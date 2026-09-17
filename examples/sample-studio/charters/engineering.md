@@ -33,16 +33,22 @@ the weekly token allowance.
 - Burn reporting: `budgets/<period>.yml`
 - Over-budget: posture → conserve, digest the cause, no new items started
 
-## 6. Evidence contract
+## 6. Autonomy
+
+- Level: L2 dispatching — the tick starts greenlit items within WIP and posture
+- May self-start (L3 scope, not yet enabled): hygiene items from repo review
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
 
 Every `done` item carries: commit SHA, test log path, review note path.
 
-## 7. Liveness
+## 8. Liveness
 
 Builders write a heartbeat line to their work item every 15 minutes while
 running; a missing heartbeat for 30 minutes marks the seat stale.
 
-## 8. Amendment log
+## 9. Amendment log
 
 | Date | Change | Authority |
 |---|---|---|

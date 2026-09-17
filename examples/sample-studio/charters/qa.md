@@ -17,7 +17,11 @@ Waiving a failing gate (only the Owner may waive).
 ## 5. Budget
 Week · 0.8M tokens · `budgets/<period>.yml`
 
-## 8. Amendment log
+## 6. Autonomy
+- Level: L1 scheduled — verification queue runs each tick; verdicts are autonomous
+- Stops starting at posture: closeout
+
+## 9. Amendment log
 | Date | Change | Authority |
 |---|---|---|
 | 2026-09-17 | Adopted | Owner |

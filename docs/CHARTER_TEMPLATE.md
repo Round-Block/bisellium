@@ -29,17 +29,23 @@ material direction. If this list grows, §2/§3 are too narrow.
 - Burn reporting: `<file or endpoint>`
 - Over-budget behaviour: posture → `conserve`, digest the cause.
 
-## 6. Evidence contract
+## 6. Autonomy
+
+- Level: `L0 manual | L1 scheduled | L2 dispatching | L3 continuous`
+- What the tick may start without a human: `<item kinds, size limits>`
+- Stops starting at posture: `closeout`
+
+## 7. Evidence contract
 
 What every deliverable carries so QA and the Owner can verify without asking:
 artifact hash, run id, model actually used, inputs, verdict.
 
-## 7. Liveness
+## 8. Liveness
 
 Heartbeat interval and receipt format for detached work. A process exit is
 not proof; a receipt is.
 
-## 8. Amendment log
+## 9. Amendment log
 
 | Date | Change | Authority |
 |---|---|---|

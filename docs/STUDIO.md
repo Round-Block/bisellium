@@ -97,7 +97,22 @@ Production until it hurts.
   already implement most of this for Art; Bisellium generalizes it. Bisellium does
   not write to epoch0.
 
-## 10. Decisions and open questions
+## 10. Autonomy
+
+Declared per department in its charter, driven by one scheduler:
+
+| Level | Behaviour |
+|---|---|
+| L0 manual | seats act only when talked to |
+| L1 scheduled | `bisellium tick` runs cadence work: dailies, repo review, check, consolidation |
+| L2 dispatching | Production's loop walks the slate: starts greenlit items within WIP and posture, advances items whose gates passed |
+| L3 continuous | leads self-assign follow-ups inside "decides alone" |
+
+The edge is the slate: autonomy never crosses an Owner touchpoint; the studio runs to the
+end of the greenlit work and idles visibly. Brakes: per-item halt, `bisellium pause`
+(stop starting), posture `limited` per department, no autonomous starts at `closeout`.
+
+## 11. Decisions and open questions
 
 **Decided 2026-09-17: conventions first, plus a reference harness for leads.**
 The studio state is files; any toolchain can produce them; the console renders

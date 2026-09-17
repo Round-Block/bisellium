@@ -17,7 +17,11 @@ Greenlight requests (backlog → slate); budget reallocation between departments
 ## 5. Budget
 Week · 0.5M tokens · `budgets/<period>.yml`
 
-## 8. Amendment log
+## 6. Autonomy
+- Level: L2 dispatching — runs the slate walk each tick
+- Stops starting at posture: closeout
+
+## 9. Amendment log
 | Date | Change | Authority |
 |---|---|---|
 | 2026-09-17 | Adopted | Owner |
