@@ -157,6 +157,8 @@ export interface Thread {
   openedBy: string; // actor roleId, or "you"
   counterparty: string;
   state: ThreadState;
+  /** First line of the question, for inbox rows. */
+  subject?: string;
 }
 
 /** Digest entries: inform-and-proceed. Never require a reply; silence binds
@@ -236,6 +238,7 @@ export interface Snapshot {
   digest?: DigestEntry[];
   departments?: Department[];
   budgets?: Budget[];
+  threads?: Thread[];
 }
 
 export interface AdapterBase {
