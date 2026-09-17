@@ -1,0 +1,201 @@
+certifies: tree:e01ee6c6e336042724ee87d353f63983d4687082
+command: npm test -s
+exit code: 0
+
+PASS  sample-studio                  0 blocking, 10 advisory
+PASS  bad-dead-link                  blocked by link.dead
+PASS  bad-empty-budget               blocked by aerarium.parse
+PASS  bad-halted-no-exit             blocked by halted.at, halted.exit
+PASS  bad-mirrored-burn              blocked by aerarium.mirror
+PASS  bad-missing-handoff            blocked by traditio.present
+PASS  bad-non-string-id              blocked by opus.keys.type
+PASS  bad-review-failed-tests        blocked by state.review.automated
+PASS  bad-unsupported-state          blocked by state.review.automated
+PASS  bad-waived-automated           blocked by probatio.waived.automated, probatio.waived.reason
+PASS  bad-wip-cap                    blocked by wip.cap
+PASS  good-minimal                   passes, as expected
+PASS  not-a-studio                   manifest.present, no throw
+PASS  init.ok                        created
+PASS  init.check                     0 blocking, 0 advisory
+PASS  new.first.id                   got W-001
+PASS  new.second.id                  got W-002
+PASS  new.check                      0 blocking, 0 advisory
+PASS  init.refuses.existing          /********.yml already exists — refusing to overwrite
+PASS  new.refuses.unknown.collegium  collegium "no-such-collegium" is not declared in /********.yml
+PASS  check: non-studio dir exits 2              status=2
+PASS  query burn: sample-studio exits 0, mentions engineering status=0 stdout="2026-W38 · production · 0/500000 tokens · 0.0% · ok\n2026-W38 · engineering · 1880000/3000000 tokens · 62.7% · conserve\n2"
+PASS  query: non-studio dir exits 2, no stack trace status=2 stderr="not a studio: /********\n"
+PASS  context: unknown sella exits 1             status=1 stderr="unknown sella: nobody\n"
+PASS  context: builder-1 max-tokens=300 exits 0, 'truncated:' before 'tokens:' status=0 truncIdx=0 tokensIdx=50
+PASS  init: temp dir exits 0                     status=0 stdout=timezone: UTC (default — set bisellium.yml#timezone to change)
+check /tmp/bisellium-cli-init-tT5jFX  (now 2026-09-17T15:00:00.000Z)
+
+PASS — 0 blocking, 0 advisory
+
+PASS  new: '--title=a=b: ship it' exits 0        status=0 stderr=
+PASS  new: title with embedded '=' preserved verbatim raw="---\nid: \"W-001\"\ntitle: \"a=b: ship it\"\nkind: \"task\"\ncollegium: \"production\"\nstate: backlog\nprobationes: {}\n---\n"
+PASS  check after init: 0 blocking, 0 advisory (no non-aerarium rule ids) status=0 nonAerariumRuleIds=[] stdout="check /tmp/bisellium-cli-init-tT5jFX  (now 2026-09-17T15:00:00.000Z)\n\nPASS — 0 blocking, 0 advisory\n"
+PASS  new: non-studio dir exits 2                status=2 stderr="/********.yml not found — not a studio\n"
+PASS  unknown flag exits 2                       status=2 stderr="flag --bogus not allowed for \"check\"\nusage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n       bisellium query <question> [dir] [--now <iso>]\n       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]\n"
+PASS  check: --sella (a context-only flag) exits 2, not 0 status=2 stderr="flag --sella not allowed for \"check\"\nusage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n       bisellium query <question> [dir] [--now <iso>]\n       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]\n"
+PASS  query: --level (a check-only flag) exits 2 status=2 stderr="flag --level not allowed for \"query\"\nusage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n       bisellium query <question> [dir] [--now <iso>]\n       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]\n"
+PASS  check: --json=false does NOT enable JSON output status=0 stdout="check /********"
+PASS  check: --json=true enables JSON output     status=0 stdout="{\n  \"root\": \"/home/edckt/projects/bisell"
+PASS  check: --json=maybe exits 2                status=2 stderr="--json must be true or false\nusage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n       bisellium query <question> [dir] [--now <iso>]\n       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]\n"
+PASS  builder-1: engineering lex present         
+PASS  builder-1: W-002 and W-004 handoffs present 
+PASS  builder-1: A-1 not included (addressed to patron) 
+PASS  patron: A-1 included (needs_you, to: patron) 
+PASS  maxTokens=300: sections dropped            
+PASS  maxTokens=300: text ends with 'truncated:' line 
+PASS  unknown sella: empty text, truncated ['unknown sella'] 
+PASS  needs_you: mentions W-004 and A-1          
+PASS  status W-003: mentions verifying and failed 
+PASS  burn: mentions engineering and conserve    
+PASS  hello: kind unknown                        
+PASS  burn: engineering listed once for 2026-W38 with a derived (non-unknown) posture ["2026-W38 · engineering · 1880000/3000000 tokens · 62.7% · conserve"]
+PASS  burn: engineering listed for 2026-W39 as unknown (not the current period) ["2026-W39 · engineering · 0/3000000 tokens · ?% · unknown"]
+PASS  diff(null, A): one item_appeared per work item 7 vs 7
+PASS  diff(null, A): one attention per petitio       2 vs 2
+PASS  diff(null, A): one digest per entry            5 vs 5
+PASS  diff(null, A): one provider.status per provider 2 vs 2
+PASS  diff(null, A): no state_changed on first appearance 
+PASS  diff(null, A): one gate_evaluated per recorded gate on appearance 15 vs 15
+PASS  diff(null, A): digest by art-lead carries DEPARTMENT art art
+PASS  diff(A, A): zero events                        0 events
+PASS  diff(A, B): exactly one state_changed          1
+PASS  diff(A, B): exactly one gate_evaluated         1
+PASS  diff(A, B): exactly one attention              1
+PASS  diff(A, B): exactly one provider.status        1
+PASS  diff(A, B): state_changed is W-002 building -> verifying 
+PASS  diff(A, B): gate_evaluated is W-003 tests -> passed 
+PASS  diff(A, B): every event has TIME_DERIVED true  
+PASS  diff(A, B): SOURCE_SEQ strictly increases      7,8,9,10
+PASS  diff(A, C): evidence href-only change emits nothing 0 events
+PASS  Store: readEvents length equals sum of ingested events 40 vs 40
+PASS  Store: events() matches readEvents length      
+PASS  Store: replay() shows W-002 verifying          verifying
+PASS  Store: fresh Store has zero corrupt lines      0
+PASS  cold ingest: replay() shows W-001 gates tests/qa/review passed {"tests":"passed","qa":"passed","review":"passed","lint":"passed","types":"passed"}
+PASS  cold ingest: replay() exposes W-001 sella      builder-2
+PASS  cold ingest: replay() exposes W-001 collegium  engineering
+PASS  readLog: corrupt middle line is skipped, not thrown 2 events
+PASS  readLog: corrupt middle line is counted        1 skipped
+PASS  Store: constructor does not throw on a corrupt log 2
+PASS  Store: corruptLines records the skipped count  1
+PASS  resumed Store: SOURCE_SEQ continues after the last seq on disk 36 vs 36
+PASS  readLog: newline guard — both lines parse after appending onto a file without a trailing newline 2 events, 0 skipped
+PASS  readLog: non-ENOENT fs error (EISDIR on a directory) propagates 
+PASS  Store: constructor lets a non-ENOENT readLog error propagate 
+PASS  acquire: worktree path exists                        /tmp/shim-git-repo-VdXanz/.bisellium/worktrees/builder-1-1
+PASS  acquire: branch is bisellium/builder-1/1             bisellium/builder-1/1
+PASS  acquire: `git worktree list` includes the new worktree /tmp/shim-git-repo-VdXanz                                   fba132f [master]
+/tmp/shim-git-repo-VdXanz/.bisellium/worktrees/builder-1-1  fba132f [bisellium/builder-1/1]
+
+PASS  release: worktree path removed                       
+PASS  release: branch deleted                              ""
+PASS  run true: exitCode 0                                 0
+PASS  run true: receipt exitCode 0                         {"sella":"builder-1","sessionId":"20260918T090000000Z-15af","startedAt":"2026-09-18T09:00:00.000Z","cwd":"/tmp/shim-studio-BTbMvz","cmd":["true"],"harness":"run","endedAt":"2026-09-17T23:40:04.210Z","exitCode":0,"durationMs":6}
+PASS  run true: receipt has endedAt                        {"sella":"builder-1","sessionId":"20260918T090000000Z-15af","startedAt":"2026-09-18T09:00:00.000Z","cwd":"/tmp/shim-studio-BTbMvz","cmd":["true"],"harness":"run","endedAt":"2026-09-17T23:40:04.210Z","exitCode":0,"durationMs":6}
+PASS  run false: exitCode 1                                1
+PASS  run false: receipt exitCode 1                        {"sella":"builder-1","sessionId":"20260918T090000000Z-15b0","startedAt":"2026-09-18T09:00:00.000Z","cwd":"/tmp/shim-studio-BTbMvz","cmd":["false"],"harness":"run","endedAt":"2026-09-17T23:40:04.215Z","exitCode":1,"durationMs":2}
+PASS  run: unknown sella exits 2                           2
+PASS  run: missing '--' exits 2                            2
+PASS  run: empty cmd exits 2                               2
+PASS  checkStudio: receipt.shape fires on garbage receipt  ["wip.declared","lex.declared","manifest.probationes","acta.daily","receipt.shape","aerarium.present"]
+--token=***
+PASS  run echo --token=*** exitCode 0                  0
+PASS  run: receipt cmd masks token=*** rather than storing it verbatim ["echo","--token=***"]
+PASS  run: --sella --no-worktree does not swallow the flag as a value 2
+PASS  run: --studio as the last arg (no value) exits 2     2
+PASS  run: child killed by SIGTERM exits 128+15            143
+PASS  init: temp studio created                            timezone: UTC (default — set bisellium.yml#timezone to change)
+check /********  (now 2026-09-18T09:00:00.000Z)
+
+PASS — 0 blocking, 0 advisory
+PASS  new: opus created                                    W-001
+tests: passed  ci/W-001-tests-5d70f0f6.log
+lint: failed  ci/W-001-lint-5d70f0f6.log
+PASS  runVerify: exits 1 (lint failed)                     1
+PASS  verify: tests passed                                 {"status":"passed","evidence":"ci/W-001-tests-5d70f0f6.log","certifies":"tree:********"}
+PASS  verify: lint failed                                  {"status":"failed","evidence":"ci/W-001-lint-5d70f0f6.log","certifies":"tree:********"}
+PASS  verify: certifies matches git's tree hash            expected tree:********, got tree:******** / tree:********
+PASS  verify: tests evidence file exists                   /********.log
+PASS  verify: lint evidence file exists                    /********.log
+PASS  verify: body unchanged, byte-for-byte                {"before":"","after":""}
+PASS  verify: keys other than probationes unchanged        {"id":"W-001","title":"Verify seam","kind":"task","collegium":"production","state":"backlog"} vs {"id":"W-001","title":"Verify seam","kind":"task","collegium":"production","state":"backlog"}
+PASS  checkStudio: no blocking probatio.* findings         []
+tests: passed  ci/W-001-tests-5d70f0f6.log
+lint: failed  ci/W-001-lint-5d70f0f6.log
+PASS  verify: running verify again right after itself needs no --allow-dirty 1
+PASS  verify: a second run right after the first certifies the same tree:<hash> {"tests":{"status":"passed","evidence":"ci/W-001-tests-5d70f0f6.log","certifies":"tree:********"},"lint":{"status":"failed","evidence":"ci/W-001-lint-5d70f0f6.log","certifies":"tree:********"}}
+tests: passed  ci/W-001-tests-5d70f0f6.log
+lint: failed  ci/W-001-lint-5d70f0f6.log
+PASS  verify: an uncommitted change under studio/ does not require --allow-dirty 1
+tests: waived (untouched)
+lint: failed  ci/W-002-lint-5d70f0f6.log
+PASS  verify (waived fixture): exits 1 (lint still fails)  1
+PASS  verify (waived fixture): 'tests' gate untouched byte-for-byte (waived_by/reason/note survive) ---
+id: W-002
+title: Fixture with a waived gate
+kind: task
+collegium: production
+sella: producer
+state: building
+probationes:
+  tests:
+    status: waived
+    waived_by: producer
+    reason: flaky on this sandbox
+    note: |
+      Known flaky; owner: producer.
+      Revisit before ship.
+  lint: { status: failed, evidence: ci/W-002-lint-5d70f0f6.log, certifies: tree:******** } # will run for real
+traditio: { sella: producer, stage: building, next: fix flake, blocked_on: none, at: 2026-09-18T09:00:00Z }
+---
+Body text, byte-for-byte.
+
+PASS  verify (waived fixture): inline comment on 'lint' survives ---
+id: W-002
+title: Fixture with a waived gate
+kind: task
+collegium: production
+sella: producer
+state: building
+probationes:
+  tests:
+    status: waived
+    waived_by: producer
+    reason: flaky on this sandbox
+    note: |
+      Known flaky; owner: producer.
+      Revisit before ship.
+  lint: { status: failed, evidence: ci/W-002-lint-5d70f0f6.log, certifies: tree:******** } # will run for real
+traditio: { sella: producer, stage: building, next: fix flake, blocked_on: none, at: 2026-09-18T09:00:00Z }
+---
+Body text, byte-for-byte.
+
+PASS  verify (waived fixture): 'lint' gate actually ran (no longer pending) {"status":"failed","evidence":"ci/W-002-lint-5d70f0f6.log","certifies":"tree:********"}
+PASS  verify (waived fixture): body unchanged, byte-for-byte 
+PASS  verify: an uncommitted source-file change exits 2 without --allow-dirty 2
+tests: passed  ci/W-001-tests-5d70f0f6.log
+lint: failed  ci/W-001-lint-5d70f0f6.log
+PASS  verify --allow-dirty: exits 1 (lint still fails)     1
+PASS  verify --allow-dirty: certifies is dirty:<hash>, never tree:<hash> {"tests":{"status":"passed","evidence":"ci/W-001-tests-5d70f0f6.log","certifies":"dirty:********"},"lint":{"status":"failed","evidence":"ci/W-001-lint-5d70f0f6.log","certifies":"dirty:********"}}
+PASS  verify with garbage sibling opus: exits 2            2
+PASS  verify with garbage sibling opus: no stack trace on stderr "could not read studio: Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 28:\n\nid: [this is not valid yaml\n                           ^\n\n"
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+working tree is dirty; commit or pass --allow-dirty
+
