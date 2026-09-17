@@ -32,7 +32,11 @@ export function usageYamlSource(root: string): ProviderStatusSource {
   return {
     id: "usage.yml",
     async read() {
-      return { providers: readUsageProviders(root), note: "observed" };
+      const { providers, notes } = readUsageProviders(root);
+      // A malformed entry (e.g. `- {}`) must still be visible somewhere —
+      // it produces nothing as a Provider row, so it surfaces as a note
+      // instead of vanishing silently.
+      return { providers, note: notes.length > 0 ? notes.join("; ") : "observed" };
     },
   };
 }
@@ -166,6 +170,9 @@ function mapProvider(raw: RawProvider): Provider | undefined {
   return { id, usagePct, resetAt, status, note: noteParts.length > 0 ? noteParts.join(", ") : undefined };
 }
 
+/** Grace period between SIGTERM and SIGKILL when a probe times out. */
+const KILL_GRACE_MS = 5_000;
+
 function runCommand(bin: string, args: string[], timeoutMs: number): Promise<string> {
   return new Promise((resolvePromise, reject) => {
     let settled = false;
@@ -176,14 +183,23 @@ function runCommand(bin: string, args: string[], timeoutMs: number): Promise<str
       reject(e instanceof Error ? e : new Error(String(e)));
       return;
     }
+    // A quota-axi probe that hangs must never hold the CLI process open —
+    // unref it so a timed-out child can't block process exit, and escalate
+    // SIGTERM to SIGKILL if it doesn't stop on its own.
+    child.unref();
+
     let out = "";
     let err = "";
+    let killTimer: ReturnType<typeof setTimeout> | undefined;
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      child.kill();
+      child.kill("SIGTERM");
+      killTimer = setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
+      killTimer.unref?.();
       reject(new Error(`timed out after ${timeoutMs}ms`));
     }, timeoutMs);
+    timer.unref?.();
 
     child.stdout?.on("data", (d: Buffer) => {
       out += d.toString("utf8");
@@ -198,7 +214,8 @@ function runCommand(bin: string, args: string[], timeoutMs: number): Promise<str
       reject(e);
     });
     child.on("close", (code) => {
-      if (settled) return;
+      clearTimeout(killTimer);
+      if (settled) return; // already rejected on timeout — a late close is a no-op
       settled = true;
       clearTimeout(timer);
       if (code !== 0) reject(new Error(err.trim() || `exited with code ${String(code)}`));

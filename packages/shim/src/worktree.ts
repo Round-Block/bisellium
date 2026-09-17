@@ -6,7 +6,7 @@
  * falls back to git whenever it is not.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 export interface AcquiredWorktree {
@@ -20,9 +20,12 @@ export interface WorktreeProvider {
   acquire(opts: { repo: string; sella: string; base?: string }): Promise<AcquiredWorktree>;
 }
 
+const TIMEOUT_MS = 30_000;
+
 function run(cmd: string, args: string[], cwd?: string): { status: number; stdout: string; stderr: string } {
-  const r = spawnSync(cmd, args, { cwd, encoding: "utf8" });
+  const r = spawnSync(cmd, args, { cwd, encoding: "utf8", timeout: TIMEOUT_MS });
   if (r.error) return { status: -1, stdout: "", stderr: r.error.message };
+  if (r.signal) return { status: -1, stdout: r.stdout ?? "", stderr: (r.stderr ?? "") || `killed by ${r.signal} (timed out after ${TIMEOUT_MS}ms)` };
   return { status: r.status ?? -1, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
 }
 
@@ -118,4 +121,105 @@ export const treehouseProvider: WorktreeProvider = {
 /** git unless treehouse happens to be on PATH. */
 export function selectProvider(): WorktreeProvider {
   return isOnPath("treehouse") ? treehouseProvider : gitWorktreeProvider;
+}
+
+// ---------------------------------------------------------------------------
+// reclaim — `bisellium run --reclaim` (W-008 follow-up). Worktree growth
+// under <repo>/.bisellium/worktrees/ is otherwise unbounded: every `run`
+// without `--keep` on a clean tree already cleans up after itself, but a
+// crashed run, a `--keep`, or a dirty worktree left behind by a builder that
+// later merged its branch all leak a slot forever. This only ever removes a
+// slot whose directory is gone (stale `git worktree` bookkeeping) or whose
+// branch is fully merged into HEAD and has no uncommitted changes — never a
+// worktree that's still doing something.
+// ---------------------------------------------------------------------------
+
+export interface ReclaimResult {
+  removed: { path: string; branch?: string; reason: "missing" | "merged" }[];
+  kept: { path: string; reason: string }[];
+}
+
+interface WorktreeEntry {
+  path: string;
+  branch?: string;
+}
+
+/** Parses `git worktree list --porcelain` into one entry per worktree. */
+function parseWorktreeList(text: string): WorktreeEntry[] {
+  const entries: WorktreeEntry[] = [];
+  let current: WorktreeEntry | undefined;
+  for (const line of text.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      if (current) entries.push(current);
+      current = { path: line.slice("worktree ".length).trim() };
+    } else if (line.startsWith("branch ") && current) {
+      current.branch = line.slice("branch ".length).trim().replace(/^refs\/heads\//, "");
+    }
+  }
+  if (current) entries.push(current);
+  return entries;
+}
+
+export function reclaimWorktrees(repo: string): ReclaimResult {
+  const repoAbs = resolve(repo);
+  const worktreesRoot = join(repoAbs, ".bisellium", "worktrees");
+  const removed: ReclaimResult["removed"] = [];
+  const kept: ReclaimResult["kept"] = [];
+  if (!existsSync(worktreesRoot)) return { removed, kept };
+
+  const list = run("git", ["worktree", "list", "--porcelain"], repoAbs);
+  const registered = list.status === 0 ? parseWorktreeList(list.stdout) : [];
+  const byPath = new Map(registered.map((e) => [resolve(e.path), e] as const));
+
+  const merged = run("git", ["branch", "--merged", "HEAD", "--format=%(refname:short)"], repoAbs);
+  const mergedBranches = new Set(merged.status === 0 ? merged.stdout.split("\n").map((s) => s.trim()).filter(Boolean) : []);
+
+  let slots: string[] = [];
+  try {
+    slots = readdirSync(worktreesRoot);
+  } catch {
+    slots = [];
+  }
+
+  for (const slot of slots) {
+    const path = join(worktreesRoot, slot);
+    const entry = byPath.get(resolve(path));
+    const dirMissing = !existsSync(path);
+
+    if (dirMissing) {
+      // git already knows the slot is gone, or never registered it — either
+      // way there's nothing to run `worktree remove` against; just drop the
+      // branch (if any) and the leftover directory entry, then let `prune`
+      // clean up git's own bookkeeping.
+      run("git", ["worktree", "prune"], repoAbs);
+      if (entry?.branch && mergedBranches.has(entry.branch)) run("git", ["branch", "-D", entry.branch], repoAbs);
+      try {
+        rmSync(path, { recursive: true, force: true });
+      } catch {
+        /* already gone */
+      }
+      removed.push({ path, branch: entry?.branch, reason: "missing" });
+      continue;
+    }
+
+    if (!entry) {
+      kept.push({ path, reason: "not registered with git worktree list — leaving it alone" });
+      continue;
+    }
+
+    if (entry.branch && mergedBranches.has(entry.branch)) {
+      const status = run("git", ["-C", path, "status", "--porcelain"], repoAbs);
+      if (status.status === 0 && status.stdout.trim().length === 0) {
+        const rm = run("git", ["worktree", "remove", "--force", path], repoAbs);
+        if (rm.status === 0) {
+          run("git", ["branch", "-D", entry.branch], repoAbs);
+          removed.push({ path, branch: entry.branch, reason: "merged" });
+          continue;
+        }
+      }
+    }
+    kept.push({ path, reason: entry.branch ? `branch "${entry.branch}" not merged, or has uncommitted changes` : "detached, in use" });
+  }
+
+  return { removed, kept };
 }

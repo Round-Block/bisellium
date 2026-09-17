@@ -41,6 +41,19 @@ usage.yml                observed provider limit telemetry
 receipts/<sella>/<sessionId>.json  run receipts written by `bisellium run` (start + exit)
 ```
 
+Receipts and ci logs are masked before they touch disk: a receipt's `cmd`
+and every line `verify`'s local pipeline writes to `ci/*.log` (other than
+its own `certifies`/header line) run through a `redact()` that masks
+`token=`/`key=`/`secret=`/`password=` values, `Bearer <token>` headers, and
+any standalone 32+ character hex/base64 run — a credential accidentally
+passed on a command line should not become evidence sitting in the repo.
+The same pipeline run also strips the child command's environment down to
+an allowlist (`PATH`, `HOME`, `NODE_*`, `LANG`, `TZ`) plus anything that
+doesn't look like a credential — any variable name matching
+`TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL` (case-insensitive) is dropped unless
+it's on that allowlist, so an untrusted probatio `command` can't read the
+parent process's secrets out of its own environment.
+
 Planned, not yet built: `memoria/sellae/`, `decisions/`, `archive/`, and the
 docs registry.
 
@@ -167,11 +180,21 @@ Posture per collegium is derived from burn/allowance (≥60% conserve,
 Any `burn*` key in an aerarium file is blocking: burn is derived, never mirrored.
 
 `bisellium providers [dir] --source auto|usage|quota-axi` prints this same
-per-provider shape. `usage` reads `usage.yml` only; `quota-axi` shells out to
-the live `quota-axi` CLI (never blocking `check`, `run` or `verify` when it's
-absent, unauthenticated, or slow — it degrades to a note within 60s);
-`auto` (the default) composites both, a live quota-axi reading for a
-provider id always taking precedence over `usage.yml`'s for that same id.
+per-provider shape. `usage` reads `usage.yml` only, tolerating a malformed
+entry the same way `quota-axi`'s own parsing does: an entry needs a
+non-empty string `id` and a numeric `usage_pct` in 0–100, else that one
+entry is skipped and reported as a `note` line (e.g. `- {}` prints nothing
+for that entry, plus the note) — never a thrown error and never a silently
+dropped row. `quota-axi` shells out to the live `quota-axi` CLI; when it's
+explicitly requested this way and the tool is absent, unauthenticated, or
+too slow, that's an honest failure — `bisellium providers --source
+quota-axi` exits 1 with the one-line reason. `auto` (the default) composites
+both, degrading to `usage.yml` silently (exit 0) whenever quota-axi is
+unavailable, a live quota-axi reading for a provider id always taking
+precedence over `usage.yml`'s for that same id. This asymmetry is
+deliberate: `auto`/`check`/`run`/`verify` must never block on quota-axi
+being present, but an operator who explicitly typed `--source quota-axi`
+wants to know when it didn't work.
 
 ## Running check
 
@@ -184,22 +207,53 @@ error). `--json` gives machine-readable findings with stable rule ids;
 `--level block` limits output to what blocks; `--now <iso>` pins the clock for
 reproducible age checks; `--repo <dir>` additionally checks each automated
 gate's `certifies` against that repo's current tree, advising
-`probatio.certifies.stale` (or `.mismatch`) rather than failing — a staleness
-check is never a reason for `check` itself to block. `npm test` runs the
-sample and every fixture.
+`probatio.certifies.stale` when a `tree:` certificate no longer matches the
+current tree — a staleness check is never a reason for `check` itself to
+block. Independent of `--repo`, any gate certifying `dirty:<hash>` (see
+`verify --allow-dirty` below) advises `probatio.certifies.dirty`, and an
+automated gate whose evidence log doesn't mention the tree/dirty hash it
+certifies advises `probatio.evidence.tree` (the local pipeline writes that
+hash into the log's header, so this only fires on a log that was hand-edited
+or came from elsewhere). `probatio.certifies.mismatch` is a separate,
+`--repo`-independent check: a `done` item whose gates certify different
+trees from each other. `npm test` runs the sample and every fixture.
 
 ## Running run and verify
 
 ```bash
-npm run bisellium -- run --sella <sella> --studio <dir> -- <cmd…>
-npm run bisellium -- verify <opus-id> --studio <dir> --repo <dir>
+npm run bisellium -- run --sella <sella> --studio <dir> [--repo <dir>] -- <cmd…>
+npm run bisellium -- run --reclaim --studio <dir>
+npm run bisellium -- verify <opus-id> --studio <dir> --repo <dir> [--allow-dirty]
 ```
 
 `run` executes `<cmd…>` as `<sella>`, in its own git worktree by default
 (`--no-worktree` runs in place; `--base <ref>` sets the worktree's start
 point; `--keep` keeps it even when clean), and always leaves a receipt under
-`receipts/<sella>/`. `verify` runs every `kind: automated` probatio's
-`command` against `--repo` (defaulting to the studio's parent repo) and
-writes each one's `status`/`evidence`/`certifies` back into that opus's front
-matter — the only tool-written change to an opus, and it touches only those
-three keys.
+`receipts/<sella>/` (gitignored — receipts are local liveness evidence, not
+something to commit; `ci/*.log` stays tracked since opera link to it as
+evidence). The worktree lives under `<repo>/.bisellium/worktrees/`, where
+`<repo>` is the git repo root — resolved via `--repo`, or `git rev-parse
+--show-toplevel` from the studio dir when the studio is a subdirectory of
+the repo (never under the studio dir itself). `bisellium run --reclaim`
+removes worktrees whose directory is gone or whose branch is fully merged
+and clean, so that directory's growth is bounded; anything still in use
+(unmerged branch, uncommitted changes, or not registered with `git worktree
+list`) is left alone and reported as kept.
+
+`verify` runs every `kind: automated` probatio's `command` against `--repo`
+(defaulting to the studio's parent repo) and writes each one's
+`status`/`evidence`/`certifies` back into that opus's front matter — the
+only tool-written change to an opus, and it touches only those three keys on
+each gate it runs, merged into the existing probatio node so sibling keys
+(`waived_by`, a `note`, comments, …) and every other gate survive untouched.
+A gate already `status: waived` is skipped entirely (not run, not
+overwritten) and printed as `<id>: waived (untouched)`. Before running,
+`verify` requires a clean working tree in `--repo` (`git status
+--porcelain`) — a command's result only means something if it ran against
+exactly the tree it's about to certify. A dirty tree exits 2 with "working
+tree is dirty; commit or pass --allow-dirty"; with `--allow-dirty`, `verify`
+runs anyway and certifies `dirty:<hash>` instead of `tree:<hash>`, an honest
+admission that the certified hash isn't exactly what ran (see
+`probatio.certifies.dirty` above). Exit codes: 0 all automated gates that
+ran passed, 1 at least one failed, 2 usage error / not a studio / unparseable
+sibling opus / dirty tree without `--allow-dirty`.

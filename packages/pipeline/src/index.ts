@@ -9,6 +9,7 @@ import { execSync, spawnSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import type { Opus } from "@bisellium/schema";
+import { filterEnv, redact } from "@bisellium/shim";
 
 export interface GateRunResult {
   status: "passed" | "failed";
@@ -33,6 +34,10 @@ export interface PipelineRunOpts {
   now: Date;
   /** Studio directory — evidence paths are recorded relative to this. */
   studioDir: string;
+  /** True when `repo`'s working tree had uncommitted changes at run time —
+   *  certifies is then `dirty:<hash>`, never `tree:<hash>` (a `tree:`
+   *  certificate is a claim that `treeHash` is exactly what ran). */
+  dirty?: boolean;
 }
 
 export interface MergePipeline {
@@ -62,6 +67,12 @@ export const localPipeline: MergePipeline = {
     mkdirSync(opts.logDir, { recursive: true });
     const tree8 = opts.treeHash.slice(0, 8);
     const results: Record<string, GateRunResult> = {};
+    const certifies = `${opts.dirty ? "dirty" : "tree"}:${opts.treeHash}`;
+    // Drop anything env-var-shaped like a credential before an untrusted
+    // probatio command ever sees it (docs/ADOPTION.md: allowlist is
+    // PATH/HOME/NODE_*/LANG/TZ; everything else matching
+    // TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL is dropped).
+    const env = filterEnv(process.env);
 
     for (const [probatioId, command] of Object.entries(opts.commands)) {
       const r = spawnSync(command, {
@@ -70,13 +81,20 @@ export const localPipeline: MergePipeline = {
         encoding: "utf8",
         timeout: TIMEOUT_MS,
         maxBuffer: 64 * 1024 * 1024,
+        env,
       });
 
       const timedOut = r.error !== undefined && (r.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
       const exitCode = timedOut ? null : r.status;
       const output = `${r.stdout ?? ""}${r.stderr ?? ""}`;
       const statusLine = timedOut ? `exit code: (timed out after ${TIMEOUT_MS / 60_000}m)` : `exit code: ${exitCode ?? `(signal ${r.signal ?? "unknown"})`}`;
-      const log = `command: ${command}\n${statusLine}\n\n${tail(output, LOG_TAIL_LINES)}\n`;
+      // The tree/certifies header is our own metadata, not part of the
+      // command's (untrusted) output — check.ts's probatio.evidence.tree
+      // rule reads it back to confirm a gate's log actually mentions the
+      // tree it certifies. `command` and the command's own output ARE
+      // untrusted (they can echo secrets back), so those are redacted;
+      // the header line is not.
+      const log = `certifies: ${certifies}\ncommand: ${redact(command)}\n${statusLine}\n\n${redact(tail(output, LOG_TAIL_LINES))}\n`;
 
       const logPath = join(opts.logDir, `${opts.opus.id}-${probatioId}-${tree8}.log`);
       writeFileSync(logPath, log);
@@ -84,7 +102,7 @@ export const localPipeline: MergePipeline = {
       results[probatioId] = {
         status: exitCode === 0 ? "passed" : "failed",
         evidence: toPosix(relative(opts.studioDir, logPath)),
-        certifies: `tree:${opts.treeHash}`,
+        certifies,
       };
     }
 

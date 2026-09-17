@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@bisellium/schema": "*"
+    "@bisellium/schema": "*",
+    "@bisellium/shim": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

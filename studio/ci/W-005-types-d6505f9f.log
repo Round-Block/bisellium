@@ -1,0 +1,4 @@
+command: npm run -s typecheck
+exit code: 0
+
+

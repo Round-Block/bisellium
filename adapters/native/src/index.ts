@@ -26,10 +26,11 @@ import type {
   Stipendium,
   Opus,
 } from "@bisellium/schema";
-// Lazy-imported inside providerStatus() (not at module top level) — @bisellium/providers
-// imports readUsageProviders back from this module, and both sides only touch
-// the cycle from inside function bodies, never at module-evaluation time.
-import { compositeSource, quotaAxiSource, usageYamlSource } from "@bisellium/providers";
+// @bisellium/providers imports readUsageProviders back from this module —
+// a static import of @bisellium/providers here (as this file used to have)
+// would be a real top-level ESM cycle. providerStatus() below dynamic-
+// imports it instead, deferred to first call, so this module never
+// statically depends on providers.
 
 // Fixed lifecycle (ADOPTION.md): greenlit is the Patron's slate decision.
 export const NATIVE_LIFECYCLE_ID = "bisellium";
@@ -246,7 +247,7 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
     }
   }
 
-  const providers = readUsageProviders(root);
+  const providers = readUsageProviders(root).providers;
 
   return { sellae, opera, providers, acta, collegia, stipendia, petitiones };
 }
@@ -257,9 +258,17 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
  * exact parsing instead of duplicating it (docs/ADOPTION.md: usage.yml is
  * observed provider limit telemetry).
  */
-export function readUsageProviders(root: string): Provider[] {
+export interface ReadUsageProvidersResult {
+  providers: Provider[];
+  /** One entry per skipped/malformed provider row, for callers (e.g.
+   *  `bisellium providers --source usage`) that want to surface why an
+   *  entry produced nothing rather than silently dropping it. */
+  notes: string[];
+}
+
+export function readUsageProviders(root: string): ReadUsageProvidersResult {
   const usagePath = join(root, "usage.yml");
-  if (!existsSync(usagePath)) return [];
+  if (!existsSync(usagePath)) return { providers: [], notes: [] };
   let parsed: unknown;
   try {
     parsed = parseYaml(readFileSync(usagePath, "utf8"));
@@ -267,29 +276,46 @@ export function readUsageProviders(root: string): Provider[] {
     // Malformed YAML (unparseable) degrades to "no observed providers"
     // rather than throwing a raw YAMLParseError at callers — see W-007
     // verifier finding on readUsageProviders.
-    return [];
+    return { providers: [], notes: [] };
   }
   if (
     typeof parsed !== "object" ||
     parsed === null ||
     !Array.isArray((parsed as { providers?: unknown }).providers)
   ) {
-    return [];
+    return { providers: [], notes: [] };
   }
-  const u = parsed as {
-    providers: unknown[];
-  };
-  return u.providers
-    .filter(
-      (p): p is { id: string; usage_pct: number; reset_at?: string; status?: ProviderStatus } =>
-        typeof p === "object" && p !== null && !Array.isArray(p),
-    )
-    .map((p) => ({
-      id: p.id,
-      usagePct: p.usage_pct,
-      resetAt: p.reset_at ? String(p.reset_at) : undefined,
-      status: p.status ?? "unknown",
-    }));
+  const u = parsed as { providers: unknown[] };
+
+  const providers: Provider[] = [];
+  const notes: string[] = [];
+  for (const raw of u.providers) {
+    // Same tolerance as the quota-axi source: validate the shape of each
+    // entry independently and skip (with a note), never throw and never
+    // let one bad row (e.g. `- {}`) take the whole list down.
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+      notes.push("usage.yml: skipped a provider entry — not a mapping");
+      continue;
+    }
+    const p = raw as { id?: unknown; usage_pct?: unknown; reset_at?: unknown; status?: unknown };
+    const id = typeof p.id === "string" && p.id.length > 0 ? p.id : undefined;
+    if (!id) {
+      notes.push("usage.yml: skipped a provider entry — id must be a non-empty string");
+      continue;
+    }
+    const usagePct = typeof p.usage_pct === "number" && Number.isFinite(p.usage_pct) ? p.usage_pct : undefined;
+    if (usagePct === undefined || usagePct < 0 || usagePct > 100) {
+      notes.push(`usage.yml: skipped provider "${id}" — usage_pct must be a number 0–100`);
+      continue;
+    }
+    providers.push({
+      id,
+      usagePct,
+      resetAt: p.reset_at !== undefined ? String(p.reset_at) : undefined,
+      status: (p.status as ProviderStatus | undefined) ?? "unknown",
+    });
+  }
+  return { providers, notes };
 }
 
 export interface CreateBiselliumAdapterOpts {
@@ -309,8 +335,12 @@ export function createBiselliumAdapter(root: string, projectId?: string, opts: C
     describeLifecycles: () => [describeLifecycle(manifest)],
     snapshot: async () => snapshotDir(root, id),
     providerStatus: async () => {
-      const yaml = usageYamlSource(root);
-      const source = live ? compositeSource([quotaAxiSource({}), yaml]) : yaml;
+      if (!live) return readUsageProviders(root).providers;
+      // Dynamic import, deferred to first call — not at module-evaluation
+      // time — so this module never statically depends on
+      // @bisellium/providers (see the comment above readUsageProviders).
+      const { compositeSource, quotaAxiSource, usageYamlSource } = await import("@bisellium/providers");
+      const source = compositeSource([quotaAxiSource({}), usageYamlSource(root)]);
       const { providers } = await source.read({ now: new Date() });
       return providers;
     },

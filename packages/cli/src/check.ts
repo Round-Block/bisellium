@@ -115,7 +115,7 @@ export interface CheckOptions {
 /** `git rev-parse HEAD^{tree}` in `repo`, or undefined if git/the repo isn't available. */
 function currentTreeHash(repo: string): string | undefined {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: repo, encoding: "utf8" }).trim() || undefined;
+    return execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: repo, encoding: "utf8", timeout: 10_000 }).trim() || undefined;
   } catch {
     return undefined;
   }
@@ -326,6 +326,24 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
             const cs = c as string;
             if (treeHash && probatioKind.get(gid) === "automated" && cs.startsWith("tree:") && cs !== `tree:${treeHash}`)
               add("probatio.certifies.stale", "advise", where, `gate "${gid}" certifies ${cs}, current tree is tree:${treeHash}`);
+            if (cs.startsWith("dirty:"))
+              add("probatio.certifies.dirty", "advise", where, `gate "${gid}" certifies a dirty working tree (${cs}) — not what "--repo" resolves as committed`);
+            // probatio.evidence.tree: an automated gate's log is supposed to
+            // record the tree/dirty hash it certifies in its own header
+            // (packages/pipeline writes it) — if the log doesn't mention it,
+            // the certificate can't be corroborated from the evidence alone.
+            const hashMatch = probatioKind.get(gid) === "automated" ? /^(?:tree|dirty):(.+)$/.exec(cs) : null;
+            if (hashMatch) {
+              const hash = hashMatch[1]!;
+              let logText: string | undefined;
+              try {
+                logText = existsSync(join(root, ev as string)) ? readFileSync(join(root, ev as string), "utf8") : undefined;
+              } catch {
+                logText = undefined;
+              }
+              if (logText !== undefined && !logText.includes(hash))
+                add("probatio.evidence.tree", "advise", where, `gate "${gid}" evidence log does not mention the tree hash it certifies (${hash})`);
+            }
           }
         }
       }

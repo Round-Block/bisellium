@@ -36,8 +36,9 @@ const USAGE =
   "       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n" +
   "       bisellium query <question> [dir] [--now <iso>]\n" +
   "       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n" +
-  "       bisellium run --sella <sella> [--studio <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
-  "       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>]";
+  "       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
+  "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
+  "       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]";
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;

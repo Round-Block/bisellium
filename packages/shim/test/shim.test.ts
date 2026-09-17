@@ -98,6 +98,32 @@ function readReceipt(studio: string, sella: string): { path: string; data: Recor
     const rules = result.findings.map((f) => f.rule);
     check("checkStudio: receipt.shape fires on garbage receipt", rules.includes("receipt.shape"), JSON.stringify(rules));
     rmSync(garbageDir, { recursive: true, force: true });
+
+    // ---- logs and receipts hygiene: a receipt's cmd is masked --------------
+    const secretRun = await runCommand(["--sella", "builder-1", "--studio", studio, "--no-worktree", "--", "echo", "--token=abc123"], { now: NOW });
+    check("run echo --token=abc123: exitCode 0", secretRun.exitCode === 0, String(secretRun.exitCode));
+    const secretReceipt = readReceipt(studio, "builder-1");
+    const cmd = secretReceipt.data["cmd"] as string[];
+    check(
+      "run: receipt cmd masks token=... rather than storing it verbatim",
+      cmd.join(" ").includes("token=***") && !cmd.join(" ").includes("abc123"),
+      JSON.stringify(cmd),
+    );
+    rmSync(join(studio, "receipts"), { recursive: true, force: true });
+
+    // ---- flag parsing: a value that looks like another flag is an error ----
+    const swallowed = await runCommand(["--sella", "--no-worktree", "--studio", studio, "--", "true"], { now: NOW });
+    check("run: --sella --no-worktree does not swallow the flag as a value", swallowed.exitCode === 2, String(swallowed.exitCode));
+
+    const missingStudioValue = await runCommand(["--sella", "builder-1", "--no-worktree", "--studio"], { now: NOW });
+    check("run: --studio as the last arg (no value) exits 2", missingStudioValue.exitCode === 2, String(missingStudioValue.exitCode));
+
+    // ---- child killed by signal -> exit 128+signal -------------------------
+    const killed = await runCommand(
+      ["--sella", "builder-1", "--studio", studio, "--no-worktree", "--", process.execPath, "-e", "process.kill(process.pid, 'SIGTERM')"],
+      { now: NOW },
+    );
+    check("run: child killed by SIGTERM exits 128+15", killed.exitCode === 143, String(killed.exitCode));
   } finally {
     rmSync(studio, { recursive: true, force: true });
   }

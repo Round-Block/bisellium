@@ -107,6 +107,100 @@ try {
   const afterCheck = checkStudio(studio, NOW, { repo });
   const probatioBlocks = afterCheck.findings.filter((f) => f.level === "block" && f.rule.startsWith("probatio."));
   check("checkStudio: no blocking probatio.* findings", probatioBlocks.length === 0, JSON.stringify(probatioBlocks));
+
+  // ---- merge, don't replace: a waived gate with sibling keys and comments ----
+  // survives byte-for-byte except the three tool-written keys; an
+  // already-waived gate is never touched (its command is not even run).
+  const waivedOpusPath = join(studio, "opera", "W-002.md");
+  const waivedFixture = `---
+id: W-002
+title: Fixture with a waived gate
+kind: task
+collegium: production
+sella: producer
+state: building
+probationes:
+  tests:
+    status: waived
+    waived_by: producer
+    reason: flaky on this sandbox
+    note: |
+      Known flaky; owner: producer.
+      Revisit before ship.
+  lint: { status: pending } # will run for real
+traditio: { sella: producer, stage: building, next: fix flake, blocked_on: none, at: 2026-09-18T09:00:00Z }
+---
+Body text, byte-for-byte.
+`;
+  writeFileSync(waivedOpusPath, waivedFixture);
+  const waivedRawBefore = readFileSync(waivedOpusPath, "utf8");
+
+  const waivedResult = await runVerify(["W-002", "--studio", studio, "--repo", repo, "--now", NOW.toISOString(), "--allow-dirty"]);
+  check("verify (waived fixture): exits 1 (lint still fails)", waivedResult.exitCode === 1, String(waivedResult.exitCode));
+
+  const waivedRawAfter = readFileSync(waivedOpusPath, "utf8");
+  check(
+    "verify (waived fixture): 'tests' gate untouched byte-for-byte (waived_by/reason/note survive)",
+    waivedRawAfter.includes("waived_by: producer") &&
+      waivedRawAfter.includes("reason: flaky on this sandbox") &&
+      waivedRawAfter.includes("Known flaky; owner: producer.") &&
+      /tests:\s*\n\s*status: waived/.test(waivedRawAfter),
+    waivedRawAfter,
+  );
+  check(
+    "verify (waived fixture): inline comment on 'lint' survives",
+    waivedRawAfter.includes("# will run for real"),
+    waivedRawAfter,
+  );
+  const waivedDoc = parseYaml(splitFront(waivedRawAfter).front) as Record<string, unknown>;
+  const waivedGates = waivedDoc["probationes"] as Record<string, { status: string }>;
+  check("verify (waived fixture): 'lint' gate actually ran (no longer pending)", waivedGates["lint"]?.status === "failed", JSON.stringify(waivedGates["lint"]));
+  check(
+    "verify (waived fixture): body unchanged, byte-for-byte",
+    splitFront(waivedRawAfter).body === splitFront(waivedRawBefore).body,
+  );
+
+  // ---- honest certifies: a dirty repo refuses, --allow-dirty certifies "dirty:" ----
+  const dirtyMarker = join(repo, "dirty-marker.txt");
+  writeFileSync(dirtyMarker, "uncommitted\n");
+  try {
+    const dirtyRefused = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString()]);
+    check("verify: dirty repo without --allow-dirty exits 2", dirtyRefused.exitCode === 2, String(dirtyRefused.exitCode));
+
+    const dirtyAllowed = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString(), "--allow-dirty"]);
+    check("verify --allow-dirty: exits 1 (lint still fails)", dirtyAllowed.exitCode === 1, String(dirtyAllowed.exitCode));
+    const afterDirtyDoc = parseYaml(splitFront(readFileSync(opusPath, "utf8")).front) as Record<string, unknown>;
+    const afterDirtyGates = afterDirtyDoc["probationes"] as Record<string, { certifies: string }>;
+    check(
+      "verify --allow-dirty: certifies is dirty:<hash>, never tree:<hash>",
+      afterDirtyGates["tests"]?.certifies === `dirty:${expectedTree}` && afterDirtyGates["lint"]?.certifies === `dirty:${expectedTree}`,
+      JSON.stringify(afterDirtyGates),
+    );
+  } finally {
+    rmSync(dirtyMarker, { force: true });
+  }
+
+  // ---- an unparseable sibling opus: verify fails cleanly, never a stack trace ----
+  const garbagePath = join(studio, "opera", "garbage.md");
+  writeFileSync(garbagePath, "---\nid: [this is not valid yaml\n---\nbody\n");
+  const originalConsoleError = console.error;
+  let capturedErr = "";
+  console.error = (...args: unknown[]) => {
+    capturedErr += args.map(String).join(" ") + "\n";
+  };
+  let garbageResult: { exitCode: number };
+  try {
+    garbageResult = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString(), "--allow-dirty"]);
+  } finally {
+    console.error = originalConsoleError;
+    rmSync(garbagePath, { force: true });
+  }
+  check("verify with garbage sibling opus: exits 2", garbageResult.exitCode === 2, String(garbageResult.exitCode));
+  check(
+    "verify with garbage sibling opus: no stack trace on stderr",
+    !/\n\s*at\s+\S+.*:\d+:\d+/.test(capturedErr) && !capturedErr.includes(".js:"),
+    JSON.stringify(capturedErr),
+  );
 } finally {
   rmSync(repo, { recursive: true, force: true });
 }

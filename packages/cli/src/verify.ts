@@ -23,7 +23,10 @@ export interface RunVerifyResult {
   exitCode: number;
 }
 
-const USAGE = "usage: bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>]";
+const USAGE =
+  "usage: bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]";
+
+const GIT_TIMEOUT_MS = 30_000;
 
 interface ParsedArgs {
   id?: string;
@@ -31,6 +34,7 @@ interface ParsedArgs {
   repo?: string;
   commit: string;
   now: Date;
+  allowDirty: boolean;
 }
 
 function parseArgs(args: string[]): ParsedArgs | { error: string } {
@@ -39,8 +43,13 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
   let repo: string | undefined;
   let commit = "HEAD";
   let now = new Date();
+  let allowDirty = false;
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
+    if (a === "--allow-dirty") {
+      allowDirty = true;
+      continue;
+    }
     if (a === "--studio" || a === "--repo" || a === "--commit" || a === "--now") {
       const v = args[++i];
       if (v === undefined) return { error: `${a} needs a value\n${USAGE}` };
@@ -58,16 +67,26 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
     if (id !== undefined) return { error: `unexpected argument "${a}"\n${USAGE}` };
     id = a;
   }
-  return { id, studio, repo, commit, now };
+  return { id, studio, repo, commit, now, allowDirty };
 }
 
 function isGitRepo(dir: string): boolean {
   try {
-    execFileSync("git", ["rev-parse", "--is-inside-work-tree"], { cwd: dir, stdio: ["ignore", "ignore", "ignore"] });
+    execFileSync("git", ["rev-parse", "--is-inside-work-tree"], {
+      cwd: dir,
+      stdio: ["ignore", "ignore", "ignore"],
+      timeout: GIT_TIMEOUT_MS,
+    });
     return true;
   } catch {
     return false;
   }
+}
+
+/** True when `git status --porcelain` in `dir` reports anything at all. */
+function isDirty(dir: string): boolean {
+  const out = execFileSync("git", ["status", "--porcelain"], { cwd: dir, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+  return out.trim().length > 0;
 }
 
 /** Front-matter split that keeps the body byte-for-byte — unlike
@@ -114,24 +133,71 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   const repo = resolve(parsed.repo ?? (isGitRepo(resolve(studioDir, "..")) ? resolve(studioDir, "..") : process.cwd()));
   let treeHash: string;
   try {
-    treeHash = execFileSync("git", ["rev-parse", `${commit}^{tree}`], { cwd: repo, encoding: "utf8" }).trim();
+    treeHash = execFileSync("git", ["rev-parse", `${commit}^{tree}`], {
+      cwd: repo,
+      encoding: "utf8",
+      timeout: GIT_TIMEOUT_MS,
+    }).trim();
   } catch (e) {
     console.error(`could not resolve tree for "${commit}" in ${repo}: ${(e as Error).message}`);
     return { exitCode: 2 };
   }
 
+  // Honest certifies: a certificate is a claim about what was actually run.
+  // If the working tree is dirty, the commands below run against files that
+  // don't match `treeHash` — certifying `tree:<hash>` would be a lie. Refuse
+  // unless the caller explicitly accepts a `dirty:<hash>` certificate instead.
+  let dirty = false;
+  if (isGitRepo(repo)) {
+    try {
+      dirty = isDirty(repo);
+    } catch (e) {
+      console.error(`could not check working tree status in ${repo}: ${(e as Error).message}`);
+      return { exitCode: 2 };
+    }
+    if (dirty && !parsed.allowDirty) {
+      console.error("working tree is dirty; commit or pass --allow-dirty");
+      return { exitCode: 2 };
+    }
+  }
+
   const commands: Record<string, string> = {};
   for (const p of manifest.probationes) if (p.kind === "automated" && p.command) commands[p.id] = p.command;
 
-  const snap = snapshotDir(studioDir, "verify", now);
+  let snap: ReturnType<typeof snapshotDir>;
+  try {
+    snap = snapshotDir(studioDir, "verify", now);
+  } catch (e) {
+    console.error(`could not read studio: ${(e as Error).message}`);
+    return { exitCode: 2 };
+  }
   const opus = snap.opera.find((o) => o.id === opusId);
   if (!opus) {
     console.error(`unknown opus: ${opusId}`);
     return { exitCode: 2 };
   }
 
+  const raw = readFileSync(opusPath, "utf8");
+  const split = splitFront(raw);
+  if (!split) {
+    console.error(`${opusPath}: missing front matter`);
+    return { exitCode: 2 };
+  }
+  const doc = parseDocument(split.front);
+
+  // A gate the studio has already waived is never touched by verify, even if
+  // it has a command in the manifest — don't run its command at all, and
+  // leave every one of its keys (waived_by, note, comments, …) exactly as is.
+  const waivedIds: string[] = [];
+  const runCommands: Record<string, string> = {};
+  for (const [gateId, command] of Object.entries(commands)) {
+    const currentStatus = doc.getIn(["probationes", gateId, "status"]);
+    if (currentStatus === "waived") waivedIds.push(gateId);
+    else runCommands[gateId] = command;
+  }
+
   const logDir = join(studioDir, "ci");
-  const runOpts = { opus, repo, commands, treeHash, logDir, now, studioDir };
+  const runOpts = { opus, repo, commands: runCommands, treeHash, logDir, now, studioDir, dirty };
   const pipeline = opts.pipeline ?? selectPipeline();
   let results: Record<string, GateRunResult>;
   try {
@@ -142,15 +208,13 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     results = await localPipeline.run(runOpts);
   }
 
-  const raw = readFileSync(opusPath, "utf8");
-  const split = splitFront(raw);
-  if (!split) {
-    console.error(`${opusPath}: missing front matter`);
-    return { exitCode: 2 };
-  }
-  const doc = parseDocument(split.front);
+  // Merge, don't replace: set status/evidence/certifies individually on the
+  // existing probatio node so sibling keys (waived_by, note, …) and comments
+  // survive — only these three keys are ever tool-written.
   for (const [gateId, r] of Object.entries(results)) {
-    doc.setIn(["probationes", gateId], { status: r.status, evidence: r.evidence, certifies: r.certifies });
+    doc.setIn(["probationes", gateId, "status"], r.status);
+    doc.setIn(["probationes", gateId, "evidence"], r.evidence);
+    doc.setIn(["probationes", gateId, "certifies"], r.certifies);
   }
   // lineWidth: 0 disables yaml's default 80-col reflow — otherwise any
   // untouched flow-mapping line longer than 80 chars (e.g. a real traditio
@@ -160,6 +224,7 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   writeFileSync(opusPath, `---\n${doc.toString({ lineWidth: 0 })}---\n${split.body}`);
 
   let anyFailed = false;
+  for (const id of waivedIds) console.log(`${id}: waived (untouched)`);
   for (const [gateId, r] of Object.entries(results)) {
     console.log(`${gateId}: ${r.status}  ${r.evidence}`);
     if (r.status === "failed") anyFailed = true;

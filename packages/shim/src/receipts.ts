@@ -7,6 +7,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { redact } from "./redact.js";
 
 export interface Receipt {
   sella: string;
@@ -43,7 +44,10 @@ export function writeReceiptStart(
 ): string {
   const path = receiptPath(studio, fields.sella, fields.sessionId);
   mkdirSync(dirname(path), { recursive: true });
-  const receipt: Receipt = { ...fields, harness: "run" };
+  // cmd is echoed verbatim by whoever ran `bisellium run` — it may well
+  // contain a token/key/secret/password passed as `--flag=value` or on a
+  // Bearer header; mask those before they land on disk.
+  const receipt: Receipt = { ...fields, cmd: fields.cmd.map((arg) => redact(arg)), harness: "run" };
   writeFileSync(path, JSON.stringify(receipt, null, 2) + "\n");
   return path;
 }

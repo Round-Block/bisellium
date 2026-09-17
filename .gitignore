@@ -3,3 +3,7 @@ dist/
 *.tsbuildinfo
 .env
 .bisellium/
+# Receipts are local liveness evidence (bisellium run), not something to
+# commit — unlike ci/*.log, which opera link to as evidence and stay tracked.
+studio/receipts/
+**/receipts/

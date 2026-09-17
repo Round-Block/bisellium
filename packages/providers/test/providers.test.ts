@@ -4,6 +4,8 @@
  * a-binary" case exercises the real spawn path against a binary that can't
  * exist, so the never-throws contract is real, not assumed.
  */
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Provider } from "@bisellium/schema";
 import { compositeSource, quotaAxiSource, usageYamlSource } from "../src/index.js";
@@ -87,6 +89,26 @@ async function main() {
       providers.some((p) => p.id === "claude") && providers.some((p) => p.id === "codex"),
       `ids=${providers.map((p) => p.id).join(",")}`,
     );
+  }
+
+  // ---- usage.yml: tolerant of malformed entries, like quota-axi's parsing ---
+  {
+    const dir = mkdtempSync(join(tmpdir(), "bisellium-providers-usage-"));
+    try {
+      writeFileSync(
+        join(dir, "usage.yml"),
+        "providers:\n  - {}\n  - { id: \"\", usage_pct: 50 }\n  - { id: bad-pct, usage_pct: 150 }\n  - { id: ok, usage_pct: 42 }\n",
+      );
+      const { providers, note } = await usageYamlSource(dir).read({ now: NOW });
+      check("usage.yml malformed: only the well-formed entry is returned", providers.length === 1 && providers[0]?.id === "ok", JSON.stringify(providers));
+      check(
+        "usage.yml malformed: prints nothing for the bad entries, plus a note",
+        typeof note === "string" && note.includes("skipped") && !note.includes("observed"),
+        `note=${JSON.stringify(note)}`,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   }
 
   // ---- compositeSource: live wins, notes tagged with source id ---------------

@@ -54,6 +54,14 @@ export async function runProviders(args: string[], opts: RunProvidersOpts = {}):
 
   const { providers, note } = await read;
 
+  // `--source quota-axi` is an explicit request for the live tool — if it's
+  // absent/unauthenticated/unusable, that's an honest failure (exit 1 with
+  // the one-line reason), not a quiet empty success. `auto` (the default)
+  // is expected to degrade to usage.yml silently — never fails on this.
+  if (source === "quota-axi" && providers.length === 0 && note) {
+    return { stdout: note, exitCode: 1 };
+  }
+
   if (opts.json) {
     return { stdout: JSON.stringify({ providers, note }, null, 2), exitCode: 0 };
   }
