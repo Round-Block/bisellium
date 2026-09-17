@@ -1,0 +1,4 @@
+VERDICT: PASS — no blocking issues.
+
+Blocking criteria, each checked directly:
+1. Thrown errors where a result was specified — NONE. 13 fault-injection cases against usageYamlSource, quotaAxiSource, compositeSource, runProviders and SnapshotAdapter#providerStatus() all returned a result: missing studio dir -> {providers:[],note:"observed"}; malformed YAML -> []; usage.yml is a directory (EISDIR) -> [] (readFileSync is inside the try, so the builder's fix covers this too); providers: scalar -> []; missing binary -> {[], "quota-axi unavailable: spawn definitely-not-a-binary-xyz ENOENT"}; REAL ti

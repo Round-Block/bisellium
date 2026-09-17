@@ -1,0 +1,3 @@
+GATES. typecheck: clean. npm test: 114 PASS, 0 FAIL, exit 0. Re-run with ~/go/bin prepended so treehouse IS on PATH: still 114 PASS, 0 FAIL, exit 0, so the suite does not depend on the installed tool. Builder's own command (npx tsx packages/shim/test/shim.test.ts .): 14 PASS, 0 FAIL, exit 0. npm run check -- examples/sample-studio: PASS, 0 blocking, 0 advisory, exit 0. packages/cli/src/main.ts is untouched (absent from git status). Repo left clean: no .bisellium/ and no receipts/ anywhere in the tree after all runs.
+
+TOOL-ABSENT PATH (the default in this WSL shell: which treehouse -> status 1;
