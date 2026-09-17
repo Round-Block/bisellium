@@ -25,6 +25,7 @@ material direction. If this list grows, §2/§3 are too narrow.
 
 - Period: `<week / sprint>`
 - Allowance: `<tokens / hours / provider pools>`
+- Hygiene share: `<percent>` reserved for `kind: hygiene`; not borrowable by features
 - Burn reporting: `<file or endpoint>`
 - Over-budget behaviour: posture → `conserve`, digest the cause.
 

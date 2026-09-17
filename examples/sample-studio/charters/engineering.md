@@ -12,6 +12,7 @@ the weekly token allowance.
 - Refactors that keep public contracts intact
 - Test scaffolding, dependency bumps, CI fixes
 - Assigning builders to greenlit items; ordering within the slate rank
+- Hygiene items inside the reserved share, up to one day of builder time each
 
 ## 3. Digests
 
@@ -27,7 +28,8 @@ the weekly token allowance.
 
 ## 5. Budget
 
-- Period: week · Allowance: 3.0M tokens
+- Period: week · Allowance: 3.0M tokens, of which 20% is reserved for `kind: hygiene`
+  (refactor, cleanup, dependency bumps, test debt); features may not borrow it
 - Burn reporting: `budgets/<period>.yml`
 - Over-budget: posture → conserve, digest the cause, no new items started
 
