@@ -1,7 +1,8 @@
 /**
- * @bisellium/adapter-bisellium — the native adapter. Reads an Bisellium-compliant
- * directory (bisellium/docs/ADOPTION.md) into a Snapshot. Snapshot-native: the
- * core diffs consecutive snapshots; this file only describes current state.
+ * @bisellium/adapter-native — reads a Bisellium studio directory
+ * (docs/ADOPTION.md) into a Snapshot. Snapshot-native: the core diffs
+ * consecutive snapshots; this file only describes current state. The raw
+ * readers are exported for `bisellium check`, which validates the same files.
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -28,7 +29,7 @@ import type {
 
 // Fixed lifecycle (ADOPTION.md): greenlit is the Owner's slate decision.
 export const NATIVE_LIFECYCLE_ID = "bisellium";
-const STATES: Lifecycle["states"] = [
+export const STATES: Lifecycle["states"] = [
   { id: "backlog", name: "Backlog", phase: "backlog" },
   { id: "greenlit", name: "Greenlit", phase: "planned" },
   { id: "building", name: "Building", phase: "in_progress" },
@@ -37,31 +38,35 @@ const STATES: Lifecycle["states"] = [
   { id: "done", name: "Done", phase: "done" },
   { id: "halted", name: "Halted", phase: "halted" },
 ];
-const ORDER = ["backlog", "greenlit", "building", "verifying", "review", "done"];
+export const ORDER = ["backlog", "greenlit", "building", "verifying", "review", "done"];
 
-interface Manifest {
+export interface Manifest {
   bisellium: number;
   studio: string;
   owner?: string;
+  timezone?: string;
   departments: { id: string; name: string; lead: string; fallback?: string; charter?: string }[];
   seats: { id: string; department: string; kind?: ActorKind; model?: string }[];
   gates: { id: string; name: string; kind: GateKind }[];
   wip_limit?: number;
+  /** Overrides for the Defaults table in the dossier. */
+  defaults?: Record<string, number>;
 }
 
-interface FrontMatter<T> {
+export interface FrontMatter<T> {
   data: T;
   body: string;
+  raw: string;
 }
 
-function readFront<T>(path: string): FrontMatter<T> {
+export function readFront<T>(path: string): FrontMatter<T> {
   const raw = readFileSync(path, "utf8");
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
   if (!m) throw new Error(`${path}: missing front matter`);
-  return { data: parseYaml(m[1] ?? "") as T, body: (m[2] ?? "").trim() };
+  return { data: parseYaml(m[1] ?? "") as T, body: (m[2] ?? "").trim(), raw };
 }
 
-function listMd(dir: string): string[] {
+export function listMd(dir: string): string[] {
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((f) => f.endsWith(".md"))

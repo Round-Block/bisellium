@@ -1,0 +1,8 @@
+bisellium: 1
+studio: Fixture
+owner: owner
+departments:
+  - { id: production, name: Production, lead: producer }
+seats:
+  - { id: producer, department: production, kind: orchestrator }
+gates: []

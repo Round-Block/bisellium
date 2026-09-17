@@ -1,0 +1,14 @@
+{
+  "name": "@bisellium/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/main.ts",
+  "dependencies": {
+    "@bisellium/adapter-native": "*",
+    "@bisellium/schema": "*",
+    "yaml": "^2.6.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
