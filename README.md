@@ -6,7 +6,7 @@ One application, two halves:
   A department is *charter + budget + digest*; the Owner touches only
   greenlight, budget allocation, taste calls, and charter changes.
   Conventions, not a runtime: agents keep running in their own toolchains.
-- **The console** — the pipeline view over that studio (and any other source):
+- **The console and reference harness** — the pipeline view over that studio (and any other source), plus a direct line to each department lead via the vendor CLIs:
   Board · Inbox · Swimlane · Agents · Digest · Studio · Graph. Boards are
   projections derived from reality, never human data entry.
 

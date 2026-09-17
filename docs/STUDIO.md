@@ -99,11 +99,14 @@ Production until it hurts.
 
 ## 10. Decisions and open questions
 
-**Decided 2026-09-17: Bisellium is conventions, not a runtime.** Projects adopt
-the model in their own docs (charters, ledgers, digests); agents keep running
-in whatever toolchain they already use; Gantry renders it through adapters.
-Reason: a runtime would be AllHands/OpenHands with better process, and would
-require moving a studio into our app. Nobody moves their agents into Bisellium.
+**Decided 2026-09-17: conventions first, plus a reference harness for leads.**
+The studio state is files; any toolchain can produce them; the console renders
+them through adapters. Bisellium also hosts department leads' conversations
+(`bisellium talk`) by driving the vendor CLIs headless (`claude -p --resume`,
+`codex exec --resume`) in the seat's worktree, so the Owner can talk to a lead
+from the console on subscription billing. Builders run wherever they run;
+nothing is locked in. A full runtime that owns the agents (AllHands/OpenHands
+style) remains out of scope.
 
 Open:
 
