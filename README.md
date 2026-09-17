@@ -19,4 +19,4 @@ that unit.
 
 ## Status
 
-Founding docs only. No runtime yet.
+Conventions, by decision (2026-09-17) — not a runtime. Founding docs only.

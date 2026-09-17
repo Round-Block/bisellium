@@ -97,10 +97,16 @@ Production until it hurts.
   already implement most of this for Art; Atrium generalizes it. Atrium does
   not write to epoch0.
 
-## 10. Open questions
+## 10. Decisions and open questions
 
-- Does Atrium become a runtime (control plane) or stay a set of conventions
-  that projects adopt in their own docs?
+**Decided 2026-09-17: Atrium is conventions, not a runtime.** Projects adopt
+the model in their own docs (charters, ledgers, digests); agents keep running
+in whatever toolchain they already use; Gantry renders it through adapters.
+Reason: a runtime would be AllHands/OpenHands with better process, and would
+require moving a studio into our app. Nobody moves their agents into Atrium.
+
+Open:
+
 - Multi-project: one studio per project, or one studio with a portfolio across
   projects?
 - Charter amendment authority: Owner only, or can Production propose and
