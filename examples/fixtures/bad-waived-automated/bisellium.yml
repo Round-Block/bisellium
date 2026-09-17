@@ -1,0 +1,10 @@
+bisellium: 1
+studio: Fixture
+owner: owner
+departments:
+  - { id: engineering, name: Engineering, lead: eng-lead }
+seats:
+  - { id: eng-lead, department: engineering }
+gates:
+  - { id: tests,  name: Tests,       kind: automated }
+  - { id: review, name: Lead review, kind: agent }

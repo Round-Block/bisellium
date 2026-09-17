@@ -60,10 +60,11 @@ export interface FrontMatter<T> {
 }
 
 export function readFront<T>(path: string): FrontMatter<T> {
-  const raw = readFileSync(path, "utf8");
+  const raw = readFileSync(path, "utf8").replace(/^﻿/, "");
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
   if (!m) throw new Error(`${path}: missing front matter`);
-  return { data: parseYaml(m[1] ?? "") as T, body: (m[2] ?? "").trim(), raw };
+  const data = (parseYaml(m[1] ?? "") ?? {}) as T;
+  return { data, body: (m[2] ?? "").trim(), raw };
 }
 
 export function listMd(dir: string): string[] {

@@ -1,0 +1,9 @@
+bisellium: 1
+studio: Fixture
+owner: owner
+departments:
+  - { id: engineering, name: Engineering, lead: eng-lead }
+seats:
+  - { id: eng-lead, department: engineering }
+gates: []
+wip_limit: 1

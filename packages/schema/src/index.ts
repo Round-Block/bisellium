@@ -46,7 +46,8 @@ export interface Actor {
  * commit and a newer substantive change voided it (epoch0 WORKFLOW §7.4).
  * Never silently mapped back to "pending" — passed-then-voided is information.
  */
-export type GateStatus = "pending" | "passed" | "failed" | "waived" | "stale";
+export const GATE_STATUSES = ["pending", "passed", "failed", "waived", "stale"] as const;
+export type GateStatus = (typeof GATE_STATUSES)[number];
 
 /**
  * Who holds the verdict.
@@ -56,7 +57,8 @@ export type GateStatus = "pending" | "passed" | "failed" | "waived" | "stale";
  *               owner's inbox
  *  - human:     the owner decides — pending ⇒ the item needs your input
  */
-export type GateKind = "automated" | "agent" | "human";
+export const GATE_KINDS = ["automated", "agent", "human"] as const;
+export type GateKind = (typeof GATE_KINDS)[number];
 
 export interface Gate {
   id: string;
@@ -112,7 +114,8 @@ export interface WorkItem {
  * Postures follow epoch0 ART_WORKFLOW §10; "unknown" is honest (missing or
  * stale telemetry) and is never guessed as "ok".
  */
-export type ProviderStatus = "ok" | "conserve" | "closeout" | "limited" | "unknown";
+export const PROVIDER_STATUSES = ["ok", "conserve", "closeout", "limited", "unknown"] as const;
+export type ProviderStatus = (typeof PROVIDER_STATUSES)[number];
 
 export interface Provider {
   id: string; // "claude", "codex", "spark"
@@ -154,7 +157,8 @@ export interface Budget {
 
 /** The inbox unit. Strict admission: only questions addressed to the owner
  *  and replies in threads the owner opened. Digests are a separate feed. */
-export type ThreadState = "needs_you" | "awaiting_reply" | "resolved";
+export const THREAD_STATES = ["needs_you", "awaiting_reply", "resolved"] as const;
+export type ThreadState = (typeof THREAD_STATES)[number];
 
 export interface Thread {
   id: string;
@@ -167,6 +171,9 @@ export interface Thread {
   subject?: string;
 }
 
+export const DIGEST_KINDS = ["consultation", "decision", "daily"] as const;
+export type DigestKind = (typeof DIGEST_KINDS)[number];
+
 /** Digest entries: inform-and-proceed. Never require a reply; silence binds
  *  nothing (epoch0 ART_WORKFLOW §8 consultation model). */
 export interface DigestEntry {
@@ -174,7 +181,7 @@ export interface DigestEntry {
   projectId: string;
   authorRoleId: string;
   at: string;
-  kind: "consultation" | "decision" | "daily";
+  kind: DigestKind;
   title: string;
   body: string;
   evidence: { label: string; href: string }[];

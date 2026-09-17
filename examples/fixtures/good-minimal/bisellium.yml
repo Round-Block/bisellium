@@ -1,0 +1,11 @@
+# The smallest studio that passes check: what `bisellium init` will produce.
+bisellium: 1
+studio: Minimal
+owner: owner
+departments:
+  - { id: production, name: Production, lead: producer }
+seats:
+  - { id: producer, department: production, kind: orchestrator }
+gates:
+  - { id: owner, name: Owner call, kind: human }
+wip_limit: 1
