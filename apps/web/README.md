@@ -1,4 +1,4 @@
-# @gantry/web (not yet implemented — build-order step 5)
+# @atrium/web (not yet implemented — build-order step 5)
 
 React + Vite, served by the core process at localhost. Six screens per the
 design canvas: Board · Inbox · Swimlane · Agents · Digest · Graph.

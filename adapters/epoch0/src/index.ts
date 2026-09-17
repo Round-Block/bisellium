@@ -1,4 +1,4 @@
-import type { Snapshot, SnapshotAdapter } from "@gantry/schema";
+import type { Snapshot, SnapshotAdapter } from "@atrium/schema";
 import { lifecycles } from "./lifecycles.js";
 
 /**

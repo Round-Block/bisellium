@@ -1,7 +1,7 @@
 /**
- * @gantry/schema — the contract every layer shares.
+ * @atrium/schema — the contract every layer shares.
  *
- * Design authority: the Gantry Dossier (see repo README). The wire format for
+ * Design authority: the Atrium Dossier (see repo README). The wire format for
  * runtime activity is standard OpenTelemetry GenAI spans; the lifecycle layer
  * OTel lacks is carried in the `workflow.*` attribute namespace defined here.
  */

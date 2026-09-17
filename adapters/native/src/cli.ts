@@ -1,4 +1,4 @@
-/** `npm run snapshot -- <atrium-dir>` — print what Gantry would see. */
+/** `npm run snapshot -- <atrium-dir>` — print what Atrium would see. */
 import { createAtriumAdapter } from "./index.js";
 
 const root = process.argv[2];

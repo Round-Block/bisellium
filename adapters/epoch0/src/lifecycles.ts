@@ -1,4 +1,4 @@
-import type { Lifecycle } from "@gantry/schema";
+import type { Lifecycle } from "@atrium/schema";
 
 /**
  * epoch0 declares TWO lifecycles in one project.

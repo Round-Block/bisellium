@@ -1,5 +1,5 @@
 {
-  "name": "gantry",
+  "name": "atrium",
   "private": true,
   "version": "0.0.1",
   "description": "The pipeline view of multi-agent work — states, gates, handoffs — over any source.",
@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "typecheck": "tsc -b",
-    "snapshot": "tsx adapters/atrium/src/cli.ts"
+    "snapshot": "tsx adapters/native/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,4 +1,4 @@
-# @gantry/core (not yet implemented — build-order step 4)
+# @atrium/core (not yet implemented — build-order step 4)
 
 The local-first heart: SQLite + JSONL event store, the snapshot differ
 (consecutive `snapshot()` results → synthetic `workflow.*` events stamped

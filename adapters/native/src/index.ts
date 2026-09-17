@@ -1,5 +1,5 @@
 /**
- * @gantry/adapter-atrium — the native adapter. Reads an Atrium-compliant
+ * @atrium/adapter-atrium — the native adapter. Reads an Atrium-compliant
  * directory (atrium/docs/ADOPTION.md) into a Snapshot. Snapshot-native: the
  * core diffs consecutive snapshots; this file only describes current state.
  */
@@ -24,7 +24,7 @@ import type {
   Thread,
   ThreadState,
   WorkItem,
-} from "@gantry/schema";
+} from "@atrium/schema";
 
 // Fixed lifecycle (ADOPTION.md): greenlit is the Owner's slate decision.
 export const ATRIUM_LIFECYCLE_ID = "atrium";
