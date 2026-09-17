@@ -48,10 +48,13 @@ npm install && npm run snapshot -- examples/sample-studio
 
 1. Schema — done.
 2. Native adapter over the adoption contract — done.
-3. `packages/core` — store, snapshot differ, query API. ← current
-4. `apps/web` — Board first, then Drawer, Inbox, Studio.
-5. Tauri wrapper: tray + native needs-you notifications.
-6. External adapters: epoch0 (snapshot), Claude Code hooks (events).
+3. `bisellium check` — done.
+4. Integrations behind the seams: treehouse (worktrees under `run`), no-mistakes (merge-blocking pipeline → gate evidence), quota-axi (`cli` provider status), axi output conventions; null fallbacks so the sample runs without them. ← current
+5. Harness shim + direct line + tick: `run`, `talk`, `tick`/`pause`; firstmate evaluated as the L2 dispatcher.
+6. `packages/core` — store, snapshot differ, burn derivation, query API.
+7. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
+8. Tauri wrapper: tray + native needs-you notifications.
+9. External adapters: a markdown/git project (snapshot), harness hooks (events).
 
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay
