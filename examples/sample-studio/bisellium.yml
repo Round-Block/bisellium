@@ -1,7 +1,9 @@
 bisellium: 1
 studio: Sample Studio
+timezone: Europe/London
+owner: owner
 departments:
-  - { id: production,  name: Production,  lead: producer,  charter: charters/production.md }
+  - { id: production,  name: Production,  lead: producer,  fallback: eng-lead, charter: charters/production.md }
   - { id: engineering, name: Engineering, lead: eng-lead,  charter: charters/engineering.md }
   - { id: art,         name: Art,         lead: art-lead,  charter: charters/art.md }
   - { id: qa,          name: QA,          lead: qa-lead,   charter: charters/qa.md }

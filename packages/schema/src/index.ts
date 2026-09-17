@@ -76,7 +76,9 @@ export interface Lifecycle {
   id: string;
   /** Ordered — single-project boards use these as columns. */
   states: LifecycleState[];
-  transitions: { from: string; to: string }[];
+  /** actors: role ids permitted to perform the transition (Production may
+   *  halt, the merge script may flip done, the Owner greenlights). */
+  transitions: { from: string; to: string; actors?: string[] }[];
   gates: Gate[];
   /** Per-lane WIP cap, rendered as "2/2" on board columns. */
   wipLimit?: number;
@@ -132,6 +134,8 @@ export interface Department {
   projectId: string;
   name: string;
   leadRoleId: string;
+  /** Acting lead for routing when the lead is stale. */
+  fallbackRoleId?: string;
   /** The charter document (CHARTER_TEMPLATE.md instance). */
   charterHref?: string;
 }
@@ -141,6 +145,7 @@ export interface Budget {
   /** e.g. "2026-W38". Unspent does not roll over. */
   period: string;
   allowance: { tokens?: number; hours?: number };
+  /** Always derived (usage events / item tokens), never read from a file. */
   burn: { tokens: number; hours?: number };
   /** Derived from burn vs allowance and provider telemetry — never
    *  self-declared "ok" without data. */
@@ -153,7 +158,8 @@ export type ThreadState = "needs_you" | "awaiting_reply" | "resolved";
 
 export interface Thread {
   id: string;
-  workItemId: string;
+  /** Absent for asks not about one item (scope, budget, charter, routing). */
+  workItemId?: string;
   openedBy: string; // actor roleId, or "you"
   counterparty: string;
   state: ThreadState;

@@ -42,7 +42,8 @@ const ORDER = ["backlog", "greenlit", "building", "verifying", "review", "done"]
 interface Manifest {
   bisellium: number;
   studio: string;
-  departments: { id: string; name: string; lead: string; charter?: string }[];
+  owner?: string;
+  departments: { id: string; name: string; lead: string; fallback?: string; charter?: string }[];
   seats: { id: string; department: string; kind?: ActorKind; model?: string }[];
   gates: { id: string; name: string; kind: GateKind }[];
   wip_limit?: number;
@@ -83,8 +84,12 @@ export function readManifest(root: string): Manifest {
 
 export function describeLifecycle(manifest: Manifest): Lifecycle {
   const gates: Gate[] = manifest.gates.map((g) => ({ id: g.id, name: g.name, kind: g.kind }));
-  const transitions = ORDER.slice(1).map((to, i) => ({ from: ORDER[i]!, to }));
-  for (const s of ORDER) if (s !== "done") transitions.push({ from: s, to: "halted" });
+  const owner = manifest.owner ?? "owner";
+  const production = manifest.departments.find((d) => d.id === "production")?.lead ?? "production";
+  const actorsFor = (to: string): string[] | undefined =>
+    to === "greenlit" ? [owner] : to === "done" ? ["merge-script"] : to === "halted" ? [production] : undefined;
+  const transitions: Lifecycle["transitions"] = ORDER.slice(1).map((to, i) => ({ from: ORDER[i]!, to, actors: actorsFor(to) }));
+  for (const s of ORDER) if (s !== "done") transitions.push({ from: s, to: "halted", actors: actorsFor("halted") });
   return { id: NATIVE_LIFECYCLE_ID, states: STATES, transitions, gates, wipLimit: manifest.wip_limit };
 }
 
@@ -96,6 +101,7 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
     projectId,
     name: d.name,
     leadRoleId: d.lead,
+    fallbackRoleId: d.fallback,
     charterHref: d.charter,
   }));
 
@@ -119,6 +125,8 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
     tokens?: number;
     heartbeat?: string;
     review_round?: number;
+    handoff?: Record<string, string>;
+    resume_when?: string;
   }
   const workItems: WorkItem[] = listMd(join(root, "work")).map((p) => {
     const { data, body } = readFront<WorkFront>(p);
@@ -143,6 +151,8 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
         tokens: data.tokens,
         heartbeat: data.heartbeat,
         reviewRound: data.review_round,
+        handoff: data.handoff,
+        resumeWhen: data.resume_when,
         notes: body,
       },
     };
@@ -176,21 +186,28 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
     };
   });
 
+  // Burn is derived: the sum of item tokens per department. Any burn figure
+  // written in the budgets file is ignored (derive, never mirror).
+  const burnFor = (departmentId: string): number =>
+    workItems
+      .filter((w) => w.meta["department"] === departmentId)
+      .reduce((n, w) => n + (typeof w.meta["tokens"] === "number" ? (w.meta["tokens"] as number) : 0), 0);
   const budgets: Budget[] = [];
   const budgetsDir = join(root, "budgets");
   if (existsSync(budgetsDir)) {
     for (const f of readdirSync(budgetsDir).filter((f) => f.endsWith(".yml")).sort()) {
       const b = parseYaml(readFileSync(join(budgetsDir, f), "utf8")) as {
         period: string;
-        departments: Record<string, { allowance_tokens?: number; burn_tokens?: number }>;
+        departments: Record<string, { allowance_tokens?: number }>;
       };
       for (const [departmentId, v] of Object.entries(b.departments)) {
+        const burn = burnFor(departmentId);
         budgets.push({
           departmentId,
           period: String(b.period),
           allowance: { tokens: v.allowance_tokens },
-          burn: { tokens: v.burn_tokens ?? 0 },
-          posture: posture(v.allowance_tokens, v.burn_tokens),
+          burn: { tokens: burn },
+          posture: posture(v.allowance_tokens, burn),
         });
       }
     }

@@ -50,15 +50,18 @@ gates:
   review: { status: passed, evidence: reviews/W-004.md, certifies: a1b2c3d }
   owner:  { status: pending }
 tokens: 412000
+handoff: { seat: builder-1, stage: review, next: await owner call, blocked_on: owner, at: 2026-09-17T09:58Z }
 ---
 Free-form notes below the front matter.
 ```
 
-A `pending` gate of kind `human` is what "needs you" means. Gate results
+`handoff` is required on every active item (stale when behind the last commit or the clock). `halted` items require `reason` and `resume_when`. Items are born with `bisellium new --kind K --dept D`, which allocates the id. A `pending` gate of kind `human` is what "needs you" means. Gate results
 name the commit or hash they certify; a newer substantive change makes them
 `stale`, never silently green.
 
 ## asks/<id>.md
+
+Asks are for questions *not* about one work item (scope, budget, charter, routing); `work` is optional. Item questions are gates.
 
 ```yaml
 ---
@@ -87,9 +90,10 @@ The choice and the reason. Silence binds nothing.
 ## budgets/<period>.yml and usage.yml
 
 ```yaml
+# allowances only, Owner-written; burn is derived from item tokens / usage events
 period: 2026-W38
 departments:
-  engineering: { allowance_tokens: 3000000, burn_tokens: 1900000 }
+  engineering: { allowance_tokens: 3000000 }
 ```
 
 ```yaml
