@@ -1,4 +1,4 @@
-# Backlot — Studio Model
+# Atrium — Studio Model
 
 Status: proposal, 2026-09-17. Generic; project-specific instances live in each
 project's own repo.
@@ -94,12 +94,12 @@ Production until it hurts.
   Digest = comms, Inbox = Owner's desk, **Studio** (new screen) = slate, budget
   burn, charter status, greenlight queue.
 - **epoch0** is the reference instance. Its WORKFLOW.md / ART_WORKFLOW.md
-  already implement most of this for Art; Backlot generalizes it. Backlot does
+  already implement most of this for Art; Atrium generalizes it. Atrium does
   not write to epoch0.
 
 ## 10. Open questions
 
-- Does Backlot become a runtime (control plane) or stay a set of conventions
+- Does Atrium become a runtime (control plane) or stay a set of conventions
   that projects adopt in their own docs?
 - Multi-project: one studio per project, or one studio with a portfolio across
   projects?

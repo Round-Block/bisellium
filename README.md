@@ -1,4 +1,4 @@
-# Backlot (working name)
+# Atrium (working name)
 
 An agent organization modeled on a product studio — departments, budgets,
 delegation, a slate — for any project. Gantry is its console; epoch0 is the
