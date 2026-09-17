@@ -1,6 +1,6 @@
 /**
- * @atrium/adapter-atrium — the native adapter. Reads an Atrium-compliant
- * directory (atrium/docs/ADOPTION.md) into a Snapshot. Snapshot-native: the
+ * @bisellium/adapter-bisellium — the native adapter. Reads an Bisellium-compliant
+ * directory (bisellium/docs/ADOPTION.md) into a Snapshot. Snapshot-native: the
  * core diffs consecutive snapshots; this file only describes current state.
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
@@ -24,10 +24,10 @@ import type {
   Thread,
   ThreadState,
   WorkItem,
-} from "@atrium/schema";
+} from "@bisellium/schema";
 
 // Fixed lifecycle (ADOPTION.md): greenlit is the Owner's slate decision.
-export const ATRIUM_LIFECYCLE_ID = "atrium";
+export const ATRIUM_LIFECYCLE_ID = "bisellium";
 const STATES: Lifecycle["states"] = [
   { id: "backlog", name: "Backlog", phase: "backlog" },
   { id: "greenlit", name: "Greenlit", phase: "planned" },
@@ -40,7 +40,7 @@ const STATES: Lifecycle["states"] = [
 const ORDER = ["backlog", "greenlit", "building", "verifying", "review", "done"];
 
 interface Manifest {
-  atrium: number;
+  bisellium: number;
   studio: string;
   departments: { id: string; name: string; lead: string; charter?: string }[];
   seats: { id: string; department: string; kind?: ActorKind; model?: string }[];
@@ -78,7 +78,7 @@ function posture(allowance: number | undefined, burn: number | undefined): Provi
 }
 
 export function readManifest(root: string): Manifest {
-  return parseYaml(readFileSync(join(root, "atrium.yml"), "utf8")) as Manifest;
+  return parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8")) as Manifest;
 }
 
 export function describeLifecycle(manifest: Manifest): Lifecycle {
@@ -213,7 +213,7 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
   return { actors, workItems, providers, digest, departments, budgets, threads };
 }
 
-export function createAtriumAdapter(root: string, projectId?: string): SnapshotAdapter {
+export function createBiselliumAdapter(root: string, projectId?: string): SnapshotAdapter {
   const manifest = readManifest(root);
   const id = projectId ?? manifest.studio.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return {

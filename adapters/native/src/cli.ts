@@ -1,12 +1,12 @@
-/** `npm run snapshot -- <atrium-dir>` — print what Atrium would see. */
-import { createAtriumAdapter } from "./index.js";
+/** `npm run snapshot -- <bisellium-dir>` — print what Bisellium would see. */
+import { createBiselliumAdapter } from "./index.js";
 
 const root = process.argv[2];
 if (!root) {
-  console.error("usage: snapshot <atrium-dir>");
+  console.error("usage: snapshot <bisellium-dir>");
   process.exit(2);
 }
-const adapter = createAtriumAdapter(root);
+const adapter = createBiselliumAdapter(root);
 const [lifecycle] = adapter.describeLifecycles();
 const snap = await adapter.snapshot();
 

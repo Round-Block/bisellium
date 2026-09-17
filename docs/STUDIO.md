@@ -1,4 +1,4 @@
-# Atrium — Studio Model
+# Bisellium — Studio Model
 
 Status: proposal, 2026-09-17. Generic; project-specific instances live in each
 project's own repo.
@@ -94,16 +94,16 @@ Production until it hurts.
   Digest = comms, Inbox = Owner's desk, **Studio** (new screen) = slate, budget
   burn, charter status, greenlight queue.
 - **epoch0** is the reference instance. Its WORKFLOW.md / ART_WORKFLOW.md
-  already implement most of this for Art; Atrium generalizes it. Atrium does
+  already implement most of this for Art; Bisellium generalizes it. Bisellium does
   not write to epoch0.
 
 ## 10. Decisions and open questions
 
-**Decided 2026-09-17: Atrium is conventions, not a runtime.** Projects adopt
+**Decided 2026-09-17: Bisellium is conventions, not a runtime.** Projects adopt
 the model in their own docs (charters, ledgers, digests); agents keep running
 in whatever toolchain they already use; Gantry renders it through adapters.
 Reason: a runtime would be AllHands/OpenHands with better process, and would
-require moving a studio into our app. Nobody moves their agents into Atrium.
+require moving a studio into our app. Nobody moves their agents into Bisellium.
 
 Open:
 

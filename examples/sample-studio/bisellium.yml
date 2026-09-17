@@ -1,4 +1,4 @@
-atrium: 1
+bisellium: 1
 studio: Sample Studio
 departments:
   - { id: production,  name: Production,  lead: producer,  charter: charters/production.md }

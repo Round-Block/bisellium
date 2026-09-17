@@ -1,4 +1,4 @@
-# Atrium
+# Bisellium
 
 One application, two halves:
 
@@ -19,11 +19,11 @@ Design history (under the console's former working name, Gantry):
 ```
 docs/STUDIO.md            the organization model
 docs/CHARTER_TEMPLATE.md  per-department charter
-docs/ADOPTION.md          what an Atrium-compliant project directory contains
+docs/ADOPTION.md          what an Bisellium-compliant project directory contains
 examples/sample-studio    a complete instance — the app runs on this alone
 packages/schema           the contract: entities, lifecycles, workflow.* attributes
 packages/core             local-first event store, snapshot differ, query API (next)
-adapters/native           reads an Atrium directory into a Snapshot
+adapters/native           reads an Bisellium directory into a Snapshot
 adapters/epoch0           reference external project (deferred; read-only)
 apps/web                  React UI (next)
 ```

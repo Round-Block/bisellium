@@ -1,4 +1,4 @@
-import type { Snapshot, SnapshotAdapter } from "@atrium/schema";
+import type { Snapshot, SnapshotAdapter } from "@bisellium/schema";
 import { lifecycles } from "./lifecycles.js";
 
 /**

@@ -1,7 +1,7 @@
 /**
- * @atrium/schema — the contract every layer shares.
+ * @bisellium/schema — the contract every layer shares.
  *
- * Design authority: the Atrium Dossier (see repo README). The wire format for
+ * Design authority: the Bisellium Dossier (see repo README). The wire format for
  * runtime activity is standard OpenTelemetry GenAI spans; the lifecycle layer
  * OTel lacks is carried in the `workflow.*` attribute namespace defined here.
  */
@@ -35,7 +35,7 @@ export interface Actor {
   roleId: string;
   projectId: string;
   kind: ActorKind;
-  /** Atrium department this seat belongs to; cost and digest rollups key on it. */
+  /** Bisellium department this seat belongs to; cost and digest rollups key on it. */
   departmentId?: string;
   /** Model, version, prompt hash… deliberately unstandardized. */
   meta: Record<string, unknown>;
@@ -122,7 +122,7 @@ export interface Provider {
 }
 
 // ---------------------------------------------------------------------------
-// Atrium studio model (conventions, not a runtime). A department is
+// Bisellium studio model (conventions, not a runtime). A department is
 // charter + budget + digest; the Owner touches only greenlight, budget
 // allocation, taste calls, and charter changes.
 // ---------------------------------------------------------------------------

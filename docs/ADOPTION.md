@@ -1,11 +1,11 @@
-# Adopting Atrium
+# Adopting Bisellium
 
-An Atrium-compliant project is a directory (usually a repo, or a folder in one)
+An Bisellium-compliant project is a directory (usually a repo, or a folder in one)
 with the files below. Agents and humans write these; Gantry reads them. Nothing
 else is required. See `examples/sample-studio` for a complete instance.
 
 ```
-atrium.yml            manifest: departments, seats, gates, paths
+bisellium.yml            manifest: departments, seats, gates, paths
 charters/<dept>.md    one charter per department (CHARTER_TEMPLATE.md)
 work/<id>.md          one file per work item, YAML front matter + notes
 asks/<id>.md          questions to the Owner and threads the Owner opened
@@ -14,10 +14,10 @@ budgets/<period>.yml  allowance and burn per department
 usage.yml             observed provider limit telemetry
 ```
 
-## atrium.yml
+## bisellium.yml
 
 ```yaml
-atrium: 1
+bisellium: 1
 studio: Sample Studio
 departments:
   - { id: engineering, name: Engineering, lead: eng-lead, charter: charters/engineering.md }

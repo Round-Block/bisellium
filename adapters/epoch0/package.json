@@ -1,11 +1,11 @@
 {
-  "name": "@atrium/adapter-epoch0",
+  "name": "@bisellium/adapter-epoch0",
   "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@atrium/schema": "*"
+    "@bisellium/schema": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
