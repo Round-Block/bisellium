@@ -27,7 +27,7 @@ import type {
 } from "@bisellium/schema";
 
 // Fixed lifecycle (ADOPTION.md): greenlit is the Owner's slate decision.
-export const ATRIUM_LIFECYCLE_ID = "bisellium";
+export const NATIVE_LIFECYCLE_ID = "bisellium";
 const STATES: Lifecycle["states"] = [
   { id: "backlog", name: "Backlog", phase: "backlog" },
   { id: "greenlit", name: "Greenlit", phase: "planned" },
@@ -85,7 +85,7 @@ export function describeLifecycle(manifest: Manifest): Lifecycle {
   const gates: Gate[] = manifest.gates.map((g) => ({ id: g.id, name: g.name, kind: g.kind }));
   const transitions = ORDER.slice(1).map((to, i) => ({ from: ORDER[i]!, to }));
   for (const s of ORDER) if (s !== "done") transitions.push({ from: s, to: "halted" });
-  return { id: ATRIUM_LIFECYCLE_ID, states: STATES, transitions, gates, wipLimit: manifest.wip_limit };
+  return { id: NATIVE_LIFECYCLE_ID, states: STATES, transitions, gates, wipLimit: manifest.wip_limit };
 }
 
 export function snapshotDir(root: string, projectId: string): Snapshot {
@@ -133,7 +133,7 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
       id: data.id,
       projectId,
       kind: data.kind ?? "task",
-      lifecycleId: ATRIUM_LIFECYCLE_ID,
+      lifecycleId: NATIVE_LIFECYCLE_ID,
       state: data.state,
       gateStatus,
       meta: {
