@@ -15,6 +15,7 @@ import { initStudio } from "../../cli/src/init.js";
 import { newItem } from "../../cli/src/new.js";
 import { runVerify } from "../../cli/src/verify.js";
 import { checkStudio } from "../../cli/src/check.js";
+import { sourceTreeHash } from "../../shim/src/index.js";
 
 const NOW = new Date("2026-09-18T09:00:00Z");
 
@@ -68,13 +69,26 @@ try {
   const beforeSplit = splitFront(rawBefore);
   const dataBefore = parseYaml(beforeSplit.front) as Record<string, unknown>;
 
-  // ---- commit the scaffold so `git rev-parse HEAD^{tree}` has something to resolve ----
+  // A real source file OUTSIDE the studio dir — without one, this repo's
+  // entire tracked tree is the studio, and excluding it (see below) would
+  // make every SOURCE tree hash the well-known empty-tree sha1, which
+  // wouldn't actually exercise the "a change to a source file trips the
+  // dirty guard" property later in this file.
+  const srcFile = join(repo, "src.txt");
+  const srcContent = "hello\n";
+  writeFileSync(srcFile, srcContent);
+
+  // ---- commit the scaffold so the SOURCE tree hash has something to resolve ----
   git(repo, ["init", "-q"]);
   git(repo, ["config", "user.email", "test@example.com"]);
   git(repo, ["config", "user.name", "Test"]);
   git(repo, ["add", "-A"]);
   git(repo, ["commit", "-q", "-m", "init"]);
-  const expectedTree = git(repo, ["rev-parse", "HEAD^{tree}"]).trim();
+  // The SOURCE tree hash (@bisellium/shim's sourceTreeHash) excludes the
+  // studio dir and .bisellium/ — this is what `verify` certifies against,
+  // not `git rev-parse HEAD^{tree}` (which would include the studio's own
+  // bookkeeping and so change every time `verify` commits its own writes).
+  const expectedTree = sourceTreeHash(repo, ["studio", ".bisellium"]);
 
   // ---- runVerify: tests ('true') passes, lint ('false') fails ---------------
   const result = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString()]);
@@ -108,6 +122,37 @@ try {
   const probatioBlocks = afterCheck.findings.filter((f) => f.level === "block" && f.rule.startsWith("probatio."));
   check("checkStudio: no blocking probatio.* findings", probatioBlocks.length === 0, JSON.stringify(probatioBlocks));
 
+  // ---- verifying twice in a row works ----------------------------------------
+  // The first `runVerify` above just wrote opera/W-001.md and ci/*.log —
+  // both under the studio dir. Those writes must never make the SOURCE tree
+  // "dirty": a second verify, with no --allow-dirty, must succeed exactly
+  // like the first, and certify the SAME hash (nothing outside the studio
+  // changed in between).
+  const secondResult = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString()]);
+  check(
+    "verify: running verify again right after itself needs no --allow-dirty",
+    secondResult.exitCode === 1,
+    String(secondResult.exitCode),
+  );
+  const afterSecondDoc = parseYaml(splitFront(readFileSync(opusPath, "utf8")).front) as Record<string, unknown>;
+  const afterSecondGates = afterSecondDoc["probationes"] as Record<string, { certifies: string }>;
+  check(
+    "verify: a second run right after the first certifies the same tree:<hash>",
+    afterSecondGates["tests"]?.certifies === `tree:${expectedTree}` && afterSecondGates["lint"]?.certifies === `tree:${expectedTree}`,
+    JSON.stringify(afterSecondGates),
+  );
+
+  // ---- a change under studio/ does not trip the dirty guard ------------------
+  const studioScratchFile = join(studio, "scratch-not-a-real-convention-file.txt");
+  writeFileSync(studioScratchFile, "just studio bookkeeping, not source\n");
+  const studioChangeResult = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString()]);
+  check(
+    "verify: an uncommitted change under studio/ does not require --allow-dirty",
+    studioChangeResult.exitCode === 1,
+    String(studioChangeResult.exitCode),
+  );
+  rmSync(studioScratchFile, { force: true });
+
   // ---- merge, don't replace: a waived gate with sibling keys and comments ----
   // survives byte-for-byte except the three tool-written keys; an
   // already-waived gate is never touched (its command is not even run).
@@ -135,7 +180,7 @@ Body text, byte-for-byte.
   writeFileSync(waivedOpusPath, waivedFixture);
   const waivedRawBefore = readFileSync(waivedOpusPath, "utf8");
 
-  const waivedResult = await runVerify(["W-002", "--studio", studio, "--repo", repo, "--now", NOW.toISOString(), "--allow-dirty"]);
+  const waivedResult = await runVerify(["W-002", "--studio", studio, "--repo", repo, "--now", NOW.toISOString()]);
   check("verify (waived fixture): exits 1 (lint still fails)", waivedResult.exitCode === 1, String(waivedResult.exitCode));
 
   const waivedRawAfter = readFileSync(waivedOpusPath, "utf8");
@@ -160,12 +205,12 @@ Body text, byte-for-byte.
     splitFront(waivedRawAfter).body === splitFront(waivedRawBefore).body,
   );
 
-  // ---- honest certifies: a dirty repo refuses, --allow-dirty certifies "dirty:" ----
-  const dirtyMarker = join(repo, "dirty-marker.txt");
-  writeFileSync(dirtyMarker, "uncommitted\n");
+  // ---- honest certifies: a change to a SOURCE file trips the dirty guard -----
+  // (a change under studio/ was already shown above NOT to trip it.)
+  writeFileSync(srcFile, "hello, but edited and never committed\n");
   try {
     const dirtyRefused = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString()]);
-    check("verify: dirty repo without --allow-dirty exits 2", dirtyRefused.exitCode === 2, String(dirtyRefused.exitCode));
+    check("verify: an uncommitted source-file change exits 2 without --allow-dirty", dirtyRefused.exitCode === 2, String(dirtyRefused.exitCode));
 
     const dirtyAllowed = await runVerify(["W-001", "--studio", studio, "--repo", repo, "--now", NOW.toISOString(), "--allow-dirty"]);
     check("verify --allow-dirty: exits 1 (lint still fails)", dirtyAllowed.exitCode === 1, String(dirtyAllowed.exitCode));
@@ -177,7 +222,7 @@ Body text, byte-for-byte.
       JSON.stringify(afterDirtyGates),
     );
   } finally {
-    rmSync(dirtyMarker, { force: true });
+    writeFileSync(srcFile, srcContent);
   }
 
   // ---- an unparseable sibling opus: verify fails cleanly, never a stack trace ----

@@ -6,3 +6,4 @@ export { gitWorktreeProvider, treehouseProvider, selectProvider, reclaimWorktree
 export type { Receipt } from "./receipts.js";
 export { makeSessionId, receiptPath, writeReceiptStart, writeReceiptEnd } from "./receipts.js";
 export { redact, filterEnv } from "./redact.js";
+export { sourceTreeHash, isDirtyOutside } from "./sourceTree.js";

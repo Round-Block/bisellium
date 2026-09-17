@@ -206,17 +206,42 @@ Exit 0 passes, 1 has blocking findings, 2 means not a studio (or a usage
 error). `--json` gives machine-readable findings with stable rule ids;
 `--level block` limits output to what blocks; `--now <iso>` pins the clock for
 reproducible age checks; `--repo <dir>` additionally checks each automated
-gate's `certifies` against that repo's current tree, advising
-`probatio.certifies.stale` when a `tree:` certificate no longer matches the
-current tree — a staleness check is never a reason for `check` itself to
-block. Independent of `--repo`, any gate certifying `dirty:<hash>` (see
-`verify --allow-dirty` below) advises `probatio.certifies.dirty`, and an
-automated gate whose evidence log doesn't mention the tree/dirty hash it
-certifies advises `probatio.evidence.tree` (the local pipeline writes that
-hash into the log's header, so this only fires on a log that was hand-edited
-or came from elsewhere). `probatio.certifies.mismatch` is a separate,
-`--repo`-independent check: a `done` item whose gates certify different
-trees from each other. `npm test` runs the sample and every fixture.
+gate's `certifies` against that repo's current SOURCE tree (see "The SOURCE
+tree hash" below), advising `probatio.certifies.stale` when a `tree:`
+certificate no longer matches it — a staleness check is never a reason for
+`check` itself to block. Independent of `--repo`, any gate certifying
+`dirty:<hash>` (see `verify --allow-dirty` below) advises
+`probatio.certifies.dirty`, and an automated gate whose evidence log doesn't
+mention the tree/dirty hash it certifies advises `probatio.evidence.tree`
+(the local pipeline writes that hash into the log's header, so this only
+fires on a log that was hand-edited or came from elsewhere).
+`probatio.certifies.mismatch` is a separate, `--repo`-independent check: a
+`done` item whose gates certify different trees from each other. `npm test`
+runs the sample and every fixture.
+
+## The SOURCE tree hash
+
+A `tree:<hash>` certificate is not `git rev-parse <ref>^{tree}`. That would
+include the officina's own bookkeeping — opera front matter, `ci/*.log`,
+receipts — everything under the studio dir and `.bisellium/`. If it were
+used: (a) `bisellium verify` writing its own result back into an opus, once
+committed, moves the hash, so every certificate a previous `verify` wrote
+goes `stale` purely because `verify` (or a commit of its output) ran; and
+(b) `verify`'s own writes, before they're even committed, would make the
+working tree "dirty" and refuse to certify anything at all — a studio can
+never verify itself twice in a row.
+
+Instead, `sourceTreeHash(repo, excludeDirs, ref = "HEAD")`
+(`@bisellium/shim`) hashes `git ls-tree -r <ref>` — one line per entry
+(mode, type, blob sha, path), already path-sorted — with a sha1 over every
+line whose path is *not* under one of `excludeDirs` (repo-root-relative;
+`verify` and `check --repo` both pass the studio dir and `.bisellium`).
+Committing a change that only touches an excluded path can't move this
+hash. The matching working-tree check, `isDirtyOutside(repo, excludeDirs)`,
+is the same idea applied to `git status --porcelain`: an uncommitted change
+only counts as "dirty" when it's outside those same paths. `verify`'s
+`--repo` clean-tree requirement (below) and `check --repo`'s staleness
+comparison both use this pair, not the raw git plumbing.
 
 ## Running run and verify
 
@@ -248,12 +273,17 @@ each gate it runs, merged into the existing probatio node so sibling keys
 (`waived_by`, a `note`, comments, …) and every other gate survive untouched.
 A gate already `status: waived` is skipped entirely (not run, not
 overwritten) and printed as `<id>: waived (untouched)`. Before running,
-`verify` requires a clean working tree in `--repo` (`git status
---porcelain`) — a command's result only means something if it ran against
-exactly the tree it's about to certify. A dirty tree exits 2 with "working
-tree is dirty; commit or pass --allow-dirty"; with `--allow-dirty`, `verify`
-runs anyway and certifies `dirty:<hash>` instead of `tree:<hash>`, an honest
+`verify` requires a clean SOURCE tree in `--repo` — `git status --porcelain`
+entries under the studio dir or `.bisellium/` don't count (see "The SOURCE
+tree hash" above) — a command's result only means something if it ran
+against exactly the tree it's about to certify, and that tree is the source,
+not the studio's own bookkeeping. A dirty tree exits 2 with "working tree is
+dirty; commit or pass --allow-dirty"; with `--allow-dirty`, `verify` runs
+anyway and certifies `dirty:<hash>` instead of `tree:<hash>`, an honest
 admission that the certified hash isn't exactly what ran (see
-`probatio.certifies.dirty` above). Exit codes: 0 all automated gates that
-ran passed, 1 at least one failed, 2 usage error / not a studio / unparseable
-sibling opus / dirty tree without `--allow-dirty`.
+`probatio.certifies.dirty` above). Because opera/ci/receipt writes are
+excluded from both the hash and the dirty check, running `verify` again
+right after itself — even without committing anything in between — needs no
+`--allow-dirty` and certifies the same hash. Exit codes: 0 all automated
+gates that ran passed, 1 at least one failed, 2 usage error / not a studio /
+unparseable sibling opus / dirty source tree without `--allow-dirty`.

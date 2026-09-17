@@ -9,10 +9,11 @@
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { join, resolve } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
 import { readManifest, snapshotDir } from "@bisellium/adapter-native";
 import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline } from "@bisellium/pipeline";
+import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -83,10 +84,9 @@ function isGitRepo(dir: string): boolean {
   }
 }
 
-/** True when `git status --porcelain` in `dir` reports anything at all. */
-function isDirty(dir: string): boolean {
-  const out = execFileSync("git", ["status", "--porcelain"], { cwd: dir, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
-  return out.trim().length > 0;
+/** POSIX-separated path of `path` relative to `base`. */
+function toPosixRelative(base: string, path: string): string {
+  return relative(base, path).split(sep).join("/");
 }
 
 /** Front-matter split that keeps the body byte-for-byte — unlike
@@ -131,26 +131,27 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   }
 
   const repo = resolve(parsed.repo ?? (isGitRepo(resolve(studioDir, "..")) ? resolve(studioDir, "..") : process.cwd()));
+  // The studio's own bookkeeping (opera front matter, ci logs, receipts)
+  // never counts toward what a probatio certifies or whether the tree is
+  // "dirty" — otherwise verify writing its own result, or committing that
+  // write, would make every certificate stale or refuse to run at all.
+  const excludeDirs = [toPosixRelative(repo, studioDir), ".bisellium"];
   let treeHash: string;
   try {
-    treeHash = execFileSync("git", ["rev-parse", `${commit}^{tree}`], {
-      cwd: repo,
-      encoding: "utf8",
-      timeout: GIT_TIMEOUT_MS,
-    }).trim();
+    treeHash = sourceTreeHash(repo, excludeDirs, commit);
   } catch (e) {
-    console.error(`could not resolve tree for "${commit}" in ${repo}: ${(e as Error).message}`);
+    console.error(`could not resolve source tree for "${commit}" in ${repo}: ${(e as Error).message}`);
     return { exitCode: 2 };
   }
 
   // Honest certifies: a certificate is a claim about what was actually run.
-  // If the working tree is dirty, the commands below run against files that
+  // If the SOURCE tree is dirty, the commands below run against files that
   // don't match `treeHash` — certifying `tree:<hash>` would be a lie. Refuse
   // unless the caller explicitly accepts a `dirty:<hash>` certificate instead.
   let dirty = false;
   if (isGitRepo(repo)) {
     try {
-      dirty = isDirty(repo);
+      dirty = isDirtyOutside(repo, excludeDirs);
     } catch (e) {
       console.error(`could not check working tree status in ${repo}: ${(e as Error).message}`);
       return { exitCode: 2 };

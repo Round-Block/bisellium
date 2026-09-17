@@ -8,8 +8,7 @@
  * "advise" is reported.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, isAbsolute, join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { basename, isAbsolute, join, relative, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import {
   ACTUM_KINDS,
@@ -19,6 +18,7 @@ import {
   PETITIO_STATES,
 } from "@bisellium/schema";
 import { listMd, readFront, STATES } from "@bisellium/adapter-native";
+import { sourceTreeHash } from "@bisellium/shim";
 
 export type Level = "block" | "advise";
 export interface Finding {
@@ -112,10 +112,14 @@ export interface CheckOptions {
   repo?: string;
 }
 
-/** `git rev-parse HEAD^{tree}` in `repo`, or undefined if git/the repo isn't available. */
-function currentTreeHash(repo: string): string | undefined {
+/** The SOURCE tree hash (see @bisellium/shim's sourceTreeHash) at HEAD in
+ *  `repo`, excluding `studioRoot` and `.bisellium/` — or undefined if
+ *  git/the repo isn't available. Excluding the studio's own bookkeeping
+ *  means committing an opus/ci-log write never makes a certificate stale. */
+function currentTreeHash(repo: string, studioRoot: string): string | undefined {
   try {
-    return execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: repo, encoding: "utf8", timeout: 10_000 }).trim() || undefined;
+    const excludeDirs = [relative(repo, studioRoot).split(sep).join("/"), ".bisellium"];
+    return sourceTreeHash(repo, excludeDirs) || undefined;
   } catch {
     return undefined;
   }
@@ -130,7 +134,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const blocks = findings.filter((f) => f.level === "block").length;
     return { root, now: now.toISOString(), ok: blocks === 0, notAStudio, blocks, advisories: findings.length - blocks, findings };
   };
-  const treeHash = opts.repo ? currentTreeHash(opts.repo) : undefined;
+  const treeHash = opts.repo ? currentTreeHash(opts.repo, root) : undefined;
 
   // ---- manifest -----------------------------------------------------------
   const manifestPath = join(root, "bisellium.yml");
