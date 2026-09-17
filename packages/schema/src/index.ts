@@ -35,6 +35,8 @@ export interface Actor {
   roleId: string;
   projectId: string;
   kind: ActorKind;
+  /** Atrium department this seat belongs to; cost and digest rollups key on it. */
+  departmentId?: string;
   /** Model, version, prompt hash… deliberately unstandardized. */
   meta: Record<string, unknown>;
 }
@@ -119,6 +121,32 @@ export interface Provider {
   note?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Atrium studio model (conventions, not a runtime). A department is
+// charter + budget + digest; the Owner touches only greenlight, budget
+// allocation, taste calls, and charter changes.
+// ---------------------------------------------------------------------------
+
+export interface Department {
+  id: string;
+  projectId: string;
+  name: string;
+  leadRoleId: string;
+  /** The charter document (CHARTER_TEMPLATE.md instance). */
+  charterHref?: string;
+}
+
+export interface Budget {
+  departmentId: string;
+  /** e.g. "2026-W38". Unspent does not roll over. */
+  period: string;
+  allowance: { tokens?: number; hours?: number };
+  burn: { tokens: number; hours?: number };
+  /** Derived from burn vs allowance and provider telemetry — never
+   *  self-declared "ok" without data. */
+  posture: ProviderStatus;
+}
+
 /** The inbox unit. Strict admission: only questions addressed to the owner
  *  and replies in threads the owner opened. Digests are a separate feed. */
 export type ThreadState = "needs_you" | "awaiting_reply" | "resolved";
@@ -172,6 +200,8 @@ export const WF = {
   TIME_DERIVED: "workflow.time.derived",
   SOURCE: "workflow.source",
   SOURCE_SEQ: "workflow.source.seq",
+  DEPARTMENT: "workflow.department",
+  GREENLIGHT: "workflow.greenlight", // "requested" | "granted" | "declined"
 } as const;
 
 export type WorkflowEventName =
@@ -182,6 +212,7 @@ export type WorkflowEventName =
   | "workflow.actor_assigned"
   | "workflow.attention"
   | "workflow.digest"
+  | "workflow.greenlight"
   | "provider.status";
 
 export interface GantryEvent {
@@ -203,6 +234,8 @@ export interface Snapshot {
   workItems: WorkItem[];
   providers?: Provider[];
   digest?: DigestEntry[];
+  departments?: Department[];
+  budgets?: Budget[];
 }
 
 export interface AdapterBase {
