@@ -1,0 +1,3 @@
+providers:
+  - { id: claude, usage_pct: 81, reset_at: 2026-09-18T14:00:00Z, status: conserve }
+  - { id: codex,  usage_pct: 34, reset_at: 2026-09-17T22:38:00Z, status: ok }
