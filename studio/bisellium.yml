@@ -1,0 +1,19 @@
+bisellium: 1
+studio: Bisellium
+owner: owner
+timezone: UTC
+departments:
+  - { id: production, name: Production, lead: producer, charter: charters/production.md }
+  - { id: engineering, name: Engineering, lead: eng-lead, fallback: producer, charter: charters/engineering.md }
+  - { id: qa, name: QA, lead: qa-lead, charter: charters/qa.md }
+seats:
+  - { id: producer, department: production, kind: orchestrator, model: claude-opus-5 }
+  - { id: eng-lead, department: engineering, kind: agent, model: claude-opus-5 }
+  - { id: builder-a, department: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-b, department: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-c, department: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: qa-lead, department: qa, kind: agent, model: claude-sonnet-5 }
+gates:
+  - { id: tests, name: Tests, kind: automated }
+  - { id: review, name: Lead review, kind: agent }
+wip_limit: 3

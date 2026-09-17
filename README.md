@@ -22,7 +22,7 @@ docs/CHARTER_TEMPLATE.md  per-department charter
 docs/ADOPTION.md          what an Bisellium-compliant project directory contains
 examples/sample-studio    a complete instance — the app runs on this alone
 packages/schema           the contract: entities, lifecycles, workflow.* attributes
-packages/core             local-first event store, snapshot differ, query API (next)
+packages/core             JSONL event log, snapshot differ, in-memory store (burn derivation + query API next)
 adapters/native           reads an Bisellium directory into a Snapshot
 adapters/epoch0           reference external project (deferred; read-only)
 apps/web                  React UI (next)
@@ -49,12 +49,14 @@ npm install && npm run snapshot -- examples/sample-studio
 1. Schema — done.
 2. Native adapter over the adoption contract — done.
 3. `bisellium check` — done.
-4. Integrations behind the seams: treehouse (worktrees under `run`), no-mistakes (merge-blocking pipeline → gate evidence), quota-axi (`cli` provider status), axi output conventions; null fallbacks so the sample runs without them. ← current
-5. Harness shim + direct line + tick: `run`, `talk`, `tick`/`pause`; firstmate evaluated as the L2 dispatcher.
-6. `packages/core` — store, snapshot differ, burn derivation, query API.
-7. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
-8. Tauri wrapper: tray + native needs-you notifications.
-9. External adapters: a markdown/git project (snapshot), harness hooks (events).
+4. `bisellium init` / `bisellium new` — done.
+5. `bisellium context` / `bisellium query` — done (deterministic, offline; live in `packages/cli`, over the same files `check` reads).
+6. Integrations behind the seams: treehouse (worktrees under `run`), no-mistakes (merge-blocking pipeline → gate evidence), quota-axi (`cli` provider status), axi output conventions; null fallbacks so the sample runs without them. ← current
+7. Harness shim + direct line + tick: `run`, `talk`, `tick`/`pause`; firstmate evaluated as the L2 dispatcher.
+8. `packages/core` — partially done: JSONL event log and snapshot differ (`diffSnapshots`) landed with an in-memory `Store`; burn derivation and a query API over the store are not yet built there (query today is `packages/cli`'s file-based `answer()`, not a core API).
+9. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
+10. Tauri wrapper: tray + native needs-you notifications.
+11. External adapters: a markdown/git project (snapshot), harness hooks (events).
 
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay

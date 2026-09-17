@@ -9,11 +9,11 @@
     "apps/*"
   ],
   "scripts": {
-    "typecheck": "tsc -p packages/schema/tsconfig.json --noEmit && tsc -p adapters/native/tsconfig.json --noEmit && tsc -p adapters/epoch0/tsconfig.json --noEmit && tsc -p packages/cli/tsconfig.json --noEmit",
+    "typecheck": "tsc -p packages/schema/tsconfig.json --noEmit && tsc -p adapters/native/tsconfig.json --noEmit && tsc -p adapters/epoch0/tsconfig.json --noEmit && tsc -p packages/cli/tsconfig.json --noEmit && tsc -p packages/core/tsconfig.json --noEmit",
     "bisellium": "tsx packages/cli/src/main.ts",
     "check": "tsx packages/cli/src/main.ts check",
     "snapshot": "tsx adapters/native/src/cli.ts",
-    "test": "tsx packages/cli/src/test.ts ."
+    "test": "tsx packages/cli/src/test.ts . && tsx packages/cli/src/init.test.ts && tsx packages/cli/src/context.test.ts . && tsx packages/core/src/differ.test.ts ."
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

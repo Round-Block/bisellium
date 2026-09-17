@@ -16,9 +16,8 @@ budgets/<period>.yml     allowances per department — burn is derived, never wr
 usage.yml                observed provider limit telemetry
 ```
 
-Planned, not yet built: `bisellium init` (empty studio that passes check),
-`bisellium new` (allocates work-item ids), `memory/seats/`, `decisions/`,
-`archive/`, and the docs registry.
+Planned, not yet built: `memory/seats/`, `decisions/`, `archive/`, and the
+docs registry.
 
 ## bisellium.yml
 
