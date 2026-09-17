@@ -1,0 +1,34 @@
+W-002: context bundle and query
+PASS - 0 blocking, 4 advisory
+
+TypeScript check: EXIT=0
+Test suite (context.test.ts): 11/11 PASS
+Full test suite: 12/12 PASS
+
+Core functionality verified:
+- buildContext with seat 'builder-1' returns bundle with all sections in priority order
+- Truncation works correctly: when exceeding max_tokens, drops lowest-priority sections and appends 'truncated:' line
+- Unknown seat returns empty text and truncated flag
+- query() answer function matches regex patterns for status, needs_you, and burn
+- All injected bodies wrapped in '--- data: <path> ---' markers
+- Age calculations in hours from opts.now
+- No bare Date.now()/new Date() calls
+
+Tests passed:
+- builder-1: engineering charter present
+- builder-1: W-002 and W-004 handoffs present
+- A-1 not included (addressed to owner)
+- owner: A-1 included (needs_you, to: owner)
+- maxTokens=300: sections dropped correctly
+- maxTokens=300: text ends with 'truncated:' line
+- unknown seat: empty text, truncated ['unknown seat']
+- needs_you: mentions W-004 and A-1
+- status W-003: mentions verifying and failed
+- burn: mentions engineering and conserve
+- hello: kind unknown
+
+Advisories (4):
+1. Ask data marker reconstructed from front matter instead of using real file path
+2. daysBetween uses Math.abs, treating future dates as 'last 2 days'
+3. answer() calls readManifest with no try/catch, can throw on non-studio
+4. STATUS evaluated before NEEDS_YOU before BURN (order differs from spec but result identical)

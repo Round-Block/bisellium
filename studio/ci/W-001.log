@@ -1,0 +1,27 @@
+W-001: bisellium init and new
+PASS - 0 blocking, 5 advisory
+
+TypeScript check: EXIT=0
+Test suite (init.test.ts): 6/6 PASS
+Full test suite: 12/12 PASS (sample-studio, 10 fixtures, not-a-studio)
+
+End-to-end verification:
+- init /tmp/qa/mystudio --now 2026-09-17T13:00:00Z -> EXIT=0, PASS
+- Manifest: bisellium: 1, studio: "mystudio", owner, production+producer+charter, seats[producer], gates[{id: owner, kind: human}], wip_limit: 1
+- Budget: period "2026-W38", production { allowance_tokens: 500000 }
+- Files: bisellium.yml, charters/production.md, work/.gitkeep, asks/.gitkeep, digest/.gitkeep, budgets/.gitkeep, budgets/2026-W38.yml
+
+CLI exit codes verified:
+- new (valid) -> 0, prints W-001
+- new --dept nope -> 1
+- new (missing --title) -> 2, prints USAGE
+- new (non-studio dir) -> 1
+- init on existing manifest -> 1
+- check sample-studio -> 0; check bad-wip-cap -> 1; check packages -> 2; --level bogus -> 2; unknown cmd -> 2
+
+Advisories (5):
+1. Flag parser truncates inline values at '=' (--title=a=b=c reads as 'a')
+2. Exit-code inconsistency for non-studio directory (returns 1, docs say 2)
+3. Real-clock fallback in library instead of CLI
+4. .gitkeep files flagged by stray.file rule (4 advisories on fresh init)
+5. KNOWN_FLAGS validated globally, not per-command

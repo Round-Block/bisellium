@@ -1,0 +1,38 @@
+W-003: core JSONL log and snapshot differ
+PASS - 0 blocking, 4 advisory
+
+TypeScript check (packages/core/tsconfig.json): EXIT=0
+Test suite (differ.test.ts): 14/14 PASS
+Full test suite: 12/12 PASS
+
+Core package implementation verified:
+- JSONL event log: append-only via appendFileSync
+- Snapshot differ: emits all 8 event kinds with correct WF constants
+- Event IDs: format `${source}:${seq}`
+- Every event has SOURCE, SOURCE_SEQ, TIME_DERIVED fields
+- DEPARTMENT field present when meta.department exists
+- Store.ingest tracks per-source and per-source seq
+- events()/replay()/burn() match spec shapes
+- Last snapshot kept in memory only
+
+Differ test results:
+- diff(null, A): one item_appeared per work item (7 vs 7), one attention per thread (2 vs 2), one digest per entry (5 vs 5)
+- diff(null, A): one provider.status per provider (2 vs 2)
+- diff(null, A): no state_changed/gate_evaluated on first appearance
+- diff(A, A): zero events
+- diff(A, B): exactly one state_changed (W-002 building -> verifying)
+- diff(A, B): exactly one gate_evaluated (W-003 tests -> passed)
+- diff(A, B): exactly one attention
+- diff(A, B): every event has TIME_DERIVED true
+- diff(A, B): SOURCE_SEQ strictly increases (7,8,9,10)
+- Store: readEvents length equals sum of ingested events (20 vs 20)
+- Store: events() matches readEvents length
+- Store: replay() shows W-002 verifying
+
+Clock pinned to 2026-09-17T13:00:00Z; no bare Date.now()/new Date() in packages/core.
+
+Advisories (4):
+1. README has overlapping descriptions (old SQLite + JSONL, new description both present)
+2. differ.test.ts imports @bisellium/adapter-native but package.json declares only @bisellium/schema
+3. gateChanged() also triggers on href change (broader than spec's 'status or evidence.certifies changes')
+4. readEvents catches all errors silently, not just ENOENT
