@@ -2,7 +2,9 @@
  * Acceptance for W-002 (context bundle and query) against
  * examples/sample-studio. `now` is pinned so age-derived text never drifts.
  */
-import { resolve } from "node:path";
+import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { buildContext } from "./context.js";
 import { answer } from "./query.js";
 
@@ -70,6 +72,33 @@ const check = (name: string, ok: boolean, detail = "") => {
 {
   const a = answer(root, "hello", { now: NOW });
   check("hello: kind unknown", a.kind === "unknown" && a.answer === null && !!a.suggestions?.length);
+}
+
+// ---- burn is period-blind: a second aerarium period gets burn 0 / unknown ----
+
+{
+  const tmp = mkdtempSync(join(tmpdir(), "bisellium-burn-period-"));
+  try {
+    cpSync(root, tmp, { recursive: true });
+    writeFileSync(join(tmp, "aerarium", "2026-W39.yml"), "period: 2026-W39\ncollegia:\n  engineering: { stipendium_tokens: 3000000 }\n");
+
+    const a = answer(tmp, "burn", { now: NOW });
+    const lines = (a.answer ?? "").split("\n");
+    const w38Eng = lines.filter((l) => l.includes("2026-W38") && l.includes("engineering"));
+    const w39Eng = lines.filter((l) => l.includes("2026-W39") && l.includes("engineering"));
+    check(
+      "burn: engineering listed once for 2026-W38 with a derived (non-unknown) posture",
+      w38Eng.length === 1 && !w38Eng[0]!.includes("unknown"),
+      JSON.stringify(w38Eng),
+    );
+    check(
+      "burn: engineering listed for 2026-W39 as unknown (not the current period)",
+      w39Eng.length === 1 && w39Eng[0]!.includes("unknown"),
+      JSON.stringify(w39Eng),
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 process.exit(failed ? 1 : 0);

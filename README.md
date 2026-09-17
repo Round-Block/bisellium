@@ -3,8 +3,8 @@
 One application, two halves:
 
 - **The studio model** — an agent organization patterned on a product team.
-  A department is *charter + budget + digest*; the Owner touches only
-  greenlight, budget allocation, taste calls, and charter changes.
+  A collegium is *lex + aerarium + acta*; the Patron touches only
+  greenlight, aerarium allocation, taste calls, and lex changes.
   Conventions, not a runtime: agents keep running in their own toolchains.
 - **The console and reference harness** — the pipeline view over that studio (and any other source), plus a direct line to each department lead via the vendor CLIs:
   Board · Inbox · Swimlane · Agents · Digest · Studio · Graph. Boards are
@@ -48,7 +48,7 @@ npm install && npm run snapshot -- examples/sample-studio
 4. Attention is an inbox with strict admission — asks only; digests are a separate feed.
 5. Limits are routing state — who is hot, when it resets.
 6. Certificates go stale honestly — a result certifies a specific commit.
-7. Departments are added only when a class of decision keeps escalating.
+7. Collegia are added only when a class of decision keeps escalating.
 
 ## Build order
 

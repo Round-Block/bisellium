@@ -75,6 +75,23 @@ export function listMd(dir: string): string[] {
     .map((f) => join(dir, f));
 }
 
+/**
+ * ISO 8601 week (Monday start, week containing the year's first Thursday) of
+ * `date`, in UTC — e.g. "2026-W38". Burn is computed only for the aerarium
+ * period this matches; other periods are period-blind by design (ADOPTION.md:
+ * burn is derived per period, not summed across all of history).
+ */
+export function isoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
+  d.setUTCDate(d.getUTCDate() - dayNum + 3); // Thursday of this ISO week
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const firstDayNum = (firstThursday.getUTCDay() + 6) % 7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDayNum + 3);
+  const week = 1 + Math.round((d.getTime() - firstThursday.getTime()) / (7 * 86_400_000));
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
 function posture(allowance: number | undefined, burn: number | undefined): ProviderStatus {
   if (allowance === undefined || burn === undefined) return "unknown";
   const r = burn / allowance;
@@ -99,8 +116,9 @@ export function describeLifecycle(manifest: Manifest): Lifecycle {
   return { id: NATIVE_LIFECYCLE_ID, states: STATES, transitions, gates, wipLimit: manifest.wip_limit };
 }
 
-export function snapshotDir(root: string, projectId: string): Snapshot {
+export function snapshotDir(root: string, projectId: string, now: Date = new Date()): Snapshot {
   const manifest = readManifest(root);
+  const currentPeriod = isoWeek(now);
 
   const collegia: Collegium[] = manifest.collegia.map((d) => ({
     id: d.id,
@@ -206,14 +224,19 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
         period: string;
         collegia: Record<string, { stipendium_tokens?: number }>;
       };
+      const period = String(b.period);
+      const isCurrent = period === currentPeriod;
       for (const [collegiumId, v] of Object.entries(b.collegia)) {
-        const burn = burnFor(collegiumId);
+        // Burn is only meaningful for the period containing `now` — a past
+        // or future aerarium file gets burn 0 and an honest "unknown"
+        // posture rather than the same all-time total repeated per file.
+        const burn = isCurrent ? burnFor(collegiumId) : 0;
         stipendia.push({
           collegiumId,
-          period: String(b.period),
+          period,
           allowance: { tokens: v.stipendium_tokens },
           burn: { tokens: burn },
-          posture: posture(v.stipendium_tokens, burn),
+          posture: isCurrent ? posture(v.stipendium_tokens, burn) : "unknown",
         });
       }
     }

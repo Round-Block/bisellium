@@ -58,7 +58,9 @@ type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
 const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
-const days = (a: Date, b: Date): number => Math.abs(b.getTime() - a.getTime()) / 86_400_000;
+/** Signed elapsed days from `a` to `b`, clamped at 0 — a future `a` (relative
+ *  to `b`) reads as fresh (0 days old), never as stale via an absolute value. */
+const days = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 86_400_000);
 
 /** Dates must be ISO strings (or YAML-parsed Date objects); anything else is rejected, not guessed. */
 function isoDate(v: unknown): Date | undefined {
@@ -126,6 +128,18 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
   if (!str(m["studio"])) add("manifest.studio", "block", "bisellium.yml", "studio name missing");
   if (!str(m["patron"])) add("manifest.patron", "advise", "bisellium.yml", 'patron role id missing (defaults to "patron")');
   const patron = str(m["patron"]) ?? "patron";
+  const reviewProbatioId = str(m["review_probatio"]) ?? "review";
+
+  if (m["timezone"] !== undefined) {
+    if (!str(m["timezone"])) add("manifest.timezone", "block", "bisellium.yml", "timezone must be a string");
+    else {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: m["timezone"] as string });
+      } catch {
+        add("manifest.timezone", "block", "bisellium.yml", `timezone "${m["timezone"] as string}" is not a valid IANA zone`);
+      }
+    }
+  }
 
   const listOf = (key: string): Dict[] => {
     const v = m[key];
@@ -294,15 +308,14 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
       }
     }
     const notPassed = (ids: string[]) => ids.filter((x) => status.get(x) !== "passed" && status.get(x) !== "waived");
-    const failedIn = (ids: string[]) => ids.filter((x) => status.get(x) === "failed" || status.get(x) === "stale");
 
     // state vs evidence: the asserted state must be supportable
     if (state === "review") {
       const a = notPassed(automated);
       if (a.length) add("state.review.automated", "block", where, `state "review" but automated gates not passed: ${a.join(", ")}`);
-      const q = notPassed(agentGates.filter((x) => x !== "review"));
+      const q = notPassed(agentGates.filter((x) => x !== reviewProbatioId));
       if (q.length) add("state.review.agent", "block", where, `state "review" but agent gates not passed: ${q.join(", ")}`);
-      if (status.get("review") === "failed") add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
+      if (status.get(reviewProbatioId) === "failed") add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
     }
     if (state === "done") {
       const missing = [...notPassed(automated), ...notPassed(agentGates), ...humanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!))];
@@ -312,15 +325,13 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     }
     if (state === "verifying" && !automated.some((x) => status.has(x)))
       add("state.verifying.none", "advise", where, `state "verifying" with no automated gate recorded`);
-    if (ACTIVE.has(state) && failedIn(automated).length && state === "review")
-      add("state.review.automated", "block", where, `state "review" with failed/stale automated gate`);
 
     checkTraditio(where, d["traditio"], state, ACTIVE.has(state));
 
     if (state === "halted") {
       for (const k of ["reason", "resume_when"]) if (!str(d[k])) add("halted.exit", "block", where, `halted item missing "${k}"`);
       const at = isoDate(d["halted_at"]) ?? (isDict(d["traditio"]) ? isoDate((d["traditio"] as Dict)["at"]) : undefined);
-      if (!at) add("halted.at", "advise", where, "halted item has no halted_at (age cannot be tracked)");
+      if (!at) add("halted.at", "block", where, "halted item has no halted_at (age cannot be tracked)");
       else if (days(at, now) > defaults.halted_stale_days) add("halted.stale", "advise", where, `halted for ${days(at, now).toFixed(0)} days`);
     }
     if (WIP_STATES.has(state)) wip++;

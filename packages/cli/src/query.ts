@@ -63,8 +63,8 @@ function readPetitiones(root: string): PetitioRow[] {
   return out;
 }
 
-function statusAnswer(root: string, id: string): QueryAnswer {
-  const snap = snapshotDir(root, "query");
+function statusAnswer(root: string, id: string, now: Date): QueryAnswer {
+  const snap = snapshotDir(root, "query", now);
   const item = snap.opera.find((w) => w.id === id);
   if (!item) return { answer: `${id}: not found`, kind: "status" };
 
@@ -91,7 +91,7 @@ function statusAnswer(root: string, id: string): QueryAnswer {
 function needsYouAnswer(root: string, now: Date): QueryAnswer {
   const manifest = readManifest(root);
   const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
-  const snap = snapshotDir(root, "query");
+  const snap = snapshotDir(root, "query", now);
   const lines: string[] = [];
 
   const gated = snap.opera.filter((w) =>
@@ -115,15 +115,15 @@ function needsYouAnswer(root: string, now: Date): QueryAnswer {
   return { answer: lines.join("\n"), kind: "needs_you" };
 }
 
-function burnAnswer(root: string): QueryAnswer {
-  const snap = snapshotDir(root, "query");
+function burnAnswer(root: string, now: Date): QueryAnswer {
+  const snap = snapshotDir(root, "query", now);
   const stipendia = snap.stipendia ?? [];
   if (!stipendia.length) return { answer: "no aerarium declared", kind: "burn" };
   const lines = stipendia.map((b) => {
     const allowance = b.allowance.tokens;
     const burn = b.burn.tokens;
-    const pct = allowance ? ((burn / allowance) * 100).toFixed(1) : "?";
-    return `${b.collegiumId} · ${burn}/${allowance ?? "?"} tokens · ${pct}% · ${b.posture}`;
+    const pct = b.posture !== "unknown" && allowance ? ((burn / allowance) * 100).toFixed(1) : "?";
+    return `${b.period} · ${b.collegiumId} · ${burn}/${allowance ?? "?"} tokens · ${pct}% · ${b.posture}`;
   });
   return { answer: lines.join("\n"), kind: "burn" };
 }
@@ -144,11 +144,11 @@ export function answer(root: string, question: string, opts: { now: Date }): Que
 
   try {
     const status = STATUS.exec(question);
-    if (status) return statusAnswer(root, status[1]!.toUpperCase());
+    if (status) return statusAnswer(root, status[1]!.toUpperCase(), opts.now);
 
     if (NEEDS_YOU.test(question)) return needsYouAnswer(root, opts.now);
 
-    if (BURN.test(question)) return burnAnswer(root);
+    if (BURN.test(question)) return burnAnswer(root, opts.now);
 
     return { answer: null, kind: "unknown", suggestions: SUGGESTIONS };
   } catch {

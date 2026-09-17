@@ -9,7 +9,7 @@ import { join, resolve } from "node:path";
 import { snapshotDir } from "@bisellium/adapter-native";
 import { WF, type GantryEvent, type Snapshot } from "@bisellium/schema";
 import { diffSnapshots } from "./differ.js";
-import { readEvents, readLog } from "./log.js";
+import { appendEvents, readEvents, readLog } from "./log.js";
 import { Store } from "./store.js";
 
 const repo = resolve(process.argv[2] ?? ".");
@@ -226,6 +226,46 @@ const B: Snapshot = structuredClone(A);
     firstResumedSeq === lastSeq + 1,
     `${firstResumedSeq} vs ${lastSeq + 1}`,
   );
+}
+
+// ---- readLog: newline guard — appending twice onto a file missing a trailing newline ----
+
+{
+  const dir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
+  const logPath = join(dir, "events.jsonl");
+  const e1: GantryEvent = { id: "y:0", name: "workflow.digest", ts: TS, projectId: "p", attrs: { [WF.DIGEST_ID]: "d1" } };
+  const e2: GantryEvent = { id: "y:1", name: "workflow.digest", ts: TS, projectId: "p", attrs: { [WF.DIGEST_ID]: "d2" } };
+  writeFileSync(logPath, JSON.stringify(e1)); // hand-written, no trailing newline
+  appendEvents(logPath, [e2]);
+
+  const { events, skipped } = readLog(logPath);
+  check(
+    "readLog: newline guard — both lines parse after appending onto a file without a trailing newline",
+    events.length === 2 && skipped === 0,
+    `${events.length} events, ${skipped} skipped`,
+  );
+}
+
+// ---- readLog / Store: a non-ENOENT fs error must throw, not read as "no log" ----
+
+{
+  const dir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
+  // dir is a directory, not a file: readFileSync fails with EISDIR, not ENOENT.
+  let threw = false;
+  try {
+    readLog(dir);
+  } catch {
+    threw = true;
+  }
+  check("readLog: non-ENOENT fs error (EISDIR on a directory) propagates", threw);
+
+  let storeThrew = false;
+  try {
+    new Store(dir);
+  } catch {
+    storeThrew = true;
+  }
+  check("Store: constructor lets a non-ENOENT readLog error propagate", storeThrew);
 }
 
 process.exit(failed ? 1 : 0);

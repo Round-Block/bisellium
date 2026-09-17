@@ -31,7 +31,9 @@ function toDate(v: unknown): Date | undefined {
   }
   return undefined;
 }
-const daysBetween = (a: Date, b: Date): number => Math.abs(b.getTime() - a.getTime()) / 86_400_000;
+/** Signed elapsed days from `a` to `b`, clamped at 0 — mirrors check.ts's
+ *  `days()`: a future `a` reads as fresh, never stale via an absolute value. */
+const daysBetween = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 86_400_000);
 
 function readPetitioFront(path: string): { data: Record<string, unknown>; body: string } | undefined {
   try {
@@ -88,7 +90,7 @@ function buildContextFor(
   maxTokens: number,
   now: Date,
 ): ContextBundle {
-  const snap = snapshotDir(root, "context");
+  const snap = snapshotDir(root, "context", now);
   const sections: Section[] = [];
 
   // 1. the sella's own collegium lex ------------------------------------
@@ -128,7 +130,8 @@ function buildContextFor(
     const addressedToMe = to === sella && state !== "resolved";
     const myAwaitingReply = from === sella && state === "awaiting_reply";
     if (!addressedToMe && !myAwaitingReply) continue;
-    petitioLines.push(`${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(`petitiones/${id}.md`, body.trim())}`);
+    const relPath = p.startsWith(root) ? p.slice(root.length + 1).replace(/\\/g, "/") : p;
+    petitioLines.push(`${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(relPath, body.trim())}`);
   }
   if (petitioLines.length) sections.push({ name: "petitiones", priority: 3, text: `## Petitiones\n${petitioLines.join("\n")}` });
 

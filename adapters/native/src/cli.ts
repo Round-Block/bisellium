@@ -1,14 +1,26 @@
-/** `npm run snapshot -- <bisellium-dir>` — print what Bisellium would see. */
-import { createBiselliumAdapter } from "./index.js";
+/** `npm run snapshot -- <bisellium-dir> [--now <iso>]` — print what Bisellium would see. */
+import { createBiselliumAdapter, snapshotDir } from "./index.js";
 
-const root = process.argv[2];
+const args = process.argv.slice(2);
+const root = args[0];
 if (!root) {
-  console.error("usage: snapshot <bisellium-dir>");
+  console.error("usage: snapshot <bisellium-dir> [--now <iso>]");
   process.exit(2);
 }
+let now: Date | undefined;
+const nowIdx = args.indexOf("--now");
+if (nowIdx !== -1) {
+  const v = args[nowIdx + 1];
+  now = v === undefined ? undefined : new Date(v);
+  if (!now || Number.isNaN(now.getTime())) {
+    console.error("--now must be an ISO date");
+    process.exit(2);
+  }
+}
+
 const adapter = createBiselliumAdapter(root);
 const [lifecycle] = adapter.describeLifecycles();
-const snap = await adapter.snapshot();
+const snap = now === undefined ? await adapter.snapshot() : snapshotDir(root, adapter.projectId, now);
 
 const human = new Set(lifecycle!.gates.filter((g) => g.kind === "human").map((g) => g.id));
 const needsYou = snap.opera.filter((w) =>

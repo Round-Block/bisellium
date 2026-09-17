@@ -55,8 +55,12 @@ export function readLog(path: string): ReadLogResult {
   let raw: string;
   try {
     raw = readFileSync(path, "utf8");
-  } catch {
-    return { events: [], skipped: 0 };
+  } catch (e) {
+    // Only "no log yet" is benign. Any other fs error (permissions, EISDIR,
+    // a corrupt filesystem, …) must throw — silently treating it as "empty"
+    // would let a Store restart its seq counter at 0 over live history.
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { events: [], skipped: 0 };
+    throw e;
   }
   const lines = raw.split("\n");
   if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();

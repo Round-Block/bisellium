@@ -58,6 +58,7 @@ probationes:
   - { id: tests,  name: Tests,        kind: automated }
   - { id: review, name: Lead review,  kind: agent }
   - { id: patron, name: Patron call,  kind: human }
+review_probatio: review           # probatio id that gates "review" state (default "review")
 wip_limit: 3                      # items in building + verifying, studio-wide
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3

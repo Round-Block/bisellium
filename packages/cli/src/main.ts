@@ -11,25 +11,25 @@ import { newItem } from "./new.js";
 import { buildContext } from "./context.js";
 import { answer } from "./query.js";
 
-const KNOWN_FLAGS = new Set([
-  "--json",
-  "--now",
-  "--level",
-  "--kind",
-  "--collegium",
-  "--title",
-  "--sella",
-  "--max-tokens",
-]);
+// Each command accepts only its own flags — a flag valid for one command
+// (e.g. context's --sella) must not silently no-op on another (check).
+const FLAGS_BY_COMMAND: Record<string, Set<string>> = {
+  check: new Set(["--json", "--now", "--level"]),
+  init: new Set(["--now", "--timezone"]),
+  new: new Set(["--kind", "--collegium", "--title"]),
+  context: new Set(["--sella", "--now", "--max-tokens"]),
+  query: new Set(["--now"]),
+};
 const USAGE =
   "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>]\n" +
-  "       bisellium init [dir] [--now <iso>]\n" +
+  "       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n" +
   "       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n" +
   "       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n" +
   "       bisellium query <question> [dir] [--now <iso>]";
 
 function main(argv: string[]): number {
   const [cmd, ...rest] = argv;
+  const allowed = (cmd !== undefined ? FLAGS_BY_COMMAND[cmd] : undefined) ?? new Set<string>();
   const opts = new Map<string, string>();
   const args: string[] = [];
   for (let i = 0; i < rest.length; i++) {
@@ -41,8 +41,15 @@ function main(argv: string[]): number {
     const eq = a.indexOf("=");
     const k = eq === -1 ? a : a.slice(0, eq);
     const inline = eq === -1 ? undefined : a.slice(eq + 1);
-    if (!KNOWN_FLAGS.has(k)) { console.error(`unknown flag ${k}\n${USAGE}`); return 2; }
-    if (k === "--json") { opts.set(k, "1"); continue; }
+    if (!allowed.has(k)) { console.error(`flag ${k} not allowed for "${cmd ?? ""}"\n${USAGE}`); return 2; }
+    if (k === "--json") {
+      // Boolean flag: bare --json or --json=true enables it, --json=false
+      // disables it, anything else is a usage error (never silently "true").
+      if (inline === undefined || inline === "true") { opts.set(k, "1"); continue; }
+      if (inline === "false") { opts.delete(k); continue; }
+      console.error(`--json must be true or false\n${USAGE}`);
+      return 2;
+    }
     const v = inline ?? rest[++i];
     if (v === undefined) { console.error(`${k} needs a value\n${USAGE}`); return 2; }
     opts.set(k, v);
@@ -64,7 +71,8 @@ function main(argv: string[]): number {
 
   if (cmd === "init") {
     const root = resolve(args[0] ?? ".");
-    const result = initStudio(root, { now });
+    const timezone = opts.get("--timezone");
+    const result = initStudio(root, { now, timezone });
     console.log(result.message);
     return result.ok ? 0 : 1;
   }

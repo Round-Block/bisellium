@@ -128,6 +128,38 @@ try {
     const r = run(["check", "examples/sample-studio", "--bogus"]);
     check("unknown flag exits 2", r.status === 2, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
   }
+
+  // ---- per-command flag sets: a flag valid elsewhere must not silently no-op ----
+  {
+    const r = run(["check", "examples/sample-studio", "--sella", "builder-1", "--now", NOW]);
+    check("check: --sella (a context-only flag) exits 2, not 0", r.status === 2, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
+  }
+  {
+    const r = run(["query", "burn", "examples/sample-studio", "--level", "block", "--now", NOW]);
+    check("query: --level (a check-only flag) exits 2", r.status === 2, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
+  }
+
+  // ---- --json is boolean: only --json / --json=true enable it ----------------
+  {
+    const r = run(["check", "examples/sample-studio", "--now", NOW, "--json=false"]);
+    check(
+      "check: --json=false does NOT enable JSON output",
+      r.status === 0 && !r.stdout.trimStart().startsWith("{"),
+      `status=${r.status} stdout=${JSON.stringify(r.stdout.slice(0, 40))}`,
+    );
+  }
+  {
+    const r = run(["check", "examples/sample-studio", "--now", NOW, "--json=true"]);
+    check(
+      "check: --json=true enables JSON output",
+      r.status === 0 && r.stdout.trimStart().startsWith("{"),
+      `status=${r.status} stdout=${JSON.stringify(r.stdout.slice(0, 40))}`,
+    );
+  }
+  {
+    const r = run(["check", "examples/sample-studio", "--now", NOW, "--json=maybe"]);
+    check("check: --json=maybe exits 2", r.status === 2, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
+  }
 } finally {
   rmSync(nonStudio, { recursive: true, force: true });
 }
