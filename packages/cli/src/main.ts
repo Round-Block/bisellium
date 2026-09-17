@@ -16,16 +16,16 @@ const KNOWN_FLAGS = new Set([
   "--now",
   "--level",
   "--kind",
-  "--dept",
+  "--collegium",
   "--title",
-  "--seat",
+  "--sella",
   "--max-tokens",
 ]);
 const USAGE =
   "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>]\n" +
   "       bisellium init [dir] [--now <iso>]\n" +
-  "       bisellium new --kind <kind> --dept <dept> --title <title> [dir]\n" +
-  "       bisellium context --seat <seat> [dir] [--now <iso>] [--max-tokens <n>]\n" +
+  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n" +
+  "       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n" +
   "       bisellium query <question> [dir] [--now <iso>]";
 
 function main(argv: string[]): number {
@@ -35,12 +35,17 @@ function main(argv: string[]): number {
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]!;
     if (!a.startsWith("--")) { args.push(a); continue; }
-    const [k, inline] = a.split("=", 2);
-    if (!KNOWN_FLAGS.has(k!)) { console.error(`unknown flag ${k}\n${USAGE}`); return 2; }
+    // Split on the FIRST '=' only — a value may itself contain '=' (e.g.
+    // --title='a=b: ship it'), and String#split("=", 2) would silently
+    // drop everything after the second '=' instead of preserving it.
+    const eq = a.indexOf("=");
+    const k = eq === -1 ? a : a.slice(0, eq);
+    const inline = eq === -1 ? undefined : a.slice(eq + 1);
+    if (!KNOWN_FLAGS.has(k)) { console.error(`unknown flag ${k}\n${USAGE}`); return 2; }
     if (k === "--json") { opts.set(k, "1"); continue; }
     const v = inline ?? rest[++i];
     if (v === undefined) { console.error(`${k} needs a value\n${USAGE}`); return 2; }
-    opts.set(k!, v);
+    opts.set(k, v);
   }
 
   const now = opts.has("--now") ? new Date(opts.get("--now")!) : new Date();
@@ -66,20 +71,20 @@ function main(argv: string[]): number {
 
   if (cmd === "new") {
     const kind = opts.get("--kind");
-    const dept = opts.get("--dept");
+    const collegium = opts.get("--collegium");
     const title = opts.get("--title");
-    if (!kind || !dept || !title) { console.error(USAGE); return 2; }
+    if (!kind || !collegium || !title) { console.error(USAGE); return 2; }
 
     const root = resolve(args[0] ?? ".");
-    const result = newItem(root, { kind, dept, title });
+    const result = newItem(root, { kind, collegium, title });
     if (result.ok) console.log(result.message);
     else console.error(result.message);
-    return result.ok ? 0 : 1;
+    return result.ok ? 0 : result.notAStudio ? 2 : 1;
   }
 
   if (cmd === "context") {
-    const seat = opts.get("--seat");
-    if (!seat) { console.error(USAGE); return 2; }
+    const sella = opts.get("--sella");
+    if (!sella) { console.error(USAGE); return 2; }
 
     let maxTokens: number | undefined;
     if (opts.has("--max-tokens")) {
@@ -88,8 +93,11 @@ function main(argv: string[]): number {
     }
 
     const root = resolve(args[0] ?? ".");
-    const bundle = buildContext(root, seat, { now, maxTokens });
-    console.log(bundle.text);
+    const bundle = buildContext(root, sella, { now, maxTokens });
+    if (bundle.text === "" && bundle.truncated[0] === "not a studio") { console.error(`not a studio: ${root}`); return 2; }
+    if (bundle.text === "" && bundle.truncated[0] === "unknown sella") { console.error(`unknown sella: ${sella}`); return 1; }
+    if (bundle.text === "" && bundle.truncated.length === 0) console.log(`nothing for sella ${sella} right now`);
+    else console.log(bundle.text);
     console.log(`tokens: ${bundle.tokens}`);
     return 0;
   }
@@ -100,6 +108,10 @@ function main(argv: string[]): number {
 
     const root = resolve(args[1] ?? ".");
     const result = answer(root, question, { now });
+    if (result.kind === "unknown" && result.suggestions?.[0]?.startsWith("not a studio:")) {
+      console.error(result.suggestions[0]);
+      return 2;
+    }
     if (result.answer !== null) console.log(result.answer);
     else console.log(`no match; try: ${(result.suggestions ?? []).join(" · ")}`);
     return 0;

@@ -1,0 +1,6 @@
+# Allowances only, Patron-written. Burn is derived from item tokens / usage events.
+period: 2026-W38
+collegia:
+  production: { stipendium_tokens: 200000 }
+  engineering: { stipendium_tokens: 3000000 }
+  qa: { stipendium_tokens: 500000 }

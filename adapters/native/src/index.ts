@@ -8,26 +8,26 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type {
-  Actor,
   ActorKind,
-  Budget,
-  Department,
-  DigestEntry,
-  Gate,
-  GateKind,
-  GateResult,
-  GateStatus,
+  Actum,
+  Collegium,
   Lifecycle,
+  Petitio,
+  PetitioState,
+  Probatio,
+  ProbatioKind,
+  ProbatioResult,
+  ProbatioStatus,
   Provider,
   ProviderStatus,
+  Sella,
   Snapshot,
   SnapshotAdapter,
-  Thread,
-  ThreadState,
-  WorkItem,
+  Stipendium,
+  Opus,
 } from "@bisellium/schema";
 
-// Fixed lifecycle (ADOPTION.md): greenlit is the Owner's slate decision.
+// Fixed lifecycle (ADOPTION.md): greenlit is the Patron's slate decision.
 export const NATIVE_LIFECYCLE_ID = "bisellium";
 export const STATES: Lifecycle["states"] = [
   { id: "backlog", name: "Backlog", phase: "backlog" },
@@ -43,11 +43,11 @@ export const ORDER = ["backlog", "greenlit", "building", "verifying", "review", 
 export interface Manifest {
   bisellium: number;
   studio: string;
-  owner?: string;
+  patron?: string;
   timezone?: string;
-  departments: { id: string; name: string; lead: string; fallback?: string; charter?: string }[];
-  seats: { id: string; department: string; kind?: ActorKind; model?: string }[];
-  gates: { id: string; name: string; kind: GateKind }[];
+  collegia: { id: string; name: string; magister: string; fallback?: string; lex?: string }[];
+  sellae: { id: string; collegium: string; kind?: ActorKind; model?: string }[];
+  probationes: { id: string; name: string; kind: ProbatioKind }[];
   wip_limit?: number;
   /** Overrides for the Defaults table in the dossier. */
   defaults?: Record<string, number>;
@@ -89,11 +89,11 @@ export function readManifest(root: string): Manifest {
 }
 
 export function describeLifecycle(manifest: Manifest): Lifecycle {
-  const gates: Gate[] = manifest.gates.map((g) => ({ id: g.id, name: g.name, kind: g.kind }));
-  const owner = manifest.owner ?? "owner";
-  const production = manifest.departments.find((d) => d.id === "production")?.lead ?? "production";
+  const gates: Probatio[] = manifest.probationes.map((g) => ({ id: g.id, name: g.name, kind: g.kind }));
+  const patron = manifest.patron ?? "patron";
+  const production = manifest.collegia.find((d) => d.id === "production")?.magister ?? "production";
   const actorsFor = (to: string): string[] | undefined =>
-    to === "greenlit" ? [owner] : to === "done" ? ["merge-script"] : to === "halted" ? [production] : undefined;
+    to === "greenlit" ? [patron] : to === "done" ? ["merge-script"] : to === "halted" ? [production] : undefined;
   const transitions: Lifecycle["transitions"] = ORDER.slice(1).map((to, i) => ({ from: ORDER[i]!, to, actors: actorsFor(to) }));
   for (const s of ORDER) if (s !== "done") transitions.push({ from: s, to: "halted", actors: actorsFor("halted") });
   return { id: NATIVE_LIFECYCLE_ID, states: STATES, transitions, gates, wipLimit: manifest.wip_limit };
@@ -102,43 +102,43 @@ export function describeLifecycle(manifest: Manifest): Lifecycle {
 export function snapshotDir(root: string, projectId: string): Snapshot {
   const manifest = readManifest(root);
 
-  const departments: Department[] = manifest.departments.map((d) => ({
+  const collegia: Collegium[] = manifest.collegia.map((d) => ({
     id: d.id,
     projectId,
     name: d.name,
-    leadRoleId: d.lead,
+    magisterRoleId: d.magister,
     fallbackRoleId: d.fallback,
-    charterHref: d.charter,
+    lexHref: d.lex,
   }));
 
-  const actors: Actor[] = manifest.seats.map((s) => ({
+  const sellae: Sella[] = manifest.sellae.map((s) => ({
     id: s.id,
     roleId: s.id,
     projectId,
     kind: s.kind ?? "agent",
-    departmentId: s.department,
+    collegiumId: s.collegium,
     meta: { model: s.model },
   }));
 
-  interface WorkFront {
+  interface OpusFront {
     id: string;
     title: string;
     kind?: string;
-    department?: string;
-    owner?: string;
+    collegium?: string;
+    sella?: string;
     state: string;
-    gates?: Record<string, { status: GateStatus; evidence?: string; certifies?: string }>;
+    probationes?: Record<string, { status: ProbatioStatus; evidence?: string; certifies?: string }>;
     tokens?: number;
     heartbeat?: string;
     review_round?: number;
-    handoff?: Record<string, string>;
+    traditio?: Record<string, string>;
     resume_when?: string;
   }
-  const workItems: WorkItem[] = listMd(join(root, "work")).map((p) => {
-    const { data, body } = readFront<WorkFront>(p);
-    const gateStatus: Record<string, GateResult> = {};
-    for (const [id, g] of Object.entries(data.gates ?? {})) {
-      gateStatus[id] = {
+  const opera: Opus[] = listMd(join(root, "opera")).map((p) => {
+    const { data, body } = readFront<OpusFront>(p);
+    const probationes: Record<string, ProbatioResult> = {};
+    for (const [id, g] of Object.entries(data.probationes ?? {})) {
+      probationes[id] = {
         status: g.status,
         evidence: g.evidence ? { href: g.evidence, certifies: g.certifies } : undefined,
       };
@@ -149,37 +149,37 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
       kind: data.kind ?? "task",
       lifecycleId: NATIVE_LIFECYCLE_ID,
       state: data.state,
-      gateStatus,
+      probationes,
       meta: {
         title: data.title,
-        department: data.department,
-        owner: data.owner,
+        collegium: data.collegium,
+        sella: data.sella,
         tokens: data.tokens,
         heartbeat: data.heartbeat,
         reviewRound: data.review_round,
-        handoff: data.handoff,
+        traditio: data.traditio,
         resumeWhen: data.resume_when,
         notes: body,
       },
     };
   });
 
-  interface AskFront { id: string; work: string; from: string; to: string; state: ThreadState; opened?: string }
-  const threads: Thread[] = listMd(join(root, "asks")).map((p) => {
-    const { data, body } = readFront<AskFront>(p);
+  interface PetitioFront { id: string; opus: string; from: string; to: string; state: PetitioState; opened?: string }
+  const petitiones: Petitio[] = listMd(join(root, "petitiones")).map((p) => {
+    const { data, body } = readFront<PetitioFront>(p);
     return {
       id: data.id,
-      workItemId: data.work,
-      openedBy: data.from === "owner" ? "you" : data.from,
-      counterparty: data.from === "owner" ? data.to : data.from,
+      opusId: data.opus,
+      openedBy: data.from === "patron" ? "you" : data.from,
+      counterparty: data.from === "patron" ? data.to : data.from,
       state: data.state,
       subject: body.split("\n")[0],
     };
   });
 
-  interface DigestFront { author: string; kind: DigestEntry["kind"]; title: string; at: string; evidence?: { label: string; href: string }[] }
-  const digest: DigestEntry[] = listMd(join(root, "digest")).map((p) => {
-    const { data, body } = readFront<DigestFront>(p);
+  interface ActumFront { author: string; kind: Actum["kind"]; title: string; at: string; evidence?: { label: string; href: string }[] }
+  const acta: Actum[] = listMd(join(root, "acta")).map((p) => {
+    const { data, body } = readFront<ActumFront>(p);
     return {
       id: p.split(/[\\/]/).pop()!.replace(/\.md$/, ""),
       projectId,
@@ -192,28 +192,28 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
     };
   });
 
-  // Burn is derived: the sum of item tokens per department. Any burn figure
-  // written in the budgets file is ignored (derive, never mirror).
-  const burnFor = (departmentId: string): number =>
-    workItems
-      .filter((w) => w.meta["department"] === departmentId)
+  // Burn is derived: the sum of item tokens per collegium. Any burn figure
+  // written in the aerarium file is ignored (derive, never mirror).
+  const burnFor = (collegiumId: string): number =>
+    opera
+      .filter((w) => w.meta["collegium"] === collegiumId)
       .reduce((n, w) => n + (typeof w.meta["tokens"] === "number" ? (w.meta["tokens"] as number) : 0), 0);
-  const budgets: Budget[] = [];
-  const budgetsDir = join(root, "budgets");
-  if (existsSync(budgetsDir)) {
-    for (const f of readdirSync(budgetsDir).filter((f) => f.endsWith(".yml")).sort()) {
-      const b = parseYaml(readFileSync(join(budgetsDir, f), "utf8")) as {
+  const stipendia: Stipendium[] = [];
+  const aerariumDir = join(root, "aerarium");
+  if (existsSync(aerariumDir)) {
+    for (const f of readdirSync(aerariumDir).filter((f) => f.endsWith(".yml")).sort()) {
+      const b = parseYaml(readFileSync(join(aerariumDir, f), "utf8")) as {
         period: string;
-        departments: Record<string, { allowance_tokens?: number }>;
+        collegia: Record<string, { stipendium_tokens?: number }>;
       };
-      for (const [departmentId, v] of Object.entries(b.departments)) {
-        const burn = burnFor(departmentId);
-        budgets.push({
-          departmentId,
+      for (const [collegiumId, v] of Object.entries(b.collegia)) {
+        const burn = burnFor(collegiumId);
+        stipendia.push({
+          collegiumId,
           period: String(b.period),
-          allowance: { tokens: v.allowance_tokens },
+          allowance: { tokens: v.stipendium_tokens },
           burn: { tokens: burn },
-          posture: posture(v.allowance_tokens, burn),
+          posture: posture(v.stipendium_tokens, burn),
         });
       }
     }
@@ -233,7 +233,7 @@ export function snapshotDir(root: string, projectId: string): Snapshot {
     }));
   }
 
-  return { actors, workItems, providers, digest, departments, budgets, threads };
+  return { sellae, opera, providers, acta, collegia, stipendia, petitiones };
 }
 
 export function createBiselliumAdapter(root: string, projectId?: string): SnapshotAdapter {

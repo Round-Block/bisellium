@@ -11,11 +11,11 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, isAbsolute, join } from "node:path";
 import { parse as parseYaml } from "yaml";
 import {
-  DIGEST_KINDS,
-  GATE_KINDS,
-  GATE_STATUSES,
+  ACTUM_KINDS,
+  PROBATIO_KINDS,
+  PROBATIO_STATUSES,
   PROVIDER_STATUSES,
-  THREAD_STATES,
+  PETITIO_STATES,
 } from "@bisellium/schema";
 import { listMd, readFront, STATES } from "@bisellium/adapter-native";
 
@@ -38,9 +38,9 @@ export interface CheckResult {
 }
 
 const ACTIVE = new Set(["building", "verifying", "review"]);
-/** WIP = items a seat is actively working: building + verifying. Review waits on someone else. */
+/** WIP = items a sella is actively working: building + verifying. Review waits on someone else. */
 const WIP_STATES = new Set(["building", "verifying"]);
-const HANDOFF_KEYS = ["seat", "stage", "next", "blocked_on", "at"];
+const TRADITIO_KEYS = ["sella", "stage", "next", "blocked_on", "at"];
 const ISO = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
 
 // Defaults table (dossier Part II); overridable via manifest.defaults.
@@ -124,8 +124,8 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
   if (num(m["bisellium"]) !== 1)
     add("manifest.version", "block", "bisellium.yml", `contract version must be 1 (got ${JSON.stringify(m["bisellium"])})`);
   if (!str(m["studio"])) add("manifest.studio", "block", "bisellium.yml", "studio name missing");
-  if (!str(m["owner"])) add("manifest.owner", "advise", "bisellium.yml", 'owner role id missing (defaults to "owner")');
-  const owner = str(m["owner"]) ?? "owner";
+  if (!str(m["patron"])) add("manifest.patron", "advise", "bisellium.yml", 'patron role id missing (defaults to "patron")');
+  const patron = str(m["patron"]) ?? "patron";
 
   const listOf = (key: string): Dict[] => {
     const v = m[key];
@@ -139,9 +139,9 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
       return isDict(x);
     }) as Dict[];
   };
-  const departments = listOf("departments");
-  const seats = listOf("seats");
-  const gates = listOf("gates");
+  const collegia = listOf("collegia");
+  const sellae = listOf("sellae");
+  const probationes = listOf("probationes");
 
   const uniq = (key: string, rows: Dict[]) => {
     const seen = new Set<string>();
@@ -153,12 +153,12 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     }
     return seen;
   };
-  const deptIds = uniq("departments", departments);
-  const seatIds = uniq("seats", seats);
-  const gateIds = uniq("gates", gates);
-  const seatDept = new Map(seats.map((s) => [str(s["id"]) ?? "", str(s["department"]) ?? ""] as const));
-  const gateKind = new Map(gates.map((g) => [str(g["id"]) ?? "", str(g["kind"]) ?? ""] as const));
-  const leadOf = new Map(departments.map((d) => [str(d["id"]) ?? "", str(d["lead"]) ?? ""] as const));
+  const collegiumIds = uniq("collegia", collegia);
+  const sellaIds = uniq("sellae", sellae);
+  const probatioIds = uniq("probationes", probationes);
+  const sellaCollegium = new Map(sellae.map((s) => [str(s["id"]) ?? "", str(s["collegium"]) ?? ""] as const));
+  const probatioKind = new Map(probationes.map((g) => [str(g["id"]) ?? "", str(g["kind"]) ?? ""] as const));
+  const magisterOf = new Map(collegia.map((d) => [str(d["id"]) ?? "", str(d["magister"]) ?? ""] as const));
   const stateIds = new Set(STATES.map((s) => s.id));
 
   const defaults = { ...DEFAULTS };
@@ -176,36 +176,36 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     add("manifest.shape", "block", "bisellium.yml#wip_limit", "wip_limit must be a number");
   if (wipLimit === undefined) add("wip.declared", "advise", "bisellium.yml", "no wip_limit — WIP is unbounded");
 
-  if (departments.length === 0) add("manifest.departments", "block", "bisellium.yml", "no departments declared");
-  for (const d of departments) {
+  if (collegia.length === 0) add("manifest.collegia", "block", "bisellium.yml", "no collegia declared");
+  for (const d of collegia) {
     const id = str(d["id"]) ?? "?";
-    const lead = str(d["lead"]);
-    if (!lead || !seatIds.has(lead)) add("dept.lead", "block", `bisellium.yml#${id}`, `lead "${lead ?? ""}" is not a declared seat`);
+    const magister = str(d["magister"]);
+    if (!magister || !sellaIds.has(magister)) add("collegium.magister", "block", `bisellium.yml#${id}`, `magister "${magister ?? ""}" is not a declared sella`);
     const fb = str(d["fallback"]);
-    if (d["fallback"] !== undefined && (!fb || !seatIds.has(fb)))
-      add("dept.fallback", "block", `bisellium.yml#${id}`, `fallback "${fb ?? ""}" is not a declared seat`);
-    const charter = str(d["charter"]);
-    if (!charter) { add("charter.declared", "advise", `bisellium.yml#${id}`, "department has no charter"); continue; }
-    const cp = join(root, charter);
+    if (d["fallback"] !== undefined && (!fb || !sellaIds.has(fb)))
+      add("collegium.fallback", "block", `bisellium.yml#${id}`, `fallback "${fb ?? ""}" is not a declared sella`);
+    const lex = str(d["lex"]);
+    if (!lex) { add("lex.declared", "advise", `bisellium.yml#${id}`, "collegium has no lex"); continue; }
+    const cp = join(root, lex);
     let text: string | undefined;
     try { text = statSync(cp).isFile() ? readFileSync(cp, "utf8") : undefined; } catch { text = undefined; }
-    if (text === undefined) { add("charter.present", "block", charter, `charter declared for ${id} but not a readable file`); continue; }
+    if (text === undefined) { add("lex.present", "block", lex, `lex declared for ${id} but not a readable file`); continue; }
     for (const section of ["Decides alone", "Digests", "Asks"])
-      if (!text.includes(section)) add("charter.sections", "advise", charter, `no "${section}" section`);
+      if (!text.includes(section)) add("lex.sections", "advise", lex, `no "${section}" section`);
   }
-  for (const s of seats) {
+  for (const s of sellae) {
     const id = str(s["id"]) ?? "?";
-    const dep = str(s["department"]);
-    if (!dep || !deptIds.has(dep)) add("seat.department", "block", `bisellium.yml#${id}`, `seat department "${dep ?? ""}" not declared`);
+    const col = str(s["collegium"]);
+    if (!col || !collegiumIds.has(col)) add("sella.collegium", "block", `bisellium.yml#${id}`, `sella collegium "${col ?? ""}" not declared`);
   }
-  if (gates.length === 0) add("manifest.gates", "advise", "bisellium.yml", "no gates declared — nothing can be verified");
-  for (const g of gates) {
+  if (probationes.length === 0) add("manifest.probationes", "advise", "bisellium.yml", "no probationes declared — nothing can be verified");
+  for (const g of probationes) {
     const k = str(g["kind"]) ?? "";
-    if (!(GATE_KINDS as readonly string[]).includes(k)) add("gate.kind", "block", `bisellium.yml#${str(g["id"]) ?? "?"}`, `gate kind "${k}" invalid`);
+    if (!(PROBATIO_KINDS as readonly string[]).includes(k)) add("probatio.kind", "block", `bisellium.yml#${str(g["id"]) ?? "?"}`, `gate kind "${k}" invalid`);
   }
-  const automated = gates.filter((g) => g["kind"] === "automated").map((g) => str(g["id"]) ?? "");
-  const agentGates = gates.filter((g) => g["kind"] === "agent").map((g) => str(g["id"]) ?? "");
-  const humanGates = gates.filter((g) => g["kind"] === "human").map((g) => str(g["id"]) ?? "");
+  const automated = probationes.filter((g) => g["kind"] === "automated").map((g) => str(g["id"]) ?? "");
+  const agentGates = probationes.filter((g) => g["kind"] === "agent").map((g) => str(g["id"]) ?? "");
+  const humanGates = probationes.filter((g) => g["kind"] === "human").map((g) => str(g["id"]) ?? "");
 
   const checkLink = (rule: string, where: string, href: string, what: string) => {
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(href)) return; // external URLs are not verified offline
@@ -214,83 +214,83 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     if (!ok) add(rule, "block", where, `${what} "${href}" not found under studio (dead link)`);
   };
 
-  // ---- work items ---------------------------------------------------------
-  const backlogByDept = new Map<string, number>();
+  // ---- opera ---------------------------------------------------------------
+  const backlogByCollegium = new Map<string, number>();
   let wip = 0;
   const itemIds = new Set<string>();
 
-  const checkHandoff = (where: string, h: unknown, state: string, required: boolean) => {
-    if (h === undefined) { if (required) add("handoff.present", "block", where, `active item (${state}) has no handoff`); return; }
-    if (!isDict(h)) { add("handoff.shape", "block", where, "handoff is not a mapping"); return; }
-    for (const k of HANDOFF_KEYS) if (str(h[k]) === undefined && !(k === "at" && h[k] instanceof Date))
-      add("handoff.keys", "block", where, `handoff missing or non-string "${k}"`);
-    const seat = str(h["seat"]);
-    if (seat && !seatIds.has(seat)) add("handoff.seat", "block", where, `handoff seat "${seat}" not declared`);
+  const checkTraditio = (where: string, h: unknown, state: string, required: boolean) => {
+    if (h === undefined) { if (required) add("traditio.present", "block", where, `active item (${state}) has no handoff`); return; }
+    if (!isDict(h)) { add("traditio.shape", "block", where, "handoff is not a mapping"); return; }
+    for (const k of TRADITIO_KEYS) if (str(h[k]) === undefined && !(k === "at" && h[k] instanceof Date))
+      add("traditio.keys", "block", where, `handoff missing or non-string "${k}"`);
+    const sella = str(h["sella"]);
+    if (sella && !sellaIds.has(sella)) add("traditio.sella", "block", where, `handoff sella "${sella}" not declared`);
     const stage = str(h["stage"]);
-    if (stage && stage !== state) add("handoff.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
+    if (stage && stage !== state) add("traditio.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
     if (h["at"] !== undefined) {
       const at = isoDate(h["at"]);
-      if (!at) add("handoff.at", "block", where, "handoff.at must be an ISO date");
+      if (!at) add("traditio.at", "block", where, "handoff.at must be an ISO date");
       else if (ACTIVE.has(state) && days(at, now) > defaults.handoff_stale_days)
-        add("handoff.stale", "advise", where, `handoff is ${days(at, now).toFixed(1)} days old`);
+        add("traditio.stale", "advise", where, `handoff is ${days(at, now).toFixed(1)} days old`);
     }
   };
 
-  for (const p of safeList(join(root, "work"))) {
+  for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
     const fm = safeFront(p);
-    if (!fm.data) { add("item.parse", "block", where, fm.error ?? "unreadable"); continue; }
+    if (!fm.data) { add("opus.parse", "block", where, fm.error ?? "unreadable"); continue; }
     const d = fm.data;
     if (fm.raw.length > defaults.hot_doc_chars)
       add("cap.hot_doc", "advise", where, `${fm.raw.length} chars exceeds hot-tier cap ${defaults.hot_doc_chars}`);
 
-    for (const k of ["id", "title", "kind", "department", "state"]) {
-      if (d[k] === undefined) add("item.keys", "block", where, `missing required key "${k}"`);
-      else if (!str(d[k])) add("item.keys.type", "block", where, `"${k}" must be a non-empty string`);
+    for (const k of ["id", "title", "kind", "collegium", "state"]) {
+      if (d[k] === undefined) add("opus.keys", "block", where, `missing required key "${k}"`);
+      else if (!str(d[k])) add("opus.keys.type", "block", where, `"${k}" must be a non-empty string`);
     }
     const id = str(d["id"]);
     if (id) {
-      if (id !== basename(p, ".md")) add("item.id.filename", "block", where, `id "${id}" does not match filename`);
-      if (itemIds.has(id)) add("item.id.duplicate", "block", where, `duplicate id "${id}"`);
+      if (id !== basename(p, ".md")) add("opus.id.filename", "block", where, `id "${id}" does not match filename`);
+      if (itemIds.has(id)) add("opus.id.duplicate", "block", where, `duplicate id "${id}"`);
       itemIds.add(id);
     }
     const state = str(d["state"]) ?? "";
-    if (state && !stateIds.has(state)) add("item.state", "block", where, `unknown state "${state}"`);
-    const dept = str(d["department"]);
-    if (dept && !deptIds.has(dept)) add("item.department", "block", where, `department "${dept}" not declared`);
-    const ownerSeat = str(d["owner"]);
-    if (d["owner"] !== undefined) {
-      if (!ownerSeat || !seatIds.has(ownerSeat)) add("item.owner", "block", where, `owner "${ownerSeat ?? ""}" is not a declared seat`);
-      else if (dept && seatDept.get(ownerSeat) !== dept)
-        add("item.owner.department", "advise", where, `owner "${ownerSeat}" belongs to ${seatDept.get(ownerSeat)}, item is ${dept}`);
+    if (state && !stateIds.has(state)) add("opus.state", "block", where, `unknown state "${state}"`);
+    const collegium = str(d["collegium"]);
+    if (collegium && !collegiumIds.has(collegium)) add("opus.collegium", "block", where, `collegium "${collegium}" not declared`);
+    const sellaId = str(d["sella"]);
+    if (d["sella"] !== undefined) {
+      if (!sellaId || !sellaIds.has(sellaId)) add("opus.sella", "block", where, `sella "${sellaId ?? ""}" is not a declared sella`);
+      else if (collegium && sellaCollegium.get(sellaId) !== collegium)
+        add("opus.sella.collegium", "advise", where, `sella "${sellaId}" belongs to ${sellaCollegium.get(sellaId)}, item is ${collegium}`);
     }
-    if (d["tokens"] !== undefined && num(d["tokens"]) === undefined) add("item.tokens", "advise", where, "tokens is not a number");
+    if (d["tokens"] !== undefined && num(d["tokens"]) === undefined) add("opus.tokens", "advise", where, "tokens is not a number");
 
     // gates
-    const g = d["gates"];
+    const g = d["probationes"];
     const status = new Map<string, string>();
     const certifies = new Map<string, string>();
-    if (g !== undefined && !isDict(g)) add("gate.shape", "block", where, "gates must be a mapping");
+    if (g !== undefined && !isDict(g)) add("probatio.shape", "block", where, "gates must be a mapping");
     for (const [gid, gv] of Object.entries(isDict(g) ? g : {})) {
-      if (!gateIds.has(gid)) { add("gate.declared", "block", where, `gate "${gid}" not in manifest`); continue; }
-      if (!isDict(gv)) { add("gate.shape", "block", where, `gate "${gid}" is not a mapping`); continue; }
+      if (!probatioIds.has(gid)) { add("probatio.declared", "block", where, `gate "${gid}" not in manifest`); continue; }
+      if (!isDict(gv)) { add("probatio.shape", "block", where, `gate "${gid}" is not a mapping`); continue; }
       const gs = str(gv["status"]) ?? "";
-      if (!(GATE_STATUSES as readonly string[]).includes(gs)) { add("gate.status", "block", where, `gate "${gid}" status "${gs}" invalid`); continue; }
+      if (!(PROBATIO_STATUSES as readonly string[]).includes(gs)) { add("probatio.status", "block", where, `gate "${gid}" status "${gs}" invalid`); continue; }
       status.set(gid, gs);
       const ev = gv["evidence"];
       if (gs === "passed" || gs === "failed") {
-        if (!str(ev)) add("gate.evidence", "block", where, `gate "${gid}" is ${gs} without evidence`);
+        if (!str(ev)) add("probatio.evidence", "block", where, `gate "${gid}" is ${gs} without evidence`);
         else {
           checkLink("link.dead", where, ev as string, `gate "${gid}" evidence`);
           const c = gv["certifies"];
-          if (c === undefined) add("gate.certifies", "advise", where, `gate "${gid}" evidence has no identity (certifies)`);
-          else if (!str(c)) add("gate.certifies.type", "block", where, `gate "${gid}" certifies must be a quoted string`);
+          if (c === undefined) add("probatio.certifies", "advise", where, `gate "${gid}" evidence has no identity (certifies)`);
+          else if (!str(c)) add("probatio.certifies.type", "block", where, `gate "${gid}" certifies must be a quoted string`);
           else certifies.set(gid, c as string);
         }
       }
       if (gs === "waived") {
-        if (gateKind.get(gid) === "automated") add("gate.waived.automated", "block", where, `automated gate "${gid}" cannot be waived`);
-        if (!str(gv["reason"])) add("gate.waived.reason", "block", where, `gate "${gid}" waived without a reason`);
+        if (probatioKind.get(gid) === "automated") add("probatio.waived.automated", "block", where, `automated gate "${gid}" cannot be waived`);
+        if (!str(gv["reason"])) add("probatio.waived.reason", "block", where, `gate "${gid}" waived without a reason`);
       }
     }
     const notPassed = (ids: string[]) => ids.filter((x) => status.get(x) !== "passed" && status.get(x) !== "waived");
@@ -306,131 +306,131 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     }
     if (state === "done") {
       const missing = [...notPassed(automated), ...notPassed(agentGates), ...humanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!))];
-      if (missing.length) add("state.done.gates", "block", where, `state "done" but gates not passed: ${missing.join(", ")}`);
+      if (missing.length) add("state.done.probationes", "block", where, `state "done" but gates not passed: ${missing.join(", ")}`);
       const ids = new Set(certifies.values());
-      if (ids.size > 1) add("gate.certifies.mismatch", "advise", where, `gates certify different trees: ${[...ids].join(", ")}`);
+      if (ids.size > 1) add("probatio.certifies.mismatch", "advise", where, `gates certify different trees: ${[...ids].join(", ")}`);
     }
     if (state === "verifying" && !automated.some((x) => status.has(x)))
       add("state.verifying.none", "advise", where, `state "verifying" with no automated gate recorded`);
     if (ACTIVE.has(state) && failedIn(automated).length && state === "review")
       add("state.review.automated", "block", where, `state "review" with failed/stale automated gate`);
 
-    checkHandoff(where, d["handoff"], state, ACTIVE.has(state));
+    checkTraditio(where, d["traditio"], state, ACTIVE.has(state));
 
     if (state === "halted") {
       for (const k of ["reason", "resume_when"]) if (!str(d[k])) add("halted.exit", "block", where, `halted item missing "${k}"`);
-      const at = isoDate(d["halted_at"]) ?? (isDict(d["handoff"]) ? isoDate(d["handoff"]["at"]) : undefined);
+      const at = isoDate(d["halted_at"]) ?? (isDict(d["traditio"]) ? isoDate((d["traditio"] as Dict)["at"]) : undefined);
       if (!at) add("halted.at", "advise", where, "halted item has no halted_at (age cannot be tracked)");
       else if (days(at, now) > defaults.halted_stale_days) add("halted.stale", "advise", where, `halted for ${days(at, now).toFixed(0)} days`);
     }
     if (WIP_STATES.has(state)) wip++;
-    if (state === "backlog" && dept) backlogByDept.set(dept, (backlogByDept.get(dept) ?? 0) + 1);
+    if (state === "backlog" && collegium) backlogByCollegium.set(collegium, (backlogByCollegium.get(collegium) ?? 0) + 1);
   }
-  if (wipLimit !== undefined && wip > wipLimit) add("wip.cap", "block", "work/", `${wip} items in progress, WIP cap is ${wipLimit}`);
-  for (const [dept, n] of backlogByDept)
-    if (n > defaults.backlog_depth) add("backlog.depth", "advise", `work/#${dept}`, `${n} backlog items (cap ${defaults.backlog_depth})`);
+  if (wipLimit !== undefined && wip > wipLimit) add("wip.cap", "block", "opera/", `${wip} items in progress, WIP cap is ${wipLimit}`);
+  for (const [collegium, n] of backlogByCollegium)
+    if (n > defaults.backlog_depth) add("backlog.depth", "advise", `opera/#${collegium}`, `${n} backlog items (cap ${defaults.backlog_depth})`);
 
-  // ---- asks ---------------------------------------------------------------
-  const openByDept = new Map<string, number>();
-  const askIds = new Set<string>();
-  for (const p of safeList(join(root, "asks"))) {
+  // ---- petitiones -----------------------------------------------------------
+  const openByCollegium = new Map<string, number>();
+  const petitioIds = new Set<string>();
+  for (const p of safeList(join(root, "petitiones"))) {
     const where = rel(p);
     const fm = safeFront(p);
-    if (!fm.data) { add("ask.parse", "block", where, fm.error ?? "unreadable"); continue; }
+    if (!fm.data) { add("petitio.parse", "block", where, fm.error ?? "unreadable"); continue; }
     const d = fm.data;
     for (const k of ["id", "from", "to", "state"]) {
-      if (d[k] === undefined) add("ask.keys", "block", where, `missing "${k}"`);
-      else if (!str(d[k])) add("ask.keys.type", "block", where, `"${k}" must be a non-empty string`);
+      if (d[k] === undefined) add("petitio.keys", "block", where, `missing "${k}"`);
+      else if (!str(d[k])) add("petitio.keys.type", "block", where, `"${k}" must be a non-empty string`);
     }
     const id = str(d["id"]);
     if (id) {
-      if (id !== basename(p, ".md")) add("ask.id.filename", "block", where, `id "${id}" does not match filename`);
-      if (askIds.has(id)) add("ask.id.duplicate", "block", where, `duplicate id "${id}"`);
-      askIds.add(id);
+      if (id !== basename(p, ".md")) add("petitio.id.filename", "block", where, `id "${id}" does not match filename`);
+      if (petitioIds.has(id)) add("petitio.id.duplicate", "block", where, `duplicate id "${id}"`);
+      petitioIds.add(id);
     }
     const s = str(d["state"]) ?? "";
-    if (!(THREAD_STATES as readonly string[]).includes(s)) add("ask.state", "block", where, `state "${s}" invalid`);
+    if (!(PETITIO_STATES as readonly string[]).includes(s)) add("petitio.state", "block", where, `state "${s}" invalid`);
     const from = str(d["from"]);
     const to = str(d["to"]);
     for (const [k, v] of [["from", from], ["to", to]] as const)
-      if (v && v !== owner && !seatIds.has(v)) add("ask.party", "block", where, `${k} "${v}" is neither a seat nor the owner`);
-    if (s === "needs_you" && to && to !== owner) add("ask.direction", "block", where, `needs_you must be addressed to the owner (to: ${to})`);
-    if (s === "awaiting_reply" && from && from !== owner) add("ask.direction", "block", where, `awaiting_reply means the owner asked (from: ${from})`);
-    if (d["work"] !== undefined) {
-      const w = str(d["work"]);
-      if (!w || !itemIds.has(w)) add("ask.work", "block", where, `work item "${w ?? ""}" does not exist`);
+      if (v && v !== patron && !sellaIds.has(v)) add("petitio.party", "block", where, `${k} "${v}" is neither a sella nor the patron`);
+    if (s === "needs_you" && to && to !== patron) add("petitio.direction", "block", where, `needs_you must be addressed to the patron (to: ${to})`);
+    if (s === "awaiting_reply" && from && from !== patron) add("petitio.direction", "block", where, `awaiting_reply means the patron asked (from: ${from})`);
+    if (d["opus"] !== undefined) {
+      const w = str(d["opus"]);
+      if (!w || !itemIds.has(w)) add("petitio.opus", "block", where, `opus "${w ?? ""}" does not exist`);
     }
     if (s !== "resolved") {
-      const dept = from ? seatDept.get(from) : undefined;
-      if (dept) openByDept.set(dept, (openByDept.get(dept) ?? 0) + 1);
+      const collegium = from ? sellaCollegium.get(from) : undefined;
+      if (collegium) openByCollegium.set(collegium, (openByCollegium.get(collegium) ?? 0) + 1);
       if (d["opened"] !== undefined) {
         const opened = isoDate(d["opened"]);
-        if (!opened) add("ask.opened", "block", where, "opened must be an ISO date");
+        if (!opened) add("petitio.opened", "block", where, "opened must be an ISO date");
         else if (s === "needs_you" && days(opened, now) > defaults.ask_stale_days)
-          add("ask.age", "advise", where, `needs you for ${days(opened, now).toFixed(1)} days`);
-      } else add("ask.opened", "advise", where, "no opened date (age cannot be tracked)");
+          add("petitio.age", "advise", where, `needs you for ${days(opened, now).toFixed(1)} days`);
+      } else add("petitio.opened", "advise", where, "no opened date (age cannot be tracked)");
     }
   }
-  for (const [dept, n] of openByDept)
-    if (n > defaults.open_asks) add("ask.cap", "advise", `asks/#${dept}`, `${n} open asks from ${dept} (cap ${defaults.open_asks})`);
+  for (const [collegium, n] of openByCollegium)
+    if (n > defaults.open_asks) add("petitio.cap", "advise", `petitiones/#${collegium}`, `${n} open asks from ${collegium} (cap ${defaults.open_asks})`);
 
-  // ---- digest -------------------------------------------------------------
+  // ---- acta -----------------------------------------------------------------
   const latestDaily = new Map<string, Date>();
-  for (const p of safeList(join(root, "digest"))) {
+  for (const p of safeList(join(root, "acta"))) {
     const where = rel(p);
     const fm = safeFront(p);
-    if (!fm.data) { add("digest.parse", "block", where, fm.error ?? "unreadable"); continue; }
+    if (!fm.data) { add("acta.parse", "block", where, fm.error ?? "unreadable"); continue; }
     const d = fm.data;
-    for (const k of ["author", "kind", "title", "at"]) if (d[k] === undefined) add("digest.keys", "block", where, `missing "${k}"`);
+    for (const k of ["author", "kind", "title", "at"]) if (d[k] === undefined) add("acta.keys", "block", where, `missing "${k}"`);
     const a = str(d["author"]);
-    if (d["author"] !== undefined && (!a || (!seatIds.has(a) && a !== owner))) add("digest.author", "block", where, `author "${a ?? ""}" not a seat`);
+    if (d["author"] !== undefined && (!a || (!sellaIds.has(a) && a !== patron))) add("acta.author", "block", where, `author "${a ?? ""}" not a sella`);
     const k = str(d["kind"]) ?? "";
-    if (!(DIGEST_KINDS as readonly string[]).includes(k)) add("digest.kind", "block", where, `kind "${k}" invalid`);
+    if (!(ACTUM_KINDS as readonly string[]).includes(k)) add("acta.kind", "block", where, `kind "${k}" invalid`);
     const at = isoDate(d["at"]);
-    if (d["at"] !== undefined && !at) add("digest.at", "block", where, "at must be an ISO date");
+    if (d["at"] !== undefined && !at) add("acta.at", "block", where, "at must be an ISO date");
     if (at && k === "daily" && a) {
       const prev = latestDaily.get(a);
       if (!prev || at > prev) latestDaily.set(a, at);
     }
     const ev = d["evidence"];
     if (ev !== undefined) {
-      if (!Array.isArray(ev)) add("digest.evidence", "block", where, "evidence must be a list");
+      if (!Array.isArray(ev)) add("acta.evidence", "block", where, "evidence must be a list");
       else for (const e of ev) {
         const href = isDict(e) ? str(e["href"]) : undefined;
-        if (!href) add("digest.evidence", "block", where, "evidence entry has no href");
+        if (!href) add("acta.evidence", "block", where, "evidence entry has no href");
         else checkLink("link.dead", where, href, "digest evidence");
       }
     }
   }
-  for (const [dept, lead] of leadOf) {
-    const last = latestDaily.get(lead);
-    if (!last) add("digest.daily", "advise", `digest/#${dept}`, `lead "${lead}" has no daily digest`);
-    else if (days(last, now) > defaults.daily_stale_days) add("digest.daily", "advise", `digest/#${dept}`, `lead "${lead}" last daily ${days(last, now).toFixed(1)} days ago`);
+  for (const [collegium, magister] of magisterOf) {
+    const last = latestDaily.get(magister);
+    if (!last) add("acta.daily", "advise", `acta/#${collegium}`, `magister "${magister}" has no daily acta`);
+    else if (days(last, now) > defaults.daily_stale_days) add("acta.daily", "advise", `acta/#${collegium}`, `magister "${magister}" last daily ${days(last, now).toFixed(1)} days ago`);
   }
 
-  // ---- budgets: allowances only -------------------------------------------
-  const budgetsDir = join(root, "budgets");
-  let budgetFiles: string[] = [];
-  try { budgetFiles = existsSync(budgetsDir) ? readdirSync(budgetsDir).filter((f) => f.endsWith(".yml")).sort() : []; } catch { budgetFiles = []; }
-  if (budgetFiles.length === 0) add("budget.present", "advise", "budgets/", "no budgets — postures will be unknown");
-  for (const f of budgetFiles) {
-    const where = `budgets/${f}`;
-    const { data: b, error } = safeYaml(join(budgetsDir, f));
-    if (!b) { add("budget.parse", "block", where, error ?? "unreadable"); continue; }
+  // ---- aerarium: allowances only -------------------------------------------
+  const aerariumDir = join(root, "aerarium");
+  let aerariumFiles: string[] = [];
+  try { aerariumFiles = existsSync(aerariumDir) ? readdirSync(aerariumDir).filter((f) => f.endsWith(".yml")).sort() : []; } catch { aerariumFiles = []; }
+  if (aerariumFiles.length === 0) add("aerarium.present", "advise", "aerarium/", "no aerarium — postures will be unknown");
+  for (const f of aerariumFiles) {
+    const where = `aerarium/${f}`;
+    const { data: b, error } = safeYaml(join(aerariumDir, f));
+    if (!b) { add("aerarium.parse", "block", where, error ?? "unreadable"); continue; }
     const period = str(b["period"]) ?? (num(b["period"]) !== undefined ? String(b["period"]) : undefined);
-    if (!period) add("budget.period", "block", where, "period missing");
-    else if (period !== basename(f, ".yml")) add("budget.period.filename", "advise", where, `period "${period}" ≠ filename`);
-    const ds = b["departments"];
-    if (!isDict(ds)) { add("budget.shape", "block", where, "departments must be a mapping"); continue; }
-    for (const [dept, v] of Object.entries(ds)) {
-      if (!deptIds.has(dept)) add("budget.department", "block", where, `department "${dept}" not declared`);
-      if (!isDict(v)) { add("budget.shape", "block", where, `${dept}: entry must be a mapping`); continue; }
+    if (!period) add("aerarium.period", "block", where, "period missing");
+    else if (period !== basename(f, ".yml")) add("aerarium.period.filename", "advise", where, `period "${period}" ≠ filename`);
+    const cs = b["collegia"];
+    if (!isDict(cs)) { add("aerarium.shape", "block", where, "collegia must be a mapping"); continue; }
+    for (const [collegium, v] of Object.entries(cs)) {
+      if (!collegiumIds.has(collegium)) add("aerarium.collegium", "block", where, `collegium "${collegium}" not declared`);
+      if (!isDict(v)) { add("aerarium.shape", "block", where, `${collegium}: entry must be a mapping`); continue; }
       if (Object.keys(v).some((k) => k.startsWith("burn")))
-        add("budget.mirror", "block", where, `${dept}: burn is derived, never written (derive, never mirror)`);
-      if (num(v["allowance_tokens"]) === undefined && num(v["allowance_hours"]) === undefined)
-        add("budget.allowance", "advise", where, `${dept}: no allowance set (posture will be unknown)`);
+        add("aerarium.mirror", "block", where, `${collegium}: burn is derived, never written (derive, never mirror)`);
+      if (num(v["stipendium_tokens"]) === undefined && num(v["stipendium_hours"]) === undefined)
+        add("aerarium.stipendium", "advise", where, `${collegium}: no allowance set (posture will be unknown)`);
     }
-    for (const dept of deptIds) if (!(dept in ds)) add("budget.missing", "advise", where, `department "${dept}" has no allowance this period`);
+    for (const collegium of collegiumIds) if (!(collegium in cs)) add("aerarium.missing", "advise", where, `collegium "${collegium}" has no allowance this period`);
   }
 
   // ---- usage --------------------------------------------------------------
@@ -453,12 +453,12 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
   }
 
   // ---- stray files in convention dirs -------------------------------------
-  for (const dir of ["work", "asks", "digest"]) {
+  for (const dir of ["opera", "petitiones", "acta"]) {
     const full = join(root, dir);
     try {
       if (!existsSync(full)) continue;
       for (const f of readdirSync(full))
-        if (!f.endsWith(".md") && statSync(join(full, f)).isFile())
+        if (f !== ".gitkeep" && !f.endsWith(".md") && statSync(join(full, f)).isFile())
           add("stray.file", "advise", `${dir}/${f}`, "not a markdown file; ignored by every reader");
     } catch { /* unreadable dir: nothing to report beyond what listMd found */ }
   }

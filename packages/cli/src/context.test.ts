@@ -19,14 +19,14 @@ const check = (name: string, ok: boolean, detail = "") => {
 
 {
   const c = buildContext(root, "builder-1", { now: NOW });
-  check("builder-1: engineering charter present", c.text.includes("Engineering charter") && c.text.includes("Mandate"));
+  check("builder-1: engineering lex present", c.text.includes("Engineering lex") && c.text.includes("Mandate"));
   check("builder-1: W-002 and W-004 handoffs present", c.text.includes("W-002") && c.text.includes("W-004"));
-  check("builder-1: A-1 not included (addressed to owner)", !c.text.includes("A-1"));
+  check("builder-1: A-1 not included (addressed to patron)", !c.text.includes("A-1"));
 }
 
 {
-  const c = buildContext(root, "owner", { now: NOW });
-  check("owner: A-1 included (needs_you, to: owner)", c.text.includes("A-1"));
+  const c = buildContext(root, "patron", { now: NOW });
+  check("patron: A-1 included (needs_you, to: patron)", c.text.includes("A-1"));
 }
 
 {
@@ -38,7 +38,7 @@ const check = (name: string, ok: boolean, detail = "") => {
 
 {
   const c = buildContext(root, "nobody", { now: NOW });
-  check("unknown seat: empty text, truncated ['unknown seat']", c.text === "" && c.truncated[0] === "unknown seat");
+  check("unknown sella: empty text, truncated ['unknown sella']", c.text === "" && c.truncated[0] === "unknown sella");
 }
 
 // ---- answer -------------------------------------------------------------------

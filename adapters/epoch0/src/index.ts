@@ -25,7 +25,7 @@ export function createEpoch0Adapter(repoRoot: string): SnapshotAdapter {
     async snapshot(): Promise<Snapshot> {
       // TODO(build-order-3): parse the surfaces listed above.
       void repoRoot;
-      return { actors: [], workItems: [] };
+      return { sellae: [], opera: [] };
     },
 
     async send(target, message) {

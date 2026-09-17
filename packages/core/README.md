@@ -1,13 +1,5 @@
 # @bisellium/core
 
-The local-first heart: an append-only JSONL event log, a snapshot differ that turns consecutive adapter `snapshot()` results into synthetic `workflow.*` events stamped `workflow.time.derived = true`, and a `Store` that appends those events to the log, keeps a per-source in-memory index, and replays the log back into current work-item state. SQLite indexing is not wired in yet (see the `TODO(sqlite)` in `store.ts`); until then the index is rebuilt in memory straight from the log.
+The local-first heart: an append-only JSONL event log (`log.ts`), a snapshot differ (`differ.ts`) that turns two consecutive adapter `snapshot()` results into synthetic `workflow.*`/`provider.status` events stamped `workflow.time.derived = true`, and an in-memory `Store` (`store.ts`) that appends those events to the log, keeps a per-source seq/snapshot index, and `replay()`s the log back into current opus state — including gates, sella and collegium, seeded truthfully even for items ingested cold (an `item_appeared` also replays every gate already recorded on that item). A corrupt log line is skipped, not fatal: `Store.corruptLines` reports how many were dropped.
 
-The local-first heart: SQLite + JSONL event store, the snapshot differ
-(consecutive `snapshot()` results → synthetic `workflow.*` events stamped
-`workflow.time.derived = true`), an OTLP/HTTP ingest endpoint, and the one
-query API the views read. Views never talk to adapters.
-
-Key invariants:
-- every ingested or synthesized event is persisted; "live" is a tail on the log
-- ordering: `(source, seq)` within a source, `ts` across sources
-- gate results carry evidence identity; staleness is computed, never guessed
+Not yet built: a SQLite index (see the `TODO(sqlite)` in `store.ts` — today every read rebuilds state in memory straight from the log, which is fine at this scale and not fine forever), an OTLP/HTTP ingest endpoint for event-style adapters, and the query API the views will eventually read instead of calling `Store` directly. Views and adapters currently go through this package's exports as-is.

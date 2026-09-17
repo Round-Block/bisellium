@@ -6,7 +6,7 @@
  */
 import { WF, type GantryEvent, type Snapshot } from "@bisellium/schema";
 import { diffSnapshots } from "./differ.js";
-import { appendEvents, readEvents } from "./log.js";
+import { appendEvents, readLog } from "./log.js";
 
 export interface IngestContext {
   source: string;
@@ -17,8 +17,8 @@ export interface IngestContext {
 export interface ReplayItem {
   state: string;
   gates: Record<string, string>;
-  owner?: string;
-  department?: string;
+  sella?: string;
+  collegium?: string;
 }
 
 export interface ReplayResult {
@@ -32,10 +32,16 @@ export class Store {
   private readonly log: GantryEvent[];
   private readonly lastSnapshot = new Map<string, Snapshot>();
   private readonly seqBySource = new Map<string, number>();
+  /** Lines in the on-disk log that failed to parse when this Store was
+   *  constructed. A corrupt log is never fatal — this just says how much
+   *  history was dropped. */
+  readonly corruptLines: number;
 
   constructor(logPath: string) {
     this.logPath = logPath;
-    this.log = readEvents(logPath);
+    const { events, skipped } = readLog(logPath);
+    this.log = events;
+    this.corruptLines = skipped;
     for (const e of this.log) {
       const source = e.attrs[WF.SOURCE];
       const seq = e.attrs[WF.SOURCE_SEQ];
@@ -83,8 +89,8 @@ export class Store {
       }
 
       const entry = itemOf(itemId);
-      const department = e.attrs[WF.DEPARTMENT];
-      if (typeof department === "string") entry.department = department;
+      const collegium = e.attrs[WF.DEPARTMENT];
+      if (typeof collegium === "string") entry.collegium = collegium;
 
       if (e.name === "workflow.item_appeared" || e.name === "workflow.state_changed") {
         const to = e.attrs[WF.STATE_TO];
@@ -97,17 +103,17 @@ export class Store {
       }
       if (e.name === "workflow.item_appeared" || e.name === "workflow.actor_assigned") {
         const role = e.attrs[WF.ACTOR_ROLE];
-        if (typeof role === "string") entry.owner = role;
+        if (typeof role === "string") entry.sella = role;
       }
     }
 
     return { items };
   }
 
-  burn(departmentId: string): number {
+  burn(collegiumId: string): number {
     let total = 0;
     for (const e of this.log) {
-      if (e.attrs[WF.DEPARTMENT] !== departmentId) continue;
+      if (e.attrs[WF.DEPARTMENT] !== collegiumId) continue;
       const tokens = e.attrs["gen_ai.usage.total_tokens"];
       if (typeof tokens === "number") total += tokens;
     }

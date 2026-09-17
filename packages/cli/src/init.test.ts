@@ -1,6 +1,6 @@
 /**
  * Tests for `bisellium init` and `bisellium new` (W-001). `now` is pinned so
- * the budget period and age-based advisories never drift the results.
+ * the aerarium period and age-based advisories never drift the results.
  */
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -27,10 +27,10 @@ try {
   const afterInit = checkStudio(dir, NOW);
   report("init.check", afterInit.ok, afterInit.ok ? `0 blocking, ${afterInit.advisories} advisory` : `blocked by ${blockIds(dir).join(", ")}`);
 
-  const first = newItem(dir, { kind: "task", dept: "production", title: "First item" });
+  const first = newItem(dir, { kind: "task", collegium: "production", title: "First item" });
   report("new.first.id", first.ok && first.id === "W-001", `got ${first.id ?? first.message}`);
 
-  const second = newItem(dir, { kind: "task", dept: "production", title: "Second item" });
+  const second = newItem(dir, { kind: "task", collegium: "production", title: "Second item" });
   report("new.second.id", second.ok && second.id === "W-002", `got ${second.id ?? second.message}`);
 
   const afterNew = checkStudio(dir, NOW);
@@ -39,8 +39,8 @@ try {
   const reinit = initStudio(dir, { now: NOW });
   report("init.refuses.existing", !reinit.ok, reinit.message);
 
-  const badDept = newItem(dir, { kind: "task", dept: "no-such-dept", title: "Bad" });
-  report("new.refuses.unknown.dept", !badDept.ok, badDept.message);
+  const badCollegium = newItem(dir, { kind: "task", collegium: "no-such-collegium", title: "Bad" });
+  report("new.refuses.unknown.collegium", !badCollegium.ok, badCollegium.message);
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

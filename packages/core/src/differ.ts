@@ -5,7 +5,7 @@
  * Every event carries workflow.time.derived = true — the timestamp is
  * observation time (ctx.ts), not occurrence time.
  */
-import { WF, type GantryEvent, type GateResult, type Snapshot, type ThreadState } from "@bisellium/schema";
+import { WF, type GantryEvent, type ProbatioResult, type Snapshot, type PetitioState } from "@bisellium/schema";
 
 export interface DiffContext {
   source: string;
@@ -21,7 +21,7 @@ export interface DiffResult {
 
 type Attrs = Record<string, string | number | boolean>;
 
-const ATTENTION_MAP: Record<ThreadState, "requested" | "resolved"> = {
+const ATTENTION_MAP: Record<PetitioState, "requested" | "resolved"> = {
   needs_you: "requested",
   awaiting_reply: "requested",
   resolved: "resolved",
@@ -29,12 +29,22 @@ const ATTENTION_MAP: Record<ThreadState, "requested" | "resolved"> = {
 
 const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
 
-function gateEvidence(gr: GateResult | undefined): string | undefined {
-  return gr?.evidence?.certifies ?? gr?.evidence?.href;
+/**
+ * A gate result changed only when its verdict or what it certifies changed.
+ * The evidence href alone (e.g. a log mirrored to a new URL) is not a
+ * re-evaluation and must not fire gate_evaluated.
+ */
+function gateChanged(prev: ProbatioResult | undefined, next: ProbatioResult): boolean {
+  return prev?.status !== next.status || prev?.evidence?.certifies !== next.evidence?.certifies;
 }
 
-function gateChanged(prev: GateResult | undefined, next: GateResult): boolean {
-  return prev?.status !== next.status || gateEvidence(prev) !== gateEvidence(next);
+function gateAttrs(base: Attrs, gateId: string, gateResult: ProbatioResult): Attrs {
+  const attrs: Attrs = { ...base, [WF.GATE_ID]: gateId, [WF.GATE_STATUS]: gateResult.status };
+  const href = gateResult.evidence?.href;
+  if (href !== undefined) attrs[WF.GATE_EVIDENCE] = href;
+  const certifies = gateResult.evidence?.certifies;
+  if (certifies !== undefined) attrs[WF.GATE_CERTIFIES] = certifies;
+  return attrs;
 }
 
 export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffContext): DiffResult {
@@ -57,21 +67,27 @@ export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffCo
     seq++;
   };
 
-  // ---- work items -----------------------------------------------------
-  const prevItems = new Map((prev?.workItems ?? []).map((w) => [w.id, w] as const));
-  const nextItemIds = new Set(next.workItems.map((w) => w.id));
+  // ---- opera -----------------------------------------------------
+  const prevItems = new Map((prev?.opera ?? []).map((w) => [w.id, w] as const));
+  const nextItemIds = new Set(next.opera.map((w) => w.id));
 
-  for (const item of next.workItems) {
-    const department = str(item.meta["department"]);
+  for (const item of next.opera) {
+    const collegium = str(item.meta["collegium"]);
     const base: Attrs = { [WF.ITEM_ID]: item.id };
-    if (department !== undefined) base[WF.DEPARTMENT] = department;
+    if (collegium !== undefined) base[WF.DEPARTMENT] = collegium;
 
     const prevItem = prevItems.get(item.id);
     if (!prevItem) {
-      const attrs: Attrs = { ...base, [WF.STATE_TO]: item.state };
-      const owner = str(item.meta["owner"]);
-      if (owner !== undefined) attrs[WF.ACTOR_ROLE] = owner;
-      emit("workflow.item_appeared", attrs);
+      // Cold appearance: emit the item, then one gate_evaluated per gate
+      // already recorded on it (so replay() of a cold ingest is truthful —
+      // a gate that was already passed didn't silently un-happen), then
+      // an actor_assigned if it already has a sella.
+      emit("workflow.item_appeared", { ...base, [WF.STATE_TO]: item.state });
+      for (const [gateId, gateResult] of Object.entries(item.probationes)) {
+        emit("workflow.gate_evaluated", gateAttrs(base, gateId, gateResult));
+      }
+      const sella = str(item.meta["sella"]);
+      if (sella !== undefined) emit("workflow.actor_assigned", { ...base, [WF.ACTOR_ROLE]: sella });
       continue;
     }
 
@@ -79,47 +95,56 @@ export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffCo
       emit("workflow.state_changed", { ...base, [WF.STATE_FROM]: prevItem.state, [WF.STATE_TO]: item.state });
     }
 
-    for (const [gateId, gateResult] of Object.entries(item.gateStatus)) {
-      if (!gateChanged(prevItem.gateStatus[gateId], gateResult)) continue;
-      const attrs: Attrs = { ...base, [WF.GATE_ID]: gateId, [WF.GATE_STATUS]: gateResult.status };
-      const evidence = gateEvidence(gateResult);
-      if (evidence !== undefined) attrs[WF.GATE_EVIDENCE] = evidence;
-      emit("workflow.gate_evaluated", attrs);
+    for (const [gateId, gateResult] of Object.entries(item.probationes)) {
+      if (!gateChanged(prevItem.probationes[gateId], gateResult)) continue;
+      emit("workflow.gate_evaluated", gateAttrs(base, gateId, gateResult));
     }
 
-    const prevOwner = str(prevItem.meta["owner"]);
-    const nextOwner = str(item.meta["owner"]);
-    if (nextOwner !== undefined && nextOwner !== prevOwner) {
-      emit("workflow.actor_assigned", { ...base, [WF.ACTOR_ROLE]: nextOwner });
+    const prevSella = str(prevItem.meta["sella"]);
+    const nextSella = str(item.meta["sella"]);
+    if (nextSella !== undefined && nextSella !== prevSella) {
+      emit("workflow.actor_assigned", { ...base, [WF.ACTOR_ROLE]: nextSella });
     }
   }
 
-  for (const item of prev?.workItems ?? []) {
+  for (const item of prev?.opera ?? []) {
     if (nextItemIds.has(item.id)) continue;
-    const department = str(item.meta["department"]);
+    const collegium = str(item.meta["collegium"]);
     const attrs: Attrs = { [WF.ITEM_ID]: item.id };
-    if (department !== undefined) attrs[WF.DEPARTMENT] = department;
+    if (collegium !== undefined) attrs[WF.DEPARTMENT] = collegium;
     emit("workflow.item_removed", attrs);
   }
 
-  // ---- threads (attention) ---------------------------------------------
-  const prevThreads = new Map((prev?.threads ?? []).map((t) => [t.id, t] as const));
-  for (const thread of next.threads ?? []) {
-    const prevThread = prevThreads.get(thread.id);
-    if (prevThread && prevThread.state === thread.state) continue;
+  // ---- petitiones (attention) ---------------------------------------------
+  const prevPetitiones = new Map((prev?.petitiones ?? []).map((t) => [t.id, t] as const));
+  for (const petitio of next.petitiones ?? []) {
+    const prevPetitio = prevPetitiones.get(petitio.id);
+    if (prevPetitio && prevPetitio.state === petitio.state) continue;
     const attrs: Attrs = {
-      [WF.ATTENTION_THREAD]: thread.id,
-      [WF.ATTENTION_EVENT]: ATTENTION_MAP[thread.state],
+      [WF.ATTENTION_THREAD]: petitio.id,
+      [WF.ATTENTION_EVENT]: ATTENTION_MAP[petitio.state],
     };
-    if (thread.workItemId !== undefined) attrs[WF.ITEM_ID] = thread.workItemId;
+    if (petitio.opusId !== undefined) attrs[WF.ITEM_ID] = petitio.opusId;
     emit("workflow.attention", attrs);
   }
 
-  // ---- digest: append-only, only new entries fire -----------------------
-  const prevDigestIds = new Set((prev?.digest ?? []).map((d) => d.id));
-  for (const entry of next.digest ?? []) {
-    if (prevDigestIds.has(entry.id)) continue;
-    emit("workflow.digest", { "workflow.digest.id": entry.id });
+  // ---- acta: append-only, only new entries fire -----------------------
+  // authorRoleId -> collegiumId, so acta events roll up to a collegium
+  // without the caller having to join sellae themselves.
+  const collegiumByRole = new Map<string, string>();
+  for (const sella of next.sellae) {
+    if (sella.collegiumId !== undefined && !collegiumByRole.has(sella.roleId)) {
+      collegiumByRole.set(sella.roleId, sella.collegiumId);
+    }
+  }
+
+  const prevActaIds = new Set((prev?.acta ?? []).map((d) => d.id));
+  for (const entry of next.acta ?? []) {
+    if (prevActaIds.has(entry.id)) continue;
+    const attrs: Attrs = { [WF.DIGEST_ID]: entry.id, [WF.DIGEST_KIND]: entry.kind };
+    const collegium = collegiumByRole.get(entry.authorRoleId);
+    if (collegium !== undefined) attrs[WF.DEPARTMENT] = collegium;
+    emit("workflow.digest", attrs);
   }
 
   // ---- providers ---------------------------------------------------------
@@ -127,11 +152,13 @@ export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffCo
   for (const provider of next.providers ?? []) {
     const prevProvider = prevProviders.get(provider.id);
     if (prevProvider && prevProvider.usagePct === provider.usagePct && prevProvider.status === provider.status) continue;
-    emit("provider.status", {
-      "provider.id": provider.id,
-      "provider.usage_pct": provider.usagePct,
-      "provider.status": provider.status,
-    });
+    const attrs: Attrs = {
+      [WF.PROVIDER_ID]: provider.id,
+      [WF.PROVIDER_USAGE_PCT]: provider.usagePct,
+      [WF.PROVIDER_STATUS]: provider.status,
+    };
+    if (provider.resetAt !== undefined) attrs[WF.PROVIDER_RESET_AT] = provider.resetAt;
+    emit("provider.status", attrs);
   }
 
   return { events, seq };

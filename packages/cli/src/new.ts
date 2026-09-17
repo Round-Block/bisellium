@@ -9,7 +9,7 @@ import type { Manifest } from "@bisellium/adapter-native";
 
 export interface NewOptions {
   kind: string;
-  dept: string;
+  collegium: string;
   title: string;
 }
 
@@ -17,25 +17,33 @@ export interface NewResult {
   ok: boolean;
   message: string;
   id?: string;
+  /** true when `dir` isn't a studio at all (missing/unparseable manifest) — main.ts exits 2, not 1. */
+  notAStudio?: boolean;
 }
 
 const ID_RE = /^W-(\d+)\.md$/;
 
 export function newItem(dir: string, opts: NewOptions): NewResult {
+  const root = resolve(dir);
+  const manifestPath = join(root, "bisellium.yml");
+  if (!existsSync(manifestPath)) return { ok: false, notAStudio: true, message: `${manifestPath} not found — not a studio` };
+
+  let manifest: Manifest;
   try {
-    const root = resolve(dir);
-    const manifestPath = join(root, "bisellium.yml");
-    if (!existsSync(manifestPath)) return { ok: false, message: `${manifestPath} not found — not a studio` };
+    manifest = parseYaml(readFileSync(manifestPath, "utf8")) as Manifest;
+  } catch (e) {
+    return { ok: false, notAStudio: true, message: `${manifestPath} unparseable — not a studio: ${(e as Error).message}` };
+  }
 
-    const manifest = parseYaml(readFileSync(manifestPath, "utf8")) as Manifest;
-    const departments = manifest.departments ?? [];
-    if (!departments.some((d) => d.id === opts.dept))
-      return { ok: false, message: `department "${opts.dept}" is not declared in ${manifestPath}` };
+  try {
+    const collegia = manifest.collegia ?? [];
+    if (!collegia.some((d) => d.id === opts.collegium))
+      return { ok: false, message: `collegium "${opts.collegium}" is not declared in ${manifestPath}` };
 
-    const workDir = join(root, "work");
-    mkdirSync(workDir, { recursive: true });
+    const operaDir = join(root, "opera");
+    mkdirSync(operaDir, { recursive: true });
     let max = 0;
-    for (const f of readdirSync(workDir)) {
+    for (const f of readdirSync(operaDir)) {
       const m = ID_RE.exec(f);
       if (m) max = Math.max(max, Number(m[1]));
     }
@@ -45,12 +53,12 @@ export function newItem(dir: string, opts: NewOptions): NewResult {
 id: ${JSON.stringify(id)}
 title: ${JSON.stringify(opts.title)}
 kind: ${JSON.stringify(opts.kind)}
-department: ${JSON.stringify(opts.dept)}
+collegium: ${JSON.stringify(opts.collegium)}
 state: backlog
-gates: {}
+probationes: {}
 ---
 `;
-    writeFileSync(join(workDir, `${id}.md`), front);
+    writeFileSync(join(operaDir, `${id}.md`), front);
     return { ok: true, message: id, id };
   } catch (e) {
     return { ok: false, message: `new failed: ${(e as Error).message}` };

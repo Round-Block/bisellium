@@ -28,43 +28,43 @@ export type Phase = (typeof PHASES)[number];
 
 export type ActorKind = "orchestrator" | "agent" | "tool" | "human" | "service";
 
-export interface Actor {
+export interface Sella {
   /** Unique per instantiation, e.g. "sol-review-2026-09-10T14:02". */
   id: string;
-  /** Stable seat/role, e.g. "final-reviewer" — swimlane rows key on this. */
+  /** Stable sella/role, e.g. "final-reviewer" — swimlane rows key on this. */
   roleId: string;
   projectId: string;
   kind: ActorKind;
-  /** Bisellium department this seat belongs to; cost and digest rollups key on it. */
-  departmentId?: string;
+  /** Bisellium collegium this sella belongs to; cost and acta rollups key on it. */
+  collegiumId?: string;
   /** Model, version, prompt hash… deliberately unstandardized. */
   meta: Record<string, unknown>;
 }
 
 /**
- * Gate result states. "stale": the certificate was valid for a specific
+ * Probatio result states. "stale": the certificate was valid for a specific
  * commit and a newer substantive change voided it (epoch0 WORKFLOW §7.4).
  * Never silently mapped back to "pending" — passed-then-voided is information.
  */
-export const GATE_STATUSES = ["pending", "passed", "failed", "waived", "stale"] as const;
-export type GateStatus = (typeof GATE_STATUSES)[number];
+export const PROBATIO_STATUSES = ["pending", "passed", "failed", "waived", "stale"] as const;
+export type ProbatioStatus = (typeof PROBATIO_STATUSES)[number];
 
 /**
  * Who holds the verdict.
  *  - automated: a script/CI decides (evidence link mandatory)
- *  - agent:     a judgment verdict held by an agent seat (sol review, astra
+ *  - agent:     a judgment verdict held by an agent sella (sol review, astra
  *               acceptance, Controller V1) — blocking, but never enters the
- *               owner's inbox
- *  - human:     the owner decides — pending ⇒ the item needs your input
+ *               patron's inbox
+ *  - human:     the patron decides — pending ⇒ the item needs your input
  */
-export const GATE_KINDS = ["automated", "agent", "human"] as const;
-export type GateKind = (typeof GATE_KINDS)[number];
+export const PROBATIO_KINDS = ["automated", "agent", "human"] as const;
+export type ProbatioKind = (typeof PROBATIO_KINDS)[number];
 
-export interface Gate {
+export interface Probatio {
   id: string;
   name: string;
-  kind: GateKind;
-  /** Lifecycle state this gate must pass before the item may leave. */
+  kind: ProbatioKind;
+  /** Lifecycle state this probatio must pass before the item may leave. */
   requiredForState?: string;
 }
 
@@ -79,15 +79,15 @@ export interface Lifecycle {
   /** Ordered — single-project boards use these as columns. */
   states: LifecycleState[];
   /** actors: role ids permitted to perform the transition (Production may
-   *  halt, the merge script may flip done, the Owner greenlights). */
+   *  halt, the merge script may flip done, the Patron greenlights). */
   transitions: { from: string; to: string; actors?: string[] }[];
-  gates: Gate[];
+  gates: Probatio[];
   /** Per-lane WIP cap, rendered as "2/2" on board columns. */
   wipLimit?: number;
 }
 
-export interface GateResult {
-  status: GateStatus;
+export interface ProbatioResult {
+  status: ProbatioStatus;
   /** Evidence link with identity: URL/path plus the artifact hash or commit
    *  SHA this result certifies. Identity is what makes `stale` computable. */
   evidence?: { href: string; certifies?: string };
@@ -95,7 +95,7 @@ export interface GateResult {
   at?: string;
 }
 
-export interface WorkItem {
+export interface Opus {
   id: string;
   projectId: string;
   /** "train", "task", "run", "wave" (post-merge batch QA), "art-batch"… */
@@ -103,8 +103,8 @@ export interface WorkItem {
   lifecycleId: string;
   /** Must be a member of the lifecycle's states. */
   state: string;
-  parentWorkItemId?: string;
-  gateStatus: Record<string, GateResult>;
+  parentOpusId?: string;
+  probationes: Record<string, ProbatioResult>;
   /** Priority (P0–P3), source, PR number… adapter-defined. */
   meta: Record<string, unknown>;
 }
@@ -127,24 +127,24 @@ export interface Provider {
 }
 
 // ---------------------------------------------------------------------------
-// Bisellium studio model (conventions, not a runtime). A department is
-// charter + budget + digest; the Owner touches only greenlight, budget
-// allocation, taste calls, and charter changes.
+// Bisellium studio model (conventions, not a runtime). A collegium is
+// lex + aerarium + acta; the Patron touches only greenlight, budget
+// allocation, taste calls, and lex changes.
 // ---------------------------------------------------------------------------
 
-export interface Department {
+export interface Collegium {
   id: string;
   projectId: string;
   name: string;
-  leadRoleId: string;
-  /** Acting lead for routing when the lead is stale. */
+  magisterRoleId: string;
+  /** Acting magister for routing when the magister is stale. */
   fallbackRoleId?: string;
-  /** The charter document (CHARTER_TEMPLATE.md instance). */
-  charterHref?: string;
+  /** The lex document (LEX_TEMPLATE.md instance). */
+  lexHref?: string;
 }
 
-export interface Budget {
-  departmentId: string;
+export interface Stipendium {
+  collegiumId: string;
   /** e.g. "2026-W38". Unspent does not roll over. */
   period: string;
   allowance: { tokens?: number; hours?: number };
@@ -155,33 +155,33 @@ export interface Budget {
   posture: ProviderStatus;
 }
 
-/** The inbox unit. Strict admission: only questions addressed to the owner
- *  and replies in threads the owner opened. Digests are a separate feed. */
-export const THREAD_STATES = ["needs_you", "awaiting_reply", "resolved"] as const;
-export type ThreadState = (typeof THREAD_STATES)[number];
+/** The inbox unit. Strict admission: only questions addressed to the patron
+ *  and replies in threads the patron opened. Acta are a separate feed. */
+export const PETITIO_STATES = ["needs_you", "awaiting_reply", "resolved"] as const;
+export type PetitioState = (typeof PETITIO_STATES)[number];
 
-export interface Thread {
+export interface Petitio {
   id: string;
-  /** Absent for asks not about one item (scope, budget, charter, routing). */
-  workItemId?: string;
+  /** Absent for petitiones not about one item (scope, aerarium, lex, routing). */
+  opusId?: string;
   openedBy: string; // actor roleId, or "you"
   counterparty: string;
-  state: ThreadState;
+  state: PetitioState;
   /** First line of the question, for inbox rows. */
   subject?: string;
 }
 
-export const DIGEST_KINDS = ["consultation", "decision", "daily"] as const;
-export type DigestKind = (typeof DIGEST_KINDS)[number];
+export const ACTUM_KINDS = ["consultation", "decision", "daily"] as const;
+export type ActumKind = (typeof ACTUM_KINDS)[number];
 
-/** Digest entries: inform-and-proceed. Never require a reply; silence binds
+/** Acta: inform-and-proceed. Never require a reply; silence binds
  *  nothing (epoch0 ART_WORKFLOW §8 consultation model). */
-export interface DigestEntry {
+export interface Actum {
   id: string;
   projectId: string;
   authorRoleId: string;
   at: string;
-  kind: DigestKind;
+  kind: ActumKind;
   title: string;
   body: string;
   evidence: { label: string; href: string }[];
@@ -203,6 +203,9 @@ export const WF = {
   GATE_STATUS: "workflow.gate.status",
   GATE_KIND: "workflow.gate.kind",
   GATE_EVIDENCE: "workflow.gate.evidence",
+  /** The commit/artifact identity a gate result certifies — separate from
+   *  GATE_EVIDENCE (the href) so a link rot doesn't read as a re-evaluation. */
+  GATE_CERTIFIES: "workflow.gate.certifies",
   ACTOR_ROLE: "workflow.actor.role",
   DELEGATION: "workflow.delegation", // "delegation" | "coordination"
   RETRY_ATTEMPT: "workflow.retry.attempt",
@@ -217,6 +220,12 @@ export const WF = {
   SOURCE_SEQ: "workflow.source.seq",
   DEPARTMENT: "workflow.department",
   GREENLIGHT: "workflow.greenlight", // "requested" | "granted" | "declined"
+  DIGEST_ID: "workflow.digest.id",
+  DIGEST_KIND: "workflow.digest.kind",
+  PROVIDER_ID: "provider.id",
+  PROVIDER_USAGE_PCT: "provider.usage_pct",
+  PROVIDER_STATUS: "provider.status",
+  PROVIDER_RESET_AT: "provider.reset_at",
 } as const;
 
 export type WorkflowEventName =
@@ -245,13 +254,13 @@ export interface GantryEvent {
 // ---------------------------------------------------------------------------
 
 export interface Snapshot {
-  actors: Actor[];
-  workItems: WorkItem[];
+  sellae: Sella[];
+  opera: Opus[];
   providers?: Provider[];
-  digest?: DigestEntry[];
-  departments?: Department[];
-  budgets?: Budget[];
-  threads?: Thread[];
+  acta?: Actum[];
+  collegia?: Collegium[];
+  stipendia?: Stipendium[];
+  petitiones?: Petitio[];
 }
 
 export interface AdapterBase {
@@ -259,7 +268,7 @@ export interface AdapterBase {
   describeLifecycles(): Lifecycle[];
   /** Optional command channel. Delivery is at the agent's next turn
    *  boundary; snapshot-only sources may degrade to an inbox file. */
-  send?(target: { actorId?: string; workItemId?: string; threadId?: string }, message: string): Promise<{ delivered: boolean; note?: string }>;
+  send?(target: { sellaId?: string; opusId?: string; petitioId?: string }, message: string): Promise<{ delivered: boolean; note?: string }>;
   /** Optional limit telemetry (observed, never guessed). */
   providerStatus?(): Promise<Provider[]>;
 }

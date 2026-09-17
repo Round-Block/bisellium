@@ -1,5 +1,29 @@
 # Adopting Bisellium
 
+## Vocabulary
+
+Bisellium's product-facing contract uses Latin names. The wire-level
+`workflow.*` / `gen_ai.* ` / `provider.*` attribute names and the lifecycle
+state ids (`backlog`, `greenlit`, `building`, `verifying`, `review`, `done`,
+`halted`) and gate/digest/provider status enums are the OTel-style wire
+format, not product vocabulary — they stay English everywhere, including
+inside Latin-named files.
+
+| Latin | English |
+|---|---|
+| Patron | Owner |
+| Collegium | Department |
+| Magister | Lead |
+| Sella | Seat / actor |
+| Lex | Charter |
+| Acta | Digest |
+| Petitio | Ask / thread |
+| Opus | Work item |
+| Probatio | Gate |
+| Traditio | Handoff |
+| Aerarium | Budget |
+| Stipendium | Allowance |
+
 A Bisellium studio is a directory (usually a repo, or a folder in one) with the
 files below. Agents and humans write these; the console reads them; `bisellium
 check` validates them — every rule here is one `check` can fail. See
@@ -7,16 +31,16 @@ check` validates them — every rule here is one `check` can fail. See
 what failing looks like.
 
 ```
-bisellium.yml            manifest: version, owner, departments, seats, gates, wip_limit, defaults
-charters/<dept>.md       one charter per department (CHARTER_TEMPLATE.md)
-work/<id>.md             one file per work item, YAML front matter + notes
-asks/<id>.md             questions to the Owner not about one item; threads the Owner opened
-digest/<date>-<slug>.md  inform-and-proceed entries
-budgets/<period>.yml     allowances per department — burn is derived, never written
+bisellium.yml              manifest: version, patron, collegia, sellae, probationes, wip_limit, defaults
+leges/<collegium>.md       one lex per collegium (LEX_TEMPLATE.md)
+opera/<id>.md               one file per opus, YAML front matter + notes
+petitiones/<id>.md          questions to the Patron not about one opus; petitiones the Patron opened
+acta/<date>-<slug>.md       inform-and-proceed entries
+aerarium/<period>.yml       allowances per collegium — burn is derived, never written
 usage.yml                observed provider limit telemetry
 ```
 
-Planned, not yet built: `memory/seats/`, `decisions/`, `archive/`, and the
+Planned, not yet built: `memoria/sellae/`, `decisions/`, `archive/`, and the
 docs registry.
 
 ## bisellium.yml
@@ -24,57 +48,57 @@ docs registry.
 ```yaml
 bisellium: 1                      # contract version; check refuses any other
 studio: Sample Studio
-owner: owner                      # the Owner's role id
+patron: patron                    # the Patron's role id
 timezone: Europe/London
-departments:
-  - { id: engineering, name: Engineering, lead: eng-lead, fallback: producer, charter: charters/engineering.md }
-seats:
-  - { id: eng-lead, department: engineering, kind: agent, model: claude-opus-5 }
-gates:
+collegia:
+  - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md }
+sellae:
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
+probationes:
   - { id: tests,  name: Tests,        kind: automated }
   - { id: review, name: Lead review,  kind: agent }
-  - { id: owner,  name: Owner call,   kind: human }
+  - { id: patron, name: Patron call,  kind: human }
 wip_limit: 3                      # items in building + verifying, studio-wide
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
 ```
 
-Ids must be unique within departments, seats and gates. Every lead and
-fallback must be a declared seat. A charter, if declared, must exist and
+Ids must be unique within collegia, sellae and probationes. Every magister and
+fallback must be a declared sella. A lex, if declared, must exist and
 should contain "Decides alone", "Digests" and "Asks" sections.
 
 ## Lifecycle (fixed)
 
 `backlog → greenlit → building → verifying → review → done`, plus `halted`.
-Greenlit is the Owner's slate decision; everything after it is the department's.
-State is asserted by the lead, but `check` fails a state the evidence cannot
+Greenlit is the Patron's slate decision; everything after it is the collegium's.
+State is asserted by the magister, but `check` fails a state the evidence cannot
 support: `review` needs every automated gate and every other agent gate passed;
 `done` needs all non-human gates passed and any recorded human gate passed or
 waived. `waived` needs a `reason` and is never allowed on an automated gate.
 WIP counts `building` + `verifying`; `review` waits on someone else.
 
-## work/<id>.md
+## opera/<id>.md
 
 ```yaml
 ---
 id: W-004
 title: Inventory drag-and-drop
 kind: feature
-department: engineering
-owner: builder-1
+collegium: engineering
+sella: builder-1
 state: review
-gates:
+probationes:
   tests:  { status: passed, evidence: ci/812.log, certifies: a1b2c3d }
   review: { status: passed, evidence: reviews/W-004.md, certifies: a1b2c3d }
-  owner:  { status: pending }
+  patron: { status: pending }
 tokens: 412000
-handoff: { seat: builder-1, stage: review, next: await owner call, blocked_on: owner, at: 2026-09-17T09:58Z }
+traditio: { sella: builder-1, stage: review, next: await patron call, blocked_on: patron, at: 2026-09-17T09:58Z }
 ---
 Free-form notes below the front matter.
 ```
 
-Required keys: `id` (must equal the filename), `title`, `kind`, `department`,
-`state` — all non-empty strings. `handoff` (`seat`, `stage`, `next`,
+Required keys: `id` (must equal the filename), `title`, `kind`, `collegium`,
+`state` — all non-empty strings. `traditio` (`sella`, `stage`, `next`,
 `blocked_on`, `at` as an ISO date) is required on every active item
 (`building`, `verifying`, `review`) and validated wherever present; it is stale
 past `handoff_stale_days`. `halted` items require `reason` and `resume_when`,
@@ -84,27 +108,27 @@ is what "needs you" means. Passed and failed gates need `evidence` that exists
 certify, quoted; a newer substantive change makes them `stale`, never silently
 green.
 
-## asks/<id>.md
+## petitiones/<id>.md
 
-Asks are for questions *not* about one work item (scope, budget, charter, routing); `work` is optional. Item questions are gates.
+Petitiones are for questions *not* about one opus (scope, aerarium, lex, routing); `opus` is optional. Item questions are gates.
 
 ```yaml
 ---
 id: A-1               # must equal the filename
-work: W-004           # optional; must exist if given
-from: eng-lead        # a seat, or the owner
-to: owner
-state: needs_you      # needs_you (to must be the owner) | awaiting_reply (from must be the owner) | resolved
+opus: W-004           # optional; must exist if given
+from: eng-lead         # a sella, or the patron
+to: patron
+state: needs_you      # needs_you (to must be the patron) | awaiting_reply (from must be the patron) | resolved
 opened: 2026-09-17T09:58:00Z
 ---
-The question, in one paragraph. Only asks that change material direction.
+The question, in one paragraph. Only petitiones that change material direction.
 ```
 
-## digest/<date>-<slug>.md
+## acta/<date>-<slug>.md
 
 ```yaml
 ---
-author: art-lead      # a seat, or the owner
+author: art-lead      # a sella, or the patron
 kind: consultation    # consultation | decision | daily
 title: Status icons go flat, not skeuomorphic
 at: 2026-09-17T09:10:00Z
@@ -114,15 +138,15 @@ evidence:
 The choice and the reason. Silence binds nothing.
 ```
 
-Each lead owes one `daily` per day; a missing or old daily is an advisory.
+Each magister owes one `daily` per day; a missing or old daily is an advisory.
 
-## budgets/<period>.yml and usage.yml
+## aerarium/<period>.yml and usage.yml
 
 ```yaml
-# allowances only, Owner-written; burn is derived from item tokens / usage events
+# allowances only, Patron-written; burn is derived from item tokens / usage events
 period: 2026-W38
-departments:
-  engineering: { allowance_tokens: 3000000 }
+collegia:
+  engineering: { stipendium_tokens: 3000000 }
 ```
 
 ```yaml
@@ -130,9 +154,9 @@ providers:
   - { id: claude, usage_pct: 81, reset_at: 2026-09-18T14:00:00Z, status: conserve }
 ```
 
-Posture per department is derived from burn/allowance (≥60% conserve,
+Posture per collegium is derived from burn/allowance (≥60% conserve,
 ≥85% closeout, ≥100% limited; no data → unknown). It is never self-declared.
-Any `burn*` key in a budgets file is blocking: burn is derived, never mirrored.
+Any `burn*` key in an aerarium file is blocking: burn is derived, never mirrored.
 
 ## Running check
 

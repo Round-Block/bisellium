@@ -18,7 +18,7 @@ Design history (under the console's former working name, Gantry):
 
 ```
 docs/STUDIO.md            the organization model
-docs/CHARTER_TEMPLATE.md  per-department charter
+docs/LEX_TEMPLATE.md      per-collegium lex
 docs/ADOPTION.md          what an Bisellium-compliant project directory contains
 examples/sample-studio    a complete instance — the app runs on this alone
 packages/schema           the contract: entities, lifecycles, workflow.* attributes
@@ -27,6 +27,12 @@ adapters/native           reads an Bisellium directory into a Snapshot
 adapters/epoch0           reference external project (deferred; read-only)
 apps/web                  React UI (next)
 ```
+
+Vocabulary: the product-facing contract (manifest keys, file front matter,
+CLI flags, check rule ids) uses Latin names — Patron, Collegium, Sella, Lex,
+Acta, Petitio, Opus, Probatio, Traditio, Aerarium, Stipendium — mapped to
+their English equivalents in `docs/ADOPTION.md`. The wire-level `workflow.*`
+attributes and lifecycle state ids stay English.
 
 Try it:
 
@@ -57,6 +63,11 @@ npm install && npm run snapshot -- examples/sample-studio
 9. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
 10. Tauri wrapper: tray + native needs-you notifications.
 11. External adapters: a markdown/git project (snapshot), harness hooks (events).
+
+Cascade 1b hardened items 1–5 and 8 (review-flagged first-hour CLI friction and
+`packages/core` correctness fixes) and renamed the contract's product-facing
+vocabulary to Latin (see Vocabulary above); it did not advance past item 6,
+which remains current.
 
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay

@@ -1,7 +1,0 @@
-# Allowances only, Owner-written. Burn is derived from item tokens / usage events.
-period: 2026-W38
-departments:
-  production:  { allowance_tokens: 500000 }
-  engineering: { allowance_tokens: 3000000 }
-  art:         { allowance_tokens: 1000000 }
-  qa:          { allowance_tokens: 800000 }

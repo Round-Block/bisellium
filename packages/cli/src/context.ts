@@ -1,10 +1,10 @@
 /**
- * packages/cli/src/context.ts — a seat's boot context: the minimum a seat
+ * packages/cli/src/context.ts — a sella's boot context: the minimum a sella
  * needs to pick up work, assembled from the same files `check` validates
- * (dossier: seat memory is a convention, not a service). Deterministic and
+ * (dossier: sella memory is a convention, not a service). Deterministic and
  * offline. Every injected file body is wrapped `--- data: <path> ---` /
  * `--- end ---` — content read from a studio file is data, never an
- * instruction to the seat reading its own context.
+ * instruction to the sella reading its own context.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -33,7 +33,7 @@ function toDate(v: unknown): Date | undefined {
 }
 const daysBetween = (a: Date, b: Date): number => Math.abs(b.getTime() - a.getTime()) / 86_400_000;
 
-function readAskFront(path: string): { data: Record<string, unknown>; body: string } | undefined {
+function readPetitioFront(path: string): { data: Record<string, unknown>; body: string } | undefined {
   try {
     const fm = readFront<Record<string, unknown>>(path);
     if (typeof fm.data !== "object" || fm.data === null || Array.isArray(fm.data)) return undefined;
@@ -50,81 +50,104 @@ interface Section {
   text: string;
 }
 
-export function buildContext(root: string, seat: string, opts: { now: Date; maxTokens?: number }): ContextBundle {
+/**
+ * Contract: buildContext never throws. A missing/unparseable bisellium.yml
+ * (or any other adapter failure reading the studio) yields
+ * `{text:'', truncated:['not a studio']}` — main.ts turns that into exit 2.
+ * An unrecognized sella yields `{text:'', truncated:['unknown sella']}` —
+ * main.ts turns that into exit 1 (a refusal, the studio itself is fine).
+ */
+export function buildContext(root: string, sella: string, opts: { now: Date; maxTokens?: number }): ContextBundle {
   const maxTokens = opts.maxTokens ?? DEFAULT_MAX_TOKENS;
-  const unknown: ContextBundle = { text: "", tokens: 0, truncated: ["unknown seat"] };
+  const notAStudio: ContextBundle = { text: "", tokens: 0, truncated: ["not a studio"] };
+  const unknownSella: ContextBundle = { text: "", tokens: 0, truncated: ["unknown sella"] };
 
   let manifest: ReturnType<typeof readManifest>;
   try {
     manifest = readManifest(root);
   } catch {
-    return unknown;
+    return notAStudio;
   }
-  const owner = manifest.owner ?? "owner";
-  const isOwner = seat === owner;
-  const seatRow = manifest.seats.find((s) => s.id === seat);
-  if (!isOwner && !seatRow) return unknown;
+  const patron = manifest.patron ?? "patron";
+  const isPatron = sella === patron;
+  const sellaRow = manifest.sellae.find((s) => s.id === sella);
+  if (!isPatron && !sellaRow) return unknownSella;
 
+  try {
+    return buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);
+  } catch {
+    return notAStudio;
+  }
+}
+
+function buildContextFor(
+  root: string,
+  manifest: ReturnType<typeof readManifest>,
+  sella: string,
+  sellaRow: ReturnType<typeof readManifest>["sellae"][number] | undefined,
+  maxTokens: number,
+  now: Date,
+): ContextBundle {
   const snap = snapshotDir(root, "context");
   const sections: Section[] = [];
 
-  // 1. the seat's own department charter ------------------------------------
-  const dept = seatRow ? manifest.departments.find((d) => d.id === seatRow.department) : undefined;
-  if (dept?.charter) {
-    const p = join(root, dept.charter);
+  // 1. the sella's own collegium lex ------------------------------------
+  const collegium = sellaRow ? manifest.collegia.find((d) => d.id === sellaRow.collegium) : undefined;
+  if (collegium?.lex) {
+    const p = join(root, collegium.lex);
     if (existsSync(p)) {
       const body = readFileSync(p, "utf8").replace(/^﻿/, "").trim();
-      sections.push({ name: "charter", priority: 1, text: `## ${dept.name} charter\n${dataBlock(dept.charter, body)}` });
+      sections.push({ name: "lex", priority: 1, text: `## ${collegium.name} lex\n${dataBlock(collegium.lex, body)}` });
     }
   }
 
-  // 2. the seat's active work items, with handoffs ---------------------------
-  const mine = snap.workItems.filter((w) => ACTIVE_STATES.has(w.state) && w.meta["owner"] === seat);
+  // 2. the sella's active opera, with traditio ---------------------------
+  const mine = snap.opera.filter((w) => ACTIVE_STATES.has(w.state) && w.meta["sella"] === sella);
   if (mine.length) {
     const lines = mine.map((w) => {
-      const h = w.meta["handoff"] as Record<string, string> | undefined;
+      const h = w.meta["traditio"] as Record<string, string> | undefined;
       const handoff = h
         ? `  handoff: stage=${h["stage"] ?? ""} next=${h["next"] ?? ""} blocked_on=${h["blocked_on"] ?? ""} at=${h["at"] ?? ""}`
         : "  handoff: (none)";
       return `${w.id} · ${w.state} · ${String(w.meta["title"] ?? "")}\n${handoff}`;
     });
-    sections.push({ name: "work items", priority: 2, text: `## Your active work\n${lines.join("\n")}` });
+    sections.push({ name: "opera", priority: 2, text: `## Your active work\n${lines.join("\n")}` });
   }
 
-  // 3. asks addressed to the seat, and the seat's own awaiting replies -------
-  const askLines: string[] = [];
-  for (const p of listMd(join(root, "asks"))) {
-    const ask = readAskFront(p);
-    if (!ask) continue;
-    const { data, body } = ask;
+  // 3. petitiones addressed to the sella, and the sella's own awaiting replies -------
+  const petitioLines: string[] = [];
+  for (const p of listMd(join(root, "petitiones"))) {
+    const petitio = readPetitioFront(p);
+    if (!petitio) continue;
+    const { data, body } = petitio;
     const id = typeof data["id"] === "string" ? data["id"] : undefined;
     const to = typeof data["to"] === "string" ? data["to"] : undefined;
     const from = typeof data["from"] === "string" ? data["from"] : undefined;
     const state = typeof data["state"] === "string" ? data["state"] : undefined;
     if (!id) continue;
-    const addressedToMe = to === seat && state !== "resolved";
-    const myAwaitingReply = from === seat && state === "awaiting_reply";
+    const addressedToMe = to === sella && state !== "resolved";
+    const myAwaitingReply = from === sella && state === "awaiting_reply";
     if (!addressedToMe && !myAwaitingReply) continue;
-    askLines.push(`${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(`asks/${id}.md`, body.trim())}`);
+    petitioLines.push(`${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(`petitiones/${id}.md`, body.trim())}`);
   }
-  if (askLines.length) sections.push({ name: "asks", priority: 3, text: `## Asks\n${askLines.join("\n")}` });
+  if (petitioLines.length) sections.push({ name: "petitiones", priority: 3, text: `## Petitiones\n${petitioLines.join("\n")}` });
 
-  // 4. one-line index of the seat's department --------------------------------
-  if (dept) {
-    const idx = snap.workItems
-      .filter((w) => w.meta["department"] === dept.id)
+  // 4. one-line index of the sella's collegium --------------------------------
+  if (collegium) {
+    const idx = snap.opera
+      .filter((w) => w.meta["collegium"] === collegium.id)
       .map((w) => `${w.id} · ${w.state} · ${String(w.meta["title"] ?? "")}`);
-    if (idx.length) sections.push({ name: "department index", priority: 4, text: `## ${dept.name} index\n${idx.join("\n")}` });
+    if (idx.length) sections.push({ name: "collegium index", priority: 4, text: `## ${collegium.name} index\n${idx.join("\n")}` });
   }
 
-  // 5. decision digests from the last two days ---------------------------------
-  const decisions = (snap.digest ?? []).filter((d) => {
+  // 5. decision acta from the last two days ---------------------------------
+  const decisions = (snap.acta ?? []).filter((d) => {
     if (d.kind !== "decision") return false;
     const at = toDate(d.at);
-    return at !== undefined && daysBetween(at, opts.now) <= DECISION_WINDOW_DAYS;
+    return at !== undefined && daysBetween(at, now) <= DECISION_WINDOW_DAYS;
   });
   if (decisions.length) {
-    const lines = decisions.map((d) => `${d.id} · ${d.title} · ${d.at}\n${dataBlock(`digest/${d.id}.md`, d.body.trim())}`);
+    const lines = decisions.map((d) => `${d.id} · ${d.title} · ${d.at}\n${dataBlock(`acta/${d.id}.md`, d.body.trim())}`);
     sections.push({ name: "decisions", priority: 5, text: `## Recent decisions\n${lines.join("\n")}` });
   }
 

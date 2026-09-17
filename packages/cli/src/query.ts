@@ -32,7 +32,7 @@ function toDate(v: unknown): Date | undefined {
 const hoursSince = (at: Date | undefined, now: Date): string =>
   at ? `${(Math.abs(now.getTime() - at.getTime()) / 3_600_000).toFixed(1)}h` : "unknown age";
 
-interface AskRow {
+interface PetitioRow {
   id: string;
   from?: string;
   to?: string;
@@ -40,9 +40,9 @@ interface AskRow {
   opened?: unknown;
 }
 
-function readAsks(root: string): AskRow[] {
-  const out: AskRow[] = [];
-  for (const p of listMd(join(root, "asks"))) {
+function readPetitiones(root: string): PetitioRow[] {
+  const out: PetitioRow[] = [];
+  for (const p of listMd(join(root, "petitiones"))) {
     try {
       const fm = readFront<Record<string, unknown>>(p);
       const d = fm.data;
@@ -57,7 +57,7 @@ function readAsks(root: string): AskRow[] {
         opened: d["opened"],
       });
     } catch {
-      /* unreadable ask: skip, same as check.ts's safeList degradation */
+      /* unreadable petitio: skip, same as check.ts's safeList degradation */
     }
   }
   return out;
@@ -65,16 +65,16 @@ function readAsks(root: string): AskRow[] {
 
 function statusAnswer(root: string, id: string): QueryAnswer {
   const snap = snapshotDir(root, "query");
-  const item = snap.workItems.find((w) => w.id === id);
+  const item = snap.opera.find((w) => w.id === id);
   if (!item) return { answer: `${id}: not found`, kind: "status" };
 
   const lines = [
     `${item.id}: ${String(item.meta["title"] ?? "")}`,
     `  state: ${item.state}`,
-    `  department: ${String(item.meta["department"] ?? "")}`,
-    `  owner: ${String(item.meta["owner"] ?? "")}`,
+    `  collegium: ${String(item.meta["collegium"] ?? "")}`,
+    `  sella: ${String(item.meta["sella"] ?? "")}`,
   ];
-  const gateEntries = Object.entries(item.gateStatus);
+  const gateEntries = Object.entries(item.probationes);
   if (gateEntries.length) {
     lines.push("  gates:");
     for (const [gid, g] of gateEntries) {
@@ -82,7 +82,7 @@ function statusAnswer(root: string, id: string): QueryAnswer {
       lines.push(`    ${gid}: ${g.status}${ev}`);
     }
   }
-  const h = item.meta["handoff"] as Record<string, string> | undefined;
+  const h = item.meta["traditio"] as Record<string, string> | undefined;
   if (h) lines.push(`  handoff: next=${h["next"] ?? ""} blocked_on=${h["blocked_on"] ?? ""} at=${h["at"] ?? ""}`);
 
   return { answer: lines.join("\n"), kind: "status" };
@@ -90,25 +90,25 @@ function statusAnswer(root: string, id: string): QueryAnswer {
 
 function needsYouAnswer(root: string, now: Date): QueryAnswer {
   const manifest = readManifest(root);
-  const humanGates = new Set(manifest.gates.filter((g) => g.kind === "human").map((g) => g.id));
+  const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
   const snap = snapshotDir(root, "query");
   const lines: string[] = [];
 
-  const gated = snap.workItems.filter((w) =>
-    Object.entries(w.gateStatus).some(([gid, g]) => humanGates.has(gid) && g.status === "pending"),
+  const gated = snap.opera.filter((w) =>
+    Object.entries(w.probationes).some(([gid, g]) => humanGates.has(gid) && g.status === "pending"),
   );
   if (gated.length) {
     lines.push("items waiting on a human gate:");
     for (const w of gated) {
-      const h = w.meta["handoff"] as Record<string, string> | undefined;
+      const h = w.meta["traditio"] as Record<string, string> | undefined;
       lines.push(`  ${w.id} · ${String(w.meta["title"] ?? "")} · ${hoursSince(toDate(h?.["at"]), now)} old`);
     }
   }
 
-  const asks = readAsks(root).filter((a) => a.state === "needs_you");
-  if (asks.length) {
-    lines.push("asks needing a reply:");
-    for (const a of asks) lines.push(`  ${a.id} · from ${a.from ?? "?"} · ${hoursSince(toDate(a.opened), now)} old`);
+  const petitiones = readPetitiones(root).filter((a) => a.state === "needs_you");
+  if (petitiones.length) {
+    lines.push("petitiones needing a reply:");
+    for (const a of petitiones) lines.push(`  ${a.id} · from ${a.from ?? "?"} · ${hoursSince(toDate(a.opened), now)} old`);
   }
 
   if (!lines.length) return { answer: "nothing is blocked on you", kind: "needs_you" };
@@ -117,24 +117,41 @@ function needsYouAnswer(root: string, now: Date): QueryAnswer {
 
 function burnAnswer(root: string): QueryAnswer {
   const snap = snapshotDir(root, "query");
-  const budgets = snap.budgets ?? [];
-  if (!budgets.length) return { answer: "no budgets declared", kind: "burn" };
-  const lines = budgets.map((b) => {
+  const stipendia = snap.stipendia ?? [];
+  if (!stipendia.length) return { answer: "no aerarium declared", kind: "burn" };
+  const lines = stipendia.map((b) => {
     const allowance = b.allowance.tokens;
     const burn = b.burn.tokens;
     const pct = allowance ? ((burn / allowance) * 100).toFixed(1) : "?";
-    return `${b.departmentId} · ${burn}/${allowance ?? "?"} tokens · ${pct}% · ${b.posture}`;
+    return `${b.collegiumId} · ${burn}/${allowance ?? "?"} tokens · ${pct}% · ${b.posture}`;
   });
   return { answer: lines.join("\n"), kind: "burn" };
 }
 
+/**
+ * Contract: answer never throws. Any adapter/fs failure while resolving a
+ * question against `root` (missing or unparseable bisellium.yml, or any
+ * other read error under it) is reported as "not a studio" rather than a
+ * stack trace — main.ts turns that into exit 2.
+ */
 export function answer(root: string, question: string, opts: { now: Date }): QueryAnswer {
-  const status = STATUS.exec(question);
-  if (status) return statusAnswer(root, status[1]!.toUpperCase());
+  const notAStudio: QueryAnswer = { answer: null, kind: "unknown", suggestions: [`not a studio: ${root}`] };
+  try {
+    readManifest(root); // cheap existence/parse check, independent of which question shape matches
+  } catch {
+    return notAStudio;
+  }
 
-  if (NEEDS_YOU.test(question)) return needsYouAnswer(root, opts.now);
+  try {
+    const status = STATUS.exec(question);
+    if (status) return statusAnswer(root, status[1]!.toUpperCase());
 
-  if (BURN.test(question)) return burnAnswer(root);
+    if (NEEDS_YOU.test(question)) return needsYouAnswer(root, opts.now);
 
-  return { answer: null, kind: "unknown", suggestions: SUGGESTIONS };
+    if (BURN.test(question)) return burnAnswer(root);
+
+    return { answer: null, kind: "unknown", suggestions: SUGGESTIONS };
+  } catch {
+    return notAStudio;
+  }
 }

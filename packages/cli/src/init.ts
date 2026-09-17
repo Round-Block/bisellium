@@ -1,7 +1,7 @@
 /**
  * `bisellium init` — scaffold the smallest studio that passes check
- * (examples/fixtures/good-minimal, plus a charter and a budget so it starts
- * clean). Contract: initStudio never throws.
+ * (examples/fixtures/good-minimal, plus a lex and an aerarium entry so it
+ * starts clean). Contract: initStudio never throws.
  */
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
@@ -9,6 +9,8 @@ import { checkStudio, formatReport } from "./check.js";
 
 export interface InitOptions {
   now?: Date;
+  /** IANA zone the ISO week is computed in. Defaults to UTC (documented in the init output). */
+  timezone?: string;
 }
 
 export interface InitResult {
@@ -17,9 +19,23 @@ export interface InitResult {
   root?: string;
 }
 
-/** ISO 8601 week (Monday start, week containing the year's first Thursday). */
-function isoWeek(now: Date): string {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+const DEFAULT_TIMEZONE = "UTC";
+
+/** `now`'s calendar date (YYYY-MM-DD) as observed in `timeZone`. */
+function isoDateInZone(now: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/**
+ * ISO 8601 week (Monday start, week containing the year's first Thursday),
+ * computed from `now` as observed in `timeZone` — a studio in Tokyo and one
+ * in Los Angeles can be in different ISO weeks at the same instant.
+ */
+function isoWeek(now: Date, timeZone: string = DEFAULT_TIMEZONE): string {
+  const [year, month, day] = isoDateInZone(now, timeZone).split("-").map(Number) as [number, number, number];
+  const d = new Date(Date.UTC(year, month - 1, day));
   const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6
   d.setUTCDate(d.getUTCDate() - dayNum + 3); // Thursday of this ISO week
   const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
@@ -29,9 +45,9 @@ function isoWeek(now: Date): string {
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-const CHARTER = `# Production Charter
+const LEX = `# Production Lex
 
-Lead: \`producer\`
+Magister: \`producer\`
 
 ## Decides alone
 
@@ -55,35 +71,41 @@ export function initStudio(dir: string, opts: InitOptions = {}): InitResult {
     }
 
     const now = opts.now ?? new Date();
+    const timezone = opts.timezone ?? DEFAULT_TIMEZONE;
     const studio = basename(root);
-    const period = isoWeek(now);
+    const period = isoWeek(now, timezone);
 
-    mkdirSync(join(root, "charters"), { recursive: true });
-    for (const d of ["work", "asks", "digest", "budgets"]) {
-      mkdirSync(join(root, d), { recursive: true });
-      writeFileSync(join(root, d, ".gitkeep"), "");
-    }
+    mkdirSync(join(root, "leges"), { recursive: true });
+    for (const d of ["opera", "petitiones", "acta", "aerarium"]) mkdirSync(join(root, d), { recursive: true });
 
     const manifest = `bisellium: 1
 studio: ${JSON.stringify(studio)}
-owner: owner
-departments:
-  - { id: production, name: Production, lead: producer, charter: charters/production.md }
-seats:
-  - { id: producer, department: production, kind: agent }
-gates:
-  - { id: owner, name: Owner call, kind: human }
+patron: patron
+timezone: ${JSON.stringify(timezone)}
+collegia:
+  - { id: production, name: Production, magister: producer, lex: leges/production.md }
+sellae:
+  - { id: producer, collegium: production, kind: agent }
+probationes:
+  - { id: patron, name: Patron call, kind: human }
 wip_limit: 1
 `;
     writeFileSync(manifestPath, manifest);
-    writeFileSync(join(root, "charters", "production.md"), CHARTER);
+    writeFileSync(join(root, "leges", "production.md"), LEX);
     writeFileSync(
-      join(root, "budgets", `${period}.yml`),
-      `period: ${JSON.stringify(period)}\ndepartments:\n  production: { allowance_tokens: 500000 }\n`,
+      join(root, "aerarium", `${period}.yml`),
+      `period: ${JSON.stringify(period)}\ncollegia:\n  production: { stipendium_tokens: 500000 }\n`,
+    );
+    // A same-day daily acta so the freshly minted magister doesn't start life
+    // owing one (acta.daily would otherwise advise on an untouched studio).
+    writeFileSync(
+      join(root, "acta", `${isoDateInZone(now, timezone)}-init.md`),
+      `---\nauthor: producer\nkind: daily\ntitle: Studio initialized\nat: ${JSON.stringify(now.toISOString())}\n---\nScaffolded via \`bisellium init\`.\n`,
     );
 
     const result = checkStudio(root, now);
-    return { ok: result.ok, message: formatReport(result), root };
+    const tzNote = opts.timezone === undefined ? `timezone: ${timezone} (default — set bisellium.yml#timezone to change)` : `timezone: ${timezone}`;
+    return { ok: result.ok, message: `${tzNote}\n${formatReport(result)}`, root };
   } catch (e) {
     return { ok: false, message: `init failed: ${(e as Error).message}` };
   }

@@ -1,10 +1,10 @@
 bisellium: 1
 studio: Fixture
-owner: owner
-departments:
-  - { id: engineering, name: Engineering, lead: eng-lead }
-seats:
-  - { id: eng-lead, department: engineering }
-gates:
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: eng-lead }
+sellae:
+  - { id: eng-lead, collegium: engineering }
+probationes:
   - { id: tests,  name: Tests,       kind: automated }
   - { id: review, name: Lead review, kind: agent }
