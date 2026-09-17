@@ -14,6 +14,8 @@ sellae:
   - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5 }
 probationes:
-  - { id: tests, name: Tests, kind: automated }
+  - { id: tests, name: Tests, kind: automated, command: "npm test -s" }
+  - { id: lint, name: Lint, kind: automated, command: "true" }
+  - { id: types, name: Typecheck, kind: automated, command: "npm run -s typecheck" }
   - { id: review, name: Lead review, kind: agent }
 wip_limit: 3

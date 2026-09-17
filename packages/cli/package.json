@@ -5,7 +5,10 @@
   "main": "src/main.ts",
   "dependencies": {
     "@bisellium/adapter-native": "*",
+    "@bisellium/pipeline": "*",
+    "@bisellium/providers": "*",
     "@bisellium/schema": "*",
+    "@bisellium/shim": "*",
     "yaml": "^2.6.0"
   },
   "scripts": {

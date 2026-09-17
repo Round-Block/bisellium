@@ -9,6 +9,7 @@
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, isAbsolute, join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { parse as parseYaml } from "yaml";
 import {
   ACTUM_KINDS,
@@ -52,6 +53,7 @@ const DEFAULTS = {
   ask_stale_days: 2,
   daily_stale_days: 1,
   hot_doc_chars: 8000,
+  sella_stale_minutes: 30,
 };
 
 type Dict = Record<string, unknown>;
@@ -61,6 +63,8 @@ const num = (v: unknown): number | undefined => (typeof v === "number" && Number
 /** Signed elapsed days from `a` to `b`, clamped at 0 — a future `a` (relative
  *  to `b`) reads as fresh (0 days old), never as stale via an absolute value. */
 const days = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 86_400_000);
+/** Same clamp as `days`, in minutes — receipts are checked on a minutes timescale, not days. */
+const minutes = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 60_000);
 
 /** Dates must be ISO strings (or YAML-parsed Date objects); anything else is rejected, not guessed. */
 function isoDate(v: unknown): Date | undefined {
@@ -100,7 +104,24 @@ function safeList(dir: string): string[] {
   }
 }
 
-export function checkStudio(root: string, now: Date = new Date()): CheckResult {
+export interface CheckOptions {
+  /** Repo to resolve the current tree hash in, for `probatio.certifies.stale`.
+   *  Omitted ⇒ that rule is skipped silently (check stays hermetic/offline
+   *  by default); a bad or non-git `repo` also skips it silently — a
+   *  staleness check is advisory, never a reason for check itself to fail. */
+  repo?: string;
+}
+
+/** `git rev-parse HEAD^{tree}` in `repo`, or undefined if git/the repo isn't available. */
+function currentTreeHash(repo: string): string | undefined {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: repo, encoding: "utf8" }).trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function checkStudio(root: string, now: Date = new Date(), opts: CheckOptions = {}): CheckResult {
   const findings: Finding[] = [];
   const add = (rule: string, level: Level, where: string, message: string) =>
     findings.push({ rule, level, where, message });
@@ -109,6 +130,7 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     const blocks = findings.filter((f) => f.level === "block").length;
     return { root, now: now.toISOString(), ok: blocks === 0, notAStudio, blocks, advisories: findings.length - blocks, findings };
   };
+  const treeHash = opts.repo ? currentTreeHash(opts.repo) : undefined;
 
   // ---- manifest -----------------------------------------------------------
   const manifestPath = join(root, "bisellium.yml");
@@ -299,7 +321,12 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
           const c = gv["certifies"];
           if (c === undefined) add("probatio.certifies", "advise", where, `gate "${gid}" evidence has no identity (certifies)`);
           else if (!str(c)) add("probatio.certifies.type", "block", where, `gate "${gid}" certifies must be a quoted string`);
-          else certifies.set(gid, c as string);
+          else {
+            certifies.set(gid, c as string);
+            const cs = c as string;
+            if (treeHash && probatioKind.get(gid) === "automated" && cs.startsWith("tree:") && cs !== `tree:${treeHash}`)
+              add("probatio.certifies.stale", "advise", where, `gate "${gid}" certifies ${cs}, current tree is tree:${treeHash}`);
+          }
         }
       }
       if (gs === "waived") {
@@ -417,6 +444,46 @@ export function checkStudio(root: string, now: Date = new Date()): CheckResult {
     const last = latestDaily.get(magister);
     if (!last) add("acta.daily", "advise", `acta/#${collegium}`, `magister "${magister}" has no daily acta`);
     else if (days(last, now) > defaults.daily_stale_days) add("acta.daily", "advise", `acta/#${collegium}`, `magister "${magister}" last daily ${days(last, now).toFixed(1)} days ago`);
+  }
+
+  // ---- receipts (bisellium run; W-008) -------------------------------------
+  // One JSON file per run session at receipts/<sella>/<sessionId>.json,
+  // written by @bisellium/shim. Not markdown, not front-matter — read raw.
+  const receiptsDir = join(root, "receipts");
+  let receiptSellaDirs: string[] = [];
+  try { receiptSellaDirs = existsSync(receiptsDir) ? readdirSync(receiptsDir) : []; } catch { receiptSellaDirs = []; }
+  const latestOpenBySella = new Map<string, { startedAt: Date; endedAt?: Date }>();
+  for (const sellaDirName of receiptSellaDirs) {
+    const sellaDirPath = join(receiptsDir, sellaDirName);
+    let isDir = false;
+    try { isDir = statSync(sellaDirPath).isDirectory(); } catch { isDir = false; }
+    if (!isDir) continue;
+    let files: string[] = [];
+    try { files = readdirSync(sellaDirPath).filter((f) => f.endsWith(".json")); } catch { files = []; }
+    for (const f of files) {
+      const p = join(sellaDirPath, f);
+      const where = rel(p);
+      let raw: string;
+      try { raw = readFileSync(p, "utf8"); } catch { add("receipt.shape", "block", where, "unreadable"); continue; }
+      let data: unknown;
+      try { data = JSON.parse(raw); } catch { add("receipt.shape", "block", where, "not valid JSON"); continue; }
+      if (!isDict(data) || !str(data["sella"]) || !str(data["startedAt"])) {
+        add("receipt.shape", "block", where, "receipt missing sella/startedAt");
+        continue;
+      }
+      const sellaId = str(data["sella"])!;
+      const startedAt = isoDate(data["startedAt"]);
+      if (!startedAt) continue; // shape passed (non-empty string) but not a real date — nothing to age
+      const endedAt = data["endedAt"] !== undefined ? isoDate(data["endedAt"]) : undefined;
+      const prev = latestOpenBySella.get(sellaId);
+      if (!prev || startedAt > prev.startedAt) latestOpenBySella.set(sellaId, { startedAt, endedAt });
+    }
+  }
+  for (const [sellaId, rec] of latestOpenBySella) {
+    if (rec.endedAt) continue;
+    const mins = minutes(rec.startedAt, now);
+    if (mins > defaults.sella_stale_minutes)
+      add("sella.stale", "advise", `receipts/${sellaId}`, `sella "${sellaId}" has been running ${mins.toFixed(0)} min with no receipt end`);
   }
 
   // ---- aerarium: allowances only -------------------------------------------

@@ -26,6 +26,10 @@ import type {
   Stipendium,
   Opus,
 } from "@bisellium/schema";
+// Lazy-imported inside providerStatus() (not at module top level) — @bisellium/providers
+// imports readUsageProviders back from this module, and both sides only touch
+// the cycle from inside function bodies, never at module-evaluation time.
+import { compositeSource, quotaAxiSource, usageYamlSource } from "@bisellium/providers";
 
 // Fixed lifecycle (ADOPTION.md): greenlit is the Patron's slate decision.
 export const NATIVE_LIFECYCLE_ID = "bisellium";
@@ -47,7 +51,7 @@ export interface Manifest {
   timezone?: string;
   collegia: { id: string; name: string; magister: string; fallback?: string; lex?: string }[];
   sellae: { id: string; collegium: string; kind?: ActorKind; model?: string }[];
-  probationes: { id: string; name: string; kind: ProbatioKind }[];
+  probationes: { id: string; name: string; kind: ProbatioKind; command?: string }[];
   wip_limit?: number;
   /** Overrides for the Defaults table in the dossier. */
   defaults?: Record<string, number>;
@@ -106,7 +110,7 @@ export function readManifest(root: string): Manifest {
 }
 
 export function describeLifecycle(manifest: Manifest): Lifecycle {
-  const gates: Probatio[] = manifest.probationes.map((g) => ({ id: g.id, name: g.name, kind: g.kind }));
+  const gates: Probatio[] = manifest.probationes.map((g) => ({ id: g.id, name: g.name, kind: g.kind, command: g.command }));
   const patron = manifest.patron ?? "patron";
   const production = manifest.collegia.find((d) => d.id === "production")?.magister ?? "production";
   const actorsFor = (to: string): string[] | undefined =>
@@ -242,31 +246,73 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
     }
   }
 
-  let providers: Provider[] = [];
+  const providers = readUsageProviders(root);
+
+  return { sellae, opera, providers, acta, collegia, stipendia, petitiones };
+}
+
+/**
+ * usage.yml → Provider[] — the "observed" half of the W-007 provider status
+ * seam. Extracted so @bisellium/providers's usageYamlSource can reuse this
+ * exact parsing instead of duplicating it (docs/ADOPTION.md: usage.yml is
+ * observed provider limit telemetry).
+ */
+export function readUsageProviders(root: string): Provider[] {
   const usagePath = join(root, "usage.yml");
-  if (existsSync(usagePath)) {
-    const u = parseYaml(readFileSync(usagePath, "utf8")) as {
-      providers: { id: string; usage_pct: number; reset_at?: string; status?: ProviderStatus }[];
-    };
-    providers = u.providers.map((p) => ({
+  if (!existsSync(usagePath)) return [];
+  let parsed: unknown;
+  try {
+    parsed = parseYaml(readFileSync(usagePath, "utf8"));
+  } catch {
+    // Malformed YAML (unparseable) degrades to "no observed providers"
+    // rather than throwing a raw YAMLParseError at callers — see W-007
+    // verifier finding on readUsageProviders.
+    return [];
+  }
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    !Array.isArray((parsed as { providers?: unknown }).providers)
+  ) {
+    return [];
+  }
+  const u = parsed as {
+    providers: unknown[];
+  };
+  return u.providers
+    .filter(
+      (p): p is { id: string; usage_pct: number; reset_at?: string; status?: ProviderStatus } =>
+        typeof p === "object" && p !== null && !Array.isArray(p),
+    )
+    .map((p) => ({
       id: p.id,
       usagePct: p.usage_pct,
       resetAt: p.reset_at ? String(p.reset_at) : undefined,
       status: p.status ?? "unknown",
     }));
-  }
-
-  return { sellae, opera, providers, acta, collegia, stipendia, petitiones };
 }
 
-export function createBiselliumAdapter(root: string, projectId?: string): SnapshotAdapter {
+export interface CreateBiselliumAdapterOpts {
+  /** providerStatus() runs quota-axi (a live subprocess) only when true.
+   *  Default false so snapshot tests stay hermetic. */
+  live?: boolean;
+}
+
+export function createBiselliumAdapter(root: string, projectId?: string, opts: CreateBiselliumAdapterOpts = {}): SnapshotAdapter {
   const manifest = readManifest(root);
   const id = projectId ?? manifest.studio.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const live = opts.live === true;
   return {
     style: "snapshot",
     projectId: id,
     intervalMs: 5_000,
     describeLifecycles: () => [describeLifecycle(manifest)],
     snapshot: async () => snapshotDir(root, id),
+    providerStatus: async () => {
+      const yaml = usageYamlSource(root);
+      const source = live ? compositeSource([quotaAxiSource({}), yaml]) : yaml;
+      const { providers } = await source.read({ now: new Date() });
+      return providers;
+    },
   };
 }

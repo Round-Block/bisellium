@@ -66,6 +66,10 @@ export interface Probatio {
   kind: ProbatioKind;
   /** Lifecycle state this probatio must pass before the item may leave. */
   requiredForState?: string;
+  /** Shell command that decides this probatio when it's automated — the
+   *  seam `bisellium verify` runs (packages/pipeline). Absent for gates a
+   *  human or agent still decides by hand. */
+  command?: string;
 }
 
 export interface LifecycleState {

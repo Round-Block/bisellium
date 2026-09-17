@@ -38,6 +38,7 @@ petitiones/<id>.md          questions to the Patron not about one opus; petition
 acta/<date>-<slug>.md       inform-and-proceed entries
 aerarium/<period>.yml       allowances per collegium — burn is derived, never written
 usage.yml                observed provider limit telemetry
+receipts/<sella>/<sessionId>.json  run receipts written by `bisellium run` (start + exit)
 ```
 
 Planned, not yet built: `memoria/sellae/`, `decisions/`, `archive/`, and the
@@ -55,7 +56,7 @@ collegia:
 sellae:
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
 probationes:
-  - { id: tests,  name: Tests,        kind: automated }
+  - { id: tests,  name: Tests,        kind: automated, command: "npm test" }
   - { id: review, name: Lead review,  kind: agent }
   - { id: patron, name: Patron call,  kind: human }
 review_probatio: review           # probatio id that gates "review" state (default "review")
@@ -67,6 +68,12 @@ defaults:                         # optional overrides of the dossier's Defaults
 Ids must be unique within collegia, sellae and probationes. Every magister and
 fallback must be a declared sella. A lex, if declared, must exist and
 should contain "Decides alone", "Digests" and "Asks" sections.
+
+`command` (a shell command) is optional on a `kind: automated` probatio; it is
+what `bisellium verify <opus-id>` runs to fill that gate's `status`/
+`evidence`/`certifies` in the opus itself (see `## opera/<id>.md` and
+`## Running check` below). An automated probatio with no `command` is never
+touched by `verify` — its evidence has to come from elsewhere.
 
 ## Lifecycle (fixed)
 
@@ -159,6 +166,13 @@ Posture per collegium is derived from burn/allowance (≥60% conserve,
 ≥85% closeout, ≥100% limited; no data → unknown). It is never self-declared.
 Any `burn*` key in an aerarium file is blocking: burn is derived, never mirrored.
 
+`bisellium providers [dir] --source auto|usage|quota-axi` prints this same
+per-provider shape. `usage` reads `usage.yml` only; `quota-axi` shells out to
+the live `quota-axi` CLI (never blocking `check`, `run` or `verify` when it's
+absent, unauthenticated, or slow — it degrades to a note within 60s);
+`auto` (the default) composites both, a live quota-axi reading for a
+provider id always taking precedence over `usage.yml`'s for that same id.
+
 ## Running check
 
 ```bash
@@ -168,4 +182,24 @@ npm run check -- examples/sample-studio
 Exit 0 passes, 1 has blocking findings, 2 means not a studio (or a usage
 error). `--json` gives machine-readable findings with stable rule ids;
 `--level block` limits output to what blocks; `--now <iso>` pins the clock for
-reproducible age checks. `npm test` runs the sample and every fixture.
+reproducible age checks; `--repo <dir>` additionally checks each automated
+gate's `certifies` against that repo's current tree, advising
+`probatio.certifies.stale` (or `.mismatch`) rather than failing — a staleness
+check is never a reason for `check` itself to block. `npm test` runs the
+sample and every fixture.
+
+## Running run and verify
+
+```bash
+npm run bisellium -- run --sella <sella> --studio <dir> -- <cmd…>
+npm run bisellium -- verify <opus-id> --studio <dir> --repo <dir>
+```
+
+`run` executes `<cmd…>` as `<sella>`, in its own git worktree by default
+(`--no-worktree` runs in place; `--base <ref>` sets the worktree's start
+point; `--keep` keeps it even when clean), and always leaves a receipt under
+`receipts/<sella>/`. `verify` runs every `kind: automated` probatio's
+`command` against `--repo` (defaulting to the studio's parent repo) and
+writes each one's `status`/`evidence`/`certifies` back into that opus's front
+matter — the only tool-written change to an opus, and it touches only those
+three keys.

@@ -1,8 +1,9 @@
 /**
  * bisellium — CLI entry. Exit codes: 0 pass · 1 blocking findings/refusal ·
  * 2 usage error or not a studio. `check` is the validator; `init`, `new`,
- * `context` and `query` are the build commands landed so far; more land per
- * the dossier build order.
+ * `context` and `query` are the build commands landed so far; `providers`,
+ * `run` and `verify` land the cascade-2 seams (provider status, worktree +
+ * receipts, automated probationes) — more land per the dossier build order.
  */
 import { resolve } from "node:path";
 import { checkStudio, formatReport, type Level } from "./check.js";
@@ -10,25 +11,43 @@ import { initStudio } from "./init.js";
 import { newItem } from "./new.js";
 import { buildContext } from "./context.js";
 import { answer } from "./query.js";
+import { runProviders } from "./providers.js";
+import { runCommand } from "./run.js";
+import { runVerify } from "./verify.js";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
+// `run` and `verify` are NOT listed here: both parse their own argv (run's
+// command line includes a "--" separator the generic parser below would
+// choke on; verify's flags are validated inside runVerify) — main.ts hands
+// them the raw, unparsed rest of argv instead of going through this table.
 const FLAGS_BY_COMMAND: Record<string, Set<string>> = {
-  check: new Set(["--json", "--now", "--level"]),
+  check: new Set(["--json", "--now", "--level", "--repo"]),
   init: new Set(["--now", "--timezone"]),
   new: new Set(["--kind", "--collegium", "--title"]),
   context: new Set(["--sella", "--now", "--max-tokens"]),
   query: new Set(["--now"]),
+  providers: new Set(["--source", "--json", "--now"]),
 };
 const USAGE =
-  "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>]\n" +
+  "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n" +
   "       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n" +
   "       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n" +
   "       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n" +
-  "       bisellium query <question> [dir] [--now <iso>]";
+  "       bisellium query <question> [dir] [--now <iso>]\n" +
+  "       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n" +
+  "       bisellium run --sella <sella> [--studio <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
+  "       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>]";
 
-function main(argv: string[]): number {
+async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
+
+  // `run` and `verify` own their argv end to end (see the comment on
+  // FLAGS_BY_COMMAND above) — dispatch before the generic flag parser ever
+  // sees their args.
+  if (cmd === "run") return (await runCommand(rest)).exitCode;
+  if (cmd === "verify") return (await runVerify(rest)).exitCode;
+
   const allowed = (cmd !== undefined ? FLAGS_BY_COMMAND[cmd] : undefined) ?? new Set<string>();
   const opts = new Map<string, string>();
   const args: string[] = [];
@@ -63,7 +82,8 @@ function main(argv: string[]): number {
     const level = opts.get("--level") as Level | undefined;
     if (level && level !== "block" && level !== "advise") { console.error("--level must be block or advise"); return 2; }
 
-    const result = checkStudio(root, now);
+    const repo = opts.get("--repo");
+    const result = checkStudio(root, now, repo ? { repo: resolve(repo) } : {});
     if (opts.has("--json")) console.log(JSON.stringify(level ? { ...result, findings: result.findings.filter((f) => f.level === level) } : result, null, 2));
     else console.log(formatReport(result, level));
     return result.notAStudio ? 2 : result.ok ? 0 : 1;
@@ -125,8 +145,21 @@ function main(argv: string[]): number {
     return 0;
   }
 
+  if (cmd === "providers") {
+    const source = opts.get("--source");
+    const result = await runProviders(args, { source, json: opts.has("--json"), now });
+    if (result.stdout) (result.exitCode === 0 ? console.log : console.error)(result.stdout);
+    return result.exitCode;
+  }
+
   console.error(USAGE);
   return 2;
 }
 
-process.exit(main(process.argv.slice(2)));
+main(process.argv.slice(2)).then(
+  (code) => process.exit(code),
+  (err) => {
+    console.error(err instanceof Error ? err.stack ?? err.message : String(err));
+    process.exit(1);
+  },
+);

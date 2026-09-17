@@ -1,13 +1,12 @@
 {
-  "name": "@bisellium/adapter-native",
+  "name": "@bisellium/providers",
   "version": "0.0.1",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@bisellium/providers": "*",
-    "@bisellium/schema": "*",
-    "yaml": "^2.6.0"
+    "@bisellium/adapter-native": "*",
+    "@bisellium/schema": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

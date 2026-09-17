@@ -1,0 +1,74 @@
+{
+  "generatedAt": "2026-09-17T22:01:39.244Z",
+  "schemaVersion": 5,
+  "providers": [
+    {
+      "provider": "claude",
+      "windows": [],
+      "state": {
+        "status": "auth_required",
+        "stale": false,
+        "error": "Claude sign-in required"
+      },
+      "quotaSemantics": {
+        "status": "unknown",
+        "effectiveAvailability": []
+      }
+    },
+    {
+      "provider": "codex",
+      "plan": "prolite",
+      "windows": [
+        {
+          "id": "weekly",
+          "label": "week",
+          "kind": "weekly",
+          "resetsAt": "2026-09-20T23:39:48.000Z",
+          "percentRemaining": 0,
+          "pace": {
+            "status": "ahead",
+            "reservePercentPoints": -43.8308,
+            "burnMultiple": 1.7803
+          }
+        }
+      ],
+      "credits": {
+        "remaining": 0,
+        "unlimited": false,
+        "unit": "credits"
+      },
+      "state": {
+        "status": "fresh",
+        "stale": false
+      },
+      "quotaSemantics": {
+        "status": "known",
+        "effectiveAvailability": [
+          {
+            "scope": "all_models",
+            "status": "known",
+            "effectivePercentRemaining": 0,
+            "boundedBy": ["weekly"],
+            "limitingWindowIds": ["weekly"],
+            "pace": {
+              "status": "ahead",
+              "aheadWindowIds": ["weekly"],
+              "worstReservePercentPoints": -43.8308,
+              "worstReserveWindowId": "weekly"
+            },
+            "runway": {
+              "status": "exhausted_now",
+              "usableRunwaySeconds": 0,
+              "limitingWindowId": "weekly",
+              "projectedExhaustedAt": "2026-09-17T22:01:39.244Z"
+            },
+            "selection": {
+              "status": "known",
+              "spendPriority": -1.7803
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

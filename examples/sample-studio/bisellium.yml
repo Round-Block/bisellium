@@ -15,7 +15,9 @@ sellae:
   - { id: art-lead,  collegium: art,         kind: agent,        model: gpt-6-astra }
   - { id: qa-lead,   collegium: qa,          kind: agent,        model: claude-sonnet-5 }
 probationes:
-  - { id: tests,  name: Tests,       kind: automated }
+  - { id: tests,  name: Tests,       kind: automated, command: "true" }
+  - { id: lint,   name: Lint,        kind: automated, command: "true" }
+  - { id: types,  name: Typecheck,   kind: automated, command: "true" }
   - { id: qa,     name: QA verdict,  kind: agent }
   - { id: review, name: Lead review, kind: agent }
   - { id: patron, name: Patron call, kind: human }

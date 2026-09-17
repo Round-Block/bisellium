@@ -57,8 +57,12 @@ npm install && npm run snapshot -- examples/sample-studio
 3. `bisellium check` — done.
 4. `bisellium init` / `bisellium new` — done.
 5. `bisellium context` / `bisellium query` — done (deterministic, offline; live in `packages/cli`, over the same files `check` reads).
-6. Integrations behind the seams: treehouse (worktrees under `run`), no-mistakes (merge-blocking pipeline → gate evidence), quota-axi (`cli` provider status), axi output conventions; null fallbacks so the sample runs without them. ← current
-7. Harness shim + direct line + tick: `run`, `talk`, `tick`/`pause`; firstmate evaluated as the L2 dispatcher.
+6. Integrations behind the seams — partial:
+   - `bisellium providers` (quota-axi live telemetry, composited with `usage.yml`) — done.
+   - `bisellium run` (worktree acquire/release + receipts) — done against git worktrees; a `treehouseProvider` seam exists and is picked up automatically when `treehouse` is on `PATH`, but the installed CLI (v1.8.0) doesn't accept `run`'s `--base` yet, so pass `--no-worktree` or omit `--base` on a machine with treehouse installed until that's reconciled.
+   - `bisellium verify` (gate evidence from an actual command run, written back into an opus) — done via a local pipeline; the `no-mistakes` merge-blocking pipeline has no non-interactive "validate and report per-probatio" entry point yet, so it's a documented stub that always defers to the local runner.
+   - Null fallbacks throughout: the sample and `studio` run fully without any of quota-axi, treehouse or no-mistakes installed.
+7. Harness shim + direct line + tick: `run` landed (above); `talk`, `tick`/`pause` not yet; firstmate evaluated as the L2 dispatcher. ← current
 8. `packages/core` — partially done: JSONL event log and snapshot differ (`diffSnapshots`) landed with an in-memory `Store`; burn derivation and a query API over the store are not yet built there (query today is `packages/cli`'s file-based `answer()`, not a core API).
 9. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
 10. Tauri wrapper: tray + native needs-you notifications.
@@ -66,8 +70,12 @@ npm install && npm run snapshot -- examples/sample-studio
 
 Cascade 1b hardened items 1–5 and 8 (review-flagged first-hour CLI friction and
 `packages/core` correctness fixes) and renamed the contract's product-facing
-vocabulary to Latin (see Vocabulary above); it did not advance past item 6,
-which remains current.
+vocabulary to Latin (see Vocabulary above).
+
+Cascade 2 landed item 6 (`providers`, `run`, `verify`, wired into the CLI with
+tests, `typecheck` and `check` green on both `examples/sample-studio` and
+`studio`) with the caveats noted above; it did not advance past item 7, which
+remains current.
 
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay
