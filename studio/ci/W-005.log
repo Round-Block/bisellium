@@ -1,0 +1,21 @@
+W-005: core correctness fixes
+PASS - 0 blocking, 0 advisory
+
+TYPECHECK: `npm run -s typecheck` clean across schema, adapters/native, adapters/epoch0, cli, core.
+
+TESTS: `npm test -s` exits 0; all 71 assertions PASS, including every one item 7 demanded:
+- cold ingest: replay() shows W-001 gates tests/qa/review passed
+- readLog: corrupt middle line is skipped, not thrown 2 events, counted 1 skipped
+- resumed Store: SOURCE_SEQ continues after the last seq on disk 32 vs 32
+- diff(A, C): evidence href-only change emits nothing 0 events
+- diff(null, A): digest by art-lead carries DEPARTMENT art
+
+The builder's typecheckOk/testsOk claims hold.
+
+SPEC LINE BY LINE (verified by reading the diff):
+1. gateChanged() is now checking status and evidence.certifies changes
+2. Differ returns zero events for non-structural changes (evidence-only).
+3. Store resume skips past the last known seq on disk, continuing from there.
+4. All core types align with schema (gates, probationes, traditio, acta).
+
+Full test suite: 71/71 PASS

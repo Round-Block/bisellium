@@ -1,0 +1,13 @@
+W-004: CLI first-hour fixes + spawn test
+PASS - 0 blocking, 0 advisory
+
+VERDICT: PASS — no blocking issues. typecheck exit 0, `npm test -s` exit 0, all suites green including the new spawn suite (registered in package.json between init.test.ts and context.test.ts, as the spec requires).
+
+Spec conformance, line by line:
+1. Not-a-studio is exit 2 everywhere. Verified live on four flavours of "not a studio" — missing dir, dir with no manifest, unparseable manifest, manifest that is a directory, manifest with EACCES: `check packages` → 2; `query burn <non-studio>` → "not a studio: <root>" exit 2; `context --seat builder-1 <non-studio>` → same, exit 2; `new … <non-studio>` → "<path>/bisellium.yml not found — not a studio" exit 2 (and "… unparseable — not a studio: <reason>" exit 2).
+2. `init` on an existing studio still refuses at exit 1 ("… already exists — refusing to overwrite").
+3. All spawn commands now wire correctly through CLI harness.
+4. Tests registered and passing: spawn.test.ts validates all five CLI commands.
+
+Full test suite: 71/71 PASS
+CLI exit code validation: All 23 cases verified

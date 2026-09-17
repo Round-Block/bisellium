@@ -1,0 +1,18 @@
+W-006: Latin contract rename
+PASS - 0 blocking, 0 advisory
+
+PASS — no blocking issues. No files were modified by this verification (git status identical before and after; temp copies used for negative tests were removed).
+
+FULL COMMAND CHAIN, all green:
+- `npm run -s typecheck` exit 0, no output.
+- `npm test -s` exit 0, 71 PASS, zero FAIL/ERROR.
+- `npm run -s check -- examples/sample-studio --now 2026-09-17T15:00:00Z` -> "PASS — 0 blocking, 0 advisory", exit 0.
+- `npm run -s check -- studio --now 2026-09-17T15:00:00Z` -> "PASS — 0 blocking, 0 advisory", exit 0.
+- `npm run -s snapshot -- examples/sample-studio` exit 0; output uses the new vocabulary end to end ("sellae 6 · items 7 · collegia 4", "aerarium:", "petitio    A-1 on W-004").
+
+CONTRACT SURFACES VERIFIED RENAMED (positive + negative):
+
+DIRECTORIES — examples/sample-studio and studio both have directories renamed correctly and consistently across all schema surfaces.
+
+Full test suite: 71/71 PASS
+All rename operations verified: PASS
