@@ -98,11 +98,15 @@ lex, a decision, or a check rule and delete it here.
   `opus.red_evidence` blocking, D-008's containment rules (advisory pending
   P-004). Both opera closed through their own lifecycle after six honest
   review rounds. Retro 6: L-018–L-025.
-- In the Patron's inbox: P-004 (scope path.escapes.officina), P-005
-  (import-error-reds class, 4th recurrence), P-007 (path traversal, 3rd).
-  retro.ts skipped P-006 — numbering defect worth a micro-fix.
-- Engineering posture is CLOSEOUT for 2026-W38 (2.89M of 3.0M spent):
-  autonomous starts pause until the next period or a Patron budget write.
+- P-004/P-005/P-007 decreed 2026-09-19: path.escapes.officina scoped to opus
+  spec:/gate evidence: paths, then both D-008 rules re-promote to blocking;
+  opus.red_evidence gains content checks (identical bodies block, load-failure
+  bodies advise) with the assertion-level-reds lex clause; isContained hoists
+  as the only sanctioned officina-path join with its lex clause. Implementation
+  = W-022 + W-023 (backlog). retro.ts P-006 numbering fix rides W-023.
+- Inbox empty. Engineering posture CLOSEOUT for 2026-W38 (2.89M/3.0M): the
+  fasti holds until W39 (Mon 2026-09-21), then greenlight web I and W-022/W-023
+  per the Patron's timing decree — no budget write.
 - Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
   L2, adapters + desktop. Estimates and rationale are in the dossier.
 
