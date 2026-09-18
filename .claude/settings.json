@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "bisellium context --studio studio", "timeout": 2 },
+          { "type": "command", "command": "bisellium hook-event start --studio studio", "timeout": 2 }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "bisellium context --studio studio", "timeout": 2 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "bisellium hook-event stop --studio studio", "timeout": 2 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "bisellium hook-event tool --studio studio", "timeout": 2 }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": ["Workflow"]
+  }
+}

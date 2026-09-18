@@ -199,11 +199,11 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
     console.error(`hook-event ${sub}: ${parsed.error}`);
     return { exitCode: 0 };
   }
-  const sella = parsed.values.get("--sella");
-  if (!sella) {
-    console.error(`hook-event ${sub}: --sella is required`);
-    return { exitCode: 0 };
-  }
+  // --sella is optional here: a hook target must never block the harness
+  // for want of a flag, so it falls back to $BISELLIUM_SELLA (the same env
+  // var CLAUDE.md documents as the source of the sella baked into hook
+  // commands) and, failing that, the "guest" sella every studio declares.
+  const sella = parsed.values.get("--sella") ?? process.env["BISELLIUM_SELLA"] ?? "guest";
   if (!isSafePathSegment(sella)) {
     console.error(`hook-event ${sub}: --sella must be a plain id (no path separators)`);
     return { exitCode: 0 };
