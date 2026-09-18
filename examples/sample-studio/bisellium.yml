@@ -4,11 +4,13 @@ timezone: Europe/London
 patron: patron
 collegia:
   - { id: production,  name: Production,  magister: producer,  fallback: eng-lead, lex: leges/production.md }
+  - { id: design,      name: Design,      magister: architect, lex: leges/design.md }
   - { id: engineering, name: Engineering, magister: eng-lead,  lex: leges/engineering.md }
   - { id: art,         name: Art,         magister: art-lead,  lex: leges/art.md }
   - { id: qa,          name: QA,          magister: qa-lead,   lex: leges/qa.md }
 sellae:
   - { id: producer,  collegium: production,  kind: orchestrator, model: claude-opus-5 }
+  - { id: architect, collegium: design,      kind: agent,        model: claude-opus-5 }
   - { id: eng-lead,  collegium: engineering, kind: agent,        model: claude-opus-5 }
   - { id: builder-1, collegium: engineering, kind: agent,        model: claude-sonnet-5 }
   - { id: builder-2, collegium: engineering, kind: agent,        model: claude-sonnet-5 }

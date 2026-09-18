@@ -138,12 +138,12 @@ try {
     check("health.json: blocks matches check", health.blocks === expected.blocks);
     check("health.json: advisories matches check", health.advisories === expected.advisories);
     check(
-      "health.json: findingsByRule counts acta.daily = 4",
-      health.findingsByRule["acta.daily"] === 4,
+      "health.json: findingsByRule counts acta.daily = 5",
+      health.findingsByRule["acta.daily"] === 5,
       JSON.stringify(health.findingsByRule),
     );
     check("health.json: autonomy.paused is false", health.autonomy.paused === false);
-    check("health.json: due lists 4 dailies", Array.isArray(health.due) && health.due.length === 4, JSON.stringify(health.due));
+    check("health.json: due lists 5 dailies", Array.isArray(health.due) && health.due.length === 5, JSON.stringify(health.due));
     check("health.json: lastTick set", health.lastTick === health.at);
   }
 
@@ -176,7 +176,7 @@ try {
 
     const after = readdirSync(join(dir, "acta"));
     const added = after.filter((f) => !before.includes(f));
-    check("write tick: one acta per due magister", added.length === 4, added.join(", "));
+    check("write tick: one acta per due magister", added.length === 5, added.join(", "));
 
     const engPath = join(dir, "acta", "2026-09-18-eng-lead-daily.md");
     check("write tick: eng-lead daily written at expected path", existsSync(engPath));
@@ -234,7 +234,7 @@ try {
     const { logs } = await capture(() => runTick(["--studio", dir], { now: NOW, talk: countingTalk }));
     check("corrupt-at: eng-lead not called again (file untouched)", readFileSync(corruptPath, "utf8") === corruptBody);
     check("corrupt-at: eng-lead not counted as talked-to", !logs.some((l) => l.includes("eng-lead") && l.startsWith("wrote")));
-    check("corrupt-at: the other three magistri were still talked to", talkCalls === 3, String(talkCalls));
+    check("corrupt-at: the other four magistri were still talked to", talkCalls === 4, String(talkCalls));
   }
 
   // ---- aerarium due is computed in the manifest's timezone, not UTC ------
@@ -277,6 +277,10 @@ try {
         "{ id: producer,  collegium: production,  kind: orchestrator, model: claude-opus-5, harness: fake }",
       )
       .replace(
+        "{ id: architect, collegium: design,      kind: agent,        model: claude-opus-5 }",
+        "{ id: architect, collegium: design,      kind: agent,        model: claude-opus-5, harness: fake }",
+      )
+      .replace(
         "{ id: eng-lead,  collegium: engineering, kind: agent,        model: claude-opus-5 }",
         "{ id: eng-lead,  collegium: engineering, kind: agent,        model: claude-opus-5, harness: fake }",
       )
@@ -288,7 +292,7 @@ try {
         "{ id: qa-lead,   collegium: qa,          kind: agent,        model: claude-sonnet-5 }",
         "{ id: qa-lead,   collegium: qa,          kind: agent,        model: claude-sonnet-5, harness: fake }",
       );
-    check("real seam setup: all four magistri patched to harness: fake", patched !== raw && !patched.includes("model: claude-opus-5 }"));
+    check("real seam setup: all five magistri patched to harness: fake", patched !== raw && !patched.includes("model: claude-opus-5 }"));
     writeFileSync(manifestPath, patched);
 
     const before = readdirSync(join(dir, "acta"));
@@ -297,7 +301,7 @@ try {
 
     const after = readdirSync(join(dir, "acta"));
     const added = after.filter((f) => !before.includes(f));
-    check("real seam: one acta per due magister actually written", added.length === 4, added.join(", "));
+    check("real seam: one acta per due magister actually written", added.length === 5, added.join(", "));
 
     const engPath = join(dir, "acta", "2026-09-18-eng-lead-daily.md");
     check("real seam: eng-lead daily written at expected path", existsSync(engPath));

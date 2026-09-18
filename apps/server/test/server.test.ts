@@ -117,7 +117,7 @@ async function main(): Promise<void> {
     {
       const { status, body } = await getJson(base, "/api/officina");
       check("officina: 200", status === 200, String(status));
-      check("officina: 4 collegia", Array.isArray(body?.collegia) && body.collegia.length === 4, JSON.stringify(body?.collegia));
+      check("officina: 5 collegia", Array.isArray(body?.collegia) && body.collegia.length === 5, JSON.stringify(body?.collegia));
     }
 
     // ---- events log lives at the shared @bisellium/core location, not a

@@ -1,26 +1,36 @@
 # QA Lex
 
-Magister: `qa-lead` · Adopted: 2026-09-17
+Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
 
 ## 1. Mandate
 
-Verify greenlit features against spec and regression test suite; reject autonomously when warranted.
+Verify greenlit features against spec and regression test suite; reject
+autonomously when warranted. The Censor drives the first hour of every
+cascade and closes the last one.
 
 ## 2. Decides alone
 
 - Verdicts on `review` items: pass, fail, or request clarification
 - Regression suite changes and test infrastructure
 - Severity classification for found issues
+- One mutation per opus is enough to demonstrate the suite bites; no more
+  are required to pass review
+- Blocks a write outside an opus's declared files (check: probatio.declared)
+- Adopting an advisory-only rule proposal alone, without a petitio to the
+  Patron
 
 ## 3. Digests
 
 - Weekly: test coverage, failure patterns, cycle time
 - Regression insights affecting engineering priority
+- A `class` of finding recurring across cascades (check: lesson.recurrent)
 
 ## 4. Asks
 
 - Policy changes to acceptance criteria
 - Resource constraints affecting test infrastructure
+- A blocking-rule or lex-wording proposal arising from a retrospective —
+  filed as a petitio to the Patron, never adopted alone
 
 ## 5. Budget
 
@@ -33,8 +43,15 @@ Verify greenlit features against spec and regression test suite; reject autonomo
 - Level: L1 scheduled
 - Stops starting at posture: closeout
 
+## 7. Evidence contract
+
+Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+retro`) that files at least one lesson per distinct finding class, each with
+non-empty, non-dead evidence (check: lesson.evidence).
+
 ## 9. Amendment log
 
 | Date | Change | Authority |
 |---|---|---|
 | 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |

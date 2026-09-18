@@ -13,10 +13,9 @@
  * verify.ts/writes.ts's commands (see their file headers) — this file only
  * exposes the capability on `answer()`'s options.
  */
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { listMd, readFront, readManifest, snapshotDir } from "@bisellium/adapter-native";
-import { answer as answerFromIndex, INDEX_DB_REL, Store } from "@bisellium/core";
+import { answer as answerFromIndex, Store } from "@bisellium/core";
 
 export type QueryKind = "needs_you" | "status" | "burn" | "unknown";
 export interface QueryAnswer {
@@ -176,16 +175,26 @@ function projectIdFor(studio: string): string {
  *  change (a plain file edit never appends anything to events.jsonl on its
  *  own). */
 function answerFromIndexIfPresent(root: string, question: string, now: Date): QueryAnswer | undefined {
-  if (!existsSync(join(root, INDEX_DB_REL))) return undefined;
   try {
     const manifest = readManifest(root);
     const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
+    // No existsSync(INDEX_DB_REL) gate here (W-016 behaviour 2): a studio
+    // with no index yet gets one built right here (`new Store` creates
+    // `.bisellium/index/index.db`) instead of --from-index being silently a
+    // no-op until some other command happens to build it first.
     const store = new Store({ studioDir: root });
     store.ingest(snapshotDir(root, "query", now), {
       source: "query",
       ts: now.toISOString(),
       projectId: projectIdFor(manifest.studio),
       humanGates,
+      // W-016 behaviour 10: a query answer is a read — it must never
+      // append to the shared events.jsonl (the CLI's writes/hooks/apps-
+      // server's own ingest all trust that file as ground truth). The
+      // diffed events still fold into the index and this source's seq/
+      // snapshot are still persisted, so the next --from-index call (a
+      // fresh process, ordinarily) reconciles against the right baseline.
+      appendToLog: false,
     });
     const result = answerFromIndex(store.query, question, { now });
     store.query.close();

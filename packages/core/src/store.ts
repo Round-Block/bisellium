@@ -37,6 +37,36 @@ export interface IngestContext {
   projectId: string;
   /** Probatio ids that are `kind: human` — see DiffContext.humanGates. */
   humanGates?: Iterable<string>;
+  /**
+   * Default true. False for a read-only reconciliation ingest (W-016:
+   * `bisellium query --from-index`, packages/cli/src/query.ts) that must
+   * never write to the shared `events.jsonl` other tools (the CLI's writes,
+   * hooks, apps/server) trust as ground truth — a query answer is not
+   * allowed to have that side effect. The diffed events still fold into
+   * `this.query` (the Index), and `seq`/the last-seen snapshot for this
+   * source are still persisted (see `persistSnapshot`'s `seq` field) so a
+   * later ingest — from this same Store or a brand-new one constructed
+   * against the same studio dir, e.g. the next CLI invocation — diffs
+   * against the right baseline and assigns fresh, non-colliding ids rather
+   * than replaying a cold start from `seq` 0 every time.
+   */
+  appendToLog?: boolean;
+}
+
+/** `.bisellium/snapshots/<source>.json`'s on-disk shape. `seq` lets a
+ *  source's next id be recovered without replaying `events.jsonl` — the
+ *  only way to recover it at all for a source whose ingests never append to
+ *  that log (`appendToLog: false` above). A file written before this field
+ *  existed has no `seq`; it's read back as `{ seq: undefined, snapshot }`
+ *  and `seqBySourceFrom(log)` is what recovers that source's seq, same as
+ *  before this change. */
+interface PersistedSnapshot {
+  seq?: number;
+  snapshot: Snapshot;
+}
+
+function isPersistedSnapshot(v: unknown): v is PersistedSnapshot {
+  return typeof v === "object" && v !== null && "snapshot" in v;
 }
 
 export interface ReplayItem {
@@ -99,6 +129,9 @@ export class Store {
   private readonly snapshotsDir: string;
   private readonly log: GantryEvent[];
   private readonly lastSnapshot = new Map<string, Snapshot>();
+  /** Per-source seq recovered from a persisted snapshot file (new shape
+   *  only) — see `IngestContext.appendToLog` and `PersistedSnapshot`. */
+  private readonly persistedSeq = new Map<string, number>();
   private seqBySource: Map<string, number>;
   /** The SQLite index this store keeps fed. Query it directly — that's the
    *  point (docs on Index, index-db.ts). */
@@ -121,6 +154,13 @@ export class Store {
     this.seqBySource = seqBySourceFrom(this.log);
 
     this.loadPersistedSnapshots();
+    // A source whose ingests skip the log (appendToLog: false) can only
+    // recover its next seq from the persisted snapshot file, never from
+    // `this.log` (seqBySourceFrom above) — take whichever is higher, so a
+    // source that mixes both kinds of ingest never regresses its counter.
+    for (const [source, seq] of this.persistedSeq) {
+      if (seq > (this.seqBySource.get(source) ?? -1)) this.seqBySource.set(source, seq);
+    }
     this.query = new Index(join(this.studioDir, INDEX_DB_REL));
   }
 
@@ -135,8 +175,18 @@ export class Store {
     for (const f of files) {
       const source = decodeURIComponent(f.slice(0, -".json".length));
       try {
-        const snap = JSON.parse(readFileSync(join(this.snapshotsDir, f), "utf8")) as Snapshot;
-        this.lastSnapshot.set(source, snap);
+        const parsed: unknown = JSON.parse(readFileSync(join(this.snapshotsDir, f), "utf8"));
+        if (isPersistedSnapshot(parsed)) {
+          this.lastSnapshot.set(source, parsed.snapshot);
+          if (typeof parsed.seq === "number" && parsed.seq > (this.persistedSeq.get(source) ?? -1)) {
+            this.persistedSeq.set(source, parsed.seq);
+          }
+        } else {
+          // Pre-W-016 shape: the file *is* the Snapshot, with no seq — that
+          // source's seq is recovered from the log the same way it always
+          // was (seqBySourceFrom below), not from this file.
+          this.lastSnapshot.set(source, parsed as Snapshot);
+        }
       } catch {
         // A corrupt snapshot file just means this source re-appears in full
         // on its next ingest — noisy, never fatal (same spirit as
@@ -145,13 +195,15 @@ export class Store {
     }
   }
 
-  private persistSnapshot(source: string, snapshot: Snapshot): void {
+  private persistSnapshot(source: string, snapshot: Snapshot, seq: number): void {
     mkdirSync(this.snapshotsDir, { recursive: true });
     const path = join(this.snapshotsDir, `${encodeURIComponent(source)}.json`);
-    writeFileSync(path, JSON.stringify(snapshot), "utf8");
+    const persisted: PersistedSnapshot = { seq, snapshot };
+    writeFileSync(path, JSON.stringify(persisted), "utf8");
   }
 
   ingest(snapshot: Snapshot, ctx: IngestContext): GantryEvent[] {
+    const appendToLog = ctx.appendToLog ?? true;
     const prev = this.lastSnapshot.get(ctx.source) ?? null;
     const seq = this.seqBySource.get(ctx.source) ?? 0;
     const { events, seq: nextSeq } = diffSnapshots(prev, snapshot, {
@@ -162,13 +214,15 @@ export class Store {
       humanGates: ctx.humanGates,
     });
     if (events.length > 0) {
-      appendEvents(this.logPath, events);
-      this.log.push(...events);
+      if (appendToLog) {
+        appendEvents(this.logPath, events);
+        this.log.push(...events);
+      }
       this.query.apply(events);
     }
     this.seqBySource.set(ctx.source, nextSeq);
     this.lastSnapshot.set(ctx.source, snapshot);
-    this.persistSnapshot(ctx.source, snapshot);
+    this.persistSnapshot(ctx.source, snapshot, nextSeq);
     return events;
   }
 

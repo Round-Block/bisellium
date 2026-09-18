@@ -4,7 +4,7 @@
  * copies of examples/sample-studio. `now` is pinned to 2026-09-18T14:00:00Z,
  * same clock writes.test.ts uses.
  */
-import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { snapshotDir } from "@bisellium/adapter-native";
@@ -26,6 +26,11 @@ const dirs: string[] = [];
 function freshStudio(tag: string): string {
   const dir = mkdtempSync(join(tmpdir(), `bisellium-query-${tag}-`));
   cpSync(sampleStudio, dir, { recursive: true });
+  // Hermetic per this file's own header: a `.bisellium/` the fixture picked
+  // up from some other run against examples/sample-studio directly (it's
+  // gitignored, not tracked, but cpSync copies it regardless) must not leak
+  // into what's supposed to be a clean copy.
+  rmSync(join(dir, ".bisellium"), { recursive: true, force: true });
   dirs.push(dir);
   return dir;
 }
@@ -57,6 +62,32 @@ try {
     "after greenlight: --from-index reflects greenlit, not stale backlog",
     /state: greenlit/.test(after.answer ?? ""),
     after.answer ?? "",
+  );
+} finally {
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+}
+
+// ---- W-016 behaviour 2 & 10: --from-index on a studio with no index yet ----
+// builds one (index.db exists, the question is answered from it) but never
+// writes to the shared events.jsonl the CLI/hooks also append to — a read
+// path must not have write side effects on the log other tools trust.
+try {
+  const dir = freshStudio("fresh-index");
+  const logPath = join(dir, ".bisellium", "events.jsonl");
+  const dbPath = join(dir, ".bisellium", "index", "index.db");
+  const before = existsSync(logPath) ? readFileSync(logPath) : Buffer.alloc(0);
+
+  check("fresh studio: no index.db yet", !existsSync(dbPath));
+
+  const result = answer(dir, "status W-007", { now: NOW, fromIndex: true });
+  check("fresh studio: --from-index answers on first use", /state: backlog/.test(result.answer ?? ""), result.answer ?? "");
+  check("fresh studio: --from-index built the index db", existsSync(dbPath));
+
+  const after = existsSync(logPath) ? readFileSync(logPath) : Buffer.alloc(0);
+  check(
+    "fresh studio: --from-index appended nothing to events.jsonl",
+    Buffer.compare(before, after) === 0,
+    `before=${before.length}B after=${after.length}B`,
   );
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

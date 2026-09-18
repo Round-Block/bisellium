@@ -2,21 +2,27 @@ bisellium: 1
 studio: Bisellium
 patron: patron
 timezone: UTC
+hooks: { default_sella: guest }
 collegia:
   - { id: production, name: Production, magister: producer, lex: leges/production.md }
+  - { id: design, name: Design, magister: architect, lex: leges/design.md }
   - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md }
   - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md }
 sellae:
   - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5 }
+  - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
   - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: builder-b, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-d, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5 }
+  - { id: guest, collegium: production, kind: human }
 probationes:
   - { id: tests, name: Tests, kind: automated, command: "npm test -s" }
-  - { id: lint, name: Lint, kind: automated, command: "true" }
+  - { id: lint, name: Lint, kind: automated, command: "npm run -s lint" }
   - { id: types, name: Typecheck, kind: automated, command: "npm run -s typecheck" }
+  - { id: spec, name: Spec, kind: agent, since: 2026-09-18T19:00:00Z }
   - { id: review, name: Lead review, kind: agent }
-wip_limit: 3
+wip_limit: 4
 source_excludes: [examples/]

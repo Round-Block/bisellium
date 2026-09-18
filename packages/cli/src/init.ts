@@ -6,6 +6,7 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { checkStudio, formatReport } from "./check.js";
+import { renderInstructions } from "./instructions.js";
 
 export interface InitOptions {
   now?: Date;
@@ -107,6 +108,12 @@ wip_limit: 1
       join(root, "acta", `${isoDateInZone(now, timezone)}-init.md`),
       `---\nauthor: producer\nkind: daily\ntitle: Studio initialized\nat: ${JSON.stringify(now.toISOString())}\n---\nScaffolded via \`bisellium init\`.\n`,
     );
+
+    // The ROM tier (W-017): a freshly scaffolded studio is its own repo
+    // root, so CLAUDE.md/AGENTS.md land right here alongside bisellium.yml.
+    const rendered = renderInstructions(root, { now });
+    writeFileSync(join(root, "CLAUDE.md"), rendered.claude);
+    writeFileSync(join(root, "AGENTS.md"), rendered.agents);
 
     const result = checkStudio(root, now);
     const tzNote = opts.timezone === undefined ? `timezone: ${timezone} (default — set bisellium.yml#timezone to change)` : `timezone: ${timezone}`;

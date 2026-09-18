@@ -4,7 +4,7 @@
  * clock — matches the studio's pinned `2026-09-18T17:00:00Z` clock (which
  * falls in aerarium period 2026-W38, examples/sample-studio/aerarium).
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { readManifest, snapshotDir } from "@bisellium/adapter-native";
@@ -302,6 +302,41 @@ function withVerifying(): Snapshot {
     `${JSON.stringify(once)} vs ${JSON.stringify(twice)}`,
   );
   index.close();
+}
+
+// ---- 10. W-016: ingest({ appendToLog: false }) never touches events.jsonl,
+// and a second such ingest from a *fresh* Store instance (a separate CLI
+// process, in reality) still reconciles a real change instead of colliding
+// on id with the first ingest's synthetic cold-start events (both instances'
+// seqBySource would otherwise reset to 0, since nothing was ever appended to
+// the shared log for this source to recover it from). ------------------------
+
+{
+  const { dir, store: store1 } = freshStore();
+  const logPath = join(dir, EVENTS_LOG_REL);
+
+  const snapV1 = structuredClone(A);
+  store1.ingest(snapV1, { source: "query", ts: TS, projectId: "sample-studio", humanGates, appendToLog: false });
+  check("appendToLog:false: events.jsonl is never created", !existsSync(logPath));
+  const opusBefore = store1.query.opus("W-002");
+  check(
+    "appendToLog:false: index reflects the cold ingest",
+    opusBefore?.state === snapV1.opera.find((w) => w.id === "W-002")?.state,
+    JSON.stringify(opusBefore),
+  );
+  store1.close();
+
+  const snapV2 = withVerifying();
+  const store2 = new Store({ studioDir: dir }); // a separate process, same studio dir
+  store2.ingest(snapV2, { source: "query", ts: TS, projectId: "sample-studio", humanGates, appendToLog: false });
+  check("appendToLog:false across fresh instances: events.jsonl still never created", !existsSync(logPath));
+  const opusAfter = store2.query.opus("W-002");
+  check(
+    "appendToLog:false across fresh instances: a real change (building -> verifying) is not lost to an id collision",
+    opusAfter?.state === "verifying",
+    JSON.stringify(opusAfter),
+  );
+  store2.close();
 }
 
 process.exit(failed ? 1 : 0);
