@@ -1,0 +1,5 @@
+certifies: tree:0acb03d23dc3e3027c035788b85070fb5174d076
+command: npm run -s lint
+exit code: 1
+
+
