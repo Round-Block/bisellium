@@ -1,27 +1,9 @@
 # behaviour: 3
-# command: node --import tsx /tmp/claude-1000/w021-bbddf4d/packages/cli/src/__red_behaviour_3.mts /tmp/claude-1000/w021-bbddf4d
+# command: node --import tsx packages/cli/src/rules.test.ts . 3
 # exit: 1
 # at: 2026-09-19T13:00:00.000Z
 # sella: builder-b
-# tree: tree:b7edeb01426089311aa5ad612fefa1ffbc702f6c
+# tree: dirty:91e92caf50f48680b075cc16b709bb5d5be4e244
 
-node:internal/modules/esm/resolve:271
-    throw new ERR_MODULE_NOT_FOUND(
-          ^
-
-Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/tmp/claude-1000/w021-bbddf4d/packages/cli/src/rules/evidence.js' imported from /tmp/claude-1000/w021-bbddf4d/packages/cli/src/__red_behaviour_3.mts
-    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
-    at moduleResolve (node:internal/modules/esm/resolve:861:10)
-    at defaultResolve (node:internal/modules/esm/resolve:988:11)
-    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
-    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
-    at nextStep (node:internal/modules/customization_hooks:189:26)
-    at resolveBaseSync (file:///home/edckt/projects/bisellium/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:10932)
-    at resolveDirectorySync (file:///home/edckt/projects/bisellium/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:12238)
-    at resolveTsPathsSync (file:///home/edckt/projects/bisellium/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:13445)
-    at resolve (file:///home/edckt/projects/bisellium/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:15991) {
-  code: 'ERR_MODULE_NOT_FOUND',
-  url: 'file:///tmp/claude-1000/w021-bbddf4d/packages/cli/src/rules/evidence.js'
-}
-
-Node.js v25.9.0
+FAIL  opus.untracked: silent for backlog/greenlit/done/halted                [{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-backlog.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-done.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-greenlit.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-halted.md","message":"opus.untracked: not yet implemented"}]
+FAIL  opus.untracked: [] when opts.repo is absent                            [{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-backlog.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.red_evidence","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-backlog.md","message":"opus.red_evidence: not yet implemented"},{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-done.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.red_evidence","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-done.md","message":"opus.red_evidence: not yet implemented"},{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-greenlit.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.red_evidence","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-greenlit.md","message":"opus.red_evidence: not yet implemented"},{"rule":"opus.untracked","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-halted.md","message":"opus.untracked: not yet implemented"},{"rule":"opus.red_evidence","level":"block","where":"/tmp/claude-1000/bisellium-rules-git-untracked-inactive-tsbQps/studio/opera/W-halted.md","message":"opus.red_evidence: not yet implemented"}]
