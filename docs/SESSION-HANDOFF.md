@@ -77,10 +77,12 @@ lex, a decision, or a check rule and delete it here.
   and format:check now real); both officinae 0 blocking. W-016 and W-019 are
   `done` with the studio's first `tree:` certificates; retro 5 filed
   (acta/2026-09-19-retro-5.md, L-015–L-017).
-- In the Patron's inbox: P-001 (Censor's rule proposals), P-002 (licence
-  choice), P-003 (where per-behaviour recorded reds live — the class recurs
-  across cascades 2/4/5; builder reds currently survive only in
-  `~/.bisellium-evidence/cascade-5/`).
+- P-001/P-002/P-003 all decreed 2026-09-19: builder-isolation clause in the
+  engineering lex; opus.untracked blocks; red store at `studio/ci/reds/` via a
+  new `bisellium red` command with `opus.red_evidence` blocking after it lands;
+  D-008 promotes to blocking (probation served by cascade 5); licence
+  Apache-2.0 (LICENSE at root). Implementation = W-020 + W-021, backlog,
+  awaiting decretum.
 - Known gaps worth a cascade slot: no CLI writes an opus lifecycle transition
   (halted→building, building→done) or an agent-gate result — stopgaps
   `scripts/opus-ready.ts` and `scripts/opus-close.ts`, delete both when
