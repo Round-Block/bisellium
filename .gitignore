@@ -25,3 +25,7 @@ studio/timeline/
 # committed record — same reasoning as receipts/ and sessions/ above.
 studio/events.jsonl
 **/events.jsonl
+# Claude Code's own local overrides (W-017) — .claude/settings.json is the
+# committed hook/agent/command profile; settings.local.json is a per-machine
+# override (e.g. a developer's own permission grants) and never shared.
+.claude/settings.local.json
