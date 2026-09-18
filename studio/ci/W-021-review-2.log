@@ -1,0 +1,241 @@
+W-021 — eng-lead review, round 2 (cascade 6, D-012)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: 4a1293c "feat(W-021): opus.untracked, opus.red_evidence, D-008 path rules"
+brief: studio/briefs/W-021.md
+tree: 1f00fc18e203911bdf647687622633783cb416f4 (master), working tree carries
+      W-020's in-flight round-2 bookkeeping only
+
+VERDICT: FAIL, round 2. One blocking finding (B1). The opus does not close on
+this evidence.
+
+
+ON THE VOIDING OF ROUND 1 — THE STATED REASON IS WRONG
+
+I was handed round 2 on the premise that round 1 "reviewed an unbuilt opus
+after a spec-phase stall" and that "its logs were reverted". The tree says
+otherwise, and I record that rather than inherit it:
+
+  - studio/ci/W-021-review-1.log is present and committed at 7de09ae. Nothing
+    was reverted.
+  - It reviewed a built opus. It cites the merged implementation by file, the
+    859-test run, the three permitted check.ts edits, the fixture trap, and
+    the insurance clause's single firing site. That is not a review of an
+    unbuilt opus.
+
+Round 1 has a defect, but a narrower one, and it is the same defect as B1: it
+passed the opus while naming the missing reds as "recorded against this opus,
+not waived". Naming a gap is not satisfying the evidence contract. A reviewer
+cannot waive engineering lex §7 by disclosure; that is the Patron's to waive.
+Round 2 therefore reaches the same facts and a different verdict.
+
+
+WHAT I RAN
+
+  bisellium verify W-021 --studio studio --repo .   tests FAILED — false, see F4
+  same, with GIT_CONFIG_* unset                     tests/lint/types all passed
+  npm test                                          exit 0, 859 PASS, 0 FAIL
+  npm run -s typecheck                              exit 0
+  npm run -s lint                                   0 errors, 1 warning
+  npm run -s format:check                           clean
+  npm run -s check -- studio --repo .               1 blocking (W-020's, not W-021's)
+  npm run -s check -- examples/sample-studio --repo .   PASS, 0 blocking, 20 advisory
+  an adversarial probe of the four rules, written for this review and run
+  independently of packages/cli/src/rules.test.ts
+
+Disclosure: my first `verify` wrote `tests: failed` into this opus's front
+matter. That red was false (F4). I re-ran `verify` in a clean git environment
+and the gate is back to `passed` against the same tree hash. Both writes went
+through the CLI; no front matter was touched by hand.
+
+
+B1 — BLOCKING. `done` with no recorded red for any of twelve behaviours.
+
+  studio/ci/reds/W-021/ does not exist. The brief lists twelve behaviours and
+  requires a red for each, recorded with `bisellium red` before the behaviour
+  is implemented. Engineering lex §7 makes that a condition of `done`:
+  "Every `done` item carries: test log path, review note path, and the
+  recorded red for every behaviour its spec listed." CLAUDE.md's standing
+  rule is the same in one line.
+
+  What exists instead is ~/.bisellium-evidence/cascade-6/w021/, outside the
+  officina:
+    run1-red.txt    ERR_MODULE_NOT_FOUND, exit 1 — the implementation file
+                    absent from the worktree. One red for the whole test
+                    file. It does not discriminate behaviour 1 from
+                    behaviour 12 and shows no assertion failing.
+    run2.txt        all green except behaviour 12, which failed at `block`
+                    on the acta's ../README.md citation.
+    run3-green.txt  green after the level drop to `advise`.
+
+  I credit run2.txt: it is a real, dated red for behaviour 12 and it is what
+  drove the insurance clause. That is one behaviour out of twelve, and it is
+  still not in the officina.
+
+  This opus wrote the rule that blocks exactly this shape. `opus.red_evidence`
+  is silent on W-021 only because the opus was advanced to `done`, which takes
+  it out of the rule's building|verifying|review scope. Advancing the opus is
+  what silenced its own rule. I confirmed the rule bites correctly the moment
+  the state is active.
+
+  The root cause is not builder-b's diligence. The brief required W-020 to
+  land `bisellium red` on master as its first commit so builder-b could record
+  into the store; the harness ran both builders in parallel worktrees off one
+  base, so that commit never existed for builder-b to use. Builder-b captured
+  a genuine red and kept it outside the officina rather than forge one. That
+  is the right instinct.
+
+  It is also not now fixable. A red recorded today, against a tree where the
+  implementation exists, is backfill — "evidence is produced, never
+  backfilled" — and `bisellium red` refuses it by design. The evidence is
+  permanently unavailable for this opus.
+
+  So: the work passes review, the close does not. The remedy is the Patron's,
+  not mine — waive §7 for W-021 against the recorded orchestration root cause,
+  or reopen the opus. I will not pass a `done` that the officina's own rule
+  would block, on a gap this opus exists to make unforgivable.
+
+
+F2 — non-blocking. A passing run dressed as a red gets through.
+
+  packages/cli/src/rules/evidence.ts:191
+
+      if (exit === undefined || !/^-?\d+$/.test(exit) || exit === "0") ...
+
+  `exit === "0"` is a string comparison. `# exit: 00` and `# exit: -0` both
+  satisfy the integer regex and are both unequal to "0", so a log recording a
+  passing run reads as a genuine red. Confirmed against the built module:
+
+      # exit: 0     → blocks      (correct)
+      # exit: +0    → blocks      (correct — fails the regex)
+      # exit: 00    → NO FINDING  (wrong)
+
+  Behaviour 7's contract is the header being `0`, and `00` is `0`. One
+  character: `Number(exit) === 0`. Not blocking — it needs a hand-forged log,
+  which is already forbidden, and no log in either officina has this shape.
+
+
+F3 — non-blocking, scope. `opus.untracked` is blind to a gitignored opus.
+
+  `git ls-files --others --exclude-standard` omits ignored files, so an opus
+  matched by one .gitignore line reads as clean. Confirmed on a throwaway
+  repo: an active opus at studio/opera/W-901.md, gitignored, produces no
+  finding. The rule's stated purpose is that work must be attributable; a
+  one-line .gitignore defeats it silently.
+
+  The brief prescribed that exact command and those exact untracked-only
+  semantics, so this is not a defect against spec. It belongs in the retro
+  or a petitio as a scope question for the rule's next revision.
+
+
+F4 — non-blocking here, but it is a false-certificate mechanism.
+
+  packages/shim/src/redact.ts:25-26
+
+      const ALLOWLIST = /^(PATH|HOME|NODE_.*|LANG|TZ)$/;
+      const SECRET_NAME = /TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL/i;
+
+  `filterEnv` drops GIT_CONFIG_KEY_0 and GIT_CONFIG_KEY_1 — the name matches
+  /KEY/i and is not on the allowlist — while keeping GIT_CONFIG_COUNT=2 and
+  the matching VALUE_n. Git then refuses every invocation:
+
+      error: missing config key GIT_CONFIG_KEY_0
+      fatal: unable to parse command-line config          (exit 128)
+
+  Every git call inside a command `bisellium verify` runs dies. Proven on one
+  tree, one commit, three runs:
+
+      bisellium verify W-021 …                      tests: failed
+      bisellium verify W-021 … (GIT_CONFIG_* unset) tests: passed
+      npm test, standalone                          exit 0, 859 PASS, 0 FAIL
+
+  The failure surfaced at packages/cli/src/test.ts:121 → sourceTreeHash →
+  `git ls-tree -r HEAD`. This is what produced round 1's false tests-red as
+  well. Not W-021's file — it is shim/pipeline, W-008/W-009 — and not this
+  opus's to fix, but a probatio pipeline that mints a red the tree does not
+  deserve is the exact failure class the officina exists to prevent. It needs
+  its own opus. The narrow fix is to allowlist GIT_CONFIG_KEY_\d+ or to drop
+  GIT_CONFIG_COUNT and every GIT_CONFIG_* together rather than half of them.
+
+
+F5 — accepted. Behaviour 12's assertion over `studio` was relaxed.
+
+  packages/cli/src/rules.test.ts:379-380 asserts no *blocking* path.* finding
+  over `studio`, where the brief's behaviour 12 asked for no path.* finding at
+  all. That follows necessarily from the level drop; the literal assertion is
+  unsatisfiable once the rule advises. It is documented in the test comment
+  and in P-004, and run2.txt shows the original assertion genuinely red before
+  it was changed. Correct handling.
+
+
+F6 — noted. The clause was applied to both path.* rules.
+
+  Only `path.escapes.officina` ever fired; `path.id.unvalidated` is clean on
+  both officinae. Both dropped to `advise`. The brief's acceptance says "drop
+  the two path.* rules to advise" verbatim, so this is compliant — recorded
+  only so that P-004's resolution re-promotes them separately rather than as a
+  pair.
+
+
+WHAT PASSED, AND WAS CHECKED RATHER THAN ASSUMED
+
+  Files owned — exact. check.ts carries the three permitted edits and nothing
+  else: ID_RE hoisted out of checkStudio to an exported module-level const,
+  two findings.push lines, and the two imports those lines need. checkLink,
+  rel() and every existing rule's level are untouched. No edit to another
+  opus's source, to either bisellium.yml, or to examples/fixtures/.
+
+  package.json co-ownership held. scripts.test carries both W-020's
+  lifecycle.test.ts entry and W-021's rules.test.ts entry. The targeted
+  string replacement did not drop the concurrent edit, which a
+  parse/stringify round-trip would have.
+
+  Seam S2 — both rules take the officina as root, read opts.repo only when
+  present, return [] rather than guessing when they cannot observe, and
+  neither throws. Verified directly, not from the opus's own test file: not a
+  repo, git absent, opts.repo missing.
+
+  Dogfooding — rules/paths.ts contains no `.startsWith(` anywhere.
+  Containment is proven by relative(root, resolve(root, href)).
+
+  Adversarial probe, run independently of packages/cli/src/rules.test.ts:
+    git-init'd officina in $TMPDIR, active opus untracked
+        → two blocks, opus and brief, brief named in the message
+        → [] after `git add -A && git commit`
+    opus.red_evidence before ci/reds exists          → [] (silent, both levels)
+    same, ci/reds created, no logs, N=3              → block naming 1, 2, 3
+    same, 01/02/03.log present with exit 1           → [] (silent)
+    id: "../../etc/passwd"                           → path.id.unvalidated
+    spec: "../../../etc/passwd"                      → path.escapes.officina
+    countBehaviours over the real studio/briefs/W-021.md → 12
+
+  Real trees at the pinned clock 2026-09-19T13:00:00Z:
+    examples/sample-studio  zero findings from all four rule ids
+    studio                  one advisory path.escapes.officina — the acta's
+                            ../README.md — and zero blocking path.*
+
+  The insurance clause fired on exactly one site and P-004 names that site
+  correctly. I checked the claim rather than taking it: acta/
+  2026-09-17-kickoff.md does cite { href: ../README.md }, the reference is
+  legitimate, and editing it to make this opus's own rule go green would have
+  been the wrong move. Builder-b did not. That is the clause working.
+
+  check studio --repo . ends at one blocking finding and it is W-020's review
+  gate — a parallel round-2 review in flight — not W-021's.
+
+
+WHAT HAPPENS NEXT
+
+  The cascade does not close on W-021 while B1 stands. B1 is not remediable by
+  the builder and not waivable by me. It goes to the Patron as the question it
+  is: does W-021 close at `done` with its twelve reds unrecorded and the
+  orchestration root cause on the record, or does it reopen?
+
+  For the retro, independent of that answer: a "land X on master first"
+  dependency between two opera of one cascade has no mechanism behind it, and
+  the harness will run both builders in parallel off one base every time until
+  one exists. W-020 has the same hole for its own behaviours 9-11. F4 belongs
+  there too — the pipeline minted a false red twice in this cascade and would
+  have minted a third if I had recorded round 2 off `verify` alone.
+
+Failed on the close, not on the work. The rules themselves are correct,
+dogfooded, honestly levelled, and I would keep every line of them.

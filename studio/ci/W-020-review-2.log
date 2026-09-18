@@ -1,0 +1,268 @@
+W-020 — eng-lead review, round 2 (cascade 6, D-012)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: 967ad4f "feat(W-020): bisellium red — per-behaviour evidence store"
+              d8189fe "feat(W-020): bisellium ready, done, review — lifecycle writes"
+brief: studio/briefs/W-020.md
+
+Round 1 (ci/W-020-review-1.log) is void. It is builder-a's own acceptance
+record — its byline reads "recorded by: builder-a" and its own verdict line
+says "PASS, pending an independent eng-lead review" — yet it was written into
+the review probatio as `sella: eng-lead`. A self-certification recorded under
+the reviewer's name is not a review. This note replaces it.
+
+VERDICT: FAIL, round 2. One blocking finding (B1). The opus does not close.
+
+
+WHAT I RAN
+
+  bisellium verify W-020 --studio studio --repo .        see NOTE ON THE TESTS GATE
+  npm test                                              exit 0
+  npm run -s check -- studio --repo .                    PASS — 0 blocking, 41 advisory
+  a first-hour drive of all four verbs against a fresh copy of
+  examples/sample-studio in $TMPDIR — every behaviour 1-12 exercised by hand,
+  not by reading the test file.
+
+
+NOTE ON THE TESTS GATE — A FALSE RED, AND IT IS NOT W-020's
+
+The first `verify W-020` run came back `tests: failed` and wrote that into the
+front matter. A direct `npm test` on the same tree exits 0. Root cause, found
+and reproduced:
+
+  packages/pipeline/src/index.ts:75  runs each probatio command with
+                                     filterEnv(process.env)
+  packages/shim/src/redact.ts:34     drops any var whose NAME matches
+                                     /TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL/i
+
+This sandbox exports GIT_CONFIG_COUNT=2 with GIT_CONFIG_KEY_0/VALUE_0 and
+GIT_CONFIG_KEY_1/VALUE_1. filterEnv drops KEY_0 and KEY_1 (they match /KEY/i)
+and keeps COUNT and both VALUEs. git then sees a config count of 2 with no
+keys behind it and dies on every single invocation:
+
+  error: missing config key GIT_CONFIG_KEY_0
+  fatal: unable to parse command-line config
+
+Confirmed directly:
+
+  filterEnv(process.env): GIT_CONFIG_KEY_0 -> DROPPED, GIT_CONFIG_VALUE_0 ->
+  KEPT, GIT_CONFIG_KEY_1 -> DROPPED, GIT_CONFIG_VALUE_1 -> KEPT,
+  GIT_CONFIG_COUNT -> KEPT
+
+  env -u GIT_CONFIG_KEY_0 -u GIT_CONFIG_KEY_1 git ls-tree -r HEAD
+  -> error: missing config key GIT_CONFIG_KEY_0
+
+Re-running verify with the GIT_CONFIG_* block removed from the environment,
+same commit, same tree hash 1f00fc18:
+
+  tests: passed  ci/W-020-tests-1f00fc18.log
+  lint:  passed  ci/W-020-lint-1f00fc18.log
+  types: passed  ci/W-020-types-1f00fc18.log
+
+So the tests gate is green on the merits, and the front matter now records the
+honest result. This is a defect in filterEnv, not in W-020 — filterEnv owns no
+part of this opus and W-020 touches neither file. A name-pattern env filter
+that leaves a half-filtered multi-part variable set is a landmine for any
+probatio command that shells out to git, which is most of them. It needs its
+own opus: filter by variable GROUP, or drop GIT_CONFIG_COUNT whenever any
+GIT_CONFIG_KEY_n is dropped. Filed as F1 below.
+
+
+BLOCKING
+
+B1 · `ready --spec` and `review --evidence` accept a path that escapes the
+     officina, and write it into tracked front matter.
+
+     packages/commands/src/lifecycle.ts:98   ready
+     packages/commands/src/lifecycle.ts:284  review
+
+     Both guard with `existsSync(join(root, path))` and nothing else. The
+     brief states the requirement twice, in plain words: "Refuses when the
+     spec file does not exist **under the officina**" and "`--evidence` must
+     exist **under the officina**". `join()` is not containment. Demonstrated
+     against a fixture officina:
+
+       bisellium ready W-006 --spec ../../../../../etc/hostname --studio <off>
+       -> W-006: spec=../../../../../etc/hostname state=building
+       -> exit 0, and the front matter now reads
+          spec: ../../../../../etc/hostname
+
+       bisellium review W-004 --pass --evidence ../../../../../etc/hostname \
+         --studio <off>
+       -> W-004: review passed (../../../../../etc/hostname)
+       -> exit 0, evidence recorded
+
+     This is D-008's own discipline, blocking as of this cascade, and it is
+     the recurrent class review×path-traversal-from-ids (L-004, L-011). The
+     author knew the idiom — `safeRedsDir` at lifecycle.ts:353 does exactly
+     the right thing for `red`'s opus id, by resolved-path relation, with a
+     comment explaining why `startsWith` is not enough. Those two lines are
+     the only place in packages/commands that resolves a caller-supplied path
+     with a bare `join(root, ...)`; it is not inherited house style, it is new
+     in this opus.
+
+     The test file agrees with the gap. Behaviour 3's test (lifecycle.test.ts:
+     151) covers "no brief exists"; behaviour 8's covers "evidence not found".
+     Neither covers "resolves outside the officina", and the word `..` does
+     not appear in the file. That is the tests×tests-that-agree-with-the-bug
+     class (L-007, L-014).
+
+     Fix: run both paths through the same resolved-path relation `safeRedsDir`
+     already uses, and add the two red-then-green cases to behaviours 3 and 8.
+     Small diff, and it closes two recurrent classes at once.
+
+
+FINDINGS OF RECORD — not blocking, but they must be filed
+
+F1 · filterEnv's partial env filter (see NOTE ON THE TESTS GATE). Not W-020's
+     file. Needs an opus of its own; until it lands, every `bisellium verify`
+     run in this sandbox reports a false tests-red and writes it into an
+     opus's front matter. That is worse than a nuisance — it is a verifier
+     that lies in the direction of failure, and the next reviewer will burn
+     the same hour I did.
+
+F2 · The red store is incomplete: behaviours 9, 10 and 11 have no log in
+     studio/ci/reds/W-020/. Only 01-08 and 12 are there.
+
+     The brief is explicit and repeats itself: behaviours 9-11 are `red`'s
+     own, "run them, keep the failing output, and write them through
+     `bisellium red` the moment it runs, before you implement
+     ready/done/review". They were captured — honestly, before the file
+     existed, as an ERR_MODULE_NOT_FOUND — but they were left in the interim
+     store at ~/.bisellium-evidence/cascade-6/w020/behaviours-09-11-red.log,
+     as one file covering three behaviours. The evidence exists and is real;
+     it is in the wrong place, and the place it is in is one W-021's rule can
+     never read. I am not treating unrecoverable evidence as a gate: the code
+     is green now and `red` will rightly refuse to record a passing command,
+     so these three cannot be re-captured. It goes on the record instead.
+
+F3 · The check rule that should have caught F2 cannot. `checkRedEvidence`
+     (packages/cli/src/rules/evidence.ts:147) only fires for opera in
+     building/verifying/review. W-020 was moved to `done` in the same session
+     the reds were written, so `opus.red_evidence` skipped it and has never
+     once looked at this opus. A blocking evidence rule that stops looking the
+     moment an opus closes is a rule that can be outrun by closing fast. That
+     is W-021's rule, not W-020's code, but it is why F2 reached me unflagged
+     and it belongs in the retro.
+
+F4 · The nine reds that are present are one red, recorded nine times.
+     01-08 and 12 are byte-identical apart from the `# behaviour:` line —
+     same command, same tree dirty:c629ec44, same output, all written within
+     the same minute:
+
+       SyntaxError: The requested module './lifecycle.js' does not provide an
+       export named 'runDone'
+
+     That is a genuine red and it was genuinely produced, not backfilled —
+     `red` cannot be made to record a passing command and I confirmed that
+     myself. But a module that fails to resolve an export proves that the file
+     does not load; it does not show behaviour 5's assertion failing, because
+     no assertion in the file ever ran. The engineering lex §7 asks for "the
+     recorded red for every behaviour its spec listed". Nine copies of one
+     load error is one red wearing nine hats. Recurrent class
+     review×evidence-backfilled-or-absent (L-001, L-008, L-017 — this is the
+     fourth cascade).
+
+F5 · `review`'s return edge is dead in practice, so L-016's wall is only half
+     down. A `--fail` sends an opus back to `building` only from state
+     `review`. The brief itself concedes that "nothing in this codebase moves
+     an opus into `verifying` or `review`". So the one state the edge fires
+     from is a state nothing can produce, and a failed review on an opus in
+     `building` or `done` leaves it exactly where it was, with no command able
+     to move it: `ready` refuses anything that is not greenlit/halted, and
+     `done` refuses anything already done. Recording my own FAIL below
+     demonstrates this: W-020 will sit in `done` carrying a failed review
+     gate, and no verb in this CLI can return it to `building` for the fix.
+     That is not a reason to withhold the fail — it is the reason the next
+     opus needs a way back.
+
+F6 · `red` never checks that the opus exists. Every other verb refuses an
+     unknown opus with exit 2; `red` cheerfully creates the directory:
+
+       bisellium red W-999-nope --behaviour 1 --studio <off> -- false
+       -> W-999-nope: red recorded for behaviour 1 -> ci/reds/W-999-nope/01.log
+       -> exit 0
+
+     The Interfaces section lists "unknown opus" as an exit-2 case for these
+     commands. Containment is correct (that part is well done), so this is
+     litter rather than a hole, but the store is W-021's input and stray
+     directories in it are noise.
+
+F7 · `done` leaves `traditio.stage` behind. Every opus this cascade closed
+     carries `traditio.stage: building` against `state: done`, and check
+     raises `traditio.stage` advisories for W-016 through W-021. `done`
+     reproduces the gap in the `scripts/opus-close.ts` it deleted. Advisory
+     only, but it is six advisories that will never clear on their own.
+
+F8 · `done`'s wrong-state refusal exits 2 where the brief's exit-code contract
+     reads 1 ("a refusal the recorded state does not support"). Behaviour 5
+     only pins the gate refusals at 1 and behaviour 2 pins ready's state
+     refusal at 2, so this is under-specified rather than wrong. Worth one
+     line in the contract next time.
+
+F9 · Both commits end `Co-Authored-By: Claude Sonnet 5`. CLAUDE.md asks for a
+     trailer "naming the sella that wrote it" — that is `builder-a`, not a
+     model name. Cosmetic, and it is the whole repo's habit, not this opus's
+     invention.
+
+
+WHAT IS GOOD — and most of this opus is good
+
+  Files-owned discipline is clean, and I checked it line by line rather than
+  taking the commit message's word for it. `packages/commands/src/writes.ts`
+  came out export-only: nine `export` keywords added and not one other
+  character changed, the five existing write commands byte-identical.
+  `packages/cli/src/main.ts` is four dispatch lines and four USAGE lines
+  across the two commits, `FLAGS_BY_COMMAND` untouched, dispatch placed ahead
+  of the generic parser exactly as the brief required. Nothing outside the
+  owned list is touched in either commit. After cascade 4b this is the thing
+  I most expected to find broken and it is not.
+
+  `red` is the piece that had to be right, and it is. I drove it end to end:
+
+    - non-zero command: writes ci/reds/<opus>/03.log with the six headers in
+      the decreed order, `# exit: 7` equal to the command's real exit code,
+      `# at` equal to `--now`, `# tree:` a real certificate, and stdout and
+      stderr interleaved verbatim after one blank line.
+    - exit-0 refusal: "red: command exited 0 — that command passed, nothing
+      recorded", exit 1, and I confirmed no file AND no ci/reds/ directory was
+      created. The refusal that makes the store worth having works.
+    - --behaviour 0, -1, 1.5, a missing `--`, an empty command, and opus ids
+      `a/b`, `../evil` and `..` all refuse with exit 2 and write nothing.
+    - a second red for the same behaviour overwrites that behaviour's log and
+      leaves its neighbour alone.
+
+  The L-016 wall is genuinely down, which is the reason this opus exists. I
+  recorded a pass on a fixture opus, then a fail over it, and watched the
+  evidence path get overwritten and both rounds ride `workflow.gate_evaluated`
+  with `workflow.review.round` 1 and 2. A `--fail` on an opus in state
+  `review` returned it to `building`; on an opus in `building` it left the
+  state alone. No write touched timeline/patron.jsonl, as decreed.
+
+  `ready` and `done` honour their guards. `ready` on greenlit set `state`,
+  `spec:` and one `workflow.state_changed`, and I diffed the body byte for
+  byte — identical. With no `spec` probatio in the manifest it correctly
+  recorded no spec gate. `done` refused W-004 with exit 1 and "gates not
+  passed: patron" because patron is recorded `pending` — the recorded-human-
+  gate asymmetry the brief asked for, implemented off `readFront` and not off
+  a regex, which is precisely what got `scripts/opus-close.ts` deleted.
+
+  All four verbs print their own usage and exit 2 on no arguments. Cascade
+  4b's ship-a-command-nothing-reaches failure does not recur.
+
+  58 assertions over real temp-studio fixtures with byte-identity checks. The
+  suite is good work. Its one blind spot is B1's.
+
+
+DISPOSITION
+
+B1 is a two-line fix in a file this opus owns, plus two test cases. Fix it,
+capture the reds for those two cases before the fix, and bring it back for
+round 3. F2, F3 and F4 go to the retro as a fourth recurrence of
+review×evidence-backfilled-or-absent, with F3 as the reason it was not caught:
+close the rule's blind spot on `done` opera, or the store can always be
+outrun. F1 needs its own opus before the next cascade, or the next reviewer
+inherits a verifier that lies.
+
+Recorded with `bisellium review W-020 --fail --evidence ci/W-020-review-2.log
+--round 2 --sella eng-lead` — this opus's own command, which is the only
+reason this verdict can be written down at all.
