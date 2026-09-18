@@ -21,6 +21,10 @@ red.
   across many files
 - One opus owns its declared files; a builder does not edit another opus's
   files without a recorded handoff
+- Each builder in a cascade works in its own git worktree, or lands a commit
+  of its own files before the censor runs. A verifier's result is void if the
+  tree changed under it. The censor restores a file from a copy it made,
+  never with `git checkout --`
 
 ## 3. Digests
 
@@ -56,3 +60,4 @@ red for every behaviour its spec listed (check: lesson.evidence).
 |---|---|---|
 | 2026-09-17 | Adopted | Patron |
 | 2026-09-18 | Rewritten into enforceable clauses; role named as Fabri (W-018) | Patron |
+| 2026-09-19 | Builder-isolation clause adopted (P-001 §1: worktree or own commit, verifier void on tree change, no `git checkout --` restores) | Patron |

@@ -152,3 +152,9 @@ that — picking one is W-019's call, not a wiring/greening pass's.
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay
 reproduces the live view; removing one adapter leaves the other untouched.
+
+## Licence
+
+Apache-2.0 — see [LICENSE](LICENSE). Chosen by the Patron in P-002
+(2026-09-19): permissive with an explicit patent grant, matching the
+OpenTelemetry ecosystem the event contract builds on.
