@@ -20,6 +20,9 @@ import {
 } from "@bisellium/schema";
 import { listMd, readFront, STATES } from "@bisellium/adapter-native";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
+import { checkProcess } from "./rules/process.js";
+import { checkLex } from "./rules/lex.js";
+import { checkInstructions } from "./rules/instructions.js";
 
 export type Level = "block" | "advise";
 export interface Finding {
@@ -27,6 +30,17 @@ export interface Finding {
   level: Level;
   where: string;
   message: string;
+}
+/** Seam S2 — the one rule-module signature. `root` is the OFFICINA; `repo`
+ *  (the repo root, only present when `check` is invoked with `--repo`) is
+ *  how a rule that must read repo-root files (CLAUDE.md, docs/, …) reaches
+ *  them — it must never be inferred as the officina's parent (for
+ *  examples/sample-studio that parent is examples/, not the repo root).
+ *  `manifest` is the already-parsed (and shape-checked) bisellium.yml. */
+export interface RuleOpts {
+  now: Date;
+  repo?: string;
+  manifest?: unknown;
 }
 export interface CheckResult {
   root: string;
@@ -279,6 +293,33 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const agentGates = probationes.filter((g) => g["kind"] === "agent").map((g) => str(g["id"]) ?? "");
   const humanGates = probationes.filter((g) => g["kind"] === "human").map((g) => str(g["id"]) ?? "");
 
+  // Seam S3 — a manifest probatio may carry `since: <ISO datetime>`. It lets
+  // state.review.automated/agent and state.done.probationes skip a gate for
+  // an opus that handed off before the gate existed, without backfilling
+  // evidence or writing briefs for done work. A non-string or unparseable
+  // `since` is a manifest shape error, not silently ignored.
+  const probatioSince = new Map<string, Date>();
+  for (const g of probationes) {
+    const gid = str(g["id"]);
+    if (!gid || g["since"] === undefined) continue;
+    if (typeof g["since"] !== "string") {
+      add("manifest.shape", "block", `bisellium.yml#probationes`, `probatio "${gid}" since must be a string`);
+      continue;
+    }
+    const since = isoDate(g["since"]);
+    if (!since) { add("manifest.shape", "block", `bisellium.yml#probationes`, `probatio "${gid}" since "${g["since"]}" is not a parseable ISO datetime`); continue; }
+    probatioSince.set(gid, since);
+  }
+  /** A gate is exempt for this opus only when it declares `since` AND the
+   *  opus's own traditio.at is known and parseable AND precedes it — a
+   *  missing/unparseable traditio.at fails closed (no exemption, the gate
+   *  stays demanded), never the opposite. */
+  const gateExempt = (gid: string, traditioAt: Date | undefined): boolean => {
+    const since = probatioSince.get(gid);
+    if (!since || !traditioAt) return false;
+    return since.getTime() > traditioAt.getTime();
+  };
+
   const checkLink = (rule: string, where: string, href: string, what: string) => {
     if (/^[a-z][a-z0-9+.-]*:\/\//i.test(href)) return; // external URLs are not verified offline
     let ok = false;
@@ -328,6 +369,10 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     }
     const state = str(d["state"]) ?? "";
     if (state && !stateIds.has(state)) add("opus.state", "block", where, `unknown state "${state}"`);
+    // Used by the `since:` exemption below — read directly off the raw
+    // traditio value (not through checkTraditio, which runs later and only
+    // adds findings) so a missing/unparseable traditio.at can fail closed.
+    const traditioAt = isDict(d["traditio"]) ? isoDate((d["traditio"] as Dict)["at"]) : undefined;
     const collegium = str(d["collegium"]);
     if (collegium && !collegiumIds.has(collegium)) add("opus.collegium", "block", where, `collegium "${collegium}" not declared`);
     const sellaId = str(d["sella"]);
@@ -395,7 +440,10 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
         if (!str(gv["reason"])) add("probatio.waived.reason", "block", where, `gate "${gid}" waived without a reason`);
       }
     }
-    const notPassed = (ids: string[]) => ids.filter((x) => status.get(x) !== "passed" && status.get(x) !== "waived");
+    // Seam S3: a gate exempt via `since` for this opus is dropped from the
+    // "not passed" set entirely — it is not demanded, so it can't block.
+    const notPassed = (ids: string[]) =>
+      ids.filter((x) => status.get(x) !== "passed" && status.get(x) !== "waived" && !gateExempt(x, traditioAt));
 
     // state vs evidence: the asserted state must be supportable
     if (state === "review") {
@@ -406,11 +454,25 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       if (status.get(reviewProbatioId) === "failed") add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
     }
     if (state === "done") {
-      const missing = [...notPassed(automated), ...notPassed(agentGates), ...humanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!))];
+      const missing = [
+        ...notPassed(automated),
+        ...notPassed(agentGates),
+        ...humanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!) && !gateExempt(x, traditioAt)),
+      ];
       if (missing.length) add("state.done.probationes", "block", where, `state "done" but gates not passed: ${missing.join(", ")}`);
     }
     if (state === "verifying" && !automated.some((x) => status.has(x)))
       add("state.verifying.none", "advise", where, `state "verifying" with no automated gate recorded`);
+
+    // Seam S4 — state.building.spec fires ONLY when the manifest declares a
+    // probatio with id "spec" (so the six bad-* fixtures, which declare no
+    // such probatio, are untouched). Active states only: done/halted are
+    // history, never gated retroactively.
+    if (probatioIds.has("spec") && ACTIVE.has(state)) {
+      const specPath = str(d["spec"]);
+      if (!specPath || status.get("spec") !== "passed")
+        add("state.building.spec", "block", where, `active opus needs a spec: key and a passed "spec" gate`);
+    }
 
     // probatio.certifies.mismatch: ACTIVE opera only, same reasoning as the
     // stale/dirty/evidence.tree gate above — a done/halted item's gates
@@ -631,6 +693,12 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
           add("stray.file", "advise", `${dir}/${f}`, "not a markdown file; ignored by every reader");
     } catch { /* unreadable dir: nothing to report beyond what listMd found */ }
   }
+
+  // ---- rule modules (Seam S2) -----------------------------------------------
+  const ruleOpts: RuleOpts = { now, repo: opts.repo, manifest: m };
+  findings.push(...checkProcess(root, ruleOpts));
+  findings.push(...checkLex(root, ruleOpts));
+  findings.push(...checkInstructions(root, ruleOpts));
 
   return done();
 }

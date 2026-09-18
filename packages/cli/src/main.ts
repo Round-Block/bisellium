@@ -8,7 +8,9 @@
 import { resolve } from "node:path";
 import { checkStudio, formatReport, type Level } from "./check.js";
 import { initStudio } from "./init.js";
-import { newItem } from "./new.js";
+import { runNew } from "./new.js";
+import { runInstructions } from "./instructions.js";
+import { runRetro } from "./retro.js";
 import { buildContext } from "./context.js";
 import { answer } from "./query.js";
 import { runProviders } from "./providers.js";
@@ -24,24 +26,26 @@ import { runHooks, runHookEvent } from "./hooks.js";
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
 // `run`, `verify`, `talk`, `tick`, `pause`, `resume`, `handoff`, `emit`,
-// `answer`, `greenlight` and `budget` are NOT listed here: each parses its
-// own argv (several have a trailing free-text argument — talk's message,
-// answer's reply — the generic parser below would mangle, and a couple use
-// a "--" separator it would choke on) — main.ts hands them the raw,
-// unparsed rest of argv instead of going through this table.
+// `answer`, `greenlight`, `budget`, `new`, `instructions` and `retro` are
+// NOT listed here: each parses its own argv (several have a trailing
+// free-text argument — talk's message, answer's reply — the generic parser
+// below would mangle, and a couple use a "--" separator it would choke on)
+// — main.ts hands them the raw, unparsed rest of argv instead of going
+// through this table.
 const FLAGS_BY_COMMAND: Record<string, Set<string>> = {
   check: new Set(["--json", "--now", "--level", "--repo"]),
   init: new Set(["--now", "--timezone"]),
-  new: new Set(["--kind", "--collegium", "--title"]),
-  context: new Set(["--sella", "--now", "--max-tokens"]),
+  context: new Set(["--sella", "--studio", "--now", "--max-tokens"]),
   query: new Set(["--now", "--from-index"]),
   providers: new Set(["--source", "--json", "--now"]),
 };
 const USAGE =
   "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n" +
   "       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n" +
-  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n" +
-  "       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n" +
+  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]\n" +
+  "       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]\n" +
+  "       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]\n" +
   "       bisellium query <question> [dir] [--now <iso>] [--from-index]\n" +
   "       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n" +
   "       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
@@ -106,6 +110,9 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "emit") return runEmit(rest).exitCode;
   if (cmd === "hooks") return runHooks(rest).exitCode;
   if (cmd === "hook-event") return (await runHookEvent(rest)).exitCode;
+  if (cmd === "new") return runNew(rest).exitCode;
+  if (cmd === "instructions") return runInstructions(rest).exitCode;
+  if (cmd === "retro") return runRetro(rest).exitCode;
   if (cmd === "serve") return runServeUntilStopped(rest);
   // answer/greenlight/budget are Patron writes: BISELLIUM_ROLE=patron
   // before calling, so their timeline/patron.jsonl line records the
@@ -169,22 +176,12 @@ async function main(argv: string[]): Promise<number> {
     return result.ok ? 0 : 1;
   }
 
-  if (cmd === "new") {
-    const kind = opts.get("--kind");
-    const collegium = opts.get("--collegium");
-    const title = opts.get("--title");
-    if (!kind || !collegium || !title) { console.error(USAGE); return 2; }
-
-    const root = resolve(args[0] ?? ".");
-    const result = newItem(root, { kind, collegium, title });
-    if (result.ok) console.log(result.message);
-    else console.error(result.message);
-    return result.ok ? 0 : result.notAStudio ? 2 : 1;
-  }
-
   if (cmd === "context") {
-    const sella = opts.get("--sella");
-    if (!sella) { console.error(USAGE); return 2; }
+    // --sella is optional: a hook target (SessionStart/PreCompact call this
+    // command as `bisellium context --studio studio`, deliberately with no
+    // --sella baked in) falls back to $BISELLIUM_SELLA, and then "guest" —
+    // same convention as hook-event (see hooks.ts).
+    const sella = opts.get("--sella") ?? process.env["BISELLIUM_SELLA"] ?? "guest";
 
     let maxTokens: number | undefined;
     if (opts.has("--max-tokens")) {
@@ -192,7 +189,7 @@ async function main(argv: string[]): Promise<number> {
       if (!Number.isFinite(maxTokens) || maxTokens <= 0) { console.error("--max-tokens must be a positive number"); return 2; }
     }
 
-    const root = resolve(args[0] ?? ".");
+    const root = resolve(opts.get("--studio") ?? args[0] ?? ".");
     const bundle = buildContext(root, sella, { now, maxTokens });
     if (bundle.text === "" && bundle.truncated[0] === "not a studio") { console.error(`not a studio: ${root}`); return 2; }
     if (bundle.text === "" && bundle.truncated[0] === "unknown sella") { console.error(`unknown sella: ${sella}`); return 1; }

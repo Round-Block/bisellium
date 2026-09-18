@@ -34,6 +34,9 @@ what failing looks like.
 bisellium.yml              manifest: version, patron, collegia, sellae, probationes, wip_limit, defaults
 leges/<collegium>.md       one lex per collegium (LEX_TEMPLATE.md)
 opera/<id>.md               one file per opus, YAML front matter + notes
+briefs/<opus-id>.md        the spec an opus's `spec:` key points at (Intent · Files owned · Interfaces · Behaviours to test · Acceptance · Out of scope)
+decisions/D-nnn.md         a decision with a kill condition — never a belief with no way to be wrong
+lessons/L-nnn.md           one filed finding per distinct class, with non-empty, non-dead evidence
 petitiones/<id>.md          questions to the Patron not about one opus; petitiones the Patron opened
 acta/<date>-<slug>.md       inform-and-proceed entries
 aerarium/<period>.yml       allowances per collegium — burn is derived, never written
@@ -60,8 +63,41 @@ doesn't look like a credential — any variable name matching
 it's on that allowlist, so an untrusted probatio `command` can't read the
 parent process's secrets out of its own environment.
 
-Planned, not yet built: `memoria/sellae/`, `decisions/`, `archive/`, and the
-docs registry.
+Planned, not yet built: `memoria/sellae/`, `archive/`, and the docs registry.
+
+## decisions/D-nnn.md and lessons/L-nnn.md
+
+```yaml
+---
+id: D-001                                      # must equal the filename
+title: Every active opus carries a spec before it enters building
+at: 2026-09-18T19:00:00Z
+provenance: stated                             # stated | observed | inferred | suggested
+by: patron                                     # a sella, or the patron
+kill_when: "two consecutive cascades show specs slowing more than they save"
+supersedes: D-000                              # optional
+---
+```
+
+```yaml
+---
+id: L-001                                      # must equal the filename
+at: 2026-09-18T21:00:00Z
+class: "tests×flaky"                           # "<probatio>×<kind>"
+evidence: ["ci/retro-3.log"]                   # required, non-empty, no dead hrefs
+cascade: 4                                     # optional
+---
+```
+
+`decision.shape` blocks a missing/ill-typed key, an id that doesn't match
+its filename, or an unknown `provenance`. `decision.kill` blocks a missing
+or empty `kill_when` — a decision with no kill condition is a belief, not a
+decision. `lesson.shape` blocks the same class of shape errors; `lesson
+.evidence` blocks an empty evidence list or a dead relative href (the same
+contract `bisellium retro` refuses to violate — see below). `lesson
+.recurrent` advises when a `class` shows up across two or more distinct
+`cascade` values on two or more distinct lessons — the same mistake made
+once is a lesson; made twice, it's a pattern the lex should probably name.
 
 ## bisellium.yml
 
@@ -76,6 +112,7 @@ sellae:
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5, harness: claude-code }
 probationes:
   - { id: tests,  name: Tests,        kind: automated, command: "npm test" }
+  - { id: spec,   name: Spec,         kind: agent, since: 2026-09-18T19:00:00Z }
   - { id: review, name: Lead review,  kind: agent }
   - { id: patron, name: Patron call,  kind: human }
 review_probatio: review           # probatio id that gates "review" state (default "review")
@@ -104,6 +141,16 @@ what `bisellium verify <opus-id>` runs to fill that gate's `status`/
 `## Running check` below). An automated probatio with no `command` is never
 touched by `verify` — its evidence has to come from elsewhere.
 
+A probatio may carry `since: <ISO datetime>` — a non-string or unparseable
+value is a manifest shape error. `since` exempts an opus from that gate
+being *demanded* (not from ever being satisfiable) when the gate's `since`
+is later than the opus's own `traditio.at`: the gate didn't exist yet when
+that opus handed off, so it isn't retroactively required. An opus with a
+missing or unparseable `traditio.at` gets no exemption from any gate — it
+fails closed, the gate stays demanded, same as if `since` weren't declared
+at all. This is what let W-018 add a `spec` probatio without turning every
+already-`done` opus red: they all handed off before its `since`.
+
 ## Lifecycle (fixed)
 
 `backlog → greenlit → building → verifying → review → done`, plus `halted`.
@@ -111,8 +158,19 @@ Greenlit is the Patron's slate decision; everything after it is the collegium's.
 State is asserted by the magister, but `check` fails a state the evidence cannot
 support: `review` needs every automated gate and every other agent gate passed;
 `done` needs all non-human gates passed and any recorded human gate passed or
-waived. `waived` needs a `reason` and is never allowed on an automated gate.
-WIP counts `building` + `verifying`; `review` waits on someone else.
+waived — **except** a gate exempted by `since` (above), which is dropped from
+what's demanded entirely, for either state. `waived` needs a `reason` and is
+never allowed on an automated gate. WIP counts `building` + `verifying`;
+`review` waits on someone else.
+
+`state.building.spec` (**block**) fires only when the manifest declares a
+probatio with id `spec` — a studio that never opts in stays untouched. Where
+it applies: `building`, `verifying` or `review` with no `spec:` front-matter
+key, or whose `spec` gate isn't `passed`. `spec:` is an officina-relative
+path to `briefs/<opus-id>.md` (`bisellium new --spec <path>`, or `--brief`
+to also scaffold it); `done` and `halted` are never gated retroactively, and
+`since` plays no part here — a spec is either on the opus or it isn't, there
+is no "before the gate existed" case for a currently-active item.
 
 ## opera/<id>.md
 

@@ -21,6 +21,15 @@ binds nothing; the Patron may redirect after the fact.
 Bullet list. The only things that reach the Patron's inbox. Each one changes
 material direction. If this list grows, §2/§3 are too narrow.
 
+**The clause convention.** A lex is a set of enforceable clauses, not a wish
+list: a §2/§3/§4 clause that `check` actually enforces ends with a marker
+naming the rule, `(check: <rule.id>)` — e.g. `- WIP cap is respected (check:
+wip.cap)`. A clause with no marker is a habit, not a rule; `lex.unchecked`
+(advise, one finding per lex) reports how many §2/§3/§4 clauses in a lex
+still have none. Not every clause needs one — some genuinely can't be
+mechanically checked — but a lex with zero markers anywhere is a charter
+that binds nobody.
+
 ## 5. Budget
 
 - Period: `<week / sprint>`
