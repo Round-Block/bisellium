@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Instrument Sans", system-ui, sans-serif; }
+    a { color: #0B6E5F; } a:hover { color: #095A4E; }
+    .card { background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); }
+    .proj { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: #6B7A76; }
+    .pdot { width: 7px; height: 7px; border-radius: 50%; }
+    .slug { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 500; color: #16211E; }
+    .who { font-size: 12px; color: #6B7A76; }
+    .coltitle { font-size: 12px; font-weight: 600; color: #3A4744; display: flex; align-items: center; gap: 8px; }
+    .count { background: #EEF2F1; border-radius: 999px; padding: 1px 9px; font-size: 11px; font-weight: 500; color: #6B7A76; }
+    .gate { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    .g-pass { background: #2E9E64; }
+    .g-fail { background: #C64A3A; }
+    .g-pend { background: #EEF2F1; border: 1px solid #C4CFCB; }
+    .g-human { background: #FBF3E4; border: 1px solid #B7791F; }
+    .sect { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #93A19D; }
+    .gaterow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #EEF2F1; }
+    .gatename { font-size: 13px; color: #16211E; flex-grow: 1; }
+    .gatemeta { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #93A19D; }
+    .evt { display: flex; gap: 14px; padding: 9px 0; border-bottom: 1px solid #EEF2F1; }
+    .evt-ts { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #93A19D; width: 64px; flex-shrink: 0; }
+    .evt-body { font-size: 12.5px; color: #3A4744; line-height: 1.5; }
+    .evt-actor { font-weight: 600; color: #16211E; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #F6F8F7; color: #16211E; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <!-- top bar -->
+  <div style="height: 60px; background: #FFFFFF; border-bottom: 1px solid #E4EAE8; display: flex; align-items: center; gap: 28px; padding: 0 28px; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B6E5F" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"></path><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px">Gantry</span>
+    </div>
+    <div style="display: flex; gap: 2px">
+      <div style="padding: 6px 16px; border-radius: 6px; background: #16211E; color: #FFFFFF; font-size: 13px; font-weight: 500">Board</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px; display: inline-flex; align-items: center; gap: 7px">Inbox <span style="background: #FBF3E4; color: #96621A; border-radius: 999px; padding: 0 7px; font-size: 10.5px; font-weight: 600">3</span></div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Swimlane</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Agents</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Digest</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Graph</div>
+    </div>
+  </div>
+
+  <!-- dimmed board behind -->
+  <div style="flex-grow: 1; display: flex; gap: 18px; padding: 22px 28px; overflow: hidden; opacity: 0.35">
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+      <div class="coltitle">In progress <span class="count">3</span></div>
+      <div class="card"><div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0</div><div class="slug">train/relic-rework</div><div class="who">builder: sonnet</div></div>
+      <div class="card"><div class="proj"><span class="pdot" style="background: #4A6FA5"></span>voyager</div><div class="slug">run/market-scan-q3</div><div class="who">researcher &times;4</div></div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+      <div class="coltitle">Verifying <span class="count">1</span></div>
+      <div class="card"><div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0</div><div class="slug">train/pvp-band-fix</div><div class="who">sim failed</div></div>
+    </div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px">
+      <div class="coltitle">Awaiting review <span class="count">2</span></div>
+      <div class="card"><div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0</div><div class="slug">train/gacha-pity-ui</div><div class="who">reviewer: sol</div></div>
+    </div>
+  </div>
+
+  <!-- detail drawer -->
+  <div style="position: absolute; top: 60px; right: 0; bottom: 0; width: 540px; background: #FFFFFF; border-left: 1px solid #E4EAE8; box-shadow: -20px 0 44px rgba(22,33,30,0.10); display: flex; flex-direction: column">
+
+    <!-- drawer header -->
+    <div style="padding: 22px 28px 16px; border-bottom: 1px solid #EEF2F1; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; QA / CI gate &middot; PR #214</div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#93A19D" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </div>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 500">train/pvp-band-fix</span>
+      <span style="font-size: 11px; color: #93A19D">3h 05m &middot; $2.31 &middot; 1.14M tokens &mdash; builder $1.84 &middot; qa $0.36 &middot; reviews $0.11</span>
+    </div>
+
+    <!-- needs-you banner -->
+    <div style="margin: 16px 28px 0; background: #FBF3E4; border: 1px solid #EAD9B8; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; gap: 10px; align-items: flex-start">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B7791F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px"><path d="M12 9v4"></path><path d="M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+        <div style="font-size: 13px; color: #96621A; line-height: 1.5"><span style="font-weight: 600">Waiting on you.</span> The builder asks: accept +2% band-4 drift as the new target, or rebalance to the 48&ndash;52% band?</div>
+      </div>
+      <div style="display: flex; gap: 8px; margin-left: 25px">
+        <div style="background: #16211E; color: #FFFFFF; border-radius: 7px; padding: 6px 14px; font-size: 12.5px; font-weight: 500">Accept drift</div>
+        <div style="border: 1px solid #D7DEDC; background: #FFFFFF; border-radius: 7px; padding: 6px 14px; font-size: 12.5px; font-weight: 500">Rebalance</div>
+        <div style="border-radius: 7px; padding: 6px 10px; font-size: 12.5px; color: #6B7A76">Reply&hellip;</div>
+      </div>
+    </div>
+
+    <!-- gate ladder -->
+    <div style="padding: 18px 28px 4px">
+      <div class="sect" style="margin-bottom: 4px">Gate ladder</div>
+      <div class="gaterow">
+        <span class="gate g-pass"></span>
+        <span class="gatename">Serial test suite</span>
+        <span class="gatemeta">passed 12:18 &middot; 1,142 tests</span>
+      </div>
+      <div class="gaterow">
+        <span class="gate g-pass"></span>
+        <span class="gatename">GDScript scenarios</span>
+        <span class="gatemeta">passed 12:26</span>
+      </div>
+      <div class="gaterow">
+        <span class="gate g-fail"></span>
+        <span class="gatename">Balance sim (n=50)</span>
+        <span class="gatemeta" style="color: #C64A3A">failed 13:44 &middot; band 4 drift +7%</span>
+      </div>
+      <div class="gaterow">
+        <span class="gate g-human"></span>
+        <span class="gatename">Owner decision <span style="color: #96621A; font-size: 11px; font-weight: 600">&middot; human gate</span></span>
+        <span class="gatemeta" style="color: #96621A">waiting on you &middot; 46m</span>
+      </div>
+      <div class="gaterow" style="border-bottom: none">
+        <span class="gate g-pend"></span>
+        <span class="gatename" style="color: #93A19D">Consolidated final review</span>
+        <span class="gatemeta">pending</span>
+      </div>
+    </div>
+
+    <!-- event timeline -->
+    <div style="padding: 12px 28px; flex-grow: 1; overflow: hidden; display: flex; flex-direction: column">
+      <div class="sect" style="margin-bottom: 2px">Events</div>
+      <div class="evt">
+        <span class="evt-ts">13:46</span>
+        <div class="evt-body"><span class="evt-actor">builder</span> asked for your decision on the band-4 target <span style="color: #93A19D">(attention.requested)</span></div>
+      </div>
+      <div class="evt">
+        <span class="evt-ts">13:44</span>
+        <div class="evt-body"><span class="evt-actor">sim gate</span> failed &middot; band 4 winrate drift +7% over target</div>
+      </div>
+      <div class="evt">
+        <span class="evt-ts">12:26</span>
+        <div class="evt-body"><span class="evt-actor">GDScript gate</span> passed</div>
+      </div>
+      <div class="evt">
+        <span class="evt-ts">12:18</span>
+        <div class="evt-body"><span class="evt-actor">test gate</span> passed &middot; 1,142 / 1,142</div>
+      </div>
+      <div class="evt" style="border-bottom: none">
+        <span class="evt-ts">11:52</span>
+        <div class="evt-body"><span class="evt-actor">controller</span> moved the train: building &rarr; QA / CI gate</div>
+      </div>
+    </div>
+
+    <!-- extension slot -->
+    <div style="border-top: 1px solid #EEF2F1; padding: 14px 28px 20px">
+      <div class="sect" style="margin-bottom: 10px">From the epoch0 adapter</div>
+      <div style="display: flex; gap: 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px">
+        <div><div style="color: #93A19D; font-size: 10px">sim winrate</div><div style="color: #C64A3A; font-size: 15px; margin-top: 3px">57.2%</div></div>
+        <div><div style="color: #93A19D; font-size: 10px">target band</div><div style="color: #16211E; font-size: 15px; margin-top: 3px">48&ndash;52%</div></div>
+        <div><div style="color: #93A19D; font-size: 10px">files touched</div><div style="color: #16211E; font-size: 15px; margin-top: 3px">9</div></div>
+        <div style="margin-left: auto; align-self: center"><a href="#" style="font-size: 12px; text-decoration: none">open journal &#8599;</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

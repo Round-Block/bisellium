@@ -67,3 +67,7 @@ Hooks, subagents and slash commands are installed for this repo:
 - Hooks: `.claude/settings.json` (SessionStart/PreCompact re-inject context, Stop closes the receipt, PostToolUse on Write|Edit logs a tool event). The sella comes from `$BISELLIUM_SELLA` (default `guest`), never a `--sella` baked into a hook command.
 - Subagents: `.claude/agents/{builder,censor,architect,clerk}.md`, each pointing at its collegium's lex and `bisellium context`.
 - Slash commands: `.claude/commands/{tick,talk,retro,verify,check}.md` — exact invocations, since the CLI's flag allowlists are strict.
+
+## Session handoff
+
+Before orchestrating a cascade, read docs/SESSION-HANDOFF.md: the Patron's standing instructions, artifact links, environment facts and what is next. Keep it short; move durable items into a lex, a decision or a check rule.

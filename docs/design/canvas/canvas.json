@@ -1,0 +1,64 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Board"
+    },
+    {
+      "file": "Drawer.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 900,
+      "title": "Board · detail drawer"
+    },
+    {
+      "file": "Swimlane.dc.html",
+      "x": 0,
+      "y": 1040,
+      "w": 1440,
+      "h": 900,
+      "title": "Swimlane timeline"
+    },
+    {
+      "file": "Agents.dc.html",
+      "x": 1560,
+      "y": 1040,
+      "w": 1440,
+      "h": 900,
+      "title": "Agents · direct line"
+    },
+    {
+      "file": "Inbox.dc.html",
+      "x": 0,
+      "y": 2080,
+      "w": 1440,
+      "h": 900,
+      "title": "Inbox · threads"
+    },
+    {
+      "file": "Digest.dc.html",
+      "x": 1560,
+      "y": 2080,
+      "w": 1440,
+      "h": 900,
+      "title": "Digest · consultations"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "gantry-ui-brief",
+      "x": -112,
+      "y": -467,
+      "w": 340,
+      "text": "Gantry UI v2 — cleaner light system, multi-project board.\nBoard: columns are normalized phases shared across projects; each card carries its project dot and native state. Amber = needs your input (strip at top aggregates across projects).\nDrawer: waiting-on-you banner with actions, gate ladder incl. a human gate, events, adapter extension slot.\nSwimlane: 'you' are a lane — the amber dashed span is time blocked on your decision."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

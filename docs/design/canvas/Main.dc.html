@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Instrument Sans", system-ui, sans-serif; }
+    a { color: #0B6E5F; } a:hover { color: #095A4E; }
+    .card { background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); }
+    .proj { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: #6B7A76; }
+    .pdot { width: 7px; height: 7px; border-radius: 50%; }
+    .slug { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 500; color: #16211E; }
+    .who { font-size: 12px; color: #6B7A76; }
+    .age { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; color: #93A19D; }
+    .gate { width: 10px; height: 10px; border-radius: 3px; }
+    .g-pass { background: #2E9E64; }
+    .g-fail { background: #C64A3A; }
+    .g-pend { background: #EEF2F1; border: 1px solid #C4CFCB; }
+    .g-human { background: #FBF3E4; border: 1px solid #B7791F; }
+    .coltitle { font-size: 12px; font-weight: 600; color: #3A4744; display: flex; align-items: center; gap: 8px; }
+    .count { background: #EEF2F1; border-radius: 999px; padding: 1px 9px; font-size: 11px; font-weight: 500; color: #6B7A76; }
+    .needpill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #96621A; background: #FBF3E4; border-radius: 999px; padding: 2px 9px; }
+    .tab { padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px; }
+    .tab-on { background: #16211E; color: #FFFFFF; font-weight: 500; }
+    .seg { padding: 5px 13px; border-radius: 6px; color: #6B7A76; font-size: 12.5px; }
+    .seg-on { background: #FFFFFF; color: #16211E; font-weight: 500; box-shadow: 0 1px 2px rgba(22,33,30,0.08); }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #F6F8F7; color: #16211E; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <!-- top bar -->
+  <div style="height: 60px; background: #FFFFFF; border-bottom: 1px solid #E4EAE8; display: flex; align-items: center; gap: 28px; padding: 0 28px; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B6E5F" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"></path><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px">Gantry</span>
+    </div>
+    <div style="display: inline-flex; align-items: center; gap: 9px; border: 1px solid #D7DEDC; background: #FFFFFF; border-radius: 8px; padding: 7px 12px 7px 14px; box-shadow: 0 1px 2px rgba(22,33,30,0.05)">
+      <span style="font-size: 13px; font-weight: 500">All projects</span>
+      <span style="background: #EEF2F1; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 500; color: #6B7A76">8</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7A76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </div>
+    <div style="display: flex; gap: 2px">
+      <div class="tab tab-on">Board</div>
+      <div class="tab" style="display: inline-flex; align-items: center; gap: 7px">Inbox <span style="background: #FBF3E4; color: #96621A; border-radius: 999px; padding: 0 7px; font-size: 10.5px; font-weight: 600">3</span></div>
+      <div class="tab">Swimlane</div>
+      <div class="tab">Agents</div>
+      <div class="tab">Digest</div>
+      <div class="tab">Graph</div>
+    </div>
+    <div style="flex-grow: 1"></div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7A76">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #2E9E64"></span>
+      <span>live &middot; updated 14:32</span>
+    </div>
+  </div>
+
+  <!-- project dropdown (open) -->
+  <div style="position: absolute; top: 62px; left: 152px; width: 320px; background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 10px; box-shadow: 0 8px 28px rgba(22,33,30,0.14); padding: 6px; z-index: 10; display: flex; flex-direction: column">
+    <div style="padding: 8px 12px 6px; display: flex; align-items: center; justify-content: space-between">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7A76">~/projects</span>
+      <span style="font-size: 10.5px; color: #93A19D">4 detected</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; background: #EEF2F1">
+      <span style="font-size: 13px; font-weight: 500; flex-grow: 1">All projects</span>
+      <span style="font-size: 11px; color: #6B7A76">8 items</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0B6E5F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px">
+      <span class="pdot" style="background: #0B6E5F"></span>
+      <span style="font-size: 13px; flex-grow: 1">epoch0</span>
+      <span class="needpill">2 need you</span>
+      <span style="font-size: 11px; color: #6B7A76">5 items</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px">
+      <span class="pdot" style="background: #4A6FA5"></span>
+      <span style="font-size: 13px; flex-grow: 1">voyager</span>
+      <span class="needpill">1 needs you</span>
+      <span style="font-size: 11px; color: #6B7A76">3 items</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px">
+      <span class="pdot" style="background: #C4CFCB"></span>
+      <span style="font-size: 13px; color: #93A19D; flex-grow: 1">blender-tools</span>
+      <a href="#" style="font-size: 11.5px; text-decoration: none">set up adapter</a>
+    </div>
+    <div style="border-top: 1px solid #EEF2F1; margin: 4px 6px 0; padding: 9px 6px 6px; display: flex; align-items: center; gap: 8px; color: #6B7A76">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7A76" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      <span style="font-size: 12.5px">Add directory&hellip;</span>
+    </div>
+  </div>
+
+  <!-- needs-your-input strip -->
+  <div style="padding: 20px 28px 4px; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B7791F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><circle cx="12" cy="12" r="9"></circle></svg>
+      <span style="font-size: 14px; font-weight: 600">Needs your input</span>
+      <span style="background: #FBF3E4; color: #96621A; border-radius: 999px; padding: 1px 9px; font-size: 11.5px; font-weight: 600">3</span>
+    </div>
+    <div style="display: flex; gap: 14px">
+      <div style="flex: 1; background: #FFFFFF; border: 1px solid #EAD9B8; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px rgba(22,33,30,0.04)">
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+          <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; owner gate</div>
+          <div style="font-size: 13px; font-weight: 500">Art direction: approve M3 character sheet v2</div>
+        </div>
+        <div style="margin-left: auto; border: 1px solid #D7DEDC; border-radius: 7px; padding: 6px 14px; font-size: 12.5px; font-weight: 500; color: #16211E; white-space: nowrap">Review</div>
+      </div>
+      <div style="flex: 1; background: #FFFFFF; border: 1px solid #EAD9B8; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px rgba(22,33,30,0.04)">
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+          <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; question from builder</div>
+          <div style="font-size: 13px; font-weight: 500">pvp-band-fix: accept +2% band drift, or rebalance?</div>
+        </div>
+        <div style="margin-left: auto; border: 1px solid #D7DEDC; border-radius: 7px; padding: 6px 14px; font-size: 12.5px; font-weight: 500; color: #16211E; white-space: nowrap">Answer</div>
+      </div>
+      <div style="flex: 1; background: #FFFFFF; border: 1px solid #EAD9B8; border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 2px rgba(22,33,30,0.04)">
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+          <div class="proj"><span class="pdot" style="background: #4A6FA5"></span>voyager &middot; budget gate</div>
+          <div style="font-size: 13px; font-weight: 500">Approve $12 API spend for deep-research run</div>
+        </div>
+        <div style="margin-left: auto; border: 1px solid #D7DEDC; border-radius: 7px; padding: 6px 14px; font-size: 12.5px; font-weight: 500; color: #16211E; white-space: nowrap">Review</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- board: normalized phases across projects -->
+  <div style="flex-grow: 1; display: flex; gap: 18px; padding: 22px 28px; overflow: hidden">
+
+    <!-- Planned -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <div class="coltitle">Planned <span class="count">2</span></div>
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; scheduled</div>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: #6B7A76; background: #EEF2F1; border-radius: 4px; padding: 1px 6px">P1</span>
+        </div>
+        <div class="slug">train/ftue-polish</div>
+        <div class="who">next up &middot; from tester wave 09-08</div>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div class="proj"><span class="pdot" style="background: #4A6FA5"></span>voyager &middot; scheduled</div>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: #6B7A76; background: #EEF2F1; border-radius: 4px; padding: 1px 6px">P2</span>
+        </div>
+        <div class="slug">run/eu-competitors</div>
+        <div class="who">queued behind market-scan-q3</div>
+      </div>
+      <div style="font-size: 11.5px; color: #93A19D; padding: 2px 4px">12 backlogged &middot; 3 validated &middot; <a href="#" style="text-decoration: none; font-size: 11.5px">view</a></div>
+    </div>
+
+    <!-- In progress -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <div class="coltitle">In progress <span class="count">3</span></div>
+      <div class="card">
+        <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; building</div>
+        <div class="slug">train/relic-rework</div>
+        <div class="who">builder: sonnet &middot; worktree active</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pend"></span><span class="gate g-pend"></span><span class="gate g-pend"></span><span class="gate g-pend"></span>
+          <span class="age" style="margin-left: auto">38m</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; building</div>
+        <div class="slug">train/umbros-dialogue</div>
+        <div class="who">builder: sonnet &middot; canon-bearing</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pend"></span><span class="gate g-pend"></span><span class="gate g-pend"></span>
+          <span class="age" style="margin-left: auto">1h 12m</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="proj"><span class="pdot" style="background: #4A6FA5"></span>voyager &middot; researching</div>
+        <div class="slug">run/market-scan-q3</div>
+        <div class="who">researcher &times;4 &middot; parallel sweep</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pend"></span><span class="gate g-pend"></span>
+          <span class="age" style="margin-left: auto">14m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verifying -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <div class="coltitle">Verifying <span class="count">1</span></div>
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; QA / CI gate</div>
+          <span class="needpill">needs you</span>
+        </div>
+        <div class="slug">train/pvp-band-fix</div>
+        <div class="who">sim failed &middot; builder asked a question</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-fail"></span><span class="gate g-human"></span><span class="gate g-pend"></span>
+          <span class="age" style="margin-left: auto">3h 05m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Awaiting review -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <div class="coltitle">Awaiting review <span class="count">2</span></div>
+      <div class="card">
+        <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; final review</div>
+        <div class="slug">train/gacha-pity-ui</div>
+        <div class="who">reviewer: sol &middot; consolidated review</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pend"></span>
+          <span class="age" style="margin-left: auto">22m</span>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div class="proj"><span class="pdot" style="background: #4A6FA5"></span>voyager &middot; synthesis review</div>
+          <span class="needpill">needs you</span>
+        </div>
+        <div class="slug">run/pricing-report</div>
+        <div class="who">draft ready &middot; awaiting your read</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-human"></span>
+          <span class="age" style="margin-left: auto">55m</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Done -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; opacity: 0.7">
+      <div class="coltitle">Done <span class="count">2</span></div>
+      <div class="card">
+        <div class="proj"><span class="pdot" style="background: #0B6E5F"></span>epoch0 &middot; merged</div>
+        <div class="slug">train/spd-band-sanity</div>
+        <div class="who">merged 11:04 &middot; PR #212</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pass"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="proj"><span class="pdot" style="background: #4A6FA5"></span>voyager &middot; delivered</div>
+        <div class="slug">run/competitor-teardown</div>
+        <div class="who">delivered 09:20</div>
+        <div style="display: flex; align-items: center; gap: 5px">
+          <span class="gate g-pass"></span><span class="gate g-pass"></span><span class="gate g-pass"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- status bar -->
+  <div style="height: 34px; border-top: 1px solid #E4EAE8; background: #FFFFFF; display: flex; align-items: center; gap: 22px; padding: 0 28px; font-size: 11.5px; color: #93A19D; flex-shrink: 0">
+    <span>2 adapters: epoch0-snapshot (10s) &middot; voyager-otlp (push)</span>
+    <span>8 work items &middot; 9 actors</span>
+    <span>epoch0 at WIP cap 2/2 + art lane</span>
+    <span style="color: #96621A">claude weekly 81% &middot; resets Thu</span>
+    <span style="margin-left: auto">columns are normalized phases &middot; native states shown on cards</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

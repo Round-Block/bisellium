@@ -66,3 +66,7 @@ commit with a `Co-Authored-By:` trailer naming the sella that wrote it.
 This project assumes no particular harness: no hooks or subagents are
 installed for you. Boot yourself with `bisellium context --sella <you>
 studio` and re-run it after any compaction or context reset.
+
+## Session handoff
+
+Before orchestrating a cascade, read docs/SESSION-HANDOFF.md: the Patron's standing instructions, artifact links, environment facts and what is next. Keep it short; move durable items into a lex, a decision or a check rule.

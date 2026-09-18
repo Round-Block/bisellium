@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Instrument Sans", system-ui, sans-serif; }
+    a { color: #0B6E5F; } a:hover { color: #095A4E; }
+    .pdot { width: 7px; height: 7px; border-radius: 50%; }
+    .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .row { display: flex; align-items: center; gap: 14px; padding: 10px 18px; border-bottom: 1px solid #EEF2F1; }
+    .role { font-size: 13.5px; font-weight: 600; color: #16211E; width: 148px; flex-shrink: 0; }
+    .kind { font-size: 11px; color: #93A19D; }
+    .doing { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: #3A4744; flex-grow: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .num { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #6B7A76; width: 62px; text-align: right; flex-shrink: 0; }
+    .grp { padding: 12px 18px 6px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #93A19D; }
+    .sect { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #93A19D; }
+    .msg { display: flex; flex-direction: column; gap: 4px; max-width: 88%; }
+    .msg-meta { font-size: 10.5px; color: #93A19D; }
+    .bubble { border-radius: 10px; padding: 10px 13px; font-size: 12.5px; line-height: 1.5; }
+    .b-agent { background: #F3F6F5; color: #3A4744; border: 1px solid #E4EAE8; }
+    .b-you { background: #16211E; color: #FFFFFF; align-self: flex-end; }
+    .qa { border: 1px solid #D7DEDC; border-radius: 999px; padding: 5px 12px; font-size: 11.5px; font-weight: 500; color: #3A4744; white-space: nowrap; }
+    .tab { padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px; }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #F6F8F7; color: #16211E; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- top bar -->
+  <div style="height: 60px; background: #FFFFFF; border-bottom: 1px solid #E4EAE8; display: flex; align-items: center; gap: 28px; padding: 0 28px; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B6E5F" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"></path><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px">Gantry</span>
+    </div>
+    <div style="display: inline-flex; align-items: center; gap: 9px; border: 1px solid #D7DEDC; background: #FFFFFF; border-radius: 8px; padding: 7px 12px 7px 14px; box-shadow: 0 1px 2px rgba(22,33,30,0.05)">
+      <span style="font-size: 13px; font-weight: 500">All projects</span>
+      <span style="background: #EEF2F1; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 500; color: #6B7A76">8</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7A76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </div>
+    <div style="display: flex; gap: 2px">
+      <div class="tab">Board</div>
+      <div class="tab" style="display: inline-flex; align-items: center; gap: 7px">Inbox <span style="background: #FBF3E4; color: #96621A; border-radius: 999px; padding: 0 7px; font-size: 10.5px; font-weight: 600">3</span></div>
+      <div class="tab">Swimlane</div>
+      <div class="tab" style="background: #16211E; color: #FFFFFF; font-weight: 500">Agents</div>
+      <div class="tab">Digest</div>
+      <div class="tab">Graph</div>
+    </div>
+    <div style="flex-grow: 1"></div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7A76">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #2E9E64"></span>
+      <span>live &middot; updated 14:32</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 20px; padding: 22px 28px; overflow: hidden">
+
+    <!-- roster -->
+    <div style="flex: 1.15; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+      <div style="display: flex; align-items: center; gap: 18px">
+        <span style="font-size: 14px; font-weight: 600">Agents</span>
+        <span style="font-size: 12px; color: #6B7A76">6 running &middot; 3 idle &middot; 1 waiting on you</span>
+        <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #6B7A76">today $4.12 &middot; 1.9M tokens</span>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 12px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); padding: 14px 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span class="sect">Model budgets</span>
+          <span style="margin-left: auto; font-size: 11px; color: #96621A; background: #FBF3E4; border-radius: 999px; padding: 2px 10px; font-weight: 600">surge lane active</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="font-size: 12.5px; font-weight: 600; width: 64px">Claude</span>
+          <div style="flex-grow: 1; height: 6px; background: #EEF2F1; border-radius: 999px; overflow: hidden"><div style="width: 81%; height: 100%; background: #B7791F; border-radius: 999px"></div></div>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #96621A; width: 148px; text-align: right">81% weekly &middot; resets Thu 14:00</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <span style="font-size: 12.5px; font-weight: 600; width: 64px">Codex</span>
+          <div style="flex-grow: 1; height: 6px; background: #EEF2F1; border-radius: 999px; overflow: hidden"><div style="width: 34%; height: 100%; background: #0B6E5F; border-radius: 999px"></div></div>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6B7A76; width: 148px; text-align: right">34% &middot; resets 22:38</span>
+        </div>
+        <div style="font-size: 11px; color: #93A19D; line-height: 1.5">Claude is hot &mdash; new builds overflow to Codex terra until the reset. Review and merge gates are unaffected (Codex-side).</div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 12px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); overflow: hidden">
+        <div class="grp"><span class="pdot" style="background: #0B6E5F"></span>epoch0</div>
+        <div class="row">
+          <span class="sdot" style="background: #2E9E64"></span>
+          <div class="role">controller<div class="kind">orchestrator &middot; opus</div></div>
+          <span class="doing">supervising 3 trains &middot; next: dispatch final review</span>
+          <span class="num">6h 10m</span>
+          <span class="num">$0.92</span>
+        </div>
+        <div class="row" style="background: #F3F8F6">
+          <span class="sdot" style="background: #2E9E64"></span>
+          <div class="role">builder<div class="kind">agent &middot; sonnet</div></div>
+          <span class="doing">train/relic-rework &middot; writing migration 118</span>
+          <span class="num">38m</span>
+          <span class="num">$1.84</span>
+        </div>
+        <div class="row">
+          <span class="sdot" style="background: #B7791F"></span>
+          <div class="role">qa-lead<div class="kind">agent &middot; sol</div></div>
+          <span class="doing">train/pvp-band-fix &middot; blocked on your band decision</span>
+          <span class="num">46m</span>
+          <span class="num">$0.61</span>
+        </div>
+        <div class="row">
+          <span class="sdot" style="background: #C4CFCB"></span>
+          <div class="role">final-reviewer<div class="kind">agent &middot; sol, fresh ctx</div></div>
+          <span class="doing" style="color: #93A19D">idle &middot; last PASS 11:04</span>
+          <span class="num">&mdash;</span>
+          <span class="num">$0.28</span>
+        </div>
+        <div class="grp" style="border-top: 1px solid #EEF2F1"><span class="pdot" style="background: #4A6FA5"></span>voyager</div>
+        <div class="row">
+          <span class="sdot" style="background: #2E9E64"></span>
+          <div class="role">orchestrator<div class="kind">orchestrator &middot; opus</div></div>
+          <span class="doing">run/market-scan-q3 &middot; merging sweep results</span>
+          <span class="num">14m</span>
+          <span class="num">$0.22</span>
+        </div>
+        <div class="row" style="border-bottom: none">
+          <span class="sdot" style="background: #2E9E64"></span>
+          <div class="role">researcher &times;4<div class="kind">agents &middot; haiku</div></div>
+          <span class="doing">parallel sweep &middot; 3 of 4 sources done</span>
+          <span class="num">14m</span>
+          <span class="num">$0.25</span>
+        </div>
+      </div>
+      <div style="font-size: 11px; color: #93A19D; padding: 0 4px">Rows are stable roles; hover shows the current invocation id. Sources without a command channel show as read-only.</div>
+    </div>
+
+    <!-- direct line -->
+    <div style="flex: 1; display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 12px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); overflow: hidden">
+      <div style="padding: 16px 20px; border-bottom: 1px solid #EEF2F1; display: flex; align-items: center; gap: 12px">
+        <span class="sdot" style="background: #2E9E64"></span>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 13.5px; font-weight: 600">builder</span>
+          <span style="font-size: 11px; color: #93A19D">epoch0 &middot; train/relic-rework &middot; sonnet</span>
+        </div>
+        <span style="margin-left: auto; font-size: 11px; color: #6B7A76; background: #EEF2F1; border-radius: 999px; padding: 3px 10px">direct line</span>
+      </div>
+
+      <div style="flex-grow: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden">
+        <div class="msg">
+          <span class="msg-meta">builder &middot; 14:18 &middot; status</span>
+          <div class="bubble b-agent">Migration 118 drafted; mirroring the relic state changes into combat_adapter now. Differential tests next.</div>
+        </div>
+        <div class="msg" style="align-self: flex-end; align-items: flex-end">
+          <span class="msg-meta">you &middot; 14:21</span>
+          <div class="bubble b-you">Keep the old relic keys working until 119 ships &mdash; don't break saves.</div>
+        </div>
+        <div class="msg">
+          <span class="msg-meta">builder &middot; 14:23 &middot; acknowledged at turn boundary</span>
+          <div class="bubble b-agent">Understood &mdash; 118 stays additive, old keys aliased. Deprecation moves to a follow-up train.</div>
+        </div>
+        <div style="align-self: center; font-size: 10.5px; color: #93A19D; background: #F6F8F7; border-radius: 999px; padding: 3px 12px">messages deliver at the agent&rsquo;s next turn boundary</div>
+      </div>
+
+      <div style="padding: 14px 20px 18px; border-top: 1px solid #EEF2F1; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; gap: 8px">
+          <span class="qa">Request status</span>
+          <span class="qa">Pause after this step</span>
+          <span class="qa">Hand off to me</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <div style="flex-grow: 1; border: 1px solid #D7DEDC; border-radius: 9px; padding: 10px 14px; font-size: 12.5px; color: #93A19D">Message builder&hellip;</div>
+          <div style="background: #16211E; color: #FFFFFF; border-radius: 9px; padding: 10px 18px; font-size: 12.5px; font-weight: 500">Send</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

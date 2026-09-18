@@ -59,3 +59,7 @@ commit with a `Co-Authored-By:` trailer naming the sella that wrote it.
 {{ROLES}}
 
 {{HARNESS}}
+
+## Session handoff
+
+Before orchestrating a cascade, read docs/SESSION-HANDOFF.md: the Patron's standing instructions, artifact links, environment facts and what is next. Keep it short; move durable items into a lex, a decision or a check rule.

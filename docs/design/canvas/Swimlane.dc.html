@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Instrument Sans", system-ui, sans-serif; }
+    a { color: #0B6E5F; } a:hover { color: #095A4E; }
+    .lane { display: flex; align-items: center; height: 76px; border-bottom: 1px solid #EEF2F1; }
+    .lane-label { width: 200px; flex-shrink: 0; padding: 0 22px; display: flex; flex-direction: column; gap: 3px; border-right: 1px solid #E4EAE8; height: 100%; justify-content: center; }
+    .lane-role { font-size: 13px; font-weight: 600; color: #16211E; }
+    .lane-kind { font-size: 10.5px; color: #93A19D; text-transform: uppercase; letter-spacing: 0.8px; }
+    .lane-track { position: relative; flex-grow: 1; height: 100%; }
+    .span { position: absolute; top: 22px; height: 32px; border-radius: 7px; display: flex; align-items: center; padding: 0 10px; font-size: 11.5px; font-weight: 500; white-space: nowrap; overflow: hidden; }
+    .gate-mark { position: absolute; top: 28px; width: 14px; height: 14px; transform: rotate(45deg); border-radius: 3px; }
+    .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: #EEF2F1; }
+    .tick-label { position: absolute; top: 8px; font-family: "IBM Plex Mono", monospace; font-size: 10px; color: #93A19D; transform: translateX(-50%); }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #FFFFFF; color: #16211E; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- top bar -->
+  <div style="height: 60px; background: #FFFFFF; border-bottom: 1px solid #E4EAE8; display: flex; align-items: center; gap: 28px; padding: 0 28px; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B6E5F" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"></path><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px">Gantry</span>
+    </div>
+    <div style="display: inline-flex; align-items: center; gap: 8px; background: #EEF2F1; border-radius: 8px; padding: 7px 14px">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #0B6E5F"></span>
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #16211E">epoch0 &middot; train/pvp-band-fix</span>
+    </div>
+    <div style="display: flex; gap: 2px">
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Board</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px; display: inline-flex; align-items: center; gap: 7px">Inbox <span style="background: #FBF3E4; color: #96621A; border-radius: 999px; padding: 0 7px; font-size: 10.5px; font-weight: 600">3</span></div>
+      <div style="padding: 6px 16px; border-radius: 6px; background: #16211E; color: #FFFFFF; font-size: 13px; font-weight: 500">Swimlane</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Agents</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Digest</div>
+      <div style="padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px">Graph</div>
+    </div>
+    <div style="flex-grow: 1"></div>
+    <div style="display: flex; align-items: center; gap: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #6B7A76">
+      <span>11:50 &rarr; 14:50</span>
+      <div style="display: flex; gap: 2px; background: #EEF2F1; border-radius: 6px; padding: 2px">
+        <div style="padding: 3px 10px; border-radius: 4px; color: #6B7A76">1h</div>
+        <div style="padding: 3px 10px; border-radius: 4px; background: #FFFFFF; color: #16211E; box-shadow: 0 1px 2px rgba(22,33,30,0.08)">3h</div>
+        <div style="padding: 3px 10px; border-radius: 4px; color: #6B7A76">day</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- timeline area -->
+  <div style="flex-grow: 1; position: relative; overflow: hidden">
+
+    <!-- time ruler -->
+    <div style="height: 30px; border-bottom: 1px solid #E4EAE8; position: relative; margin-left: 200px">
+      <span class="tick-label" style="left: 62px">12:00</span>
+      <span class="tick-label" style="left: 268px">12:30</span>
+      <span class="tick-label" style="left: 474px">13:00</span>
+      <span class="tick-label" style="left: 680px">13:30</span>
+      <span class="tick-label" style="left: 886px">14:00</span>
+      <span class="tick-label" style="left: 1092px">14:30</span>
+    </div>
+
+    <!-- grid ticks -->
+    <div style="position: absolute; top: 30px; bottom: 44px; left: 200px; right: 0; pointer-events: none">
+      <div class="tick" style="left: 62px"></div>
+      <div class="tick" style="left: 268px"></div>
+      <div class="tick" style="left: 474px"></div>
+      <div class="tick" style="left: 680px"></div>
+      <div class="tick" style="left: 886px"></div>
+      <div class="tick" style="left: 1092px"></div>
+      <div style="position: absolute; left: 1114px; top: 0; bottom: 0; width: 2px; background: #0B6E5F; opacity: 0.55"></div>
+    </div>
+
+    <!-- lanes -->
+    <div class="lane" style="background: #FEFBF4">
+      <div class="lane-label"><span class="lane-role">you</span><span class="lane-kind">owner &middot; human</span></div>
+      <div class="lane-track">
+        <div class="gate-mark" style="left: 800px; background: #FBF3E4; border: 1.5px solid #B7791F"></div>
+        <div class="span" style="left: 818px; width: 296px; background: #FBF3E4; border: 1px dashed #B7791F; color: #96621A">waiting on you &middot; 46m</div>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label"><span class="lane-role">controller</span><span class="lane-kind">orchestrator</span></div>
+      <div class="lane-track">
+        <div class="span" style="left: 20px; width: 90px; background: #E7F1EE; border: 1px solid #7FB5A9; color: #095A4E">dispatch</div>
+        <div class="span" style="left: 320px; width: 120px; background: #E7F1EE; border: 1px solid #7FB5A9; color: #095A4E">state &rarr; qa</div>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label"><span class="lane-role">builder</span><span class="lane-kind">agent &middot; sonnet</span></div>
+      <div class="lane-track">
+        <div class="span" style="left: 60px; width: 250px; background: #F3F6F5; border: 1px solid #C9D4D0; color: #3A4744">implement registry fix + tests</div>
+        <div class="span" style="left: 640px; width: 150px; background: #F3F6F5; border: 1px solid #C9D4D0; color: #3A4744">drift analysis</div>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-label"><span class="lane-role">qa-lead</span><span class="lane-kind">agent &middot; sol</span></div>
+      <div class="lane-track">
+        <div class="span" style="left: 380px; width: 210px; background: #F3F6F5; border: 1px solid #C9D4D0; color: #3A4744">player-facing QA sweep</div>
+      </div>
+    </div>
+    <div class="lane" style="border-bottom: none">
+      <div class="lane-label"><span class="lane-role">gate/sim</span><span class="lane-kind">tool</span></div>
+      <div class="lane-track">
+        <div class="span" style="left: 620px; width: 150px; background: #FAE9E5; border: 1px solid #C64A3A; color: #C64A3A">n=50 &middot; drift +7%</div>
+        <div class="gate-mark" style="left: 774px; background: #C64A3A"></div>
+      </div>
+    </div>
+
+    <!-- connectors -->
+    <svg style="position: absolute; top: 30px; left: 200px; width: 1240px; height: 380px; pointer-events: none" viewBox="0 0 1240 380" fill="none">
+      <path d="M 110 130 C 110 152, 60 150, 60 166" stroke="#0B6E5F" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"></path>
+      <path d="M 60 174 l -4 -8 l 8 0 z" fill="#0B6E5F" opacity="0.7"></path>
+      <path d="M 440 130 C 470 168, 424 216, 404 242" stroke="#0B6E5F" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"></path>
+      <path d="M 402 250 l -4 -8 l 8 0 z" fill="#0B6E5F" opacity="0.7"></path>
+      <path d="M 770 342 C 850 300, 790 120, 806 56" stroke="#C64A3A" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.7"></path>
+      <path d="M 806 46 l -4 8 l 8 0 z" fill="#C64A3A" opacity="0.7"></path>
+    </svg>
+
+    <!-- legend -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 44px; border-top: 1px solid #E4EAE8; background: #FFFFFF; display: flex; align-items: center; gap: 24px; padding: 0 28px; font-size: 11px; color: #6B7A76">
+      <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 14px; height: 10px; border-radius: 3px; background: #E7F1EE; border: 1px solid #7FB5A9"></span>orchestration</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 14px; height: 10px; border-radius: 3px; background: #F3F6F5; border: 1px solid #C9D4D0"></span>agent span</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 10px; height: 10px; border-radius: 3px; transform: rotate(45deg); background: #C64A3A"></span>gate evaluated</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 14px; height: 10px; border-radius: 3px; background: #FBF3E4; border: 1px dashed #B7791F"></span>waiting on you</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 14px; height: 0; border-top: 1.5px dashed #0B6E5F"></span>handoff</span>
+      <span style="display: inline-flex; align-items: center; gap: 7px"><span style="width: 14px; height: 0; border-top: 1.5px dashed #C64A3A"></span>failure escalation</span>
+      <span style="margin-left: auto">lanes = stable roles &middot; spans = invocations</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

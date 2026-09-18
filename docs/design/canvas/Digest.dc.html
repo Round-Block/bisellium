@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: "Instrument Sans", system-ui, sans-serif; }
+    a { color: #0B6E5F; } a:hover { color: #095A4E; }
+    .pdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .tab { padding: 6px 16px; border-radius: 6px; color: #6B7A76; font-size: 13px; }
+    .sect { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #93A19D; }
+    .entry { background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); }
+    .e-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #93A19D; }
+    .e-title { font-size: 14px; font-weight: 600; color: #16211E; }
+    .e-body { font-size: 12.5px; color: #3A4744; line-height: 1.55; }
+    .ev-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #D7DEDC; border-radius: 7px; padding: 5px 11px; font-size: 11.5px; color: #3A4744; }
+    .ev-sw { width: 12px; height: 12px; border-radius: 3px; }
+    .rail-card { background: #FFFFFF; border: 1px solid #E4EAE8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 1px 2px rgba(22,33,30,0.04); }
+  </style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #F6F8F7; color: #16211E; display: flex; flex-direction: column; overflow: hidden">
+
+  <!-- top bar -->
+  <div style="height: 60px; background: #FFFFFF; border-bottom: 1px solid #E4EAE8; display: flex; align-items: center; gap: 28px; padding: 0 28px; flex-shrink: 0">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B6E5F" stroke-width="2" stroke-linecap="round"><path d="M3 20h18"></path><path d="M5 20V8l7-4 7 4v12"></path><path d="M9 20v-6h6v6"></path></svg>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.2px">Gantry</span>
+    </div>
+    <div style="display: inline-flex; align-items: center; gap: 9px; border: 1px solid #D7DEDC; background: #FFFFFF; border-radius: 8px; padding: 7px 12px 7px 14px; box-shadow: 0 1px 2px rgba(22,33,30,0.05)">
+      <span style="font-size: 13px; font-weight: 500">All projects</span>
+      <span style="background: #EEF2F1; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 500; color: #6B7A76">8</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B7A76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+    </div>
+    <div style="display: flex; gap: 2px">
+      <div class="tab">Board</div>
+      <div class="tab" style="display: inline-flex; align-items: center; gap: 7px">Inbox <span style="background: #FBF3E4; color: #96621A; border-radius: 999px; padding: 0 7px; font-size: 10.5px; font-weight: 600">3</span></div>
+      <div class="tab">Swimlane</div>
+      <div class="tab">Agents</div>
+      <div class="tab" style="background: #16211E; color: #FFFFFF; font-weight: 500">Digest</div>
+      <div class="tab">Graph</div>
+    </div>
+    <div style="flex-grow: 1"></div>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7A76">
+      <span style="width: 7px; height: 7px; border-radius: 50%; background: #2E9E64"></span>
+      <span>live &middot; updated 14:32</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; gap: 20px; padding: 22px 28px; overflow: hidden">
+
+    <!-- feed -->
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; max-width: 880px">
+      <div style="display: flex; align-items: baseline; gap: 12px">
+        <span style="font-size: 14px; font-weight: 600">Decisions &amp; consultations</span>
+        <span style="font-size: 12px; color: #93A19D">nothing here needs a reply &mdash; asks go to the Inbox</span>
+      </div>
+
+      <div class="sect" style="padding-left: 2px">Today &middot; Wed 10 Sep</div>
+
+      <div class="entry">
+        <div class="e-meta">
+          <span class="pdot" style="background: #0B6E5F"></span>
+          <span>epoch0 &middot; art &middot; <b style="color: #3A4744">astra (Art Lead)</b> &middot; 14:05</span>
+          <span style="margin-left: auto; background: #EEF2F1; border-radius: 999px; padding: 2px 10px; font-size: 10.5px; color: #6B7A76">consultation</span>
+        </div>
+        <div class="e-title">Status icons: chose direction B &mdash; flat glyphs, badge-safe corners</div>
+        <div class="e-body">Direction A&rsquo;s beveled look broke the ~2px corner-badge clear region at battle scale. B holds the 28px cell read and the ~10px battle footprint. Proceeding to the full buff/debuff family; deferred: corruption glyph variant (1 nonblocking debt).</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <span class="ev-chip"><span class="ev-sw" style="background: #0B6E5F"></span>28px cell sheet</span>
+          <span class="ev-chip"><span class="ev-sw" style="background: #4A6FA5"></span>battle-scale composite</span>
+          <span class="ev-chip"><span class="ev-sw" style="background: #B7791F"></span>before / after</span>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="e-meta">
+          <span class="pdot" style="background: #0B6E5F"></span>
+          <span>epoch0 &middot; code &middot; <b style="color: #3A4744">controller</b> &middot; 11:20</span>
+          <span style="margin-left: auto; background: #EEF2F1; border-radius: 999px; padding: 2px 10px; font-size: 10.5px; color: #6B7A76">decision</span>
+        </div>
+        <div class="e-title">spd-band-sanity merged &mdash; band spread measured 48&ndash;52% across bands 1&ndash;5</div>
+        <div class="e-body">n=50 sim confirms the rebalance target holds on every band except band 4 (tracked separately in train/pvp-band-fix). Tester wave dispatched against the refreshed main stack.</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <span class="ev-chip"><span class="ev-sw" style="background: #2E9E64"></span>sim summary n=50</span>
+          <span class="ev-chip"><span class="ev-sw" style="background: #4A6FA5"></span>PR #212</span>
+        </div>
+      </div>
+
+      <div class="entry">
+        <div class="e-meta">
+          <span class="pdot" style="background: #4A6FA5"></span>
+          <span>voyager &middot; <b style="color: #3A4744">orchestrator</b> &middot; 09:35</span>
+          <span style="margin-left: auto; background: #EEF2F1; border-radius: 999px; padding: 2px 10px; font-size: 10.5px; color: #6B7A76">daily digest</span>
+        </div>
+        <div class="e-title">competitor-teardown delivered; market-scan-q3 sweep 3/4 done</div>
+        <div class="e-body">Teardown report delivered 09:20 (12 pages, 4 sources). Scan continues on the last source; synthesis queued behind it. EU-competitors run scheduled next per your thread.</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap">
+          <span class="ev-chip"><span class="ev-sw" style="background: #4A6FA5"></span>teardown report</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- rail -->
+    <div style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+      <div class="rail-card">
+        <span class="sect">Quota posture</span>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12.5px">
+          <span style="font-weight: 600; width: 92px">code track</span>
+          <span style="color: #96621A; background: #FBF3E4; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 600">conserve</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #93A19D; margin-left: auto">claude 81% wk</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12.5px">
+          <span style="font-weight: 600; width: 92px">art track</span>
+          <span style="color: #6B7A76; background: #EEF2F1; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 600">normal</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #93A19D; margin-left: auto">art env 31% used</span>
+        </div>
+        <span style="font-size: 11px; color: #93A19D; line-height: 1.5">Self-reported by each track&rsquo;s lead; observed telemetry, not guesses.</span>
+      </div>
+
+      <div class="rail-card">
+        <span class="sect">Waiting on you</span>
+        <div style="font-size: 12.5px; color: #3A4744; line-height: 1.6">3 asks are in the <a href="#" style="text-decoration: none">Inbox</a> &mdash; band-4 drift, art sheet v2, $12 spend. Digest entries never need a reply.</div>
+      </div>
+
+      <div class="rail-card">
+        <span class="sect">Cadence</span>
+        <div style="font-size: 12px; color: #6B7A76; line-height: 1.6">One combined entry per track per workday, plus entries at first representative direction, every delivery, and significant re-plans.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
