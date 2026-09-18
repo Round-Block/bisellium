@@ -93,6 +93,16 @@ lex, a decision, or a check rule and delete it here.
 - W-017 and W-018 closed `done` in pass 5b (round-2 reviews passed on
   tree:272d2d3b; `.claude/worktrees/` gitignored so certificates mint clean).
   All four 4b opera are done.
+- Cascade 6 (2026-09-19) landed the P-001 decrees as machinery: `bisellium
+  ready/review/done/red`, the `ci/reds/` store, `opus.untracked` +
+  `opus.red_evidence` blocking, D-008's containment rules (advisory pending
+  P-004). Both opera closed through their own lifecycle after six honest
+  review rounds. Retro 6: L-018–L-025.
+- In the Patron's inbox: P-004 (scope path.escapes.officina), P-005
+  (import-error-reds class, 4th recurrence), P-007 (path traversal, 3rd).
+  retro.ts skipped P-006 — numbering defect worth a micro-fix.
+- Engineering posture is CLOSEOUT for 2026-W38 (2.89M of 3.0M spent):
+  autonomous starts pause until the next period or a Patron budget write.
 - Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
   L2, adapters + desktop. Estimates and rationale are in the dossier.
 
