@@ -1,0 +1,209 @@
+W-020 — eng-lead review, round 5 (cascade 6)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: 113f20e "studio(W-021): replace the twelve import-error reds with
+              assertion-level ones", on top of ae22e88, bf1db77, 108ee23,
+              2412500, 4bd08d5
+brief: studio/briefs/W-020.md
+tree: verify certificates at tree:9c1b650418b6bcffd2221f5fa549df8d334b688c
+prior rounds: ci/W-020-review-1.log (void — builder-a's own acceptance record
+              filed under the reviewer's name)
+              ci/W-020-review-2.log (FAIL — B1 containment, F5 no reopen)
+              ci/W-020-review-3.log (FAIL — B2 missing reds 09-11)
+              ci/W-020-review-4.log (FAIL — B3 nine reds are one document)
+
+VERDICT: FAIL, round 5. B3 stands, unchanged and untouched. The opus does not
+close.
+
+
+ON THE ROUND NUMBER, AGAIN
+
+I was asked to review as round 4 and to record at ci/W-020-review-4.log. That
+file already exists, holds round 4's FAIL verdict, and W-020's front matter
+cites it as the current review gate. Writing this note there would have
+destroyed a recorded verdict to make room for a pass — the same act round 4
+refused to perform on round 3's log, one round earlier, for the same reason.
+This is round 5 and it is recorded as round 5. Nothing in
+ci/W-020-review-4.log was altered.
+
+The history I was handed was wrong in the same way it was wrong for round 4.
+It described round 3 as the most recent review and the 09-11 recapture as
+awaiting a verdict. Round 4 already gave that verdict: it accepted the
+recapture, discharged B2 explicitly, and failed the close on a different
+finding. I have not relitigated anything round 4 settled.
+
+
+WHAT I RAN, FIRST-HAND
+
+  bisellium verify W-020 --studio studio --repo /home/edckt/projects/bisellium
+                                        exit 0
+    tests:  passed  ci/W-020-tests-9c1b6504.log
+    lint:   passed  ci/W-020-lint-9c1b6504.log
+    types:  passed  ci/W-020-types-9c1b6504.log
+    all three certifying tree:9c1b650418b6bcffd2221f5fa549df8d334b688c
+  npm run -s check -- studio --repo /home/edckt/projects/bisellium
+                                        PASS — 0 blocking, 40 advisory
+  a hand drive of `red --cwd` across four cases against two throwaway git
+  worktrees in $TMPDIR, with the tree hashes computed independently through
+  sourceTreeHash rather than read back out of red's own header.
+
+Both numeric conditions the task set are met. They were met at round 4 as
+well. They are not what W-020 is failing on.
+
+
+BEHAVIOUR 16 IS GENUINELY FIXED — RE-TESTED BY HAND, NOT READ
+
+Two git repos in $TMPDIR with deliberately different trees: `outer`, holding a
+copy of examples/sample-studio as its officina, and `inner`, an unrelated repo.
+`red` invoked from /home/edckt/projects/bisellium — a third repo — with
+`--studio <outer>/studio --cwd <inner>`:
+
+  recorded header                    # tree: tree:20b73b17568d4fe6cc40ca5648c273c8c6b67697
+  inner's tree  (sourceTreeHash)     20b73b17568d4fe6cc40ca5648c273c8c6b67697   <- match
+  outer's tree, no excludes          aa80cc7c4ec1829ee6dc51a927da99489d9a209f
+  outer's tree, studio excluded      9e886ab602f8b3a507a3c841cd1fa2b25e990695
+  wrapped command's own process.cwd  <inner>
+
+The header names the repo the command actually ran in, under either exclusion
+set, and not the officina's parent. That is exactly the defect W-021's round-3
+review raised (a red certifying the caller's tree instead of the exercised
+tree) and it is closed. Three further edges, all correct:
+
+  --cwd at a directory in no git repo   -> `# tree: none`, not a silent
+                                           fallback to something unasked for
+  --repo <outer> with --cwd <inner>     -> tree:9e886ab6…, the explicit
+                                           override winning, officina excluded
+  no --cwd, no --repo                   -> the caller's own repo, dirty-marked
+
+And `red` still refuses a command that exits 0 (exit 1, nothing written).
+That refusal remains the best thing in this opus.
+
+REDS 09, 10 AND 11 ARE ASSERTION-LEVEL — CONFIRMED
+
+Three distinct documents (hashes e574641c, 8acc2abc, c45f45003, computed with
+the `# behaviour:` line stripped), each naming its own behaviour's assertions,
+each having RUN rather than failed to load. `# tree:` on all three is
+dirty:6788b647…, the stubbed worktree, not the officina's parent. Round 4's
+acceptance of these holds and I confirm it independently.
+
+One thing round 4 flagged as a caution is still visible in the artifacts, and
+I record it as a finding rather than let it pass silently:
+
+  10.log  PASS  red: no directory created for a passing command
+  11.log  PASS  red: none of the usage refusals created ci/reds
+
+A stub that does nothing creates nothing, so these two silence-only assertions
+are trivially true against it. They are green inside a document filed as a red.
+Behaviours 10 and 11 are therefore only partially red at assertion level. Not
+blocking on its own — the other assertions in both files did run and did fail —
+but it is the trap W-021's review named and builder-b avoided by stubbing to a
+failing value rather than to nothing. Whoever re-runs 01-08 and 12 should stub
+that way, and should re-run 10 and 11 in the same pass.
+
+
+BLOCKING
+
+B3 (round 4) · CARRIED VERBATIM. Nine of W-020's brief behaviours still have
+     no red of their own. reds 01-08 and 12 are one byte-identical document
+     stored nine times.
+
+     Re-measured this round, with the `# behaviour:` line stripped:
+
+       01 02 03 04 05 06 07 08 12  ->  all f3ea7c22a6b2
+       09 10 11 13 14 15 16        ->  seven distinct hashes
+
+     The single document is still:
+
+       SyntaxError: The requested module './lifecycle.js' does not provide
+       an export named 'runDone'
+
+     Nothing has been done about it. This is not a re-argument; it is a
+     measurement:
+
+       HEAD is 113f20e — the same commit round 4 reviewed.
+       `git status` shows no change outside studio/ since.
+       01-08 and 12 carry mtime 2026-09-18 22:59:48; round 4's log carries
+       2026-09-19 00:48:52. The nine files predate the verdict against them
+       by two hours and have not been touched since it was written.
+
+     Round 4 failed this opus, named the remedy in one paragraph, and pointed
+     at two commits in this same cascade that already perform it. The remedy
+     was not attempted. A reviewer cannot discharge a finding by being asked
+     a second time; the files have to change.
+
+     I have nothing to add to round 4's reasoning and I do not restate it. It
+     was right then and the tree in front of me is the tree it described.
+     W-020 is the opus that ships the red store and defines what a red is. A
+     module that fails to load proves nothing existed yet — it cannot tell
+     behaviour 3 failing from behaviour 5 failing, because in neither case did
+     any assertion run. Engineering lex §7 asks a `done` item for "the
+     recorded red for every behaviour its spec listed". opus.red_evidence
+     counts files and reads one header, so nine copies satisfy the rule
+     exactly as well as nine real reds would. The rule cannot catch this. That
+     is why three consecutive reviewers have had to.
+
+     Round 6 is the same one commit round 4 specified: re-run
+     lifecycle.test.ts's slices for behaviours 1-8 and 12 (and 10 and 11, per
+     the finding above) against a worktree stubbed to a failing value, record
+     them through `red --cwd`, and keep the harness as a committed script —
+     CLAUDE.md, mechanical work is a script you write, run and keep. Neither
+     ae22e88's nor 113f20e's harness survives, so neither reconstruction can
+     be audited or repeated, and this is now the third time that has cost a
+     round.
+
+
+WHY ZERO BLOCKING IS NOT A PASS
+
+`check` reports 0 blocking and I am recording a FAIL, so I will state the
+relation plainly rather than leave it to be inferred.
+
+Zero blocking was the precondition round 3 set, and it is met. It was met at
+round 4 too. It is necessary and it is not sufficient, for the reason round 3
+wrote down and round 4 acted on: opus.red_evidence counts logs and reads the
+`# behaviour:` header. Nine identical documents pass it. The rule is not
+wrong; it is looking at the only thing a rule can look at. Signing the close
+because the counter is at zero would make W-020's own rule decorative from
+birth, in the opus that ships it.
+
+
+FINDINGS OF RECORD — not blocking
+
+F13 · Reds 10 and 11 each contain a PASS line, trivially true against a no-op
+     stub (detailed above). Fold into round 6's re-run.
+
+F12 (carried, round 4) · `review` rewrites status, evidence, sella and at but
+     leaves an existing `certifies:` untouched, so the record can assert an
+     identity for evidence nothing ever computed one for.
+     `probatio.certifies.stale` makes it visible rather than silent, and it
+     does not bite the real officina (W-020's review probatio carries no
+     `certifies:`). Worth a decision.
+
+F11 (carried, rounds 3-4) · briefs/W-020.md still lists 12 behaviours; the test
+     file and the store carry 16. Behaviours 13-16 are proved but not demanded.
+
+F10 (carried, rounds 3-4) · isContained() is lexical, not real: a symlink
+     inside the officina pointing out of it still escapes. Identical relation
+     in rules/paths.ts:119. A studio-wide decision on what D-008 means, not a
+     reason to hold this opus.
+
+F2, F3, F6, F7, F8, F9 from round 2 stand as written. F4 remains superseded by
+B3. B1, B2 and F5 remain discharged.
+
+
+DISPOSITION
+
+The engineering is good and every defect this opus was failed for in rounds 2
+and 3 is properly fixed. I re-drove `red --cwd` myself across four cases and
+two worktrees and it is correct, including the two edges it did not have to
+get right. verify is clean, check is at zero blocking with the opus still in
+the rule's line of sight, 09-11 are honest assertion-level reds.
+
+It does not close, because the nine files round 4 failed it for are the same
+nine files, unmodified, and were not re-run. The finding is a reviewer's call
+with a mechanical remedy that this cascade has already executed twice on the
+sibling opus. It costs one commit.
+
+W-020 stays in `building`. Round 6 is nine reds, two re-runs, and a kept
+script.
+
+Recorded with `bisellium review W-020 --fail --evidence ci/W-020-review-5.log
+--round 5 --sella eng-lead --now 2026-09-19T13:00:00Z`.

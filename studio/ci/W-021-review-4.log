@@ -1,0 +1,209 @@
+W-021 — eng-lead review, round 4 (cascade 6, D-012)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: 113f20e "studio(W-021): replace the twelve import-error reds with
+              assertion-level ones", on 4a1293c "feat(W-021): opus.untracked,
+              opus.red_evidence, D-008 path rules", with ae22e88
+              "fix(W-020): red --cwd names the repo it actually ran in"
+brief: studio/briefs/W-021.md
+tree: 9c1b650418b6bcffd2221f5fa549df8d334b688c
+
+VERDICT: PASS, round 4. Both round-3 blockers discharged. Three advisories
+carried forward unchanged, two new ones filed to the retro, nothing blocking.
+
+
+ON THE ROUND NUMBER, FIRST, BECAUSE IT IS A CORRECTION
+
+  My dispatch for this review named it round 3 and told me to write
+  studio/ci/W-021-review-3.log. That would have been wrong and I did not do
+  it. Round 3 already happened: studio/ci/W-021-review-3.log is tracked at
+  bf1db77, it is my own note, and it is a FAIL on two blocking findings (B1,
+  B2). The opus front matter carries it — review: failed, evidence
+  ci/W-021-review-3.log. Commit 113f20e cites it by name in its message.
+
+  Writing a PASS over that path would have destroyed the document the fix
+  commit answers and left the officina asserting that round 3 passed. That is
+  precisely the class of defect — evidence rewritten rather than produced —
+  that rounds 2 and 3 failed this opus for. This note is round 4 and is
+  recorded as round 4. The dispatch's history was also incomplete in the same
+  way: it described the round-2→round-3 remediation (108ee23's twelve
+  worktree reds) as "the fix round since", when that remediation is exactly
+  what round 3 examined and failed. The fix round actually under review here
+  is the one after that, 113f20e.
+
+
+B1 — DISCHARGED. Twelve logs, twelve documents, twelve behaviours failing.
+
+  Round 3's B1: all twelve reds were one of two byte-identical
+  ERR_MODULE_NOT_FOUND documents, produced against bbddf4d where
+  rules/{evidence,paths}.ts do not exist. Resolve-time errors, no assertion
+  ever ran, zero of twelve logs showed a behaviour failing.
+
+  113f20e re-ran each of rules.test.ts's twelve behaviour slices against a
+  throwaway $TMPDIR worktree at HEAD with the two rule modules replaced by
+  pre-implementation skeletons. Strip the six header lines and hash the body:
+
+    01 f7891ab518a3   05 59dc08f9328f   09 859fe4212d96
+    02 dcc97dc40f65   06 bb8372b177fd   10 48da69238e14
+    03 399f9ae9bd25   07 104f97daf67c   11 2c7e2a17d901
+    04 8bda6b0261d5   08 faa5773e0fa5   12 c4b5a7eb5559
+
+  Twelve distinct. Every log now carries PASS/FAIL lines from the slice's own
+  assertions, each naming its behaviour's fixture officina, and every one of
+  the twelve has at least one FAIL. The assertions ran. That is what round 3
+  asked for and it is what landed.
+
+  Spot-check, the same two behaviours round 3 spot-checked and rejected:
+
+    06.log claims behaviour 6 — blocks when ci/reds/<id>/NN.log is missing for
+    any of 1..N, names the missing numbers, clears when all N are present.
+    Three assertions, three FAILs, against fixture
+    bisellium-rules-red-missing-EqljmP/opera/W-201.md. "blocks naming all
+    missing behaviours" fails because the skeleton's message is "not yet
+    implemented" rather than the missing numbers; "clears once all N logs are
+    present" fails because the skeleton still fires with all twelve present.
+    Both directions of the behaviour are discriminated. This is a red for
+    behaviour 6 and nothing else.
+
+    11.log claims behaviour 11 — a spec: and a gate evidence: that escape the
+    officina, in the absolute and the a/../../b forms, and a path that merely
+    looks like an escape but resolves inside. Six assertions: four FAIL (the
+    two escape forms, the gate-evidence escape, the relative escape in spec:),
+    two PASS. The PASSes are the "clears once it resolves inside" pair, which
+    cannot go red against a skeleton that returns no findings. Behaviour 11 is
+    shown failing. See A5 for what is still not shown failing inside it.
+
+    A note on 11.log's last line, which reads PASS with a detail string that
+    looks like a failure — "path rule module calls .startsWith() nowhere
+    (dogfoods its own rule)  rules/paths.ts calls .startsWith()". I chased
+    this as a possible mislabelled column. It is not: rules.test.ts:27's
+    check() prints its third argument unconditionally on both outcomes, and
+    line 351 passes that string as the static detail. The PASS/FAIL column is
+    reliable throughout the store.
+
+  The skeleton choice deserves to be on the record because it is not the one
+  I prescribed. Round 3 said "exported stubs returning []". builder-b used
+  that for paths.ts but made evidence.ts flag every opus unconditionally,
+  because behaviours 3, 4 and 5 assert silence and a return-[] stub makes them
+  trivially green. That reasoning is correct and it is the same reasoning I
+  credited in round 3 for behaviour 12's wiring assertion: an assertion that
+  cannot fail against the null implementation proves nothing, and the useful
+  skeleton is the one that is wrong in the direction the assertion can see. I
+  accept it on the merits. It is also the reason A5 exists.
+
+
+B2 — DISCHARGED. The header names a tree the command actually ran in.
+
+  Round 3's B2: all twelve logs read `# tree:
+  tree:b7edeb01426089311aa5ad612fefa1ffbc702f6c`, HEAD's source tree, in which
+  the file nine of them said could not be found is 244 lines long. The cause
+  was in red, not in builder-b's hands: sourceTreeHash hashed the repo red was
+  invoked from while runCapture ran the command from the caller's cwd.
+
+  ae22e88 adds `red --cwd`: the command runs there and the header names the
+  git repo containing that directory, walking up via `git rev-parse
+  --show-toplevel` and recording "none" when there is none. Without --cwd the
+  default derivation now follows the caller's cwd rather than assuming the
+  officina's parent repo — so the defect is fixed at the root, not only on the
+  path W-021 took.
+
+  All twelve logs now read `# tree: dirty:91e92caf50f48680b075cc16b709bb5d5be
+  4e244`, the stubbed worktree. No log any longer certifies a tree that would
+  not produce the recorded failure. Round 3's stated bar for W-021 was "run
+  red with its cwd inside the tree under test, or accept unknown in the
+  header". The first of those is what happened.
+
+
+RE-VERIFICATION — WHAT I RAN
+
+  bisellium verify W-021 --studio studio --repo /home/edckt/projects/bisellium
+      tests: passed   ci/W-021-tests-9c1b6504.log   exit 0, zero FAIL lines
+      lint:  passed   ci/W-021-lint-9c1b6504.log    exit 0, 1 pre-existing warning
+      types: passed   ci/W-021-types-9c1b6504.log   exit 0
+      all three certify tree:9c1b650418b6bcffd2221f5fa549df8d334b688c.
+
+  npm run -s check -- studio --repo /home/edckt/projects/bisellium
+      PASS — 0 blocking, 39 advisory.
+      W-020's opus.red_evidence block, the single blocking finding at round 3,
+      is cleared by ae22e88's completion of its own store (behaviours 9-11,
+      and 16 for the --cwd fix itself). The task's "zero blocking" bar is met
+      on the officina as a whole this time, not merely on this opus.
+
+  countBehaviours(studio/briefs/W-021.md) = 12, matching the brief's ordered
+  list exactly. opus.red_evidence is silent on W-021 against the live studio:
+  the store satisfies the rule on merit, with the opus in `building` and
+  therefore in the rule's scope throughout.
+
+  Does it still bite? A copy of studio in $TMPDIR, git init'd and committed:
+      delete reds/W-021/06.log and 11.log
+          → block, opera/W-021.md, "missing red log(s) for behaviour(s) 6, 11"
+      restore both
+          → finding gone
+      rewrite 03.log's header to `# exit: 0`   → block, "record a passing run"
+      `# exit: ` (empty)                        → block
+      `# exit: abc`                             → block
+      `# exit: 2`                               → no finding (correct)
+      `# exit: 00`                              → NO FINDING
+  Five of six shapes correct. The sixth is F2 below, unchanged.
+
+
+CARRIED FORWARD, UNCHANGED AND NON-BLOCKING
+
+  F2  `exit: 00` reads as a red. evidence.ts:191 tests `exit === "0"` as a
+      string; `Number(exit) === 0` is the one-character fix. Re-measured above
+      and still live. It needs a hand-forged log to exploit — `bisellium red`
+      cannot emit `00` — and no log in either officina has that shape.
+  F3  opus.untracked is blind to a gitignored opus: `git ls-files --others
+      --exclude-standard` omits ignored files. Spec-compliant; a scope
+      question for the rule's next revision.
+  F5  Behaviour 12's assertion over `studio` relaxed to "no blocking path.*"
+      after the level drop. Correct handling, documented in P-004.
+  F6  The insurance clause was applied to both path.* rules though only
+      path.escapes.officina ever fired. Brief-compliant; recorded so P-004's
+      resolution can re-promote them separately.
+
+  F4 remains closed (2412500).
+
+
+NEW, ADVISORY, FOR THE RETRO
+
+  A5  The two skeletons are asymmetric. evidence.ts over-fires, so the
+      silence-only assertions in behaviours 3, 4 and 5 go red. paths.ts is a
+      no-op, so the silence-only assertions in 10 and 11 stay green — including
+      behaviour 11's central clause, "a path that merely looks like an escape
+      but resolves inside passes, proving the relation not a string prefix",
+      which is the whole reason D-008 came back a third time. An over-firing
+      paths.ts skeleton, symmetric with the evidence.ts one, would have redded
+      it. This is not blocking: behaviour 11 is shown failing, and the
+      behaviour is the granularity both lex §2 and the store work at. But the
+      one assertion that would catch a startsWith regression is the one with no
+      red behind it, and that is worth saying out loud.
+
+  A6  The reds are reconstructions and the store cannot say so. The stubbed
+      worktree was removed after recording and the skeleton sources were never
+      committed, so dirty:91e92ca… names a tree that exists nowhere. The header
+      is now honest — it no longer certifies a tree that contradicts the body —
+      but a cold reader still cannot reproduce or even identify what the
+      failure was produced against. W-020's log format has no field for
+      "reconstructed against skeleton X at commit Y". That is the remaining
+      half of B2 and it belongs to W-020 or a petitio, not here.
+
+  A7  For the retro, restating round 3's cheapest lesson now that it has been
+      answered by hand rather than by a rule: the store's shape is checkable
+      and is not checked. A rule that blocks when two logs under one opus have
+      byte-identical bodies would have caught round 3's B1 without a reviewer.
+      Round 4 shows the defect is fixable; it does not show it is prevented.
+      L-001/L-008/L-017's class, fifth appearance.
+
+
+WHAT I CHECKED AND FOUND UNCHANGED
+
+  check.ts carries exactly the three edits the brief permits. package.json's
+  scripts.test carries both builders' entries. Seam S2 holds for both rules.
+  rules/paths.ts contains no startsWith. The acta's ../README.md is a
+  legitimate citation, correctly left alone — it is the one blocking finding
+  on the $TMPDIR copy, an artefact of copying the officina out from under its
+  repo, not a defect.
+
+Passed on the evidence, which is what the last two rounds were about. The
+rules were right at round 2 and they are still right; what took three rounds
+was making the officina able to say so. Closing.
