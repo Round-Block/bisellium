@@ -6,10 +6,12 @@
   "types": "src/index.ts",
   "dependencies": {
     "@bisellium/adapter-native": "*",
-    "@bisellium/cli": "*",
     "@bisellium/core": "*",
     "@bisellium/schema": "*",
     "@bisellium/shim": "*"
+  },
+  "devDependencies": {
+    "@bisellium/commands": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

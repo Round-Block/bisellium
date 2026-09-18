@@ -1,20 +1,40 @@
 /**
  * apps/server/src/http.ts — the localhost HTTP + SSE surface over
- * apps/server/src/store.ts's Store (W-014). `startServer` owns the whole
- * lifecycle: open the Store, ingest one snapshot, start polling (unless
- * `--once`), bind the HTTP server to 127.0.0.1 only, and hand back a
- * `close()` that stops both. `packages/cli/src/serve.ts` is the thin argv
- * wrapper around this; apps/server/test/server.test.ts drives this module
- * directly so the tests never depend on main.ts wiring the command in.
+ * apps/server/src/store.ts's Store (W-014, rewritten W-016). `startServer`
+ * owns the whole lifecycle: open the Store, ingest one snapshot, start
+ * polling (unless `--once`), bind the HTTP server to 127.0.0.1 only, and
+ * hand back a `close()` that stops both. `packages/cli/src/serve.ts` is the
+ * thin argv wrapper around this; apps/server/test/server.test.ts drives this
+ * module directly so the tests never depend on main.ts wiring the command
+ * in.
+ *
+ * W-016 (cascade-4 review) rewired this module for dependency inversion:
+ * apps/server must never import `@bisellium/cli` or `@bisellium/commands`
+ * (that was the actual cycle — apps/server re-implementing ingest AND
+ * importing the CLI's write commands both at once). Every write command and
+ * `checkStudio` are injected via `StartServerOptions` instead; the CLI
+ * (packages/cli/src/serve.ts) is what wires the real ones in.
+ *
+ * Also fixed this cascade: writes require `X-Bisellium-Token` (loopback bind
+ * alone never authorized anything — it's the same 127.0.0.1 every process on
+ * the machine shares), an `Origin` header on any write is refused outright
+ * (this is a local tool, not a CORS-enabled API), a wrong Content-Type on a
+ * write is 415, an oversized body is 413 with a real JSON response instead
+ * of a destroyed socket, `?limit=` on /api/events and /api/timeline/:sella
+ * clamps into [1,500] and never throws, the SSE fan-out is one
+ * `store.on("event")` listener total (not one per client), a client past
+ * MAX_SSE_CLIENTS gets 503, a client whose socket errors is dropped without
+ * taking the server down, a slow client's backpressure (`res.write()`
+ * returning false) never blocks the others, and static file containment
+ * uses `path.relative` instead of a bare `startsWith` (which a sibling
+ * directory sharing WEB_DIST's name as a prefix could pass).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, extname, join, resolve } from "node:path";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GantryEvent } from "@bisellium/schema";
-import { runHandoff, runAnswer, runGreenlight, runBudget } from "@bisellium/cli/src/writes.js";
-import { runTalk } from "@bisellium/cli/src/talk.js";
-import { runPause, runResume } from "@bisellium/cli/src/pause.js";
 import { Store } from "./store.js";
 
 export interface StartServerOptions {
@@ -29,10 +49,28 @@ export interface StartServerOptions {
   now?: Date;
   /** providerStatus() runs quota-axi (a live subprocess) only when true. */
   live?: boolean;
+  /** Injected by packages/cli/src/serve.ts. apps/server must not import
+   *  @bisellium/cli or @bisellium/commands — that is the cycle. */
+  checkStudio: (root: string, now?: Date) => { ok: boolean; blocks: number; advisories: number; findings: unknown[] };
+  /** Printed by serve.ts at start; required on every POST as
+   *  X-Bisellium-Token. Auto-generated when omitted (tests pin one so they
+   *  can craft the header deterministically). */
+  token?: string;
+  /** Injected write runners, so apps/server calls no CLI module by name. */
+  runners: {
+    answer: (args: string[]) => { exitCode: number };
+    greenlight: (args: string[]) => { exitCode: number };
+    budget: (args: string[]) => { exitCode: number };
+    handoff: (args: string[]) => { exitCode: number };
+    talk: (args: string[]) => Promise<{ exitCode: number }>;
+    pause: (args: string[]) => Promise<{ exitCode: number }>;
+    resume: (args: string[]) => Promise<{ exitCode: number }>;
+  };
 }
 
 export interface StartServerResult {
   port: number;
+  token: string;
   store: Store;
   close: () => Promise<void>;
 }
@@ -40,6 +78,9 @@ export interface StartServerResult {
 const DEFAULT_PORT = 4477;
 const DEFAULT_POLL_MS = 5_000;
 const HEARTBEAT_MS = 15_000;
+const MAX_SSE_CLIENTS = 50;
+const MIN_LIMIT = 1;
+const MAX_LIMIT = 500;
 
 // ---------------------------------------------------------------------------
 // Small response helpers
@@ -68,20 +109,28 @@ function serverError(res: ServerResponse, e: unknown): void {
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
+class PayloadTooLargeError extends Error {}
+
 function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolvePromise, reject) => {
     let size = 0;
+    let tooLarge = false;
     const chunks: Buffer[] = [];
     req.on("data", (chunk: Buffer) => {
+      if (tooLarge) return; // already over cap: drain and ignore the rest
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
-        reject(new Error("request body too large"));
-        req.destroy();
+        tooLarge = true;
+        chunks.length = 0; // stop holding what we'd already buffered
         return;
       }
       chunks.push(chunk);
     });
     req.on("end", () => {
+      if (tooLarge) {
+        reject(new PayloadTooLargeError("request body too large"));
+        return;
+      }
       const raw = Buffer.concat(chunks).toString("utf8").trim();
       if (raw === "") {
         resolvePromise({});
@@ -102,16 +151,20 @@ function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   });
 }
 
-/** readJsonBody, but a malformed body answers 400 {error} here (a client
- *  mistake) instead of letting the rejection reach route()'s catch, which
- *  hands everything to serverError() and answers 500 (spec: 500 is
- *  reserved for server errors, never surfaced as the way to tell a caller
- *  "you sent junk"). Returns `undefined` after already sending the 400 —
- *  the caller's job is just to `return` when it sees that. */
+/** readJsonBody, but a malformed body answers 400 {error} (a client mistake,
+ *  413 for an oversized one) here instead of letting the rejection reach
+ *  route()'s catch, which hands everything to serverError() and answers 500
+ *  (spec: 500 is reserved for server errors). Returns `undefined` after
+ *  already sending a response — the caller's job is just to `return` when it
+ *  sees that. */
 async function readJsonBodyOr400(req: IncomingMessage, res: ServerResponse): Promise<Record<string, unknown> | undefined> {
   try {
     return await readJsonBody(req);
   } catch (e) {
+    if (e instanceof PayloadTooLargeError) {
+      sendJson(res, 413, { error: e.message });
+      return undefined;
+    }
     sendJson(res, 400, { error: e instanceof Error ? e.message : String(e) });
     return undefined;
   }
@@ -183,6 +236,37 @@ async function asPatron<T>(fn: () => Promise<T> | T): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
+// Write auth: token + no-Origin + application/json. "Loopback alone never
+// authorizes" (W-016 behaviour 5) — the server binding to 127.0.0.1 is still
+// true but is no longer treated as sufficient on its own.
+// ---------------------------------------------------------------------------
+
+/** Constant-time token compare — a plain `===` would leak the token's real
+ *  length/prefix through timing, cheap to avoid with a fixed-size digest
+ *  compare instead. */
+function tokensMatch(expected: string, given: string | undefined): boolean {
+  if (typeof given !== "string") return false;
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(given, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+/** Order matters, and is exactly what the spec's four cases pin down: an
+ *  Origin header (this is a local tool, never a CORS-enabled API — any
+ *  Origin at all means a browser made this request, cross-site or not, and
+ *  neither is welcome here) is refused before the token is even looked at;
+ *  then the token; then Content-Type. Returns the status to answer with, or
+ *  `undefined` when the request is authorized to proceed. */
+function checkWriteAuth(req: IncomingMessage, token: string): number | undefined {
+  if (req.headers["origin"] !== undefined) return 403;
+  if (!tokensMatch(token, req.headers["x-bisellium-token"] as string | undefined)) return 401;
+  const contentType = (req.headers["content-type"] ?? "").toString();
+  if (!/^application\/json(\s*;.*)?$/i.test(contentType.trim())) return 415;
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
 // Static file serving: apps/web/dist if it's been built, else a one-page
 // index of the API routes.
 // ---------------------------------------------------------------------------
@@ -226,10 +310,20 @@ const ROUTE_INDEX_HTML = `<!doctype html>
 <li>GET /api/events?since=&amp;limit=</li>
 <li>GET /api/receipts?sella=</li>
 <li>GET /api/live (SSE)</li>
-<li>POST /api/answer, /api/greenlight, /api/budget, /api/handoff, /api/talk, /api/pause, /api/resume</li>
+<li>POST /api/answer, /api/greenlight, /api/budget, /api/handoff, /api/talk, /api/pause, /api/resume (X-Bisellium-Token required)</li>
 </ul>
 </body>
 </html>`;
+
+/** Containment via `path.relative`, not a bare `startsWith`: a sibling
+ *  directory that merely shares WEB_DIST's name as a string prefix (e.g.
+ *  `.../web-dist-evil/x` against `.../web-dist`) would pass a `startsWith`
+ *  check with no separator boundary — `relative()` can't be fooled that way,
+ *  since it always answers in terms of real path segments. */
+export function isPathContained(base: string, target: string): boolean {
+  const rel = relative(base, target);
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
 
 function serveStatic(pathname: string, res: ServerResponse): boolean {
   if (pathname === "/") {
@@ -240,10 +334,7 @@ function serveStatic(pathname: string, res: ServerResponse): boolean {
   }
   if (pathname.startsWith("/assets/")) {
     const filePath = resolve(WEB_DIST, "." + pathname);
-    // Containment: "." + pathname can never climb above WEB_DIST because
-    // pathname always starts with "/assets/", but a decoded "../" would —
-    // refuse anything that resolves outside WEB_DIST rather than trust that.
-    if (!filePath.startsWith(WEB_DIST)) {
+    if (!isPathContained(WEB_DIST, filePath)) {
       sendJson(res, 403, { error: "forbidden" });
       return true;
     }
@@ -264,28 +355,58 @@ function serveStatic(pathname: string, res: ServerResponse): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// SSE
+// SSE — one store "event" listener fans out to every connected client
+// (never one listener per client), with per-client backpressure and a hard
+// connection cap.
 // ---------------------------------------------------------------------------
 
-function handleLive(store: Store, req: IncomingMessage, res: ServerResponse, sseClients: Set<ServerResponse>): void {
+interface SseHub {
+  clients: Set<ServerResponse>;
+  /** Clients whose last res.write() returned false — skipped on broadcast
+   *  until their "drain" fires, so one slow reader never blocks the rest. */
+  paused: WeakSet<ServerResponse>;
+  stop: () => void;
+}
+
+function createSseHub(store: Store): SseHub {
+  const clients = new Set<ServerResponse>();
+  const paused = new WeakSet<ServerResponse>();
+  const onEvent = (e: GantryEvent): void => {
+    const frame = `data: ${JSON.stringify(e)}\n\n`;
+    for (const res of clients) {
+      if (paused.has(res)) continue;
+      let ok: boolean;
+      try {
+        ok = res.write(frame);
+      } catch {
+        continue; // client gone; its own close handler cleans it up
+      }
+      if (!ok) {
+        paused.add(res);
+        res.once("drain", () => paused.delete(res));
+      }
+    }
+  };
+  store.on("event", onEvent);
+  return { clients, paused, stop: () => store.off("event", onEvent) };
+}
+
+function handleLive(hub: SseHub, req: IncomingMessage, res: ServerResponse): void {
+  if (hub.clients.size >= MAX_SSE_CLIENTS) {
+    sendJson(res, 503, { error: "too many /api/live clients" });
+    return;
+  }
+
   res.writeHead(200, {
     "Content-Type": "text/event-stream; charset=utf-8",
     "Cache-Control": "no-cache",
     Connection: "keep-alive",
   });
   res.write(": connected\n\n");
-  sseClients.add(res);
-
-  const onEvent = (e: GantryEvent) => {
-    try {
-      res.write(`data: ${JSON.stringify(e)}\n\n`);
-    } catch {
-      // client gone; the close handler below will clean up
-    }
-  };
-  store.on("event", onEvent);
+  hub.clients.add(res);
 
   const heartbeat = setInterval(() => {
+    if (hub.paused.has(res)) return;
     try {
       res.write(": heartbeat\n\n");
     } catch {
@@ -294,20 +415,34 @@ function handleLive(store: Store, req: IncomingMessage, res: ServerResponse, sse
   }, HEARTBEAT_MS);
 
   let cleaned = false;
-  const cleanup = () => {
+  const cleanup = (): void => {
     if (cleaned) return;
     cleaned = true;
     clearInterval(heartbeat);
-    store.off("event", onEvent);
-    sseClients.delete(res);
+    hub.clients.delete(res);
   };
   req.on("close", cleanup);
   res.on("close", cleanup);
+  // A client whose socket errors (reset, broken pipe, …) must be dropped
+  // the same way a clean close is — without this, an unhandled "error" on a
+  // response stream can crash the whole process.
+  res.on("error", cleanup);
 }
 
 // ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
+
+/** Clamps a `?limit=` query param into `[MIN_LIMIT, MAX_LIMIT]`. `null`
+ *  (the param was never given) means "no limit" — the caller decides what
+ *  that means for its own route; anything else (out of range, `0`,
+ *  negative, non-numeric) is clamped, never thrown on (W-016 behaviour 7). */
+function clampedLimit(raw: string | null): number | undefined {
+  if (raw === null) return undefined;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return MAX_LIMIT;
+  return Math.min(MAX_LIMIT, Math.max(MIN_LIMIT, Math.trunc(n)));
+}
 
 function num(v: string | null): number | undefined {
   if (v === null) return undefined;
@@ -319,7 +454,10 @@ async function route(
   store: Store,
   allowPoll: () => Promise<GantryEvent[]>,
   withWriteLock: <T>(fn: () => Promise<T>) => Promise<T>,
-  sseClients: Set<ServerResponse>,
+  sseHub: SseHub,
+  checkStudio: StartServerOptions["checkStudio"],
+  runners: StartServerOptions["runners"],
+  token: string,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -327,75 +465,77 @@ async function route(
   const pathname = url.pathname;
   const method = req.method ?? "GET";
 
-  // ---- writes: 127.0.0.1 only (the server is bound there too, but this is
-  // the explicit contract the spec names, not just an accident of bind()). --
-  const remote = req.socket.remoteAddress ?? "";
-  const isLoopback = remote === "127.0.0.1" || remote === "::1" || remote === "::ffff:127.0.0.1";
+  // ---- writes: token + no-Origin + application/json required. Loopback
+  // (the bind itself) is never sufficient on its own — see checkWriteAuth. --
   const WRITE_PATHS = new Set(["/api/answer", "/api/greenlight", "/api/budget", "/api/handoff", "/api/talk", "/api/pause", "/api/resume"]);
-  if (method === "POST" && WRITE_PATHS.has(pathname) && !isLoopback) {
-    sendJson(res, 403, { error: "writes are only accepted from 127.0.0.1" });
-    return;
+  if (method === "POST" && WRITE_PATHS.has(pathname)) {
+    const authStatus = checkWriteAuth(req, token);
+    if (authStatus !== undefined) {
+      const message = authStatus === 401 ? "missing or invalid X-Bisellium-Token" : authStatus === 403 ? "cross-origin writes are refused" : "Content-Type must be application/json";
+      sendJson(res, authStatus, { error: message });
+      return;
+    }
   }
 
-  if (method === "GET" && pathname === "/api/officina") return sendJson(res, 200, store.query.officina());
+  if (method === "GET" && pathname === "/api/officina") return sendJson(res, 200, store.api.officina());
 
   if (method === "GET" && pathname === "/api/opera") {
     const state = url.searchParams.get("state") ?? undefined;
     const collegium = url.searchParams.get("collegium") ?? undefined;
-    return sendJson(res, 200, store.query.opera({ state, collegium }));
+    return sendJson(res, 200, store.api.opera({ state, collegium }));
   }
 
   {
     const m = /^\/api\/opus\/([^/]+)$/.exec(pathname);
     if (method === "GET" && m) {
-      const opus = store.query.opus(decodeURIComponent(m[1]!));
+      const opus = store.api.opus(decodeURIComponent(m[1]!));
       if (!opus) return notFound(res, "opus");
       return sendJson(res, 200, opus);
     }
   }
 
-  if (method === "GET" && pathname === "/api/inbox") return sendJson(res, 200, store.query.needsYou());
+  if (method === "GET" && pathname === "/api/inbox") return sendJson(res, 200, store.api.needsYou());
 
   if (method === "GET" && pathname === "/api/acta") {
     const days = num(url.searchParams.get("days")) ?? 7;
-    return sendJson(res, 200, store.query.acta(days));
+    return sendJson(res, 200, store.api.acta(days));
   }
 
   if (method === "GET" && pathname === "/api/aerarium") {
     const period = url.searchParams.get("period") ?? undefined;
-    return sendJson(res, 200, store.query.aerarium(period));
+    return sendJson(res, 200, store.api.aerarium(period));
   }
 
   if (method === "GET" && pathname === "/api/providers") {
     const live = url.searchParams.get("live") === "1" || url.searchParams.get("live") === "true";
-    return sendJson(res, 200, await store.query.providers(live));
+    return sendJson(res, 200, await store.api.providers(live));
   }
 
-  if (method === "GET" && pathname === "/api/health") return sendJson(res, 200, store.query.health());
+  if (method === "GET" && pathname === "/api/health") return sendJson(res, 200, store.api.health(checkStudio));
 
   {
     const m = /^\/api\/timeline\/([^/]+)$/.exec(pathname);
     if (method === "GET" && m) {
       const sella = decodeURIComponent(m[1]!);
       if (!store.sellaExists(sella)) return notFound(res, "sella");
-      const limit = num(url.searchParams.get("limit"));
-      return sendJson(res, 200, store.query.timeline(sella, limit));
+      const limit = clampedLimit(url.searchParams.get("limit"));
+      return sendJson(res, 200, store.api.timeline(sella, limit));
     }
   }
 
   if (method === "GET" && pathname === "/api/events") {
     const since = num(url.searchParams.get("since"));
-    const limit = num(url.searchParams.get("limit"));
-    return sendJson(res, 200, store.query.events({ since, limit }));
+    const limit = clampedLimit(url.searchParams.get("limit"));
+    return sendJson(res, 200, store.api.events({ since, limit }));
   }
 
   if (method === "GET" && pathname === "/api/receipts") {
     const sella = url.searchParams.get("sella") ?? undefined;
-    return sendJson(res, 200, store.query.receipts(sella));
+    return sendJson(res, 200, store.api.receipts(sella));
   }
 
   if (method === "GET" && pathname === "/api/live") {
-    handleLive(store, req, res, sseClients);
+    handleLive(sseHub, req, res);
     return;
   }
 
@@ -423,7 +563,7 @@ async function route(
     const args = ["--petitio", petitio, reply, "--studio", store.studioDir];
     if (body["askBack"] === true) args.push("--ask-back");
     if (body["charterGap"] === true) args.push("--charter-gap");
-    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runAnswer(args))));
+    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.answer(args))));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
@@ -437,7 +577,7 @@ async function route(
     }
     const args = [opus, "--studio", store.studioDir];
     if (typeof body["decline"] === "string") args.push("--decline", body["decline"]);
-    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runGreenlight(args))));
+    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.greenlight(args))));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
@@ -453,7 +593,7 @@ async function route(
     }
     const args = [period, "--collegium", collegium, "--tokens", String(tokens), "--studio", store.studioDir];
     if (body["hours"] !== undefined) args.push("--hours", String(body["hours"]));
-    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runBudget(args))));
+    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.budget(args))));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
@@ -470,7 +610,7 @@ async function route(
     const args = ["--opus", opus, "--sella", sella, "--next", next, "--studio", store.studioDir];
     if (typeof body["stage"] === "string") args.push("--stage", body["stage"]);
     if (typeof body["blockedOn"] === "string") args.push("--blocked-on", body["blockedOn"]);
-    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runHandoff(args)));
+    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runners.handoff(args)));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
@@ -490,7 +630,7 @@ async function route(
     // the caller waits for the reply, same as the CLI would. withWriteLock
     // queues this behind any other in-flight write rather than letting it
     // interleave with one through the shared console/env mutation.
-    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runTalk(args)));
+    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runners.talk(args)));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
@@ -498,13 +638,13 @@ async function route(
     const body = await readJsonBody(req).catch(() => ({}) as Record<string, unknown>);
     const args = ["--studio", store.studioDir];
     if (typeof body["reason"] === "string") args.push("--reason", body["reason"]);
-    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runPause(args)));
+    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runners.pause(args)));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
   if (method === "POST" && pathname === "/api/resume") {
     const args = ["--studio", store.studioDir];
-    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runResume(args)));
+    const { result, stdout, stderr } = await withWriteLock(() => withCapturedConsole(() => runners.resume(args)));
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
@@ -524,8 +664,9 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
     throw new Error(`not a studio: ${studioDir}`);
   }
 
+  const token = opts.token ?? randomBytes(24).toString("hex");
   const store = new Store({ studioDir, now: opts.now, live: opts.live });
-  await store.ingest();
+  await store.ingestOnce();
 
   const once = opts.once ?? false;
   const pollMs = opts.pollMs ?? DEFAULT_POLL_MS;
@@ -534,7 +675,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
     if (polling) return []; // skip when a poll is still running (spec)
     polling = true;
     try {
-      return await store.ingest();
+      return await store.ingestOnce();
     } catch (e) {
       // Same reasoning as the access-log line above: never console.error,
       // this can fire from the poll timer while a write's console capture
@@ -549,12 +690,11 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   let pollTimer: NodeJS.Timeout | undefined;
   if (!once) pollTimer = setInterval(() => void doPoll(), pollMs);
 
-  // Every write route serializes through this (see createWriteLock's docs);
-  // every open /api/live response is tracked here so close() can end them
-  // instead of waiting on server.close()'s callback forever (an SSE client
-  // never disconnects on its own — that's the whole point of the route).
+  // Every write route serializes through this (see createWriteLock's docs).
   const withWriteLock = createWriteLock();
-  const sseClients = new Set<ServerResponse>();
+  // One store "event" listener for every connected /api/live client to fan
+  // out from (W-016 behaviour 8) — never one listener per client.
+  const sseHub = createSseHub(store);
 
   const server = createServer((req, res) => {
     const start = Date.now();
@@ -567,7 +707,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
       // response body instead of the terminal.
       process.stderr.write(`${method} ${url} ${res.statusCode} ${Date.now() - start}ms\n`);
     });
-    route(store, doPoll, withWriteLock, sseClients, req, res).catch((e) => serverError(res, e));
+    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, token, req, res).catch((e) => serverError(res, e));
   });
 
   await new Promise<void>((resolvePromise, reject) => {
@@ -583,10 +723,11 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
     if (closed) return;
     closed = true;
     if (pollTimer) clearInterval(pollTimer);
+    sseHub.stop();
     // End every open SSE stream (and force its socket shut) before asking
     // the server to close — otherwise server.close()'s callback waits
     // forever for a connection that, by design, never ends on its own.
-    for (const client of sseClients) {
+    for (const client of sseHub.clients) {
       try {
         client.end();
       } catch {
@@ -598,7 +739,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
         // already gone
       }
     }
-    sseClients.clear();
+    sseHub.clients.clear();
     await new Promise<void>((resolvePromise) => {
       server.close(() => resolvePromise());
       // Backstop for any other lingering connection (e.g. a slow client
@@ -607,5 +748,5 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
     });
   };
 
-  return { port, store, close };
+  return { port, token, store, close };
 }
