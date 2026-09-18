@@ -24,6 +24,16 @@ import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
 import { checkInstructions } from "./rules/instructions.js";
 import { checkDocs } from "./rules/docs.js";
+import { checkEvidence } from "./rules/evidence.js";
+import { checkPaths } from "./rules/paths.js";
+
+// An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
+// every id here can end up as a path component elsewhere) — reject anything
+// containing a path separator or a ".." segment before it ever reaches a
+// join(), rather than relying on every downstream writer to re-derive this
+// on its own. Exported so manifest.id.format and rules/paths.ts (D-008)
+// share one definition rather than a copy that can drift.
+export const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 export type Level = "block" | "advise";
 export interface Finding {
@@ -217,12 +227,6 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellae = listOf("sellae");
   const probationes = listOf("probationes");
 
-  // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md,
-  // and every id here can end up as a path component elsewhere) — reject
-  // anything containing a path separator or a ".." segment before it ever
-  // reaches a join(), rather than relying on every downstream writer to
-  // re-derive this on its own.
-  const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
   const uniq = (key: string, rows: Dict[]) => {
     const seen = new Set<string>();
     for (const r of rows) {
@@ -701,6 +705,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkLex(root, ruleOpts));
   findings.push(...checkInstructions(root, ruleOpts));
   findings.push(...checkDocs(root, ruleOpts));
+  findings.push(...checkEvidence(root, ruleOpts));
+  findings.push(...checkPaths(root, ruleOpts));
 
   return done();
 }

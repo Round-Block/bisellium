@@ -83,10 +83,11 @@ lex, a decision, or a check rule and delete it here.
   D-008 promotes to blocking (probation served by cascade 5); licence
   Apache-2.0 (LICENSE at root). Implementation = W-020 + W-021, backlog,
   awaiting decretum.
-- Known gaps worth a cascade slot: no CLI writes an opus lifecycle transition
-  (halted→building, building→done) or an agent-gate result — stopgaps
-  `scripts/opus-ready.ts` and `scripts/opus-close.ts`, delete both when
-  `bisellium ready`/`done` exist; `bisellium instructions --write` strips the
+- Closed in cascade 6 (W-020): `bisellium ready`, `done`, `review` and `red`
+  write the lifecycle transitions, the review verdict (pass *and* fail) and the
+  per-behaviour red store; the `scripts/opus-ready.ts` / `scripts/opus-close.ts`
+  stopgaps are deleted.
+- Known gaps worth a cascade slot: `bisellium instructions --write` strips the
   docs-registry front matter W-019 put on `GLOSSARY.md` (generator vs registry
   seam); `retro`'s previous-retro matcher misses `-retro-4b.md` suffixes.
 - W-017 and W-018 closed `done` in pass 5b (round-2 reviews passed on

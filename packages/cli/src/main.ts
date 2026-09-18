@@ -20,6 +20,7 @@ import { runTalk } from "./talk.js";
 import { runTick } from "./tick.js";
 import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
+import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
 import { runDocs } from "./docs.js";
@@ -61,6 +62,10 @@ const USAGE =
   "       bisellium answer --petitio <id> <reply…> [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--now <iso>] -- <cmd…>\n" +
   "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +
   "       bisellium hooks check --harness claude-code [--studio <dir>]\n" +
@@ -110,6 +115,10 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "resume") return (await runResume(rest)).exitCode;
   if (cmd === "handoff") return runHandoff(rest).exitCode;
   if (cmd === "emit") return runEmit(rest).exitCode;
+  if (cmd === "ready") return runReady(rest).exitCode;
+  if (cmd === "done") return runDone(rest).exitCode;
+  if (cmd === "review") return runReview(rest).exitCode;
+  if (cmd === "red") return (await runRed(rest)).exitCode;
   if (cmd === "hooks") return runHooks(rest).exitCode;
   if (cmd === "hook-event") return (await runHookEvent(rest)).exitCode;
   if (cmd === "docs") return runDocs(rest).exitCode;

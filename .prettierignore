@@ -17,11 +17,10 @@ cascades/
 packages/
 apps/
 adapters/
-# W-018's script (cascades/ package, not this opus's file), and the Design
-# collegium's spec-phase script — new since this brief was written, not
-# owned here.
+# W-018's script (cascades/ package, not this opus's file) — new since that
+# brief was written, not owned here. The `scripts/opus-ready.ts` entry that
+# sat beside it went out with the file itself (W-020, cascade 6).
 scripts/usage-from-workflow.mjs
-scripts/opus-ready.ts
 # Claude Code sandbox /dev/null masks (see .gitignore) — unreadable device
 # nodes prettier's "." glob would otherwise choke on.
 .bash_profile

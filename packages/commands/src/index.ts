@@ -12,3 +12,4 @@ export * from "./run.js";
 export * from "./verify.js";
 export * from "./talk.js";
 export * from "./writes.js";
+export * from "./lifecycle.js";
