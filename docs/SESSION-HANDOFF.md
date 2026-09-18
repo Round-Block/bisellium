@@ -57,15 +57,24 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-19)
+## Where things stand (2026-09-19, after cascade 5)
 
-- Cascades 1–4c are in the dossier progress log. Suite green; both officinae
-  0 blocking.
-- Next opera: W-016 (server security — Patron POST writes are CSRF-able until it
-  lands; core `Store` in the server) and W-019 (eslint/CI/docs registry; its
-  absence blocks W-017 and W-018 via the `lint` probatio). Run them from
-  `cascades/cascade.js` at `cascades/sizing.json`.
-- In the Patron's inbox: P-001 (licence choice and the Censor's rule proposals).
+- Cascades 1–5 are in the dossier progress log. Suite green (731 tests, lint
+  and format:check now real); both officinae 0 blocking. W-016 and W-019 are
+  `done` with the studio's first `tree:` certificates; retro 5 filed
+  (acta/2026-09-19-retro-5.md, L-015–L-017).
+- In the Patron's inbox: P-001 (Censor's rule proposals), P-002 (licence
+  choice), P-003 (where per-behaviour recorded reds live — the class recurs
+  across cascades 2/4/5; builder reds currently survive only in
+  `~/.bisellium-evidence/cascade-5/`).
+- Known gaps worth a cascade slot: no CLI writes an opus lifecycle transition
+  (halted→building, building→done) or an agent-gate result — stopgaps
+  `scripts/opus-ready.ts` and `scripts/opus-close.ts`, delete both when
+  `bisellium ready`/`done` exist; `bisellium instructions --write` strips the
+  docs-registry front matter W-019 put on `GLOSSARY.md` (generator vs registry
+  seam); `retro`'s previous-retro matcher misses `-retro-4b.md` suffixes.
+- W-017 and W-018 remain `halted` but their `resume_when` (a runnable lint
+  script) is now satisfied — re-verify and close them next, cheaply.
 - Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
   L2, adapters + desktop. Estimates and rationale are in the dossier.
 
