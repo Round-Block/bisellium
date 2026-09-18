@@ -39,11 +39,11 @@ export interface WriteResult {
 // Shared argv/studio/event/timeline plumbing
 // ---------------------------------------------------------------------------
 
-interface FlagSpec {
+export interface FlagSpec {
   valued?: string[];
   boolean?: string[];
 }
-interface ParsedFlags {
+export interface ParsedFlags {
   values: Map<string, string>;
   flags: Set<string>;
   positionals: string[];
@@ -52,7 +52,7 @@ interface ParsedFlags {
 /** Minimal, strict flag parser shared by all five commands: any `--flag`
  *  not declared in `spec` is a usage error, never a silent no-op — this is
  *  what makes budget refuse an arbitrary `--burn-anything` flag. */
-function parseFlags(args: string[], spec: FlagSpec): ParsedFlags | { error: string } {
+export function parseFlags(args: string[], spec: FlagSpec): ParsedFlags | { error: string } {
   const valued = new Set(spec.valued ?? []);
   const boolean = new Set(spec.boolean ?? []);
   const values = new Map<string, string>();
@@ -80,13 +80,13 @@ function parseFlags(args: string[], spec: FlagSpec): ParsedFlags | { error: stri
 
 /** `--now <iso>` if given, else `opts.now`, else the real clock. `undefined`
  *  return means an explicit --now failed to parse as a date. */
-function resolveNow(flagValue: string | undefined, fallback: Date | undefined): Date | undefined {
+export function resolveNow(flagValue: string | undefined, fallback: Date | undefined): Date | undefined {
   if (flagValue === undefined) return fallback ?? new Date();
   const d = new Date(flagValue);
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
-interface OpenedStudio {
+export interface OpenedStudio {
   root: string;
   manifest: Manifest;
 }
@@ -100,7 +100,7 @@ interface OpenedStudio {
  * normalization ever surprising us. Matches the house convention
  * `verify.ts` already follows via `snapshotDir(...).opera.find`.
  */
-function safeItemPath(dir: string, id: string): string | { error: string } {
+export function safeItemPath(dir: string, id: string): string | { error: string } {
   if (!id || /[\\/]/.test(id) || id === "." || id === "..") return { error: `invalid id "${id}"` };
   const resolvedDir = resolve(dir);
   const path = join(resolvedDir, `${id}.md`);
@@ -110,7 +110,7 @@ function safeItemPath(dir: string, id: string): string | { error: string } {
 
 /** Resolves `studioArg` (default ".") and confirms it's a readable studio —
  *  same not-a-studio wording verify.ts and run.ts use. */
-function openStudio(studioArg: string | undefined): OpenedStudio | { error: string } {
+export function openStudio(studioArg: string | undefined): OpenedStudio | { error: string } {
   const root = resolve(studioArg ?? ".");
   const manifestPath = join(root, "bisellium.yml");
   if (!existsSync(manifestPath)) return { error: `${manifestPath} not found — not a studio` };
@@ -131,7 +131,7 @@ function projectIdFor(manifest: Manifest): string {
 /** Reads an opus/petitio's current `state` without going through the full
  *  adapter (which trims the body) — every command here needs this before it
  *  decides what to write. */
-function readState(path: string): string | { error: string } {
+export function readState(path: string): string | { error: string } {
   let raw: string;
   try {
     raw = readFileSync(path, "utf8");
@@ -149,7 +149,7 @@ function readState(path: string): string | { error: string } {
  *  to, so a CLI write and a running Store never fork the log), seq'd off the
  *  log's current length (this file's simpler seq scheme — not the
  *  per-source counter @bisellium/core's Store keeps for snapshot diffing). */
-function emitEvent(root: string, manifest: Manifest, name: string, now: Date, attrs: Record<string, string | number | boolean>): void {
+export function emitEvent(root: string, manifest: Manifest, name: string, now: Date, attrs: Record<string, string | number | boolean>): void {
   const logPath = join(root, EVENTS_LOG_REL);
   const seq = readLog(logPath).events.length;
   const event: GantryEvent = {
