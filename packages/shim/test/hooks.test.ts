@@ -5,10 +5,10 @@
  * stream (Readable.from) — never a real `claude` CLI, never real process
  * stdin. `now` is pinned so receipt/event timestamps are reproducible.
  */
-import { chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { claudeCodeHooksBlock, receiptPath } from "../src/index.js";
 import { runHooks, runHookEvent } from "../../cli/src/hooks.js";
@@ -265,7 +265,9 @@ try {
       .split("\n")
       .filter(Boolean)
       .map((l) => l.slice(1, -1));
-    check("print(argv): subcommand is context", argv[0] === "context", JSON.stringify(argv));
+    // W-016: SessionStart's boot-context command moved from "bisellium
+    // context" to "bisellium hook-event context" (behaviour 12).
+    check("print(argv): subcommand is hook-event context", argv[0] === "hook-event" && argv[1] === "context", JSON.stringify(argv));
     check(
       "print(argv): --sella resolves to the literal sella, not empty",
       argv[argv.indexOf("--sella") + 1] === sella,
@@ -426,6 +428,102 @@ try {
       "SessionStart wiring: hooks check reports builder-1 alive",
       statuses.logs.some((l) => l.includes("builder-1") && l.includes("alive")),
       JSON.stringify(statuses.logs),
+    );
+  }
+  // ---- 11. W-016 behaviour 12: `hook-event context` exits 0 within 2s on a
+  // broken studio, a missing studio and a healthy one, and prints the boot
+  // bundle on stdout. The printed profile uses `hook-event context` for
+  // SessionStart and PreCompact, with every timeout in it 2. -----------------
+  {
+    const healthy = freshStudio("context-healthy");
+    const missing = join(tmpdir(), `bisellium-context-missing-${process.pid}-${Date.now()}`);
+    const broken = freshStudio("context-broken");
+    writeFileSync(join(broken, "bisellium.yml"), "{not: yaml: [");
+
+    for (const [label, dir] of [["healthy", healthy], ["missing", missing], ["broken", broken]] as const) {
+      const t0 = Date.now();
+      const { result, logs } = await capture(() =>
+        runHookEvent(["context", "--sella", "builder-1", "--studio", dir], { now: NOW, stdin: stdinOf("{}") }),
+      );
+      const elapsed = Date.now() - t0;
+      check(`context(${label}): exitCode 0`, result.exitCode === 0, String(result.exitCode));
+      check(`context(${label}): within 2s`, elapsed < 2000, `${elapsed}ms`);
+      check(`context(${label}): something printed on stdout`, logs.length >= 1, JSON.stringify(logs));
+    }
+    const { logs: healthyLogs } = await capture(() =>
+      runHookEvent(["context", "--sella", "builder-1", "--studio", healthy], { now: NOW, stdin: stdinOf("{}") }),
+    );
+    check("context(healthy): boot bundle is non-empty", (healthyLogs[0] ?? "").length > 0, JSON.stringify(healthyLogs));
+
+    const block = claudeCodeHooksBlock({ sella: "eng-lead", studio: "studio" });
+    const sessionStart = (block.hooks["SessionStart"] as { hooks: { command: string; timeout: number }[] }[])[0]!.hooks;
+    const preCompact = (block.hooks["PreCompact"] as { hooks: { command: string; timeout: number }[] }[])[0]!.hooks;
+    const stop = (block.hooks["Stop"] as { hooks: { command: string; timeout: number }[] }[])[0]!.hooks;
+    const postToolUse = (block.hooks["PostToolUse"] as { hooks: { command: string; timeout: number }[] }[])[0]!.hooks;
+    check(
+      "print: SessionStart's boot-context command is hook-event context",
+      sessionStart.some((h) => h.command.includes("hook-event context")),
+      JSON.stringify(sessionStart),
+    );
+    check(
+      "print: PreCompact runs hook-event context",
+      preCompact.some((h) => h.command.includes("hook-event context")),
+      JSON.stringify(preCompact),
+    );
+    const allHooks = [...sessionStart, ...preCompact, ...stop, ...postToolUse];
+    check("print: every hook's timeout is 2", allHooks.every((h) => h.timeout === 2), JSON.stringify(allHooks.map((h) => h.timeout)));
+  }
+
+  // ---- 12. W-016 behaviour 13: hook-event tool never re-parses the whole
+  // log (5000 lines, under 300ms, exactly one line appended), and redacts
+  // `cwd` the same way `file_path` already is. -------------------------------
+  {
+    const dir = freshStudio("tool-perf");
+    const logPath = join(dir, ".bisellium", "events.jsonl");
+    mkdirSync(dirname(logPath), { recursive: true });
+    const lines: string[] = [];
+    for (let i = 0; i < 5000; i++) {
+      lines.push(JSON.stringify({ id: `seed:${i}`, name: "workflow.digest", ts: NOW.toISOString(), projectId: "sample-studio", attrs: {} }));
+    }
+    writeFileSync(logPath, lines.join("\n") + "\n");
+
+    const secret = "abcdef1234567890";
+    const payload = JSON.stringify({
+      session_id: "sess-tool-perf",
+      tool_name: "Write",
+      tool_input: { file_path: "/repo/x.md", old_string: "a", new_string: "b" },
+      cwd: `/repo/work?token=${secret}`,
+    });
+    const t0 = Date.now();
+    const r = await runHookEvent(["tool", "--sella", "builder-1", "--studio", dir], { now: NOW, stdin: stdinOf(payload) });
+    const elapsed = Date.now() - t0;
+    check("tool(perf): exitCode 0", r.exitCode === 0, String(r.exitCode));
+    check("tool(perf): finishes under 300ms with 5000 existing lines", elapsed < 300, `${elapsed}ms`);
+
+    const after = readFileSync(logPath, "utf8").trim().split("\n").filter(Boolean);
+    check("tool(perf): exactly one line appended", after.length === 5001, String(after.length));
+    const event = JSON.parse(after[after.length - 1] ?? "{}") as { attrs: Record<string, unknown> };
+    const cwd = String(event.attrs["tool.cwd"] ?? "");
+    check("tool(perf): cwd is present and masked like file_path", cwd.includes("token=***"), cwd);
+    check("tool(perf): raw secret value is gone from cwd", !cwd.includes(secret), cwd);
+  }
+
+  // ---- 13. W-016 behaviour 14: sella is optional on ClaudeCodeHooksOpts —
+  // omitted entirely strips --sella (and its placeholder), never substitutes
+  // an empty string; a real sella still carries `--sella 'x'` on every
+  // command (the existing profile test, #10 above, already covers that). ----
+  {
+    const noSella = claudeCodeHooksBlock({ studio: "studio" });
+    const flat = JSON.stringify(noSella);
+    check("claudeCodeHooksBlock({studio}): no command contains --sella", !flat.includes("--sella"), flat);
+    check("claudeCodeHooksBlock({studio}): no leftover __SELLA__ placeholder", !flat.includes("__SELLA__"), flat);
+
+    const withSella = claudeCodeHooksBlock({ sella: "eng-lead", studio: "studio" });
+    const sessionStartCmds = (withSella.hooks["SessionStart"] as { hooks: { command: string }[] }[])[0]!.hooks.map((h) => h.command);
+    check(
+      "claudeCodeHooksBlock({sella}): every SessionStart command carries --sella 'eng-lead'",
+      sessionStartCmds.every((c) => c.includes("--sella 'eng-lead'")),
+      JSON.stringify(sessionStartCmds),
     );
   }
 } finally {

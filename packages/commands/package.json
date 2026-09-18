@@ -1,19 +1,17 @@
 {
-  "name": "@bisellium/cli",
+  "name": "@bisellium/commands",
   "version": "0.0.1",
   "type": "module",
-  "main": "src/main.ts",
-  "bin": {
-    "bisellium": "bin/bisellium.mjs"
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    "./*.js": "./src/*.ts"
   },
   "dependencies": {
     "@bisellium/adapter-native": "*",
-    "@bisellium/commands": "*",
     "@bisellium/core": "*",
     "@bisellium/pipeline": "*",
-    "@bisellium/providers": "*",
     "@bisellium/schema": "*",
-    "@bisellium/server": "*",
     "@bisellium/shim": "*",
     "yaml": "^2.6.0"
   },

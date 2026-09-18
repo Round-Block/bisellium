@@ -5,7 +5,7 @@
  *
  *   bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
  *   bisellium hooks check --harness claude-code [--studio <dir>]
- *   bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]
+ *   bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
  *
  * `hooks print`/`hooks check` are ordinary administrative commands (usage
  * errors exit 2, like every other command in this CLI). `hook-event` is
@@ -23,7 +23,7 @@
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { readFront, readManifest, listMd, type Manifest } from "@bisellium/adapter-native";
-import { appendEvents, readLog, EVENTS_LOG_REL } from "@bisellium/core";
+import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import {
   claudeCodeHooksBlock,
@@ -34,6 +34,7 @@ import {
   writeReceiptEnd,
   writeReceiptStart,
 } from "@bisellium/shim";
+import { buildContext } from "./context.js";
 
 export interface HooksResult {
   exitCode: number;
@@ -169,7 +170,7 @@ export interface HookEventOptions {
   stdinTimeoutMs?: number;
 }
 
-const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]";
+const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]";
 
 /** `receipts/<sella>/<sessionId>.json` and `timeline/<sella>.jsonl` both
  *  join these two values straight into a filesystem path — `sella` is
@@ -190,7 +191,7 @@ function isSafePathSegment(s: string): boolean {
 
 export async function runHookEvent(args: string[], opts: HookEventOptions = {}): Promise<HooksResult> {
   const [sub, ...rest] = args;
-  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact") {
+  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context") {
     console.error(`hook-event: unknown subcommand ${JSON.stringify(sub ?? "")}\n${HOOK_EVENT_USAGE}`);
     return { exitCode: 0 }; // a hook target never blocks the harness, even on a usage error
   }
@@ -221,6 +222,7 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
     if (sub === "start") return handleStart(studio, sella, payload.data, now);
     if (sub === "stop") return handleStop(studio, sella, payload.data, now);
     if (sub === "tool") return handleTool(studio, sella, payload.data, now);
+    if (sub === "context") return handleContext(studio, sella, now);
     return handleCompact(studio, sella, payload.data, now);
   } catch (e) {
     console.error(`hook-event ${sub}: ${(e as Error).message}`);
@@ -315,6 +317,28 @@ function staleTraditioReminder(studio: string, sella: string, now: Date): string
   return undefined;
 }
 
+/** A cheap stand-in for `readLog(path).events.length`: this hook fires on
+ *  every single Write/Edit tool call, so it must not JSON.parse every line
+ *  of a studio's whole history just to learn how many lines are already
+ *  there (W-016 behaviour 13 — "does not read the whole log", 5,000 lines
+ *  under 300ms). Counts newline-terminated lines directly off the raw text
+ *  — no parsing, no GantryEvent[] materialized — same "no log yet is
+ *  benign" ENOENT handling as log.ts's real readLog. */
+function countLogLines(path: string): number {
+  let raw: string;
+  try {
+    raw = readFileSync(path, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return 0;
+    throw e;
+  }
+  if (raw.length === 0) return 0;
+  let count = 0;
+  for (let i = 0; i < raw.length; i++) if (raw.charCodeAt(i) === 10 /* "\n" */) count++;
+  if (raw[raw.length - 1] !== "\n") count++; // a trailing partial/unterminated line still counts
+  return count;
+}
+
 function handleTool(studio: string, sella: string, payload: Record<string, unknown>, now: Date): HooksResult {
   const manifest = readManifestSafe(studio);
   if (!manifest) {
@@ -324,20 +348,23 @@ function handleTool(studio: string, sella: string, payload: Record<string, unkno
   const toolName = stringField(payload, "tool_name") ?? "";
   const toolInput = payload["tool_input"];
   const rawFilePath = isDict(toolInput) && typeof toolInput["file_path"] === "string" ? (toolInput["file_path"] as string) : undefined;
+  const rawCwd = stringField(payload, "cwd");
 
   const logPath = join(studio, EVENTS_LOG_REL);
-  const seq = readLog(logPath).events.length;
+  const seq = countLogLines(logPath);
   const attrs: Record<string, string | number | boolean> = {
     [WF.ACTOR_ROLE]: sella,
     "tool.name": toolName,
     [WF.SOURCE]: "hook",
     [WF.SOURCE_SEQ]: seq,
   };
-  // A Write/Edit file_path is a path, not a secret — but a model can be
-  // asked to write literally anything, including a line with a token/key/
-  // secret/password embedded in it (e.g. a query-string-shaped path); mask
-  // it the same way receipts.ts masks a run's argv before it lands on disk.
+  // A Write/Edit file_path (and the hook payload's cwd, same reasoning) is a
+  // path, not a secret — but a model can be asked to write literally
+  // anything, including a line with a token/key/secret/password embedded in
+  // it (e.g. a query-string-shaped path); mask both the same way
+  // receipts.ts masks a run's argv before it lands on disk.
   if (rawFilePath !== undefined) attrs["tool.file_path"] = redact(rawFilePath);
+  if (rawCwd !== undefined) attrs["tool.cwd"] = redact(rawCwd);
 
   const event: GantryEvent = {
     id: `hook:${seq}`,
@@ -347,6 +374,20 @@ function handleTool(studio: string, sella: string, payload: Record<string, unkno
     attrs,
   };
   appendEvents(logPath, [event]);
+  return { exitCode: 0 };
+}
+
+/** `hook-event context` — SessionStart/PreCompact's boot-bundle command
+ *  (W-016; replaces the plain `bisellium context` the printed profile used
+ *  to run for these two hooks). Same `buildContext` a direct `bisellium
+ *  context` call uses, printed on stdout for Claude Code to read as
+ *  additional context — never blocks the harness: `buildContext` itself
+ *  never throws, and both its "not a studio" and "unknown sella" outcomes
+ *  still print (an empty bundle, in that case) and exit 0 rather than
+ *  refusing like the interactive `bisellium context` command does. */
+function handleContext(studio: string, sella: string, now: Date): HooksResult {
+  const bundle = buildContext(studio, sella, { now });
+  console.log(bundle.text);
   return { exitCode: 0 };
 }
 

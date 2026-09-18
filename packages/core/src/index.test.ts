@@ -339,4 +339,30 @@ function withVerifying(): Snapshot {
   store2.close();
 }
 
+// ---- 8. W-016 behaviours 1/3/4: Store is an EventEmitter (apps/server's SSE
+// feed subscribes to it directly, one listener total — see
+// apps/server/test/server.test.ts) and Index.events() carries the Store's
+// own monotonic seq (never a re-derived log.length), strictly increasing and
+// non-colliding across interleaved sources. ---------------------------------
+{
+  const { store } = freshStore();
+  const seen: GantryEvent[] = [];
+  const onEvent = (e: GantryEvent) => seen.push(e);
+  store.on("event", onEvent);
+
+  store.ingest(A, ctx(humanGates));
+  check("Store extends EventEmitter: emits one 'event' per newly diffed event", seen.length === store.events().length, `${seen.length} vs ${store.events().length}`);
+
+  const B = withVerifying();
+  store.ingest(B, { source: "other-source", ts: TS, projectId: "sample-studio", humanGates });
+  const indexed = store.query.events();
+  const seqs = indexed.map((e) => e.seq);
+  const sorted = [...seqs].sort((a, b) => a - b);
+  check("Index.events(): seq is present on every event", indexed.every((e) => typeof e.seq === "number"));
+  check("Index.events(): seq strictly increasing across two interleaved sources", JSON.stringify(seqs) === JSON.stringify(sorted) && new Set(seqs).size === seqs.length, JSON.stringify(seqs));
+
+  store.off("event", onEvent);
+  store.close();
+}
+
 process.exit(failed ? 1 : 0);

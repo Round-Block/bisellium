@@ -67,7 +67,12 @@ function jsonEscape(s: string): string {
 }
 
 export interface ClaudeCodeHooksOpts {
-  sella: string;
+  /** Omitted entirely strips `--sella` (and its placeholder) from every
+   *  printed command rather than substituting an empty string — a hook
+   *  target with no `--sella` baked in falls back to `$BISELLIUM_SELLA`,
+   *  then `"guest"` (hook-event's own resolution order; see
+   *  packages/cli/src/hooks.ts). */
+  sella?: string;
   /** Studio directory every wired command is given via `--studio`. Defaults to ".". */
   studio?: string;
 }
@@ -83,8 +88,17 @@ export interface ClaudeCodeHooksBlock {
  *  run rather than caching them. */
 export function claudeCodeHooksBlock(opts: ClaudeCodeHooksOpts): ClaudeCodeHooksBlock {
   const raw = readFileSync(TEMPLATE_PATH, "utf8");
-  const sella = jsonEscape(shellQuote(opts.sella));
   const studio = jsonEscape(shellQuote(opts.studio ?? "."));
-  const filled = raw.replace(/__SELLA__/g, sella).replace(/__STUDIO__/g, studio);
+  let filled = raw.replace(/__STUDIO__/g, studio);
+  if (opts.sella !== undefined) {
+    const sella = jsonEscape(shellQuote(opts.sella));
+    filled = filled.replace(/__SELLA__/g, sella);
+  } else {
+    // Strip the flag AND its placeholder from the template text — never
+    // substitute an empty string (`--sella ''` is a real, if useless,
+    // argument; hook-event's own fallback chain only kicks in when the
+    // flag is absent entirely).
+    filled = filled.replace(/ --sella __SELLA__/g, "");
+  }
   return JSON.parse(filled) as ClaudeCodeHooksBlock;
 }

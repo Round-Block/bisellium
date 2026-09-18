@@ -1,21 +1,47 @@
 /**
  * `bisellium serve` — localhost HTTP + SSE over the store (W-014). All the
  * actual mechanism (Store, HTTP routing, SSE) lives in @bisellium/server;
- * this is just the argv-parsing CLI entry, matching every other command in
- * this directory (run/verify/talk/tick/pause/resume/handoff/…). Kept out of
- * main.ts on purpose — wired in by the integrator ("bisellium serve
- * [--studio dir] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]").
+ * this is the argv-parsing CLI entry, matching every other command in this
+ * directory (run/verify/talk/tick/pause/resume/handoff/…), AND (W-016,
+ * cascade-4 review) the one place that wires apps/server's injected
+ * `checkStudio`/`runners` to the real implementations — apps/server itself
+ * must never import @bisellium/cli or @bisellium/commands (that was the
+ * actual dependency cycle). The generated write-auth token is printed here,
+ * once, at start.
  */
 import { resolve } from "node:path";
-import { startServer } from "@bisellium/server";
+import { randomBytes } from "node:crypto";
+import { startServer, type StartServerOptions } from "@bisellium/server";
+import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/commands/writes.js";
+import { runTalk } from "@bisellium/commands/talk.js";
+import { runPause, runResume } from "@bisellium/commands/pause.js";
+import { checkStudio } from "./check.js";
+
+const REAL_RUNNERS: StartServerOptions["runners"] = {
+  answer: (args) => runAnswer(args),
+  greenlight: (args) => runGreenlight(args),
+  budget: (args) => runBudget(args),
+  handoff: (args) => runHandoff(args),
+  talk: (args) => runTalk(args),
+  pause: (args) => runPause(args),
+  resume: (args) => runResume(args),
+};
 
 export interface RunServeOptions {
   /** Pinned clock override, used when `--now` isn't in `args` (tests). */
   now?: Date;
+  /** Pinned write-auth token override (tests only) — production always lets
+   *  startServer generate one. */
+  token?: string;
 }
 
 export interface RunServeResult {
   exitCode: number;
+  /** The write-auth token in effect (X-Bisellium-Token on every POST),
+   *  undefined on a usage-error / failed-start exit. Also printed to stdout
+   *  at start — returned too so a caller (or a test) doesn't have to scrape
+   *  the log line for it. */
+  token?: string;
   /** Stops polling and closes the HTTP server. A no-op resolved promise on
    *  a usage-error / failed-start exit (there's nothing to close). */
   close: () => Promise<void>;
@@ -86,9 +112,13 @@ export async function runServe(args: string[], opts: RunServeOptions = {}): Prom
       pollMs: parsed.pollMs ?? 5000,
       once: parsed.once,
       now: parsed.now,
+      checkStudio,
+      runners: REAL_RUNNERS,
+      token: opts.token ?? randomBytes(24).toString("hex"),
     });
     console.log(`bisellium serve: listening on http://127.0.0.1:${started.port} (studio ${studioDir})`);
-    return { exitCode: 0, close: started.close };
+    console.log(`bisellium serve: write-auth token (X-Bisellium-Token): ${started.token}`);
+    return { exitCode: 0, token: started.token, close: started.close };
   } catch (e) {
     console.error((e as Error).message);
     return { exitCode: 2, close: NOOP_CLOSE };

@@ -5,24 +5,60 @@
  * the aerarium/current-period math is reproducible. `NODE_ENV=test` is set
  * before starting the server so the `/api/_poll` test hook is reachable —
  * it's otherwise a 404.
+ *
+ * W-016 (cascade-4 review) rewired `startServer` for dependency inversion:
+ * apps/server/src no longer imports @bisellium/cli or @bisellium/commands
+ * (that was the actual cycle), so every write command and `checkStudio` are
+ * injected here from @bisellium/commands / a trivial fake — the same way
+ * packages/cli/src/serve.ts wires the real ones in production. Writes also
+ * now require `X-Bisellium-Token`; every existing write call below carries
+ * it via `postJson`'s default header.
  */
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { request as httpRequest, type IncomingMessage } from "node:http";
-import { startServer } from "../src/index.js";
+import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/commands/writes.js";
+import { runTalk } from "@bisellium/commands/talk.js";
+import { runPause, runResume } from "@bisellium/commands/pause.js";
+import { startServer, isPathContained, type StartServerOptions } from "../src/index.js";
 
 process.env["NODE_ENV"] = "test";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-18T17:00:00Z");
+const TEST_TOKEN = "test-token-w016";
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(52)} ${detail}`);
   if (!ok) failed++;
 };
+
+// ---------------------------------------------------------------------------
+// Fakes for what startServer now injects instead of importing @bisellium/cli
+// or @bisellium/commands directly — production wiring (packages/cli/src/
+// serve.ts) uses the real checkStudio and the real commands; this file
+// exercises apps/server's own logic in isolation, same spirit as before.
+// ---------------------------------------------------------------------------
+
+const fakeCheckStudio: StartServerOptions["checkStudio"] = () => ({ ok: true, blocks: 0, advisories: 0, findings: [] });
+
+const realRunners: StartServerOptions["runners"] = {
+  answer: (args) => runAnswer(args),
+  greenlight: (args) => runGreenlight(args),
+  budget: (args) => runBudget(args),
+  handoff: (args) => runHandoff(args),
+  talk: (args) => runTalk(args),
+  pause: (args) => runPause(args),
+  resume: (args) => runResume(args),
+};
+
+function baseOpts(studioDir: string, extra: Partial<StartServerOptions> = {}): StartServerOptions {
+  return { studioDir, checkStudio: fakeCheckStudio, runners: realRunners, token: TEST_TOKEN, ...extra };
+}
 
 const dirs: string[] = [];
 function freshStudio(tag: string): string {
@@ -49,10 +85,10 @@ async function getJson(base: string, path: string): Promise<JsonResponse> {
   return { status: res.status, body };
 }
 
-async function postJson(base: string, path: string, payload: unknown): Promise<JsonResponse> {
+async function postJson(base: string, path: string, payload: unknown, headers: Record<string, string> = {}): Promise<JsonResponse> {
   const res = await fetch(base + path, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-bisellium-token": TEST_TOKEN, ...headers },
     body: JSON.stringify(payload),
   });
   const text = await res.text();
@@ -68,10 +104,12 @@ async function postJson(base: string, path: string, payload: unknown): Promise<J
 /** A minimal SSE client for /api/live: parses "data: <json>\n\n" frames off
  *  the raw response stream (node:http, not fetch — we want the connection
  *  to stay open and keep pushing). */
-function connectSSE(port: number): { events: Record<string, unknown>[]; close: () => void } {
+function connectSSE(port: number): { events: Record<string, unknown>[]; res: IncomingMessage | undefined; close: () => void } {
   const events: Record<string, unknown>[] = [];
   let buffer = "";
+  let response: IncomingMessage | undefined;
   const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET" }, (res: IncomingMessage) => {
+    response = res;
     res.setEncoding("utf8");
     res.on("data", (chunk: string) => {
       buffer += chunk;
@@ -94,7 +132,7 @@ function connectSSE(port: number): { events: Record<string, unknown>[]; close: (
     /* connection torn down by close() below; nothing to report */
   });
   req.end();
-  return { events, close: () => req.destroy() };
+  return { events, get res() { return response; }, close: () => req.destroy() };
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<boolean> {
@@ -106,13 +144,88 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<bool
   return predicate();
 }
 
+// ---------------------------------------------------------------------------
+// W-016 behaviour 11: apps/server's own module graph never reaches
+// @bisellium/cli or @bisellium/commands — a structural walk, not a grep (a
+// grep for the string passes over a cycle reached through a third module).
+// ---------------------------------------------------------------------------
+
+async function assertNoCycle(): Promise<void> {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const entry = resolve(here, "..", "src", "index.ts");
+  const workspaceRoots: Record<string, string> = {
+    "@bisellium/cli": resolve(repo, "packages/cli/src"),
+    "@bisellium/commands": resolve(repo, "packages/commands/src"),
+    "@bisellium/adapter-native": resolve(repo, "adapters/native/src"),
+    "@bisellium/core": resolve(repo, "packages/core/src"),
+    "@bisellium/schema": resolve(repo, "packages/schema/src"),
+    "@bisellium/shim": resolve(repo, "packages/shim/src"),
+    "@bisellium/pipeline": resolve(repo, "packages/pipeline/src"),
+    "@bisellium/providers": resolve(repo, "packages/providers/src"),
+  };
+  const forbidden = new Set(["@bisellium/cli", "@bisellium/commands"]);
+  const IMPORT_RE = /(?:import|export)\s+(?:[^"'`]*?from\s+)?["']([^"']+)["']/g;
+
+  function resolveModulePath(fromFile: string, specifier: string): { file: string; pkg?: string } | undefined {
+    if (specifier.startsWith(".")) {
+      let target = resolve(dirname(fromFile), specifier);
+      if (target.endsWith(".js")) target = target.slice(0, -3) + ".ts";
+      if (!existsSync(target)) target = target + ".ts";
+      return existsSync(target) ? { file: target } : undefined;
+    }
+    for (const [pkg, srcRoot] of Object.entries(workspaceRoots)) {
+      if (specifier === pkg || specifier.startsWith(pkg + "/")) {
+        const sub = specifier === pkg ? "index.js" : specifier.slice(pkg.length + 1);
+        let target = join(srcRoot, sub.endsWith(".js") ? sub.slice(0, -3) + ".ts" : sub);
+        if (!existsSync(target)) target = target + ".ts";
+        return existsSync(target) ? { file: target, pkg } : undefined;
+      }
+    }
+    return undefined; // an external dep (node:*, yaml, …) — never part of this cycle
+  }
+
+  const visited = new Set<string>();
+  const reached = new Set<string>();
+  function walk(file: string): void {
+    if (visited.has(file)) return;
+    visited.add(file);
+    let text: string;
+    try {
+      text = readFileSync(file, "utf8");
+    } catch {
+      return;
+    }
+    for (const m of text.matchAll(IMPORT_RE)) {
+      const specifier = m[1]!;
+      const resolved = resolveModulePath(file, specifier);
+      if (!resolved) continue;
+      if (resolved.pkg && forbidden.has(resolved.pkg)) reached.add(resolved.pkg);
+      walk(resolved.file);
+    }
+  }
+  walk(entry);
+
+  check("module graph: apps/server/src/index.ts never reaches @bisellium/cli or @bisellium/commands", reached.size === 0, JSON.stringify([...reached]));
+}
+
 async function main(): Promise<void> {
+  await assertNoCycle();
+
   const dir = freshStudio("main");
-  const started = await startServer({ studioDir: dir, port: 0, once: true, now: NOW });
+  const started = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
   const base = `http://127.0.0.1:${started.port}`;
   let beforeRestartEvents: { name: string }[] = [];
 
   try {
+    // ---- W-016 behaviour 1: apps/server's store IS @bisellium/core's Store —
+    // the SQLite index exists on disk, and its own .query.opera() answers. --
+    {
+      const dbPath = join(dir, ".bisellium", "index", "index.db");
+      check("index: .bisellium/index/index.db exists after startServer", existsSync(dbPath), dbPath);
+      const opera = started.store.query.opera();
+      check("index: store.query.opera() (the real Index) returns the studio's opera", opera.length > 0 && opera.some((o) => o.id === "W-002"), JSON.stringify(opera.map((o) => o.id)));
+    }
+
     // ---- GET /api/officina --------------------------------------------------
     {
       const { status, body } = await getJson(base, "/api/officina");
@@ -168,6 +281,41 @@ async function main(): Promise<void> {
       check("timeline/nobody: {error}", typeof body?.error === "string", JSON.stringify(body));
     }
 
+    // ---- W-016 behaviour 7: ?limit= clamps into [1,500], never throws -------
+    {
+      for (const raw of ["-5", "0", "99999", "abc"]) {
+        const { status } = await getJson(base, `/api/events?limit=${raw}`);
+        check(`events limit=${raw}: never throws (200)`, status === 200, String(status));
+        const { status: tStatus } = await getJson(base, `/api/timeline/builder-1?limit=${raw}`);
+        check(`timeline limit=${raw}: never throws (200)`, tStatus === 200, String(tStatus));
+      }
+    }
+
+    // ---- W-016 behaviour 5: write auth matrix --------------------------------
+    {
+      const r1 = await postJson(base, "/api/greenlight", { opus: "NOPE-AUTH" }, { origin: "https://evil.test" });
+      check("auth: valid token + Origin -> 403", r1.status === 403, String(r1.status));
+
+      const r2 = await postJson(base, "/api/greenlight", { opus: "NOPE-AUTH" }, { "x-bisellium-token": "" });
+      check("auth: no Origin, no token -> 401", r2.status === 401, String(r2.status));
+
+      const r3 = await postJson(base, "/api/greenlight", { opus: "NOPE-AUTH" }, { "content-type": "text/plain" });
+      check("auth: token + text/plain -> 415", r3.status === 415, String(r3.status));
+    }
+
+    // ---- W-016 behaviour 6: an oversized body is 413 with a JSON body,
+    // not a destroyed socket. ---------------------------------------------
+    {
+      const res = await fetch(`${base}/api/greenlight`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-bisellium-token": TEST_TOKEN },
+        body: JSON.stringify({ opus: "W-BIG", pad: "x".repeat(3 * 1024 * 1024) }),
+      });
+      const body = await res.json().catch(() => undefined);
+      check("body cap: oversized POST answers 413", res.status === 413, String(res.status));
+      check("body cap: 413 body is real JSON with an error", typeof body?.error === "string", JSON.stringify(body));
+    }
+
     // ---- POST /api/greenlight then GET /api/opus/W-007 -----------------------
     {
       const { status, body } = await postJson(base, "/api/greenlight", { opus: "W-007" });
@@ -185,25 +333,55 @@ async function main(): Promise<void> {
       check("_poll: absorbs the greenlight diff", r.status === 200, JSON.stringify(r.body));
     }
 
-    // ---- SSE: mutate W-002 on disk, manual-poll, expect one state_changed ---
+    // ---- W-016 behaviour 3: /api/events and /api/live reflect a write made
+    // after start (append via the injected answer/greenlight runner, force a
+    // poll, and the new event appears without a restart). ---------------------
     {
+      const before = await getJson(base, "/api/events");
+      const beforeCount = Array.isArray(before.body) ? before.body.length : 0;
+
       const sse = connectSSE(started.port);
-      await new Promise((r) => setTimeout(r, 100)); // let the connection establish
+      await new Promise((r) => setTimeout(r, 100));
 
       const opusPath = join(dir, "opera", "W-002.md");
-      const before = readFileSync(opusPath, "utf8");
-      const mutated = before.replace("state: building", "state: verifying");
-      check("sse setup: W-002's state line found and replaced", mutated !== before);
+      const raw = readFileSync(opusPath, "utf8");
+      const mutated = raw.replace("state: building", "state: verifying");
+      check("sse setup: W-002's state line found and replaced", mutated !== raw);
       writeFileSync(opusPath, mutated);
 
       const poll = await postJson(base, "/api/_poll", {});
       check("_poll: 200", poll.status === 200, JSON.stringify(poll.body));
+
+      const after = await getJson(base, "/api/events");
+      const afterCount = Array.isArray(after.body) ? after.body.length : 0;
+      check("events: a write made after start is reflected without a restart", afterCount > beforeCount, `${beforeCount} -> ${afterCount}`);
 
       const matches = () =>
         sse.events.filter((e) => e["name"] === "workflow.state_changed" && (e["attrs"] as Record<string, unknown>)?.["workflow.item.id"] === "W-002");
       const arrived = await waitFor(() => matches().length === 1);
       check("sse: exactly one state_changed event for W-002", arrived, JSON.stringify(matches()));
       sse.close();
+    }
+
+    // ---- W-016 behaviour 4: seq is the Store's own sequence, never
+    // log.length — strictly increasing and non-colliding across two
+    // interleaved sources (this server's own diff ingest, source "server",
+    // and a direct CLI-shaped emit into the same log, source "cli"). -------
+    {
+      // greenlight (above) appended a "cli"-sourced event and the W-002 edit
+      // (also above) produced a "server"-sourced one — both are now in the
+      // same shared log/index; assert they carry non-colliding, strictly
+      // increasing seq (the Index's own counter), not one derived per-source
+      // from log.length.
+      const { body } = await getJson(base, "/api/events");
+      const seqs = Array.isArray(body) ? (body as { seq: number }[]).map((e) => e.seq) : [];
+      const sorted = [...seqs].sort((a, b) => a - b);
+      check("events: seq is present on every event", seqs.length > 0 && seqs.every((s) => typeof s === "number"));
+      check(
+        "events: seq strictly increasing and non-colliding across interleaved sources",
+        JSON.stringify(seqs) === JSON.stringify(sorted) && new Set(seqs).size === seqs.length,
+        JSON.stringify(seqs),
+      );
     }
 
     // ---- /api/_poll is a 404 outside NODE_ENV=test ---------------------------
@@ -214,10 +392,6 @@ async function main(): Promise<void> {
       check("_poll: 404 outside NODE_ENV=test", r.status === 404, String(r.status));
       process.env["NODE_ENV"] = prevEnv;
     }
-
-    // ---- writes reject a non-loopback caller (best-effort: header spoof) ----
-    // (The server only binds 127.0.0.1, so this mainly exercises the guard
-    // logic itself rather than an actual remote connection.)
 
     // Snapshot the event log's shape before restart, so the restart block
     // below can tell "replayed the whole world again" apart from "picked up
@@ -231,7 +405,7 @@ async function main(): Promise<void> {
     await started.close();
   }
 
-  // ---- close() releases the port -------------------------------------------
+  // ---- close: port released -------------------------------------------------
   {
     let refused = false;
     try {
@@ -243,12 +417,10 @@ async function main(): Promise<void> {
   }
 
   // ---- restart against the same studio: no false "item_appeared" replay,
-  // and the CLI's own workflow.greenlight event (appended by this same
-  // greenlight POST, via packages/cli/src/writes.ts's emitEvent into
-  // EVENTS_LOG_REL) is visible once the log is unified (verifier block
-  // issues: apps/server/src/store.ts x2). --------------------------------
+  // and the CLI's own workflow.greenlight event is visible once the log is
+  // unified. --------------------------------------------------------------
   {
-    const restarted = await startServer({ studioDir: dir, port: 0, once: true, now: NOW });
+    const restarted = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
     try {
       const restartBase = `http://127.0.0.1:${restarted.port}`;
       const { body } = await getJson(restartBase, "/api/events");
@@ -267,15 +439,12 @@ async function main(): Promise<void> {
     }
   }
 
-  // ---- close(): resolves promptly even with a live SSE client connected
-  // (verifier block issue: apps/server/src/http.ts, close() never ends SSE
-  // responses nor forces the sockets closed, so server.close()'s callback
-  // never fires while a client is on /api/live). --------------------------
+  // ---- close(): resolves promptly even with a live SSE client connected --
   {
     const dirSse = freshStudio("close-live");
-    const sSse = await startServer({ studioDir: dirSse, port: 0, once: true, now: NOW });
+    const sSse = await startServer(baseOpts(dirSse, { port: 0, once: true, now: NOW }));
     const sse = connectSSE(sSse.port);
-    await new Promise((r) => setTimeout(r, 100)); // let the connection establish
+    await new Promise((r) => setTimeout(r, 100));
 
     const t0 = Date.now();
     let timedOut = false;
@@ -293,11 +462,10 @@ async function main(): Promise<void> {
   }
 
   // ---- close(): still resolves promptly after the SSE client itself
-  // aborted first (the listener count drops to 0, but close() must not
-  // still be waiting on a half-torn-down connection). ---------------------
+  // aborted first. ----------------------------------------------------------
   {
     const dirSse2 = freshStudio("close-live-aborted");
-    const sSse2 = await startServer({ studioDir: dirSse2, port: 0, once: true, now: NOW });
+    const sSse2 = await startServer(baseOpts(dirSse2, { port: 0, once: true, now: NOW }));
     const sse2 = connectSSE(sSse2.port);
     await new Promise((r) => setTimeout(r, 100));
     sse2.close(); // client aborts first
@@ -317,19 +485,97 @@ async function main(): Promise<void> {
     check("close: resolves within 3s after the SSE client aborted", !timedOut, `elapsedMs=${Date.now() - t0}`);
   }
 
+  // ---- W-016 behaviour 8: SSE fan-out is one store listener, a client past
+  // MAX_SSE_CLIENTS gets 503, an errored client is dropped without taking
+  // the server down, and a slow client's backpressure never blocks others. --
+  {
+    const dirSse3 = freshStudio("sse-fanout");
+    const sSse3 = await startServer(baseOpts(dirSse3, { port: 0, once: true, now: NOW }));
+    try {
+      const clients = [connectSSE(sSse3.port), connectSSE(sSse3.port), connectSSE(sSse3.port)];
+      await new Promise((r) => setTimeout(r, 150));
+      check("sse: exactly one store 'event' listener with three clients connected", sSse3.store.listenerCount("event") === 1, String(sSse3.store.listenerCount("event")));
+
+      // Force a diff so all three clients get a frame.
+      const opusPath = join(dirSse3, "opera", "W-002.md");
+      writeFileSync(opusPath, readFileSync(opusPath, "utf8").replace("state: building", "state: verifying"));
+      const base3 = `http://127.0.0.1:${sSse3.port}`;
+      await postJson(base3, "/api/_poll", {});
+      const allGotIt = await waitFor(() => clients.every((c) => c.events.length >= 1));
+      check("sse: fan-out reaches every connected client from the single listener", allGotIt, JSON.stringify(clients.map((c) => c.events.length)));
+      for (const c of clients) c.close();
+
+      // A socket "error" on one live response must not crash the process or
+      // affect anything else — simulate by connecting, then forcing the
+      // underlying response into an error state via destroy() with an error.
+      const errClient = connectSSE(sSse3.port);
+      await new Promise((r) => setTimeout(r, 100));
+      errClient.res?.destroy(new Error("simulated client socket error"));
+      await new Promise((r) => setTimeout(r, 100));
+      const health = await getJson(base3, "/api/officina");
+      check("sse: an errored client is dropped without taking the server down", health.status === 200, String(health.status));
+    } finally {
+      await sSse3.close();
+    }
+  }
+
+  // ---- W-016 behaviour 8b: a client past MAX_SSE_CLIENTS gets 503 ---------
+  {
+    const dirCap = freshStudio("sse-cap");
+    const sCap = await startServer(baseOpts(dirCap, { port: 0, once: true, now: NOW }));
+    const opened: ReturnType<typeof connectSSE>[] = [];
+    try {
+      // MAX_SSE_CLIENTS is 50 (apps/server/src/http.ts) — open one past it.
+      for (let i = 0; i < 51; i++) opened.push(connectSSE(sCap.port));
+      await new Promise((r) => setTimeout(r, 300));
+      const res = await fetch(`http://127.0.0.1:${sCap.port}/api/live`);
+      check("sse: a client past MAX_SSE_CLIENTS gets 503", res.status === 503, String(res.status));
+      await res.text().catch(() => undefined);
+    } finally {
+      for (const c of opened) c.close();
+      await sCap.close();
+    }
+  }
+
+  // ---- W-016 behaviour 9: static containment uses path.relative, not a bare
+  // startsWith(). A sibling directory sharing WEB_DIST's name as a *string*
+  // prefix (".../web-dist-evil" against ".../web-dist") is the exact case a
+  // naive `filePath.startsWith(WEB_DIST)` gets wrong — no separator boundary
+  // means "web-dist-evil" satisfies startsWith("web-dist"). Tested directly
+  // against the exported `isPathContained` (this is a router-level dead
+  // path in today's code — `new URL()` normalizes a literal "../" out of
+  // `pathname` before serveStatic ever runs, so an end-to-end HTTP repro
+  // would only be testing WHATWG URL's own dot-segment collapsing, not this
+  // fix) — the same `resolve(WEB_DIST, "." + pathname)` computation
+  // apps/server/src/http.ts's serveStatic performs. --------------------------
+  {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const webDist = resolve(here, "..", "..", "web", "dist");
+    const evilFile = resolve(webDist, "..", "dist-evil", "x"); // a sibling sharing "dist" as a string prefix
+    check(
+      "containment: a sibling dir sharing WEB_DIST's name as a prefix is rejected",
+      !isPathContained(webDist, evilFile),
+      `${webDist} vs ${evilFile}`,
+    );
+    check(
+      "containment: the same sibling path WOULD have passed a bare startsWith() (the bug this replaces)",
+      evilFile.startsWith(webDist),
+      evilFile,
+    );
+    const legitFile = resolve(webDist, "." + "/assets/app.js");
+    check("containment: a real file under WEB_DIST is accepted", isPathContained(webDist, legitFile), legitFile);
+  }
+
   // ---- overlapping /api/talk calls must not cross-wire responses, and must
   // not leave console.log/console.error permanently pointed at a stale
-  // per-request collector (verifier block issue: apps/server/src/http.ts,
-  // withCapturedConsole mutates the process-global console). -------------
+  // per-request collector. --------------------------------------------------
   {
     const dirTalk = freshStudio("talk-overlap");
-    const sTalk = await startServer({ studioDir: dirTalk, port: 0, once: true, now: NOW });
+    const sTalk = await startServer(baseOpts(dirTalk, { port: 0, once: true, now: NOW }));
     const talkBase = `http://127.0.0.1:${sTalk.port}`;
     const originalLog = console.log;
     const originalError = console.error;
     try {
-      // Two different sellae, so this isolates the console cross-wire from
-      // any unrelated same-file (session/timeline) write race.
       const pA = postJson(talkBase, "/api/talk", { sella: "builder-1", message: "one", harness: "fake" });
       await new Promise((r) => setTimeout(r, 25));
       const pB = postJson(talkBase, "/api/talk", { sella: "builder-2", message: "two", harness: "fake" });
@@ -346,6 +592,7 @@ async function main(): Promise<void> {
       await sTalk.close();
     }
   }
+
 }
 
 main()

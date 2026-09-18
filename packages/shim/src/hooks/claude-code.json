@@ -6,13 +6,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bisellium context --sella __SELLA__ --studio __STUDIO__",
-            "timeout": 10
+            "command": "bisellium hook-event context --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 2
           },
           {
             "type": "command",
             "command": "bisellium hook-event start --sella __SELLA__ --studio __STUDIO__",
-            "timeout": 5
+            "timeout": 2
           }
         ]
       }
@@ -23,8 +23,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bisellium context --sella __SELLA__ --studio __STUDIO__",
-            "timeout": 10
+            "command": "bisellium hook-event context --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 2
           }
         ]
       }
@@ -36,7 +36,7 @@
           {
             "type": "command",
             "command": "bisellium hook-event stop --sella __SELLA__ --studio __STUDIO__",
-            "timeout": 5
+            "timeout": 2
           }
         ]
       }
@@ -48,7 +48,7 @@
           {
             "type": "command",
             "command": "bisellium hook-event tool --sella __SELLA__ --studio __STUDIO__",
-            "timeout": 5
+            "timeout": 2
           }
         ]
       }
