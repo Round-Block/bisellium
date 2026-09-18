@@ -1,0 +1,17 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-19T13:00:00.000Z
+# sella: builder-a
+# tree: dirty:c629ec44af83307edb59f891eeb1032b0d4401cc
+
+/home/edckt/projects/bisellium/.claude/worktrees/wf_7cbbec32-65d-2/packages/cli/src/lifecycle.test.ts:15
+import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
+                   ^
+SyntaxError: The requested module './lifecycle.js' does not provide an export named 'runDone'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0

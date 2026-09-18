@@ -1,16 +1,36 @@
 /**
- * packages/commands/src/lifecycle.ts — W-020: the per-behaviour red store
- * (`bisellium red`), landed first per the brief ("Land red on master first
- * ... Builder B cannot record a single red for W-021 until that commit
- * exists"). `ready`/`done`/`review` land in a follow-up commit on this
- * same branch. Kept out of main.ts's generic flag table on purpose, same
- * as `verify`/`talk` — this parses its own argv.
+ * packages/commands/src/lifecycle.ts — W-020: the four lifecycle/evidence
+ * write commands (`ready`, `done`, `review`, `red`). Replaces the two
+ * stopgap scripts (`scripts/opus-ready.ts`, `scripts/opus-close.ts`, both
+ * deleted by this opus) and adds the third piece P-001/P-003 decreed: a
+ * per-behaviour red store at `<studio>/ci/reds/<opus>/`, written only
+ * through `red`. Kept out of main.ts's generic flag table on purpose, same
+ * as `verify`/`talk` — each of these parses its own argv.
+ *
+ * Every front-matter write goes through `editOpusFrontMatter` (merge into
+ * the yaml Document, body byte-for-byte) — the same discipline writes.ts's
+ * five commands already follow. `ready`/`done`/`review` share writes.ts's
+ * plumbing (`parseFlags`, `openStudio`, `safeItemPath`, `readState`,
+ * `resolveNow`, `emitEvent`) rather than re-deriving it.
  */
-import { execFileSync, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
+import { readFront } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
-import { openStudio, parseFlags, resolveNow, type WriteOptions, type WriteResult } from "./writes.js";
+import { WF } from "@bisellium/schema";
+import { editOpusFrontMatter } from "./frontmatter.js";
+import {
+  emitEvent,
+  openStudio,
+  parseFlags,
+  readState,
+  resolveNow,
+  safeItemPath,
+  type WriteOptions,
+  type WriteResult,
+} from "./writes.js";
 
 const GIT_TIMEOUT_MS = 30_000;
 
@@ -20,6 +40,292 @@ const GIT_TIMEOUT_MS = 30_000;
 function resolveSella(flagValue: string | undefined): string {
   return flagValue ?? process.env["BISELLIUM_SELLA"] ?? "guest";
 }
+
+interface OpusFront {
+  state?: unknown;
+  probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown }>;
+}
+
+// ---------------------------------------------------------------------------
+// 1. ready — greenlit|halted -> building (scripts/opus-ready.ts, plus the event)
+// ---------------------------------------------------------------------------
+
+const READY_USAGE = "usage: bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
+  const parsed = parseFlags(args, { valued: ["--spec", "--sella", "--studio", "--now"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${READY_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, positionals } = parsed;
+  const opusId = positionals[0];
+  if (!opusId) {
+    console.error(READY_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+
+  const opusPath = safeItemPath(join(root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+    console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  const currentState = readState(opusPath);
+  if (typeof currentState !== "string") {
+    console.error(currentState.error);
+    return { exitCode: 2 };
+  }
+  if (currentState !== "greenlit" && currentState !== "halted") {
+    console.error(`${opusId} is not greenlit or halted (state: ${currentState || "?"})`);
+    return { exitCode: 2 };
+  }
+
+  const specRel = values.get("--spec") ?? `briefs/${opusId}.md`;
+  if (!existsSync(join(root, specRel))) {
+    console.error(`${opusId}: no spec at ${specRel} — not ready`);
+    return { exitCode: 2 };
+  }
+
+  const sella = resolveSella(values.get("--sella"));
+  const hasSpecProbatio = manifest.probationes.some((p) => p.id === "spec");
+
+  editOpusFrontMatter(opusPath, (doc) => {
+    doc.setIn(["spec"], specRel);
+    if (hasSpecProbatio) {
+      doc.setIn(["probationes", "spec", "sella"], sella);
+      doc.setIn(["probationes", "spec", "status"], "passed");
+      doc.setIn(["probationes", "spec", "evidence"], specRel);
+      doc.setIn(["probationes", "spec", "at"], now.toISOString());
+    }
+    doc.setIn(["state"], "building");
+    // A halt's exit conditions describe a state this opus is no longer in.
+    for (const k of ["halted_at", "reason", "resume_when"]) doc.delete(k);
+    return undefined;
+  });
+
+  emitEvent(root, manifest, "workflow.state_changed", now, {
+    [WF.ITEM_ID]: opusId,
+    [WF.STATE_FROM]: currentState,
+    [WF.STATE_TO]: "building",
+    [WF.ACTOR_ROLE]: sella,
+  });
+
+  console.log(`${opusId}: spec=${specRel} state=building`);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// 2. done — building|verifying|review -> done (scripts/opus-close.ts, plus the event)
+// ---------------------------------------------------------------------------
+
+const DONE_USAGE = "usage: bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]";
+const DONE_FROM_STATES = new Set(["building", "verifying", "review"]);
+
+export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
+  const parsed = parseFlags(args, { valued: ["--sella", "--studio", "--now"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${DONE_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, positionals } = parsed;
+  const opusId = positionals[0];
+  if (!opusId) {
+    console.error(DONE_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+
+  const opusPath = safeItemPath(join(root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+    console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  // Read off disk with readFront, never a regex over raw YAML (that was
+  // opus-close.ts's own shortcut, and the reason it's deleted).
+  const front = readFront<OpusFront>(opusPath).data;
+  const currentState = typeof front.state === "string" ? front.state : "";
+  // Not one of the three states this write accepts from: same "any other
+  // current state is a refusal" shape ready's greenlit/halted guard uses.
+  if (!DONE_FROM_STATES.has(currentState)) {
+    console.error(`${opusId} is not building, verifying or review (state: ${currentState || "?"})`);
+    return { exitCode: 2 };
+  }
+
+  const recorded = front.probationes ?? {};
+  const missing: string[] = [];
+  for (const p of manifest.probationes) {
+    const rec = recorded[p.id];
+    const status = typeof rec?.status === "string" ? rec.status : undefined;
+    const certifies = typeof rec?.certifies === "string" ? rec.certifies : undefined;
+    if (p.kind === "automated") {
+      if (status !== "passed" || !certifies?.startsWith("tree:")) missing.push(p.id);
+    } else if (p.kind === "agent") {
+      if (status !== "passed" && status !== "waived") missing.push(p.id);
+    } else if (p.kind === "human") {
+      // An unrecorded human gate is not demanded — same asymmetry
+      // check.ts's state.done.probationes rule already has.
+      if (rec !== undefined && status !== "passed" && status !== "waived") missing.push(p.id);
+    }
+  }
+  if (missing.length) {
+    console.error(`${opusId}: gates not passed: ${missing.join(", ")}`);
+    return { exitCode: 1 };
+  }
+
+  const sella = resolveSella(values.get("--sella"));
+
+  editOpusFrontMatter(opusPath, (doc) => {
+    doc.setIn(["state"], "done");
+    return undefined;
+  });
+
+  emitEvent(root, manifest, "workflow.state_changed", now, {
+    [WF.ITEM_ID]: opusId,
+    [WF.STATE_FROM]: currentState,
+    [WF.STATE_TO]: "done",
+    [WF.ACTOR_ROLE]: sella,
+  });
+
+  console.log(`${opusId}: done`);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// 3. review — records a passed or failed review verdict (L-016)
+// ---------------------------------------------------------------------------
+
+const REVIEW_USAGE =
+  "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+export function runReview(args: string[], opts: WriteOptions = {}): WriteResult {
+  const parsed = parseFlags(args, {
+    valued: ["--evidence", "--round", "--sella", "--studio", "--now"],
+    boolean: ["--pass", "--fail"],
+  });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${REVIEW_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, flags, positionals } = parsed;
+  const opusId = positionals[0];
+  if (!opusId) {
+    console.error(REVIEW_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const pass = flags.has("--pass");
+  const fail = flags.has("--fail");
+  if (pass === fail) {
+    console.error(`exactly one of --pass/--fail is required\n${REVIEW_USAGE}`);
+    return { exitCode: 2 };
+  }
+
+  const evidence = values.get("--evidence");
+  if (!evidence) {
+    console.error(REVIEW_USAGE);
+    return { exitCode: 2 };
+  }
+
+  let round: number | undefined;
+  if (values.has("--round")) {
+    round = Number(values.get("--round"));
+    if (!Number.isFinite(round) || !Number.isInteger(round)) {
+      console.error("--round must be an integer");
+      return { exitCode: 2 };
+    }
+  }
+
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+
+  const opusPath = safeItemPath(join(root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+    console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  if (!existsSync(join(root, evidence))) {
+    console.error(`--evidence "${evidence}" not found under studio`);
+    return { exitCode: 2 };
+  }
+
+  const currentState = readState(opusPath);
+  if (typeof currentState !== "string") {
+    console.error(currentState.error);
+    return { exitCode: 2 };
+  }
+
+  const reviewProbatioId = (manifest as unknown as { review_probatio?: string }).review_probatio ?? "review";
+  const sella = resolveSella(values.get("--sella"));
+  const status = pass ? "passed" : "failed";
+
+  editOpusFrontMatter(opusPath, (doc) => {
+    doc.setIn(["probationes", reviewProbatioId, "sella"], sella);
+    doc.setIn(["probationes", reviewProbatioId, "status"], status);
+    doc.setIn(["probationes", reviewProbatioId, "evidence"], evidence);
+    doc.setIn(["probationes", reviewProbatioId, "at"], now.toISOString());
+    // The decree's own return edge: a failed review on an opus in `review`
+    // sends it back to `building` — no other command can move it there.
+    // An opus already in `building` (or anywhere else) keeps its state;
+    // `review` performs no forward transition, that's `done`'s job.
+    if (fail && currentState === "review") doc.setIn(["state"], "building");
+    return undefined;
+  });
+
+  const attrs: Record<string, string | number | boolean> = {
+    [WF.ITEM_ID]: opusId,
+    [WF.GATE_ID]: reviewProbatioId,
+    [WF.GATE_STATUS]: status,
+    [WF.GATE_EVIDENCE]: evidence,
+    [WF.ACTOR_ROLE]: sella,
+  };
+  if (round !== undefined) attrs[WF.REVIEW_ROUND] = round;
+  emitEvent(root, manifest, "workflow.gate_evaluated", now, attrs);
+
+  console.log(`${opusId}: review ${status} (${evidence})`);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// 4. red — the per-behaviour evidence store, the seam with W-021
+// ---------------------------------------------------------------------------
 
 const RED_USAGE =
   "usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--now <iso>] -- <cmd…>";
