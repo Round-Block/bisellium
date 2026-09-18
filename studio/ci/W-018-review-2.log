@@ -1,0 +1,222 @@
+W-018 — REVIEW ROUND 2 — VERDICT: PASS
+Reviewer: eng-lead (Opus, sole reviewer) · Pinned clock: 2026-09-19T11:00:00Z
+Tree: clean at 98e2049 · certificates minted on tree:272d2d3ba8d9c5934212cffcb0cb6d446d15a0d9
+
+This is a re-review of a FAILED round 1 (ci/W-018.log), not a currency check.
+Every round-1 finding was re-judged against the tree as it stands today.
+
+
+## 1. ROUND-1 FINDINGS — DISPOSITIONS
+
+Round 1's root cause was a single fact: at HEAD 51fb2ba nothing from cascade
+4b was committed, so nothing about W-018 could be verified independently. All
+seven findings are downstream of that one. Cascade 4c committed the work;
+cascade 5 exercised it.
+
+R1-a. "HEAD is still 51fb2ba; zero commits from the W-016..W-019 cascade;
+       37 dirty paths; all four builders' work in one shared uncommitted tree."
+  RESOLVED. HEAD is 98e2049 and `git status --porcelain` is empty. W-018's
+  artifacts are in the history under distinct commits:
+    0f4f1d8  studio: land the design collegium and get tick/server tests green
+    cb2e754  cli: wire instructions/retro/new commands and land the instructions rule
+    0866f68  studio: commit cascade 4b's briefs, decisions and cascade template
+    8a60113  studio: cascade sizing as data (D-012, D-013)
+  The specific consequence round 1 named — "a shared-file edit silently broke
+  another builder's owned tests with nothing to bisect" — no longer has a
+  mechanism: each artifact has a commit.
+
+R1-b. "Untracked files: cascades/, CLAUDD.md fragments suggest work was sketched.
+       No builder work committed against this item."
+  RESOLVED. cascades/ is tracked and real: cascades/cascade.js:34 exports
+  `phases = ["spec", "build", "verify", "close"]` (brief behaviour 13), with
+  cascades/README.md, cascades/package.json and cascades/sizing.json alongside.
+  The "CLAUDD.md" fragment is gone; no such path exists on the tree.
+  Load-bearing beyond mere existence: cascade.js drove the cascade-5 run.
+
+R1-c. "Acceptance suite failures: 6 failures in tick.test.ts, unrelated to
+       W-018 scope."
+  RESOLVED. Re-minted this pass on the clean tree:
+    tests: passed   ci/W-018-tests-272d2d3b.log
+    lint:  passed   ci/W-018-lint-272d2d3b.log
+    types: passed   ci/W-018-types-272d2d3b.log
+  all three certifying tree:272d2d3b. tick.test.ts is green (fixed in 0f4f1d8).
+  Note this also clears the round-1 `blocked_on` on opera/W-018.md, which said
+  "probatio lint fails: no eslint config or lint script exists anywhere in this
+  repo" — W-019 (commit a23aef1) landed a real lint, and it passes.
+
+R1-d. "No briefs/, leges/design.md updates. No leges for the design collegium
+       formalized."
+  RESOLVED. studio/briefs/W-018.md is tracked, and studio/leges/design.md
+  exists as a real charter alongside production/engineering/qa, all four
+  rewritten from docs/LEX_TEMPLATE.md. The Design collegium is in the manifest:
+    studio/bisellium.yml:8   - { id: design, name: Design, magister: architect, lex: leges/design.md }
+    studio/bisellium.yml:13  - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
+  and mirrored into examples/sample-studio/bisellium.yml (its own
+  leges/design.md is picked up by lex.unchecked in that officina's check).
+  The clause convention is live, not decorative: `lex.unchecked` reports 6/11/7/10
+  unchecked clauses across the four leges, and engineering.md carries real
+  markers — "(check: decision.shape)", "(check: decision.kill)",
+  "(check: lesson.evidence)".
+
+R1-e. "No decisions recorded in the studio process."
+  RESOLVED, and exceeded. studio/decisions/ holds D-001..D-013 — the brief
+  asked for D-001..D-007; D-008..D-013 came from retro 4b and cascade 5. They
+  are enforced, not filed: `decision.shape` and `decision.kill` are block rules
+  wired through packages/cli/src/rules/process.ts, and the studio passes both.
+
+R1-f. "No retro recorded."
+  RESOLVED. Two retros exist and the second was machine-drafted:
+    studio/acta/2026-09-18-retro-4b.md
+    studio/acta/2026-09-19-retro-5.md
+  retro-5 carries every section the brief names plus the Usage section added by
+  D-013 (## Numbers, ## Findings by class, ## Lessons filed, ## Recurrence,
+  ## Proposals, ## Pruning candidates, ## Usage). It was drafted by
+  packages/cli/src/retro.ts, which is what behaviour 10 asked for. The lessons
+  it filed are load-bearing downstream: `lesson.recurrent` now advises on six
+  recurring classes across studio/lessons/L-001..L-017.
+
+R1-g. "Zero redEvidence for any W-018 behaviour against acceptance suite."
+  ADVISORY — superseded, with pointers. Two things happened.
+
+  First, the substance: all 13 brief behaviours now have executable assertions,
+  and the two suites are committed and green.
+    packages/cli/src/process.test.ts   covers behaviours 1-9
+    packages/cli/src/retro.test.ts     covers behaviours 10-15
+  Spot-checking the ones round 1 called out as unevidenced, by assertion label:
+    1a/1b/1c   state.building.spec blocks no-spec, blocks gate-not-passed, clears when passed
+    2a/2b/2c   never fires on done/halted; bad-wip-cap EXPECT set unchanged
+    3a-3f      the `since:` exemption, both directions, plus fail-closed on an
+               unparseable traditio.at, for state.review.* and state.done.probationes
+    4a-4m      --brief/--spec, including absolute-path, "..", and
+               outside-officina refusals with nothing written
+    5a         lex.unchecked reports the exact clause count
+    6, 7a-7c   decision.shape looped over each missing key in turn (process.test.ts:344)
+               plus unknown provenance; decision.kill on missing and empty
+    8a-8d      lesson.shape looped over each missing key (process.test.ts:394);
+               lesson.evidence on empty list and dead href
+    9a/9b      lesson.recurrent only at >=2 cascades on >=2 opera
+    10a-10h    every retro section, one stub per class, petitio only for the
+               blocking proposal, pruning candidate byte-identical on disk,
+               and zero NEW blocking findings from check afterwards
+    11a-11g    draftRetro and runRetro both refuse and write nothing
+    12         byte-identical retro under a pinned --now
+    13         cascade.js phase list
+  The brief's own "Record the red for each" is therefore satisfied in substance:
+  each behaviour has a test that would fail if the behaviour regressed.
+
+  Second, the gap that remains is a mechanism gap, not a W-018 defect, and it
+  is already on the record as studio process rather than as an open finding:
+    studio/lessons/L-001.md      class "review×evidence-backfilled-or-absent",
+                                 naming W-016 and W-018 by id
+    studio/petitiones/P-001.md:36-44  proposes `opus.red_evidence` as a new
+                                 blocking rule, to the patron, state needs_you
+    studio/opera/W-016.md:35     "the officina sanctions no per-behaviour red
+                                 store (no redEvidence slot, verify mints only
+                                 the three gate logs)"
+  The officina has no slot to put a per-behaviour red in. Demanding one from
+  W-018 now would mean backfilling captured failing output after the fact,
+  which the standing rule "evidence is produced, never backfilled" forbids —
+  and which is the exact failure class L-001 was filed for. So: advisory,
+  pointer to P-001, and it is the patron's call, not this review's.
+  The class also recurs (L-001, L-008, L-017 across three cascades), which the
+  studio's own lesson.recurrent rule already reports.
+
+
+## 2. GATES RE-MINTED THIS PASS
+
+  bisellium verify W-018 --studio studio --repo /home/edckt/projects/bisellium
+    tests: passed  ci/W-018-tests-272d2d3b.log
+    lint:  passed  ci/W-018-lint-272d2d3b.log
+    types: passed  ci/W-018-types-272d2d3b.log
+
+All three certify tree:272d2d3ba8d9c5934212cffcb0cb6d446d15a0d9 — a tree
+certificate, not a dirty-tree fallback, which is itself only possible because
+W-017 (7649991) stopped Claude Code worktrees from dirtying the tree.
+
+
+## 3. BRIEF ACCEPTANCE — STILL HOLDS
+
+  npm run -s typecheck                                   ok (types gate, above)
+  npm test                                               ok (tests gate, above)
+  npm run -s check -- studio --repo .            PASS — 0 blocking, 31 advisory
+  npm run -s check -- examples/sample-studio --repo .
+                                                 PASS — 0 blocking, 20 advisory
+
+"Both officinae end with zero blocking findings" — holds.
+"Every pre-existing fixture EXPECT set is unchanged" — holds; the fixture
+suite is inside the green `npm test`, and behaviour 2c asserts it directly
+against a copy of examples/fixtures/bad-wip-cap.
+
+The five pieces, verified against the tree rather than the builder report:
+  (1) Design + spec. Manifest carries the design collegium (:8), the architect
+      sella (:13), builder-d (:18), `hooks: { default_sella: guest }` (:5),
+      the lint command (:23), `wip_limit: 4` (:27), and
+      `- { id: spec, name: Spec, kind: agent, since: 2026-09-18T19:00:00Z }`
+      (:25) placed immediately before `review` (:26) in the ladder, as the
+      brief specified. The `since:` seam is implemented at check.ts:297-321:
+      a non-string or unparseable `since` is a manifest.shape block (:306, :311),
+      and the exemption at :319-321 requires BOTH a declared `since` AND a
+      parseable traditio.at — `if (!since || !traditioAt) return false` is the
+      fail-closed the brief demanded, and it is fail-closed in the right
+      direction (missing traditio.at demands the gate rather than waiving it).
+  (2) Leges as leges. Four charters + LEX_TEMPLATE clause convention; the
+      `lex.unchecked` advisory fires once per lex, never per clause, in both
+      officinae.
+  (3) Decisions and lessons in the contract. D-001..D-013, L-001..L-017, all
+      five rules wired and passing.
+  (4) retro.ts. Drafted the real retro-5 end to end, refuses empty/dead
+      evidence, deterministic under --now.
+  (5) cascade.js. Committed, parses, correct phase list, and actually drove
+      cascade 5.
+
+Rule-module pattern (the brief's "establish the pattern the other two briefs'
+rules follow"): delivered and adopted. check.ts:41 exports `RuleOpts`;
+check.ts:699-701 builds one `ruleOpts` and pushes checkProcess and checkLex.
+W-017's rules/instructions.ts and W-019's rules/docs.ts are both in
+packages/cli/src/rules/ following it — the pattern took.
+
+
+## 4. BLOCKING FINDINGS
+
+None.
+
+
+## 5. ADVISORIES CARRIED (none blocking, none new work for W-018)
+
+A1. Per-behaviour red evidence has no home in the officina. See R1-g.
+    Pointer: petitiones/P-001.md item 3 (`opus.red_evidence`), lessons/L-001.md.
+    Patron's call. Do not backfill.
+
+A2. `probatio.certifies` advises on opera/W-018.md for the "review" and "spec"
+    gates — agent gates carry an evidence href but no `certifies:` identity.
+    Structural: an agent verdict certifies a judgement, not a tree hash. Shared
+    with W-017 and W-019, so it is a model question, not a W-018 defect.
+
+A3. `traditio.stage` advises "handoff stage halted ≠ state building" on
+    opera/W-018.md. Stale from the round-1 halt; the handoff this review files
+    clears it.
+
+A4. `aerarium.missing` — collegium "design" has no allowance in
+    aerarium/2026-W38.yml. W-018 created the collegium; funding it is
+    production's, and the brief does not put aerarium/ in W-018's owned files.
+
+A5. `lex.unchecked` reports 34 unmarked clauses across the four studio leges.
+    Working as designed — it is the advisory W-018 built to measure exactly
+    this, and a nonzero count is the honest reading, not a defect.
+
+A6. `hook.dead` on eight receipts and `acta.daily` for the architect are
+    cadence advisories from the studio's own clock, not W-018 artifacts.
+
+
+## 6. VERDICT
+
+PASS. Round 1 failed on one root cause — no persistence in the repo — and that
+cause is gone: the tree is clean, the work is committed under attributable
+commits, all three gates certify a tree hash, both officinae check zero
+blocking, and every behaviour the brief listed has an assertion behind it. Six
+of the seven round-1 findings are resolved against the tree. The seventh
+(per-behaviour redEvidence) is advisory: the studio has since filed it as
+L-001 and escalated it to the patron as P-001 item 3, and the only way to
+close it inside W-018 would be to backfill evidence, which the studio forbids.
+
+Recommend W-018 to done.

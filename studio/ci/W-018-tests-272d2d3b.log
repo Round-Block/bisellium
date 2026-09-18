@@ -1,0 +1,204 @@
+certifies: tree:272d2d3ba8d9c5934212cffcb0cb6d446d15a0d9
+command: npm test -s
+exit code: 0
+
+PASS  serve wiring: /api/health reflects a real checkStudio run (ok/blocks/advisories present) {"at":"2026-09-19T10:00:00.000Z","ok":true,"blocks":0,"advisories":10,"findingsByRule":{"probatio.certifies.mismatch":1,"petitio.age":1,"acta.daily":5,"aerarium.missing":1,"lex.unchecked":2},"autonomy":{"paused":false},"lastTick":"2026-09-19T10:00:00.000Z","due":[]}
+PASS  serve wiring: a write with no token is refused (401)       401
+PASS  serve wiring: a write with the real token succeeds (200, exitCode 0) {"ok":true,"exitCode":0,"output":"W-007: greenlit"}
+PASS  serve wiring: the real runGreenlight actually mutated the opus on disk ---
+id: W-007
+title: Seasonal event framework
+kind: feature
+collegium: engineering
+state: greenlit
+probationes: {}
+---
+Greenlight requested by producer (A-2 is the Patron's question back).
+
+PASS  real repo: checkDocs finds nothing at now=2026-09-19T10:00:00Z []
+PASS  checkDocs returns [] when opts.repo is omitted             
+PASS  empty repo root: checkDocs never throws                    
+PASS  empty repo root: checkDocs returns []                      []
+PASS  unknown kind: doc.fields advises                           [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"unregistered kind \"not-a-real-kind\""}]
+PASS  fixed kind: clears                                         []
+PASS  owner not declared: doc.fields advises                     [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"owner \"not-a-sella\" is not a declared sella or the patron"}]
+PASS  owner is the patron literal: clears                        []
+PASS  missing "kind": doc.fields advises                         [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"kind\""}]
+PASS  missing "kind": clears once fixed                          []
+PASS  missing "owner": doc.fields advises                        [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"owner\""}]
+PASS  missing "owner": clears once fixed                         []
+PASS  missing "tier": doc.fields advises                         [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"tier\""}]
+PASS  missing "tier": clears once fixed                          []
+PASS  missing "review": doc.fields advises                       [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"review\""}]
+PASS  missing "review": clears once fixed                        []
+PASS  missing "kill": doc.fields advises                         [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"kill\""}]
+PASS  missing "kill": clears once fixed                          []
+PASS  review before now: doc.fields advises                      [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"review date 2020-01-01 is before now"}]
+PASS  review after now: clears                                   []
+PASS  dead relative link: doc.link advises                       [{"rule":"doc.link","level":"advise","where":"docs/TEST.md","message":"dead relative link \"./NOPE.md\""}]
+PASS  link resolves once the target exists: clears               []
+PASS  http(s) and bare-anchor links are ignored                  []
+docs registry: 2 doc(s) at 2026-09-19T10:00:00.000Z -> .bisellium/registry.json
+PASS  docs registry: exits 0                                     
+PASS  docs registry: writes .bisellium/registry.json             
+PASS  docs registry: one entry per registered doc                [{"path":"docs/A.md","kind":"guide","owner":"eng-lead","tier":"reference","review":"2026-12-01","kill":"never, this is a fixture"},{"path":"docs/B.md","kind":"guide","owner":"eng-lead","tier":"reference","review":"2026-12-01","kill":"never, this is a fixture"}]
+PASS  docs registry: at matches --now                            2026-09-19T10:00:00.000Z
+docs registry: 2 doc(s) at 2026-09-19T10:00:00.000Z -> .bisellium/registry.json
+PASS  docs registry: two runs at the same --now are byte-identical 
+PASS  buildRegistry matches what runDocs wrote                   
+PASS  groups.length === 3 (Unreleased, Cascade 2, Cascade 1) ["Unreleased","2","1"]
+PASS  group 0 is Unreleased                              
+PASS  Unreleased holds the two commits before any Cascade N line ["docs: newest, no cascade label yet","fix: typo"]
+PASS  group 1 is Cascade 2                               
+PASS  Cascade 2 holds its own label plus the follow-up commit, in order ["Cascade 2: server hardening","cli: follow-up inside cascade 2"]
+PASS  group 2 is Cascade 1                               
+PASS  Cascade 1 holds its label plus the oldest commit   ["Cascade 1: init and new","chore: repo scaffold"]
+PASS  reverse-chronological order                        
+PASS  no-cascade-label fixture: one group, Unreleased    
+PASS  no-cascade-label fixture: holds every commit       
+PASS  run 1: CHANGELOG.md was written                    
+PASS  run 1: nothing outside CHANGELOG.md touched        ["CHANGELOG.md"]
+PASS  run 2: byte-identical to run 1 (deterministic)     
+PASS  CHANGELOG.md mentions the cascade label            
+PASS  CHANGELOG.md puts the later commit under Unreleased 
+PASS  run 1 actually fixed the missing semicolon         "const answer = 42;\n"
+PASS  run 2 changed nothing (idempotent)                 "const answer = 42;\n"
+PASS  parses as YAML                                     
+PASS  has a typecheck step                               
+PASS  has a lint step                                    
+PASS  has a format:check step                            
+PASS  has a test step                                    
+PASS  has a check --repo . step naming studio            
+PASS  has a check --repo . step naming examples/sample-studio 
+PASS  the string 'verify' appears nowhere in the file    
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+working tree is dirty; commit or pass --allow-dirty
+--stage "review" does not match opus state "building"
+unknown sella "nobody" — not declared in bisellium.yml
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+emit: event needs a non-empty string "name"
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+unknown opus: W-999
+--ask-back requires petitio "A-1" to be needs_you (currently awaiting_reply)
+W-007 is not in backlog (state: greenlit)
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+hooks print: --harness must be "claude-code" (got "codex")
+usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+hook-event start: payload session_id is not a plain id (no path separators)
+hook-event stop: payload session_id is not a plain id (no path separators)
+hook-event start: --sella must be a plain id (no path separators)
+GET /api/officina 200 2ms
+GET /api/inbox 200 6ms
+GET /api/aerarium 200 4ms
+GET /api/opus/W-004 200 1ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+GET /api/events?limit=-5 200 1ms
+GET /api/timeline/builder-1?limit=-5 200 1ms
+GET /api/events?limit=0 200 1ms
+GET /api/timeline/builder-1?limit=0 200 1ms
+GET /api/events?limit=99999 200 1ms
+GET /api/timeline/builder-1?limit=99999 200 1ms
+GET /api/events?limit=abc 200 1ms
+GET /api/timeline/builder-1?limit=abc 200 2ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 1ms
+POST /api/greenlight 415 1ms
+POST /api/greenlight 413 4ms
+POST /api/greenlight 200 9ms
+GET /api/opus/W-007 200 1ms
+POST /api/_poll 200 18ms
+GET /api/events 200 0ms
+POST /api/_poll 200 11ms
+GET /api/events 200 0ms
+GET /api/events 200 1ms
+POST /api/_poll 404 0ms
+GET /api/events 200 0ms
+GET /api/events 200 0ms
+GET /api/live 200 100ms
+POST /api/_poll 200 8ms
+GET /api/officina 200 1ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 249ms
+GET /api/live 200 249ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 248ms
+GET /api/live 200 247ms
+GET /api/live 200 247ms
+GET /api/live 200 247ms
+GET /api/live 200 247ms
+POST /api/talk 200 84ms
+POST /api/talk 200 122ms
+fatal: not a git repository (or any of the parent directories): .git
+--spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
+--spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+--spec "briefs/../../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+/********.yml not found — not a studio
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+GET /api/health 200 26ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 200 4ms
+
