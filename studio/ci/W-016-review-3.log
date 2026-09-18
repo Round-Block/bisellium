@@ -1,0 +1,102 @@
+VERDICT: PASS (round 3, cascade 5). Reviewer: eng-lead (Opus, D-012 one-reviewer-per-opus).
+Tree under review: tree:4d00f08eb860ed4f38f64e2bec7a6dd40759cf44 (master @ 3c66190, clean).
+
+GATES (re-minted on a clean tree, no --allow-dirty)
+- verify W-016 --studio studio --repo .: tests/lint/types all passed, certifying
+  tree:4d00f08e (ci/W-016-tests-4d00f08e.log, ci/W-016-lint-4d00f08e.log,
+  ci/W-016-types-4d00f08e.log). Round 2's dirty: certificates are gone: the
+  harness's untracked .claude/worktrees/ was the sole cause and is now pruned.
+  This is the first tree: certificate on W-016 and closes Retrospectio 4b's
+  headline finding for this opus.
+- check studio --repo .: PASS, 0 blocking, 30 advisory.
+
+ROUND-2 BLOCKING FINDING 1 (no recorded red for behaviours 1-15): CLEARED.
+New fact round 2 did not have: builder-a captured a red per behaviour group at
+build time, under /tmp/w016-evidence/, with a durable copy at
+~/.bisellium-evidence/cascade-5/w016/. Inspected both. What they contain, and
+how each red maps to the brief:
+
+  core-index.red.log (17:26:19) -> core-index.green.log (17:26:57)
+    Red: TypeError "store.on is not a function" at packages/core/src/index.test.ts:351.
+    Covers behaviours 1, 3, 4 (Store as EventEmitter, post-start writes, seq from
+    the Store's sequence). Green twin: 36 PASS, 0 FAIL.
+  server.red.log (17:38:55) -> server.green.log (17:39:18)
+    Red: SyntaxError, '../src/index.js' does not provide an export named
+    'isPathContained' — the rewritten apps/server/test/server.test.ts does not
+    load at all, so every behaviour it asserts is failing. Covers 5, 6, 7, 8, 9,
+    11 (and 1/3/4 at server level). Green twin: 58 PASS, 0 FAIL.
+  cli-server.red.log (17:41:07) -> cli-server.green.log (17:41:14)
+    Red: 5 named FAILs — write-auth token undefined, /api/health 500
+    ("checkStudio is not a function"), token-bearing write refused, greenlight
+    never mutating disk. Covers the serve-wiring half of behaviour 5 and the
+    dependency inversion behind it. Green twin: 8 PASS, 0 FAIL.
+  hooks-typecheck.red.log (17:43:55)
+    Red: TS2345 at packages/shim/test/hooks.test.ts(514,42) — 'sella' missing but
+    required in ClaudeCodeHooksOpts. Covers behaviour 14, and is exactly the
+    typecheck the brief names.
+  hooks.red.log (17:44:05) -> hooks.green.log (17:46:18)
+    Red: 8 named FAILs plus a crash in shellQuote at claude-code.ts:58 —
+    hook-event context printing nothing on stdout (healthy/missing/broken),
+    SessionStart/PreCompact still on `context` rather than `hook-event context`,
+    timeouts [10,5,10,5,5] not 2, cwd unmasked. Covers behaviours 12, 13, 14.
+    Green twin: 91 PASS, 0 FAIL.
+  unused-cli.log (17:47:45) -> unused-cli2.log (17:48:10), plus empty
+  unused-{commands,core,server,shim}.log
+    Red: TS6133 'readLog' declared but never read in packages/cli/src/hooks.ts,
+    under noUnusedLocals/noUnusedParameters; green after the fix. Covers
+    behaviour 15 and also clears round-2 advisory 2 ("the code is fine; the
+    recorded run is missing") — the run exists and it was a real red.
+
+WHY I READ THESE AS GENUINE, NOT BACKFILLED
+- Ordering: every red predates its own green by minutes, and all of them
+  (17:26-17:48) predate all four W-016 commits (d80ba3f 17:50:51, 37c3aec
+  17:51:12, a6f92f8 17:51:38, 30b540c 17:51:57).
+- Provenance: every stack trace names
+  .claude/worktrees/wf_f8104331-3d7-2/... — builder-a's per-builder worktree,
+  which was pruned before round 2 ran at 18:10. These cannot have been produced
+  after the fact; the tree they were produced in no longer exists.
+- Internal consistency: each red's failure mode is the exact pre-fix state of
+  the symbol its commit introduces (store.on, isPathContained,
+  ClaudeCodeHooksOpts.sella, the cwd redaction, the unused import), and its
+  green twin shows those same named assertions passing. A fabricated red does
+  not line up symbol-by-symbol with the diff that follows it.
+The lex Sec.2/Sec.7 contract is "the test has been run and shown failing, and
+that failure is kept as evidence". Substance met: captured before the fix,
+kept, inspectable, and re-inspectable now. Round 2's finding was correct on the
+facts round 2 had (it searched studio/ci/, the worktrees and .bisellium/); it
+is wrong on the facts as they now stand.
+
+ESCALATED REGARDLESS (mechanism, not this opus)
+The reds live outside the officina because the officina sanctions no
+per-behaviour red store: opera front matter has no redEvidence slot, verify
+mints only the three automated gate logs, and nothing in studio/ references
+/tmp or ~/.bisellium-evidence. So this evidence is honest but not durable
+studio evidence — a mtime-dated file tree a reviewer must be told about is not
+a certificate. Stays escalated to the Patron: the fix is a CLI-minted red store
+(a redEvidence slot per behaviour, written by the tool, certifying the tree the
+red was taken in), not a convention about where builders drop logs. This is the
+third recurrence of lesson class review x evidence-backfilled-or-absent
+(L-001, L-008); it is a tooling gap, and round 3 shows the builders were doing
+the right thing with nowhere sanctioned to put it.
+
+ADVISORY (carried, none blocking)
+1. Behaviours 2 and 10 have no red because nothing was built for them: their
+   tests (packages/cli/src/query.test.ts:70-90) already existed at 0f4f1d8, an
+   ancestor of the spec-phase commit f52d835, and were green on arrival. Not a
+   defect; they are not W-016 build evidence and should not be counted as such.
+2. Behaviour 15's residual hit stands: packages/cli/src/tick.test.ts(203,31)
+   'opts' declared but never read — pre-existing, in a file W-016 owns, and
+   nothing enforces the two flags repo-wide (they are in no tsconfig, and
+   W-019's eslint carries no-unused-vars as a warning with no --max-warnings).
+3. The review probatio's evidence still points at ci/W-016.log from cascade 4.
+   The round-3 note is this file; the front matter gate has no certifies, which
+   check reports as probatio.certifies advisory.
+4. Round-2 findings on files-owned discipline, behaviour coverage and the
+   structural module-graph walk for behaviour 11 all stand as passing and were
+   not re-litigated.
+
+NEXT
+W-016 clears review. No blocking findings. The code was sound at round 2 and is
+unchanged; what changed is that the evidence the contract asks for has been
+produced and inspected. The mechanism gap is the Patron's to close, not this
+opus's.

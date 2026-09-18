@@ -1,0 +1,192 @@
+W-019 — lead review, round 3 (cascade 5)
+reviewer: eng-lead · at: 2026-09-18T10:28:00Z
+under review: a23aef1 "build(W-019): repo hygiene" plus 3c66190
+  "test(W-019): cover lint-fix idempotence and ci.yml shape"
+source tree: 4d00f08eb860ed4f38f64e2bec7a6dd40759cf44
+
+VERDICT: PASS — both round-2 blockers clear. One mechanism gap stays with
+the Patron; it is not a defect of this opus.
+
+WHAT WAS RUN (read-only; no source file edited by this review)
+
+  bisellium verify W-019 --studio studio --repo /home/edckt/projects/bisellium
+    tests:  passed  ci/W-019-tests-4d00f08e.log   certifies tree:4d00f08e
+    lint:   passed  ci/W-019-lint-4d00f08e.log    certifies tree:4d00f08e
+    types:  passed  ci/W-019-types-4d00f08e.log   certifies tree:4d00f08e
+
+  npm run -s check -- studio --repo .   PASS — 0 blocking, 27 advisory
+
+  Certificates read tree:, not dirty: — the worktrees are pruned and the
+  round-2 bookkeeping is committed (4aeeb1d), so the source tree is clean.
+  The three new certificates cover 3c66190's two new test files: the tests
+  gate ran `npm test -s` against the tree that contains them.
+
+ROUND-2 BLOCKING 2 — CLEARED (two behaviours had no test)
+
+  3c66190 adds both, and they are behaviour tests, not tests written to
+  agree with the code.
+
+  scripts/lint-fix.test.mjs (behaviour 3) builds a fixture with a genuinely
+  auto-fixable rule, so it asserts that run 1 *changes* the file and run 2
+  does not — it would fail both if the script were a no-op, and fail the
+  second if `eslint --fix` ever stopped converging. The fixture is mkdtemp'd
+  inside the repo because the script under test hardcodes cwd and ESLint's
+  flat-config lookup walks up; the header says so. Correct, and see
+  ADVISORY 3.
+
+  scripts/ci-workflow.test.mjs (behaviour 11) parses ci.yml as YAML, walks
+  the jobs' run lines, and asserts typecheck, lint, format:check, test, the
+  two `check --repo .` invocations naming studio and examples/sample-studio
+  separately, and that "verify" appears nowhere in the file. That is the
+  guard round 2 asked for: a later edit dropping format:check, or adding a
+  verify step that would write certificates from a machine that is not the
+  officina, now fails the build instead of needing a reviewer to notice.
+
+  Both were test-first with a red kept:
+    behaviour-3-red.log   exit=1, against a mutant that appends a timestamp
+                          comment each run and so never converges; both
+                          assertions fail, and the detail column carries the
+                          mutant's own output.
+    behaviour-3-green.log exit=0 against the real script.
+    behaviour-11-red.log  exit=1 against a deliberately broken workflow
+                          fixture — format:check missing, the second check
+                          step missing, "verify" present. The other five
+                          assertions pass in the red, which is what a
+                          targeted mutant should look like.
+    behaviour-11-green.log exit=0 against .github/workflows/ci.yml.
+  Both reds precede 3c66190 (18:17:50 +0800); behaviour-3-red carries an
+  embedded epoch, 1789726519991 = 2026-09-18T10:15:20Z, inside its own
+  output — the log's content dates itself, independently of its mtime.
+
+ROUND-2 BLOCKING 1 — WITHDRAWN (zero recorded reds)
+
+  The finding was wrong on its facts, and I am the reviewer who made it. It
+  said no red exists for any of the eleven behaviours. Eight reds do exist.
+  They were produced during the build and stored outside the officina, in
+  /tmp, named in builder-d's dispatch report — a document round 2 did not
+  have. Round 2 searched studio/ci/, the history of studio/ci/* across all
+  branches, and builder D's worktree. Those are the places the officina's
+  own model says a red would live, and it is not in any of them, which is
+  the real finding and is restated below as the escalation. But "searched
+  the sanctioned places and found none" was written up as "no red exists",
+  and that inference was not available from what round 2 had in hand.
+
+  Inspected, with durable copies at ~/.bisellium-evidence/cascade-5/w019/
+  byte-identical to the /tmp originals (cmp, all eight):
+
+    w019-red-lint-broad.log       behaviour 1's named red — eslint under the
+      pre-narrowing rule set: 13 errors, no-explicit-any plus no-unused-vars
+      without the ^_ ignore pattern, exactly the rules the brief says to
+      start broad and then narrow. This is the evidence round 2 said had
+      never been captured, and it is the specific claim round 2 said had
+      nothing behind it.
+    w019-red-lint-noconfig.log    eslint with no flat config — the state
+      before eslint.config.mjs existed.
+    w019-red-formatcheck-noignore.log  prettier --check with no ignore file:
+      173 files.
+    w019-red-format-fourpaths.log  behaviour 2's named red, and the decisive
+      one: warnings on studio/opera/W-001.md, docs/ADOPTION.md,
+      examples/sample-studio/bisellium.yml and packages/cli/src/check.ts —
+      the four paths the brief names, and only those four. The brief told
+      the builder to verify that set and record it; the log is that set.
+    w019-red-changelog.log        behaviours 4-5 against a stubbed
+      groupByCascade: the grouping assertions fail.
+    w019-red-docs.log             behaviours 6-10 against stubbed
+      checkDocs/buildRegistry: every advise-and-clear pair and the registry
+      entry-count assertion fail.
+    w019-lintfix-run{1,2}.log     byte-identical pair, the convergence
+      behaviour 3 claims, recorded at build time before any test existed for
+      it.
+
+  Weighing content and mtimes against a23aef1 (17:31:05 +0800):
+
+    17:18:39  baseline test        \
+    17:19:43  red lint-noconfig     |  reds interleaved with the build, in
+    17:19:47  red formatcheck       |  the order the brief lists the work,
+    17:21:11  red format-fourpaths  |  each before the code that makes it
+    17:21:31  red lint-broad        |  green
+    17:22:51  lintfix run1          |
+    17:22:53  lintfix run2          |
+    17:24:05  red changelog         |
+    17:27:09  red docs             /
+    17:29:06  final typecheck/test/check — greens
+    17:30:33  acceptance runs
+    17:31:05  a23aef1
+
+  Three things make this a build-time record rather than a backfill. The
+  order is the brief's order, spread over nine minutes and interleaved with
+  the greens — a backfill produces a clump. The two precisely-named reds
+  match the brief's wording exactly, down to the four-path set, which is a
+  thing you can only capture against the tree as it stood. And every path
+  inside w019-red-lint-broad.log and the lintfix pair is under
+  .claude/worktrees/wf_f8104331-3d7-3 — builder D's worktree, now pruned, so
+  these files could not have been produced after the fact.
+
+  The evidence contract's substance is met: a red captured before the fix,
+  kept, and inspectable. Eleven behaviours, all with a red on the record
+  once 3c66190's two are counted. BLOCKING 1 is withdrawn.
+
+ESCALATION (stands whatever the verdict) — no sanctioned red store
+
+  What is left after the withdrawal is the mechanism, not the builder. The
+  officina has nowhere to keep a per-behaviour red: ci/ holds gate logs keyed
+  by source-tree hash, no CLI writes anything else there, and neither check
+  nor verify knows a red exists. So a builder told to keep a red keeps it in
+  /tmp, and a reviewer looking for one finds nothing and — as round 2 did —
+  reads absence as never-produced. Both halves of that failure are the
+  missing mechanism.
+
+  W-019's reds are one `rm -rf /tmp` from gone; the durable copy is an
+  untracked directory in one machine's home. The same answer W-016 waits on
+  answers this: where a per-behaviour red lives, what writes it, and what
+  check asserts about it. It should be answered once, for both.
+
+ADVISORY 1 — two behaviours' reds are vacuous by construction
+
+  Inside w019-red-docs.log, behaviours 7 and 10 ("checkDocs produces no
+  findings for the repo as you leave it", "returns [] when opts.repo is
+  omitted", "never throws on an empty root") pass against the stub — a
+  behaviour that asserts an empty result is green against a function that
+  returns nothing. Same for behaviour 5's determinism and write-scope
+  assertions in w019-red-changelog.log. Not the builder's fault: a
+  negative-space behaviour cannot go red against a stub, only against a
+  mutant. 3c66190 shows the right shape — behaviour 3's red is a mutant that
+  never converges. Whatever answer the Patron gives on the red store should
+  say that a behaviour whose assertion is "nothing happens" records its red
+  against a mutant, not a stub.
+
+ADVISORY 2 — .claude/worktrees/ still not in .gitignore
+
+  Round 2's advisory stands unchanged. It is in .git/info/exclude on this
+  machine only, which is a per-session workaround. One line in .gitignore,
+  alongside receipts/, sessions/, timeline/ and .bisellium/, which it
+  belongs with for the same reason.
+
+ADVISORY 3 — .lint-fix-test-* is the same class
+
+  scripts/lint-fix.test.mjs mkdtemps `.lint-fix-test-*` at the repo root and
+  removes it in a finally, which is right. Nothing ignores that pattern, so
+  a crashed or killed run leaves an untracked directory and the next verify
+  reports a dirty tree for a reason that has nothing to do with the source.
+  Same one-line fix as ADVISORY 2, same .gitignore edit, next opus that owns
+  the file.
+
+ADVISORY 4 — no CLI moves an opus to done
+
+  This verdict is recorded the only ways the CLI offers: a
+  workflow.gate_evaluated emit for the review gate and a handoff on the
+  traditio. Nothing in the CLI writes an agent gate's status into the opus's
+  front matter or moves state: building -> done, and the standing rules
+  forbid doing either by hand. Same family as the red-store gap, worth one
+  answer with it.
+
+WHAT IS GOOD (round 2's findings, unchanged and restated for the record)
+
+  The lint probatio is a real gate that passes. Files-owned discipline is
+  clean, including the targeted package.json replacement that left W-016's
+  concurrent scripts.test value intact — and 3c66190 did it again correctly
+  for its two new test entries. The docs command is reachable and checkDocs
+  is called from inside checkStudio. P-001 was left alone and the licence
+  ask is P-002, needs_you. The .prettierignore scope is honest rather than
+  green-by-rewriting another builder's files, with widening it recorded in
+  CONTRIBUTING.md as the next cascade's first task.
