@@ -39,6 +39,12 @@ acta/<date>-<slug>.md       inform-and-proceed entries
 aerarium/<period>.yml       allowances per collegium — burn is derived, never written
 usage.yml                observed provider limit telemetry
 receipts/<sella>/<sessionId>.json  run receipts written by `bisellium run` (start + exit)
+sessions/<sella>.json      talk session store, written by `bisellium talk` (gitignored, local like receipts/)
+timeline/<sella>.jsonl     talk chatter, written by `bisellium talk` (gitignored, local like receipts/)
+timeline/patron.jsonl      one line per Patron write (answer/greenlight/budget; gitignored, local like receipts/)
+events.jsonl               live workflow telemetry (`bisellium emit`, snapshot diffing; gitignored, local like receipts/)
+health.json                `bisellium tick`'s generated check + due-cadence snapshot (gitignored, local like receipts/)
+PAUSED                     the manual-pause marker (`bisellium pause`/`bisellium resume`; gitignored, local like receipts/)
 ```
 
 Receipts and ci logs are masked before they touch disk: a receipt's `cmd`
@@ -65,9 +71,9 @@ studio: Sample Studio
 patron: patron                    # the Patron's role id
 timezone: Europe/London
 collegia:
-  - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md }
+  - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md, autonomy: L1 }
 sellae:
-  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5, harness: claude-code }
 probationes:
   - { id: tests,  name: Tests,        kind: automated, command: "npm test" }
   - { id: review, name: Lead review,  kind: agent }
@@ -78,9 +84,18 @@ defaults:                         # optional overrides of the dossier's Defaults
   handoff_stale_days: 3
 ```
 
-Ids must be unique within collegia, sellae and probationes. Every magister and
-fallback must be a declared sella. A lex, if declared, must exist and
-should contain "Decides alone", "Digests" and "Asks" sections.
+Ids must be unique within collegia, sellae and probationes, and each id must
+be alphanumeric (`.`, `_`, `-` allowed) with no path separator or `..`
+segment — every id can end up as a filename component (an acta or a daily
+digest is named after one), so `check` blocks anything that isn't safe to
+join into a path (`manifest.id.format`). Every magister and fallback must be
+a declared sella. A lex, if declared, must exist and should contain "Decides
+alone", "Digests" and "Asks" sections.
+
+`collegia[].autonomy` (`L0`–`L3`, dossier §10) defaults to `L1` when absent;
+`check` blocks any other value (`collegium.autonomy`). `bisellium tick`'s
+cadence work (below) only acts on collegia at `L1` or above — `L0` is
+manual and tick never touches it.
 
 `command` (a shell command) is optional on a `kind: automated` probatio; it is
 what `bisellium verify <opus-id>` runs to fill that gate's `status`/
@@ -267,10 +282,14 @@ list`) is left alone and reported as kept.
 
 `verify` runs every `kind: automated` probatio's `command` against `--repo`
 (defaulting to the studio's parent repo) and writes each one's
-`status`/`evidence`/`certifies` back into that opus's front matter — the
-only tool-written change to an opus, and it touches only those three keys on
-each gate it runs, merged into the existing probatio node so sibling keys
-(`waived_by`, a `note`, comments, …) and every other gate survive untouched.
+`status`/`evidence`/`certifies` back into that opus's front matter — it
+touches only those three keys on each gate it runs, merged into the existing
+probatio node so sibling keys (`waived_by`, a `note`, comments, …) and every
+other gate survive untouched. `handoff` and `greenlight` (below) are the
+other tool-written changes to an opus, and go through the exact same
+merge-not-replace seam (`editOpusFrontMatter`, packages/cli/src/frontmatter.ts):
+each touches only the keys its own contract names — `traditio`'s five keys
+for `handoff`, `state`/`declined` for `greenlight` — never anything else.
 A gate already `status: waived` is skipped entirely (not run, not
 overwritten) and printed as `<id>: waived (untouched)`. Before running,
 `verify` requires a clean SOURCE tree in `--repo` — `git status --porcelain`
@@ -287,3 +306,125 @@ right after itself — even without committing anything in between — needs no
 `--allow-dirty` and certifies the same hash. Exit codes: 0 all automated
 gates that ran passed, 1 at least one failed, 2 usage error / not a studio /
 unparseable sibling opus / dirty source tree without `--allow-dirty`.
+
+## Writing to a studio (handoff, emit, answer, greenlight, budget)
+
+```bash
+npm run bisellium -- handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- emit '{"name":"workflow.custom","attrs":{"k":"v"}}' [--studio <dir>] [--now <iso>]
+npm run bisellium -- answer --petitio <id> <reply…> [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+npm run bisellium -- greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+```
+
+`handoff` validates `--sella` is declared and, when `--stage` is given, that
+it equals the opus's current `state` (omit `--stage` to just reuse the
+current state) — a mismatch or an undeclared sella is a validation error
+(exit 2). It writes `traditio: { sella, stage, next, blocked_on, at }` on the
+opus, merged in via the same `editOpusFrontMatter` seam `verify` uses
+(packages/cli/src/frontmatter.ts) — nothing else on the opus changes, byte
+for byte. `--blocked-on` defaults to `none`.
+
+`emit` validates a minimal event shape (`{name, attrs?}`, `attrs` values
+string/number/boolean only) and appends one `GantryEvent` to
+`<studio>/events.jsonl` via `@bisellium/core`'s `appendEvents`, stamped
+`workflow.source: cli` and a `workflow.source.seq` taken from the log's
+current length. `events.jsonl` is live/derived telemetry, not the studio's
+committed record — gitignored, same reasoning as `receipts/` and
+`timeline/`.
+
+`answer`, `greenlight` and `budget` are Patron writes: the CLI runs them
+with `BISELLIUM_ROLE=patron`, and each one appends a line to
+`<studio>/timeline/patron.jsonl` (also gitignored) recording what the Patron
+just did. `answer --petitio <id> <reply…>` appends
+`\n\n[stated] <now> <patron>: <reply>` to the petitio's body and resolves it
+(`state: resolved`); `--ask-back` instead flips `from`/`to` so the Patron
+becomes the asker and sets `state: awaiting_reply` (matching `check`'s
+`petitio.direction` rule); `--charter-gap` additionally files a `kind:
+decision` acta proposing a lex amendment, titled `Lex gap: <first line of
+the petitio>`. `greenlight <opus>` requires the opus be `state: backlog`
+(exit 2 otherwise) and either sets `state: greenlit` or, with `--decline
+<reason>`, leaves it in backlog and records `declined: <reason>` — either
+way it emits a `workflow.greenlight` (`granted`/`declined`) event. `budget
+<period> --collegium <id> --tokens <n> [--hours <n>]` creates or merges
+`aerarium/<period>.yml`, writing only `stipendium_tokens`/`stipendium_hours`
+under that collegium (`period` must match `^\d{4}-W\d{2}$`); like every
+command here its flag parser is strict, so an unrecognized flag (e.g. a
+`--burn-*` one, trying to write a derived key) is refused, not silently
+ignored.
+
+## Running tick, pause and resume
+
+```bash
+npm run bisellium -- tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+npm run bisellium -- pause [--studio <dir>] [--reason <text>]
+npm run bisellium -- resume [--studio <dir>]
+```
+
+`tick` is L1 "scheduled" autonomy (dossier §10): it always runs `check` and
+writes `<studio>/health.json` (`at`, `ok`, `blocks`, `advisories`,
+`findingsByRule`, `autonomy`, `lastTick`, `due`) — even while paused, even
+when `check` has blocking findings. It then computes the DUE cadence list
+for collegia at `autonomy: L1` or above: one `daily` per active collegium's
+magister who hasn't filed one today, the current ISO week's `aerarium` file
+if it doesn't exist yet, and any opus under an active collegium whose
+`traditio` is older than `handoff_stale_days`. `--dry-run` only prints what's
+due; otherwise `daily` items get a real acta written (talking to the
+magister's sella through `bisellium talk`'s programmatic seam, no CLI
+subprocess) while `aerarium`/`traditio` items are reported only — writing
+either is a Patron/sella act, not tick's. `tick` finishes by writing a
+receipt under `receipts/tick/`. Exit codes: 0 `check` passed (or paused), 1
+`check` had blocking findings, 2 usage error / not a studio.
+
+`pause` writes `<studio>/PAUSED` (`{ at, reason }`); `resume` removes it.
+While paused, `tick` runs only the `check` + `health.json` step above and
+skips all cadence work — no acta, no receipt. The brake stops *starting*
+autonomous work, not talking: `run` and `talk` both proceed regardless while
+paused, each printing a one-line `warning: studio is paused …` first (the
+Patron talking to a sella directly is how you find out why it's paused).
+
+## Running talk
+
+```bash
+npm run bisellium -- talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+```
+
+`talk` is the Patron's direct line to one sella, driving its vendor CLI
+headless (docs/STUDIO.md §11: `claude -p --resume`, `codex exec --resume`)
+through a `@bisellium/shim` `HarnessProfile` — `claude-code` (tier 1),
+`codex` (tier 2), or `git-only` (tier 3: always "available", but talking to
+it is a contradiction in terms — `start`/`resume` refuse). Which profile a
+sella uses is its manifest entry's `harness` key (`sellae[].harness`,
+default `claude-code`), overridable per call with `--harness`.
+
+A question `bisellium query` already answers deterministically (`status
+W-<id>`, `burn`, "what is blocked on me") is answered from the studio's
+files — printed as `query · <answer>` — without starting or resuming a
+harness session at all, unless `--model-only` forces the model path.
+Otherwise `talk` builds the sella's boot bundle (the same one `bisellium
+context` prints) as the system prompt, starts a session or resumes the last
+one recorded for that sella *on the same harness* (`sessions/<sella>.json`:
+`harness`, `sessionId`, `startedAt`, `lastAt`, `turns` — switching
+`--harness` starts a fresh session rather than resuming under a mismatched
+vendor), prints the reply, and appends both sides of the exchange to
+`timeline/<sella>.jsonl` (`at`, `sella`, `direction: in|out`, `text`,
+`sessionId`, `model`, `usage`). `talk` always runs in the studio root, never
+inside a worktree — worktrees are for `run`, which actually changes files;
+a conversation doesn't.
+
+A conversation is chatter (dossier: STUDIO.md §5) unless it escalates: a
+reply line starting `PETITIO: <text>` opens a petitio addressed to the
+patron (the next `P-NNN` under `petitiones/`, `from` the sella, `state:
+needs_you`) and `talk` prints `petitio P-NNN opened`; a line starting
+`ACTUM: <text>` writes a `kind: decision` acta entry authored by the sella.
+Everything else in the reply stays in the timeline only — silence (or an
+ordinary reply) binds nothing, same as any other acta.
+
+`talk` writes a run receipt exactly like `bisellium run` does
+(`receipts/<sella>/<sessionId>.json`), with `harness` set to the profile id
+that actually ran instead of `"run"`. Exit codes: 0 ok (including the
+deterministic-query fast path) · 2 usage error / not a studio / unknown
+sella / unknown or unavailable harness (one-line reason) · 3 the harness
+reported a usage/rate limit, printed as `<sella> is limited on <harness>;
+try again after <reset if known>` · anything else is the harness's own exit
+code, relayed as-is.

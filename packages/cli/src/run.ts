@@ -18,6 +18,7 @@ import { join, resolve } from "node:path";
 import { readManifest } from "@bisellium/adapter-native";
 import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
+import { pauseWarning } from "./pause.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -151,6 +152,12 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     console.error(`unknown sella "${sella}" — not declared in ${manifestPath}`);
     return { exitCode: 2 };
   }
+
+  // `bisellium pause` stops autonomous starting (bisellium tick), not
+  // talking — a sella already being run by hand proceeds regardless, with
+  // just a warning so the operator knows the brake is on.
+  const warning = pauseWarning(studioRoot);
+  if (warning) console.error(warning);
 
   let worktree: Awaited<ReturnType<WorktreeProvider["acquire"]>> | undefined;
   if (!noWorktree) {

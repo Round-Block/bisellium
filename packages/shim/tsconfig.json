@@ -4,5 +4,5 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["src", "test", "../cli/src/run.ts", "../cli/src/check.ts"]
+  "include": ["src", "test", "../cli/src/run.ts", "../cli/src/check.ts", "../cli/src/talk.ts"]
 }

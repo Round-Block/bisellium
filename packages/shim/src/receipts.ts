@@ -15,7 +15,9 @@ export interface Receipt {
   startedAt: string;
   cwd: string;
   cmd: string[];
-  harness: "run";
+  /** "run" for `bisellium run`; a harness profile id (e.g. "claude-code",
+   *  "codex", "fake") for `bisellium talk`. */
+  harness: string;
   endedAt?: string;
   exitCode?: number;
   durationMs?: number;
@@ -37,17 +39,19 @@ export function receiptPath(studio: string, sella: string, sessionId: string): s
   return join(resolve(studio), "receipts", sella, `${sessionId}.json`);
 }
 
-/** Writes the start-of-run receipt and returns its path. */
+/** Writes the start-of-run receipt and returns its path. `harness` defaults
+ *  to "run" (bisellium run's own receipts); `bisellium talk` passes the
+ *  profile id it actually used. */
 export function writeReceiptStart(
   studio: string,
-  fields: Pick<Receipt, "sella" | "sessionId" | "startedAt" | "cwd" | "cmd">,
+  fields: Pick<Receipt, "sella" | "sessionId" | "startedAt" | "cwd" | "cmd"> & Partial<Pick<Receipt, "harness">>,
 ): string {
   const path = receiptPath(studio, fields.sella, fields.sessionId);
   mkdirSync(dirname(path), { recursive: true });
-  // cmd is echoed verbatim by whoever ran `bisellium run` — it may well
-  // contain a token/key/secret/password passed as `--flag=value` or on a
-  // Bearer header; mask those before they land on disk.
-  const receipt: Receipt = { ...fields, cmd: fields.cmd.map((arg) => redact(arg)), harness: "run" };
+  // cmd is echoed verbatim by whoever ran `bisellium run`/`bisellium talk`
+  // — it may well contain a token/key/secret/password passed as
+  // `--flag=value` or on a Bearer header; mask those before they land on disk.
+  const receipt: Receipt = { ...fields, cmd: fields.cmd.map((arg) => redact(arg)), harness: fields.harness ?? "run" };
   writeFileSync(path, JSON.stringify(receipt, null, 2) + "\n");
   return path;
 }

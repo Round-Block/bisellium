@@ -136,6 +136,14 @@ export interface Provider {
 // allocation, taste calls, and lex changes.
 // ---------------------------------------------------------------------------
 
+/**
+ * Autonomy level (dossier §10), declared per collegium and driven by one
+ * scheduler (`bisellium tick`). Defaults to "L1" when a collegium doesn't
+ * declare one — scheduled cadence work, never dispatching or self-assigning.
+ */
+export const AUTONOMY_LEVELS = ["L0", "L1", "L2", "L3"] as const;
+export type AutonomyLevel = (typeof AUTONOMY_LEVELS)[number];
+
 export interface Collegium {
   id: string;
   projectId: string;
@@ -145,6 +153,8 @@ export interface Collegium {
   fallbackRoleId?: string;
   /** The lex document (LEX_TEMPLATE.md instance). */
   lexHref?: string;
+  /** L0 manual .. L3 continuous (dossier §10). Defaults to "L1". */
+  autonomy?: AutonomyLevel;
 }
 
 export interface Stipendium {

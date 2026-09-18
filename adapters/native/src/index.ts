@@ -10,6 +10,7 @@ import { parse as parseYaml } from "yaml";
 import type {
   ActorKind,
   Actum,
+  AutonomyLevel,
   Collegium,
   Lifecycle,
   Petitio,
@@ -50,8 +51,13 @@ export interface Manifest {
   studio: string;
   patron?: string;
   timezone?: string;
-  collegia: { id: string; name: string; magister: string; fallback?: string; lex?: string }[];
-  sellae: { id: string; collegium: string; kind?: ActorKind; model?: string }[];
+  /** `autonomy` (L0–L3, dossier §10) defaults to "L1" when absent; an
+   *  invalid value is `check`'s job to block (collegium.autonomy), not
+   *  this reader's — it's passed through as-is. */
+  collegia: { id: string; name: string; magister: string; fallback?: string; lex?: string; autonomy?: string }[];
+  /** `harness`: the @bisellium/shim harness profile id `bisellium talk`
+   *  drives this sella through — defaults to "claude-code" when absent. */
+  sellae: { id: string; collegium: string; kind?: ActorKind; model?: string; harness?: string }[];
   probationes: { id: string; name: string; kind: ProbatioKind; command?: string }[];
   wip_limit?: number;
   /** Overrides for the Defaults table in the dossier. */
@@ -132,6 +138,10 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
     magisterRoleId: d.magister,
     fallbackRoleId: d.fallback,
     lexHref: d.lex,
+    // check.ts validates the declared value (collegium.autonomy); an
+    // invalid string still passes through here rather than being silently
+    // coerced, so a consumer that skips check can't mistake garbage for L1.
+    autonomy: (d.autonomy as AutonomyLevel | undefined) ?? "L1",
   }));
 
   const sellae: Sella[] = manifest.sellae.map((s) => ({

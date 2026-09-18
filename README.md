@@ -62,7 +62,12 @@ npm install && npm run snapshot -- examples/sample-studio
    - `bisellium run` (worktree acquire/release + receipts) — done against git worktrees; a `treehouseProvider` seam exists and is picked up automatically when `treehouse` is on `PATH`, but the installed CLI (v1.8.0) doesn't accept `run`'s `--base` yet, so pass `--no-worktree` or omit `--base` on a machine with treehouse installed until that's reconciled.
    - `bisellium verify` (gate evidence from an actual command run, written back into an opus) — done via a local pipeline; the `no-mistakes` merge-blocking pipeline has no non-interactive "validate and report per-probatio" entry point yet, so it's a documented stub that always defers to the local runner.
    - Null fallbacks throughout: the sample and `studio` run fully without any of quota-axi, treehouse or no-mistakes installed.
-7. Harness shim + direct line + tick: `run` landed (above); `talk`, `tick`/`pause` not yet; firstmate evaluated as the L2 dispatcher. ← current
+7. Harness shim + direct line + tick — mostly done:
+   - `bisellium talk` (a direct line to one sella over a `claude-code`/`codex`/`git-only` harness profile, a deterministic-query fast path, resumable sessions, timeline + petitio/acta escalation) — done.
+   - `bisellium tick` (L1 scheduled autonomy: `check` + `health.json` always, due dailies/aerarium/traditio for `autonomy: L1+` collegia, dailies actually written via `talk`) — done.
+   - `bisellium pause` / `bisellium resume` (the manual brake: `tick` skips cadence work while paused; `run`/`talk` proceed with a one-line warning) — done.
+   - Patron and sella write commands (`handoff`, `emit`, `answer`, `greenlight`, `budget`) — done, wired into the CLI with tests.
+   - Not yet: firstmate as the L2 dispatcher; a sella's manifest `model` isn't passed through to its harness CLI yet, so every seat talks on the vendor's default model. ← current
 8. `packages/core` — partially done: JSONL event log and snapshot differ (`diffSnapshots`) landed with an in-memory `Store`; burn derivation and a query API over the store are not yet built there (query today is `packages/cli`'s file-based `answer()`, not a core API).
 9. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
 10. Tauri wrapper: tray + native needs-you notifications.
@@ -76,6 +81,13 @@ Cascade 2 landed item 6 (`providers`, `run`, `verify`, wired into the CLI with
 tests, `typecheck` and `check` green on both `examples/sample-studio` and
 `studio`) with the caveats noted above; it did not advance past item 7, which
 remains current.
+
+Cascade 3 landed the rest of item 7's CLI surface — `talk`, `tick` (L1),
+`pause`/`resume`, and the Patron/sella write commands — all wired into
+`main.ts` with `typecheck`, `npm test` and `check` green on both
+`examples/sample-studio` and `studio`; item 7's two remaining gaps (firstmate
+as the L2 dispatcher, and passing a sella's `model` through to its harness
+CLI) are noted above and carry forward.
 
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay

@@ -12,6 +12,7 @@ import { basename, isAbsolute, join, relative, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import {
   ACTUM_KINDS,
+  AUTONOMY_LEVELS,
   PROBATIO_KINDS,
   PROBATIO_STATUSES,
   PROVIDER_STATUSES,
@@ -183,11 +184,19 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellae = listOf("sellae");
   const probationes = listOf("probationes");
 
+  // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md,
+  // and every id here can end up as a path component elsewhere) — reject
+  // anything containing a path separator or a ".." segment before it ever
+  // reaches a join(), rather than relying on every downstream writer to
+  // re-derive this on its own.
+  const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
   const uniq = (key: string, rows: Dict[]) => {
     const seen = new Set<string>();
     for (const r of rows) {
       const id = str(r["id"]);
       if (!id) { add("manifest.shape", "block", `bisellium.yml#${key}`, "entry has no string id"); continue; }
+      if (!ID_RE.test(id) || id.includes(".."))
+        add("manifest.id.format", "block", `bisellium.yml#${key}`, `id "${id}" must be alphanumeric (., _, - allowed) with no path separators`);
       if (seen.has(id)) add("manifest.unique", "block", `bisellium.yml#${key}`, `duplicate id "${id}"`);
       seen.add(id);
     }
@@ -224,6 +233,11 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const fb = str(d["fallback"]);
     if (d["fallback"] !== undefined && (!fb || !sellaIds.has(fb)))
       add("collegium.fallback", "block", `bisellium.yml#${id}`, `fallback "${fb ?? ""}" is not a declared sella`);
+    if (d["autonomy"] !== undefined) {
+      const a = str(d["autonomy"]);
+      if (!a || !(AUTONOMY_LEVELS as readonly string[]).includes(a))
+        add("collegium.autonomy", "block", `bisellium.yml#${id}`, `autonomy "${a ?? ""}" invalid (must be L0–L3)`);
+    }
     const lex = str(d["lex"]);
     if (!lex) { add("lex.declared", "advise", `bisellium.yml#${id}`, "collegium has no lex"); continue; }
     const cp = join(root, lex);

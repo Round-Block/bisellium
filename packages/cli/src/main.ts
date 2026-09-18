@@ -14,13 +14,19 @@ import { answer } from "./query.js";
 import { runProviders } from "./providers.js";
 import { runCommand } from "./run.js";
 import { runVerify } from "./verify.js";
+import { runTalk } from "./talk.js";
+import { runTick } from "./tick.js";
+import { runPause, runResume } from "./pause.js";
+import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
-// `run` and `verify` are NOT listed here: both parse their own argv (run's
-// command line includes a "--" separator the generic parser below would
-// choke on; verify's flags are validated inside runVerify) — main.ts hands
-// them the raw, unparsed rest of argv instead of going through this table.
+// `run`, `verify`, `talk`, `tick`, `pause`, `resume`, `handoff`, `emit`,
+// `answer`, `greenlight` and `budget` are NOT listed here: each parses its
+// own argv (several have a trailing free-text argument — talk's message,
+// answer's reply — the generic parser below would mangle, and a couple use
+// a "--" separator it would choke on) — main.ts hands them the raw,
+// unparsed rest of argv instead of going through this table.
 const FLAGS_BY_COMMAND: Record<string, Set<string>> = {
   check: new Set(["--json", "--now", "--level", "--repo"]),
   init: new Set(["--now", "--timezone"]),
@@ -38,7 +44,16 @@ const USAGE =
   "       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n" +
   "       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
   "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
-  "       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]";
+  "       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]\n" +
+  "       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>\n" +
+  "       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]\n" +
+  "       bisellium pause [--studio <dir>] [--reason <text>]\n" +
+  "       bisellium resume [--studio <dir>]\n" +
+  "       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium emit <json> [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium answer --petitio <id> <reply…> [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]";
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -48,6 +63,23 @@ async function main(argv: string[]): Promise<number> {
   // sees their args.
   if (cmd === "run") return (await runCommand(rest)).exitCode;
   if (cmd === "verify") return (await runVerify(rest)).exitCode;
+  if (cmd === "talk") return (await runTalk(rest)).exitCode;
+  if (cmd === "tick") return (await runTick(rest)).exitCode;
+  if (cmd === "pause") return (await runPause(rest)).exitCode;
+  if (cmd === "resume") return (await runResume(rest)).exitCode;
+  if (cmd === "handoff") return runHandoff(rest).exitCode;
+  if (cmd === "emit") return runEmit(rest).exitCode;
+  // answer/greenlight/budget are Patron writes: BISELLIUM_ROLE=patron
+  // before calling, so their timeline/patron.jsonl line records the
+  // correct role (docs/ADOPTION.md: "the CLI runs them with
+  // BISELLIUM_ROLE=patron"; the functions default to "patron" on their
+  // own only so tests calling them directly don't need this wrapper).
+  if (cmd === "answer" || cmd === "greenlight" || cmd === "budget") {
+    process.env["BISELLIUM_ROLE"] = "patron";
+    if (cmd === "answer") return runAnswer(rest).exitCode;
+    if (cmd === "greenlight") return runGreenlight(rest).exitCode;
+    return runBudget(rest).exitCode;
+  }
 
   const allowed = (cmd !== undefined ? FLAGS_BY_COMMAND[cmd] : undefined) ?? new Set<string>();
   const opts = new Map<string, string>();

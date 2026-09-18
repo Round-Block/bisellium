@@ -7,13 +7,14 @@
  * byte-for-byte. Kept out of main.ts on purpose — wired in by the
  * integrator alongside the other builders' commands.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, relative, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
 import { readManifest, snapshotDir } from "@bisellium/adapter-native";
 import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline } from "@bisellium/pipeline";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
+import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -87,14 +88,6 @@ function isGitRepo(dir: string): boolean {
 /** POSIX-separated path of `path` relative to `base`. */
 function toPosixRelative(base: string, path: string): string {
   return relative(base, path).split(sep).join("/");
-}
-
-/** Front-matter split that keeps the body byte-for-byte — unlike
- *  `@bisellium/adapter-native`'s readFront, which trims the body. */
-function splitFront(raw: string): { front: string; body: string } | undefined {
-  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw.replace(/^﻿/, ""));
-  if (!m) return undefined;
-  return { front: m[1] ?? "", body: m[2] ?? "" };
 }
 
 export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Promise<RunVerifyResult> {
@@ -211,18 +204,18 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
 
   // Merge, don't replace: set status/evidence/certifies individually on the
   // existing probatio node so sibling keys (waived_by, note, …) and comments
-  // survive — only these three keys are ever tool-written.
-  for (const [gateId, r] of Object.entries(results)) {
-    doc.setIn(["probationes", gateId, "status"], r.status);
-    doc.setIn(["probationes", gateId, "evidence"], r.evidence);
-    doc.setIn(["probationes", gateId, "certifies"], r.certifies);
-  }
-  // lineWidth: 0 disables yaml's default 80-col reflow — otherwise any
-  // untouched flow-mapping line longer than 80 chars (e.g. a real traditio
-  // line) gets refolded into a multi-line block on the first tool-written
-  // change to an opus, producing a spurious diff on data this write must
-  // not touch (spec: "preserving all other front matter").
-  writeFileSync(opusPath, `---\n${doc.toString({ lineWidth: 0 })}---\n${split.body}`);
+  // survive — only these three keys are ever tool-written. Nothing else
+  // touches opusPath between the read above and this write, so re-parsing
+  // it here (via the shared editOpusFrontMatter seam every write command
+  // uses — see frontmatter.ts) is equivalent to mutating `doc` in place.
+  editOpusFrontMatter(opusPath, (freshDoc) => {
+    for (const [gateId, r] of Object.entries(results)) {
+      freshDoc.setIn(["probationes", gateId, "status"], r.status);
+      freshDoc.setIn(["probationes", gateId, "evidence"], r.evidence);
+      freshDoc.setIn(["probationes", gateId, "certifies"], r.certifies);
+    }
+    return undefined;
+  });
 
   let anyFailed = false;
   for (const id of waivedIds) console.log(`${id}: waived (untouched)`);
