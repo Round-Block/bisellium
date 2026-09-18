@@ -107,6 +107,38 @@ never had to block on each other's `Store` signature). Carried forward:
 via curl/tests and its own built-in route-index page, not a real UI; item 7's
 two gaps above still stand.
 
+Cascade 4b landed the instructions layer (item 11: `CLAUDE.md`/`AGENTS.md`/
+`GLOSSARY.md` rendered from one template + the manifest, `checkInstructions`,
+the `.claude/` hook profile, subagents and slash commands — W-017) and the
+process-as-data layer (a Design collegium, `studio/briefs/*`,
+`studio/decisions/*`, `bisellium new --spec/--brief`, `bisellium retro` and
+its lesson/petitio/pruning-candidate machinery, `rules/{lex,process}.ts` —
+W-018), both now actually wired into `main.ts`/`check.ts` and committed —
+`typecheck`, `npm test` and `check` are green on both `examples/sample-studio`
+and `studio`, and `bisellium` now has a real `bin` entry
+(`packages/cli/bin/bisellium.mjs`). Cascade sizing is data too (D-012, backed
+by `cascades/sizing.json`) and a cascade's usage is a retrospectio input
+(D-013): `bisellium emit --usage` records real per-agent spend, and
+`bisellium retro`'s optional `usage` input adds a "Usage" section to the
+acta it drafts (totals, checking/building ratio, tokens per opus, trend vs.
+the previous retro, posture from the current aerarium).
+
+What's still halted, honestly (`studio/opera/W-01{6,8,9}.md` carry the
+detail): W-016 (server/core correctness — the `@bisellium/commands`
+workspace move, the SQLite index as `apps/server`'s read path, and
+write-route auth were never built) and W-019 (repo hygiene — no eslint
+config, no CI, no docs registry, no `CONTRIBUTING.md`) landed nothing on
+disk; their halts from cascade 4b's own retro (worktree fragmentation, no
+persistent bookkeeping) no longer apply — the tree is committed now — but
+the underlying work itself still doesn't exist. W-019's absence is also why
+W-017 and W-018, despite each meeting its own brief's acceptance criteria in
+full, cannot reach `state: done`: `studio/bisellium.yml` declares `lint`
+(`npm run -s lint`) as a studio-wide automated probatio, no lint script
+exists anywhere in this repo, and `check.ts` blocks `done` while any
+automated gate is unpassed (automated gates can't be waived). This pass
+deliberately did not invent an eslint config from scratch to paper over
+that — picking one is W-019's call, not a wiring/greening pass's.
+
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay
 reproduces the live view; removing one adapter leaves the other untouched.

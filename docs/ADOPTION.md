@@ -99,6 +99,52 @@ contract `bisellium retro` refuses to violate — see below). `lesson
 `cascade` values on two or more distinct lessons — the same mistake made
 once is a lesson; made twice, it's a pattern the lex should probably name.
 
+## bisellium retro
+
+```bash
+npm run bisellium -- retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+```
+
+Validates every `reviewFindings[].evidence` first (non-empty, no dead
+relative href — the same contract `lesson.evidence` blocks) and writes
+nothing at all if any of it fails, naming the offending class. Once
+validated, it drafts `acta/<date>-retro-<N>.md`: numbers (verifier issues,
+tests, fix rounds, mutations caught, agents), findings by class, one lesson
+stub per distinct class (`lessons/L-nnn.md`), recurrence (the same
+`lesson.recurrent` computation `check` runs, against history plus this
+cascade), proposals (a recurring class files a petitio to the Patron; a
+one-off is adopted alone as an advisory rule), and pruning candidates
+(decisions whose `kill_when` text matches a class this cascade actually
+saw — listed, never edited).
+
+`--from <json>`'s input can carry an optional `usage` (D-013, "usage is a
+retrospectio input"):
+
+```json
+{
+  "usage": {
+    "agents": [{ "label": "builder-a", "role": "builder", "model": "claude-sonnet-5", "tokens": 12000, "minutes": 40 }],
+    "totalTokens": 16500,
+    "byModel": { "claude-sonnet-5": 12500, "claude-opus-5": 4000 },
+    "byRole": { "builder": 12000, "reviewer": 4500 },
+    "waste": { "reruns": 1, "refused": 0, "fixRounds": 1 }
+  }
+}
+```
+
+When `usage` is present, the acta gains a "## Usage" section: totals, a
+by-model and by-role breakdown, the checking/building ratio (Opus
+verify+review tokens ÷ builder tokens, split by each agent's `role`),
+tokens per opus, a trend against the previous retro (reads the last one's
+own "Total tokens:" line back out of its markdown), and posture read from
+`aerarium/<current ISO week>.yml`. Absent `usage` entirely, no section is
+added and nothing else about the draft changes — an existing caller that
+never tracked usage sees byte-identical output. `scripts/
+usage-from-workflow.mjs` builds this `usage` object (and the matching
+`bisellium emit --usage` calls) straight from a Claude Code Workflow
+tool's own output file — see `cascades/README.md`'s "Usage tracking"
+section.
+
 ## bisellium.yml
 
 ```yaml
@@ -409,6 +455,18 @@ taken from the log's current length. `events.jsonl` is live/derived
 telemetry, not the studio's committed record — gitignored, same reasoning as
 `receipts/` and
 `timeline/`.
+
+`emit --usage <tokens> --opus <id> --sella <sella> --model <model>
+[--studio <dir>] [--now <iso>]` is a shortcut over the same append: instead
+of a `<json>` positional, it builds a `gen_ai.usage` event with
+`gen_ai.usage.total_tokens: <tokens>`, `gen_ai.request.model: <model>`,
+`workflow.item.id: <opus>`, `workflow.actor.role: <sella>` and, when the
+named opus's own front matter declares a `collegium`, `workflow.department:
+<that collegium>`. This is what makes `burn` (`packages/core/src/
+index-db.ts`) derive a collegium's period spend from real recorded usage,
+rather than nothing at all. `cascades/README.md`'s "Usage tracking" section
+and `scripts/usage-from-workflow.mjs` are the documented bridge from a
+Workflow-tool run's own output into a series of these calls.
 
 `answer`, `greenlight` and `budget` are Patron writes: the CLI runs them
 with `BISELLIUM_ROLE=patron`, and each one appends a line to
