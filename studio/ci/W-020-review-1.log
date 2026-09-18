@@ -1,0 +1,45 @@
+W-020 — acceptance record, round 1 (cascade 6)
+recorded by: builder-a · at: 2026-09-19T13:00:00Z
+under review: branch cascade-6/W-020
+  967ad4f "feat(W-020): bisellium red — per-behaviour evidence store"
+  d8189fe "feat(W-020): bisellium ready, done, review — lifecycle writes"
+
+This is the builder's own acceptance record from studio/briefs/W-020.md's
+Acceptance section, run to close this opus with the commands it ships
+rather than by hand. It is not a substitute for an independent eng-lead
+review; recorded here as directed by the brief's dogfood sequence.
+
+WHAT WAS RUN
+
+  node --import tsx packages/cli/src/lifecycle.test.ts .   84 assertions, 0 FAIL
+  npm test                                                  PASS (full suite)
+  npm run -s typecheck                                      PASS
+  npm run -s lint                                           PASS (0 errors)
+  npm run -s format:check                                   PASS
+  npm run -s check -- studio --repo .                       PASS — 0 blocking, 28 advisory
+  npm run -s check -- examples/sample-studio --repo .       PASS — 0 blocking, 20 advisory
+
+EVIDENCE
+
+  Reds for behaviours 9-11 (red's own) captured manually before the file
+  existed (ERR_MODULE_NOT_FOUND), kept at
+  /home/edckt/.bisellium-evidence/cascade-6/w020/behaviours-09-11-red.log.
+
+  Reds for behaviours 1-8 and 12 captured with the working `bisellium red`
+  against the real officina, before ready/done/review existed (the test
+  file's own import failed with SyntaxError) — studio/ci/reds/W-020/
+  01.log..08.log, 12.log.
+
+SCOPE CHECK
+
+  Files owned per the brief: packages/commands/src/lifecycle.ts (new),
+  packages/commands/src/writes.ts (export-only), packages/commands/src/
+  index.ts (one line), packages/cli/src/lifecycle.ts (shim, new),
+  packages/cli/src/main.ts (four dispatch + four usage lines only),
+  packages/cli/src/lifecycle.test.ts (new), root package.json (one
+  appended scripts.test entry), scripts/opus-ready.ts and
+  scripts/opus-close.ts (deleted). No other file touched.
+
+VERDICT: PASS, pending an independent eng-lead review before this record
+is treated as satisfying that gate for anyone other than this opus's own
+bootstrap close.
