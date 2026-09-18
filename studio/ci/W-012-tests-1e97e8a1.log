@@ -1,0 +1,204 @@
+certifies: tree:1e97e8a16adc780fc551760efa675b0784874f23
+command: npm test -s
+exit code: 0
+
+PASS  redaction: receipt still masked too                        ["deploy with token=*** please"]
+PASS  unknown sella: exits 2                                     2
+PASS  git-only: exits 2                                          2
+PASS  fenced petitio: exits 0                                    0
+PASS  fenced petitio: no 'petitio opened' line                   ["FAKE: NOTE\n```\nPETITIO: FENCED ASK\n```"]
+PASS  fenced petitio: no new petitio file                        2 -> 2
+PASS  echoed petitio: exits 0                                    0
+PASS  echoed petitio: no 'petitio opened' line                   ["FAKE: STATUS\nPETITIO: NEED HELP WITH SCOPE"]
+PASS  echoed petitio: no new petitio file                        3 -> 3
+PASS  no sessionId: exits 0                                      0
+PASS  no sessionId: session file written                         
+PASS  no sessionId: sessionId recorded as null                   {"harness":"fake","sessionId":null,"startedAt":"2026-09-18T04:17:35.713Z","lastAt":"2026-09-18T04:17:35.713Z","turns":1}
+PASS  no sessionId: timeline entries carry a note                [{"at":"2026-09-18T04:17:35.713Z","sella":"eng-lead","direction":"in","text":"hello","sessionId":"","note":"no sessionId from harness"},{"at":"2026-09-18T04:17:35.713Z","sella":"eng-lead","direction":"out","text":"no id from me","sessionId":"","note":"no sessionId from harness"}]
+PASS  no sessionId: second call still exits 0 (never attempted resume) 0
+PASS  filterEnv: secret-shaped var stripped                      []
+PASS  filterEnv: PATH still present                              
+PASS  limit-in-reply-text: exits 0, not 3                        0
+PASS  limit-in-reply-text: reply delivered as-is                 ["we hit a rate limit yesterday, all clear now (429 was transient)"]
+PASS  limited fake harness: exits 3                              3
+PASS  paused talk: still exits 0                                 0
+PASS  paused talk: prints a pause warning                        ["warning: studio is paused since 2026-09-18T04:17:35.757Z: investigating — proceeding (pause stops starting, not talking)"]
+PASS  start: exitCode 0                                          0
+PASS  start: receipt file exists                                 /********.json
+PASS  start: receipt harness is claude-code                      {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/********","cmd":[],"harness":"claude-code"}
+PASS  start: receipt sessionId from payload                      {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/********","cmd":[],"harness":"claude-code"}
+PASS  start: receipt not yet closed                              {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/********","cmd":[],"harness":"claude-code"}
+traditio reminder: W-002 handoff is 30.3h old (next: wire log filter, blocked_on: none)
+PASS  stop: exitCode 0                                           0
+PASS  stop: receipt closed (endedAt set)                         {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/********","cmd":[],"harness":"claude-code","endedAt":"2026-09-18T17:01:00.000Z","exitCode":0,"durationMs":60000}
+PASS  stop: durationMs computed from the start receipt           {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/********","cmd":[],"harness":"claude-code","endedAt":"2026-09-18T17:01:00.000Z","exitCode":0,"durationMs":60000}
+PASS  stop: sella/sessionId survive the rewrite                  {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/********","cmd":[],"harness":"claude-code","endedAt":"2026-09-18T17:01:00.000Z","exitCode":0,"durationMs":60000}
+PASS  tool: exitCode 0                                           0
+PASS  tool: events.jsonl written under .bisellium/               /tmp/bisellium-hooks-tool-L4na9A/.bisellium/events.jsonl
+PASS  tool: exactly one event written                            1
+PASS  tool: event name is workflow.*                             workflow.tool_used
+PASS  tool: attrs carry the tool name                            {"workflow.actor.role":"builder-1","tool.name":"Edit","workflow.source":"hook","workflow.source.seq":0,"tool.file_path":"/repo/notes.md?token=***"}
+PASS  tool: file path token= value is masked                     /repo/notes.md?token=***
+PASS  tool: raw secret value is gone                             /repo/notes.md?token=***
+PASS  malformed: exitCode 0 (never blocks the harness)           0
+PASS  malformed: exactly one stderr line                         ["hook-event start: invalid JSON on stdin: Expected property name or '}' in JSON at position 1 (line 1 column 2)"]
+PASS  malformed: nothing on stdout                               []
+PASS  malformed: no receipt written                              
+PASS  print: exitCode 0                                          0
+PASS  print: exactly one stdout block                            1
+PASS  print: explains, on stderr, that it doesn't write settings.json ["paste the block above into .claude/settings.json under its \"hooks\" key (merge with anything already there — bisellium never writes that file for you). SubagentStart is intentionally left unwired (documented, no-op: a subagent has no sella of its own to hand a receipt or boot bundle to)."]
+PASS  print: hooks.SessionStart present                          ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: hooks.PreCompact present                            ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: hooks.Stop present                                  ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: hooks.PostToolUse present                           ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: SubagentStart intentionally absent                  ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: the sella appears in the printed block              {"hooks":{"SessionStart":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium context --sella 'eng-lead' --studio '/studio'","timeout":10},{"type":"command","command":"bisellium hook-event start --sella 'eng-lead' --studio '/studio'","timeout":5}]}],"PreCompact":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium context --sella 'eng-lead' --studio '/studio'","timeout":10}]}],"Stop":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event stop --sella 'eng-lead' --studio '/studio'","timeout":5}]}],"PostToolUse":[{"matcher":"Write|Edit","hooks":[{"type":"command","command":"bisellium hook-event tool --sella 'eng-lead' --studio '/studio'","timeout":5}]}]}}
+PASS  print: unsupported --harness is a usage error              2
+PASS  check: exitCode 0                                          0
+PASS  check: builder-1 reported dead before any receipt exists   ["producer: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  check setup: hook-event start succeeded                    0
+PASS  check: builder-1 reported alive after hook-event start     ["producer: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder-1: harness=claude-code last=sess-live (started 2026-09-18T17:00:00.000Z) alive","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  check: an untouched sella (builder-2) is still dead        ["producer: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder-1: harness=claude-code last=sess-live (started 2026-09-18T17:00:00.000Z) alive","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  checkStudio: no hook.dead before the studio has any receipts/ at all []
+PASS  check rule setup: hook-event start succeeded               0
+PASS  checkStudio: hook.dead is advise-level, never block        [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+PASS  checkStudio: builder-2 (never run) flagged hook.dead       [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+PASS  checkStudio: builder-1 (hook-started) NOT flagged hook.dead [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+PASS  print(argv): exitCode 0                                    0
+PASS  print(argv): SessionStart command has no same-line env-var indirection bisellium context --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /********` dir'
+PASS  print(argv): PreCompact command has no same-line env-var indirection bisellium context --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /********` dir'
+PASS  print(argv): Stop command has no same-line env-var indirection bisellium hook-event stop --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /********` dir'
+PASS  print(argv): PostToolUse command has no same-line env-var indirection bisellium hook-event tool --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /********` dir'
+PASS  print(argv): stub shell run exited 0                       {"status":0,"stderr":""}
+PASS  print(argv): subcommand is context                         ["context","--sella","builder-1","--studio","/tmp/weird \"studio's\" $HOME `touch /********` dir"]
+PASS  print(argv): --sella resolves to the literal sella, not empty ["context","--sella","builder-1","--studio","/tmp/weird \"studio's\" $HOME `touch /********` dir"]
+PASS  print(argv): --studio resolves to the literal studio, special chars intact ["context","--sella","builder-1","--studio","/tmp/weird \"studio's\" $HOME `touch /********` dir"]
+PASS  print(argv): backtick/$HOME inside the studio value never executed /********
+PASS  compact: exitCode 0                                        0
+PASS  compact: timeline file written                             /********.jsonl
+PASS  compact: exactly one timeline entry                        1
+PASS  compact: kind is compact                                   {"at":"2026-09-18T17:00:00.000Z","sella":"builder-1","direction":"out","kind":"compact","text":"context compacted (manual token=***","sessionId":"sess-compact-token=***"}
+PASS  compact: trigger token= value is masked                    context compacted (manual token=***
+PASS  compact: raw secret value is gone from text                context compacted (manual token=***
+PASS  compact: sessionId is redacted too                         sess-compact-token=***
+PASS  traversal(start): still exits 0 (never blocks the harness) 0
+PASS  traversal(start): nothing written outside the studio dir   /********.json
+PASS  traversal(start): no receipt written inside the studio either 
+PASS  traversal(stop): still exits 0 (never blocks the harness)  0
+PASS  traversal(stop): nothing written outside the studio dir    /********.json
+PASS  traversal(long): still exits 0                             0
+PASS  traversal(long): stderr stays short (no echoed 200KB value) [75]
+PASS  traversal(sella): still exits 0                            0
+PASS  traversal(sella): nothing written outside the studio dir   /********.json
+PASS  SessionStart: the printed profile also runs hook-event start (not just context) ["bisellium context --sella 'builder-1' --studio '/studio'","bisellium hook-event start --sella 'builder-1' --studio '/studio'"]
+PASS  SessionStart wiring: hook-event start exits 0              0
+PASS  SessionStart wiring: no receipt.shape block finding        []
+PASS  SessionStart wiring: hooks check reports builder-1 alive   ["producer: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder-1: harness=claude-code last=sess-real-session-start (started 2026-09-18T17:00:00.000Z) alive","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  re-ingesting an identical snapshot yields no new events    0 events
+PASS  ... and the index gains no new rows                        {"events":41,"opera":7,"petitiones":2,"providers":2,"lastSeq":40} vs {"events":41,"opera":7,"petitiones":2,"providers":2,"lastSeq":40}
+PASS  rebuild() from that log matches the incrementally-built index {"events":41,"opera":7,"petitiones":2,"providers":2,"lastSeq":40} vs {"events":41,"opera":7,"petitiones":2,"providers":2,"lastSeq":40}
+PASS  needsYou: exactly one pending human probatio               [{"opus":"W-004","probatio":"patron"}]
+PASS  needsYou: it is W-004's patron gate                        {"opus":"W-004","probatio":"patron"}
+PASS  needsYou: agent-kind pending gates (W-003 qa, W-005 review) are excluded [{"opus":"W-004","probatio":"patron"}]
+PASS  needsYou: exactly one petitio needing you                  [{"id":"A-1","opus":"W-004","from":"eng-lead","opened":"2026-09-17T13:00:00Z"}]
+PASS  needsYou: it is A-1, from eng-lead, about W-004            {"id":"A-1","opus":"W-004","from":"eng-lead","opened":"2026-09-17T13:00:00Z"}
+PASS  needsYou: A-2 (awaiting_reply, opened by the Patron) is excluded 
+PASS  exactly one state_changed is appended                      1
+PASS  it is W-002 building -> verifying                          {"id":"sample-studio:41","name":"workflow.state_changed","ts":"2026-09-17T13:00:00Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-002","workflow.department":"engineering","workflow.state.from":"building","workflow.state.to":"verifying","workflow.source":"sample-studio","workflow.source.seq":41,"workflow.time.derived":true}}
+PASS  opera_state reflects the new state                         verifying
+PASS  opera_state keeps W-002's collegium                        engineering
+PASS  burn sums total_tokens for engineering                     1234
+PASS  burn sums input+output for art                             150
+PASS  burn ignores a usage event from a different period         
+PASS  first ingest on a fresh studio dir produces events         41
+PASS  restart: re-ingesting an unchanged snapshot emits zero events 0 events
+PASS  rebuildIndex() stats match the incrementally-built index   {"events":42,"opera":7,"petitiones":2,"providers":2,"lastSeq":41} vs {"events":42,"opera":7,"petitiones":2,"providers":2,"lastSeq":41}
+PASS  sanity: the incremental index actually recorded more than zero opera 7
+PASS  shape-corrupt log: Store construction does not throw       undefined
+PASS  shape-corrupt log: every bad line (1 unparseable + 4 wrong-shaped) counted as corrupt 5
+PASS  shape-corrupt log: replay() over the sanitized log does not throw 
+PASS  shape-corrupt log: burn() over the sanitized log does not throw 
+PASS  corrupt index db: Index construction does not throw        undefined
+PASS  corrupt index db: stats() reads back a fresh, empty index  {"events":0,"opera":0,"petitiones":0,"providers":0,"lastSeq":-1}
+PASS  corrupt index db: Store construction does not throw either undefined
+PASS  duplicate apply: events count unchanged                    {"events":1,"opera":1,"petitiones":0,"providers":0,"lastSeq":0} vs {"events":1,"opera":1,"petitiones":0,"providers":0,"lastSeq":0}
+PASS  duplicate apply: lastSeq does not drift ahead of the actual row count {"events":1,"opera":1,"petitiones":0,"providers":0,"lastSeq":0} vs {"events":1,"opera":1,"petitiones":0,"providers":0,"lastSeq":0}
+PASS  officina: 200                                        200
+PASS  officina: 4 collegia                                 [{"id":"production","name":"Production","magister":"producer","fallback":"eng-lead","autonomy":"L1"},{"id":"engineering","name":"Engineering","magister":"eng-lead","autonomy":"L1"},{"id":"art","name":"Art","magister":"art-lead","autonomy":"L1"},{"id":"qa","name":"QA","magister":"qa-lead","autonomy":"L1"}]
+PASS  events-log: no stray events.jsonl at studio root     /********.jsonl
+PASS  events-log: real log exists at .bisellium/events.jsonl /********/.bisellium/events.jsonl
+PASS  inbox: 200                                           200
+PASS  inbox: lists W-004                                   ["W-004"]
+PASS  inbox: lists A-1                                     ["A-1"]
+PASS  aerarium: 200                                        200
+PASS  aerarium: engineering posture conserve               {"collegium":"engineering","period":"2026-W38","allowance":{"tokens":3000000},"burn":{"tokens":1880000},"posture":"conserve"}
+PASS  opus/W-004: 200                                      200
+PASS  opus/W-004: has traditio                             {"sella":"builder-1","stage":"review","next":"await patron call","blocked_on":"patron","at":"2026-09-17T09:58:00Z"}
+PASS  opus/NOPE: 404                                       404
+PASS  opus/NOPE: {error}                                   {"error":"unknown opus"}
+PASS  timeline/nobody: 404                                 404
+PASS  timeline/nobody: {error}                             {"error":"unknown sella"}
+PASS  greenlight: 200                                      200
+PASS  greenlight: ok true, exitCode 0                      {"ok":true,"exitCode":0,"output":"W-007: greenlit"}
+PASS  opus/W-007: state greenlit                           {"id":"W-007","title":"Seasonal event framework","kind":"feature","collegium":"engineering","state":"greenlit","probationes":{}}
+PASS  _poll: absorbs the greenlight diff                   {"ok":true,"ingested":1}
+PASS  sse setup: W-002's state line found and replaced     
+PASS  _poll: 200                                           {"ok":true,"ingested":1}
+PASS  sse: exactly one state_changed event for W-002       [{"id":"server:42","name":"workflow.state_changed","ts":"2026-09-18T17:00:00.000Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-002","workflow.department":"engineering","workflow.state.from":"building","workflow.state.to":"verifying","workflow.source":"server","workflow.source.seq":42,"workflow.time.derived":true}}]
+PASS  _poll: 404 outside NODE_ENV=test                     404
+PASS  close: port released                                 
+PASS  events-log: greenlight's own cli event visible after restart ["workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.greenlight","workflow.state_changed","workflow.state_changed"]
+PASS  events-log: restart does not replay item_appeared events again before=7 after=7
+PASS  close: resolves within 3s with an open SSE client connected elapsedMs=1
+PASS  close: resolves within 3s after the SSE client aborted elapsedMs=0
+PASS  talk overlap: request A (message 'one') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: ONE"}
+PASS  talk overlap: request B (message 'two') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: TWO"}
+PASS  talk overlap: console.log restored to the real console afterwards 
+PASS  talk overlap: console.error restored to the real console afterwards 
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+working tree is dirty; commit or pass --allow-dirty
+--stage "review" does not match opus state "building"
+unknown sella "nobody" — not declared in bisellium.yml
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+emit: event needs a non-empty string "name"
+--ask-back requires petitio "A-1" to be needs_you (currently awaiting_reply)
+W-007 is not in backlog (state: greenlit)
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+hooks print: --harness must be "claude-code" (got "codex")
+usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+hook-event start: payload session_id is not a plain id (no path separators)
+hook-event stop: payload session_id is not a plain id (no path separators)
+hook-event start: --sella must be a plain id (no path separators)
+GET /api/officina 200 3ms
+GET /api/inbox 200 11ms
+GET /api/aerarium 200 4ms
+GET /api/opus/W-004 200 1ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+POST /api/greenlight 200 6ms
+GET /api/opus/W-007 200 0ms
+POST /api/_poll 200 4ms
+POST /api/_poll 200 4ms
+POST /api/_poll 404 0ms
+GET /api/events 200 0ms
+GET /api/events 200 1ms
+GET /api/live 200 101ms
+POST /api/talk 200 87ms
+POST /api/talk 200 129ms
+
