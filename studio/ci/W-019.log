@@ -1,0 +1,29 @@
+SCOPE NOTE FIRST: the relayed user voice this run was a question — "and it's a symptom of the lack of persistance in the repo right?" — not an instruction to build. Builder D's refusal to act on the computed task's "you are builder D again, fix all blocking issues" framing was CORRECT and is not counted as a defect below. I made no edits and ran nothing that writes to the repo; every finding below is from read-only inspection.
+
+CONFIRMING THE USER'S PREMISE (direct evidence, not inference)
+HEAD is 51fb2ba "studio: W-012 verification logs", last real commit from 2026-09-18T12:23:00Z (W-012).
+Zero commits from cascade 4b (W-016..W-019) are in the repo.
+`git status --porcelain` shows 37 dirty paths: 15 modified + 22 untracked.
+studio/briefs/ and all four studio/opera/W-{016,017,018,019}.md files are untracked (`??`).
+No ci/<item>.log files existed before this verification pass.
+
+THE LACK OF PERSISTENCE IN THE REPO IS THE ROOT CAUSE
+
+Direct consequences:
+1. Cascade state (what was asked, what each builder decided, what each opus is in) exists ONLY in loose files and relayed computed task text. No chain of evidence in git history.
+2. Shared-file edits (check.ts, query.ts, store.ts, bisellium.yml, leges) have zero attribution to any builder because nothing has been committed per-builder.
+3. A leftover `stash@{0}` from an earlier session remains (git stash drop was blocked by permission checks).
+4. Probatio results (npm test, typecheck, check) cannot be traced to the cascade that introduced them.
+5. No way to resume from recorded state on the next run — the entire cascade orchestration record must be recomputed.
+
+BUILDER D'S WORK THIS TURN
+- Refused to implement the computed task's "fix all blocking issues" framing (correct call: the user's question is not a build instruction).
+- Correctly diagnosed the root cause: lack of cascade bookkeeping persistence.
+- Made zero edits, zero commits, zero side effects.
+
+FINDINGS FOR CLOSURE
+- No hermetic test pass / redEvidence recording against W-019 brief behaviours.
+- The repo hygiene item (lint, format, CI, docs registry, contributing) is blocked until cascade bookkeeping is persistent.
+- Acceptance suite: npm test -s exits 1 with 6 failures in tick.test.ts (unrelated to W-019, caused by shared-tree fragmentation).
+
+VERDICT: FAIL - Item cannot be closed without persistent cascade bookkeeping in the repo.

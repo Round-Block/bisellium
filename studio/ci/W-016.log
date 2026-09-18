@@ -1,0 +1,20 @@
+VERDICT: FAIL. The builder did no builder work this turn (it answered the user's clarifying question instead), so there is nothing to certify against the W-016 brief: zero redEvidence for behaviours 1-15, and the acceptance suite is red. Every factual claim the builder DID make, I independently confirmed.
+
+BUILDER CLAIMS — ALL CONFIRMED
+- Single worktree: `git worktree list` -> only /home/edckt/projects/bisellium. 15 modified + ~22 untracked paths, all uncommitted.
+- npm test red for exactly the failures described: 6 failures in tick.test.ts per the builder report.
+- typecheck clean, as verified.
+
+SUBSTANTIVE FINDINGS
+- No redEvidence recorded against any behaviour (all empty for W-016 cascade entry).
+- Acceptance suite (npm test -s) fails: exit code 1, 6 failures in tick.test.ts.
+- Shared-file rule violation: packages/cli/src/check.ts, query.ts, store.ts were edited in the shared tree with no per-builder attribution and no coordination.
+- The untracked CLAUDE.md, AGENTS.md, GLOSSARY.md files suggest documentation work was sketched but not integrated.
+- No ci/<item>.log files exist for any cascade item yet.
+
+ROOT CAUSE
+The shared worktree / lack of persistent cascade bookkeeping (opera state, briefs, logs) means:
+1. Builders work in the same tree with no way to isolate or bisect changes.
+2. Changes cannot be attributed to builders per-commit.
+3. Probatio results (test failures, typecheck) have no chain of evidence connecting them to specific behaviours or builder decisions.
+4. The cascade orchestration state exists only in the relayed computed task text, not in the repo — no way for the next run to resume from recorded state.

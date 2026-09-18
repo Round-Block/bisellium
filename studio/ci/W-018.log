@@ -1,0 +1,20 @@
+ANSWER TO THE USER'S QUESTION FIRST: yes — confirmed independently, not taken from the builder report. HEAD is still 51fb2ba "studio: W-012 verification logs"; `git log` shows zero commits from the W-016..W-019 cascade; `git status --porcelain` shows 37 dirty paths (15 modified, 22 untracked). All four builders' work sits in one shared uncommitted tree. Three consequences are directly observable: (a) a shared-file edit silently broke another builder's owned tests with nothing to bisect; (b) the process as data has no persistent record in the repo — every cascade decision, redEvidence, and state transition lives only in computed task text and loose files; (c) no attribution trail per builder.
+
+BUILDER CLAIMS — PARTIALLY VERIFIED
+- W-018 brief scope: Design collegium, spec, leges, decisions, lessons, retro
+- Untracked files: cascades/, CLAUDD.md fragments suggest work was sketched
+- No builder work committed against this item
+- Acceptance suite failures: 6 failures in tick.test.ts, unrelated to W-018 scope
+
+ROOT CAUSE OF FAILURE
+Same as W-016: shared worktree with no cascade bookkeeping / persistence in the repo means this item cannot be verified as "done" independently. The work exists only as loose files in a shared tree, with no per-builder commit history and no recorded redEvidence against the brief behaviours.
+
+MISSING FOR CLOSURE
+- No briefs/, leges/design.md updates
+- No decisions recorded in the studio process
+- No retro recorded
+- No leges for the design collegium formalized
+- Zero redEvidence for any W-018 behaviour against acceptance suite
+
+NOTE
+The user's original question ("and it's a symptom of the lack of persistance in the repo right?") is CONFIRMED. This item (and W-016, W-019) cannot close without persistent cascade bookkeeping in the repo.

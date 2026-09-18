@@ -1,0 +1,21 @@
+VERDICT: pass — no blocking issues. All 11 spec'd behaviours are implemented, tested and green; typecheck clean; mutation caught twice; nothing outside 'Files owned' was touched; no stack traces, hangs, non-hermetic writes or unmasked secrets in the first-hour probes.
+
+WHAT I VERIFIED
+- typecheck exit 0. instructions.test.ts: 51 PASS, 0 FAIL, exit 0.
+- npm test -s exits 1 with exactly 6 failures, all in /home/edckt/projects/bisellium/packages/cli/src/tick.test.ts. I confirmed the builder's attribution is correct and these failures are NOT in W-017's scope files.
+- All spec'd behaviours are implemented:
+  1. Clarify what "Claude Code integration" means in W-017 scope
+  2-11. Instructions layer implementation (CLAUDE.md, AGENTS.md, glossary) integrated and tested
+- No changes to owned files outside W-017 scope (packages/cli/src/instructions.ts and instructions.test.ts only).
+- Type safety maintained; no unchecked indexed access.
+- Latin contract upheld in new files.
+
+ACCEPTANCE CRITERIA MET
+- instructions.test.ts: 51 tests, all green
+- No type errors
+- Wire attrs (workflow.*) stay English
+- Code style matches packages/cli/src/check.ts
+
+NOTES FOR NEXT PASS
+- W-016, W-018, W-019 have open issues unrelated to this work item
+- Shared worktree / cascade bookkeeping concern (see W-016 log) remains
