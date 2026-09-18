@@ -1,0 +1,204 @@
+certifies: tree:a2d0e59e6e0c10c8a0c5601440c0a487e6845d23
+command: npm test -s
+exit code: 0
+
+lint: failed  ci/W-001-lint-5d70f0f6.log
+PASS  verify --allow-dirty: exits 1 (lint still fails)     1
+PASS  verify --allow-dirty: certifies is dirty:<hash>, never tree:<hash> {"tests":{"status":"passed","evidence":"ci/W-001-tests-5d70f0f6.log","certifies":"dirty:********"},"lint":{"status":"failed","evidence":"ci/W-001-lint-5d70f0f6.log","certifies":"dirty:********"}}
+PASS  verify with garbage sibling opus: exits 2            2
+PASS  verify with garbage sibling opus: no stack trace on stderr "could not read studio: Flow sequence in block collection must be sufficiently indented and end with a ] at line 1, column 28:\n\nid: [this is not valid yaml\n                           ^\n\n"
+PASS  dry-run: exit 0                                exitCode=0
+PASS  dry-run: lists daily due for producer          
+PASS  dry-run: lists daily due for eng-lead          
+PASS  dry-run: lists daily due for art-lead          
+PASS  dry-run: lists daily due for qa-lead           
+PASS  dry-run: no aerarium due (current week's file exists) 
+PASS  dry-run: no traditio due (all handoffs fresh)  
+PASS  dry-run: no acta files written                 
+PASS  harnessForSella: defaults to claude-code when unset 
+PASS  harnessForSella: honors an explicit override   
+PASS  computeDue: L0 collegium's magister not due    
+PASS  computeDue: L1 (default) collegium's magister still due 
+PASS  pause: writes PAUSED                           
+PASS  paused tick: exit 0 (check passes)             exitCode=0
+PASS  paused tick: prints 'paused since ... : ...'   paused since 2026-09-18T14:00:00.000Z: investigating a bad deploy
+PASS  paused tick: no daily due lines printed        
+PASS  paused tick: no new acta written               
+PASS  paused tick: no receipt written                
+PASS  paused tick: still writes health.json          
+PASS  resume: removes PAUSED                         
+PASS  health tick: exit 0                            
+PASS  health.json written                            
+PASS  health.json: ok matches check                  true vs true
+PASS  health.json: blocks matches check              
+PASS  health.json: advisories matches check          
+PASS  health.json: findingsByRule counts acta.daily = 4 {"acta.daily":4}
+PASS  health.json: autonomy.paused is false          
+PASS  health.json: due lists 4 dailies               [{"kind":"daily","sella":"producer"},{"kind":"daily","sella":"eng-lead"},{"kind":"daily","sella":"art-lead"},{"kind":"daily","sella":"qa-lead"}]
+PASS  health.json: lastTick set                      
+PASS  test setup: manifest actually patched          
+PASS  check: invalid collegium.autonomy blocks       collegium.autonomy, acta.daily, acta.daily, acta.daily, acta.daily
+PASS  check: overall not ok                          
+PASS  write tick: exit 0                             exitCode=0 logs=wrote /********.md | wrote /********.md | wrote /********.md | wrote /********.md
+PASS  write tick: one acta per due magister          2026-09-18-art-lead-daily.md, 2026-09-18-eng-lead-daily.md, 2026-09-18-producer-daily.md, 2026-09-18-qa-lead-daily.md
+PASS  write tick: eng-lead daily written at expected path 
+PASS  write tick: author is eng-lead                 author: "eng-lead"
+PASS  write tick: kind is daily                      
+PASS  write tick: evidence points at bisellium.yml (never dead in a clone) 
+PASS  write tick: body carries the fake reply        
+PASS  write tick: harness defaults to claude-code (sample-studio sets none) ---
+author: "eng-lead"
+kind: daily
+title: "eng-lead status stable (claude-code)"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+eng-lead status stable (claude-code)
+nothing blocked
+see you tomorrow
+
+PASS  write tick: receipt written under receipts/tick/ 
+PASS  write tick: second dry-run has nothing due     nothing due
+PASS  real seam setup: all four magistri patched to harness: fake 
+PASS  real seam: exit 0                              exitCode=0 errs=
+PASS  real seam: one acta per due magister actually written 2026-09-18-art-lead-daily.md, 2026-09-18-eng-lead-daily.md, 2026-09-18-producer-daily.md, 2026-09-18-qa-lead-daily.md
+PASS  real seam: eng-lead daily written at expected path 
+PASS  real seam: body carries the real fake-harness reply ---
+author: "eng-lead"
+kind: daily
+title: "FAKE: WRITE TODAY'S ACTA DIURNA FOR YOUR COLLEGIUM IN THREE LINES"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+FAKE: WRITE TODAY'S ACTA DIURNA FOR YOUR COLLEGIUM IN THREE LINES
+
+PASS  real seam: receipt written under receipts/tick/ 
+W-002: traditio -> sella=builder-1 stage=building next="ship the filter" blocked_on=none
+PASS  handoff: exitCode 0                                        0
+PASS  handoff: body byte-for-byte unchanged                      {"before":"","after":""}
+PASS  handoff: keys other than traditio unchanged                {"beforeRest":{"id":"W-002","title":"Combat log panel","kind":"feature","collegium":"engineering","sella":"builder-1","state":"building","probationes":{"tests":{"status":"pending"}},"tokens":470000,"heartbeat":"2026-09-17T10:42:00Z"},"afterRest":{"id":"W-002","title":"Combat log panel","kind":"feature","collegium":"engineering","sella":"builder-1","state":"building","probationes":{"tests":{"status":"pending"}},"tokens":470000,"heartbeat":"2026-09-17T10:42:00Z"}}
+PASS  handoff: traditio updated as requested                     {"sella":"builder-1","stage":"building","next":"ship the filter","blocked_on":"none","at":"2026-09-18T14:00:00.000Z"}
+PASS  handoff: --stage mismatching opus state exits 2            2
+PASS  handoff: unknown sella exits 2                             2
+cli:0: workflow.custom
+PASS  emit: exitCode 0                                           0
+PASS  emit: exactly one event on disk                            1
+PASS  emit: event name preserved                                 {"id":"cli:0","name":"workflow.custom","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"foo":"bar","workflow.source":"cli","workflow.source.seq":0}}
+PASS  emit: event ts is pinned now                               2026-09-18T14:00:00.000Z
+PASS  emit: attrs carried through                                {"foo":"bar","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit: attrs stamped with source=cli                        {"foo":"bar","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit: attrs stamped with seq 0                             {"foo":"bar","workflow.source":"cli","workflow.source.seq":0}
+cli:1: workflow.custom
+PASS  emit: second event exitCode 0                              0
+PASS  emit: seq increments off the log length                    1
+PASS  emit: invalid JSON exits 2                                 
+PASS  emit: missing name exits 2                                 
+A-1: resolved
+PASS  answer: exitCode 0                                         0
+PASS  answer: appends a [stated] line to the body                Drag-and-drop grew a second screen (split stacks). Accept the scope drift and
+ship both, or cut split stacks to a new item?
+
+
+[stated] 2026-09-18T14:00:00.000Z patron: Ship both screens.
+PASS  answer: state -> resolved                                  {"id":"A-1","opus":"W-004","from":"eng-lead","to":"patron","state":"resolved","opened":"2026-09-17T09:58:00Z"}
+PASS  answer: studio passes check                                
+A-1: awaiting_reply
+PASS  answer --ask-back: exitCode 0                              0
+PASS  answer --ask-back: state -> awaiting_reply                 awaiting_reply
+PASS  answer --ask-back: from is now the patron                  {"id":"A-1","opus":"W-004","from":"patron","to":"eng-lead","state":"awaiting_reply","opened":"2026-09-17T09:58:00Z"}
+PASS  answer --ask-back: to is the original asker                {"id":"A-1","opus":"W-004","from":"patron","to":"eng-lead","state":"awaiting_reply","opened":"2026-09-17T09:58:00Z"}
+PASS  answer --ask-back: studio passes check                     
+A-1: resolved
+PASS  answer --charter-gap: exitCode 0                           0
+PASS  answer --charter-gap: one new acta file                    ["********.md"]
+PASS  answer --charter-gap: author is the patron                 patron
+PASS  answer --charter-gap: kind is decision                     decision
+PASS  answer --charter-gap: title proposes a lex gap             Lex gap: Drag-and-drop grew a second screen (split stacks). Accept the scope drift and
+PASS  answer --charter-gap: studio passes check                  
+W-007: greenlit
+PASS  greenlight: first call exitCode 0                          0
+PASS  greenlight: W-007 is now greenlit                          greenlit
+PASS  greenlight: exactly one greenlight event                   1
+PASS  greenlight: event name is workflow.greenlight              {"id":"cli:0","name":"workflow.greenlight","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-007","workflow.greenlight":"granted","workflow.source":"cli","workflow.source.seq":0}}
+PASS  greenlight: event records granted                          {"workflow.item.id":"W-007","workflow.greenlight":"granted","workflow.source":"cli","workflow.source.seq":0}
+PASS  greenlight: second call exits 2 (no longer in backlog)     2
+PASS  greenlight: studio passes check                            
+W-007: declined (not this sprint)
+PASS  greenlight --decline: exitCode 0                           0
+PASS  greenlight --decline: stays in backlog                     backlog
+PASS  greenlight --decline: records the reason                   not this sprint
+PASS  greenlight --decline: event records declined               {"workflow.item.id":"W-007","workflow.greenlight":"declined","reason":"not this sprint","workflow.source":"cli","workflow.source.seq":0}
+2026-W39: engineering = 2500000 tokens
+PASS  budget: exitCode 0                                         0
+PASS  budget: creates 2026-W39.yml                               
+PASS  budget: period matches                                     2026-W39
+PASS  budget: tokens recorded                                    {"engineering":{"stipendium_tokens":2500000}}
+PASS  budget: studio passes check                                
+PASS  budget: refuses --burn-anything                            2
+PASS  budget: file untouched after the refused call              {"engineering":{"stipendium_tokens":2500000}}
+PASS  budget: malformed period exits 2                           2
+PASS  budget: unknown collegium exits 2                          2
+2026-W39: art = 100000 tokens / 40 hours
+PASS  budget: --hours accepted                                   0
+PASS  budget: --hours recorded, engineering untouched            {"engineering":{"stipendium_tokens":2500000},"art":{"stipendium_tokens":100000,"stipendium_hours":40}}
+PASS  query path: exits 0                                        0
+PASS  query path: printed with 'query · ' prefix                 ["query · items waiting on a human gate:\n  W-004 · Inventory drag-and-drop · 14.9h old\npetitiones needing a reply:\n  A-1 · from eng-lead · 14.9h old"]
+PASS  query path: never called the harness                       {"start":0,"resume":0}
+PASS  query path: no session file written                        
+PASS  query path: no timeline file written                       
+PASS  free-form: exits 0                                         0
+PASS  free-form: prints the FAKE reply                           ["FAKE: PLEASE GIVE A STATUS UPDATE"]
+PASS  free-form: session file written                            
+PASS  free-form: session harness is fake                         fake
+PASS  free-form: session turns is 1                              1
+PASS  free-form: session has a sessionId                         
+PASS  free-form: timeline file written                           
+PASS  free-form: timeline has exactly two entries                2
+PASS  free-form: first entry is 'in' with the message            {"at":"2026-09-18T00:51:31.656Z","sella":"eng-lead","direction":"in","text":"please give a status update","sessionId":"********"}
+PASS  free-form: second entry is 'out' with the reply            {"at":"2026-09-18T00:51:31.656Z","sella":"eng-lead","direction":"out","text":"FAKE: PLEASE GIVE A STATUS UPDATE","sessionId":"********","model":"fake-1","usage":{"input":1,"output":2}}
+PASS  free-form: receipt dir written                             
+PASS  free-form: exactly one receipt                             ["********.json"]
+PASS  free-form: receipt harness is fake                         fake
+PASS  free-form: receipt sella is eng-lead                       eng-lead
+PASS  resume: exits 0                                            0
+PASS  resume: sessionId unchanged                                ******** vs ********
+PASS  resume: turns is 2                                         2
+PASS  resume: timeline now has four entries                      4
+PASS  petitio: exits 0                                           0
+PASS  petitio: prints 'petitio P-001 opened'                     ["FAKE: STATUS UPDATE\nPETITIO: NEED A SCOPE CALL","petitio P-001 opened"]
+PASS  petitio: P-001.md written                                  
+PASS  petitio: checkStudio has no blocking findings              []
+PASS  redaction: exits 0                                         0
+PASS  redaction: 'in' entry has no raw secret                    deploy with token=*** please
+PASS  redaction: 'in' entry is masked                            deploy with token=*** please
+PASS  redaction: 'out' entry has no raw secret                   FAKE: DEPLOY WITH TOKEN=*** PLEASE
+PASS  redaction: 'out' entry is masked                           FAKE: DEPLOY WITH TOKEN=*** PLEASE
+PASS  redaction: receipt still masked too                        ["deploy with token=*** please"]
+PASS  unknown sella: exits 2                                     2
+PASS  git-only: exits 2                                          2
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+working tree is dirty; commit or pass --allow-dirty
+--stage "review" does not match opus state "building"
+unknown sella "nobody" — not declared in bisellium.yml
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+emit: event needs a non-empty string "name"
+W-007 is not in backlog (state: greenlit)
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+
