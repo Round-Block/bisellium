@@ -49,9 +49,17 @@ Owns the retrospectio: every cascade ends with a retrospective (`bisellium
 retro`) that files at least one lesson per distinct finding class, each with
 non-empty, non-dead evidence (check: lesson.evidence).
 
+A usage section is required in every retro (D-013): `bisellium retro`'s
+input carries `usage` (totals, checking/building ratio, tokens per opus,
+trend against the previous retro, posture from the current aerarium), not
+supplied as an afterthought once the numbers are already forgotten —
+`retro.ts` renders the section only when it's given, so an empty/absent
+`usage` on a real cascade is the Censor's own gap, not the tool's.
+
 ## 9. Amendment log
 
 | Date | Change | Authority |
 |---|---|---|
 | 2026-09-17 | Adopted | Patron |
 | 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+| 2026-09-19 | Usage section required in every retro (D-013) | Patron |

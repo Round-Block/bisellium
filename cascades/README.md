@@ -32,15 +32,13 @@ order:
 import { buildCascade, phases } from "./cascade.js";
 
 const steps = buildCascade({
-  opera: ["W-016", "W-017", "W-018", "W-019"],
-  now: "2026-09-18T20:00:00Z",
+  opera: ["W-020", "W-021"],
+  now: "2026-09-19T09:00:00Z",
   repo: "/home/edckt/projects/bisellium",
-  cascadeNumber: 4,
+  cascadeNumber: 5,
   builders: [
-    { sella: "builder-a", opus: "W-016" },
-    { sella: "builder-b", opus: "W-017" },
-    { sella: "builder-c", opus: "W-018" },
-    { sella: "builder-d", opus: "W-019" },
+    { sella: "builder-a", opus: "W-020" },
+    { sella: "builder-b", opus: "W-021" },
   ],
 });
 ```
@@ -50,6 +48,14 @@ returns one descriptor per phase — `{ phase, prompt }` for spec/verify/close,
 `{ phase, prompts }` (one per builder) for build — which the Workflow tool
 script dispatches to the sellae named in `builders`; this module only
 describes the cascade's shape, it never calls the Workflow tool itself.
+
+`opera` must have exactly `cascades/sizing.json`'s `operaPerCascade` items
+(2, per D-012 "Cascade sizing") — `buildCascade` throws otherwise, naming
+the mismatch, rather than silently building a differently-shaped cascade
+than the one the Patron sized. Pass a different `sizing` to `buildCascade`
+only when deliberately overriding it (e.g. a one-off cleanup cascade) —
+cascade 4b's own four-opus run (`studio/opera/W-016.md`..`W-019.md`)
+predates this decision and is the counter-example it's partly reacting to.
 
 ## Usage tracking
 

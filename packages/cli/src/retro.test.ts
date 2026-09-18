@@ -178,9 +178,37 @@ try {
   // =========================================================================
   // Behaviour 13 — cascades/cascade.js parses, phase list is exact
   // =========================================================================
+  let cascadeMod;
   {
-    const mod = (await import(join(repo, "cascades", "cascade.js"))) as { phases: string[] };
+    const mod = (await import(join(repo, "cascades", "cascade.js"))) as {
+      phases: string[];
+      loadSizing: () => Record<string, unknown>;
+      buildCascade: (opts: Record<string, unknown>) => unknown;
+    };
+    cascadeMod = mod;
     check("13. cascade.js phases === [spec, build, verify, close]", JSON.stringify(mod.phases) === JSON.stringify(["spec", "build", "verify", "close"]));
+  }
+
+  // =========================================================================
+  // Behaviour 15 — cascades/sizing.json (D-012): buildCascade enforces
+  // operaPerCascade, and loadSizing reads real numbers back.
+  // =========================================================================
+  {
+    const sizing = cascadeMod.loadSizing();
+    check("15a. sizing.json: operaPerCascade is 2 (D-012)", sizing["operaPerCascade"] === 2, JSON.stringify(sizing));
+
+    // Right-sized: two opera, no throw.
+    const ok = cascadeMod.buildCascade({ opera: ["W-020", "W-021"], now: "2026-09-19T09:00:00Z", repo: "/tmp/repo", cascadeNumber: 5 });
+    check("15b. buildCascade accepts operaPerCascade-many opera", Array.isArray(ok) && ok.length === 4, JSON.stringify(ok));
+
+    // Wrong-sized: cascade 4b's own four-opus shape now throws, naming why.
+    let threw = "";
+    try {
+      cascadeMod.buildCascade({ opera: ["W-016", "W-017", "W-018", "W-019"], now: "2026-09-18T20:00:00Z", repo: "/tmp/repo", cascadeNumber: 4 });
+    } catch (e) {
+      threw = (e as Error).message;
+    }
+    check("15c. buildCascade throws naming sizing.json/D-012 for a mis-sized opera list", threw.includes("sizing.json") && threw.includes("D-012"), threw);
   }
 
   // =========================================================================

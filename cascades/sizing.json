@@ -1,0 +1,9 @@
+{
+  "_decision": "studio/decisions/D-012.md",
+  "operaPerCascade": 2,
+  "reviewer": { "role": "reviewer", "model": "claude-opus-5", "perOpus": 1 },
+  "firstHourBuilderModel": "claude-sonnet-5",
+  "mutationOpusPerCascade": 1,
+  "worktreesPerBuilder": 1,
+  "midTurnRelaysAllowed": false
+}

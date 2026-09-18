@@ -4,15 +4,31 @@
  * JS for the Workflow tool (see the `workflow-authoring` skill): four
  * phases, run in order, parameterized by `{ opera, now, repo }`.
  *
- * `opera` is the list of opus ids this cascade carries (e.g.
- * ["W-016","W-017","W-018","W-019"]); `now` is an ISO datetime (pinned for
- * a reproducible run, real for a live one); `repo` is the repo root the
- * whole cascade operates against.
+ * `opera` is the list of opus ids this cascade carries; `now` is an ISO
+ * datetime (pinned for a reproducible run, real for a live one); `repo`
+ * is the repo root the whole cascade operates against.
+ *
+ * Sizing (how many opera, how many reviewers per opus, which model drives
+ * the first hour, …) is data too — D-012 ("Cascade sizing") points at
+ * `cascades/sizing.json`, and `loadSizing`/`buildCascade` read it from
+ * there rather than hardcoding the numbers a second time here.
  *
  * This module exports data (the phase list, and each phase's builder) — it
  * does not itself call any Workflow-tool API, so it stays a plain, testable
  * ESM module: `import("./cascade.js")` and read `phases` back out.
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const SIZING_PATH = join(dirname(fileURLToPath(import.meta.url)), "sizing.json");
+
+/** Reads cascades/sizing.json — the numbers D-012 names, as data. Never
+ *  caches: this file is small, rarely read (once per cascade build), and
+ *  a hand-edit to it should take effect on the very next call. */
+export function loadSizing() {
+  return JSON.parse(readFileSync(SIZING_PATH, "utf8"));
+}
 
 /** Fixed order: Spec → Build → Verify → Close-with-Retro. */
 export const phases = ["spec", "build", "verify", "close"];
@@ -39,10 +55,15 @@ function specPrompt({ opera, repo }) {
  * Nothing opus-specific belongs here beyond which brief to read — the
  * brief itself carries the rest.
  */
-function builderPrompt({ sella, opus }) {
-  return [`Read CLAUDE.md.`, `Run "bisellium context --sella ${sella} studio".`, `Then read your brief at studio/briefs/${opus}.md and implement it exactly.`].join(
-    " ",
-  );
+function builderPrompt({ sella, opus }, sizing) {
+  const firstHour = sizing?.firstHourBuilderModel
+    ? ` Your first hour on this opus runs on ${sizing.firstHourBuilderModel} (D-012, cascade sizing) — escalate to a heavier model only once that hour's actually spent, not pre-emptively.`
+    : "";
+  return [
+    `Read CLAUDE.md.`,
+    `Run "bisellium context --sella ${sella} studio".`,
+    `Then read your brief at studio/briefs/${opus}.md and implement it exactly.${firstHour}`,
+  ].join(" ");
 }
 
 function verifyPrompt({ opera, repo }) {
@@ -57,9 +78,12 @@ function verifyPrompt({ opera, repo }) {
  * any petitiones a recurring finding needs), and reports the cascade's
  * numbers to the Patron.
  */
-function closePrompt({ opera, repo, now, cascadeNumber }) {
+function closePrompt({ opera, repo, now, cascadeNumber, sizing }) {
+  const mutation = sizing?.mutationOpusPerCascade
+    ? ` Run the mutation-testing step (D-010) against ${sizing.mutationOpusPerCascade} opus this cascade, per D-012's sizing — not every opus, not zero.`
+    : "";
   return [
-    `Run "bisellium retro --cascade ${cascadeNumber} --studio studio --now ${now}".`,
+    `Run "bisellium retro --cascade ${cascadeNumber} --studio studio --now ${now}".${mutation}`,
     `Confirm "npm run -s check -- studio --repo ${repo}" reports zero new blocking findings for [${opera.join(", ")}].`,
   ].join(" ");
 }
@@ -71,21 +95,28 @@ function closePrompt({ opera, repo, now, cascadeNumber }) {
  * prompts are dispatched (single agent, one per sella, etc.); this module
  * only describes the cascade's shape.
  */
-export function buildCascade({ opera, now, repo, cascadeNumber = 1, builders = [] }) {
+export function buildCascade({ opera, now, repo, cascadeNumber = 1, builders = [], sizing = loadSizing() }) {
   if (!Array.isArray(opera) || opera.length === 0) throw new Error("buildCascade: opera must be a non-empty array of opus ids");
   if (typeof now !== "string" || !now) throw new Error("buildCascade: now must be an ISO datetime string");
   if (typeof repo !== "string" || !repo) throw new Error("buildCascade: repo must be a path");
+  if (typeof sizing?.operaPerCascade === "number" && opera.length !== sizing.operaPerCascade) {
+    throw new Error(
+      `buildCascade: cascades/sizing.json (D-012) calls for ${sizing.operaPerCascade} opera per cascade, got ${opera.length}: [${opera.join(", ")}] — pass a different sizing to override deliberately`,
+    );
+  }
 
   return phases.map((phase) => {
     if (phase === "spec") return { phase, prompt: specPrompt({ opera, repo }) };
     if (phase === "build")
       return {
         phase,
-        prompts: builders.length ? builders.map((b) => builderPrompt(b)) : opera.map((opus) => builderPrompt({ sella: "builder", opus })),
+        prompts: builders.length
+          ? builders.map((b) => builderPrompt(b, sizing))
+          : opera.map((opus) => builderPrompt({ sella: "builder", opus }, sizing)),
       };
     if (phase === "verify") return { phase, prompt: verifyPrompt({ opera, repo }) };
-    return { phase, prompt: closePrompt({ opera, repo, now, cascadeNumber }) };
+    return { phase, prompt: closePrompt({ opera, repo, now, cascadeNumber, sizing }) };
   });
 }
 
-export default { phases, buildCascade };
+export default { phases, buildCascade, loadSizing };

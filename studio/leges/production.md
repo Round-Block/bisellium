@@ -13,6 +13,10 @@ detection. The Aedile owns the road, not the work travelling on it.
 - Keep work in progress within the declared cap (check: wip.cap)
 - Refuse a `done` claim the recorded gates don't support (check:
   state.done.probationes)
+- Cascade sizing (D-012): two opera per cascade, one worktree/branch per
+  builder, no mid-turn relay into a running workflow — enforced today by
+  `cascades/cascade.js`'s `buildCascade` reading `cascades/sizing.json`,
+  not yet by `check`
 
 ## 3. Digests
 
@@ -43,3 +47,4 @@ detection. The Aedile owns the road, not the work travelling on it.
 |---|---|---|
 | 2026-09-17 | Adopted | Patron |
 | 2026-09-18 | Rewritten into enforceable clauses; role named as the Aedile (W-018) | Patron |
+| 2026-09-19 | Cascade sizing clause added (D-012) | Patron |
