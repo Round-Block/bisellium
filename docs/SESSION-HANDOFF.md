@@ -52,8 +52,8 @@ lex, a decision, or a check rule and delete it here.
   `sudo apt-get install bubblewrap socat` has been run in the distro.
   `.devcontainer/` is Anthropic's reference config on node:25 with the egress
   firewall, for fully contained cascade runs. Repo backup: bundle at
-  C:\Users\edene\bisellium-backups\; GitHub remote pending a PAT with repo-create
-  rights (gh is authed as edckt but the fine-grained token cannot createRepository).
+  C:\Users\edene\bisellium-backups\; private remote github.com/edckt/bisellium (origin). Sandbox deps
+  (bubblewrap, socat) installed 2026-09-19.
 
 - Node, npm, git, `claude`, `codex`, Go, treehouse, no-mistakes exist only inside
   WSL. From a Windows-hosted session run `wsl -e bash -lc "cd ~/projects/bisellium && …"`.
