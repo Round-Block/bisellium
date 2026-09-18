@@ -22,6 +22,7 @@ import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
+import { runDocs } from "./docs.js";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
@@ -63,7 +64,8 @@ const USAGE =
   "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +
   "       bisellium hooks check --harness claude-code [--studio <dir>]\n" +
-  "       bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]";
+  "       bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]\n" +
+  "       bisellium docs registry [--repo <dir>] [--now <iso>]";
 
 /** `bisellium serve` never exits on its own — it's a long-running HTTP
  *  server (plus a poll timer, unless `--once`), so main()'s usual
@@ -110,6 +112,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "emit") return runEmit(rest).exitCode;
   if (cmd === "hooks") return runHooks(rest).exitCode;
   if (cmd === "hook-event") return (await runHookEvent(rest)).exitCode;
+  if (cmd === "docs") return runDocs(rest).exitCode;
   if (cmd === "new") return runNew(rest).exitCode;
   if (cmd === "instructions") return runInstructions(rest).exitCode;
   if (cmd === "retro") return runRetro(rest).exitCode;

@@ -1,0 +1,24 @@
+node_modules/
+dist/
+.bisellium/
+package-lock.json
+*.md
+studio/
+examples/
+docs/
+# .claude/** and cascades/** belong to other opera this cascade (W-017,
+# W-018 — both halted) — reformatting them is not this opus's to do.
+.claude/
+cascades/
+# cascade 5 (W-016/W-019): packages/, apps/ and adapters/ are mid-migration
+# this cascade (files move between builders) — widening this ignore back
+# down to individual files, then dropping it, is the first task of the next
+# cascade once the moved files settle (see CONTRIBUTING.md).
+packages/
+apps/
+adapters/
+# W-018's script (cascades/ package, not this opus's file), and the Design
+# collegium's spec-phase script — new since this brief was written, not
+# owned here.
+scripts/usage-from-workflow.mjs
+scripts/opus-ready.ts

@@ -1,3 +1,11 @@
+---
+kind: model
+owner: architect
+tier: reference
+review: 2026-12-01
+kill: when the studio model it describes ships as the real officina and this proposal is archived
+---
+
 # Bisellium — Studio Model
 
 Status: proposal, 2026-09-17. Generic; project-specific instances live in each

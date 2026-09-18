@@ -1,3 +1,11 @@
+---
+kind: template
+owner: eng-lead
+tier: reference
+review: 2026-12-01
+kill: when every collegium's lex has adopted it and no new lex is expected
+---
+
 # <Collegium> Lex
 
 Magister: `<sella>` · Adopted: `<date>` · Amended: see §8

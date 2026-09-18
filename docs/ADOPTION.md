@@ -1,3 +1,11 @@
+---
+kind: contract
+owner: eng-lead
+tier: reference
+review: 2026-12-01
+kill: when the contract it documents is superseded by a new adoption doc
+---
+
 # Adopting Bisellium
 
 ## Vocabulary
