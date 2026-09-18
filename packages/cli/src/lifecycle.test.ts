@@ -2,6 +2,12 @@
  * packages/cli/src/lifecycle.test.ts — W-020 (ready, done, review, red),
  * against temp copies of examples/sample-studio. `now` is pinned to
  * 2026-09-19T13:00:00Z. House pattern: writes.test.ts is the model.
+ *
+ * `BISELLIUM_ONLY_BEHAVIOUR` (comma-separated behaviour numbers) restricts
+ * the run to those blocks — the red-capture harness for a stubbed
+ * lifecycle.ts (studio/ci/reds/W-020, round 6) invokes this file directly
+ * rather than re-deriving its fixtures in a second script. Unset, every
+ * behaviour runs, exactly as before this existed.
  */
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -18,6 +24,10 @@ import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-19T13:00:00Z");
+
+const only = process.env["BISELLIUM_ONLY_BEHAVIOUR"];
+const selected = only ? new Set(only.split(",").map(Number)) : undefined;
+const runs = (behaviour: number): boolean => selected === undefined || selected.has(behaviour);
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -64,7 +74,7 @@ try {
   // =========================================================================
 
   // ---- behaviour 1: ready on a greenlit opus ------------------------------
-  {
+  if (runs(1)) {
     const dir = freshStudio("ready-greenlit");
     addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
     const briefsDir = join(dir, "briefs");
@@ -103,7 +113,7 @@ try {
   }
 
   // ---- behaviour 2: ready on halted, and refusal from every other state ---
-  {
+  if (runs(2)) {
     const dir = freshStudio("ready-halted");
     addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
     const briefsDir = join(dir, "briefs");
@@ -150,7 +160,7 @@ try {
   }
 
   // ---- behaviour 3: missing spec file / no spec probatio declared --------
-  {
+  if (runs(3)) {
     const dir = freshStudio("ready-no-spec");
     // No brief created for W-006 at all — the manifest here has no "spec"
     // probatio (sample-studio's own, untouched).
@@ -187,7 +197,7 @@ try {
     );
   }
 
-  {
+  if (runs(4)) {
     const dir = freshStudio("done-success");
     for (const [id, state] of [
       ["W-300", "building"],
@@ -204,7 +214,7 @@ try {
     check("done: one workflow.state_changed per success", events.filter((e) => e["name"] === "workflow.state_changed").length === 3, String(events.length));
   }
 
-  {
+  if (runs(5)) {
     const dir = freshStudio("done-refuse");
     const cases: [string, string][] = [
       ["W-310", passingLines.map((l) => (l.startsWith("  tests:") ? "  tests: { status: failed, evidence: ci/x.log, certifies: tree:abc123 }" : l)).join("\n")],
@@ -229,7 +239,7 @@ try {
   // =========================================================================
   // review — behaviours 6-8
   // =========================================================================
-  {
+  if (runs(6)) {
     const dir = freshStudio("review-pass");
     writeFileSync(join(dir, "ci", "review-pass-1.log"), "review notes\n");
     const opusPath = join(dir, "opera", "W-002.md");
@@ -255,7 +265,7 @@ try {
     check("review --pass: event carries WF.REVIEW_ROUND", attrs?.[WF.REVIEW_ROUND] === 2, JSON.stringify(attrs));
   }
 
-  {
+  if (runs(7)) {
     const dir = freshStudio("review-fail");
     writeFileSync(join(dir, "ci", "review-fail-2.log"), "second round notes\n");
 
@@ -276,7 +286,7 @@ try {
     check("review --fail on building: state stays building", after2.state === "building", after2.state);
   }
 
-  {
+  if (runs(8)) {
     const dir = freshStudio("review-usage");
     const opusPath = join(dir, "opera", "W-002.md");
     const before = readFileSync(opusPath, "utf8");
@@ -296,7 +306,7 @@ try {
   // =========================================================================
   // red — behaviours 9-11
   // =========================================================================
-  {
+  if (runs(9)) {
     const dir = freshStudio("red-record");
     const redsDir = join(dir, "ci", "reds", "W-900");
 
@@ -316,7 +326,7 @@ try {
     check("red: blank line then combined output", lines[6] === "" && log.includes("out-line") && log.includes("err-line"), JSON.stringify(lines.slice(6)));
   }
 
-  {
+  if (runs(10)) {
     const dir = freshStudio("red-exit0");
     const redsDir = join(dir, "ci", "reds", "W-901");
     const r = await runRed(["W-901", "--behaviour", "5", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(0)"], {});
@@ -324,7 +334,7 @@ try {
     check("red: no directory created for a passing command", !existsSync(redsDir));
   }
 
-  {
+  if (runs(10)) {
     const dir = freshStudio("red-overwrite");
     const redsDir = join(dir, "ci", "reds", "W-902");
     await runRed(["W-902", "--behaviour", "1", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first'); process.exit(1)"], {});
@@ -338,7 +348,7 @@ try {
   }
 
   // ---- behaviour 11: usage refusals -------------------------------------
-  {
+  if (runs(11)) {
     const dir = freshStudio("red-usage");
     const okCmd = ["node", "-e", "process.exit(1)"];
 
@@ -370,7 +380,7 @@ try {
   // behaviour 12: no-argument invocation through main.ts prints its own
   // usage line (not the generic USAGE) and exits 2.
   // =========================================================================
-  {
+  if (runs(12)) {
     const mainPath = join(repo, "packages/cli/src/main.ts");
     for (const [cmd, needle] of [
       ["ready", "usage: bisellium ready "],
@@ -395,7 +405,7 @@ try {
   // behaviour 13: ready --spec refuses a path that escapes the officina
   // (cascade 6 round-2 review, B1/D-008)
   // =========================================================================
-  {
+  if (runs(13)) {
     const dir = freshStudio("ready-spec-escape");
     const opusPath = join(dir, "opera", "W-006.md"); // greenlit in the fixture
     const before = readFileSync(opusPath, "utf8");
@@ -409,7 +419,7 @@ try {
   // behaviour 14: review --evidence refuses a path that escapes the officina
   // (cascade 6 round-2 review, B1/D-008)
   // =========================================================================
-  {
+  if (runs(14)) {
     const dir = freshStudio("review-evidence-escape");
     const opusPath = join(dir, "opera", "W-004.md"); // in `review` in the fixture
     const before = readFileSync(opusPath, "utf8");
@@ -423,7 +433,7 @@ try {
   // behaviour 15: review --fail on a `done` opus returns it to `building`
   // (cascade 6 round-2 review, F5 — the wall L-016 only half took down)
   // =========================================================================
-  {
+  if (runs(15)) {
     const dir = freshStudio("review-fail-done");
     writeFileSync(join(dir, "ci", "W-950-review-2.log"), "round 2 notes\n");
     const opusPath = writeOpus(
@@ -456,7 +466,7 @@ try {
   // `# tree:` header names the repo containing that directory, never the
   // officina's own (cascade 6 round-3 review, W-021 B2)
   // =========================================================================
-  {
+  if (runs(16)) {
     function scratchRepo(tag: string): string {
       const gitDir = mkdtempSync(join(tmpdir(), `bisellium-w020-b16-${tag}-`));
       writeFileSync(join(gitDir, "marker.txt"), tag);

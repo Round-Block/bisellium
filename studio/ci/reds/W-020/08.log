@@ -3,15 +3,9 @@
 # exit: 1
 # at: 2026-09-19T13:00:00.000Z
 # sella: builder-a
-# tree: dirty:c629ec44af83307edb59f891eeb1032b0d4401cc
+# tree: dirty:9072d296a45263b95ad4263b6da2699635a2177c
 
-/home/edckt/projects/bisellium/.claude/worktrees/wf_7cbbec32-65d-2/packages/cli/src/lifecycle.test.ts:15
-import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
-                   ^
-SyntaxError: The requested module './lifecycle.js' does not provide an export named 'runDone'
-    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
-    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
-
-Node.js v25.9.0
+FAIL  review: neither --pass nor --fail exits 2                        0
+FAIL  review: both --pass and --fail exits 2                           0
+FAIL  review: nonexistent --evidence exits 2                           0
+PASS  review: file untouched by every usage refusal                    
