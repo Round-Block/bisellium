@@ -4,9 +4,19 @@
  * "what's blocked"). No model; questions are matched against three fixed
  * shapes. Output is compact indented text, not JSON — cheap for an agent to
  * read.
+ *
+ * `--from-index` (W-013): when a `.bisellium/` SQLite index already exists
+ * for this studio, answer from `@bisellium/core`'s Store/Index instead of
+ * re-reading every file — same three question shapes, sourced from the
+ * event log's derived state rather than the studio's files. Wiring the flag
+ * into main.ts's per-command flag table is left to the integrator, same as
+ * verify.ts/writes.ts's commands (see their file headers) — this file only
+ * exposes the capability on `answer()`'s options.
  */
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { listMd, readFront, readManifest, snapshotDir } from "@bisellium/adapter-native";
+import { answer as answerFromIndex, INDEX_DB_REL, Store } from "@bisellium/core";
 
 export type QueryKind = "needs_you" | "status" | "burn" | "unknown";
 export interface QueryAnswer {
@@ -128,18 +138,80 @@ function burnAnswer(root: string, now: Date): QueryAnswer {
   return { answer: lines.join("\n"), kind: "burn" };
 }
 
+export interface QueryOptions {
+  now: Date;
+  /** Use `@bisellium/core`'s Store/Index instead of the studio's files, but
+   *  only when a `.bisellium/` index actually exists for `root` — otherwise
+   *  this is silently a no-op and the file-based path below runs exactly as
+   *  before. Never a reason to fail a question the file-based path could
+   *  have answered: an index open/query error falls back to files too. */
+  fromIndex?: boolean;
+}
+
+/** Same slugging `projectIdFor` in writes.ts uses, duplicated rather than
+ *  imported since these two files are deliberately independent (see this
+ *  file's header) — keeps the id lined up with what a Store ingesting this
+ *  same studio elsewhere would produce, though nothing here depends on it
+ *  beyond bookkeeping (Index never filters by projectId). */
+function projectIdFor(studio: string): string {
+  return studio.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+/** The `--from-index` path: answered from the Store's Index, in the same
+ *  three shapes as the file-based functions above (core/src/query.ts is
+ *  deliberately the same regex/dispatch shape as this file). Returns
+ *  `undefined` when there's no usable index to answer from, so the caller
+ *  falls back to files rather than treating that as a real answer.
+ *
+ *  A CLI write (handoff/emit/answer/greenlight/budget, writes.ts) edits the
+ *  studio's files or appends to the events log directly — never through a
+ *  Store — so a persisted index can be behind the files it's meant to
+ *  mirror (present-but-stale, not just present-or-missing). Re-ingesting
+ *  the studio's current snapshot under this Store before answering
+ *  reconciles that the same way any other source's ingest does: a real
+ *  diff against this source's own last-seen snapshot (persisted under
+ *  `.bisellium/snapshots/query.json`), turned into whatever workflow.*
+ *  events actually changed and folded into the index — not a guess, and
+ *  not a full rebuild from a log that may itself be missing the state
+ *  change (a plain file edit never appends anything to events.jsonl on its
+ *  own). */
+function answerFromIndexIfPresent(root: string, question: string, now: Date): QueryAnswer | undefined {
+  if (!existsSync(join(root, INDEX_DB_REL))) return undefined;
+  try {
+    const manifest = readManifest(root);
+    const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
+    const store = new Store({ studioDir: root });
+    store.ingest(snapshotDir(root, "query", now), {
+      source: "query",
+      ts: now.toISOString(),
+      projectId: projectIdFor(manifest.studio),
+      humanGates,
+    });
+    const result = answerFromIndex(store.query, question, { now });
+    store.query.close();
+    return result;
+  } catch {
+    return undefined; // a locked/corrupt index db: fall back to the file-based path, don't refuse the question
+  }
+}
+
 /**
  * Contract: answer never throws. Any adapter/fs failure while resolving a
  * question against `root` (missing or unparseable bisellium.yml, or any
  * other read error under it) is reported as "not a studio" rather than a
  * stack trace — main.ts turns that into exit 2.
  */
-export function answer(root: string, question: string, opts: { now: Date }): QueryAnswer {
+export function answer(root: string, question: string, opts: QueryOptions): QueryAnswer {
   const notAStudio: QueryAnswer = { answer: null, kind: "unknown", suggestions: [`not a studio: ${root}`] };
   try {
     readManifest(root); // cheap existence/parse check, independent of which question shape matches
   } catch {
     return notAStudio;
+  }
+
+  if (opts.fromIndex) {
+    const fromIndex = answerFromIndexIfPresent(root, question, opts.now);
+    if (fromIndex) return fromIndex;
   }
 
   try {

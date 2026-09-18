@@ -1,17 +1,15 @@
 {
-  "name": "@bisellium/cli",
+  "name": "@bisellium/server",
   "version": "0.0.1",
   "type": "module",
-  "main": "src/main.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "dependencies": {
     "@bisellium/adapter-native": "*",
+    "@bisellium/cli": "*",
     "@bisellium/core": "*",
-    "@bisellium/pipeline": "*",
-    "@bisellium/providers": "*",
     "@bisellium/schema": "*",
-    "@bisellium/server": "*",
-    "@bisellium/shim": "*",
-    "yaml": "^2.6.0"
+    "@bisellium/shim": "*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

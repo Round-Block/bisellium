@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
+import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
 import { checkStudio } from "./check.js";
 import { splitFront } from "./frontmatter.js";
@@ -37,7 +38,7 @@ function blockIds(dir: string): string[] {
 }
 
 function readEventLines(dir: string): Record<string, unknown>[] {
-  const path = join(dir, "events.jsonl");
+  const path = join(dir, EVENTS_LOG_REL);
   if (!existsSync(path)) return [];
   return readFileSync(path, "utf8")
     .split("\n")

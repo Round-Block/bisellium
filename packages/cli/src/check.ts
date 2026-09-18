@@ -19,7 +19,7 @@ import {
   PETITIO_STATES,
 } from "@bisellium/schema";
 import { listMd, readFront, STATES } from "@bisellium/adapter-native";
-import { sourceTreeHash } from "@bisellium/shim";
+import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 
 export type Level = "block" | "advise";
 export interface Finding {
@@ -551,6 +551,30 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const mins = minutes(rec.startedAt, now);
     if (mins > defaults.sella_stale_minutes)
       add("sella.stale", "advise", `receipts/${sellaId}`, `sella "${sellaId}" has been running ${mins.toFixed(0)} min with no receipt end`);
+  }
+
+  // ---- hooks: harness-native receipt liveness (W-015) ----------------------
+  // A sella's effective harness defaults to "claude-code" (adapter-native's
+  // Manifest.sellae[].harness comment) — advisory only, same shared logic
+  // `bisellium hooks check` reports: this can't tell "hooks never wired"
+  // apart from "no session run yet today". Gated on receipts/ existing at
+  // all: a freshly `init`ed studio has never run anything through ANY
+  // harness (run/talk/tick/hooks) yet, so nothing to call dead versus alive
+  // — the moment the studio has run something (receipts/ exists), a sella
+  // still missing a hook receipt among its recent history is worth a nudge.
+  for (const s of existsSync(join(root, "receipts"))
+    ? hookReceiptStatuses(
+        root,
+        sellae.map((row) => ({ id: str(row["id"]) ?? "", harness: str(row["harness"]) })).filter((row) => row.id),
+      )
+    : []) {
+    if (s.dead)
+      add(
+        "hook.dead",
+        "advise",
+        `receipts/${s.sella}`,
+        `sella "${s.sella}" (harness ${s.harness}) has no hook receipt in its last ${HOOK_DEAD_RECENT_RECEIPTS} session(s) — .claude/settings.json hooks may not be wired`,
+      );
   }
 
   // ---- aerarium: allowances only -------------------------------------------

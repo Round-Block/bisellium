@@ -12,6 +12,15 @@ export interface DiffContext {
   seq: number;
   ts: string;
   projectId: string;
+  /**
+   * Probatio ids that are `kind: human` in the manifest (docs/ADOPTION.md).
+   * Snapshots carry only gate *results*, never gate *definitions*, so the
+   * differ has no other way to know which pending gate means "needs you" —
+   * the caller (whoever holds the manifest) passes this in. Stamped onto
+   * `gate_evaluated` as WF.GATE_KIND so the fact survives in the log itself
+   * (the Index derives `needsYou()` from events alone, never the manifest).
+   */
+  humanGates?: Iterable<string>;
 }
 
 export interface DiffResult {
@@ -38,18 +47,20 @@ function gateChanged(prev: ProbatioResult | undefined, next: ProbatioResult): bo
   return prev?.status !== next.status || prev?.evidence?.certifies !== next.evidence?.certifies;
 }
 
-function gateAttrs(base: Attrs, gateId: string, gateResult: ProbatioResult): Attrs {
+function gateAttrs(base: Attrs, gateId: string, gateResult: ProbatioResult, humanGates: Set<string>): Attrs {
   const attrs: Attrs = { ...base, [WF.GATE_ID]: gateId, [WF.GATE_STATUS]: gateResult.status };
   const href = gateResult.evidence?.href;
   if (href !== undefined) attrs[WF.GATE_EVIDENCE] = href;
   const certifies = gateResult.evidence?.certifies;
   if (certifies !== undefined) attrs[WF.GATE_CERTIFIES] = certifies;
+  if (humanGates.has(gateId)) attrs[WF.GATE_KIND] = "human";
   return attrs;
 }
 
 export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffContext): DiffResult {
   const events: GantryEvent[] = [];
   let seq = ctx.seq;
+  const humanGates = new Set(ctx.humanGates ?? []);
 
   const emit = (name: string, attrs: Attrs): void => {
     events.push({
@@ -84,7 +95,7 @@ export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffCo
       // an actor_assigned if it already has a sella.
       emit("workflow.item_appeared", { ...base, [WF.STATE_TO]: item.state });
       for (const [gateId, gateResult] of Object.entries(item.probationes)) {
-        emit("workflow.gate_evaluated", gateAttrs(base, gateId, gateResult));
+        emit("workflow.gate_evaluated", gateAttrs(base, gateId, gateResult, humanGates));
       }
       const sella = str(item.meta["sella"]);
       if (sella !== undefined) emit("workflow.actor_assigned", { ...base, [WF.ACTOR_ROLE]: sella });
@@ -97,7 +108,7 @@ export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffCo
 
     for (const [gateId, gateResult] of Object.entries(item.probationes)) {
       if (!gateChanged(prevItem.probationes[gateId], gateResult)) continue;
-      emit("workflow.gate_evaluated", gateAttrs(base, gateId, gateResult));
+      emit("workflow.gate_evaluated", gateAttrs(base, gateId, gateResult, humanGates));
     }
 
     const prevSella = str(prevItem.meta["sella"]);
@@ -125,6 +136,12 @@ export function diffSnapshots(prev: Snapshot | null, next: Snapshot, ctx: DiffCo
       [WF.ATTENTION_EVENT]: ATTENTION_MAP[petitio.state],
     };
     if (petitio.opusId !== undefined) attrs[WF.ITEM_ID] = petitio.opusId;
+    // Who opened this thread — "you" when the Patron is the asker (adapter-
+    // native's openedBy), a sella id otherwise. This is what lets a reader of
+    // the event log alone (no file access) tell needs_you (a sella opened it)
+    // apart from awaiting_reply (the Patron opened it) — both collapse to the
+    // same ATTENTION_EVENT ("requested") above.
+    if (petitio.openedBy !== undefined) attrs[WF.ACTOR_ROLE] = petitio.openedBy;
     emit("workflow.attention", attrs);
   }
 

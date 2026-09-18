@@ -345,10 +345,11 @@ for byte. `--blocked-on` defaults to `none`.
 
 `emit` validates a minimal event shape (`{name, attrs?}`, `attrs` values
 string/number/boolean only) and appends one `GantryEvent` to
-`<studio>/events.jsonl` via `@bisellium/core`'s `appendEvents`, stamped
-`workflow.source: cli` and a `workflow.source.seq` taken from the log's
-current length. `events.jsonl` is live/derived telemetry, not the studio's
-committed record — gitignored, same reasoning as `receipts/` and
+`<studio>/.bisellium/events.jsonl` (`EVENTS_LOG_REL`) via `@bisellium/core`'s
+`appendEvents`, stamped `workflow.source: cli` and a `workflow.source.seq`
+taken from the log's current length. `events.jsonl` is live/derived
+telemetry, not the studio's committed record — gitignored, same reasoning as
+`receipts/` and
 `timeline/`.
 
 `answer`, `greenlight` and `budget` are Patron writes: the CLI runs them
@@ -373,6 +374,97 @@ under that collegium (`period` must match `^\d{4}-W\d{2}$`); like every
 command here its flag parser is strict, so an unrecognized flag (e.g. a
 `--burn-*` one, trying to write a derived key) is refused, not silently
 ignored.
+
+## The `.bisellium/` directory
+
+Every derived/local artifact `@bisellium/core`'s `Store` (and anything built
+on it — `apps/server`, `bisellium query --from-index`) owns lives under one
+gitignored directory at the studio root, so cleaning a studio's local state
+is always `rm -rf <studio>/.bisellium`:
+
+```
+<studio>/.bisellium/events.jsonl        the append-only event log (EVENTS_LOG_REL) —
+                                         `emit`/`handoff`/`answer`/`greenlight`/`budget`
+                                         (packages/cli/src/writes.ts), a Store's own
+                                         ingest(), and `bisellium hook-event tool` all
+                                         append here; nothing ever rewrites a line.
+<studio>/.bisellium/snapshots/<source>.json   the last snapshot a Store ingested for
+                                         one source (SNAPSHOTS_DIR_REL), so a restart
+                                         diffs against what it actually last saw
+                                         instead of replaying the whole studio as
+                                         newly appeared. One file per source
+                                         (`cli`, `server`, `query`, a sample studio's
+                                         adapter id, …) — sources never share a
+                                         sequence counter or a snapshot baseline.
+<studio>/.bisellium/index/index.db      the SQLite index (INDEX_DB_REL, `node:sqlite`)
+                                         every Store keeps fed from the log —
+                                         `opera_state`/`petitiones_state`/
+                                         `providers_state`/`events` tables, all
+                                         derived: `Index.rebuild()` drops and replays
+                                         them from `events.jsonl`, so a corrupt or
+                                         missing index.db is recovered (deleted and
+                                         recreated empty), never fatal.
+```
+
+A corrupt line in `events.jsonl` (fails to parse, or parses but isn't
+event-shaped) is dropped and counted (`Store.corruptLines`), never thrown —
+same "degrade, don't throw" discipline as every file-based reader in this
+document. `.bisellium/` is gitignored at every depth (`.gitignore`'s
+`.bisellium/` line, no leading slash) — under a studio dir, under
+`examples/sample-studio`, anywhere.
+
+## Running serve
+
+```bash
+npm run bisellium -- serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+```
+
+`apps/server`'s `startServer` (wrapped by the CLI as `bisellium serve`) is a
+localhost-only HTTP + SSE surface over one studio: it binds `127.0.0.1`
+only, ingests one snapshot at start, and (unless `--once`) polls again every
+`--poll-ms`. It shares `EVENTS_LOG_REL`/`SNAPSHOTS_DIR_REL` with
+`@bisellium/core`'s `Store` so the two read/append the exact same
+`.bisellium/` files, though `apps/server` keeps its own small per-source
+(`"server"`) ingest bookkeeping rather than depending on `Store`'s class
+directly (see the file header comment on `apps/server/src/store.ts`). Reads:
+
+```
+GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit
+GET  /api/opera?state=&collegium=  every opus, filterable
+GET  /api/opus/:id                 one opus's front matter + body + probationes + traditio
+GET  /api/inbox                    needs-you: pending human gates + petitiones needing a reply
+GET  /api/acta?days=               digest entries within the last `days` (default 7)
+GET  /api/aerarium?period=         allowance + derived burn + posture per collegium
+GET  /api/providers?live=          provider status (usage.yml, or live quota-axi with live=1)
+GET  /api/health                   health.json if `tick` wrote one, else a fresh check summary
+GET  /api/timeline/:sella?limit=   that sella's (or the Patron's) timeline
+GET  /api/events?since=&limit=     raw log events, with a stable `seq` a client can resume from
+GET  /api/receipts?sella=          receipts, all sellae or one
+GET  /api/live                     SSE: `data: <event>` for every newly-ingested event
+```
+
+Writes reuse `packages/cli/src/writes.ts`/`talk.ts`/`pause.ts` verbatim (same
+validation, same exit codes, `stdout`/`stderr` captured into the JSON
+response body) and are refused from anything but `127.0.0.1`:
+
+```
+POST /api/answer      {petitio, reply, askBack?, charterGap?}
+POST /api/greenlight   {opus, decline?}
+POST /api/budget       {period, collegium, tokens, hours?}
+POST /api/handoff      {opus, sella, next, stage?, blockedOn?}
+POST /api/talk         {sella, message, harness?}
+POST /api/pause        {reason?}
+POST /api/resume       {}
+```
+
+Every write route serializes through one per-server async lock, so two
+overlapping writes (e.g. two `/api/talk` calls, which can each take minutes)
+queue instead of interleaving through the shared `console.log`/`console.error`
+capture. `POST /api/_poll` (manual re-ingest) only answers outside
+`NODE_ENV=test` with a 404 — it exists for tests to force a poll
+deterministically, never a route a real client should call. `close()` ends
+every open `/api/live` connection before closing the HTTP server, so a
+connected SSE client never makes shutdown hang.
 
 ## Running tick, pause and resume
 
@@ -495,3 +587,46 @@ sella / unknown or unavailable harness (one-line reason) · 3 the harness
 reported a usage/rate limit, printed as `<sella> is limited on <harness>;
 try again after <reset if known>` · anything else is the harness's own exit
 code, relayed as-is.
+
+## Harness hooks (Claude Code)
+
+```bash
+npm run bisellium -- hooks print --harness claude-code --sella <sella> [--studio <dir>]
+npm run bisellium -- hooks check --harness claude-code [--studio <dir>]
+npm run bisellium -- hook-event <start|stop|tool|compact> --sella <sella> [--studio <dir>]
+```
+
+Where `talk` drives a harness directly, hooks let the harness drive itself:
+running a sella straight inside Claude Code (no `bisellium talk` subprocess)
+while still leaving the same receipts and events a subprocess run would.
+`hooks print` prints (never writes) the `.claude/settings.json` block to
+paste in by hand: `SessionStart` runs TWO commands — `bisellium context`
+(its stdout becomes the sella's injected boot bundle) and `hook-event start`
+(opens the session's receipt) — `PreCompact` re-runs just `bisellium
+context`, and `Stop`/`PostToolUse` (`Write`/`Edit` only) wire to `hook-event
+stop`/`hook-event tool`. `SubagentStart` is intentionally left unwired — a
+subagent has no sella of its own to hand a receipt or boot bundle to.
+
+`hook-event` is the actual command each hook runs: it reads the hook's JSON
+payload from stdin and always exits 0 (at most one line to stderr on any
+failure) — a broken studio must never block the harness. `start`/`stop`
+write and close a `receipts/<sella>/<sessionId>.json` receipt exactly like
+`bisellium run`'s (`harness: "claude-code"`); `stop` also prints a one-line
+reminder when that sella's active opus has a `traditio` older than 24h.
+`start`/`stop` treat the payload's `session_id` (and `--sella`) as untrusted
+input joined straight into that path: either one failing
+`/^[A-Za-z0-9._-]{1,128}$/` (no separators, no bare `.`/`..`, bounded length)
+is refused — one short stderr line, still exit 0 — rather than ever writing
+outside the studio dir or letting an oversized value blow up the error text.
+`tool` appends one `workflow.tool_used` event to `<studio>/.bisellium/events.jsonl`
+(the same log `@bisellium/core`'s Store reads), with the touched file path
+redacted the same way a run receipt's argv is. `compact` appends a note to
+`timeline/<sella>.jsonl`.
+
+`hooks check` reports each declared sella's most recent hook receipt and
+flags `hook dead`: a sella whose harness is `claude-code` (the default) but
+whose last few receipts (default 3) carry no `harness: "claude-code"` entry
+— advisory, never a hard failure, and only once the studio has *some*
+receipt history (a never-run studio isn't "dead", it's just new). `check`'s
+own `hook.dead` rule reports the same thing for every studio check already
+runs.

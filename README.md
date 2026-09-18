@@ -22,9 +22,11 @@ docs/LEX_TEMPLATE.md      per-collegium lex
 docs/ADOPTION.md          what an Bisellium-compliant project directory contains
 examples/sample-studio    a complete instance — the app runs on this alone
 packages/schema           the contract: entities, lifecycles, workflow.* attributes
-packages/core             JSONL event log, snapshot differ, in-memory store (burn derivation + query API next)
+packages/core             JSONL event log, snapshot differ, SQLite index + query API, Store
+packages/shim             worktree seam, run receipts, harness profiles (claude-code/codex/git-only/fake), Claude Code hooks profile
 adapters/native           reads an Bisellium directory into a Snapshot
 adapters/epoch0           reference external project (deferred; read-only)
+apps/server               localhost HTTP + SSE surface over a studio (`bisellium serve`)
 apps/web                  React UI (next)
 ```
 
@@ -68,10 +70,12 @@ npm install && npm run snapshot -- examples/sample-studio
    - `bisellium pause` / `bisellium resume` (the manual brake: `tick` skips cadence work while paused; `run`/`talk` proceed with a one-line warning) — done.
    - Patron and sella write commands (`handoff`, `emit`, `answer`, `greenlight`, `budget`) — done, wired into the CLI with tests.
    - Not yet: firstmate as the L2 dispatcher; a sella's manifest `model` isn't passed through to its harness CLI yet, so every seat talks on the vendor's default model. ← current
-8. `packages/core` — partially done: JSONL event log and snapshot differ (`diffSnapshots`) landed with an in-memory `Store`; burn derivation and a query API over the store are not yet built there (query today is `packages/cli`'s file-based `answer()`, not a core API).
+8. `packages/core` — done: JSONL event log, snapshot differ (`diffSnapshots`), a per-source-seq `Store` that persists a snapshot cache (`.bisellium/snapshots/<source>.json`) and feeds a SQLite index (`.bisellium/index/index.db`, `node:sqlite`), and a query API (`opera`/`opus`/`needsYou`/`burn`/`timeline`/`events`/`stats`) mirroring `packages/cli`'s file-based `answer()` shapes. `bisellium query` gains `--from-index` to answer from the index instead of re-reading every file, falling back to files whenever the index is missing, locked or corrupt. A corrupt log line or index db file is recovered from, never fatal (matches the file-based readers' own degrade-don't-throw discipline).
 9. `apps/web` — Inbox and Studio first, then Board with drawer, Digest, Agents.
 10. Tauri wrapper: tray + native needs-you notifications.
-11. External adapters: a markdown/git project (snapshot), harness hooks (events).
+11. External adapters: a markdown/git project (snapshot) — done; harness hooks (events) — first profile done:
+    - `apps/server` (`bisellium serve`): a localhost-only HTTP + SSE server over a studio — `GET /api/{officina,opera,opus/:id,inbox,acta,aerarium,providers,health,timeline/:sella,events,receipts}`, `GET /api/live` (SSE), and the Patron/sella write routes (`answer`/`greenlight`/`budget`/`handoff`/`talk`/`pause`/`resume`) reusing `packages/cli`'s write functions under a per-server write lock. Writes are refused from anything but 127.0.0.1.
+    - `packages/shim`'s `claude-code` hooks profile: `bisellium hooks print --harness claude-code --sella <id>` prints the `.claude/settings.json` block to paste in (SessionStart → `bisellium context` + `bisellium hook-event start`; PreCompact → `bisellium context`; Stop → `hook-event stop`; PostToolUse (Write|Edit) → `hook-event tool`; SubagentStart intentionally left unwired). `bisellium hook-event <start|stop|tool|compact>` is the actual hook target: reads its payload from stdin, never blocks the harness (always exits 0, at most one stderr line), and rejects a path-shaped `session_id`/`--sella` rather than joining untrusted harness input straight into a receipt path. `bisellium hooks check` / `check`'s `hook.dead` rule report per-sella hook liveness from those receipts.
 
 Cascade 1b hardened items 1–5 and 8 (review-flagged first-hour CLI friction and
 `packages/core` correctness fixes) and renamed the contract's product-facing
@@ -88,6 +92,20 @@ Cascade 3 landed the rest of item 7's CLI surface — `talk`, `tick` (L1),
 `examples/sample-studio` and `studio`; item 7's two remaining gaps (firstmate
 as the L2 dispatcher, and passing a sella's `model` through to its harness
 CLI) are noted above and carry forward.
+
+Cascade 4 landed item 8 (`packages/core`'s SQLite index + query API, `bisellium
+query --from-index`), a localhost HTTP + SSE server (`apps/server`, `bisellium
+serve`) over a studio, and item 11's first harness-hooks profile
+(`packages/shim`'s `claude-code` profile plus `bisellium hooks`/`hook-event`,
+wired into `main.ts`) — `typecheck`, `npm test` and `check` green on both
+`examples/sample-studio` and `studio`. `apps/server` reads through its own
+thin per-source ingest (not `packages/core`'s `Store` directly — the two
+converged on the same on-disk contract, `EVENTS_LOG_REL`/`SNAPSHOTS_DIR_REL`,
+rather than a shared class, so the two builds that landed in the same window
+never had to block on each other's `Store` signature). Carried forward:
+`apps/web` (item 9) hasn't started, so `apps/server`'s API is exercised today
+via curl/tests and its own built-in route-index page, not a real UI; item 7's
+two gaps above still stand.
 
 Acceptance: the console renders the sample studio and an external adapter with
 zero adapter-specific code outside the drawer's extension slot; replay

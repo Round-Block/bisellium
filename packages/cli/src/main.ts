@@ -18,6 +18,8 @@ import { runTalk } from "./talk.js";
 import { runTick } from "./tick.js";
 import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
+import { runServe } from "./serve.js";
+import { runHooks, runHookEvent } from "./hooks.js";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
@@ -32,7 +34,7 @@ const FLAGS_BY_COMMAND: Record<string, Set<string>> = {
   init: new Set(["--now", "--timezone"]),
   new: new Set(["--kind", "--collegium", "--title"]),
   context: new Set(["--sella", "--now", "--max-tokens"]),
-  query: new Set(["--now"]),
+  query: new Set(["--now", "--from-index"]),
   providers: new Set(["--source", "--json", "--now"]),
 };
 const USAGE =
@@ -40,7 +42,7 @@ const USAGE =
   "       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n" +
   "       bisellium new --kind <kind> --collegium <collegium> --title <title> [dir]\n" +
   "       bisellium context --sella <sella> [dir] [--now <iso>] [--max-tokens <n>]\n" +
-  "       bisellium query <question> [dir] [--now <iso>]\n" +
+  "       bisellium query <question> [dir] [--now <iso>] [--from-index]\n" +
   "       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]\n" +
   "       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
   "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
@@ -53,7 +55,40 @@ const USAGE =
   "       bisellium emit <json> [--studio <dir>] [--now <iso>]\n" +
   "       bisellium answer --petitio <id> <reply…> [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]";
+  "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
+  "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +
+  "       bisellium hooks check --harness claude-code [--studio <dir>]\n" +
+  "       bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]";
+
+/** `bisellium serve` never exits on its own — it's a long-running HTTP
+ *  server (plus a poll timer, unless `--once`), so main()'s usual
+ *  "compute an exit code and return it" shape doesn't fit. A usage error or
+ *  failed start (bad --studio, port already in use, …) still exits
+ *  immediately with runServe's own exit code. Otherwise this resolves only
+ *  once the process gets SIGINT/SIGTERM (Ctrl-C, or `kill`, matching how an
+ *  operator actually stops it — see docs/ADOPTION.md), calling the server's
+ *  own close() first so every open SSE client and the HTTP socket itself
+ *  shut down cleanly instead of process.exit() ripping them out from
+ *  under connected clients. */
+async function runServeUntilStopped(rest: string[]): Promise<number> {
+  const started = await runServe(rest);
+  if (started.exitCode !== 0) return started.exitCode;
+
+  return new Promise<number>((resolveExit) => {
+    let stopping = false;
+    const stop = (): void => {
+      if (stopping) return;
+      stopping = true;
+      started.close().then(
+        () => resolveExit(0),
+        () => resolveExit(0),
+      );
+    };
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
+  });
+}
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
@@ -69,6 +104,9 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "resume") return (await runResume(rest)).exitCode;
   if (cmd === "handoff") return runHandoff(rest).exitCode;
   if (cmd === "emit") return runEmit(rest).exitCode;
+  if (cmd === "hooks") return runHooks(rest).exitCode;
+  if (cmd === "hook-event") return (await runHookEvent(rest)).exitCode;
+  if (cmd === "serve") return runServeUntilStopped(rest);
   // answer/greenlight/budget are Patron writes: BISELLIUM_ROLE=patron
   // before calling, so their timeline/patron.jsonl line records the
   // correct role (docs/ADOPTION.md: "the CLI runs them with
@@ -94,12 +132,13 @@ async function main(argv: string[]): Promise<number> {
     const k = eq === -1 ? a : a.slice(0, eq);
     const inline = eq === -1 ? undefined : a.slice(eq + 1);
     if (!allowed.has(k)) { console.error(`flag ${k} not allowed for "${cmd ?? ""}"\n${USAGE}`); return 2; }
-    if (k === "--json") {
-      // Boolean flag: bare --json or --json=true enables it, --json=false
-      // disables it, anything else is a usage error (never silently "true").
+    if (k === "--json" || k === "--from-index") {
+      // Boolean flag: bare --json/--from-index or an explicit "=true"
+      // enables it, "=false" disables it, anything else is a usage error
+      // (never silently "true").
       if (inline === undefined || inline === "true") { opts.set(k, "1"); continue; }
       if (inline === "false") { opts.delete(k); continue; }
-      console.error(`--json must be true or false\n${USAGE}`);
+      console.error(`${k} must be true or false\n${USAGE}`);
       return 2;
     }
     const v = inline ?? rest[++i];
@@ -168,7 +207,7 @@ async function main(argv: string[]): Promise<number> {
     if (!question) { console.error(USAGE); return 2; }
 
     const root = resolve(args[1] ?? ".");
-    const result = answer(root, question, { now });
+    const result = answer(root, question, { now, fromIndex: opts.has("--from-index") });
     if (result.kind === "unknown" && result.suggestions?.[0]?.startsWith("not a studio:")) {
       console.error(result.suggestions[0]);
       return 2;

@@ -17,3 +17,5 @@ export {
   gitOnlyProfile,
   fakeProfile,
 } from "./harness/index.js";
+export { CLAUDE_CODE_HOOK_NAMES, claudeCodeHooksBlock, readJsonFromStream, hookReceiptStatuses, HOOK_HARNESS_ID, HOOK_DEAD_RECENT_RECEIPTS } from "./hooks/index.js";
+export type { ClaudeCodeHooksOpts, ClaudeCodeHooksBlock, ReadPayloadResult, HookReceiptStatus, ReceiptSummary } from "./hooks/index.js";

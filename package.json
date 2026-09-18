@@ -9,11 +9,11 @@
     "apps/*"
   ],
   "scripts": {
-    "typecheck": "tsc -p packages/schema/tsconfig.json --noEmit && tsc -p packages/providers/tsconfig.json --noEmit && tsc -p packages/shim/tsconfig.json --noEmit && tsc -p packages/pipeline/tsconfig.json --noEmit && tsc -p adapters/native/tsconfig.json --noEmit && tsc -p adapters/epoch0/tsconfig.json --noEmit && tsc -p packages/cli/tsconfig.json --noEmit && tsc -p packages/core/tsconfig.json --noEmit",
+    "typecheck": "tsc -p packages/schema/tsconfig.json --noEmit && tsc -p packages/providers/tsconfig.json --noEmit && tsc -p packages/shim/tsconfig.json --noEmit && tsc -p packages/pipeline/tsconfig.json --noEmit && tsc -p adapters/native/tsconfig.json --noEmit && tsc -p adapters/epoch0/tsconfig.json --noEmit && tsc -p packages/core/tsconfig.json --noEmit && tsc -p apps/server/tsconfig.json --noEmit && tsc -p packages/cli/tsconfig.json --noEmit",
     "bisellium": "tsx packages/cli/src/main.ts",
     "check": "tsx packages/cli/src/main.ts check",
     "snapshot": "tsx adapters/native/src/cli.ts",
-    "test": "tsx packages/cli/src/test.ts . && tsx packages/cli/src/init.test.ts && tsx packages/cli/src/cli.test.ts . && tsx packages/cli/src/context.test.ts . && tsx packages/cli/src/check.test.ts . && tsx packages/core/src/differ.test.ts . && tsx packages/providers/test/providers.test.ts . && tsx packages/shim/test/shim.test.ts . && tsx packages/shim/test/harness.test.ts . && tsx packages/pipeline/test/pipeline.test.ts . && tsx packages/cli/src/tick.test.ts . && tsx packages/cli/src/writes.test.ts . && tsx packages/shim/test/talk.test.ts ."
+    "test": "tsx packages/cli/src/test.ts . && tsx packages/cli/src/init.test.ts && tsx packages/cli/src/cli.test.ts . && tsx packages/cli/src/context.test.ts . && tsx packages/cli/src/check.test.ts . && tsx packages/core/src/differ.test.ts . && tsx packages/providers/test/providers.test.ts . && tsx packages/shim/test/shim.test.ts . && tsx packages/shim/test/harness.test.ts . && tsx packages/pipeline/test/pipeline.test.ts . && tsx packages/cli/src/tick.test.ts . && tsx packages/cli/src/writes.test.ts . && tsx packages/cli/src/query.test.ts . && tsx packages/shim/test/talk.test.ts . && tsx packages/shim/test/hooks.test.ts . && tsx packages/core/src/index.test.ts . && tsx apps/server/test/server.test.ts ."
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,0 +1,57 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bisellium context --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bisellium hook-event start --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bisellium context --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bisellium hook-event stop --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bisellium hook-event tool --sella __SELLA__ --studio __STUDIO__",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

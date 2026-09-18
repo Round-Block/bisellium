@@ -3,14 +3,14 @@
  * examples/sample-studio. `ts` is pinned so nothing here depends on the
  * wall clock.
  */
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { snapshotDir } from "@bisellium/adapter-native";
 import { WF, type GantryEvent, type Snapshot } from "@bisellium/schema";
 import { diffSnapshots } from "./differ.js";
 import { appendEvents, readEvents, readLog } from "./log.js";
-import { Store } from "./store.js";
+import { EVENTS_LOG_REL, Store } from "./store.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const root = resolve(repo, "examples/sample-studio");
@@ -151,12 +151,11 @@ const B: Snapshot = structuredClone(A);
 
 {
   const dir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
-  const logPath = join(dir, "events.jsonl");
-  const store = new Store(logPath);
+  const store = new Store({ studioDir: dir });
   const ev1 = store.ingest(A, { source: "sample-studio", ts: TS, projectId: "sample-studio" });
   const ev2 = store.ingest(B, { source: "sample-studio", ts: TS, projectId: "sample-studio" });
 
-  const onDisk = readEvents(logPath);
+  const onDisk = readEvents(join(dir, EVENTS_LOG_REL));
   check(
     "Store: readEvents length equals sum of ingested events",
     onDisk.length === ev1.length + ev2.length,
@@ -173,8 +172,7 @@ const B: Snapshot = structuredClone(A);
 
 {
   const dir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
-  const logPath = join(dir, "events.jsonl");
-  const store = new Store(logPath);
+  const store = new Store({ studioDir: dir });
   store.ingest(A, { source: "sample-studio", ts: TS, projectId: "sample-studio" });
 
   const replay = store.replay();
@@ -192,7 +190,8 @@ const B: Snapshot = structuredClone(A);
 
 {
   const dir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
-  const logPath = join(dir, "events.jsonl");
+  const logPath = join(dir, EVENTS_LOG_REL);
+  mkdirSync(join(dir, ".bisellium"), { recursive: true });
   const good1: GantryEvent = { id: "x:0", name: "workflow.digest", ts: TS, projectId: "p", attrs: { [WF.DIGEST_ID]: "d1" } };
   const good2: GantryEvent = { id: "x:1", name: "workflow.digest", ts: TS, projectId: "p", attrs: { [WF.DIGEST_ID]: "d2" } };
   writeFileSync(logPath, `${JSON.stringify(good1)}\nnot json at all\n${JSON.stringify(good2)}\n`, "utf8");
@@ -201,7 +200,7 @@ const B: Snapshot = structuredClone(A);
   check("readLog: corrupt middle line is skipped, not thrown", events.length === 2, `${events.length} events`);
   check("readLog: corrupt middle line is counted", skipped === 1, `${skipped} skipped`);
 
-  const store = new Store(logPath);
+  const store = new Store({ studioDir: dir });
   check("Store: constructor does not throw on a corrupt log", store.events().length === 2, `${store.events().length}`);
   check("Store: corruptLines records the skipped count", store.corruptLines === 1, `${store.corruptLines}`);
 }
@@ -210,14 +209,13 @@ const B: Snapshot = structuredClone(A);
 
 {
   const dir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
-  const logPath = join(dir, "events.jsonl");
 
-  const store1 = new Store(logPath);
+  const store1 = new Store({ studioDir: dir });
   const firstBatch = store1.ingest(A, { source: "sample-studio", ts: TS, projectId: "sample-studio" });
   const lastSeq = Math.max(...firstBatch.map((e) => Number(e.attrs[WF.SOURCE_SEQ])));
 
-  // A fresh Store re-opening the same log (as a restarted process would).
-  const store2 = new Store(logPath);
+  // A fresh Store re-opening the same studio dir (as a restarted process would).
+  const store2 = new Store({ studioDir: dir });
   const secondBatch = store2.ingest(B, { source: "sample-studio", ts: TS, projectId: "sample-studio" });
   const firstResumedSeq = Math.min(...secondBatch.map((e) => Number(e.attrs[WF.SOURCE_SEQ])));
 
@@ -259,9 +257,14 @@ const B: Snapshot = structuredClone(A);
   }
   check("readLog: non-ENOENT fs error (EISDIR on a directory) propagates", threw);
 
+  // For the Store, force the SAME condition at its own derived log path
+  // (<studioDir>/.bisellium/events.jsonl): a directory sitting where the log
+  // file should be.
+  const storeDir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
+  mkdirSync(join(storeDir, EVENTS_LOG_REL), { recursive: true });
   let storeThrew = false;
   try {
-    new Store(dir);
+    new Store({ studioDir: storeDir });
   } catch {
     storeThrew = true;
   }

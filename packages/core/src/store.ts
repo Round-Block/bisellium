@@ -1,17 +1,42 @@
 /**
- * The event store: appends diffed events to the JSONL log and rebuilds
- * whatever an index needs to answer purely from that log. One store owns
- * one log file and may ingest snapshots from several sources, each keeping
- * its own last-seen snapshot and seq counter.
+ * The event store: appends diffed events to the JSONL log, keeps the last
+ * snapshot per source so a restart doesn't replay the world as a fresh
+ * appearance, and feeds every new event into the SQLite Index (W-013) so
+ * queries never have to replay the log by hand. One store owns one studio
+ * directory — every path it touches is derived from `studioDir`, all of it
+ * under `.bisellium/` (gitignored, docs/ADOPTION.md).
  */
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { WF, type GantryEvent, type Snapshot } from "@bisellium/schema";
 import { diffSnapshots } from "./differ.js";
+import { Index } from "./index-db.js";
 import { appendEvents, readLog } from "./log.js";
+
+/**
+ * `<studio>/.bisellium/events.jsonl` — the CLI's `emit`/Patron-write commands
+ * (packages/cli/src/writes.ts) append here too, so the log a Store replays
+ * and the log the CLI writes are the same file (coordinated via this
+ * constant rather than each side hard-coding the path).
+ */
+export const EVENTS_LOG_REL = ".bisellium/events.jsonl";
+/** `<studio>/.bisellium/snapshots/<source>.json` — the last snapshot ingested
+ *  per source, persisted so a restarted Store has a baseline to diff
+ *  against instead of treating everything as newly appeared. */
+export const SNAPSHOTS_DIR_REL = ".bisellium/snapshots";
+/** `<studio>/.bisellium/index/index.db` — the SQLite index (see index-db.ts). */
+export const INDEX_DB_REL = ".bisellium/index/index.db";
+
+export interface StoreOptions {
+  studioDir: string;
+}
 
 export interface IngestContext {
   source: string;
   ts: string;
   projectId: string;
+  /** Probatio ids that are `kind: human` — see DiffContext.humanGates. */
+  humanGates?: Iterable<string>;
 }
 
 export interface ReplayItem {
@@ -25,47 +50,152 @@ export interface ReplayResult {
   items: Map<string, ReplayItem>;
 }
 
-// TODO(sqlite): index in a real database; for now everything below is
-// rebuilt in memory from the log on every read.
+function seqBySourceFrom(log: GantryEvent[]): Map<string, number> {
+  const seqBySource = new Map<string, number>();
+  for (const e of log) {
+    const source = e.attrs[WF.SOURCE];
+    const seq = e.attrs[WF.SOURCE_SEQ];
+    if (typeof source !== "string" || typeof seq !== "number") continue;
+    const next = seq + 1;
+    if (next > (seqBySource.get(source) ?? 0)) seqBySource.set(source, next);
+  }
+  return seqBySource;
+}
+
+/** True for a value that JSON.parse'd but isn't actually GantryEvent-shaped
+ *  (e.g. `{"id":"x"}`, `null`, `42`, `"a string"`) — readLog only rejects a
+ *  line that fails to *parse*, not one that parses into the wrong shape.
+ *  Every reader of `this.log` below (`seqBySourceFrom`, `replay`, `burn`)
+ *  indexes straight into `.attrs[...]`, so a wrong-shaped-but-valid-JSON
+ *  line must never reach `this.log` at all. */
+function isGantryEvent(e: unknown): e is GantryEvent {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    typeof (e as Record<string, unknown>)["id"] === "string" &&
+    typeof (e as Record<string, unknown>)["name"] === "string" &&
+    typeof (e as Record<string, unknown>)["attrs"] === "object" &&
+    (e as Record<string, unknown>)["attrs"] !== null
+  );
+}
+
+/** Drops any line that parsed as JSON but isn't event-shaped, folding it
+ *  into the same "corrupt" count readLog's own unparseable lines use — "a
+ *  corrupt log is never fatal" (this file's own docs) covers both kinds of
+ *  bad line, not just the JSON.parse failures. */
+function sanitizeLog(events: GantryEvent[]): { events: GantryEvent[]; corrupt: number } {
+  const out: GantryEvent[] = [];
+  let corrupt = 0;
+  for (const e of events) {
+    if (isGantryEvent(e)) out.push(e);
+    else corrupt++;
+  }
+  return { events: out, corrupt };
+}
+
 export class Store {
+  readonly studioDir: string;
   private readonly logPath: string;
+  private readonly snapshotsDir: string;
   private readonly log: GantryEvent[];
   private readonly lastSnapshot = new Map<string, Snapshot>();
-  private readonly seqBySource = new Map<string, number>();
-  /** Lines in the on-disk log that failed to parse when this Store was
-   *  constructed. A corrupt log is never fatal — this just says how much
-   *  history was dropped. */
-  readonly corruptLines: number;
+  private seqBySource: Map<string, number>;
+  /** The SQLite index this store keeps fed. Query it directly — that's the
+   *  point (docs on Index, index-db.ts). */
+  readonly query: Index;
+  /** Lines in the on-disk log that failed to parse, as of the last time this
+   *  Store read the log from disk (construction, or `rebuildIndex()`). A
+   *  corrupt log is never fatal — this just says how much history was
+   *  dropped. */
+  corruptLines: number;
 
-  constructor(logPath: string) {
-    this.logPath = logPath;
-    const { events, skipped } = readLog(logPath);
-    this.log = events;
-    this.corruptLines = skipped;
-    for (const e of this.log) {
-      const source = e.attrs[WF.SOURCE];
-      const seq = e.attrs[WF.SOURCE_SEQ];
-      if (typeof source !== "string" || typeof seq !== "number") continue;
-      const next = seq + 1;
-      if (next > (this.seqBySource.get(source) ?? 0)) this.seqBySource.set(source, next);
+  constructor(opts: StoreOptions) {
+    this.studioDir = opts.studioDir;
+    this.logPath = join(this.studioDir, EVENTS_LOG_REL);
+    this.snapshotsDir = join(this.studioDir, SNAPSHOTS_DIR_REL);
+
+    const { events, skipped } = readLog(this.logPath);
+    const sanitized = sanitizeLog(events);
+    this.log = sanitized.events;
+    this.corruptLines = skipped + sanitized.corrupt;
+    this.seqBySource = seqBySourceFrom(this.log);
+
+    this.loadPersistedSnapshots();
+    this.query = new Index(join(this.studioDir, INDEX_DB_REL));
+  }
+
+  private loadPersistedSnapshots(): void {
+    if (!existsSync(this.snapshotsDir)) return;
+    let files: string[] = [];
+    try {
+      files = readdirSync(this.snapshotsDir).filter((f) => f.endsWith(".json"));
+    } catch {
+      return; // unreadable snapshots dir: every source starts as cold, same as a fresh studio
     }
+    for (const f of files) {
+      const source = decodeURIComponent(f.slice(0, -".json".length));
+      try {
+        const snap = JSON.parse(readFileSync(join(this.snapshotsDir, f), "utf8")) as Snapshot;
+        this.lastSnapshot.set(source, snap);
+      } catch {
+        // A corrupt snapshot file just means this source re-appears in full
+        // on its next ingest — noisy, never fatal (same spirit as
+        // readLog's corrupt-line handling).
+      }
+    }
+  }
+
+  private persistSnapshot(source: string, snapshot: Snapshot): void {
+    mkdirSync(this.snapshotsDir, { recursive: true });
+    const path = join(this.snapshotsDir, `${encodeURIComponent(source)}.json`);
+    writeFileSync(path, JSON.stringify(snapshot), "utf8");
   }
 
   ingest(snapshot: Snapshot, ctx: IngestContext): GantryEvent[] {
     const prev = this.lastSnapshot.get(ctx.source) ?? null;
     const seq = this.seqBySource.get(ctx.source) ?? 0;
-    const { events, seq: nextSeq } = diffSnapshots(prev, snapshot, { source: ctx.source, seq, ts: ctx.ts, projectId: ctx.projectId });
+    const { events, seq: nextSeq } = diffSnapshots(prev, snapshot, {
+      source: ctx.source,
+      seq,
+      ts: ctx.ts,
+      projectId: ctx.projectId,
+      humanGates: ctx.humanGates,
+    });
     if (events.length > 0) {
       appendEvents(this.logPath, events);
       this.log.push(...events);
+      this.query.apply(events);
     }
     this.seqBySource.set(ctx.source, nextSeq);
     this.lastSnapshot.set(ctx.source, snapshot);
+    this.persistSnapshot(ctx.source, snapshot);
     return events;
   }
 
   events(): GantryEvent[] {
     return [...this.log];
+  }
+
+  /** Re-reads the log from disk (picking up anything appended outside this
+   *  Store, e.g. the CLI's `emit`/write commands) and rebuilds the Index
+   *  from scratch against it — the reconciliation path for when apply()'s
+   *  incremental trail can't be trusted to already be complete. */
+  rebuildIndex(): void {
+    const { events, skipped } = readLog(this.logPath);
+    const sanitized = sanitizeLog(events);
+    this.log.length = 0;
+    this.log.push(...sanitized.events);
+    this.corruptLines = skipped + sanitized.corrupt;
+    this.seqBySource = seqBySourceFrom(this.log);
+    this.query.rebuild(this.log);
+  }
+
+  /** Releases the SQLite handle this Store's Index owns. Every caller that
+   *  constructs a Store should call this when done with it — the Store is
+   *  what created the handle, so it's what should own closing it, rather
+   *  than every caller reaching through to `store.query.close()` itself. */
+  close(): void {
+    this.query.close();
   }
 
   replay(): ReplayResult {

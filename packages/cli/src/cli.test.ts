@@ -6,8 +6,8 @@
  *
  * `now` is pinned so age-derived text never drifts.
  */
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -61,6 +61,48 @@ try {
       r.status === 2 && !looksLikeStackTrace(r.stderr) && !looksLikeStackTrace(r.stdout),
       `status=${r.status} stderr=${JSON.stringify(r.stderr)}`,
     );
+  }
+  // --from-index (W-013's index-backed answer path) must actually be
+  // reachable from a user typing `bisellium query ... --from-index`, not
+  // just from a library caller passing {fromIndex: true} directly.
+  {
+    const r = run(["query", "status W-002", "examples/sample-studio", "--now", NOW, "--from-index"]);
+    check(
+      "query --from-index: main.ts accepts the flag and exits 0",
+      r.status === 0 && !/not allowed for/.test(r.stderr),
+      `status=${r.status} stdout=${JSON.stringify(r.stdout.slice(0, 120))} stderr=${JSON.stringify(r.stderr)}`,
+    );
+  }
+
+  // ---- hooks / hook-event: W-015's CLI surfaces dispatched via main.ts -------
+  {
+    const r = run(["hooks", "print", "--harness", "claude-code", "--sella", "eng-lead", "--studio", "examples/sample-studio"]);
+    check("hooks print: dispatched through main.ts, exits 0", r.status === 0, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
+    const parsesAsJson = (() => {
+      try {
+        JSON.parse(r.stdout);
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+    check("hooks print: stdout is the hooks JSON block", parsesAsJson, r.stdout.slice(0, 200));
+  }
+  {
+    const dir = mkdtempSync(join(tmpdir(), "bisellium-cli-hookevent-"));
+    try {
+      cpSync("examples/sample-studio", dir, { recursive: true });
+      const r = spawnSync(process.execPath, ["--import", "tsx", MAIN, "hook-event", "start", "--sella", "builder-1", "--studio", dir], {
+        cwd: repo,
+        encoding: "utf8",
+        input: JSON.stringify({ session_id: "cli-wiring-test" }),
+      });
+      check("hook-event start: dispatched through main.ts, exits 0", r.status === 0, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
+      const receiptFile = join(dir, "receipts", "builder-1", "cli-wiring-test.json");
+      check("hook-event start: receipt written under the studio dir", existsSync(receiptFile), receiptFile);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   }
 
   // ---- context ------------------------------------------------------------------
@@ -163,5 +205,74 @@ try {
 } finally {
   rmSync(nonStudio, { recursive: true, force: true });
 }
+
+// ---- serve: dispatched through main.ts, actually serves, dies on SIGTERM ---
+// Spawned (not spawnSync) because the process never exits on its own — it's
+// a long-running HTTP server, same as an operator would run it. `--port 0`
+// picks a random free port so parallel test runs never collide.
+async function testServeWiring(): Promise<void> {
+  const dir = mkdtempSync(join(tmpdir(), "bisellium-cli-serve-"));
+  cpSync("examples/sample-studio", dir, { recursive: true });
+  try {
+    const child = spawn(process.execPath, ["--import", "tsx", MAIN, "serve", "--studio", dir, "--port", "0", "--once", "--now", NOW], {
+      cwd: repo,
+    });
+    let stdout = "";
+    let stderrBuf = "";
+    child.stdout?.on("data", (c: Buffer) => (stdout += c.toString()));
+    child.stderr?.on("data", (c: Buffer) => (stderrBuf += c.toString()));
+
+    const port = await new Promise<number | undefined>((resolvePort) => {
+      const timer = setTimeout(() => resolvePort(undefined), 10_000);
+      const tryMatch = () => {
+        const m = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout);
+        if (m) {
+          clearTimeout(timer);
+          resolvePort(Number(m[1]));
+        }
+      };
+      child.stdout?.on("data", tryMatch);
+      tryMatch();
+    });
+    check(
+      "serve: dispatched through main.ts, prints its listening line",
+      port !== undefined,
+      `stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(stderrBuf)}`,
+    );
+
+    if (port !== undefined) {
+      const officina = await fetch(`http://127.0.0.1:${port}/api/officina`);
+      check("serve: GET /api/officina responds 200", officina.status === 200, String(officina.status));
+
+      const inbox = await fetch(`http://127.0.0.1:${port}/api/inbox`);
+      check("serve: GET /api/inbox responds 200", inbox.status === 200, String(inbox.status));
+
+      const aerarium = await fetch(`http://127.0.0.1:${port}/api/aerarium`);
+      check("serve: GET /api/aerarium responds 200", aerarium.status === 200, String(aerarium.status));
+
+      const health = await fetch(`http://127.0.0.1:${port}/api/health`);
+      check("serve: GET /api/health responds 200", health.status === 200, String(health.status));
+
+      // This child was NOT given NODE_ENV=test, so the test-only manual
+      // poll hook must refuse it, same as production.
+      const poll = await fetch(`http://127.0.0.1:${port}/api/_poll`, { method: "POST" });
+      check("serve: POST /api/_poll refused outside NODE_ENV=test", poll.status === 404, String(poll.status));
+    }
+
+    child.kill("SIGTERM");
+    const exitedCleanly = await new Promise<boolean>((resolveExit) => {
+      const timer = setTimeout(() => resolveExit(false), 5000);
+      child.once("exit", () => {
+        clearTimeout(timer);
+        resolveExit(true);
+      });
+    });
+    check("serve: SIGTERM stops it (main.ts's runServeUntilStopped)", exitedCleanly, "");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+await testServeWiring();
 
 process.exit(failed ? 1 : 0);

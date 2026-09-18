@@ -21,7 +21,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeF
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
-import { appendEvents, readLog } from "@bisellium/core";
+import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
 
@@ -144,11 +144,13 @@ function readState(path: string): string | { error: string } {
   return typeof state === "string" ? state : "";
 }
 
-/** Appends one workflow.* event to `<studio>/events.jsonl`, seq'd off the
+/** Appends one workflow.* event to `<studio>/.bisellium/events.jsonl`
+ *  (EVENTS_LOG_REL, `@bisellium/core` — the same file a Store reads/appends
+ *  to, so a CLI write and a running Store never fork the log), seq'd off the
  *  log's current length (this file's simpler seq scheme — not the
  *  per-source counter @bisellium/core's Store keeps for snapshot diffing). */
 function emitEvent(root: string, manifest: Manifest, name: string, now: Date, attrs: Record<string, string | number | boolean>): void {
-  const logPath = join(root, "events.jsonl");
+  const logPath = join(root, EVENTS_LOG_REL);
   const seq = readLog(logPath).events.length;
   const event: GantryEvent = {
     id: `cli:${seq}`,
@@ -327,7 +329,7 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
   }
   const { root, manifest } = opened;
 
-  const logPath = join(root, "events.jsonl");
+  const logPath = join(root, EVENTS_LOG_REL);
   let event: GantryEvent;
   try {
     const seq = readLog(logPath).events.length;
