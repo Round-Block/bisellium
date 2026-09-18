@@ -182,6 +182,70 @@ try {
     const mod = (await import(join(repo, "cascades", "cascade.js"))) as { phases: string[] };
     check("13. cascade.js phases === [spec, build, verify, close]", JSON.stringify(mod.phases) === JSON.stringify(["spec", "build", "verify", "close"]));
   }
+
+  // =========================================================================
+  // Behaviour 14 — usage: a "Usage" section (totals, checking/building
+  // ratio, tokens per opus, trend vs the previous retro, posture from the
+  // current aerarium), only when RetroInput.usage is supplied at all —
+  // an existing caller that omits it (behaviours 10-13 above) gets no
+  // section and no behaviour change.
+  // =========================================================================
+  {
+    const dir = tempStudio("usage");
+    writeFileSync(join(dir, "ev.log"), "x\n");
+
+    const baseInput: RetroInput = {
+      verifierIssues: 0,
+      reviewFindings: [],
+      agents: [],
+      tests: 1,
+      fixRounds: 0,
+      mutationsCaught: 0,
+    };
+
+    // 14a. no usage supplied -> no Usage section at all.
+    const noUsage = draftRetro(dir, 1, baseInput, NOW);
+    check("14a. no input.usage -> no '## Usage' section", !noUsage.markdown.includes("## Usage"), noUsage.markdown);
+
+    // 14b. usage supplied -> section present with the numbers computed
+    // from it. aerarium/2026-W38.yml (NOW's ISO week) gives engineering
+    // a 100000-token allowance so posture has something to compare against.
+    mkdirSync(join(dir, "aerarium"), { recursive: true });
+    writeFileSync(
+      join(dir, "aerarium", "2026-W38.yml"),
+      "bisellium: 1\nperiod: 2026-W38\ncollegia: { engineering: { stipendium_tokens: 100000 } }\n",
+    );
+    const withUsage: RetroInput = {
+      ...baseInput,
+      usage: {
+        agents: [
+          { label: "eng-lead", role: "reviewer", model: "claude-opus-5", tokens: 5000, minutes: 20 },
+          { label: "builder-c", role: "builder", model: "claude-sonnet-5", tokens: 10000, minutes: 40 },
+        ],
+        totalTokens: 15000,
+        byModel: { "claude-opus-5": 5000, "claude-sonnet-5": 10000 },
+        byRole: { reviewer: 5000, builder: 10000 },
+        waste: { reruns: 1, refused: 0, fixRounds: 1 },
+      },
+    };
+    const draft2 = draftRetro(dir, 2, withUsage, NOW);
+    check("14b. input.usage -> '## Usage' section present", draft2.markdown.includes("## Usage"), draft2.markdown);
+    check("14c. total tokens reported", draft2.markdown.includes("Total tokens: 15000"), draft2.markdown);
+    check("14d. by-model breakdown reported", draft2.markdown.includes("claude-opus-5: 5000") && draft2.markdown.includes("claude-sonnet-5: 10000"), draft2.markdown);
+    check("14e. by-role breakdown reported", draft2.markdown.includes("reviewer: 5000") && draft2.markdown.includes("builder: 10000"), draft2.markdown);
+    // checking (reviewer, 5000) / building (builder, 10000) = 0.50
+    check("14f. checking/building ratio computed (5000/10000 = 0.50)", draft2.markdown.includes("0.50"), draft2.markdown);
+    // tokens per opus: totalTokens / building-role agent count (1) = 15000
+    check("14g. tokens per opus reported", draft2.markdown.includes("Tokens per opus: 15000"), draft2.markdown);
+    check("14h. waste reported", draft2.markdown.includes("1 rerun") && draft2.markdown.includes("1 fix round"), draft2.markdown);
+    check("14i. posture from the current aerarium reported", draft2.markdown.includes("engineering") && /ok|conserve|closeout|limited/.test(draft2.markdown), draft2.markdown);
+    check("14j. no prior retro yet -> trend says so", draft2.markdown.toLowerCase().includes("no prior retro"), draft2.markdown);
+
+    // 14k. a third retro (cascade 3), same totalTokens, should now find
+    // cascade 2's retro and report a flat (0%) trend rather than "no prior".
+    const draft3 = draftRetro(dir, 3, withUsage, NOW);
+    check("14k. a later retro finds the previous one and reports a trend", !draft3.markdown.toLowerCase().includes("no prior retro"), draft3.markdown);
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

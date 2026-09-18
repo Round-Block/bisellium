@@ -14,12 +14,38 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
+import { parse as parseYaml } from "yaml";
+import { isoWeek } from "@bisellium/adapter-native";
 
 export interface RetroFinding {
   class: string;
   where: string;
   /** Required, non-empty — same contract lesson.evidence enforces. */
   evidence: string[];
+}
+export interface RetroUsageAgent {
+  label: string;
+  /** Free-text role, e.g. "builder", "reviewer", "verifier" — matched by
+   *  substring (case-insensitive) against /build/ and /review|verify|censor/
+   *  to split "checking" tokens from "building" tokens. Not one of the
+   *  manifest's fixed sella `kind`s on purpose: a retro's usage input comes
+   *  from the cascade orchestrator, not from re-deriving it off the
+   *  manifest. */
+  role: string;
+  model: string;
+  tokens: number;
+  minutes: number;
+}
+export interface RetroUsage {
+  agents: RetroUsageAgent[];
+  totalTokens: number;
+  byModel: Record<string, number>;
+  byRole: Record<string, number>;
+  waste: { reruns: number; refused: number; fixRounds: number };
+  /** Provider quota snapshot, passed straight through if given (W-007's
+   *  provider status shape) — informational only, no computation depends
+   *  on it today. */
+  quota?: { id: string; usagePct?: number | null; status?: string }[];
 }
 export interface RetroInput {
   verifierIssues: number;
@@ -28,6 +54,11 @@ export interface RetroInput {
   tests: number;
   fixRounds: number;
   mutationsCaught: number;
+  /** Optional: when present, draftRetro adds a "## Usage" section (totals,
+   *  checking/building ratio, tokens per opus, trend vs the previous
+   *  retro, posture from the current aerarium). Absent entirely for a
+   *  caller that doesn't track usage — no section, no behaviour change. */
+  usage?: RetroUsage;
 }
 export interface RetroDraft {
   path: string;
@@ -121,6 +152,138 @@ function pruningCandidates(studioRoot: string, classes: string[]): { id: string;
       out.push({ id: idMatch[1]!.trim(), path: `decisions/${f}`, killWhen });
   }
   return out;
+}
+
+/** Same 4-band thresholds adapters/native/src/index.ts's own (unexported)
+ *  `posture()` uses — duplicated here rather than importing a private
+ *  helper across a package boundary; kept in sync by inspection since both
+ *  are tiny and stable. */
+function posture(allowance: number | undefined, burn: number | undefined): "ok" | "conserve" | "closeout" | "limited" | "unknown" {
+  if (allowance === undefined || burn === undefined) return "unknown";
+  const r = burn / allowance;
+  if (r >= 1) return "limited";
+  if (r >= 0.85) return "closeout";
+  if (r >= 0.6) return "conserve";
+  return "ok";
+}
+
+/** Reads aerarium/<isoWeek(now)>.yml (never throws) and reports, for every
+ *  collegium it declares an allowance for, this cascade's own usage.totalTokens
+ *  against that allowance — a simple, honestly-labelled approximation (this
+ *  cascade's spend vs. the period's per-collegium allowance), not the
+ *  cumulative all-time burn `bisellium budget`/adapters/native compute from
+ *  the full event log, which draftRetro has no index/store handle to query. */
+function posturesFromCurrentAerarium(studioRoot: string, now: Date, totalTokens: number): { collegium: string; posture: string; allowance: number; period: string }[] {
+  const period = isoWeek(now);
+  const path = join(studioRoot, "aerarium", `${period}.yml`);
+  let doc: unknown;
+  try {
+    if (!existsSync(path)) return [];
+    doc = parseYaml(readFileSync(path, "utf8"));
+  } catch {
+    return [];
+  }
+  if (typeof doc !== "object" || doc === null) return [];
+  const collegia = (doc as Record<string, unknown>)["collegia"];
+  if (typeof collegia !== "object" || collegia === null) return [];
+  const out: { collegium: string; posture: string; allowance: number; period: string }[] = [];
+  for (const [id, v] of Object.entries(collegia as Record<string, unknown>)) {
+    if (typeof v !== "object" || v === null) continue;
+    const allowance = (v as Record<string, unknown>)["stipendium_tokens"];
+    if (typeof allowance !== "number") continue;
+    out.push({ collegium: id, posture: posture(allowance, totalTokens), allowance, period });
+  }
+  return out.sort((a, b) => a.collegium.localeCompare(b.collegium));
+}
+
+/** Finds the highest-numbered retro acta strictly before `cascade` (by
+ *  filename, `acta/<date>-retro-<N>.md`) and pulls its "Total tokens: N"
+ *  line back out of its own Usage section — the only signal a prior
+ *  retro's markdown carries forward, deliberately not a second data store. */
+function previousRetroTotalTokens(studioRoot: string, cascade: number): { cascadeNumber: number; totalTokens: number } | undefined {
+  const dir = join(studioRoot, "acta");
+  let files: string[] = [];
+  try {
+    files = existsSync(dir) ? readdirSync(dir) : [];
+  } catch {
+    files = [];
+  }
+  let best: { cascadeNumber: number; file: string } | undefined;
+  const re = /-retro-(\d+)\.md$/;
+  for (const f of files) {
+    const m = re.exec(f);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (n < cascade && (best === undefined || n > best.cascadeNumber)) best = { cascadeNumber: n, file: f };
+  }
+  if (!best) return undefined;
+  let raw: string;
+  try {
+    raw = readFileSync(join(dir, best.file), "utf8");
+  } catch {
+    return undefined;
+  }
+  const m = /Total tokens:\s*(\d+)/.exec(raw);
+  if (!m) return undefined;
+  return { cascadeNumber: best.cascadeNumber, totalTokens: Number(m[1]) };
+}
+
+/** Builds the "## Usage" section's lines, or [] when `usage` is absent —
+ *  the caller (draftRetro) splices this in only when non-empty, so an
+ *  existing caller that never supplies usage sees byte-identical output
+ *  to before this field existed. */
+function usageSection(studioRoot: string, cascade: number, usage: RetroUsage | undefined, now: Date): string[] {
+  if (!usage) return [];
+
+  const byModelLine = Object.entries(usage.byModel).sort(([a], [b]) => a.localeCompare(b)).map(([m, t]) => `${m}: ${t}`).join(", ") || "(none)";
+  const byRoleLine = Object.entries(usage.byRole).sort(([a], [b]) => a.localeCompare(b)).map(([r, t]) => `${r}: ${t}`).join(", ") || "(none)";
+
+  // Checking/building ratio: Opus verify+review tokens ÷ builder tokens —
+  // "checking" and "building" are read off each agent's role (substring
+  // match, case-insensitive), not off the model name, since a builder can
+  // run on Opus too (studio/bisellium.yml's producer/eng-lead/architect do).
+  const checkingTokens = usage.agents.filter((a) => /review|verify|censor/i.test(a.role)).reduce((s, a) => s + a.tokens, 0);
+  const buildingAgents = usage.agents.filter((a) => /build/i.test(a.role));
+  const buildingTokens = buildingAgents.reduce((s, a) => s + a.tokens, 0);
+  const ratioLine = buildingTokens > 0 ? (checkingTokens / buildingTokens).toFixed(2) : "n/a (no building-role tokens)";
+
+  // Tokens per opus: this cascade model runs one builder per opus (D-012),
+  // so the building-role agent count is the opus count; falls back to the
+  // total agent count if no agent's role reads as "building" at all.
+  const opusCount = buildingAgents.length > 0 ? buildingAgents.length : Math.max(1, usage.agents.length);
+  const tokensPerOpus = Math.round(usage.totalTokens / opusCount);
+
+  const prev = previousRetroTotalTokens(studioRoot, cascade);
+  const trendLine =
+    prev === undefined
+      ? "no prior retro found for comparison"
+      : prev.totalTokens === 0
+        ? `cascade ${prev.cascadeNumber} reported 0 tokens — no percentage trend`
+        : (() => {
+            const pct = ((usage.totalTokens - prev.totalTokens) / prev.totalTokens) * 100;
+            const sign = pct >= 0 ? "+" : "";
+            return `${sign}${pct.toFixed(1)}% vs cascade ${prev.cascadeNumber} (${prev.totalTokens} → ${usage.totalTokens})`;
+          })();
+
+  const postures = posturesFromCurrentAerarium(studioRoot, now, usage.totalTokens);
+  const postureLines = postures.length
+    ? postures.map((p) => `${p.collegium}: ${p.posture} (this cascade ${usage.totalTokens} / ${p.allowance} tokens, ${p.period})`)
+    : ["(no aerarium on record for the current period)"];
+
+  return [
+    "## Usage",
+    "",
+    `- Total tokens: ${usage.totalTokens}`,
+    `- By model: ${byModelLine}`,
+    `- By role: ${byRoleLine}`,
+    `- Checking/building ratio: ${ratioLine}`,
+    `- Tokens per opus: ${tokensPerOpus} (opera basis: ${opusCount})`,
+    `- Waste: ${usage.waste.reruns} rerun(s), ${usage.waste.refused} refusal(s), ${usage.waste.fixRounds} fix round(s)`,
+    `- Trend vs previous retro: ${trendLine}`,
+    "- Posture:",
+    ...postureLines.map((l) => `  - ${l}`),
+    "",
+  ];
 }
 
 /**
@@ -288,6 +451,7 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
       ? pruning.map((d) => `- ${d.id} (${d.path}): kill_when — "${d.killWhen}"`)
       : ["- (none — no decision's kill_when matches this cascade's findings)"]),
     "",
+    ...usageSection(studioRoot, cascade, input.usage, now),
   ];
   const markdown = lines.join("\n");
 

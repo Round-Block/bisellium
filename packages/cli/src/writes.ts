@@ -267,7 +267,9 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
 // 2. emit
 // ---------------------------------------------------------------------------
 
-const EMIT_USAGE = "usage: bisellium emit <json> [--studio <dir>] [--now <iso>]";
+const EMIT_USAGE =
+  "usage: bisellium emit <json> [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]";
 
 interface RawCliEvent {
   name: string;
@@ -297,24 +299,30 @@ function parseRawEvent(json: string): RawCliEvent | { error: string } {
   return { name: v["name"], attrs };
 }
 
+/** Opus front matter is just enough to attribute a usage event to a
+ *  collegium (`WF.DEPARTMENT`) — same file safeItemPath already validates
+ *  containment for. Returns undefined (never throws) on anything
+ *  unreadable/unparseable; --usage then omits WF.DEPARTMENT rather than
+ *  failing the whole emit over an opus that happens to have no collegium. */
+function opusCollegium(opusPath: string): string | undefined {
+  try {
+    const split = splitFront(readFileSync(opusPath, "utf8"));
+    if (!split) return undefined;
+    const front = parseDocument(split.front).toJS() as Record<string, unknown> | null;
+    const collegium = front?.["collegium"];
+    return typeof collegium === "string" && collegium.length > 0 ? collegium : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
-  const parsed = parseFlags(args, { valued: ["--studio", "--now"] });
+  const parsed = parseFlags(args, { valued: ["--studio", "--now", "--usage", "--opus", "--sella", "--model"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${EMIT_USAGE}`);
     return { exitCode: 2 };
   }
   const { values, positionals } = parsed;
-  const json = positionals[0];
-  if (json === undefined) {
-    console.error(EMIT_USAGE);
-    return { exitCode: 2 };
-  }
-
-  const raw = parseRawEvent(json);
-  if ("error" in raw) {
-    console.error(`emit: ${raw.error}`);
-    return { exitCode: 2 };
-  }
 
   const now = resolveNow(values.get("--now"), opts.now);
   if (!now) {
@@ -328,6 +336,54 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
   const { root, manifest } = opened;
+
+  let raw: RawCliEvent;
+  if (values.has("--usage")) {
+    // --usage shortcut: appends a gen_ai.usage event, so `burn`
+    // (packages/core/src/index-db.ts) derives collegium spend from real
+    // recorded usage — the wire attrs a usage span needs (docs/ADOPTION.md,
+    // packages/schema/src/index.ts's WF comment): gen_ai.usage.total_tokens,
+    // WF.ITEM_ID, WF.ACTOR_ROLE, WF.DEPARTMENT.
+    const tokensRaw = values.get("--usage");
+    const tokens = tokensRaw !== undefined ? Number(tokensRaw) : NaN;
+    const opusId = values.get("--opus");
+    const sella = values.get("--sella");
+    const model = values.get("--model");
+    if (!Number.isFinite(tokens) || tokens < 0 || !opusId || !sella || !model) {
+      console.error(EMIT_USAGE);
+      return { exitCode: 2 };
+    }
+    if (!(manifest.sellae ?? []).some((s) => s.id === sella)) {
+      console.error(`unknown sella "${sella}" — not declared in bisellium.yml`);
+      return { exitCode: 2 };
+    }
+    const opusPath = safeItemPath(join(root, "opera"), opusId);
+    if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+      console.error(`unknown opus: ${opusId}`);
+      return { exitCode: 2 };
+    }
+    const attrs: Record<string, string | number | boolean> = {
+      "gen_ai.usage.total_tokens": tokens,
+      "gen_ai.request.model": model,
+      [WF.ITEM_ID]: opusId,
+      [WF.ACTOR_ROLE]: sella,
+    };
+    const collegium = opusCollegium(opusPath);
+    if (collegium !== undefined) attrs[WF.DEPARTMENT] = collegium;
+    raw = { name: "gen_ai.usage", attrs };
+  } else {
+    const json = positionals[0];
+    if (json === undefined) {
+      console.error(EMIT_USAGE);
+      return { exitCode: 2 };
+    }
+    const parsedEvent = parseRawEvent(json);
+    if ("error" in parsedEvent) {
+      console.error(`emit: ${parsedEvent.error}`);
+      return { exitCode: 2 };
+    }
+    raw = parsedEvent;
+  }
 
   const logPath = join(root, EVENTS_LOG_REL);
   let event: GantryEvent;

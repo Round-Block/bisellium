@@ -117,6 +117,33 @@ try {
     check("emit: missing name exits 2", runEmit(["{}", "--studio", dir], { now: NOW }).exitCode === 2);
   }
 
+  // ---- emit --usage: a shortcut that appends a gen_ai.usage event --------
+  // so `burn` (packages/core/src/index-db.ts) derives collegium spend from
+  // real recorded usage instead of nothing at all. No <json> positional is
+  // needed for this form.
+  {
+    const dir = freshStudio("emit-usage");
+    const r = runEmit(["--usage", "1234", "--opus", "W-002", "--sella", "builder-1", "--model", "claude-sonnet-5", "--studio", dir], { now: NOW });
+    check("emit --usage: exitCode 0", r.exitCode === 0, String(r.exitCode));
+
+    const events = readEventLines(dir);
+    check("emit --usage: exactly one event on disk", events.length === 1, JSON.stringify(events));
+    const e = events[0] as { name?: unknown; attrs?: Record<string, unknown> };
+    check("emit --usage: event name is gen_ai.usage", e.name === "gen_ai.usage", JSON.stringify(e));
+    check("emit --usage: gen_ai.usage.total_tokens carried", e.attrs?.["gen_ai.usage.total_tokens"] === 1234, JSON.stringify(e.attrs));
+    check("emit --usage: workflow.item.id is the opus", e.attrs?.[WF.ITEM_ID] === "W-002", JSON.stringify(e.attrs));
+    check("emit --usage: workflow.actor.role is the sella", e.attrs?.[WF.ACTOR_ROLE] === "builder-1", JSON.stringify(e.attrs));
+    check("emit --usage: gen_ai.request.model carried", e.attrs?.["gen_ai.request.model"] === "claude-sonnet-5", JSON.stringify(e.attrs));
+    // W-002's collegium (examples/sample-studio/opera/W-002.md) — burn's
+    // WF.DEPARTMENT filter is what makes this a real per-collegium spend
+    // signal rather than just a token count nobody can attribute.
+    check("emit --usage: workflow.department is the opus's collegium", e.attrs?.[WF.DEPARTMENT] === "engineering", JSON.stringify(e.attrs));
+
+    check("emit --usage: missing --sella exits 2", runEmit(["--usage", "10", "--opus", "W-002", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
+    check("emit --usage: non-numeric --usage exits 2", runEmit(["--usage", "nope", "--opus", "W-002", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
+    check("emit --usage: unknown --opus exits 2", runEmit(["--usage", "10", "--opus", "W-999", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
+  }
+
   // ---- answer: resolves A-1 with a [stated] line, passes check ----------
   {
     const dir = freshStudio("answer");
