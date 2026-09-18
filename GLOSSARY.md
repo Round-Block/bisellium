@@ -1,11 +1,3 @@
----
-kind: model
-owner: eng-lead
-tier: ROM
-review: 2026-12-01
-kill: when instructions.ts's `--write` output supersedes this committed copy
----
-
 # Glossary
 
 Bisellium's product-facing contract uses Latin names. The wire-level
