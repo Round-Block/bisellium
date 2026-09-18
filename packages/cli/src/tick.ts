@@ -14,11 +14,12 @@
  *  (d) write a tick receipt.
  * While paused (`bisellium pause`, see pause.ts) only (a) runs.
  */
+import { basename, dirname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { isoWeek, listMd, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
-import { makeSessionId, receiptPath } from "@bisellium/shim";
+import { listMd, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
+import { makeSessionId, receiptPath, redact } from "@bisellium/shim";
 import { checkStudio, type CheckOptions } from "./check.js";
+import { isoWeek } from "./init.js";
 import { readPauseState } from "./pause.js";
 
 // ---------------------------------------------------------------------------
@@ -116,7 +117,17 @@ export function computeDue(studioRoot: string, manifest: Manifest, now: Date): D
   // ---- daily: one per active collegium's magister, deduped -------------
   const activeMagisters = [...new Set(activeCollegia.map((c) => c.magister))];
   const latestDailyBySella = new Map<string, string>();
+  // Idempotence before spend: `<date>-<sella>-daily.md` existing for today
+  // counts as "already filed" even when the front matter's own `at` is
+  // corrupt/unparseable (readFront still succeeds; only `toDate` fails) —
+  // writeDailyActum below names the file this exact way, so a match here is
+  // proof a talk call already happened, and skipping it is what keeps a
+  // corrupt-`at` daily from spending a harness turn a second time.
+  const DAILY_FILENAME_RE = /^(\d{4}-\d{2}-\d{2})-(.+)-daily\.md$/;
+  const filenameDailyToday = new Set<string>();
   for (const p of listMd(join(studioRoot, "acta"))) {
+    const m = DAILY_FILENAME_RE.exec(basename(p));
+    if (m && m[1] === today) filenameDailyToday.add(m[2]!);
     try {
       const { data } = readFront<{ author?: unknown; kind?: unknown; at?: unknown }>(p);
       if (data.kind !== "daily" || typeof data.author !== "string") continue;
@@ -129,10 +140,16 @@ export function computeDue(studioRoot: string, manifest: Manifest, now: Date): D
       // unreadable acta: skip, same degradation as check.ts's safeFront
     }
   }
-  for (const sella of activeMagisters) if (latestDailyBySella.get(sella) !== today) due.push({ kind: "daily", sella });
+  for (const sella of activeMagisters) {
+    const alreadyFiledToday = latestDailyBySella.get(sella) === today || filenameDailyToday.has(sella);
+    if (!alreadyFiledToday) due.push({ kind: "daily", sella });
+  }
 
   // ---- aerarium: current ISO week's allowance file present? -------------
-  const period = isoWeek(now);
+  // Timezone-aware (init.ts's isoWeek, the one tz-aware isoWeek every caller
+  // shares) — a studio's week boundary is wherever Monday 00:00 falls in
+  // manifest.timezone, not in UTC.
+  const period = isoWeek(now, manifest.timezone);
   if (!existsSync(join(studioRoot, "aerarium", `${period}.yml`))) due.push({ kind: "aerarium", period });
 
   // ---- traditio: stale handoffs on opera under an active collegium ------
@@ -214,7 +231,11 @@ async function writeDailyActum(
   let reply: string;
   try {
     const result = await talk({ studio: studioRoot, sella, message: DAILY_MESSAGE, harness, now });
-    reply = (result?.reply ?? "").trim();
+    // Redacted the same way talk.ts's own timeline entries are — the daily
+    // title and body land in a tracked, committed acta file (unlike
+    // timeline/, which is gitignored), so a credential the model happened
+    // to include must not become plaintext evidence in the repo.
+    reply = redact((result?.reply ?? "").trim());
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }

@@ -11,7 +11,10 @@
  * small recursive scan pulls the first value found under any of a field's
  * known aliases, wherever it's nested. A usage-limit report is detected the
  * same honest way `bisellium providers` treats an unreachable quota-axi: by
- * matching the vendor's own wording, not by guessing a schema.
+ * matching the vendor's own wording — but only in stderr or a dedicated
+ * `error`-kind event, never in an `agent_message`/`assistant` event (that's
+ * reply text; a sella talking ABOUT a rate limit must not be mistaken for
+ * one hitting it).
  */
 import { spawn } from "node:child_process";
 import type { HarnessProfile, HarnessResumeOpts, HarnessStartOpts, Turn } from "./types.js";
@@ -19,6 +22,8 @@ import { USAGE_LIMIT_EXIT_CODE } from "./types.js";
 
 const TIMEOUT_MS = 120_000;
 const USAGE_LIMIT_RE = /usage limit|rate limit|quota|429|too many requests/i;
+
+const isDict = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** Recursively finds the first value at any of `keys`, searching breadth-first
  *  so a top-level hit wins over a deeply nested one. Never throws on cycles
@@ -52,7 +57,7 @@ interface Parsed {
   output?: number;
 }
 
-function parseEvents(stdout: string): Parsed {
+function linesToEvents(stdout: string): unknown[] {
   const events: unknown[] = [];
   for (const line of stdout.split("\n")) {
     const t = line.trim();
@@ -63,17 +68,55 @@ function parseEvents(stdout: string): Parsed {
       // Not a JSON line (a banner, a warning) — skip it, never fatal.
     }
   }
+  return events;
+}
 
+/** An event's reply text, if it's actually an agent reply — either a
+ *  top-level `agent_message`/`assistant` event, or one wrapped in
+ *  `item.completed` (`{ type: "item.completed", item: { type:
+ *  "agent_message", text } }`, a shape some codex-cli releases use). Never
+ *  matches any other event kind (a tool call, a status line, an error). */
+function agentMessageText(e: unknown): string | undefined {
+  const kind = asString(findFirst(e, ["type"]));
+  if (kind && /agent_message|assistant/i.test(kind)) {
+    const s = asString(findFirst(e, ["message", "text"]));
+    if (s) return s;
+  }
+  if (kind === "item.completed" && isDict(e)) {
+    const item = e["item"];
+    if (isDict(item)) {
+      const itemKind = asString(item["type"]);
+      if (itemKind && /agent_message|assistant/i.test(itemKind)) {
+        const s = asString(item["text"]) ?? asString(item["message"]);
+        if (s) return s;
+      }
+    }
+  }
+  return undefined;
+}
+
+/** True when a JSONL event is itself an `error`-kind event whose own detail
+ *  names a usage/rate limit — never true for an `agent_message`/`assistant`
+ *  event, which is reply text (a sella talking ABOUT a limit is not one). */
+function isErrorEventLimited(events: unknown[]): boolean {
+  for (const e of events) {
+    const kind = asString(findFirst(e, ["type"])) ?? "";
+    if (!/error/i.test(kind)) continue;
+    if (agentMessageText(e) !== undefined) continue; // never an agent reply
+    const code = findFirst(e, ["code"]);
+    const detail = [asString(findFirst(e, ["message", "text"])) ?? "", typeof code === "number" || typeof code === "string" ? String(code) : ""].join(
+      " ",
+    );
+    if (USAGE_LIMIT_RE.test(kind) || USAGE_LIMIT_RE.test(detail)) return true;
+  }
+  return false;
+}
+
+function parseEvents(events: unknown[]): Parsed {
   const messages: string[] = [];
   for (const e of events) {
-    for (const text of [findFirst(e, ["message", "text"])]) {
-      const s = asString(text);
-      // Only collect text that actually looks like an agent reply — an
-      // event carrying a "message"/"text" field for something else (a tool
-      // call, a status line) is not something talk.ts should ever print.
-      const kind = asString(findFirst(e, ["type"]));
-      if (s && kind && /agent_message|assistant/i.test(kind)) messages.push(s);
-    }
+    const text = agentMessageText(e);
+    if (text !== undefined) messages.push(text);
   }
 
   let sessionId: string | undefined;
@@ -115,11 +158,14 @@ function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; m
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      if (USAGE_LIMIT_RE.test(stdout) || USAGE_LIMIT_RE.test(stderr)) {
-        finish({ sessionId: parseEvents(stdout).sessionId ?? "", reply: "", exitCode: USAGE_LIMIT_EXIT_CODE, raw: { stdout, stderr } });
+      const events = linesToEvents(stdout);
+      // Detection sources: stderr, or a dedicated error-kind event — never
+      // the reply text an agent_message/assistant event carries.
+      if (USAGE_LIMIT_RE.test(stderr) || isErrorEventLimited(events)) {
+        finish({ sessionId: parseEvents(events).sessionId ?? "", reply: "", exitCode: USAGE_LIMIT_EXIT_CODE, raw: { stdout, stderr } });
         return;
       }
-      const parsed = parseEvents(stdout);
+      const parsed = parseEvents(events);
       finish({
         sessionId: parsed.sessionId ?? "",
         reply: parsed.reply ?? "",

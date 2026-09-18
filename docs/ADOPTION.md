@@ -82,6 +82,7 @@ review_probatio: review           # probatio id that gates "review" state (defau
 wip_limit: 3                      # items in building + verifying, studio-wide
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
+source_excludes: [examples/]      # optional; repo-root-relative paths also excluded from the SOURCE tree hash
 ```
 
 Ids must be unique within collegia, sellae and probationes, and each id must
@@ -250,13 +251,30 @@ Instead, `sourceTreeHash(repo, excludeDirs, ref = "HEAD")`
 (`@bisellium/shim`) hashes `git ls-tree -r <ref>` — one line per entry
 (mode, type, blob sha, path), already path-sorted — with a sha1 over every
 line whose path is *not* under one of `excludeDirs` (repo-root-relative;
-`verify` and `check --repo` both pass the studio dir and `.bisellium`).
-Committing a change that only touches an excluded path can't move this
-hash. The matching working-tree check, `isDirtyOutside(repo, excludeDirs)`,
-is the same idea applied to `git status --porcelain`: an uncommitted change
-only counts as "dirty" when it's outside those same paths. `verify`'s
-`--repo` clean-tree requirement (below) and `check --repo`'s staleness
-comparison both use this pair, not the raw git plumbing.
+`verify` and `check --repo` both pass the studio dir and `.bisellium`, plus
+any `source_excludes` the manifest declares — below). Committing a change
+that only touches an excluded path can't move this hash. The matching
+working-tree check, `isDirtyOutside(repo, excludeDirs)`, is the same idea
+applied to `git status --porcelain`: an uncommitted change only counts as
+"dirty" when it's outside those same paths. `verify`'s `--repo` clean-tree
+requirement (below) and `check --repo`'s staleness comparison both use this
+pair, not the raw git plumbing.
+
+`source_excludes` (`bisellium.yml`, above) extends the exclusion set beyond
+the studio dir and `.bisellium/` with repo-root-relative paths of the
+manifest's own choosing — a studio nested in a monorepo alongside unrelated
+sibling studios or fixtures (e.g. `studio/`'s own `source_excludes:
+[examples/]`, and `examples/sample-studio`'s `source_excludes: [studio/,
+examples/fixtures/]`) so that sibling's churn never moves this studio's
+certificates. `check` blocks a non-list-of-strings value (`manifest.shape`).
+
+Certificate staleness/dirtiness/corroboration (`probatio.certifies.stale`,
+`.dirty`, `.mismatch`, `.evidence.tree`) is judged only for opera in an
+ACTIVE state — `building`, `verifying`, `review` — never for `done` or
+`halted`: a done opus's certificate is history, and re-flagging it every
+time the tree moves on afterward would be noise a done item can't act on.
+`bisellium check --repo .` on a studio whose non-active opera carry old or
+mismatched certifies shows no certifies advisories for them.
 
 ## Running run and verify
 
@@ -340,7 +358,10 @@ just did. `answer --petitio <id> <reply…>` appends
 `\n\n[stated] <now> <patron>: <reply>` to the petitio's body and resolves it
 (`state: resolved`); `--ask-back` instead flips `from`/`to` so the Patron
 becomes the asker and sets `state: awaiting_reply` (matching `check`'s
-`petitio.direction` rule); `--charter-gap` additionally files a `kind:
+`petitio.direction` rule) — allowed only when the petitio is currently
+`needs_you` (exit 2 otherwise, file untouched), so a second `--ask-back`
+before the sella has replied can't flip `from`/`to` a second time and
+corrupt the record; `--charter-gap` additionally files a `kind:
 decision` acta proposing a lex amendment, titled `Lex gap: <first line of
 the petitio>`. `greenlight <opus>` requires the opus be `state: backlog`
 (exit 2 otherwise) and either sets `state: greenlit` or, with `--decline
@@ -365,15 +386,23 @@ npm run bisellium -- resume [--studio <dir>]
 writes `<studio>/health.json` (`at`, `ok`, `blocks`, `advisories`,
 `findingsByRule`, `autonomy`, `lastTick`, `due`) — even while paused, even
 when `check` has blocking findings. It then computes the DUE cadence list
-for collegia at `autonomy: L1` or above: one `daily` per active collegium's
-magister who hasn't filed one today, the current ISO week's `aerarium` file
-if it doesn't exist yet, and any opus under an active collegium whose
-`traditio` is older than `handoff_stale_days`. `--dry-run` only prints what's
-due; otherwise `daily` items get a real acta written (talking to the
-magister's sella through `bisellium talk`'s programmatic seam, no CLI
-subprocess) while `aerarium`/`traditio` items are reported only — writing
-either is a Patron/sella act, not tick's. `tick` finishes by writing a
-receipt under `receipts/tick/`. Exit codes: 0 `check` passed (or paused), 1
+for collegia at `autonomy: L1` or above (the current ISO week is computed
+tz-aware, in the manifest's `timezone` — a studio near a week boundary at
+midnight UTC can be in a different ISO week locally): one `daily` per active
+collegium's magister who hasn't filed one today — "already filed" is true
+either from a parsed, valid `at` on today's date, or from the acta filename
+alone (`<date>-<sella>-daily.md`) matching today, so a daily with a corrupt
+`at` still counts and tick never spends a second harness turn re-filing it —
+the current ISO week's `aerarium` file if it doesn't exist yet, and any opus
+under an active collegium whose `traditio` is older than
+`handoff_stale_days`. `--dry-run` only prints what's due; otherwise `daily`
+items get a real acta written (talking to the magister's sella through
+`bisellium talk`'s programmatic seam, no CLI subprocess), its title and body
+passed through `redact()` first — a tracked, committed acta file must not
+carry a credential the model happened to include, same reasoning as `talk`'s
+own timeline entries — while `aerarium`/`traditio` items are reported only —
+writing either is a Patron/sella act, not tick's. `tick` finishes by writing
+a receipt under `receipts/tick/`. Exit codes: 0 `check` passed (or paused), 1
 `check` had blocking findings, 2 usage error / not a studio.
 
 `pause` writes `<studio>/PAUSED` (`{ at, reason }`); `resume` removes it.
@@ -395,7 +424,24 @@ through a `@bisellium/shim` `HarnessProfile` — `claude-code` (tier 1),
 `codex` (tier 2), or `git-only` (tier 3: always "available", but talking to
 it is a contradiction in terms — `start`/`resume` refuse). Which profile a
 sella uses is its manifest entry's `harness` key (`sellae[].harness`,
-default `claude-code`), overridable per call with `--harness`.
+default `claude-code`), overridable per call with `--harness`. The boot
+bundle reaches `claude` via `--append-system-prompt-file <tmpfile>` (written
+just before the call, deleted right after) rather than as an argv token —
+an argv-sized prompt risks the platform's argv length limit and is visible
+in `ps`, neither a problem for a file.
+
+A vendor CLI reporting a real usage/rate limit (`Turn.exitCode ===
+USAGE_LIMIT_EXIT_CODE`, mapped to `talk`'s exit 3 below) is detected only
+from signals a sella's own conversation can't fake by talking ABOUT a
+limit: for `claude-code`, the JSON envelope's own `is_error`/`subtype`/
+`error` fields, or stderr; for `codex`, stderr or a dedicated `error`-kind
+JSONL event. A reply's `result`/`agent_message` text (what the sella
+actually said) is never inspected for this — a sella relaying "we hit a
+rate limit yesterday" or mentioning "429" must be delivered normally, not
+mistaken for the harness itself being limited. `codex`'s event parsing also
+reads an `agent_message`/`assistant` reply wrapped in `item.completed`
+(`{ type: "item.completed", item: { type: "agent_message", text } }`, a
+shape some codex-cli releases use), not just a top-level event.
 
 A question `bisellium query` already answers deterministically (`status
 W-<id>`, `burn`, "what is blocked on me") is answered from the studio's
@@ -410,7 +456,17 @@ vendor), prints the reply, and appends both sides of the exchange to
 `timeline/<sella>.jsonl` (`at`, `sella`, `direction: in|out`, `text`,
 `sessionId`, `model`, `usage`). `talk` always runs in the studio root, never
 inside a worktree — worktrees are for `run`, which actually changes files;
-a conversation doesn't.
+a conversation doesn't. The subprocess environment is filtered the same way
+an untrusted probatio command's is (`filterEnv`, `@bisellium/shim`): a
+secret-shaped variable name is dropped before the harness sees it.
+
+A harness turn that comes back with no usable `sessionId` (empty or
+non-string) is never persisted or resumed against: it's recorded as a fresh
+start (`sessions/<sella>.json`'s `sessionId: null`, with a `note` on both of
+that turn's `timeline/<sella>.jsonl` entries), and `readSession` treats any
+stored record whose `sessionId` isn't a non-empty string the same way — as
+if there were no session file at all, so the next call starts fresh again
+rather than ever resuming against `""` or `null`.
 
 A conversation is chatter (dossier: STUDIO.md §5) unless it escalates: a
 reply line starting `PETITIO: <text>` opens a petitio addressed to the
@@ -418,7 +474,18 @@ patron (the next `P-NNN` under `petitiones/`, `from` the sella, `state:
 needs_you`) and `talk` prints `petitio P-NNN opened`; a line starting
 `ACTUM: <text>` writes a `kind: decision` acta entry authored by the sella.
 Everything else in the reply stays in the timeline only — silence (or an
-ordinary reply) binds nothing, same as any other acta.
+ordinary reply) binds nothing, same as any other acta. Three guards apply
+before a line counts as either: it must be **top-level** (`^PETITIO:`/
+`^ACTUM:` with no leading whitespace — a line nested under a list or
+blockquote never matches), **unfenced** (not inside a ` ``` … ``` ` block —
+a sella quoting an example must not accidentally escalate), and **not an
+echo**: a line whose trimmed text already appears verbatim in the boot
+bundle sent as that turn's system prompt (e.g. a `PETITIO:`-looking line
+inside another petitio's body, embedded as context) is content, not a fresh
+instruction to escalate, and is skipped. Usage-limit detection itself never
+looks at reply text either (below) — only a harness's own envelope/event/
+stderr signal ever produces the exit-3 path this section's petitio/decision
+logic runs after.
 
 `talk` writes a run receipt exactly like `bisellium run` does
 (`receipts/<sella>/<sessionId>.json`), with `harness` set to the profile id

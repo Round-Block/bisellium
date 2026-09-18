@@ -21,8 +21,10 @@ export interface InitResult {
 
 const DEFAULT_TIMEZONE = "UTC";
 
-/** `now`'s calendar date (YYYY-MM-DD) as observed in `timeZone`. */
-function isoDateInZone(now: Date, timeZone: string): string {
+/** `now`'s calendar date (YYYY-MM-DD) as observed in `timeZone`. Exported —
+ *  the one place other modules (tick.ts's aerarium-due computation) get a
+ *  timezone-aware calendar date from, rather than each re-deriving it. */
+export function isoDateInZone(now: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
@@ -31,9 +33,12 @@ function isoDateInZone(now: Date, timeZone: string): string {
 /**
  * ISO 8601 week (Monday start, week containing the year's first Thursday),
  * computed from `now` as observed in `timeZone` — a studio in Tokyo and one
- * in Los Angeles can be in different ISO weeks at the same instant.
+ * in Los Angeles can be in different ISO weeks at the same instant. Exported
+ * — the one tz-aware isoWeek every caller shares (distinct from
+ * @bisellium/adapter-native's isoWeek, which is UTC-only and used only for
+ * matching an aerarium file's period to "now" for burn computation).
  */
-function isoWeek(now: Date, timeZone: string = DEFAULT_TIMEZONE): string {
+export function isoWeek(now: Date, timeZone: string = DEFAULT_TIMEZONE): string {
   const [year, month, day] = isoDateInZone(now, timeZone).split("-").map(Number) as [number, number, number];
   const d = new Date(Date.UTC(year, month - 1, day));
   const dayNum = (d.getUTCDay() + 6) % 7; // Mon=0 .. Sun=6

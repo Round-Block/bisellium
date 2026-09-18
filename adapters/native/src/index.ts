@@ -62,6 +62,11 @@ export interface Manifest {
   wip_limit?: number;
   /** Overrides for the Defaults table in the dossier. */
   defaults?: Record<string, number>;
+  /** Repo-root-relative paths additionally excluded from the SOURCE tree
+   *  hash / dirty check (on top of the studio dir and `.bisellium/`, always
+   *  excluded) — e.g. a studio nested in a monorepo alongside unrelated
+   *  sibling studios or fixtures. See check.ts/verify.ts. */
+  source_excludes?: string[];
 }
 
 export interface FrontMatter<T> {

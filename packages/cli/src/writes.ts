@@ -409,6 +409,24 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
 
+  // --ask-back turns this into the Patron asking a follow-up — only sound
+  // when the petitio is currently needs_you (the sella is the one waiting
+  // on the Patron). Once it's already awaiting_reply (a prior --ask-back),
+  // asking back again would flip from/to a second time, undoing the first
+  // flip and corrupting the record — refuse instead, leaving the file
+  // untouched, until the sella replies and moves it back to needs_you.
+  if (askBack) {
+    const currentState = readState(petitioPath);
+    if (typeof currentState !== "string") {
+      console.error(currentState.error);
+      return { exitCode: 2 };
+    }
+    if (currentState !== "needs_you") {
+      console.error(`--ask-back requires petitio "${petitioId}" to be needs_you (currently ${currentState || "?"})`);
+      return { exitCode: 2 };
+    }
+  }
+
   const newState = askBack ? "awaiting_reply" : "resolved";
 
   // The petitio front-matter edit, the optional acta file and the Patron

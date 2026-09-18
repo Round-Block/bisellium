@@ -153,6 +153,22 @@ try {
     check("answer --ask-back: studio passes check", result.ok, result.ok ? "" : `blocked by ${blockIds(dir).join(", ")}`);
   }
 
+  // ---- answer --ask-back: refused once state is no longer needs_you ------
+  {
+    const dir = freshStudio("answer-double-ask-back");
+    const first = runAnswer(["--petitio", "A-1", "What", "about", "QA?", "--ask-back", "--studio", dir], { now: NOW });
+    check("double ask-back: first call exitCode 0", first.exitCode === 0, String(first.exitCode));
+
+    const petitioPath = join(dir, "petitiones", "A-1.md");
+    const before = readFileSync(petitioPath, "utf8");
+
+    const second = runAnswer(["--petitio", "A-1", "Again?", "--ask-back", "--studio", dir], { now: NOW });
+    check("double ask-back: second call exits 2", second.exitCode === 2, String(second.exitCode));
+
+    const after = readFileSync(petitioPath, "utf8");
+    check("double ask-back: file unchanged by the refused second call", after === before, JSON.stringify({ before, after }));
+  }
+
   // ---- answer --charter-gap: proposes an amendment via a new acta -------
   {
     const dir = freshStudio("answer-charter-gap");

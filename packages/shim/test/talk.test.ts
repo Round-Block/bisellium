@@ -4,11 +4,12 @@
  * always-available-but-refusing 'git-only' one) against a temp copy of
  * examples/sample-studio — never a real `claude`/`codex` call.
  */
-import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { runTalk } from "../../cli/src/talk.js";
 import { checkStudio } from "../../cli/src/check.js";
+import { runPause } from "../../cli/src/pause.js";
 import { fakeProfile, gitOnlyProfile } from "../src/index.js";
 import type { HarnessProfile } from "../src/index.js";
 
@@ -232,6 +233,184 @@ function readJsonl(path: string): unknown[] {
       }),
     );
     check("git-only: exits 2", result.exitCode === 2, String(result.exitCode));
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 7. escalation hardening: fenced PETITIO is never escalated ------------
+
+{
+  const studio = freshStudio();
+  try {
+    const before = existsSync(join(studio, "petitiones")) ? readdirSync(join(studio, "petitiones")).length : 0;
+    const { result, logs } = await captureLogs(() =>
+      runTalk(
+        ["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "note\n```\npetitio: fenced ask\n```"],
+        { harnesses: { fake: fakeProfile } },
+      ),
+    );
+    check("fenced petitio: exits 0", result.exitCode === 0, String(result.exitCode));
+    check("fenced petitio: no 'petitio opened' line", !logs.some((l) => l.includes("petitio") && l.includes("opened")), JSON.stringify(logs));
+    const after = existsSync(join(studio, "petitiones")) ? readdirSync(join(studio, "petitiones")).length : 0;
+    check("fenced petitio: no new petitio file", after === before, `${before} -> ${after}`);
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 8. escalation hardening: a PETITIO line already present in the boot ---
+// ---- bundle (echoed content) is never escalated ----------------------------
+
+{
+  const studio = freshStudio();
+  try {
+    writeFileSync(
+      join(studio, "petitiones", "A-900.md"),
+      `---\nid: "A-900"\nfrom: "patron"\nto: "eng-lead"\nstate: "awaiting_reply"\nopened: "2026-09-17T09:58:00Z"\n---\nPETITIO: NEED HELP WITH SCOPE\n`,
+    );
+    const before = readdirSync(join(studio, "petitiones")).length;
+    const { result, logs } = await captureLogs(() =>
+      runTalk(
+        ["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "status\npetitio: need help with scope"],
+        { harnesses: { fake: fakeProfile } },
+      ),
+    );
+    check("echoed petitio: exits 0", result.exitCode === 0, String(result.exitCode));
+    check("echoed petitio: no 'petitio opened' line", !logs.some((l) => l.includes("petitio") && l.includes("opened")), JSON.stringify(logs));
+    const after = readdirSync(join(studio, "petitiones")).length;
+    check("echoed petitio: no new petitio file", after === before, `${before} -> ${after}`);
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 9. sessions: a harness turn with no sessionId is a fresh start, never resumed --
+
+{
+  const studio = freshStudio();
+  try {
+    const noIdProfile: HarnessProfile = {
+      id: "fake",
+      tier: 1,
+      available: async () => true,
+      start: async () => ({ sessionId: "", reply: "no id from me", exitCode: 0 }),
+      resume: async () => ({ sessionId: "", reply: "should never be called", exitCode: 0 }),
+    };
+    const { result } = await captureLogs(() =>
+      runTalk(["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "hello"], { harnesses: { fake: noIdProfile } }),
+    );
+    check("no sessionId: exits 0", result.exitCode === 0, String(result.exitCode));
+
+    const sessionPath = join(studio, "sessions", "eng-lead.json");
+    check("no sessionId: session file written", existsSync(sessionPath));
+    const session = JSON.parse(readFileSync(sessionPath, "utf8")) as { sessionId: unknown };
+    check("no sessionId: sessionId recorded as null", session.sessionId === null, JSON.stringify(session));
+
+    const timelinePath = join(studio, "timeline", "eng-lead.jsonl");
+    const entries = readJsonl(timelinePath) as { note?: string }[];
+    check("no sessionId: timeline entries carry a note", entries.every((e) => typeof e.note === "string" && e.note.length > 0), JSON.stringify(entries));
+
+    // A second call must start fresh again (never "resume" against an invalid id).
+    const { result: result2 } = await captureLogs(() =>
+      runTalk(["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "again"], { harnesses: { fake: noIdProfile } }),
+    );
+    check("no sessionId: second call still exits 0 (never attempted resume)", result2.exitCode === 0, String(result2.exitCode));
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 10. talk strips secret-shaped env vars before handing them to the harness --
+
+{
+  const studio = freshStudio();
+  const secretName = "BISELLIUM_TEST_SECRET_TOKEN";
+  const had = Object.prototype.hasOwnProperty.call(process.env, secretName);
+  const prevValue = process.env[secretName];
+  process.env[secretName] = "super-secret-value";
+  try {
+    let seenEnv: NodeJS.ProcessEnv | undefined;
+    const capturingProfile: HarnessProfile = {
+      id: "fake",
+      tier: 1,
+      available: async () => true,
+      start: async (o) => {
+        seenEnv = o.env;
+        return { sessionId: "s1", reply: "ok", exitCode: 0 };
+      },
+      resume: async (o) => {
+        seenEnv = o.env;
+        return { sessionId: "s1", reply: "ok", exitCode: 0 };
+      },
+    };
+    await captureLogs(() =>
+      runTalk(["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "hello"], { harnesses: { fake: capturingProfile } }),
+    );
+    check(
+      "filterEnv: secret-shaped var stripped",
+      seenEnv !== undefined && !(secretName in seenEnv),
+      JSON.stringify(seenEnv ? Object.keys(seenEnv).filter((k) => /SECRET|TOKEN/i.test(k)) : []),
+    );
+    check("filterEnv: PATH still present", seenEnv !== undefined && typeof seenEnv["PATH"] === "string" && seenEnv["PATH"]!.length > 0);
+  } finally {
+    if (had) process.env[secretName] = prevValue;
+    else delete process.env[secretName];
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 11. a usage limit is never inferred from reply text mentioning it -----
+
+{
+  const studio = freshStudio();
+  try {
+    const mentionsLimitProfile: HarnessProfile = {
+      id: "fake",
+      tier: 1,
+      available: async () => true,
+      start: async () => ({ sessionId: "s1", reply: "we hit a rate limit yesterday, all clear now (429 was transient)", exitCode: 0 }),
+      resume: async () => ({ sessionId: "s1", reply: "still fine", exitCode: 0 }),
+    };
+    const { result, logs } = await captureLogs(() =>
+      runTalk(["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "status?"], { harnesses: { fake: mentionsLimitProfile } }),
+    );
+    check("limit-in-reply-text: exits 0, not 3", result.exitCode === 0, String(result.exitCode));
+    check("limit-in-reply-text: reply delivered as-is", logs.some((l) => l.includes("rate limit yesterday")), JSON.stringify(logs));
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 12. talk exit 3 on a limited harness (fake profile, flagged via env) --
+
+{
+  const studio = freshStudio();
+  const prevMode = process.env["BISELLIUM_FAKE_MODE"];
+  process.env["BISELLIUM_FAKE_MODE"] = "limited";
+  try {
+    const { result } = await captureLogs(() =>
+      runTalk(["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "status?"], { harnesses: { fake: fakeProfile } }),
+    );
+    check("limited fake harness: exits 3", result.exitCode === 3, String(result.exitCode));
+  } finally {
+    if (prevMode === undefined) delete process.env["BISELLIUM_FAKE_MODE"];
+    else process.env["BISELLIUM_FAKE_MODE"] = prevMode;
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- 13. talk warns but still proceeds while the studio is paused ---------
+
+{
+  const studio = freshStudio();
+  try {
+    await captureLogs(() => runPause(["--studio", studio, "--reason", "investigating"]));
+    const { result, errs } = await captureLogs(() =>
+      runTalk(["--sella", "eng-lead", "--studio", studio, "--harness", "fake", "hello"], { harnesses: { fake: fakeProfile } }),
+    );
+    check("paused talk: still exits 0", result.exitCode === 0, String(result.exitCode));
+    check("paused talk: prints a pause warning", errs.some((l) => l.startsWith("warning: studio is paused")), JSON.stringify(errs));
   } finally {
     rmSync(studio, { recursive: true, force: true });
   }

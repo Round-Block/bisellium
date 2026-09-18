@@ -114,12 +114,15 @@ export interface CheckOptions {
 }
 
 /** The SOURCE tree hash (see @bisellium/shim's sourceTreeHash) at HEAD in
- *  `repo`, excluding `studioRoot` and `.bisellium/` — or undefined if
- *  git/the repo isn't available. Excluding the studio's own bookkeeping
- *  means committing an opus/ci-log write never makes a certificate stale. */
-function currentTreeHash(repo: string, studioRoot: string): string | undefined {
+ *  `repo`, excluding `studioRoot`, `.bisellium/`, and any manifest
+ *  `source_excludes` (repo-root-relative) — or undefined if git/the repo
+ *  isn't available. Excluding the studio's own bookkeeping means committing
+ *  an opus/ci-log write never makes a certificate stale; `source_excludes`
+ *  extends that to sibling paths a studio wants ignored too (e.g. a demo
+ *  studio nested in the same monorepo as the studio being checked). */
+function currentTreeHash(repo: string, studioRoot: string, extraExcludes: string[] = []): string | undefined {
   try {
-    const excludeDirs = [relative(repo, studioRoot).split(sep).join("/"), ".bisellium"];
+    const excludeDirs = [relative(repo, studioRoot).split(sep).join("/"), ".bisellium", ...extraExcludes];
     return sourceTreeHash(repo, excludeDirs) || undefined;
   } catch {
     return undefined;
@@ -135,7 +138,6 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const blocks = findings.filter((f) => f.level === "block").length;
     return { root, now: now.toISOString(), ok: blocks === 0, notAStudio, blocks, advisories: findings.length - blocks, findings };
   };
-  const treeHash = opts.repo ? currentTreeHash(opts.repo, root) : undefined;
 
   // ---- manifest -----------------------------------------------------------
   const manifestPath = join(root, "bisellium.yml");
@@ -156,6 +158,22 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   if (!str(m["patron"])) add("manifest.patron", "advise", "bisellium.yml", 'patron role id missing (defaults to "patron")');
   const patron = str(m["patron"]) ?? "patron";
   const reviewProbatioId = str(m["review_probatio"]) ?? "review";
+
+  // source_excludes: optional list of repo-root-relative paths additionally
+  // excluded from the SOURCE tree hash (on top of the studio dir and
+  // .bisellium/, always excluded) — e.g. a studio nested in a monorepo
+  // alongside unrelated sibling studios/fixtures whose churn shouldn't move
+  // this studio's certificates.
+  const sourceExcludesRaw = m["source_excludes"];
+  let sourceExcludes: string[] = [];
+  if (sourceExcludesRaw !== undefined) {
+    if (!Array.isArray(sourceExcludesRaw) || !sourceExcludesRaw.every((x) => typeof x === "string" && x.length > 0)) {
+      add("manifest.shape", "block", "bisellium.yml#source_excludes", "source_excludes must be a list of non-empty strings");
+    } else {
+      sourceExcludes = sourceExcludesRaw as string[];
+    }
+  }
+  const treeHash = opts.repo ? currentTreeHash(opts.repo, root, sourceExcludes) : undefined;
 
   if (m["timezone"] !== undefined) {
     if (!str(m["timezone"])) add("manifest.timezone", "block", "bisellium.yml", "timezone must be a string");
@@ -342,25 +360,32 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
           else {
             certifies.set(gid, c as string);
             const cs = c as string;
-            if (treeHash && probatioKind.get(gid) === "automated" && cs.startsWith("tree:") && cs !== `tree:${treeHash}`)
-              add("probatio.certifies.stale", "advise", where, `gate "${gid}" certifies ${cs}, current tree is tree:${treeHash}`);
-            if (cs.startsWith("dirty:"))
-              add("probatio.certifies.dirty", "advise", where, `gate "${gid}" certifies a dirty working tree (${cs}) — not what "--repo" resolves as committed`);
-            // probatio.evidence.tree: an automated gate's log is supposed to
-            // record the tree/dirty hash it certifies in its own header
-            // (packages/pipeline writes it) — if the log doesn't mention it,
-            // the certificate can't be corroborated from the evidence alone.
-            const hashMatch = probatioKind.get(gid) === "automated" ? /^(?:tree|dirty):(.+)$/.exec(cs) : null;
-            if (hashMatch) {
-              const hash = hashMatch[1]!;
-              let logText: string | undefined;
-              try {
-                logText = existsSync(join(root, ev as string)) ? readFileSync(join(root, ev as string), "utf8") : undefined;
-              } catch {
-                logText = undefined;
+            // Certificate staleness/dirtiness/corroboration is a property of
+            // ACTIVE opera only (building/verifying/review) — a done or
+            // halted item's certificate is history: the work it attests to
+            // already happened, and re-flagging it every time the tree
+            // moves on would just be noise a done item can't act on anyway.
+            if (ACTIVE.has(state)) {
+              if (treeHash && probatioKind.get(gid) === "automated" && cs.startsWith("tree:") && cs !== `tree:${treeHash}`)
+                add("probatio.certifies.stale", "advise", where, `gate "${gid}" certifies ${cs}, current tree is tree:${treeHash}`);
+              if (cs.startsWith("dirty:"))
+                add("probatio.certifies.dirty", "advise", where, `gate "${gid}" certifies a dirty working tree (${cs}) — not what "--repo" resolves as committed`);
+              // probatio.evidence.tree: an automated gate's log is supposed to
+              // record the tree/dirty hash it certifies in its own header
+              // (packages/pipeline writes it) — if the log doesn't mention it,
+              // the certificate can't be corroborated from the evidence alone.
+              const hashMatch = probatioKind.get(gid) === "automated" ? /^(?:tree|dirty):(.+)$/.exec(cs) : null;
+              if (hashMatch) {
+                const hash = hashMatch[1]!;
+                let logText: string | undefined;
+                try {
+                  logText = existsSync(join(root, ev as string)) ? readFileSync(join(root, ev as string), "utf8") : undefined;
+                } catch {
+                  logText = undefined;
+                }
+                if (logText !== undefined && !logText.includes(hash))
+                  add("probatio.evidence.tree", "advise", where, `gate "${gid}" evidence log does not mention the tree hash it certifies (${hash})`);
               }
-              if (logText !== undefined && !logText.includes(hash))
-                add("probatio.evidence.tree", "advise", where, `gate "${gid}" evidence log does not mention the tree hash it certifies (${hash})`);
             }
           }
         }
@@ -383,11 +408,17 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (state === "done") {
       const missing = [...notPassed(automated), ...notPassed(agentGates), ...humanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!))];
       if (missing.length) add("state.done.probationes", "block", where, `state "done" but gates not passed: ${missing.join(", ")}`);
-      const ids = new Set(certifies.values());
-      if (ids.size > 1) add("probatio.certifies.mismatch", "advise", where, `gates certify different trees: ${[...ids].join(", ")}`);
     }
     if (state === "verifying" && !automated.some((x) => status.has(x)))
       add("state.verifying.none", "advise", where, `state "verifying" with no automated gate recorded`);
+
+    // probatio.certifies.mismatch: ACTIVE opera only, same reasoning as the
+    // stale/dirty/evidence.tree gate above — a done/halted item's gates
+    // certifying different trees is history, not something to keep flagging.
+    if (ACTIVE.has(state)) {
+      const ids = new Set(certifies.values());
+      if (ids.size > 1) add("probatio.certifies.mismatch", "advise", where, `gates certify different trees: ${[...ids].join(", ")}`);
+    }
 
     checkTraditio(where, d["traditio"], state, ACTIVE.has(state));
 

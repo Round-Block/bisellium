@@ -128,7 +128,7 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   // never counts toward what a probatio certifies or whether the tree is
   // "dirty" — otherwise verify writing its own result, or committing that
   // write, would make every certificate stale or refuse to run at all.
-  const excludeDirs = [toPosixRelative(repo, studioDir), ".bisellium"];
+  const excludeDirs = [toPosixRelative(repo, studioDir), ".bisellium", ...(manifest.source_excludes ?? [])];
   let treeHash: string;
   try {
     treeHash = sourceTreeHash(repo, excludeDirs, commit);

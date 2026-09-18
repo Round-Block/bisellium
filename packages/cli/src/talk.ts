@@ -20,7 +20,7 @@
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
-import { HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
+import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
 import { pauseWarning } from "./pause.js";
@@ -94,7 +94,9 @@ function parseArgs(args: string[]): ParsedTalkArgs | { error: string } {
 
 interface SessionRecord {
   harness: string;
-  sessionId: string;
+  /** `null` means the harness gave back no usable sessionId on its last
+   *  turn — a fresh start, not something a later call may resume. */
+  sessionId: string | null;
   startedAt: string;
   lastAt: string;
   turns: number;
@@ -104,12 +106,16 @@ function sessionPathFor(root: string, sella: string): string {
   return join(root, "sessions", `${sella}.json`);
 }
 
-function readSession(path: string): SessionRecord | undefined {
+/** A record with no valid (non-empty string) sessionId can't be resumed —
+ *  ignore it entirely (as if there were no session file at all) rather than
+ *  ever resuming against "" or null. */
+function readSession(path: string): (SessionRecord & { sessionId: string }) | undefined {
   try {
     const v: unknown = JSON.parse(readFileSync(path, "utf8"));
     if (typeof v !== "object" || v === null) return undefined;
     const r = v as Partial<SessionRecord>;
-    if (typeof r.harness !== "string" || typeof r.sessionId !== "string") return undefined;
+    if (typeof r.harness !== "string") return undefined;
+    if (typeof r.sessionId !== "string" || r.sessionId.length === 0) return undefined;
     return {
       harness: r.harness,
       sessionId: r.sessionId,
@@ -141,6 +147,10 @@ interface TimelineEntry {
   sessionId: string;
   model?: string;
   usage?: { input?: number; output?: number };
+  /** Set only when the harness gave back no usable sessionId for this turn
+   *  (see the session-store contract above) — flags the entry rather than
+   *  silently recording an empty string. */
+  note?: string;
 }
 
 function appendTimeline(root: string, sella: string, entries: TimelineEntry[]): void {
@@ -295,7 +305,10 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   // 4. Start or resume, in the studio root (worktrees are for `run`, not `talk`).
   const sessPath = sessionPathFor(root, sella);
   const existing = readSession(sessPath);
-  const env = process.env;
+  // Same secret-shaped-env stripping packages/pipeline gives an untrusted
+  // probatio command — a harness subprocess is no more trusted with the
+  // parent process's credentials than one is.
+  const env = filterEnv(process.env);
 
   let turn: Turn;
   try {
@@ -326,9 +339,13 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   // otherwise the record describes a session that never had that many
   // turns under a harness it never talked to before this one.
   const sameHarness = existing !== undefined && existing.harness === harnessId;
+  // An empty/missing sessionId from the harness can never be persisted or
+  // resumed against — treat it as a fresh start (sessionId: null) rather
+  // than silently writing/resuming "".
+  const hasValidSessionId = typeof turn.sessionId === "string" && turn.sessionId.length > 0;
   writeSession(sessPath, {
     harness: harnessId,
-    sessionId: turn.sessionId,
+    sessionId: hasValidSessionId ? turn.sessionId : null,
     startedAt: sameHarness ? existing.startedAt || now.toISOString() : now.toISOString(),
     lastAt: now.toISOString(),
     turns: sameHarness ? existing.turns + 1 : 1,
@@ -337,9 +354,20 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   // 6. Timeline: chatter, in both directions. Redacted the same way receipts
   // are (docs/ADOPTION.md: a credential passed in a message must not become
   // plaintext evidence sitting in the repo).
+  const timelineSessionId = hasValidSessionId ? turn.sessionId : "";
+  const noSessionIdNote = hasValidSessionId ? {} : { note: "no sessionId from harness" };
   appendTimeline(root, sella, [
-    { at: now.toISOString(), sella, direction: "in", text: redact(message), sessionId: turn.sessionId },
-    { at: now.toISOString(), sella, direction: "out", text: redact(turn.reply), sessionId: turn.sessionId, model: turn.model, usage: turn.usage },
+    { at: now.toISOString(), sella, direction: "in", text: redact(message), sessionId: timelineSessionId, ...noSessionIdNote },
+    {
+      at: now.toISOString(),
+      sella,
+      direction: "out",
+      text: redact(turn.reply),
+      sessionId: timelineSessionId,
+      model: turn.model,
+      usage: turn.usage,
+      ...noSessionIdNote,
+    },
   ]);
 
   // 7. Receipt.
@@ -354,9 +382,32 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   writeReceiptEnd(receiptFile, { endedAt: now.toISOString(), exitCode: 0, durationMs: 0 });
 
   // 8. Escalation: a reply line can open a petitio or write a decision —
-  // everything else in it stays chatter (timeline only).
+  // everything else in it stays chatter (timeline only). Three guards, all
+  // required before a line counts:
+  //  (a) not inside a fenced code block (``` … ``` — a sella quoting an
+  //      example must not accidentally escalate);
+  //  (b) top-level — `^PETITIO:`/`^ACTUM:` with no leading whitespace, so a
+  //      line nested under a list/blockquote never matches;
+  //  (c) not an exact (trimmed) echo of a line already present in the boot
+  //      bundle sent as this turn's system prompt — that's the sella
+  //      reading back context (e.g. quoting an existing petitio's body),
+  //      content, never a fresh instruction to escalate.
+  const bundleLines = new Set(
+    systemPrompt
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0),
+  );
   const petitiones: string[] = [];
+  let inFence = false;
   for (const line of turn.reply.split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (bundleLines.has(line.trim())) continue;
+
     // Both petitiones/ and acta/ are tracked studio files (unlike
     // timeline/, which is gitignored) — a credential the model happened to
     // echo in an escalation line must not become plaintext evidence

@@ -22,3 +22,4 @@ probationes:
   - { id: review, name: Lead review, kind: agent }
   - { id: patron, name: Patron call, kind: human }
 wip_limit: 3
+source_excludes: [studio/, examples/fixtures/]

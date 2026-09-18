@@ -8,10 +8,16 @@
  * The script always mints a fresh session_id; `resume()` here is what
  * actually keeps the session pinned, the same way a resumed real CLI call
  * would report back the id it was given rather than a new one.
+ *
+ * `env.BISELLIUM_FAKE_MODE === "limited"` is a test-only flag: it makes
+ * start/resume return a usage-limit Turn (exitCode 3) without spawning the
+ * script at all — how tests exercise talk.ts's exitCode-3 handling without
+ * a real vendor CLI ever reporting a limit.
  */
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import type { HarnessProfile, HarnessResumeOpts, HarnessStartOpts, Turn } from "./types.js";
+import { USAGE_LIMIT_EXIT_CODE } from "./types.js";
 
 const SCRIPT = fileURLToPath(new URL("../../test/fake-harness.mjs", import.meta.url));
 const TIMEOUT_MS = 30_000;
@@ -72,6 +78,9 @@ export const fakeProfile: HarnessProfile = {
   },
 
   async start(opts: HarnessStartOpts): Promise<Turn> {
+    if (opts.env["BISELLIUM_FAKE_MODE"] === "limited") {
+      return { sessionId: "", reply: "", exitCode: USAGE_LIMIT_EXIT_CODE, raw: { simulated: "limited" } };
+    }
     const r = await runFakeScript({ cwd: opts.cwd, env: opts.env, message: opts.message });
     if (!r.parsed) return { sessionId: "", reply: "", exitCode: r.exitCode ?? 1, raw: { stdout: r.stdout, stderr: r.stderr } };
     return {
@@ -85,6 +94,9 @@ export const fakeProfile: HarnessProfile = {
   },
 
   async resume(opts: HarnessResumeOpts): Promise<Turn> {
+    if (opts.env["BISELLIUM_FAKE_MODE"] === "limited") {
+      return { sessionId: opts.sessionId, reply: "", exitCode: USAGE_LIMIT_EXIT_CODE, raw: { simulated: "limited" } };
+    }
     const r = await runFakeScript({ cwd: opts.cwd, env: opts.env, message: opts.message });
     if (!r.parsed) return { sessionId: opts.sessionId, reply: "", exitCode: r.exitCode ?? 1, raw: { stdout: r.stdout, stderr: r.stderr } };
     // A real resumed CLI reports back the same session it was given —

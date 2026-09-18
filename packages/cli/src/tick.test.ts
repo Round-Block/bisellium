@@ -196,6 +196,70 @@ try {
     check("write tick: second dry-run has nothing due", second.exitCode === 0 && secondLogs.some((l) => l.includes("nothing due")), secondLogs.join(" | "));
   }
 
+  // ---- tick redacts the daily title/body before writing acta ------------
+  {
+    const dir = track(freshStudio("redact"));
+    const secret = "abcdef0123456789abcdef0123456789";
+    const secretTalk = async (opts: TalkCallOptions): Promise<TalkCallResult> => ({
+      reply: `deploy token=${secret} status stable\nnothing blocked\nsee you tomorrow`,
+    });
+    const { result } = await capture(() => runTick(["--studio", dir], { now: NOW, talk: secretTalk }));
+    check("redact: exit 0", result.exitCode === 0, `exitCode=${result.exitCode}`);
+    const engPath = join(dir, "acta", "2026-09-18-eng-lead-daily.md");
+    check("redact: eng-lead daily written", existsSync(engPath));
+    if (existsSync(engPath)) {
+      const text = readFileSync(engPath, "utf8");
+      check("redact: no raw secret in the acta file", !text.includes(secret), text);
+      check("redact: title/body carry the masked form", text.includes("token=***"), text);
+    }
+  }
+
+  // ---- tick idempotence: a daily whose filename already matches today, even
+  // with a corrupt `at`, still counts — no second talk call, no overwrite --
+  {
+    const dir = track(freshStudio("corrupt-at"));
+    const corruptPath = join(dir, "acta", "2026-09-18-eng-lead-daily.md");
+    const corruptBody = `---\nauthor: "eng-lead"\nkind: "daily"\ntitle: "already filed"\nat: "not-a-real-date"\n---\nAlready filed today, before tick ran.\n`;
+    writeFileSync(corruptPath, corruptBody);
+
+    let talkCalls = 0;
+    const countingTalk = async (opts: TalkCallOptions): Promise<TalkCallResult> => {
+      talkCalls++;
+      return { reply: `${opts.sella} status stable (${opts.harness})\nnothing blocked\nsee you tomorrow` };
+    };
+    // A corrupt `at` is itself a check.ts blocking finding (acta.at) —
+    // independent of tick's own idempotence logic under test here, so this
+    // doesn't assert tick's overall exit code, only that it never re-talks
+    // to or overwrites the sella whose daily filename already exists today.
+    const { logs } = await capture(() => runTick(["--studio", dir], { now: NOW, talk: countingTalk }));
+    check("corrupt-at: eng-lead not called again (file untouched)", readFileSync(corruptPath, "utf8") === corruptBody);
+    check("corrupt-at: eng-lead not counted as talked-to", !logs.some((l) => l.includes("eng-lead") && l.startsWith("wrote")));
+    check("corrupt-at: the other three magistri were still talked to", talkCalls === 3, String(talkCalls));
+  }
+
+  // ---- aerarium due is computed in the manifest's timezone, not UTC ------
+  // sample-studio's timezone is Europe/London. 2026-09-20T23:30:00Z is
+  // Sunday in UTC (still ISO week 38, matching the committed
+  // aerarium/2026-W38.yml) but Monday 2026-09-21 00:30 BST in London — ISO
+  // week 39, which has no aerarium file yet and so must be due.
+  {
+    const dir = track(freshStudio("tz-aerarium"));
+    const nearMidnightUTC = new Date("2026-09-20T23:30:00Z");
+    const manifest = readManifest(dir);
+    check("tz-aerarium: sample-studio timezone is Europe/London", manifest.timezone === "Europe/London", manifest.timezone);
+    const due = computeDue(dir, manifest, nearMidnightUTC);
+    check(
+      "tz-aerarium: 2026-W39 (London-local week) is due",
+      due.some((d) => d.kind === "aerarium" && d.period === "2026-W39"),
+      JSON.stringify(due.filter((d) => d.kind === "aerarium")),
+    );
+    check(
+      "tz-aerarium: 2026-W38 (UTC week, already on disk) is not due",
+      !due.some((d) => d.kind === "aerarium" && d.period === "2026-W38"),
+      JSON.stringify(due.filter((d) => d.kind === "aerarium")),
+    );
+  }
+
   // ---- real seam: no injected opts.talk — tick must reach the real
   // ./talk.js (talk.ts's exported `talkOnce`) via its lazy dynamic import.
   // Pointed at the 'fake' harness (packages/shim/src/harness/fake.ts, which

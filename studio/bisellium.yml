@@ -19,3 +19,4 @@ probationes:
   - { id: types, name: Typecheck, kind: automated, command: "npm run -s typecheck" }
   - { id: review, name: Lead review, kind: agent }
 wip_limit: 3
+source_excludes: [examples/]
