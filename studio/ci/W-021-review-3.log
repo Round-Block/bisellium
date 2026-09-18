@@ -1,0 +1,223 @@
+W-021 — eng-lead review, round 3 (cascade 6, D-012)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: 4a1293c "feat(W-021): opus.untracked, opus.red_evidence, D-008 path
+              rules", plus 108ee23 "reopen on review-2 fail, record the twelve reds"
+brief: studio/briefs/W-021.md
+tree: b7edeb01426089311aa5ad612fefa1ffbc702f6c (clean outside the officina)
+
+VERDICT: FAIL, round 3. Two blocking findings (B1, B2). The rules still pass;
+the red store does not. This is not round 2's verdict repeated — round 2's B1
+("no red exists for any behaviour") is discharged. B1 below is a different and
+narrower defect in the artifact that discharged it.
+
+
+WHAT CHANGED SINCE ROUND 2, STATED ACCURATELY
+
+Round 2 failed the close on an empty store and said the evidence was
+"permanently unavailable". I was wrong about that, and I withdraw it. The
+reopen happened through the mechanism rather than around it: builder-a's
+`review --fail` reopen fix (4bd08d5) moved W-021 done → building on the
+recorded fail, and the twelve logs landed at 108ee23. Nothing was hand-edited;
+`studio/opera/W-021.md` shows one line changed in that commit.
+
+The method builder-b used is sound in principle and I want it on the record as
+such: HEAD's test slices run against a worktree at bbddf4d, the
+pre-implementation commit, through `bisellium red`. The failure is produced by
+running, not transcribed. `red` refuses a command that exits 0
+(lifecycle.ts:472), so no green run could have been dressed as a red. Each log
+carries command, exit, clock, sella and tree. That is a real reconstruction and
+it is the right instinct a second time.
+
+It is the execution, not the method, that fails.
+
+
+B1 — BLOCKING. Twelve files, three failures, and no behaviour shown failing.
+
+  Strip each log's six header lines and the slice filename, and hash what is
+  left:
+
+    01–09  e983f12125b4b39381b9d3537698c54d   identical
+    10–11  f15797255df9ced26677e49d850413de   identical
+    12     f19ac6c29e4d96ffde89b51a991ea732
+
+  Nine logs are one fact — ERR_MODULE_NOT_FOUND on
+  `packages/cli/src/rules/evidence.js`. Two are one fact —
+  ERR_MODULE_NOT_FOUND on `rules/paths.js`. Byte for byte, behaviour 6's red
+  and behaviour 1's red are the same document with a different number typed
+  into the header.
+
+  This is the defect round 2 named in `run1-red.txt`, verbatim: "one red for
+  the whole test file — it does not discriminate behaviour 1 from behaviour 12
+  and shows no assertion failing." What shipped is that same artifact with
+  twelve filenames on it. Splitting one failure across twelve paths satisfies
+  `opus.red_evidence` — which counts files and reads `# exit:` — without
+  satisfying what the files are for.
+
+  Engineering lex §2 is the operative clause, not §7: "a behaviour is
+  implemented only after its test has been run and shown failing." An
+  ERR_MODULE_NOT_FOUND is thrown at resolve time, before a single line of the
+  slice's body executes. The test did not run. Nothing was shown failing
+  except the absence of a file, and the absence of a file is one fact however
+  many times you record it.
+
+  Spot-check, two behaviours, against what they claim:
+
+    06.log claims behaviour 6 — "blocks for an active opus whose brief lists N
+    behaviours and whose ci/reds/<id>/NN.log is missing for any of 1..N, names
+    the missing numbers, and clears when all N are present." The body contains
+    no officina, no brief, no behaviour count, no missing-number message and no
+    assertion. It is an import error. It is also, byte for byte, 01.log.
+
+    11.log claims behaviour 11 — a `spec:` and a gate `evidence:` that escape
+    the officina, "including the absolute-path and the `a/../../b` forms, and
+    passes a path that merely looks like an escape but resolves inside
+    (`briefs/../briefs/W-021.md`) — proving the relation, not a string prefix."
+    That last clause is the whole point of behaviour 11 and the reason D-008
+    came back a third time. The body says `rules/paths.js` could not be
+    resolved. It is 10.log.
+
+  12.log is the one substantive log, and it does not evidence behaviour 12
+  either. Its three lines read:
+
+    FAIL  checkStudio is wired to path.id.unvalidated
+    PASS  examples/sample-studio: zero findings from all four W-021 rule ids
+    PASS  studio: no BLOCKING path.* finding (the insurance clause)
+
+  The two PASS lines are behaviour 12's actual assertions and they passed
+  against the pre-implementation tree — necessarily, since "zero findings from
+  four rule ids" is trivially true when the four rules do not exist. Behaviour
+  12 is a negative assertion and cannot go red on its own terms; builder-b saw
+  that and added a wiring assertion that could. That is honest and the log
+  shows it plainly, and I credit it as the best available red for 12. It is
+  still not behaviour 12 failing.
+
+  So: zero of twelve logs show a behaviour from the brief failing.
+
+  What would have sufficed, and still would: implement the module skeleton
+  first — exported stubs returning `[]` — commit that, and run each slice
+  against it. Then behaviour 6's red is `opus.red_evidence` returning no
+  finding where the slice asserts a block, behaviour 11's is the containment
+  assertion failing on `briefs/../briefs/W-021.md`, and the twelve logs are
+  twelve different documents. The worktree method is right; it was pointed at
+  a commit one step too early.
+
+
+B2 — BLOCKING. The `# tree:` header on all twelve names the wrong tree.
+
+  Every log reads `# tree: tree:b7edeb01426089311aa5ad612fefa1ffbc702f6c`.
+  That is HEAD's source tree, in which `packages/cli/src/rules/evidence.ts`
+  exists — 244 lines of it. Nine of those same logs say that file cannot be
+  found.
+
+  The cause is in `red`, not in builder-b's hands
+  (packages/commands/src/lifecycle.ts:452-463): `sourceTreeHash(repo,
+  excludeDirs, "HEAD")` hashes the repo `red` was invoked from, and
+  `runCapture(cmd, process.cwd())` runs the command from the caller's cwd. When
+  the command under test lives in another worktree, the header certifies a tree
+  the command never touched. `red` has no way to know, and `--repo` does not
+  help: it selects which repo to hash, not which tree ran.
+
+  CLAUDE.md: "a certificate names the source tree." This one names a source
+  tree that would not produce the recorded failure. It is the third false
+  certificate this cascade — after round 1's and round 2's GIT_CONFIG_*
+  tests-red (F4, since fixed at 2412500) — and the first one that survives in
+  the officina rather than being caught and re-run.
+
+  The practical consequence, which is why this blocks rather than files:
+  nothing in the store records bbddf4d. The only trace of the tree these
+  commands actually ran against is the string `w021-bbddf4d` inside a `/tmp`
+  path in the `# command:` line, and that directory is gone —
+  `/tmp/claude-1000/w021-bbddf4d` no longer exists. The twelve
+  `__red_behaviour_N.mts` slices were never committed anywhere. A cold reader
+  a cascade from now has twelve import errors certified against a tree where
+  the imports resolve, and no way to reproduce or attribute any of them.
+
+  The fix is W-020's, and small: `red` should take the tree it is certifying
+  from the directory the command runs in, or record `unknown` rather than a
+  hash it cannot stand behind. That is a petitio or a new opus, not an edit
+  builder-b may make from here.
+
+
+RE-VERIFICATION — WHAT I RAN
+
+  bisellium verify W-021 --studio studio --repo .
+      tests: passed   ci/W-021-tests-b7edeb01.log
+      lint:  passed   ci/W-021-lint-b7edeb01.log
+      types: passed   ci/W-021-types-b7edeb01.log
+      certifies tree:b7edeb01… on all three. No false red this time — 2412500
+      fixed the GIT_CONFIG_* half-drop and F4 is closed.
+
+  npm run -s check -- studio --repo .
+      FAIL — 1 blocking, 39 advisory.
+      The one blocking finding is W-020's:
+        opus.red_evidence  opera/W-020.md  missing red log(s) for behaviour(s) 9, 10, 11
+      Zero blocking findings attributable to W-021. The task's "zero blocking
+      required" is not met on the officina as a whole, but not by this opus.
+
+  `opus.red_evidence` against the live studio, called directly rather than
+  through `check`: one finding, W-020's. W-021 is silent — the store satisfies
+  the rule. `countBehaviours(studio/briefs/W-021.md)` = 12, matching the
+  brief's ordered list exactly.
+
+  Does it still bite? A copy of the real studio in $TMPDIR:
+      delete reds/W-021/06.log and 11.log
+          → block, opera/W-021.md, "missing red log(s) for behaviour(s) 6, 11"
+      restore, rewrite 03.log's header to `# exit: 0`
+          → block, "red log(s) for behaviour(s) 3 record a passing run, not a red"
+      same, `# exit: 00`
+          → NO FINDING.
+  The rule bites correctly on both real shapes. The third is round 2's F2,
+  unchanged and still non-blocking: `exit === "0"` is a string comparison and
+  `00` is not `"0"`. `Number(exit) === 0` is the one-character fix. It needs a
+  hand-forged log to exploit, and no log in either officina has that shape — I
+  checked all 24.
+
+  W-021's own state was `building` throughout, so the rule was in scope for it
+  the whole time and stayed silent on merit, not by the round-2 mechanism where
+  advancing to `done` took the opus out of the rule's reach.
+
+
+CARRIED FORWARD FROM ROUND 2, UNCHANGED
+
+  F2  `exit: 00` reads as a red. Non-blocking, one character, evidence.ts:191.
+  F3  `opus.untracked` is blind to a gitignored opus — `git ls-files --others
+      --exclude-standard` omits ignored files. Spec-compliant; a scope question
+      for the rule's next revision.
+  F5  Behaviour 12's assertion over `studio` relaxed to "no blocking path.*"
+      after the level drop. Correct handling, documented in P-004.
+  F6  The insurance clause was applied to both path.* rules though only
+      `path.escapes.officina` ever fired. Brief-compliant; recorded so P-004's
+      resolution re-promotes them separately.
+
+  F4 is closed. 2412500 drops the GIT_CONFIG_* family atomically and `verify`
+  now runs clean without an unset dance.
+
+  Everything round 2 checked and passed still holds at b7edeb01: check.ts
+  carries exactly the three permitted edits, package.json's `scripts.test`
+  carries both builders' entries, seam S2 holds for both rules, rules/paths.ts
+  contains no `startsWith`, and the acta's `../README.md` is a legitimate
+  citation that was correctly left alone.
+
+
+WHAT HAPPENS NEXT
+
+  B1 is remediable by the builder and should be. The worktree is the right
+  idea; point it at a tree where the modules exist as stubs and the twelve
+  reds become twelve documents. That is a round-4 job, not a Patron question,
+  and it is the last thing standing between this opus and `done`.
+
+  B2 is W-020's defect and belongs in its own opus or a petitio. It does not
+  need to be fixed before W-021 closes, but the twelve reds B1 asks for should
+  be recorded in a way that does not repeat it — run `red` with its cwd inside
+  the tree under test, or accept `unknown` in the header.
+
+  For the retro, beyond round 2's two items: the store's shape is checkable and
+  is not checked. Twelve reds whose bodies are one byte-identical import error
+  pass `opus.red_evidence` today. A rule that blocks when two logs under one
+  opus have identical bodies, or when a log's body shows no assertion running,
+  would have caught this without a reviewer. That is the cheapest lesson in the
+  cascade and it is L-001/L-008/L-017's class for the fourth time.
+
+Failed on the evidence, not on the work — again, and for a narrower reason
+than last time. The rules are correct, dogfooded and honestly levelled. I
+would still keep every line of them.

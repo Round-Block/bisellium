@@ -1,0 +1,205 @@
+W-020 — eng-lead review, round 3 (cascade 6, D-012)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: 4bd08d5 "fix(W-020): D-008 containment on ready --spec/review
+              --evidence, review --fail reopens done"
+              on top of 967ad4f, d8189fe (rounds 1-2)
+brief: studio/briefs/W-020.md
+prior rounds: ci/W-020-review-1.log (void — builder-a's own acceptance record
+              filed under the reviewer's name), ci/W-020-review-2.log (FAIL, B1)
+
+VERDICT: FAIL, round 3. One blocking finding (B2). The opus does not close.
+
+B1 from round 2 is genuinely fixed and I re-tested it myself rather than
+reading the diff. The opus does not close on B1. It does not close because
+W-021's `opus.red_evidence` rule now blocks on W-020 itself, and the only
+thing that would make `check` green is the very close I am being asked to
+record. That is round 2's own F3 pathology, arriving exactly where F3 said it
+would.
+
+
+WHAT I RAN
+
+  bisellium verify W-020 --studio studio --repo .   exit 0
+    tests:  passed  ci/W-020-tests-b7edeb01.log
+    lint:   passed  ci/W-020-lint-b7edeb01.log
+    types:  passed  ci/W-020-types-b7edeb01.log
+    all three certifying tree:b7edeb01426089311aa5ad612fefa1ffbc702f6c
+  npm test                                          exit 0, 871 PASS, 0 FAIL
+  npm run -s check -- studio --repo .                exit 1 — 1 BLOCKING, 42 advisory
+  a hand drive of the round-2 repro and the reopen path against a fresh copy
+  of examples/sample-studio in $TMPDIR — not by reading lifecycle.test.ts.
+
+The tests gate matches a direct `npm test` for the first time this cascade.
+Round 2's F1 (filterEnv dropping GIT_CONFIG_KEY_n while keeping COUNT and
+VALUE_n, killing every git invocation inside a probatio) is fixed in 2412500
+by filtering the GIT_CONFIG_* family atomically, with a unit case and a
+localPipeline integration case that runs `git rev-parse HEAD` under an
+injecting env. The verifier no longer lies in the direction of failure. That
+was the precondition for this round meaning anything, and it holds.
+
+
+B1 IS FIXED — VERIFIED BY HAND
+
+  packages/commands/src/lifecycle.ts:49  isContained(), the resolved-path
+  relation (`relative()`, isAbsolute, first-segment `..`) that safeRedsDir
+  already used for red's opus id. Called at :108 (ready --spec) and :298
+  (review --evidence), both BEFORE the existsSync check — so an escaping path
+  that happens to exist is refused as an escape, not reported as missing.
+  That ordering is right and I checked it specifically.
+
+  Against a fixture officina in $TMPDIR, every form refuses with exit 2,
+  names D-008, and leaves the opus byte-identical (md5 checked before/after):
+
+    ready W-006  --spec ../../../../../etc/hostname    exit 2, D-008
+    ready W-006  --spec /etc/hostname                  exit 2, D-008
+    ready W-006  --spec briefs/../../etc/hostname      exit 2, D-008
+    review W-004 --pass --evidence ../../../../../etc/hostname  exit 2, D-008
+    review W-004 --pass --evidence /etc/hostname       exit 2, D-008
+    review W-004 --pass --evidence ci/../../etc/hostname exit 2, D-008
+
+  No over-refusal: `ready W-006 --spec briefs/W-006.md` on a greenlit opus
+  still exits 0 and writes `spec=briefs/W-006.md state=building`.
+
+  Round 2 asked for exactly this relation and for the two red-then-green
+  cases. Both landed: reds/W-020/13.log and 14.log carry `# exit: 1` and
+  "BUG CONFIRMED", timestamped 15:29Z against tree:1f00fc18 — the pre-fix
+  tree — four minutes before the fix commit. Red before green, honestly
+  ordered, and I checked the timestamps rather than the commit message.
+  lifecycle.test.ts behaviours 13 and 14 assert exit 2 AND byte-identity of
+  the opus file, which closes the tests-that-agree-with-the-bug blind spot
+  round 2 named.
+
+F5 IS FIXED — AND THIS ROUND EXISTS BECAUSE IT IS
+
+  review --fail now returns an opus to `building` from `review` OR `done`
+  (lifecycle.ts:329). Driven on the fixture:
+
+    W-001 (done)     --fail -> exit 0, state: building, gate recorded failed
+    W-004 (review)   --fail -> exit 0, state: building
+    W-005 (building) --fail -> exit 0, state: building (unchanged, correct)
+
+  red 15.log records the stuck-in-done bug pre-fix, same tree and minute as
+  13/14. The wall L-016 put up is now fully down: a failed review reopens the
+  work instead of stranding it. W-020's own round-2 FAIL has been re-run
+  through it and the opus is in `building` as I write this, which is the
+  proof that matters.
+
+
+BLOCKING
+
+B2 · `check studio --repo .` is blocking on W-020, and closing W-020 is the
+     only thing that would clear it.
+
+       BLOCKING (1)
+         opus.red_evidence  opera/W-020.md
+         missing red log(s) for behaviour(s) 9, 10, 11
+
+     ci/reds/W-020/ holds 01-08, 12, 13, 14, 15. Behaviours 9, 10 and 11 —
+     `red`'s own three — have no log in the store. The brief demands one per
+     behaviour and says so twice; engineering lex §7 requires "the recorded
+     red for every behaviour its spec listed" of every `done` item.
+
+     This is round 2's F2, which round 2 recorded and declined to gate on,
+     and round 2 was right to do so at the time: the rule could not see it.
+     What changed is not the evidence, it is who is looking. checkRedEvidence
+     (packages/cli/src/rules/evidence.ts:147) fires only for states in
+     ACTIVE = {building, verifying, review}. In round 2 W-020 sat in `done`,
+     outside that set, so the rule skipped it — round 2's F3. The F5 fix has
+     now returned W-020 to `building`, the rule has looked at this opus for
+     the first time in its life, and it blocks.
+
+     Now follow what closing does. `runDone` (lifecycle.ts) gates on the
+     front matter's probationes and nothing else; it does not consult a
+     single check rule. So `bisellium done W-020` would be accepted — every
+     gate on disk supports it — and the act of setting `state: done` would
+     take W-020 back out of ACTIVE and the blocking finding would vanish
+     from `check`. Not resolved. Hidden. The tree afterwards would read
+     0 blocking and the missing reds would still not exist.
+
+     I will not sign that. "Zero blocking required" is not a number to be
+     reached by moving the opus out of the rule's line of sight; it is the
+     condition the tree has to satisfy while the rule can still see it.
+     Round 2 wrote F3 as "a blocking evidence rule that stops looking the
+     moment an opus closes is a rule that can be outrun by closing fast."
+     One round later I am holding the stopwatch. Recording a pass here would
+     make round 3 the second self-serving close in this opus's history,
+     after round 1 — a different mechanism, the same result.
+
+     There is no honest path to zero blocking inside W-020, and I want that
+     on the record plainly rather than dressed up:
+
+       - Re-capturing 9-11 with `bisellium red` is impossible. The code is
+         green and `red` refuses to record a passing command. That refusal is
+         correct and is the best thing in this opus; I am not asking for it
+         to be weakened.
+       - Copying ~/.bisellium-evidence/cascade-6/w020/behaviours-09-11-red.log
+         into ci/reds/W-020/09-11.log is forbidden twice over: CLAUDE.md's
+         "never by hand: ci/*.log" and "evidence is produced, never
+         backfilled". It is also one file covering three behaviours, so it
+         would not honestly answer the rule even if it were permitted.
+       - Widening ACTIVE, or exempting W-020, is W-021's file and would be
+         me editing the rule that judges me.
+
+     This is a Patron-level disposition, not a reviewer's signature. The
+     decision available is to waive behaviours 9-11's reds explicitly and on
+     the record — naming the interim log as what was actually produced, and
+     naming the bootstrap as the reason — or to accept that W-020 does not
+     close. Either is defensible. Neither is mine to take, and neither is
+     `bisellium done`.
+
+
+FINDINGS OF RECORD — not blocking
+
+F4 (carried, round 2) · reds 01-08 and 12 remain one red recorded nine times:
+     the same `SyntaxError: ... does not provide an export named 'runDone'`
+     load failure, same dirty tree, same minute, differing only in the
+     `# behaviour:` line. Genuinely produced, not backfilled — but a module
+     that fails to load proves no assertion ran, so it does not show each
+     behaviour failing. Fourth cascade of
+     review×evidence-backfilled-or-absent (L-001, L-008, L-017). 13-15 are
+     the counter-example: three distinct reds, each naming its own bug.
+
+F10 · isContained() does not resolve symlinks, so a symlink inside the
+     officina that points out of it still escapes:
+
+       ln -s /etc <officina>/briefs/escape
+       review W-004 --pass --evidence briefs/escape/hostname  -> exit 0
+
+     Not W-020's invention and not a reason to hold this opus: D-008's own
+     rule module uses the identical relation (packages/cli/src/rules/
+     paths.ts:119, `relative(root, resolve(root, href))`, no realpath), so
+     the gap is the studio-wide definition of containment, not this fix's
+     departure from it. The fix does exactly what round 2 prescribed. Worth
+     a decision on whether D-008 means lexical or real containment; if it
+     means real, it is a one-line change in both places.
+
+F11 · The brief lists 12 behaviours; the fix added 13-15 to the test file and
+     the red store without amending briefs/W-020.md. Harmless to the rule
+     (it only checks 1..n) but the brief is now a stale count of what this
+     opus proves.
+
+F2, F3, F6, F7, F8, F9 from round 2 stand as written. F1 is fixed (2412500).
+
+
+DISPOSITION
+
+The engineering work is done and it is good. B1 and F5 were fixed properly —
+the right relation, in the right place, red before green, with regression
+tests that assert the refusal and the non-write. `red` still refuses to
+record a passing command, files-owned discipline still holds, the suite is
+871 green, and verify and `npm test` finally agree. If the question were
+"is the code right", this is a pass.
+
+The question is whether W-020 may be recorded `done`, and the answer on the
+tree in front of me is no: `check` blocks on this opus's own missing reds,
+and the close is what would silence it. Round 1 closed this opus on the
+builder's own say-so. I am not closing it on a rule's blind spot.
+
+W-020 stays in `building`. It needs a Patron decision on behaviours 9-11's
+reds — waive on the record, or leave the opus open — and then a round 4 that
+is one line long.
+
+Recorded with `bisellium review W-020 --fail --evidence ci/W-020-review-3.log
+--round 3 --sella eng-lead --now 2026-09-19T13:00:00Z` — this opus's own
+command, and the reopen edge it shipped in this very round is why this
+verdict can be written down without stranding the work.
