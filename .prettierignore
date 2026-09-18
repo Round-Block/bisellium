@@ -22,3 +22,16 @@ adapters/
 # owned here.
 scripts/usage-from-workflow.mjs
 scripts/opus-ready.ts
+# Claude Code sandbox /dev/null masks (see .gitignore) — unreadable device
+# nodes prettier's "." glob would otherwise choke on.
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.gitconfig
+.gitmodules
+.ripgreprc
+.mcp.json
+.idea
+.vscode

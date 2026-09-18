@@ -51,7 +51,12 @@ lex, a decision, or a check rule and delete it here.
   epoch0 and /mnt/c deny-listed) — it hard-fails until
   `sudo apt-get install bubblewrap socat` has been run in the distro.
   `.devcontainer/` is Anthropic's reference config on node:25 with the egress
-  firewall, for fully contained cascade runs. Repo backup: bundle at
+  firewall, for fully contained cascade runs. Under the sandbox the tsx CLI
+  cannot run (its IPC unix-socket listen is denied; docker.sock exists in this
+  distro so sockets stay blocked) — the bisellium bin and every package.json
+  script use `node --import tsx` instead; agents should too, never `npx tsx`.
+  The sandbox also masks shell/tool config paths in the repo root as /dev/null
+  devices; both ignore files carry the block so verify stays clean-tree. Repo backup: bundle at
   C:\Users\edene\bisellium-backups\; private remote github.com/edckt/bisellium (origin). Sandbox deps
   (bubblewrap, socat) installed 2026-09-19.
 

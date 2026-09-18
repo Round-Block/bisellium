@@ -34,3 +34,27 @@ studio/events.jsonl
 # not studio content; an untracked worktree here made `verify` see a dirty
 # tree and mint `dirty:` certificates for byte-identical tracked source.
 .claude/worktrees/
+# Claude Code's Bash sandbox (bubblewrap) masks these cwd paths with
+# /dev/null device nodes so a command cannot plant shell/tool config in the
+# working tree. From inside the sandbox they read as untracked files, which
+# would make every `verify` see a dirty tree — same failure class as
+# .claude/worktrees/ above. Outside the sandbox none of them exist.
+.bash_profile
+.bashrc
+.profile
+.zprofile
+.zshrc
+.gitconfig
+.gitmodules
+.ripgreprc
+.mcp.json
+.idea
+.vscode
+.claude/hooks
+.claude/launch.json
+.claude/loop.md
+.claude/output-styles
+.claude/routines
+.claude/scheduled_tasks.json
+.claude/skills
+.claude/workflows
