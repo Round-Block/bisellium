@@ -1,0 +1,70 @@
+W-021 — lead review, round 1
+reviewer: eng-lead (Fabri)
+at: 2026-09-19T13:00:00Z
+tree: 1f00fc18e203911bdf647687622633783cb416f4 (master, post-integration)
+
+VERDICT: passed
+
+Scope reviewed
+--------------
+packages/cli/src/rules/evidence.ts, packages/cli/src/rules/paths.ts,
+packages/cli/src/rules.test.ts, the three permitted edits to
+packages/cli/src/check.ts (ID_RE hoisted to an exported module-level const,
+two findings.push wiring lines), the one appended scripts.test entry in root
+package.json, studio/petitiones/P-004.md.
+
+What was checked
+----------------
+- Files owned: matches the brief exactly. check.ts carries three edits and no
+  others; checkLink, rel() and every existing rule's level are untouched.
+  No edit to another opus's source, none to bisellium.yml, none to
+  examples/fixtures/.
+- Seam S2: both rules take the officina as root, read opts.repo only when
+  present, return [] rather than guessing when they cannot observe (no git,
+  not a repo, git failure, timeout), and neither throws.
+- Dogfooding: rules/paths.ts contains no .startsWith() used as a containment
+  test; containment is proven by relative(root, resolve(root, href)). The test
+  asserts this against the module source.
+- All twelve brief behaviours are covered by packages/cli/src/rules.test.ts,
+  including the fixture trap (behaviours 1-4 build a throwaway git repo in
+  $TMPDIR with its own user.name/user.email and clean it up).
+- opus.red_evidence is correctly gated on existsSync(<officina>/ci/reds): it
+  emitted nothing before W-020 landed the store, and bites now that it has.
+  Confirmed on this very tree, against this very studio — see below.
+- Acceptance on the merged tree: typecheck clean, npm test 859 passing,
+  lint 0 errors, format:check clean, check examples/sample-studio 0 blocking.
+
+The insurance clause
+--------------------
+It fired, and it was honoured. studio/acta/2026-09-17-kickoff.md legitimately
+cites ../README.md, repo-root evidence that path.escapes.officina would
+otherwise block. Builder-b did not edit that acta to make its own rule go
+green; both D-008 rules landed at advise and studio/petitiones/P-004.md went
+to the Patron with the firing site named. That is the clause working as
+decreed, and it is the correct reading of it. The promotion of D-008 to
+blocking therefore does not complete in this cascade; it waits on the
+Patron's scoping of the rule.
+
+Recorded against this opus, not waived
+--------------------------------------
+This opus's own twelve behaviours have no per-behaviour log in
+studio/ci/reds/W-021/. Builder-b recorded a genuine red — a real failing run
+of the full twelve-behaviour test file with the implementation moved out of
+the tree, ERR_MODULE_NOT_FOUND, exit 1, captured before the implementation
+existed — but recorded it outside the officina, because the store it would
+have written to did not exist on master at the time.
+
+The root cause is a cascade-ordering failure, not a builder's: the brief
+required W-020 to land `bisellium red` on master as its first commit
+precisely so that builder-b could record into the store, and the harness ran
+both builders in parallel worktrees off one base, so that commit never
+existed for builder-b to use. W-020 has the same hole for its own behaviours
+9-11 (red's own bootstrap reds, uncapturable by definition).
+
+Backfilling the logs now would be a lie about when the failure was observed,
+and `bisellium red` refuses it by design. The reds are not manufactured. The
+gap is recorded here, in the evidence the close rests on, and belongs in the
+retro as a cascade-orchestration finding: the "land X on master first"
+dependency between two opera in one cascade has no mechanism behind it.
+
+Passed on the work, with that gap named.
