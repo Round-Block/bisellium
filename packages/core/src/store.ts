@@ -6,6 +6,7 @@
  * directory — every path it touches is derived from `studioDir`, all of it
  * under `.bisellium/` (gitignored, docs/ADOPTION.md).
  */
+import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { WF, type GantryEvent, type Snapshot } from "@bisellium/schema";
@@ -123,7 +124,15 @@ function sanitizeLog(events: GantryEvent[]): { events: GantryEvent[]; corrupt: n
   return { events: out, corrupt };
 }
 
-export class Store {
+/**
+ * `Store` is an `EventEmitter`: `ingest()` emits `"event"` once per newly
+ * diffed event, in log order — apps/server's SSE route (W-016) subscribes to
+ * this directly instead of re-implementing its own ingest/diff loop, so
+ * there is exactly one `"event"` listener per running Store no matter how
+ * many SSE clients are attached (they fan out from a single subscription,
+ * not one each).
+ */
+export class Store extends EventEmitter {
   readonly studioDir: string;
   private readonly logPath: string;
   private readonly snapshotsDir: string;
@@ -143,6 +152,7 @@ export class Store {
   corruptLines: number;
 
   constructor(opts: StoreOptions) {
+    super();
     this.studioDir = opts.studioDir;
     this.logPath = join(this.studioDir, EVENTS_LOG_REL);
     this.snapshotsDir = join(this.studioDir, SNAPSHOTS_DIR_REL);
@@ -162,6 +172,16 @@ export class Store {
       if (seq > (this.seqBySource.get(source) ?? -1)) this.seqBySource.set(source, seq);
     }
     this.query = new Index(join(this.studioDir, INDEX_DB_REL));
+    // Reconcile the on-disk log into the index at open time: `apply()` is
+    // idempotent (INSERT OR IGNORE keyed on event id), so this is a no-op
+    // for anything already applied and only catches up whatever landed in
+    // events.jsonl since this index was last touched — a write appended
+    // directly (packages/commands/writes.ts's emitEvent, a hook, another
+    // process's Store) never diffed through *this* instance's own
+    // ingest() otherwise never reaches the index at all (W-016: apps/server
+    // opening a Store against a studio with pre-existing CLI-written events
+    // must still see them via `.query`, not just its own future diffs).
+    this.query.apply(this.log);
   }
 
   private loadPersistedSnapshots(): void {
@@ -223,6 +243,7 @@ export class Store {
     this.seqBySource.set(ctx.source, nextSeq);
     this.lastSnapshot.set(ctx.source, snapshot);
     this.persistSnapshot(ctx.source, snapshot, nextSeq);
+    for (const e of events) this.emit("event", e);
     return events;
   }
 

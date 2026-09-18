@@ -526,8 +526,13 @@ export class Index {
   /** Raw events in log order, strictly after `since` (a seq number, or an
    *  ISO timestamp string — ISO 8601 strings sort lexicographically the same
    *  as chronologically, so a plain string compare is exact), capped at
-   *  `limit`. Omitting `since` returns from the start of the log. */
-  events(since?: number | string, limit = 1000): GantryEvent[] {
+   *  `limit`. Omitting `since` returns from the start of the log. `seq` on
+   *  each row is this Index's own monotonic counter (`applyOne`'s
+   *  `nextSeq`) — the single authoritative sequence across every source
+   *  that ever ingested into this Index, never a re-derived `log.length`
+   *  (W-016 behaviour 4: two sources appending interleaved must still yield
+   *  strictly increasing, non-colliding `seq`). */
+  events(since?: number | string, limit = 1000): (GantryEvent & { seq: number })[] {
     const rows = this.db.prepare("SELECT id, name, ts, seq, project_id, attrs FROM events ORDER BY seq").all() as {
       id: string;
       name: string;
@@ -536,12 +541,12 @@ export class Index {
       project_id: string;
       attrs: string;
     }[];
-    const out: GantryEvent[] = [];
+    const out: (GantryEvent & { seq: number })[] = [];
     for (const r of rows) {
       if (typeof since === "number" && r.seq <= since) continue;
       if (typeof since === "string" && !(r.ts > since)) continue;
       const attrs = JSON.parse(r.attrs) as Record<string, string | number | boolean>;
-      out.push({ id: r.id, name: r.name, ts: r.ts, projectId: r.project_id, attrs });
+      out.push({ id: r.id, name: r.name, ts: r.ts, projectId: r.project_id, attrs, seq: r.seq });
       if (out.length >= limit) break;
     }
     return out;
