@@ -73,8 +73,9 @@ lex, a decision, or a check rule and delete it here.
   `bisellium ready`/`done` exist; `bisellium instructions --write` strips the
   docs-registry front matter W-019 put on `GLOSSARY.md` (generator vs registry
   seam); `retro`'s previous-retro matcher misses `-retro-4b.md` suffixes.
-- W-017 and W-018 remain `halted` but their `resume_when` (a runnable lint
-  script) is now satisfied — re-verify and close them next, cheaply.
+- W-017 and W-018 closed `done` in pass 5b (round-2 reviews passed on
+  tree:272d2d3b; `.claude/worktrees/` gitignored so certificates mint clean).
+  All four 4b opera are done.
 - Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
   L2, adapters + desktop. Estimates and rationale are in the dossier.
 
