@@ -1,0 +1,136 @@
+W-017 — lead review, round 2 (currency pass after cascade 5)
+reviewer: eng-lead · at: 2026-09-19T11:00:00Z
+under review: 841bbe0 ".claude: install the hook profile, subagents and slash
+  commands (W-017)" and the W-017 sources as they stand at 7649991
+  "fix(W-017): gitignore Claude Code worktrees to stop dirty-tree certificates"
+source tree: 272d2d3ba8d9c5934212cffcb0cb6d446d15a0d9
+
+VERDICT: PASS — nothing cascade 5 changed invalidates the round-1 pass.
+Scope of this pass: confirming currency, not redoing the first-hour review.
+W-017 was halted only because the studio-wide `lint` probatio had no script;
+W-019 made it real, and W-017's lint gate is now green on a freshly minted
+certificate rather than `failed` on a missing script.
+
+WHAT WAS RUN (read-only apart from the bookkeeping this review is meant to
+produce: the three certificates, this note, and the emitted events)
+
+  bisellium verify W-017 --studio studio --repo /home/edckt/projects/bisellium \
+    --now 2026-09-19T11:00:00Z
+    tests:  passed  ci/W-017-tests-272d2d3b.log   certifies tree:272d2d3b
+    lint:   passed  ci/W-017-lint-272d2d3b.log    certifies tree:272d2d3b
+    types:  passed  ci/W-017-types-272d2d3b.log   certifies tree:272d2d3b
+
+  Certificates read tree:, not dirty: — the tree was clean at 7649991, which
+  is exactly what that commit's .gitignore entry for .claude/worktrees/ was
+  for. The stale 0acb03d2 certificates are replaced; `check` no longer raises
+  probatio.certifies.stale against W-017 (it still does against W-018, which
+  is not this opus).
+
+  npm run -s check -- studio --repo /home/edckt/projects/bisellium \
+    --now 2026-09-19T11:00:00Z
+    PASS — 0 blocking, 37 advisory. None of the 37 is an instructions.* or
+    cap.instructions finding.
+
+  npx tsx packages/cli/src/instructions.test.ts .
+    51 PASS, 0 FAIL, exit 0 — the same count round 1 recorded.
+
+  npx eslint .
+    exit 0; 1 warning, at packages/cli/src/tick.test.ts:203 ('opts' unused).
+    Not a W-017 file and not an error; the lint gate passes.
+
+CURRENCY SPOT-CHECKS AGAINST THE BRIEF, ON TODAY'S TREE
+
+The tree has moved through cascade 5 (the @bisellium/commands extraction,
+`hook-event context`, optional sella, a real lint/format/CI gate, the docs
+registry). Each brief clause that could have been disturbed by those was
+re-checked:
+
+  Seam S1 (dispatch before the generic flag parser) — intact.
+  packages/cli/src/main.ts:117 still reads
+  `if (cmd === "instructions") return runInstructions(rest).exitCode;`
+  ahead of the flag parser, and `instructions` is still absent from the flag
+  allowlist. The commands extraction moved context/query/run/talk/verify/
+  writes into packages/commands but left instructions.ts in packages/cli, so
+  nothing about this seam moved.
+
+  check.ts wiring — intact. packages/cli/src/check.ts:702 still calls
+  `checkInstructions(root, ruleOpts)`.
+
+  Behaviour 1 (deterministic render) — no timestamps or absolute paths in
+  the output; covered by the test file, still green.
+
+  Behaviour 2 (6,000-char cap) — CLAUDE.md 2,897 chars, AGENTS.md 2,511,
+  GLOSSARY.md 1,558. Far under. cap.instructions silent.
+
+  Behaviour 4 (self-parsing flags) — `instructions --studio studio --bogus`
+  prints `instructions: unknown flag: --bogus` plus the usage line and exits
+  2. `instructions --studio studio --repo <repo> --now <iso>` prints all
+  three documents and writes nothing.
+
+  Behaviour 8 (instructions.stale) — silent. The committed CLAUDE.md,
+  AGENTS.md and GLOSSARY.md still byte-match what the generator produces on
+  today's manifest, so cascade 5's manifest and docs changes did not put the
+  committed renders out of date.
+
+  Behaviour 9 (.claude/settings.json) — holds exactly as specified. Four hook
+  keys and only four (SessionStart, PreCompact, Stop, PostToolUse); every
+  timeout is 2; every command carries `--studio studio` and no `--sella`;
+  PostToolUse matches `Write|Edit`; permissions allow `Workflow`.
+
+  Behaviour 10 (.claude/agents/*.md) — builder, censor, architect and clerk
+  each declare model and tools in front matter and carry
+  `@studio/leges/<collegium>.md` plus a `bisellium context --sella <id>
+  studio` line in the body. No invented `context:` key.
+
+  Behaviour 11 (.claude/commands/*.md) — the five files match the brief's
+  table. Close step CS-3 is effectively satisfied for `retro`: retro.md now
+  exists and carries `bisellium retro --cascade $ARGUMENTS --studio studio`,
+  and the test asserts it rather than taking the W-018 exemption.
+
+ADVISORY — CARRY-OVERS, NONE BLOCKING
+
+  A1. Close step CS-2 is still open, and cascade 5 is what made it possible.
+  `ClaudeCodeHooksOpts.sella` is now optional
+  (packages/shim/src/hooks/claude-code.ts:93–102 strips the flag and its
+  placeholder rather than substituting an empty string), so
+  `claudeCodeHooksBlock({ studio: "studio" })` typechecks today where it did
+  not in cascade 4b. It would not deep-equal the committed settings.json,
+  however: the template's SessionStart/PreCompact entries invoke
+  `bisellium hook-event context`, while the hand-authored file invokes plain
+  `bisellium context`. Both inject the bundle; only `hook-event context`
+  opens a receipt, and `hook-event start` in the same SessionStart group
+  already does that, so the installed profile is functionally sound. The
+  brief assigned CS-2 to the integrator, not to builder B, and behaviour 9's
+  test is structural and passes either way. Take CS-2 in a later slot; it is
+  not a defect of this opus and does not hold the pass.
+
+  A2. The GLOSSARY.md front-matter seam is real and already on the record.
+  `bisellium instructions --write` renders GLOSSARY.md without front matter,
+  so it strips the docs-registry front matter W-019 added; commit 2f6c691
+  already did exactly that. It is currently benign — the registry's field
+  rules are scoped to `docs/*.md`
+  (packages/cli/src/rules/docs.ts:67 returns early for README.md and
+  GLOSSARY.md), so `check` is green and the tree is self-consistent — and it
+  is already logged as a known gap in docs/SESSION-HANDOFF.md and in the
+  dossier's cascade-5 row. Not chargeable to W-017: the brief told builder B
+  in so many words to add no front matter and to let W-019 add it. Fixing it
+  means deciding whether the generator preserves a registry header or the
+  registry exempts generated files — a cross-opus decision, not a patch.
+
+  A3. `report("commands.dir.listing", true, ...)` in instructions.test.ts is
+  still a tautology that cannot fail, inflating the PASS count by one. Retro
+  4b named it a pruning candidate and D-010 says a test that cannot fail is
+  not evidence. It predates cascade 5, so it does not change this verdict;
+  drop it on the next touch of that file, along with the now-unreachable
+  `command.retro.exempted(W-018)` else-branch.
+
+  A4. Evidence quality, not this opus: the lint certificate's redaction eats
+  the information the log exists to carry. ci/W-017-lint-272d2d3b.log records
+  `/********.test.ts` and `@********` where eslint printed
+  `packages/cli/src/tick.test.ts` and `@typescript-eslint/no-unused-vars`, so
+  the certificate alone cannot tell a reader which file or which rule. Worth
+  a look at the redaction pass in verify before the next cascade leans on
+  lint logs as evidence.
+
+NOTHING BLOCKING. Round 1's pass stands, now on certificates that name the
+current source tree.
