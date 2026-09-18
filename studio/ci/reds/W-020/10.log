@@ -1,0 +1,11 @@
+# behaviour: 10
+# command: node --import tsx /tmp/claude-1000/w020-b0911/behaviour10.mts
+# exit: 1
+# at: 2026-09-19T13:00:00.000Z
+# sella: builder-a
+# tree: dirty:6788b6473e0c06bba22f642bf024f35fed101edd
+
+FAIL  red: a passing command refuses with exit 1                       -1
+PASS  red: no directory created for a passing command                  
+FAIL  red: re-running a behaviour overwrites only that log             
+FAIL  red: sibling behaviour's log is untouched                        

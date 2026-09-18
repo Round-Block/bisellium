@@ -1,0 +1,14 @@
+# behaviour: 16
+# command: node --import tsx /tmp/claude-1000/w020-b16/repro.mts
+# exit: 1
+# at: 2026-09-19T13:00:00.000Z
+# sella: builder-a
+# tree: tree:b7edeb01426089311aa5ad612fefa1ffbc702f6c
+
+W-964: red recorded for behaviour 1 -> ci/reds/W-964/01.log
+invoked from (process.cwd() during the call): /tmp/claude-1000/w020-b16-inner-59uoHX
+officina's own parent (studio's grandparent):  /tmp/claude-1000/w020-b16-outer-Qi9VtT
+recorded header:                               # tree: tree:34af30994b2fe0f3676f703acaa36ec6908e2e05
+inner's real tree:                             tree:d2fc69bdf31241e11b2240a4be452868796d5965
+outer's tree (what the officina's parent is):  tree:34af30994b2fe0f3676f703acaa36ec6908e2e05
+BUG CONFIRMED: red's default tree header names the officina's own parent repo, not the repo the process was actually invoked in

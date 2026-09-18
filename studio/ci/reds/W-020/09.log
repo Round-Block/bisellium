@@ -1,0 +1,16 @@
+# behaviour: 9
+# command: node --import tsx /tmp/claude-1000/w020-b0911/behaviour9.mts
+# exit: 1
+# at: 2026-09-19T13:00:00.000Z
+# sella: builder-a
+# tree: dirty:6788b6473e0c06bba22f642bf024f35fed101edd
+
+FAIL  red: recording a real failure exits 0                            -1
+FAIL  red: writes 03.log                                               
+FAIL  red: header line 1 is # behaviour: 3                             
+FAIL  red: header line 2 is # command:                                 
+FAIL  red: header line 3 is # exit: 7                                  
+FAIL  red: header line 4 is # at: <now>                                
+FAIL  red: header line 5 is # sella: builder-a                         
+FAIL  red: header line 6 is # tree: unknown (non-git --repo)           
+FAIL  red: blank line then combined output                             []

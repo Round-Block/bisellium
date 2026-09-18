@@ -1,0 +1,15 @@
+# behaviour: 11
+# command: node --import tsx /tmp/claude-1000/w020-b0911/behaviour11.mts
+# exit: 1
+# at: 2026-09-19T13:00:00.000Z
+# sella: builder-a
+# tree: dirty:6788b6473e0c06bba22f642bf024f35fed101edd
+
+FAIL  red: --behaviour 0 exits 2                                       -1
+FAIL  red: negative --behaviour exits 2                                -1
+FAIL  red: non-integer --behaviour exits 2                             -1
+FAIL  red: missing -- separator exits 2                                -1
+FAIL  red: empty command exits 2                                       -1
+FAIL  red: '..' opus id exits 2                                        -1
+FAIL  red: opus id with a path separator exits 2                       -1
+PASS  red: none of the usage refusals created ci/reds                  

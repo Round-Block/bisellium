@@ -11,6 +11,7 @@ import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
+import { sourceTreeHash } from "@bisellium/shim";
 import { splitFront } from "./frontmatter.js";
 import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
 
@@ -448,6 +449,72 @@ try {
     const after = readFront<{ state: string; probationes: Record<string, { status: string; evidence: string }> }>(opusPath).data;
     check("review --fail on done: reopens to building", after.state === "building", after.state);
     check("review --fail on done: records the failed gate", after.probationes.review?.status === "failed" && after.probationes.review?.evidence === "ci/W-950-review-2.log", JSON.stringify(after.probationes.review));
+  }
+
+  // =========================================================================
+  // behaviour 16: red --cwd — the wrapped command runs there, and the
+  // `# tree:` header names the repo containing that directory, never the
+  // officina's own (cascade 6 round-3 review, W-021 B2)
+  // =========================================================================
+  {
+    function scratchRepo(tag: string): string {
+      const gitDir = mkdtempSync(join(tmpdir(), `bisellium-w020-b16-${tag}-`));
+      writeFileSync(join(gitDir, "marker.txt"), tag);
+      execFileSync("git", ["init", "-q"], { cwd: gitDir });
+      execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", "add", "-A"], { cwd: gitDir });
+      execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", tag], { cwd: gitDir });
+      return gitDir;
+    }
+
+    const outer = scratchRepo("outer");
+    const inner = scratchRepo("inner");
+    const studioDir = join(outer, "studio");
+    cpSync(sampleStudio, studioDir, { recursive: true });
+
+    const outerHash = `tree:${sourceTreeHash(outer, ["studio"], "HEAD")}`;
+    const innerHash = `tree:${sourceTreeHash(inner, [], "HEAD")}`;
+    check("red behaviour-16 fixture: outer and inner trees differ", outerHash !== innerHash);
+
+    // ---- --cwd runs the wrapped command there and certifies that repo ----
+    {
+      const r = await runRed(
+        ["W-961", "--behaviour", "1", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", inner, "--", "node", "-e", "require('node:fs').writeFileSync('ran-here.txt', 'x'); process.exit(1)"],
+        {},
+      );
+      check("red --cwd: recording exits 0", r.exitCode === 0, String(r.exitCode));
+      check("red --cwd: the wrapped command ran with --cwd as its cwd", existsSync(join(inner, "ran-here.txt")));
+      const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-961", "01.log"), "utf8").split("\n")[5];
+      check("red --cwd: # tree: names --cwd's repo, not the officina's", treeLine === `# tree: ${innerHash}`, treeLine);
+      rmSync(join(inner, "ran-here.txt")); // leave `inner` clean for the next sub-test
+    }
+
+    // ---- no --cwd, no --repo: names the repo of the actual process cwd,
+    //      never assumed from --studio's own location (the round-3 bug) ----
+    {
+      const prevCwd = process.cwd();
+      process.chdir(inner);
+      try {
+        const r = await runRed(["W-962", "--behaviour", "1", "--studio", studioDir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
+        check("red: default (no --cwd/--repo) exits 0", r.exitCode === 0, String(r.exitCode));
+        const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-962", "01.log"), "utf8").split("\n")[5];
+        check("red: default names the actual cwd's repo, not the officina's parent", treeLine === `# tree: ${innerHash}` && treeLine !== `# tree: ${outerHash}`, treeLine);
+      } finally {
+        process.chdir(prevCwd);
+      }
+    }
+
+    // ---- --cwd naming a directory outside any git repo -> "none" ---------
+    {
+      const plain = mkdtempSync(join(tmpdir(), "bisellium-w020-b16-none-"));
+      const r = await runRed(["W-963", "--behaviour", "1", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", plain, "--", "node", "-e", "process.exit(1)"], {});
+      check("red --cwd (no enclosing git repo): exits 0", r.exitCode === 0, String(r.exitCode));
+      const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-963", "01.log"), "utf8").split("\n")[5];
+      check('red --cwd (no enclosing git repo): "# tree: none"', treeLine === "# tree: none", treeLine);
+      rmSync(plain, { recursive: true, force: true });
+    }
+
+    rmSync(outer, { recursive: true, force: true });
+    rmSync(inner, { recursive: true, force: true });
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

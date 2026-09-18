@@ -349,7 +349,7 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
 // ---------------------------------------------------------------------------
 
 const RED_USAGE =
-  "usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--now <iso>] -- <cmd…>";
+  "usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>";
 
 function isGitRepo(dir: string): boolean {
   try {
@@ -361,6 +361,25 @@ function isGitRepo(dir: string): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Walks up from `dir` to the git repo containing it (`git rev-parse
+ *  --show-toplevel`), or `undefined` when `dir` is not inside a work tree.
+ *  The repo a red's `# tree:` header certifies is the one the wrapped
+ *  command actually ran in — never assumed from wherever `--studio` happens
+ *  to live (cascade 6 round-3, W-021 B2: a red certified the officina's own
+ *  repo while the command it wrapped ran against a different worktree). */
+function findGitRoot(dir: string): string | undefined {
+  try {
+    return execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd: dir,
+      encoding: "utf8",
+      timeout: GIT_TIMEOUT_MS,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return undefined;
   }
 }
 
@@ -379,9 +398,10 @@ function safeRedsDir(studioRoot: string, opusId: string): string | { error: stri
   return dir;
 }
 
-/** Runs `cmd` (cwd: the caller's own), collecting stdout+stderr in the order
- *  the OS actually delivers them — real chronological combination, which is
- *  why this (unlike ready/done/review) has to be async. */
+/** Runs `cmd` (cwd: `--cwd` when given, else the caller's own), collecting
+ *  stdout+stderr in the order the OS actually delivers them — real
+ *  chronological combination, which is why this (unlike ready/done/review)
+ *  has to be async. */
 function runCapture(cmd: string[], cwd: string): Promise<{ exitCode: number; output: string }> {
   return new Promise((done) => {
     const child = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe"] });
@@ -410,7 +430,7 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     return { exitCode: 2 };
   }
 
-  const parsed = parseFlags(before, { valued: ["--behaviour", "--sella", "--studio", "--repo", "--now"] });
+  const parsed = parseFlags(before, { valued: ["--behaviour", "--sella", "--studio", "--repo", "--cwd", "--now"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${RED_USAGE}`);
     return { exitCode: 2 };
@@ -449,24 +469,46 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   }
 
   const sella = resolveSella(values.get("--sella"));
-  const repo = resolve(values.get("--repo") ?? (isGitRepo(resolve(root, "..")) ? resolve(root, "..") : process.cwd()));
+  const cwdFlag = values.get("--cwd");
+  const execCwd = cwdFlag !== undefined ? resolve(cwdFlag) : process.cwd();
 
-  let treeHeader = "unknown";
-  if (isGitRepo(repo)) {
+  // Same exclusion set verify.ts computes: the officina itself, .bisellium/,
+  // and any manifest source_excludes — so red's own log write is never what
+  // makes the tree it just certified "dirty". Only applies when the officina
+  // actually lives inside the repo being hashed; a --cwd pointing at an
+  // unrelated repo (the usual reason to pass --cwd at all) has nothing of
+  // the officina's to exclude.
+  function hashRepo(repoDir: string): string {
     try {
-      // Same exclusion set verify.ts computes: the officina itself,
-      // .bisellium/, and any manifest source_excludes — so red's own log
-      // write is never what makes the tree it just certified "dirty".
-      const excludeDirs = [relative(repo, root).split(sep).join("/"), ".bisellium", ...(manifest.source_excludes ?? [])];
-      const hash = sourceTreeHash(repo, excludeDirs, "HEAD");
-      const dirty = isDirtyOutside(repo, excludeDirs);
-      treeHeader = `${dirty ? "dirty" : "tree"}:${hash}`;
+      const rel = relative(repoDir, root);
+      const rootInside = !isAbsolute(rel) && rel.split(sep)[0] !== "..";
+      const excludeDirs = rootInside ? [rel.split(sep).join("/"), ".bisellium", ...(manifest.source_excludes ?? [])] : [];
+      const hash = sourceTreeHash(repoDir, excludeDirs, "HEAD");
+      const dirty = isDirtyOutside(repoDir, excludeDirs);
+      return `${dirty ? "dirty" : "tree"}:${hash}`;
     } catch {
-      treeHeader = "unknown";
+      return "unknown";
     }
   }
 
-  const { exitCode: cmdExit, output } = await runCapture(cmd, process.cwd());
+  // `--repo` is an explicit override (unchanged): hash that repo, or
+  // "unknown" when it isn't one. Without it, the tree a red certifies is
+  // the repo containing the directory the command actually runs in — never
+  // assumed from wherever `--studio` happens to live (the round-3 false
+  // certificate, W-021 B2). With `--cwd` and no repo found there, that is
+  // reported as "none" rather than silently falling back to something the
+  // caller didn't ask for.
+  let treeHeader: string;
+  const repoFlag = values.get("--repo");
+  if (repoFlag !== undefined) {
+    const repo = resolve(repoFlag);
+    treeHeader = isGitRepo(repo) ? hashRepo(repo) : "unknown";
+  } else {
+    const found = findGitRoot(execCwd);
+    treeHeader = found === undefined ? (cwdFlag !== undefined ? "none" : "unknown") : hashRepo(found);
+  }
+
+  const { exitCode: cmdExit, output } = await runCapture(cmd, execCwd);
 
   if (cmdExit === 0) {
     console.error(`red: command exited 0 — that command passed, nothing recorded`);
