@@ -1,0 +1,63 @@
+VERDICT: FAIL (round 2, cascade 5). Reviewer: eng-lead (Opus, D-012 one-reviewer-per-opus).
+Tree under review: 9020672e35effcaba508e572c8795a631712d863 (master @ da4535a, working tree dirty).
+
+WHAT PASSES
+- verify W-016 --allow-dirty: tests/lint/types all green
+  (ci/W-016-tests-9020672e.log, ci/W-016-lint-9020672e.log, ci/W-016-types-9020672e.log).
+- check studio --repo .: PASS, 0 blocking, 33 advisory.
+- Files-owned discipline: clean. The four W-016 commits (d80ba3f, 37c3aec,
+  a6f92f8, 30b540c) touch only paths the brief declares owned. Root
+  package.json was edited as two targeted script-line replacements, not a
+  JSON round-trip; W-019's concurrent keys survived (confirmed in da4535a).
+  Nothing in the out-of-scope list (check.ts, new.ts, retro.ts, rules/**,
+  leges/**, bisellium.yml, cascades/**, .claude/**, main.ts) was touched by a
+  W-016 commit; check.ts's +2 came from W-019's a23aef1.
+- Behaviour coverage is real, not nominal. Behaviour 11 in particular is the
+  structural module-graph walk the brief demanded (apps/server/test/server.test.ts:148-210),
+  resolving relative and workspace specifiers transitively — not the grep the
+  brief pre-emptively ruled out. Behaviours 1,3,4,5,6,7,8,9 in
+  apps/server/test/server.test.ts; 1/3/4 also in packages/core/src/index.test.ts:342;
+  12,13,14 in packages/shim/test/hooks.test.ts:433,477,511.
+
+BLOCKING
+1. Zero recorded reds for behaviours 1-15. The brief's Acceptance says
+   "Report redEvidence (captured failing output) for behaviours 1-15";
+   Engineering lex Sec.2 says a behaviour is implemented only after its test has
+   been run and shown failing, "and that failure is kept as evidence";
+   Sec.7 makes the recorded red part of every done item's evidence contract.
+   Searched: studio/ci/ (only the three green verify logs per tree, plus the
+   cascade-4 review note), both builder worktrees under .claude/worktrees/,
+   .bisellium/ (no events.jsonl exists at all), and W-016's own front matter
+   (no red slot populated). Nothing. This is lesson class
+   review x evidence-backfilled-or-absent, already recurrent across two
+   cascades (L-001, L-008) per check's own lesson.recurrent advisory. A red
+   cannot be backfilled, which is the point: the remedy is not to produce one
+   now.
+
+ADVISORY
+2. Behaviour 15 unmet as specified. The brief requires the moved and rewritten
+   modules to compile under noUnusedLocals/noUnusedParameters with that run
+   recorded as evidence. Neither flag appears in tsconfig.base.json or any
+   package tsconfig, and W-019's eslint carries no-unused-vars as a *warning*
+   with no --max-warnings, so nothing enforces it. Reviewer ran it directly:
+   packages/commands and apps/server are clean; packages/cli has one pre-existing
+   hit, tick.test.ts(203,31) 'opts' declared but never read — a file W-016 owns.
+   So the code is fine; the recorded run is missing.
+3. Behaviours 2 and 10 were not built this cascade. Their tests
+   (packages/cli/src/query.test.ts:70-90) already existed at 0f4f1d8, an
+   ancestor of the cascade's spec-phase commit f52d835. No red, no new test,
+   nothing to fix — they were green on arrival. Not a defect, but they should
+   not be counted as W-016 build evidence.
+4. W-016 holds no tree: certificate, only dirty:9020672e. Cause is outside the
+   opus: .claude/worktrees/ (the harness's own per-builder worktrees, 117M) is
+   untracked and absent from .gitignore, so verify sees a dirty tree and every
+   gate certifies dirty: instead of tree:. Retrospectio 4b's headline finding
+   was that no tree: certificate exists; it recurs here for a one-line reason.
+   .gitignore is W-017's file (out of scope for W-016) — routed, not fixed.
+
+NEXT
+W-016 stays building. The blocking finding is a process failure, not a code
+defect: the implementation is sound and the behaviour tests are honest. It
+cannot be cleared inside this opus by producing evidence after the fact.
+Route to the Patron/Censor as a cascade-level decision on how reds are
+captured and stored, since this is the third recurrence of the class.

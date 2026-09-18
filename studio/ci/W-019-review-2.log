@@ -1,0 +1,169 @@
+W-019 — lead review, round 2 (cascade 5)
+reviewer: eng-lead · at: 2026-09-18T10:05:00Z
+under review: a23aef1 "build(W-019): repo hygiene", as integrated at da4535a
+source tree: 9020672e35effcaba508e572c8795a631712d863
+
+VERDICT: FAIL — cannot move to done.
+
+WHAT WAS RUN (read-only; no source file edited by this review)
+
+  bisellium verify W-019 --studio studio --repo /home/edckt/projects/bisellium
+    tests:  passed  ci/W-019-tests-9020672e.log   certifies tree:9020672e
+    lint:   passed  ci/W-019-lint-9020672e.log    certifies tree:9020672e
+    types:  passed  ci/W-019-types-9020672e.log   certifies tree:9020672e
+
+  npm run -s check -- studio --repo .        PASS — 0 blocking, 30 advisory
+  npm run -s format:check                    exit 0
+  npx tsx packages/cli/src/docs.test.ts .    7/7 PASS
+  node scripts/changelog.test.mjs            8/8 PASS
+  npm ci --dry-run                           up to date (the lock reconciles
+                                             now that both opera have landed,
+                                             so ci.yml's first step is live)
+
+  Every command in the brief's Acceptance block was run and passes. The
+  certificates say tree:, not dirty: — see ADVISORY 1 for why W-016's say
+  otherwise and why that is not a W-016 defect.
+
+WHAT IS GOOD
+
+  The opus's stated intent is met. `npm run -s lint` was a probatio pointed
+  at a command that did not exist, failing for every opus in this repo
+  (ci/W-019-lint-0acb03d2.log, exit 1). It is now a real gate that passes.
+
+  Files-owned discipline is clean. Every path in a23aef1 is one the brief
+  grants. The two shared-file wires are exactly the single lines the brief
+  specified and nothing more: check.ts gained an import and one
+  `findings.push(...checkDocs(root, ruleOpts))`; main.ts gained an import,
+  one USAGE line and one dispatch line placed before the generic flag
+  parser. package.json was edited by targeted replacement — W-016's
+  concurrent `scripts.test` value survived intact alongside W-019's two
+  appended entries, which is the failure mode the brief warned about and it
+  did not happen. P-001 was left alone and the licence ask was filed as
+  P-002, state needs_you, with no LICENSE file chosen. Front matter only on
+  every registered doc; README's one permitted badge line and nothing else.
+
+  The docs command is reachable — `bisellium docs registry` dispatches and
+  checkDocs is called from inside checkStudio. That was cascade 4b's exact
+  failure and it was not repeated.
+
+  .github/workflows/ci.yml matches behaviour 11's spec on inspection: node
+  25, npm ci, typecheck, lint, format:check, test, and two `check` calls
+  naming studio and examples/sample-studio with --repo .; the string
+  "verify" appears zero times.
+
+  The .prettierignore scope is honest rather than green-by-rewriting another
+  builder's files, and CONTRIBUTING.md records widening it as the next
+  cascade's first task. That is the right call and it is documented where the
+  next builder will find it.
+
+BLOCKING 1 — zero recorded reds for eleven spec'd behaviours
+
+  The brief lists eleven behaviours and closes that section with "Record the
+  red for each before implementing." Engineering lex 2 makes it a clause a
+  builder does not skip ("a behaviour is implemented only after its test has
+  been run and shown failing, and that failure is kept as evidence") and lex
+  7 makes it a condition of done ("the recorded red for every behaviour its
+  spec listed").
+
+  No red exists for any of the eleven. Searched: studio/ci/ (only the three
+  gate logs per tree, plus the stale cascade-4b review note), the full
+  history of studio/ci/* across all branches, and builder D's own worktree at
+  .claude/worktrees/wf_f8104331-3d7-3, which is clean with nothing
+  uncommitted. cascade-5/W-019 is a single squashed build commit; there is no
+  red-then-green pair anywhere in it.
+
+  ci/W-019-lint-0acb03d2.log is not behaviour 1's red. It records "npm run -s
+  lint, exit code 1" because the script did not exist — that is the brief's
+  Intent evidence. Behaviour 1's red is named precisely: "the pre-narrowing
+  run's failing output", i.e. eslint under the deliberately broader rule set,
+  shown failing, before the set was narrowed. That output was never captured,
+  so the claim that the rule set was narrowed from a broader one rather than
+  written narrow from the start has no evidence behind it. The same holds for
+  behaviour 2, whose red is named just as precisely ("the same command with
+  the four paths above un-ignored") and is equally absent.
+
+  A red cannot be backfilled. Re-running these commands today, against a tree
+  where the code already works, produces a green, not the red that was
+  supposed to precede the code. This finding is therefore not remediable by
+  producing evidence now, and it is fourth in a class the officina has failed
+  on before: review x evidence-backfilled-or-absent, L-001, L-008, and W-016
+  round 2 this same cascade.
+
+  I record the same distinction the W-016 reviewer drew, because it is the
+  honest one. The officina has no sanctioned place to store a per-behaviour
+  red: ci/ holds gate logs keyed by source-tree hash and nothing else, and no
+  CLI writes one. A builder told to keep a red has nowhere the model
+  recognises to keep it. That mechanism gap is already escalated to the
+  Patron on W-016 and W-019 cannot clear it from inside the opus either. It
+  should be answered once, for both.
+
+BLOCKING 2 — two behaviours have no test at all
+
+  Distinct from BLOCKING 1 and, unlike it, fixable inside this opus.
+
+  Behaviour 3 — "scripts/lint-fix.mjs is idempotent; a second run changes no
+  file." No test anywhere. The script's own header comment asserts the
+  idempotence ("Idempotent: a clean tree produces no changes, so running it
+  twice in a row is always safe"), which is a claim, not a check. Nothing
+  fails if `eslint --fix` ever stops converging.
+
+  Behaviour 11 — the ci.yml assertions. No test anywhere. I confirmed the
+  file's content by hand and it is correct today, but behaviour 11 asks for a
+  test precisely so that a later edit dropping format:check, or adding a
+  `verify` step that would write certificates from a machine that is not the
+  officina, is caught. A hand read by one reviewer is not that guard.
+
+  Nine of eleven behaviours do have real tests, and they are real behaviour
+  tests, not tests written to agree with the code: docs.test.ts drives
+  behaviours 6-10 with fixtures that assert an advisory appears AND that it
+  clears once fixed, and changelog.test.mjs covers 4-5 including the
+  determinism and write-scope assertions. The two gaps stand out against
+  that, which is why they read as omissions rather than as the standard here.
+
+ADVISORY 1 — .claude/worktrees/ is not gitignored, and it is silently
+downgrading this cascade's certificates
+
+  Not W-019's to fix — .gitignore is W-017's file and W-017 is halted — but
+  it is this cascade's problem and it should not be lost.
+
+  The cascade harness puts each builder's git worktree under
+  .claude/worktrees/ inside the repo. Nothing ignores that path, so it shows
+  as untracked and isDirtyOutside reports the tree dirty. It does not affect
+  sourceTreeHash, which reads `git ls-tree` and so sees tracked files only.
+  The result: the source tree is byte-identical to HEAD, and verify refuses
+  to run anyway.
+
+  That is where W-016's three dirty:9020672e certificates come from, and the
+  three probatio.certifies.dirty advisories `check` now prints against it.
+  They do not indicate that W-016 was verified against modified source. They
+  indicate that the harness left its own scratch checkouts where git could
+  see them. The honest reading of those three advisories is "harness
+  artefact", not "W-016 certified a dirty tree", and whoever reviews W-016
+  should know that before treating them as a defect.
+
+  To run verify here I added .claude/worktrees/ to .git/info/exclude — local,
+  uncommitted, outside the tree, and it changes no source file. That is a
+  workaround for one session. The fix is one line in .gitignore, and it
+  should be the first thing the opus that next owns that file does.
+
+  Recommend: add .claude/worktrees/ to .gitignore alongside the existing
+  local-state entries (receipts/, sessions/, timeline/, .bisellium/), which
+  it belongs with for exactly the same reason — it is a machine's working
+  state, not the studio's committed record.
+
+ADVISORY 2 — eslint.config.mjs, not eslint.config.js
+
+  The brief's Files-owned list says eslint.config.js; the opus shipped .mjs.
+  Correct as built — the root package.json declares no "type": "module", so a
+  flat config must be .mjs to load as ESM. Recorded so the next reader of the
+  brief does not file it as drift.
+
+WHAT WOULD CLEAR THIS
+
+  BLOCKING 2 is the builder's: tests for behaviours 3 and 11, each with its
+  red recorded before the test passes.
+
+  BLOCKING 1 is not clearable inside W-019 by any action available to builder
+  D, and it is the fourth recurrence of its class. It needs the Patron's
+  answer on where a per-behaviour red lives and what writes it — the same
+  answer W-016 is blocked on. Until then W-019 holds at building.
