@@ -46,6 +46,15 @@ lex, a decision, or a check rule and delete it here.
 
 ## Environment facts
 
+- Containment (Patron, 2026-09-19): `.claude/settings.local.json` carries the
+  Bash sandbox config (bubblewrap; writes confined to repo + evidence dir,
+  epoch0 and /mnt/c deny-listed) — it hard-fails until
+  `sudo apt-get install bubblewrap socat` has been run in the distro.
+  `.devcontainer/` is Anthropic's reference config on node:25 with the egress
+  firewall, for fully contained cascade runs. Repo backup: bundle at
+  C:\Users\edene\bisellium-backups\; GitHub remote pending a PAT with repo-create
+  rights (gh is authed as edckt but the fine-grained token cannot createRepository).
+
 - Node, npm, git, `claude`, `codex`, Go, treehouse, no-mistakes exist only inside
   WSL. From a Windows-hosted session run `wsl -e bash -lc "cd ~/projects/bisellium && …"`.
   From a session whose project directory is this repo, run commands directly.
