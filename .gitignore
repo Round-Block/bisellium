@@ -29,3 +29,8 @@ studio/events.jsonl
 # committed hook/agent/command profile; settings.local.json is a per-machine
 # override (e.g. a developer's own permission grants) and never shared.
 .claude/settings.local.json
+# Per-builder git worktrees the Claude Code Workflow harness creates inside
+# the repo (cascade-5 review, W-016/W-019 advisory) — local checkout state,
+# not studio content; an untracked worktree here made `verify` see a dirty
+# tree and mint `dirty:` certificates for byte-identical tracked source.
+.claude/worktrees/
