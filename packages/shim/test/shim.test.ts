@@ -8,9 +8,10 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, 
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { gitWorktreeProvider } from "../src/index.js";
+import { gitWorktreeProvider, filterEnv } from "../src/index.js";
 import { runCommand } from "../../cli/src/run.js";
 import { checkStudio } from "../../cli/src/check.js";
+import { localPipeline } from "../../pipeline/src/index.js";
 
 const NOW = new Date("2026-09-18T09:00:00Z");
 
@@ -126,6 +127,82 @@ function readReceipt(studio: string, sella: string): { path: string; data: Recor
     check("run: child killed by SIGTERM exits 128+15", killed.exitCode === 143, String(killed.exitCode));
   } finally {
     rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- filterEnv: GIT_CONFIG_* is an atomic family, never partially dropped --
+// A sandbox that injects git config via GIT_CONFIG_COUNT/KEY_n/VALUE_n has
+// KEY_n match /KEY/i (secret-shaped) while COUNT and VALUE_n don't. Dropping
+// only the KEY_ns leaves git a config count with no keys behind it — it dies
+// on every invocation. VALUE_n can itself carry an injected credential, so
+// the fix is not to allowlist the family through; it's to drop the whole
+// family together whenever any member of it would be dropped.
+
+{
+  const withGitConfig: NodeJS.ProcessEnv = {
+    PATH: "/usr/bin",
+    GIT_CONFIG_COUNT: "2",
+    GIT_CONFIG_KEY_0: "user.name",
+    GIT_CONFIG_VALUE_0: "Test",
+    GIT_CONFIG_KEY_1: "user.email",
+    GIT_CONFIG_VALUE_1: "test@example.com",
+    SOME_API_TOKEN: "shhh",
+  };
+  const out = filterEnv(withGitConfig);
+  const gitConfigKeysKept = Object.keys(out).filter((k) => k.startsWith("GIT_CONFIG_"));
+  check("filterEnv: GIT_CONFIG_* family dropped atomically (none kept)", gitConfigKeysKept.length === 0, JSON.stringify(gitConfigKeysKept));
+  check("filterEnv: unrelated secret-shaped var still dropped", !("SOME_API_TOKEN" in out), JSON.stringify(Object.keys(out)));
+  check("filterEnv: PATH still passed through", out["PATH"] === "/usr/bin", JSON.stringify(out));
+
+  const withoutKeys: NodeJS.ProcessEnv = { PATH: "/usr/bin" };
+  const out2 = filterEnv(withoutKeys);
+  check("filterEnv: no GIT_CONFIG_* present -> nothing to drop, PATH kept", out2["PATH"] === "/usr/bin", JSON.stringify(out2));
+}
+
+// ---- integration: a probatio command shelling to git survives a --------
+// ---- GIT_CONFIG_*-injecting env (packages/pipeline's localPipeline) -----
+
+{
+  const repo = mktemp("shim-gitconfig-repo-");
+  const logDir = mktemp("shim-gitconfig-logs-");
+  const savedEnv: Record<string, string | undefined> = {};
+  const injected = ["GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0", "GIT_CONFIG_KEY_1", "GIT_CONFIG_VALUE_1"];
+  for (const k of injected) savedEnv[k] = process.env[k];
+  try {
+    git(repo, ["init", "-q"]);
+    git(repo, ["config", "user.email", "test@example.com"]);
+    git(repo, ["config", "user.name", "Test"]);
+    writeFileSync(join(repo, "README.md"), "hello\n");
+    git(repo, ["add", "-A"]);
+    git(repo, ["commit", "-q", "-m", "init"]);
+
+    process.env["GIT_CONFIG_COUNT"] = "2";
+    process.env["GIT_CONFIG_KEY_0"] = "user.name";
+    process.env["GIT_CONFIG_VALUE_0"] = "Sandbox";
+    process.env["GIT_CONFIG_KEY_1"] = "user.email";
+    process.env["GIT_CONFIG_VALUE_1"] = "sandbox@example.com";
+
+    const results = await localPipeline.run({
+      opus: { id: "W-GITCONFIG" } as never,
+      repo,
+      commands: { tests: "git rev-parse HEAD" },
+      treeHash: "0000000000000000000000000000000000000",
+      logDir,
+      now: NOW,
+      studioDir: logDir,
+    });
+    check(
+      "localPipeline: `git rev-parse HEAD` passes under a GIT_CONFIG_*-injecting env",
+      results["tests"]?.status === "passed",
+      JSON.stringify(results),
+    );
+  } finally {
+    for (const k of injected) {
+      if (savedEnv[k] === undefined) delete process.env[k];
+      else process.env[k] = savedEnv[k];
+    }
+    rmSync(repo, { recursive: true, force: true });
+    rmSync(logDir, { recursive: true, force: true });
   }
 }
 

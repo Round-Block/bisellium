@@ -25,14 +25,35 @@ export function redact(text: string): string {
 const ALLOWLIST = /^(PATH|HOME|NODE_.*|LANG|TZ)$/;
 const SECRET_NAME = /TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL/i;
 
+/** git's `GIT_CONFIG_COUNT`/`GIT_CONFIG_KEY_n`/`GIT_CONFIG_VALUE_n` triplet
+ *  (how a sandbox injects git config via env). `KEY_n` is secret-shaped
+ *  (matches SECRET_NAME) while `COUNT` and `VALUE_n` are not, so a plain
+ *  per-name filter drops only the keys and leaves git a config count with no
+ *  keys behind it — it dies on every invocation. `VALUE_n` can itself carry
+ *  an injected credential, so allowlisting the family through is not the
+ *  fix; treating it as one atomic unit is: if any member would be dropped,
+ *  the whole family goes. */
+const GIT_CONFIG_FAMILY = /^GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+)$/;
+
 /** A copy of `env` with any secret-shaped variable name dropped, unless it's
  *  on the allowlist (PATH, HOME, NODE_*, LANG, TZ). Used to run untrusted
- *  probatio commands without handing them the parent process's credentials. */
+ *  probatio commands without handing them the parent process's credentials.
+ *  The GIT_CONFIG_* family is filtered atomically (see GIT_CONFIG_FAMILY). */
 export function filterEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const out: NodeJS.ProcessEnv = {};
+  let dropGitConfigFamily = false;
   for (const [k, v] of Object.entries(env)) {
+    if (GIT_CONFIG_FAMILY.test(k)) {
+      if (SECRET_NAME.test(k) && !ALLOWLIST.test(k)) dropGitConfigFamily = true;
+      continue;
+    }
     if (SECRET_NAME.test(k) && !ALLOWLIST.test(k)) continue;
     out[k] = v;
+  }
+  if (!dropGitConfigFamily) {
+    for (const [k, v] of Object.entries(env)) {
+      if (GIT_CONFIG_FAMILY.test(k)) out[k] = v;
+    }
   }
   return out;
 }
