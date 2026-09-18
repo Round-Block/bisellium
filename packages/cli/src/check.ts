@@ -23,6 +23,7 @@ import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "
 import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
 import { checkInstructions } from "./rules/instructions.js";
+import { checkDocs } from "./rules/docs.js";
 
 export type Level = "block" | "advise";
 export interface Finding {
@@ -699,6 +700,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkProcess(root, ruleOpts));
   findings.push(...checkLex(root, ruleOpts));
   findings.push(...checkInstructions(root, ruleOpts));
+  findings.push(...checkDocs(root, ruleOpts));
 
   return done();
 }

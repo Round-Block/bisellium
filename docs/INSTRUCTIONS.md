@@ -1,3 +1,11 @@
+---
+kind: guide
+owner: eng-lead
+tier: reference
+review: 2026-12-01
+kill: when the instructions layer it documents (W-017) ships and this doc folds into ADOPTION.md
+---
+
 # The instructions layer (W-017)
 
 The ROM tier — what a builder knows before it reads anything else — is a

@@ -1,4 +1,14 @@
+---
+kind: guide
+owner: producer
+tier: reference
+review: 2026-12-01
+kill: when replaced by a generated product page
+---
+
 # Bisellium
+
+![CI](../../actions/workflows/ci.yml/badge.svg)
 
 One application, two halves:
 

@@ -1,8 +1,8 @@
 ---
-kind: runbook
-owner: production
-tier: warm
-review: per-cascade
+kind: guide
+owner: producer
+tier: reference
+review: 2026-12-01
 kill: when every item here is enforced by a lex clause or a check rule
 ---
 
