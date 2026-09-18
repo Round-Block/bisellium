@@ -1,0 +1,11 @@
+certifies: tree:77e7eb4c9d0f4d3a206647567757e102adc1261f
+command: npm run -s lint
+exit code: 0
+
+
+/********.test.ts
+  203:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+✖ 1 problem (0 errors, 1 warning)
+
+

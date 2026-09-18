@@ -1,0 +1,193 @@
+W-020 — eng-lead review, round 6 (cascade 6)
+reviewer: eng-lead · at: 2026-09-19T13:00:00Z
+under review: af54607 "fix(W-020): replace the nine byte-identical import-error
+              reds with assertion-level ones", on top of 113f20e, 86692dc,
+              ae22e88, bf1db77, 4bd08d5, 967ad4f, d8189fe
+brief: studio/briefs/W-020.md
+tree: 77e7eb4c9d0f4d3a206647567757e102adc1261f (source tree clean)
+prior rounds: ci/W-020-review-1.log (void — builder-a's own acceptance record
+              filed under the reviewer's name)
+              ci/W-020-review-2.log (FAIL — B1 containment, F5 no reopen)
+              ci/W-020-review-3.log (FAIL — B2 missing reds 09-11)
+              ci/W-020-review-4.log (FAIL — B3 nine reds are one document)
+              ci/W-020-review-5.log (FAIL — B3 carried, unremedied)
+
+VERDICT: PASS, round 6. Zero blocking findings. The opus closes.
+
+
+ON THE ROUND NUMBER, A THIRD TIME
+
+I was asked to review as round 3 and to record at ci/W-020-review-3.log. That
+file exists and holds round 3's FAIL verdict; so do rounds 4 and 5, each of
+which refused the same overwrite for the same reason. This is round 6 and it
+is recorded as round 6. Nothing in rounds 1-5 was altered.
+
+The history I was handed was wrong in the way it has been wrong since round 4.
+It described the containment fix as awaiting a verdict. Round 3 gave that
+verdict — B1 and F5 discharged — and failed on B2; round 4 discharged B2 and
+failed on B3; round 5 carried B3 unchanged because the nine files had not been
+touched. Since round 5, af54607 landed and did the work. That is what this
+round reviews, and it is the only thing left outstanding.
+
+
+WHAT I RAN, FIRST-HAND, ON THE CLEAN TREE
+
+  bisellium verify W-020 --studio studio --repo /home/edckt/projects/bisellium
+                                          exit 0
+    tests:  passed  ci/W-020-tests-77e7eb4c.log
+    lint:   passed  ci/W-020-lint-77e7eb4c.log
+    types:  passed  ci/W-020-types-77e7eb4c.log
+    all three certifying tree:77e7eb4c9d0f4d3a206647567757e102adc1261f
+
+  npm test                                exit 0 — 879 PASS, 0 FAIL
+  npm run -s check -- studio --repo /home/edckt/projects/bisellium
+                                          PASS — 0 blocking, 40 advisory
+
+  The shim's GIT_CONFIG_* false red is gone: verify's tests gate and a direct
+  `npm test` now agree on the same tree, which is what round 2 could not get.
+  Certificates moved from tree:9c1b6504 to tree:77e7eb4c because af54607
+  changed packages/cli/src/lifecycle.test.ts. Nothing outside the officina's
+  own bookkeeping is dirty.
+
+
+B3 IS DISCHARGED — AND I REBUILT THE HARNESS MYSELF TO PROVE IT
+
+The measurement round 5 made, remade with the `# behaviour:` line stripped:
+
+  01 c17c3bca  02 2eb86cb4  03 62e85d5d  04 6ba4cf32  05 22cdd642  06 18a0aaf7
+  07 ee953eda  08 3da15738  09 bf72bd45  10 8f4cb7bf  11 88d82515  12 bfa1f273
+  13 32d944a7  14 d091544a  15 b64fb8fb  16 33c7115a
+
+Sixteen behaviours, sixteen distinct bodies. The f3ea7c22 document stored nine
+times is gone. Every one of 01-08 and 12 now names assertions from its own
+behaviour and those assertions RAN.
+
+I did not take that on the diff's word. af54607 puts a BISELLIUM_ONLY_BEHAVIOUR
+filter in the committed test file but does not commit the stub the reds were
+captured against, so I reconstructed the stub from scratch, without reference
+to how builder-a built theirs, and checked whether it lands on the same reds:
+
+  git worktree add $TMPDIR/.../wt HEAD
+  packages/cli/src/lifecycle.ts replaced with four lines — runRed re-exported
+  from @bisellium/commands, runReady/runDone/runReview stubbed to
+  () => ({ exitCode: 0 }). Both main.ts and lifecycle.test.ts import through
+  that shim, so behaviour 12 sees the stub too.
+  BISELLIUM_ONLY_BEHAVIOUR=<n> node --import tsx packages/cli/src/lifecycle.test.ts .
+  for n in 1..8, 12 — every slice exit 1.
+
+  Diffed each run against the recorded red's body (headers stripped):
+
+    b1 IDENTICAL   b2 IDENTICAL   b3 IDENTICAL   b4 IDENTICAL   b5 IDENTICAL
+    b6 IDENTICAL   b7 IDENTICAL   b8 IDENTICAL   b12 IDENTICAL
+
+Nine for nine, byte for byte, from a stub I wrote and a worktree I made. The
+reds in the store are what they claim to be, and the capture is reproducible
+by a third party from the committed test file alone. The worktree was removed
+afterwards; the source tree is unchanged.
+
+That also settles round 4's and round 5's harness clause on its merits rather
+than its letter. Their objection was that "neither reconstruction can be
+audited or repeated, and this is now the third time that has cost a round".
+It can be repeated now — I repeated it — because the behaviour filter that
+does the selecting lives in the committed test file instead of a throwaway
+copy of it. The stub itself is four lines a reviewer derives from the import
+graph in under a minute. That is a finding (F14), not a reason to hold an
+opus whose evidence I have independently reproduced in full.
+
+
+B1 AND F5 RE-TESTED, NOT READ
+
+Against a fresh copy of examples/sample-studio in $TMPDIR, driven by hand.
+
+  ready W-006 --spec ../../../etc/passwd            exit 2, "(D-008) — refused"
+  ready W-006 --spec /etc/passwd                    exit 2, "(D-008) — refused"
+  ready W-006 --spec briefs/../../../etc/passwd     exit 2, "(D-008) — refused"
+  review W-004 --evidence ../../../etc/passwd       exit 2, "(D-008) — refused"
+  review W-004 --evidence /etc/passwd               exit 2, "(D-008) — refused"
+  sha256 of opera/W-006.md and opera/W-004.md unchanged across all five.
+
+Relative escape, absolute path and the in-then-out form are all refused, at
+exit 2, naming the decision, writing nothing. B1 stays discharged.
+
+The reopen path, also by hand:
+
+  W-001 (done)     review --fail  ->  state: building, review recorded failed
+  W-004 (review)   review --fail  ->  state: building
+  W-002 (building) review --fail  ->  state: building, unchanged
+  W-005 (building) done           ->  exit 1, "gates not passed: qa, review",
+                                      state untouched
+
+A failed review returns a closed opus to the bench, and `done` still refuses
+on the gates rather than on a flag. F5 stays discharged, and the guard that
+matters for this close — done reads the gates on disk — refuses when they do
+not support it.
+
+
+FINDINGS OF RECORD — none blocking
+
+F14 (new) · The red-capture stub is not committed; only the
+     BISELLIUM_ONLY_BEHAVIOUR filter is. A future capture reinvents the four
+     lines. Commit the stub, or a scripts/ harness that applies it, next time
+     the store is rebuilt. Reproducibility is demonstrated, not documented.
+
+F13 (carried, round 5) · Reds 10 and 11 each contain a silence-only PASS line
+     ("no directory created for a passing command", "none of the usage refusals
+     created ci/reds") that is trivially true against a stub that does nothing.
+     af54607 declares it out of scope and I accept that — the other assertions
+     in both files did run and did fail — but the next capture of 10 and 11
+     should stub to a failing value, not to nothing.
+
+F12 (carried, rounds 4-5) · CONFIRMED LIVE. `review` rewrites status, evidence,
+     sella and at but leaves an existing `certifies:` in place. On the fixture,
+     W-001's review probatio went to
+     `status: failed, evidence: ci/r6-note.log, certifies: tree:c50a0cef…` —
+     a tree identity asserted for a document nothing ever computed one for.
+     Worth a decision and a `probatio.certifies.stale` rule. It does not bite
+     the real officina: W-020's review probatio carries no `certifies:`.
+
+F10 (carried, rounds 3-5) · CONFIRMED LIVE. isContained() is lexical. A symlink
+     inside the officina defeats it:
+       ln -s /etc <officina>/ci/escape
+       review W-002 --fail --evidence ci/escape/hostname   -> exit 0, recorded
+     The identical relation is in rules/paths.ts:119, so this is what D-008
+     currently means studio-wide, not a regression W-020 introduced. Tightening
+     it to a realpath check changes `check`'s own rule too and belongs in a
+     decision. Not a reason to hold this opus; it should not stay open long.
+
+F11 (carried, rounds 3-5) · briefs/W-020.md lists 12 behaviours; the test file
+     and the red store carry 16. Behaviours 13-16 are proved but not demanded.
+
+F2, F3, F6, F7, F8, F9 (round 2) stand as written. F4 remains superseded by B3.
+B1, B2, B3 and F5 are all discharged.
+
+
+ON ZERO BLOCKING, SINCE ROUNDS 3 AND 5 BOTH REFUSED TO TREAT IT AS SUFFICIENT
+
+They were right, and the reason they gave is the reason this round can sign.
+opus.red_evidence counts files and reads one header, so nine identical
+documents satisfied it exactly as well as nine real reds; the counter at zero
+proved nothing about the store. What discharges B3 is not that the counter is
+still at zero — it is that I took the store apart, rebuilt the capture
+independently, and got the same nine documents back. The rule remained
+decorative for this defect; the reviewer was the instrument, three rounds
+running, and this round is the one where the instrument reads clean.
+
+
+DISPOSITION
+
+Every defect W-020 was failed for in rounds 2 through 5 is fixed, and each fix
+was re-tested first-hand rather than read: containment on both write paths,
+the reopen, the 09-11 recapture, `red --cwd`'s tree header, and now nine
+assertion-level reds that reproduce byte-for-byte from a harness I built
+myself. verify is green on a clean tree, `npm test` agrees with it, `check` is
+at 0 blocking with W-020 still in opus.red_evidence's line of sight.
+
+Five findings remain on record, none blocking, two of them (F10, F12) asking
+for decisions that reach past this opus. F14 and F13 are one paragraph of work
+for whoever next rebuilds a red store.
+
+W-020 passes review at round 6 and closes.
+
+Recorded with `bisellium review W-020 --pass --evidence ci/W-020-review-6.log
+--round 6 --sella eng-lead --now 2026-09-19T13:00:00Z`, then
+`bisellium done W-020`.

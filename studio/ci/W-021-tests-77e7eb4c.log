@@ -1,0 +1,204 @@
+certifies: tree:77e7eb4c9d0f4d3a206647567757e102adc1261f
+command: npm test -s
+exit code: 0
+
+PASS  opus.untracked: never throws when opts.repo is not a git repository    
+PASS  opus.untracked: [] when opts.repo is not a git repository              []
+PASS  opus.untracked: never throws when git fails outright                   
+PASS  opus.untracked: [] when git fails outright                             []
+PASS  opus.red_evidence: silent while ci/reds does not exist                 []
+PASS  opus.red_evidence: blocks naming all missing behaviours                [{"rule":"opus.red_evidence","level":"block","where":"opera/W-201.md","message":"missing red log(s) for behaviour(s) 1, 2, 3"}]
+PASS  opus.red_evidence: names only the still-missing behaviour              [{"rule":"opus.red_evidence","level":"block","where":"opera/W-201.md","message":"missing red log(s) for behaviour(s) 2"}]
+PASS  opus.red_evidence: clears once all N logs are present                  []
+PASS  opus.red_evidence: blocks on exit 0                                    [{"rule":"opus.red_evidence","level":"block","where":"opera/W-202.md","message":"red log(s) for behaviour(s) 1, 2, 3 record a passing run, not a red"}]
+PASS  opus.red_evidence: blocks on absent exit                               [{"rule":"opus.red_evidence","level":"block","where":"opera/W-202.md","message":"red log(s) for behaviour(s) 1, 2, 3 record a passing run, not a red"}]
+PASS  opus.red_evidence: blocks on non-integer exit                          [{"rule":"opus.red_evidence","level":"block","where":"opera/W-202.md","message":"red log(s) for behaviour(s) 1, 2, 3 record a passing run, not a red"}]
+PASS  opus.red_evidence: clears once every log records a real non-zero exit  []
+PASS  opus.red_evidence: advises for zero numbered behaviours                [{"rule":"opus.red_evidence","level":"advise","where":"opera/W-203.md","message":"brief lists no numbered behaviours — nothing to prove"}]
+PASS  opus.red_evidence: does not block for zero numbered behaviours         [{"rule":"opus.red_evidence","level":"advise","where":"opera/W-203.md","message":"brief lists no numbered behaviours — nothing to prove"}]
+PASS  countBehaviours: counts the top-level list, ignoring every distractor  4
+PASS  countBehaviours: 0 when the heading is missing                         
+PASS  countBehaviours: 0 when the section has no numbered items              
+PASS  path.id.unvalidated: blocks opus id "a/b"                              [{"rule":"path.id.unvalidated","level":"advise","where":"opera/SAFE.md","message":"id \"a/b\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "a\b"                              [{"rule":"path.id.unvalidated","level":"advise","where":"opera/SAFE.md","message":"id \"a\\b\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "a..b"                             [{"rule":"path.id.unvalidated","level":"advise","where":"opera/SAFE.md","message":"id \"a..b\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "-bad"                             [{"rule":"path.id.unvalidated","level":"advise","where":"opera/SAFE.md","message":"id \"-bad\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "bad id"                           [{"rule":"path.id.unvalidated","level":"advise","where":"opera/SAFE.md","message":"id \"bad id\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks a bad front-matter sella reference         [{"rule":"path.id.unvalidated","level":"advise","where":"opera/W-300.md","message":"front matter.traditio.sella \"a/b\" is not a valid id"}]
+PASS  path.id.unvalidated: clears once the sella reference is valid          []
+PASS  path.id.unvalidated: blocks a bad probationes: key                     [{"rule":"path.id.unvalidated","level":"advise","where":"opera/W-301.md","message":"probationes key \"bad/key\" is not a valid id"}]
+PASS  path.id.unvalidated: clears once the probatio key is valid             []
+PASS  path.id.unvalidated: blocks a bad receipts/ directory name             [{"rule":"path.id.unvalidated","level":"advise","where":"receipts/","message":"receipts directory name \"a..b\" is not a valid id"}]
+PASS  path.id.unvalidated: clears once the receipts/ directory name is valid []
+PASS  path.escapes.officina: blocks a relative a/../../b escape in spec:     [{"rule":"path.escapes.officina","level":"advise","where":"opera/W-400.md","message":"spec \"../../etc/passwd\" resolves outside the officina"}]
+PASS  path.escapes.officina: blocks an absolute-path spec:                   [{"rule":"path.escapes.officina","level":"advise","where":"opera/W-400.md","message":"spec \"../../etc/passwd\" resolves outside the officina"},{"rule":"path.escapes.officina","level":"advise","where":"opera/W-401.md","message":"spec \"/etc/passwd\" resolves outside the officina"}]
+PASS  path.escapes.officina: a path that merely looks like an escape but resolves inside passes [{"rule":"path.escapes.officina","level":"advise","where":"opera/W-400.md","message":"spec \"../../etc/passwd\" resolves outside the officina"},{"rule":"path.escapes.officina","level":"advise","where":"opera/W-401.md","message":"spec \"/etc/passwd\" resolves outside the officina"}]
+PASS  path.escapes.officina: blocks a gate evidence: that escapes            [{"rule":"path.escapes.officina","level":"advise","where":"opera/W-403.md","message":"gate \"spec\" evidence \"../outside.md\" resolves outside the officina"}]
+PASS  path.escapes.officina: clears once gate evidence: resolves inside      []
+PASS  path rule module calls .startsWith() nowhere (dogfoods its own rule)   rules/paths.ts calls .startsWith()
+PASS  checkStudio is wired to path.id.unvalidated                            [{"rule":"manifest.patron","level":"advise","where":"bisellium.yml","message":"patron role id missing (defaults to \"patron\")"},{"rule":"wip.declared","level":"advise","where":"bisellium.yml","message":"no wip_limit — WIP is unbounded"},{"rule":"manifest.collegia","level":"block","where":"bisellium.yml","message":"no collegia declared"},{"rule":"manifest.probationes","level":"advise","where":"bisellium.yml","message":"no probationes declared — nothing can be verified"},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"title\""},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"kind\""},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"collegium\""},{"rule":"opus.id.filename","level":"block","where":"opera/W-500.md","message":"id \"bad/id\" does not match filename"},{"rule":"traditio.present","level":"block","where":"opera/W-500.md","message":"active item (building) has no handoff"},{"rule":"aerarium.present","level":"advise","where":"aerarium/","message":"no aerarium — postures will be unknown"},{"rule":"path.id.unvalidated","level":"advise","where":"opera/W-500.md","message":"id \"bad/id\" is not a valid id"}]
+PASS  examples/sample-studio: zero findings from all four W-021 rule ids     []
+PASS  studio: no BLOCKING path.* finding (the insurance clause)              []
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+working tree is dirty; commit or pass --allow-dirty
+--stage "review" does not match opus state "building"
+unknown sella "nobody" — not declared in bisellium.yml
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+emit: event needs a non-empty string "name"
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+unknown opus: W-999
+--ask-back requires petitio "A-1" to be needs_you (currently awaiting_reply)
+W-007 is not in backlog (state: greenlit)
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+hooks print: --harness must be "claude-code" (got "codex")
+usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+hook-event start: payload session_id is not a plain id (no path separators)
+hook-event stop: payload session_id is not a plain id (no path separators)
+hook-event start: --sella must be a plain id (no path separators)
+GET /api/officina 200 3ms
+GET /api/inbox 200 7ms
+GET /api/aerarium 200 3ms
+GET /api/opus/W-004 200 1ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+GET /api/events?limit=-5 200 1ms
+GET /api/timeline/builder-1?limit=-5 200 1ms
+GET /api/events?limit=0 200 1ms
+GET /api/timeline/builder-1?limit=0 200 1ms
+GET /api/events?limit=99999 200 1ms
+GET /api/timeline/builder-1?limit=99999 200 1ms
+GET /api/events?limit=abc 200 0ms
+GET /api/timeline/builder-1?limit=abc 200 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 0ms
+POST /api/greenlight 413 3ms
+POST /api/greenlight 200 4ms
+GET /api/opus/W-007 200 0ms
+POST /api/_poll 200 11ms
+GET /api/events 200 1ms
+POST /api/_poll 200 11ms
+GET /api/events 200 0ms
+GET /api/events 200 1ms
+POST /api/_poll 404 0ms
+GET /api/events 200 1ms
+GET /api/events 200 0ms
+GET /api/live 200 101ms
+POST /api/_poll 200 12ms
+GET /api/officina 200 0ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 276ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 275ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 274ms
+GET /api/live 200 259ms
+GET /api/live 200 260ms
+GET /api/live 200 260ms
+GET /api/live 200 260ms
+GET /api/live 200 259ms
+GET /api/live 200 259ms
+GET /api/live 200 259ms
+GET /api/live 200 259ms
+GET /api/live 200 259ms
+GET /api/live 200 259ms
+POST /api/talk 200 85ms
+POST /api/talk 200 125ms
+fatal: not a git repository (or any of the parent directories): .git
+--spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
+--spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+--spec "briefs/../../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+/********.yml not found — not a studio
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+GET /api/health 200 27ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 200 4ms
+W-007 is not greenlit or halted (state: backlog)
+W-002 is not greenlit or halted (state: building)
+W-003 is not greenlit or halted (state: verifying)
+W-004 is not greenlit or halted (state: review)
+W-001 is not greenlit or halted (state: done)
+W-006: no spec at briefs/W-006.md — not ready
+W-310: gates not passed: tests
+W-311: gates not passed: tests
+W-312: gates not passed: tests
+W-313: gates not passed: qa
+W-314: gates not passed: patron
+exactly one of --pass/--fail is required
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]
+exactly one of --pass/--fail is required
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]
+--evidence "ci/does-not-exist.log" not found under studio
+red: command exited 0 — that command passed, nothing recorded
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+missing "--" separator before the command
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+empty command after "--"
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+invalid opus id ".."
+invalid opus id "sub/dir"
+W-006: --spec "../../../../../etc/hostname" resolves outside the officina (D-008) — refused
+W-004: --evidence "../../../../../etc/hostname" resolves outside the officina (D-008) — refused
+fatal: not a git repository (or any of the parent directories): .git
+
