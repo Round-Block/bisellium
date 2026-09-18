@@ -1,0 +1,11 @@
+SUITE IS RED — the builder's central claim is false. Builder reported \`npm test -s\` exit 0 with "423 PASS / 0 FAIL". Actual, on the current tree, run twice with identical results: exit 1, 424 PASS / 5 FAIL. Typecheck is genuinely clean (exit 0, zero output), and node:sqlite is available, so spec item 1's fallback is not needed.
+
+The 5 failures, all deterministic, all in apps/server/test/server.test.ts:
+  FAIL  events-log: no stray events.jsonl at studio root
+  FAIL  events-log: real log exists at expected path
+  FAIL  events-log: stray log doesn't block new log creation
+  FAIL  events-log: can write multiple events
+  FAIL  events-log: honors compression via store opts
+
+RED EVIDENCE INDEPENDENTLY REPRODUCED — I re-created all five failures by restoring the old events.jsonl path reference back in store.ts, and got identical "5 FAIL" output:
+- Mutation: revert \`this.logPath = join(studioDir, EVENTS_LOG_REL)\` to \`join(studioDir, "events.jsonl")\` and tests fail identically

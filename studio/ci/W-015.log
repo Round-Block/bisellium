@@ -1,0 +1,11 @@
+TYPECHECK + SUITE
+- \`npm run -s typecheck\` exit 0. \`npm test -s\` exit 0 with zero \`^FAIL\` lines (the writes.test.ts failure the builder reported as a concurrent builder's in-flight work is no longer present). \`npx tsx packages/shim/test/hooks.test.ts .\` = 57 PASS / 0 FAIL, exit 0, reproduced 3x.
+
+RED EVIDENCE (step 2)
+Plausible and matched for the two behaviours this pass added. I reproduced equivalent red by mutation rather than trusting the report:
+
+- MUTATION A (drop \`redact\` in handleCompact). In packages/shim/src/hooks.ts, handleCompact method, changed \`const safe = redact(event);\` to \`const safe = event;\`. Ran hooks.test.ts -> 8 FAIL in redaction suite (redact: redacts workflow.*, redact: sanitizes log content, etc.)
+
+- MUTATION B (skip profile write in harness). In packages/shim/src/index.ts initHarness, commented out \`await writeProfile(config)\`. Ran full suite -> 2 FAIL in harness suite (profile: claude code writes session, profile: format matches contract).
+
+Both mutations independently reproduced the reported reds. All reverted; suite now passes 57 PASS / 0 FAIL.

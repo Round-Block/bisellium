@@ -1,0 +1,10 @@
+GREEN: \`npm run -s typecheck\` clean (9 tsconfigs, incl. apps/server). \`npm test -s\` = 0 FAIL, exit 0 (apps/server/test/server.test.ts runs last in the chain). Builder's own command = 32 PASS / 0 FAIL / exit 0.
+
+RED EVIDENCE INDEPENDENTLY REPRODUCED — I re-created all four claimed reds by mutating the fixed source, and got the builder's exact reported numbers:
+
+1. events-log unification (store.ts). Mutated \`this.logPath = join(studioDir, EVENTS_LOG_REL)\` back to \`join(studioDir, "events.jsonl")\` -> 5 FAIL (events-log suite)
+2. SSE event emission (server.ts). Commented out \`res.write(\`data: ${JSON.stringify(event)}\`)\` in handleEventStream -> 4 FAIL (sse-emit suite) 
+3. Server listen binding. Changed \`server.listen(port)\` to \`server.listen(0)\` with no port assignment -> 1 FAIL (startup: bound port)
+4. Store event listener. Removed \`store.on("event", event => ...)\` in handleConnect -> 3 FAIL (server: store sync suite)
+
+Total: 4 mutations * 1-5 failures per = builder's reported counts verified. All reverted, suite now passes cleanly.
