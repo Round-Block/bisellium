@@ -16,7 +16,7 @@
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { readFront } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
@@ -44,6 +44,16 @@ function resolveSella(flagValue: string | undefined): string {
 interface OpusFront {
   state?: unknown;
   probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown }>;
+}
+
+/** True when `relPath` resolved against `root` stays inside it — D-008's
+ *  resolved-path relation (`relative()`, first segment check), never a
+ *  `startsWith`/`join()`-only test. Shared by `ready --spec` and
+ *  `review --evidence`, the two ids-into-paths this opus itself writes. */
+function isContained(root: string, relPath: string): boolean {
+  const rel = relative(root, resolve(root, relPath));
+  if (isAbsolute(rel)) return false;
+  return rel.split(sep)[0] !== "..";
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +105,10 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   }
 
   const specRel = values.get("--spec") ?? `briefs/${opusId}.md`;
+  if (!isContained(root, specRel)) {
+    console.error(`${opusId}: --spec "${specRel}" resolves outside the officina (D-008) — refused`);
+    return { exitCode: 2 };
+  }
   if (!existsSync(join(root, specRel))) {
     console.error(`${opusId}: no spec at ${specRel} — not ready`);
     return { exitCode: 2 };
@@ -281,6 +295,10 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
 
+  if (!isContained(root, evidence)) {
+    console.error(`${opusId}: --evidence "${evidence}" resolves outside the officina (D-008) — refused`);
+    return { exitCode: 2 };
+  }
   if (!existsSync(join(root, evidence))) {
     console.error(`--evidence "${evidence}" not found under studio`);
     return { exitCode: 2 };
@@ -302,10 +320,13 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     doc.setIn(["probationes", reviewProbatioId, "evidence"], evidence);
     doc.setIn(["probationes", reviewProbatioId, "at"], now.toISOString());
     // The decree's own return edge: a failed review on an opus in `review`
-    // sends it back to `building` — no other command can move it there.
-    // An opus already in `building` (or anywhere else) keeps its state;
-    // `review` performs no forward transition, that's `done`'s job.
-    if (fail && currentState === "review") doc.setIn(["state"], "building");
+    // OR `done` sends it back to `building` — no other command can move it
+    // there, and without this a `done` opus with a failed gate is stuck
+    // forever (state.done.probationes fires and nothing reopens it — the
+    // gap cascade 6's round-2 review exposed, F5). An opus already in
+    // `building` (or anywhere else) keeps its state; `review` performs no
+    // forward transition, that's `done`'s job.
+    if (fail && (currentState === "review" || currentState === "done")) doc.setIn(["state"], "building");
     return undefined;
   });
 

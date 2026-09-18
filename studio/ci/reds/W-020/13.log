@@ -1,0 +1,8 @@
+# behaviour: 13
+# command: node --import tsx /tmp/claude-1000/w020-b13-ready-spec-repro.mjs
+# exit: 1
+# at: 2026-09-18T15:29:47.840Z
+# sella: builder-a
+# tree: tree:1f00fc18e203911bdf647687622633783cb416f4
+
+BUG CONFIRMED: ready --spec ../../../../../etc/hostname exited 0 and wrote a traversal path into /tmp/claude-1000/bisellium-b13-r7nU2a/opera/W-006.md

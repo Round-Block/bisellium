@@ -1,0 +1,8 @@
+# behaviour: 15
+# command: node --import tsx /tmp/claude-1000/w020-b15-review-fail-done-repro.mjs
+# exit: 1
+# at: 2026-09-18T15:29:57.108Z
+# sella: builder-a
+# tree: tree:1f00fc18e203911bdf647687622633783cb416f4
+
+BUG CONFIRMED: review --fail on a done opus recorded the failed gate but left state: done (stuck, no command can reopen it)

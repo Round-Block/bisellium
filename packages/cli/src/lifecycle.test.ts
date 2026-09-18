@@ -390,6 +390,65 @@ try {
       check(`main.ts: "${cmd}" prints its own usage, not the generic one`, stderr.trim().startsWith(needle), stderr);
     }
   }
+  // =========================================================================
+  // behaviour 13: ready --spec refuses a path that escapes the officina
+  // (cascade 6 round-2 review, B1/D-008)
+  // =========================================================================
+  {
+    const dir = freshStudio("ready-spec-escape");
+    const opusPath = join(dir, "opera", "W-006.md"); // greenlit in the fixture
+    const before = readFileSync(opusPath, "utf8");
+
+    const r = runReady(["W-006", "--spec", "../../../../../etc/hostname", "--studio", dir], { now: NOW });
+    check("ready: --spec escaping the officina refuses with exit 2", r.exitCode === 2, String(r.exitCode));
+    check("ready: escaping --spec writes nothing", readFileSync(opusPath, "utf8") === before);
+  }
+
+  // =========================================================================
+  // behaviour 14: review --evidence refuses a path that escapes the officina
+  // (cascade 6 round-2 review, B1/D-008)
+  // =========================================================================
+  {
+    const dir = freshStudio("review-evidence-escape");
+    const opusPath = join(dir, "opera", "W-004.md"); // in `review` in the fixture
+    const before = readFileSync(opusPath, "utf8");
+
+    const r = runReview(["W-004", "--pass", "--evidence", "../../../../../etc/hostname", "--studio", dir], { now: NOW });
+    check("review: --evidence escaping the officina refuses with exit 2", r.exitCode === 2, String(r.exitCode));
+    check("review: escaping --evidence writes nothing", readFileSync(opusPath, "utf8") === before);
+  }
+
+  // =========================================================================
+  // behaviour 15: review --fail on a `done` opus returns it to `building`
+  // (cascade 6 round-2 review, F5 — the wall L-016 only half took down)
+  // =========================================================================
+  {
+    const dir = freshStudio("review-fail-done");
+    writeFileSync(join(dir, "ci", "W-950-review-2.log"), "round 2 notes\n");
+    const opusPath = writeOpus(
+      dir,
+      "W-950",
+      [
+        "---",
+        "id: W-950",
+        "title: Done-with-failed-review",
+        "kind: feature",
+        "collegium: engineering",
+        "state: done",
+        "probationes:",
+        "  review: { status: passed, evidence: ci/W-950-review-1.log, sella: eng-lead, at: 2026-09-19T12:00:00.000Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+
+    const r = runReview(["W-950", "--fail", "--evidence", "ci/W-950-review-2.log", "--round", "2", "--sella", "eng-lead", "--studio", dir], { now: NOW });
+    check("review --fail on done: exitCode 0", r.exitCode === 0, String(r.exitCode));
+    const after = readFront<{ state: string; probationes: Record<string, { status: string; evidence: string }> }>(opusPath).data;
+    check("review --fail on done: reopens to building", after.state === "building", after.state);
+    check("review --fail on done: records the failed gate", after.probationes.review?.status === "failed" && after.probationes.review?.evidence === "ci/W-950-review-2.log", JSON.stringify(after.probationes.review));
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }
