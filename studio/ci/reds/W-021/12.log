@@ -1,0 +1,10 @@
+# behaviour: 12
+# command: node --import tsx /tmp/claude-1000/w021-bbddf4d/packages/cli/src/__red_behaviour_12.mts /tmp/claude-1000/w021-bbddf4d
+# exit: 1
+# at: 2026-09-19T13:00:00.000Z
+# sella: builder-b
+# tree: tree:b7edeb01426089311aa5ad612fefa1ffbc702f6c
+
+FAIL  checkStudio is wired to path.id.unvalidated                            [{"rule":"manifest.patron","level":"advise","where":"bisellium.yml","message":"patron role id missing (defaults to \"patron\")"},{"rule":"wip.declared","level":"advise","where":"bisellium.yml","message":"no wip_limit — WIP is unbounded"},{"rule":"manifest.collegia","level":"block","where":"bisellium.yml","message":"no collegia declared"},{"rule":"manifest.probationes","level":"advise","where":"bisellium.yml","message":"no probationes declared — nothing can be verified"},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"title\""},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"kind\""},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"collegium\""},{"rule":"opus.id.filename","level":"block","where":"opera/W-500.md","message":"id \"bad/id\" does not match filename"},{"rule":"traditio.present","level":"block","where":"opera/W-500.md","message":"active item (building) has no handoff"},{"rule":"aerarium.present","level":"advise","where":"aerarium/","message":"no aerarium — postures will be unknown"}]
+PASS  examples/sample-studio: zero findings from all four W-021 rule ids     []
+PASS  studio: no BLOCKING path.* finding (the insurance clause)              []
