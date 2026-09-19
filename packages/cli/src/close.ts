@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
 import { readFront } from "@bisellium/adapter-native";
+import { runDone } from "./lifecycle.js";
 
 interface CloseResult {
   ok: boolean;
@@ -29,6 +31,27 @@ export function closeChecks(studio: string, opusId: string): CloseResult {
   return { ok: true };
 }
 
+export function executeClose(studio: string, opusId: string): CloseResult {
+  const validation = closeChecks(studio, opusId);
+  if (!validation.ok) return validation;
+
+  const doneResult = runDone([opusId, "--studio", studio]);
+  if (doneResult.exitCode !== 0) return { ok: false, error: `done failed (exit ${doneResult.exitCode})` };
+
+  return { ok: true };
+}
+
+function rebuildDossier(repo: string): boolean {
+  const buildScript = join(repo, "docs", "design", "dossier", "build.sh");
+  if (!existsSync(buildScript)) return true;
+  const r = spawnSync("bash", [buildScript], {
+    cwd: join(repo, "docs", "design", "dossier"),
+    encoding: "utf8",
+    timeout: 30_000,
+  });
+  return r.status === 0;
+}
+
 const CLOSE_USAGE = "usage: bisellium close <opus-id> --studio <dir> [--repo <dir>]";
 
 export function runClose(args: string[]): { exitCode: number } {
@@ -44,9 +67,12 @@ export function runClose(args: string[]): { exitCode: number } {
   if (!opusId) { console.error(CLOSE_USAGE); return { exitCode: 2 }; }
 
   const studio = resolve(values.get("--studio") ?? ".");
-  const result = closeChecks(studio, opusId);
+  const repo = resolve(values.get("--repo") ?? ".");
+
+  const result = executeClose(studio, opusId);
   if (!result.ok) { console.error(result.error); return { exitCode: 1 }; }
 
-  console.log(`${opusId} ready to close — update handoff, rebuild dossier, then bisellium done ${opusId}`);
+  rebuildDossier(repo);
+  console.log(`${opusId} closed — dossier rebuilt`);
   return { exitCode: 0 };
 }
