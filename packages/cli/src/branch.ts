@@ -13,8 +13,8 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, resolve, sep } from "node:path";
-import { readFront, readManifest } from "@bisellium/adapter-native";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { parseFrontMatter, readFront, readManifest } from "@bisellium/adapter-native";
 import { sourceTreeHash } from "@bisellium/shim";
 
 interface BranchResult {
@@ -88,6 +88,55 @@ function sourceExcludeDirs(repo: string, studio: string): string[] {
   return [relative(repo, resolve(studio)).split(sep).join("/"), ".bisellium", ...extra];
 }
 
+/** Repo-root-relative path of `studio`, posix-separated — undefined when
+ *  `studio` resolves outside `repo` (a raw `relative()` would start with
+ *  `..` or, on Windows, be absolute). Shared by `readOpusRecord` and the
+ *  places that already build this same relation (`sourceExcludeDirs`
+ *  above) so all three agree on what "inside the repo" means. */
+function studioRelToRepo(repo: string, studio: string): string | undefined {
+  const rel = relative(repo, resolve(studio)).split(sep).join("/");
+  return rel.startsWith("..") || isAbsolute(rel) ? undefined : rel;
+}
+
+/** B5.1 (round 5): `mergeOpusBranch` must read the opus record from the SAME
+ *  copy `staleCertificateError` hashes — `branch`'s own — not whatever
+ *  happens to be on disk in the checkout `merge` runs from. With `studio`
+ *  INSIDE the repo (the real layout, and this repo's own) the trunk and the
+ *  opus branch carry two different commits' worth of the same file, and a
+ *  disk read follows the checkout rather than the artifact: it can fail
+ *  OPEN (the trunk's copy has no certificate yet, so there's "nothing to
+ *  check" while the branch's own copy is what's actually shipping) or fail
+ *  CLOSED (the trunk's copy carries a stale certificate from an earlier
+ *  round while the branch's own copy is correct and current).
+ *
+ *  `git show <branch>:<studio-rel>/opera/<id>.md` reads the exact blob the
+ *  branch ships, no working tree involved. Falls back to the filesystem
+ *  when `studio` resolves outside `repo` — `--studio` and `--repo` are
+ *  independent flags, and nothing then names a blob inside `repo` to show. */
+function readOpusRecord(repo: string, studio: string, branch: string, opusId: string): Record<string, unknown> {
+  const studioRel = studioRelToRepo(repo, studio);
+  if (studioRel !== undefined) {
+    const show = git(["show", `${branch}:${studioRel}/opera/${opusId}.md`], repo);
+    if (show.status === 0) return parseFrontMatter<Record<string, unknown>>(show.stdout, `${branch}:${studioRel}/opera/${opusId}.md`).data;
+  }
+  return readFront<Record<string, unknown>>(join(resolve(studio), "opera", `${opusId}.md`)).data;
+}
+
+/** The manifest's `probationes` ids declared `kind: automated` — reused by
+ *  `staleCertificateError`'s absence rule below. Same defensive-read
+ *  posture as `resolveIntegration`/`sourceExcludeDirs`: an absent or
+ *  unparseable manifest just means no declared automated gates. Reads the
+ *  manifest off disk, same as those two — the manifest itself (unlike the
+ *  opus record) isn't what diverges between the trunk and the branch here. */
+function automatedGateIds(studio: string): Set<string> {
+  try {
+    const declared = readManifest(studio).probationes ?? [];
+    return new Set(declared.filter((g) => g.kind === "automated").map((g) => g.id));
+  } catch {
+    return new Set();
+  }
+}
+
 /** D-015 B1 (round 4 correction): a rebase replays `branch`'s commits onto a
  *  moved trunk, which changes its SOURCE tree — so a `tree:` certificate an
  *  automated probatio recorded before the rebase no longer describes what is
@@ -128,21 +177,47 @@ function staleCertificateError(
   opusData: Record<string, unknown>,
   rebased: boolean,
 ): string | undefined {
-  const gates = opusData["probationes"];
-  if (gates === null || typeof gates !== "object") return undefined;
+  const gatesRaw = opusData["probationes"];
+  const gates: Record<string, unknown> = gatesRaw !== null && typeof gatesRaw === "object" ? (gatesRaw as Record<string, unknown>) : {};
+  const automated = automatedGateIds(studio);
+  // Nothing recorded and nothing declared — genuinely nothing to check,
+  // same as the old early return. Kept as its own branch so the common
+  // case (most tests, no manifest at all) never pays for a tree hash.
+  if (Object.keys(gates).length === 0 && automated.size === 0) return undefined;
+
   let newHash: string;
   try {
     newHash = `tree:${sourceTreeHash(repo, sourceExcludeDirs(repo, studio), branch)}`;
   } catch {
     return undefined; // hashing failed — advisory-grade concern, never blocks a merge on its own
   }
-  for (const [gid, gv] of Object.entries(gates as Record<string, unknown>)) {
+
+  for (const [gid, gv] of Object.entries(gates)) {
     if (gv === null || typeof gv !== "object") continue;
     const certifies = (gv as Record<string, unknown>)["certifies"];
     if (typeof certifies === "string" && certifies.startsWith("tree:") && certifies !== newHash) {
       const cause = rebased ? `${branch} was rebased onto ${master}` : `${branch}'s tree no longer matches its certificate`;
       const treeWord = rebased ? "the rebased tree" : "its current tree";
-      return `${cause} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches ${treeWord} (${newHash}); check out ${branch} and re-run "bisellium verify ${opusId}" there, then retry the merge`;
+      // A5.3 (round 5, safe now B5.1 reads the branch regardless of what's
+      // checked out): naming `master` here means an operator who checks out
+      // `branch` to follow the remedy is told to switch BACK before
+      // retrying — staying on `branch` for the retry is what used to walk
+      // straight into `git branch -D branch` refusing because it's the
+      // current HEAD, on an otherwise-correct merge.
+      return `${cause} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches ${treeWord} (${newHash}); check out ${branch} and re-run "bisellium verify ${opusId}" there, then switch back to ${master} and retry the merge`;
+    }
+  }
+
+  // B5.1 absence rule (defense in depth, round 5): a gate the manifest
+  // declares `kind: automated` with no recorded `tree:` certificate at all
+  // reads, on a bare lookup, exactly like "nothing to check" — indistinguishable
+  // from a gate nobody's declared. That is precisely what let B5.1(a) land
+  // uncertified work: absence was treated as a pass. Refuse instead.
+  for (const gid of automated) {
+    const gv = gates[gid];
+    const certifies = gv !== null && typeof gv === "object" ? (gv as Record<string, unknown>)["certifies"] : undefined;
+    if (typeof certifies !== "string" || !certifies.startsWith("tree:")) {
+      return `opus ${opusId}'s gate "${gid}" is declared "kind: automated" but ${branch} has no recorded tree: certificate for it; run "bisellium verify ${opusId}" on ${branch} before merging`;
     }
   }
   return undefined;
@@ -273,10 +348,14 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
   let state: string | undefined;
   let opusData: Record<string, unknown>;
   try {
-    opusData = readFront<Record<string, unknown>>(opusPath).data;
+    // B5.1 (round 5): read the SAME copy `staleCertificateError` hashes —
+    // `branch`'s own — not the filesystem's, which follows whatever is
+    // checked out (typically the trunk, since that's the only place
+    // `git branch -D branch` can succeed; see the module comment).
+    opusData = readOpusRecord(cwd, studio, branch, opusId);
     state = typeof opusData["state"] === "string" ? opusData["state"] : undefined;
   } catch {
-    return { ok: false, error: `opus ${opusId} unreadable at ${opusPath}` };
+    return { ok: false, error: `opus ${opusId} unreadable on ${branch} (checked ${opusPath} as a fallback)` };
   }
   if (state !== "done") return { ok: false, error: `opus ${opusId} is not done (state: ${state ?? "?"})` };
 

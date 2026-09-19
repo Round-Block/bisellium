@@ -1,0 +1,10 @@
+# behaviour: 27
+# command: node --import tsx packages/cli/src/branch.test.ts . 27
+# exit: 1
+# at: 2026-09-19T17:05:49.493Z
+# sella: builder-a
+# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+
+FAIL  B5.1(b): a correct branch is not refused on a stale certificate that survives only in the trunk's copy opus/W-100's tree no longer matches its certificate — opus W-100's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches its current tree (tree:3d9037783849e963df74f3ece17b115115104d9e); check out opus/W-100 and re-run "bisellium verify W-100" there, then retry the merge
+FAIL  feature commit lands on master                               9c7c20c studio bookkeeping: open W-100, certifies a stale tree
+fe53871 init

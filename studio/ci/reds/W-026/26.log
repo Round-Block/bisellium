@@ -1,0 +1,13 @@
+# behaviour: 26
+# command: node --import tsx packages/cli/src/branch.test.ts . 26
+# exit: 1
+# at: 2026-09-19T17:05:43.958Z
+# sella: builder-a
+# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+
+FAIL  B5.1(a): does not land a never-certified commit by trusting the trunk's own (uncertified) copy undefined
+FAIL  master never advances past the trunk-side bookkeeping        2287074 feat: more work, never certified
+b40f0bc bookkeeping: verify on the branch
+72265bf feat: add feature
+b8b0c06 studio bookkeeping: open W-099
+074b6dc init

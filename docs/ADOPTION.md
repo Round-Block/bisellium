@@ -202,21 +202,33 @@ reads it and, under `strategy: rebase`, replays the opus branch onto the
 current trunk before landing it. A rebase changes the opus's SOURCE tree, so
 any `tree:` certificate an automated probatio recorded before the rebase no
 longer describes what is about to ship — `merge` does not re-run the gates
-itself (that is `bisellium verify`'s job); it checks a recorded
-`certifies: tree:<hash>` against the branch's current tree on every call
-that would land or push it (not only the call that happens to rebase, so a
-retry of the same command can't defeat the refusal, and a branch that never
-needed a rebase at all is still covered), and refuses on a mismatch. The
-remedy is to check out the opus branch and re-run `bisellium verify` there —
-running it from a trunk checkout instead (e.g. the studio's own default
-invocation) certifies the trunk's tree, not the branch's, and can never
-produce a matching certificate. A `certifies: dirty:<hash>` gate (an opus
-verified with `--allow-dirty`) is never compared here — only a `tree:`
-certificate can go stale this way. An unrecognised `strategy` value falls
-back to `fast_forward` rather than failing merge outright (defensive
-reading, not a second validator — `bisellium check` already blocks a typo'd
-`strategy` at `manifest.shape`, so this fallback is merge's own defensive
-posture, never the only guard against one).
+itself (that is `bisellium verify`'s job); it reads the opus record from the
+opus branch itself (`git show <branch>:<studio-rel>/opera/<id>.md`, falling
+back to the filesystem only when `--studio` resolves outside `--repo`) and
+checks a recorded `certifies: tree:<hash>` there against that same branch's
+current tree, on every call that would land or push it (not only the call
+that happens to rebase, so a retry of the same command can't defeat the
+refusal, and a branch that never needed a rebase at all is still covered).
+Reading the branch's own copy — not whatever the checkout `merge` happens to
+run from shows — matters because `merge` is typically run from the trunk
+(that's the only checkout `git branch -D <branch>` can succeed from): a
+disk read there can miss a certificate the branch already has (round-5
+B5.1(a): uncertified work lands) or refuse on a stale certificate that
+survives only in the trunk's own copy (B5.1(b)). A gate the manifest
+declares `kind: automated` with no recorded `tree:` certificate at all is
+also refused, not treated as a pass — absence reads, on a bare lookup,
+exactly like "nothing to check". The remedy for a mismatch is to check out
+the opus branch and re-run `bisellium verify` there, then switch back to the
+trunk before retrying the merge — running `verify` from a trunk checkout
+instead (e.g. the studio's own default invocation) certifies the trunk's
+tree, not the branch's, and can never produce a matching certificate. A
+`certifies: dirty:<hash>` gate (an opus verified with `--allow-dirty`) is
+never compared here — only a `tree:` certificate can go stale this way. An
+unrecognised `strategy` value falls back to `fast_forward` rather than
+failing merge outright (defensive reading, not a second validator —
+`bisellium check` already blocks a typo'd `strategy` at `manifest.shape`, so
+this fallback is merge's own defensive posture, never the only guard
+against one).
 `pr.required: true` stops `merge` after the rebase/push, leaving the branch
 for a PR to carry to the trunk (PR creation is W-028's territory); with
 `pr.required: true`, `pull_after_push` never runs, since it lives only on the

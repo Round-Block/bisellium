@@ -692,6 +692,12 @@ function originMasterRev(bare: string): string {
 // trunk-only commit that touches nothing but studio bookkeeping (as a real
 // `bisellium verify` front-matter write would) must never stale an
 // otherwise-matching certificate.
+//
+// B5.1 (round 5): the certificate is committed to the BRANCH, not master —
+// `mergeOpusBranch` now reads the opus record from `branch`, so a
+// certificate written only to master's own checkout (this test's original
+// shape) would never be seen at all, and the test would pass for the wrong
+// reason (nothing to compare) rather than exercising the exclude set.
 {
   const dir = tmpRepo();
   const studio = join(dir, "studio"); // INSIDE the repo — the real layout
@@ -704,12 +710,14 @@ function originMasterRev(bare: string): string {
     execSync("git checkout opus/W-094", { cwd: dir, stdio: "pipe" });
     writeFileSync(join(dir, "feature.ts"), "opus work");
     execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
-    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
 
-    // Certificate recorded BEFORE any trunk-side bookkeeping churn — the
-    // exclude set is what has to keep it matching after that churn lands.
+    // Certificate recorded ON THE BRANCH, before any trunk-side bookkeeping
+    // churn — the exclude set is what has to keep it matching after that
+    // churn lands and a real rebase replays these commits onto it.
     const matching = expectedPostRebaseTreeHash(dir, studio, "master", "opus/W-094");
     writeOpusFileWithCertifies(studio, "W-094", "done", "tests", matching);
+    execSync("git add . && git commit -m 'bookkeeping: verify on the branch'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
 
     // A bookkeeping-only commit lands on master, touching ONLY the studio
     // dir (e.g. another opus opening) — never the source tree.
@@ -827,6 +835,139 @@ function originMasterRev(bare: string): string {
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// round-5 review, B5.1: `mergeOpusBranch` read the opus record off whatever
+// is checked out (the trunk, when `merge` runs there — CLAUDE.md's own
+// documented invocation) but hashed the BRANCH ref. With `studio` INSIDE the
+// repo — the real layout, and this repo's own — those are two different
+// commits' worth of the same file. Every behaviour above except 22 puts
+// `studio` OUTSIDE the repo (`tmpStudio()`), where the two reads are
+// necessarily identical and B5.1 is structurally invisible; 26-28 all use
+// `studio` INSIDE the repo (`join(dir, "studio")`, `git add .` tracks it) to
+// close that blind spot.
+// ---------------------------------------------------------------------------
+
+// behaviour 26 (B5.1(a), pre-implementation): FAILS OPEN under the old code.
+// The opus is opened on the trunk before any gate has run (master's own
+// copy: no certificate at all). The builder then verifies on the branch —
+// certifying the tree as of the feature commit — and one MORE, never-
+// certified commit follows. `merge` runs from the trunk. Reading the trunk's
+// copy finds nothing to compare and would let the uncertified commit land;
+// reading the branch's own copy (the fix) finds a certificate that no longer
+// matches the branch's own current tree and refuses.
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio"); // INSIDE the repo — the real layout
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(
+      join(studio, "opera", "W-099.md"),
+      "---\nid: \"W-099\"\nstate: done\nprobationes: { tests: { status: pending } }\n---\n",
+    );
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-099'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-099");
+    execSync("git checkout opus/W-099", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+
+    // Builder verifies on the branch: certifies the tree AS OF THIS commit.
+    const excludeDirs = [relative(dir, studio).split(sep).join("/"), ".bisellium"];
+    const certified = `tree:${sourceTreeHash(dir, excludeDirs, "opus/W-099")}`;
+    writeFileSync(
+      join(studio, "opera", "W-099.md"),
+      `---\nid: "W-099"\nstate: done\nprobationes: { tests: { status: passed, evidence: "x", certifies: "${certified}" } }\n---\n`,
+    );
+    execSync("git add . && git commit -m 'bookkeeping: verify on the branch'", { cwd: dir, stdio: "pipe" });
+
+    // ...then one more commit lands on the branch, never certified.
+    writeFileSync(join(dir, "more.ts"), "more opus work, never certified");
+    execSync("git add . && git commit -m 'feat: more work, never certified'", { cwd: dir, stdio: "pipe" });
+
+    // Merge is run from the TRUNK — master's own copy of the opus record is
+    // still the pre-verify version (probationes: pending, no certifies).
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+    const result = mergeOpusBranch(dir, "W-099", studio);
+    check(26, "B5.1(a): does not land a never-certified commit by trusting the trunk's own (uncertified) copy", result.ok === false, String(result.error));
+    check(26, "master never advances past the trunk-side bookkeeping", !masterLog(dir).includes("never certified"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// behaviour 27 (B5.1(b), pre-implementation): FAILS CLOSED under the old
+// code — the instance this PR itself hit. The TRUNK's copy of the opus
+// record carries a stale/wrong `tree:` certificate (left over from an
+// earlier round); the BRANCH's own copy correctly certifies its own current
+// tree. Reading the trunk's copy refuses a correct merge on evidence that
+// exists only in the wrong file; reading the branch's own copy (the fix)
+// lands it.
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio"); // INSIDE the repo — the real layout
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(
+      join(studio, "opera", "W-100.md"),
+      '---\nid: "W-100"\nstate: done\nprobationes: { tests: { status: passed, evidence: "x", certifies: "tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef" } }\n---\n',
+    );
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-100, certifies a stale tree'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-100");
+    execSync("git checkout opus/W-100", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+
+    // Builder re-verifies on the branch: the branch's OWN copy now certifies
+    // its own actual current tree, correctly.
+    const excludeDirs = [relative(dir, studio).split(sep).join("/"), ".bisellium"];
+    const correct = `tree:${sourceTreeHash(dir, excludeDirs, "opus/W-100")}`;
+    writeFileSync(
+      join(studio, "opera", "W-100.md"),
+      `---\nid: "W-100"\nstate: done\nprobationes: { tests: { status: passed, evidence: "x", certifies: "${correct}" } }\n---\n`,
+    );
+    execSync("git add . && git commit -m 'bookkeeping: verify on the branch, correct certificate'", { cwd: dir, stdio: "pipe" });
+
+    // Merge is run from the TRUNK — master's own copy still certifies the
+    // stale tree from before the branch was ever re-verified.
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+    const result = mergeOpusBranch(dir, "W-100", studio);
+    check(27, "B5.1(b): a correct branch is not refused on a stale certificate that survives only in the trunk's copy", result.ok === true, String(result.error));
+    check(27, "feature commit lands on master", masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// behaviour 28 (B5.1 absence rule, pre-implementation): defense in depth.
+// The manifest declares gate "tests" `kind: automated`; the (correctly-read)
+// branch copy of the opus record carries no `probationes` at all — never
+// verified. Absence is, on a bare read, indistinguishable from "nothing to
+// check" (exactly what let B5.1(a) land uncertified work); refuse rather
+// than pass on it.
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio"); // INSIDE the repo — the real layout
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-101.md"), '---\nid: "W-101"\nstate: done\n---\n');
+    writeFileSync(join(studio, "bisellium.yml"), "bisellium: 1\nstudio: Test\nprobationes:\n  - { id: tests, name: Tests, kind: automated }\n");
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-101'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-101");
+    execSync("git checkout opus/W-101", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work, never verified");
+    execSync("git add . && git commit -m 'feat: add feature, never verified'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-101", studio);
+    check(28, "absence rule: an automated gate with no recorded tree: certificate refuses, not passes", result.ok === false, String(result.error));
+    check(28, "master untouched", !masterLog(dir).includes("never verified"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 }
 
