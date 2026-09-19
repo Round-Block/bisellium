@@ -14,8 +14,9 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { parseFrontMatter, readFront, readManifest } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
 import { sourceTreeHash } from "@bisellium/shim";
+import { parse as parseYaml } from "yaml";
 
 interface BranchResult {
   ok: boolean;
@@ -73,26 +74,11 @@ function resolveIntegration(studio: string): ResolvedIntegration {
   };
 }
 
-/** Repo-root-relative excludes for the SOURCE tree hash — the exact set
- *  check.ts (`currentTreeHash`) and verify.ts already build, reused here so
- *  all three agree on what "the tree" means. Same fail-open reasoning as
- *  `resolveIntegration`: an absent/unparseable manifest just means no
- *  `source_excludes` on top of the studio dir and `.bisellium/`. */
-function sourceExcludeDirs(repo: string, studio: string): string[] {
-  let extra: string[] = [];
-  try {
-    extra = readManifest(studio).source_excludes ?? [];
-  } catch {
-    // no manifest / unparseable — fall back to the always-excluded set
-  }
-  return [relative(repo, resolve(studio)).split(sep).join("/"), ".bisellium", ...extra];
-}
-
 /** Repo-root-relative path of `studio`, posix-separated — undefined when
  *  `studio` resolves outside `repo` (a raw `relative()` would start with
- *  `..` or, on Windows, be absolute). Shared by `readOpusRecord` and the
- *  places that already build this same relation (`sourceExcludeDirs`
- *  above) so all three agree on what "inside the repo" means. */
+ *  `..` or, on Windows, be absolute). Shared by `readOpusRecord` and
+ *  `sourceExcludeDirs` below so both agree on what "inside the repo"
+ *  means. */
 function studioRelToRepo(repo: string, studio: string): string | undefined {
   const rel = relative(repo, resolve(studio)).split(sep).join("/");
   return rel.startsWith("..") || isAbsolute(rel) ? undefined : rel;
@@ -136,6 +122,41 @@ function readOpusRecord(repo: string, studio: string, branch: string, opusId: st
     if (show.status === 0) return parseFrontMatter<Record<string, unknown>>(show.stdout, `${branch}:${studioRel}/opera/${opusId}.md`).data;
   }
   return readFront<Record<string, unknown>>(join(resolve(studio), "opera", `${opusId}.md`)).data;
+}
+
+/** B7.1 (round 7): the exclude set that DEFINES the hash a `tree:`
+ *  certificate is compared against must follow the same rule as
+ *  `readOpusRecord` above, and for the same reason. An opus whose own work
+ *  is a NEW `source_excludes` entry (declared in the manifest, on `branch`)
+ *  is certified — by `verify`, run on `branch` — under the branch's
+ *  manifest; hashing against the checkout's manifest instead (typically the
+ *  trunk's, which never gained the addition) compares the certificate to a
+ *  hash it was never computed against, and there is no remedy that clears
+ *  it: the certificate IS the correct hash, so re-verifying reproduces it
+ *  byte-identical and the refusal repeats forever (round-7 lab16). Same
+ *  `git show <branch>:<studio-rel>/bisellium.yml` read as `readOpusRecord`,
+ *  same filesystem fallback when `studio` resolves outside `repo`. */
+function sourceExcludeDirs(repo: string, studio: string, branch: string): string[] {
+  const studioRel = studioRelToRepo(repo, studio);
+  let manifest: Manifest | undefined;
+  if (studioRel !== undefined) {
+    const show = git(["show", `${branch}:${studioRel}/bisellium.yml`], repo);
+    if (show.status === 0) {
+      try {
+        manifest = parseYaml(show.stdout) as Manifest;
+      } catch {
+        // unparseable on the branch — fall through to the disk read below
+      }
+    }
+  }
+  if (!manifest) {
+    try {
+      manifest = readManifest(studio);
+    } catch {
+      // no manifest / unparseable — fall back to the always-excluded set
+    }
+  }
+  return [relative(repo, resolve(studio)).split(sep).join("/"), ".bisellium", ...(manifest?.source_excludes ?? [])];
 }
 
 /** D-015 B1 (round 4 correction): a rebase replays `branch`'s commits onto a
@@ -210,7 +231,7 @@ function staleCertificateError(
 
   let newHash: string;
   try {
-    newHash = `tree:${sourceTreeHash(repo, sourceExcludeDirs(repo, studio), branch)}`;
+    newHash = `tree:${sourceTreeHash(repo, sourceExcludeDirs(repo, studio, branch), branch)}`;
   } catch {
     return undefined; // hashing failed — advisory-grade concern, never blocks a merge on its own
   }

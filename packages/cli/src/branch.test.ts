@@ -950,7 +950,9 @@ function originMasterRev(bare: string): string {
   }
 }
 
-// behaviour 28 (round 6, B6.1 — RETIRED, kept at this number per P-005):
+// behaviour 28 (round 6, B6.1 — RETIRED, kept at this number so
+// countBehaviours' contiguous 1..N read, packages/cli/src/rules/evidence.ts,
+// keeps counting 30 behaviours instead of orphaning 29-30):
 // used to pin the "absence rule" (a `kind: automated` gate with no recorded
 // `tree:` certificate at all refuses, rather than passing on the absence).
 // Round-6 review found that rule refuses a Patron-waived gate FOREVER — the
@@ -1104,6 +1106,65 @@ function originMasterRev(bare: string): string {
     check(30, "the remedy, followed literally with the commit step, lands the merge", second.ok === true, String(second.error));
     check(30, "both commits reach master", masterLog(dir).includes("feat: add feature") && masterLog(dir).includes("more work, uncertified"), masterLog(dir).trim());
     check(30, "the branch is cleaned up", !branches(dir).includes("opus/W-104"), branches(dir).join(","));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// behaviour 31 (round 7, B7.1, pre-implementation): `sourceExcludeDirs`
+// supplies the exclude set that DEFINES the hash a recorded certificate is
+// compared against — this is the last read in the file that still follows
+// the checkout instead of `branch`'s ref. The opus's own work here is
+// declaring a NEW `source_excludes` entry (`vendor/`) in the manifest, on
+// the branch. `verify` (simulated here the same way behaviours 26-30
+// simulate it) hashes under the branch's manifest, so the certified hash
+// already excludes `vendor/`; the trunk's copy of the manifest never
+// gained that exclusion. Reading the manifest off disk (the old code)
+// hashes WITH `vendor/` included and refuses a correct merge on a mismatch
+// that is entirely of its own making; reading it from `branch` (the fix)
+// hashes the same way `verify` did and lands it.
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio"); // INSIDE the repo — the real layout
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-105.md"), '---\nid: "W-105"\nstate: done\n---\n');
+    writeFileSync(join(studio, "bisellium.yml"), "bisellium: 1\nstudio: Test\nprobationes:\n  - { id: tests, name: Tests, kind: automated }\n");
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-105'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-105");
+    execSync("git checkout opus/W-105", { cwd: dir, stdio: "pipe" });
+
+    // The opus's own work: a new `vendor/` tree, declared excluded in the
+    // manifest — both committed on the branch, never on the trunk.
+    mkdirSync(join(dir, "vendor"), { recursive: true });
+    writeFileSync(join(dir, "vendor", "dep.js"), "// vendored dependency");
+    writeFileSync(
+      join(studio, "bisellium.yml"),
+      "bisellium: 1\nstudio: Test\nprobationes:\n  - { id: tests, name: Tests, kind: automated }\nsource_excludes: [vendor/]\n",
+    );
+    execSync("git add . && git commit -m 'feat: vendor a dependency, exclude it from the source hash'", { cwd: dir, stdio: "pipe" });
+
+    // Builder verifies on the branch: hashes under the BRANCH's manifest,
+    // i.e. with vendor/ excluded — exactly what `sourceTreeHash` computes
+    // when its exclude set includes "vendor/".
+    const excludeDirsWithVendor = [relative(dir, studio).split(sep).join("/"), ".bisellium", "vendor/"];
+    const certified = `tree:${sourceTreeHash(dir, excludeDirsWithVendor, "opus/W-105")}`;
+    writeFileSync(
+      join(studio, "opera", "W-105.md"),
+      `---\nid: "W-105"\nstate: done\nprobationes: { tests: { status: passed, evidence: "x", certifies: "${certified}" } }\n---\n`,
+    );
+    execSync("git add . && git commit -m 'bookkeeping: verify on the branch'", { cwd: dir, stdio: "pipe" });
+
+    // Merge runs from the TRUNK — whose own bisellium.yml never gained the
+    // `source_excludes: [vendor/]` line; that change is the branch's own,
+    // uncommitted-on-trunk work, same shape as every other mixed-provenance
+    // read this suite pins (26-30).
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+    const result = mergeOpusBranch(dir, "W-105", studio);
+    check(31, "B7.1: a branch that declares its own source_excludes is merged, not refused on a mismatch created by reading the trunk's manifest", result.ok === true, String(result.error));
+    check(31, "the vendoring commit lands on master", masterLog(dir).includes("vendor a dependency"), masterLog(dir).trim());
+    check(31, "the branch is cleaned up", !branches(dir).includes("opus/W-105"), branches(dir).join(","));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
