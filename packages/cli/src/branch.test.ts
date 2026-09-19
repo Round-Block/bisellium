@@ -9,7 +9,8 @@
 import { execSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
+import { sourceTreeHash } from "@bisellium/shim";
 import { createOpusBranch, mergeOpusBranch, opusBranchName } from "./branch.js";
 
 let failed = 0;
@@ -44,6 +45,27 @@ function tmpStudio(): string {
 function writeOpusFile(studio: string, id: string, state: string): void {
   mkdirSync(join(studio, "opera"), { recursive: true });
   writeFileSync(join(studio, "opera", `${id}.md`), `---\nid: "${id}"\nstate: ${state}\n---\n`);
+}
+
+// D-015 B1: an opus carrying a recorded `tree:` certificate on one gate.
+function writeOpusFileWithCertifies(studio: string, id: string, state: string, gateId: string, certifies: string): void {
+  mkdirSync(join(studio, "opera"), { recursive: true });
+  writeFileSync(
+    join(studio, "opera", `${id}.md`),
+    `---\nid: "${id}"\nstate: ${state}\nprobationes: { ${gateId}: { status: passed, evidence: "x", certifies: "${certifies}" } }\n---\n`,
+  );
+}
+
+// The exact SOURCE tree hash `mergeOpusBranch` will compare a recorded
+// certificate against post-rebase (branch.ts's own `sourceExcludeDirs` —
+// same two-line exclude-set build check.ts and verify.ts each also inline).
+// `git merge-tree --write-tree <trunk> <branch>` computes the resulting tree
+// object for a clean, non-conflicting rebase/merge without touching the
+// working directory — confirmed to match a real rebase's tree byte for byte.
+function expectedPostRebaseTreeHash(repo: string, studio: string, trunk: string, branch: string): string {
+  const mergeTreeOid = execSync(`git merge-tree --write-tree ${trunk} ${branch}`, { cwd: repo, encoding: "utf8" }).trim();
+  const excludeDirs = [relative(repo, studio).split(sep).join("/"), ".bisellium"];
+  return `tree:${sourceTreeHash(repo, excludeDirs, mergeTreeOid)}`;
 }
 
 function branches(dir: string): string[] {
@@ -368,9 +390,9 @@ function originMasterRev(bare: string): string {
     const merges = execSync("git log --merges --oneline master", { cwd: dir, encoding: "utf8" }).trim();
     check(11, "rebase produced a linear history, no merge commit", merges === "", merges);
     check(
-      11,
-      "the rebase's own consequence (stale certificates) is surfaced, not suppressed",
-      (result.note ?? "").includes("probatio.certifies.stale"),
+      17,
+      "round-4 (D-015 B1): the rebase note no longer cites probatio.certifies.stale, a rule that never fires for a done opus",
+      (result.note ?? "").includes("was rebased onto master") && !(result.note ?? "").includes("probatio.certifies.stale"),
       String(result.note),
     );
   } finally {
@@ -516,6 +538,143 @@ function originMasterRev(bare: string): string {
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// D-015 B1 (round-3 review) — merge refuses when a recorded gate certificate
+// no longer matches the post-rebase source tree, rather than leaning on
+// `check`'s probatio.certifies.stale (which never fires for a `done` opus).
+// New behaviours (17+, W-026 round 4 — 17 sits in behaviour 11's own block
+// above, the corrected note text; 18-20 are here).
+// ---------------------------------------------------------------------------
+
+// behaviour 18: a recorded tree: certificate that does NOT match the
+// rebased tree refuses the merge — master is left untouched.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    writeOpusFileWithCertifies(studio, "W-090", "done", "tests", "tree:0000000000000000000000000000000000000000");
+    createOpusBranch(dir, "W-090");
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-090", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-090", studio);
+    check(18, "refuses when the recorded certificate no longer matches the rebased tree", result.ok === false, String(result.error));
+    check(18, "error names the stale gate and points at re-verify", (result.error ?? "").includes('gate "tests"') && (result.error ?? "").includes("bisellium verify"), String(result.error));
+    check(18, "master is untouched", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+    check(18, "the branch is left in place for a retry after verify, not deleted", branches(dir).includes("opus/W-090"), branches(dir).join(","));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 19: a recorded tree: certificate that DOES match the rebased
+// tree is not refused — the merge proceeds and lands as behaviour 11 does.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    createOpusBranch(dir, "W-091");
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-091", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const matching = expectedPostRebaseTreeHash(dir, studio, "master", "opus/W-091");
+    writeOpusFileWithCertifies(studio, "W-091", "done", "tests", matching);
+
+    const result = mergeOpusBranch(dir, "W-091", studio);
+    check(19, "a matching certificate does not block the merge", result.ok === true, String(result.error));
+    check(19, "feature commit lands on master", masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 20: every post-rebase failure path carries the rebase note, not
+// just the two success paths the old code comment ("either exit path
+// below") actually covered — here, the branch-delete failure (branch.ts's
+// third such path; the other two are the ff-merge and trunk-fetch failures,
+// which get the identical one-line `note: staleNote` addition).
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    writeOpusFile(studio, "W-092", "done");
+    createOpusBranch(dir, "W-092");
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-092", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    // stays checked out on opus/W-092 (the rebase runs in this same
+    // worktree, then the eventual `git branch -D` fails: git refuses to
+    // delete the branch you're standing on).
+
+    const result = mergeOpusBranch(dir, "W-092", studio);
+    check(20, "branch-delete failure after a rebase is still reported as a failure", result.ok === false, String(result.error));
+    check(20, "master genuinely advanced despite the reported failure", masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+    check(20, "the failure still carries the rebase note", (result.note ?? "").includes("was rebased onto master"), String(result.note));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// D-015 B2 (round-3 review) — a rebase-then-push must use
+// --force-with-lease: a plain `git push origin <branch>` is rejected
+// non-fast-forward the moment the branch already has a remote counterpart
+// (exactly PR #2's own situation). New behaviour (21, W-026 round 4).
+// ---------------------------------------------------------------------------
+
+// behaviour 21: the branch was already pushed to origin (a PR is open on
+// it) BEFORE merge runs — the one case no existing test covers, and exactly
+// studio/bisellium.yml's own configured flow (rebase + push + pr.required).
+// A rebase then a plain push is rejected non-fast-forward (round-3 review's
+// reproduction); force-with-lease must still land it on origin.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  let bare: string | undefined;
+  try {
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n  push: true\n  pr:\n    required: true\n");
+    writeOpusFile(studio, "W-093", "done");
+    bare = addLocalOrigin(dir);
+    createOpusBranch(dir, "W-093");
+    execSync("git checkout opus/W-093", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    // The branch is pushed to origin BEFORE trunk diverges — the PR-already-
+    // open case: origin now holds the pre-rebase commit.
+    execSync("git push origin opus/W-093", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-093", studio);
+    check(21, "rebase-then-push succeeds even though the branch was already on origin", result.ok === true, String(result.error));
+    check(21, "pr.required still stops merge from landing locally", result.landed === false, String(result.landed));
+    const localBranchRev = execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim();
+    const originBranchRev = execSync(`git --git-dir="${bare}" rev-parse opus/W-093`, { encoding: "utf8" }).trim();
+    check(21, "origin's branch was force-with-lease-pushed to the rebased tip, not left diverged", originBranchRev === localBranchRev, `local ${localBranchRev} origin ${originBranchRev}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+    if (bare) rmSync(bare, { recursive: true, force: true });
   }
 }
 

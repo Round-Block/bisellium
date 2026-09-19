@@ -1,0 +1,8 @@
+# behaviour: 17
+# command: node --import tsx packages/cli/src/branch.test.ts . 17
+# exit: 1
+# at: 2026-09-19T16:02:16.660Z
+# sella: builder-a
+# tree: dirty:42b8510d82a06832767d07f1e2de4f0047e96130
+
+FAIL  round-4 (D-015 B1): the rebase note no longer cites probatio.certifies.stale, a rule that never fires for a done opus opus/W-080 was rebased onto master — its tree: gate certificates are now stale (bisellium check will report probatio.certifies.stale); re-verify before this ships

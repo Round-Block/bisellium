@@ -13,16 +13,19 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import { readFront, readManifest } from "@bisellium/adapter-native";
+import { sourceTreeHash } from "@bisellium/shim";
 
 interface BranchResult {
   ok: boolean;
   error?: string;
   /** Non-fatal information the CLI should still print — e.g. that a rebase
-   *  rewrote the opus's tree (D-015: its `tree:` gate certificates are now
-   *  stale, and `check` will say so) or that a PR still has to carry the
-   *  change (D-015 leaves PR creation to W-028). */
+   *  rewrote the opus's tree (D-015 B1: `check`'s `probatio.certifies.stale`
+   *  is scoped to ACTIVE opera and never fires for a `done` opus merge
+   *  accepts, so this is advisory, not a claim that `check` will report
+   *  anything) or that a PR still has to carry the change (D-015 leaves PR
+   *  creation to W-028). */
   note?: string;
   /** The trunk branch name actually touched (see `resolveTrunk`) — never
    *  assumed to be "master" (the W-026 adjacent bug: a repo whose trunk is
@@ -68,6 +71,50 @@ function resolveIntegration(studio: string): ResolvedIntegration {
     prRequired: cfg.pr?.required === true,
     prReviewer: cfg.pr?.reviewer,
   };
+}
+
+/** Repo-root-relative excludes for the SOURCE tree hash — the exact set
+ *  check.ts (`currentTreeHash`) and verify.ts already build, reused here so
+ *  all three agree on what "the tree" means. Same fail-open reasoning as
+ *  `resolveIntegration`: an absent/unparseable manifest just means no
+ *  `source_excludes` on top of the studio dir and `.bisellium/`. */
+function sourceExcludeDirs(repo: string, studio: string): string[] {
+  let extra: string[] = [];
+  try {
+    extra = readManifest(studio).source_excludes ?? [];
+  } catch {
+    // no manifest / unparseable — fall back to the always-excluded set
+  }
+  return [relative(repo, resolve(studio)).split(sep).join("/"), ".bisellium", ...extra];
+}
+
+/** D-015 B1: a rebase replays `branch`'s commits onto a moved trunk, which
+ *  changes its SOURCE tree — so a `tree:` certificate an automated probatio
+ *  recorded before the rebase no longer describes what is about to ship.
+ *  `merge` does not re-run the gates itself (that's `bisellium verify`'s
+ *  job, and duplicating it here would give two places that run them); it
+ *  refuses instead, naming the mismatch, so the operator re-verifies and
+ *  retries. Reuses @bisellium/shim's `sourceTreeHash` — the same function
+ *  check.ts and verify.ts already call — rather than re-deriving the hash.
+ *  Returns undefined (nothing to refuse on) when the opus has no `tree:`
+ *  certificate recorded at all. */
+function staleCertificateError(repo: string, studio: string, branch: string, master: string, opusId: string, opusData: Record<string, unknown>): string | undefined {
+  const gates = opusData["probationes"];
+  if (gates === null || typeof gates !== "object") return undefined;
+  let newHash: string;
+  try {
+    newHash = `tree:${sourceTreeHash(repo, sourceExcludeDirs(repo, studio), branch)}`;
+  } catch {
+    return undefined; // hashing failed — advisory-grade concern, never blocks a merge on its own
+  }
+  for (const [gid, gv] of Object.entries(gates as Record<string, unknown>)) {
+    if (gv === null || typeof gv !== "object") continue;
+    const certifies = (gv as Record<string, unknown>)["certifies"];
+    if (typeof certifies === "string" && certifies.startsWith("tree:") && certifies !== newHash) {
+      return `${branch} was rebased onto ${master} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches the rebased tree (${newHash}); re-run "bisellium verify ${opusId}" and retry the merge`;
+    }
+  }
+  return undefined;
 }
 
 function git(args: string[], cwd: string): { status: number; stdout: string; stderr: string } {
@@ -119,9 +166,9 @@ function findWorktreeForBranch(cwd: string, branch: string): string | undefined 
 
 /** Rebases `branch` onto `master` for real (D-015): replays the opus
  *  branch's own commits on top of the trunk's current tip. That necessarily
- *  rewrites the opus's source tree — the caller surfaces that as a `note`,
- *  never suppresses it (its `tree:` gate certificates are stale afterwards
- *  by construction; `check` reports `probatio.certifies.stale`).
+ *  rewrites the opus's source tree — the caller checks any recorded `tree:`
+ *  certificate against it (`staleCertificateError`, D-015 B1) and refuses on
+ *  a mismatch, then surfaces the rebase itself as an informational `note`.
  *
  *  Runs wherever `branch` is already checked out (a builder's own worktree,
  *  the common case — module comment above) so conflicts land where an
@@ -160,8 +207,15 @@ function rebaseOntoTrunk(cwd: string, branch: string, master: string): BranchRes
   }
 }
 
-function pushRef(cwd: string, ref: string): BranchResult {
-  const r = git(["push", "origin", ref], cwd);
+/** `forceWithLease` is for pushing a ref this process may itself have just
+ *  rewritten (the opus branch, after a rebase) — `--force-with-lease`, never
+ *  `--force`: it still refuses if origin moved since our last look, it just
+ *  doesn't insist the push be a fast-forward of what's there. A plain push
+ *  of a rebased branch that already has a remote counterpart (e.g. an open
+ *  PR) is rejected non-fast-forward every time; see D-015 B2. */
+function pushRef(cwd: string, ref: string, opts: { forceWithLease?: boolean } = {}): BranchResult {
+  const args = opts.forceWithLease ? ["push", "--force-with-lease", "origin", ref] : ["push", "origin", ref];
+  const r = git(args, cwd);
   if (r.status !== 0) return { ok: false, error: `push to origin failed: ${r.stderr.trim() || "unknown error"}` };
   return { ok: true };
 }
@@ -186,9 +240,10 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
 
   const opusPath = join(resolve(studio), "opera", `${opusId}.md`);
   let state: string | undefined;
+  let opusData: Record<string, unknown>;
   try {
-    const data = readFront<Record<string, unknown>>(opusPath).data;
-    state = typeof data["state"] === "string" ? data["state"] : undefined;
+    opusData = readFront<Record<string, unknown>>(opusPath).data;
+    state = typeof opusData["state"] === "string" ? opusData["state"] : undefined;
   } catch {
     return { ok: false, error: `opus ${opusId} unreadable at ${opusPath}` };
   }
@@ -218,6 +273,14 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
       const rebase = rebaseOntoTrunk(cwd, branch, master);
       if (!rebase.ok) return { ok: false, error: rebase.error, trunk: master };
       rebased = true;
+
+      // D-015 B1: the branch's tree just changed under any certificate it
+      // carries. Refuse rather than land (or even open a PR for) a rebase
+      // whose recorded certifies no longer describes what ships — see
+      // staleCertificateError's own comment for why this refuses instead of
+      // re-running the gates.
+      const staleError = staleCertificateError(cwd, studio, branch, master, opusId, opusData);
+      if (staleError) return { ok: false, error: staleError, trunk: master };
     } else {
       // fast_forward (default): unchanged behaviour. Probe the merge with
       // `merge-tree`, which computes the result purely in-memory — unlike
@@ -230,15 +293,15 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
     }
   }
 
-  // D-015's own consequence to handle, not suppress: a rebase rewrote the
-  // opus's tree, so its `tree:` gate certificates are stale by construction
-  // (`check` reports probatio.certifies.stale) — the gates genuinely must
-  // re-run, since the opus was never tested against the code it's about to
-  // ship alongside. Surfaced here so a merge that did this is never silent
-  // about it, on either exit path below.
-  const staleNote = rebased
-    ? `${branch} was rebased onto ${master} — its tree: gate certificates are now stale (bisellium check will report probatio.certifies.stale); re-verify before this ships`
-    : undefined;
+  // D-015 B1 corrected: `probatio.certifies.stale` is scoped to ACTIVE opera
+  // (check.ts) and this opus is `done` — that rule will never fire here, so
+  // the note must not claim it will (round-3 review caught exactly that
+  // false claim). staleCertificateError above already refused if a recorded
+  // certificate stopped matching; reaching this line means either there was
+  // nothing to check or what's recorded still matches the rebased tree.
+  // This is purely informational — surfaced on every exit path below so a
+  // merge that rewrote the branch's history is never silent about it.
+  const staleNote = rebased ? `${branch} was rebased onto ${master} — its source tree changed; run "bisellium verify ${opusId}" again before this ships` : undefined;
 
   if (integration.prRequired) {
     // D-015 / this opus's brief: PR creation is W-028's territory. `merge`
@@ -246,7 +309,10 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
     // the strategy) and, if configured, pushed — and leaves the branch in
     // place for a PR to carry to the trunk, rather than landing it locally.
     if (integration.push) {
-      const pushed = pushRef(cwd, branch);
+      // force-with-lease: a rebase may have just rewritten `branch`, and a
+      // PR already open against it (D-015 B2) means origin has the
+      // pre-rebase history — a plain push is rejected non-fast-forward.
+      const pushed = pushRef(cwd, branch, { forceWithLease: true });
       if (!pushed.ok) return { ok: false, error: pushed.error, trunk: master, note: staleNote };
     }
     const reviewerNote = integration.prReviewer ? ` (reviewer: ${integration.prReviewer})` : "";
@@ -260,14 +326,14 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
   if (current === master) {
     // Already on the trunk — merge in place, same as any manual merge.
     const merge = git(["merge", "--ff-only", branch], cwd);
-    if (merge.status !== 0) return { ok: false, error: merge.stderr.trim() || "merge failed", trunk: master };
+    if (merge.status !== 0) return { ok: false, error: merge.stderr.trim() || "merge failed", trunk: master, note: staleNote };
   } else {
     // Not on the trunk (the opus branch itself, or anything else) —
     // advance the trunk ref directly instead of checking it out.
     // `git fetch . <src>:<dst>` only ever fast-forwards `dst`, so this
     // can never land the merge on whatever happens to be checked out.
     const fetch = git(["fetch", ".", `${branch}:${master}`], cwd);
-    if (fetch.status !== 0) return { ok: false, error: fetch.stderr.trim() || `could not fast-forward ${master}`, trunk: master };
+    if (fetch.status !== 0) return { ok: false, error: fetch.stderr.trim() || `could not fast-forward ${master}`, trunk: master, note: staleNote };
   }
 
   // `-D` (force), not `-d`: git's `-d` safety check is "merged into HEAD",
@@ -285,6 +351,7 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
       ok: false,
       error: `${master} fast-forwarded to ${branch}, but could not delete ${branch}: ${del.stderr.trim() || "in use"} — switch off it and delete manually`,
       trunk: master,
+      note: staleNote,
     };
   }
 

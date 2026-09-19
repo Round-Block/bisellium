@@ -1,0 +1,13 @@
+# behaviour: 18
+# command: node --import tsx packages/cli/src/branch.test.ts . 18
+# exit: 1
+# at: 2026-09-19T16:02:21.538Z
+# sella: builder-a
+# tree: dirty:42b8510d82a06832767d07f1e2de4f0047e96130
+
+FAIL  refuses when the recorded certificate no longer matches the rebased tree undefined
+FAIL  error names the stale gate and points at re-verify           undefined
+FAIL  master is untouched                                          f9e15a2 feat: add feature
+550e5a7 master work
+ff7afe5 init
+FAIL  the branch is left in place for a retry after verify, not deleted master

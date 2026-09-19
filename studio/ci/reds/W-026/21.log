@@ -1,0 +1,16 @@
+# behaviour: 21
+# command: node --import tsx packages/cli/src/branch.test.ts . 21
+# exit: 1
+# at: 2026-09-19T16:02:31.645Z
+# sella: builder-a
+# tree: dirty:42b8510d82a06832767d07f1e2de4f0047e96130
+
+FAIL  rebase-then-push succeeds even though the branch was already on origin push to origin failed: To /tmp/claude-1000/bisellium-origin-SiTtEp
+ ! [rejected]        opus/W-093 -> opus/W-093 (non-fast-forward)
+error: failed to push some refs to '/tmp/claude-1000/bisellium-origin-SiTtEp'
+hint: Updates were rejected because a pushed branch tip is behind its remote
+hint: counterpart. If you want to integrate the remote changes, use 'git pull'
+hint: before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+FAIL  pr.required still stops merge from landing locally           undefined
+FAIL  origin's branch was force-with-lease-pushed to the rebased tip, not left diverged local fa07f73202047a36abcecdcf38de8888a343d716 origin 585ba6f952c6f84e51f0847fd23e9ab0e69813d3

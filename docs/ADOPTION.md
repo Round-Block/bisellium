@@ -39,7 +39,7 @@ check` validates them — every rule here is one `check` can fail. See
 what failing looks like.
 
 ```
-bisellium.yml              manifest: version, patron, collegia, sellae, probationes, wip_limit, defaults
+bisellium.yml              manifest: version, patron, collegia, sellae, probationes, wip_limit, defaults, integration
 leges/<collegium>.md       one lex per collegium (LEX_TEMPLATE.md)
 opera/<id>.md               one file per opus, YAML front matter + notes
 briefs/<opus-id>.md        the spec an opus's `spec:` key points at (Intent · Files owned · Interfaces · Behaviours to test · Acceptance · Out of scope)
@@ -174,6 +174,13 @@ wip_limit: 3                      # items in building + verifying, studio-wide
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
 source_excludes: [examples/]      # optional; repo-root-relative paths also excluded from the SOURCE tree hash
+integration:                      # optional (D-015); how an opus branch reaches the trunk — `bisellium merge` reads this
+  strategy: rebase                # fast_forward (default) | rebase | merge_commit (declared, refused — not built)
+  push: true                      # push the trunk (and, under pr.required, the opus branch) to origin. Default false
+  pull_after_push: true           # `git pull` the trunk again after that push. Ignored when push is false
+  pr:
+    required: true                # merge stops after rebase+push, leaving the branch for a PR — never lands it locally
+    reviewer: eng-lead             # advisory; nothing here opens the PR (W-028)
 ```
 
 Ids must be unique within collegia, sellae and probationes, and each id must
@@ -188,6 +195,22 @@ alone", "Digests" and "Asks" sections.
 `check` blocks any other value (`collegium.autonomy`). `bisellium tick`'s
 cadence work (below) only acts on collegia at `L1` or above — `L0` is
 manual and tick never touches it.
+
+`integration:` (D-015) is optional; absent entirely it is today's only
+behaviour — fast-forward only, no push, no PR. `bisellium merge <opus-id>`
+reads it and, under `strategy: rebase`, replays the opus branch onto the
+current trunk before landing it. A rebase changes the opus's SOURCE tree, so
+any `tree:` certificate an automated probatio recorded before the rebase no
+longer describes what is about to ship — `merge` does not re-run the gates
+itself (that is `bisellium verify`'s job); it refuses when a recorded
+`certifies: tree:<hash>` no longer matches the post-rebase tree, and the
+operator re-verifies and retries. An unrecognised `strategy` value falls
+back to `fast_forward` rather than failing merge outright (defensive
+reading, not a second validator — a typo here is not yet caught anywhere).
+`pr.required: true` stops `merge` after the rebase/push, leaving the branch
+for a PR to carry to the trunk (PR creation is W-028's territory); with
+`pr.required: true`, `pull_after_push` never runs, since it lives only on the
+landing path merge takes when no PR is required.
 
 `command` (a shell command) is optional on a `kind: automated` probatio; it is
 what `bisellium verify <opus-id>` runs to fill that gate's `status`/
