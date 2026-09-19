@@ -83,77 +83,170 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-19, cascade 9 complete)
+## Where things stand (2026-09-20, first PR merged)
 
-- Cascades 1–7 in the dossier progress log. Suite green; both
-  officinae 0 blocking.
-- **Cascade 8** (6 commits): visual pass, process fixes (`standing_rules`,
-  check rules, screen map, review prompt, inbox click-to-select).
-- **Cascade 9** (3 commits): W-026 complete — per-opus branching,
-  `bisellium branch`/`merge`, `run --opus`.
-- **Cascade 10**: W-028 checkpoint rule + `bisellium close` command.
-- **Cascade 11**: W-022 evidence content rules (P-005 resolved).
-- **Cascade 12**: W-023 containment scoping (P-004 resolved).
-- **Cascade 13**: W-027 prune command.
-- **Cascade 14**: W-028 close automation.
-- **Cascade 15**: process.cascade rule + hook enforcement.
-- **Cascade 16**: W-029 Playwright smoke suite (Sonnet builder, 118k).
-- **Cascade 17**: FastiStrip regression fixed (Sonnet builder, 35k).
-- **Cascade 18**: Review gate pass for all six opera. Results:
-  - W-029: **PASS** — only opus with reds, closeable.
-  - W-022: FAIL — no reds (6 behaviours).
-  - W-023: FAIL — no reds, undocumented `lessons/` containment removal.
-  - W-026: FAIL — no reds, brief behaviour 4 missing (merge without state
-    check), no push/gate check, mutation test dead on behaviour 5.
-  - W-027: FAIL — no reds, behaviour 5 (`runPrune` wrapper) untested.
-  - W-028: FAIL — two bugs: `CLOSEABLE` set has wrong state names
-    (`reviewing`/`greenlit` instead of `verifying`/`review`), and
-    `rebuildDossier` failure silently swallowed.
-  - **NOTE**: these reviews ran on `censor` while it was still Sonnet 5,
-    so they were recorded below the D-014 tier. The findings are valid and
-    worth acting on, but each verdict should be re-confirmed now that
-    `censor` is Opus 5 — W-029's pass especially, since it closes an opus.
-- **In-flight builders** (may have completed by session start):
-  - W-028 bug fix builder (Sonnet): fixing CLOSEABLE states + dossier
-    failure handling.
-  - `process.review_tier` check rule builder (Sonnet): new rule to flag
-    reviews done by non-Opus sellae — mechanical prevention of the
-    wrong-model dispatch mistake.
-- **Backlog (priority order)**:
-  1. Close W-029 (`bisellium done`) — review passed. Needs a handoff
-     first: `traditio.present` blocks, and `close.ts` does not consult
-     `check`, so closing leaves it failing.
-  2. Integration strategy as configuration (D-015): manifest setting read
-     by `bisellium merge`; rebase-onto-trunk + PR + QA review is the
-     reference default. Rebase half is W-026, PR half is W-028.
-  3. **Settings screen** (Patron, 2026-09-19): surface officina and
-     harness configuration — integration strategy, Claude Code hooks,
-     subagents, commands — as something a user can see and change rather
-     than baked-in. UI/UX is Patron-only, so this needs design input
-     before a brief exists.
-  4. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
-  5. `branch.ts:172` hardcodes "into master" in its success message, so a
+Cascades 1–17 are in the dossier progress log. The session of 2026-09-19/20
+moved the project onto D-015's branch → PR → QA → merge flow and put four
+opera through it. Read the four review logs named below before touching any
+of this work; they are far more precise than this summary.
+
+### The flow, as actually operated
+
+`bisellium branch` → builder in an isolated worktree → commit → rebase onto
+master → **lifecycle before the PR** (greenlight, ready, verify on the
+branch) → push → `gh pr create` → `censor` reviews → fix rounds → `done` on
+the branch → `gh pr merge --rebase`.
+
+Every step has now been executed at least once for real. Deviating from it
+has cost a round each time.
+
+### Open PRs
+
+| PR | Opus | State |
+|----|------|-------|
+| [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | **MERGED** at round 8 |
+| [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | round 2 FAIL — fix pushed, round 3 not dispatched |
+| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round 2 FAIL — **not yet fixed** |
+| [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
+
+### What W-031 owes (PR #4, round 2, `ci/W-031-review-2.log`)
+
+1. **The spec gate was re-signed, and that is backfilled evidence.** The
+   orchestrating session changed `spec: { sella: qa-lead }` to `eng-lead`
+   one minute after the fix commit, to stop `process.cascade` firing, with
+   a commit message naming the rule as the reason. Nothing shows an
+   eng-lead context ever read that brief. Clear it by *producing* the
+   eng-lead gate, or restore `qa-lead` and file a petitio — the QA lex has
+   the Censor drive the first hour and close the last, so qa-lead on both
+   spec and review may be the designed shape and `process.cascade` may be
+   the thing that is wrong. **Do not re-attribute a signature to satisfy a
+   rule.**
+2. `--allow-dirty`'s split is correct and **completely unenforced** — both
+   ways of undoing it survive the full 1066-assertion suite.
+3. `packages/cli/src/main.ts:60`'s usage line lacks `--allow-dirty`, which
+   `ci.ts`'s own USAGE has. One line, and it is the drift class behaviour 7
+   guards, one layer up.
+
+### What W-030 owes (PR #3, round 2, `ci/W-030-review-2.log`)
+
+Round 2's blocking finding (the drift guard could be made to scan almost
+nothing) is fixed and pushed — the count is pinned at 30. Round 3 has not
+been dispatched. Advisories A2/A3 were folded in; the opus record conflict
+and the missing handoff were reconciled.
+
+### New opera opened, none started
+
+- **W-032** — the PR gate. `gh pr create` bypasses the CLI, so unlike
+  `close` nothing can refuse an ungated opus. Behaviour 5 is pointed
+  deliberately: a refusal must hold on *every* run.
+- **W-033** — bookkeeping provenance. Three blocking findings in one day
+  from the same class; poses the question rather than answering it.
+  **Architect's call before any code.**
+- **W-034** — `done` cannot honour a Patron waiver, and writes to whichever
+  ref it is run from. Defect 1 is independent; **defect 2 is blocked on
+  W-033.**
+
+### Decisions
+
+- **D-014 amended twice.** Opus-tier roles on `claude-opus-5`; the
+  cross-generation clause struck. **One review gate**: `censor`, Opus 5,
+  boots as `qa-lead`, read-only by design. `reviewer46` deleted.
+- **D-015** — integration strategy is configuration. Its original claim
+  that rebase forces re-verification "for free" was **disproved** and is
+  struck with the finding cited; `merge` now does the check itself.
+
+### Why W-026 took eight rounds
+
+Worth reading before assuming a fix round is cheap.
+
+1. **A brief caused an entire round.** The absence rule was added as "free
+   defence in depth" on the orchestrator's instruction. It was a new
+   refusal path that rejected legitimate waived gates with no remedy.
+   Round 7 removed it.
+2. **Nobody did an inventory.** Round 5 established the rule — everything
+   `merge` compares comes from the branch's ref. The right next move was to
+   enumerate every read in the compare path. Instead round 5 fixed the opus
+   record, round 6 found `state` in the same read, round 7 found the
+   exclude set. One bug, three locations, three rounds. **When a review
+   establishes a class, enumerate the class.**
+3. **Tests were written where the bug cannot appear.** Every certificate
+   test but one put `studio/` outside the repo, where branch and trunk
+   copies collapse into one file. Same shape as W-030's truncation test
+   (toy fixture lex) and W-031's certificate tests. Three opera, three
+   authors, one blind spot.
+4. The work genuinely sits where git refs, filesystem state and the
+   evidence model intersect.
+
+The rounds were not waste. Merging at round 3 would have shipped a `merge`
+that silently landed on whatever branch was checked out and reported
+success against master.
+
+### Traps that cost real time
+
+- **A fresh worktree resolves `@bisellium/*` through the parent checkout.**
+  Edits to `packages/` are then invisible to `node --import tsx` and tests
+  pass against the wrong source. Caught three builders and a reviewer; one
+  misdiagnosed it as `TS2339`. **Always `readlink -f
+  node_modules/@bisellium/shim` before trusting a result.** `npm install`
+  needs `--cache "$TMPDIR/..."`; `~/.npm/_cacache` is read-only here.
+- **Worktree isolation does not isolate `$TMPDIR`.** A builder lost work to
+  a collision on a shared `$TMPDIR/mut`. Use uniquely-named scratch paths.
+- **Every branch conflicts on its own opus record.** Reviews write to the
+  reviewer's checkout, lifecycle commands to the branch. Recipe that worked
+  three times: take master's copy (`git checkout --ours` during rebase),
+  then re-run greenlight/ready/verify/handoff on the branch through the
+  CLI. Never hand-edit front matter. W-033 exists to end this.
+- **Run `bisellium` with no arguments for flag shapes.** Three reviewers
+  had to correct invocations written from memory, and one wrote a real gate
+  citing a brief as its evidence while probing for syntax.
+
+### CI
+
+`.github/workflows/ci.yml` **has never executed once** — GitHub Actions is
+billing-blocked on this account, so every run dies in ~3s with an empty
+`steps: []` and an annotation visible only through the API. **The red check
+on every PR means nothing.** Unblocking it is the Patron's, in GitHub's
+Billing & plans.
+
+`bisellium ci` (W-031, PR #4) is the local replacement. Its first real run
+found the repo had been failing its own `format:check` since `6e84979`.
+
+### Backlog
+
+1. W-031 round-2 fixes, then round 3.
+2. W-030 round 3 (fix already pushed).
+3. W-033 — architect's decision, blocks W-034's defect 2.
+4. W-032 — the PR gate.
+5. **Settings screen** (Patron): surface officina and harness config.
+   UI/UX is Patron-only; needs design input before a brief.
+6. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
+7. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
+   `packages/cli/src/instructions.template.md` — edit the template.
+8. Old item, still open: `branch.ts:172` hardcoded "into master" — **fixed**
+   in W-026; this line retained only to note it landed. A repo on `main` now
      repo on `main` merges into main and reports master — same family as
-     the bug just fixed above it.
-  6. **`run --opus` → `merge` is a broken chain** (found by dogfooding,
-     2026-09-19). `bisellium run --opus W-026` forks the worktree from
-     `opus/W-026`'s commit correctly, but puts the work on branch
-     `bisellium/<sella>/<n>`. `mergeOpusBranch` only ever reads
-     `opus/<id>`, so a builder's commits never reach the branch that
-     `merge` merges. Nothing moves sella branch -> opus branch. This is
-     why W-026's behaviour 7 "has no test coverage" mattered: the wiring
-     was verified by inspection, never end to end.
-  7. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
-     harness's own worktrees under `.claude/worktrees/` are invisible to
-     them; two stale ones from an old workflow run are still on disk.
-- D-014 (amended twice on 2026-09-19): Sonnet 5 builders, **Opus 5** for
-  opus-tier roles *and* for review. The cross-generation clause is struck —
-  review independence rests on role separation, not model generation.
-- **One review gate**: `censor` (Opus 5, boots as `qa-lead`, read-only by
-  design) is the only reviewing agent. `reviewer46` is deleted. Agent set is
-  now architect, builder, censor, clerk — matching the rendered harness list.
-- Research note added: `docs/research/jev-typesafe-ai.md` — System One
-  model for structured decisions, evaluate for talk/posture path.
+   reports `main`.
+9. **`run --opus` → `merge` is a broken chain** (found by dogfooding).
+   `run --opus W-026` forks the worktree from `opus/W-026`'s commit
+   correctly, then puts the work on `bisellium/<sella>/<n>`, while
+   `mergeOpusBranch` only ever reads `opus/<id>`. A builder's commits never
+   reach the branch `merge` merges, and nothing moves one to the other.
+   This is why W-026's behaviour 7 "has no test coverage" mattered — the
+   wiring was verified by inspection, never run. Round 5 noted behaviour
+   7's test asserts where the worktree forked *from* and nothing about
+   where work lands, and its `finally` deletes the very branch it lands on.
+10. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
+    harness's own worktrees under `.claude/worktrees/` are invisible to
+    them, and several stale ones are on disk. `git worktree prune`
+    deregisters them but cannot unlink the admin dirs under the sandbox
+    ("Device or resource busy") — needs a shell outside it.
+
+### Also on disk
+
+- `docs/research/jev-typesafe-ai.md` — non-autoregressive model for
+  structured decisions; possible fit for the `talk`/posture path.
+- `.claude/.claude/` holds `/dev/null` character devices, a sandbox
+  artifact of config-path masking. Not real files; do not commit.
 
 ## Naming
 

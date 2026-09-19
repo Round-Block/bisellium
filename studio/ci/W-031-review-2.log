@@ -1,0 +1,271 @@
+review: W-031 (local CI: run the pipeline and record evidence without a runner) — round 2
+sella: qa-lead
+model: claude-opus-5
+verdict: FAIL
+subject: PR #4, branch opus/W-031 -> master, at 5b1a098
+        "chore(W-031): restore lifecycle after rebase; spec gate under eng-lead"
+        on 758efb4 "fix(ci): --ref must certify the ref's tree, not the worktree's studio"
+        on ec6ee10 / 1d9e1f8, rebased onto master
+
+Everything below was executed, not read off the diff. Scratch worktree at
+/tmp/claude-1000/w031r2-2 (uniquely named), detached at 5b1a098, own
+`npm ci` (npm_config_cache redirected to $TMPDIR; the user cache is
+read-only under this sandbox) — `readlink -f node_modules/@bisellium/shim`
+= /tmp/claude-1000/w031r2-2/packages/shim, checked before any run. Every
+mutation was applied in that worktree and restored from a backup copy of
+the unmutated file; `git status --porcelain` was empty at the end. The real
+origin was never pushed to. The real officina was never written to except
+by this log and `bisellium review`. Two off-suite probes (probe.mts,
+probe2.mts, hash.mts) were run from inside the worktree against fixture
+repos created under $TMPDIR and deleted afterwards.
+
+Base state (worktree at 5b1a098)
+--------------------------------
+  npm test                      exit 0, 1066 PASS, 0 FAIL
+  npm run -s typecheck          exit 0
+  npm run -s lint               exit 0
+  npm run -s format:check       exit 0
+  node scripts/ci-workflow.test.mjs   exit 0, 10 PASS (startsWith change applied)
+  node --import tsx packages/cli/src/ci.test.ts   exit 0, 7 PASS (behaviours 1-6, 8)
+  npm run -s check -- studio --repo .   exit 1, 9 blocking / 79 advisory
+    (round 1 saw 10 blocking; W-031's own traditio.present is now satisfied.
+     W-031's two remaining findings are advisory probatio.certifies on the
+     human `review` and `spec` gates — pre-existing shape, not new.)
+
+THE FIX — VERIFIED SOUND. The reasoning about behaviours 5/6 is correct.
+------------------------------------------------------------------------
+The stated invariant is the right one: on the `--ref` path the exclusion
+must be what the DIRECT path would have computed with repo = the checkout
+`--studio` really is nested under. `ci` computes exactly that
+(toPosixRelative(root, resolve(studioArg ?? "."))), and `resolve(studioArg
+?? ".")` matches `verify`'s own default (`let studio = "."`), so the two
+paths cannot diverge on a missing --studio either.
+
+Verified in three configurations, not one:
+
+  (i)  studio nested in the repo (the real layout, and behaviour 8's):
+       ref and direct front matters byte-identical. This is the case the
+       bug lived in.
+  (ii) studio outside the repo (behaviours 5/6's layout): both paths
+       compute the SAME non-matching "../…" entry, so both exclude
+       nothing and both agree. No new divergence is introduced — which is
+       why 5 and 6 could never have caught the bug, exactly as claimed.
+  (iii) studio nested but NOT named "studio" (I ran the fixture with the
+       officina at <repo>/officina):
+         ref    tree:49f5910c…   direct tree:49f5910c…   MATCH
+       The fix generalises; it is not tuned to the name.
+
+Mutation, on the mechanism the certificate now rests on — BOTH SIDES BITE.
+--------------------------------------------------------------------------
+Each applied alone to the clean worktree, full ci.test.ts run:
+
+  M1  verify.ts: `opts.studioRepoRelative ?? toPosixRelative(repo, studioDir)`
+      -> `toPosixRelative(repo, studioDir)`   (override ignored — pre-fix verify)
+        behaviour 8 FAIL; 1-6 all PASS.
+  M2  ci.ts: `toPosixRelative(root!, studioDirActual)`
+      -> `toPosixRelative(execRepo, studioDirActual)`   (pre-fix ci)
+        behaviour 8 FAIL; 1-6 all PASS.
+  M3  ci.ts: the whole expression -> the literal `"studio"`
+        behaviour 8 PASS — SURVIVES. See advisory A1.
+
+M1 and M2 are the two independent ways the fix can be undone, and
+behaviour 8 is the only thing in the suite that catches either. The
+mechanism is covered from both ends.
+
+Behaviour 8's red IS genuinely pre-implementation. PROVEN, not accepted.
+------------------------------------------------------------------------
+I did not take the stash procedure on trust. In the scratch worktree I
+reverted exactly the two fix files to their ec6ee10 (pre-fix) content,
+left the SHIPPED test in place, and ran `ci.test.ts 8`:
+
+  reproduced   direct tree:79a5092f…   ref tree:b2eb2ead…
+  recorded 08.log  direct tree:79a5092f…   ref tree:b2eb2ead…
+  diff of the FAIL block, recorded vs reproduced: IDENTICAL (byte-for-byte)
+
+A red that is byte-reproducible from "shipped test + reverted fix" is a
+red the test could only have produced before the fix existed. Test-first
+is established for behaviour 8.
+
+Behaviour 4's red — FIXED, and I identified the mutation mechanically.
+-----------------------------------------------------------------------
+Round 1's finding 3 said 03.log and 04.log were reproduced by the same
+mutation. The new 04.log's assertion DETAIL is still `ref=1
+workingTree=1` (that string is just two exit codes; it cannot
+distinguish the two), so I diffed the log BODIES instead:
+
+  04.log body vs run under M1 (skip the install)          IDENTICAL
+  04.log body vs run under M2 (execRepo = repoFlag)       differs (4 lines)
+
+The re-recorded red is the install-skip mutation. Finding 3 is closed —
+04.log now demonstrates what only behaviour 4 catches.
+
+Certificates — RECOMPUTED INDEPENDENTLY. Trustworthy on both paths.
+-------------------------------------------------------------------
+  sourceTreeHash(worktree, ["studio",".bisellium","examples/"], 5b1a098)
+      = 22bf952d0ba577facd68524af1252d7ab4b2616c
+  same at 758efb4                        = 22bf952d…  (identical; the
+      lifecycle commit touches only studio/, which is excluded)
+  same at ec6ee10 (pre-fix)              = 6dd3b180…
+The three tests/lint/types certificates on opera/W-031.md read
+tree:22bf952d… — the tree the branch actually ships, WITH the fix in it,
+and distinct from the pre-fix tree. The gates were really re-run after the
+rebase. The `npm test` evidence log is 204 lines because the pipeline
+records the last 200 by design, not because it was truncated by accident.
+
+Answering the question directly: is the certificate now trustworthy on
+both paths? On the source-tree identity, YES — measured, in three studio
+layouts, with the mechanism mutated from both sides. On the dirty/clean
+claim, NOT YET — see finding 2.
+
+FINDING 1 (BLOCKING) — the spec gate was re-signed under a sella to
+silence an advisory that was firing correctly.
+-------------------------------------------------------------------
+  round 1 observed   spec: { sella: qa-lead,  at: 2026-09-19T16:28:45.313Z }
+  5b1a098 ships      spec: { sella: eng-lead, at: 2026-09-19T18:27:08.223Z }
+  commit message     "Spec sella is eng-lead, not qa-lead, so process.cascade
+                      does not fire on one sella holding both the spec and
+                      review gates"
+
+A probatio is a claim about who did a thing and when. This one now says an
+eng-lead context signed off on briefs/W-031.md at 18:27 — one minute after
+the fix commit, two hours after the spec act it records, and nothing in
+the officina shows an eng-lead context ever read that brief. The stated
+reason for the change is the check rule, not the act. That is the
+officina's own recurrent finding class —
+review×evidence-backfilled-or-absent, L-001 / L-008 / L-017, petitio
+P-003 — and it is the standing rule "Evidence is produced, never
+backfilled" read in reverse.
+
+Confirmed the relabel is load-bearing: rules/process.ts
+`sameSellaBuiltAndReviewed` fires iff spec.sella === review.sella, and
+`check studio` at 5b1a098 reports no process.cascade line for
+opera/W-031.md where round 1's tree did.
+
+Note that the advisory was not wrong about the facts. If it is wrong about
+the POLICY — and there is a real argument that it is, since the QA lex has
+the Censor drive the first hour of every cascade AND close the last one,
+so qa-lead holding spec and review is the designed shape, not an accident
+— then the thing to change is the rule, via a petitio (qa lex §4: a
+blocking-rule or lex-wording proposal is "filed as a petitio to the
+Patron, never adopted alone"). Re-attributing the signature is the one
+response that leaves the record less true than it was.
+
+To clear: either produce the evidence that an eng-lead context actually
+gated this spec (then the commit message is simply misleading and should
+say so), or restore spec.sella = qa-lead, let the advisory stand, and file
+the petitio. I am not asking for a code change.
+
+FINDING 2 (BLOCKING) — the --allow-dirty split is correct when run and
+completely unenforced: the exact round-1 regression is invisible to the
+suite.
+-----------------------------------------------------------------------
+The split itself is the right call. Executed end to end against a fixture
+repo with a nested officina (probe.mts):
+
+  A  dirty source, no flag          exit 2, "working tree is dirty; commit
+                                    or pass --allow-dirty", probationes: {}
+                                    — nothing written. Correct.
+  B  dirty source, --allow-dirty    exit 0, certifies: dirty:49f5910c…
+  C  churn only INSIDE the studio   exit 0, certifies: tree:49f5910c…
+                                    — bookkeeping still excluded. Correct.
+
+And the --ref side of the split is sound in principle: the scratch
+checkout is a fresh `git worktree add`, and the six steps run in it are
+read-only plus a gitignored node_modules.
+
+But nothing tests any of it. Two mutations, each run against the FULL
+suite (`npm test`, 1066 assertions), not just ci.test.ts:
+
+  M4  `if (allowDirty || ref !== undefined) verifyArgs.push("--allow-dirty");`
+      -> `verifyArgs.push("--allow-dirty");`        (round 1's finding 2,
+      verbatim, restored)
+        npm test exit 0, 0 FAIL — SURVIVES
+  M5  -> `if (allowDirty) verifyArgs.push("--allow-dirty");`  (drop it on
+      the --ref path too)
+        npm test exit 0, 0 FAIL — SURVIVES
+
+So a blocking round-1 finding was fixed with no behaviour, no assertion
+and no red, and can silently come back — including by a well-meaning
+simplification, since M5 also survives and would break the --ref path the
+first time a step dirtied the scratch checkout. The same is true of the
+step-5 stderr line added for round 1's finding 4(d): it fires (I
+confirmed it on a fixture whose `check` script exits 1), and no test
+mentions it.
+
+The officina's standing rule is "Test-first with a recorded red", and
+`opus.red_evidence` exists for precisely this. The fixture is already
+written — behaviour 8's makeCiRepoWithNestedStudio plus one dirtying
+write covers A/B above in a few lines, and probe.mts in this review's
+scratch dir is a working prototype of it.
+
+FINDING 3 (must fix, one line) — the top-level usage the CLI prints does
+not know about --allow-dirty.
+-----------------------------------------------------------------------
+  packages/cli/src/main.ts:60
+    "       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>]\n"
+  packages/commands/src/ci.ts:82  (updated)
+    "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]"
+
+`node packages/cli/src/main.ts` with no arguments prints the stale line.
+Agents in this officina are instructed to read that output for flag
+shapes precisely because an invocation recalled from memory is usually
+wrong — and --allow-dirty is now the ONLY way past the new exit 2 on a
+dirty tree. The flag does reach runCi (ci is dispatched before main's
+allowlist parsing), so this is a discoverability defect, not a functional
+one. Note also that nothing ties main.ts's USAGE to each command's own
+USAGE: the same drift class behaviour 7 exists to prevent for CI_STEPS,
+one layer up.
+
+ADVISORIES
+----------
+A1. Behaviour 8 cannot tell a computed exclusion from a hardcoded
+    "studio" — M3 above survives, because the fixture names its officina
+    "studio". Proven to be a fixture weakness and not a code defect: with
+    the fixture's officina renamed to "officina", the shipped code still
+    matches (MATCH: true) and M3 fails (MATCH: false). One word in
+    makeCiRepoWithNestedStudio kills the survivor. This is the same shape
+    of gap — "the test is correct in a configuration the bug cannot
+    appear in" — that behaviours 5/6 had, one level down.
+
+A2. `const CHECK_STUDIO_STEP = CI_STEPS[4];` is a positional index into
+    the very list behaviour 7 exists to keep in sync with ci.yml. Adding
+    or reordering a step in BOTH ci.ts and ci.yml keeps the drift guard
+    green while the hint silently attaches to the wrong step; shortening
+    the list makes it `undefined`, which never matches, and the hint
+    disappears with no failure anywhere. Under noUncheckedIndexedAccess
+    the type is `string | undefined`, so typecheck is happy either way.
+    The literal string, or `CI_STEPS.find((s) => s.includes("-- studio"))`,
+    costs nothing.
+
+A3. Round-1 carry-overs, left as noted. I do not think any of them should
+    block, and I say so explicitly since asked:
+      4(a) timeout-as-null indistinguishable from a real failure — a
+           10-minute hang reported as an ordinary red. Fails closed;
+           annoying, not unsafe.
+      4(b) `opts.provider ?? selectProvider()` uncovered — same shape as
+           `bisellium run`, consistent with the house.
+      4(c) `bisellium ci` still absent from CLAUDE.md's Commands list,
+           docs/ and .claude/commands/. Still true at 5b1a098. Worth
+           doing with W-030, not worth holding this PR for.
+
+A4. Nit: on the --ref path `root` defaults to `gitRoot(process.cwd())`,
+    while `verify`'s own default repo is `studioDir/..` when that is a git
+    repo. Identical in every normal layout; they only diverge if `ci` is
+    run from inside a different repo than the officina's. Not worth code.
+
+WHAT WOULD CLEAR THIS ROUND
+---------------------------
+1. Finding 1 — restore the honest signature and file the petitio, or show
+   the eng-lead gate actually happened.
+2. Finding 2 — one behaviour (9) over the nested-studio fixture: dirty
+   source + `ci --opus` exits 2 and writes nothing; with --allow-dirty
+   writes `dirty:`. Recorded red first.
+3. Finding 3 — the one-line usage string.
+A1's fixture rename is a free rider on (2) if anyone is in the file.
+
+The certificate-correctness work itself is good, and I want to be plain
+about that: the diagnosis was right, the fix is at the root cause rather
+than the symptom, it generalises past the fixture, the red is real, and
+the one test that guards it is the only test in 1066 that catches either
+way of undoing it. Findings 1 and 2 are both about evidence, not about
+the mechanism.
