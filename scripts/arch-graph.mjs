@@ -55,7 +55,13 @@ for (const wsDir of WORKSPACE_DIRS) {
       console.error(`note: ${wsDir}/${entry} has no package.json — not a workspace yet, omitted`);
       continue;
     }
-    pkgs.push({ name: pkg.name, dir, rel: `${wsDir}/${entry}`, deps: pkg.dependencies ?? {}, devDeps: pkg.devDependencies ?? {} });
+    pkgs.push({
+      name: pkg.name,
+      dir,
+      rel: `${wsDir}/${entry}`,
+      deps: pkg.dependencies ?? {},
+      devDeps: pkg.devDependencies ?? {},
+    });
   }
 }
 const known = new Set(pkgs.map((p) => p.name));
@@ -81,7 +87,8 @@ for (const p of pkgs) {
       const dynamic = m[0].includes("(");
       const declared = target in p.deps;
       addEdge(p.name, target, test || !declared ? "dashed" : dynamic ? "dotted" : "solid");
-      if (!declared && !(target in p.devDeps)) console.error(`drift: ${p.rel} imports ${target} but does not declare it`);
+      if (!declared && !(target in p.devDeps))
+        console.error(`drift: ${p.rel} imports ${target} but does not declare it`);
     }
   }
   for (const dep of Object.keys(p.deps)) {
@@ -96,7 +103,9 @@ for (const p of pkgs) {
 const arrow = { solid: "-->", dotted: "-. dynamic .->", dashed: "-.->" };
 const lines = ["flowchart TD"];
 for (const p of pkgs.sort((a, b) => a.name.localeCompare(b.name))) {
-  lines.push(`  ${nodeId(p.name)}["${nodeId(p.name).replace(/_/g, "-")}<br/>${relative(repoRoot, p.dir).replaceAll("\\", "/")}"]`);
+  lines.push(
+    `  ${nodeId(p.name)}["${nodeId(p.name).replace(/_/g, "-")}<br/>${relative(repoRoot, p.dir).replaceAll("\\", "/")}"]`,
+  );
 }
 for (const e of [...edges.values()].sort((a, b) => `${a.from}${a.to}`.localeCompare(`${b.from}${b.to}`))) {
   const from = nodeId(e.from);
@@ -105,4 +114,6 @@ for (const e of [...edges.values()].sort((a, b) => `${a.from}${a.to}`.localeComp
   lines.push(`  ${from} ${seam ? `-- "${seam}" -->` : arrow[e.kind]} ${to}`);
 }
 console.log(lines.join("\n"));
-console.error(`\n${pkgs.length} workspaces, ${edges.size} edges (solid = runtime import, dotted = dynamic, dashed = dev/test-only)`);
+console.error(
+  `\n${pkgs.length} workspaces, ${edges.size} edges (solid = runtime import, dotted = dynamic, dashed = dev/test-only)`,
+);
