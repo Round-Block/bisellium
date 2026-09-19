@@ -374,6 +374,14 @@ function handleTool(studio: string, sella: string, payload: Record<string, unkno
     attrs,
   };
   appendEvents(logPath, [event]);
+
+  if (rawFilePath !== undefined && !sella.startsWith("builder")) {
+    const isSource = /\.(tsx?|jsx?)$/.test(rawFilePath) && !rawFilePath.includes(".test.") && !rawFilePath.includes("/dossier/");
+    if (isSource) {
+      console.error(`⚠ process.cascade: sella "${sella}" is writing source (${redact(rawFilePath)}) — dispatch a builder subagent instead`);
+    }
+  }
+
   return { exitCode: 0 };
 }
 
