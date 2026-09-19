@@ -26,7 +26,7 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   check(
     7,
     "posture: reason names burn, allowance and period",
-    reason === "1084475 / 3000000 tokens this 2026-W38",
+    reason === "1,084,475 / 3,000,000 tokens this 2026-W38",
     reason,
   );
 }

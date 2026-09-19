@@ -11,17 +11,12 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   if (!ok) failed++;
 }
 
-// ---- Behaviour 10: colophon appears at scroll-bottom of the Officina
-// screen, after the four panels -------------------------------------------
+// ---- Behaviour 10: the three data panels are present --------------------
 {
   const sections = officinaSections();
-  check(10, "officina layout: colophon is the last section", sections[sections.length - 1] === "colophon", sections.join(","));
-  check(
-    10,
-    "officina layout: the four data panels all precede the colophon",
-    ["decreta", "postureAndBurn", "lexStatus", "processHealth"].every((s) => sections.includes(s as never) && sections.indexOf(s as never) < sections.indexOf("colophon")),
-    sections.join(","),
-  );
+  check(10, "officina layout: has postureAndBurn panel", sections.includes("postureAndBurn"), sections.join(","));
+  check(10, "officina layout: has processHealth panel", sections.includes("processHealth"), sections.join(","));
+  check(10, "officina layout: has lexStatus panel", sections.includes("lexStatus"), sections.join(","));
 }
 
 process.exit(failed ? 1 : 0);

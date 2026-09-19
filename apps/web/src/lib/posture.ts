@@ -18,9 +18,13 @@ export interface FormattedPosture {
   reason: string;
 }
 
+function fmt(n: number): string {
+  return n.toLocaleString();
+}
+
 export function formatPosture(entry: AerariumEntry): FormattedPosture {
   return {
     word: entry.posture,
-    reason: `${entry.burn.tokens} / ${entry.allowance.tokens} tokens this ${entry.period}`,
+    reason: `${fmt(entry.burn.tokens)} / ${fmt(entry.allowance.tokens)} tokens this ${entry.period}`,
   };
 }

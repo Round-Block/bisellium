@@ -6,7 +6,7 @@
  * module only pins where it sits relative to the four data panels, so
  * that placement is testable without a DOM.
  */
-export const OFFICINA_SECTIONS = ["fasti", "decreta", "postureAndBurn", "lexStatus", "processHealth", "colophon"] as const;
+export const OFFICINA_SECTIONS = ["postureAndBurn", "processHealth", "lexStatus"] as const;
 
 export type OfficinaSection = (typeof OFFICINA_SECTIONS)[number];
 

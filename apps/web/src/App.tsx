@@ -1,11 +1,6 @@
-/**
- * apps/web/src/App.tsx — co-owned by W-024 and W-025. W-024 owns the
- * Inbox screen at the default hash route; W-025 adds `/#/officina`,
- * hash-route switching, and the `<Nav>` wrapper.
- */
 import { useEffect, useState } from "react";
 import { parseRoute } from "./lib/route.js";
-import { Nav } from "./components/Nav.js";
+import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
 import { Inbox } from "./screens/Inbox.js";
 import { fetchInbox } from "./api.js";
@@ -25,7 +20,10 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    // Nav's needs-you badge: petitiones.length from /api/inbox (brief §Nav).
+    if (location.search.includes("demo")) {
+      setNeedsYouCount(3);
+      return;
+    }
     fetchInbox()
       .then((r) => setNeedsYouCount(r.petitiones.length))
       .catch(() => undefined);
@@ -34,9 +32,11 @@ export function App() {
   const route = parseRoute(hash);
 
   return (
-    <>
-      <Nav needsYouCount={needsYouCount} />
-      {route === "officina" ? <Officina /> : <Inbox />}
-    </>
+    <div className="shell">
+      <Sidebar route={route} needsYouCount={needsYouCount} />
+      <main className="shell__main">
+        {route === "officina" ? <Officina /> : <Inbox />}
+      </main>
+    </div>
   );
 }

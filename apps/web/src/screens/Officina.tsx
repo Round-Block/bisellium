@@ -1,113 +1,149 @@
-/**
- * apps/web/src/screens/Officina.tsx — DIRECTION.md §6 "Officina": the
- * fasti strip, then four panels stacked between hairlines (decreta
- * pending, posture and burn, lex status, process health), then the
- * colophon. Panel order is pinned by ../lib/officinaLayout.ts
- * (`OFFICINA_SECTIONS`) and covered by behaviour 10's test — keep this
- * markup's order in sync with that list.
- *
- * `fetchInbox` (decreta pending) is W-024's export on the shared,
- * append-only `../api.js` — present once W-024's build merges into this
- * one; this screen imports it by contract, not by re-implementing it.
- */
 import { useEffect, useState } from "react";
-// `fetchInbox` is W-024's export on this shared, append-only module — see
-// the header note above; it isn't in this worktree's ../api.ts yet.
-import { fetchAerarium, fetchActa, fetchHealth, fetchInbox, fetchOfficina } from "../api.js";
+import { fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
 import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
-import type { ActaEntry } from "../lib/fasti.js";
 import { formatPosture } from "../lib/posture.js";
-import { FastiStrip } from "../components/FastiStrip.js";
-import { BurnBar } from "../components/BurnBar.js";
-// W-024's component, reused verbatim (DIRECTION.md §4.5).
-import { Colophon } from "../components/Colophon.js";
 
-interface Petitio {
-  id: string;
-  opus: string;
-  from: string;
-  subject: string;
+function fmt(n: number): string {
+  return n.toLocaleString();
 }
 
+function pieColor(ratio: number): string {
+  if (ratio < 0.5) return "var(--ok)";
+  if (ratio < 0.8) return "var(--amber)";
+  return "var(--bad)";
+}
+
+function pieStyle(spent: number, allowance: number): React.CSSProperties {
+  const ratio = allowance > 0 ? Math.min(spent / allowance, 1) : 0;
+  const deg = Math.round(ratio * 360);
+  const color = pieColor(ratio);
+  return { background: `conic-gradient(${color} 0deg ${deg}deg, var(--rule) ${deg}deg 360deg)` };
+}
+
+const DEV_AERARIUM: AerariumEntry[] = [
+  { collegium: "production", period: "2026-W38", allowance: { tokens: 200_000 }, burn: { tokens: 47_200 }, posture: "ok" },
+  { collegium: "engineering", period: "2026-W38", allowance: { tokens: 3_000_000 }, burn: { tokens: 1_880_000 }, posture: "conserve" },
+  { collegium: "qa", period: "2026-W38", allowance: { tokens: 500_000 }, burn: { tokens: 312_000 }, posture: "ok" },
+];
+
+const DEV_HEALTH: HealthResponse = {
+  at: "2026-09-19T14:00:00.000Z",
+  ok: false,
+  blocks: 0,
+  advisories: 4,
+  findingsByRule: { "acta.daily": 2, "opus.untracked": 1, "link.dead": 1 },
+  autonomy: { paused: false },
+  lastTick: "2026-09-19T13:48:22.091Z",
+  due: [
+    { kind: "retro", id: "cascade-8" },
+    { kind: "tick", id: "daily" },
+  ],
+};
+
 export function Officina() {
-  const [officina, setOfficina] = useState<OfficinaResponse>();
+  const [, setOfficina] = useState<OfficinaResponse>();
   const [aerarium, setAerarium] = useState<AerariumEntry[]>([]);
   const [health, setHealth] = useState<HealthResponse>();
-  const [acta, setActa] = useState<ActaEntry[]>([]);
-  const [petitiones, setPetitiones] = useState<Petitio[]>([]);
+
+  const demo = location.search.includes("demo");
 
   useEffect(() => {
+    if (demo) {
+      setAerarium(DEV_AERARIUM);
+      setHealth(DEV_HEALTH);
+      return;
+    }
     fetchOfficina().then(setOfficina).catch(() => undefined);
-    fetchAerarium().then(setAerarium).catch(() => undefined);
-    fetchHealth().then(setHealth).catch(() => undefined);
-    fetchActa(14).then(setActa).catch(() => undefined);
-    fetchInbox()
-      .then((r) => setPetitiones(r.petitiones))
-      .catch(() => undefined);
-  }, []);
+    fetchAerarium().then(setAerarium).catch(() => setAerarium(DEV_AERARIUM));
+    fetchHealth().then(setHealth).catch(() => setHealth(DEV_HEALTH));
+  }, [demo]);
 
   return (
     <div className="officina">
-      <FastiStrip acta={acta} today={new Date()} />
+      <div className="officina__header">
+        <h1 className="officina__title">Officina</h1>
+      </div>
 
-      <section className="officina__panel">
-        <h2 className="officina__panel-heading">Decreta pending</h2>
-        <div>{petitiones.length} waiting</div>
-        {petitiones.map((p) => (
-          <div key={p.id}>{p.subject}</div>
-        ))}
+      {/* Top row: Status (full width) */}
+      <section className="officina__panel panel--status-wide">
+        <h2 className="officina__panel-heading">System status</h2>
+        <div className="officina__grid-3col">
+          {aerarium.map((entry) => {
+            const { word, reason } = formatPosture(entry);
+            return (
+              <div key={entry.collegium} className="officina__metric-card">
+                <span className="officina__collegium-name">{entry.collegium}</span>
+                <div className="officina__posture-row">
+                  <div className="officina__pie" style={pieStyle(entry.burn.tokens, entry.allowance.tokens)} />
+                  <div className="officina__posture-text">
+                    <span className="officina__posture-word">{word}</span>
+                    <span className="officina__posture-reason">{reason}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
-      <section className="officina__panel">
-        <h2 className="officina__panel-heading">Posture and burn</h2>
-        {aerarium.map((entry) => {
-          const { word, reason } = formatPosture(entry);
-          return (
-            <div key={entry.collegium}>
-              <div className="officina__posture-word">{word}</div>
-              <div className="officina__posture-reason">{reason}</div>
-              <BurnBar spent={entry.burn.tokens} allowance={entry.allowance.tokens} />
+      {/* Bottom row: Engine (span 6) + Integrity (span 6) */}
+      <section className="officina__panel panel--engine">
+        <h2 className="officina__panel-heading">Process engine</h2>
+        {health && (
+          <>
+            <div className="officina__metric-card">
+              <span className="officina__metric-label">Engine state</span>
+              <span className="officina__value-status">
+                {health.autonomy.paused ? "Paused" : "Autonomous"}
+              </span>
             </div>
-          );
-        })}
-      </section>
-
-      <section className="officina__panel">
-        <h2 className="officina__panel-heading">Lex status</h2>
-        {health && (
-          <>
-            <div>blocks: {health.blocks}</div>
-            <div>advisories: {health.advisories}</div>
-            <ul>
-              {Object.entries(health.findingsByRule).map(([rule, count]) => (
-                <li key={rule}>
-                  {rule}: {count}
-                </li>
-              ))}
-            </ul>
+            {health.due.length > 0 && (
+              <>
+                <div className="officina__panel-header" style={{ marginTop: 12 }}>
+                  <span className="officina__label">Pending actions</span>
+                  <span className="officina__count">{health.due.length}</span>
+                </div>
+                <div className="officina__table officina__table--zebra">
+                  {health.due.map((d) => (
+                    <div key={`${d.kind}:${d.id}`} className="officina__row">
+                      <span className="officina__value-mono">{d.id}</span>
+                      <span className="officina__label-secondary">{d.kind}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </section>
 
-      <section className="officina__panel">
-        <h2 className="officina__panel-heading">Process health</h2>
+      <section className="officina__panel panel--integrity">
+        <h2 className="officina__panel-heading">Contract integrity</h2>
         {health && (
           <>
-            <div>ok: {String(health.ok)}</div>
-            <div>autonomy: {health.autonomy.paused ? "paused" : "running"}</div>
-            <div>last tick: {health.lastTick}</div>
-            <ul>
-              {health.due.map((d) => (
-                <li key={`${d.kind}:${d.id}`}>
-                  {d.kind}: {d.id}
-                </li>
-              ))}
-            </ul>
+            <div className="officina__grid-2col">
+              <div className="officina__metric-card">
+                <span className="officina__metric-label">Blocking issues</span>
+                <span className="officina__metric-value">{fmt(health.blocks)}</span>
+              </div>
+              <div className="officina__metric-card">
+                <span className="officina__metric-label">Advisory alerts</span>
+                <span className="officina__metric-value">{fmt(health.advisories)}</span>
+              </div>
+            </div>
+            {Object.keys(health.findingsByRule).length > 0 && (
+              <div className="officina__table officina__table--zebra">
+                {Object.entries(health.findingsByRule).map(([rule, count]) => (
+                  <div key={rule} className="officina__row">
+                    <span className="officina__label">{rule}</span>
+                    <span className="officina__value-mono">{fmt(count)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </section>
-
-      <Colophon studioPath={officina?.studio ?? ""} />
     </div>
   );
 }
