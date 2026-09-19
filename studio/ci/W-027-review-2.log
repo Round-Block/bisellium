@@ -1,0 +1,134 @@
+review: W-027 — container lifecycle: prune command (round 2)
+sella: qa-lead
+command: independent re-review on Opus 5 (round 1 ran on a sub-tier model).
+  Read brief, opera front matter, prune.ts, prune.test.ts, main.ts wiring,
+  shim/worktree.ts reclaimWorktrees. Ran: check studio --repo . --json;
+  npm run -s typecheck; npx eslint prune.ts; prune.test.ts; one fresh
+  mutation on the merged-branch guard; four end-to-end runPrune runs against
+  throwaway git fixtures.
+verdict: failed
+
+Round 1's findings, verified:
+
+1. [block] opus.red_evidence — CONFIRMED. `check studio --repo . --json`
+   returns level "block" for opera/W-027.md: "missing red log(s) for
+   behaviour(s) 1, 2, 3, 4, 5". `studio/ci/reds/W-027/` does not exist
+   (reds exist for W-020, W-021, W-024, W-025, W-028, W-029 — so the
+   convention was followed elsewhere in the same cascade). Standing rule
+   "Test-first with a recorded red"; evidence is produced, never backfilled.
+   Nothing can retroactively create these; the opus needs its reds re-run
+   against a reverted implementation, or the gap acknowledged as a lesson.
+
+2. [coverage gap] behaviour 5 untested — CONFIRMED, and exercised by hand to
+   establish whether a defect hides behind it. runPrune has no test anywhere
+   in the repo; `main.ts:135` is its only caller. Manual end-to-end runs
+   against throwaway fixtures (git init, studio/opera with done/building
+   opera, opus/* branches, a live .bisellium/worktrees slot):
+
+     A  prune --studio <fix>/studio --repo <fix>
+        -> "branch removed: opus/W-100 (done and merged)", exit 0;
+           opus/W-100 gone, opus/W-101 (building) kept.          CORRECT
+     B  prune --studio <fix>/nope --repo <fix>
+        -> "no opera directory at <fix>/nope", exit 2.           CORRECT
+     C  prune (no flags, cwd=repo root)
+        -> "no opera directory at <repo>", exit 2.               CORRECT
+     D  prune --studio <fix>/studio --repo <fix>/not-a-repo
+        -> "nothing to prune", exit 0.                           see 6
+     E  prune --studio=<fix>/studio --repo <fix>
+        -> falls back to cwd, exit 2.                            see 5
+     F  prune --help
+        -> falls back to cwd, exit 2, no usage printed.          see 5
+     G  live worktree (.bisellium/worktrees/slot1, merged, clean) + done
+        merged opus branch
+        -> "worktree removed: <...>/slot1 (merged)" AND
+           "branch removed: opus/W-300 (done and merged)", exit 0. CORRECT
+
+   Conclusion: the untested behaviour 5 is a coverage gap, not a latent
+   functional defect. The happy path, the combined worktree+branch report
+   and the exit-2 path all behave as the brief specifies. This does not make
+   the gap acceptable — nothing in the repo stops the next edit from
+   breaking it silently — but it is not the reason this round fails.
+
+3. [minor] dead code — CONFIRMED by eslint (2 warnings, exit 0):
+   `readdirSync` imported unused (prune.ts:2), `PRUNE_USAGE` assigned unused
+   (prune.ts:77). Consequence beyond tidiness: `prune` has no usage path at
+   all. Unlike close.ts (which prints CLOSE_USAGE when its positional is
+   missing), prune has no required positional, so PRUNE_USAGE is unreachable
+   and `--help` / `--studio=<x>` / any typo silently degrade to studio=cwd
+   (cases E, F). Harmless from the repo root; from inside a studio-shaped cwd
+   it would run a real prune the operator did not ask for.
+
+New in round 2:
+
+4. [block] THE SUITE DOES NOT BITE ON THE SAFETY GUARD. Round 1 ran one
+   mutation (the `state !== "done"` check) and it was caught. A second,
+   harder mutation on the clause the brief calls the safety property
+   ("Safe: only merged+done branches are deleted") SURVIVES:
+
+     prune.ts:61   if (!mergedSet.has(branch)) {   ->   if (false) {
+
+   Run against a copy (packages/cli/src/prune.mut.ts + prune.mut.test.ts,
+   deleted after the run; tracked sources untouched): 4 tests, 4 pass, 0 fail.
+   Test 3 ("keeps an unmerged branch even if opus is done") does not catch it
+   because git's own `branch -d` refuses to delete an unmerged branch, so the
+   branch still lands in kept[] — with reason "delete failed" instead of
+   "not merged into HEAD". The test asserts only `removed.length === 0` and
+   that the branch appears in kept[], never the reason, so it passes for the
+   wrong reason. As written, the merged check in prune.ts is untested
+   guesswork sitting on top of git's refusal; delete it and every test stays
+   green. Asserting `kept[0].reason` in tests 2 and 3 closes this.
+
+5. [advise] probatio.certifies.stale — the tests/lint/types gates certify
+   tree:5ab03a0b4156..., the current source tree is tree:1752b55143. The
+   certificates were legitimate when taken (round 1 was right about that);
+   unrelated source churn since has aged them out. They must be re-run before
+   any pass verdict, since a pass would be certifying a tree no gate covers.
+
+6. [advise] silent success on a bad --repo. Case D above: a --repo that is
+   not a git repository produces "nothing to prune" and exit 0. `git branch
+   --list` fails, status !== 0, and pruneStaleOpusBranches returns an empty
+   result indistinguishable from "clean repo". An operator who mistypes
+   --repo is told the tree is clean. One `status !== 0` -> exit 1 in runPrune
+   would fix it. Advisory, not blocking: close.ts does not validate --repo
+   either, so this is house-wide, not a W-027 regression.
+
+7. [advise] kept[] is computed and thrown away. runPrune reports only
+   removals; every kept entry and its reason ("not merged into HEAD", "opus
+   state is building", "no opus file found") is discarded, and the operator
+   sees "nothing to prune" even when branches were deliberately spared. The
+   brief's behaviour 5 says "reports both worktree and branch results" —
+   satisfied on the removal side, but the diagnostic half of the data
+   structure has no consumer.
+
+Process record:
+
+8. Round 1 disclosed that its first `review` invocation filed a real gate
+   citing briefs/W-027.md as evidence. studio/opera/W-027.md now correctly
+   cites ci/W-027-review-1.log — the front matter is clean. The append-only
+   ledger is not: studio/.bisellium/events.jsonl lines 275 and 276 both carry
+   workflow.gate.evidence = "briefs/W-027.md" for the failed review gate.
+   That is permanent and must not be hand-edited; recording it here so the
+   retro can file it under the evidence-backfilled-or-absent class.
+
+9. The checkout moved under this review: git status was clean at the start
+   and showed modifications to apps/web/src/screens/Inbox.tsx,
+   packages/cli/src/rules/paths.ts, studio/opera/W-029.md and three untracked
+   W-029 ci logs by the end — none of them mine (my two mutation copies were
+   created and deleted under packages/cli/src/). W-027's own files did not
+   move, so the verdict stands, but a reviewer sharing a checkout with a live
+   builder is the no-builder-isolation hazard from retro 4b, still open.
+
+Verified green, for the record:
+- `npm run -s typecheck` exit 0.
+- `node --import tsx --test packages/cli/src/prune.test.ts` — 4 pass, 0 fail.
+- `npx eslint packages/cli/src/prune.ts` exit 0 (2 warnings, see 3).
+- `check studio --repo .` exit 1, with the two blocking findings above
+  (opus.red_evidence, traditio.present — the latter is the missing handoff
+  for a building item, not a code defect).
+
+Verdict: fail. Blocking: (1) no reds for any of the 5 behaviours, and (4) the
+suite does not bite on the merged-branch safety guard. To pass: record the
+reds honestly for a re-implementation rather than backfilling them, assert
+kept[] reasons so the merged check is actually pinned, add a runPrune test
+(behaviour 5), drop the dead import and constant, and re-run tests/lint/types
+so the certificates name the current tree.

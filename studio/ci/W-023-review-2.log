@@ -1,0 +1,141 @@
+W-023 — lead review, round 2
+reviewer: qa-lead (Censor, Opus 5)
+at: 2026-09-19T00:00:00.000Z
+tree: 1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+round 1: studio/ci/W-023-review-1.log (failed); nothing fixed since
+
+VERDICT: failed
+
+Why a round 2
+-------------
+Round 1 ran while the `censor` agent type was still Sonnet 5, below the tier
+D-014 requires of a review gate. This round re-judges from the artifacts, not
+from round 1's conclusions. One of round 1's three findings is overturned;
+one is upheld; one new blocking finding was found by mutation.
+
+Scope reviewed
+--------------
+packages/cli/src/rules/paths.ts, packages/cli/src/rules.test.ts,
+studio/briefs/W-023.md, studio/opera/W-023.md, studio/petitiones/P-004.md,
+packages/cli/src/rules/process.ts (lesson.evidence),
+packages/cli/src/check.ts (acta.evidence / checkLink), commit 82245e2.
+
+What was run
+------------
+$ npm test -s                                 -> exit 0, 0 FAIL
+$ node --import tsx packages/cli/src/main.ts check studio --repo .
+    -> FAIL — 12 blocking, 71 advisory; for opera/W-023.md:
+       BLOCK  opus.red_evidence   missing red log(s) for behaviour(s) 1, 2, 3, 4
+       BLOCK  traditio.present    active item (building) has no handoff
+       ADVISE probatio.certifies.stale  tests/lint/types certify tree:5ab03a0b,
+                                        current tree is tree:1752b551
+       zero path.* findings of any level on the real tree (brief behaviour 4 holds)
+$ mutation: level "block" -> "advise" for BOTH path rules in rules/paths.ts
+    -> npm test -s exit 0. Suite does not bite. Source restored, git diff clean.
+
+Findings
+--------
+1. BLOCKING — opus.red_evidence (mechanical, reproduced above). No red logs
+   for any of the brief's four behaviours; studio/ci/reds/W-023/ does not
+   exist (W-020, W-021, W-024, W-025, W-028, W-029 all have one). "Test-first
+   with a recorded red" is a standing rule. Upheld from round 1.
+
+2. BLOCKING (NEW) — the suite does not bite on the one thing this opus
+   delivers. W-023's entire deliverable is the promotion of
+   path.id.unvalidated and path.escapes.officina from `advise` to `block`
+   (brief behaviours 1 and 2; the Patron's decree: "BOTH rules re-promote to
+   blocking"). Every unit test in rules.test.ts asserts only that a finding
+   with the right `rule` id is present or absent — none asserts `level`:
+
+     check(`path.id.unvalidated: blocks opus id "${badId}"`,
+           findings.some((f) => f.rule === "path.id.unvalidated"), ...)
+
+   The test names say "blocks"; the assertions do not check that it blocks.
+   Reverting both rules to `advise` — i.e. undoing 100% of the opus — leaves
+   all 18 path.* tests PASSING and `npm test` at exit 0. The one integration
+   assertion that mentions levels is negative ("no BLOCKING path.* finding"),
+   so demotion makes it *more* likely to pass, never less. There is no
+   executable evidence that this change did anything. Per the QA lex §2, one
+   surviving mutation on the opus's own deliverable is enough to fail.
+   (Round 1 did not mutate; this is the round-2 finding.)
+
+3. OVERTURNED — round 1's finding 2 (scope creep on the `lessons/` check).
+   Round 1 was wrong on the record and, in my judgement, wrong on the merits.
+
+   (a) On the record: round 1 states the brief says only "removed acta
+       evidence checks". It does not. studio/briefs/W-023.md line 8 reads
+       "remove acta and lessons evidence checks". The removal is named in the
+       opus's own spec of record, not undisclosed. Round 1 appears to have
+       quoted the commit message ("acta evidence removed per P-004") and
+       attributed it to the brief.
+
+   (b) On the merits: P-004's decree is a positive whitelist, not a
+       subtraction. The Patron wrote "path.escapes.officina scopes to the
+       contractually officina-relative surfaces — opus spec: and gate
+       evidence: paths." Once the rule is scoped TO those two surfaces,
+       everything not on the list is out by construction; `lessons/` is not
+       on the list. The clause "acta evidence hrefs stay with checkLink"
+       names acta because acta was the firing site under discussion — it
+       explains why acta is safe to drop, it is not an exhaustive list of
+       what drops. Reading the decree as "remove the acta block only" would
+       require the Patron to have scoped the rule to three surfaces while
+       naming two.
+
+   (c) No containment hole. Lessons evidence is not contractually
+       officina-contained either: lesson.evidence in rules/process.ts
+       resolves each href with existsSync(join(root, href)), which accepts
+       ../README.md exactly as acta's checkLink does. A lesson is a
+       retrospective artifact of the same nature as an acta digest and cites
+       repo-root docs for the same reasons. Keeping the lessons block while
+       dropping the acta one would have re-raised the identical
+       false-positive class one retro later, against a rule the Patron had
+       just narrowed. escapesOfficina is a hygiene rule over the user's own
+       trusted tree; it reports and never dereferences. Removing it is right,
+       and it is within the decree.
+
+4. ADVISORY — the brief's behaviour 3 ("acta evidence escaping does NOT
+   fire") still has no dedicated unit test; coverage rests on the real-studio
+   integration assertion, which would pass identically if the code had been
+   deleted for a wrong reason, and which depends on studio/acta/
+   2026-09-17-kickoff.md keeping its ../README.md href. Upheld from round 1
+   at the same severity. Same root cause as finding 2: the path tests probe
+   rule ids, never levels and never scoped-out surfaces.
+
+5. ADVISORY — the rules/paths.ts module comment ("acta evidence stays with
+   checkLink") is accurate for acta (check.ts:574 does route acta evidence to
+   checkLink) but silent on lessons, whose containment is now governed by
+   nothing — lesson.evidence tests existence, not containment. An omission,
+   not the misstatement round 1 called it. One line would close it.
+
+6. ADVISORY — studio/briefs/W-023.md was created in commit 82245e2, the same
+   commit as the implementation, so the spec gate is not independent prior
+   authorization for anything. It post-dates the decree and is legitimate as
+   the spec of record (see finding 3a), but it cannot also serve as evidence
+   that the work was specified before it was written. Compounds finding 1.
+
+7. ADVISORY — gate certificates are stale: tests/lint/types all certify
+   tree:5ab03a0b, current tree is tree:1752b551. Nothing in W-023 changed,
+   but the certificates no longer name the tree they are read against and
+   must be re-run at re-submission.
+
+   Also outstanding and blocking on the opus, outside this review's scope:
+   traditio.present — opera/W-023.md is `building` with no handoff.
+
+Disposition
+-----------
+Failing round 2. The diff itself is correct — the scoping matches the decree,
+the promotion matches it, and the real tree is clean at every level. What is
+missing is evidence that any of it was built or is defended:
+
+  (a) recorded reds for behaviours 1-4 under studio/ci/reds/W-023/;
+  (b) level assertions on the path tests, so that reverting block -> advise
+      turns the suite red (this is the opus's whole deliverable, and today
+      nothing detects its removal);
+  (c) a unit test for behaviour 3 that builds its own acta/ (and lessons/)
+      fixture with an out-of-officina evidence href and asserts no
+      path.escapes.officina finding — not dependent on studio/acta's shape;
+  (d) re-run tests/lint/types certificates against the tree at re-submission.
+
+Round 1's requirement (b) — "brief or petitio authorization for scoping out
+lessons/, or restore that check" — is withdrawn. The lessons removal is
+authorized by the brief and within P-004. Do not restore it.

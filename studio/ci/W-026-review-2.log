@@ -1,0 +1,151 @@
+review: W-026 (parallel workstreams: per-opus branching) — round 2
+sella: qa-lead
+verdict: FAIL
+
+Round 2 exists because round 1 ran on a censor below the tier D-014 requires
+for a review gate. Every round-1 claim was re-tested from the code, not taken
+on trust. Nothing in W-026 changed between rounds (HEAD 1b975c8, clean tree).
+
+Base state verified at HEAD 1b975c8:
+- npm test exit 0 (full suite).
+- npm run -s typecheck exit 0.
+- npm run -s lint exit 0, 7 warnings; two of them are W-026's own
+  (branch.test.ts unused `mkdirSync`, dead `repo`). Certificates honest.
+- node --import tsx packages/cli/src/branch.test.ts . -> 10/10 PASS.
+
+Round 1 findings, re-tested
+---------------------------
+
+1. CONFIRMED (blocking). Behaviour 4 ("mergeOpusBranch refuses when opus
+   state is not `done`") is absent. branch.ts reads no opus file at all;
+   runMerge only existsSync's studio/opera/<id>.md and never looks at
+   `state:`. branch.test.ts's "behaviour 4" block asserts "refuses missing
+   branch" — a requirement nobody wrote — so the claimed 7-behaviour suite
+   is 6 behaviours plus a substitute. `bisellium merge` will merge an opus
+   in `building` today.
+   Note for the fix: the guard needs no new machinery. `splitFront` in
+   packages/commands/src/frontmatter.ts already parses opus front matter,
+   and check.ts:468 (state.done.probationes) already blocks `state: done`
+   with an unpassed gate — so a `state === "done"` test subsumes the
+   "after gates pass" half of the interface line for free.
+
+2. PARTLY OVERTURNED. Round 1 treated "merge after gates pass, push, delete
+   branch" as one half-built interface. Split it:
+   - gates: not an independent finding. `done` already implies gates passed
+     (check.ts:468). It collapses into finding 1.
+   - push: real gap against the Interfaces line (no `git push` in
+     branch.ts; the only `push` is Array.push at branch.ts:77) but I do not
+     hold it blocking for this opus. No behaviour in the brief lists it, the
+     acceptance criterion does not need it, and this repo has a live remote
+     (origin git@github.com:edckt/bisellium.git) — a merge helper that
+     silently pushes to it is an architect's decision, not something a
+     builder should infer from one clause. Downgraded to ADVISORY: the brief
+     overstates its own testable behaviours; either drop `push` from the
+     Interfaces line or add it as behaviour 8 with a test.
+
+3. CONFIRMED (blocking). `bisellium run --opus <id>` (behaviour 7) has no
+   test anywhere. Grepped every *.ts under packages/, apps/, adapters/ for
+   `--opus`: the only test hits are writes.test.ts exercising handoff/emit,
+   an unrelated flag. The 10 runCommand cases in packages/shim/test/
+   shim.test.ts all pass --no-worktree, so neither run.ts:147 (the
+   --opus/--base mutual-exclusion guard) nor run.ts:148 (`base =
+   opus/${opus}`) is executed by any test — the worktree/base path is never
+   entered with a base at all.
+
+4. CONFIRMED (blocking), reproduced independently. Copied branch.ts and
+   branch.test.ts to a scratch dir, inverted `if (canMerge.status !== 0)` to
+   `=== 0` (branch.ts:49), ran the suite: 10/10 PASS, exit 0. The only
+   observable difference is the detail string printed by behaviour 5, which
+   flips from "branch opus/W-031 conflicts with master" to "branch
+   opus/W-031 has diverged from master — rebase first". Both arms return
+   `{ ok: false }` and the test asserts only `result.ok === false`, so the
+   `git merge --no-commit --no-ff` conflict probe is dead code from the
+   suite's point of view. Round 1's account is exactly right.
+
+New in round 2
+--------------
+
+5. NEW, BLOCKING. mergeOpusBranch merges into whatever HEAD points at — it
+   never names master. The string "master" does not occur anywhere in
+   branch.ts; merge-base is taken against HEAD (branch.ts:44-46) and the
+   merge is `git merge --ff-only <branch>` into the current checkout, while
+   runMerge prints "merged opus/<id> into master" unconditionally
+   (branch.ts:114).
+   Probe (temp repo, opus commit on opus/W-A, then `git checkout -b
+   sidebranch` before merging):
+     result: {"ok":true}
+     master log:      0f940ec init            <- untouched
+     sidebranch log:  727685f opus work | 0f940ec init
+   A merge run from the wrong checkout silently lands on the wrong branch
+   and reports success against master. For an opus whose whole purpose is
+   keeping concurrent workstreams off each other, this is the central risk,
+   and no test pins the target branch.
+
+6. NEW, BLOCKING. Running `merge` from the opus branch itself is a silent
+   no-op reported as success — and that is the likely operator path, since
+   builders work in a worktree checked out on opus/<id>. HEAD == merge-base,
+   so `git merge --ff-only opus/<id>` returns "Already up to date" (status
+   0), then `git branch -d` fails (cannot delete the current branch) and its
+   return value is discarded (branch.ts:60).
+   Probe (opus commit made on opus/W-G2, merge invoked without leaving it):
+     result: {"ok":true}   branches after: master,opus/W-G2
+     master log: still at init
+   ok:true, "merged opus/W-G2 into master" printed, master not advanced,
+   branch not deleted. Behaviour 6's test only ever runs from master, so it
+   cannot see this.
+
+7. NEW. No clean-tree guard, and uncommitted work is misdiagnosed as a
+   conflict. The divergence path runs `git merge --no-commit --no-ff` and
+   then `git merge --abort` in the operator's live working tree — it mutates
+   the tree to answer a question that `git merge-tree` answers without
+   touching it.
+   Probe (master moved, opus branch edits shared.ts, no actual conflict
+   between the two branches, one uncommitted local edit to shared.ts):
+     result: {"ok":false,"error":"branch opus/W-B2 conflicts with master"}
+   There is no conflict; git refused to start the merge because of the
+   local change, and the error text blames the branch. The uncommitted work
+   survived in this probe, but a probe that aborts a merge in a dirty tree
+   is one step from losing it, and nothing in the suite covers a dirty tree.
+
+8. NEW. The acceptance criterion has no test and is not met as shipped.
+   "Two opera can be worked concurrently in separate sessions, each on its
+   own branch, and merged independently when done" — no test merges two
+   opus branches, and under the ff-only model the second one cannot merge
+   after the first lands: master has moved, so mergeOpusBranch returns
+   "has diverged from master — rebase first" even with zero conflicts.
+   W-026 ships nothing to perform that rebase. Either the acceptance line or
+   the fast-forward-only model needs the architect; it is not a builder's
+   call.
+
+9. ADVISORY. branch.test.ts:11 `const repo = resolve(process.argv[2] ?? ".")`
+   is never read, and `cpSync`/`mkdirSync` are imported unused. The suite
+   advertises a repo argument it ignores; every case builds its own temp
+   repo. Cosmetic, but it is why the file reads as testing the real repo
+   when it does not.
+
+10. ADVISORY. createOpusBranch forks from HEAD (Interfaces line) while the
+    brief's Intent says branches are "forked from master". Same root as
+    findings 5 and 6: no code path in branch.ts ever names master. Test 1
+    only runs from master, so the divergence is invisible to the suite.
+
+11. Bookkeeping, outside W-026's code. studio/opera/W-026.md records the
+    round-1 review as `sella: eng-lead`, while ci/W-026-review-1.log's own
+    header says `sella: qa-lead`. One of the two is wrong; for the clerk.
+
+Verdict
+-------
+
+FAIL. Back to building. Blocking: 1 (done-state guard, untested and
+unimplemented), 3 (run --opus has no test), 4 (conflict probe is dead code —
+assert the error text, not just .ok), 5 (merge targets HEAD, not master),
+6 (merge from the opus branch is a false success). Advisory: 2-push, 7, 9,
+10. Finding 8 is a question for the architect before the next build round,
+not a defect to hand a builder.
+
+Commands run for this log:
+  git log --oneline -1; git status --porcelain
+  node --import tsx packages/cli/src/branch.test.ts .
+  npm test; npm run -s typecheck; npm run -s lint
+  sed-mutated copy of branch.ts+branch.test.ts in a scratch dir, suite re-run
+  three temp-repo probes driving createOpusBranch/mergeOpusBranch directly
+  (wrong-checkout merge, merge from the opus branch, dirty tree + divergence)

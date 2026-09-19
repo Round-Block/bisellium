@@ -1,0 +1,177 @@
+W-022 — censor review, round 2
+reviewer: qa-lead (Censor, Opus 5 — round 1 ran below the D-014 review tier)
+at: 2026-09-19 (review session)
+repo HEAD: 1b975c8a6fb923426b7359486c65726d5cb6a159
+commit under review: ea4c2dd445b3afef3a6b1626604bc0417eeea8f4
+opus certificates certify tree:5ab03a0b... (now stale against HEAD)
+
+VERDICT: failed
+
+Mandate for this round: re-derive round 1's judgement independently, with
+emphasis on the code verdict (round 1 read the implementation as correct)
+and on the newline edge case it flagged but did not exercise.
+
+1. Round 1's code verdict — partly confirmed, one defect missed
+---------------------------------------------------------------
+Confirmed. The two exported functions live where round 1 said
+(packages/cli/src/rules/evidence.ts:144 isDuplicateRed, :152
+isModuleLoadFailure; NOT process.ts). `node --import tsx
+packages/cli/src/rules/evidence.test.ts .` on HEAD: 6 PASS, exit 0.
+`npm run -s typecheck`: exit 0. evidence.test.ts is wired into the
+`npm test` script (package.json:16), so the behaviours do gate.
+
+Round 1 asserted the checkRedEvidence wiring "matches the brief's
+acceptance line verbatim" from reading alone. Exercised end to end here
+against a synthetic officina ($TMPDIR/offc: bisellium.yml copied from
+studio, opera/W-100.md state=building, briefs/W-100.md with 3 numbered
+behaviours, ci/reds/W-100/{01,02}.log identical after header strip,
+03.log an ERR_MODULE_NOT_FOUND trace):
+
+  $ node --import tsx packages/cli/src/main.ts check "$TMPDIR/offc"
+    opus.red_content   opera/W-100.md   red logs for behaviours 1 and 2 are identical after header strip   [blocking]
+    opus.red_content   opera/W-100.md   red(s) for behaviour(s) 3 are module-load failures, not assertion-level   [advisory]
+
+Acceptance line holds: block for duplicates, advise for module-load,
+reached through `bisellium check`, not only through the unit tests.
+
+2. NEW blocking finding — behaviour numbering is 0-based in the one file
+   whose subject is per-behaviour red evidence
+-------------------------------------------------------------------------
+packages/cli/src/rules/evidence.test.ts numbers its cases 0..5:
+
+  // behaviour 0: identical bodies after header strip are duplicates
+  ...
+  // behaviour 5: empty body is not a module load failure
+
+Every other test in the house — including packages/cli/src/rules/process.test.ts,
+the sibling file in the same directory — numbers from 1, matching the brief's
+"## Behaviours to test" list, matching countBehaviours() (evidence.ts:106,
+which yields 1..N), and matching the ci/reds/<id>/NN.log contract
+(01.log..06.log). Observed:
+
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 6
+  exit=0            <- no assertion runs at all; brief behaviour 6 is unreachable
+
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 1
+  PASS  different body = not duplicate                               false
+  exit=0            <- this is the brief's behaviour 2, not behaviour 1
+
+Consequences, all inside the opus's own subject matter:
+- `bisellium red W-022 --behaviour 6 -- node --import tsx
+  packages/cli/src/rules/evidence.test.ts . 6` records exit 0 — a log that
+  this opus's own sibling rule (opus.red_evidence, evidence.ts:247) would
+  report as "records a passing run, not a red".
+- Behaviours 1..5 captured that way are each off by one against the brief.
+- Two such captures over a filter that selects nothing would produce
+  byte-identical empty bodies — which isDuplicateRed deliberately does not
+  flag (bodyA.length > 0 guard, verified: isDuplicateRed("# exit: 1\n",
+  "# exit: 1\n") === false). So the silent-miss path stays silent.
+
+Round 1 checked that 6 behaviours pass and that they map one-to-one onto the
+brief's list; it did not check that they are *addressable* by the numbers the
+reds store uses. The remediation round 1 prescribed ("six `bisellium red
+W-022 --behaviour N`" captures) cannot be carried out correctly until this
+is fixed. Blocking: the opus mechanizing red-evidence integrity ships a test
+file whose per-behaviour handle is misaligned with the red-evidence contract.
+
+3. Round 1's newline note — real, and narrower than feared
+-----------------------------------------------------------
+MODULE_LOAD_RE (evidence.ts:150) uses `.` without the `s` flag. Probe run
+(temporary script, deleted after the run):
+
+  DIFF  wrapped SyntaxError (newline)              got=false want=true
+  ok    real node frame + one-line SyntaxError     got=true  want=true
+  ok    ERR_MODULE_NOT_FOUND                       got=true  want=true
+  ok    ERR_UNSUPPORTED_DIR_IMPORT                 got=false want=false
+  ok    Cannot find package (msg only)             got=false want=false
+  ok    tsx/TS compile error                       got=false want=false
+  DIFF  assertion line naming the code (self-ref)  got=true  want=false
+
+Round 1's suspicion is confirmed as a true miss, but V8 emits "does not
+provide an export named" on a single line; the multi-line frame preceding it
+does not defeat the regex (second case above passes). Non-blocking, agreed.
+
+The probe found a second, more reachable inversion round 1 did not name:
+isModuleLoadFailure is applied to the WHOLE log text, header included
+(evidence.ts:213), so any red whose assertion output merely mentions the
+string is flagged. A red captured from evidence.test.ts itself — whose
+fixtures contain "ERR_MODULE_NOT_FOUND" — would advise "module-load failure,
+not assertion-level" about a genuine assertion failure. Advisory level, so
+non-blocking, but it fires precisely on this opus's own reds.
+
+Also non-blocking, recorded for the class:
+- isDuplicateRed is byte-equality after header strip, so it catches copied
+  files only. Verified: bodies differing only by a random temp-dir suffix
+  compare false (studio/ci/reds/W-021/01.log contains exactly such a suffix;
+  studio/ci/reds/W-029/01.log carries wall-clock timestamps). Re-running one
+  command per behaviour — the actual failure mode the class describes —
+  slips past. Matches the brief as written ("identical bodies reused"), so
+  not a defect against spec; worth a P-00x if the class recurs.
+- No cross-opus duplicate detection (a red copied from another opus's store
+  is invisible). Out of brief scope.
+- No examples/fixtures/ fixture for opus.red_content. The house pattern is a
+  fixture + EXPECT per blocking rule (packages/cli/src/test.ts), but no red
+  rule has one — W-021's opus.red_evidence and opus.untracked have none
+  either, so this is a repo-wide gap, not a W-022 regression.
+- packages/cli/src/rules/process.ts gained process.review_tier today
+  (df762b6). Unrelated to W-022; typecheck and the suite are clean with both
+  in the tree; no interaction found.
+
+4. Round 1's blocking finding — independently verified, upheld
+---------------------------------------------------------------
+  $ node --import tsx packages/cli/src/main.ts check studio --repo .
+    opus.red_evidence   opera/W-022.md   missing red log(s) for behaviour(s) 1, 2, 3, 4, 5, 6
+
+  $ ls studio/ci/reds
+    W-020  W-021  W-024  W-025  W-028  W-029     <- no W-022
+
+The bootstrap excuse is exhausted, and I checked this rather than taking
+round 1's word:
+
+  $ git log --oneline --diff-filter=A -1 -S"runRed" -- packages/cli/src/
+    967ad4f feat(W-020): bisellium red — per-behaviour evidence store
+  $ git merge-base --is-ancestor 967ad4f ea4c2dd && echo ancestor
+    ancestor
+  967ad4f  2026-09-18 22:49:34 +0800
+  ea4c2dd  2026-09-19 19:14:09 +0800
+
+`bisellium red` was on master, reachable from main.ts (main.ts:128), ~20
+hours before W-022's only commit. Siblings in the same window used it
+(W-024, W-025, W-029 all have populated stores). ea4c2dd lands the two
+functions and their passing tests in one commit: no red anywhere in history
+for any of the six behaviours.
+
+Standing rules invoked: "Test-first with a recorded red"; "Evidence is
+produced, never backfilled." Class: review×evidence-backfilled-or-absent
+(4th recurrence, per this repo's own lesson.recurrent output).
+
+Disposition
+-----------
+Failed, on two blocking findings.
+
+(a) No red evidence for any of the six behaviours, with no bootstrap excuse.
+    Round 1's reasoning verified independently and upheld.
+(b) NEW: evidence.test.ts numbers its behaviours 0..5, so the brief's
+    behaviour 6 is unreachable and reds 1..5 would be captured off by one —
+    the per-behaviour filter is misaligned with the reds contract this very
+    opus enforces. Fix (b) first; it is a precondition for producing (a)
+    correctly.
+
+Round 3 needs: behaviours renumbered 1..6 in evidence.test.ts, then six
+genuine reds via `bisellium red W-022 --behaviour N -- node --import tsx
+packages/cli/src/rules/evidence.test.ts . N`, derived against a tree where
+the implementation is absent or stubbed (not re-labelled passing runs).
+Certificates must then be re-cut: the tests/lint/types gates currently
+certify tree:5ab03a0b and are stale against HEAD.
+
+Commands run for this log
+-------------------------
+node --import tsx packages/cli/src/main.ts context --sella qa-lead studio
+node --import tsx packages/cli/src/main.ts check studio --repo .
+node --import tsx packages/cli/src/main.ts check "$TMPDIR/offc"   (synthetic fixture, above)
+node --import tsx packages/cli/src/rules/evidence.test.ts .
+node --import tsx packages/cli/src/rules/evidence.test.ts . 1
+node --import tsx packages/cli/src/rules/evidence.test.ts . 6
+npm run -s typecheck
+git log --oneline --diff-filter=A -1 -S"runRed" -- packages/cli/src/
+git merge-base --is-ancestor 967ad4f ea4c2dd

@@ -1,0 +1,154 @@
+# W-029 review — round 2
+# reviewer: qa-lead (the Censor, Opus 5)
+# at: 2026-09-19T14:20:00Z
+# HEAD: 1b975c8a6fb923426b7359486c65726d5cb6a159
+# source tree at verify: tree:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+# verdict: PASS (agrees with round 1; round 1's reasoning corrected in 3 places)
+
+## Why a second round
+
+Round 1 ran while the censor agent type was bound to Sonnet 5, below the
+tier D-014 requires for a review gate. This round re-runs the load-bearing
+evidence rather than re-reading round 1's conclusions.
+
+## Re-run acceptance (produced now)
+
+`npm run test:e2e` in apps/web, current tree:
+
+  5 passed (2.6s)
+
+All five named tests green. Round 1's claim 3 holds on the moved tree.
+
+## Behaviour coverage — confirmed, and confirmed mechanically
+
+Brief behaviours 1..5 map 1:1 onto the five named tests in
+apps/web/tests/smoke.spec.ts, in brief order. Independent of my reading,
+check's own `opus.red_evidence` rule agrees: of the six opera in `building`,
+W-022/023/026/027/028 are all blocked for missing red logs, and W-029 is the
+only one not flagged. The mapping is machine-verified, not asserted.
+
+## Correction 1 — round 1 misclassified red 03
+
+Round 1: "03,04 are genuine reds against pre-implementation DOM
+(behaviours 3,4)."
+
+04 is genuine: `.fasti-strip` was absent from the DOM.
+
+03 is NOT. Its call log resolves the locator to
+`<div data-focused="false" class="inbox__row inbox__row--attention">` — the
+rows and the data-focused attribute already rendered, and j/k already
+worked. It is red only because the assertion at line 39 read
+`toHaveAttribute("data-focused", "true")` where the shipped test reads
+`"false"`. That is a mutated-assertion red, same class as 01/02/05.
+
+So the true split is 4 mutated-assertion reds (01,02,03,05) and 2 app-side
+reds (04,06 — the same FastiStrip regression, before and after commit).
+The reds remain honest; the classification was wrong, and it matters because
+a mutated-assertion red proves only that the assertion executes, not that
+the suite detects a real regression.
+
+## Correction 2 — round 1 produced no app-side mutation of its own
+
+Remedied here. Live mutation against the current tree, app side, not test
+side: in apps/web/src/screens/Inbox.tsx line 48,
+
+  e.key === "j" || e.key === "k"   ->   e.key === "JJ" || e.key === "KK"
+
+disabling the j/k handler. Re-ran `npx playwright test -g "keyboard
+navigation"`:
+
+  1 failed — keyboard navigation (j/k) moves focus on inbox items
+  Expected: "false"  Received: "true"
+  locator resolved to <div data-focused="true" class="inbox__row
+  inbox__row--attention inbox__row--focused">
+
+Correct diagnostic, correct line. Source restored; `git status --porcelain
+apps/web` clean afterwards. Lex §2 (one mutation per opus) satisfied by an
+app-side mutation, which is stronger than what round 1 had.
+
+## Correction 3 — round 1's certificates were stale by the time it passed
+
+Round 1 passed against tree:5ab03a0b. The source tree has since moved
+(close.ts fixes, model-tier commits). W-029's tests/lint/types probationes
+still named 5ab03a0b, which no longer exists on disk — check reports
+`probatio.certifies.stale` for W-022/023/026/027/028 on exactly that hash,
+and W-029 was in the same condition.
+
+Re-ran `bisellium verify W-029 --studio studio --repo .`: tests, lint and
+types all pass and now certify tree:1752b551. Round 1's green was real but
+no longer certified anything; this round re-certifies.
+
+## Blocking check finding round 1 did not mention
+
+  traditio.present   opera/W-029.md   active item (building) has no handoff
+
+This is a blocker naming opera/W-029.md. It is shared by all six building
+opera, so it is an orchestration gap rather than a defect in this opus's
+work, and I do not fail the opus for it. But it is not cleared by passing
+review, and it is not cleared by closing either: `closeChecks`
+(packages/cli/src/close.ts:14-31) gates only on state being one of
+building/verifying/review — it consults neither the review probatio nor
+`check`. Closing W-029 will leave `check studio --repo .` failing on
+traditio.present unless a handoff is recorded first. Related: `wip.cap`,
+6 in progress against a cap of 4.
+
+## Scope — round 1's statement understates the commits
+
+Round 1: "All three present and unchanged outside declared scope." True of
+the test assets, not of the commits.
+
+130f29a also touched .gitignore (three Playwright artifact dirs),
+package-lock.json (the @playwright/test install), docs/SESSION-HANDOFF.md
+and four dossier HTML files. 3ed05c8, the behaviour-4 fix, touched
+apps/web/src/screens/Officina.tsx — outside the brief's Files owned.
+
+Judged acceptable: the gitignore lines and the lockfile are the mechanical
+consequence of the declared interface (`test:e2e` + the devDep), and the
+Officina fix repairs a real W-026 regression that this suite caught, which
+is the suite doing its job. Recorded, not waived silently.
+
+Note for the collegium: qa.md §2 says "Blocks a write outside an opus's
+declared files (check: probatio.declared)". That citation is wrong.
+check.ts:398's probatio.declared only asserts a gate id appears in the
+manifest; nothing in check compares written files against a brief's Files
+owned. The clause is unenforced and is being applied by reviewer judgement,
+which the standing rule "process enforcement is a check rule or a hook,
+never a memory or prose" says it should not be.
+
+## Concurrency observed during this review
+
+At 22:15:30 +0800, packages/cli/src/rules/paths.ts appeared modified in the
+working tree with `path.id.unvalidated` and `path.escapes.officina`
+downgraded from "block" to "advise"; by 22:15:36 it was reverted. Not my
+edit — a concurrent agent mutation-testing check's path rules in the same
+checkout. My verify certificate was computed at 22:13, before it, and
+`git status --porcelain apps/web` was clean throughout, so W-029's evidence
+is unaffected.
+
+Flagged anyway: this is class review×no-builder-isolation (L-003, L-010),
+still recurring. Two agents mutating one shared working tree can have one
+certify a tree that momentarily contained the other's mutation. That my
+certificate landed in a clean window is luck, not isolation.
+
+## Advisories carried forward or added
+
+1. (round 1 #1, still true) No green log for `npm run test:e2e` exists in
+   studio bookkeeping. Two reviews have now verified the acceptance
+   criterion live and neither run is recorded as a probatio. Class
+   review×evidence-backfilled-or-absent (L-001, L-008, L-017, L-021),
+   already the studio's most recurrent class.
+2. (round 1 #2, confirmed) Test 5's comment says "no full reload" and the
+   test asserts nothing about reloading. A full reload on hash change would
+   pass it. Comment overstates.
+3. (new) playwright.config.ts uses a fixed port 5199 with
+   `reuseExistingServer: !process.env["CI"]`. Locally, an unrelated server
+   already on 5199 is silently reused and the suite asserts against the
+   wrong app. Harmless in CI, a false green waiting to happen locally.
+
+## Verdict
+
+PASS. The opus does what the brief asked, the acceptance criterion passes
+live on the current tree, the reds are honest (one of them caught a real
+regression in someone else's work), the suite bites under an app-side
+mutation, and tests/lint/types are re-certified against the tree as it
+stands. Round 1 reached the right verdict on partly wrong reasoning.
