@@ -56,7 +56,10 @@ function parseArgs(argv) {
   if (promptFile) {
     const p = resolve(ROOT, promptFile);
     if (existsSync(p)) prompt = readFileSync(p, "utf8");
-    else { console.error(`prompt file not found: ${promptFile}`); process.exit(1); }
+    else {
+      console.error(`prompt file not found: ${promptFile}`);
+      process.exit(1);
+    }
   }
   return { model, files, prompt };
 }
