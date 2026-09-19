@@ -1,0 +1,298 @@
+<title>Bisellium Progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F7F9F8;
+    --surface: #FFFFFF;
+    --surface-2: #EFF4F2;
+    --ink: #1A2523;
+    --muted: #5A6B67;
+    --line: #DCE5E2;
+    --accent: #0E7C6B;
+    --accent-soft: #E1F0EC;
+    --ok: #178A50;
+    --ok-soft: #E2F3E9;
+    --warn: #B7791F;
+    --warn-soft: #F7EDDA;
+    --bad: #C0392B;
+    --bad-soft: #F9E6E3;
+    --pend: #7A8783;
+    --pend-soft: #EAEEEC;
+    --code-bg: #14201C;
+    --code-ink: #D9E7E2;
+    --code-accent: #6FD9C2;
+    --shadow: 0 1px 2px rgba(20, 35, 30, .06), 0 4px 16px rgba(20, 35, 30, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101614;
+      --surface: #18201D;
+      --surface-2: #1E2825;
+      --ink: #E6EEEB;
+      --muted: #93A39E;
+      --line: #2A3531;
+      --accent: #3ECFB2;
+      --accent-soft: #163229;
+      --ok: #4CC98A;
+      --ok-soft: #14301F;
+      --warn: #E0A94E;
+      --warn-soft: #34290F;
+      --bad: #E5776A;
+      --bad-soft: #3A1712;
+      --pend: #8B9995;
+      --pend-soft: #232D2A;
+      --code-bg: #0C1210;
+      --code-ink: #CDDCD6;
+      --code-accent: #5FD3B8;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101614;
+    --surface: #18201D;
+    --surface-2: #1E2825;
+    --ink: #E6EEEB;
+    --muted: #93A39E;
+    --line: #2A3531;
+    --accent: #3ECFB2;
+    --accent-soft: #163229;
+    --ok: #4CC98A;
+    --ok-soft: #14301F;
+    --warn: #E0A94E;
+    --warn-soft: #34290F;
+    --bad: #E5776A;
+    --bad-soft: #3A1712;
+    --pend: #8B9995;
+    --pend-soft: #232D2A;
+    --code-bg: #0C1210;
+    --code-ink: #CDDCD6;
+    --code-accent: #5FD3B8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+  .prose { max-width: 72ch; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", sans-serif;
+    text-wrap: balance;
+    line-height: 1.15;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; margin: .2em 0 .25em; letter-spacing: -0.01em; }
+  h2 { font-size: 1.7rem; font-weight: 650; margin: 0 0 .5em; }
+  h3 { font-size: 1.18rem; font-weight: 600; margin: 2em 0 .5em; }
+  p { margin: 0 0 1em; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 600; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .08em .35em;
+  }
+
+  .eyebrow {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .6em;
+  }
+  header.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+  .thesis { font-size: 1.22rem; color: var(--muted); max-width: 60ch; margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 24px;
+    margin-top: 28px;
+    font-size: .82rem; color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .meta-row span b { color: var(--ink); font-weight: 500; }
+
+  section { padding: 56px 0 8px; }
+  .part-rule {
+    display: flex; align-items: center; gap: 16px;
+    margin: 64px 0 0;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+  }
+  .part-rule .part-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 4px 12px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .part-rule h2 { margin: 0; font-size: 2rem; }
+
+  /* verdict card */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 26px 30px;
+    margin: 36px 0 0;
+  }
+  .verdict p:last-child { margin-bottom: 0; }
+
+  /* chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem; font-weight: 500;
+    padding: 2px 10px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .chip.ok   { color: var(--ok);   background: var(--ok-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.bad  { color: var(--bad);  background: var(--bad-soft); }
+  .chip.pend { color: var(--pend); background: var(--pend-soft); }
+
+  /* tables */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); margin: 20px 0 28px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 640px; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* two-col gap layout */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 24px 0; }
+  @media (max-width: 720px) { .gap-grid { grid-template-columns: 1fr; } }
+  .gap-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .gap-card h3 { margin-top: 0; }
+  .gap-card ul { margin: 0; padding-left: 1.2em; }
+  .gap-card li { margin-bottom: .45em; }
+  .gap-card.crowded h3 { color: var(--bad); }
+  .gap-card.open h3 { color: var(--ok); }
+
+  /* board mock */
+  .board-mock {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .board-cols { display: flex; gap: 14px; min-width: 700px; }
+  .board-col { flex: 1; }
+  .board-col-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+    display: flex; justify-content: space-between;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .card .slug { font-family: "IBM Plex Mono", monospace; font-size: .78rem; font-weight: 500; margin-bottom: 2px; }
+  .card .who { font-size: .74rem; color: var(--muted); margin-bottom: 8px; }
+  .gates { display: flex; gap: 5px; align-items: center; }
+  .gate { width: 10px; height: 10px; border-radius: 3px; }
+  .gate.passed { background: var(--ok); }
+  .gate.failed { background: var(--bad); }
+  .gate.pending { background: var(--pend-soft); border: 1px solid var(--pend); }
+  .gate-label { font-family: "IBM Plex Mono", monospace; font-size: .64rem; color: var(--muted); margin-left: 4px; }
+  .mock-caption { font-size: .8rem; color: var(--muted); margin: 14px 4px 0; }
+
+  /* code blocks */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    line-height: 1.55;
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 20px 0 28px;
+  }
+  pre .c { color: color-mix(in srgb, var(--code-ink) 55%, transparent); }
+  pre .k { color: var(--code-accent); }
+
+  /* build plan */
+  ol.plan { counter-reset: step; list-style: none; padding: 0; margin: 24px 0; }
+  ol.plan > li {
+    counter-increment: step;
+    display: grid; grid-template-columns: 44px 1fr; gap: 16px;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+  }
+  ol.plan > li:last-child { border-bottom: none; }
+  ol.plan > li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 1.4rem; font-weight: 700; color: var(--accent);
+    line-height: 1.2;
+  }
+  ol.plan b { font-weight: 600; }
+  ol.plan p { margin: .25em 0 0; font-size: .92rem; color: var(--muted); }
+
+  ul.reading { list-style: none; padding: 0; margin: 20px 0; }
+  ul.reading li { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .94rem; }
+  ul.reading li:last-child { border-bottom: none; }
+  ul.reading .why { color: var(--muted); font-size: .86rem; }
+
+  .footnote { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Agent studio &middot; build history</p>
+  <h1>Bisellium Progress</h1>
+  <p class="thesis">One row per cascade: what shipped, what it cost, what review found. The model, the plan and the architecture live in the <a href="https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c">dossier</a>.</p>
+</header>
+
+<section>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Cascade</th><th>Shipped</th><th>Agents / tokens / time</th><th>Review found</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1</strong> &middot; 2026-09-17</td><td><code>init</code>, <code>new</code>, <code>context</code>, <code>query</code>; core log + differ + Store; repo tracks itself in <code>studio/</code> (ab126ee, 0bed107)</td><td>10 / 0.9M / 19 min</td><td>4 spec violations, 7 first-hour bugs; verifiers never spawned the CLI</td></tr>
+        <tr><td><strong>1b</strong> &middot; 2026-09-17</td><td>all of the above fixed; CLI spawn tests; Latin contract across code, sample, fixtures, docs (116da92, fac1871)</td><td>13 / 1.5M / 66 min &mdash; the rename alone 361k, 230 calls</td><td>4 regressions (duplicate rule, period-blind burn, hardcoded gate id, <code>--json=false</code>); mechanical rename by hand is the wrong tool</td></tr>
+        <tr><td><strong>2</strong> &middot; 2026-09-18</td><td><code>providers</code> (quota-axi | usage.yml), <code>run</code> (git worktree | treehouse, receipts), <code>verify</code> (local pipeline, tree-certified) (b631a89, 445b494, 5dbf963)</td><td>11 / 1.3M / 51 min</td><td><code>verify</code> replaced gate nodes and certified untested trees; a builder backfilled evidence it never ran; certificates must name the <em>source</em> tree</td></tr>
+        <tr><td><strong>3</strong> &middot; 2026-09-18</td><td><code>talk</code> over harness profiles (Claude Code, Codex, git-only, fake) with the deterministic <code>query</code> path first and <code>PETITIO:</code>/<code>ACTUM:</code> escalation; <code>tick</code> L1 + <code>health.json</code>; <code>pause</code>/<code>resume</code>; <code>handoff</code>, <code>emit</code>, <code>answer</code>, <code>greenlight</code>, <code>budget</code> through one front-matter helper (ac8a3de, 43b175a). <strong>First real direct line:</strong> the Fabri magister answered &ldquo;what is the state of W-009?&rdquo; over the Claude Code CLI; status questions never touched a model.</td><td>15 / 2.1M / 70 min; 263 tests</td><td>Two builders shipped path traversal (unvalidated ids joined into paths) and one wrote an unredacted model reply into a tracked acta &mdash; caught by the first-hour verifiers, fixed before integration. Final review: escalation could be triggered by echoed bundle content; empty session ids resumed; usage limits inferred from reply text; double <code>--ask-back</code> corrupted a petitio.</td></tr>
+        <tr><td><strong>3b</strong> &middot; 2026-09-18</td><td>cleanup of the above, test-first with recorded red; certificates judged only on active opera; <code>source_excludes</code> (a34d018, 9991468)</td><td>1 builder / 0.35M / 35 min; 321 tests</td><td>&mdash;</td></tr>
+        <tr><td><strong>4</strong> &middot; 2026-09-18</td><td>SQLite index over the log with a query API and a snapshot cache; <code>bisellium serve</code> on 127.0.0.1 with JSON routes, SSE, and the Patron&rsquo;s writes over POST; the Claude Code hook profile (<code>hooks print</code>, <code>hook-event</code>, <code>hook.dead</code>) (4405143, 3c23210)</td><td>15 / 3.4M / ~2 h across a usage-limit interruption and a resume; 467 tests; mutation check caught 3/3</td><td>Verifiers: SSE <code>close()</code> hang, wrong log path, unwired flags, receipts written outside the officina from a hook payload, the printed profile never starting a receipt. Final review: the index is dead code because the server re-implements ingest; Patron writes are CSRF-able from the user&rsquo;s own browser (loopback is not authentication); <code>context</code> wired as a hook violates the hook contract (exit codes, timeouts). All mechanical; 4b.</td></tr>
+        <tr><td><strong>4b</strong> &middot; 2026-09-18</td><td>The first run with a spec phase (architect + spec breaker, one revision) and the first retrospectio. Produced: briefs for four opera; <code>CLAUDE.md</code>/<code>AGENTS.md</code>/<code>GLOSSARY.md</code> rendered from one template; <code>.claude/</code> with hooks, sellae as agent definitions, commands; leges rewritten with <code>(check: rule)</code> markers; <code>decisions/</code> D-001&ndash;D-011 and <code>lessons/</code> L-001&ndash;L-014 with the retro actum and the consolidated petitio P-001; <code>bisellium retro</code>; <code>cascades/cascade.js</code>. <strong>It did not integrate</strong>: all of it was left uncommitted in one shared checkout.</td><td>21 / 2.4M / 91 min</td><td>Root cause, named by three agents independently: no per-builder commits or worktrees, so verifiers saw a moving tree, a Censor&rsquo;s restore step destroyed a builder&rsquo;s work, and no <code>tree:</code> certificate could be minted. Second cause: a mid-turn Patron message was relayed into the running agents and several treated it as their instruction and refused their build. Six of seven lesson classes recur across cascades.</td></tr>
+        <tr><td><strong>4c</strong> &middot; 2026-09-19</td><td>Persistence pass, nine commits per area (cb2e754 &hellip; 73e6da0): everything 4b produced is now committed and wired &mdash; <code>instructions</code>, <code>retro</code>, <code>new --spec/--brief</code>, the instructions rule, a real <code>bisellium</code> bin, the hook profile installed in <code>.claude/settings.json</code> with sellae and commands, briefs, D-001&ndash;D-013, the cascade template with <code>sizing.json</code>, <code>emit --usage</code> and the retro&rsquo;s Usage section. Suite green; both officinae 0 blocking.</td><td>1 builder / 0.35M / 38 min</td><td>Opera set honestly: all four <code>halted</code>, none claimed done. W-017 and W-018 meet their briefs but are blocked by the studio&rsquo;s own <code>lint</code> probatio, which has no script because W-019 (repo hygiene, incl. eslint) was never built; W-016 (server security and the core Store) was never built either &mdash; the server still ships CSRF-able Patron writes. Those two are the next cascade&rsquo;s opera, built under the new sizing.</td></tr>
+        <tr><td><strong>5</strong> &middot; 2026-09-19</td><td>First run at D-012 sizing (two opera, one worktree/branch per builder, Sonnet builds, one Opus reviewer per opus), launched from <code>cascades/cascade.js</code> through the Workflow tool. W-016: <code>@bisellium/commands</code> extracted behind re-export shims; core <code>Store</code> an EventEmitter with the SQLite index as the server&rsquo;s read path; POST auth (token + Origin + Content-Type, 413, limit clamps), single-listener SSE with cap and backpressure, <code>path.relative</code> static containment; <code>hook-event context</code> and <code>cwd</code> redaction; the cli&harr;server cycle cut and asserted by a transitive module-graph test. W-019: a real eslint gate, honestly-scoped prettier, read-only CI, docs registry with <code>doc.fields</code>/<code>doc.link</code>, CONTRIBUTING/CHANGELOG, licence petitio P-002 (f52d835 &hellip; da4535a, 3c66190). Both opera <code>done</code> with the studio&rsquo;s first <code>tree:</code> certificates; usage emitted per agent (D-013) and the retro&rsquo;s Usage section carried.</td><td>9 / 1.08M / 77 min; 731 tests; mutation caught (6 FAIL, restored byte-identical)</td><td>Round 2 failed both opera on the recorded-red class (3rd recurrence &rarr; petitio P-003): reds <em>were</em> captured at build time but live in <code>/tmp</code> &mdash; the officina has no per-behaviour red store. Round 3 cleared both on the dispatch-time evidence; W-019 grew tests for <code>lint-fix</code> idempotence and <code>ci.yml</code> shape. New mechanism gaps filed as L-015/L-016: no CLI moves an opus out of <code>halted</code> or into <code>done</code> (stopgap scripts <code>opus-ready</code>/<code>opus-close</code>), and no CLI updates a review gate&rsquo;s evidence path. The instructions generator strips the docs registry&rsquo;s front matter on <code>GLOSSARY.md</code> &mdash; seam conflict for the next cascade.</td></tr>
+        <tr><td><strong>5b</strong> &middot; 2026-09-19</td><td>Close-out pass: W-017 and W-018 reopened (their <code>resume_when</code> &mdash; a runnable lint script &mdash; was satisfied by W-019), re-verified and closed <code>done</code> on <code>tree:272d2d3b</code>. builder-b added the one <code>.gitignore</code> line (<code>.claude/worktrees/</code>) both cascade-5 reviewers flagged, ending the <code>dirty:</code>-certificate class. W-017&rsquo;s round-2 review confirmed cascade 5 invalidated nothing; W-018&rsquo;s round-2 resolved all seven round-1 findings on today&rsquo;s tree &mdash; its own artifacts had since run a full cascade in production (7649991 &hellip; aca7a3f). <strong>All four 4b opera are now done.</strong></td><td>3 / 0.21M / 13 min; 731 tests</td><td>Advisories only: the <code>.claude/settings.json</code> hooks block drifts from the template (integrator&rsquo;s CS-2, only now possible since <code>sella</code> went optional); <code>verify</code>&rsquo;s redaction over-masks lint log paths and rule names; the <code>commands.dir.listing</code> tautology stays a D-010 pruning candidate. The per-behaviour red store stays with the Patron (P-001/P-003).</td></tr>
+        <tr><td><strong>6</strong> &middot; 2026-09-19</td><td>The P-001 decrees as working machinery. W-020: <code>bisellium ready</code>, <code>review --pass|--fail</code> (a fail reopens a <code>done</code> opus), <code>done</code> with its every-gate guard, and <code>red</code> &mdash; the per-behaviour evidence store at <code>ci/reds/&lt;opus&gt;/</code>, produced-by-running only (a command that exits 0 is refused), with <code>--cwd</code> tree attribution; both stopgap scripts deleted. W-021: <code>opus.untracked</code> and <code>opus.red_evidence</code> blocking; D-008's two containment rules built &mdash; landed advisory because the insurance clause fired on a legitimate acta citation (&rarr; P-004). <strong>The lifecycle closed itself</strong>: both opera were opened by <code>ready</code>, evidenced by <code>red</code>, judged by <code>review</code> across six honest rounds, and closed by <code>done</code> (bbddf4d &hellip; af54607).</td><td>29 agent-runs / 2.89M / ~3.4 h; 879 tests; mutation bit (3 assertions); checking/building 0.93</td><td>The hardest cascade yet, on purpose: one voided round (builders dispatched before briefs existed &mdash; the workflow now gates on the spec phase); three real bugs caught by review (missing path containment in <code>ready</code>/<code>review</code>, <code>red</code> certifying the caller&rsquo;s tree, <code>filterEnv</code>&rsquo;s partial <code>GIT_CONFIG_*</code> drop minting false test-reds under the sandbox); import-error logs posing as per-behaviour reds replaced twice before the assertion-level standard held; two self-certified closes rejected; reviewers refused stale round numbers from the orchestrator and renumbered from disk. Eight lessons (L-018&ndash;L-025); P-005 (evidence class, 4th recurrence) and P-007 (path traversal, 3rd) to the Patron; <code>retro.ts</code> skipped P-006 (numbering defect, queued). Engineering hit <em>closeout</em> posture for 2026-W38.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>

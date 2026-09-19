@@ -22,10 +22,11 @@ lex, a decision, or a check rule and delete it here.
   re-verified without asking; judgment (names, scope, lex boundaries, what a
   collegium may decide, licences) goes to the Patron as a petitio. This is the
   no-mistakes auto-fix-versus-escalate split, one level up.
-- **Update the dossier at every checkpoint** (after each cascade and each
-  cleanup commit): Part V "Progress log" row + masthead status. Source:
-  `docs/design/dossier/` (`build.sh`, then republish with the Artifact tool,
-  `url` = the dossier link below).
+- **Update the progress page and dossier masthead at every checkpoint**
+  (after each cascade and each cleanup commit): a row on the Progress page
+  + the dossier's masthead status line. Source: `docs/design/dossier/`
+  (`build.sh` builds both pages; republish each with the Artifact tool at
+  the links below).
 - **Never relay a mid-turn Patron message into a running workflow**; answer
   between cascades. Agents given a relayed question refused their build (4b).
 - Test-first with a recorded red; mechanical work is a script; evidence is
@@ -36,6 +37,10 @@ lex, a decision, or a check rule and delete it here.
 - Dossier: https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c
   (rebuild from `docs/design/dossier/head.html` + `body.html`; patch `body.html`
   with a script, never by hand-editing the built page).
+- Progress log (per-cascade rows, split out of the dossier 2026-09-19):
+  https://claude.ai/code/artifact/Rnk9m3UwfP9uexz57Zw37e — source
+  `docs/design/dossier/progress-body.html`, built by the same `build.sh`.
+  Checkpoints now update the PROGRESS page's row + the dossier masthead.
 - UI design canvas (six screens, Patron-editable; check for external saves
   before republishing): https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f
   — sources in `docs/design/canvas/` (`*.dc.html`, `canvas.json`). Re-seeding
