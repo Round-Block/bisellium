@@ -1,0 +1,256 @@
+# W-030 qa-lead review — round 2 (PR #3)
+# reviewer: qa-lead (Censor)
+# model: claude-opus-5
+# at: 2026-09-20
+# pr: https://github.com/edckt/bisellium/pull/3  (opus/W-030 -> master)
+# commit under review: d3fec62d36bee3b4dddaa4dceee46f71d98383e5
+# master at review time: 0819ea2 (moved since round 1's 0f9090b)
+# prior: studio/ci/W-030-review-1.log (FAIL, round 1)
+# verdict: FAIL
+
+## 0. Harness
+
+$ git worktree add --detach $TMPDIR/w030r2-$$ d3fec62
+$ cp -a <parent>/node_modules <scratch>/node_modules
+$ readlink -f <scratch>/node_modules/@bisellium/shim
+    /tmp/claude-1000/w030r2-2/packages/shim          <- INSIDE the scratch
+  @bisellium/commands      -> <scratch>/packages/commands
+  @bisellium/adapter-native-> <scratch>/adapters/native
+All three resolve inside the worktree. Every result below is d3fec62's code.
+Working tree `git status --porcelain` empty before and after every mutation.
+
+Cleanup: stale `.git/worktrees/pr3` admin dir left by a previous reviewer
+found and pruned; my own scratch removed.
+
+## 1. B1 — the misfiled W-028 reds: CLOSED
+
+$ git ls-tree d3fec62 --name-only studio/ci/reds/W-028/
+$ git ls-tree master  --name-only studio/ci/reds/W-028/
+  Both: 17.log 18.log 19.log 21.log check-real-officina.log
+        close-bugs-{green,red}.log review-tier-{green,red}.log
+  Identical. 22/23/24 present in neither.
+$ git ls-tree -r d3fec62 --name-only | grep -E 'W-028/(22|23|24)'  -> NONE
+
+Removed on d3fec62 (-75 lines). The merge no longer writes them to the trunk.
+CLOSED.
+
+## 2. B2 — lifecycle and certificates: the hashes are right, the gate set is not
+
+RECOMPUTED, not trusted. Replicating shim/src/sourceTree.ts's algorithm
+(sha1 over `git ls-tree -r <ref>` lines, excluding studio/, .bisellium/, and
+the manifest's source_excludes: [examples/]) in plain shell:
+
+$ git ls-tree -r <ref> | grep -v -E '^[^\t]*\t(studio/|\.bisellium/|examples/)' \
+    | sha1sum
+    d3fec62  3df97d7e8894aecf7b1c08479de57f1f0ac98d9c
+    165358f  3df97d7e8894aecf7b1c08479de57f1f0ac98d9c
+    master   31ec6d0dc48419d414376a0bfb9762b4a3b164b1
+
+The front matter's tree:3df97d7e8894aecf7b1c08479de57f1f0ac98d9c is exactly
+the branch's source tree, and master's is different. The orchestrator's
+reasoning for verifying on the branch rather than master is correct and the
+hash is genuine.
+
+Corollary worth having: 165358f and d3fec62 have the SAME source hash — the
+new commit touches studio/ only. Every source-level result in round 1 (the
+50-cell pointer matrix, M1-M10) therefore carries over byte-identically and
+did not need re-running. Spot-checked anyway: qa-lead / builder-a / eng-lead
+at --max-tokens 600 all PRESENT.
+
+GATES RE-RUN on the scratch worktree:
+  $ npm test              exit 0 · 1104 PASS · 0 FAIL   (certificate: 1104, exact)
+  $ npm run -s typecheck  exit 0
+  $ npm run -s lint       exit 0 (2 pre-existing warnings)
+The three certificate logs carry the right `certifies:`, command and exit code.
+
+WHAT IS NOT FIXED — the gate set is 4 of 5, and check gets worse:
+
+(a) The manifest declares five probationes: tests, lint, types, spec, review.
+    d3fec62's W-030.md carries four. `review` is absent.
+    lifecycle.ts:195-214 (`done`) requires every agent gate `passed`/`waived`;
+    `review` is kind: agent. `bisellium done W-030` on this branch refuses
+    with "gates not passed: review". `mergeOpusBranch` refuses unless done.
+    The opus cannot reach a mergeable state from this branch.
+
+(b) The round-1 review verdict is on MASTER, not the branch:
+    $ git show master:studio/opera/W-030.md
+        state: backlog
+        probationes: { review: { status: failed, evidence: ci/W-030-review-1.log,
+                                 at: 2026-09-19T16:08:28.946Z } }
+    $ git show d3fec62:studio/opera/W-030.md
+        state: building
+        probationes: { spec …16:10:31, tests, lint, types }
+    Two minutes apart, in two different checkouts, neither seeing the other.
+    $ git merge-tree --write-tree master d3fec62
+        CONFLICT (content): Merge conflict in studio/opera/W-030.md
+    This is why the PR reports mergeable: UNKNOWN. Resolving it branch-wins
+    erases the round-1 FAIL from the trunk; resolving it master-wins erases
+    the four certificates.
+
+(c) The PR introduces a NEW blocking check finding.
+    $ bisellium check studio --repo .   (branch)  FAIL — 10 blocking, 77 advisory
+    $ bisellium check studio --repo .   (master)  FAIL —  9 blocking
+    diff:  + traditio.present  opera/W-030.md  active item (building) has no handoff
+           ~ wip.cap           5 items in progress -> 6, cap is 4
+    Round 1 passed this PR's check posture on the stated ground that it
+    "introduces no new blocking finding". It now does — a direct consequence
+    of the B2 fix moving the opus to `building` without a handoff.
+    Fix: `bisellium handoff --opus W-030 --sella ...`. One command.
+
+    Good news in the same run: `opus.red_evidence` does NOT fire for W-030.
+    evidence.ts:25 ACTIVE = {building, verifying, review}, so the rule now
+    evaluates the opus and the six reds satisfy it. That half of round 1's
+    B2 is genuinely closed.
+
+## 3. Mutation (mine) — M11/M12/M13, promoting round-1 A1
+
+Round 1 found two isolated survivors (a template literal, a `: string`
+annotation) and called the gap advisory. I set out to measure the class
+rather than the instances. Script kept at the mutation harness path below.
+
+M11 — annotate EVERY usage constant with `: string` and drift it.
+     27 constants annotated across 14 files.
+     $ node --import tsx packages/commands/src/usage.test.ts .
+       FAIL  scan found at least one per-command usage constant
+       exit 1                                               CAUGHT
+     The guard's only backstop fires when ALL constants vanish.
+
+M12 — same, but leave pause.ts's two constants intact so `sawAny` holds.
+     25 constants annotated and drifted
+     ("bisellium " -> "bisellium-DRIFTED ", "--studio <dir>" -> "--STUDIO-DRIFTED <dir>")
+     $ node --import tsx packages/commands/src/usage.test.ts .
+       PASS  packages/commands/src/pause.ts:USAGE_PAUSE line in USAGE
+       PASS  packages/commands/src/pause.ts:USAGE_RESUME line in USAGE
+       PASS  scan found at least one per-command usage constant
+       exit 0                                               SURVIVED
+     30 checks became 2. 93% of the guard's coverage disappeared, silently.
+
+M13 — the decisive one. Same, but also leave lifecycle.ts intact, because
+     four pre-existing cli.test.ts assertions (ready/done/review/red) compare
+     that file's usage text literally and would otherwise do the catching.
+     21 constants annotated and drifted.
+     $ npm test                exit 0 · 1080 PASS · 0 FAIL  SURVIVED
+     $ npm run -s typecheck    exit 0                       (`: string` is valid TS)
+     The whole regression suite is green. The PASS count silently drops
+     1104 -> 1080: 24 assertions evaporated and nothing said so.
+
+     And the drift is user-visible, not cosmetic:
+     $ bisellium close
+       usage: bisellium-DRIFTED close <opus-id> --STUDIO-DRIFTED <dir> [--repo <dir>]
+     $ bisellium          (the banner, undrifted)
+              bisellium close <opus-id> --studio <dir> [--repo <dir>]
+     Per-command help and the banner now disagree — the exact divergence
+     behaviour 5 exists to prevent — with npm test, typecheck and lint green.
+
+THE PROPOSED FIX, EXECUTED:
+     let sawAny = false        -> let seen = 0
+     sawAny = true             -> seen++
+     check("scan found at least one …", sawAny)
+       -> check("scanned every known usage constant", seen === 30, `${seen}`)
+     clean tree : PASS  scanned every known usage constant   30
+     under M13  : FAIL  scanned every known usage constant    6   exit 1
+     Three lines, no new file, catches the whole class. Confirmed by running it.
+
+## 4. The four advisories — round-2 rulings
+
+A1 (guard skips what it cannot parse) — PROMOTED TO BLOCKING. In THIS PR.
+    New evidence moved it: round 1 had two isolated survivors, M13 has 21
+    constants drifting user-visibly past a fully green suite. D-010 already
+    decrees "a test that cannot fail is not evidence". Behaviour 5 IS this
+    opus's deliverable; a guard whose coverage can fall from 30 to 2 without
+    a word delivers the appearance of behaviour 5, not behaviour 5. That is
+    the same defect this PR's own commit message indicts in the test it
+    replaced ("its test passed because the fixture lex is ~200 tokens") —
+    a check pinned to nothing. Shipping it and filing a follow-up opus would
+    put the officina's oldest finding class back in the trunk in the PR
+    written to close it. Three lines, already proven above.
+
+A2 (undeclared paths) — ADVISORY, take it here, cheap.
+    $ git diff --stat master...d3fec62 -- packages/
+      packages/commands/src/index.ts | 1 +
+    Confirmed in the diff, named in no list. briefs/W-030.md's "Files owned"
+    bullets (lines 28-35) list eight paths; pause.ts / serve.ts / tick.ts are
+    in the prose at lines 37-41, not the bullets. No `probatio.declared` rule
+    exists yet, so nothing fails today — this is only cheap now and annoying
+    later. Brief edit, no code, no gate re-run.
+
+A3 (30 of 34 banner lines) — ADVISORY, brief text only. Measured:
+    banner lines: 34
+    commands with a backing constant (from the guard's own output): 30
+    uncovered: check, init, context, query — exactly the four whose flags
+    live in main.ts's FLAGS_BY_COMMAND. The brief's "Out of scope" (lines
+    80-83) says "Reconciling USAGE against the parseFlags allowlists" but
+    never says the consequence is 4 uncovered banner lines. One sentence.
+    NOT blocking: it is an honest limit of a scoped feature, and unlike A1
+    the covered 30 are genuinely covered.
+
+A4 (behaviour 6's red covers 3 of 4) — ADVISORY, confirmed verbatim.
+    studio/ci/reds/W-030/06.log, last four lines:
+      FAIL  no args: prints banner, exits 2            status=2
+      FAIL  unknown command: prints banner, exits 2    status=2
+      PASS  unknown flag: prints banner, exits 2       status=2
+      FAIL  --help: prints banner, exits 2             status=2
+    Round 1's reading is exact. The behaviour as a whole went red so the red
+    conforms to the W-020 contract; one of its four assertions has never been
+    shown to fail. Not worth a re-record of an already-conforming red.
+
+## 5. Merge preconditions that are NOT this opus's defect
+
+D-015's named-and-unsolved gap is live on this PR and should be stated with
+numbers before anyone merges, not discovered after:
+
+  $ git merge-base --is-ancestor master d3fec62   -> NOT an ancestor
+  $ git log --oneline d3fec62..master
+      0819ea2 style: format scripts/gemini.mjs
+      95a0045 docs: open W-032
+  $ git diff --stat d3fec62...master -- . ':!studio' ':!examples'
+      scripts/gemini.mjs | 5 ++++-
+
+Master has moved under a SOURCE path since verify ran. tree:3df97d7e is the
+branch's tree; it is not the tree that ships. D-015 records that
+`probatio.certifies.stale` cannot catch this (scoped to ACTIVE opera, while
+merge demands `done`) and that the question is open. Nothing in W-030 caused
+this and W-030 should not be made to solve it — but the re-verify after
+rebase is a manual step someone has to take, and this PR is where it bites.
+
+## 6. Not a defect
+
+Round 1 §9 stands and nothing in d3fec62 touches it (identical source tree).
+The three automated certificates are honest: right hash, right command, right
+exit code, and I reproduced all three green. The orchestrator's account of
+both fixes is accurate in every particular I checked, including the one it
+volunteered against itself (that A1 was left unfixed).
+
+## 7. Verdict
+
+FAIL — round 2.
+
+Round 1's two blocking findings are fixed, and I proved it by recomputation
+rather than by reading the front matter: the misfiled reds are gone from the
+branch tree, and tree:3df97d7e is provably the branch's own source hash.
+
+What fails is one thing I got wrong in round 1 and one thing the fix created:
+
+  - A1 was not an advisory. 21 usage constants can drift user-visibly past a
+    1080-PASS green suite (M13). That is D-010's "a test that cannot fail is
+    not evidence", against this opus's own headline behaviour. Three lines,
+    executed and confirmed, in this PR.
+  - the branch now carries a blocking `traditio.present` on W-030 that master
+    does not, it holds 4 of 5 declared gates, and its opus record conflicts
+    with master's copy of the same file.
+
+To pass:
+  - pin the scanned-constant count in usage.test.ts (three lines; verified
+    above to read 30 clean and FAIL at 6 under M13);
+  - `bisellium handoff --opus W-030 --sella <id> --next <text>` so the branch
+    stops adding a blocking finding to the trunk;
+  - reconcile studio/opera/W-030.md with master's copy so the merge does not
+    choose between the round-1 verdict and the four certificates;
+  - (advisory) move pause/serve/tick into the brief's Files-owned bullets,
+    add packages/commands/src/index.ts, and name the 4 uncovered banner
+    lines in Out of scope.
+
+Round 1 closed on "the code is fine and the evidence does not say what it
+claims to say". Round 2 is narrower and sharper: the code is fine, the
+evidence about the code is now true — and the test that is supposed to keep
+it true can be made to check almost nothing without anyone noticing.

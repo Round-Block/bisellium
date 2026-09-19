@@ -1,0 +1,232 @@
+review: W-031 (local CI: run the pipeline and record evidence without a runner) — round 1
+sella: qa-lead
+model: claude-opus-5
+verdict: FAIL
+subject: PR #4, branch opus/W-031 -> master, at 60bc385
+        "chore(W-031): enter the lifecycle before the PR"
+        on 59e7e29 "feat(ci): bisellium ci — run the pipeline locally, without a runner"
+        on 0819ea2 (master)
+
+Everything below was executed, not read off the diff. Scratch worktree at
+/tmp/claude-1000/w031r1-2 (uniquely named), detached at 60bc385, with its
+own `npm ci` — `readlink -f node_modules/@bisellium/shim` =
+/tmp/claude-1000/w031r1-2/packages/shim, checked before any run. Every
+mutation was applied in that worktree and reverted from a backup copy;
+`git status --porcelain` was empty at the end and the suite green again.
+The real origin was never pushed to. The real officina was never written
+to except by this log and `bisellium review`; the one `verify` run below
+was aimed at a throwaway copy of studio/ under $TMPDIR.
+
+Base state (worktree at 60bc385)
+--------------------------------
+  bisellium ci (no flags)     40.6s wall, exit 1 at step 5
+    step 1 npm run -s typecheck        pass
+    step 2 npm run -s lint             pass
+    step 3 npm run -s format:check     pass
+    step 4 npm test                    pass (no FAIL lines in 2234 lines of output)
+    step 5 npm run -s check -- studio --repo .        FAIL — 10 blocking, 78 advisory
+    step 6 npm run -s check -- examples/sample-studio not reached
+    stderr: bisellium ci: step failed (exit 1): npm run -s check -- studio --repo .
+  git status --porcelain before/after the run: byte-identical (behaviour 6
+  confirmed on the real repo, not only on the fixture)
+
+  node scripts/ci-workflow.test.mjs   exit 0, 10 PASS
+
+Behaviour 7 — the drift guard. VERIFIED SOUND.
+----------------------------------------------
+Broken in both directions and in two extra ways, each from the restored
+baseline:
+  A baseline                                       exit 0
+  B step appended to CI_STEPS only (ci.ts)         exit 1, FAIL names both lists
+  C step appended to ci.yml only                   exit 1, FAIL names both lists
+  D typecheck/lint swapped in CI_STEPS only        exit 1 (order is guarded, not just membership)
+  E ci.ts made syntactically invalid               exit 1, FAIL with `ci.ts: []` —
+    the child-process indirection fails CLOSED. A module-load failure is
+    reported through check() as a FAIL, never a silent green, never an
+    unhandled throw that skips the comparison.
+  F restored                                       exit 0
+The `node --import tsx -e` child is the right call, not fragile: this
+script runs under plain node, the repo's ".js"-specifier-for-".ts"-source
+convention needs tsx to resolve, and the only alternative — a second copy
+of the list inside the guard — is the exact drift the guard exists to
+prevent. Residual nit, fail-closed, not blocking: the workflow side
+filters with `line !== "npm ci"` (exact match), so `- run: npm ci
+--no-audit` in ci.yml would raise a false red. Wrong direction is the safe
+direction, but `startsWith("npm ci")` would cost nothing.
+
+Behaviour 4 — is --ref watertight? YES. VERIFIED BY MUTATION.
+-------------------------------------------------------------
+gitWorktreeProvider puts the scratch checkout at
+<repo>/.bisellium/worktrees/ci-<n> — INSIDE the parent checkout — so node's
+upward resolution really does reach the parent's node_modules. The trap is
+real and the real `npm ci` is what closes it.
+
+  M1  `(opts.installDeps ?? defaultInstallDeps)(execRepo)` replaced by a no-op
+      behaviour 3  PASS  (ref=0 workingTree=1)
+      behaviour 4  FAIL  (ref=1 workingTree=1)
+      Behaviour 4 catches what behaviour 3 cannot. The install is
+      load-bearing and the test proves it.
+
+  M2  `execRepo = worktree.path` replaced by `resolve(repoFlag ?? ".")`
+      behaviour 3  FAIL  (ref=1 workingTree=1)
+      behaviour 4  FAIL  (ref=1 workingTree=1)
+      Both bite; no other behaviour moved.
+
+Behaviour 5 — is the front-matter diff meaningful? YES.
+-------------------------------------------------------
+  M3  verifyArgs reduced from [opusId, "--repo", execRepo, "--allow-dirty"]
+      to [opusId, "--allow-dirty"]
+      behaviour 5  FAIL (byte diff on the two opus files); 1,2,3,4,6 unmoved.
+      The diff is not vacuous — it detects a certificate naming a different
+      tree, which is precisely the class of error it is there for.
+
+Flag handling
+-------------
+  bisellium ci --bogus            -> unknown flag "--bogus" + usage
+  bisellium ci studio             -> unexpected argument "studio" + usage
+  bisellium ci --ref does-not-exist-ref
+                                  -> named acquire failure, no worktree left behind
+
+FINDING 1 (BLOCKING) — `--ref` + `--opus` mints a certificate over the
+officina's own bookkeeping, with a wrong tree hash, silently.
+----------------------------------------------------------------------
+packages/commands/src/ci.ts forwards `--repo <scratch worktree>` to
+runVerify while `--studio` still resolves against the CALLER's cwd. In
+verify.ts the exclusion list is built as
+
+    toPosixRelative(repo, studioDir)
+
+i.e. relative to the repo it was handed. On the `--ref` path that repo is
+the scratch worktree and the studio is outside it, so the exclusion comes
+out as `../../../home/edckt/projects/bisellium/studio` — which matches
+nothing in `git ls-tree` of the worktree. The worktree's own `studio/`
+subtree is therefore hashed INTO the certificate.
+
+Measured, at 60bc385:
+
+  exclude when --repo is the real repo : ["studio",".bisellium"]
+  exclude when --repo is the worktree  : ["../../../home/edckt/projects/bisellium/studio",".bisellium"]
+
+  sourceTreeHash(worktree, ["studio",".bisellium","examples/"], HEAD)
+      = 6dd3b180be9702da73bec3c928c5eebd73e65293   <- correct; equals what
+        the branch's own tests/lint/types certificates carry, and equals
+        sourceTreeHash(real repo, same excludes, 59e7e29)
+  sourceTreeHash(worktree, ci --ref's excludes,      HEAD)
+      = 0cb99d4d6759dbc388cde1cdd40402b17d9559c9   <- what ci --ref --opus writes
+
+Confirmed end to end by running the exact argument vector runCi builds,
+against a throwaway copy of studio/ so the real officina was untouched:
+
+  node --import tsx packages/cli/src/main.ts verify W-031 \
+      --repo /tmp/claude-1000/w031r1-2 --allow-dirty --studio $TMPDIR/studiocopy
+
+  probationes: { tests: { ... certifies: tree:0cb99d4d6759dbc388cde1cdd40402b17d9559c9 }, ... }
+
+Consequences:
+  - Direct breach of the standing rule "A certificate names the source
+    tree, not the officina's own bookkeeping." The hash moves whenever any
+    opus front matter, ci log or receipt is committed.
+  - The prefix is `tree:`, not `dirty:` — it looks authoritative.
+  - It can never match what `verify` or `check` computes for the same
+    commit, so the certificate is stale from the instant it is written.
+  - Behaviour 5's spec sentence ("records gate certificates identical to
+    what verify would record for the same tree") is FALSE on this path.
+    The behaviour-5 test only ever exercises the current-tree path; no test
+    combines `--ref` with `--opus`, which is the combination the brief's
+    Acceptance paragraph describes ("a QA agent reviewing a PR runs one
+    command"). Nothing in the code or the usage line forbids it.
+  - No warning, no refusal. It writes real officina bookkeeping.
+
+The fix is small — on the `--ref` path the exclusion has to be computed
+against the repo whose tree is being hashed, e.g. by pointing verify at the
+worktree's own studio, or by passing the studio as a repo-relative path —
+but it needs a test that runs `--ref` and `--opus` together and compares
+the hash against a plain `verify` of the same commit.
+
+FINDING 2 (must fix, same line of code) — `--allow-dirty` is hardcoded.
+-----------------------------------------------------------------------
+    const verifyArgs = [opusId, "--repo", execRepo, "--allow-dirty"];
+
+A caller of `bisellium ci --opus <id>` on a dirty tree gets `dirty:<hash>`
+certificates where `bisellium verify <id>` would have exited 2 and written
+nothing. That refusal is the guard adopted after cascade 4b — "a
+certificate is a claim about what was actually run" (verify.ts) — and `ci`
+removes it with no way to ask for it back. Behaviour 5's equality claim is
+false here too, and the behaviour-5 fixture never exercises it (its repo is
+committed clean, so `dirty` is false on both sides and the two runs agree
+for the wrong reason). On the `--ref` path the flag is not needed at all: a
+fresh checkout plus a gitignored node_modules is clean. Either drop it or
+surface it as an explicit `bisellium ci --allow-dirty`.
+
+FINDING 3 (advisory) — behaviour 4's red does not demonstrate behaviour 4.
+--------------------------------------------------------------------------
+reds/W-031/03.log and 04.log carry byte-identical assertion details
+(`ref=1 workingTree=1`) and are both reproduced exactly by one mutation,
+M2 above. The mutation that separates behaviour 4 from behaviour 3 — skip
+the install, borrow the parent's node_modules — is M1, and it was never
+recorded. Behaviour 4 is this opus's load-bearing claim; its red should be
+the one that only it can catch. The test is fine (M1 proves it bites); the
+evidence is thin. Related tool gap, not the builder's: `bisellium red`'s
+header has no field for the mutation, so no red log in this officina
+states what was broken.
+
+FINDING 4 (advisory) — smaller things
+--------------------------------------
+  a. A step killed by STEP_TIMEOUT_MS (10 min) returns status null ->
+     `r.status ?? 1`, and is reported as an ordinary step failure. A
+     ten-minute hang and a real red are indistinguishable in the output.
+  b. `opts.provider ?? selectProvider()` — every test injects
+     gitWorktreeProvider, so the production default is uncovered. treehouse
+     is not on PATH here, so `--ref` took the git path throughout. Same
+     shape as `bisellium run`, so consistent with the house, but noted.
+  c. `bisellium ci` is not in CLAUDE.md's Commands list, docs/, or
+     .claude/commands/ on this branch. W-030 exists to make the CLI
+     discoverable; a command whose whole purpose is that reviewers stop
+     hand-building worktrees should be findable without reading main.ts.
+  d. When step 5 blocks, `ci --opus` gives no hint that `bisellium verify
+     <id>` is the single-opus route. One line of stderr would save a
+     reviewer the deduction.
+
+Lifecycle — CORRECT. W-030's round-1 failure is not repeated.
+--------------------------------------------------------------
+  spec gate recorded  2026-09-19T16:28:45.313Z (sella qa-lead, evidence briefs/W-031.md)
+  lifecycle commit    2026-09-19T16:30:24Z  (60bc385)
+  PR #4 created       2026-09-19T16:30:53Z
+  state: building; probationes carries spec + tests + lint + types.
+  tests/lint/types all certify tree:6dd3b180be9702da73bec3c928c5eebd73e65293,
+  which I recomputed independently from the branch's own source tree — it
+  matches 60bc385 and 59e7e29 (studio/ is excluded, so the lifecycle commit
+  does not move it). The certificates name the tree the branch ships.
+  The three evidence logs ship with the PR, are non-empty, redacted, and
+  record exit code 0 with the same hash.
+
+Reds — 7 files, 7 distinct assertion-level failures, no module-load errors,
+no duplicate assertions. 01 reversed order, 02 no early stop, 03/04 the
+worktree bypass (see finding 3), 05 a front-matter diff, 06 bookkeeping
+written without --opus, 07 an extra step in CI_STEPS only. All exit 1.
+
+The --opus strictness question — CORRECT AS BUILT. Do not soften it.
+---------------------------------------------------------------------
+First, a correction to the premise: the 10 blocking findings are NOT all
+other opera's. `traditio.present opera/W-031.md — active item (building)
+has no handoff` is W-031's own, and W-031 is one of the 6 items putting
+`wip.cap` over 4. Two of the ten are this opus's.
+
+Second, on the principle. Step 5 is `npm run -s check -- studio --repo .`
+because that is the line in ci.yml. Scoping it to one opus would require a
+second, opus-aware check path — a second source of truth for what "green"
+means, which is exactly what behaviour 7 exists to forbid. And the rules
+that fire here are collective by construction: `wip.cap` is a statement
+about the officina, not about an opus; `lesson.recurrent` is about the
+corpus. "Another opus's missing red is not my problem" is the reasoning
+those rules were written to overrule.
+
+Third, the division of labour is already right and already documented by
+this opus's own gates: `verify <opus>` runs what the manifest declares for
+one opus and mints its certificates; `ci` reproduces the runner, and the
+runner has never cared whose finding it is. The escape hatch exists, is
+narrower, and is the one W-031 itself used.
+
+Coarse, yes. Correct, also yes. The only change worth making is finding
+4(d) — say so in one line of stderr instead of leaving the reviewer to
+work it out.
