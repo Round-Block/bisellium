@@ -9,9 +9,9 @@ collegia:
   - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md }
   - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md }
 sellae:
-  - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-4-6 }
-  - { id: architect, collegium: design, kind: agent, model: claude-opus-4-6 }
-  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-4-6 }
+  - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5 }
+  - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
   - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: builder-b, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5 }
