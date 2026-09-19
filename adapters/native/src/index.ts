@@ -97,12 +97,21 @@ export interface FrontMatter<T> {
   raw: string;
 }
 
-export function readFront<T>(path: string): FrontMatter<T> {
-  const raw = readFileSync(path, "utf8").replace(/^﻿/, "");
-  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
-  if (!m) throw new Error(`${path}: missing front matter`);
+/** Parses a front-matter document already in memory — the same shape
+ *  `readFront` reads off disk, reused by a caller that gets the raw text
+ *  from somewhere else (e.g. `git show <ref>:<path>`, packages/cli/src/
+ *  branch.ts B5.1) instead of the filesystem. `label` is only used in the
+ *  thrown error message. */
+export function parseFrontMatter<T>(raw: string, label = "<content>"): FrontMatter<T> {
+  const stripped = raw.replace(/^﻿/, "");
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(stripped);
+  if (!m) throw new Error(`${label}: missing front matter`);
   const data = (parseYaml(m[1] ?? "") ?? {}) as T;
-  return { data, body: (m[2] ?? "").trim(), raw };
+  return { data, body: (m[2] ?? "").trim(), raw: stripped };
+}
+
+export function readFront<T>(path: string): FrontMatter<T> {
+  return parseFrontMatter<T>(readFileSync(path, "utf8"), path);
 }
 
 export function listMd(dir: string): string[] {

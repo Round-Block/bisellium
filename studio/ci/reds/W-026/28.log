@@ -1,0 +1,11 @@
+# behaviour: 28
+# command: node --import tsx packages/cli/src/branch.test.ts . 28
+# exit: 1
+# at: 2026-09-19T17:05:51.304Z
+# sella: builder-a
+# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+
+FAIL  absence rule: an automated gate with no recorded tree: certificate refuses, not passes undefined
+FAIL  master untouched                                             c5b971c feat: add feature, never verified
+52c6a71 studio bookkeeping: open W-101
+0c06b59 init

@@ -1,0 +1,9 @@
+# behaviour: 9
+# command: node --import tsx packages/cli/src/branch.test.ts . 9
+# exit: 1
+# at: 2026-09-19T17:14:51.757Z
+# sella: builder-a
+# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+
+FAIL  refuses a clean-but-diverged merge (ff-only)                 undefined
+FAIL  names divergence, not a conflict                             undefined
