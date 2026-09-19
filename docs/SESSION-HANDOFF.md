@@ -89,14 +89,15 @@ lex, a decision, or a check rule and delete it here.
   officinae 0 blocking.
 - **Cascade 8** (6 commits): visual pass, process fixes (`standing_rules`,
   check rules, screen map, review prompt, inbox click-to-select).
-- **Cascade 9 landed** (3 commits, pushed to origin):
-  - W-026 complete: `createOpusBranch`, `mergeOpusBranch`, `opusBranchName`
-    with 7-behaviour integration test suite
-  - CLI: `bisellium branch`/`bisellium merge` commands wired
-  - `bisellium run --opus <id>` forks worktree from opus branch
+- **Cascade 9** (3 commits): W-026 complete — per-opus branching,
+  `bisellium branch`/`merge`, `run --opus`.
+- **Cascade 10 landed**:
+  - W-028 first deliverable: `process.checkpoint` check rule — fires when
+    an opera file changes without a handoff/dossier update in the same commit.
+    `checkpointStale` pure function + 6 new behaviours.
 - **Backlog (priority order)**:
-  1. **W-028** — patron-as-agent: automated merge, push, cascade
-     orchestration. The producer sella drives without a human in the loop.
+  1. **W-028** (building) — patron-as-agent: `bisellium close` command,
+     fully autonomous patron sella. checkpoint rule landed.
   2. **W-027** — container lifecycle: prune, cleanup, disk-aware cascade
      start. Needed once parallel workstreams run.
   3. W-022 — evidence content rules (P-005)

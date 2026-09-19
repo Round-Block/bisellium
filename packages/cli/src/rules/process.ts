@@ -48,6 +48,13 @@ export function tddViolation(files: string[]): boolean {
   return hasSource && !hasTest;
 }
 
+const isOpera = (f: string): boolean => /opera\//.test(f);
+const isCheckpoint = (f: string): boolean => f === "docs/SESSION-HANDOFF.md" || f.includes("dossier/progress-body.html") || f.includes("dossier/body.html");
+
+export function checkpointStale(files: string[]): boolean {
+  return files.some(isOpera) && !files.some(isCheckpoint);
+}
+
 export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   const findings: Finding[] = [];
   const add = (rule: string, level: Level, where: string, message: string) => findings.push({ rule, level, where, message });
@@ -162,14 +169,15 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     );
   }
 
-  // process.tdd (advise): the most recent commit changed source code
-  // without changing any test file.
   if (_opts.repo) {
     try {
       const raw = execSync("git diff --name-only HEAD~1 HEAD", { cwd: _opts.repo, encoding: "utf8" });
       const files = raw.trim().split("\n").filter(Boolean);
       if (tddViolation(files)) {
         add("process.tdd", "advise", "HEAD", "last commit changed source code without a corresponding test change");
+      }
+      if (checkpointStale(files)) {
+        add("process.checkpoint", "advise", "HEAD", "last commit changed opera without updating SESSION-HANDOFF.md or dossier progress");
       }
     } catch {
       // no git, shallow clone, or initial commit — skip silently

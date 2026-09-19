@@ -4,7 +4,7 @@
  * advisory. Pure function test — no git, no temp dirs.
  */
 
-import { tddViolation } from "./process.js";
+import { tddViolation, checkpointStale } from "./process.js";
 
 let failed = 0;
 const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
@@ -53,6 +53,41 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
 {
   const files = ["apps/web/src/components/w025.css"];
   check(7, "css-only commit is not a violation", tddViolation(files) === false, String(tddViolation(files)));
+}
+
+// behaviour 8: opera changed without handoff is stale
+{
+  const files = ["studio/opera/W-026.md", "packages/cli/src/branch.ts"];
+  check(8, "opera changed without handoff is stale", checkpointStale(files) === true, String(checkpointStale(files)));
+}
+
+// behaviour 9: opera and handoff both changed is not stale
+{
+  const files = ["studio/opera/W-026.md", "docs/SESSION-HANDOFF.md", "packages/cli/src/branch.ts"];
+  check(9, "opera + handoff is not stale", checkpointStale(files) === false, String(checkpointStale(files)));
+}
+
+// behaviour 10: only handoff changed is not stale
+{
+  const files = ["docs/SESSION-HANDOFF.md"];
+  check(10, "handoff-only is not stale", checkpointStale(files) === false, String(checkpointStale(files)));
+}
+
+// behaviour 11: docs-only commit (no opera) is not stale
+{
+  const files = ["docs/ARCHITECTURE.md", "README.md"];
+  check(11, "docs-only is not stale", checkpointStale(files) === false, String(checkpointStale(files)));
+}
+
+// behaviour 12: empty file list is not stale
+{
+  check(12, "empty is not stale", checkpointStale([]) === false, String(checkpointStale([])));
+}
+
+// behaviour 13: progress page counts as checkpoint update
+{
+  const files = ["studio/opera/W-026.md", "docs/design/dossier/progress-body.html"];
+  check(13, "opera + progress page is not stale", checkpointStale(files) === false, String(checkpointStale(files)));
 }
 
 process.exit(failed ? 1 : 0);
