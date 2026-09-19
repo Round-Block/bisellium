@@ -1,0 +1,305 @@
+review: W-026 (parallel workstreams: per-opus branching) — round 5
+sella: qa-lead
+model: claude-opus-5
+verdict: FAIL
+subject: PR #2, branch opus/W-026 -> master, at a7d3d50
+        "chore(W-026): re-verify on the rebased tree"
+        on f6af13b "fix(merge): the stale-certificate refusal now holds on every run"
+        on 72fa5af (the round-4 subject, rebased)
+
+Everything below was executed, not read off the diff. Scratch worktree at
+/tmp/claude-1000/qa5-w026-censor/wt (uniquely named, no shared $TMPDIR path),
+node_modules relinked so every @bisellium/* resolves INTO the worktree
+(readlink -f node_modules/@bisellium/{shim,cli,core,adapter-native} checked
+before any run). Labs are throwaway repos with bare "origin"s under the same
+scratch root. The real origin was never pushed to.
+
+Base state (worktree at a7d3d50)
+--------------------------------
+  npm test                 exit 0, 1106 PASS, 0 FAIL   (1096 at round 4)
+  npm run -s typecheck     exit 0
+  npm run -s lint          0 errors, 2 warnings (close.test.ts execSync,
+                           tick.test.ts opts) — both pre-existing, neither
+                           in W-026's files
+  branch.test.ts .         69 PASS, 0 FAIL   (59 at round 4)
+  check studio --repo .    8 blocking, 74 advisory — the same 8 as round 4
+                           (traditio.present x5, wip.cap, opus.red_evidence
+                           for W-027/W-028). W-026 raises none of them.
+
+Gates — the recorded certificates are honest
+--------------------------------------------
+Recomputed independently rather than trusting the logs:
+  sourceTreeHash(a7d3d50, ["studio", ".bisellium", "examples/"])
+    = 7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+  sourceTreeHash(f6af13b, same) = 7496efcc...  (a7d3d50 is bookkeeping-only,
+    and studio/ is excluded — the hashes agreeing is the correct result)
+  sourceTreeHash(origin/master, same) = 31ec6d0d...
+All three recorded gates (tests, lint, types) on the BRANCH's copy of
+studio/opera/W-026.md certify tree:7496efcc..., which is exactly what the
+branch ships. No inconsistency. That part is self-consistent.
+
+ROUND-4 B1.4 — CLOSED. The retry no longer lands.
+--------------------------------------------------
+This was the one thing that had to hold, and it holds. Same lab shape as
+round 4's lab3, real CLI, nothing done between invocations:
+
+  lab3 (local only, strategy rebase, studio inside the repo, certificate
+  tree:deadbeef... on gate "tests"):
+    merge #1 -> "opus/W-900 was rebased onto master — ... certifies
+                 tree:deadbeef..., which no longer matches the rebased tree
+                 (tree:84b819e3...); check out opus/W-900 and re-run
+                 'bisellium verify W-900' there, then retry the merge"  exit 1
+    merge #2 -> "opus/W-900's tree no longer matches its certificate — ..."
+                                                                       exit 1
+    merge #3 -> same                                                   exit 1
+    master: 2 commits (init, trunk moved). opus/W-900 still present.
+    Certificate untouched.
+  The second and third runs take the non-rebased wording, which is the
+  `rebased` parameter doing its only job. Correct.
+
+  lab4 (the studio's own configured flow: rebase + push + pull_after_push +
+  pr.required, live bare origin, the opus branch pushed BEFORE the trunk
+  moved — the PR-already-open case):
+    merge #1/#2/#3 all exit 1. Across all three runs
+      origin opus/W-900 stayed 6c7ab31 (its pre-rebase tip),
+      origin master stayed 2fa2081,
+      local master stayed at "trunk moved".
+    The refusal precedes the push on every run, not just the first.
+
+Mutation confirms the relocation is what does it, not luck:
+  M-G  restore the round-4 placement (`if (staleError && rebased) return`)
+       -> 4 FAIL, and exactly the right four: behaviour 23's
+       "the retry refuses too", "master is still untouched after the retry",
+       "the branch still exists after the retry", and behaviour 24's
+       "refuses a fast-forward-ready branch whose certificate predates its
+       last commit".
+  M-H  refusal neutered (`if (false && staleError)`)  -> 10 FAIL (18, 23,
+       24, 25 in full).
+So the suite bites on the relocated check itself, in the precise direction
+round 4 said it had to.
+
+ROUND-4 B1.5 — CLOSED. The remedy is now achievable end to end.
+----------------------------------------------------------------
+Not taken from the message text; executed.
+
+  lab5: studio INSIDE the repo, real manifest with an automated probatio.
+    merge #1 -> refuses, naming tree:84b819e3... as the rebased tree.
+    Follow the message verbatim: `git checkout opus/W-900`, then
+      `bisellium verify W-900 --studio <lab>/studio --repo <lab>`
+      -> exit 0, writes certifies: tree:84b819e3db25c389d5c58a9813afb2c91682a99b
+      — byte-identical to what merge computed.
+    Retry the merge -> master fast-forwarded to opus/W-900.
+  lab6 (pr.required + push, the studio's own flow): same remedy, retry
+    exits 0, force-with-lease lands the rebased tip on origin
+    (origin opus == local opus == 770cb37).
+
+So the message layer WAS the right place for B1.5: the mismatch was never in
+verify's hashing, it was that the message named a command run from the wrong
+checkout. `verify --commit <ref>` remains a real, cheaper option for CI and I
+would take it as a follow-up, not a blocker — but I asked for a remedy an
+operator can carry out, and this one now works. Not papering over anything.
+
+B5.1 (NEW, BLOCKING) — the check reads one ref and hashes another.
+-------------------------------------------------------------------
+`mergeOpusBranch` reads the opus record off the FILESYSTEM
+(readFront(join(resolve(studio), "opera", "<id>.md")), branch.ts:274) — i.e.
+whatever branch is checked out right now — and hashes the OPUS BRANCH REF
+(sourceTreeHash(repo, excludes, branch), branch.ts:135). When the studio
+lives inside the repo (the real layout, and this repo's own), those are two
+different copies of the same file, and the verdict follows the checkout
+rather than the artifact. Both directions are reachable and both are wrong.
+
+  (a) FAILS OPEN — uncertified work lands. lab8, studio inside the repo,
+      strategy rebase. The opus is opened on the trunk BEFORE any gate has
+      run, so master's copy reads `probationes: { tests: { status: pending } }`
+      with no `certifies` at all. The builder then works on the branch:
+      verifies there (certifies tree:1256ad4f...), commits that bookkeeping
+      to the branch, and adds ONE MORE commit, "feat: more work, never
+      certified". Merge is then run from the trunk, as CLAUDE.md documents:
+        master's copy (what merge reads): probationes: { tests: { status: pending } }
+        branch's copy:                    certifies: tree:1256ad4f...
+        bisellium merge W-900 --studio ... --repo ...
+          -> "merged opus/W-900 into master"    exit 0
+        master log: feat: more work, never certified
+                    bookkeeping: verify on the branch
+                    feat: add feature
+                    bookkeeping: open W-900
+      staleCertificateError found no `tree:` certificate in the copy it read,
+      returned undefined, and the uncertified commit landed. This is exactly
+      the population behaviour 24 claims to cover, defeated by where the
+      operator is standing. Nothing here is operator error: `bisellium
+      verify` writes front matter to the checkout it runs in, builders work
+      on the opus branch in worktrees (this repo's own model), and `merge`
+      is run from the trunk because that is the only place `git branch -D
+      opus/<id>` can succeed.
+
+  (b) FAILS CLOSED — a correct PR is refused, and this PR is the instance.
+      lab7 is a local clone of this repo with origin removed, opus/W-026 at
+      a7d3d50, HEAD on master, state flipped to done as `bisellium done`
+      would:
+        bisellium merge W-026 --studio <clone>/studio --repo <clone>
+          -> "opus/W-026's tree no longer matches its certificate — opus
+              W-026's gate "tests" certifies tree:5ab03a0b4156..., which no
+              longer matches its current tree (tree:7496efcc...)"   exit 1
+      tree:5ab03a0b is a hash from an earlier round that survives only in
+      MASTER's copy of studio/opera/W-026.md. The branch's own copy certifies
+      tree:7496efcc — correct, current, and verified above. The mechanism
+      refuses the very PR that introduces it, on evidence it read from the
+      wrong file. Harmless in itself; diagnostic of (a).
+
+  Root cause is one line, not two: read-provenance and hash-provenance
+  disagree. Read the opus record from the branch being merged (one `git show
+  <branch>:<studio-rel>/opera/<id>.md`, falling back to the disk read when
+  the studio resolves outside the repo) and both directions close at once.
+  A cheaper partial that closes only (a): treat the ABSENCE of a `tree:`
+  certificate on a gate the manifest declares `kind: automated` as a refusal
+  rather than a pass. Absence is currently indistinguishable from "nothing
+  to check", and that is what lands the work.
+
+  This is the third round on this mechanism and the same class each time:
+  round 3 it could not fire; round 4 it fired once then stepped aside for the
+  retry; round 5 it fires for the wrong file. What is different, and worth
+  saying plainly: the round-4 hole is genuinely gone, and this one needs the
+  studio inside the repo to bite — which is precisely the configuration
+  round-4 A4.4 flagged as untested and behaviour 22 only half-covers (see
+  A5.1).
+
+ROUND-4 A4.4 — CLOSED for the exclude set, re-derived not accepted
+-------------------------------------------------------------------
+  M-E  sourceExcludeDirs -> return []   0 FAIL at round 4, now 2 FAIL:
+       behaviour 22's "a trunk-side studio-only commit does not stale a
+       matching certificate" and "feature commit lands on master".
+  M-F  hash the trunk instead of the branch   2 FAIL at round 4, now 4 FAIL
+       (19 and 22).
+Both reported figures confirmed exactly. Behaviour 22 does pin the exclude
+set. It does not pin the record-provenance question — see A5.1.
+
+Reds 22-25 — attributions verified, not accepted
+-------------------------------------------------
+Round-5 branch.test.ts run unchanged against 72fa5af's branch.ts (the
+unmodified round-4 implementation), one behaviour at a time:
+  22  PASS, 2/2 — so NOT a pre-implementation red. The mutation-record
+      label is correct, and M-E above reproduces its recorded 2 FAIL with
+      the same two assertions. Its log's message text is the round-4
+      wording ("re-run ... and retry the merge"), consistent with a mutation
+      taken against round-4 code.
+  23  FAIL x3 — "the retry refuses too", "master is still untouched after
+      the retry", "the branch still exists after the retry"; PASS on "first
+      call refuses". Identical to 23.log.
+  24  FAIL x1 — "refuses a fast-forward-ready branch whose certificate
+      predates its last commit". Identical to 24.log.
+  25  FAIL x1 — "names an achievable remedy"; PASS on "refuses on the stale
+      certificate". Identical to 25.log.
+All three pre-implementation claims hold. Round-4's complaint that a log does
+not say which kind it is has been answered in the brief and the test comments;
+22.log's own header still does not carry it, which is a labelling nit, not a
+finding — the attribution is now checkable from the brief.
+
+ROUND-4 A4.2 — CLOSED
+---------------------
+The false sentence is gone and the replacement is true, checked live rather
+than read: sample-studio with `strategy: teleprt` ->
+  manifest.shape  bisellium.yml#integration.strategy  strategy "teleprt" must
+  be one of fast_forward, rebase, merge_commit
+
+ROUND-4 A4.6 — CLOSED
+---------------------
+ADOPTION.md now says a `certifies: dirty:<hash>` gate "is never compared
+here — only a `tree:` certificate can go stale this way". Accurate.
+
+ROUND-4 A4.3 (brief) — substantially closed, with one real gap
+---------------------------------------------------------------
+Intent no longer says merge "fast-forwards master when the opus is done";
+docs/ADOPTION.md is declared in Files owned; Behaviours to test now reaches
+25. See A5.2 for what the format costs.
+
+Advisories
+----------
+A5.1  Behaviour 22 is the ONLY behaviour with the studio inside the repo,
+      and it exercises exactly one property there (the exclude set). Every
+      other certificate behaviour — 18, 19, 23, 24, 25 — uses tmpStudio(),
+      outside the repo, where the opus record has exactly one copy and
+      B5.1 cannot be seen. The blind spot round 4 named is narrower now but
+      still the same blind spot: the real layout is under-tested, and the
+      one blocking finding of this round lives in it.
+
+A5.2  The brief's behaviour list is enforced by `opus.red_evidence`, and
+      that rule counts lines matching /^\s{0,3}\d+\.\s/ (countBehaviours,
+      rules/evidence.ts:106-124). The brief's new entries are written
+      "8-9.", "10-16.", "17-21.", "22-25." — none of which match. Verified:
+      countBehaviours(studio/briefs/W-026.md) === 7. So the rule checks reds
+      01-07 and would not notice a missing red for any of 8-25. Reds 10-25
+      do in fact exist, so nothing is actually unproven here — but the
+      amendment that answered round-4 A4.3 is prose the enforcement cannot
+      read, against the standing rule that process enforcement is a check
+      rule, never prose. Either write them one per line, or teach
+      countBehaviours ranges.
+
+A5.3  Following the remedy verbatim under a non-PR config leaves you
+      standing on the opus branch, which guarantees the branch-delete
+      failure path: lab5's successful retry exited 1 with "master
+      fast-forwarded to opus/W-900, but could not delete opus/W-900 ...
+      switch off it and delete manually", even though everything was
+      correct. Under pr.required (lab6) it exits 0, because merge never
+      deletes. Worth one clause in the message ("...then retry the merge
+      from <trunk>") — which, note, is only safe once B5.1 is fixed, since
+      today retrying from the trunk is what reads the wrong file.
+
+A5.4  ADOPTION.md now says merge "checks a recorded `certifies: tree:<hash>`
+      against the branch's current tree on every call that would land or
+      push it". The second half is true as of this round; the first half is
+      not — it checks the certificate recorded in the CURRENT CHECKOUT's
+      copy. Fix the sentence together with B5.1, not instead of it.
+
+A5.5  Carried unchanged from round 4, still accepted: A4.1 (pull_after_push
+      inert under pr.required, documented), A4.5 (a refused merge leaves the
+      branch rebased and, with a remote counterpart, diverged — benign under
+      force-with-lease, and now no longer a route to landing).
+
+On the design call — still endorsed
+------------------------------------
+Refuse rather than re-run gates remains right, and this round's finding does
+not touch it: the fix is which ref the certificate is read from, not whether
+merge should execute anything. One place runs gates.
+
+Verdict
+-------
+FAIL, round 5. One blocking finding (B5.1), and it is NOT the round-4 one:
+that retry transcript no longer lands, under both the local and the
+push+pr.required configurations, and I reproduced it three invocations deep
+in each. B1.5's remedy is achievable and I ran it end to end. A4.4's mutation
+hole is genuinely closed at the figures the builder reported. Reds 22-25 are
+what they are labelled.
+
+What blocks is that the refusal reads the opus record from the working-tree
+checkout while hashing the branch ref, so under the real layout a merge run
+from the trunk can miss a certificate entirely and land uncertified work
+(lab8), and can equally refuse a correct branch on a stale trunk-side copy
+(lab7, this PR). One read, changed to come from the branch, closes both.
+
+Commands run for this log
+-------------------------
+  git worktree add --detach <scratch>/wt a7d3d50
+  (node_modules relinked; readlink -f verified before any run)
+  npm test; npm run -s typecheck; npm run -s lint
+  node --import tsx packages/cli/src/branch.test.ts .
+  node --import tsx packages/cli/src/branch.test.ts . 22|23|24|25
+  node --import tsx packages/cli/src/main.ts check studio --repo . [--level block]
+  node --import tsx packages/cli/src/main.ts check <sample-studio copy with a
+    typo'd strategy>
+  sourceTreeHash recomputed for a7d3d50, f6af13b and origin/master
+  lab3  local, rebase, stale certificate, merge x3
+  lab4  rebase + push + pull_after_push + pr.required, bare origin, branch
+        pushed pre-rebase, merge x3
+  lab5  studio inside the repo, real probatio, remedy followed verbatim
+  lab5b same, remedy followed then checkout master before the retry
+  lab6  pr.required + push, remedy followed, retry from the branch and from
+        the trunk
+  lab7  local clone of this repo, origin removed, merge W-026 from master
+  lab8  studio inside the repo, opus opened on the trunk pre-verify,
+        verified and committed on the branch, one uncertified commit after
+  mutations of packages/cli/src/branch.ts, each reverted and the file diffed
+    clean against a saved-good copy: M-E, M-F, M-G, M-H
+  round-5 branch.test.ts run against 72fa5af's branch.ts for 22, 23, 24, 25
+  read of rules/evidence.ts:106-124 (countBehaviours) and branch.ts:88, 135,
+    274, 326-327

@@ -1,0 +1,288 @@
+review: W-026 (parallel workstreams: per-opus branching) — round 8
+sella: qa-lead
+model: claude-opus-5
+verdict: PASS
+subject: PR #2, branch opus/W-026 -> master, at dc4c4d8
+        "chore(W-026): re-verify on the round-7 tree; handoff"
+        on 0d8db73 "fix(merge): read the exclude set from the branch too — the last mixed read"
+        rebased onto master 756eade
+
+Everything below was executed, not read off the diff. Scratch worktree at
+/tmp/claude-1000/r8-2/wt (uniquely named), node_modules copied in and every
+@bisellium/* verified to resolve INTO the worktree (readlink -f: shim ->
+/tmp/claude-1000/r8-2/wt/packages/shim). The CLI was driven through a
+wrapper pinned to that worktree's main.ts and to its own tsx loader. Labs
+are throwaway repos under the same scratch root, built with the real CLI
+(init/new/greenlight/ready/branch/verify/done/merge). The real origin was
+never pushed to. Both trees left clean (worktree: git status --porcelain
+empty apart from my own node_modules; the real repo shows only this log,
+the pre-existing untracked W-026-review-5.log and .claude/.claude/).
+
+Base state (worktree at dc4c4d8)
+--------------------------------
+  npm test                 exit 0, 1126 PASS, 0 FAIL   (1123 at round 7)
+  npm run -s typecheck     exit 0
+  npm run -s lint          exit 0, 0 errors, 2 warnings (close.test.ts
+                           execSync, tick.test.ts opts) — both pre-existing
+  npm run -s format:check  exit 0, clean
+  branch.test.ts .         89 PASS, 0 FAIL   (86 at round 7) — the three new
+                           assertions are behaviour 31's
+  check studio --repo .    7 blocking, 75 advisory: traditio.present x4
+                           (W-022/023/027/028), wip.cap, opus.red_evidence
+                           for W-027 and W-028. W-026 raises NONE of them —
+                           opus.red_evidence does not fire for W-026, so the
+                           rule read all 31 behaviours against all 31 logs.
+
+THE DIFF SINCE ROUND 7 IS ONE FUNCTION
+---------------------------------------
+diff of 4836db0:branch.ts against dc4c4d8:branch.ts is exactly
+`sourceExcludeDirs` gaining a `branch` parameter and the
+`git show <branch>:<studio-rel>/bisellium.yml` read, plus its comment, plus
+its one call site. Nothing else in the file moved. I diffed it literally.
+
+One correctness point worth recording: the branch read uses
+`parseYaml(show.stdout)` while the fallback uses `readManifest(studio)`, and
+`readManifest` (adapters/native/src/index.ts:151-153) is literally
+`parseYaml(readFileSync(...))`. The two paths are the same parse — there is
+no normalisation the branch read silently skips.
+
+Gates — recomputed independently, they match
+---------------------------------------------
+  sourceTreeHash(dc4c4d8, ["studio",".bisellium","examples/"]) = 803f58a9d04c22c4ec53d3c283b5f7e67f6cf5bf
+  sourceTreeHash(0d8db73, same) = 803f58a9...  (dc4c4d8 is bookkeeping-only, studio/ excluded — agreeing is correct)
+  sourceTreeHash(4836db0, same) = c56a5125...  sourceTreeHash(master, same) = 31ec6d0d...
+All three automated gates on the BRANCH's copy of studio/opera/W-026.md
+certify tree:803f58a9d04c22c4ec53d3c283b5f7e67f6cf5bf — exactly what I
+recompute for what the branch ships. The three ci logs are real runs:
+tests exit 0, types exit 0, lint exit 0 with 0 errors / 2 warnings, matching
+my own independent runs. (The tests log holds 204 lines because
+packages/pipeline/src/index.ts:96 writes a `tail(output, LOG_TAIL_LINES)`
+by design, not because the run was short; its header line is the
+load-bearing claim and it reads exit code: 0.)
+The `review` gate carries the round-7 FAIL — sella qa-lead, model
+claude-opus-5, evidence ci/W-026-review-7.log — so the reconciliation
+described in the round-8 brief preserved master's record correctly. All
+seven of my prior review logs are tracked on the branch.
+
+1. lab16 RE-RUN — THE LOOP IS GONE, AND I PROVED IT BOTH WAYS ON ONE STATE
+---------------------------------------------------------------------------
+Rebuilt from scratch with the real CLI. Throwaway repo, studio INSIDE the
+repo, strategy rebase, manifest declaring `tests` kind: automated with a
+command. Opus opened, greenlit and readied on the TRUNK. Then on the branch:
+`vendor/dep.js` added and `source_excludes: [vendor/]` appended to
+studio/bisellium.yml (the opus's own work, committed on the branch only);
+a real source file src/app.js so the hash is not degenerate; `bisellium
+verify` -> certifies tree:54820475, committed; `bisellium done` -> state:
+done, committed. Then I froze that exact state and ran merge from the trunk
+against BOTH implementations, same repo, same commits:
+
+  PRE-FIX (4836db0's branch.ts swapped in):
+    merge  -> "opus/W-001's tree no longer matches its certificate —
+               ... certifies tree:54820475..., which no longer matches its
+               current tree (tree:41ba9412...)"              exit 1
+    remedy verbatim: checkout opus/W-001; verify -> "tests: passed
+      ci/W-001-tests-54820475.log"; git status --porcelain EMPTY; commit ->
+      "nothing to commit, working tree clean"
+    merge retry -> the IDENTICAL message                     exit 1
+    The unclearable loop, reproduced.
+
+  POST-FIX (shipped branch.ts restored, git reset --hard to the same commit):
+    merge  -> "merged opus/W-001 into master"                exit 0
+    opus/W-001 deleted; the vendoring commit on master.
+
+Same starting state, one function apart. The builder's claim is exact.
+
+2. lab8 (FAIL-OPEN) RE-RUN — STILL CLOSED
+------------------------------------------
+Fresh lab. Certified and done on the branch, then ONE MORE commit
+"feat: more work, never certified".
+  merge, three times -> the stale-certificate refusal, exit 1, 1, 1.
+  master's log never moved past "studio bookkeeping: open W-001 (pre-verify)".
+Control on the same lab: re-verify on the branch, commit, retry ->
+  "merged opus/W-001 into master"                            exit 0
+The fail-open direction is unchanged by B7.1's fix. No regression.
+
+3. lab11 (WAIVED GATE) RE-RUN — STILL MERGES
+---------------------------------------------
+Fresh lab, fully certified and done on the branch, then the tests gate
+replaced with { status: waived, waived_by: patron, note: ... } and committed
+there.
+  merge -> "merged opus/W-001 into master"                   exit 0
+  opus/W-001 deleted. The round-6 unclearable loop stays closed.
+
+4. lab16r — THE THREE BRANCH-REF READS COMPOSE ACROSS A REAL REBASE
+--------------------------------------------------------------------
+Not asked for; it is the interaction the three reads newly create. lab16's
+shape plus a trunk commit under the branch, strategy rebase, so
+`sourceExcludeDirs` is evaluated AFTER `rebaseOntoTrunk` rewrote `branch`.
+  merge -> "opus/W-001 was rebased onto master — ... certifies
+            tree:d819baa2..., which no longer matches the rebased tree
+            (tree:9c6922f5...)"                              exit 1
+That refusal is CORRECT: the rebase genuinely pulled a new source file in.
+Remedy verbatim -> verify certifies tree:9c6922f5 (computed under the
+branch's own exclude set, post-rewrite), commit, retry ->
+  "merged opus/W-001 into master"                            exit 0
+`git show <branch>:...` reads the rewritten branch, so the exclude set and
+the hash it defines stay in step through the rewrite. One pass, no loop.
+
+5. MUTATIONS ON THE NEW MANIFEST READ — TWO BITE, ONE DOES NOT
+----------------------------------------------------------------
+Each applied to the worktree's packages/cli/src/branch.ts, full
+branch.test.ts run, then restored from a saved-good copy and diffed clean.
+  M-X1  force the disk fallback: the `git show` replaced by
+        `{ status: 1, stdout: "", stderr: "" }` so the branch read never
+        succeeds — literally the mutation the round-8 brief asked for
+        -> 3 FAIL, behaviour 31 only, ALL THREE assertions. CAUGHT.
+  M-X2  the show points at `HEAD:` instead of `${branch}:` — the exact bug
+        shape, one token
+        -> 3 FAIL, behaviour 31 only, all three assertions. CAUGHT.
+  M-X3  the disk fallback removed entirely (`if (!manifest)` -> `if (false)`)
+        -> 0 FAIL. NOT caught. See A8.1; it fails CLOSED and is advisory.
+
+6. BEHAVIOUR 31's RED IS GENUINELY PRE-IMPLEMENTATION
+------------------------------------------------------
+Three independent confirmations, not one:
+  (a) 31.log's own header: `# tree: dirty:c56a5125983759b739859be7eebb9617b45ea56b`
+      — that is sourceTreeHash(4836db0), the ROUND-7 tree, i.e. the tree
+      before the fix. `# at: 2026-09-19T18:17:02.587Z`.
+  (b) the fix commit 0d8db73 is dated 2026-09-20T02:24:23+08:00 =
+      2026-09-19T18:24:23Z — seven minutes AFTER the red.
+  (c) I swapped 4836db0's branch.ts into the worktree and ran the round-8
+      test file's behaviour 31 against it: 3 FAIL, and the refusal text
+      names tree:c0edc31960b46d4b3a8a13d5b67178e81b7645b7 vs
+      tree:ca624c021e3ae0fe4f8047c5607762d633c63185 — byte-identical to the
+      two hashes in the recorded 31.log. The log is a real run of this
+      test against this pre-fix code, not a reconstruction.
+
+7. countBehaviours READS 31 CONTIGUOUSLY, WITH ALL 31 LOGS
+------------------------------------------------------------
+  countBehaviours(studio/briefs/W-026.md) invoked directly from
+  packages/cli/src/rules/evidence.ts -> 31
+  git ls-tree dc4c4d8 studio/ci/reds/W-026/ -> 31 files, 01.log..31.log,
+  no gap (03/04/06 were already on master; the rest arrive with this PR).
+  opus.red_evidence does not fire for W-026 in `check studio --repo .`,
+  which is the rule confirming the same thing independently.
+
+8. A7.1 — CLOSED, AND MY ROUND-7 NOTE NAMED A FILE THAT NEVER HAD IT
+---------------------------------------------------------------------
+The builder is right and I was wrong. `git show <ref>:packages/cli/src/branch.ts
+| grep -c P-005` is 0 at 23307e4, 4c14edc, 4836db0 and dc4c4d8 — branch.ts
+never carried the citation. At round 7 the string lived in exactly two
+places, both of which I named correctly (briefs/W-026.md:48 and :112,
+branch.test.ts:953); "branch.ts's B6.1 comment" was my error. All of them
+now cite `countBehaviours` / rules/evidence.ts instead, and `grep -rn P-005`
+over branch.ts, branch.test.ts and briefs/W-026.md returns nothing.
+
+9. B7.2 — CLOSED, VERIFIED IN BOTH HALVES
+------------------------------------------
+docs/ADOPTION.md:245-251 now reads: a `dirty:<hash>` gate "is never compared
+by `merge` at all — `merge` only ever examines a `certifies` value that
+starts with `tree:`... the refusal for a dirty certificate comes from
+`bisellium done`". Both halves checked, not read:
+  - code: staleCertificateError's loop is guarded by
+    `certifies.startsWith("tree:")`; `grep -rn "no recorded tree" packages/
+    docs/` now returns only a test assertion NAME that asserts the REMOVAL.
+    The false promise is gone from the contract document.
+  - lab12, real CLI: `verify --allow-dirty` on the branch -> `certifies:
+    dirty:d819baa2`, status passed; `bisellium done W-001` ->
+    "W-001: gates not passed: tests", exit 1, state unchanged at building.
+    The doc's claim about where the refusal comes from is true.
+
+WHY I AM PASSING THIS, EXACTLY
+-------------------------------
+Not "the tests are green". Three things, and each is a thing I ran:
+
+(1) The converging sequence closed on the function I named. At round 7 I
+wrote that every blocking finding in rounds 5-7 was one bug — a read
+pointing at the checkout instead of the branch ref — and that the
+implementation was one function short of obeying its own rule. The diff
+since round 7 is exactly that one function and nothing else; I diffed it
+literally. The prediction was falsifiable and it held.
+
+(2) I reproduced the defect and its absence on ONE frozen repository state,
+swapping only branch.ts. Pre-fix: the refusal, the byte-identical
+re-verification, the "nothing to commit", the identical refusal on retry.
+Post-fix, same commits: exit 0, branch deleted. That is a controlled
+experiment, not a passing test.
+
+(3) `merge`'s compare path now has no disk read left in it. `readOpusRecord`
+(certificates and state) and `sourceExcludeDirs` (the exclude set that
+defines the hash both are compared against) both read `git show
+<branch>:<studio-rel>/...`, with the same fallback and the same parse. I
+mutated the new read two ways — forced to the disk fallback, and pointed at
+HEAD — and behaviour 31 caught both in all three assertions. And I checked
+the reads compose: lab8 (fail-open) still refuses, lab11 (waived) still
+merges, lab16r shows the exclude set tracking the branch through a real
+rebase rewrite. Three reads, one provenance, no regression between them.
+
+On the design question the brief asks: the design of putting certificate
+checking inside `merge` is sound and is now correctly implemented. The
+sequence converged; it did not stall. I have no blocking finding this round.
+
+Advisories
+----------
+A8.1  M-X3 (dropping `sourceExcludeDirs`'s disk fallback entirely) causes 0
+      FAIL — the studio-outside-repo path is unpinned, as round 4's A4.4
+      already found for the pre-B7.1 version of this function and behaviour
+      22 only partly closed. It fails CLOSED (losing `source_excludes` means
+      a larger hash, so merge refuses rather than lands), so this is a
+      coverage gap, not a hole. Worth one assertion, not a round.
+A8.2  `resolveIntegration` still reads bisellium.yml off DISK while
+      `sourceExcludeDirs` now reads the SAME FILE from the branch — round 7
+      flagged this as untested, so I tested it (labint): an opus whose own
+      work is adopting `integration: strategy: rebase` has that declaration
+      ignored, because merge uses the trunk's (absent) block and falls back
+      to fast_forward -> "branch opus/W-001 has diverged from master —
+      rebase first". Clearable in two documented steps (manual rebase, then
+      the stale-certificate remedy), so advisory, not blocking. I think the
+      split is actually DEFENSIBLE — `integration:` is the officina's merge
+      policy, an operator/checkout property, while `source_excludes` is an
+      input to the artifact's own hash — but nothing says so anywhere, and
+      ADOPTION.md's new paragraph ("read the same way too") invites the
+      reader to assume the whole manifest follows the branch. One sentence
+      in ADOPTION.md, or a follow-up opus if the policy should follow the
+      branch after all.
+A8.3  Carried from A7.5, still open: behaviours 29 and 30 are labelled
+      "pre-implementation" in the brief but are partial reds (one genuinely
+      new assertion each; the logs themselves are honest and show the PASS
+      lines). 31 by contrast IS a full pre-implementation red — 3/3
+      assertions — so the label is right there. Give 29 and 30 the same
+      qualifier 22 carries.
+A8.4  briefs/W-026.md:114 still says countBehaviours "keeps reading 1..30
+      contiguously" in behaviour 28's retirement note; it is 1..31 now.
+      One number.
+A8.5  Carried and still accepted: A7.2 (`done` run on the trunk dirties it
+      and blocks the checkout the merge remedy asks for — the real fix is in
+      `done`, and W-033/W-034 are now open for it), A7.3 (`done` cannot
+      honour a waived automated gate — W-034), A7.4 (behaviour 29(b)'s first
+      two assertions are satisfied by any refusal naming the branch), A6.6,
+      A4.1, A4.5.
+
+Commands run for this log
+-------------------------
+  git worktree add --detach /tmp/claude-1000/r8-2/wt dc4c4d8
+  node_modules copied in; @bisellium/* verified by readlink -f to resolve
+    INTO the worktree; CLI wrapper pinned to the worktree's main.ts + tsx
+  npm test; npm run -s typecheck; npm run -s lint; npm run -s format:check
+  node --import tsx packages/cli/src/branch.test.ts .
+  node --import tsx packages/cli/src/branch.test.ts . 31  (against BOTH
+    dc4c4d8's and 4836db0's branch.ts)
+  main.ts check studio --repo . [--level block]
+  countBehaviours(briefs/W-026.md) invoked directly from rules/evidence.ts
+  sourceTreeHash recomputed for dc4c4d8, 0d8db73, 4836db0, master via
+    @bisellium/shim from inside the worktree
+  diff of 4836db0:branch.ts against the shipped branch.ts
+  git show <ref>:packages/cli/src/branch.ts | grep -c P-005, four refs
+  git ls-tree dc4c4d8 studio/ci/reds/W-026/ ; headers of reds 28-31
+  lab16   source_excludes declared by the opus itself — merged post-fix,
+          looped pre-fix, on one frozen state
+  lab16r  the same with a real rebase under it
+  lab8    fail-open: certified, done, then an uncertified commit; 3 retries
+          + the remedy control
+  lab11   waived automated gate, post-done
+  lab12   verify --allow-dirty, dirty: certificate, `done` refuses it
+  labint  integration.strategy declared on the branch only (A8.2)
+  mutations M-X1, M-X2, M-X3 of sourceExcludeDirs, each restored and
+    diffed clean against a saved-good copy
+  reads of branch.ts, adapters/native/src/index.ts:151, pipeline/src/index.ts:70-110,
+    rules/evidence.ts:100-125, docs/ADOPTION.md:196-255, briefs/W-026.md
