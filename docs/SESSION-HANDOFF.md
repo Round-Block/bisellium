@@ -37,6 +37,9 @@ lex, a decision, or a check rule and delete it here.
 - Dossier: https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c
   (rebuild from `docs/design/dossier/head.html` + `body.html`; patch `body.html`
   with a script, never by hand-editing the built page).
+- Design direction (what web I builds to; source docs/design/DIRECTION.md,
+  rendered by build-arch.mjs via build.sh):
+  https://claude.ai/artifact/J6LGxy2T7V7M1x3F3CrT15
 - Architecture (Mermaid system map, rendered from docs/ARCHITECTURE.md by
   docs/design/dossier/build-arch.mjs via build.sh):
   https://claude.ai/artifact/WUBAJ9JceMAX5qEhgjoyuN — republish after any
@@ -116,6 +119,13 @@ lex, a decision, or a check rule and delete it here.
 - Inbox empty. Engineering posture CLOSEOUT for 2026-W38 (2.89M/3.0M): the
   fasti holds until W39 (Mon 2026-09-21), then greenlight web I and W-022/W-023
   per the Patron's timing decree — no budget write.
+- Web I builds to docs/design/DIRECTION.md (ledger identity, signature
+  elements, bans) and updates docs/ARCHITECTURE.md per the design lex.
+- D-014 (2026-09-19): Opus 4.6 + Sonnet 4.6 alongside the 5 family —
+  builder-c/d on claude-sonnet-4-6 (manifest), review split per cascade
+  between claude-opus-5 and claude-opus-4-6 (.claude/agents/builder46.md,
+  reviewer46.md; sizing.json reviewer.models). Bought for cross-generation
+  review diversity, not cost (Sonnet 4.6 is pricier than Sonnet 5).
 - Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
   L2, adapters + desktop. Estimates and rationale are in the dossier.
 

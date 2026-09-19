@@ -1,8 +1,16 @@
 {
   "_decision": "studio/decisions/D-012.md",
   "operaPerCascade": 2,
-  "reviewer": { "role": "reviewer", "model": "claude-opus-5", "perOpus": 1 },
-  "firstHourBuilderModel": "claude-sonnet-5",
+  "reviewer": {
+    "role": "reviewer",
+    "models": [
+      "claude-opus-5",
+      "claude-opus-4-6"
+    ],
+    "perOpus": 1,
+    "_decision": "D-014 cross-generation split"
+  },
+  "firstHourBuilderModel": "your sella's manifest Sonnet (claude-sonnet-5 or claude-sonnet-4-6, D-014)",
   "mutationOpusPerCascade": 1,
   "worktreesPerBuilder": 1,
   "midTurnRelaysAllowed": false

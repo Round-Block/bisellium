@@ -1,0 +1,378 @@
+<title>Bisellium Design Direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F7F9F8;
+    --surface: #FFFFFF;
+    --surface-2: #EFF4F2;
+    --ink: #1A2523;
+    --muted: #5A6B67;
+    --line: #DCE5E2;
+    --accent: #0E7C6B;
+    --accent-soft: #E1F0EC;
+    --ok: #178A50;
+    --ok-soft: #E2F3E9;
+    --warn: #B7791F;
+    --warn-soft: #F7EDDA;
+    --bad: #C0392B;
+    --bad-soft: #F9E6E3;
+    --pend: #7A8783;
+    --pend-soft: #EAEEEC;
+    --code-bg: #14201C;
+    --code-ink: #D9E7E2;
+    --code-accent: #6FD9C2;
+    --shadow: 0 1px 2px rgba(20, 35, 30, .06), 0 4px 16px rgba(20, 35, 30, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101614;
+      --surface: #18201D;
+      --surface-2: #1E2825;
+      --ink: #E6EEEB;
+      --muted: #93A39E;
+      --line: #2A3531;
+      --accent: #3ECFB2;
+      --accent-soft: #163229;
+      --ok: #4CC98A;
+      --ok-soft: #14301F;
+      --warn: #E0A94E;
+      --warn-soft: #34290F;
+      --bad: #E5776A;
+      --bad-soft: #3A1712;
+      --pend: #8B9995;
+      --pend-soft: #232D2A;
+      --code-bg: #0C1210;
+      --code-ink: #CDDCD6;
+      --code-accent: #5FD3B8;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101614;
+    --surface: #18201D;
+    --surface-2: #1E2825;
+    --ink: #E6EEEB;
+    --muted: #93A39E;
+    --line: #2A3531;
+    --accent: #3ECFB2;
+    --accent-soft: #163229;
+    --ok: #4CC98A;
+    --ok-soft: #14301F;
+    --warn: #E0A94E;
+    --warn-soft: #34290F;
+    --bad: #E5776A;
+    --bad-soft: #3A1712;
+    --pend: #8B9995;
+    --pend-soft: #232D2A;
+    --code-bg: #0C1210;
+    --code-ink: #CDDCD6;
+    --code-accent: #5FD3B8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+  .prose { max-width: 72ch; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", sans-serif;
+    text-wrap: balance;
+    line-height: 1.15;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; margin: .2em 0 .25em; letter-spacing: -0.01em; }
+  h2 { font-size: 1.7rem; font-weight: 650; margin: 0 0 .5em; }
+  h3 { font-size: 1.18rem; font-weight: 600; margin: 2em 0 .5em; }
+  p { margin: 0 0 1em; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 600; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .08em .35em;
+  }
+
+  .eyebrow {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .6em;
+  }
+  header.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+  .thesis { font-size: 1.22rem; color: var(--muted); max-width: 60ch; margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 24px;
+    margin-top: 28px;
+    font-size: .82rem; color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .meta-row span b { color: var(--ink); font-weight: 500; }
+
+  section { padding: 56px 0 8px; }
+  .part-rule {
+    display: flex; align-items: center; gap: 16px;
+    margin: 64px 0 0;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+  }
+  .part-rule .part-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 4px 12px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .part-rule h2 { margin: 0; font-size: 2rem; }
+
+  /* verdict card */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 26px 30px;
+    margin: 36px 0 0;
+  }
+  .verdict p:last-child { margin-bottom: 0; }
+
+  /* chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem; font-weight: 500;
+    padding: 2px 10px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .chip.ok   { color: var(--ok);   background: var(--ok-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.bad  { color: var(--bad);  background: var(--bad-soft); }
+  .chip.pend { color: var(--pend); background: var(--pend-soft); }
+
+  /* tables */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); margin: 20px 0 28px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 640px; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* two-col gap layout */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 24px 0; }
+  @media (max-width: 720px) { .gap-grid { grid-template-columns: 1fr; } }
+  .gap-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .gap-card h3 { margin-top: 0; }
+  .gap-card ul { margin: 0; padding-left: 1.2em; }
+  .gap-card li { margin-bottom: .45em; }
+  .gap-card.crowded h3 { color: var(--bad); }
+  .gap-card.open h3 { color: var(--ok); }
+
+  /* board mock */
+  .board-mock {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .board-cols { display: flex; gap: 14px; min-width: 700px; }
+  .board-col { flex: 1; }
+  .board-col-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+    display: flex; justify-content: space-between;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .card .slug { font-family: "IBM Plex Mono", monospace; font-size: .78rem; font-weight: 500; margin-bottom: 2px; }
+  .card .who { font-size: .74rem; color: var(--muted); margin-bottom: 8px; }
+  .gates { display: flex; gap: 5px; align-items: center; }
+  .gate { width: 10px; height: 10px; border-radius: 3px; }
+  .gate.passed { background: var(--ok); }
+  .gate.failed { background: var(--bad); }
+  .gate.pending { background: var(--pend-soft); border: 1px solid var(--pend); }
+  .gate-label { font-family: "IBM Plex Mono", monospace; font-size: .64rem; color: var(--muted); margin-left: 4px; }
+  .mock-caption { font-size: .8rem; color: var(--muted); margin: 14px 4px 0; }
+
+  /* code blocks */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    line-height: 1.55;
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 20px 0 28px;
+  }
+  pre .c { color: color-mix(in srgb, var(--code-ink) 55%, transparent); }
+  pre .k { color: var(--code-accent); }
+
+  /* build plan */
+  ol.plan { counter-reset: step; list-style: none; padding: 0; margin: 24px 0; }
+  ol.plan > li {
+    counter-increment: step;
+    display: grid; grid-template-columns: 44px 1fr; gap: 16px;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+  }
+  ol.plan > li:last-child { border-bottom: none; }
+  ol.plan > li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 1.4rem; font-weight: 700; color: var(--accent);
+    line-height: 1.2;
+  }
+  ol.plan b { font-weight: 600; }
+  ol.plan p { margin: .25em 0 0; font-size: .92rem; color: var(--muted); }
+
+  ul.reading { list-style: none; padding: 0; margin: 20px 0; }
+  ul.reading li { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .94rem; }
+  ul.reading li:last-child { border-bottom: none; }
+  ul.reading .why { color: var(--muted); font-size: .86rem; }
+
+  .footnote { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Agent studio &middot; design direction</p>
+  <h1>Bisellium Design Direction</h1>
+  <p class="thesis">What the console is (an officina&rsquo;s ledger) and is not (a SaaS dashboard) &mdash; the system, the signature elements, and the bans. Web I builds to this.</p>
+</header>
+
+<section>
+<h1>Design direction</h1>
+<p>The web console's visual contract. Web I builds to this; a builder's work is reviewed against it clause by clause. Where a lens in the research conflicts with another, this file has already decided — the decision and its reason are inline. The tokens (ink, verdigris, amber, ok, bad, Bricolage Grotesque / Instrument Sans / IBM Plex Mono) are fixed by the Patron and are not reopened.</p>
+<h2>1. Identity thesis</h2>
+<p><strong>Bisellium is an officina's ledger.</strong> It renders who decided what, on what evidence, and who owes the next move — a Roman guild's book of record, drawn flat and modern, where every number on screen is an entry someone can be held to.</p>
+<p><strong>It is not a SaaS dashboard.</strong> Nothing here is a "metric", nothing is a KPI, and no surface exists to reassure. If a pixel does not carry a fact from the officina's files, it is deleted.</p>
+<h2>2. The generic diagnosis</h2>
+<p>Measured in <code>docs/design/canvas/*.dc.html</code>. Each is a named pattern to kill.</p>
+<p>1. <strong>No type scale.</strong> 11 distinct sizes across six screens, four of them half-pixel (10.5 / 11.5 / 12.5 / 13.5). Sizes fitted by eye read as <a href="https://www.orbix.studio/blogs/saas-typography-examples">made-up-as-I-went</a>. 2. <strong>No radius decision.</strong> 10 radii in one surface family (3, 4, 6, 7, 8, 9, 10, 12, 50%, 999px). Indecision rendered. 3. <strong>The shadcn tell.</strong> 21 instances of <code>box-shadow: 0 1px 2px rgba(22,33,30,.04)</code>. A shadow at 4% opacity is a border that costs a paint — <a href="https://dev.to/sangrokjung/stop-your-ai-coding-tool-from-generating-generic-ui-impeccable-design-skill-4g1l">drop-shadow card grids signal no thought</a>. 4. <strong>Card-in-card.</strong> Page <code>#F6F8F7</code> → white panel → white card → pill: four nesting levels around one line of text. This is <a href="https://www.datadoghq.com/blog/datadog-dashboards/">everything-a-card</a>; it stutters and it costs the density we need. 5. <strong>Badge rainbow.</strong> 27 pills at <code>border-radius: 999px</code>, including <code>p-amber</code> on a duration ("46m"). Amber spent on a clock is amber that no longer means waiting on a human. 6. <strong>Template chrome.</strong> Every card's meta line is an <code>A · B · C</code> middle-dot string: three facts at identical weight, so none of them is the answer. 7. <strong>Palette sprawl.</strong> 27 hex values, including <code>#4A6FA5</code> — a blue whose only meaning is "second project". Above the <a href="https://www.setproduct.com/blog/data-table-ui-design">≤3 semantic colors on screen</a> threshold by an order of magnitude. 8. <strong>Mono as decoration.</strong> IBM Plex Mono on <code>~/projects</code> and on prose labels. Mono is for things that must align in a column; using it for flavour throws away the one signal it carries. 9. <strong>Chrome outweighs content.</strong> 60px top bar + 22/28 page padding + 14/16 card padding: the Board fits ~5 cards per column at 900px. A board that shows five items is a screenshot, not a floor. 10. <strong>Anonymous wordmark.</strong> A generic stroked house glyph that belongs to any product.</p>
+<h2>3. The system</h2>
+<h3>Typography</h3>
+<p>One scale, ratio 1.125 anchored at 13px, rounded to integers. <strong>No half-pixel sizes. No italics. No all-caps labels. No sixth weight.</strong></p>
+<p>| Role | Family / weight | Size / line-height | Tracking | |---|---|---|---| | Display (screen title, once) | Bricolage Grotesque 700 | 30 / 32 | −0.02em | | Section head | Bricolage Grotesque 600 | 17 / 22 | −0.01em | | Prose body | Instrument Sans 400 | 15 / 22 | 0 | | UI default, table cell | Instrument Sans 400 | 13 / 18 | 0 | | Secondary, dense label | Instrument Sans 400 | 12 / 16 | 0 | | Micro (counts, ages) | Instrument Sans 500 | 11 / 14 | +0.01em | | Data | IBM Plex Mono 400, <code>tabular-nums</code> | 12 / 18 | 0 |</p>
+<p>Weights available: 400, 500, 600 (heads only), 700 (display only). Hierarchy is carried by weight and color before it is carried by size — <a href="https://www.925studios.co/blog/stripe-dashboard-design-breakdown">Stripe's inverse hierarchy</a>.</p>
+<p>Mono is permitted on exactly four things: opus and sella ids, tree hashes, numerals (tokens, cost, counts, durations), and file paths. Never on a word that is not an identifier. Numeric columns are right-aligned with <code>tabular-nums</code>; text is left-aligned. Prose measure ≤ 68ch. Body text is never centred.</p>
+<p>Small caps (<code>font-variant: small-caps</code>, never <code>text-transform: uppercase</code>) appear in one place: the fasti strip's weekday initials.</p>
+<h3>Color</h3>
+<p>Neutrals do the work. Five of them, replacing the fourteen greys in the mocks:</p>
+<p><code>ink #16211E</code> · <code>ink-2 #4A5654</code> · <code>ink-3 #788582</code> · <code>rule #DDE3E1</code> · <code>wash #F4F7F6</code>. Surfaces are white; panels are separated by rules, not by a lighter-on-darker sandwich.</p>
+<ul>
+<li><strong>Verdigris <code>#0B6E5F</code></strong> — identity and interaction: the wordmark, links, the</li>
+<p>focus ring, the current selection. At most <strong>one verdigris fill per screen</strong> (the primary action, where one exists). Never a decorative fill, never a tint wash.</p>
+<li><strong>Amber <code>#B7791F</code></strong> — waiting on a human, and nothing else, ever. Budget: one</li>
+<p>amber region per screen plus the nav count. Rendered as a <strong>2px left rule</strong> on the row plus the age numeral in amber. Never a pill, never a background, never on a duration that is not yours.</p>
+<li><strong>ok <code>#2E9E64</code> / bad <code>#C64A3A</code></strong> — inside a gate mark only, at 6px, and always</li>
+<p>paired with a <strong>shape</strong> difference so the state survives colour blindness (<a href="https://carbondesignsystem.com/patterns/status-indicator-pattern/">don't rely on colour alone</a>).</p>
+<li>Ceiling: <strong>≤3 semantic colours visible at once</strong>. Projects are named, never</li>
+<p>colour-coded — the per-project dot is deleted.</p>
+</ul>
+<h3>Space</h3>
+<ul>
+<li><strong>4px base. Permitted gaps: 4, 8, 12, 16, 24, 32, 48.</strong> Nothing else. The</li>
+<p>9/13/14/22/28 values in the mocks are all errors.</p>
+<li><strong>Two radii: 2px on marks, inputs and controls; 0 on panels and rows.</strong> No</li>
+<p>999px pills anywhere. Circles exist only on avatars.</p>
+<li><strong>Zero box-shadows in the flat layer.</strong> Shadow exists once, on the drawer:</li>
+<p><code>0 0 0 1px var(--rule), 0 16px 48px rgba(22,33,30,.18)</code>.</p>
+<li><strong>Hairlines, not boxes.</strong> A panel is a 1px <code>--rule</code> top border plus a heading.</li>
+<p>Nesting depth cap is 2 (screen → panel). Anything that wants to be a card inside a card becomes a row inside a table.</p>
+<li><strong>Density targets.</strong> Board: 288px columns, 64px cards, 8px between, ≥12 cards</li>
+<p>visible per column at 900px. Tables: 32px rows, 8px cell padding vertical, 16px horizontal, ≥20 rows visible. One density, no toggle.</p>
+<li><strong>Chrome budget.</strong> Nav ≤ 44px, no second toolbar, no breadcrumb bar. Content</li>
+<p>begins within 56px of the viewport top. ≥88% of vertical pixels are content.</p>
+</ul>
+<h2>4. Signature elements</h2>
+<p>Five ownable components. These are what the console is recognised by.</p>
+<p><strong>4.1 Gate ladder as engraved marks.</strong> Not coloured dots. A fixed-width row of 6×6px marks at 3px gaps sitting on a 1px rule (the rail): filled ink = passed, hollow 1px outline = pending, <code>bad</code> fill with a 1px diagonal = failed, <code>ok</code> fill = a human's own call passed, half-height bar = waived. Width is a function of gate count, so items sharing a probatio set align vertically down a column and the column reads as a stack of identical ladders with different fill patterns — which is exactly what "who is stuck where" looks like. Four gates = 33px. Hover names the gate and its blocker.</p>
+<p><strong>4.2 The fasti strip.</strong> Officina only, 28px tall, full width, directly under the nav: 14 day-columns, past through today to forecast. A filled 3px verdigris tick = a cascade landed; a hollow 3px tick = the officina was open and nothing landed; nothing at all = a closed day (posture <code>closeout</code>, or over allowance). Weekday initial in 11px small caps beneath. Today is a 1px full-height ink rule, not a highlight. It is the only graphic on the screen, and it is literally a Roman calendar of days on which business may be done.</p>
+<p><strong>4.3 Clause number as anchor.</strong> Lex clauses, decisions and check-rule citations render with the number in a 32px left gutter: mono 12px <code>ink-3</code>, right-aligned, baseline-aligned to the clause's first line, no punctuation, no bold. Body at 15/22 in a 62ch measure. Licensed because the content genuinely is numbered (leges run §1–§9 and rules cite them). Numbered markers appear <strong>nowhere else</strong>.</p>
+<p><strong>4.4 The decision line.</strong> Every human verdict renders as one 20px line in four fixed columns: verb (13px/500 ink — <code>approve</code> <code>decline</code> <code>defer</code> <code>delegate</code>, a word, never an icon, never a checkmark), subject (mono 12px, 24ch truncation), reason (13px <code>ink-2</code>, one line, five presets plus free text), timestamp (mono 11px <code>ink-3</code>, right). <strong>A decision without a reason cannot be submitted</strong> — the reason is the product, and it is what makes retro computable (<a href="https://linear.app/now/how-we-built-triage-intelligence">reason codes as the feedback loop</a>). A deferral's reason travels with the item, so the Board shows <code>deferred · waiting for info</code>, not a yellow dot.</p>
+<p><strong>4.5 The colophon rule.</strong> Every screen *ends* — at the bottom of its scroll, not floating — with one hairline and one mono 11px <code>ink-3</code> line: source tree hash, officina path, generated-at, schema version. It is the ledger's imprint. It names which bytes this view renders, which is what makes <code>stale</code> legible without a badge. It is the only footer in the product.</p>
+<h2>5. Motion and interaction</h2>
+<ul>
+<li><strong>No entrance animation, no page-load sequence.</strong> Nothing moves that a person</li>
+<p>did not move.</p>
+<li>Three transitions exist, all 120ms ease-out: drawer slide-in from the right</li>
+<p>(translateX only — no fade, no scale), row-selection background, disclosure height. <code>prefers-reduced-motion</code> drops all three to 0ms.</p>
+<li><strong>No spinner, ever.</strong> Work in progress is a 2px verdigris bar across the top of</li>
+<p>the affected row. Unknown duration means it sits at its last known fraction with the elapsed mono numeral beside it; it does not pulse. A stopped clock reads as stopped, and that is the honest signal.</p>
+<li><strong>Drawer, never modal.</strong> Board scroll position is snapshotted on open and</li>
+<p>restored on close; the board stays live behind it.</p>
+<li><strong>Keyboard first.</strong> Item lists are roving-tabindex listboxes: <code>j</code>/<code>k</code> move,</li>
+<p><code>Enter</code> opens the drawer, <code>Esc</code> closes, <code>1</code>/<code>2</code>/<code>3</code> are approve/defer/decline in the Inbox, <code>⌘K</code> is the only palette. Shortcuts are printed in the drawer footer, not hidden behind a help modal.</p>
+<li>Focus ring: 2px verdigris at 2px offset, on every focusable element, never</li>
+<p>suppressed on a custom control.</p>
+<li>Hover changes background colour only. No lift, no shadow, no scale, no</li>
+<p>border-colour change.</p>
+</ul>
+<h2>6. Per-screen notes</h2>
+<p><strong>Inbox</strong> — a queue of decisions, not a mail client. One column at a 720px measure, left-aligned to the screen title; <strong>no preview pane</strong>, because two panes invite reading instead of deciding. The focused item is expanded and shows its ask, its evidence links and the four verbs; every other item is a 40px row — amber 2px left rule if it is yours, title at 13/18, asker's sella id in mono 12, age as a right-aligned mono numeral that escalates in *weight* (500 → 700) with age, never in colour. "You asked" and "For information" sit below a rule, collapsed, and never carry amber. The empty state is the resting state: one line, "Nothing waiting on you", then the colophon. No celebration graphic.</p>
+<p><strong>Officina</strong> — the fasti strip, then four panels stacked between hairlines, no boxes: decreta pending, posture and burn, lex status, process health. Burn is two mono numerals and a 4px rule filled to the spent fraction — ink under allowance, amber past it. No donut, no gauge, no sparkline. Posture is the word itself at 17px Bricolage 600 (<code>closeout</code>) with its reason beneath at 13px: a posture is a sentence someone can argue with, not a coloured chip. The pause brake is the one place a verdigris fill button is allowed.</p>
+<p><strong>Board</strong> — phase columns at 288px; the card is three lines in 64px: gate ladder, title truncated at two lines (13/18), owner sella id in mono 12. Cards have no border and no shadow — they are separated by 8px of page and carry a 2px left rule only when blocked (<code>bad</code>) or waiting on you (amber). The column head is two lines: name + count at 13/500, then a 3px WIP rule filled to count/cap (ink under cap, amber at cap — a WIP breach is a human's problem) with median dwell time as a right-aligned mono numeral, so the header names the bottleneck instead of just labelling the column (<a href="https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-board-layout">column limit indicators</a>). Needs-you is not a floating pill: it is the first column, pinned left, empty on a good day.</p>
+<h2>7. Rejects</h2>
+<p>Banned as generic or as kitsch. A build containing one of these fails review.</p>
+<ul>
+<li>**Serif body text, parchment, sepia, texture overlays, wax seals, Trajan,</li>
+<p>ornamental borders.** The Latin lives in the vocabulary; in the pixels it is costume. (Rejects the classical lens's serif-body move — the token set is the Patron's and wins.)</p>
+<li><strong>Broadsheet pastiche</strong> — justified multi-column prose, rules used as</li>
+<p>decoration. Hairlines here carry structure or they are deleted.</p>
+<li><strong>The density toggle</strong> (condensed/regular/relaxed). One audience, one density.</li>
+<p>A preference we persist is a decision we refused to make.</p>
+<li><strong>Status-reflective nav glyphs</strong> (Vercel's move). Our states are per item; a</li>
+<p>nav icon averaging seven items' states says nothing.</p>
+<li><strong>Concentric status pulse rings</strong> (agent-activity's move 2). Three nested rings</li>
+<p>is a chart the size of a bullet; the drawer's waterfall bar says it legibly.</p>
+<li><strong>Per-project colour dots and colour-hashed identities.</strong> A colour mapping</li>
+<p>nothing learnable is decoration.</p>
+<li><strong>Batch-confirm staging in the Inbox</strong> (inbox-attention's move 1). A decision</li>
+<p>not committed when made is a decision you will re-litigate. Commit on the verb; offer undo for 10 seconds.</p>
+<li><strong>Sparklines, donuts, gauges, KPI card strips, trend arrows, heatmap cells.</strong></li>
+<li><strong>Emoji as status</strong> (⚠️ 🔴 🟡) anywhere in product chrome.</li>
+<li><strong>Swimlanes as a Board grouping axis.</strong> Swimlane is its own screen (actors ×</li>
+<p>time); on the Board, gate state is card metadata, not an axis.</p>
+<li>**Gradients, glassmorphism, hover lift, bounce/elastic easing, scroll-triggered</li>
+<p>reveals.**</p>
+<li><strong>All-caps tracked-out eyebrow labels</strong>, <code>A · B · C</code> middle-dot meta strings,</li>
+<p>and <code>→</code> appended to link or button text.</p>
+</ul>
+</section>
+
+</div>
+<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}</style>
