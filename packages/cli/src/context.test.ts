@@ -5,6 +5,7 @@
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { readManifest } from "@bisellium/adapter-native";
 import { buildContext } from "./context.js";
 import { answer } from "./query.js";
 
@@ -55,20 +56,53 @@ const check = (name: string, ok: boolean, detail = "") => {
   check("patron: standing rules present", c.text.includes("Standing rules") && c.text.includes("Evidence is produced"));
 }
 
-// ---- CLI usage pointer (W-028: point every agent at the usage banner before
-// invoking it, from the one thing every agent reliably runs first) ------------
+// ---- CLI usage pointer (W-030: point every agent at the usage banner before
+// invoking it, from the one thing every agent reliably runs first; first
+// filed and numbered as W-028 behaviours 22-24 — that numbering was wrong,
+// see studio/briefs/W-030.md) -------------------------------------------------
 
-{
-  // behaviour 22: the pointer is present for a normal sella.
-  const c = buildContext(root, "builder-1", { now: NOW });
-  check(
-    "builder-1: CLI usage pointer present",
-    c.text.includes("## CLI usage") && c.text.includes("Run `bisellium` with no arguments"),
-  );
+/** Just the "## CLI usage" section's own text, isolated from every other
+ *  section — so behaviour 2 below can't be satisfied by accident because
+ *  some *other* section happens to contain no flag syntax either. */
+function pointerSection(text: string): string {
+  const idx = text.indexOf("## CLI usage");
+  if (idx === -1) return "";
+  const rest = text.slice(idx);
+  const end = rest.indexOf("\n\n");
+  return end === -1 ? rest : rest.slice(0, end);
 }
 
 {
-  // behaviour 23: pointer only, not the full ~700-token banner inlined —
+  // behaviour 1: the pointer is present for every declared sella, not just
+  // one hand-picked example.
+  const manifest = readManifest(root);
+  const sellae = [manifest.patron ?? "patron", ...manifest.sellae.map((s) => s.id)];
+  for (const sella of sellae) {
+    const c = buildContext(root, sella, { now: NOW });
+    check(
+      `${sella}: CLI usage pointer present, warning intact`,
+      // "Run `bisellium` with no arguments" alone survives a mutant that
+      // guts everything after it — the warning that gives the sentence its
+      // force (strict allowlists, a wrong invocation writing real
+      // bookkeeping) has to be asserted too, or cutting it is free.
+      c.text.includes("## CLI usage") &&
+        c.text.includes("Run `bisellium` with no arguments") &&
+        c.text.includes("allowlists are strict") &&
+        c.text.includes("write real bookkeeping"),
+    );
+  }
+}
+
+{
+  // behaviour 2: the pointer names no flag shapes itself — it can only ever
+  // point at the banner, never restate (and drift from) a piece of it.
+  const c = buildContext(root, "builder-1", { now: NOW });
+  const section = pointerSection(c.text);
+  check("builder-1: pointer names no flag shapes", section.length > 0 && !/--[a-zA-Z]/.test(section), section);
+}
+
+{
+  // behaviour 3: pointer only, not the full ~700-token banner inlined —
   // none of the per-command usage lines main.ts's USAGE constant renders
   // (e.g. "bisellium check [dir]") leak into context output.
   const c = buildContext(root, "builder-1", { now: NOW });
@@ -76,17 +110,35 @@ const check = (name: string, ok: boolean, detail = "") => {
 }
 
 {
-  // behaviour 24: the pointer outranks the lower-priority sections and
-  // survives truncation that drops them (opera has priority 4, well below
-  // the pointer's priority 2 — see context.ts's Section priorities). 600 is
-  // below builder-1's full render (693 tokens) but well above lex + the
-  // pointer alone, so it drops opera/providers/collegium-index without
-  // reaching down to priority 1-2.
-  const c = buildContext(root, "builder-1", { now: NOW, maxTokens: 600 });
-  check(
-    "maxTokens=600: CLI usage pointer survives truncation that drops other sections",
-    c.truncated.length > 0 && c.text.includes("## CLI usage"),
-  );
+  // behaviour 4: the pointer survives truncation at a budget that starves
+  // even the lex, for a lex the size of the *real* officina's, not just this
+  // fixture's ~200-token one. The real engineering lex runs ~1100 tokens; at
+  // that size, --max-tokens 600 forces the truncation loop (context.ts) past
+  // every other section AND the lex before it can stop, which is exactly
+  // the case the fixture's ~200-token lex can never exercise — dropping
+  // everything but the lex there still fits under 600. See W-030 review
+  // (studio/ci/W-028-review-3.log §2,4): at priority 2 the pointer is
+  // dropped fourth of five, ahead of the lex, and is gone by the time only
+  // the (still oversized) lex is left; priority 0 outranks the lex itself,
+  // so the lex goes first and the pointer is what's left standing.
+  const tmp = mkdtempSync(join(tmpdir(), "bisellium-context-biglex-"));
+  try {
+    cpSync(root, tmp, { recursive: true });
+    const fillerLine = "- filler clause, present only to size this lex like the real officina's.\n";
+    const bigLex = "# Engineering Lex (inflated for test)\n\n" + fillerLine.repeat(60);
+    writeFileSync(join(tmp, "leges", "engineering.md"), bigLex);
+
+    const full = buildContext(tmp, "builder-1", { now: NOW });
+    const c = buildContext(tmp, "builder-1", { now: NOW, maxTokens: 600 });
+    check("realistic lex: fixture inflated past 1000 tokens", full.tokens > 1000, `tokens=${full.tokens}`);
+    check(
+      "maxTokens=600, realistic-size lex: CLI usage pointer survives truncation of the lex itself",
+      c.truncated.includes("lex") && c.text.includes("## CLI usage"),
+      `truncated=${JSON.stringify(c.truncated)} tokens=${c.tokens}`,
+    );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 }
 
 // ---- answer -------------------------------------------------------------------

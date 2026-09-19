@@ -1,0 +1,35 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/context.test.ts .
+# exit: 1
+# at: 2026-09-19T15:52:24.336Z
+# sella: builder-a
+# tree: dirty:d34e898e6adefffbf369170a76d2841754ce0221
+
+PASS  builder-1: engineering lex present         
+PASS  builder-1: W-002 and W-004 handoffs present 
+PASS  builder-1: A-1 not included (addressed to patron) 
+PASS  patron: A-1 included (needs_you, to: patron) 
+PASS  maxTokens=300: sections dropped            
+PASS  maxTokens=300: text ends with 'truncated:' line 
+PASS  unknown sella: empty text, truncated ['unknown sella'] 
+PASS  builder-1: standing rules present          
+PASS  patron: standing rules present             
+PASS  patron: CLI usage pointer present, warning intact 
+PASS  producer: CLI usage pointer present, warning intact 
+PASS  architect: CLI usage pointer present, warning intact 
+PASS  eng-lead: CLI usage pointer present, warning intact 
+PASS  builder-1: CLI usage pointer present, warning intact 
+PASS  builder-2: CLI usage pointer present, warning intact 
+PASS  art-lead: CLI usage pointer present, warning intact 
+PASS  qa-lead: CLI usage pointer present, warning intact 
+PASS  builder-1: pointer names no flag shapes    ## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+PASS  builder-1: full banner not inlined         
+PASS  realistic lex: fixture inflated past 1000 tokens tokens=1386
+FAIL  maxTokens=600, realistic-size lex: CLI usage pointer survives truncation of the lex itself truncated=["providers","collegium index","opera","standing rules","cli usage","lex"] tokens=19
+PASS  needs_you: mentions W-004 and A-1          
+PASS  status W-003: mentions verifying and failed 
+PASS  burn: mentions engineering and conserve    
+PASS  hello: kind unknown                        
+PASS  burn: engineering listed once for 2026-W38 with a derived (non-unknown) posture ["2026-W38 · engineering · 1880000/3000000 tokens · 62.7% · conserve"]
+PASS  burn: engineering listed for 2026-W39 as unknown (not the current period) ["2026-W39 · engineering · 0/3000000 tokens · ?% · unknown"]

@@ -47,7 +47,7 @@ export interface RunServeResult {
   close: () => Promise<void>;
 }
 
-const USAGE = "usage: bisellium serve [--studio dir] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]";
+const USAGE = "usage: bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]";
 const NOOP_CLOSE = async (): Promise<void> => {};
 
 interface ParsedServeArgs {
