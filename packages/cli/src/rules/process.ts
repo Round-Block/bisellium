@@ -55,6 +55,22 @@ export function checkpointStale(files: string[]): boolean {
   return files.some(isOpera) && !files.some(isCheckpoint);
 }
 
+function gateSella(probationes: unknown, gate: string): string | undefined {
+  if (!isDict(probationes)) return undefined;
+  const g = probationes[gate];
+  return isDict(g) ? str(g["sella"]) : undefined;
+}
+
+/** process.cascade (advise): the same sella recorded for both the "spec"
+ *  (builder's job) and "review" (censor's job) gates on one opus — one
+ *  context built and reviewed its own work, the cascade model D-014 warns
+ *  against (Sonnet 5 builds, Opus 4.6 reviews). */
+export function sameSellaBuiltAndReviewed(probationes: unknown): boolean {
+  const spec = gateSella(probationes, "spec");
+  const review = gateSella(probationes, "review");
+  return spec !== undefined && review !== undefined && spec === review;
+}
+
 export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   const findings: Finding[] = [];
   const add = (rule: string, level: Level, where: string, message: string) => findings.push({ rule, level, where, message });
@@ -167,6 +183,19 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       "lessons/",
       `class "${cls}" recurs across ${byCascade.size} cascades (${[...entries].sort().join(", ")})`,
     );
+  }
+
+  // ---- opera/*.md probationes (process.cascade) ----------------------------
+  // Shape errors (bad gate mappings etc.) are check.ts's job; this rule only
+  // asks whether a readable opus shows the same sella on spec and review.
+  for (const p of safeList(join(root, "opera"))) {
+    const where = rel(p);
+    const data = safeFront(p);
+    if (!data) continue;
+    if (sameSellaBuiltAndReviewed(data["probationes"])) {
+      const sella = gateSella(data["probationes"], "spec");
+      add("process.cascade", "advise", where, `sella "${sella}" recorded for both spec and review — one context built and reviewed its own work`);
+    }
   }
 
   if (_opts.repo) {

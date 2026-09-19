@@ -4,7 +4,7 @@
  * advisory. Pure function test — no git, no temp dirs.
  */
 
-import { tddViolation, checkpointStale } from "./process.js";
+import { tddViolation, checkpointStale, sameSellaBuiltAndReviewed } from "./process.js";
 
 let failed = 0;
 const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
@@ -88,6 +88,29 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
 {
   const files = ["studio/opera/W-026.md", "docs/design/dossier/progress-body.html"];
   check(13, "opera + progress page is not stale", checkpointStale(files) === false, String(checkpointStale(files)));
+}
+
+// behaviour 14: same sella on spec and review gates fires
+{
+  const probationes = { spec: { sella: "sonnet-5", status: "passed" }, review: { sella: "sonnet-5", status: "passed" } };
+  check(14, "same sella on spec and review fires", sameSellaBuiltAndReviewed(probationes) === true, String(sameSellaBuiltAndReviewed(probationes)));
+}
+
+// behaviour 15: different sellae on spec and review does not fire
+{
+  const probationes = { spec: { sella: "sonnet-5", status: "passed" }, review: { sella: "opus-4-6", status: "passed" } };
+  check(15, "different sellae does not fire", sameSellaBuiltAndReviewed(probationes) === false, String(sameSellaBuiltAndReviewed(probationes)));
+}
+
+// behaviour 16: only one gate recorded does not fire
+{
+  const probationes = { spec: { sella: "sonnet-5", status: "passed" } };
+  check(16, "only one gate recorded does not fire", sameSellaBuiltAndReviewed(probationes) === false, String(sameSellaBuiltAndReviewed(probationes)));
+}
+
+// behaviour 17: no probationes does not fire
+{
+  check(17, "no probationes does not fire", sameSellaBuiltAndReviewed(undefined) === false, String(sameSellaBuiltAndReviewed(undefined)));
 }
 
 process.exit(failed ? 1 : 0);
