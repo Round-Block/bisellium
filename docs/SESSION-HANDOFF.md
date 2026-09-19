@@ -135,6 +135,17 @@ lex, a decision, or a check rule and delete it here.
   5. `branch.ts:172` hardcodes "into master" in its success message, so a
      repo on `main` merges into main and reports master — same family as
      the bug just fixed above it.
+  6. **`run --opus` → `merge` is a broken chain** (found by dogfooding,
+     2026-09-19). `bisellium run --opus W-026` forks the worktree from
+     `opus/W-026`'s commit correctly, but puts the work on branch
+     `bisellium/<sella>/<n>`. `mergeOpusBranch` only ever reads
+     `opus/<id>`, so a builder's commits never reach the branch that
+     `merge` merges. Nothing moves sella branch -> opus branch. This is
+     why W-026's behaviour 7 "has no test coverage" mattered: the wiring
+     was verified by inspection, never end to end.
+  7. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
+     harness's own worktrees under `.claude/worktrees/` are invisible to
+     them; two stale ones from an old workflow run are still on disk.
 - D-014 (amended twice on 2026-09-19): Sonnet 5 builders, **Opus 5** for
   opus-tier roles *and* for review. The cross-generation clause is struck —
   review independence rests on role separation, not model generation.
