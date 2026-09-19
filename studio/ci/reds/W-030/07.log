@@ -1,0 +1,16 @@
+# behaviour: 7
+# command: node scripts/w030-usage-guard-mutation.mjs
+# exit: 1
+# at: 2026-09-19T18:15:18.030Z
+# sella: builder-a
+# tree: dirty:4b39700f232314143b0e78b378cff972929ff18c
+
+PASS  packages/commands/src/lifecycle.ts:READY_USAGE line in USAGE           "usage: bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:DONE_USAGE line in USAGE            "usage: bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:REVIEW_USAGE line in USAGE          "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:RED_USAGE line in USAGE             "usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>"
+PASS  packages/commands/src/pause.ts:USAGE_PAUSE line in USAGE               "usage: bisellium pause [--studio <dir>] [--reason <text>]"
+PASS  packages/commands/src/pause.ts:USAGE_RESUME line in USAGE              "usage: bisellium resume [--studio <dir>]"
+FAIL  scanned every known usage constant                                     6
+
+[mutation] usage.test.ts exited 1 under M13 (21 constants annotated, pause.ts/lifecycle.ts intact)
