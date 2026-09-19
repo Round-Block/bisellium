@@ -135,6 +135,24 @@ function parseLogHeader(text: string): Map<string, string> {
   return header;
 }
 
+function stripHeader(text: string): string {
+  const lines = text.split(/\r?\n/);
+  const firstNonHeader = lines.findIndex((l) => !/^#\s*[A-Za-z_]+:/.test(l));
+  return (firstNonHeader === -1 ? [] : lines.slice(firstNonHeader)).join("\n").trim();
+}
+
+export function isDuplicateRed(a: string, b: string): boolean {
+  const bodyA = stripHeader(a);
+  const bodyB = stripHeader(b);
+  return bodyA.length > 0 && bodyA === bodyB;
+}
+
+const MODULE_LOAD_RE = /ERR_MODULE_NOT_FOUND|SyntaxError:.*does not provide an export named/;
+
+export function isModuleLoadFailure(text: string): boolean {
+  return MODULE_LOAD_RE.test(text);
+}
+
 function checkRedEvidence(root: string): Finding[] {
   const redsDir = join(root, "ci", "reds");
   if (!existsSync(redsDir)) return [];
@@ -174,6 +192,8 @@ function checkRedEvidence(root: string): Finding[] {
 
     const missing: number[] = [];
     const notRed: number[] = [];
+    const moduleLoad: number[] = [];
+    const logTexts = new Map<number, string>();
     for (let nn = 1; nn <= n; nn++) {
       const logPath = join(redsDir, id, `${String(nn).padStart(2, "0")}.log`);
       if (!existsSync(logPath)) {
@@ -187,9 +207,36 @@ function checkRedEvidence(root: string): Finding[] {
         missing.push(nn);
         continue;
       }
+      logTexts.set(nn, logText);
       const exit = parseLogHeader(logText).get("exit");
       if (exit === undefined || !/^-?\d+$/.test(exit) || exit === "0") notRed.push(nn);
+      if (isModuleLoadFailure(logText)) moduleLoad.push(nn);
     }
+
+    // P-005 part 2: module-load failure is not assertion-level
+    if (moduleLoad.length)
+      findings.push({
+        rule: "opus.red_content",
+        level: "advise",
+        where,
+        message: `red(s) for behaviour(s) ${moduleLoad.join(", ")} are module-load failures, not assertion-level`,
+      });
+
+    // P-005 part 1: duplicate reds (byte-identical after header strip)
+    const texts = [...logTexts.entries()];
+    for (let i = 0; i < texts.length; i++) {
+      for (let j = i + 1; j < texts.length; j++) {
+        if (isDuplicateRed(texts[i]![1], texts[j]![1])) {
+          findings.push({
+            rule: "opus.red_content",
+            level: "block",
+            where,
+            message: `red logs for behaviours ${texts[i]![0]} and ${texts[j]![0]} are identical after header strip`,
+          });
+        }
+      }
+    }
+
     if (missing.length)
       findings.push({
         rule: "opus.red_evidence",
