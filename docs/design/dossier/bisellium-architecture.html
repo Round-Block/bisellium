@@ -1,0 +1,404 @@
+<title>Bisellium Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F7F9F8;
+    --surface: #FFFFFF;
+    --surface-2: #EFF4F2;
+    --ink: #1A2523;
+    --muted: #5A6B67;
+    --line: #DCE5E2;
+    --accent: #0E7C6B;
+    --accent-soft: #E1F0EC;
+    --ok: #178A50;
+    --ok-soft: #E2F3E9;
+    --warn: #B7791F;
+    --warn-soft: #F7EDDA;
+    --bad: #C0392B;
+    --bad-soft: #F9E6E3;
+    --pend: #7A8783;
+    --pend-soft: #EAEEEC;
+    --code-bg: #14201C;
+    --code-ink: #D9E7E2;
+    --code-accent: #6FD9C2;
+    --shadow: 0 1px 2px rgba(20, 35, 30, .06), 0 4px 16px rgba(20, 35, 30, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101614;
+      --surface: #18201D;
+      --surface-2: #1E2825;
+      --ink: #E6EEEB;
+      --muted: #93A39E;
+      --line: #2A3531;
+      --accent: #3ECFB2;
+      --accent-soft: #163229;
+      --ok: #4CC98A;
+      --ok-soft: #14301F;
+      --warn: #E0A94E;
+      --warn-soft: #34290F;
+      --bad: #E5776A;
+      --bad-soft: #3A1712;
+      --pend: #8B9995;
+      --pend-soft: #232D2A;
+      --code-bg: #0C1210;
+      --code-ink: #CDDCD6;
+      --code-accent: #5FD3B8;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101614;
+    --surface: #18201D;
+    --surface-2: #1E2825;
+    --ink: #E6EEEB;
+    --muted: #93A39E;
+    --line: #2A3531;
+    --accent: #3ECFB2;
+    --accent-soft: #163229;
+    --ok: #4CC98A;
+    --ok-soft: #14301F;
+    --warn: #E0A94E;
+    --warn-soft: #34290F;
+    --bad: #E5776A;
+    --bad-soft: #3A1712;
+    --pend: #8B9995;
+    --pend-soft: #232D2A;
+    --code-bg: #0C1210;
+    --code-ink: #CDDCD6;
+    --code-accent: #5FD3B8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+  .prose { max-width: 72ch; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", sans-serif;
+    text-wrap: balance;
+    line-height: 1.15;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; margin: .2em 0 .25em; letter-spacing: -0.01em; }
+  h2 { font-size: 1.7rem; font-weight: 650; margin: 0 0 .5em; }
+  h3 { font-size: 1.18rem; font-weight: 600; margin: 2em 0 .5em; }
+  p { margin: 0 0 1em; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 600; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .08em .35em;
+  }
+
+  .eyebrow {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .6em;
+  }
+  header.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+  .thesis { font-size: 1.22rem; color: var(--muted); max-width: 60ch; margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 24px;
+    margin-top: 28px;
+    font-size: .82rem; color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .meta-row span b { color: var(--ink); font-weight: 500; }
+
+  section { padding: 56px 0 8px; }
+  .part-rule {
+    display: flex; align-items: center; gap: 16px;
+    margin: 64px 0 0;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+  }
+  .part-rule .part-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 4px 12px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .part-rule h2 { margin: 0; font-size: 2rem; }
+
+  /* verdict card */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 26px 30px;
+    margin: 36px 0 0;
+  }
+  .verdict p:last-child { margin-bottom: 0; }
+
+  /* chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem; font-weight: 500;
+    padding: 2px 10px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .chip.ok   { color: var(--ok);   background: var(--ok-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.bad  { color: var(--bad);  background: var(--bad-soft); }
+  .chip.pend { color: var(--pend); background: var(--pend-soft); }
+
+  /* tables */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); margin: 20px 0 28px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 640px; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* two-col gap layout */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 24px 0; }
+  @media (max-width: 720px) { .gap-grid { grid-template-columns: 1fr; } }
+  .gap-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .gap-card h3 { margin-top: 0; }
+  .gap-card ul { margin: 0; padding-left: 1.2em; }
+  .gap-card li { margin-bottom: .45em; }
+  .gap-card.crowded h3 { color: var(--bad); }
+  .gap-card.open h3 { color: var(--ok); }
+
+  /* board mock */
+  .board-mock {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .board-cols { display: flex; gap: 14px; min-width: 700px; }
+  .board-col { flex: 1; }
+  .board-col-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+    display: flex; justify-content: space-between;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .card .slug { font-family: "IBM Plex Mono", monospace; font-size: .78rem; font-weight: 500; margin-bottom: 2px; }
+  .card .who { font-size: .74rem; color: var(--muted); margin-bottom: 8px; }
+  .gates { display: flex; gap: 5px; align-items: center; }
+  .gate { width: 10px; height: 10px; border-radius: 3px; }
+  .gate.passed { background: var(--ok); }
+  .gate.failed { background: var(--bad); }
+  .gate.pending { background: var(--pend-soft); border: 1px solid var(--pend); }
+  .gate-label { font-family: "IBM Plex Mono", monospace; font-size: .64rem; color: var(--muted); margin-left: 4px; }
+  .mock-caption { font-size: .8rem; color: var(--muted); margin: 14px 4px 0; }
+
+  /* code blocks */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    line-height: 1.55;
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 20px 0 28px;
+  }
+  pre .c { color: color-mix(in srgb, var(--code-ink) 55%, transparent); }
+  pre .k { color: var(--code-accent); }
+
+  /* build plan */
+  ol.plan { counter-reset: step; list-style: none; padding: 0; margin: 24px 0; }
+  ol.plan > li {
+    counter-increment: step;
+    display: grid; grid-template-columns: 44px 1fr; gap: 16px;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+  }
+  ol.plan > li:last-child { border-bottom: none; }
+  ol.plan > li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 1.4rem; font-weight: 700; color: var(--accent);
+    line-height: 1.2;
+  }
+  ol.plan b { font-weight: 600; }
+  ol.plan p { margin: .25em 0 0; font-size: .92rem; color: var(--muted); }
+
+  ul.reading { list-style: none; padding: 0; margin: 20px 0; }
+  ul.reading li { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .94rem; }
+  ul.reading li:last-child { border-bottom: none; }
+  ul.reading .why { color: var(--muted); font-size: .86rem; }
+
+  .footnote { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Agent studio &middot; system map</p>
+  <h1>Bisellium Architecture</h1>
+  <p class="thesis">The system as it stands in the tree — module graph generated by <code>scripts/arch-graph.mjs</code>, kept current per cascade by the design lex. The model and plan live in the <a href="https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c">dossier</a>.</p>
+</header>
+
+<section>
+<h1>Architecture</h1>
+<p>Four maps of Bisellium as it stands after cascade 6: what depends on what, how an opus moves, how a cascade runs, and how a studio's files reach a screen. A map, not a spec — the contracts live in <code>docs/ADOPTION.md</code> and the leges.</p>
+<h2>1. Packages</h2>
+<p>Regenerated by <code>scripts/arch-graph.mjs</code> (<code>node scripts/arch-graph.mjs .</code>), which reads each workspace's <code>package.json</code> and scans its own <code>@bisellium/*</code> import specifiers. Paste its stdout over the block below; its stderr reports drift (declared-but-never-imported, imported-but-undeclared) and is not part of the diagram.</p>
+<pre class="mermaid">
+flowchart TD
+  adapter_epoch0["adapter-epoch0<br/>adapters/epoch0"]
+  adapter_native["adapter-native<br/>adapters/native"]
+  cli["cli<br/>packages/cli"]
+  commands["commands<br/>packages/commands"]
+  core["core<br/>packages/core"]
+  pipeline["pipeline<br/>packages/pipeline"]
+  providers["providers<br/>packages/providers"]
+  schema["schema<br/>packages/schema"]
+  server["server<br/>apps/server"]
+  shim["shim<br/>packages/shim"]
+  adapter_epoch0 --> schema
+  adapter_native -. dynamic .-> providers
+  adapter_native --> schema
+  cli --> adapter_native
+  cli --> commands
+  cli --> core
+  cli --> providers
+  cli --> schema
+  cli -- "injects checkStudio + runners" --> server
+  cli --> shim
+  commands --> adapter_native
+  commands --> core
+  commands --> pipeline
+  commands --> schema
+  commands --> shim
+  core -.-> adapter_native
+  core --> schema
+  pipeline --> schema
+  pipeline --> shim
+  providers --> adapter_native
+  providers --> schema
+  server --> adapter_native
+  server -.-> commands
+  server --> core
+  server --> schema
+</pre>
+<p>Solid is a runtime import, dotted a deliberate dynamic <code>import()</code> (<code>adapter-native</code> → <code>providers</code>, the one edge that would otherwise be a static ESM cycle), dashed a dev/test-only edge — and the only <code>cli</code>↔<code>server</code> edge runs downward: <code>packages/cli/src/serve.ts</code> passes <code>checkStudio</code> and the seven write runners into <code>startServer</code>, so <code>apps/server</code> never imports <code>@bisellium/cli</code> or <code>@bisellium/commands</code> at runtime (the cycle W-016 cut).</p>
+<p>Two declared-but-unused dependencies stand today, reported by the script and left alone here: <code>packages/cli</code> → <code>@bisellium/pipeline</code> and <code>apps/server</code> → <code>@bisellium/shim</code>. <code>apps/web</code> has no <code>package.json</code> yet, so it is not in the graph.</p>
+<h2>2. Opus lifecycle</h2>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> backlog
+  backlog --> greenlit: greenlight (Patron)
+  greenlit --> building: ready --spec
+  building --> verifying: orchestrator
+  verifying --> review: orchestrator
+  review --> done: done
+  building --> done: done
+  verifying --> done: done
+  review --> building: review --fail
+  done --> building: review --fail
+  greenlit --> halted: production
+  halted --> building: ready --spec
+</pre>
+<p>Only four transitions have a command behind them — <code>greenlight</code> (backlog only), <code>ready</code> (from <code>greenlit</code> or <code>halted</code>, and it refuses without a spec), <code>done</code> (from <code>building</code>, <code>verifying</code> or <code>review</code>) and <code>review --fail</code>'s reopen edge back to <code>building</code> from <code>review</code> or <code>done</code>; <code>verify</code> writes gate records and never touches <code>state</code>.</p>
+<p>The middle of the lifecycle is orchestrator-driven: nothing in the CLI moves an opus into <code>verifying</code> or <code>review</code>, and nothing writes <code>halted</code> — <code>adapters/native</code> names production's magister as halt's actor, and every state but <code>done</code> may halt (drawn once, from <code>greenlit</code>, rather than six times). That gap is L-015, open.</p>
+<h2>3. Cascade</h2>
+<pre class="mermaid">
+flowchart TD
+  spec["spec — architect writes studio/briefs/&lt;opus&gt;.md"]
+  gate1{"briefs committed<br/>+ spec gate recorded?"}
+  build["build — one builder per opus,<br/>each in its own worktree"]
+  integrate["integrate — eng-lead lands each builder's own files"]
+  verify["verify — 1 Opus reviewer per opus<br/>bisellium verify + check"]
+  gate2{"zero blocking findings?"}
+  fix["fix round — builder, then re-review"]
+  close["close — Censor: bisellium retro --cascade N"]
+  spec --> gate1
+  gate1 -- no --> spec
+  gate1 -- yes --> build
+  build --> integrate --> verify --> gate2
+  gate2 -- no --> fix
+  fix --> verify
+  gate2 -- yes --> close
+</pre>
+<p>Four phases are fixed in <code>cascades/cascade.js</code> (<code>spec → build → verify → close</code>) and sized by <code>cascades/sizing.json</code> (2 opera, 1 reviewer per opus, 1 mutation-tested opus) — integration and the fix rounds are eng-lead practice inside <code>build</code>/<code>verify</code>, not phases of their own. The two gates are what actually stop a cascade: no opus enters <code>building</code> without a committed brief and a passed <code>spec</code> gate (Design lex §1, <code>check</code>'s <code>state.building.spec</code>), and no cascade closes with a blocking finding outstanding.</p>
+<p>Builder isolation is the hard rule around the build phase: a worktree per builder, or a commit of its own files before the Censor runs, because a verifier's result is void if the tree moved under it (engineering lex §2).</p>
+<h2>4. Console read path</h2>
+<pre class="mermaid">
+flowchart LR
+  files["studio/ files<br/>bisellium.yml, opera/, acta/, petitiones/"]
+  snap["adapter-native snapshotDir()"]
+  store["server Store extends core Store<br/>poll every --poll-ms (5s)"]
+  log[(".bisellium/events.jsonl")]
+  snaps[(".bisellium/snapshots/&lt;source&gt;.json")]
+  idx[(".bisellium/index/index.db (SQLite)")]
+  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health"]
+  events["GET /api/events"]
+  live["GET /api/live (SSE)"]
+  posts["POST /api/answer /greenlight /budget<br/>/handoff /talk /pause /resume<br/>X-Bisellium-Token + no-Origin"]
+  runners["injected runners (@bisellium/commands)"]
+  web["web screens — next: web I<br/>Inbox, Officina/Board"]
+  files --> snap --> store
+  store -- "diffSnapshots" --> log
+  store --> snaps
+  log --> idx
+  idx --> events
+  store --> reads
+  store -- "on event" --> live
+  reads --> web
+  events --> web
+  live --> web
+  posts --> runners --> files
+</pre>
+<p>One direction of truth: the studio's files are the state, <code>snapshotDir()</code> reads them into a Snapshot, the core Store diffs consecutive snapshots into the append-only <code>events.jsonl</code> and folds each new event into the SQLite index — <code>/api/events</code> is answered from that index, the other GETs re-read the files through <code>adapter-native</code> on every call (no cache to invalidate), and the POSTs never write directly: they call the runners <code>serve.ts</code> injected, which edit the files the next poll picks up.</p>
+<h2>Seams</h2>
+<ul>
+<li><code>StartServerOptions.checkStudio</code> / <code>.runners</code> — the injection that keeps</li>
+<p><code>apps/server</code> free of <code>@bisellium/cli</code> (§1).</p>
+<li><code>MergePipeline</code> (<code>@bisellium/pipeline</code>) — <code>verify</code> runs gates through it, so a</li>
+<p>merge-blocking pipeline is a drop-in for the local runner.</p>
+<li><code>WorktreeProvider</code> / <code>HarnessProfile</code> (<code>@bisellium/shim</code>) — where a builder</li>
+<p>runs, and what drives it.</p>
+<li><code>SnapshotAdapter</code> (<code>adapters/native</code>, <code>adapters/epoch0</code>) — the only thing that</li>
+<p>knows a studio's file layout.</p>
+<li><code>workflow.*</code> (<code>@bisellium/schema</code>) — the wire vocabulary every layer shares.</li>
+</ul>
+</section>
+
+</div>
+<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}</style>

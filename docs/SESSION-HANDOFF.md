@@ -37,6 +37,10 @@ lex, a decision, or a check rule and delete it here.
 - Dossier: https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c
   (rebuild from `docs/design/dossier/head.html` + `body.html`; patch `body.html`
   with a script, never by hand-editing the built page).
+- Architecture (Mermaid system map, rendered from docs/ARCHITECTURE.md by
+  docs/design/dossier/build-arch.mjs via build.sh):
+  https://claude.ai/artifact/WUBAJ9JceMAX5qEhgjoyuN — republish after any
+  cascade that touched ARCHITECTURE.md (the design lex obliges the update).
 - Progress log (per-cascade rows, split out of the dossier 2026-09-19):
   https://claude.ai/code/artifact/Rnk9m3UwfP9uexz57Zw37e — source
   `docs/design/dossier/progress-body.html`, built by the same `build.sh`.

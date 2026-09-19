@@ -6,4 +6,5 @@ set -e
 cd "$(dirname "$0")"
 cat head.html body.html > bisellium-dossier.html
 sed 's|<title>Bisellium Dossier</title>|<title>Bisellium Progress</title>|' head.html | cat - progress-body.html > bisellium-progress.html
+node build-arch.mjs
 echo built bisellium-dossier.html bisellium-progress.html
