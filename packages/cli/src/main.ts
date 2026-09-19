@@ -24,6 +24,7 @@ import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
 import { runDocs } from "./docs.js";
+import { runBranch, runMerge } from "./branch.js";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
@@ -70,6 +71,8 @@ const USAGE =
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +
   "       bisellium hooks check --harness claude-code [--studio <dir>]\n" +
   "       bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]\n" +
+  "       bisellium branch <opus-id> --studio <dir> [--repo <dir>]\n" +
+  "       bisellium merge <opus-id> --studio <dir> --repo <dir>\n" +
   "       bisellium docs registry [--repo <dir>] [--now <iso>]";
 
 /** `bisellium serve` never exits on its own — it's a long-running HTTP
@@ -122,6 +125,8 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "hooks") return runHooks(rest).exitCode;
   if (cmd === "hook-event") return (await runHookEvent(rest)).exitCode;
   if (cmd === "docs") return runDocs(rest).exitCode;
+  if (cmd === "branch") return runBranch(rest).exitCode;
+  if (cmd === "merge") return runMerge(rest).exitCode;
   if (cmd === "new") return runNew(rest).exitCode;
   if (cmd === "instructions") return runInstructions(rest).exitCode;
   if (cmd === "retro") return runRetro(rest).exitCode;

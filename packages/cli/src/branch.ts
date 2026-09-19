@@ -3,7 +3,8 @@
  * Create opus/<id> branches from HEAD, merge back to master when done.
  */
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 interface BranchResult {
   ok: boolean;
@@ -58,4 +59,58 @@ export function mergeOpusBranch(repo: string, opusId: string): BranchResult {
 
   git(["branch", "-d", branch], cwd);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// CLI wrappers
+// ---------------------------------------------------------------------------
+
+const BRANCH_USAGE = "usage: bisellium branch <opus-id> --studio <dir> [--repo <dir>]";
+const MERGE_USAGE = "usage: bisellium merge <opus-id> --studio <dir> --repo <dir>";
+
+function parseSimple(args: string[]): { positionals: string[]; values: Map<string, string> } {
+  const values = new Map<string, string>();
+  const positionals: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    if (a.startsWith("--")) { values.set(a, args[++i] ?? ""); continue; }
+    positionals.push(a);
+  }
+  return { positionals, values };
+}
+
+export function runBranch(args: string[]): { exitCode: number } {
+  const { positionals, values } = parseSimple(args);
+  const opusId = positionals[0];
+  if (!opusId) { console.error(BRANCH_USAGE); return { exitCode: 2 }; }
+
+  const studio = resolve(values.get("--studio") ?? ".");
+  if (!existsSync(join(studio, "opera", `${opusId}.md`))) {
+    console.error(`opus ${opusId} not found in ${studio}`);
+    return { exitCode: 1 };
+  }
+
+  const repo = resolve(values.get("--repo") ?? ".");
+  const result = createOpusBranch(repo, opusId);
+  if (!result.ok) { console.error(result.error); return { exitCode: 1 }; }
+  console.log(`created ${opusBranchName(opusId)}`);
+  return { exitCode: 0 };
+}
+
+export function runMerge(args: string[]): { exitCode: number } {
+  const { positionals, values } = parseSimple(args);
+  const opusId = positionals[0];
+  if (!opusId) { console.error(MERGE_USAGE); return { exitCode: 2 }; }
+
+  const studio = resolve(values.get("--studio") ?? ".");
+  if (!existsSync(join(studio, "opera", `${opusId}.md`))) {
+    console.error(`opus ${opusId} not found in ${studio}`);
+    return { exitCode: 1 };
+  }
+
+  const repo = resolve(values.get("--repo") ?? ".");
+  const result = mergeOpusBranch(repo, opusId);
+  if (!result.ok) { console.error(result.error); return { exitCode: 1 }; }
+  console.log(`merged ${opusBranchName(opusId)} into master`);
+  return { exitCode: 0 };
 }
