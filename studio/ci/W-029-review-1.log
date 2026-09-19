@@ -1,0 +1,75 @@
+# W-029 eng-lead review — round 1
+# reviewer: qa-lead (Sonnet 5)
+# at: 2026-09-19
+# tree: 5ab03a0b415660335a02ec1a46197dfec027ee09 (HEAD 30fb51b)
+# verdict: PASS
+
+## Scope
+
+Files owned per brief: apps/web/playwright.config.ts, apps/web/tests/smoke.spec.ts,
+apps/web/package.json (devDep + test:e2e script). All three present and unchanged
+outside declared scope.
+
+## Live acceptance run (produced now, not backfilled)
+
+`npx playwright test` run directly against current tree from apps/web:
+
+  5 passed (2.6s)
+  - inbox screen loads and shows heading
+  - nav links switch between Inbox and Officina
+  - keyboard navigation (j/k) moves focus on inbox items
+  - officina screen loads and shows fasti strip
+  - route hash changes reflect in displayed screen
+
+This is the first recorded pass of the actual acceptance script
+(`npm run test:e2e`) in studio bookkeeping — see advisory below.
+
+## Behaviour coverage vs brief
+
+1:1 mapping, all 5 brief behaviours have a named test in smoke.spec.ts, in
+brief order. Out-of-scope items (drawer/verb interaction, CI wiring, visual
+regression) correctly absent.
+
+## Recorded reds
+
+6 logs at studio/ci/reds/W-029/{01..06}.log. 01,02,05 are mutated-assertion
+reds (behaviours 1,2,5). 03,04 are genuine reds against pre-implementation
+DOM (behaviours 3,4). 06 is a second, unmutated red for behaviour 4
+(".fasti-strip" not found) recorded against the *clean* W-029 commit
+(130f29a) itself — a real regression (FastiStrip dropped in the W-026
+visual pass), not a synthetic mutation. It was fixed out-of-band in
+3ed05c8 (apps/web/src/screens/Officina.tsx — outside W-029's declared
+files, since the bug predates and is unrelated to this opus) and the red
+log was committed alongside that fix, honestly, rather than dropped.
+Satisfies test-first-with-recorded-red; no evidence was faked or
+backfilled to hide the miss.
+
+## Config review
+
+playwright.config.ts: chromium-only (matches "out of scope: firefox/webkit"
+implied by brief's minimal-suite intent), webServer starts vite dev itself,
+baseURL/port fixed and non-conflicting, reuseExistingServer off in CI.
+package.json adds exactly one devDependency (@playwright/test) and one
+script (test:e2e). No unrequested abstraction, no CI wiring (correctly out
+of scope).
+
+tests/lint/types probationes (ci/W-029-{tests,lint,types}-5ab03a0b.log)
+certify the general repo suite (`npm test`/`lint`/`typecheck`), which does
+not invoke Playwright — this is standard boilerplate for every opus, not a
+mislabeled claim about e2e status.
+
+## Advisory (non-blocking)
+
+1. No dedicated green log for `npm run test:e2e` exists anywhere in studio
+   bookkeeping prior to this review — only reds. The acceptance criterion
+   was verified live by this review, not by the opus's own evidence trail.
+   Given "review×evidence-backfilled-or-absent" is a recurring finding
+   class in this studio (L-001, L-008, L-017, L-021), recommend a future
+   check rule or convention: an opus whose acceptance criterion is an
+   external test command (not covered by root `npm test`) captures one
+   green log for that command, same as reds are captured per behaviour.
+2. Test 5's name/comment claims "no full reload" but the test does not
+   assert against a reload (e.g. a page-identity marker); it duplicates
+   test 2's transition check via direct hash assignment instead of a click.
+   Not a coverage gap (hash routing is still exercised) but the comment
+   overstates what's checked.

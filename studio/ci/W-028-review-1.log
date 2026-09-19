@@ -1,0 +1,75 @@
+# W-028 qa-lead review — round 1
+# reviewer: qa-lead (Censor)
+# at: 2026-09-19
+# commit: 30fb51bfd05dd810c750cad7f44c6a18f5de2dff
+# verdict: FAIL
+
+## Gates verified on current tree
+
+- packages/cli/src/close.test.ts: PASS (7/7 behaviours, exit 0)
+- packages/cli/src/rules/process.test.ts: PASS (17/17 behaviours incl. 6
+  checkpointStale behaviours, exit 0)
+
+Both suites pass, but coverage does not reach the actually-reachable CLI
+entry points (`runClose`, `rebuildDossier`) — every close.test.ts assertion
+exercises only the pure `closeChecks`/`executeClose` functions, never
+`runClose` (the function `main.ts` wires to `bisellium close`). That gap
+hid two functional bugs, both reproduced live against the built CLI:
+
+## Bug 1 — dossier-rebuild failure is swallowed; close reports success anyway
+
+`runClose` (packages/cli/src/close.ts:75) calls `rebuildDossier(repo)` and
+discards its boolean return value unconditionally:
+
+    rebuildDossier(repo);
+    console.log(`${opusId} closed — dossier rebuilt`);
+    return { exitCode: 0 };
+
+Reproduced: pointed --repo at a fixture with a `docs/design/dossier/build.sh`
+that exits 1, ran `bisellium close`. Opus transitioned to `done`, command
+printed "W-500 closed — dossier rebuilt" and exited 0, despite the rebuild
+script failing. This is the exact failure mode the opus's own
+`process.checkpoint` rule (same opus, packages/cli/src/rules/process.ts)
+was written to catch — code/state lands, checkpoint artifact silently
+doesn't — except now produced by the automation meant to prevent it, and
+reported as a success. The commit message for 19f2353 ("executeClose ...
+rebuilds dossier HTML") also does not match the code: `rebuildDossier` is
+called from `runClose`, never from `executeClose`, so any caller reusing
+`executeClose` directly (e.g. a future autonomous patron sella, this
+opus's own stated later deliverable) gets no dossier rebuild at all.
+
+## Bug 2 — closeChecks's CLOSEABLE set doesn't match lifecycle's real states
+
+`closeChecks` (close.ts:12) allows `{"building", "reviewing", "greenlit"}`.
+The lifecycle state ids (docs/ADOPTION.md:15, and `runDone`'s own
+`DONE_FROM_STATES` in packages/commands/src/lifecycle.ts:150) are
+`{"building", "verifying", "review"}` — there is no "reviewing" state, and
+"greenlit" is a pre-build state `runDone` never accepts. Net effect,
+reproduced live: `bisellium close` refuses an opus in `state: verifying` or
+`state: review` — the two states a "close after checks pass" command exists
+to serve — while accepting a nonexistent "reviewing" (dead code) and a
+"greenlit" opus that will fail one step later inside `runDone` anyway. Only
+`state: building` actually works end to end. No test in close.test.ts
+exercises "verifying" or "review" as an input state; behaviour 0 only
+covers "building".
+
+## Brief conformance
+
+process.checkpoint rule (in-scope deliverable): matches the brief exactly —
+6 behaviours (advise-level, opera-changed-without-handoff), wired into
+checkProcess via git diff HEAD~1 HEAD. No issues found here.
+
+`bisellium close` / executeClose (opus's own stated stretch work, not the
+brief's in-scope item, but shipped and offered for review as such): fails
+its own purpose on two of its three legitimate entry states and lies about
+dossier-rebuild success on the one state that does work.
+
+## Verdict
+
+FAIL. Both bugs are reproducible against the shipped code, not mutations,
+and both sit directly on the opus's stated intent (guarantee checkpoint
+artifacts land; close an opus once its gates pass). Fix: align CLOSEABLE
+with DONE_FROM_STATES (or import it), surface/propagate rebuildDossier's
+result as a non-zero exit + error message, and add runClose-level tests
+(success, dossier-failure, verifying/review states) so the CLI entry point
+itself is under test, not just the pure helpers.

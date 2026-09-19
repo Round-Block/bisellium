@@ -1,0 +1,78 @@
+W-022 — censor review, round 1
+reviewer: qa-lead (Censor)
+at: 2026-09-19T19:30:00Z (review session)
+tree: 5ab03a0b415660335a02ec1a46197dfec027ee09 (studio/opera/W-022.md probationes)
+commit reviewed: ea4c2dd445b3afef3a6b1626604bc0417eeea8f4
+
+VERDICT: failed
+
+Scope reviewed
+--------------
+packages/cli/src/rules/evidence.ts (isDuplicateRed, isModuleLoadFailure,
+wiring into checkRedEvidence's opus.red_content emission),
+packages/cli/src/rules/evidence.test.ts, studio/briefs/W-022.md,
+studio/opera/W-022.md.
+
+Code correctness
+----------------
+- isDuplicateRed / isModuleLoadFailure match the brief's stated interfaces.
+  Ran `node --import tsx packages/cli/src/rules/evidence.test.ts` directly:
+  all 6 claimed behaviours PASS, one-to-one with the brief's "Behaviours to
+  test" list.
+- `npm run -s typecheck` clean on this tree.
+- opus.red_content wiring in checkRedEvidence emits block for duplicate
+  pairs and advise for module-load reds, matching the brief's acceptance
+  line verbatim.
+- Minor, non-blocking: MODULE_LOAD_RE's `.` does not match newlines, so a
+  "does not provide an export named" message split across lines by the
+  runtime would slip past isModuleLoadFailure. Not exercised by any fixture
+  either way; worth a behaviour if it's ever seen in the wild.
+
+Blocking finding: this opus is itself unexcused evidence-backfilled-or-absent
+-----------------------------------------------------------------------------
+`node --import tsx packages/cli/src/main.ts check studio --repo .` reports,
+against studio/opera/W-022.md itself:
+
+  opus.red_evidence   opera/W-022.md   missing red log(s) for behaviour(s) 1, 2, 3, 4, 5, 6
+
+No `studio/ci/reds/W-022/` directory exists at all (confirmed: `find
+studio/ci/reds -iname '*W-022*'` finds nothing). Git history for
+evidence.ts/evidence.test.ts is a single commit, ea4c2dd, landing the
+functions and their passing tests together — no red commit, no captured
+failing run, anywhere.
+
+Unlike W-021 (studio/ci/W-021-review-1.log), which had a real bootstrap
+excuse — `bisellium red` and the `ci/reds/` store had not yet landed on
+master when builder-b did that work — W-022's commit (2026-09-19T19:14:09
++08:00) lands directly on top of W-020 and W-021 (2026-09-18T22:47:25+08:00
+and earlier in the same linear history: `git log --graph` shows no parallel
+branch). `bisellium red` and the reds store were fully available; sibling
+opera in the same window (W-024, W-025, W-029 all have populated
+studio/ci/reds/<id>/ directories) used them. W-022 did not, and the commit
+message carries no acknowledgment of the gap the way W-021's review did.
+
+This is exactly the recurring class the project's own retros track
+(`review×evidence-backfilled-or-absent`, recurring across 4 cascades now per
+`bisellium check`'s own lesson.recurrent output: L-001, L-008, L-017,
+L-021) and precisely what P-005/W-021's opus.red_evidence rule exists to
+catch. An opus implementing the mechanical detector for backfilled evidence
+that itself has no recorded reds is not a technicality; it is the finding.
+
+Standing rules invoked
+-----------------------
+- "Test-first with a recorded red." — not demonstrated for any of the 6
+  behaviours.
+- "Evidence is produced, never backfilled." — no evidence was produced at
+  all for this opus's own tests; there is nothing to backfill from, which
+  is worse than a late backfill.
+
+Disposition
+-----------
+Failed. Code is correct and matches the brief; process evidence for this
+opus's own six behaviours is entirely absent, with no bootstrap excuse
+available this time. Round 2 needs six `bisellium red W-022 --behaviour N --
+<cmd>` captures (necessarily backdated in spirit only if the tests still
+fail without the implementation — i.e. re-derive genuine reds by temporarily
+reverting the two functions to a stub/throw, or by re-running against the
+pre-ea4c2dd tree) before this can pass, per the same rule this opus enforces
+on everyone else.

@@ -1,0 +1,39 @@
+review: W-027 — container lifecycle: prune command
+sella: eng-lead
+command: manual review (read brief, opera, prune.ts, prune.test.ts; ran npm test subset; ran check studio --repo .; ran one mutation)
+verdict: failed
+
+Findings:
+
+1. [blocking] opus.red_evidence — `bisellium check studio --repo .` reports
+   `opus.red_evidence  opera/W-027.md  missing red log(s) for behaviour(s)
+   1, 2, 3, 4, 5`. No `studio/ci/reds/W-027/0N.log` exists for any of the
+   brief's 5 behaviours. Standing rule "Test-first with a recorded red" and
+   the QA evidence contract ("Evidence is produced, never backfilled")
+   require these; none were produced during this opus.
+
+2. [coverage gap] Brief §"Behaviours to test" lists 5 behaviours, the 5th
+   being "`runPrune` exits 0 and reports both worktree and branch results".
+   `packages/cli/src/prune.test.ts` only covers behaviours 1-4
+   (`pruneStaleOpusBranches`). `runPrune` — the CLI wrapper: flag parsing,
+   the `--studio` missing-opera-dir exit-2 path, and the console reporting
+   — is not exercised by any test in the repo (confirmed: `runPrune` has
+   no other callers under `packages/` or `apps/` besides `main.ts` and its
+   own definition).
+
+3. [minor / lint] `packages/cli/src/prune.ts` imports `readdirSync` (never
+   used) and defines `PRUNE_USAGE` (never referenced — the usage string is
+   duplicated inline in `main.ts` instead). Lint reports these as warnings
+   only (exit 0), but they are dead code.
+
+Verified independently:
+- `pruneStaleOpusBranches`'s 4 existing tests pass
+  (`node --import tsx --test packages/cli/src/prune.test.ts`).
+- One mutation (`state !== "done"` -> `state !== "bogus-mutant"`) makes
+  test 1 fail as expected; the suite bites for the behaviours it covers.
+- `npm run -s typecheck` and lint both exit 0 on the certified tree.
+- CLI wiring for `prune` in `main.ts` is present and matches the brief.
+
+Not blocking on its own, but relevant: opus state is "building", not
+"review" — filing this as a fail returns/keeps it in `building` per
+`runReview`'s own transition rule.

@@ -1,0 +1,61 @@
+review: W-026 (parallel workstreams: per-opus branching) — round 1
+sella: qa-lead
+verdict: FAIL
+
+Checked against studio/briefs/W-026.md against packages/cli/src/branch.ts,
+packages/cli/src/branch.test.ts, packages/cli/src/main.ts,
+packages/commands/src/run.ts.
+
+Blocking findings:
+
+1. Brief behaviour 4 — "mergeOpusBranch refuses when opus state is not
+   `done`" — is not implemented and not tested. mergeOpusBranch(repo, opusId)
+   takes no opus/studio state at all; runMerge only checks that
+   studio/opera/<id>.md *exists*, never its `state:` field. branch.test.ts's
+   own "behaviour 4" tests something else entirely ("refuses missing
+   branch"), so the 7-count in the dossier/handoff ("7-behaviour integration
+   test suite") is reached by substituting an untested requirement with one
+   nobody asked for. As shipped, `bisellium merge` will fast-forward any
+   opus branch into master regardless of lifecycle state or gate status.
+   Verified by reading branch.ts (no state read anywhere) and grepping the
+   whole tree for a done/state check tied to merge — none exists.
+
+2. Brief's own Interfaces section: "bisellium merge ... merge opus branch to
+   master after gates pass, push, delete branch." mergeOpusBranch never
+   pushes (grep for `push` in branch.ts: only Array.push, no git push), and
+   never checks probationes gates (tests/lint/types) before merging. Only
+   the branch-delete half of that sentence is implemented.
+
+3. Behaviour 7 ("bisellium run --opus <id> forks worktree from opus branch,
+   not HEAD") has zero test coverage anywhere in the repo. branch.test.ts
+   doesn't touch run.ts; packages/shim/test/shim.test.ts's runCommand tests
+   never pass --opus; grepped every *.test.ts for "--opus" — none exercises
+   it. The wiring (packages/commands/src/run.ts:94-98,147-148, `base =
+   opus/${opus}`) looks plausible by inspection only, unverified by any
+   test.
+
+4. Mutation test (qa lex §2: one mutation is enough to demonstrate the
+   suite bites): inverted `canMerge.status !== 0` to `=== 0` in
+   mergeOpusBranch's conflict-detection branch (the code path exercised by
+   the suite's own "behaviour 5: refuses conflicting branch" test). All 10
+   branch.test.ts checks still PASS. Root cause: both the "conflict" arm and
+   the "clean but diverged" arm return `{ ok: false }` to the caller, and
+   the test only asserts `result.ok === false`, never the specific error
+   text — so the `git merge --no-commit --no-ff` conflict probe is
+   currently provable dead code from the test's point of view. The suite
+   does not actually bite on this behaviour.
+
+Evidence checked and found sound (not re-litigated as findings):
+- npm test green at tree 5ab03a0b415660335a02ec1a46197dfec027ee09 (verified
+  independently: `sourceTreeHash` recomputed from HEAD 30fb51b matches; ran
+  `node --import tsx packages/cli/src/branch.test.ts .` directly, 10/10 PASS).
+- Behaviours 1, 2, 3, 6 (create/duplicate-refuse/ff-merge/branch-delete) are
+  implemented and covered as claimed.
+- tree/lint/types certificates are real (not a fabricated git object — the
+  "tree:" id is @bisellium/shim's sourceTreeHash, a sha1 over `git ls-tree`
+  excluding studio/.bisellium, by design not a git object id).
+
+Verdict: FAIL. Send back to building: implement and test the `done`-state
+(and gates-passed) guard on mergeOpusBranch, implement the push step, add a
+real test for `run --opus`, and replace or supplement the conflict-detection
+test so it can't pass with the check removed.

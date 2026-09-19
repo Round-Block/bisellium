@@ -1,0 +1,78 @@
+W-023 — lead review, round 1
+reviewer: qa-lead (Censor)
+at: 2026-09-19T13:52:29.000Z
+tree: 5ab03a0b415660335a02ec1a46197dfec027ee09 (certified by opus's own tests/lint/types gates)
+
+VERDICT: failed
+
+Scope reviewed
+--------------
+packages/cli/src/rules/paths.ts (containment scoping, level promotion),
+packages/cli/src/rules.test.ts (comment update on the real-tree integration
+assertion), studio/petitiones/P-004.md (Patron's decree).
+
+What was checked
+----------------
+- Diff (commit 82245e2) matches the brief's stated scope for the promotion:
+  both path.id.unvalidated and path.escapes.officina now emit "block" instead
+  of "advise", matching brief behaviours 1-2.
+- checkContainment's acta/ block removed, matching the Patron's decree
+  (petitiones/P-004.md, option b): opus spec: and gate evidence: paths stay
+  in scope; acta evidence hrefs are no longer escape-checked here.
+- `node --import tsx ... check studio --repo .` shows zero path.* findings of
+  any level on the real studio tree — the insurance-clause acceptance bar
+  (brief behaviour 4) holds.
+- Module still dogfoods D-008: no `.startsWith()` in rules/paths.ts (asserted
+  by the existing source-scan test).
+- Gate evidence for tests/lint/types (ci/W-023-{tests,lint,types}-5ab03a0b.log)
+  is present, non-empty and shows a real run (npm test -s / lint / typecheck,
+  exit 0 in each).
+
+Findings
+--------
+1. BLOCKING — opus.red_evidence (mechanical, confirmed by `check studio`):
+   opera/W-023.md has zero recorded red logs for any of its four declared
+   behaviours (ci/reds/W-023/01.log .. 04.log all absent). "Test-first with
+   a recorded red" is a standing rule, not a suggestion — the brief lists
+   four specific behaviours to prove, and none has a red captured before the
+   fix. Whether or not the diff is correct, there is no evidence it was
+   built test-first; this alone fails the gate the studio itself enforces.
+
+2. BLOCKING — undocumented scope creep beyond the brief and the decree: the
+   diff removes not only the acta/ evidence containment block from
+   checkContainment (which the brief and P-004 both name) but also the
+   lessons/ evidence containment block, which neither the brief ("removed
+   acta evidence checks") nor the Patron's decree at petitiones/P-004.md
+   (which discusses only the acta/2026-09-17-kickoff.md firing site and
+   says "acta evidence hrefs stay with checkLink") ever mentions. The
+   module's own updated comment ("acta evidence stays with checkLink") is
+   also inaccurate for the part that was quietly dropped: lessons/ evidence
+   hrefs were never governed by checkLink at all — they have their own
+   inline dead-link check in rules/process.ts's `lesson.evidence` rule, so
+   "stays with checkLink" mischaracterizes what still covers lessons
+   evidence. No lesson currently references an out-of-officina href, so the
+   real tree isn't broken by this, but a Patron decree was extended past
+   what it decided without asking, and the change isn't disclosed anywhere
+   in the opus's own record.
+
+3. ADVISORY — test coverage gap against the brief's own behaviour list:
+   brief behaviour 3 is "Acta evidence escaping does NOT fire (scoped out)"
+   as a distinct, numbered thing to test. rules.test.ts has no unit test
+   that builds an acta/ fixture with an out-of-officina evidence href and
+   asserts checkPaths returns no path.escapes.officina finding for it (or
+   for the equivalent lessons/ case, given finding 2). The only coverage is
+   the real-studio "zero blocking path.* findings" integration assertion,
+   which would pass identically if the acta/lessons code paths had been
+   deleted for a wrong reason, or if a future edit to studio/acta ever
+   removed the one fixture (../README.md) that currently exercises this —
+   silently losing the regression. Not blocking on its own, but compounds
+   finding 1.
+
+Disposition
+-----------
+Failing this round. Re-submit with: (a) recorded reds for behaviours 1-4
+under ci/reds/W-023/, (b) either brief/petitio authorization for scoping out
+lessons/ evidence too, or restore that check and confine this opus to what
+P-004 actually decided, (c) a dedicated unit test for the acta-scoping
+behaviour (brief item 3) that does not depend on the current shape of
+studio/acta/2026-09-17-kickoff.md.
