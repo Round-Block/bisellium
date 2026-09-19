@@ -93,16 +93,15 @@ lex, a decision, or a check rule and delete it here.
   `bisellium branch`/`merge`, `run --opus`.
 - **Cascade 10**: W-028 checkpoint rule + `bisellium close` command.
 - **Cascade 11**: W-022 evidence content rules (P-005 resolved).
-- **Cascade 12 landed**:
-  - W-023 complete: `path.escapes.officina` scoped to spec and gate
-    evidence only (acta removed per P-004), both path rules promoted
-    to blocking. Insurance clause test passes.
+- **Cascade 12**: W-023 containment scoping (P-004 resolved).
+- **Cascade 13 landed**:
+  - W-027 complete: `bisellium prune` command — removes merged opus
+    branches for done opera and reclaims stale worktrees. 4 behaviours,
+    CLI wired.
 - **Backlog (priority order)**:
-  1. **W-028** (building) — patron-as-agent: `bisellium close` command,
-     fully autonomous patron sella. checkpoint rule landed.
-  2. **W-027** — container lifecycle: prune, cleanup, disk-aware cascade
-     start. Needed once parallel workstreams run.
-  3. Playwright / UI integration testing (not yet scoped)
+  1. **W-028** (building) — patron-as-agent: remaining scope (autonomous
+     patron sella, `close` full automation) needs Patron judgment.
+  2. Playwright / UI integration testing (not yet scoped)
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
 - Then: web II (Board screen, drawer, SSE live), web III (Swimlane, Agents,
   Graph), autonomy L2, adapters + desktop.
