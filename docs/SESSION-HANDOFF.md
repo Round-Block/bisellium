@@ -76,7 +76,7 @@ lex, a decision, or a check rule and delete it here.
   WSL. From a Windows-hosted session run `wsl -e bash -lc "cd ~/projects/bisellium && …"`.
   From a session whose project directory is this repo, run commands directly.
 - Commit with `-c user.name=edckt -c user.email=edene.chankt@gmail.com` and the
-  trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+  trailer `Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>`.
 - The Workflow tool is allowed without a prompt (`.claude/settings.json`).
 - Codex weekly quota was exhausted until 2026-09-21; quota-axi cannot read the
   Claude Code login (`auth_required`), so Claude posture is observed/unknown.
@@ -97,14 +97,36 @@ lex, a decision, or a check rule and delete it here.
 - **Cascade 13**: W-027 prune command.
 - **Cascade 14**: W-028 close automation.
 - **Cascade 15**: process.cascade rule + hook enforcement.
-- **Cascade 16**: W-029 Playwright smoke suite (Sonnet builder, 118k tokens).
-  5 behaviours, 4 pass, 1 honest red: FastiStrip regression.
-- **Cascade 17**: FastiStrip regression fixed (Sonnet builder, 35k tokens).
-  Re-imported `FastiStrip` + demo acta into `Officina.tsx`. All 5 Playwright
-  behaviours green.
+- **Cascade 16**: W-029 Playwright smoke suite (Sonnet builder, 118k).
+- **Cascade 17**: FastiStrip regression fixed (Sonnet builder, 35k).
+- **Cascade 18**: Review gate pass for all six opera. Results:
+  - W-029: **PASS** — only opus with reds, closeable.
+  - W-022: FAIL — no reds (6 behaviours).
+  - W-023: FAIL — no reds, undocumented `lessons/` containment removal.
+  - W-026: FAIL — no reds, brief behaviour 4 missing (merge without state
+    check), no push/gate check, mutation test dead on behaviour 5.
+  - W-027: FAIL — no reds, behaviour 5 (`runPrune` wrapper) untested.
+  - W-028: FAIL — two bugs: `CLOSEABLE` set has wrong state names
+    (`reviewing`/`greenlit` instead of `verifying`/`review`), and
+    `rebuildDossier` failure silently swallowed.
+  - **NOTE**: reviews were run by censor agents (wrong model — should have
+    been `reviewer46` / Opus 4.6 per D-014). Findings are valid but the
+    reviews need re-recording with the correct agent type. W-029's pass
+    should be re-confirmed by `reviewer46`.
+- **In-flight builders** (may have completed by session start):
+  - W-028 bug fix builder (Sonnet): fixing CLOSEABLE states + dossier
+    failure handling.
+  - `process.review_tier` check rule builder (Sonnet): new rule to flag
+    reviews done by non-Opus sellae — mechanical prevention of the
+    wrong-model dispatch mistake.
 - **Backlog (priority order)**:
-  1. Web II (Board screen, drawer, SSE live)
+  1. Close W-029 (`bisellium done`) — review passed.
+  2. Re-record all reviews with `reviewer46` (Opus 4.6).
+  3. Round-2 fixes for W-022/W-023/W-026/W-027/W-028 (reds + code bugs).
+  4. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
+- Research note added: `docs/research/jev-typesafe-ai.md` — System One
+  model for structured decisions, evaluate for talk/posture path.
 
 ## Naming
 
