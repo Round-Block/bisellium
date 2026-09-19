@@ -128,9 +128,8 @@ lex, a decision, or a check rule and delete it here.
   opus-tier roles *and* for review. The cross-generation clause is struck —
   review independence rests on role separation, not model generation.
 - **One review gate**: `censor` (Opus 5, boots as `qa-lead`, read-only by
-  design) is the only reviewing agent. `reviewer46` is a deprecated stub —
-  **delete `.claude/agents/reviewer46.md` by hand**; a cascade session
-  can't, the sandbox holds `.claude/` read-only to the shell.
+  design) is the only reviewing agent. `reviewer46` is deleted. Agent set is
+  now architect, builder, censor, clerk — matching the rendered harness list.
 - Research note added: `docs/research/jev-typesafe-ai.md` — System One
   model for structured decisions, evaluate for talk/posture path.
 
