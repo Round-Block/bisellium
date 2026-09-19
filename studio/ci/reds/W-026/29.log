@@ -1,0 +1,18 @@
+# behaviour: 29
+# command: node --import tsx packages/cli/src/branch.test.ts . 29
+# exit: 1
+# at: 2026-09-19T17:48:22.002Z
+# sella: builder-a
+# tree: dirty:70e311c08e00e0237dd857238db33ff714e15463
+
+PASS  state read from the branch: a done branch merges even though the trunk's disk copy still says building undefined
+PASS  feature commit lands on master                               e8376b1 bookkeeping: done on the branch
+03bdcbe feat: add feature
+a95f92a studio bookkeeping: open W-102
+05c9f67 init
+PASS  state read from the branch: a wrongly-edited trunk copy does not fool merge into landing an unfinished branch opus W-103 is not done (state: building)
+FAIL  the refusal names the branch, not just a bare state          opus W-103 is not done (state: building)
+PASS  the refusal names the branch's real state                    opus W-103 is not done (state: building)
+PASS  master untouched beyond its own bookkeeping commit           dc9a469 bookkeeping: (wrongly) mark done on master only
+d040483 studio bookkeeping: open W-103
+05c9f67 init

@@ -295,13 +295,18 @@ function masterLog(dir: string): string {
   }
 }
 
-// behaviour 8 (extra, not in the brief's numbered list): missing branch
+// behaviour 8 (extra, not in the brief's numbered list; A6.5, mutation-
+// record): missing branch. This logic predates round 5/6 entirely — the
+// FAIL captured for this behaviour's evidence came from a deliberate
+// mutation of the early-exit guard, not from the feature being unbuilt
+// (re-run against round-5 code: PASS 1/1). Labelled in the check() name
+// below so the log itself says so (A6.5), not only this comment.
 {
   const dir = tmpRepo();
   const studio = tmpStudio();
   try {
     const result = mergeOpusBranch(dir, "W-999", studio);
-    check(8, "refuses missing branch", result.ok === false, String(result.error));
+    check(8, "mutation-record: refuses missing branch", result.ok === false, String(result.error));
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
@@ -312,6 +317,9 @@ function masterLog(dir: string): string {
 // merge under the ff-only model is refused, distinctly from a conflict —
 // this is the acceptance-criterion gap round-2 review flags for the
 // architect (finding 8): nothing here builds the rebase this needs.
+// A6.5, mutation-record: same footing as 8 above — this logic predates
+// round 5/6 (re-run against round-5 code: PASS 2/2); the recorded FAIL came
+// from a deliberate mutation, not an unbuilt feature.
 {
   const dir = tmpRepo();
   const studio = tmpStudio();
@@ -326,8 +334,8 @@ function masterLog(dir: string): string {
     execSync("git checkout master", { cwd: dir, stdio: "pipe" });
 
     const result = mergeOpusBranch(dir, "W-070", studio);
-    check(9, "refuses a clean-but-diverged merge (ff-only)", result.ok === false, String(result.error));
-    check(9, "names divergence, not a conflict", result.error === "branch opus/W-070 has diverged from master — rebase first", String(result.error));
+    check(9, "mutation-record: refuses a clean-but-diverged merge (ff-only)", result.ok === false, String(result.error));
+    check(9, "mutation-record: names divergence, not a conflict", result.error === "branch opus/W-070 has diverged from master — rebase first", String(result.error));
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
@@ -942,12 +950,20 @@ function originMasterRev(bare: string): string {
   }
 }
 
-// behaviour 28 (B5.1 absence rule, pre-implementation): defense in depth.
-// The manifest declares gate "tests" `kind: automated`; the (correctly-read)
-// branch copy of the opus record carries no `probationes` at all — never
-// verified. Absence is, on a bare read, indistinguishable from "nothing to
-// check" (exactly what let B5.1(a) land uncertified work); refuse rather
-// than pass on it.
+// behaviour 28 (round 6, B6.1 — RETIRED, kept at this number per P-005):
+// used to pin the "absence rule" (a `kind: automated` gate with no recorded
+// `tree:` certificate at all refuses, rather than passing on the absence).
+// Round-6 review found that rule refuses a Patron-waived gate FOREVER — the
+// remedy it names ("run verify") can never clear a waived gate, since
+// `verify` deliberately never touches one — and that its `kind ===
+// "automated"` scoping was pinned by nothing (A6.3). It's removed: the
+// guarantee it duplicated is `bisellium done`'s own gate (lifecycle.ts),
+// which already refuses to write `state: done` while an automated
+// probatio's `status`/`certifies` are missing. This behaviour's assertion
+// is flipped to match — an uncertified automated gate no longer refuses a
+// merge BY ITSELF (a raw front-matter write, bypassing `done`, is the only
+// way to reach this shape at all, same as every other test file in this
+// suite that writes opera front matter directly).
 {
   const dir = tmpRepo();
   const studio = join(dir, "studio"); // INSIDE the repo — the real layout
@@ -964,8 +980,130 @@ function originMasterRev(bare: string): string {
     execSync("git checkout master", { cwd: dir, stdio: "pipe" });
 
     const result = mergeOpusBranch(dir, "W-101", studio);
-    check(28, "absence rule: an automated gate with no recorded tree: certificate refuses, not passes", result.ok === false, String(result.error));
-    check(28, "master untouched", !masterLog(dir).includes("never verified"), masterLog(dir).trim());
+    check(28, "absence rule removed: an automated gate with no recorded tree: certificate does not by itself refuse the merge", result.ok === true, String(result.error));
+    check(28, "feature commit lands on master", masterLog(dir).includes("never verified"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// round-6 review: two blockers on top of B5.1's branch-ref read. B6.3 —
+// `readOpusRecord` supplies `state` from the branch too, and nothing pinned
+// that (M-1 in the review's mutation sweep was only caught by 26/27's
+// certificate assertions). B6.2 — the stale-certificate remedy was one
+// commit short of achievable end to end. Both use `studio` INSIDE the repo,
+// same reason as 26-28.
+// ---------------------------------------------------------------------------
+
+// behaviour 29 (round 6, B6.3, pre-implementation): `state` is read from
+// `branch`, not from whatever `--studio` shows on disk when `merge` runs.
+{
+  // (a) branch says done, the trunk's own (never-updated) disk copy still
+  // says building — merge must trust the branch and succeed.
+  const dir = tmpRepo();
+  const studio = join(dir, "studio");
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-102.md"), '---\nid: "W-102"\nstate: building\n---\n');
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-102'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-102");
+    execSync("git checkout opus/W-102", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(studio, "opera", "W-102.md"), '---\nid: "W-102"\nstate: done\n---\n');
+    execSync("git add . && git commit -m 'bookkeeping: done on the branch'", { cwd: dir, stdio: "pipe" });
+    // master's own copy of the record is never touched — it still says
+    // "building" on disk once checked out.
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-102", studio);
+    check(29, "state read from the branch: a done branch merges even though the trunk's disk copy still says building", result.ok === true, String(result.error));
+    check(29, "feature commit lands on master", masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+{
+  // (b) branch genuinely is not done; the trunk's own disk copy was (wrongly)
+  // edited to say done — merge must trust the branch and refuse, naming it.
+  const dir = tmpRepo();
+  const studio = join(dir, "studio");
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-103.md"), '---\nid: "W-103"\nstate: building\n---\n');
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-103'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-103");
+    execSync("git checkout opus/W-103", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    // branch's OWN record is never advanced past "building".
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(studio, "opera", "W-103.md"), '---\nid: "W-103"\nstate: done\n---\n');
+    execSync("git add . && git commit -m 'bookkeeping: (wrongly) mark done on master only'", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-103", studio);
+    check(29, "state read from the branch: a wrongly-edited trunk copy does not fool merge into landing an unfinished branch", result.ok === false, String(result.error));
+    check(29, "the refusal names the branch, not just a bare state", (result.error ?? "").includes("opus/W-103"), String(result.error));
+    check(29, "the refusal names the branch's real state", (result.error ?? "").includes("building"), String(result.error));
+    check(29, "master untouched beyond its own bookkeeping commit", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// behaviour 30 (round 6, B6.2, pre-implementation): the stale-certificate
+// remedy, followed LITERALLY (check out the branch, re-verify, commit the
+// result there, switch back, retry) lands the merge — proving the commit
+// step the message now names is both necessary and sufficient (round-6
+// lab9: the same sequence without that step never terminates).
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio");
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-104.md"), '---\nid: "W-104"\nstate: done\n---\n');
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-104'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-104");
+    execSync("git checkout opus/W-104", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+
+    const excludeDirs = [relative(dir, studio).split(sep).join("/"), ".bisellium"];
+    const firstCertified = `tree:${sourceTreeHash(dir, excludeDirs, "opus/W-104")}`;
+    writeFileSync(
+      join(studio, "opera", "W-104.md"),
+      `---\nid: "W-104"\nstate: done\nprobationes: { tests: { status: passed, evidence: "x", certifies: "${firstCertified}" } }\n---\n`,
+    );
+    execSync("git add . && git commit -m 'bookkeeping: verify on the branch'", { cwd: dir, stdio: "pipe" });
+
+    // one more commit lands after that certificate, uncertified.
+    writeFileSync(join(dir, "more.ts"), "more opus work, uncertified");
+    execSync("git add . && git commit -m 'feat: more work, uncertified'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const first = mergeOpusBranch(dir, "W-104", studio);
+    check(30, "first attempt refuses on the stale certificate", first.ok === false, String(first.error));
+    check(30, "the remedy names the missing commit step", (first.error ?? "").includes("commit the result on opus/W-104"), String(first.error));
+
+    // Follow the remedy verbatim: check out the branch, re-verify, COMMIT
+    // the result there, switch back, retry.
+    execSync("git checkout opus/W-104", { cwd: dir, stdio: "pipe" });
+    const secondCertified = `tree:${sourceTreeHash(dir, excludeDirs, "opus/W-104")}`;
+    writeFileSync(
+      join(studio, "opera", "W-104.md"),
+      `---\nid: "W-104"\nstate: done\nprobationes: { tests: { status: passed, evidence: "x", certifies: "${secondCertified}" } }\n---\n`,
+    );
+    execSync("git add . && git commit -m 'bookkeeping: verify on the branch, again'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const second = mergeOpusBranch(dir, "W-104", studio);
+    check(30, "the remedy, followed literally with the commit step, lands the merge", second.ok === true, String(second.error));
+    check(30, "both commits reach master", masterLog(dir).includes("feat: add feature") && masterLog(dir).includes("more work, uncertified"), masterLog(dir).trim());
+    check(30, "the branch is cleaned up", !branches(dir).includes("opus/W-104"), branches(dir).join(","));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
