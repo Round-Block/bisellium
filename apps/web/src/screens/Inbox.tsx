@@ -68,6 +68,7 @@ export function Inbox(): JSX.Element {
       focusIndex={focusIndex}
       reason={reason}
       onReasonChange={setReason}
+      onFocusChange={setFocusIndex}
       onSubmit={submit}
     />
   );

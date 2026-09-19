@@ -8,6 +8,7 @@ export interface InboxViewProps {
   focusIndex: number;
   reason: string;
   onReasonChange: (value: string) => void;
+  onFocusChange: (index: number) => void;
   onSubmit: (petitioId: string, verb: Verb) => void;
 }
 
@@ -19,7 +20,7 @@ const VERBS: { verb: Verb; key: string }[] = [
 ];
 
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, reason, onReasonChange, onSubmit } = props;
+  const { petitiones, opera, focusIndex, reason, onReasonChange, onFocusChange, onSubmit } = props;
 
   if (petitiones.length === 0 && opera.length === 0) {
     return (
@@ -45,7 +46,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
           ].filter(Boolean).join(" ");
 
           return (
-            <div key={p.id} className={rowClasses} data-focused={focused}>
+            <div key={p.id} className={rowClasses} data-focused={focused} onClick={() => onFocusChange(i)}>
               <span className="inbox__subject">{p.subject}</span>
               <span className="inbox__sella">{p.from}</span>
             </div>

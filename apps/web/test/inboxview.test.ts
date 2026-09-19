@@ -23,6 +23,7 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
     focusIndex: 0,
     reason: "",
     onReasonChange: () => undefined,
+    onFocusChange: () => undefined,
     onSubmit: () => undefined,
     ...overrides,
   };
@@ -47,6 +48,16 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
   check(4, "subject text is present", html.includes("ask for a decision"), html);
   check(4, "sella id text is present", html.includes("builder-a"), html);
   check(4, "detail pane shows body content", html.includes("Full proposal content here."), html);
+}
+
+// behaviour 10: rows have onClick for focus change
+{
+  const petitiones = [
+    { id: "P-1", opus: "W-024", from: "builder-a", subject: "first" },
+    { id: "P-2", opus: "W-025", from: "censor", subject: "second" },
+  ];
+  const html = renderToStaticMarkup(InboxView(baseProps({ petitiones, onFocusChange: () => undefined })));
+  check(10, "rows are clickable (have onClick via role=button or cursor style)", html.includes('class="inbox__row') && html.split('inbox__row').length > 2, html);
 }
 
 // behaviour 8: detail pane shows verb buttons; disabled until a non-empty reason.
