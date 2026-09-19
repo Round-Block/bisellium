@@ -55,7 +55,7 @@
       "x": -112,
       "y": -467,
       "w": 340,
-      "text": "Gantry UI v2 — cleaner light system, multi-project board.\nBoard: columns are normalized phases shared across projects; each card carries its project dot and native state. Amber = needs your input (strip at top aggregates across projects).\nDrawer: waiting-on-you banner with actions, gate ladder incl. a human gate, events, adapter extension slot.\nSwimlane: 'you' are a lane — the amber dashed span is time blocked on your decision."
+      "text": "Bisellium UI v2 (seeded under the working name Gantry) — cleaner light system, multi-project board.\nBoard: columns are normalized phases shared across projects; each card carries its project dot and native state. Amber = needs your input (strip at top aggregates across projects).\nDrawer: waiting-on-you banner with actions, gate ladder incl. a human gate, events, adapter extension slot.\nSwimlane: 'you' are a lane — the amber dashed span is time blocked on your decision."
     }
   ],
   "launch": {
