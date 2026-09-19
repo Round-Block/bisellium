@@ -8,6 +8,7 @@
  * directory that isn't a Bisellium officina at all (no `bisellium.yml`) —
  * `root` is always the OFFICINA, never the repo root.
  */
+import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
@@ -37,6 +38,15 @@ function safeList(dir: string): string[] {
 }
 
 const isExternal = (href: string): boolean => /^[a-z][a-z0-9+.-]*:\/\//i.test(href);
+
+const isSource = (f: string): boolean => /\.(tsx?|jsx?)$/.test(f) && !f.endsWith(".test.ts") && !f.endsWith(".test.tsx") && !/\.css$/.test(f);
+const isTest = (f: string): boolean => /\.test\.(tsx?|jsx?)$/.test(f);
+
+export function tddViolation(files: string[]): boolean {
+  const hasSource = files.some(isSource);
+  const hasTest = files.some(isTest);
+  return hasSource && !hasTest;
+}
 
 export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   const findings: Finding[] = [];
@@ -150,6 +160,20 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       "lessons/",
       `class "${cls}" recurs across ${byCascade.size} cascades (${[...entries].sort().join(", ")})`,
     );
+  }
+
+  // process.tdd (advise): the most recent commit changed source code
+  // without changing any test file.
+  if (_opts.repo) {
+    try {
+      const raw = execSync("git diff --name-only HEAD~1 HEAD", { cwd: _opts.repo, encoding: "utf8" });
+      const files = raw.trim().split("\n").filter(Boolean);
+      if (tddViolation(files)) {
+        add("process.tdd", "advise", "HEAD", "last commit changed source code without a corresponding test change");
+      }
+    } catch {
+      // no git, shallow clone, or initial commit — skip silently
+    }
   }
 
   return findings;
