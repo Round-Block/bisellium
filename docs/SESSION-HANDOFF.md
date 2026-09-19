@@ -120,10 +120,21 @@ lex, a decision, or a check rule and delete it here.
     reviews done by non-Opus sellae — mechanical prevention of the
     wrong-model dispatch mistake.
 - **Backlog (priority order)**:
-  1. Close W-029 (`bisellium done`) — review passed.
-  2. Re-confirm all six review verdicts with `censor` (now Opus 5).
-  3. Round-2 fixes for W-022/W-023/W-026/W-027/W-028 (reds + code bugs).
+  1. Close W-029 (`bisellium done`) — review passed. Needs a handoff
+     first: `traditio.present` blocks, and `close.ts` does not consult
+     `check`, so closing leaves it failing.
+  2. Integration strategy as configuration (D-015): manifest setting read
+     by `bisellium merge`; rebase-onto-trunk + PR + QA review is the
+     reference default. Rebase half is W-026, PR half is W-028.
+  3. **Settings screen** (Patron, 2026-09-19): surface officina and
+     harness configuration — integration strategy, Claude Code hooks,
+     subagents, commands — as something a user can see and change rather
+     than baked-in. UI/UX is Patron-only, so this needs design input
+     before a brief exists.
   4. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
+  5. `branch.ts:172` hardcodes "into master" in its success message, so a
+     repo on `main` merges into main and reports master — same family as
+     the bug just fixed above it.
 - D-014 (amended twice on 2026-09-19): Sonnet 5 builders, **Opus 5** for
   opus-tier roles *and* for review. The cross-generation clause is struck —
   review independence rests on role separation, not model generation.
