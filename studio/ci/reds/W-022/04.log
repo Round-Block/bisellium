@@ -1,0 +1,8 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/rules/evidence.test.ts . 4
+# exit: 1
+# at: 2026-09-19T14:24:53.751Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+FAIL  import SyntaxError detected                                  false

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { readFront } from "@bisellium/adapter-native";
 import { reclaimWorktrees } from "@bisellium/shim";
@@ -76,11 +76,22 @@ export function pruneStaleOpusBranches(repo: string, studio: string): PruneResul
 
 const PRUNE_USAGE = "usage: bisellium prune --studio <dir> [--repo <dir>]";
 
+const PRUNE_FLAGS = new Set(["--studio", "--repo"]);
+
 export function runPrune(args: string[]): { exitCode: number } {
   const values = new Map<string, string>();
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a.startsWith("--")) { values.set(a, args[++i] ?? ""); continue; }
+    if (!a.startsWith("--") || !PRUNE_FLAGS.has(a)) {
+      console.error(`${a.startsWith("--") ? `unknown flag "${a}"` : `unexpected argument "${a}"`}\n${PRUNE_USAGE}`);
+      return { exitCode: 2 };
+    }
+    const v = args[++i];
+    if (v === undefined) {
+      console.error(`${a} needs a value\n${PRUNE_USAGE}`);
+      return { exitCode: 2 };
+    }
+    values.set(a, v);
   }
 
   const studio = resolve(values.get("--studio") ?? ".");

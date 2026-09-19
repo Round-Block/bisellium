@@ -1,0 +1,68 @@
+# behaviour: 6
+# command: node --import tsx --test --test-name-pattern=rejects packages/cli/src/prune.test.ts
+# exit: 1
+# at: 2026-09-19T14:33:05.418Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+▶ runPrune flag validation
+  ✖ rejects an unrecognized flag instead of silently falling back to cwd (2.732126ms)
+  ✖ rejects --help instead of silently falling back to cwd (0.262314ms)
+✖ runPrune flag validation (3.91566ms)
+ℹ tests 2
+ℹ suites 1
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 177.41259
+
+✖ failing tests:
+
+test at packages/cli/src/prune.test.ts:10:1999
+✖ rejects an unrecognized flag instead of silently falling back to cwd (2.732126ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /unknown flag "--studio=\/tmp\/whatever"/. Input:
+  
+  'no opera directory at /home/edckt/projects/bisellium\n'
+  
+      at TestContext.<anonymous> (/home/edckt/projects/bisellium/packages/cli/src/prune.test.ts:112:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at node:internal/test_runner/test:1617:71
+      at node:internal/per_context/primordials:466:82
+      at new Promise (<anonymous>)
+      at new SafePromise (node:internal/per_context/primordials:435:3)
+      at node:internal/per_context/primordials:466:9
+      at Array.map (<anonymous>) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'no opera directory at /home/edckt/projects/bisellium\n',
+    expected: /unknown flag "--studio=\/tmp\/whatever"/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at packages/cli/src/prune.test.ts:10:2247
+✖ rejects --help instead of silently falling back to cwd (0.262314ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /unknown flag "--help"/. Input:
+  
+  'no opera directory at /home/edckt/projects/bisellium\n'
+  
+      at TestContext.<anonymous> (/home/edckt/projects/bisellium/packages/cli/src/prune.test.ts:118:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Promise.all (index 0)
+      at async Suite.run (node:internal/test_runner/test:1619:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'no opera directory at /home/edckt/projects/bisellium\n',
+    expected: /unknown flag "--help"/,
+    operator: 'match',
+    diff: 'simple'
+  }

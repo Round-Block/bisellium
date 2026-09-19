@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
-import { pruneStaleOpusBranches } from "./prune.js";
+import { pruneStaleOpusBranches, runPrune } from "./prune.js";
 
 function git(args: string[], cwd: string): void {
   const r = spawnSync("git", args, { cwd, encoding: "utf8", timeout: 10_000 });
@@ -59,7 +59,9 @@ describe("pruneStaleOpusBranches", () => {
     git(["branch", "opus/W-101"], repo);
     const result = pruneStaleOpusBranches(repo, studio);
     assert.equal(result.removed.length, 0);
-    assert.ok(result.kept.some((k) => k.branch === "opus/W-101"));
+    const kept = result.kept.find((k) => k.branch === "opus/W-101");
+    assert.ok(kept);
+    assert.equal(kept.reason, 'opus state is "building"');
   });
 
   it("3: keeps an unmerged branch even if opus is done", () => {
@@ -70,7 +72,13 @@ describe("pruneStaleOpusBranches", () => {
     git(["checkout", "master"], repo);
     const result = pruneStaleOpusBranches(repo, studio);
     assert.equal(result.removed.length, 0);
-    assert.ok(result.kept.some((k) => k.branch === "opus/W-102"));
+    const kept = result.kept.find((k) => k.branch === "opus/W-102");
+    assert.ok(kept);
+    // the safety guard itself must be why this branch survives — not git's
+    // own refusal to delete an unmerged branch (which would land here with
+    // reason "delete failed" even if the `!mergedSet.has(branch)` check were
+    // deleted outright).
+    assert.equal(kept.reason, "not merged into HEAD");
   });
 
   it("4: returns empty when no opus branches exist", () => {
@@ -80,5 +88,33 @@ describe("pruneStaleOpusBranches", () => {
     assert.equal(result.removed.length, 0);
     assert.equal(result.kept.length, 0);
     rmSync(fresh, { recursive: true, force: true });
+  });
+});
+
+function captureStderr(fn: () => { exitCode: number }): { exitCode: number; stderr: string } {
+  const orig = console.error;
+  let stderr = "";
+  console.error = (...parts: unknown[]) => { stderr += parts.join(" ") + "\n"; };
+  try {
+    return { exitCode: fn().exitCode, stderr };
+  } finally {
+    console.error = orig;
+  }
+}
+
+describe("runPrune flag validation", () => {
+  it("rejects an unrecognized flag instead of silently falling back to cwd", () => {
+    // must be caught as a bad flag, not merely surface exit 2 from the
+    // unrelated "no opera directory" fallback that a cwd-degraded --studio
+    // would also trip
+    const { exitCode, stderr } = captureStderr(() => runPrune(["--studio=/tmp/whatever"]));
+    assert.equal(exitCode, 2);
+    assert.match(stderr, /unknown flag "--studio=\/tmp\/whatever"/);
+  });
+
+  it("rejects --help instead of silently falling back to cwd", () => {
+    const { exitCode, stderr } = captureStderr(() => runPrune(["--help"]));
+    assert.equal(exitCode, 2);
+    assert.match(stderr, /unknown flag "--help"/);
   });
 });

@@ -276,7 +276,7 @@ try {
       writeManifest(dir);
       writeOpus(dir, "SAFE", { id: badId, state: "building" });
       const findings = checkPaths(dir, { now: NOW });
-      check(`path.id.unvalidated: blocks opus id "${badId}"`, findings.some((f) => f.rule === "path.id.unvalidated"), JSON.stringify(findings));
+      check(`path.id.unvalidated: blocks opus id "${badId}"`, findings.some((f) => f.rule === "path.id.unvalidated" && f.level === "block"), JSON.stringify(findings));
     }
   }
   {
@@ -284,7 +284,7 @@ try {
     writeManifest(dir);
     writeOpus(dir, "W-300", { id: "W-300", state: "building", traditio: { sella: "a/b", stage: "building", next: "x", blocked_on: "none", at: "2026-09-19T13:00:00Z" } });
     const findings = checkPaths(dir, { now: NOW });
-    check("path.id.unvalidated: blocks a bad front-matter sella reference", findings.some((f) => f.rule === "path.id.unvalidated" && f.message.includes("a/b")), JSON.stringify(findings));
+    check("path.id.unvalidated: blocks a bad front-matter sella reference", findings.some((f) => f.rule === "path.id.unvalidated" && f.level === "block" && f.message.includes("a/b")), JSON.stringify(findings));
 
     writeOpus(dir, "W-300", { id: "W-300", state: "building", traditio: { sella: "builder-a", stage: "building", next: "x", blocked_on: "none", at: "2026-09-19T13:00:00Z" } });
     const fixed = checkPaths(dir, { now: NOW });
@@ -295,7 +295,7 @@ try {
     writeManifest(dir);
     writeOpus(dir, "W-301", { id: "W-301", state: "building", probationes: { "bad/key": { status: "pending" } } });
     const findings = checkPaths(dir, { now: NOW });
-    check("path.id.unvalidated: blocks a bad probationes: key", findings.some((f) => f.rule === "path.id.unvalidated" && f.message.includes("bad/key")), JSON.stringify(findings));
+    check("path.id.unvalidated: blocks a bad probationes: key", findings.some((f) => f.rule === "path.id.unvalidated" && f.level === "block" && f.message.includes("bad/key")), JSON.stringify(findings));
 
     writeOpus(dir, "W-301", { id: "W-301", state: "building", probationes: { spec: { status: "pending" } } });
     const fixed = checkPaths(dir, { now: NOW });
@@ -306,7 +306,7 @@ try {
     writeManifest(dir);
     mkdirSync(join(dir, "receipts", "a..b"), { recursive: true });
     const findings = checkPaths(dir, { now: NOW });
-    check("path.id.unvalidated: blocks a bad receipts/ directory name", findings.some((f) => f.rule === "path.id.unvalidated" && f.where === "receipts/"), JSON.stringify(findings));
+    check("path.id.unvalidated: blocks a bad receipts/ directory name", findings.some((f) => f.rule === "path.id.unvalidated" && f.level === "block" && f.where === "receipts/"), JSON.stringify(findings));
 
     rmSync(join(dir, "receipts", "a..b"), { recursive: true, force: true });
     mkdirSync(join(dir, "receipts", "builder-a"), { recursive: true });
@@ -320,11 +320,11 @@ try {
     writeManifest(dir);
     writeOpus(dir, "W-400", { id: "W-400", state: "building", spec: "../../etc/passwd" });
     const r1 = checkPaths(dir, { now: NOW });
-    check("path.escapes.officina: blocks a relative a/../../b escape in spec:", r1.some((f) => f.rule === "path.escapes.officina"), JSON.stringify(r1));
+    check("path.escapes.officina: blocks a relative a/../../b escape in spec:", r1.some((f) => f.rule === "path.escapes.officina" && f.level === "block"), JSON.stringify(r1));
 
     writeOpus(dir, "W-401", { id: "W-401", state: "building", spec: "/etc/passwd" });
     const r2 = checkPaths(dir, { now: NOW });
-    check("path.escapes.officina: blocks an absolute-path spec:", r2.some((f) => f.rule === "path.escapes.officina" && f.where.includes("W-401")), JSON.stringify(r2));
+    check("path.escapes.officina: blocks an absolute-path spec:", r2.some((f) => f.rule === "path.escapes.officina" && f.level === "block" && f.where.includes("W-401")), JSON.stringify(r2));
 
     writeOpus(dir, "W-402", { id: "W-402", state: "building", spec: "briefs/../briefs/W-402.md" });
     const r3 = checkPaths(dir, { now: NOW });
@@ -339,11 +339,35 @@ try {
     writeManifest(dir);
     writeOpus(dir, "W-403", { id: "W-403", state: "building", probationes: { spec: { status: "passed", evidence: "../outside.md" } } });
     const findings = checkPaths(dir, { now: NOW });
-    check("path.escapes.officina: blocks a gate evidence: that escapes", findings.some((f) => f.rule === "path.escapes.officina"), JSON.stringify(findings));
+    check("path.escapes.officina: blocks a gate evidence: that escapes", findings.some((f) => f.rule === "path.escapes.officina" && f.level === "block"), JSON.stringify(findings));
 
     writeOpus(dir, "W-403", { id: "W-403", state: "building", probationes: { spec: { status: "passed", evidence: "briefs/W-403.md" } } });
     const fixed = checkPaths(dir, { now: NOW });
     check("path.escapes.officina: clears once gate evidence: resolves inside", fixed.length === 0, JSON.stringify(fixed));
+  }
+  {
+    // P-004: acta evidence escaping does NOT fire — scoped out of
+    // path.escapes.officina (acta evidence hrefs stay with checkLink). Own
+    // fixture, not dependent on studio/acta/'s shape.
+    const dir = freshDir("escapes-acta-scoped-out");
+    writeManifest(dir);
+    mkdirSync(join(dir, "acta"), { recursive: true });
+    writeFileSync(
+      join(dir, "acta", "2026-09-19-fixture-daily.md"),
+      `---\n${stringify({
+        author: "fixture",
+        kind: "daily",
+        title: "fixture",
+        at: "2026-09-19T13:00:00Z",
+        evidence: [{ href: "../outside.md" }],
+      })}---\n\nbody\n`,
+    );
+    const findings = checkPaths(dir, { now: NOW });
+    check(
+      "path.escapes.officina: does not fire on an escaping acta evidence: href (scoped out)",
+      !findings.some((f) => f.rule === "path.escapes.officina"),
+      JSON.stringify(findings),
+    );
   }
   {
     // no startsWith dogfooding, source-level check

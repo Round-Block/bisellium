@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --import tsx --test --test-name-pattern=3: keeps an unmerged branch packages/cli/src/prune.test.ts
+# exit: 1
+# at: 2026-09-19T14:29:53.807Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+▶ pruneStaleOpusBranches
+  ✖ 3: keeps an unmerged branch even if opus is done (21.338122ms)
+✖ pruneStaleOpusBranches (31.618018ms)
+ℹ tests 1
+ℹ suites 1
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 197.021164
+
+✖ failing tests:
+
+test at packages/cli/src/prune.test.ts:10:933
+✖ 3: keeps an unmerged branch even if opus is done (21.338122ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'delete failed'
+  - 'not merged into HEAD'
+  
+      at TestContext.<anonymous> (/home/edckt/projects/bisellium/packages/cli/src/prune.test.ts:81:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at async Promise.all (index 2)
+      at async Suite.run (node:internal/test_runner/test:1619:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'delete failed',
+    expected: 'not merged into HEAD',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

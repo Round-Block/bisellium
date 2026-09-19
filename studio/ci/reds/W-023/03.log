@@ -1,0 +1,53 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/rules.test.ts . 3
+# exit: 1
+# at: 2026-09-19T14:28:25.758Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+PASS  opus.untracked: blocks for an untracked opera file                     [{"rule":"opus.untracked","level":"block","where":"studio/opera/W-100.md","message":"\"studio/opera/W-100.md\" is untracked"}]
+PASS  opus.untracked: clears once the opera file is tracked                  []
+PASS  opus.untracked: blocks for an untracked brief                          [{"rule":"opus.untracked","level":"block","where":"studio/opera/W-101.md","message":"brief \"studio/briefs/W-101.md\" is untracked"}]
+PASS  opus.untracked: names the brief in the message                         [{"rule":"opus.untracked","level":"block","where":"studio/opera/W-101.md","message":"brief \"studio/briefs/W-101.md\" is untracked"}]
+PASS  opus.untracked: clears once the brief is tracked                       []
+PASS  opus.untracked: silent for backlog/greenlit/done/halted                []
+PASS  opus.untracked: [] when opts.repo is absent                            []
+fatal: not a git repository (or any of the parent directories): .git
+PASS  opus.untracked: never throws when opts.repo is not a git repository    
+PASS  opus.untracked: [] when opts.repo is not a git repository              []
+PASS  opus.untracked: never throws when git fails outright                   
+PASS  opus.untracked: [] when git fails outright                             []
+PASS  opus.red_evidence: silent while ci/reds does not exist                 []
+PASS  opus.red_evidence: blocks naming all missing behaviours                [{"rule":"opus.red_evidence","level":"block","where":"opera/W-201.md","message":"missing red log(s) for behaviour(s) 1, 2, 3"}]
+PASS  opus.red_evidence: names only the still-missing behaviour              [{"rule":"opus.red_evidence","level":"block","where":"opera/W-201.md","message":"missing red log(s) for behaviour(s) 2"}]
+PASS  opus.red_evidence: clears once all N logs are present                  []
+PASS  opus.red_evidence: blocks on exit 0                                    [{"rule":"opus.red_evidence","level":"block","where":"opera/W-202.md","message":"red log(s) for behaviour(s) 1, 2, 3 record a passing run, not a red"}]
+PASS  opus.red_evidence: blocks on absent exit                               [{"rule":"opus.red_evidence","level":"block","where":"opera/W-202.md","message":"red log(s) for behaviour(s) 1, 2, 3 record a passing run, not a red"}]
+PASS  opus.red_evidence: blocks on non-integer exit                          [{"rule":"opus.red_evidence","level":"block","where":"opera/W-202.md","message":"red log(s) for behaviour(s) 1, 2, 3 record a passing run, not a red"}]
+PASS  opus.red_evidence: clears once every log records a real non-zero exit  []
+PASS  opus.red_evidence: advises for zero numbered behaviours                [{"rule":"opus.red_evidence","level":"advise","where":"opera/W-203.md","message":"brief lists no numbered behaviours — nothing to prove"}]
+PASS  opus.red_evidence: does not block for zero numbered behaviours         [{"rule":"opus.red_evidence","level":"advise","where":"opera/W-203.md","message":"brief lists no numbered behaviours — nothing to prove"}]
+PASS  countBehaviours: counts the top-level list, ignoring every distractor  4
+PASS  countBehaviours: 0 when the heading is missing                         
+PASS  countBehaviours: 0 when the section has no numbered items              
+PASS  path.id.unvalidated: blocks opus id "a/b"                              [{"rule":"path.id.unvalidated","level":"block","where":"opera/SAFE.md","message":"id \"a/b\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "a\b"                              [{"rule":"path.id.unvalidated","level":"block","where":"opera/SAFE.md","message":"id \"a\\b\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "a..b"                             [{"rule":"path.id.unvalidated","level":"block","where":"opera/SAFE.md","message":"id \"a..b\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "-bad"                             [{"rule":"path.id.unvalidated","level":"block","where":"opera/SAFE.md","message":"id \"-bad\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks opus id "bad id"                           [{"rule":"path.id.unvalidated","level":"block","where":"opera/SAFE.md","message":"id \"bad id\" is not a valid id"}]
+PASS  path.id.unvalidated: blocks a bad front-matter sella reference         [{"rule":"path.id.unvalidated","level":"block","where":"opera/W-300.md","message":"front matter.traditio.sella \"a/b\" is not a valid id"}]
+PASS  path.id.unvalidated: clears once the sella reference is valid          []
+PASS  path.id.unvalidated: blocks a bad probationes: key                     [{"rule":"path.id.unvalidated","level":"block","where":"opera/W-301.md","message":"probationes key \"bad/key\" is not a valid id"}]
+PASS  path.id.unvalidated: clears once the probatio key is valid             []
+PASS  path.id.unvalidated: blocks a bad receipts/ directory name             [{"rule":"path.id.unvalidated","level":"block","where":"receipts/","message":"receipts directory name \"a..b\" is not a valid id"}]
+PASS  path.id.unvalidated: clears once the receipts/ directory name is valid []
+PASS  path.escapes.officina: blocks a relative a/../../b escape in spec:     [{"rule":"path.escapes.officina","level":"block","where":"opera/W-400.md","message":"spec \"../../etc/passwd\" resolves outside the officina"}]
+PASS  path.escapes.officina: blocks an absolute-path spec:                   [{"rule":"path.escapes.officina","level":"block","where":"opera/W-400.md","message":"spec \"../../etc/passwd\" resolves outside the officina"},{"rule":"path.escapes.officina","level":"block","where":"opera/W-401.md","message":"spec \"/etc/passwd\" resolves outside the officina"}]
+PASS  path.escapes.officina: a path that merely looks like an escape but resolves inside passes [{"rule":"path.escapes.officina","level":"block","where":"opera/W-400.md","message":"spec \"../../etc/passwd\" resolves outside the officina"},{"rule":"path.escapes.officina","level":"block","where":"opera/W-401.md","message":"spec \"/etc/passwd\" resolves outside the officina"}]
+PASS  path.escapes.officina: blocks a gate evidence: that escapes            [{"rule":"path.escapes.officina","level":"block","where":"opera/W-403.md","message":"gate \"spec\" evidence \"../outside.md\" resolves outside the officina"}]
+PASS  path.escapes.officina: clears once gate evidence: resolves inside      []
+FAIL  path.escapes.officina: does not fire on an escaping acta evidence: href (scoped out) [{"rule":"path.escapes.officina","level":"block","where":"acta/2026-09-19-fixture-daily.md","message":"acta evidence \"../outside.md\" resolves outside the officina"}]
+PASS  path rule module calls .startsWith() nowhere (dogfoods its own rule)   rules/paths.ts calls .startsWith()
+PASS  checkStudio is wired to path.id.unvalidated                            [{"rule":"manifest.patron","level":"advise","where":"bisellium.yml","message":"patron role id missing (defaults to \"patron\")"},{"rule":"wip.declared","level":"advise","where":"bisellium.yml","message":"no wip_limit — WIP is unbounded"},{"rule":"manifest.collegia","level":"block","where":"bisellium.yml","message":"no collegia declared"},{"rule":"manifest.probationes","level":"advise","where":"bisellium.yml","message":"no probationes declared — nothing can be verified"},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"title\""},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"kind\""},{"rule":"opus.keys","level":"block","where":"opera/W-500.md","message":"missing required key \"collegium\""},{"rule":"opus.id.filename","level":"block","where":"opera/W-500.md","message":"id \"bad/id\" does not match filename"},{"rule":"traditio.present","level":"block","where":"opera/W-500.md","message":"active item (building) has no handoff"},{"rule":"aerarium.present","level":"advise","where":"aerarium/","message":"no aerarium — postures will be unknown"},{"rule":"path.id.unvalidated","level":"block","where":"opera/W-500.md","message":"id \"bad/id\" is not a valid id"}]
+PASS  examples/sample-studio: zero findings from all four W-021 rule ids     []
+FAIL  studio: no BLOCKING path.* finding (the insurance clause)              [{"rule":"path.escapes.officina","level":"block","where":"acta/2026-09-17-kickoff.md","message":"acta evidence \"../README.md\" resolves outside the officina"}]
