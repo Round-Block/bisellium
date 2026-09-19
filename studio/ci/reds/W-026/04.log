@@ -1,0 +1,12 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/branch.test.ts . 4
+# exit: 1
+# at: 2026-09-19T14:31:54.178Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+FAIL  refuses a non-done opus                                      undefined
+FAIL  error names the actual state                                 undefined
+FAIL  master untouched                                             853ce93 feat: add feature
+becd175 init
+FAIL  opus branch still exists                                     master

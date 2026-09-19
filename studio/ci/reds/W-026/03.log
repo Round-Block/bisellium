@@ -1,0 +1,14 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/branch.test.ts . 3
+# exit: 1
+# at: 2026-09-19T14:31:45.919Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+PASS  merge from master succeeds                                   undefined
+PASS  feature commit on master (from master)                       e2cb1bf feat: add feature
+5cc5163 init
+FAIL  feature commit on master (from a third branch)               5cc5163 init
+PASS  merge from a third branch leaves it checked out              sidebranch
+PASS  merge from a third branch still reports success              undefined
+FAIL  feature commit on master (from the opus branch itself)       5cc5163 init

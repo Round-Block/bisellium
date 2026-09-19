@@ -1,0 +1,10 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/branch.test.ts . 6
+# exit: 1
+# at: 2026-09-19T14:31:54.932Z
+# sella: builder-a
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+PASS  branch deleted after merge                                   master
+FAIL  never a false success when the branch can't be deleted       {"ok":true}
+PASS  branch left in place when deletion fails                     master,opus/W-032c
