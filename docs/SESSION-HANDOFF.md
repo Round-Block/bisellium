@@ -83,25 +83,24 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-19, cascade 8 complete)
+## Where things stand (2026-09-19, cascade 9 complete)
 
 - Cascades 1–7 in the dossier progress log. Suite green; both
   officinae 0 blocking.
-- **Cascade 8 landed** (6 commits, pushed to origin):
-  - Visual pass: sidebar + 12-col grid, pie charts, inbox master/detail
-  - Process fixes: `process.tdd` check rule, `standing_rules` in context
-    (survives compaction), `design.screen-map` + `design.review-prompt`
-    check rules, screen map in DIRECTION.md §8, review prompt persisted
-    in `studio/prompts/review.md`, inbox click-to-select fix
+- **Cascade 8** (6 commits): visual pass, process fixes (`standing_rules`,
+  check rules, screen map, review prompt, inbox click-to-select).
+- **Cascade 9 landed** (3 commits, pushed to origin):
+  - W-026 complete: `createOpusBranch`, `mergeOpusBranch`, `opusBranchName`
+    with 7-behaviour integration test suite
+  - CLI: `bisellium branch`/`bisellium merge` commands wired
+  - `bisellium run --opus <id>` forks worktree from opus branch
 - **Backlog (priority order)**:
-  1. **W-026** (greenlit) — parallel workstreams: per-opus branching + merge
-     coordination. Enables concurrent cascades.
-  2. **W-028** — patron-as-agent: automated merge, push, cascade
+  1. **W-028** — patron-as-agent: automated merge, push, cascade
      orchestration. The producer sella drives without a human in the loop.
-  3. **W-027** — container lifecycle: prune, cleanup, disk-aware cascade
+  2. **W-027** — container lifecycle: prune, cleanup, disk-aware cascade
      start. Needed once parallel workstreams run.
-  4. W-022 — evidence content rules (P-005)
-  5. W-023 — containment scoping (P-004)
+  3. W-022 — evidence content rules (P-005)
+  4. W-023 — containment scoping (P-004)
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
 - Then: web II (Board screen, drawer, SSE live), web III (Swimlane, Agents,
   Graph), autonomy L2, adapters + desktop.
