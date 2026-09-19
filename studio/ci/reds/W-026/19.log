@@ -1,0 +1,10 @@
+# behaviour: 19
+# command: node --import tsx packages/cli/src/branch.test.ts . 19
+# exit: 1
+# at: 2026-09-19T16:03:11.522Z
+# sella: builder-a
+# tree: dirty:42b8510d82a06832767d07f1e2de4f0047e96130
+
+FAIL  a matching certificate does not block the merge              opus/W-091 was rebased onto master — opus W-091's gate "tests" certifies tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); re-run "bisellium verify W-091" and retry the merge
+FAIL  feature commit lands on master                               ef65eae master work
+be9db97 init

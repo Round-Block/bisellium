@@ -1,0 +1,12 @@
+# behaviour: 20
+# command: node --import tsx packages/cli/src/branch.test.ts . 20
+# exit: 1
+# at: 2026-09-19T16:02:26.429Z
+# sella: builder-a
+# tree: dirty:42b8510d82a06832767d07f1e2de4f0047e96130
+
+PASS  branch-delete failure after a rebase is still reported as a failure master fast-forwarded to opus/W-092, but could not delete opus/W-092: error: cannot delete branch 'opus/W-092' used by worktree at '/tmp/claude-1000/bisellium-branch-YKaBw7' — switch off it and delete manually
+PASS  master genuinely advanced despite the reported failure       ca71de6 feat: add feature
+c0d09b8 master work
+eba1740 init
+FAIL  the failure still carries the rebase note                    undefined
