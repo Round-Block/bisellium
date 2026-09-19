@@ -1,0 +1,387 @@
+review: W-026 (parallel workstreams: per-opus branching) — round 7
+sella: qa-lead
+model: claude-opus-5
+verdict: FAIL
+subject: PR #2, branch opus/W-026 -> master, at 73ad20d
+        "chore(W-026): re-verify on the round-6 tree"
+        on 79e2d13 "fix(merge): drop the absence rule; name the branch in every remedy"
+        on 22e7794 (the round-6 subject, rebased from d35ad2c)
+
+Everything below was executed, not read off the diff. Scratch worktree at
+/tmp/claude-1000/r7-2/wt (uniquely named), node_modules rebuilt so every
+@bisellium/* resolves INTO the worktree (readlink -f verified before any
+run: @bisellium/shim -> /tmp/claude-1000/r7-2/wt/packages/shim). The CLI was
+driven through a wrapper pinned to that worktree's main.ts. Labs are
+throwaway repos under the same scratch root, built with the real CLI
+(init/new/greenlight/ready/branch/verify/done/merge). The real origin was
+never pushed to. Both trees left clean (git status --porcelain empty in the
+worktree; the real repo shows only this log and the pre-existing W-026.md
+edit).
+
+Base state (worktree at 73ad20d)
+--------------------------------
+  npm test                 exit 0, 1123 PASS, 0 FAIL   (1112 at round 6)
+  npm run -s typecheck     exit 0
+  npm run -s lint          0 errors, 2 warnings (close.test.ts execSync,
+                           tick.test.ts opts) — both pre-existing
+  npm run -s format:check  clean
+  branch.test.ts .         86 PASS, 0 FAIL   (75 at round 6)
+  check studio --repo .    8 blocking, 74 advisory — the same 8 as rounds
+                           5 and 6 (traditio.present x5, wip.cap,
+                           opus.red_evidence for W-027/W-028). W-026 raises
+                           none of them; opus.red_evidence does NOT fire for
+                           W-026, so the rule reads all 30 behaviours.
+
+Gates — recomputed independently, they match
+---------------------------------------------
+  sourceTreeHash(73ad20d, ["studio",".bisellium","examples/"]) = c56a5125983759b739859be7eebb9617b45ea56b
+  sourceTreeHash(79e2d13, same) = c56a5125...  (73ad20d is bookkeeping-only, studio/ excluded — agreeing is correct)
+  sourceTreeHash(22e7794, same) = 70e311c0...  sourceTreeHash(master, same) = 31ec6d0d...
+All three gates on the BRANCH's copy of studio/opera/W-026.md certify
+tree:c56a5125983759b739859be7eebb9617b45ea56b — exactly what the branch
+ships. The three ci logs are real runs: tests exit 0, types exit 0, lint
+exit 0 with 0 errors / 2 warnings, matching my own independent runs
+line for line. Confirmed, no inconsistency.
+
+1. lab8 (FAIL-OPEN) — CLOSED WITHOUT THE ABSENCE RULE. The highest-value check.
+------------------------------------------------------------------------------
+Rebuilt from scratch with the real CLI, not re-read. Throwaway repo, studio
+INSIDE the repo, strategy rebase, manifest declaring `tests` kind: automated
+with a command. Opus opened on the TRUNK pre-verify. Then on the branch:
+feature commit, `bisellium verify` -> certifies tree:22d520cb, committed;
+`bisellium ready` + `bisellium done` -> state: done, committed; then ONE MORE
+commit "feat: more work, never certified". merge run from the trunk.
+
+  bisellium merge W-001 --studio studio --repo .
+    "opus/W-001's tree no longer matches its certificate — opus W-001's gate
+     "tests" certifies tree:22d520cb..., which no longer matches its current
+     tree (tree:792ec6cc...); check out opus/W-001, re-run "bisellium verify
+     W-001" there, commit the result on opus/W-001, then switch back to
+     master and retry the merge"                                     exit 1
+    Retried 3x: exit 1, 1, 1. master log never moved past
+    "studio bookkeeping: open W-001 (pre-verify)".
+
+The fail-open direction stays closed with the absence rule gone. The
+branch-ref provenance fix alone refuses it. This is the answer to the
+round-7 brief's first question, and it is unambiguous.
+
+2. lab11 (WAIVED GATE) — CLOSED. B6.1 resolved.
+-----------------------------------------------
+Same lab, fully certified and done on the branch, then the tests gate set to
+{ status: waived, waived_by: patron, note: "no test suite for a docs-only
+opus" } and committed there.
+  bisellium merge W-001 ...  -> "merged opus/W-001 into master"      exit 0
+  master lands every branch commit; opus/W-001 deleted cleanly.
+A control on the same lab (re-verify + commit, no waiver) also merges exit 0.
+The unclearable loop of round 6 is gone.
+
+3. `done`'s GUARD — TESTED DIRECTLY. The load-bearing claim is TRUE.
+--------------------------------------------------------------------
+packages/commands/src/lifecycle.ts:195-214, exercised through the real CLI
+with the manifest declaring `tests` kind: automated, opus at state building.
+Five record shapes, each written then `bisellium done` run:
+  A  gate absent from the record entirely
+       -> "W-001: gates not passed: tests"   exit 1, state unchanged
+  B  status: passed, certifies: "dirty:abc"
+       -> "gates not passed: tests"          exit 1, state unchanged
+  C  status: waived, waived_by: patron
+       -> "gates not passed: tests"          exit 1, state unchanged
+  D  status: failed, certifies: "tree:deadbeef"
+       -> "gates not passed: tests"          exit 1, state unchanged
+  E  status: passed, certifies: "tree:deadbeef" (an ARBITRARY hash)
+       -> "W-001: done"                      exit 0
+Case E is the one hole in `done` alone — it checks the `tree:` PREFIX, never
+that the hash matches. merge closes it: staleCertificateError compares the
+recorded hash against the branch's current source tree, which is exactly
+what lab8 above demonstrates. The two together form a complete chain:
+  `done` demands every declared automated gate have a tree: certificate;
+  `merge` demands state: done ON THE BRANCH;
+  `merge` demands every recorded tree: certificate match the branch's tree.
+I could not construct a CLI-reachable path to `state: done` with an
+uncertified automated gate. lifecycle.ts:219 is the only writer of
+`state: done` in the codebase (grepped setIn(["state"]) across packages/,
+apps/, adapters/ — writes.ts:506 and :621 are petitio and greenlight
+states, lifecycle.ts:338 is review --fail dropping back to building). The
+builder's argument for dropping the rule holds. Verified, not accepted.
+
+4. BEHAVIOUR 28 FLIPPED IN PLACE — honest, and pinned. One wrong citation.
+--------------------------------------------------------------------------
+M-A2: the absence rule restored faithfully (BOTH halves — the early-return
+condition `&& automated.size === 0` and the loop; my first attempt restored
+only the loop and got 0 FAIL, because the new early return fires first. That
+was a badly-placed mutation, not a coverage gap, and I record both).
+  M-A2 -> 2 FAIL, behaviour 28 only, both assertions. The removal IS pinned.
+Retiring in place rather than renumbering is the right call and I endorse
+it: renumbering would orphan 28.log..30.log and break countBehaviours'
+contiguous 1..N read in rules/evidence.ts, which is the rule that makes reds
+checkable at all. Nothing is obscured — the brief entry, the test comment
+and the check() name all say RETIRED and say why.
+  But "per P-005" is a MISATTRIBUTION. P-005 (studio/petitiones/P-005.md,
+resolved) is about assertion-level reds and the red_evidence content check —
+it says nothing about behaviour numbering. The practice is right, the
+authority cited for it is not. See A7.1.
+
+5. MUTATIONS — mine, on readOpusRecord's STATE path
+----------------------------------------------------
+Each applied to packages/cli/src/branch.ts in the worktree, full
+branch.test.ts run, then reverted and diffed clean against a saved-good copy.
+  M-S1  state read from DISK (readFront(opusPath)), certificates still from
+        the branch — i.e. EXACTLY the split I proposed at round 6
+        -> 3 FAIL, all behaviour 29: 29(a) both assertions, and 29(b)'s
+           "names the branch's real state". Both directions. PINNED.
+  M-S2  the state message loses the branch name and the remedy
+        -> 1 FAIL, 29(b) "the refusal names the branch, not just a bare state"
+  M-A2  absence rule restored (above) -> 2 FAIL, behaviour 28 only
+  M-A   absence rule restored at the wrong insertion point -> 0 FAIL
+        (recorded for honesty; my error, not the suite's)
+Round 6's finding that `state` provenance had no test of its own is closed.
+
+6. REDS {08,09,28,29,30} — re-run, not accepted
+------------------------------------------------
+The round-7 branch.test.ts run against 22e7794's unmodified branch.ts, one
+behaviour at a time:
+  08  PASS 1/1   09  PASS 2/2   22  PASS 2/2   26  PASS 2/2   27  PASS 2/2
+  28  FAIL 2/2   — reproduces 28.log exactly, including the absence-rule
+                   refusal text. Genuine pre-implementation red for the flip.
+  29  PASS 5, FAIL 1 — the failing one is "the refusal names the branch, not
+                   just a bare state". Reproduces 29.log exactly.
+  30  PASS 4, FAIL 1 — the failing one is "the remedy names the missing
+                   commit step". Reproduces 30.log exactly.
+So 29 and 30 are PARTIAL reds: one genuinely-new assertion each, the rest
+regression pins for fixes that landed in earlier rounds (29(a) passes under
+old code because the B5.1 branch-ref read is already in at fab9522). The
+logs record that honestly — they show the PASS lines alongside the FAIL
+rather than claiming a blanket red. The brief calls them "pre-implementation"
+without the qualifier; see A7.5. 08/09 now carry "mutation-record:" in the
+check() names, so the log text itself says what they are (A6.5 closed).
+All 30 behaviours numbered contiguously 1..30, all 30 reds present.
+
+7. B6.2 REMEDY — CLOSED, verified with the REAL CLI end to end (lab9)
+----------------------------------------------------------------------
+Behaviour 30 simulates `verify` with a hand-written front-matter file, so it
+does not by itself prove the real command works. Ran it literally instead:
+  merge                       -> refuses, names the commit step      exit 1
+  git checkout opus/W-001     -> "Switched to branch 'opus/W-001'"
+  bisellium verify W-001      -> "tests: passed ci/W-001-tests-792ec6cc.log"
+  git add . && git commit     -> fb2cfc8
+  git checkout master         -> "Switched to branch 'master'"
+  merge (retry)               -> "merged opus/W-001 into master"     exit 0
+  branch cleaned up: git branch --list 'opus/*' empty.
+The remedy is achievable, word for word, with the real commands. B6.2 closed.
+
+8. B6.3 REMEDY — works from a clean trunk; one rough edge (A7.2)
+-----------------------------------------------------------------
+lab63d (trunk never touched): merge refuses "opus W-001 is not done on
+opus/W-001 (state: building); run "bisellium done W-001" on opus/W-001 and
+commit it there"; following it verbatim lands the merge, exit 0. The message
+names the ref and the remedy — the round-6 complaint is answered.
+
+ON THE DESIGN CALL (B6.3) — I WAS WRONG AT ROUND 6, AND M-S1 PROVES IT
+-----------------------------------------------------------------------
+I suggested splitting provenance: certificates from the branch, state from
+the checkout. The builder refused and is right. M-S1 implements my
+suggestion and 29 catches it in both directions, but the deeper reason is
+structural: dropping the absence rule makes the fail-open guarantee rest
+ENTIRELY on `done`'s gate (section 3), and that guarantee only transfers to
+`merge` because `merge` reads `state` from the same ref it reads the
+certificates from. Split them and a `done` run against the TRUNK's copy —
+which on this very PR carries passed gates certifying the stale round-4 tree
+— would authorise a merge of a branch record that has no certificates at
+all. My round-6 suggestion would have reopened the exact hole the absence
+rule was there to plug, at the same moment the rule was removed. One
+provenance, one rule, is correct. Endorsed without reservation.
+
+B7.1 (BLOCKING) — sourceExcludeDirs is the LAST mixed-provenance read, and
+it produces an unclearable loop with a remedy that provably cannot clear.
+---------------------------------------------------------------------------
+`readOpusRecord` now reads the record from `branch`'s ref. `sourceExcludeDirs`
+(branch.ts:81-89), which supplies the exclude set that DEFINES the hash the
+record is compared against, still reads the manifest off DISK — whatever
+`--studio` shows in the checkout `merge` runs from. `verify`, run on the
+branch, uses the BRANCH's manifest. So an opus whose own work touches
+`source_excludes` is certified under one exclude set and compared under
+another.
+
+  lab16, real CLI throughout. The opus's work: add `vendor/` and declare
+  `source_excludes: [vendor/]` in studio/bisellium.yml, committed on the
+  branch. Then on the branch: verify -> certifies tree:22d520cb (vendor/
+  excluded); done; committed. merge from the trunk:
+    "opus/W-001's tree no longer matches its certificate — ... certifies
+     tree:22d520cb..., which no longer matches its current tree
+     (tree:050362e1...); check out opus/W-001, re-run "bisellium verify
+     W-001" there, commit the result on opus/W-001, then switch back to
+     master and retry the merge"                                     exit 1
+  Follow that remedy verbatim, on the branch:
+    bisellium verify W-001 ...  -> "tests: passed ci/W-001-tests-22d520cb.log"
+    git commit                  -> "nothing to commit, working tree clean"
+                                   (the certificate is byte-identical — it
+                                    must be: verify is computing the right
+                                    hash, merge is computing the wrong one)
+    bisellium merge W-001 ...   -> the IDENTICAL message               exit 1
+  The loop does not terminate. This is the same shape as round-6 B6.1, and
+  it is not cleared by a rebase either: the manifest change is the BRANCH's
+  own commit, so replaying it onto the trunk leaves the divergence intact.
+  The only escape is to run `merge` from a checkout sitting on the branch —
+  where it then half-succeeds: "master fast-forwarded to opus/W-001, but
+  could not delete opus/W-001: ... used by worktree", exit 1, code landed,
+  branch orphaned. Nothing documents either.
+
+  I graded the sibling of this finding A6.2 (advisory) at round 6 because I
+  tested the GATE-LIST case, which a rebase does clear. I did not test the
+  exclude-set case. That was my error, and this is the worse half: the
+  exclude set feeds the hash itself, and nothing clears it.
+
+  The fix is the rule the builder already established and already owns:
+  everything `merge` compares comes from `branch`'s ref. `readOpusRecord`
+  already has the `git show <branch>:<studio-rel>/...` mechanism and
+  `studioRelToRepo` already computes the path; `sourceExcludeDirs` needs to
+  use them (and `resolveIntegration` should be judged the same way — the
+  trunk's strategy, less severe, untested here). After that, branch.ts has
+  no disk read left in the compare path at all, which is the invariant this
+  opus has been converging on for three rounds.
+
+B7.2 (BLOCKING) — docs/ADOPTION.md documents a refusal this same commit
+deleted, and the refusal does not happen.
+---------------------------------------------------------------------------
+The A6.1 correction rewrote the `dirty:` sentence from "is never compared
+here" to its opposite:
+  "A `certifies: dirty:<hash>` gate ... IS compared here in one direction:
+   `merge` demands a `tree:` certificate specifically, so a gate that only
+   ever certified `dirty:<hash>` is refused with "no recorded tree:
+   certificate" — a `dirty:` certificate never satisfies a merge, by design"
+   (docs/ADOPTION.md:236-240)
+That refusal WAS the absence rule, removed 100 lines earlier in the same
+commit. `grep -rn "no recorded tree" packages/ docs/` returns the doc line
+and one test NAME — the string exists in no source file. staleCertificateError
+now skips any gate whose `certifies` does not start with `tree:`, so a
+`dirty:` certificate is not examined at all.
+  lab12, real CLI: verify --allow-dirty on the branch -> `certifies:
+  dirty:22d520cb`, status passed. `bisellium done` correctly refuses it
+  ("gates not passed: tests"). Forcing state: done in the record and
+  committing it, then merging from the trunk:
+    "merged opus/W-001 into master"                                  exit 0
+  i.e. merge lands it silently. The doc claims the opposite, in the
+  paragraph that is the written contract for the mechanism under review.
+The underlying behaviour is defensible (the `done` gate is what refuses a
+dirty certificate, and it does). What is not defensible is the contract
+document asserting a safety property that was deleted in the same commit
+that asserted it. Either restore the sentence to the truth ("a `dirty:`
+certificate is never compared by merge; `bisellium done` is what refuses
+one") or make the code match the doc. This is one paragraph.
+
+Advisories
+----------
+A7.1  "per P-005" on behaviour 28 (brief line 112, branch.test.ts:953,
+      branch.ts's B6.1 comment) is the wrong citation — P-005 is the
+      assertion-level-reds petitio. The retire-in-place practice is right;
+      its actual justification is countBehaviours' contiguous 1..N read in
+      rules/evidence.ts. Cite that, or open a petitio for the practice.
+A7.2  The B6.3 remedy's step 1 aborts in the case the message is written
+      FOR. lab63c: operator on the trunk runs `bisellium done W-026`
+      (exactly CLAUDE.md's documented invocation) — it succeeds, because
+      master's copy of W-026.md is `state: building` with passed gates
+      certifying the stale tree:5ab03a0b, and `done` checks only the
+      `tree:` prefix. merge then refuses and says "run done on opus/W-026
+      and commit it there"; `git checkout opus/W-026` refuses, because
+      `done` itself just dirtied the trunk (studio/opera/W-026.md AND
+      studio/.bisellium/events.jsonl). Not a loop — git's own message names
+      the escape and a stash clears it — so advisory, not blocking. But it
+      will fire on THIS PR the moment it is marked done. The real fix is in
+      `done`, not `merge`: refuse (or warn) when run on the trunk for an
+      opus that has a live branch. Worth its own opus.
+      lab63b: if the operator COMMITS that trunk-side `done` instead, the
+      branch's own `done` then conflicts on rebase — "could not be rebased
+      onto master — resolve the conflict on opus/W-026 and retry", which is
+      honest and recoverable.
+A7.3  `bisellium done` refuses a WAIVED automated gate (section 3 case C:
+      lifecycle.ts:205 demands status === "passed" for kind: automated). So
+      the round-6 lab11 shape is unreachable through the CLI in the first
+      place, and a Patron waiver on an automated gate — a first-class
+      ProbatioStatus that check.ts:487/495/509 and the web gate ladder both
+      treat as satisfied — cannot be honoured anywhere in the lifecycle.
+      Out of W-026's scope; the defect is in `done`, and removing the
+      absence rule was still the right call for merge. File it.
+A7.4  Behaviour 29(b)'s first two assertions (`result.ok === false` and
+      `.includes("opus/W-103")`) are satisfied by ANY refusal naming the
+      branch — under M-S1 they pass on "branch opus/W-103 has diverged from
+      master — rebase first". Only the third assertion bites. It does bite,
+      so the behaviour is not vacuous; tighten the first two anyway.
+A7.5  29 and 30 are labelled "pre-implementation" in the brief but are
+      partial reds (one new assertion each; section 6). The LOGS are honest
+      — they show the PASS lines. The brief should carry the same
+      qualifier, as it does for 22's "(mutation-record)".
+A7.6  Carried and still accepted: A6.6 (prune.ts:49 and close.ts:22 read
+      the opus record off disk; `git branch --merged HEAD` is prune's real
+      guard, so a wrong read can only keep a branch, never land code),
+      A4.1 (pull_after_push inert under pr.required, documented), A4.5 (a
+      refused merge leaves the branch rebased, benign under
+      force-with-lease).
+
+On the design question the brief asks
+--------------------------------------
+The remaining defect is in the IMPLEMENTATION, not in the design of putting
+certificate checking inside `merge`.
+
+I say that with more confidence this round than last, because the design
+just passed the test that matters: its belt-and-braces rule was removed
+entirely and the fail-open lab still refuses (section 1), because the
+guarantee genuinely lives in `done` + the branch-ref read together (section
+3). A mechanism that survives having one of its two refusal paths deleted is
+a mechanism that was load-bearing in the right place.
+
+Every blocking finding in rounds 5, 6 and 7 is one bug: a read pointing at
+the checkout instead of the branch ref. B5.1 was the opus record. B6.3 was
+`state` inside that record — same read, already fixed, argued correctly.
+B7.1 is `sourceExcludeDirs`, the last one, and the one that defines the hash
+everything else is compared against. That is a converging sequence, not a
+design that keeps failing: the rule "everything merge compares comes from
+`branch`'s ref" is correct, and the implementation is one function short of
+obeying it.
+
+Verdict
+-------
+FAIL, round 7 — but on two findings that are one function and one paragraph,
+with no design change and no new behaviour required beyond a red on the
+exclude-set loop.
+
+What this round genuinely closed, all of it executed: the fail-open lab
+refuses with the absence rule gone; the waived gate merges; `done`'s guard
+is real and I tested all five shapes against the CLI; both remedies work
+verbatim with the real commands from a clean trunk; the state path is pinned
+by 29 and my own M-S1/M-S2; 28's flip is pinned by M-A2 and is honestly
+labelled; the reds reproduce exactly against the previous implementation;
+and the gates are honest — tree:c56a5125 is what I recomputed for 73ad20d.
+
+What blocks: an opus that touches `source_excludes` cannot be merged at all,
+and the refusal's own remedy provably loops (B7.1, lab16); and ADOPTION.md
+now promises a refusal the same commit deleted, which lab12 disproves
+(B7.2). I graded B7.1's sibling advisory at round 6 on incomplete evidence;
+that was my error and I am naming it rather than presenting this as new.
+
+Commands run for this log
+-------------------------
+  git worktree add --detach /tmp/claude-1000/r7-2/wt 73ad20d
+  node_modules rebuilt entry by entry; @bisellium/* relinked INTO the
+    worktree; readlink -f verified for shim/cli/commands/core/schema
+  npm test; npm run -s typecheck; npm run -s lint; npm run -s format:check
+  node --import tsx packages/cli/src/branch.test.ts .
+  node --import tsx packages/cli/src/branch.test.ts . 8|9|22|26|27|28|29|30
+    (round-7 test file against BOTH 73ad20d and 22e7794's branch.ts)
+  node --import tsx packages/cli/src/main.ts check studio --repo . [--level block]
+  sourceTreeHash recomputed for 73ad20d, 79e2d13, 22e7794, master via
+    @bisellium/shim from inside the worktree
+  lab8    fail-open: certified, done, then an uncertified commit; 3 retries
+  labdone `bisellium done` guard, five record shapes (A-E)
+  lab11   waived automated gate, post-done; plus a clean control
+  lab9    the B6.2 remedy followed literally with the real CLI, end to end
+  lab63b/c/d  the B6.3 remedy: clean trunk, uncommitted trunk-side done,
+              committed trunk-side done
+  lab12   verify --allow-dirty, dirty: certificate, forced done (B7.2)
+  lab16   source_excludes declared by the opus itself (B7.1), + the
+          merge-from-the-branch escape
+  mutations M-S1, M-S2, M-A, M-A2 of packages/cli/src/branch.ts, each
+    reverted and diffed clean against a saved-good copy
+  reads of branch.ts (sourceExcludeDirs, studioRelToRepo, readOpusRecord,
+    staleCertificateError, mergeOpusBranch), commands/src/lifecycle.ts:150-232,
+    commands/src/writes.ts:455-530, cli/src/rules/evidence.ts:90-135,
+    petitiones/P-005.md, leges/engineering.md, docs/ADOPTION.md:202-248
