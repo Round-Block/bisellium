@@ -1,0 +1,54 @@
+certifies: cascade 7 retro evidence — qa-lead
+command: node scripts/arch-graph.mjs . ; diff against docs/ARCHITECTURE.md $1 Packages block
+at: 2026-09-19T05:11:31.000Z
+
+-- regenerated graph (node scripts/arch-graph.mjs .) --
+drift: packages/cli declares @bisellium/pipeline but never imports it
+drift: apps/server declares @bisellium/shim but never imports it
+flowchart TD
+  adapter_epoch0["adapter-epoch0<br/>adapters/epoch0"]
+  adapter_native["adapter-native<br/>adapters/native"]
+  cli["cli<br/>packages/cli"]
+  commands["commands<br/>packages/commands"]
+  core["core<br/>packages/core"]
+  pipeline["pipeline<br/>packages/pipeline"]
+  providers["providers<br/>packages/providers"]
+  schema["schema<br/>packages/schema"]
+  server["server<br/>apps/server"]
+  shim["shim<br/>packages/shim"]
+  web["web<br/>apps/web"]
+  adapter_epoch0 --> schema
+  adapter_native -. dynamic .-> providers
+  adapter_native --> schema
+  cli --> adapter_native
+  cli --> commands
+  cli --> core
+  cli --> providers
+  cli --> schema
+  cli -- "injects checkStudio + runners" --> server
+  cli --> shim
+  commands --> adapter_native
+  commands --> core
+  commands --> pipeline
+  commands --> schema
+  commands --> shim
+  core -.-> adapter_native
+  core --> schema
+  pipeline --> schema
+  pipeline --> shim
+  providers --> adapter_native
+  providers --> schema
+  server --> adapter_native
+  server -.-> commands
+  server --> core
+  server --> schema
+
+11 workspaces, 25 edges (solid = runtime import, dotted = dynamic, dashed = dev/test-only)
+
+-- docs/ARCHITECTURE.md's current Packages block has no 'web' node --
+6:kill: when the console renders these graphs live from the index (web III, Graph screen) — a generated view replaces a pasted one
+71:`@bisellium/shim`. `apps/web` has no `package.json` yet, so it is not in the
+151:  web["web screens — next: web I<br/>Inbox, Officina/Board"]
+159:  reads --> web
+160:  events --> web
+161:  live --> web

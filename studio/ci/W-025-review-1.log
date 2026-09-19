@@ -1,0 +1,96 @@
+# W-025 eng-lead review — round 1
+# reviewer: eng-lead (Opus 4.6, D-014 cross-generation)
+# at: 2026-09-19
+# commit: eb37e045a618301896e5f14cf642bcec60cf0d81
+# verdict: PASS
+
+## Gates verified on current tree
+
+- vite build: PASS (31 modules, 104ms)
+- typecheck: PASS (exit 0)
+- tests: PASS (all 42 assertions green, including all 10 W-025 behaviours)
+- lint: PASS (0 errors, 1 unrelated warning)
+
+## Recorded reds
+
+10 reds at studio/ci/reds/W-025/{01..10}.log, one per behaviour, all
+assertion-level (not import/module-load failures), each isolated by behaviour
+number via argv filter. All exit 1 with at least one FAIL line. Satisfies
+engineering lex section 2 (test-first with recorded red, assertion-level reds).
+
+## Brief acceptance criteria
+
+1. Fasti strip: 14 day-columns, today-13..today, weekday initials in
+   small-caps, today column 1px ink rule. Behaviours 1-3 covered.
+2. Gate ladder: 6x6 marks, 3px gaps, 1px rail, width formula (4 gates =
+   33px), five status-to-mark mappings, hover title. Behaviours 4-5.
+3. BurnBar: mono numerals, 4px rail, ink/amber color switch. Behaviour 6.
+4. Posture: word at 17px Bricolage 600, reason at 13px body. Behaviour 7.
+5. Nav: 44px height, wordmark text (not glyph, per DIRECTION.md section 2.10),
+   two links, amber badge when needsYouCount > 0. Behaviour 8.
+6. Hash routing: #/inbox -> Inbox, #/officina -> Officina, default -> Inbox.
+   Behaviour 9.
+7. Colophon reused from W-024, positioned last. Behaviour 10.
+
+## DIRECTION.md compliance
+
+### Type scale (section 3)
+- Section heads: 17/22 Bricolage 600. Correct.
+- UI default: 13/18 Instrument Sans 400. Correct.
+- Micro: 11/14. Correct (nav badge, fasti weekday).
+- Data: mono 12/18 tabular-nums. Correct (burn numerals).
+- Small-caps: font-variant: small-caps on fasti weekday initials only. Correct.
+- No half-pixel sizes, no italics, no all-caps labels, no sixth weight.
+
+### Color ceiling (section 3)
+- Verdigris: wordmark, fasti ticks. Within ceiling.
+- Amber: nav badge, burn-bar over-allowance. Correct semantics.
+- ok/bad: gate marks only, at 6px, paired with shape differences. Correct.
+- No palette sprawl; all values reference CSS custom properties from tokens.css.
+
+### Spacing (section 3)
+- All gaps from the permitted set {4,8,12,16,24,32,48}px. Verified.
+
+### Radii (section 3)
+- 2px on gate-ladder marks. Correct.
+- 0 on panels and rows. Correct.
+- No 999px pills, no box-shadows. Correct.
+
+### Rejects (section 7)
+- No violations found. No sparklines, donuts, gauges, emoji status, gradient,
+  glassmorphism, A-B-C middle-dot strings, all-caps labels, or arrow-appended
+  links.
+
+## Engineering lex compliance
+
+- Test-first with recorded reds: satisfied (10 reds, assertion-level).
+- No raw path joins in frontend code (only ES import specifiers, URL string
+  interpolation for API calls — not filesystem paths).
+- Co-owned files (App.tsx, api.ts) declared in brief as co-owned with W-024.
+- Pure logic separated from components (lib/*.ts testable without DOM).
+
+## Advisory notes (non-blocking)
+
+1. BOX-SIZING ON HOLLOW ELEMENTS: No global box-sizing: border-box reset.
+   The hollow fasti tick (.fasti-strip__tick--hollow, border: 1px solid on a
+   3px element) renders at 5x5px content-box vs 3x3px filled. Same issue on
+   gate-ladder hollow marks (8x8 vs 6x6). Add box-sizing: border-box to
+   .fasti-strip__tick and .gate-ladder__mark, or add a global reset. This
+   is a visual alignment bug, not a logic or spec violation.
+
+2. GATE LADDER bad-diagonal: The clip-path polygon(0 100%, 100% 0, 100% 100%)
+   renders a triangle, not "bad fill with a 1px diagonal" as DIRECTION.md
+   section 4.1 specifies. The accessibility requirement (shape difference
+   surviving color blindness) IS met. The visual is a reasonable 6px-scale
+   interpretation but does not literally match the spec's description of a
+   filled mark with a diagonal line overlaid. Consider a pseudo-element or
+   linear-gradient approach for the 1px diagonal on a fully filled bad mark.
+
+3. CLOSED-DAY FASTI STATE: The builder correctly documented (ponytail comment
+   in fasti.ts) that the frozen API has no per-day closed/open signal, so all
+   non-landing days show hollow instead of the three-state behavior described
+   in DIRECTION.md section 4.2. This is an API limitation, not a code defect.
+
+4. NAV LINK COLOR: Nav links use var(--ink). DIRECTION.md section 3 says
+   "Verdigris — links." Arguable whether nav items are "links" in this context
+   vs content hyperlinks. Not blocking.

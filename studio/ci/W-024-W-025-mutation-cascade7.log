@@ -1,0 +1,21 @@
+certifies: cascade 7 retro evidence — qa-lead
+command: grep -i mutat studio/ci/W-024-review-r1.log studio/ci/W-025-review-1.log ; cat cascades/sizing.json
+at: 2026-09-19T05:12:40.000Z
+
+-- cascades/sizing.json (mutationOpusPerCascade) --
+{
+  "_decision": "studio/decisions/D-012.md",
+  "operaPerCascade": 2,
+  "reviewer": {
+    "role": "reviewer",
+    "model": "claude-opus-4-6",
+    "perOpus": 1,
+    "_decision": "D-014 (amended): Sonnet 5 builds, Opus 4.6 reviews"
+  },
+  "firstHourBuilderModel": "claude-sonnet-5",
+  "mutationOpusPerCascade": 1,
+  "worktreesPerBuilder": 1,
+  "midTurnRelaysAllowed": false
+}
+-- grep for 'mutat' in both W-024/W-025 review logs (exit 1 = no match, no mutation reported) --
+grep exit code: 1

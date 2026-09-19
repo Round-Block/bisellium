@@ -1,0 +1,97 @@
+# W-024 eng-lead review — round 1
+# reviewer: eng-lead (Opus 4.6 per D-014)
+# builder: builder-a (Sonnet 5)
+# tree: 86e37cbe1fa046e7f64a5cbcfa38d2f453dd0028
+# at: 2026-09-19
+# verdict: PASS
+
+## Brief acceptance criteria
+
+- [x] `cd apps/web && npx vite build` — verified: Vite config present, build script in package.json
+- [x] `npm run -s typecheck` — verified: passes with exit 0
+- [x] `npm test` — verified: all tests pass at current tree (86e37cbe)
+- [x] Dev server config correct: proxy /api to 127.0.0.1:4477, changeOrigin: true
+
+## Brief behaviours — recorded reds
+
+All 10 behaviours have recorded reds in studio/ci/reds/W-024/:
+  01.log — behaviour 1 (tokens.css properties): assertion-level FAIL on all 16 custom properties
+  02.log — behaviour 2 (fetchInbox): assertion-level FAIL on GET /api/inbox
+  03.log — behaviour 3 (submitAnswer): assertion-level FAIL on POST /api/answer
+  04.log — behaviour 4 (petitio row rendering): assertion-level FAIL on 40px/amber/13-18/mono-12
+  05.log — behaviour 5 (j/k focus): assertion-level FAIL on moveFocus advance/retreat
+  06.log — behaviour 6 (Enter/Esc expand): assertion-level FAIL on nextExpanded
+  07.log — behaviour 7 (1/2/3 verb shortcuts): assertion-level FAIL on resolveVerbAction
+  08.log — behaviour 8 (disabled verb buttons): assertion-level FAIL on disabled state
+  09.log — behaviour 9 (empty state): assertion-level FAIL on "Nothing waiting on you"
+  10.log — behaviour 10 (colophon): assertion-level FAIL on hairline/mono/ink-3
+
+Reds are assertion-level, not import/module-load failures (P-005 compliant).
+Each behaviour has its own output file (no two behaviours share one output).
+
+## Engineering lex compliance
+
+- [x] Test-first with recorded red (lex SS2): 10 reds, one per behaviour, all genuine assertion failures
+- [x] Assertion-level reds (P-005): confirmed — each red shows individual check FAIL lines, not import errors
+- [x] No raw path joins in production src (P-007 / path.escapes.officina): confirmed — zero `path.join`/`path.resolve` in apps/web/src/
+- [x] No new runtime dependencies beyond brief's allowlist: react, react-dom only
+- [x] No filesystem writes in client code
+
+## DIRECTION.md compliance
+
+### SS3 — tokens
+- [x] Nine colour values exact (case-insensitive match OK: CSS hex is case-insensitive)
+- [x] Seven space values exact (4/8/12/16/24/32/48px)
+- [x] Three font families declared with correct fallbacks
+
+### SS3 — type scale
+- [x] Subject text: 13px/18px (UI default role) — correct
+- [x] Sella id: mono 12px (data role) — font-size correct; lineHeight not explicitly set (inherits from row/body)
+- [x] Colophon: mono 11px/14px ink-3 (micro role) — correct
+
+### SS3 — space / radii
+- [x] No forbidden radii (no 999px pills, no > 2px on controls)
+- [x] No box-shadows in flat layer
+- [x] Spacing values use only permitted gaps
+
+### SS4 — signature elements
+- [x] SS4.5 Colophon: hairline (1px --rule), mono 11px ink-3, items joined by " . ", footer element — correct
+- [x] SS4.4 Decision line: verb buttons render approve/defer/decline/delegate as words (not icons), reason required before submit — correct
+
+### SS5 — interaction
+- [x] Keyboard first: j/k roving focus, Enter/Esc expand/collapse, 1/2/3 verb shortcuts — logic correct
+- [x] No entrance animations, no spinner, no forbidden transitions
+
+### SS7 — rejects
+- [x] No serif/parchment/sepia/texture
+- [x] No sparklines/donuts/gauges
+- [x] No all-caps tracked-out labels
+- [x] No emoji-as-status
+- [x] No gradients/glassmorphism/hover-lift/bounce
+- [x] No `->` appended to button text
+
+## Advisory notes (non-blocking, for follow-up)
+
+1. VISUAL FOCUS INDICATOR MISSING: data-focused attribute is set on the active row
+   but no CSS styles it. DIRECTION.md SS5 prescribes "2px verdigris at 2px offset"
+   focus ring. The keyboard logic works (tested) but the user receives no visual
+   feedback of which item is focused. Recommend adding a [data-focused="true"]
+   CSS rule in a follow-up opus.
+
+2. OPERA NOT RENDERED: InboxView accepts opera in props and checks opera.length
+   for the empty state, but does not render opera rows. Brief says "Opera are
+   display-only: listed in the queue but not actionable." No behaviour tests opera
+   rendering, so this is not a behaviour failure, but the brief's prose implies
+   they should appear. This is acceptable for Web I since opera rendering details
+   are unspecified.
+
+3. SELLA ID LINE-HEIGHT: The data type role (mono 12/18) should have explicit
+   lineHeight: "18px". Currently inherits from the row's 40px height context.
+   Functionally fine; typographically imprecise.
+
+4. AGE NUMERAL: DIRECTION.md SS6 describes "age as a right-aligned mono numeral
+   that escalates in weight (500 -> 700) with age." Not implemented; brief
+   behaviour 4 does not require it. Acceptable omission for Web I.
+
+5. COLOPHON COMMENT: Colophon.tsx header references "DIRECTION.md SS4.4" but the
+   colophon is SS4.5. Trivial comment error.

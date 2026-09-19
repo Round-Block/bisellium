@@ -1,0 +1,14 @@
+certifies: cascade 7 retro evidence — qa-lead
+command: grep -c gen_ai.usage .bisellium/events.jsonl ; grep 'W-024\|W-025' .bisellium/events.jsonl | grep -c gen_ai.usage
+at: 2026-09-19T05:12:40.000Z
+
+total gen_ai.usage events in the log: 48
+gen_ai.usage events tagged workflow.item.id W-024 or W-025: 0
+
+-- W-024/W-025 events present (greenlight/state_changed/gate_evaluated only, no gen_ai.usage) --
+{"id":"cli:69","name":"workflow.greenlight","ts":"2026-09-19T04:23:42.517Z","projectId":"bisellium","attrs":{"workflow.item.id":"W-024","workflow.greenlight":"granted","workflow.source":"cli","workflow.source.seq":69}}
+{"id":"cli:70","name":"workflow.greenlight","ts":"2026-09-19T04:23:44.715Z","projectId":"bisellium","attrs":{"workflow.item.id":"W-025","workflow.greenlight":"granted","workflow.source":"cli","workflow.source.seq":70}}
+{"id":"cli:71","name":"workflow.state_changed","ts":"2026-09-19T04:35:07.095Z","projectId":"bisellium","attrs":{"workflow.item.id":"W-024","workflow.state.from":"greenlit","workflow.state.to":"building","workflow.actor.role":"guest","workflow.source":"cli","workflow.source.seq":71}}
+{"id":"cli:72","name":"workflow.state_changed","ts":"2026-09-19T04:35:07.907Z","projectId":"bisellium","attrs":{"workflow.item.id":"W-025","workflow.state.from":"greenlit","workflow.state.to":"building","workflow.actor.role":"guest","workflow.source":"cli","workflow.source.seq":72}}
+{"id":"cli:73","name":"workflow.gate_evaluated","ts":"2026-09-19T05:07:10.598Z","projectId":"bisellium","attrs":{"workflow.item.id":"W-024","workflow.gate.id":"review","workflow.gate.status":"passed","workflow.gate.evidence":"ci/W-024-review-r1.log","workflow.actor.role":"eng-lead","workflow.review.round":1,"workflow.source":"cli","workflow.source.seq":73}}
+{"id":"cli:74","name":"workflow.gate_evaluated","ts":"2026-09-19T05:07:14.581Z","projectId":"bisellium","attrs":{"workflow.item.id":"W-025","workflow.gate.id":"review","workflow.gate.status":"passed","workflow.gate.evidence":"ci/W-025-review-1.log","workflow.actor.role":"eng-lead","workflow.review.round":1,"workflow.source":"cli","workflow.source.seq":74}}
