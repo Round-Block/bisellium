@@ -85,6 +85,9 @@ function closePrompt({ opera, repo, now, cascadeNumber, sizing }) {
   return [
     `Run "bisellium retro --cascade ${cascadeNumber} --studio studio --now ${now}".${mutation}`,
     `Confirm "npm run -s check -- studio --repo ${repo}" reports zero new blocking findings for [${opera.join(", ")}].`,
+    `Confirm docs/ARCHITECTURE.md reflects any dependency-edge, seam, lifecycle or route change this cascade made`,
+    `(Design lex §2; regenerate the module-graph block with "node scripts/arch-graph.mjs", never by hand) — a stale`,
+    `architecture doc is a finding for the retro, not a silent omission.`,
   ].join(" ");
 }
 
