@@ -1,0 +1,24 @@
+# behaviour: 10
+# command: node --import tsx packages/cli/src/check.test.ts .
+# exit: 1
+# at: 2026-09-19T15:21:58.924Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  setup: W-001 actually patched                              
+PASS  done opus: no probatio.certifies.mismatch                  
+PASS  done opus: no probatio.certifies.stale                     
+PASS  done opus: no probatio.certifies.dirty                     
+PASS  done opus: no probatio.evidence.tree                       
+PASS  active opus: probatio.certifies.mismatch fires             probatio.certifies.stale, probatio.certifies.dirty, probatio.certifies.mismatch
+PASS  active opus: probatio.certifies.dirty fires                probatio.certifies.stale, probatio.certifies.dirty, probatio.certifies.mismatch
+PASS  halted opus: no probatio.certifies.stale                   traditio.stage
+PASS  source_excludes: non-list value blocks manifest.shape      manifest.shape, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  setup: docs/ is nonempty enough to move the hash           068a48e68c74e1d7e49a0b396dfb46028559c215 vs 6ddadcf0bdaae844d21217fb7074739191b51e63
+PASS  no source_excludes: certificate matches the baseline hash, not stale probatio.evidence.tree
+PASS  source_excludes: [docs/] changes the comparison hash, certificate now stale probatio.certifies.stale, probatio.evidence.tree
+FAIL  integration: non-mapping value blocks manifest.shape       probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+FAIL  integration.strategy: invalid value blocks manifest.shape  probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+FAIL  integration.push: non-boolean value blocks manifest.shape  probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+FAIL  integration.pr.reviewer: unknown sella blocks integration.pr.reviewer probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration: a well-formed block adds no manifest.shape or integration.* blocking findings 

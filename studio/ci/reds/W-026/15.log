@@ -1,0 +1,12 @@
+# behaviour: 15
+# command: node --import tsx packages/cli/src/branch.test.ts . 15
+# exit: 1
+# at: 2026-09-19T15:26:21.584Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+FAIL  merge_commit is refused, not silently downgraded             undefined
+FAIL  error names the strategy as not implemented                  undefined
+FAIL  master is untouched                                          16fbfb5 feat: add feature
+8a018eb init
+FAIL  opus branch is untouched                                     master

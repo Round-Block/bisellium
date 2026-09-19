@@ -1,0 +1,15 @@
+# behaviour: 7
+# command: node --import tsx packages/commands/src/run.test.ts
+# exit: 1
+# at: 2026-09-19T15:20:01.235Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+bisellium run: --opus and --base are mutually exclusive
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+PASS  --opus and --base together exits 2                           2
+worktree kept at /tmp/claude-1000/run-opus-repo-pq1s3U/.bisellium/worktrees/builder-1-1 (--keep)
+PASS  run --opus: exits 0                                          0
+FAIL  worktree forked from the opus branch, not HEAD               /tmp/claude-1000/run-opus-repo-pq1s3U/.bisellium/worktrees/builder-1-1
+PASS  HEAD (master) never got the opus commit                      /tmp/claude-1000/run-opus-repo-pq1s3U

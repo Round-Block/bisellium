@@ -312,4 +312,211 @@ function masterLog(dir: string): string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// D-015 — integration strategy is configuration, not a fixed flow. Extra
+// behaviours (11+, not in W-026's original numbered list — same footing as
+// 8/9 above): `mergeOpusBranch` reading `integration:` off the manifest.
+// ---------------------------------------------------------------------------
+
+/** A minimal manifest with just the `integration:` block under test —
+ *  `readManifest` never validates shape (that's `check`'s job), so nothing
+ *  else in the manifest is read by `resolveIntegration`. */
+function writeIntegrationManifest(studio: string, block: string): void {
+  writeFileSync(join(studio, "bisellium.yml"), `bisellium: 1\nstudio: Test\n${block}\n`);
+}
+
+/** A bare repo under the OS tmp dir wired as `origin` — a real remote, but
+ *  never `origin` itself: these tests must never touch the private remote
+ *  this repo actually pushes to. */
+function addLocalOrigin(dir: string): string {
+  const bare = mkdtempSync(join(tmpdir(), "bisellium-origin-"));
+  execSync(`git init -q --bare "${bare}"`, { stdio: "pipe" });
+  execSync(`git remote add origin "${bare}"`, { cwd: dir, stdio: "pipe" });
+  return bare;
+}
+
+function originMasterRev(bare: string): string {
+  try {
+    return execSync("git rev-parse master", { cwd: bare, encoding: "utf8" }).trim();
+  } catch {
+    return "(origin has no master — nothing was pushed)";
+  }
+}
+
+// behaviour 11: integration.strategy "rebase" actually rebases the opus
+// branch onto the trunk, then fast-forwards — not the fast-forward-only
+// refusal behaviour 9 covers. Also covers D-015's own named consequence:
+// the rebase rewrites the opus's tree, so `mergeOpusBranch` must say so.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFile(studio, "W-080", "done");
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    createOpusBranch(dir, "W-080");
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-080", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-080", studio);
+    check(11, "rebase strategy succeeds where ff-only would refuse", result.ok === true, String(result.error));
+    check(11, "feature commit lands on master after rebase", masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+    check(11, "opus branch deleted after a rebased merge", !branches(dir).includes("opus/W-080"), branches(dir).join(","));
+    const merges = execSync("git log --merges --oneline master", { cwd: dir, encoding: "utf8" }).trim();
+    check(11, "rebase produced a linear history, no merge commit", merges === "", merges);
+    check(
+      11,
+      "the rebase's own consequence (stale certificates) is surfaced, not suppressed",
+      (result.note ?? "").includes("probatio.certifies.stale"),
+      String(result.note),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 12: a genuine conflict under the "rebase" strategy is refused
+// distinctly from behaviour 5's ff-only conflict wording, and never leaves
+// a rebase in progress or a deleted branch behind.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFile(studio, "W-081", "done");
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    createOpusBranch(dir, "W-081");
+    writeFileSync(join(dir, "README.md"), "master change");
+    execSync("git add . && git commit -m 'master diverge'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-081", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "README.md"), "opus change");
+    execSync("git add . && git commit -m 'opus diverge'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-081", studio);
+    check(12, "refuses a real rebase conflict", result.ok === false, String(result.error));
+    check(12, "error names the rebase, not the ff-only wording", (result.error ?? "").includes("could not be rebased"), String(result.error));
+    check(12, "no rebase left in progress", execSync("git status --porcelain=v1 --branch", { cwd: dir, encoding: "utf8" }).includes("## master"), "");
+    check(12, "opus branch survives a failed rebase", branches(dir).includes("opus/W-081"), branches(dir).join(","));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 13: integration.push, gated on the setting — a successful merge
+// pushes the trunk to a (local, throwaway) origin; the default (no
+// integration block, all existing behaviours above) never touches a remote
+// at all, since none of those tests configure one.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  let bare: string | undefined;
+  try {
+    writeOpusFile(studio, "W-082", "done");
+    writeIntegrationManifest(studio, "integration:\n  push: true\n  pull_after_push: true\n");
+    bare = addLocalOrigin(dir);
+    createOpusBranch(dir, "W-082");
+    execSync("git checkout opus/W-082", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "done");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-082", studio);
+    check(13, "merge with integration.push succeeds", result.ok === true, String(result.error));
+    const localMaster = execSync("git rev-parse master", { cwd: dir, encoding: "utf8" }).trim();
+    check(13, "origin's master matches the local trunk after push", originMasterRev(bare) === localMaster, originMasterRev(bare));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+    if (bare) rmSync(bare, { recursive: true, force: true });
+  }
+}
+
+// behaviour 14: integration.pr.required stops `merge` short of landing the
+// change locally — the seam this opus leaves for W-028 (PR creation) rather
+// than building it. The branch survives, untouched, for a PR to carry.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFile(studio, "W-083", "done");
+    writeIntegrationManifest(studio, "integration:\n  pr:\n    required: true\n    reviewer: qa-lead\n");
+    createOpusBranch(dir, "W-083");
+    execSync("git checkout opus/W-083", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "done");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-083", studio);
+    check(14, "pr.required still reports success (merge did its half)", result.ok === true, String(result.error));
+    check(14, "pr.required does not land the change on the trunk", result.landed === false, String(result.landed));
+    check(14, "master is untouched", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+    check(14, "opus branch survives for a PR to carry", branches(dir).includes("opus/W-083"), branches(dir).join(","));
+    check(14, "note names the reviewer", (result.note ?? "").includes("qa-lead"), String(result.note));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 15: integration.strategy "merge_commit" is declared (D-015
+// names it as a valid strategy) but not built here — a clear, immediate
+// error beats half a merge-commit policy nobody asked to exercise yet.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFile(studio, "W-084", "done");
+    writeIntegrationManifest(studio, "integration:\n  strategy: merge_commit\n");
+    createOpusBranch(dir, "W-084");
+    execSync("git checkout opus/W-084", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "done");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-084", studio);
+    check(15, "merge_commit is refused, not silently downgraded", result.ok === false, String(result.error));
+    check(15, "error names the strategy as not implemented", (result.error ?? "").includes("merge_commit") && (result.error ?? "").includes("not implemented"), String(result.error));
+    check(15, "master is untouched", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+    check(15, "opus branch is untouched", branches(dir).includes("opus/W-084"), branches(dir).join(","));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 16 (adjacent bug fix, branch.ts:172): a repo whose trunk is
+// `main` merges into `main`, and `mergeOpusBranch` reports `main` as the
+// trunk it touched — never a hardcoded "master" (see runMerge's use of
+// `result.trunk`).
+{
+  const dir = mkdtempSync(join(tmpdir(), "bisellium-branch-"));
+  const studio = tmpStudio();
+  try {
+    execSync("git init -q -b main", { cwd: dir, stdio: "pipe" });
+    execSync("git config user.name test", { cwd: dir, stdio: "pipe" });
+    execSync("git config user.email test@test", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "README.md"), "init");
+    execSync("git add . && git commit -m init", { cwd: dir, stdio: "pipe" });
+
+    writeOpusFile(studio, "W-085", "done");
+    createOpusBranch(dir, "W-085");
+    execSync("git checkout opus/W-085", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "done");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout main", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-085", studio);
+    check(16, "merges into main when main is the trunk", result.ok === true, String(result.error));
+    check(16, "reports the real trunk name (main), not a hardcoded master", result.trunk === "main", String(result.trunk));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
 process.exit(failed ? 1 : 0);

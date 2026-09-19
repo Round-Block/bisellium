@@ -1,0 +1,9 @@
+# behaviour: 16
+# command: node --import tsx packages/cli/src/branch.test.ts . 16
+# exit: 1
+# at: 2026-09-19T15:26:44.288Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  merges into main when main is the trunk                      undefined
+FAIL  reports the real trunk name (main), not a hardcoded master   master

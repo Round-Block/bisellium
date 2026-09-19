@@ -1,0 +1,10 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/branch.test.ts . 1
+# exit: 1
+# at: 2026-09-19T15:18:51.433Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  createOpusBranch succeeds                                    true
+PASS  branch exists after create                                   master,opus/W-026
+FAIL  stays on original branch                                     opus/W-026

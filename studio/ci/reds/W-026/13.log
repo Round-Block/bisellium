@@ -1,0 +1,15 @@
+# behaviour: 13
+# command: node --import tsx packages/cli/src/branch.test.ts . 13
+# exit: 1
+# at: 2026-09-19T15:25:39.002Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  merge with integration.push succeeds                         undefined
+fatal: ambiguous argument 'master': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+fatal: ambiguous argument 'master': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+FAIL  origin's master matches the local trunk after push           (origin has no master — nothing was pushed)

@@ -26,6 +26,18 @@ probationes:
   - { id: review, name: Lead review, kind: agent }
 wip_limit: 4
 source_excludes: [examples/]
+# D-015: how an opus branch reaches the trunk is a setting, not a fixed
+# flow. This is the Patron's own reference flow — rebase the opus branch
+# onto the trunk (bisellium merge does the rebase, then fast-forwards),
+# push the trunk to origin and pull it back, and let a PR (still W-028's
+# territory to open) carry the change for qa-lead's review.
+integration:
+  strategy: rebase
+  push: true
+  pull_after_push: true
+  pr:
+    required: true
+    reviewer: qa-lead
 standing_rules:
   - "Test-first with a recorded red."
   - "Mechanical work is a script you write, run and keep."

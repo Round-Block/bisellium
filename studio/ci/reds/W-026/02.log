@@ -1,0 +1,8 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/branch.test.ts . 2
+# exit: 1
+# at: 2026-09-19T15:19:23.131Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+FAIL  refuses duplicate branch                                     undefined

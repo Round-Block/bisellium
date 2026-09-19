@@ -1,0 +1,29 @@
+# behaviour: 12
+# command: node --import tsx packages/cli/src/branch.test.ts . 12
+# exit: 1
+# at: 2026-09-19T15:24:52.456Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  refuses a real rebase conflict                               hint: Diverging branches can't be fast-forwarded, you need to either:
+hint: 
+hint: 	git merge --no-ff
+hint: 
+hint: or:
+hint: 
+hint: 	git rebase
+hint: 
+hint: Disable this message with "git config advice.diverging false"
+fatal: Not possible to fast-forward, aborting.
+FAIL  error names the rebase, not the ff-only wording              hint: Diverging branches can't be fast-forwarded, you need to either:
+hint: 
+hint: 	git merge --no-ff
+hint: 
+hint: or:
+hint: 
+hint: 	git rebase
+hint: 
+hint: Disable this message with "git config advice.diverging false"
+fatal: Not possible to fast-forward, aborting.
+PASS  no rebase left in progress                                   
+PASS  opus branch survives a failed rebase                         master,opus/W-081

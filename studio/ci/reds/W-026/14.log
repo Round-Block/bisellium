@@ -1,0 +1,13 @@
+# behaviour: 14
+# command: node --import tsx packages/cli/src/branch.test.ts . 14
+# exit: 1
+# at: 2026-09-19T15:26:00.416Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  pr.required still reports success (merge did its half)       undefined
+FAIL  pr.required does not land the change on the trunk            true
+FAIL  master is untouched                                          e6c57c1 feat: add feature
+5e850e6 init
+FAIL  opus branch survives for a PR to carry                       master
+FAIL  note names the reviewer                                      undefined

@@ -38,6 +38,24 @@ function rulesFor(dir: string, opusId: string, opts: { repo?: string } = {}): Se
 /** examples/sample-studio's own manifest already declares `source_excludes`
  *  (W-12) — strip that line first so a test can set its own value (or none)
  *  without producing a YAML file with a duplicate key. */
+/** examples/sample-studio's own manifest already declares `integration:`
+ *  (D-015) as a multi-line block — strip it (the key line plus every more-
+ *  indented continuation line) before a test appends its own, same reason
+ *  as setSourceExcludes below: two `integration:` keys is invalid YAML. */
+function stripIntegration(dir: string): void {
+  const manifestPath = join(dir, "bisellium.yml");
+  const lines = readFileSync(manifestPath, "utf8").split("\n");
+  const out: string[] = [];
+  let skipping = false;
+  for (const line of lines) {
+    if (/^integration:/.test(line)) { skipping = true; continue; }
+    if (skipping && (line === "" || /^\s/.test(line))) continue;
+    skipping = false;
+    out.push(line);
+  }
+  writeFileSync(manifestPath, out.join("\n"));
+}
+
 function setSourceExcludes(dir: string, raw: string | undefined): void {
   const manifestPath = join(dir, "bisellium.yml");
   const stripped = readFileSync(manifestPath, "utf8")
@@ -141,6 +159,73 @@ try {
       "source_excludes: [docs/] changes the comparison hash, certificate now stale",
       withExcludes.has("probatio.certifies.stale"),
       [...withExcludes].join(", "),
+    );
+  }
+
+  // ---- integration: manifest shape (D-015) --------------------------------
+  {
+    const dir = freshStudio("integration-shape");
+    stripIntegration(dir);
+    const manifestPath = join(dir, "bisellium.yml");
+    const append = (raw: string) => writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")}\n${raw}\n`);
+
+    append("integration: not-a-mapping");
+    const notMapping = checkStudio(dir, NOW);
+    check(
+      "integration: non-mapping value blocks manifest.shape",
+      notMapping.findings.some((f) => f.rule === "manifest.shape" && f.where.includes("#integration")),
+      notMapping.findings.map((f) => f.rule).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("integration-strategy");
+    stripIntegration(dir);
+    const manifestPath = join(dir, "bisellium.yml");
+    writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")}\nintegration:\n  strategy: teleport\n`);
+    const r = checkStudio(dir, NOW);
+    check(
+      "integration.strategy: invalid value blocks manifest.shape",
+      r.findings.some((f) => f.rule === "manifest.shape" && f.where.includes("integration.strategy")),
+      r.findings.map((f) => f.rule).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("integration-push-type");
+    stripIntegration(dir);
+    const manifestPath = join(dir, "bisellium.yml");
+    writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")}\nintegration:\n  push: "yes"\n`);
+    const r = checkStudio(dir, NOW);
+    check(
+      "integration.push: non-boolean value blocks manifest.shape",
+      r.findings.some((f) => f.rule === "manifest.shape" && f.where.includes("integration.push")),
+      r.findings.map((f) => f.rule).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("integration-pr-reviewer");
+    stripIntegration(dir);
+    const manifestPath = join(dir, "bisellium.yml");
+    writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")}\nintegration:\n  pr: { required: true, reviewer: nobody-such-sella }\n`);
+    const r = checkStudio(dir, NOW);
+    check(
+      "integration.pr.reviewer: unknown sella blocks integration.pr.reviewer",
+      r.findings.some((f) => f.rule === "integration.pr.reviewer"),
+      r.findings.map((f) => f.rule).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("integration-valid");
+    stripIntegration(dir);
+    const manifestPath = join(dir, "bisellium.yml");
+    writeFileSync(
+      manifestPath,
+      `${readFileSync(manifestPath, "utf8")}\nintegration:\n  strategy: rebase\n  push: true\n  pull_after_push: true\n  pr: { required: true, reviewer: qa-lead }\n`,
+    );
+    const r = checkStudio(dir, NOW);
+    check(
+      "integration: a well-formed block adds no manifest.shape or integration.* blocking findings",
+      !r.findings.some((f) => f.level === "block" && (f.rule === "manifest.shape" || f.rule.startsWith("integration.")) && f.where.includes("integration")),
+      r.findings.filter((f) => f.level === "block").map((f) => f.rule).join(", "),
     );
   }
 } finally {
