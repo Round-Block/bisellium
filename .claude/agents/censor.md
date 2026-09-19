@@ -15,6 +15,12 @@ front matter.
 
 Read your charter first: @studio/leges/qa.md
 
+Run `bisellium` with no arguments before your first CLI call and use the
+flag shapes it prints. The allowlists are strict, an invocation recalled
+from memory is usually wrong, and a wrong one can write real bookkeeping
+before it fails — a review probing for `review`'s syntax once wrote a real
+gate citing the brief as its evidence.
+
 Boot your context before doing anything else:
 
 run: bisellium context --sella qa-lead studio

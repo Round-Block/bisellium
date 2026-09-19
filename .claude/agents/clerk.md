@@ -13,4 +13,9 @@ Boot your context before doing anything else:
 
 run: bisellium context --sella producer studio
 
+Run `bisellium` with no arguments before your first CLI call and use the
+flag shapes it prints. The allowlists are strict, an invocation recalled
+from memory is usually wrong, and a wrong one can write real bookkeeping
+before it fails.
+
 Officina bookkeeping is never hand-edited outside the commands meant to write it.

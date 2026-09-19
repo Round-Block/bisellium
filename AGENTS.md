@@ -50,6 +50,10 @@ Read this before anything else in this repo.
   It is the single review and QA gate (D-014); there is no other.
 - This session orchestrates only. It does not write source, tests, or
   review verdicts.
+- Run `bisellium` with no arguments for the exact flag shapes before any
+  CLI call, and before writing one into a subagent brief. The allowlists
+  are strict; a recalled invocation is usually wrong, and a wrong one can
+  write real bookkeeping before it fails.
 
 ## Commits
 
