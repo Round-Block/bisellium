@@ -34,7 +34,7 @@ export interface RunResult {
 const GIT_TIMEOUT_MS = 30_000;
 
 const USAGE =
-  "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>\n" +
+  "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>\n" +
   "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]";
 
 /** `studio` slug for GIT_AUTHOR_EMAIL / BISELLIUM_STUDIO — same shape as adapter-native's projectId default. */
@@ -85,11 +85,18 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   let base: string | undefined;
   let keep = false;
   let reclaim = false;
+  let opus: string | undefined;
   let sepIndex = -1;
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
     if (a === "--") { sepIndex = i; break; }
+    if (a === "--opus") {
+      const r = takeValue(args, ++i, "--opus");
+      if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
+      opus = r.value;
+      continue;
+    }
     if (a === "--sella") {
       const r = takeValue(args, ++i, "--sella");
       if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
@@ -137,6 +144,8 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   const cmd = args.slice(sepIndex + 1);
   if (cmd.length === 0) { console.error(`bisellium run: empty command after "--"\n${USAGE}`); return { exitCode: 2 }; }
   if (!sella) { console.error(`bisellium run: --sella is required\n${USAGE}`); return { exitCode: 2 }; }
+  if (opus && base) { console.error(`bisellium run: --opus and --base are mutually exclusive\n${USAGE}`); return { exitCode: 2 }; }
+  if (opus) base = `opus/${opus}`;
 
   const manifestPath = join(studioRoot, "bisellium.yml");
   if (!existsSync(manifestPath)) { console.error(`not a studio: ${studioRoot}`); return { exitCode: 2 }; }
