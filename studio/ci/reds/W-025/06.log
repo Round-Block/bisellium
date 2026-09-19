@@ -1,0 +1,13 @@
+# behaviour: 6
+# command: node --import tsx apps/web/src/lib/burn.test.ts . 6
+# exit: 1
+# at: 2026-09-19T04:44:58.391Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  burn: fraction(50, 200) === 0.25                                       0
+FAIL  burn: fraction clamps at 1 when over allowance                         0
+PASS  burn: fraction floors at 0 for a negative spend                        0
+PASS  burn: color is ink under allowance                                     ink
+FAIL  burn: color is amber at allowance                                      ink
+FAIL  burn: color is amber past allowance                                    ink

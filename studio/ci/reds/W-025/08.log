@@ -1,0 +1,10 @@
+# behaviour: 8
+# command: node --import tsx apps/web/src/lib/nav.test.ts . 8
+# exit: 1
+# at: 2026-09-19T04:45:48.267Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+PASS  nav: chrome budget height is 44px (DIRECTION.md §3)                    44
+PASS  nav: badge hidden when needs-you count is 0                            
+FAIL  nav: badge visible when needs-you count > 0                            

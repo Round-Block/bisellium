@@ -1,0 +1,9 @@
+# behaviour: 7
+# command: node --import tsx apps/web/src/lib/posture.test.ts . 7
+# exit: 1
+# at: 2026-09-19T04:45:22.927Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  posture: word is the posture itself                                    
+FAIL  posture: reason names burn, allowance and period                       

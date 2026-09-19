@@ -1,0 +1,15 @@
+# behaviour: 4
+# command: node --import tsx apps/web/src/lib/gateLadder.test.ts . 4
+# exit: 1
+# at: 2026-09-19T04:44:32.202Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  gateLadder: width(4) === 33 (DIRECTION.md §4.1)                        0
+FAIL  gateLadder: width(1) === 6 (one mark, no trailing gap)                 0
+PASS  gateLadder: width(0) === 0                                             0
+FAIL  gateLadder: markKind(passed) === filled                                hollow
+PASS  gateLadder: markKind(pending) === hollow                               hollow
+FAIL  gateLadder: markKind(failed) === bad-diagonal                          hollow
+FAIL  gateLadder: markKind(human_passed) === ok-filled                       hollow
+FAIL  gateLadder: markKind(waived) === half-height                           hollow
