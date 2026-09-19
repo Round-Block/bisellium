@@ -26,6 +26,7 @@ import { checkInstructions } from "./rules/instructions.js";
 import { checkDocs } from "./rules/docs.js";
 import { checkEvidence } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
+import { checkDesign } from "./rules/design.js";
 
 // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
 // every id here can end up as a path component elsewhere) — reject anything
@@ -707,6 +708,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkDocs(root, ruleOpts));
   findings.push(...checkEvidence(root, ruleOpts));
   findings.push(...checkPaths(root, ruleOpts));
+  findings.push(...checkDesign(root, ruleOpts));
 
   return done();
 }

@@ -225,6 +225,28 @@ labelling the column
 Needs-you is not a floating pill: it is the first column, pinned left, empty on a
 good day.
 
+## 8. Screen map
+
+Four Patron touchpoints (STUDIO.md §4) mapped to screens. A structural
+change to a screen must preserve the touchpoints it owns; moving a touchpoint
+between screens is a lex change (check: design.screen-map).
+
+| Touchpoint | Write | Screen | Surface |
+|---|---|---|---|
+| **Decretum** | backlog → greenlit / declined | **Board** | fasti strip + decretum queue; greenlight is the Board's verb |
+| **Budget allocation** | per-collegium stipendium | **Officina** | posture and burn panel; the Patron sees the allocation and its effect |
+| **Arbitrium** | human probatio verdict | **Inbox** | petitio detail pane; approve / defer / decline / delegate with ratio decidendi |
+| **Lex change** | amend a collegium's lex | **Officina** | lex status panel; pending amendments surface here |
+
+Screens not owned by a touchpoint:
+
+| Screen | Role |
+|---|---|
+| **Acta** | read-only feed — consultations, decisions, dailies, evidence |
+| **Agents** | roster, per-sella cost, provider limits |
+| **Swimlane** | actors × time; the Patron is a lane |
+| **Graph** | topology |
+
 ## 7. Rejects
 
 Banned as generic or as kitsch. A build containing one of these fails review.
