@@ -1,0 +1,41 @@
+# behaviour: 6
+# command: npx playwright test -g officina screen loads and shows fasti strip
+# exit: 1
+# at: 2026-09-19T13:01:16.847Z
+# sella: builder-a
+# tree: clean:130f29a584c545b7a495706287cb0f5d37e9e973
+
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests/smoke.spec.ts:48:1 › officina screen loads and shows fasti strip (5.4s)
+
+
+  1) [chromium] › tests/smoke.spec.ts:48:1 › officina screen loads and shows fasti strip ───────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.fasti-strip')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.fasti-strip') with timeout 5000ms
+      - waiting for locator('.fasti-strip')
+
+
+      49 |   await page.goto("/?demo=1#/officina");
+      50 |   await expect(page.getByRole("heading", { name: "Officina" })).toBeVisible();
+    > 51 |   await expect(page.locator(".fasti-strip")).toBeVisible();
+         |                                              ^
+      52 | });
+      53 |
+      54 | // behaviour 5: hash changes reflect in the displayed screen (no full reload).
+        at /home/edckt/projects/bisellium/apps/web/tests/smoke.spec.ts:51:46
+
+    Error Context: test-results/smoke-officina-screen-loads-and-shows-fasti-strip-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/smoke.spec.ts:48:1 › officina screen loads and shows fasti strip ────────────

@@ -97,16 +97,13 @@ lex, a decision, or a check rule and delete it here.
 - **Cascade 13**: W-027 prune command.
 - **Cascade 14**: W-028 close automation.
 - **Cascade 15**: process.cascade rule + hook enforcement.
-- **Cascade 16 landed**:
-  - W-029: Playwright smoke suite (Sonnet builder, 118k tokens). 5
-    behaviours, 4 pass, 1 honest red: FastiStrip dropped from Officina
-    during W-026 visual pass (real regression, not a test bug).
-- **Regression**: `apps/web/src/screens/Officina.tsx` no longer imports or
-  renders `FastiStrip` — dropped in commit 6e84979 (W-026 visual pass).
-  Component and CSS still exist. Needs a follow-up opus or inline fix.
+- **Cascade 16**: W-029 Playwright smoke suite (Sonnet builder, 118k tokens).
+  5 behaviours, 4 pass, 1 honest red: FastiStrip regression.
+- **Cascade 17**: FastiStrip regression fixed (Sonnet builder, 35k tokens).
+  Re-imported `FastiStrip` + demo acta into `Officina.tsx`. All 5 Playwright
+  behaviours green.
 - **Backlog (priority order)**:
-  1. FastiStrip regression fix in Officina.tsx
-  2. Web II (Board screen, drawer, SSE live)
+  1. Web II (Board screen, drawer, SSE live)
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
 
 ## Naming

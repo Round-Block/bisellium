@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
 import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
 import { formatPosture } from "../lib/posture.js";
+import { FastiStrip } from "../components/FastiStrip.js";
+import type { ActaEntry } from "../lib/fasti.js";
 
 function fmt(n: number): string {
   return n.toLocaleString();
@@ -26,6 +28,12 @@ const DEV_AERARIUM: AerariumEntry[] = [
   { collegium: "qa", period: "2026-W38", allowance: { tokens: 500_000 }, burn: { tokens: 312_000 }, posture: "ok" },
 ];
 
+const DEV_ACTA: ActaEntry[] = [
+  { id: "cascade-7", author: "opus-4.6", kind: "cascade", title: "Cascade 7", at: "2026-09-17T10:00:00Z", evidence: null },
+  { id: "cascade-8", author: "opus-4.6", kind: "cascade", title: "Cascade 8", at: "2026-09-18T14:00:00Z", evidence: null },
+  { id: "cascade-9", author: "sonnet-5", kind: "cascade", title: "Cascade 9", at: "2026-09-19T09:00:00Z", evidence: null },
+];
+
 const DEV_HEALTH: HealthResponse = {
   at: "2026-09-19T14:00:00.000Z",
   ok: false,
@@ -44,6 +52,7 @@ export function Officina() {
   const [, setOfficina] = useState<OfficinaResponse>();
   const [aerarium, setAerarium] = useState<AerariumEntry[]>([]);
   const [health, setHealth] = useState<HealthResponse>();
+  const [acta, setActa] = useState<ActaEntry[]>([]);
 
   const demo = location.search.includes("demo");
 
@@ -51,6 +60,7 @@ export function Officina() {
     if (demo) {
       setAerarium(DEV_AERARIUM);
       setHealth(DEV_HEALTH);
+      setActa(DEV_ACTA);
       return;
     }
     fetchOfficina().then(setOfficina).catch(() => undefined);
@@ -63,6 +73,8 @@ export function Officina() {
       <div className="officina__header">
         <h1 className="officina__title">Officina</h1>
       </div>
+
+      <FastiStrip acta={acta} today={new Date()} />
 
       {/* Top row: Status (full width) */}
       <section className="officina__panel panel--status-wide">
