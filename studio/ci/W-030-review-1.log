@@ -1,0 +1,342 @@
+# W-030 qa-lead review — round 1 (PR #3)
+# reviewer: qa-lead (Censor)
+# model: claude-opus-5
+# at: 2026-09-20
+# pr: https://github.com/edckt/bisellium/pull/3  (opus/W-030 -> master)
+# commit under review: 165358f8970fb6671caab3d328651167f919202a
+# base: master 0f9090bc32b38d2696a12376ee6853ac88138fa8
+# supersedes: PR #1 / studio/ci/W-028-review-3.log (FAIL, round 3)
+# verdict: FAIL
+
+## 0. Harness — and the trap the practical notes warned about
+
+$ git worktree add --detach <scratch> pr3-head
+$ cp -a <parent>/node_modules <scratch>/node_modules
+$ cp -a <parent>/apps/web/node_modules <scratch>/apps/web/node_modules
+$ readlink -f <scratch>/node_modules/@bisellium/commands
+  <scratch>/packages/commands        <- resolves INSIDE the scratch worktree
+
+The workspace links under node_modules/@bisellium are relative
+(`../../packages/commands`), so copying node_modules wholesale relinks them
+to the worktree's own sources. Every result below is the PR head's code, not
+the parent checkout's. Verified before any test was run.
+
+$ git merge-base --is-ancestor master 165358f  -> exit 0 (rebased on current master)
+
+## 1. Gates re-run on the PR head tree
+
+$ npm test                  exit 0 · 1104 PASS · 0 FAIL   (PR body claims 1104 — exact)
+$ npm run -s typecheck      exit 0
+$ npm run -s lint           exit 0 (2 pre-existing warnings, close.test.ts / tick.test.ts)
+$ bisellium check studio --repo .
+    FAIL — 9 blocking, 75 advisory
+  Blocking set is byte-identical to master's 9 (W-022/023/026/027/028
+  traditio.present, wip.cap, W-026/027/028 red_evidence). This PR introduces
+  no new blocking finding and clears 9 advisories.
+  The red CI check on the PR is the billing-blocked GitHub Actions account,
+  not a finding — no job has ever started. Ignored, as instructed.
+
+## 2. B1 — "the pointer is dropped by truncation for the sellae it exists for"
+
+Not taken on anyone's word. Script: a presence matrix over EVERY sella
+declared in studio/bisellium.yml (9, plus patron) x five budgets, grepping
+live `context` output of the REAL officina for the pointer sentence.
+
+$ for s in patron producer architect eng-lead qa-lead builder-a builder-b \
+           builder-c builder-d guest; do
+    for m in 400 600 1000 4000 <default>; do
+      bisellium context --sella $s studio --max-tokens $m | grep 'Run `bisellium`'
+    done; done
+
+  sella       400       600       1000      4000      default   full-tokens
+  patron      PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   3040
+  producer    PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   3479
+  architect   PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   3554
+  eng-lead    PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   1335
+  qa-lead     PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   3638
+  builder-a   PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   1335
+  builder-b   PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   1335
+  builder-c   PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   1335
+  builder-d   PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   1335
+  guest       PRESENT   PRESENT   PRESENT   PRESENT   PRESENT   3479
+
+CONTROL — the matrix is not a broken grep. Same script, one mutation
+(priority 0 -> 2, i.e. PR #1's value) applied in the scratch worktree:
+
+  patron      PRESENT   PRESENT   PRESENT   PRESENT   PRESENT
+  producer    DROPPED   PRESENT   PRESENT   PRESENT   PRESENT
+  architect   DROPPED   PRESENT   PRESENT   PRESENT   PRESENT
+  eng-lead    DROPPED   DROPPED   PRESENT   PRESENT   PRESENT
+  qa-lead     DROPPED   DROPPED   PRESENT   PRESENT   PRESENT
+  builder-a   DROPPED   DROPPED   PRESENT   PRESENT   PRESENT
+  builder-b   DROPPED   DROPPED   PRESENT   PRESENT   PRESENT
+  builder-c   DROPPED   DROPPED   PRESENT   PRESENT   PRESENT
+  builder-d   DROPPED   DROPPED   PRESENT   PRESENT   PRESENT
+  guest       DROPPED   PRESENT   PRESENT   PRESENT   PRESENT
+
+The DROPPED set at 600 reproduces round 3's finding exactly (eng-lead,
+qa-lead, builder-a, builder-b) and extends it to builder-c and builder-d,
+which round 3 did not enumerate. At priority 0 nothing is dropped anywhere,
+down to a 400-token budget.
+
+B1: CLOSED. Verified against the real studio/, not the fixture, with a
+control proving the harness detects the failure it is looking for.
+
+## 3. B2 — the banner it promotes, and whether the drift guard bites
+
+$ node --import tsx packages/commands/src/usage.test.ts .
+  30 PASS, 0 FAIL, exit 0 — 30 constant lines from 21 files
+
+Both named drifts are fixed in the banner (`red` gains `[--cwd <dir>]`;
+`hook-event` gains `|context`). The third the builder reports (`emit
+--usage`) is real: writes.ts:271 EMIT_USAGE is two lines, the banner carried
+one. Three cosmetic ones fixed in the constants, not the banner
+(pause/serve/tick bare `dir`/`text` -> `<dir>`/`<text>`).
+
+NORMALIZATION — the question was whether stripping a 7-char "usage: " /
+"       " prefix makes the assertion vacuous. It does not. Both prefixes are
+exactly 7 characters, so the strip only aligns a standalone constant's
+"usage: bisellium X …" with the banner's continuation-line "       bisellium
+X …"; everything after column 8 is compared verbatim. Demonstrated by M1-M4
+below, each of which differs from the banner only after column 8 and each of
+which is caught.
+
+MUTATION BATTERY (my own, scripted; file restored with `git checkout --`
+after each; `git status --porcelain` empty at the end):
+
+  M1  banner: drop `[--repo <dir>]` from the `close` line      CAUGHT
+        FAIL packages/cli/src/close.ts:CLOSE_USAGE line in USAGE
+  M2  pause.ts constant reverted to bare `dir`/`text`          CAUGHT
+        FAIL packages/commands/src/pause.ts:USAGE_PAUSE line in USAGE
+  M3  banner: hook-event loses `|context` again                CAUGHT
+  M4  banner: red loses `[--cwd <dir>]` again                  CAUGHT
+        (reproduces studio/ci/reds/W-030/05.log's FAIL line verbatim)
+  M5  close.ts constant -> template literal AND drifted        SURVIVED
+  M6  close.ts constant gets `: string` annotation AND drifted SURVIVED
+  M7  pointer priority 0 -> 2                                  CAUGHT
+        FAIL maxTokens=600 … truncated=["providers","collegium index",
+             "opera","standing rules","cli usage","lex"] tokens=19
+        (reproduces reds/W-030/04.log's FAIL line verbatim)
+  M8  pointer priority 0 -> 3   (round-3 survivor M5)           CAUGHT
+  M9  gut sentence to "Run `bisellium` with no arguments. "
+        (round-3 survivor M6)                                   CAUGHT
+        FAIL <every sella>: CLI usage pointer present, warning intact
+  M10 pointer section deleted entirely                          CAUGHT
+        10 FAIL — matches reds/W-030/01.log's 10 FAIL lines
+
+The guard bites, in both directions of the comparison (mutate the banner:
+caught; mutate a constant: caught). B2: CLOSED.
+
+M5/M6 are the guard's limit, not its failure — see A1.
+
+## 4. Round 3's two surviving mutants — re-run
+
+  round-3 M5 (priority 2 -> 3, ties standing rules): now M8 above, CAUGHT.
+    The realistic-lex fixture in context.test.ts (inflated to >1000 tokens,
+    asserting `c.truncated.includes("lex")`) is what does it: the pointer
+    now has to outlive the lex, which only priority 0 achieves.
+  round-3 M6 (gut the sentence body): now M9 above, CAUGHT.
+    context.test.ts:1 asserts "allowlists are strict" AND "write real
+    bookkeeping" as well as the imperative opener. The PR's claim is exact.
+
+Both closed.
+
+## 5. Evidence — the six reds
+
+$ md5sum studio/ci/reds/W-030/*.log | uniq -c   -> no two identical
+  behaviour  command                       FAILs  assertion-level?
+  01         context.test.ts               10     yes (section removed)
+  02         context.test.ts                1     yes (flag shape injected)
+  03         context.test.ts                1     yes (banner line inlined)
+  04         context.test.ts                1     yes (priority 0 -> 2)
+  05         usage.test.ts                  1     yes ([--cwd] dropped)
+  06         cli.test.ts                    3     yes (main.ts fallback muted)
+
+None is a module-load failure; each log carries `# sella: builder-a` (round
+3's A2 closed), a command, an exit code and a tree line. The PR body's
+account of which mutation produced which red is accurate for all six — I
+reproduced 01, 04 and 05 independently (M10, M7, M4 above) and their FAIL
+lines match the logs verbatim. Round 3's A1 (a red's stated mutation not
+matching its content) does not recur.
+
+## 6. Scope
+
+Files touched vs. the amended brief's "Files owned":
+  declared, bullets : commands/src/usage.ts, cli/src/usage.ts, cli/src/main.ts,
+                      commands/src/context.ts, cli/src/context.test.ts,
+                      commands/src/usage.test.ts, cli/src/cli.test.ts,
+                      package.json
+  declared, prose   : commands/src/pause.ts, cli/src/serve.ts, cli/src/tick.ts
+  NOT declared      : packages/commands/src/index.ts  (+1 line: export * from "./usage.js")
+                      studio/briefs/W-030.md          (the brief itself)
+
+The amendment is honest, not a rationalisation. Behaviour 5 is "every
+per-command *_USAGE line appears verbatim in USAGE"; a constant that
+disagrees can be reconciled by editing the banner or the constant, and for
+`pause`/`serve`/`tick` the constants were the wrong ones (bare `dir` where
+every other constant and the banner write `<dir>`). The reach is a
+consequence of the behaviour, the diff is one token per file, no accepted
+flag changes (the brief's own out-of-scope line holds), and the three files
+are named with their reason rather than slipped in. That is the right
+handling of an overflow: amend the brief, say why.
+
+See A2 for the two undeclared paths.
+
+## 7. Blocking findings (round 1)
+
+### B1 — the PR lands the misfiled W-028 evidence it was created to retire
+
+$ git ls-tree master --name-only studio/ci/reds/W-028/
+    17.log 18.log 19.log 21.log check-real-officina.log close-bugs-*.log
+    review-tier-*.log
+$ git ls-tree pr3-head --name-only studio/ci/reds/W-028/
+    … + 22.log 23.log 24.log
+$ git log --oneline master..pr3-head -- studio/ci/reds/W-028/
+    06f10aa feat(context): point every sella at the CLI usage banner
+
+These three files are NOT on master. They are PR #1's reds, carried in on
+the first of this PR's two commits and never removed by the second. Merging
+#3 writes them into the trunk for the first time.
+
+They are precisely the artefact this PR's own body calls a mistake:
+  - filed under behaviours 22-24, which briefs/W-028.md does not declare
+    (it declares 1-5, all `checkpointStale`) — so they can never satisfy
+    `opus.red_evidence`, which still blocks W-028 on "missing red log(s)
+    for behaviour(s) 1, 2, 3, 4, 5";
+  - `# sella: guest` — unattributable, round 3's A2, uncorrected;
+  - 22.log's mutation is misdescribed in PR #1's body (round 3's A1);
+  - and they are strictly redundant: reds/W-030/01-04 are the same
+    mutations against the same assertions, correctly numbered and
+    attributed.
+
+W-028 is an open opus. Landing three reds for behaviours it does not have,
+in the PR whose stated premise is "that numbering was wrong, this is the
+opus it belongs to", is the officina's recurring finding class
+(review×evidence-backfilled-or-absent, 4 cascades) in its purest form: the
+code is fine and the evidence does not say what it claims to say.
+
+Fix: `git rm studio/ci/reds/W-028/{22,23,24}.log`. No source change, no
+gate re-run. One command.
+
+NOTE FOR THE ORCHESTRATOR: the review task I was given asserts these files
+"still exist on master and should eventually be removed". That is factually
+wrong in a way that matters — a merge performed on that belief lands them
+believing it is a no-op. They exist only on the branch.
+
+### B2 — W-030 has no probationes at all, and never entered the lifecycle
+
+$ cat studio/opera/W-030.md
+    state: backlog
+    probationes: {}
+
+There is no `tests`, `lint`, `types` or `spec` certificate on this opus. I
+re-ran all three myself (§1) and they are green, so the facts are
+established — but a fact I establish in a review log is not a probatio, and
+a claim in a PR body is not one either. That was round 3's B2 wording and it
+applies unchanged; absent certificates are strictly worse than the stale
+ones I failed #1 for.
+
+The opus is also `backlog` while its work is complete and under review, so
+`opus.red_evidence` never evaluates against it and the six conforming reds
+in §5 are checked by nothing.
+
+This is the orchestrator's step, not the builder's, and it is why this is a
+merge precondition rather than a defect in the work: `greenlight` / `ready`
+/ `verify W-030 --studio studio --repo .` against the tree that merges, then
+`done`. It must happen before the merge, not after — `verify` refuses a
+dirty tree and a certificate recorded post-merge names a different tree.
+
+## 8. Advisory findings
+
+A1. The drift guard silently skips what it cannot parse. M5/M6 above: a
+    constant rewritten as a template literal, or given a `: string`
+    annotation, is not matched by `extractUsageConstants`' regex and
+    disappears from the guard along with any drift in it — no failure, no
+    warning. `sawAny` only requires that ONE constant was found, so 29 of
+    the 30 could vanish silently. A pinned count closes it in one line:
+    `check("scanned every known usage constant", found === 30)`. Cheap, and
+    it fails loudly the day the count legitimately changes, which is exactly
+    when someone should look.
+
+A2. Two undeclared paths. `packages/commands/src/index.ts` (+1 line) is in
+    the diff and in no list. And the three files the amendment adds
+    (pause/serve/tick) are named in the brief's PROSE, not in its "Files
+    owned" bullets — so a future `probatio.declared` check, parsing the
+    bullet list as every other consumer does, would flag them anyway. Move
+    them into bullets and add index.ts.
+
+A3. The guard is one-directional and four banner lines have no backing
+    constant: `check`, `init`, `context`, `query` — exactly the four
+    commands whose flags live in main.ts's `FLAGS_BY_COMMAND` rather than a
+    `*_USAGE` string. Their banner lines are correct today (I compared them
+    against the table by hand) but nothing keeps them so. The brief puts
+    "reconciling USAGE against the parseFlags allowlists" out of scope, so
+    this is a limit of the delivered feature rather than a defect in it —
+    worth naming in the brief's out-of-scope section so the next reader
+    knows the guard's coverage is 30 of 34 lines, not 34 of 34.
+
+A4. Behaviour 6's red covers three of its four paths. reds/W-030/06.log
+    shows `unknown flag: prints banner, exits 2` PASSING under the stated
+    mutation (main.ts's fallback muted) — that path reaches the banner
+    through a different call site, which the log itself proves, since the
+    pre-existing `unknown flag exits 2` assertion in the same run prints the
+    full banner to stderr. The behaviour as a whole does go red, so the red
+    conforms; but the fourth assertion has never been demonstrated to fail
+    and is the one that would survive a regression in that call site.
+
+A5. All six reds record `tree: dirty:d34e898e…`, which is PR #1's head tree,
+    not this branch's. Reds are dirty by construction (a mutation is
+    applied) and the prefix is honestly disclosed, so this is not a defect —
+    but the base hash names a tree that is not in this PR's history, which
+    makes the reds harder to locate in time than they need to be. Producing
+    reds from the branch they ship on would cost nothing.
+
+## 9. Not a defect
+
+The design judgement in round 3's §9 stands and I re-verified the part that
+this PR changed: `packages/commands/package.json` still declares no
+dependency on `@bisellium/cli`, `cli` declares `commands`, and the new
+`packages/cli/src/usage.ts` shim follows the W-016 verify.ts/talk.ts pattern
+exactly. No cycle.
+
+Replacing "hand-fix the two lines round 3 named" with "assert the class and
+let it find the rest" was the right call and it paid immediately: it found
+`emit --usage`, which nobody — including me, with 33 grep hits in front of
+me in round 3 — had named. That is the correct response to a review finding:
+close the class, not the instance.
+
+Behaviour 4's realistic-lex fixture is the right shape for the bug it pins.
+It asserts `c.truncated.includes("lex")` alongside the pointer's presence,
+so it fails both when the pointer is dropped AND when the lex is small
+enough that the case is never exercised — which is exactly how the original
+test lied.
+
+## 10. Verdict
+
+FAIL — round 1.
+
+The engineering is done and I could verify every claim it makes. B1 and B2
+of round 3 are genuinely closed, proved by execution with a control, not by
+reading the diff; both surviving mutants are caught; the six reds are
+distinct, assertion-level, attributed and reproducible; the scope amendment
+is honest.
+
+What fails is two things around it, neither of which is a code change:
+
+  - three reds for behaviours that do not exist are riding into the trunk
+    inside the PR that exists to un-misfile them (B1) — `git rm`;
+  - the opus carries no certificate of any kind and is still in `backlog`
+    (B2) — greenlight/ready/verify/done before the merge.
+
+Round 3's closing line was that the officina keeps making the same finding:
+the code is fine and the evidence does not say what it claims to say. Both
+items above are that finding again, smaller each time. They are also both
+a single command each, so round 2 should be minutes, not a rebuild.
+
+To pass:
+  - remove studio/ci/reds/W-028/{22,23,24}.log from the branch;
+  - record tests/lint/types on W-030 against the tree that merges, and move
+    the opus out of backlog;
+  - (advisory, take or leave) pin the constant count in usage.test.ts,
+    move pause/serve/tick into the brief's Files-owned bullets and add
+    packages/commands/src/index.ts.
