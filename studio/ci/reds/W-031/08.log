@@ -1,0 +1,76 @@
+# behaviour: 8
+# command: node --import tsx packages/cli/src/ci.test.ts 8
+# exit: 1
+# at: 2026-09-19T18:16:35.344Z
+# sella: guest
+# tree: dirty:6dd3b180be9702da73bec3c928c5eebd73e65293
+
+
+> test
+> node ci-marker.mjs test
+
+
+> test
+> node ci-marker.mjs test
+
+bisellium ci: step failed (exit 1): npm run -s typecheck
+
+added 1 package in 163ms
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+bisellium ci: step failed (exit 1): npm test
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+
+> test
+> node -e "process.exit(0)"
+
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-79a5092f.log
+lint: passed  ci/W-001-lint-79a5092f.log
+types: passed  ci/W-001-types-79a5092f.log
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-b2eb2ead.log
+lint: passed  ci/W-001-lint-b2eb2ead.log
+types: passed  ci/W-001-types-b2eb2ead.log
+FAIL  --ref + --opus certifies the same tree the direct path would, studio excluded both ways direct=0
+---
+id: "W-001"
+title: "ci ref+opus opus"
+kind: "task"
+collegium: "production"
+state: backlog
+probationes: { tests: { status: passed, evidence: ci/W-001-tests-79a5092f.log, certifies: tree:79a5092f50ac51994829ed93224c7e62cdd953ed }, lint: { status: passed, evidence: ci/W-001-lint-79a5092f.log, certifies: tree:79a5092f50ac51994829ed93224c7e62cdd953ed }, types: { status: passed, evidence: ci/W-001-types-79a5092f.log, certifies: tree:79a5092f50ac51994829ed93224c7e62cdd953ed } }
+---
+
+---
+ref=0
+---
+id: "W-001"
+title: "ci ref+opus opus"
+kind: "task"
+collegium: "production"
+state: backlog
+probationes: { tests: { status: passed, evidence: ci/W-001-tests-b2eb2ead.log, certifies: tree:b2eb2ead992934af00f74aa59d3ca186dbb3a08c }, lint: { status: passed, evidence: ci/W-001-lint-b2eb2ead.log, certifies: tree:b2eb2ead992934af00f74aa59d3ca186dbb3a08c }, types: { status: passed, evidence: ci/W-001-types-b2eb2ead.log, certifies: tree:b2eb2ead992934af00f74aa59d3ca186dbb3a08c } }
+---
+

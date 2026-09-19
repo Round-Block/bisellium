@@ -98,7 +98,11 @@ try {
   check("CI_STEPS reads from packages/commands/src/ci.ts", false, String(err));
 }
 
-const workflowRunSteps = runLines.filter((line) => line !== "npm ci");
+// startsWith, not exact-match: `- run: npm ci --no-audit` in ci.yml is still
+// the install prerequisite, not a seventh CI_STEPS entry — an exact match
+// would raise a false red for it. Wrong direction (missing a real drift) is
+// unsafe; this direction only costs a stricter match, never a missed one.
+const workflowRunSteps = runLines.filter((line) => !line.startsWith("npm ci"));
 check(
   "bisellium ci's CI_STEPS matches this workflow's run: steps (minus npm ci)",
   JSON.stringify(ciSteps) === JSON.stringify(workflowRunSteps),

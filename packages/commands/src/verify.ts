@@ -19,6 +19,17 @@ import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
   pipeline?: MergePipeline;
+  /** Overrides the officina's position within `repo`'s tree, used only to
+   *  exclude studio bookkeeping from the source-tree hash and dirty check.
+   *  Needed whenever `repo` is not the checkout `--studio` actually lives
+   *  under — `bisellium ci --ref` hands `repo` a scratch worktree of a
+   *  different ref while `--studio` still names the real officina, so
+   *  `relative(repo, studioDir)` walks all the way out of `repo` and
+   *  matches nothing in ITS tree; the worktree's own, ref-checked-out
+   *  `studio/` then gets hashed in instead of excluded. Defaults to
+   *  `relative(repo, studioDir)`, which is correct whenever `--studio`
+   *  really is nested under `--repo` (every direct, non-`--ref` call). */
+  studioRepoRelative?: string;
 }
 
 export interface RunVerifyResult {
@@ -85,8 +96,12 @@ function isGitRepo(dir: string): boolean {
   }
 }
 
-/** POSIX-separated path of `path` relative to `base`. */
-function toPosixRelative(base: string, path: string): string {
+/** POSIX-separated path of `path` relative to `base`. Exported so callers
+ *  that hand `runVerify` a `repo` other than the one `--studio` lives under
+ *  (`ci.ts`'s `--ref` path) can compute the same shape of value for
+ *  `RunVerifyOptions.studioRepoRelative`, rooted at the checkout `--studio`
+ *  really is nested under instead of at `repo`. */
+export function toPosixRelative(base: string, path: string): string {
   return relative(base, path).split(sep).join("/");
 }
 
@@ -128,7 +143,11 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   // never counts toward what a probatio certifies or whether the tree is
   // "dirty" — otherwise verify writing its own result, or committing that
   // write, would make every certificate stale or refuse to run at all.
-  const excludeDirs = [toPosixRelative(repo, studioDir), ".bisellium", ...(manifest.source_excludes ?? [])];
+  const excludeDirs = [
+    opts.studioRepoRelative ?? toPosixRelative(repo, studioDir),
+    ".bisellium",
+    ...(manifest.source_excludes ?? []),
+  ];
   let treeHash: string;
   try {
     treeHash = sourceTreeHash(repo, excludeDirs, commit);
