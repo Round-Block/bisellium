@@ -95,12 +95,12 @@ lex, a decision, or a check rule and delete it here.
 - **Cascade 11**: W-022 evidence content rules (P-005 resolved).
 - **Cascade 12**: W-023 containment scoping (P-004 resolved).
 - **Cascade 13**: W-027 prune command.
-- **Cascade 14 landed**:
-  - W-028 close automation: `executeClose` orchestrates validation +
-    `done` transition + dossier rebuild. 3 new behaviours (7 total).
-    Patron authority split decided: UI/UX + architecture = human-only,
-    everything else automatable (toggle/checklist pattern, future).
-    Checkpoint artifacts are universal HTML on disk, not provider-specific.
+- **Cascade 14**: W-028 close automation.
+- **Cascade 15 landed**:
+  - `process.cascade` check rule: flags an opus where the same sella
+    recorded both spec and review gates. Builder (Sonnet) implemented,
+    4 behaviours. CLAUDE.md standing rules updated: process enforcement
+    is a check rule, never a memory; dispatch through the cascade model.
 - **Backlog (priority order)**:
   1. Playwright / UI integration testing (not yet scoped)
   2. Web II (Board screen, drawer, SSE live)
