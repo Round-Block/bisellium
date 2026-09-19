@@ -1,0 +1,48 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/ci.test.ts 6
+# exit: 1
+# at: 2026-09-19T16:22:53.064Z
+# sella: guest
+# tree: dirty:796565ee521efa14130084f8f7495cd83f4f1c64
+
+
+> test
+> node ci-marker.mjs test
+
+/home/edckt/projects/bisellium/.claude/worktrees/agent-aacfe247e5ffcaccc/bisellium.yml not found — not a studio
+
+> test
+> node ci-marker.mjs test
+
+/home/edckt/projects/bisellium/.claude/worktrees/agent-aacfe247e5ffcaccc/bisellium.yml not found — not a studio
+bisellium ci: step failed (exit 1): npm run -s typecheck
+
+added 1 package in 155ms
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+/home/edckt/projects/bisellium/.claude/worktrees/agent-aacfe247e5ffcaccc/bisellium.yml not found — not a studio
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+bisellium ci: step failed (exit 1): npm test
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+FAIL  without --opus, exits 0 and writes no officina bookkeeping             exit=0 opusChanged=true ciDirExists=true

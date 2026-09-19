@@ -14,3 +14,4 @@ export * from "./talk.js";
 export * from "./writes.js";
 export * from "./lifecycle.js";
 export * from "./usage.js";
+export * from "./ci.js";
