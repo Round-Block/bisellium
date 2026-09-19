@@ -369,11 +369,9 @@ try {
     check("examples/sample-studio: zero findings from all four W-021 rule ids", ours.length === 0, JSON.stringify(ours));
   }
   {
-    // The insurance clause fired here: studio/acta/2026-09-17-kickoff.md
-    // cites ../README.md (repo-root evidence) legitimately, which
-    // path.escapes.officina would otherwise block. Per the Patron's decree
-    // both path.* rules land advise, not block — filed as P-004 — so the
-    // acceptance bar is zero BLOCKING path.* findings, not zero findings.
+    // P-004 resolved: path.escapes.officina scoped to spec: and gate
+    // evidence: only (acta evidence stays with checkLink). Both rules
+    // promoted to blocking — zero blocking path.* findings expected.
     const studio = join(repo, "studio");
     const r = checkStudio(studio, NOW, { repo });
     const blockingPathFindings = r.findings.filter((f) => f.rule.startsWith("path.") && f.level === "block");

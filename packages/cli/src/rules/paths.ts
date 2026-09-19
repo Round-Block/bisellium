@@ -9,13 +9,10 @@
  * containment test anywhere below (`escapesOfficina` proves the relation
  * via the first segment of a `relative()` path instead).
  *
- * Built to block per P-001 item 4 (D-008 promoted, decreed 2026-09-19). The
- * insurance clause fired on the real tree at build time: `studio/acta/
- * 2026-09-17-kickoff.md` cites `../README.md` (repo-root evidence) as
- * `path.escapes.officina` would define escape, and that reference is
- * legitimate — editing another opus's acta to silence this rule is out of
- * scope. Per the Patron's decree both rules here land `advise`, not
- * `block`, and the discrepancy is filed as `studio/petitiones/P-004.md`.
+ * Built to block per P-001 item 4 (D-008 promoted, decreed 2026-09-19).
+ * P-004 resolved: `path.escapes.officina` scoped to the contractually
+ * officina-relative surfaces (opus spec: and gate evidence: paths only);
+ * acta evidence stays with checkLink. Both rules promoted to blocking.
  */
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -81,11 +78,11 @@ function checkIds(root: string): Finding[] {
 
       const id = data["id"];
       if (typeof id === "string" && id.length > 0 && badId(id))
-        findings.push({ rule: "path.id.unvalidated", level: "advise", where, message: `id "${id}" is not a valid id` });
+        findings.push({ rule: "path.id.unvalidated", level: "block", where, message: `id "${id}" is not a valid id` });
 
       for (const ref of collectIdRefs(data))
         if (badId(ref.value))
-          findings.push({ rule: "path.id.unvalidated", level: "advise", where, message: `${ref.label} "${ref.value}" is not a valid id` });
+          findings.push({ rule: "path.id.unvalidated", level: "block", where, message: `${ref.label} "${ref.value}" is not a valid id` });
     }
   }
 
@@ -105,7 +102,7 @@ function checkIds(root: string): Finding[] {
         isDir = false;
       }
       if (isDir && badId(name))
-        findings.push({ rule: "path.id.unvalidated", level: "advise", where: "receipts/", message: `receipts directory name "${name}" is not a valid id` });
+        findings.push({ rule: "path.id.unvalidated", level: "block", where: "receipts/", message: `receipts directory name "${name}" is not a valid id` });
     }
   }
   return findings;
@@ -133,7 +130,7 @@ function checkContainment(root: string): Finding[] {
 
     const spec = data["spec"];
     if (typeof spec === "string" && spec.length > 0 && escapesOfficina(root, spec))
-      findings.push({ rule: "path.escapes.officina", level: "advise", where, message: `spec "${spec}" resolves outside the officina` });
+      findings.push({ rule: "path.escapes.officina", level: "block", where, message: `spec "${spec}" resolves outside the officina` });
 
     const gates = data["probationes"];
     if (isDict(gates))
@@ -141,32 +138,8 @@ function checkContainment(root: string): Finding[] {
         if (!isDict(gv)) continue;
         const ev = gv["evidence"];
         if (typeof ev === "string" && ev.length > 0 && escapesOfficina(root, ev))
-          findings.push({ rule: "path.escapes.officina", level: "advise", where, message: `gate "${gid}" evidence "${ev}" resolves outside the officina` });
+          findings.push({ rule: "path.escapes.officina", level: "block", where, message: `gate "${gid}" evidence "${ev}" resolves outside the officina` });
       }
-  }
-
-  for (const p of safeList(join(root, "acta"))) {
-    const data = safeFront(p);
-    if (!data) continue;
-    const where = rel(p);
-    const ev = data["evidence"];
-    if (Array.isArray(ev))
-      for (const e of ev) {
-        const href = isDict(e) && typeof e["href"] === "string" ? e["href"] : undefined;
-        if (href && escapesOfficina(root, href))
-          findings.push({ rule: "path.escapes.officina", level: "advise", where, message: `evidence "${href}" resolves outside the officina` });
-      }
-  }
-
-  for (const p of safeList(join(root, "lessons"))) {
-    const data = safeFront(p);
-    if (!data) continue;
-    const where = rel(p);
-    const ev = data["evidence"];
-    if (Array.isArray(ev))
-      for (const href of ev)
-        if (typeof href === "string" && href.length > 0 && escapesOfficina(root, href))
-          findings.push({ rule: "path.escapes.officina", level: "advise", where, message: `evidence "${href}" resolves outside the officina` });
   }
 
   return findings;

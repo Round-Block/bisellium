@@ -92,16 +92,17 @@ lex, a decision, or a check rule and delete it here.
 - **Cascade 9** (3 commits): W-026 complete — per-opus branching,
   `bisellium branch`/`merge`, `run --opus`.
 - **Cascade 10**: W-028 checkpoint rule + `bisellium close` command.
-- **Cascade 11 landed**:
-  - W-022 complete: `opus.red_content` check rule — blocks duplicate reds
-    (byte-identical after header strip), advises on module-load failures
-    (ERR_MODULE_NOT_FOUND, missing-export SyntaxError). P-005 resolved.
+- **Cascade 11**: W-022 evidence content rules (P-005 resolved).
+- **Cascade 12 landed**:
+  - W-023 complete: `path.escapes.officina` scoped to spec and gate
+    evidence only (acta removed per P-004), both path rules promoted
+    to blocking. Insurance clause test passes.
 - **Backlog (priority order)**:
   1. **W-028** (building) — patron-as-agent: `bisellium close` command,
      fully autonomous patron sella. checkpoint rule landed.
   2. **W-027** — container lifecycle: prune, cleanup, disk-aware cascade
      start. Needed once parallel workstreams run.
-  3. W-023 — containment scoping (P-004)
+  3. Playwright / UI integration testing (not yet scoped)
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
 - Then: web II (Board screen, drawer, SSE live), web III (Swimlane, Agents,
   Graph), autonomy L2, adapters + desktop.
