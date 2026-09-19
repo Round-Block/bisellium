@@ -1,0 +1,18 @@
+# behaviour: 21
+# command: node --import tsx /tmp/claude-1000/red-b21.mjs
+# exit: 1
+# at: 2026-09-19T14:29:35.716Z
+# sella: guest
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+behaviour 21: reviewTierAdvisory against {"review":{"sella":"eng-lead","status":"passed"}}
+expected: review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier
+/home/edckt/projects/bisellium/packages/cli/src/rules/process.ts:104
+  const model = sellaModel.get(sella);
+                           ^
+
+TypeError: Cannot read properties of undefined (reading 'get')
+    at reviewTierAdvisory (/home/edckt/projects/bisellium/packages/cli/src/rules/process.ts:104:28)
+    at <anonymous> (/tmp/claude-1000/red-b21.mjs:6:16)
+
+Node.js v25.9.0

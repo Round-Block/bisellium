@@ -113,37 +113,41 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   check(17, "no probationes does not fire", sameSellaBuiltAndReviewed(undefined) === false, String(sameSellaBuiltAndReviewed(undefined)));
 }
 
-// behaviour 18: review sella on an opus-tier model is silent
+// behaviour 18: review gate recorded with an opus-tier model is silent
 {
-  const probationes = { review: { sella: "eng-lead", status: "passed" } };
-  const sellaModel = new Map([["eng-lead", "claude-opus-5"]]);
-  const result = reviewTierAdvisory(probationes, sellaModel);
-  check(18, "opus-tier review sella is silent", result === undefined, String(result));
+  const probationes = { review: { sella: "eng-lead", status: "passed", model: "claude-opus-5" } };
+  const result = reviewTierAdvisory(probationes);
+  check(18, "opus-tier recorded model is silent", result === undefined, String(result));
 }
 
-// behaviour 19: review sella on a non-opus-tier model advises
+// behaviour 19: review gate recorded with a non-opus-tier model advises
 {
-  const probationes = { review: { sella: "qa-lead", status: "passed" } };
-  const sellaModel = new Map([["qa-lead", "claude-sonnet-5"]]);
-  const result = reviewTierAdvisory(probationes, sellaModel);
-  check(19, "sonnet-tier review sella advises", result === 'review sella "qa-lead" runs on claude-sonnet-5, not an opus-tier model', String(result));
+  const probationes = { review: { sella: "qa-lead", status: "passed", model: "claude-sonnet-5" } };
+  const result = reviewTierAdvisory(probationes);
+  check(19, "sonnet-tier recorded model advises", result === 'review sella "qa-lead" ran on claude-sonnet-5, not an opus-tier model', String(result));
 }
 
 // behaviour 20: no review gate at all is silent
 {
   const probationes = { spec: { sella: "guest", status: "passed" } };
-  const sellaModel = new Map([["guest", "claude-sonnet-5"]]);
-  const result = reviewTierAdvisory(probationes, sellaModel);
+  const result = reviewTierAdvisory(probationes);
   check(20, "no review gate is silent", result === undefined, String(result));
 }
 
-// behaviour 21: review sella missing from the manifest is silent — can't
-// verify, don't guess.
+// behaviour 21: review gate recorded with no `model:` field at all (every
+// gate written before this field existed) ADVISES rather than staying
+// silent — the whole point of this rule is to stop D-014 violations from
+// going unnoticed, and a silent default here would keep every pre-existing
+// gate invisible until individually re-recorded.
 {
-  const probationes = { review: { sella: "ghost", status: "passed" } };
-  const sellaModel = new Map([["qa-lead", "claude-sonnet-5"]]);
-  const result = reviewTierAdvisory(probationes, sellaModel);
-  check(21, "review sella absent from manifest is silent", result === undefined, String(result));
+  const probationes = { review: { sella: "eng-lead", status: "passed" } };
+  const result = reviewTierAdvisory(probationes);
+  check(
+    21,
+    "review gate with no recorded model advises",
+    result === 'review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier',
+    String(result),
+  );
 }
 
 process.exit(failed ? 1 : 0);

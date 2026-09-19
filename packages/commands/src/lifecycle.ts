@@ -236,11 +236,11 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
 // ---------------------------------------------------------------------------
 
 const REVIEW_USAGE =
-  "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]";
+  "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]";
 
 export function runReview(args: string[], opts: WriteOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
-    valued: ["--evidence", "--round", "--sella", "--studio", "--now"],
+    valued: ["--evidence", "--round", "--sella", "--model", "--studio", "--now"],
     boolean: ["--pass", "--fail"],
   });
   if ("error" in parsed) {
@@ -313,12 +313,21 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   const reviewProbatioId = (manifest as unknown as { review_probatio?: string }).review_probatio ?? "review";
   const sella = resolveSella(values.get("--sella"));
   const status = pass ? "passed" : "failed";
+  const model = values.get("--model");
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["probationes", reviewProbatioId, "sella"], sella);
     doc.setIn(["probationes", reviewProbatioId, "status"], status);
     doc.setIn(["probationes", reviewProbatioId, "evidence"], evidence);
     doc.setIn(["probationes", reviewProbatioId, "at"], now.toISOString());
+    // The model that actually executed the gate (D-014, process.review_tier)
+    // — never inferred from the sella id, which is a declaration and can
+    // diverge from what really ran (W-028 round 2, A5). Overwritten fully
+    // on every recorded round exactly like sella/status/evidence/at above:
+    // a round that omits --model must not leave a stale model from a
+    // previous round attached to its own verdict.
+    if (model !== undefined) doc.setIn(["probationes", reviewProbatioId, "model"], model);
+    else doc.deleteIn(["probationes", reviewProbatioId, "model"]);
     // The decree's own return edge: a failed review on an opus in `review`
     // OR `done` sends it back to `building` — no other command can move it
     // there, and without this a `done` opus with a failed gate is stuck

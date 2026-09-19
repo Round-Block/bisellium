@@ -67,7 +67,7 @@ const USAGE =
   "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--now <iso>] -- <cmd…>\n" +
   "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +

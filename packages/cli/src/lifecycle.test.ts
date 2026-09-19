@@ -526,6 +526,38 @@ try {
     rmSync(outer, { recursive: true, force: true });
     rmSync(inner, { recursive: true, force: true });
   }
+  // =========================================================================
+  // behaviour 17: review --model records the model that actually executed
+  // the gate — the field process.review_tier reads directly (W-028 round 2,
+  // A5). Overwritten on every re-recorded round exactly like
+  // sella/status/evidence/at: a round that omits --model must not leave a
+  // stale model from a previous round attached to its own verdict.
+  // =========================================================================
+  if (runs(17)) {
+    const dir = freshStudio("review-model");
+    writeFileSync(join(dir, "ci", "review-model-1.log"), "round 1 notes\n");
+    const opusPath = join(dir, "opera", "W-002.md");
+
+    const r = runReview(
+      ["W-002", "--pass", "--evidence", "ci/review-model-1.log", "--sella", "eng-lead", "--model", "claude-opus-5", "--studio", dir],
+      { now: NOW },
+    );
+    check("review --model: exitCode 0", r.exitCode === 0, String(r.exitCode));
+
+    const after = readFront<{ probationes: Record<string, { model?: string }> }>(opusPath).data;
+    check("review --model: records the model field", after.probationes.review?.model === "claude-opus-5", JSON.stringify(after.probationes.review));
+
+    writeFileSync(join(dir, "ci", "review-model-2.log"), "round 2 notes\n");
+    const r2 = runReview(["W-002", "--fail", "--evidence", "ci/review-model-2.log", "--sella", "eng-lead", "--studio", dir], { now: NOW });
+    check("review --model omitted: exitCode 0", r2.exitCode === 0, String(r2.exitCode));
+
+    const after2 = readFront<{ probationes: Record<string, { model?: string }> }>(opusPath).data;
+    check(
+      "review --model omitted: does not carry over a stale model from a previous round",
+      after2.probationes.review?.model === undefined,
+      JSON.stringify(after2.probationes.review),
+    );
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

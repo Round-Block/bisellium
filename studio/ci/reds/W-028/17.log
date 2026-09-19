@@ -1,0 +1,14 @@
+# behaviour: 17
+# command: env BISELLIUM_ONLY_BEHAVIOUR=17 node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-19T14:26:32.620Z
+# sella: guest
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+unknown flag "--model"
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  review --model: exitCode 0                                       2
+FAIL  review --model: records the model field                          
+W-002: review failed (ci/review-model-2.log)
+PASS  review --model omitted: exitCode 0                               0
+PASS  review --model omitted: does not carry over a stale model from a previous round {"sella":"eng-lead","status":"failed","evidence":"ci/review-model-2.log","at":"2026-09-19T13:00:00.000Z"}

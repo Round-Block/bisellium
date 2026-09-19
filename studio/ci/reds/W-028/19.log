@@ -1,0 +1,18 @@
+# behaviour: 19
+# command: node --import tsx /tmp/claude-1000/red-b19.mjs
+# exit: 1
+# at: 2026-09-19T14:29:35.385Z
+# sella: guest
+# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+
+behaviour 19: reviewTierAdvisory against {"review":{"sella":"qa-lead","status":"passed","model":"claude-sonnet-5"}}
+expected: review sella "qa-lead" ran on claude-sonnet-5, not an opus-tier model
+/home/edckt/projects/bisellium/packages/cli/src/rules/process.ts:104
+  const model = sellaModel.get(sella);
+                           ^
+
+TypeError: Cannot read properties of undefined (reading 'get')
+    at reviewTierAdvisory (/home/edckt/projects/bisellium/packages/cli/src/rules/process.ts:104:28)
+    at <anonymous> (/tmp/claude-1000/red-b19.mjs:6:16)
+
+Node.js v25.9.0
