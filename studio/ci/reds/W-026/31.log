@@ -1,0 +1,11 @@
+# behaviour: 31
+# command: node --import tsx packages/cli/src/branch.test.ts . 31
+# exit: 1
+# at: 2026-09-19T18:17:02.587Z
+# sella: builder-a
+# tree: dirty:c56a5125983759b739859be7eebb9617b45ea56b
+
+FAIL  B7.1: a branch that declares its own source_excludes is merged, not refused on a mismatch created by reading the trunk's manifest opus/W-105's tree no longer matches its certificate — opus W-105's gate "tests" certifies tree:c0edc31960b46d4b3a8a13d5b67178e81b7645b7, which no longer matches its current tree (tree:ca624c021e3ae0fe4f8047c5607762d633c63185); check out opus/W-105, re-run "bisellium verify W-105" there, commit the result on opus/W-105, then switch back to master and retry the merge
+FAIL  the vendoring commit lands on master                         469ec96 studio bookkeeping: open W-105
+09518b1 init
+FAIL  the branch is cleaned up                                     master,opus/W-105
