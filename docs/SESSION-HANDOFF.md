@@ -83,19 +83,32 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-19, after cascade 7)
+## Where things stand (2026-09-19, after cascade 8 visual pass)
 
-- Cascades 1–7 in the dossier progress log. Suite green (972 tests); both
+- Cascades 1–7 in the dossier progress log. Suite green; both
   officinae 0 blocking, 45 advisory.
-- **Cascade 7 (web I)**: W-024 (apps/web scaffold + Inbox screen) and W-025
-  (Officina screen) both `done`. Vite + React at `apps/web/`, design tokens
-  from DIRECTION.md, Inbox (decision queue with j/k/1-2-3 keyboard), Officina
-  (fasti strip, posture/burn, lex status, process health), shared Nav and
-  Colophon. 9 agents, 747k tokens, first-round reviews passed both opera.
-  Retro 7: L-026–L-029. `bisellium serve` now serves the built web app.
+- **W-026 visual pass** (uncommitted, cascade 8): sidebar + 12-col grid shell
+  replacing top nav, Officina panels (System status with pie charts, Process
+  engine, Contract integrity), Inbox master/detail split with body content and
+  approve/defer/decline/delegate, demo mode via `?demo`. Gemini→Claude→Gemini
+  pipeline established (text-only, free tier). `scripts/gemini.mjs` for the
+  Gemini calls.
+- **Process gap found**: TDD discipline was lost during the visual pass — layout
+  changes were made code-first without recorded reds. DIRECTION.md was checked
+  by the Gemini review but the dossier's structural contract (four touchpoints,
+  screen mapping) was not. The Gemini review prompt lived in a scratch file
+  and was lost on compaction.
+- **Next (process fixes before more features)**:
+  1. Add process rules to `bisellium check` (TDD enforcement, structural
+     contract compliance) — scope as opera with proper TDD.
+  2. Expand SessionStart hook re-injection to include standing rules that
+     survive compaction (TDD, dossier reference, Gemini pipeline).
+  3. Move Gemini review prompt from scratch file into the studio (a lex or
+     collegium artifact) so it persists.
+  4. Write screen map (touchpoint → screen mapping) as a section in
+     DIRECTION.md or the dossier, not a new file.
 - W-022 + W-023 (evidence content rules, containment scoping) remain backlog.
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
-- ARCHITECTURE.md regenerated with `apps/web` node after cascade 7.
 - Then: web II (Board screen, drawer, SSE live), web III (Swimlane, Agents,
   Graph), autonomy L2, adapters + desktop.
 
