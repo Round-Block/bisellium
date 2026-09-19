@@ -1,11 +1,42 @@
-import type { JSX } from "react";
+/**
+ * apps/web/src/App.tsx — co-owned by W-024 and W-025. W-024 owns the
+ * Inbox screen at the default hash route; W-025 adds `/#/officina`,
+ * hash-route switching, and the `<Nav>` wrapper.
+ */
+import { useEffect, useState } from "react";
+import { parseRoute } from "./lib/route.js";
+import { Nav } from "./components/Nav.js";
+import { Officina } from "./screens/Officina.js";
 import { Inbox } from "./screens/Inbox.js";
+import { fetchInbox } from "./api.js";
 
-/** apps/web/src/App.tsx — co-owned with W-025 (routing and nav, per
- * studio/briefs/W-024.md "Files owned"). W-024's slice is the whole of
- * the app so far: the Inbox at the default route, no nav, no hash
- * switching. W-025 wraps this in `<Nav>` and adds `/#/officina` without
- * removing this route. */
-export function App(): JSX.Element {
-  return <Inbox />;
+function currentHash(): string {
+  return typeof window === "undefined" ? "" : window.location.hash;
+}
+
+export function App() {
+  const [hash, setHash] = useState(currentHash());
+  const [needsYouCount, setNeedsYouCount] = useState(0);
+
+  useEffect(() => {
+    const onHashChange = () => setHash(currentHash());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  useEffect(() => {
+    // Nav's needs-you badge: petitiones.length from /api/inbox (brief §Nav).
+    fetchInbox()
+      .then((r) => setNeedsYouCount(r.petitiones.length))
+      .catch(() => undefined);
+  }, []);
+
+  const route = parseRoute(hash);
+
+  return (
+    <>
+      <Nav needsYouCount={needsYouCount} />
+      {route === "officina" ? <Officina /> : <Inbox />}
+    </>
+  );
 }

@@ -1,0 +1,9 @@
+# behaviour: 5
+# command: node --import tsx apps/web/src/lib/gateLadder.test.ts . 5
+# exit: 1
+# at: 2026-09-19T04:44:32.669Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  gateLadder: title with a blocker names id and blocker                  
+FAIL  gateLadder: title with no blocker is just the gate id                  

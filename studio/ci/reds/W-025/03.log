@@ -1,0 +1,9 @@
+# behaviour: 3
+# command: node --import tsx apps/web/src/lib/fasti.test.ts . 3
+# exit: 1
+# at: 2026-09-19T04:43:58.077Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  fasti: a day with a cascade-landing actum ticks filled                 undefined
+FAIL  fasti: a day with no landing ticks hollow                              undefined

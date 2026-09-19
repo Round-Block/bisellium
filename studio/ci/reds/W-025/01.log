@@ -1,0 +1,10 @@
+# behaviour: 1
+# command: node --import tsx apps/web/src/lib/fasti.test.ts . 1
+# exit: 1
+# at: 2026-09-19T04:43:57.071Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  fasti: renders exactly 14 day-columns                                  got 0
+FAIL  fasti: spans today-13 through today                                    undefined .. undefined
+PASS  fasti: every column carries a weekday initial                          

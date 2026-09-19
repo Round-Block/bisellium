@@ -1,0 +1,189 @@
+/**
+ * apps/web/src/components/w025.css — styles for W-025's own components
+ * (Nav, FastiStrip, GateLadder, BurnBar, Officina). Kept apart from
+ * `tokens.css` (W-024's file) since gaps/radii/type here are additive,
+ * not new tokens. Every gap and radius below is drawn from
+ * DIRECTION.md §3: gaps in {4,8,12,16,24,32,48}px, radius 2px on
+ * marks/controls, 0 on panels/rows, zero box-shadow.
+ */
+
+.nav {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.nav__wordmark {
+  color: var(--verdigris);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.nav__link {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav__badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--amber);
+}
+
+.fasti-strip {
+  height: 28px;
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.fasti-strip__column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 12px;
+}
+
+.fasti-strip__tick {
+  width: 3px;
+  height: 3px;
+  border-radius: 0;
+}
+
+.fasti-strip__tick--filled {
+  background: var(--verdigris);
+}
+
+.fasti-strip__tick--hollow {
+  border: 1px solid var(--verdigris);
+}
+
+.fasti-strip__today-rule {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ink);
+}
+
+.fasti-strip__weekday {
+  font-variant: small-caps;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--ink-3);
+}
+
+.gate-ladder {
+  position: relative;
+  height: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.gate-ladder__mark {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.gate-ladder__mark--filled {
+  background: var(--ink);
+}
+
+.gate-ladder__mark--hollow {
+  border: 1px solid var(--ink);
+}
+
+.gate-ladder__mark--ok-filled {
+  background: var(--ok);
+}
+
+.gate-ladder__mark--bad-diagonal {
+  background: var(--bad);
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+.gate-ladder__mark--half-height {
+  top: 3px;
+  height: 3px;
+  background: var(--ink);
+}
+
+.burn-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.burn-bar__numerals {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.burn-bar__rail {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  background: var(--rule);
+}
+
+.burn-bar__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.burn-bar__fill--ink {
+  background: var(--ink);
+}
+
+.burn-bar__fill--amber {
+  background: var(--amber);
+}
+
+.officina {
+  display: flex;
+  flex-direction: column;
+}
+
+.officina__panel {
+  border-top: 1px solid var(--rule);
+  padding: 16px;
+}
+
+.officina__panel-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+  margin: 0 0 12px;
+}
+
+.officina__posture-word {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+}
+
+.officina__posture-reason {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+  margin-top: 4px;
+}

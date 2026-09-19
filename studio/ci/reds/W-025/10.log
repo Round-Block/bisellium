@@ -1,0 +1,9 @@
+# behaviour: 10
+# command: node --import tsx apps/web/src/lib/officinaLayout.test.ts . 10
+# exit: 1
+# at: 2026-09-19T04:46:39.463Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  officina layout: colophon is the last section                          
+FAIL  officina layout: the four data panels all precede the colophon         

@@ -1,0 +1,11 @@
+# behaviour: 9
+# command: node --import tsx apps/web/src/lib/route.test.ts . 9
+# exit: 1
+# at: 2026-09-19T04:46:12.387Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  route: "#/inbox" -> inbox                                              officina
+PASS  route: "#/officina" -> officina                                        officina
+FAIL  route: "" (no hash) -> inbox                                           officina
+FAIL  route: "#/" (root hash) -> inbox                                       officina

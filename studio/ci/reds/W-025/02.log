@@ -1,0 +1,9 @@
+# behaviour: 2
+# command: node --import tsx apps/web/src/lib/fasti.test.ts . 2
+# exit: 1
+# at: 2026-09-19T04:43:57.605Z
+# sella: builder-b
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  fasti: exactly one column is today                                     got 0
+FAIL  fasti: the today column is the last (rightmost) one                    
