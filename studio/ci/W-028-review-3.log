@@ -1,0 +1,286 @@
+# W-028 qa-lead review — round 3 (PR #1)
+# reviewer: qa-lead (Censor)
+# model: claude-opus-5
+# at: 2026-09-19T15:33:55Z
+# pr: https://github.com/edckt/bisellium/pull/1  (opus/W-028 -> master)
+# commit under review: dbf0e29ae30fbf36a48902a4116dc4368ec86e29
+# checkout: clean detached worktree of the PR head, workspace node_modules relinked to it
+# verdict: FAIL
+
+## 0. Rebase state (D-015 precondition)
+$ git merge-base --is-ancestor master dbf0e29
+  exit=0 — branch is rebased on current master (db6cf4a)
+
+## 1. Gates re-run on the PR head tree
+$ npm test
+  exit=0 · PASS lines: 1060 · FAIL lines: 0
+$ npm run -s typecheck
+  exit=0
+$ npm run -s lint
+  exit=0 (2 pre-existing warnings in close.test.ts / tick.test.ts, unrelated)
+$ node --import tsx packages/cli/src/context.test.ts .
+  18 PASS, 0 FAIL
+$ node --import tsx packages/cli/src/main.ts check studio --repo .
+BLOCKING (9)
+  traditio.present           opera/W-022.md                 active item (building) has no handoff
+  traditio.present           opera/W-023.md                 active item (building) has no handoff
+  traditio.present           opera/W-026.md                 active item (building) has no handoff
+  traditio.present           opera/W-027.md                 active item (building) has no handoff
+  traditio.present           opera/W-028.md                 active item (building) has no handoff
+  wip.cap                    opera/                         5 items in progress, WIP cap is 4
+  opus.red_evidence          opera/W-026.md                 missing red log(s) for behaviour(s) 1, 2, 5, 7
+  opus.red_evidence          opera/W-027.md                 missing red log(s) for behaviour(s) 1, 2, 4, 5
+  opus.red_evidence          opera/W-028.md                 missing red log(s) for behaviour(s) 1, 2, 3, 4, 5
+
+
+## 2. Does the pointer actually work? — live output, real officina, every sella
+$ node --import tsx packages/cli/src/main.ts context --sella builder-a studio | sed -n '75,76p'
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+$ for s in <every sella + patron>; do for m in 600 4000; do context --sella $s studio --max-tokens $m; done; done
+  sella        max=600     max=4000    (full-render tokens)
+  patron       PRESENT     PRESENT     (tokens: 3040)
+  producer     PRESENT     PRESENT     (tokens: 3479)
+  architect    PRESENT     PRESENT     (tokens: 3554)
+  eng-lead     DROPPED     PRESENT     (tokens: 1296)
+  qa-lead      DROPPED     PRESENT     (tokens: 3638)
+  builder-a    DROPPED     PRESENT     (tokens: 1296)
+  builder-b    DROPPED     PRESENT     (tokens: 1296)
+
+$ context --sella builder-a studio --max-tokens 600   (full output, 2 lines)
+  truncated: decisions, collegium index, standing rules, cli usage, lex
+  tokens: 18
+
+## 3. Mutation battery — does the suite bite?
+context.ts mutated in place in the scratch worktree, packages/cli/src/context.test.ts
+re-run after each, file restored between mutants (git status clean after).
+  M1 remove section entirely: CAUGHT
+      FAIL  builder-1: CLI usage pointer present
+      FAIL  maxTokens=600: CLI usage pointer survives truncation that drops other sections
+  M2 reword sentence only (heading kept): CAUGHT
+      FAIL  builder-1: CLI usage pointer present
+  M3 inline the full banner: CAUGHT
+      FAIL  builder-1: full banner not inlined
+      FAIL  maxTokens=600: CLI usage pointer survives truncation that drops other sections
+  M4 priority 2 -> 9: CAUGHT
+      FAIL  maxTokens=600: CLI usage pointer survives truncation that drops other sections
+  M5 priority 2 -> 3 (ties standing rules): SURVIVED
+  M6 gut the sentence body, keep asserted substrings: SURVIVED
+
+  M1 is the mutation the PR body claims produced red 22 ("removing the pointer").
+  M1 fails behaviours 22 AND 24. studio/ci/reds/W-028/22.log shows 24 PASSING.
+  The log matches M2 (sentence reworded, heading kept), not M1.
+  reds 23 and 24 reproduce exactly (M3 one-line inline / M4 priority raise).
+
+## 4. The one-character fix for the claimed truncation behaviour
+priority 2 -> 0 on the cli usage section, same scratch worktree:
+  eng-lead   max=600 -> PRESENT
+  qa-lead    max=600 -> PRESENT
+  builder-a  max=600 -> PRESENT
+  context.test.ts: 18 PASS, 0 FAIL (no test change needed)
+  (truncation drops the highest priority number first; at priority 2 the
+   pointer is the 4th of 5 sections dropped, before the lex it should outlive.)
+
+## 5. Single-source claim — verified, and its limit
+$ cat packages/commands/package.json | grep -A6 dependencies   # no @bisellium/cli
+    "dependencies": {
+      "@bisellium/adapter-native": "*",
+      "@bisellium/core": "*",
+      "@bisellium/pipeline": "*",
+      "@bisellium/schema": "*",
+      "@bisellium/shim": "*",
+      "yaml": "^2.6.0"
+    },
+  cli depends on commands (packages/cli/package.json), commands does not depend on cli.
+  The stated cycle reasoning holds. The shim matches talk.ts/verify.ts (W-016) exactly.
+
+$ node --import tsx packages/cli/src/main.ts            -> exit 2, banner printed
+$ node --import tsx packages/cli/src/main.ts wibble     -> banner printed
+$ node --import tsx packages/cli/src/main.ts check --nope -> 'flag --nope not allowed for "check"' + banner
+$ node --import tsx packages/cli/src/main.ts --help     -> banner printed
+  all four usage-error paths still work.
+
+$ grep -rn 'usage: bisellium' --include=*.ts . | grep -v node_modules   (33 per-command constants)
+  The banner is not generated from them. Two already disagree at PR head:
+
+  packages/commands/src/usage.ts:33
+    33:  "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--now <iso>] -- <cmd…>\n" +
+  packages/commands/src/lifecycle.ts:360 (RED_USAGE) and :442 (parseFlags)
+    361:  "usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>";
+    410:/** Runs `cmd` (cwd: `--cwd` when given, else the caller's own), collecting
+    -> the banner omits [--cwd <dir>], which red accepts.
+
+  packages/commands/src/usage.ts:37
+    37:  "       bisellium hook-event <start|stop|tool|compact> --sella <id> [--studio <dir>]\n" +
+  packages/cli/src/hooks.ts:173 and :194
+    173:const HOOK_EVENT_USAGE = "usage: bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]";
+    194:  if (sub !== "start" && sub !== "stop" && sub !== "tool" && sub !== "compact" && sub !== "context") {
+    -> the banner omits the 'context' subcommand, which hook-event accepts.
+
+  Cosmetic disagreements as well: serve/tick/pause write '[--studio dir]',
+  the banner writes '[--studio <dir>]'.
+
+## 6. Brief and round-2 conditions
+briefs/W-028.md 'Files owned':
+  ## Files owned
+  
+  - `packages/cli/src/rules/process.ts` — `checkpointStale` pure function + wiring into `checkProcess`
+  - `packages/cli/src/rules/process.test.ts` — new behaviours for checkpoint rule
+  - `studio/briefs/W-028.md` — this file
+  
+  ## Interfaces
+  PR #1 touches, none of them declared:
+    packages/cli/src/context.test.ts
+    packages/cli/src/main.ts
+    packages/cli/src/usage.ts
+    packages/commands/src/context.ts
+    packages/commands/src/index.ts
+    packages/commands/src/usage.ts
+    studio/ci/reds/W-028/22.log
+    studio/ci/reds/W-028/23.log
+    studio/ci/reds/W-028/24.log
+
+round 2 (studio/ci/W-028-review-2.log) named four conditions to pass. Status at PR head:
+  1. amend briefs/W-028.md to declare the delivered work + behaviours  -> NOT DONE (brief unchanged, still 5 checkpointStale behaviours, 3 files)
+  2. a conforming red for every numbered behaviour                     -> NOT DONE (opus.red_evidence still blocking: missing 1,2,3,4,5)
+  3. re-record tests/lint/types against the current tree               -> NOT DONE (probatio.certifies.stale x3, certifies 5ab03a0b, current d34e898e)
+  4. re-submit                                                          -> done
+
+## 7. Blocking findings (round 3)
+
+### B1 — the claimed truncation behaviour is false in the real officina
+
+context.ts:107 calls the section "one line, never dropped by truncation".
+It is dropped. §2 above: at --max-tokens 600 the pointer is gone for
+eng-lead, qa-lead, builder-a and builder-b — every builder and the censor,
+the four sellae the pointer exists for. It survives only for patron,
+producer and architect, whose leges are small enough that nothing needs
+dropping.
+
+The drop loop (context.ts:198-205) removes the highest priority *number*
+first. At priority 2 the pointer is the fourth of five sections dropped,
+ahead of the lex. Behaviour 24 passes because the fixture officina's lex is
+~200 tokens; the real engineering lex is ~1100, so 600 tokens forces the
+loop past the pointer and on to the lex, leaving a two-line output that is
+nothing but "truncated: ...".
+
+§4: priority 0 makes the comment true for every sella at 600 with no test
+change. One character.
+
+### B2 — round 2's pass conditions are unmet; the gate cannot be re-opened on this tree
+
+§6. The brief is unchanged, the five declared behaviours still have no reds
+(opus.red_evidence, blocking), and tests/lint/types still certify
+tree:5ab03a0b while the PR head tree is tree:d34e898e — three
+probatio.certifies.stale advisories on this opus's own front matter.
+
+D-015 is explicit that this is the point of rebasing: "the gates must
+re-run before the PR can pass, because the evidence model already refuses
+stale certificates." They were not re-run. The PR's test plan asserts "npm
+test — 0 failures on the rebased tree"; that is true (I re-ran it) but no
+certificate records it, and a claim in a PR body is not a probatio.
+
+### B3 — the work is outside the opus's declared files
+
+briefs/W-028.md owns three files: rules/process.ts, rules/process.test.ts,
+briefs/W-028.md. This PR touches six source files, none of them declared.
+Behaviours 22-24 are not an overflow of the brief's numbering — they are a
+different subject from all five of its behaviours, which concern
+checkpointStale. Numbering past 5 was the wrong call: it treats a brief the
+opus has outgrown as a numbering offset rather than a document to amend,
+and it makes opus.red_evidence permanently unsatisfiable, because reds for
+1-5 can only be produced against behaviours the brief still describes. This
+is round 2's B3 unchanged, now with a third deliverable stacked on it.
+
+The engineering lex's "one opus owns its declared files" and the QA lex's
+"(check: probatio.declared)" both cover this; probatio.declared is still
+not implemented, so nothing caught it mechanically.
+
+### B4 — the PR promotes a reference that is already wrong
+
+The deliverable tells every agent the banner is the authority on flag
+shapes. §5: at PR head the banner omits `[--cwd <dir>]` from `red` and the
+`context` subcommand from `hook-event`, both of which the code accepts and
+both of which the commands' own usage constants document. The drift is
+pre-existing, but this PR is what converts it from a stale string into an
+instruction every boot repeats.
+
+Moving USAGE from cli to commands single-sources nothing that was ever
+duplicated — there was one copy before and one copy after. The duplication
+that matters is banner vs. 33 per-command *_USAGE constants vs. the
+parseFlags allowlists, and it is live today. One test asserting every
+per-command usage line appears verbatim in USAGE would close the class and
+is smaller than the two string fixes it would force.
+
+## 8. Advisory findings
+
+A1. The PR body misdescribes red 22. It says the mutation was "removing the
+    pointer"; §3 shows that mutation fails behaviours 22 and 24 together,
+    while 22.log records 24 passing. The red is genuine, distinct and
+    assertion-level — it just proves the sentence is asserted, not that the
+    section is. Reds 23 and 24 reproduce exactly as described. An
+    inaccurate account of what was mutated is the cheapest kind of evidence
+    defect to fix and the most expensive to discover later.
+
+A2. All three reds carry "# sella: guest". `bisellium red --sella <id>` was
+    available; the evidence is unattributable as recorded.
+
+A3. context.test.ts:73-75 asserts on the literal "bisellium check [dir]"
+    rather than deriving it from USAGE — the one restatement of banner text
+    this PR adds, in the file whose subject is not restating banner text.
+    `USAGE.split("\n")[0]` costs nothing and cannot drift.
+
+A4. Mutation M6 survived: the pointer sentence can be cut to "Run
+    `bisellium` with no arguments. " and all three behaviours pass. The
+    warning that gives the sentence its force — strict allowlists, a wrong
+    invocation writing real bookkeeping — is untested. This is the
+    "asserted that it fired, not what it did" pattern; milder here than in
+    the three opera that failed round 2 for it, because the imperative
+    opening is pinned.
+
+A5. Mutation M5 survived: priority 2 -> 3 is not caught. Once B1 is fixed
+    the behaviour worth pinning is "present at the tightest budget that
+    renders anything for the largest real lex", not "present at 600 in the
+    fixture".
+
+## 9. Not a defect
+
+The pointer-over-inline trade is right, and by a wider margin than the PR
+claims. Measured: USAGE is 2833 chars = 709 tokens, 17.7% of the 4000-token
+default. The pointer is 266 chars = 67 tokens, 1.7%. A 10x saving on a
+reference most boots never need, in exchange for one round-trip an agent
+about to make a CLI call is already positioned to make. Inlining would have
+been wrong.
+
+The cycle reasoning is correct and I verified it rather than took it:
+commands declares no dependency on cli, cli declares commands. The shim
+follows the W-016 pattern exactly. All four of main.ts's usage-error paths
+still print the banner.
+
+## 10. Verdict
+
+FAIL — round 3.
+
+The feature is the right feature and the design judgement inside it is
+sound. What fails is everything around it: a behaviour claimed and
+commented that the code does not deliver for the sellae it was built for
+(B1), round 2's three conditions carried over untouched (B2), a third
+undeclared deliverable stacked on a brief that stopped describing this opus
+two deliverables ago (B3), and an instruction to trust a reference that is
+wrong in two places (B4).
+
+To pass:
+  - priority 0 on the cli usage section, and a behaviour that pins survival
+    against a lex the size of the real one;
+  - amend briefs/W-028.md — or, better, split the usage-banner work into
+    its own opus with its own brief, since it shares nothing with
+    "patron-as-agent" but a number;
+  - reds for every numbered behaviour the amended brief declares;
+  - re-record tests/lint/types against the tree that merges;
+  - fix the two banner omissions and add the test that keeps them fixed;
+  - correct the PR body's account of red 22.
+
+B4 alone would be an advisory. Combined with B1-B3 it is the same finding
+the officina has now made three times in a row on this opus: the code is
+fine and the evidence does not say what it claims to say.

@@ -1,0 +1,247 @@
+review: W-026 (parallel workstreams: per-opus branching) — round 3
+sella: qa-lead
+model: claude-opus-5
+verdict: FAIL
+subject: PR #2, branch opus/W-026 -> master, single commit 8ec1352
+        "feat(merge): integration strategy as configuration (D-015)"
+
+Reviewed against D-015 (studio/decisions/D-015.md) and the round-2 log
+(studio/ci/W-026-review-2.log). Everything below was executed, not read off
+the diff. All git probes ran in throwaway repos under the session scratchpad
+with a local bare repo wired as "origin"; the real origin was never touched.
+
+Base state (worktree at 8ec1352, node_modules workspace links repointed at
+the worktree)
+-------------------------------------------------------------------------
+- npm test                      exit 0, 0 FAIL lines
+- npm run -s typecheck          exit 0
+- npm run -s lint               exit 0, 2 warnings, neither in W-026's files
+                                (round 2's two branch.test.ts warnings gone)
+- branch.test.ts                47 PASS, 0 FAIL
+- run.test.ts                   4 PASS, 0 FAIL
+- check.test.ts                 0 FAIL
+A first typecheck run reported TS2339 "Property 'integration' does not exist
+on type 'Manifest'" in branch.ts. That was my own harness: a symlinked
+node_modules resolved @bisellium/adapter-native to the master checkout, not
+the worktree. Clean once the workspace links point at the worktree. NOT a
+defect in the PR; recorded so the claim isn't repeated.
+
+Blocking
+--------
+
+B1. The stale-certificate promise does not fire for any opus that can reach
+    the rebase. mergeOpusBranch refuses unless state === "done"
+    (branch.ts:195). check.ts:462 scopes probatio.certifies.stale (and
+    .dirty, and probatio.evidence.tree) to ACTIVE opera only —
+    building/verifying/review — with an explicit comment that a done item's
+    certificate is history. done is exactly and only the state merge accepts.
+    So the note merge prints, "bisellium check will report
+    probatio.certifies.stale", is false at the moment it prints.
+    Probe: copied studio/ to a scratch dir, flipped W-026 to state: done
+    (review passed), re-ran check --json.
+      state: building -> 3 x probatio.certifies.stale on opera/W-026.md
+      state: done     -> 0; W-026's findings are probatio.certifies (x2),
+                        traditio.stage, process.review_tier. None about the
+                        tree.
+    Nothing *suppresses* the rule — the brief's phrasing — but the rule never
+    applies to the population merge operates on. D-015's "Rebase forces
+    re-verification, for free ... the evidence model already refuses stale
+    certificates" does not hold as built: after a rebased merge the tree has
+    changed, the certificates are stale, and check is silent. The PR's third
+    Decisions bullet ("The rebase consequence is surfaced, never suppressed")
+    is the load-bearing claim of the whole D-015 rebase story, and it is the
+    one thing here that does not work. The note is also advisory-only even
+    when it does fire (check.ts:464 level "advise"), which is a separate
+    question for the architect.
+
+B2. strategy: rebase + push: true + pr.required: true — the officina's own
+    configured flow, studio/bisellium.yml — fails on any opus branch that is
+    already on origin. The rebase rewrites the branch; pushRef
+    (branch.ts:163-167) runs a plain `git push origin <branch>`, which the
+    remote rejects non-fast-forward.
+    Probe (lab/C): fresh repo + bare origin, opus branch pushed to origin
+    first (i.e. a PR exists on it), trunk ahead, then merge:
+      push to origin failed: ! [rejected] opus/W-900 -> opus/W-900
+        (non-fast-forward)
+      exit 1
+      local opus/W-900:  0e79159 opus work / 7c2405a trunk moved / de6938c init
+      origin opus/W-900: 10353ef opus work / de6938c init
+    The rebase is not rolled back, so the run leaves local and remote
+    diverged, exits 1, and the error blames the push without ever saying the
+    branch was rewritten. This is not hypothetical for this repo: origin
+    holds opus/W-026 and PR #2 is open against it, so running
+    `bisellium merge W-026 --studio studio --repo .` today lands exactly
+    here. A rebase-then-push path needs --force-with-lease (and a test that
+    pushes the branch before merging, which behaviour 14 does not).
+
+Advisory
+--------
+
+A2. "Every exit path carries a note" (PR body) is false. After a successful
+    rebase three failure paths return with no note: ff-merge failure
+    (branch.ts:263), trunk-fetch failure (:270), branch-delete failure
+    (:284-288). The code comment at :238 says "on either exit path below",
+    which is accurate for the two success paths; the PR body generalised it.
+    The delete path is the one that matters — the trunk really advanced.
+    Probe (lab/F): rebase strategy, builder worktree checked out on the opus
+    branch, no pr.required:
+      master fast-forwarded to opus/W-900, but could not delete opus/W-900:
+        ... used by worktree at .../lab/F/wt — switch off it and delete manually
+      exit 1;  master log: a614f67 opus work / 5616f3a trunk moved / 3049468 init
+    Rebased commits on the trunk, exit 1, no word about stale certificates.
+
+A3. pull_after_push is unreachable under the studio's own configuration.
+    pullTrunk is called only on the landing path (branch.ts:294); with
+    pr.required: true merge returns at :256 first. studio/bisellium.yml sets
+    both pull_after_push: true and pr.required: true, so as shipped that
+    setting can never run in this officina. It is still validated by check
+    and documented in the manifest — a setting that reads as live and is not.
+
+A4. The PR's "Known follow-up" describes a problem that does not exist. No
+    process.* rule reads or assumes any integration strategy: the only rule
+    ids in packages/cli/src/rules/process.ts are process.cascade,
+    process.review_tier, process.tdd, process.checkpoint, and grepping
+    check.ts + rules/*.ts for rebase / pull request / opus branch returns only
+    this PR's own new lines. So nothing today is "wrong for an officina
+    configured the other way", and D-015's "process.* rules must read the
+    setting" is vacuously satisfied. The scoping call is right; the stated
+    reason is wrong. The feature is coherent as shipped — it is merge's own
+    behaviour, and nothing enforces the flow either way.
+
+A5. An invalid strategy: value silently degrades to fast_forward
+    (branch.ts:63), and an unparseable or missing manifest does the same
+    (:57-61). check blocks the first, but merge does not run check. A typo
+    ("rebse") gets a silent fast-forward refusal instead of "unknown
+    strategy". Documented as deliberate ("defensive, not a second
+    validator"), and defensible — but a setting the operator explicitly wrote
+    and misspelled deserves an error rather than a downgrade.
+
+A6. Behaviour 7's test asserts where the worktree forked FROM and nothing
+    about where the work goes TO — and its own cleanup block deletes
+    `bisellium/${sella}/1` (run.test.ts, finally block), so the suite names
+    the branch the work actually lands on while asserting past it. That is
+    the break found by hand today (docs/SESSION-HANDOFF.md): run --opus forks
+    from opus/<id> but commits to bisellium/<sella>/<n>, which merge never
+    reads. One more assertion — opus/W-100 contains the commit after the run
+    — would have caught it in both earlier rounds. Root cause is the brief's
+    behaviour-7 wording, not the builder; it belongs in the follow-up opus,
+    not here.
+
+A7. integration: is a manifest contract addition and is undocumented in
+    docs/ADOPTION.md, which is where wip_limit (line 173) and source_excludes
+    (line 176) are documented and which line 42 presents as the manifest key
+    list. The only prose is a TS interface comment and the two manifests'
+    own comments. D-015's principle is "configuration the user can see".
+
+A8. The brief's "Files owned" (branch.ts, branch.test.ts) is stale: this PR
+    also changes check.ts, check.test.ts, adapters/native/src/index.ts and
+    two manifests. D-015 authorises the work and it cannot be done inside
+    branch.ts; amend the brief rather than exceed the ownership line quietly.
+
+The merge_commit refusal — upheld
+---------------------------------
+Correct call, and correctly built. Probe (lab/E): strategy: merge_commit ->
+`integration.strategy "merge_commit" is declared but not implemented — use
+"fast_forward" or "rebase"`, exit 1, trunk untouched, branch untouched. It
+refuses before computing merge-base, so no side effect precedes the refusal.
+Mutation M6 below shows the suite catches a silent downgrade. A merge-commit
+policy nobody has exercised would be guessed message format and guessed
+conflict handling, and D-015's kill_when contemplates deleting strategies
+rather than accumulating them. An enumerated-and-refused value is honest
+configuration; a silent downgrade to fast_forward would not be.
+
+The four owed reds — genuine
+----------------------------
+studio/ci/reds/W-026/{01,02,05,07}.log. All four are assertion-level failures
+(the FAIL lines are check() assertions with surrounding PASS lines proving the
+module loaded and the suite ran to completion), and no two cover the same
+behaviour: 01 createOpusBranch must not move HEAD; 02 duplicate-branch
+refusal; 05 conflict wording vs divergence wording; 07 run --opus fork source.
+
+The earlier builder's claim that these could not be produced was wrong, and I
+verified that rather than taking the logs on trust. Reproduced two from my own
+mutations of the shipped code:
+  01: `git branch <b>` -> `git checkout -b <b>`
+      FAIL  stays on original branch                opus/W-026
+  05: conflict probe short-circuited to never fire
+      FAIL  error names the conflict, not divergence
+      FAIL  names the conflict against master, not sidebranch
+Both match the recorded logs line for line. Behaviours 10-16 are ordinary
+pre-implementation reds, also assertion-level, also distinct (10 manifest
+validation, 11 rebase-then-ff, 12 rebase conflict, 13 push, 14 pr.required,
+15 merge_commit, 16 trunk name).
+
+Mutation — the suite bites
+--------------------------
+Six mutations of branch.ts, each reverted, `branch.test.ts .` re-run:
+  M1  trunk advance `git fetch . <b>:<trunk>` -> `git merge --ff-only <b>`
+      (round 2's finding 5, the original defect)              2 FAIL
+  M2  strategy setting ignored, always fast_forward           9 FAIL
+  M3  staleNote suppressed                                    1 FAIL
+  M4  pr.required ignored                                     4 FAIL
+  M5  push ignored                                            1 FAIL
+  M6  merge_commit silently downgraded to fast_forward        4 FAIL
+M1 is the one asked for: the merge target is pinned by assertion, not merely
+observed. The suite does not repeat round 2's failure mode.
+
+Configuration behaviour, driven end to end through the CLI
+----------------------------------------------------------
+Each case: throwaway repo, bare local origin, a full copy of
+studio/bisellium.yml with the integration block varied, opus at state: done.
+
+  A   no integration: block, diverged branch
+      -> "branch opus/W-900 has diverged from master — rebase first", exit 1,
+         origin untouched, branch intact. Identical to pre-PR behaviour.
+  A2  no integration: block, fast-forwardable
+      -> "merged opus/W-900 into master", exit 0, branch deleted, origin NOT
+         pushed (origin still at the old tip). Identical to pre-PR behaviour.
+  B   rebase + push + pull_after_push + pr.required (the real studio config)
+      -> exit 0; local master untouched; opus branch rebased onto the trunk;
+         origin has both refs; both notes printed (PR-required note and the
+         stale-certificate note); nothing landed.
+  C   as B, branch pre-pushed to origin  -> B2 above.
+  D   rebase + push + pull_after_push, no pr.required
+      -> "merged opus/W-900 into master" + stale note, exit 0; local and
+         origin master identical; branch deleted.
+  E   merge_commit -> refused, trunk untouched (above).
+  F   rebase, branch checked out in another worktree -> A2 above.
+  H   acceptance criterion, two opera: W-901 and W-902 each on their own
+      branch, merged in sequence under strategy: rebase
+      -> both exit 0, master = W-902 work / W-901 work / init, both files
+         present, no branches left. Round-2 finding 8 is now met: this is
+         the substantive thing the PR buys, and it works.
+
+Verdict
+-------
+FAIL, round 3. Two blocking findings, both narrow.
+
+B1 is the reason. The rebase consequence is the mechanism D-015 leans on to
+answer "should merge re-run gates", and as built the mechanism is silent for
+every opus merge will accept. Either the rule has to cover the state merge
+operates on, or the note has to stop citing a rule that will not fire and the
+enforcement has to live somewhere that does. That is the architect's call,
+not a builder's guess.
+
+B2 is a one-flag fix plus the test that would have caught it.
+
+Everything else is advisory and none of it needs to hold the PR. The reds are
+real and were re-derived, not trusted; the suite bites on the merge target;
+the configuration does what the manifest says on every path except the two
+above; the default with no integration: block is byte-for-byte the old
+behaviour; and the acceptance criterion this opus has failed twice is now
+demonstrably met.
+
+Commands run for this log
+-------------------------
+  git worktree add --detach <scratch>/pr2 opus/W-026
+  npm test; npm run -s typecheck; npm run -s lint            (in that worktree)
+  node --import tsx packages/cli/src/branch.test.ts .
+  node --import tsx packages/cli/src/branch.test.ts . 1|5
+  node --import tsx packages/commands/src/run.test.ts
+  node --import tsx packages/cli/src/check.test.ts .
+  node --import tsx packages/cli/src/main.ts check studio --repo . [--json]
+  node --import tsx packages/cli/src/main.ts check <studio-copy-with-done-W-026> --repo . --json
+  node --import tsx packages/cli/src/main.ts merge W-900|W-901|W-902 --studio <lab>/studio --repo <lab>/repo
+  six reverted mutations of packages/cli/src/branch.ts, suite re-run per mutation
+  two reverted mutations reproducing reds 01 and 05
+  grep of packages/cli/src/rules/*.ts and check.ts for integration/rebase/PR rules
