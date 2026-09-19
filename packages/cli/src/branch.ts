@@ -112,7 +112,23 @@ function studioRelToRepo(repo: string, studio: string): string | undefined {
  *  `git show <branch>:<studio-rel>/opera/<id>.md` reads the exact blob the
  *  branch ships, no working tree involved. Falls back to the filesystem
  *  when `studio` resolves outside `repo` — `--studio` and `--repo` are
- *  independent flags, and nothing then names a blob inside `repo` to show. */
+ *  independent flags, and nothing then names a blob inside `repo` to show.
+ *
+ *  Round-6 B6.3: this same read also supplies `state` — not only the
+ *  certificates. That is deliberate, not an oversight: `bisellium done
+ *  <opus-id>` has no branch flag, it only ever writes wherever it's run, so
+ *  for `merge` to see `state: done` at all that write has to land, and be
+ *  committed, on `branch` itself — exactly the same contract B6.2 already
+ *  puts on `bisellium verify`. Splitting the two (certificates from the
+ *  branch, state from whatever `merge`'s own checkout shows) was
+ *  considered and rejected: `merge` is documented to run from a worktree
+ *  sitting on `branch` itself just as often as from the trunk (module
+ *  comment above), so "the checkout" is exactly the ambiguous, ref-agnostic
+ *  read B5.1 already proved unsound for certificates — reusing it only for
+ *  `state` would reopen the same class of bug for one field while closing
+ *  it for the others. One provenance, one rule — `mergeOpusBranch`'s state
+ *  check below names `branch` when its state disagrees with what's on
+ *  disk. */
 function readOpusRecord(repo: string, studio: string, branch: string, opusId: string): Record<string, unknown> {
   const studioRel = studioRelToRepo(repo, studio);
   if (studioRel !== undefined) {
@@ -120,21 +136,6 @@ function readOpusRecord(repo: string, studio: string, branch: string, opusId: st
     if (show.status === 0) return parseFrontMatter<Record<string, unknown>>(show.stdout, `${branch}:${studioRel}/opera/${opusId}.md`).data;
   }
   return readFront<Record<string, unknown>>(join(resolve(studio), "opera", `${opusId}.md`)).data;
-}
-
-/** The manifest's `probationes` ids declared `kind: automated` — reused by
- *  `staleCertificateError`'s absence rule below. Same defensive-read
- *  posture as `resolveIntegration`/`sourceExcludeDirs`: an absent or
- *  unparseable manifest just means no declared automated gates. Reads the
- *  manifest off disk, same as those two — the manifest itself (unlike the
- *  opus record) isn't what diverges between the trunk and the branch here. */
-function automatedGateIds(studio: string): Set<string> {
-  try {
-    const declared = readManifest(studio).probationes ?? [];
-    return new Set(declared.filter((g) => g.kind === "automated").map((g) => g.id));
-  } catch {
-    return new Set();
-  }
 }
 
 /** D-015 B1 (round 4 correction): a rebase replays `branch`'s commits onto a
@@ -160,14 +161,37 @@ function automatedGateIds(studio: string): Set<string> {
  *  silently. `rebased` only changes the wording of the message — a mismatch
  *  refuses either way.
  *
- *  The remedy named is "check out `branch`, verify there" — not a bare
- *  `bisellium verify <opus-id>`. `verify` certifies `--commit` (default
- *  HEAD) in the repo it's pointed at; run from a trunk checkout (exactly
- *  CLAUDE.md's own documented `bisellium verify <opus> --studio studio
- *  --repo .`) that certifies the TRUNK's tree, which can never match what
- *  this function compares against. Naming that command was the round-4 B1.5
- *  finding: the error's own instruction couldn't produce the certificate it
- *  demanded. */
+ *  The remedy named is "check out `branch`, verify there, COMMIT the
+ *  result, then switch back" — not a bare `bisellium verify <opus-id>`.
+ *  `verify` certifies `--commit` (default HEAD) in the repo it's pointed at;
+ *  run from a trunk checkout (exactly CLAUDE.md's own documented `bisellium
+ *  verify <opus> --studio studio --repo .`) that certifies the TRUNK's
+ *  tree, which can never match what this function compares against — that
+ *  was the round-4 B1.5 finding. Round-6 B6.2: `verify`'s front-matter
+ *  write only ever lands on disk; since this function (via `readOpusRecord`,
+ *  B5.1) reads the opus record from `branch`'s own ref, that write is
+ *  invisible here until it's committed to `branch` — followed without that
+ *  step, `git checkout <master>` afterwards refuses ("commit your changes
+ *  or stash them") and a retry finds the identical, still-uncommitted
+ *  certificate. The message names the commit step explicitly so it doesn't
+ *  have to be rediscovered (round-6 lab9).
+ *
+ *  Round-6 B6.1 — the "absence rule" this function used to also enforce (a
+ *  `kind: automated` gate with no recorded `tree:` certificate at all
+ *  refuses, treating absence as distinct from "nothing to check") is
+ *  removed. It duplicated a guarantee `bisellium done` already gives:
+ *  lifecycle.ts's own gate requires `status: "passed"` AND a `tree:`
+ *  certificate for every `kind: automated` probatio before state can
+ *  honestly become `done` at all — so an opus that reached `done` through
+ *  that command, on `branch`, cannot have an uncertified automated gate.
+ *  The rule's only failure mode this round was on a *waived* automated
+ *  gate — the remedy it named ("run verify") can never clear one, since
+ *  `verify` explicitly never touches a waived gate — and its own scope was
+ *  unpinned (A6.3: dropping the `kind === "automated"` filter caused no
+ *  additional test failure). Removing it, rather than teaching it to
+ *  exempt `waived`, is the smaller surface: it adds no coverage the `done`
+ *  gate doesn't already provide, and it can no longer trap a legitimately
+ *  waived agent/human gate or loop forever on one. */
 function staleCertificateError(
   repo: string,
   studio: string,
@@ -179,11 +203,10 @@ function staleCertificateError(
 ): string | undefined {
   const gatesRaw = opusData["probationes"];
   const gates: Record<string, unknown> = gatesRaw !== null && typeof gatesRaw === "object" ? (gatesRaw as Record<string, unknown>) : {};
-  const automated = automatedGateIds(studio);
-  // Nothing recorded and nothing declared — genuinely nothing to check,
-  // same as the old early return. Kept as its own branch so the common
-  // case (most tests, no manifest at all) never pays for a tree hash.
-  if (Object.keys(gates).length === 0 && automated.size === 0) return undefined;
+  // Nothing recorded — genuinely nothing to check, same as the old early
+  // return. Kept as its own branch so the common case (most tests, no
+  // certifies at all) never pays for a tree hash.
+  if (Object.keys(gates).length === 0) return undefined;
 
   let newHash: string;
   try {
@@ -204,22 +227,10 @@ function staleCertificateError(
       // retrying — staying on `branch` for the retry is what used to walk
       // straight into `git branch -D branch` refusing because it's the
       // current HEAD, on an otherwise-correct merge.
-      return `${cause} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches ${treeWord} (${newHash}); check out ${branch} and re-run "bisellium verify ${opusId}" there, then switch back to ${master} and retry the merge`;
+      return `${cause} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches ${treeWord} (${newHash}); check out ${branch}, re-run "bisellium verify ${opusId}" there, commit the result on ${branch}, then switch back to ${master} and retry the merge`;
     }
   }
 
-  // B5.1 absence rule (defense in depth, round 5): a gate the manifest
-  // declares `kind: automated` with no recorded `tree:` certificate at all
-  // reads, on a bare lookup, exactly like "nothing to check" — indistinguishable
-  // from a gate nobody's declared. That is precisely what let B5.1(a) land
-  // uncertified work: absence was treated as a pass. Refuse instead.
-  for (const gid of automated) {
-    const gv = gates[gid];
-    const certifies = gv !== null && typeof gv === "object" ? (gv as Record<string, unknown>)["certifies"] : undefined;
-    if (typeof certifies !== "string" || !certifies.startsWith("tree:")) {
-      return `opus ${opusId}'s gate "${gid}" is declared "kind: automated" but ${branch} has no recorded tree: certificate for it; run "bisellium verify ${opusId}" on ${branch} before merging`;
-    }
-  }
   return undefined;
 }
 
@@ -357,7 +368,13 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
   } catch {
     return { ok: false, error: `opus ${opusId} unreadable on ${branch} (checked ${opusPath} as a fallback)` };
   }
-  if (state !== "done") return { ok: false, error: `opus ${opusId} is not done (state: ${state ?? "?"})` };
+  // B6.3: name `branch` here — `state` was just read from that ref, not
+  // from whatever `--studio` shows on disk, and those two can legitimately
+  // disagree (e.g. `bisellium done` was run on the trunk instead of on
+  // `branch`, per readOpusRecord's own comment above). Silently reporting
+  // just "state: building" leaves an operator staring at a disk copy that
+  // says "done" with no idea which copy the tool means.
+  if (state !== "done") return { ok: false, error: `opus ${opusId} is not done on ${branch} (state: ${state ?? "?"}); run "bisellium done ${opusId}" on ${branch} and commit it there` };
 
   const trunk = resolveTrunk(cwd);
   if ("error" in trunk) return { ok: false, error: trunk.error };

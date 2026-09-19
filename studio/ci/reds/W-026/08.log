@@ -1,8 +1,14 @@
 # behaviour: 8
 # command: node --import tsx packages/cli/src/branch.test.ts . 8
 # exit: 1
-# at: 2026-09-19T17:14:25.744Z
+# at: 2026-09-19T17:49:49.006Z
 # sella: builder-a
-# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+# tree: dirty:70e311c08e00e0237dd857238db33ff714e15463
 
-FAIL  refuses missing branch                                       undefined
+FAIL  mutation-record: refuses missing branch                      undefined
+fatal: ambiguous argument 'master': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+fatal: ambiguous argument 'master': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'

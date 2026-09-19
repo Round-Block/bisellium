@@ -1,11 +1,10 @@
 # behaviour: 28
 # command: node --import tsx packages/cli/src/branch.test.ts . 28
 # exit: 1
-# at: 2026-09-19T17:05:51.304Z
+# at: 2026-09-19T17:48:19.980Z
 # sella: builder-a
-# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+# tree: dirty:70e311c08e00e0237dd857238db33ff714e15463
 
-FAIL  absence rule: an automated gate with no recorded tree: certificate refuses, not passes undefined
-FAIL  master untouched                                             c5b971c feat: add feature, never verified
-52c6a71 studio bookkeeping: open W-101
-0c06b59 init
+FAIL  absence rule removed: an automated gate with no recorded tree: certificate does not by itself refuse the merge opus W-101's gate "tests" is declared "kind: automated" but opus/W-101 has no recorded tree: certificate for it; run "bisellium verify W-101" on opus/W-101 before merging
+FAIL  feature commit lands on master                               bd03ab5 studio bookkeeping: open W-101
+fba4592 init

@@ -1,0 +1,17 @@
+# behaviour: 30
+# command: node --import tsx packages/cli/src/branch.test.ts . 30
+# exit: 1
+# at: 2026-09-19T17:48:24.017Z
+# sella: builder-a
+# tree: dirty:70e311c08e00e0237dd857238db33ff714e15463
+
+PASS  first attempt refuses on the stale certificate               opus/W-104's tree no longer matches its certificate — opus W-104's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches its current tree (tree:c3704c031309328bc36c0b44153a93b0773fdf48); check out opus/W-104 and re-run "bisellium verify W-104" there, then switch back to master and retry the merge
+FAIL  the remedy names the missing commit step                     opus/W-104's tree no longer matches its certificate — opus W-104's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches its current tree (tree:c3704c031309328bc36c0b44153a93b0773fdf48); check out opus/W-104 and re-run "bisellium verify W-104" there, then switch back to master and retry the merge
+PASS  the remedy, followed literally with the commit step, lands the merge undefined
+PASS  both commits reach master                                    11ead01 bookkeeping: verify on the branch, again
+a303b25 feat: more work, uncertified
+f4ca0ab bookkeeping: verify on the branch
+0d18cd8 feat: add feature
+6b009f1 studio bookkeeping: open W-104
+c8bda59 init
+PASS  the branch is cleaned up                                     master

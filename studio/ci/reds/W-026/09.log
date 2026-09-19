@@ -1,9 +1,15 @@
 # behaviour: 9
 # command: node --import tsx packages/cli/src/branch.test.ts . 9
 # exit: 1
-# at: 2026-09-19T17:14:51.757Z
+# at: 2026-09-19T17:49:50.612Z
 # sella: builder-a
-# tree: dirty:7496efcc17f5bbecbf46e06e9c5e5f33a4a41977
+# tree: dirty:70e311c08e00e0237dd857238db33ff714e15463
 
-FAIL  refuses a clean-but-diverged merge (ff-only)                 undefined
-FAIL  names divergence, not a conflict                             undefined
+FAIL  mutation-record: refuses a clean-but-diverged merge (ff-only) undefined
+FAIL  mutation-record: names divergence, not a conflict            undefined
+fatal: ambiguous argument 'master': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+fatal: ambiguous argument 'master': unknown revision or path not in the working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
