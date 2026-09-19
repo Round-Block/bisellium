@@ -1,0 +1,14 @@
+# behaviour: 7
+# command: node --import tsx test/inboxLogic.test.ts 7
+# exit: 1
+# at: 2026-09-19T04:53:41.139Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  resolveVerbAction: '1' on the expanded item resolves to approve 
+FAIL  resolveVerbAction: '2' resolves to defer                     
+FAIL  resolveVerbAction: '3' resolves to decline                   
+PASS  resolveVerbAction: ignored when the item isn't expanded      
+PASS  resolveVerbAction: ignored without a reason (behaviour 8)    
+PASS  resolveVerbAction: ignored for a key with no verb            
+FAIL  buildReply: verb prefix plus trimmed reason                  

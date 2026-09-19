@@ -1,0 +1,23 @@
+# behaviour: 1
+# command: node --import tsx test/tokens.test.ts
+# exit: 1
+# at: 2026-09-19T04:53:09.701Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  tokens.css --ink is #16211E                                  
+FAIL  tokens.css --ink-2 is #4A5654                                
+FAIL  tokens.css --ink-3 is #788582                                
+FAIL  tokens.css --rule is #DDE3E1                                 
+FAIL  tokens.css --wash is #F4F7F6                                 
+FAIL  tokens.css --verdigris is #0B6E5F                            
+FAIL  tokens.css --amber is #B7791F                                
+FAIL  tokens.css --ok is #2E9E64                                   
+FAIL  tokens.css --bad is #C64A3A                                  
+FAIL  tokens.css --sp-1 is 4px                                     
+FAIL  tokens.css --sp-2 is 8px                                     
+FAIL  tokens.css --sp-3 is 12px                                    
+FAIL  tokens.css --sp-4 is 16px                                    
+FAIL  tokens.css --sp-6 is 24px                                    
+FAIL  tokens.css --sp-8 is 32px                                    
+FAIL  tokens.css --sp-12 is 48px                                   

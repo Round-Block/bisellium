@@ -1,0 +1,33 @@
+/* apps/web/src/tokens.css — W-024. DIRECTION.md §3: the nine colour values
+ * and seven space values are mandatory and exact. Type scale is declared
+ * directly on elements (DIRECTION.md leaves that choice to the builder). */
+:root {
+  --ink: #16211e;
+  --ink-2: #4a5654;
+  --ink-3: #788582;
+  --rule: #dde3e1;
+  --wash: #f4f7f6;
+  --verdigris: #0b6e5f;
+  --amber: #b7791f;
+  --ok: #2e9e64;
+  --bad: #c64a3a;
+
+  --font-display: "Bricolage Grotesque", sans-serif;
+  --font-body: "Instrument Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-body);
+}

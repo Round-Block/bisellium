@@ -1,0 +1,11 @@
+# behaviour: 8
+# command: node --import tsx test/inboxview.test.ts 8
+# exit: 1
+# at: 2026-09-19T04:53:44.726Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+PASS  collapsed row has no verb buttons                            <div>not implemented</div>
+FAIL  expanded with no reason: all four verb buttons disabled      <div>not implemented</div>
+PASS  expanded with a reason: no verb button is disabled           <div>not implemented</div>
+FAIL  all four verbs are offered                                   <div>not implemented</div>

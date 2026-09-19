@@ -1,0 +1,10 @@
+# behaviour: 2
+# command: node --import tsx test/api.test.ts 2
+# exit: 1
+# at: 2026-09-19T04:53:23.775Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  fetchInbox sends GET to /api/inbox                           
+FAIL  fetchInbox returns the parsed JSON response                  {"opera":[],"petitiones":[]}
+FAIL  fetchInbox rejects with the response status on non-200       undefined

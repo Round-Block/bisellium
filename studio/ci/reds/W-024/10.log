@@ -1,0 +1,11 @@
+# behaviour: 10
+# command: node --import tsx test/colophon.test.ts
+# exit: 1
+# at: 2026-09-19T04:53:51.819Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  colophon renders a footer                                    
+FAIL  colophon renders a 1px hairline                              <div>not implemented</div>
+FAIL  colophon line is mono 11px ink-3                             <div>not implemented</div>
+FAIL  colophon joins officina path and generated-at with ' · '     <div>not implemented</div>

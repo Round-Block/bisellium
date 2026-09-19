@@ -1,0 +1,12 @@
+# behaviour: 3
+# command: node --import tsx test/api.test.ts 3
+# exit: 1
+# at: 2026-09-19T04:53:27.343Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  submitAnswer sends POST to /api/answer                       
+FAIL  submitAnswer sends JSON body { petitio, reply }              undefined
+FAIL  submitAnswer sets Content-Type: application/json             
+FAIL  submitAnswer sets X-Bisellium-Token                          
+FAIL  submitAnswer returns the parsed response                     {"ok":true,"exitCode":0,"output":""}

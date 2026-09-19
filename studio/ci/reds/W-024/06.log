@@ -1,0 +1,10 @@
+# behaviour: 6
+# command: node --import tsx test/inboxLogic.test.ts 6
+# exit: 1
+# at: 2026-09-19T04:53:38.038Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  nextExpanded: Enter expands the focused item                 
+FAIL  nextExpanded: Esc collapses back to a row                    
+PASS  nextExpanded: an unrelated key leaves state unchanged        

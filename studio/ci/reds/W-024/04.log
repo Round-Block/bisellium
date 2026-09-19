@@ -1,0 +1,13 @@
+# behaviour: 4
+# command: node --import tsx test/inboxview.test.ts 4
+# exit: 1
+# at: 2026-09-19T04:53:30.747Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  petitio row is 40px                                          <div>not implemented</div>
+FAIL  petitio row has a 2px amber left rule                        <div>not implemented</div>
+FAIL  subject renders at 13/18                                     <div>not implemented</div>
+FAIL  sella id renders in mono 12                                  <div>not implemented</div>
+FAIL  subject text is present                                      <div>not implemented</div>
+FAIL  sella id text is present                                     <div>not implemented</div>

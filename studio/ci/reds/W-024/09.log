@@ -1,0 +1,10 @@
+# behaviour: 9
+# command: node --import tsx test/inboxview.test.ts 9
+# exit: 1
+# at: 2026-09-19T04:53:48.304Z
+# sella: builder-a
+# tree: dirty:40eaab9df628e6ea1d42c7f540b6070fc9210a18
+
+FAIL  empty state shows 'Nothing waiting on you'                   <div>not implemented</div>
+FAIL  empty state renders the colophon                             <div>not implemented</div>
+PASS  empty state renders nothing else                             <div>not implemented</div>
