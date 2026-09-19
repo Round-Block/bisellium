@@ -92,9 +92,8 @@ lex, a decision, or a check rule and delete it here.
 - **Cascade 9** (3 commits): W-026 complete — per-opus branching,
   `bisellium branch`/`merge`, `run --opus`.
 - **Cascade 10 landed**:
-  - W-028 first deliverable: `process.checkpoint` check rule — fires when
-    an opera file changes without a handoff/dossier update in the same commit.
-    `checkpointStale` pure function + 6 new behaviours.
+  - W-028: `process.checkpoint` check rule, `bisellium close` command
+    (validates opus state, guards the checkpoint flow), CLI wired.
 - **Backlog (priority order)**:
   1. **W-028** (building) — patron-as-agent: `bisellium close` command,
      fully autonomous patron sella. checkpoint rule landed.
