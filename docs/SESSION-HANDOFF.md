@@ -83,51 +83,21 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-19, after cascade 5)
+## Where things stand (2026-09-19, after cascade 7)
 
-- Cascades 1–5 are in the dossier progress log. Suite green (731 tests, lint
-  and format:check now real); both officinae 0 blocking. W-016 and W-019 are
-  `done` with the studio's first `tree:` certificates; retro 5 filed
-  (acta/2026-09-19-retro-5.md, L-015–L-017).
-- P-001/P-002/P-003 all decreed 2026-09-19: builder-isolation clause in the
-  engineering lex; opus.untracked blocks; red store at `studio/ci/reds/` via a
-  new `bisellium red` command with `opus.red_evidence` blocking after it lands;
-  D-008 promotes to blocking (probation served by cascade 5); licence
-  Apache-2.0 (LICENSE at root). Implementation = W-020 + W-021, backlog,
-  awaiting decretum.
-- Closed in cascade 6 (W-020): `bisellium ready`, `done`, `review` and `red`
-  write the lifecycle transitions, the review verdict (pass *and* fail) and the
-  per-behaviour red store; the `scripts/opus-ready.ts` / `scripts/opus-close.ts`
-  stopgaps are deleted.
-- Known gaps worth a cascade slot: `bisellium instructions --write` strips the
-  docs-registry front matter W-019 put on `GLOSSARY.md` (generator vs registry
-  seam); `retro`'s previous-retro matcher misses `-retro-4b.md` suffixes.
-- W-017 and W-018 closed `done` in pass 5b (round-2 reviews passed on
-  tree:272d2d3b; `.claude/worktrees/` gitignored so certificates mint clean).
-  All four 4b opera are done.
-- Cascade 6 (2026-09-19) landed the P-001 decrees as machinery: `bisellium
-  ready/review/done/red`, the `ci/reds/` store, `opus.untracked` +
-  `opus.red_evidence` blocking, D-008's containment rules (advisory pending
-  P-004). Both opera closed through their own lifecycle after six honest
-  review rounds. Retro 6: L-018–L-025.
-- P-004/P-005/P-007 decreed 2026-09-19: path.escapes.officina scoped to opus
-  spec:/gate evidence: paths, then both D-008 rules re-promote to blocking;
-  opus.red_evidence gains content checks (identical bodies block, load-failure
-  bodies advise) with the assertion-level-reds lex clause; isContained hoists
-  as the only sanctioned officina-path join with its lex clause. Implementation
-  = W-022 + W-023 (backlog). retro.ts P-006 numbering fix rides W-023.
-- Inbox empty. Engineering posture CLOSEOUT for 2026-W38 (2.89M/3.0M): the
-  fasti holds until W39 (Mon 2026-09-21), then greenlight web I and W-022/W-023
-  per the Patron's timing decree — no budget write.
-- Web I builds to docs/design/DIRECTION.md (ledger identity, signature
-  elements, bans) and updates docs/ARCHITECTURE.md per the design lex.
-- D-014 (2026-09-19, amended same day): the model pair is Sonnet 5 (all
-  builders) + Opus 4.6 (architect, eng-lead integration/review; manifest,
-  .claude/agents/{architect,reviewer46}.md, sizing.json reviewer). Gen-5
-  builds, gen-4.6 reviews. Bash writes to .claude/agents/ are
-  sandbox-denied — use the Write/Edit tools there.
-- Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
-  L2, adapters + desktop. Estimates and rationale are in the dossier.
+- Cascades 1–7 in the dossier progress log. Suite green (972 tests); both
+  officinae 0 blocking, 45 advisory.
+- **Cascade 7 (web I)**: W-024 (apps/web scaffold + Inbox screen) and W-025
+  (Officina screen) both `done`. Vite + React at `apps/web/`, design tokens
+  from DIRECTION.md, Inbox (decision queue with j/k/1-2-3 keyboard), Officina
+  (fasti strip, posture/burn, lex status, process health), shared Nav and
+  Colophon. 9 agents, 747k tokens, first-round reviews passed both opera.
+  Retro 7: L-026–L-029. `bisellium serve` now serves the built web app.
+- W-022 + W-023 (evidence content rules, containment scoping) remain backlog.
+- D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
+- ARCHITECTURE.md regenerated with `apps/web` node after cascade 7.
+- Then: web II (Board screen, drawer, SSE live), web III (Swimlane, Agents,
+  Graph), autonomy L2, adapters + desktop.
 
 ## Naming
 

@@ -8,7 +8,7 @@ kill: when the console renders these graphs live from the index (web III, Graph 
 
 # Architecture
 
-Four maps of Bisellium as it stands after cascade 6: what depends on what, how
+Four maps of Bisellium as it stands after cascade 7: what depends on what, how
 an opus moves, how a cascade runs, and how a studio's files reach a screen.
 A map, not a spec — the contracts live in `docs/ADOPTION.md` and the leges.
 
@@ -32,6 +32,7 @@ flowchart TD
   schema["schema<br/>packages/schema"]
   server["server<br/>apps/server"]
   shim["shim<br/>packages/shim"]
+  web["web<br/>apps/web"]
   adapter_epoch0 --> schema
   adapter_native -. dynamic .-> providers
   adapter_native --> schema
