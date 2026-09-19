@@ -121,11 +121,11 @@ lex, a decision, or a check rule and delete it here.
   per the Patron's timing decree — no budget write.
 - Web I builds to docs/design/DIRECTION.md (ledger identity, signature
   elements, bans) and updates docs/ARCHITECTURE.md per the design lex.
-- D-014 (2026-09-19): Opus 4.6 + Sonnet 4.6 alongside the 5 family —
-  builder-c/d on claude-sonnet-4-6 (manifest), review split per cascade
-  between claude-opus-5 and claude-opus-4-6 (.claude/agents/builder46.md,
-  reviewer46.md; sizing.json reviewer.models). Bought for cross-generation
-  review diversity, not cost (Sonnet 4.6 is pricier than Sonnet 5).
+- D-014 (2026-09-19, amended same day): the model pair is Sonnet 5 (all
+  builders) + Opus 4.6 (architect, eng-lead integration/review; manifest,
+  .claude/agents/{architect,reviewer46}.md, sizing.json reviewer). Gen-5
+  builds, gen-4.6 reviews. Bash writes to .claude/agents/ are
+  sandbox-denied — use the Write/Edit tools there.
 - Then: web I (Inbox + Officina screens over `serve`), web II, web III, autonomy
   L2, adapters + desktop. Estimates and rationale are in the dossier.
 
