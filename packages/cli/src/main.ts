@@ -17,6 +17,7 @@ import { answer } from "./query.js";
 import { runProviders } from "./providers.js";
 import { runCommand } from "./run.js";
 import { runVerify } from "./verify.js";
+import { runCi } from "./ci.js";
 import { runTalk } from "./talk.js";
 import { runTick } from "./tick.js";
 import { runPause, runResume } from "./pause.js";
@@ -82,6 +83,7 @@ async function main(argv: string[]): Promise<number> {
   // sees their args.
   if (cmd === "run") return (await runCommand(rest)).exitCode;
   if (cmd === "verify") return (await runVerify(rest)).exitCode;
+  if (cmd === "ci") return (await runCi(rest)).exitCode;
   if (cmd === "talk") return (await runTalk(rest)).exitCode;
   if (cmd === "tick") return (await runTick(rest)).exitCode;
   if (cmd === "pause") return (await runPause(rest)).exitCode;

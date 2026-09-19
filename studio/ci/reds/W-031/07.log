@@ -1,0 +1,17 @@
+# behaviour: 7
+# command: node scripts/ci-workflow.test.mjs
+# exit: 1
+# at: 2026-09-19T16:23:39.377Z
+# sella: guest
+# tree: dirty:796565ee521efa14130084f8f7495cd83f4f1c64
+
+PASS  parses as YAML                                     
+PASS  has a typecheck step                               
+PASS  has a lint step                                    
+PASS  has a format:check step                            
+PASS  has a test step                                    
+PASS  has a check --repo . step naming studio            
+PASS  has a check --repo . step naming examples/sample-studio 
+PASS  the string 'verify' appears nowhere in the file    
+PASS  CI_STEPS reads from packages/commands/src/ci.ts    ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo .","npm run -s extra-step-not-in-ci-yml"]
+FAIL  bisellium ci's CI_STEPS matches this workflow's run: steps (minus npm ci) ci.ts: ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo .","npm run -s extra-step-not-in-ci-yml"]  vs  workflow: ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]

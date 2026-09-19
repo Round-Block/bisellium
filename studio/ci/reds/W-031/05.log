@@ -1,0 +1,60 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/ci.test.ts 5
+# exit: 1
+# at: 2026-09-19T16:21:54.675Z
+# sella: guest
+# tree: dirty:796565ee521efa14130084f8f7495cd83f4f1c64
+
+
+> test
+> node ci-marker.mjs test
+
+
+> test
+> node ci-marker.mjs test
+
+bisellium ci: step failed (exit 1): npm run -s typecheck
+
+added 1 package in 159ms
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+bisellium ci: step failed (exit 1): npm test
+
+> test
+> node -e "process.exit(0)"
+
+/home/edckt/projects/bisellium/.claude/worktrees/agent-aacfe247e5ffcaccc/bisellium.yml not found — not a studio
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+FAIL  --opus records certificates identical to verify's for the same tree    A:
+---
+id: "W-001"
+title: "ci opus"
+kind: "task"
+collegium: "production"
+state: backlog
+probationes: {}
+---
+
+---
+B:
+---
+id: "W-001"
+title: "ci opus"
+kind: "task"
+collegium: "production"
+state: backlog
+probationes: { tests: { status: passed, evidence: ci/W-001-tests-670c0394.log, certifies: tree:670c03940ea6ab7c23702387cf3f6249288de617 }, lint: { status: passed, evidence: ci/W-001-lint-670c0394.log, certifies: tree:670c03940ea6ab7c23702387cf3f6249288de617 }, types: { status: passed, evidence: ci/W-001-types-670c0394.log, certifies: tree:670c03940ea6ab7c23702387cf3f6249288de617 } }
+---
+
+
+> test
+> node -e "process.exit(0)"
+
