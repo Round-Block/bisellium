@@ -96,19 +96,18 @@ lex, a decision, or a check rule and delete it here.
 - **Cascade 12**: W-023 containment scoping (P-004 resolved).
 - **Cascade 13**: W-027 prune command.
 - **Cascade 14**: W-028 close automation.
-- **Cascade 15 landed**:
-  - `process.cascade` check rule: flags an opus where the same sella
-    recorded both spec and review gates. Builder (Sonnet) implemented,
-    4 behaviours. CLAUDE.md standing rules updated: process enforcement
-    is a check rule, never a memory; dispatch through the cascade model.
+- **Cascade 15**: process.cascade rule + hook enforcement.
+- **Cascade 16 landed**:
+  - W-029: Playwright smoke suite (Sonnet builder, 118k tokens). 5
+    behaviours, 4 pass, 1 honest red: FastiStrip dropped from Officina
+    during W-026 visual pass (real regression, not a test bug).
+- **Regression**: `apps/web/src/screens/Officina.tsx` no longer imports or
+  renders `FastiStrip` — dropped in commit 6e84979 (W-026 visual pass).
+  Component and CSS still exist. Needs a follow-up opus or inline fix.
 - **Backlog (priority order)**:
-  1. Playwright / UI integration testing (not yet scoped)
+  1. FastiStrip regression fix in Officina.tsx
   2. Web II (Board screen, drawer, SSE live)
 - D-014 model pair: Sonnet 5 builders, Opus 4.6 reviews (unchanged).
-- Then: web II (Board screen, drawer, SSE live), web III (Swimlane, Agents,
-  Graph), autonomy L2, adapters + desktop.
-- **Process note**: Playwright / UI integration testing identified as a gap —
-  static rendering tests cover structure but not interaction.
 
 ## Naming
 

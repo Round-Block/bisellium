@@ -1,0 +1,70 @@
+# behaviour: 5
+# command: npx playwright test -g route hash changes reflect in displayed screen
+# exit: 1
+# at: 2026-09-19T12:47:49.003Z
+# sella: builder-a
+# tree: dirty:5f50f2c7cb8822fc688d6ab41e6f66d30b24d2e5
+
+
+Running 1 test using 1 worker
+
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/officina
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/aerarium
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/health
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/officina
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/aerarium
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:50 PM [vite] http proxy error: /api/health
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+  ✘  1 [chromium] › tests/smoke.spec.ts:55:1 › route hash changes reflect in displayed screen (5.2s)
+
+
+  1) [chromium] › tests/smoke.spec.ts:55:1 › route hash changes reflect in displayed screen ────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Officina-RED' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Officina-RED' }) with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Officina-RED' })
+
+
+      60 |     window.location.hash = "#/officina";
+      61 |   });
+    > 62 |   await expect(page.getByRole("heading", { name: "Officina-RED" })).toBeVisible();
+         |                                                                     ^
+      63 |
+      64 |   await page.evaluate(() => {
+      65 |     window.location.hash = "#/inbox";
+        at /home/edckt/projects/bisellium/apps/web/tests/smoke.spec.ts:62:69
+
+    Error Context: test-results/smoke-route-hash-changes-reflect-in-displayed-screen-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/smoke.spec.ts:55:1 › route hash changes reflect in displayed screen ─────────

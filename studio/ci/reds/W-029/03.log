@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: npx playwright test -g keyboard navigation \(j/k\) moves focus on inbox items
+# exit: 1
+# at: 2026-09-19T12:47:31.868Z
+# sella: builder-a
+# tree: dirty:5f50f2c7cb8822fc688d6ab41e6f66d30b24d2e5
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests/smoke.spec.ts:32:1 › keyboard navigation (j/k) moves focus on inbox items (5.2s)
+
+
+  1) [chromium] › tests/smoke.spec.ts:32:1 › keyboard navigation (j/k) moves focus on inbox items ──
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('.inbox__row').first()
+    Expected: "true"
+    Received: "false"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('.inbox__row').first() with timeout 5000ms
+      - waiting for locator('.inbox__row').first()
+        14 × locator resolved to <div data-focused="false" class="inbox__row inbox__row--attention">…</div>
+           - unexpected value "false"
+
+
+      37 |
+      38 |   await page.keyboard.press("j");
+    > 39 |   await expect(rows.nth(0)).toHaveAttribute("data-focused", "true");
+         |                             ^
+      40 |   await expect(rows.nth(1)).toHaveAttribute("data-focused", "true");
+      41 |
+      42 |   await page.keyboard.press("k");
+        at /home/edckt/projects/bisellium/apps/web/tests/smoke.spec.ts:39:29
+
+    Error Context: test-results/smoke-keyboard-navigation-j-k-moves-focus-on-inbox-items-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/smoke.spec.ts:32:1 › keyboard navigation (j/k) moves focus on inbox items ───

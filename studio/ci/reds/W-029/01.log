@@ -1,0 +1,52 @@
+# behaviour: 1
+# command: npx playwright test -g inbox screen loads and shows heading
+# exit: 1
+# at: 2026-09-19T12:46:57.669Z
+# sella: builder-a
+# tree: dirty:5f50f2c7cb8822fc688d6ab41e6f66d30b24d2e5
+
+
+Running 1 test using 1 worker
+
+[WebServer] 8:47:00 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:00 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:00 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:00 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+  ✘  1 [chromium] › tests/smoke.spec.ts:14:1 › inbox screen loads and shows heading (5.3s)
+
+
+  1) [chromium] › tests/smoke.spec.ts:14:1 › inbox screen loads and shows heading ──────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Ibnox-RED' })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Ibnox-RED' }) with timeout 5000ms
+      - waiting for getByRole('heading', { name: 'Ibnox-RED' })
+
+
+      14 | test("inbox screen loads and shows heading", async ({ page }) => {
+      15 |   await page.goto("/");
+    > 16 |   await expect(page.getByRole("heading", { name: "Ibnox-RED" })).toBeVisible();
+         |                                                                  ^
+      17 | });
+      18 |
+      19 | // behaviour 2: nav links switch between Inbox and Officina screens.
+        at /home/edckt/projects/bisellium/apps/web/tests/smoke.spec.ts:16:66
+
+    Error Context: test-results/smoke-inbox-screen-loads-and-shows-heading-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/smoke.spec.ts:14:1 › inbox screen loads and shows heading ───────────────────

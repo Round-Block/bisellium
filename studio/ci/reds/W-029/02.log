@@ -1,0 +1,70 @@
+# behaviour: 2
+# command: npx playwright test -g nav links switch between Inbox and Officina
+# exit: 1
+# at: 2026-09-19T12:47:15.413Z
+# sella: builder-a
+# tree: dirty:5f50f2c7cb8822fc688d6ab41e6f66d30b24d2e5
+
+
+Running 1 test using 1 worker
+
+[WebServer] 8:47:16 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:16 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:16 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:16 PM [vite] http proxy error: /api/inbox
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:17 PM [vite] http proxy error: /api/officina
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:17 PM [vite] http proxy error: /api/aerarium
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:17 PM [vite] http proxy error: /api/health
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:17 PM [vite] http proxy error: /api/officina
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:17 PM [vite] http proxy error: /api/aerarium
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+[WebServer] 8:47:17 PM [vite] http proxy error: /api/health
+[WebServer] Error: connect ECONNREFUSED 127.0.0.1:4477
+[WebServer]     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1705:16)
+  ✘  1 [chromium] › tests/smoke.spec.ts:20:1 › nav links switch between Inbox and Officina (5.2s)
+
+
+  1) [chromium] › tests/smoke.spec.ts:20:1 › nav links switch between Inbox and Officina ───────────
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /#\/officina-RED$/
+    Received string:  "http://localhost:5199/#/officina"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        14 × locator resolved to <html lang="en">…</html>
+           - unexpected value "http://localhost:5199/#/officina"
+
+
+      22 |   await page.getByRole("link", { name: "Officina" }).click();
+      23 |   await expect(page.getByRole("heading", { name: "Officina" })).toBeVisible();
+    > 24 |   await expect(page).toHaveURL(/#\/officina-RED$/);
+         |                      ^
+      25 |
+      26 |   await page.getByRole("link", { name: "Inbox" }).click();
+      27 |   await expect(page.getByRole("heading", { name: "Inbox" })).toBeVisible();
+        at /home/edckt/projects/bisellium/apps/web/tests/smoke.spec.ts:24:22
+
+    Error Context: test-results/smoke-nav-links-switch-between-Inbox-and-Officina-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/smoke.spec.ts:20:1 › nav links switch between Inbox and Officina ────────────

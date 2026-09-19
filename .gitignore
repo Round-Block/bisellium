@@ -3,6 +3,11 @@ dist/
 *.tsbuildinfo
 .env
 .bisellium/
+# Playwright's own run artifacts (W-029) — regenerated on every
+# `npm run test:e2e`, not something to commit.
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/
 # Receipts are local liveness evidence (bisellium run), not something to
 # commit — unlike ci/*.log, which opera link to as evidence and stay tracked.
 studio/receipts/
