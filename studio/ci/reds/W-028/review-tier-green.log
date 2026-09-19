@@ -1,0 +1,22 @@
+PASS  source-only commit is a violation                            true
+PASS  source + test commit is not a violation                      false
+PASS  test-only commit is not a violation                          false
+PASS  docs/config-only commit is not a violation                   false
+PASS  inline .test.ts counts as test coverage                      false
+PASS  empty commit is not a violation                              false
+PASS  css-only commit is not a violation                           false
+PASS  opera changed without handoff is stale                       true
+PASS  opera + handoff is not stale                                 false
+PASS  handoff-only is not stale                                    false
+PASS  docs-only is not stale                                       false
+PASS  empty is not stale                                           false
+PASS  opera + progress page is not stale                           false
+PASS  same sella on spec and review fires                          true
+PASS  different sellae does not fire                               false
+PASS  only one gate recorded does not fire                         false
+PASS  no probationes does not fire                                 false
+PASS  opus-tier review sella is silent                             undefined
+PASS  sonnet-tier review sella advises                             review sella "qa-lead" runs on claude-sonnet-5, not an opus-tier model
+PASS  no review gate is silent                                     undefined
+PASS  review sella absent from manifest is silent                  undefined
+exit=0

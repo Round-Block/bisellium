@@ -1,0 +1,11 @@
+/home/edckt/projects/bisellium/packages/cli/src/rules/process.test.ts:7
+import { tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
+                                                                   ^
+SyntaxError: The requested module './process.js' does not provide an export named 'reviewTierAdvisory'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0
+exit=1

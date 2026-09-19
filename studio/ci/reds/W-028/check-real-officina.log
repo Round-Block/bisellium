@@ -1,0 +1,94 @@
+check /home/edckt/projects/bisellium/studio  (now 2026-09-19T14:08:54.662Z)
+
+BLOCKING (12)
+  traditio.present           opera/W-022.md                 active item (building) has no handoff
+  traditio.present           opera/W-023.md                 active item (building) has no handoff
+  traditio.present           opera/W-026.md                 active item (building) has no handoff
+  traditio.present           opera/W-027.md                 active item (building) has no handoff
+  traditio.present           opera/W-028.md                 active item (building) has no handoff
+  traditio.present           opera/W-029.md                 active item (building) has no handoff
+  wip.cap                    opera/                         6 items in progress, WIP cap is 4
+  opus.red_evidence          opera/W-022.md                 missing red log(s) for behaviour(s) 1, 2, 3, 4, 5, 6
+  opus.red_evidence          opera/W-023.md                 missing red log(s) for behaviour(s) 1, 2, 3, 4
+  opus.red_evidence          opera/W-026.md                 missing red log(s) for behaviour(s) 1, 2, 3, 4, 5, 6, 7
+  opus.red_evidence          opera/W-027.md                 missing red log(s) for behaviour(s) 1, 2, 3, 4, 5
+  opus.red_evidence          opera/W-028.md                 missing red log(s) for behaviour(s) 1, 2, 3, 4, 5
+
+advisories (74)
+  probatio.certifies         opera/W-016.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-016.md                 gate "spec" evidence has no identity (certifies)
+  traditio.stage             opera/W-016.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-017.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-017.md                 gate "spec" evidence has no identity (certifies)
+  traditio.stage             opera/W-017.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-018.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-018.md                 gate "spec" evidence has no identity (certifies)
+  traditio.stage             opera/W-018.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-019.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-019.md                 gate "spec" evidence has no identity (certifies)
+  traditio.stage             opera/W-019.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-020.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-020.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-020.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-021.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-021.md                 gate "review" evidence has no identity (certifies)
+  traditio.stage             opera/W-021.md                 handoff stage "building" ≠ state "done"
+  probatio.certifies         opera/W-022.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-022.md                 gate "tests" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-022.md                 gate "lint" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-022.md                 gate "types" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies         opera/W-022.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-023.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-023.md                 gate "tests" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-023.md                 gate "lint" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-023.md                 gate "types" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies         opera/W-023.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-024.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-024.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-025.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies         opera/W-025.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-026.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-026.md                 gate "tests" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-026.md                 gate "lint" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-026.md                 gate "types" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies         opera/W-026.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-027.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-027.md                 gate "tests" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-027.md                 gate "lint" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-027.md                 gate "types" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies         opera/W-027.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-028.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-028.md                 gate "tests" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-028.md                 gate "lint" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-028.md                 gate "types" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies         opera/W-028.md                 gate "review" evidence has no identity (certifies)
+  probatio.certifies         opera/W-029.md                 gate "spec" evidence has no identity (certifies)
+  probatio.certifies.stale   opera/W-029.md                 gate "tests" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-029.md                 gate "lint" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies.stale   opera/W-029.md                 gate "types" certifies tree:5ab03a0b415660335a02ec1a46197dfec027ee09, current tree is tree:e4068955f877dcc93a11c21aba8b969e8caee758
+  probatio.certifies         opera/W-029.md                 gate "review" evidence has no identity (certifies)
+  acta.daily                 acta/#production               magister "producer" last daily 2.0 days ago
+  acta.daily                 acta/#design                   magister "architect" has no daily acta
+  acta.daily                 acta/#qa                       magister "qa-lead" last daily 2.0 days ago
+  hook.dead                  receipts/producer              sella "producer" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/architect             sella "architect" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/builder-a             sella "builder-a" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/builder-b             sella "builder-b" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/builder-c             sella "builder-c" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/builder-d             sella "builder-d" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/qa-lead               sella "qa-lead" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  hook.dead                  receipts/guest                 sella "guest" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired
+  aerarium.missing           aerarium/2026-W38.yml          collegium "design" has no allowance this period
+  lesson.recurrent           lessons/                       class "review×evidence-backfilled-or-absent" recurs across 4 cascades (L-001, L-008, L-017, L-021)
+  lesson.recurrent           lessons/                       class "review×mechanical-work-by-hand" recurs across 2 cascades (L-002, L-009)
+  lesson.recurrent           lessons/                       class "review×no-builder-isolation" recurs across 2 cascades (L-003, L-010)
+  lesson.recurrent           lessons/                       class "review×path-traversal-from-ids" recurs across 3 cascades (L-004, L-011, L-022)
+  lesson.recurrent           lessons/                       class "review×unredacted-writes-to-tracked-files" recurs across 3 cascades (L-005, L-012, L-013)
+  lesson.recurrent           lessons/                       class "tests×tests-that-agree-with-the-bug" recurs across 2 cascades (L-007, L-014)
+  lex.unchecked              leges/design.md                7 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/engineering.md           14 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/production.md            7 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/qa.md                    10 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+
+FAIL — 12 blocking, 74 advisory
+exit=1

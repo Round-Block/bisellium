@@ -4,7 +4,7 @@
  * advisory. Pure function test — no git, no temp dirs.
  */
 
-import { tddViolation, checkpointStale, sameSellaBuiltAndReviewed } from "./process.js";
+import { tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
 
 let failed = 0;
 const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
@@ -111,6 +111,39 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
 // behaviour 17: no probationes does not fire
 {
   check(17, "no probationes does not fire", sameSellaBuiltAndReviewed(undefined) === false, String(sameSellaBuiltAndReviewed(undefined)));
+}
+
+// behaviour 18: review sella on an opus-tier model is silent
+{
+  const probationes = { review: { sella: "eng-lead", status: "passed" } };
+  const sellaModel = new Map([["eng-lead", "claude-opus-5"]]);
+  const result = reviewTierAdvisory(probationes, sellaModel);
+  check(18, "opus-tier review sella is silent", result === undefined, String(result));
+}
+
+// behaviour 19: review sella on a non-opus-tier model advises
+{
+  const probationes = { review: { sella: "qa-lead", status: "passed" } };
+  const sellaModel = new Map([["qa-lead", "claude-sonnet-5"]]);
+  const result = reviewTierAdvisory(probationes, sellaModel);
+  check(19, "sonnet-tier review sella advises", result === 'review sella "qa-lead" runs on claude-sonnet-5, not an opus-tier model', String(result));
+}
+
+// behaviour 20: no review gate at all is silent
+{
+  const probationes = { spec: { sella: "guest", status: "passed" } };
+  const sellaModel = new Map([["guest", "claude-sonnet-5"]]);
+  const result = reviewTierAdvisory(probationes, sellaModel);
+  check(20, "no review gate is silent", result === undefined, String(result));
+}
+
+// behaviour 21: review sella missing from the manifest is silent — can't
+// verify, don't guess.
+{
+  const probationes = { review: { sella: "ghost", status: "passed" } };
+  const sellaModel = new Map([["qa-lead", "claude-sonnet-5"]]);
+  const result = reviewTierAdvisory(probationes, sellaModel);
+  check(21, "review sella absent from manifest is silent", result === undefined, String(result));
 }
 
 process.exit(failed ? 1 : 0);

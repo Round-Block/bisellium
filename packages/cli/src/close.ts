@@ -9,7 +9,9 @@ interface CloseResult {
   error?: string;
 }
 
-const CLOSEABLE = new Set(["building", "reviewing", "greenlit"]);
+// Matches DONE_FROM_STATES in packages/commands/src/lifecycle.ts — runDone
+// rejects anything else one step later, so closeChecks must agree exactly.
+const CLOSEABLE = new Set(["building", "verifying", "review"]);
 
 export function closeChecks(studio: string, opusId: string): CloseResult {
   const opusPath = join(resolve(studio), "opera", `${opusId}.md`);
@@ -26,7 +28,7 @@ export function closeChecks(studio: string, opusId: string): CloseResult {
   const state = typeof data["state"] === "string" ? data["state"] : undefined;
   if (!state) return { ok: false, error: `opus ${opusId} has no state` };
   if (state === "done") return { ok: false, error: `opus ${opusId} is already done` };
-  if (!CLOSEABLE.has(state)) return { ok: false, error: `opus ${opusId} is in state "${state}" — must be building, reviewing, or greenlit` };
+  if (!CLOSEABLE.has(state)) return { ok: false, error: `opus ${opusId} is in state "${state}" — must be building, verifying, or review` };
 
   return { ok: true };
 }
@@ -72,7 +74,10 @@ export function runClose(args: string[]): { exitCode: number } {
   const result = executeClose(studio, opusId);
   if (!result.ok) { console.error(result.error); return { exitCode: 1 }; }
 
-  rebuildDossier(repo);
+  if (!rebuildDossier(repo)) {
+    console.error(`${opusId} closed, but dossier rebuild failed — run docs/design/dossier/build.sh manually`);
+    return { exitCode: 1 };
+  }
   console.log(`${opusId} closed — dossier rebuilt`);
   return { exitCode: 0 };
 }

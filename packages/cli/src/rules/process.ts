@@ -9,8 +9,9 @@
  * `root` is always the OFFICINA, never the repo root.
  */
 import { execSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { parse as parseYaml } from "yaml";
 import { listMd, readFront } from "@bisellium/adapter-native";
 import type { Finding, Level, RuleOpts } from "../check.js";
 
@@ -64,11 +65,45 @@ function gateSella(probationes: unknown, gate: string): string | undefined {
 /** process.cascade (advise): the same sella recorded for both the "spec"
  *  (builder's job) and "review" (censor's job) gates on one opus — one
  *  context built and reviewed its own work, the cascade model D-014 warns
- *  against (Sonnet 5 builds, Opus 4.6 reviews). */
+ *  against (Sonnet 5 builds, Opus 5 for opus-tier roles). */
 export function sameSellaBuiltAndReviewed(probationes: unknown): boolean {
   const spec = gateSella(probationes, "spec");
   const review = gateSella(probationes, "review");
   return spec !== undefined && review !== undefined && spec === review;
+}
+
+const isOpusTier = (model: string): boolean => /opus/i.test(model);
+
+/** review sella id -> declared model, from the officina's own bisellium.yml
+ *  `sellae` list. Malformed/missing manifest is check.ts's job to report;
+ *  here it just means nothing can be verified, so an empty map. */
+function sellaModels(root: string): Map<string, string> {
+  const map = new Map<string, string>();
+  try {
+    const doc = parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8"));
+    if (!isDict(doc) || !Array.isArray(doc["sellae"])) return map;
+    for (const s of doc["sellae"]) {
+      if (!isDict(s)) continue;
+      const id = str(s["id"]);
+      const model = str(s["model"]);
+      if (id && model) map.set(id, model);
+    }
+  } catch {
+    // unparseable manifest — nothing to verify against
+  }
+  return map;
+}
+
+/** process.review_tier (advise): D-014 requires opus-tier models on review
+ *  gates; nothing enforced that mechanically before this. Silent when the
+ *  review sella isn't declared in the manifest at all — can't verify, won't
+ *  guess. */
+export function reviewTierAdvisory(probationes: unknown, sellaModel: Map<string, string>): string | undefined {
+  const sella = gateSella(probationes, "review");
+  if (!sella) return undefined;
+  const model = sellaModel.get(sella);
+  if (!model || isOpusTier(model)) return undefined;
+  return `review sella "${sella}" runs on ${model}, not an opus-tier model`;
 }
 
 export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
@@ -185,9 +220,10 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     );
   }
 
-  // ---- opera/*.md probationes (process.cascade) ----------------------------
-  // Shape errors (bad gate mappings etc.) are check.ts's job; this rule only
-  // asks whether a readable opus shows the same sella on spec and review.
+  // ---- opera/*.md probationes (process.cascade, process.review_tier) ------
+  // Shape errors (bad gate mappings etc.) are check.ts's job; these rules
+  // only ask whether a readable opus's recorded review gate looks right.
+  const sellaModel = sellaModels(root);
   for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
     const data = safeFront(p);
@@ -196,6 +232,8 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       const sella = gateSella(data["probationes"], "spec");
       add("process.cascade", "advise", where, `sella "${sella}" recorded for both spec and review — one context built and reviewed its own work`);
     }
+    const tierMsg = reviewTierAdvisory(data["probationes"], sellaModel);
+    if (tierMsg) add("process.review_tier", "advise", where, tierMsg);
   }
 
   if (_opts.repo) {

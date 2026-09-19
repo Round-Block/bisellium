@@ -1,0 +1,27 @@
+PASS  building opus passes                                         undefined
+PASS  missing opus fails                                           opus W-999 not found
+PASS  done opus fails                                              opus W-099 is already done
+PASS  backlog opus fails                                           opus W-099 is in state "backlog" — must be building, verifying, or review
+W-099: done
+PASS  executeClose transitions opus to done                        ---
+id: W-099
+title: test
+state: done
+probationes:
+  spec: { sella: guest, status: passed, evidence: briefs/W-099.md }
+---
+
+PASS  executeClose fails on done opus                              opus W-099 is already done
+W-099: gates not passed: spec
+PASS  executeClose fails when gates not passed                     done failed (exit 1)
+PASS  verifying opus passes                                        undefined
+PASS  review opus passes                                           undefined
+PASS  greenlit opus fails                                          opus W-099 is in state "greenlit" — must be building, verifying, or review
+PASS  "reviewing" (not a real state) fails                         opus W-099 is in state "reviewing" — must be building, verifying, or review
+PASS  runClose exits 0 and reports rebuilt on dossier success      exit=0 out=W-099: done
+W-099 closed — dossier rebuilt
+
+W-099 closed, but dossier rebuild failed — run docs/design/dossier/build.sh manually
+PASS  runClose exits non-zero and does not claim rebuilt on dossier failure exit=1 out=W-099: done
+
+exit=0
