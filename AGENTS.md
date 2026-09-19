@@ -45,9 +45,9 @@ Read this before anything else in this repo.
 - Process enforcement is a check rule or a hook, never a memory or prose.
 - To implement a task, dispatch a builder subagent:
   `Agent({ subagent_type: "builder", model: "sonnet" })`.
-- To review an opus, dispatch the reviewer subagent:
-  `Agent({ subagent_type: "reviewer46" })`.
-  Never `censor` for a review gate — it does not carry the D-014 model.
+- To review an opus, dispatch the one reviewing subagent:
+  `Agent({ subagent_type: "censor" })`.
+  It is the single review and QA gate (D-014); there is no other.
 - This session orchestrates only. It does not write source, tests, or
   review verdicts.
 

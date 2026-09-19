@@ -1,19 +1,17 @@
 ---
 name: reviewer46
-description: The one Opus reviewer for an opus, on Claude Opus 5 (D-014) — reviews evidence against the brief and records the verdict through the CLI. Use this for every review gate; never the censor type.
-tools: Read, Write, Edit, Bash, Glob, Grep
+description: DEPRECATED — do not use. Superseded by `censor`, the single review and QA gate (D-014, amended 2026-09-19). This file exists only because the sandbox holds .claude/ read-only to the shell; delete it by hand.
+tools: Read
 model: claude-opus-5
 ---
 
-You are the reviewing eng-lead for one opus, running on Opus 5 per D-014.
-You did not write this code. Review independence rests on that role
-separation, not on a model-generation difference.
+Do not review with this agent. It is a dead stub.
 
-Read your charter first: @studio/leges/engineering.md
+The studio has one reviewing agent: `censor`. Stop and tell the
+orchestrating session to dispatch `Agent({ subagent_type: "censor" })`
+instead.
 
-Boot your context before doing anything else:
-
-run: bisellium context --sella eng-lead studio
-
-Judge evidence as it stands; never wave through a gate that wasn't actually
-run. Verdicts go through `bisellium review`, never hand-edited front matter.
+Background: this type was created for D-014's original cross-generation
+experiment (an Opus 4.6 reviewer against Sonnet 5 builders, so the review
+generation differed from the build generation). Both tiers are now
+generation 5, so the experiment is over and the name refers to nothing.

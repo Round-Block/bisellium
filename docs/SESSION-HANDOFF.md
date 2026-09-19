@@ -109,10 +109,10 @@ lex, a decision, or a check rule and delete it here.
   - W-028: FAIL — two bugs: `CLOSEABLE` set has wrong state names
     (`reviewing`/`greenlit` instead of `verifying`/`review`), and
     `rebuildDossier` failure silently swallowed.
-  - **NOTE**: reviews were run by censor agents (wrong model — should have
-    been `reviewer46` per D-014). Findings are valid but the reviews need
-    re-recording with the correct agent type. W-029's pass should be
-    re-confirmed by `reviewer46`.
+  - **NOTE**: these reviews ran on `censor` while it was still Sonnet 5,
+    so they were recorded below the D-014 tier. The findings are valid and
+    worth acting on, but each verdict should be re-confirmed now that
+    `censor` is Opus 5 — W-029's pass especially, since it closes an opus.
 - **In-flight builders** (may have completed by session start):
   - W-028 bug fix builder (Sonnet): fixing CLOSEABLE states + dossier
     failure handling.
@@ -121,14 +121,16 @@ lex, a decision, or a check rule and delete it here.
     wrong-model dispatch mistake.
 - **Backlog (priority order)**:
   1. Close W-029 (`bisellium done`) — review passed.
-  2. Re-record all reviews with `reviewer46` (Opus 5).
+  2. Re-confirm all six review verdicts with `censor` (now Opus 5).
   3. Round-2 fixes for W-022/W-023/W-026/W-027/W-028 (reds + code bugs).
   4. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
-- D-014 model pair (amended 2026-09-19): Sonnet 5 builders, **Opus 5**
-  opus-tier roles. The cross-generation clause is struck — review
-  independence now rests on role separation, not model generation.
-  `reviewer46` is stale as a name; rename by hand to `reviewer` when
-  something can write `.claude/` (read-only to the shell under the sandbox).
+- D-014 (amended twice on 2026-09-19): Sonnet 5 builders, **Opus 5** for
+  opus-tier roles *and* for review. The cross-generation clause is struck —
+  review independence rests on role separation, not model generation.
+- **One review gate**: `censor` (Opus 5, boots as `qa-lead`, read-only by
+  design) is the only reviewing agent. `reviewer46` is a deprecated stub —
+  **delete `.claude/agents/reviewer46.md` by hand**; a cascade session
+  can't, the sandbox holds `.claude/` read-only to the shell.
 - Research note added: `docs/research/jev-typesafe-ai.md` — System One
   model for structured decisions, evaluate for talk/posture path.
 
