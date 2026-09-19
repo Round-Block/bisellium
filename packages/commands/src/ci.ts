@@ -43,7 +43,7 @@ import { join, resolve } from "node:path";
 import type { MergePipeline } from "@bisellium/pipeline";
 import { selectProvider, type AcquiredWorktree, type WorktreeProvider } from "@bisellium/shim";
 import { parseFlags } from "./writes.js";
-import { runVerify, type RunVerifyResult } from "./verify.js";
+import { runVerify, toPosixRelative, type RunVerifyOptions, type RunVerifyResult } from "./verify.js";
 
 // The six steps `.github/workflows/ci.yml` runs, in order — `npm ci` is a
 // dependency-install prerequisite, not one of the six, and is deliberately
@@ -56,6 +56,10 @@ export const CI_STEPS: readonly string[] = [
   "npm run -s check -- studio --repo .",
   "npm run -s check -- examples/sample-studio --repo .",
 ];
+
+// The one CI_STEPS entry that's officina-wide rather than per-opus — named
+// so its failure message can point a reviewer at `verify <opus>` instead.
+const CHECK_STUDIO_STEP = CI_STEPS[4];
 
 export interface RunCiOptions {
   /** Override worktree provider — mainly for tests. Defaults to selectProvider(). */
@@ -75,7 +79,7 @@ export interface RunCiResult {
   exitCode: number;
 }
 
-const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>]";
+const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]";
 const GIT_TIMEOUT_MS = 30_000;
 const STEP_TIMEOUT_MS = 10 * 60_000;
 
@@ -114,12 +118,12 @@ function runStep(command: string, cwd: string): number {
 }
 
 export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<RunCiResult> {
-  const parsed = parseFlags(args, { valued: ["--ref", "--opus", "--studio", "--repo"] });
+  const parsed = parseFlags(args, { valued: ["--ref", "--opus", "--studio", "--repo"], boolean: ["--allow-dirty"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${USAGE}`);
     return { exitCode: 2 };
   }
-  const { values, positionals } = parsed;
+  const { values, flags, positionals } = parsed;
   if (positionals.length > 0) {
     console.error(`unexpected argument "${positionals[0]}"\n${USAGE}`);
     return { exitCode: 2 };
@@ -129,12 +133,17 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
   const opusId = values.get("--opus");
   const studioArg = values.get("--studio");
   const repoFlag = values.get("--repo");
+  const allowDirty = flags.has("--allow-dirty");
 
   let execRepo: string;
   let worktree: AcquiredWorktree | undefined;
+  // Only set on the `--ref` path — the checkout `--studio` is really nested
+  // under, needed to translate its position into the scratch worktree's own
+  // tree (see the `studioRepoRelative` comment on `RunVerifyOptions`).
+  let root: string | undefined;
 
   if (ref !== undefined) {
-    const root = repoFlag !== undefined ? resolve(repoFlag) : gitRoot(process.cwd());
+    root = repoFlag !== undefined ? resolve(repoFlag) : gitRoot(process.cwd());
     if (root === undefined) {
       console.error(`bisellium ci: not inside a git repo (pass --repo)\n${USAGE}`);
       return { exitCode: 2 };
@@ -165,14 +174,41 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
       const status = runStep(step, execRepo);
       if (status !== 0) {
         console.error(`bisellium ci: step failed (exit ${status}): ${step}`);
+        // Step 5 is officina-wide by construction (it's the line ci.yml
+        // runs); it blocks on any opus's missing red or handoff, not just
+        // the one a reviewer has in mind. `verify <opus>` is the narrower,
+        // per-opus gate — say so, rather than leaving that deduction to
+        // whoever is staring at 78 advisory findings.
+        if (step === CHECK_STUDIO_STEP) {
+          console.error(
+            'bisellium ci: "npm run -s check -- studio" is officina-wide; "bisellium verify <opus>" is the per-opus gate.',
+          );
+        }
         return { exitCode: 1 };
       }
     }
 
     if (opusId !== undefined) {
-      const verifyArgs = [opusId, "--repo", execRepo, "--allow-dirty"];
+      const verifyArgs = [opusId, "--repo", execRepo];
       if (studioArg !== undefined) verifyArgs.push("--studio", studioArg);
-      const verifyOpts = opts.pipeline !== undefined ? { pipeline: opts.pipeline } : {};
+      // The current-tree path only certifies a `dirty:` tree when the
+      // caller of `ci` explicitly accepted that, same refusal `verify`
+      // alone gives. The `--ref` path's scratch checkout is a fresh `git
+      // worktree add` of `ref`, never touched by hand — clean by
+      // construction — so it always gets the same allowance `verify` would
+      // need to certify it at all.
+      if (allowDirty || ref !== undefined) verifyArgs.push("--allow-dirty");
+      const verifyOpts: RunVerifyOptions = {};
+      if (opts.pipeline !== undefined) verifyOpts.pipeline = opts.pipeline;
+      if (ref !== undefined) {
+        // `execRepo` is a scratch worktree, not the checkout `--studio`
+        // lives under — translate the officina's position from `root` (the
+        // checkout the ref was forked from) onto `execRepo`'s own tree,
+        // which mirrors the same layout since it's a checkout of the same
+        // repo. See `RunVerifyOptions.studioRepoRelative`.
+        const studioDirActual = resolve(studioArg ?? ".");
+        verifyOpts.studioRepoRelative = toPosixRelative(root!, studioDirActual);
+      }
       const result: RunVerifyResult = await runVerify(verifyArgs, verifyOpts);
       return result;
     }

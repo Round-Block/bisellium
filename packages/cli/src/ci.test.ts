@@ -358,4 +358,90 @@ function cpDir(src: string, dest: string): void {
   }
 }
 
+// ---------------------------------------------------------------------------
+// behaviour 8: --ref + --opus certifies the SAME tree `verify`/the direct
+// path would for the same commit. Behaviours 5/6's studio lives entirely
+// outside `repo` on purpose (see the comment above `makeCiRepo`) precisely
+// so their fixtures never exercise studio-exclusion at all — that gap is
+// what let the `--ref` + `--opus` studio-resolution bug ship. Here the
+// officina is a committed subdirectory OF the repo, the real-world layout
+// (`bisellium ci --opus <id> --studio studio --repo .`), so the worktree
+// `--ref` acquires checks out its own stale copy of `studio/` that a
+// correct exclusion must ignore exactly like the direct path does.
+// ---------------------------------------------------------------------------
+function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
+  const dir = mkdtempSync(join(tmpdir(), "ci-ref-opus-repo-"));
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify(
+      {
+        name: "ci-ref-opus-fixture",
+        private: true,
+        scripts: {
+          typecheck: "node -e \"process.exit(0)\"",
+          lint: "node -e \"process.exit(0)\"",
+          "format:check": "node -e \"process.exit(0)\"",
+          test: "node -e \"process.exit(0)\"",
+          check: "node -e \"process.exit(0)\"",
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  const studioDir = join(dir, "studio");
+  const init = initStudio(studioDir, { now: new Date("2026-09-19T00:00:00Z") });
+  if (!init.ok) throw new Error(`initStudio failed: ${init.message}`);
+  const manifestPath = join(studioDir, "bisellium.yml");
+  const manifest = readFileSync(manifestPath, "utf8");
+  const marker = "probationes:\n  - { id: patron, name: Patron call, kind: human }\n";
+  if (!manifest.includes(marker)) throw new Error(`initStudio's manifest template changed — update this fixture:\n${manifest}`);
+  writeFileSync(
+    manifestPath,
+    manifest.replace(
+      marker,
+      `${marker}  - { id: tests, name: Tests, kind: automated, command: "true" }\n` +
+        `  - { id: lint, name: Lint, kind: automated, command: "true" }\n` +
+        `  - { id: types, name: Typecheck, kind: automated, command: "true" }\n`,
+    ),
+  );
+  const created = newItem(studioDir, { kind: "task", collegium: "production", title: "ci ref+opus opus" });
+  if (!created.ok || !created.id) throw new Error(`newItem failed: ${created.message}`);
+  gitInit(dir);
+  commitAll(dir, "init (repo with nested studio)");
+  return { dir, opusId: created.id };
+}
+
+{
+  const { dir: repoSrc, opusId } = makeCiRepoWithNestedStudio();
+  const repoDirect = `${repoSrc}-direct`;
+  const repoRef = `${repoSrc}-ref`;
+  try {
+    cpDir(repoSrc, repoDirect);
+    cpDir(repoSrc, repoRef);
+
+    const directResult = await runCi(["--repo", repoDirect, "--studio", join(repoDirect, "studio"), "--opus", opusId]);
+    const refResult = await runCi(
+      ["--repo", repoRef, "--ref", "HEAD", "--studio", join(repoRef, "studio"), "--opus", opusId],
+      { provider: gitWorktreeProvider, installDeps: () => {} },
+    );
+
+    const direct = readFileSync(join(repoDirect, "studio", "opera", `${opusId}.md`), "utf8");
+    const ref = readFileSync(join(repoRef, "studio", "opera", `${opusId}.md`), "utf8");
+
+    check(
+      8,
+      "--ref + --opus certifies the same tree the direct path would, studio excluded both ways",
+      directResult.exitCode === 0 && refResult.exitCode === 0 && direct === ref,
+      directResult.exitCode === 0 && refResult.exitCode === 0 && direct === ref
+        ? "identical"
+        : `direct=${directResult.exitCode}\n${direct}\n---\nref=${refResult.exitCode}\n${ref}`,
+    );
+  } finally {
+    rmSync(repoSrc, { recursive: true, force: true });
+    rmSync(repoDirect, { recursive: true, force: true });
+    rmSync(repoRef, { recursive: true, force: true });
+  }
+}
+
 process.exit(failed ? 1 : 0);

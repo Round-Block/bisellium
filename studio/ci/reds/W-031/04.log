@@ -1,9 +1,9 @@
 # behaviour: 4
 # command: node --import tsx packages/cli/src/ci.test.ts 4
 # exit: 1
-# at: 2026-09-19T16:20:58.455Z
+# at: 2026-09-19T18:22:04.332Z
 # sella: guest
-# tree: dirty:796565ee521efa14130084f8f7495cd83f4f1c64
+# tree: dirty:6dd3b180be9702da73bec3c928c5eebd73e65293
 
 
 > test
@@ -39,3 +39,17 @@ types: passed  ci/W-001-types-670c0394.log
 > test
 > node -e "process.exit(0)"
 
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-79a5092f.log
+lint: passed  ci/W-001-lint-79a5092f.log
+types: passed  ci/W-001-types-79a5092f.log
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-79a5092f.log
+lint: passed  ci/W-001-lint-79a5092f.log
+types: passed  ci/W-001-types-79a5092f.log
