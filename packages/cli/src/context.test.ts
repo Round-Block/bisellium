@@ -43,6 +43,18 @@ const check = (name: string, ok: boolean, detail = "") => {
   check("unknown sella: empty text, truncated ['unknown sella']", c.text === "" && c.truncated[0] === "unknown sella");
 }
 
+// ---- standing_rules -----------------------------------------------------------
+
+{
+  const c = buildContext(root, "builder-1", { now: NOW });
+  check("builder-1: standing rules present", c.text.includes("Standing rules") && c.text.includes("Test-first with a recorded red"));
+}
+
+{
+  const c = buildContext(root, "patron", { now: NOW });
+  check("patron: standing rules present", c.text.includes("Standing rules") && c.text.includes("Evidence is produced"));
+}
+
 // ---- answer -------------------------------------------------------------------
 
 {

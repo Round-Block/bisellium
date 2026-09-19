@@ -103,7 +103,13 @@ function buildContextFor(
     }
   }
 
-  // 2. the sella's active opera, with traditio ---------------------------
+  // 2. standing process rules (cross-cutting, all sellae) ----------------
+  if (manifest.standing_rules?.length) {
+    const lines = manifest.standing_rules.map((r) => `- ${r}`);
+    sections.push({ name: "standing rules", priority: 2, text: `## Standing rules\n${lines.join("\n")}` });
+  }
+
+  // 3. the sella's active opera, with traditio ---------------------------
   const mine = snap.opera.filter((w) => ACTIVE_STATES.has(w.state) && w.meta["sella"] === sella);
   if (mine.length) {
     const lines = mine.map((w) => {
@@ -113,10 +119,10 @@ function buildContextFor(
         : "  handoff: (none)";
       return `${w.id} · ${w.state} · ${String(w.meta["title"] ?? "")}\n${handoff}`;
     });
-    sections.push({ name: "opera", priority: 2, text: `## Your active work\n${lines.join("\n")}` });
+    sections.push({ name: "opera", priority: 3, text: `## Your active work\n${lines.join("\n")}` });
   }
 
-  // 3. petitiones addressed to the sella, and the sella's own awaiting replies -------
+  // 4. petitiones addressed to the sella, and the sella's own awaiting replies -------
   const petitioLines: string[] = [];
   for (const p of listMd(join(root, "petitiones"))) {
     const petitio = readPetitioFront(p);
@@ -133,17 +139,17 @@ function buildContextFor(
     const relPath = p.startsWith(root) ? p.slice(root.length + 1).replace(/\\/g, "/") : p;
     petitioLines.push(`${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(relPath, body.trim())}`);
   }
-  if (petitioLines.length) sections.push({ name: "petitiones", priority: 3, text: `## Petitiones\n${petitioLines.join("\n")}` });
+  if (petitioLines.length) sections.push({ name: "petitiones", priority: 4, text: `## Petitiones\n${petitioLines.join("\n")}` });
 
-  // 4. one-line index of the sella's collegium --------------------------------
+  // 5. one-line index of the sella's collegium --------------------------------
   if (collegium) {
     const idx = snap.opera
       .filter((w) => w.meta["collegium"] === collegium.id)
       .map((w) => `${w.id} · ${w.state} · ${String(w.meta["title"] ?? "")}`);
-    if (idx.length) sections.push({ name: "collegium index", priority: 4, text: `## ${collegium.name} index\n${idx.join("\n")}` });
+    if (idx.length) sections.push({ name: "collegium index", priority: 5, text: `## ${collegium.name} index\n${idx.join("\n")}` });
   }
 
-  // 5. decision acta from the last two days ---------------------------------
+  // 6. decision acta from the last two days ---------------------------------
   const decisions = (snap.acta ?? []).filter((d) => {
     if (d.kind !== "decision") return false;
     const at = toDate(d.at);
@@ -151,13 +157,13 @@ function buildContextFor(
   });
   if (decisions.length) {
     const lines = decisions.map((d) => `${d.id} · ${d.title} · ${d.at}\n${dataBlock(`acta/${d.id}.md`, d.body.trim())}`);
-    sections.push({ name: "decisions", priority: 5, text: `## Recent decisions\n${lines.join("\n")}` });
+    sections.push({ name: "decisions", priority: 6, text: `## Recent decisions\n${lines.join("\n")}` });
   }
 
-  // 6. provider postures --------------------------------------------------------
+  // 7. provider postures --------------------------------------------------------
   if (snap.providers?.length) {
     const lines = snap.providers.map((p) => `${p.id} · ${p.usagePct}% · ${p.status}${p.resetAt ? ` · resets ${p.resetAt}` : ""}`);
-    sections.push({ name: "providers", priority: 6, text: `## Provider posture\n${lines.join("\n")}` });
+    sections.push({ name: "providers", priority: 7, text: `## Provider posture\n${lines.join("\n")}` });
   }
 
   const render = (secs: Section[]): string =>

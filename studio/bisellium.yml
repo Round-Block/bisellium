@@ -26,3 +26,8 @@ probationes:
   - { id: review, name: Lead review, kind: agent }
 wip_limit: 4
 source_excludes: [examples/]
+standing_rules:
+  - "Test-first with a recorded red."
+  - "Mechanical work is a script you write, run and keep."
+  - "Evidence is produced, never backfilled."
+  - "Before structural screen changes, verify against the dossier's touchpoint mapping."

@@ -67,6 +67,7 @@ export interface Manifest {
    *  excluded) — e.g. a studio nested in a monorepo alongside unrelated
    *  sibling studios or fixtures. See check.ts/verify.ts. */
   source_excludes?: string[];
+  standing_rules?: string[];
 }
 
 export interface FrontMatter<T> {

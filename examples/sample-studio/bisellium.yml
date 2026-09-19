@@ -25,3 +25,7 @@ probationes:
   - { id: patron, name: Patron call, kind: human }
 wip_limit: 3
 source_excludes: [studio/, examples/fixtures/]
+standing_rules:
+  - "Test-first with a recorded red."
+  - "Mechanical work is a script you write, run and keep."
+  - "Evidence is produced, never backfilled."
