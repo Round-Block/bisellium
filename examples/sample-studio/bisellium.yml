@@ -25,6 +25,18 @@ probationes:
   - { id: patron, name: Patron call, kind: human }
 wip_limit: 3
 source_excludes: [studio/, examples/fixtures/]
+# D-015: how an opus branch reaches the trunk is a setting, not a fixed
+# flow — this fixture illustrates the full shape (see the real studio's own
+# bisellium.yml for the Patron's reference flow). An officina with no
+# integration: block at all keeps today's only behaviour: fast-forward
+# only, no push, no PR.
+integration:
+  strategy: rebase
+  push: true
+  pull_after_push: true
+  pr:
+    required: true
+    reviewer: qa-lead
 standing_rules:
   - "Test-first with a recorded red."
   - "Mechanical work is a script you write, run and keep."

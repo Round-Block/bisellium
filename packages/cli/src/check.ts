@@ -263,6 +263,49 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     add("manifest.shape", "block", "bisellium.yml#wip_limit", "wip_limit must be a number");
   if (wipLimit === undefined) add("wip.declared", "advise", "bisellium.yml", "no wip_limit — WIP is unbounded");
 
+  // integration: optional (D-015) — how an opus branch reaches the trunk is
+  // a setting, not a fixed flow. Absent entirely means today's only
+  // behaviour (fast-forward only, no push, no PR); `bisellium merge`
+  // (packages/cli/src/branch.ts) is the reader, this is only shape/type
+  // validation, same pattern as source_excludes/wip_limit above.
+  const INTEGRATION_STRATEGIES = ["fast_forward", "rebase", "merge_commit"];
+  if (m["integration"] !== undefined) {
+    const integ = m["integration"];
+    if (!isDict(integ)) {
+      add("manifest.shape", "block", "bisellium.yml#integration", "integration must be a mapping");
+    } else {
+      if (integ["strategy"] !== undefined) {
+        const strat = str(integ["strategy"]);
+        if (!strat || !INTEGRATION_STRATEGIES.includes(strat))
+          add(
+            "manifest.shape",
+            "block",
+            "bisellium.yml#integration.strategy",
+            `strategy "${String(integ["strategy"])}" must be one of ${INTEGRATION_STRATEGIES.join(", ")}`,
+          );
+      }
+      if (integ["push"] !== undefined && typeof integ["push"] !== "boolean")
+        add("manifest.shape", "block", "bisellium.yml#integration.push", "push must be a boolean");
+      if (integ["pull_after_push"] !== undefined && typeof integ["pull_after_push"] !== "boolean")
+        add("manifest.shape", "block", "bisellium.yml#integration.pull_after_push", "pull_after_push must be a boolean");
+      if (integ["pr"] !== undefined) {
+        const pr = integ["pr"];
+        if (!isDict(pr)) {
+          add("manifest.shape", "block", "bisellium.yml#integration.pr", "pr must be a mapping");
+        } else {
+          if (pr["required"] !== undefined && typeof pr["required"] !== "boolean")
+            add("manifest.shape", "block", "bisellium.yml#integration.pr.required", "required must be a boolean");
+          if (pr["reviewer"] !== undefined) {
+            const reviewer = str(pr["reviewer"]);
+            if (!reviewer) add("manifest.shape", "block", "bisellium.yml#integration.pr.reviewer", "reviewer must be a non-empty string");
+            else if (!sellaIds.has(reviewer))
+              add("integration.pr.reviewer", "block", "bisellium.yml#integration.pr.reviewer", `reviewer "${reviewer}" is not a declared sella`);
+          }
+        }
+      }
+    }
+  }
+
   if (collegia.length === 0) add("manifest.collegia", "block", "bisellium.yml", "no collegia declared");
   for (const d of collegia) {
     const id = str(d["id"]) ?? "?";

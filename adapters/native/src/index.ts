@@ -68,6 +68,27 @@ export interface Manifest {
    *  sibling studios or fixtures. See check.ts/verify.ts. */
   source_excludes?: string[];
   standing_rules?: string[];
+  /** D-015: how an opus branch reaches the trunk is a setting, not a fixed
+   *  flow. Absent entirely ⇒ today's only behaviour (fast-forward only, no
+   *  push, no PR) — `bisellium merge` (packages/cli/src/branch.ts) is the
+   *  reader. */
+  integration?: {
+    /** "fast_forward" (default) | "rebase" | "merge_commit". */
+    strategy?: string;
+    /** Push the trunk to origin after a successful merge. Default: false. */
+    push?: boolean;
+    /** `git pull` the trunk again after that push. Default: false; ignored
+     *  when `push` is false. */
+    pull_after_push?: boolean;
+    pr?: {
+      /** A PR must carry the change to the trunk instead of `merge` landing
+       *  it directly. Default: false. PR creation itself is out of scope
+       *  here (W-028) — `bisellium merge` stops short of opening one. */
+      required?: boolean;
+      /** sella id that reviews the PR. Advisory; nothing here opens the PR. */
+      reviewer?: string;
+    };
+  };
 }
 
 export interface FrontMatter<T> {

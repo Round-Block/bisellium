@@ -1,0 +1,13 @@
+# behaviour: 11
+# command: node --import tsx packages/cli/src/branch.test.ts . 11
+# exit: 1
+# at: 2026-09-19T15:23:49.940Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+FAIL  rebase strategy succeeds where ff-only would refuse          branch opus/W-080 has diverged from master — rebase first
+FAIL  feature commit lands on master after rebase                  e6463ee master work
+22ccf2a init
+FAIL  opus branch deleted after a rebased merge                    master,opus/W-080
+PASS  rebase produced a linear history, no merge commit            
+FAIL  the rebase's own consequence (stale certificates) is surfaced, not suppressed undefined

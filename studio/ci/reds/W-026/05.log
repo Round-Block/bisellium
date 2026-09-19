@@ -1,0 +1,11 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/branch.test.ts . 5
+# exit: 1
+# at: 2026-09-19T15:19:45.378Z
+# sella: builder-a
+# tree: dirty:337fafe67614ea229b0a6b9b77d45104cd14b7a7
+
+PASS  refuses conflicting branch                                   branch opus/W-031 has diverged from master — rebase first
+FAIL  error names the conflict, not divergence                     branch opus/W-031 has diverged from master — rebase first
+PASS  refuses conflicting branch even from a third branch          branch opus/W-032 has diverged from master — rebase first
+FAIL  names the conflict against master, not sidebranch            branch opus/W-032 has diverged from master — rebase first
