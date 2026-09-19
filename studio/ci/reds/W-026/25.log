@@ -1,0 +1,9 @@
+# behaviour: 25
+# command: node --import tsx packages/cli/src/branch.test.ts . 25
+# exit: 1
+# at: 2026-09-19T16:37:21.049Z
+# sella: builder-a
+# tree: dirty:0a214ce3372696dfba674588660342d076a8c79b
+
+PASS  refuses on the stale certificate                             opus/W-098 was rebased onto master — opus W-098's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); re-run "bisellium verify W-098" and retry the merge
+FAIL  names an achievable remedy: check out the branch, not a bare re-verify from here opus/W-098 was rebased onto master — opus W-098's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); re-run "bisellium verify W-098" and retry the merge

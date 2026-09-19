@@ -88,17 +88,46 @@ function sourceExcludeDirs(repo: string, studio: string): string[] {
   return [relative(repo, resolve(studio)).split(sep).join("/"), ".bisellium", ...extra];
 }
 
-/** D-015 B1: a rebase replays `branch`'s commits onto a moved trunk, which
- *  changes its SOURCE tree — so a `tree:` certificate an automated probatio
- *  recorded before the rebase no longer describes what is about to ship.
- *  `merge` does not re-run the gates itself (that's `bisellium verify`'s
- *  job, and duplicating it here would give two places that run them); it
- *  refuses instead, naming the mismatch, so the operator re-verifies and
- *  retries. Reuses @bisellium/shim's `sourceTreeHash` — the same function
- *  check.ts and verify.ts already call — rather than re-deriving the hash.
- *  Returns undefined (nothing to refuse on) when the opus has no `tree:`
- *  certificate recorded at all. */
-function staleCertificateError(repo: string, studio: string, branch: string, master: string, opusId: string, opusData: Record<string, unknown>): string | undefined {
+/** D-015 B1 (round 4 correction): a rebase replays `branch`'s commits onto a
+ *  moved trunk, which changes its SOURCE tree — so a `tree:` certificate an
+ *  automated probatio recorded before the rebase no longer describes what is
+ *  about to ship. `merge` does not re-run the gates itself (that's
+ *  `bisellium verify`'s job, and duplicating it here would give two places
+ *  that run them); it refuses instead, naming the mismatch, so the operator
+ *  re-verifies and retries. Reuses @bisellium/shim's `sourceTreeHash` — the
+ *  same function check.ts and verify.ts already call — rather than
+ *  re-deriving the hash. Returns undefined (nothing to refuse on) when the
+ *  opus has no `tree:` certificate recorded at all.
+ *
+ *  Round-4 review (B1.4/B1.5): the caller evaluates this against `branch`'s
+ *  CURRENT tree on every call that's about to land or push — not only the
+ *  call that happens to perform a rebase. Evaluating it only inside "a
+ *  rebase just ran" left two holes: (a) a retry of the exact same command,
+ *  nothing else changed, found `mergeBase === masterRev` (this process's own
+ *  prior rebase already got it there) and skipped the check entirely,
+ *  landing a certificate that never got fixed; (b) a branch that was already
+ *  fast-forwardable (no rebase needed at all) never reached the check even
+ *  once, so a certificate that predated the branch's own last commit shipped
+ *  silently. `rebased` only changes the wording of the message — a mismatch
+ *  refuses either way.
+ *
+ *  The remedy named is "check out `branch`, verify there" — not a bare
+ *  `bisellium verify <opus-id>`. `verify` certifies `--commit` (default
+ *  HEAD) in the repo it's pointed at; run from a trunk checkout (exactly
+ *  CLAUDE.md's own documented `bisellium verify <opus> --studio studio
+ *  --repo .`) that certifies the TRUNK's tree, which can never match what
+ *  this function compares against. Naming that command was the round-4 B1.5
+ *  finding: the error's own instruction couldn't produce the certificate it
+ *  demanded. */
+function staleCertificateError(
+  repo: string,
+  studio: string,
+  branch: string,
+  master: string,
+  opusId: string,
+  opusData: Record<string, unknown>,
+  rebased: boolean,
+): string | undefined {
   const gates = opusData["probationes"];
   if (gates === null || typeof gates !== "object") return undefined;
   let newHash: string;
@@ -111,7 +140,9 @@ function staleCertificateError(repo: string, studio: string, branch: string, mas
     if (gv === null || typeof gv !== "object") continue;
     const certifies = (gv as Record<string, unknown>)["certifies"];
     if (typeof certifies === "string" && certifies.startsWith("tree:") && certifies !== newHash) {
-      return `${branch} was rebased onto ${master} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches the rebased tree (${newHash}); re-run "bisellium verify ${opusId}" and retry the merge`;
+      const cause = rebased ? `${branch} was rebased onto ${master}` : `${branch}'s tree no longer matches its certificate`;
+      const treeWord = rebased ? "the rebased tree" : "its current tree";
+      return `${cause} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches ${treeWord} (${newHash}); check out ${branch} and re-run "bisellium verify ${opusId}" there, then retry the merge`;
     }
   }
   return undefined;
@@ -273,14 +304,6 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
       const rebase = rebaseOntoTrunk(cwd, branch, master);
       if (!rebase.ok) return { ok: false, error: rebase.error, trunk: master };
       rebased = true;
-
-      // D-015 B1: the branch's tree just changed under any certificate it
-      // carries. Refuse rather than land (or even open a PR for) a rebase
-      // whose recorded certifies no longer describes what ships — see
-      // staleCertificateError's own comment for why this refuses instead of
-      // re-running the gates.
-      const staleError = staleCertificateError(cwd, studio, branch, master, opusId, opusData);
-      if (staleError) return { ok: false, error: staleError, trunk: master };
     } else {
       // fast_forward (default): unchanged behaviour. Probe the merge with
       // `merge-tree`, which computes the result purely in-memory — unlike
@@ -292,6 +315,16 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
       return { ok: false, error: `branch ${branch} has diverged from ${master} — rebase first`, trunk: master };
     }
   }
+
+  // D-015 B1 (round 4): evaluated against `branch`'s current tree here, on
+  // EVERY call that reaches this point — never only inside "a rebase just
+  // ran". staleCertificateError's own comment explains the two holes that
+  // left open: a retry of the exact same command (this process's own prior
+  // rebase already moved mergeBase, so the old placement skipped the check
+  // the second time) and a fast-forward-ready branch that never needed a
+  // rebase at all (so the old placement never reached the check even once).
+  const staleError = staleCertificateError(cwd, studio, branch, master, opusId, opusData, rebased);
+  if (staleError) return { ok: false, error: staleError, trunk: master };
 
   // D-015 B1 corrected: `probatio.certifies.stale` is scoped to ACTIVE opera
   // (check.ts) and this opus is `done` — that rule will never fire here, so

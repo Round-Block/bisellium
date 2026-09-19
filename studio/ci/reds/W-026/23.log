@@ -1,0 +1,13 @@
+# behaviour: 23
+# command: node --import tsx packages/cli/src/branch.test.ts . 23
+# exit: 1
+# at: 2026-09-19T16:37:17.676Z
+# sella: builder-a
+# tree: dirty:0a214ce3372696dfba674588660342d076a8c79b
+
+PASS  first call refuses on the stale certificate                  opus/W-096 was rebased onto master — opus W-096's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); re-run "bisellium verify W-096" and retry the merge
+FAIL  the retry refuses too — the error's own remedy does not defeat it undefined
+FAIL  master is still untouched after the retry                    dd391fe feat: add feature
+fdd3118 master work
+4283b0d init
+FAIL  the branch still exists after the retry                      master
