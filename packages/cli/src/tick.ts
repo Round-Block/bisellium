@@ -276,7 +276,7 @@ export interface RunTickResult {
   exitCode: number;
 }
 
-const USAGE = "usage: bisellium tick [--studio dir] [--now <iso>] [--dry-run] [--repo dir]";
+const USAGE = "usage: bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]";
 
 interface ParsedTickArgs {
   studio: string;

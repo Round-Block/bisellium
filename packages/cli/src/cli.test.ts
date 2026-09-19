@@ -10,6 +10,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { USAGE } from "./usage.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const NOW = "2026-09-17T15:00:00Z";
@@ -274,5 +275,27 @@ async function testServeWiring(): Promise<void> {
 }
 
 await testServeWiring();
+
+// ---- usage banner reachable from every error path (W-030 behaviour 6) -----
+// main.ts's own comment table (FLAGS_BY_COMMAND) documents which commands
+// route through the generic flag parser; these four are the paths that fall
+// out the bottom of main() rather than into a command handler — the ones
+// that matter for "does a wrong invocation ever get told the right shapes".
+{
+  const r = run([]);
+  check("no args: prints banner, exits 2", r.status === 2 && r.stderr.includes(USAGE), `status=${r.status}`);
+}
+{
+  const r = run(["wibble"]);
+  check("unknown command: prints banner, exits 2", r.status === 2 && r.stderr.includes(USAGE), `status=${r.status}`);
+}
+{
+  const r = run(["check", "--nope"]);
+  check("unknown flag: prints banner, exits 2", r.status === 2 && r.stderr.includes(USAGE), `status=${r.status}`);
+}
+{
+  const r = run(["--help"]);
+  check("--help: prints banner, exits 2", r.status === 2 && r.stderr.includes(USAGE), `status=${r.status}`);
+}
 
 process.exit(failed ? 1 : 0);

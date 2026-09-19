@@ -103,9 +103,18 @@ function buildContextFor(
     }
   }
 
-  // 2. CLI usage pointer — one line, never dropped by truncation. The one
-  // thing every sella needs before its first CLI call: `context` is the
-  // command every agent definition tells its agent to run first (see
+  // 2. CLI usage pointer — priority 0, the single most protected section:
+  // the truncation loop below drops the highest priority *number* first, so
+  // 0 outranks even the lex (priority 1) and is dropped last of all. That
+  // matters in the real officina, not just the fixture: the engineering lex
+  // alone runs ~1100 tokens, so at a 600-token budget every section down to
+  // and including the lex must go before the loop stops — a priority of 2
+  // (below opera/petitiones/etc. but above the lex) still gets dropped well
+  // before the lex is gone, since the lex is only exempted from the count
+  // once it is *also* dropped. Priority 0 is what actually leaves the
+  // pointer standing alone once everything else, lex included, is gone.
+  // The one thing every sella needs before its first CLI call: `context` is
+  // the command every agent definition tells its agent to run first (see
   // .claude/agents/*.md), so this is the one output no brief-writer can
   // miss. A pointer, not the ~700-token banner inlined (see USAGE in
   // ./usage.js, the single source main.ts's own usage errors read from
@@ -118,7 +127,7 @@ function buildContextFor(
   // any CLI call.
   sections.push({
     name: "cli usage",
-    priority: 2,
+    priority: 0,
     text: "## CLI usage\nRun `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.",
   });
 

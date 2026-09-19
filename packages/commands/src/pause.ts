@@ -26,8 +26,8 @@ export interface PauseResult {
   exitCode: number;
 }
 
-const USAGE_PAUSE = "usage: bisellium pause [--studio dir] [--reason text]";
-const USAGE_RESUME = "usage: bisellium resume [--studio dir]";
+const USAGE_PAUSE = "usage: bisellium pause [--studio <dir>] [--reason <text>]";
+const USAGE_RESUME = "usage: bisellium resume [--studio <dir>]";
 
 export function pausedFilePath(studio: string): string {
   return join(resolve(studio), "PAUSED");
