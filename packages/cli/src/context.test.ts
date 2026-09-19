@@ -55,6 +55,40 @@ const check = (name: string, ok: boolean, detail = "") => {
   check("patron: standing rules present", c.text.includes("Standing rules") && c.text.includes("Evidence is produced"));
 }
 
+// ---- CLI usage pointer (W-028: point every agent at the usage banner before
+// invoking it, from the one thing every agent reliably runs first) ------------
+
+{
+  // behaviour 22: the pointer is present for a normal sella.
+  const c = buildContext(root, "builder-1", { now: NOW });
+  check(
+    "builder-1: CLI usage pointer present",
+    c.text.includes("## CLI usage") && c.text.includes("Run `bisellium` with no arguments"),
+  );
+}
+
+{
+  // behaviour 23: pointer only, not the full ~700-token banner inlined —
+  // none of the per-command usage lines main.ts's USAGE constant renders
+  // (e.g. "bisellium check [dir]") leak into context output.
+  const c = buildContext(root, "builder-1", { now: NOW });
+  check("builder-1: full banner not inlined", !c.text.includes("bisellium check [dir]"));
+}
+
+{
+  // behaviour 24: the pointer outranks the lower-priority sections and
+  // survives truncation that drops them (opera has priority 4, well below
+  // the pointer's priority 2 — see context.ts's Section priorities). 600 is
+  // below builder-1's full render (693 tokens) but well above lex + the
+  // pointer alone, so it drops opera/providers/collegium-index without
+  // reaching down to priority 1-2.
+  const c = buildContext(root, "builder-1", { now: NOW, maxTokens: 600 });
+  check(
+    "maxTokens=600: CLI usage pointer survives truncation that drops other sections",
+    c.truncated.length > 0 && c.text.includes("## CLI usage"),
+  );
+}
+
 // ---- answer -------------------------------------------------------------------
 
 {
