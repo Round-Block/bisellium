@@ -678,4 +678,156 @@ function originMasterRev(bare: string): string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Round-4 review (studio/ci/W-026-review-4.log) — B1 fires once, then steps
+// aside for the retry its own error message tells the operator to run, and
+// never fires at all for an ff-ready branch that needed no rebase. New
+// behaviours (22+, round 4; 22 is a mutation-record — see its own comment).
+// ---------------------------------------------------------------------------
+
+// behaviour 22 (A4.4, mutation-record): the SOURCE-tree exclude set, pinned
+// with the studio INSIDE the repo — the real configuration. Round 4's own
+// mutation (sourceExcludeDirs -> return []) found 0 FAIL because 18/19 keep
+// the studio OUTSIDE the repo, where exclusion is inert either way. Here a
+// trunk-only commit that touches nothing but studio bookkeeping (as a real
+// `bisellium verify` front-matter write would) must never stale an
+// otherwise-matching certificate.
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio"); // INSIDE the repo — the real layout
+  try {
+    writeOpusFile(studio, "W-094", "done");
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-094'", { cwd: dir, stdio: "pipe" });
+
+    createOpusBranch(dir, "W-094");
+    execSync("git checkout opus/W-094", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    // Certificate recorded BEFORE any trunk-side bookkeeping churn — the
+    // exclude set is what has to keep it matching after that churn lands.
+    const matching = expectedPostRebaseTreeHash(dir, studio, "master", "opus/W-094");
+    writeOpusFileWithCertifies(studio, "W-094", "done", "tests", matching);
+
+    // A bookkeeping-only commit lands on master, touching ONLY the studio
+    // dir (e.g. another opus opening) — never the source tree.
+    writeOpusFile(studio, "W-095", "backlog");
+    execSync("git add . && git commit -m 'studio bookkeeping: open W-095'", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-094", studio);
+    check(
+      22,
+      "mutation-record (A4.4): a trunk-side studio-only commit does not stale a matching certificate",
+      result.ok === true,
+      String(result.error),
+    );
+    check(22, "feature commit lands on master", masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// behaviour 23 (B1.4, pre-implementation): a stale certificate refuses the
+// merge on EVERY invocation, not just the one that happened to perform the
+// rebase. Round 4's reproduction: nothing changes between the two calls —
+// no verify, no edit — yet unfixed code lands on the second call, because
+// the first call's rebase already moved mergeBase to masterRev and the
+// stale check lived only inside the "mergeBase !== masterRev" branch.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFileWithCertifies(studio, "W-096", "done", "tests", "tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    createOpusBranch(dir, "W-096");
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-096", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const first = mergeOpusBranch(dir, "W-096", studio);
+    check(23, "first call refuses on the stale certificate", first.ok === false, String(first.error));
+
+    // Nothing changed: no verify, no edit, no manifest change — retry the
+    // exact same command.
+    const second = mergeOpusBranch(dir, "W-096", studio);
+    check(23, "the retry refuses too — the error's own remedy does not defeat it", second.ok === false, String(second.error));
+    check(23, "master is still untouched after the retry", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
+    check(23, "the branch still exists after the retry", branches(dir).includes("opus/W-096"), branches(dir).join(","));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 24 (B1, pre-implementation): the fast-forward blind spot — a
+// branch that already contains master's tip (no rebase needed at all, the
+// default fast_forward strategy) is still refused when its own certificate
+// predates its OWN last commit. Round 4: this case never even reached the
+// old check, since that check lived entirely inside "mergeBase !==
+// masterRev", which is false here by construction.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFile(studio, "W-097", "done");
+    createOpusBranch(dir, "W-097");
+    execSync("git checkout opus/W-097", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+
+    // Certify against the tree as of THIS commit...
+    const excludeDirs = [relative(dir, studio).split(sep).join("/"), ".bisellium"];
+    const certified = `tree:${sourceTreeHash(dir, excludeDirs, "opus/W-097")}`;
+    writeOpusFileWithCertifies(studio, "W-097", "done", "tests", certified);
+
+    // ...then the branch gains ANOTHER commit after that — master never
+    // moves, so this stays trivially fast-forwardable, but the certificate
+    // no longer describes what's about to ship.
+    writeFileSync(join(dir, "more.ts"), "more opus work");
+    execSync("git add . && git commit -m 'feat: more work, uncertified'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-097", studio);
+    check(24, "refuses a fast-forward-ready branch whose certificate predates its last commit", result.ok === false, String(result.error));
+    check(24, "master is untouched", !masterLog(dir).includes("more opus work"), masterLog(dir).trim());
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// behaviour 25 (B1.5, pre-implementation): the refusal names an achievable
+// remedy. `bisellium verify <opus>` alone (default `--commit HEAD`, run from
+// a trunk checkout — exactly CLAUDE.md's own documented invocation) certifies
+// the TRUNK's tree, not the opus branch's — following the old message
+// verbatim can never produce a matching certificate. The honest remedy is to
+// check out the branch first.
+{
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  try {
+    writeOpusFileWithCertifies(studio, "W-098", "done", "tests", "tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+    writeIntegrationManifest(studio, "integration:\n  strategy: rebase\n");
+    createOpusBranch(dir, "W-098");
+    writeFileSync(join(dir, "other.ts"), "master work");
+    execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout opus/W-098", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "opus work");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+
+    const result = mergeOpusBranch(dir, "W-098", studio);
+    check(25, "refuses on the stale certificate", result.ok === false, String(result.error));
+    check(25, "names an achievable remedy: check out the branch, not a bare re-verify from here", (result.error ?? "").includes("check out opus/W-098"), String(result.error));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
 process.exit(failed ? 1 : 0);

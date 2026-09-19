@@ -202,11 +202,21 @@ reads it and, under `strategy: rebase`, replays the opus branch onto the
 current trunk before landing it. A rebase changes the opus's SOURCE tree, so
 any `tree:` certificate an automated probatio recorded before the rebase no
 longer describes what is about to ship — `merge` does not re-run the gates
-itself (that is `bisellium verify`'s job); it refuses when a recorded
-`certifies: tree:<hash>` no longer matches the post-rebase tree, and the
-operator re-verifies and retries. An unrecognised `strategy` value falls
+itself (that is `bisellium verify`'s job); it checks a recorded
+`certifies: tree:<hash>` against the branch's current tree on every call
+that would land or push it (not only the call that happens to rebase, so a
+retry of the same command can't defeat the refusal, and a branch that never
+needed a rebase at all is still covered), and refuses on a mismatch. The
+remedy is to check out the opus branch and re-run `bisellium verify` there —
+running it from a trunk checkout instead (e.g. the studio's own default
+invocation) certifies the trunk's tree, not the branch's, and can never
+produce a matching certificate. A `certifies: dirty:<hash>` gate (an opus
+verified with `--allow-dirty`) is never compared here — only a `tree:`
+certificate can go stale this way. An unrecognised `strategy` value falls
 back to `fast_forward` rather than failing merge outright (defensive
-reading, not a second validator — a typo here is not yet caught anywhere).
+reading, not a second validator — `bisellium check` already blocks a typo'd
+`strategy` at `manifest.shape`, so this fallback is merge's own defensive
+posture, never the only guard against one).
 `pr.required: true` stops `merge` after the rebase/push, leaving the branch
 for a PR to carry to the trunk (PR creation is W-028's territory); with
 `pr.required: true`, `pull_after_push` never runs, since it lives only on the

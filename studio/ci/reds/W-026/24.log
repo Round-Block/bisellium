@@ -1,0 +1,11 @@
+# behaviour: 24
+# command: node --import tsx packages/cli/src/branch.test.ts . 24
+# exit: 1
+# at: 2026-09-19T16:37:19.378Z
+# sella: builder-a
+# tree: dirty:0a214ce3372696dfba674588660342d076a8c79b
+
+FAIL  refuses a fast-forward-ready branch whose certificate predates its last commit undefined
+PASS  master is untouched                                          6bc2e45 feat: more work, uncertified
+3bdc962 feat: add feature
+ba2c84a init

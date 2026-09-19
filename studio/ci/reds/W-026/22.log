@@ -1,0 +1,11 @@
+# behaviour: 22
+# command: node --import tsx packages/cli/src/branch.test.ts . 22
+# exit: 1
+# at: 2026-09-19T16:37:36.695Z
+# sella: builder-a
+# tree: dirty:0a214ce3372696dfba674588660342d076a8c79b
+
+FAIL  mutation-record (A4.4): a trunk-side studio-only commit does not stale a matching certificate opus/W-094 was rebased onto master — opus W-094's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches the rebased tree (tree:f467b51ef04e0fc436463fba3bfdee74aa5de794); re-run "bisellium verify W-094" and retry the merge
+FAIL  feature commit lands on master                               f36ea06 studio bookkeeping: open W-095
+10bc802 studio bookkeeping: open W-094
+d790c70 init
