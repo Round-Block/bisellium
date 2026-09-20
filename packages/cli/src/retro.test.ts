@@ -4,7 +4,7 @@
  */
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { checkStudio } from "./check.js";
 import { draftRetro, runRetro, type RetroInput } from "./retro.js";
 
@@ -337,6 +337,62 @@ try {
       draft.markdown.indexOf("## Recurrence") < draft.markdown.indexOf("## Addressed") &&
         draft.markdown.indexOf("## Addressed") < draft.markdown.indexOf("## Proposals"),
       "",
+    );
+  }
+
+  // =========================================================================
+  // Behaviour 18 (round 2, F1) — an `addressed_by` that path-traverses out of
+  // `studioRoot` never reaches a filesystem read outside it, classifies as
+  // unaddressed, and the recurring class still files its petitio ("never
+  // throws, never reads outside studioRoot" — briefs/W-035.md:321).
+  // =========================================================================
+  {
+    const dir = tempStudio("traversal");
+    writeFileSync(join(dir, "ev.log"), "x\n");
+
+    // A file OUTSIDE studioRoot — reachable only if classifyAddressedTarget
+    // joins `target` onto `opera/`/`decisions/` without containment.
+    const outsideDir = join(dirname(dir), `bisellium-retro-outside-${process.pid}-${Date.now()}`);
+    dirs.push(outsideDir);
+    mkdirSync(join(outsideDir, "opera"), { recursive: true });
+    writeFileSync(join(outsideDir, "opera", "secret.md"), '---\nstate: "SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA"\n---\n');
+    const traversalTarget = relative(join(dir, "opera"), join(outsideDir, "opera", "secret"));
+
+    mkdirSync(join(dir, "lessons"), { recursive: true });
+    writeFileSync(
+      join(dir, "lessons", "L-201.md"),
+      `---\nid: "L-201"\nat: 2026-09-10T00:00:00Z\nclass: "traversal-class"\nevidence: ["ev.log"]\ncascade: 1\naddressed_by: ${JSON.stringify(traversalTarget)}\n---\nEarlier.\n`,
+    );
+
+    const input: RetroInput = {
+      verifierIssues: 0,
+      reviewFindings: [{ class: "traversal-class", where: "w", evidence: ["ev.log"] }],
+      agents: [],
+      tests: 1,
+      fixRounds: 0,
+      mutationsCaught: 0,
+    };
+
+    let threwTraversal = false;
+    let draftT: ReturnType<typeof draftRetro> | undefined;
+    try {
+      draftT = draftRetro(dir, 6, input, NOW);
+    } catch {
+      threwTraversal = true;
+    }
+    check("18g. path-traversal addressed_by: draftRetro never throws", !threwTraversal);
+
+    const markdownT = draftT?.markdown ?? "";
+    check("18h. path-traversal addressed_by: nothing outside studioRoot is read into the acta", !markdownT.includes("SECRET-LEAKED"), markdownT);
+    check(
+      "18i. path-traversal addressed_by: '## Addressed' lists the class as unresolved, not an opus",
+      markdownT.includes('"traversal-class" → nothing yet'),
+      markdownT,
+    );
+    check(
+      "18j. path-traversal addressed_by: the recurring class still files its petitio",
+      (draftT?.petitiones.length ?? 0) === 1,
+      JSON.stringify(draftT?.petitiones),
     );
   }
 } finally {

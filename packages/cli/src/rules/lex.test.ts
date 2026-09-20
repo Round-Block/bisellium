@@ -16,13 +16,20 @@ import { fileURLToPath } from "node:url";
 import { bulletClauses, checkLex } from "./lex.js";
 import { RULE_IDS } from "./ids.js";
 
-// behaviour 7's harvest: the same two shapes checkStudio actually uses,
-// `add("id", ...)` and `{ rule: "id", ... }`, over check.ts plus every
-// rules/*.ts — excluding ids.ts itself (else a stale literal in the
-// registry would satisfy the guard against itself) and every *.test.ts.
-// Paths resolve off import.meta.url, not process.argv[2]/cwd — a
-// worktree's cwd is not the repo root.
-const HARVEST_RE = /(?<![.\w])add\(\s*"([a-z][A-Za-z0-9._-]*)"|rule:\s*"([a-z][A-Za-z0-9._-]*)"/g;
+// behaviour 7's harvest: any call whose first argument is a rule-id-shaped
+// dotted string literal (`add("id", ...)`, or a forwarder like
+// `checkLink("id", ...)` — check.ts:372 forwards its `rule` straight to
+// `add`) and the object-literal shape `{ rule: "id", ... }`, over check.ts
+// plus every rules/*.ts — excluding ids.ts itself (else a stale literal in
+// the registry would satisfy the guard against itself) and every
+// *.test.ts. Every id in RULE_IDS is dotted (`noun.attribute`), so
+// requiring a "." keeps this call-shape generic (any future forwarder is
+// caught, not just named ones) without matching an unrelated string
+// literal — verified: this class-general form harvests nothing beyond
+// `add(`/`checkLink(` call sites over the current tree. Paths resolve off
+// import.meta.url, not process.argv[2]/cwd — a worktree's cwd is not the
+// repo root.
+const HARVEST_RE = /(?<![.\w])[A-Za-z_]\w*\(\s*"([a-z][A-Za-z0-9_-]*\.[A-Za-z0-9._-]*)"|rule:\s*"([a-z][A-Za-z0-9._-]*)"/g;
 function harvestRuleIds(): Set<string> {
   const here = dirname(fileURLToPath(import.meta.url)); // packages/cli/src/rules
   const srcDir = dirname(here); // packages/cli/src
@@ -179,6 +186,10 @@ try {
       missingFromRegistry.length === 0 && staleInRegistry.length === 0,
       JSON.stringify({ missingFromRegistry, staleInRegistry }),
     );
+    // The forwarder-shape regression this behaviour exists to catch:
+    // checkLink("link.dead", ...) (check.ts:450,617) forwards to add(), so
+    // checkStudio can emit it — the registry must know about it too.
+    check(7, "RULE_IDS contains link.dead (the checkLink forwarder shape)", RULE_IDS.has("link.dead"));
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

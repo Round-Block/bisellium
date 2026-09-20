@@ -54,6 +54,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "lex.present",
   "lex.sections",
   "lex.unchecked",
+  "link.dead",
   "manifest.collegia",
   "manifest.defaults",
   "manifest.id.format",
