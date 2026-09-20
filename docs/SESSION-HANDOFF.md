@@ -102,42 +102,63 @@ has cost a round each time.
 
 ### Open PRs
 
-One open — **PR #17 (W-035), PAUSED by the Patron 2026-09-20**. It is
-mergeable: censor round 2 PASSED (0 blocking), `done` recorded on the
-branch, rebased onto master through the CI-history fix, re-verified
-(`tree:a312c047`), gates green. Merge on the Patron's go — nothing else
-is outstanding on it. Until it merges, master's officina check shows
-`opus.red_evidence` for W-035's 18 behaviours: the red logs live on
-`opus/W-035`; the finding is *caused by* the pause, not by a defect.
+None. PRs #1–#20 all merged or closed. Cascade 23 (PR #20) executed the
+Patron's decrees of 2026-09-20: **P-008 answered (b)** — specs signed by
+the architect, `process.cascade` stands, QA lex first-hour clause
+amended; **P-009 and P-010 accepted** — their lex amendments landed
+verbatim in qa.md and production.md with §9 rows; **D-017** (W-023/W-027
+evidence accepted as historical, kill_when resurrection) and **D-018**
+(pre-W-026 identity-less gates/models grandfathered) written; **W-022
+finished** after a genuine round-3 PASS (the censor mutation-tested all
+six reds; `done` initially refused on the failed round-2 gate — the CLI
+failed closed, round 3 cleared it); **W-028's `close` refused** (no
+abandon verb — see W-042); `traditio.stage` swept 10→0 via the kept
+script `scripts/sweep-traditio-stage.mjs`; three lesson classes stamped
+to genuine pre-existing decisions (L-009→D-005, L-013→D-009,
+L-014→D-010); first retro with the `## Addressed` section
+(`studio/acta/2026-09-20-retro-23.md`).
 
-| PR | Opus | State |
-|----|------|-------|
-| [#2](https://github.com/edckt/bisellium/pull/2)–[#16](https://github.com/edckt/bisellium/pull/16), [#18](https://github.com/edckt/bisellium/pull/18) | W-026/30/31/36/37, checkpoints, gap filings, CI gate/permissions/history | ALL MERGED |
-| [#17](https://github.com/Round-Block/bisellium/pull/17) | W-035 | **OPEN — PAUSED, awaiting Patron's go** |
-| [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
+W-035 (improvement loop) merged as PR #17 after two rounds — round 1's
+path traversal (the very class L-022 stamps) and the `link.dead`
+registry gap, both fixed red-first; its drift guard made its first live
+catch during the final rebase (`process.history` unregistered). Review
+logs: `studio/ci/W-035-review-{1,2}.log`, `cascade-23-cleanup-review.log`,
+`W-022-review-3.log`.
 
-W-035 (improvement loop) took two review rounds: round 1 FAILED on a path
-traversal in `classifyAddressedTarget` (the very class L-022 stamps as
-addressed — the censor caught what the stamped rule cannot see) and a
-`link.dead` gap in RULE_IDS; both fixed red-first, round 2 PASSED with an
-fs-interposition proof (83 calls, 0 outside the officina). During the
-final rebase, W-035's own drift guard made its **first live catch**:
-`process.history` (added by PR #18) was unregistered, and behaviour 7
-refused until it entered the registry.
+**Board after cascade 23: 3 blocking, ~80 advisory.** The 3 blockings
+are W-028 (`traditio.present` + `red_evidence`) and W-027
+(`red_evidence`) — both waiting SOLELY on **W-042 (halt/abandon verb)**:
+no CLI verb takes an opus out of play without completing it (`close`
+gates on passed reviews; `pause` is officina-wide; nothing writes
+`state: halted` though readers accept it). W-043 (addressed_by stamped
+via CLI, never by hand) filed from the same review. Both filed per
+P-010's own gap clause, briefs are CLI scaffolds — **architect must spec
+them before greenlight**.
 
-**Awaiting the Patron (everything else is stopped, conserve-credits order):**
+**Resume point for the next funded session (in order):**
 
-1. **PR #17 go/no-go** (see above).
-2. **P-008** (`process.cascade` vs the QA lex), **P-009** (QA-lex
-   amendment; orchestrator recommends accept as written), **P-010**
-   (production lex: rank by long-term gain; a found gap owes a lesson or
-   opus). Once #17 merges, answer with `bisellium answer --petitio P-nnn
-   … --opus W-nnn` — dogfoods W-035's new flag.
-3. **Stale-opera ruling**: W-022/23/27/28 sit in `building` with no
-   handoffs and (for 27/28) unproducible reds. Halt/close them + accept
-   the dead reds by decision → the officina check goes green → flip the
-   `officina` CI job to a required check → full GitHub reliance (the
-   Patron's stated goal). Until then every Actions run shows a red X.
+1. Spec + build **W-042** (architect → builder → censor). Then: halt
+   W-023/W-027 and abandon W-028 through the new verb, officina goes
+   green, flip the `officina` job to a required check (`gh api` PUT on
+   ruleset 23720000, same pattern as `gates`) → full GitHub CI reliance.
+2. Retro nit: `retro --cascade 23` printed "no class recurs" in
+   `## Addressed` while `lesson.recurrent` still advises
+   `review×no-builder-isolation` — recurrence detection likely needs
+   `--from` findings JSON. Small defect, file or fix with W-043.
+3. Then the architect's standing ranking: W-033 → W-041 → W-039 →
+   W-038 → W-032 → W-040 → prettierignore.
+4. Deferred checkpoint rows (conserve-credits order): progress page owes
+   rows for the CI-gate work + W-035's rounds + cascade 23; masthead
+   stale at cascade 22. Artifacts last republished at checkpoint 22.
+
+**Patron's standing order (2026-09-20): before starting any task, judge
+whether the credit balance can finish it; if not, pause and write the
+handover instead.** Two dispatches died mid-flight on spend limits this
+session (a builder and a censor); a dead censor left stray verify
+bookkeeping that the re-run had to revert. Weekly limit resets Wed 2pm
+(Asia/Singapore). Also still registered: scratch worktree
+`/tmp/claude-1000/w037r2-rep/verdict` (stale, W-037 already landed —
+safe to `git worktree remove --force` from an unsandboxed shell).
 
 ### W-031 and W-030 — resolved
 
