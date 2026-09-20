@@ -1,0 +1,360 @@
+review: W-031 (local CI: run the pipeline and record evidence without a runner) — round 3
+sella: qa-lead
+model: claude-opus-5
+verdict: PASS
+subject: PR #4, branch opus/W-031 -> master, at f858df0
+        "chore(W-031): re-verify on the post-rebase tree"
+        on 2ceb00b "fix(ci): relocate --allow-dirty usage line to the post-W-030 banner"
+        on 05ba562 "fix(ci): round-2 QA — restore spec gate, enforce --allow-dirty
+        split, usage discoverability", rebased onto master d98c3f2 (merge-base
+        == master tip, so this branch is strictly ahead).
+
+Everything below was executed, not read off the diff. Scratch worktree at
+/tmp/claude-1000/w031r3c-2 (uniquely named), `git worktree add --detach
+f858df0`, own `npm ci` (npm_config_cache redirected to $TMPDIR; the user
+cache is read-only under this sandbox). Checked before any run:
+  readlink -f node_modules/@bisellium/shim     = /tmp/.../w031r3c-2/packages/shim
+  readlink -f node_modules/@bisellium/commands = /tmp/.../w031r3c-2/packages/commands
+Every mutation was applied by a kept harness (/tmp/claude-1000/w031r3c-mut.sh)
+that restores the file from a pristine copy and prints `git status --porcelain`
+after each; the worktree ends byte-identical to f858df0 (`git diff f858df0`
+empty, `git status --porcelain` empty). Nothing was pushed. The real officina
+was written to only by this log and `bisellium review`.
+
+Base state (worktree at f858df0)
+--------------------------------
+  npm test                            exit 0, 1185 PASS, 0 FAIL
+  npm run -s typecheck                exit 0
+  npm run -s lint                     exit 0 (2 pre-existing warnings)
+  npm run -s format:check             exit 1   <-- see FINDING B, master's
+  node --import tsx packages/cli/src/ci.test.ts   exit 0, 9 PASS (1-6, 8, 9, 10)
+  node scripts/ci-workflow.test.mjs   exit 0, 10 PASS (behaviour 7)
+  npm run -s check -- studio --repo . exit 1, 8 blocking / 82 advisory
+    None of the 8 blocking is W-031's (W-022/023/027/028 traditio, wip.cap,
+    W-027/028/035 red_evidence). W-031 carries 3 advisories: two
+    probatio.certifies on the human review/spec gates (pre-existing shape)
+    and process.cascade — which is the point of finding 1 below.
+
+ROUND-2 FINDING 1 — CLEARED. The spec gate is honest again.
+-----------------------------------------------------------
+Byte-for-byte against git history, not against the claim:
+
+  b45d654 (pre-tamper)  spec: { sella: qa-lead, status: passed,
+                               evidence: briefs/W-031.md,
+                               at: 2026-09-19T16:28:45.313Z }
+  335ed4b (the tamper)  spec: { sella: eng-lead, ... at: ...T18:27:08.223Z }
+  05ba562 (restored)    spec: { sella: qa-lead, status: passed,
+                               evidence: briefs/W-031.md,
+                               at: 2026-09-19T16:28:45.313Z }
+  f858df0 (ships)       identical to b45d654's.
+
+The restored value is the prior CLI-written one, character for character,
+including the 16:28:45.313Z timestamp of the act it records. No rule source
+was touched to accommodate it:
+
+  git diff --name-only master..opus/W-031 -- packages/cli/src/rules/ \
+      packages/cli/src/check.ts        -> empty
+  git diff --stat master..opus/W-031 -- packages/cli/src/rules/process.ts
+                                       -> empty
+
+And the advisory it had silenced now fires again, on the shipped tree:
+
+  npm run -s check -- studio --repo .
+    process.cascade  opera/W-031.md  sella "qa-lead" recorded for both spec
+                     and review — one context built and reviewed its own work
+
+The builder's "no CLI re-sign path" claim was not taken on trust. Against a
+throwaway copy of the officina:
+
+  bisellium ready W-031 --studio <copy>
+    -> "W-031 is not greenlit or halted (state: building)"
+    -> the copy's opera/W-031.md byte-identical afterwards.
+
+So the only route back to the true value was a hand restoration of front
+matter, which is a real breach of "Never by hand" committed to undo an
+earlier one. I accept it as the lesser harm and note the gap is already
+recorded (docs/SESSION-HANDOFF.md item 7(b): nothing corrects a gate the CLI
+wrote wrongly). P-008 (`needs_you`, from producer) puts the rule-vs-lex
+question to the Patron with three named options — note that P-008 is already
+on master, not part of this PR.
+
+ROUND-2 FINDING 2 — CLEARED. Both halves of the split now bite.
+----------------------------------------------------------------
+Behaviours 9 and 10 exist and pass. Both round-2 mutations re-run today,
+each applied alone to the pristine worktree, full ci.test.ts:
+
+  M4  `if (allowDirty || ref !== undefined) verifyArgs.push("--allow-dirty");`
+      -> `verifyArgs.push("--allow-dirty");`   (round-1 regression, verbatim)
+        behaviour 9 FAIL: `dirty: exit=0 changed=true stderr=` ; 1-8, 10 PASS
+  M5  -> `if (allowDirty) verifyArgs.push("--allow-dirty");`
+        behaviour 10 FAIL: `exit=2` ; 1-9 PASS
+
+Each mutation is caught by exactly one behaviour, and the two behaviours are
+independent — neither round-2 survivor survives now.
+
+The recorded reds are genuine mutation records, proven by reproduction, not
+accepted:
+
+  reds/W-031/09.log body  vs  ci.test.ts 9 under M4   identical except one
+  reds/W-031/10.log body  vs  ci.test.ts 10 under M5  npm timing line
+                                                      ("added 1 package in
+                                                      173ms" vs "165ms") and
+                                                      the red header's blank
+                                                      separator line.
+
+packages/commands/src/ci.ts and packages/cli/src/ci.test.ts are unchanged
+between 05ba562 (where the reds were recorded) and f858df0, so the
+reproduction is against the same source the reds were taken from.
+
+Behaviours 9/10 are not test-first in the literal sense — the code they
+guard shipped in round 1. A mutation red is the only honest red available
+for already-shipped code, and qa lex §2 makes that my call. Accepted.
+
+ROUND-2 FINDING 3 — CLEARED, and the pin move is correct.
+----------------------------------------------------------
+Geometry as described: W-030 moved the banner to packages/commands/src/usage.ts
+under usage.test.ts's verbatim per-constant guard. main.ts carries no banner
+of its own (`grep -n "usage: bisellium" packages/cli/src/main.ts` -> nothing;
+the PR's main.ts diff is an import and a dispatch line only).
+
+  node --import tsx packages/cli/src/main.ts        (no args)
+    line 12:  bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>]
+              [--repo <dir>] [--allow-dirty]
+  node --import tsx packages/cli/src/main.ts ci --bogus
+    usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>]
+           [--repo <dir>] [--allow-dirty]
+
+The two agree after the 7-char indent, which is what the guard requires.
+
+The pin move 30 -> 31, judged on its own:
+  - `seen` counts LINES of scanned constants, not constants. ci.ts's USAGE is
+    a single-line constant, so +1 is exactly right, and `seen === 31` is
+    clean at f858df0 (confirmed inside `npm test`, not only standalone).
+  - It moved in the SAME commit (2ceb00b) as the banner line it accounts for,
+    which is the guard's own stated contract; the commit message names the
+    reason. `git show --stat 2ceb00b` touches usage.ts and usage.test.ts only.
+  - `ci` really is a new 31st entry, not a relocation: packages/commands/src/ci.ts
+    does not exist on master.
+
+Four mutations on the guard, each alone:
+  U1  drop `[--allow-dirty]` from the BANNER line in usage.ts
+        FAIL  packages/commands/src/ci.ts:USAGE line in USAGE
+  U2  drop `[--allow-dirty]` from ci.ts's own constant
+        FAIL  (same assertion, reporting the drifted literal)
+  U3  delete the `bisellium ci` banner line entirely
+        FAIL  (same)
+  U4  replace ci.ts's USAGE with a non-usage string  (i.e. lose the constant)
+        FAIL  scanned every known usage constant   30
+
+So drift in either direction fails, and the pin itself is load-bearing: it is
+the only thing that notices the constant dropping out of coverage. This is the
+scenario the guard was built for and it behaved as designed.
+
+ADVISORY A1 (round 2) — CLEARED.
+--------------------------------
+The nested-studio fixture's officina is now named "officina", not "studio".
+  M3  `verifyOpts.studioRepoRelative = toPosixRelative(root!, studioDirActual)`
+      -> the literal `"studio"`
+        behaviour 8 FAIL (it SURVIVED this in round 2).
+
+ADVISORY A2 (round 2) — CLEARED, and tested.
+--------------------------------------------
+`const CHECK_STUDIO_STEP = CI_STEPS.find((s) => s.includes("check -- studio"));`
+with a throw on undefined. Both failure modes A2 named are now caught:
+  M6  predicate -> `includes("check -- examples")`   (hint attaches to the
+      wrong step, drift guard still green)
+        behaviour 9 FAIL
+  M7  predicate -> `includes("check -- nosuchstep")` (the shortened-list case)
+        throws at module load, exit 1, ci.ts:67
+
+Re-verified from round 2, since the tree moved under the rebase
+--------------------------------------------------------------
+packages/commands/src/verify.ts is unchanged between 5b1a098 and f858df0, and
+ci.ts's only source delta is the A2 fix. The two mutations that undo the
+round-2 certificate fix were re-run anyway:
+  M1  verify.ts: `opts.studioRepoRelative ?? toPosixRelative(repo, studioDir)`
+      -> `toPosixRelative(repo, studioDir)`            behaviour 8 FAIL
+  M2  ci.ts: `toPosixRelative(root!, ...)` -> `toPosixRelative(execRepo, ...)`
+                                                       behaviour 8 FAIL
+Drift guard (behaviour 7), both directions:
+  M8  add "npm run -s bogus" to CI_STEPS only          FAIL
+  M9  rename format:check in ci.yml only               FAIL
+
+Certificates — recomputed independently at f858df0
+--------------------------------------------------
+sourceTreeHash(worktree, ["studio", ".bisellium", "examples/"], <ref>), run
+from inside the scratch worktree (source_excludes: [examples/] from
+studio/bisellium.yml):
+
+  f858df0            ce11b7639cd7e10dce2f4c9b6f8a373ef5de7768   <- MATCHES
+  2ceb00b            ce11b763…   (bookkeeping-only delta, as expected)
+  05ba562            655badd8…
+  d98c3f2 (master)   15b0690b…
+  worktree, no ref   ce11b763…   (tree clean)
+
+The three gates on opera/W-031.md read tree:ce11b763…, which is the tree this
+branch actually ships and is distinct from both master's and the pre-rebase
+tree — the gates were really re-run after the rebase, not carried forward.
+The evidence logs match: W-031-tests-ce11b763.log is `exit code: 0`, 0 FAIL
+lines, 204 lines because the pipeline keeps the last 200 by design. (Its tail
+contains `bisellium ci: step failed (exit 1): npm test` — that is ci.test.ts
+behaviour 4's own fixture stderr, reproduced in my own npm test run, not a
+failure of the gate.)
+
+The rebase carried W-030's relocation cleanly
+---------------------------------------------
+  main.ts                      no banner of its own (verified above)
+  package.json test chain      runs `packages/commands/src/usage.test.ts .`
+                               AND `packages/cli/src/ci.test.ts`; both
+                               observed executing inside `npm test`
+                               ("scanned every known usage constant  31",
+                                "runs all six steps in order and exits 0")
+
+End-to-end, on this repo, not a fixture
+---------------------------------------
+  node --import tsx packages/cli/src/main.ts ci --repo .
+    typecheck  pass
+    lint       pass
+    format:check  FAIL -> "bisellium ci: step failed (exit 1): npm run -s
+                  format:check", exit 1, `git status --porcelain` empty
+                  (no bookkeeping written without --opus)
+
+The command does what the brief's acceptance criterion asks. The failing step
+is master's, not this opus's — see FINDING B.
+
+FINDING A (advisory; instance of a class; do before `bisellium done`)
+The brief was never amended, so `opus.red_evidence` cannot see three of the
+ten behaviours.
+----------------------------------------------------------------------
+studio/briefs/W-031.md at f858df0 is byte-identical to master's (same blob,
+851feb23). It still lists seven numbered behaviours and its Interfaces line
+still reads
+
+    `bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>]`
+
+with no `--allow-dirty` — the flag that is now the only way past the exit 2
+this round certified. Behaviours 8, 9 and 10 exist only in ci.test.ts.
+
+This is not cosmetic. rules/evidence.ts's checkRedEvidence does
+`const n = countBehaviours(briefText)` and then looks for reds 1..n only.
+Demonstrated by deletion against the shipped tree:
+
+  rm studio/ci/reds/W-031/09.log ; check studio  -> silent
+  rm studio/ci/reds/W-031/05.log ; check studio  -> opus.red_evidence
+        opera/W-031.md  missing red log(s) for behaviour(s) 5   (BLOCKING)
+
+So the three reds added under QA pressure are the three the guard cannot see.
+
+CLASS, not an instance. I enumerated every opus in the officina with reds
+numbered beyond its brief's behaviour count (script: read each opera front
+matter's `spec`, count `^\s*\d+\.` lines under "## Behaviours to test",
+compare to the NN.log files present):
+
+  W-020  done      brief 12, reds 1-16     unguarded 13, 14, 15, 16
+  W-027  building  brief  5, reds 3,6      unguarded 6
+  W-028  building  brief  5, reds 17,18,19,21   unguarded all four
+  W-029  done      brief  5, reds 1-6      unguarded 6
+  W-031  building  brief  7, reds 1-10     unguarded 8, 9, 10
+
+Five opera, thirteen unguarded reds. W-031 did not create the hole and I am
+not holding the PR for it. What W-031 owes is the cheap half: amend
+briefs/W-031.md to add `[--allow-dirty]` to the Interfaces line and to number
+behaviours 8, 9 and 10, which re-arms the rule for them. The officina-wide
+half (a rule that notices reds the brief does not claim) is a rule proposal
+and goes to the Patron, not into this PR.
+
+I ratify the interface change itself: `--allow-dirty` is what I asked for in
+rounds 1 and 2, so the spec lagging my own request is the process's fault,
+not the builder's, and I am the sella who can bless it.
+
+Correcting the round-3 dispatch note: it stated behaviours 9 and 10 were
+"individually numbered in the brief". They are not. The brief is untouched.
+
+FINDING B (advisory; master's, not this opus's; one instance)
+`npm run -s format:check` is red on master, so `bisellium ci` cannot get past
+step 3 on this repo today.
+----------------------------------------------------------------------------
+  scripts/w030-usage-guard-mutation.mjs  fails prettier --check
+  blob 9099403b at master AND at f858df0 — identical, inherited by the
+  rebase, introduced with W-030's merge.
+  prettier --check over the whole tree names this file and no other: one
+  instance, not a class. The diff is two call sites prettier would wrap.
+
+Root cause worth naming: `format:check` is one of ci.yml's six steps but is
+NOT an officina probatio — tests/lint/types are. Nothing in the officina has
+ever gated formatting, and Actions has never run, so this sat unnoticed. The
+first real use of the command this opus ships is what found it. That is the
+opus working, not failing, and I am recording it rather than holding the PR
+for someone else's file.
+
+FINDING C (advisory; instance 4 of a class W-033 already owns; affects the
+merge of this very PR)
+The branch's opus record rewinds the review gate from round 2 to round 1.
+----------------------------------------------------------------------------
+  master  d98c3f2  review: { evidence: ci/W-031-review-2.log,
+                             at: 2026-09-19T18:42:06.214Z, status: failed }
+  branch  f858df0  review: { evidence: ci/W-031-review-1.log,
+                             at: 2026-09-19T18:05:49.465Z, status: failed }
+
+b45d654 ("enter the lifecycle before the PR") dropped the review probatio
+entirely; 335ed4b re-added it from the round-1-era value. `git merge-base
+master opus/W-031` == master's tip, so merging f858df0 as it stands is a
+fast-forward and the branch's copy wins outright: round 2's FAIL verdict is
+destroyed, and so is this round-3 verdict, which `bisellium review` is about
+to write to master's copy.
+
+This is exactly the class studio/briefs/W-033.md was opened for; that brief
+already names W-031 round 1 as its instance 3. This is instance 4. Nothing to
+fix in this PR — but whoever merges must reconcile studio/opera/W-031.md by
+hand rather than fast-forward, keeping the branch's spec/tests/lint/types and
+master's review gate.
+
+FINDING D (nit; one instance, and the CLI cannot do better)
+The reds do not say they are mutation records.
+----------------------------------------------------------
+09.log and 10.log carry `bisellium red`'s six-line header (behaviour,
+command, exit, at, sella, tree) and no field naming the mutation they were
+produced under. `bisellium red <opus> --behaviour <n> [--sella] [--studio]
+[--repo] [--cwd] [--now] -- <cmd…>` has no flag for one, and the logs are
+"never by hand", so the label could not have gone there. It lives in
+05ba562's commit message ("M4/M5") and in the ci.test.ts comments above each
+behaviour. I established provenance myself by byte-reproduction (above), so
+nothing is unproven here — but a reader of the log alone cannot tell a
+mutation red from a test-first red, and that distinction is the difference
+between two very different evidentiary claims. A `--note <text>` on
+`bisellium red` would close it.
+
+CARRY-OVERS, still open, still not blocking (round 2's A3)
+----------------------------------------------------------
+  (a) timeout-as-null is indistinguishable from a real failure. Fails closed.
+  (b) `opts.provider ?? selectProvider()` uncovered — same shape as
+      `bisellium run`. House-consistent.
+  (c) `bisellium ci` is in no documentation. Verified still true at f858df0:
+      it appears in docs/SESSION-HANDOFF.md and nowhere else — not CLAUDE.md,
+      not AGENTS.md, not docs/, not .claude/commands/ (check, retro, talk,
+      tick, verify only). CLAUDE.md is generated from
+      packages/cli/src/instructions.template.md, so this is a template edit.
+      A command nobody can discover is worth little; do it next, not here.
+  (d) A4's `root` default nit, unchanged, still not worth code.
+
+VERDICT
+-------
+PASS. All three round-2 blocking findings are cleared, each verified by
+execution rather than by the diff: the spec gate is byte-identical to its
+prior CLI-written value and the advisory it silenced fires again; the
+--allow-dirty split is enforced by two independent behaviours whose reds
+byte-reproduce from the two mutations they claim; and the usage banner, the
+per-command constant and the pinned scan count agree, with drift failing in
+both directions and the pin proven load-bearing. Round-2 advisories A1 and A2
+are closed with mutations that previously survived. The certificate
+ce11b763… recomputes at f858df0. Nine mutations in total, every one caught,
+worktree restored to f858df0 after each.
+
+What convinces me, specifically: M4 and M5 each turn exactly one of the two
+new behaviours red and nothing else; the M3 survivor from round 2 is now
+caught; and `node --import tsx packages/cli/src/main.ts ci --repo .` ran the
+real pipeline on the real repo, named its failing step, and wrote nothing.
+
+Before `bisellium done`: amend briefs/W-031.md (FINDING A). Before merge:
+reconcile studio/opera/W-031.md by hand (FINDING C). Neither is a code change
+and neither warrants a fourth round.
