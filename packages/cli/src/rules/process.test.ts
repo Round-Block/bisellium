@@ -1,10 +1,17 @@
 /**
  * packages/cli/src/rules/process.test.ts — process.tdd rule: a commit
  * that changes source code without a corresponding test change is an
- * advisory. Pure function test — no git, no temp dirs.
+ * advisory. Mostly pure-function tests (no git, no temp dirs); behaviour 22
+ * is the exception — it drives checkProcess's real execSync git-diff path
+ * against a non-git directory to prove the catch branch now reports
+ * "process.history" instead of swallowing the failure (the CI shallow-clone
+ * bug this rule exists to surface).
  */
 
-import { tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { checkProcess, tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
 
 let failed = 0;
 const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
@@ -148,6 +155,26 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
     result === 'review gate (sella "eng-lead") has no recorded model — re-record with "bisellium review --model <id>" to verify tier',
     String(result),
   );
+}
+
+// behaviour 22: repo given but has no git history at all (same symptom as
+// CI's shallow `fetch-depth: 1` checkouts, where `git diff HEAD~1 HEAD`
+// hits an ambiguous-argument fatal) — checkProcess must report
+// process.history instead of silently skipping process.tdd/checkpoint.
+{
+  const officina = mkdtempSync(join(tmpdir(), "bisellium-process-history-officina-"));
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-process-history-repo-"));
+  writeFileSync(join(officina, "bisellium.yml"), "id: test\n");
+  const findings = checkProcess(officina, { now: new Date(), repo });
+  const finding = findings.find((f) => f.rule === "process.history");
+  check(
+    22,
+    "git history unavailable emits process.history advisory",
+    finding?.level === "advise" && finding.where === "HEAD" && finding.message.includes("process.tdd and process.checkpoint not evaluated"),
+    JSON.stringify(finding),
+  );
+  rmSync(officina, { recursive: true, force: true });
+  rmSync(repo, { recursive: true, force: true });
 }
 
 process.exit(failed ? 1 : 0);

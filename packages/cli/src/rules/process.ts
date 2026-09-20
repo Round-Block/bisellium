@@ -238,7 +238,11 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
 
   if (_opts.repo) {
     try {
-      const raw = execSync("git diff --name-only HEAD~1 HEAD", { cwd: _opts.repo, encoding: "utf8" });
+      const raw = execSync("git diff --name-only HEAD~1 HEAD", {
+        cwd: _opts.repo,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
       const files = raw.trim().split("\n").filter(Boolean);
       if (tddViolation(files)) {
         add("process.tdd", "advise", "HEAD", "last commit changed source code without a corresponding test change");
@@ -247,7 +251,17 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
         add("process.checkpoint", "advise", "HEAD", "last commit changed opera without updating SESSION-HANDOFF.md or dossier progress");
       }
     } catch {
-      // no git, shallow clone, or initial commit — skip silently
+      // no git, shallow clone, or initial commit — process.tdd and
+      // process.checkpoint can't be evaluated; say so instead of swallowing
+      // it (this used to leak the underlying `git` fatal to inherited
+      // stderr in CI, since execSync default-inherits stdio — now piped and
+      // discarded above).
+      add(
+        "process.history",
+        "advise",
+        "HEAD",
+        "git history unavailable (shallow clone or no git) — process.tdd and process.checkpoint not evaluated",
+      );
     }
   }
 
