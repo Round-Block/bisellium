@@ -1,0 +1,8 @@
+# behaviour: 10
+# command: node --import tsx packages/cli/src/rules.test.ts . 10
+# exit: 1
+# at: 2026-09-20T07:39:39.986Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lesson.addressed_by: accepts an id in RULE_IDS                         [{"rule":"lesson.addressed_by","level":"block","where":"lessons/L-1000.md","message":"addressed_by \"decision.kill\" names no opus, rule id, or decision"}]

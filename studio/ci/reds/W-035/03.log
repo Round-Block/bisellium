@@ -1,0 +1,8 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/rules/lex.test.ts _ 3
+# exit: 1
+# at: 2026-09-20T07:33:46.603Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lex.unchecked is silent for a lex whose only unchecked clauses were wrapped markers [{"rule":"lex.unchecked","level":"advise","where":"leges/fixture.md","message":"2 clause(s) in §2/§3/§4 with no \"(check: <rule.id>)\" marker"}]

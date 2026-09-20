@@ -1,0 +1,8 @@
+# behaviour: 14
+# command: node --import tsx packages/cli/src/rules.test.ts . 14
+# exit: 1
+# at: 2026-09-20T07:37:59.909Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lesson.recurrent: in-flight opus reports the not-yet-done message      [{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-inflight\" recurs across 2 cascades (L-1400, L-1401)"}]

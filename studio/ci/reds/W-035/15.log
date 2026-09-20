@@ -1,0 +1,10 @@
+# behaviour: 15
+# command: node --import tsx packages/cli/src/rules.test.ts . 15
+# exit: 1
+# at: 2026-09-20T07:38:00.343Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lesson.recurrent: silent for a done opus                               [{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-done-opus\" recurs across 2 cascades (L-1500, L-1501)"},{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-rule\" recurs across 2 cascades (L-1502, L-1503)"},{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-decision\" recurs across 2 cascades (L-1504, L-1505)"}]
+FAIL  lesson.recurrent: silent for a rule id                                 [{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-done-opus\" recurs across 2 cascades (L-1500, L-1501)"},{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-rule\" recurs across 2 cascades (L-1502, L-1503)"},{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-decision\" recurs across 2 cascades (L-1504, L-1505)"}]
+FAIL  lesson.recurrent: silent for a decision id                             [{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-done-opus\" recurs across 2 cascades (L-1500, L-1501)"},{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-rule\" recurs across 2 cascades (L-1502, L-1503)"},{"rule":"lesson.recurrent","level":"advise","where":"lessons/","message":"class \"recur-decision\" recurs across 2 cascades (L-1504, L-1505)"}]

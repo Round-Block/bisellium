@@ -1,0 +1,8 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/rules/lex.test.ts _ 7
+# exit: 1
+# at: 2026-09-20T07:34:33.532Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  RULE_IDS equals the harvest of check.ts + rules/*.ts                   {"missingFromRegistry":[],"staleInRegistry":["lesson.addressed_by","lex.marker_unknown"]}

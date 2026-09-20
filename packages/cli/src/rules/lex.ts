@@ -11,8 +11,10 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Finding, Level, RuleOpts } from "../check.js";
+import { RULE_IDS } from "./ids.js";
 
 const CHECK_MARKER = /\(check:\s*[^)]+\)\s*$/;
+const CHECK_MARKER_ID = /\(check:\s*([^)]+)\)\s*$/;
 const SECTION_HEADING = /^##\s+([0-9]+)\./;
 
 /** Body text of §2/§3/§4 (numbered `## N. Title` headings), in file order. */
@@ -34,12 +36,31 @@ function numberedSections(text: string, numbers: Set<string>): string[] {
   return out;
 }
 
-/** Top-level bullet clauses (`- ` / `* `) within a section body. */
-function bulletClauses(body: string): string[] {
-  return body
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => /^[-*]\s+\S/.test(l));
+/** Top-level bullet clauses (`- ` / `* `) within a section body. A clause
+ *  starts at a bullet and runs until the next bullet, a heading, or a blank
+ *  line — continuation lines folded in with a single space, so a marker
+ *  wrapped onto its own line is still found. An indented bullet still
+ *  starts its own clause: the line is trimmed before the bullet test. */
+export function bulletClauses(body: string): string[] {
+  const out: string[] = [];
+  let cur: string | undefined;
+  for (const raw of body.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (/^[-*]\s+\S/.test(line)) {
+      if (cur !== undefined) out.push(cur);
+      cur = line;
+      continue;
+    }
+    if (cur === undefined) continue;
+    if (line === "" || /^#{1,6}\s/.test(line)) {
+      out.push(cur);
+      cur = undefined;
+      continue;
+    }
+    cur += ` ${line}`;
+  }
+  if (cur !== undefined) out.push(cur);
+  return out;
 }
 
 export function checkLex(root: string, _opts: RuleOpts): Finding[] {
@@ -66,11 +87,19 @@ export function checkLex(root: string, _opts: RuleOpts): Finding[] {
       continue; // unreadable lex is lex.present's job (check.ts), not ours
     }
     let unchecked = 0;
+    let unknownClauses = 0;
+    const unknownIds = new Set<string>();
     for (const body of numberedSections(text, sectionNumbers)) {
-      for (const clause of bulletClauses(body)) if (!CHECK_MARKER.test(clause)) unchecked++;
+      for (const clause of bulletClauses(body)) {
+        if (!CHECK_MARKER.test(clause)) { unchecked++; continue; }
+        const id = CHECK_MARKER_ID.exec(clause)?.[1]?.trim();
+        if (id && !RULE_IDS.has(id)) { unknownClauses++; unknownIds.add(id); }
+      }
     }
     if (unchecked > 0)
       add("lex.unchecked", "advise", where, `${unchecked} clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker`);
+    if (unknownClauses > 0)
+      add("lex.marker_unknown", "advise", where, `${unknownClauses} clause(s) cite a rule that does not exist: ${[...unknownIds].sort().join(", ")}`);
   }
 
   return findings;

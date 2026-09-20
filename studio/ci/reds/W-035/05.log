@@ -1,0 +1,8 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/rules/lex.test.ts _ 5
+# exit: 1
+# at: 2026-09-20T07:41:00.784Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lex.marker_unknown is silent when every marker names a real id         [{"rule":"lex.marker_unknown","level":"advise","where":"leges/fixture.md","message":"1 clause(s) cite a rule that does not exist: decision.kill"}]

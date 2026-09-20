@@ -1,0 +1,8 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/rules/lex.test.ts _ 2
+# exit: 1
+# at: 2026-09-20T07:33:09.610Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  bulletClauses does not fold across a following bullet or a blank line  ["- clause A","- clause B starts immediately, not folded into A","- clause C"]

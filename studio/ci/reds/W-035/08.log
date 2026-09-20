@@ -1,0 +1,8 @@
+# behaviour: 8
+# command: node --import tsx packages/cli/src/rules.test.ts . 8
+# exit: 1
+# at: 2026-09-20T07:39:16.469Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lesson.addressed_by: silent when the key is absent                     [{"rule":"lesson.addressed_by","level":"block","where":"lessons/L-800.md","message":"\"addressed_by\" must be a non-empty string"}]

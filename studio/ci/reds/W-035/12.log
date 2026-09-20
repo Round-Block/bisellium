@@ -1,0 +1,11 @@
+# behaviour: 12
+# command: node --import tsx packages/cli/src/rules.test.ts . 12
+# exit: 1
+# at: 2026-09-20T07:37:59.033Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lesson.addressed_by: blocks an unresolvable id                         []
+FAIL  lesson.addressed_by: blocks an empty string                            []
+FAIL  lesson.addressed_by: blocks a non-string value (number)                []
+FAIL  lesson.addressed_by: blocks a non-string value (list)                  []

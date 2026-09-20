@@ -1,0 +1,8 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/rules/lex.test.ts _ 1
+# exit: 1
+# at: 2026-09-20T07:32:58.592Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  bulletClauses folds a wrapped bullet and the marker is found on the joined clause ["- A clause whose marker is wrapped onto the next line"]

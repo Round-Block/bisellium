@@ -1,0 +1,8 @@
+# behaviour: 9
+# command: node --import tsx packages/cli/src/rules.test.ts . 9
+# exit: 1
+# at: 2026-09-20T07:39:39.464Z
+# sella: builder-a
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+FAIL  lesson.addressed_by: accepts an existing opus id                       [{"rule":"lesson.addressed_by","level":"block","where":"lessons/L-900.md","message":"addressed_by \"W-900\" names no opus, rule id, or decision"}]
