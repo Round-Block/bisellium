@@ -1,0 +1,737 @@
+# behaviour: 18
+# command: node --import tsx packages/cli/src/retro.test.ts .
+# exit: 1
+# at: 2026-09-20T07:37:44.294Z
+# sella: builder-b
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+PASS  10a. retro doc has section "## Numbers"                    
+PASS  10a. retro doc has section "## Findings by class"          
+PASS  10a. retro doc has section "## Lessons filed"              
+PASS  10a. retro doc has section "## Recurrence"                 
+PASS  10a. retro doc has section "## Proposals"                  
+PASS  10a. retro doc has section "## Pruning candidates"         
+PASS  10b. one lesson stub per distinct class (2 classes -> 2 new lessons) 2
+PASS  10c. a petitio was filed for the recurring class, none for the one-off ["petitiones/P-001.md"]
+PASS  10d. petitio is addressed to the patron, needs_you         
+PASS  10e. pruning candidate lists D-001 (kill_when mentions 'flaky') ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 4"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 4
+
+## Numbers
+
+- Verifier issues: 2
+- Tests: 120
+- Fix rounds: 1
+- Mutations caught: 3
+- Agents:
+  - builder-c (claude-sonnet-5): 12000 tokens, 40 min
+
+## Findings by class
+
+- flaky: 1
+- one-off-typo: 1
+
+## Lessons filed
+
+- L-002 (flaky) → lessons/L-002.md
+- L-003 (one-off-typo) → lessons/L-003.md
+
+## Recurrence
+
+- "flaky" recurs across cascades 3, 4
+
+## Proposals
+
+- "flaky": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "one-off-typo": advisory rule — adopt alone
+
+## Pruning candidates
+
+- D-001 (decisions/D-001.md): kill_when — "flaky tests recur across cascades"
+
+PASS  10f. the decision file itself is byte-identical on disk (never edited) 
+PASS  10g. check on the officina afterwards: zero NEW blocking findings 
+PASS  10h. check on the officina afterwards: zero blocking findings at all []
+PASS  11a. empty evidence list: draftRetro throws naming the class retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+PASS  11b. nothing written: no acta/ dir created                 
+PASS  11c. nothing written: no lessons/ dir created              
+PASS  11d. dead evidence href: draftRetro throws naming the class retro: finding class "y" evidence "does-not-exist.log" not found under the officina (dead link)
+PASS  11e. nothing written after the dead-href refusal either    
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+PASS  11f. runRetro exits 2 on the same refusal                  
+PASS  11g. runRetro: nothing written either                      
+PASS  12. same input + pinned --now -> byte-identical retro markdown 
+PASS  13. cascade.js phases === [spec, build, verify, close]     
+PASS  15a. sizing.json: operaPerCascade is 2 (D-012)             {"_decision":"studio/decisions/D-012.md","operaPerCascade":2,"reviewer":{"role":"reviewer","model":"claude-opus-5","perOpus":1,"_decision":"D-014 (amended twice): Sonnet 5 builds, Opus 5 reviews"},"firstHourBuilderModel":"claude-sonnet-5","mutationOpusPerCascade":1,"worktreesPerBuilder":1,"midTurnRelaysAllowed":false}
+PASS  15b. buildCascade accepts operaPerCascade-many opera       [{"phase":"spec","prompt":"Read CLAUDE.md at /tmp/repo. Run \"bisellium context --sella architect studio\". For each opus in [W-020, W-021], write or confirm its spec at studio/briefs/<opus>.md (Intent · Files owned · Interfaces · Behaviours to test · Acceptance · Out of scope), then set spec: studio/briefs/<opus>.md on the opus and move it to building only once its spec is ready (Design lex §1, \"definition of ready\")."},{"phase":"build","prompts":["Read CLAUDE.md. Run \"bisellium context --sella builder studio\". Then read your brief at studio/briefs/W-020.md and implement it exactly. Your first hour on this opus runs on claude-sonnet-5 (D-012, cascade sizing) — escalate to a heavier model only once that hour's actually spent, not pre-emptively.","Read CLAUDE.md. Run \"bisellium context --sella builder studio\". Then read your brief at studio/briefs/W-021.md and implement it exactly. Your first hour on this opus runs on claude-sonnet-5 (D-012, cascade sizing) — escalate to a heavier model only once that hour's actually spent, not pre-emptively."]},{"phase":"verify","prompt":"For each opus in [W-020, W-021], run \"bisellium verify <opus> --studio studio --repo /tmp/repo\" and \"npm run -s check -- studio --repo /tmp/repo\" — a cascade does not close with a blocking finding outstanding."},{"phase":"close","prompt":"Run \"bisellium retro --cascade 5 --studio studio --now 2026-09-19T09:00:00Z\". Run the mutation-testing step (D-010) against 1 opus this cascade, per D-012's sizing — not every opus, not zero. Confirm \"npm run -s check -- studio --repo /tmp/repo\" reports zero new blocking findings for [W-020, W-021]. Confirm docs/ARCHITECTURE.md reflects any dependency-edge, seam, lifecycle or route change this cascade made (Design lex §2; regenerate the module-graph block with \"node scripts/arch-graph.mjs\", never by hand) — a stale architecture doc is a finding for the retro, not a silent omission."}]
+PASS  15c. buildCascade throws naming sizing.json/D-012 for a mis-sized opera list buildCascade: cascades/sizing.json (D-012) calls for 2 opera per cascade, got 4: [W-016, W-017, W-018, W-019] — pass a different sizing to override deliberately
+PASS  14a. no input.usage -> no '## Usage' section               ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 1"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 1
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+PASS  14b. input.usage -> '## Usage' section present             ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14c. total tokens reported                                 ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14d. by-model breakdown reported                           ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14e. by-role breakdown reported                            ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14f. checking/building ratio computed (5000/10000 = 0.50)  ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14g. tokens per opus reported                              ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14h. waste reported                                        ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14i. posture from the current aerarium reported            ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14j. no prior retro yet -> trend says so                   ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 2"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 2
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: no prior retro found for comparison
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+PASS  14k. a later retro finds the previous one and reports a trend ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 3"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 3
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- (no findings this cascade)
+
+## Lessons filed
+
+- (none)
+
+## Recurrence
+
+- no class recurs across two or more cascades yet
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+## Usage
+
+- Total tokens: 15000
+- By model: claude-opus-5: 5000, claude-sonnet-5: 10000
+- By role: builder: 10000, reviewer: 5000
+- Checking/building ratio: 0.50
+- Tokens per opus: 15000 (opera basis: 1)
+- Waste: 1 rerun(s), 0 refusal(s), 1 fix round(s)
+- Trend vs previous retro: +0.0% vs cascade 2 (15000 → 15000)
+- Posture:
+  - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
+
+FAIL  18a. no petitio filed for the addressed class              ["petitiones/P-001.md","petitiones/P-003.md","petitiones/P-006.md"]
+FAIL  18b. petitio ids are consecutive                           [1,3,6]
+FAIL  18c. '## Addressed' lists the addressed class with its target ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 5"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 5
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- addressed-class: 1
+- unaddressed-a: 1
+- unaddressed-b: 1
+
+## Lessons filed
+
+- L-104 (addressed-class) → lessons/L-104.md
+- L-105 (unaddressed-a) → lessons/L-105.md
+- L-106 (unaddressed-b) → lessons/L-106.md
+
+## Recurrence
+
+- "addressed-class" recurs across cascades 1, 5
+- "unaddressed-a" recurs across cascades 1, 5
+- "unaddressed-b" recurs across cascades 1, 5
+
+## Proposals
+
+- "addressed-class": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-003.md
+- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-006.md
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+FAIL  18d. '## Addressed' lists both unaddressed classes as unresolved ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 5"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 5
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- addressed-class: 1
+- unaddressed-a: 1
+- unaddressed-b: 1
+
+## Lessons filed
+
+- L-104 (addressed-class) → lessons/L-104.md
+- L-105 (unaddressed-a) → lessons/L-105.md
+- L-106 (unaddressed-b) → lessons/L-106.md
+
+## Recurrence
+
+- "addressed-class" recurs across cascades 1, 5
+- "unaddressed-a" recurs across cascades 1, 5
+- "unaddressed-b" recurs across cascades 1, 5
+
+## Proposals
+
+- "addressed-class": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-003.md
+- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-006.md
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+FAIL  18e. the addressed class is not proposed for a petitio in '## Proposals' ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 5"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 5
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- addressed-class: 1
+- unaddressed-a: 1
+- unaddressed-b: 1
+
+## Lessons filed
+
+- L-104 (addressed-class) → lessons/L-104.md
+- L-105 (unaddressed-a) → lessons/L-105.md
+- L-106 (unaddressed-b) → lessons/L-106.md
+
+## Recurrence
+
+- "addressed-class" recurs across cascades 1, 5
+- "unaddressed-a" recurs across cascades 1, 5
+- "unaddressed-b" recurs across cascades 1, 5
+
+## Proposals
+
+- "addressed-class": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-003.md
+- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-006.md
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+FAIL  18f. '## Addressed' section sits between '## Recurrence' and '## Proposals' 

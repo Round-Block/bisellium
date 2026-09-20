@@ -274,6 +274,71 @@ try {
     const draft3 = draftRetro(dir, 3, withUsage, NOW);
     check("14k. a later retro finds the previous one and reports a trend", !draft3.markdown.toLowerCase().includes("no prior retro"), draft3.markdown);
   }
+
+  // =========================================================================
+  // Behaviour 18 (W-035) — an addressed recurrent class files no petitio and
+  // is listed under "## Addressed"; two unaddressed recurrent classes still
+  // get petitiones, with consecutive ids (the numbering-skip fix).
+  // =========================================================================
+  {
+    const dir = tempStudio("addressed");
+    writeFileSync(join(dir, "ev.log"), "x\n");
+    mkdirSync(join(dir, "lessons"), { recursive: true });
+    writeFileSync(
+      join(dir, "lessons", "L-101.md"),
+      '---\nid: "L-101"\nat: 2026-09-10T00:00:00Z\nclass: "addressed-class"\nevidence: ["ev.log"]\ncascade: 1\naddressed_by: "some.rule.id"\n---\nEarlier.\n',
+    );
+    writeFileSync(
+      join(dir, "lessons", "L-102.md"),
+      '---\nid: "L-102"\nat: 2026-09-10T00:00:00Z\nclass: "unaddressed-a"\nevidence: ["ev.log"]\ncascade: 1\n---\nEarlier.\n',
+    );
+    writeFileSync(
+      join(dir, "lessons", "L-103.md"),
+      '---\nid: "L-103"\nat: 2026-09-10T00:00:00Z\nclass: "unaddressed-b"\nevidence: ["ev.log"]\ncascade: 1\n---\nEarlier.\n',
+    );
+
+    const input: RetroInput = {
+      verifierIssues: 0,
+      reviewFindings: [
+        { class: "addressed-class", where: "w", evidence: ["ev.log"] },
+        { class: "unaddressed-a", where: "w", evidence: ["ev.log"] },
+        { class: "unaddressed-b", where: "w", evidence: ["ev.log"] },
+      ],
+      agents: [],
+      tests: 1,
+      fixRounds: 0,
+      mutationsCaught: 0,
+    };
+
+    const draft = draftRetro(dir, 5, input, NOW);
+
+    check("18a. no petitio filed for the addressed class", draft.petitiones.length === 2, JSON.stringify(draft.petitiones));
+
+    const ids = draft.petitiones.map((p) => Number(/P-(\d+)\.md$/.exec(p)![1]));
+    check("18b. petitio ids are consecutive", ids.length === 2 && ids[1] === ids[0]! + 1, JSON.stringify(ids));
+
+    check(
+      "18c. '## Addressed' lists the addressed class with its target",
+      draft.markdown.includes('"addressed-class" → some.rule.id (rule)'),
+      draft.markdown,
+    );
+    check(
+      "18d. '## Addressed' lists both unaddressed classes as unresolved",
+      draft.markdown.includes('"unaddressed-a" → nothing yet') && draft.markdown.includes('"unaddressed-b" → nothing yet'),
+      draft.markdown,
+    );
+    check(
+      "18e. the addressed class is not proposed for a petitio in '## Proposals'",
+      !draft.markdown.includes('"addressed-class": blocking-rule'),
+      draft.markdown,
+    );
+    check(
+      "18f. '## Addressed' section sits between '## Recurrence' and '## Proposals'",
+      draft.markdown.indexOf("## Recurrence") < draft.markdown.indexOf("## Addressed") &&
+        draft.markdown.indexOf("## Addressed") < draft.markdown.indexOf("## Proposals"),
+      "",
+    );
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

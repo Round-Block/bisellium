@@ -1,0 +1,117 @@
+# behaviour: 17
+# command: node --import tsx packages/cli/src/writes.test.ts .
+# exit: 1
+# at: 2026-09-20T07:36:14.107Z
+# sella: builder-b
+# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+
+W-002: traditio -> sella=builder-1 stage=building next="ship the filter" blocked_on=none
+PASS  handoff: exitCode 0                                        0
+PASS  handoff: body byte-for-byte unchanged                      {"before":"","after":""}
+PASS  handoff: keys other than traditio unchanged                {"beforeRest":{"id":"W-002","title":"Combat log panel","kind":"feature","collegium":"engineering","sella":"builder-1","state":"building","probationes":{"tests":{"status":"passed","evidence":"ci/W-002-tests-6b416199.log","certifies":"tree:6b4161990d0381a22f465d2702c376c82d672a67"},"lint":{"status":"passed","evidence":"ci/W-002-lint-6b416199.log","certifies":"tree:6b4161990d0381a22f465d2702c376c82d672a67"},"types":{"status":"passed","evidence":"ci/W-002-types-6b416199.log","certifies":"tree:6b4161990d0381a22f465d2702c376c82d672a67"}},"tokens":470000,"heartbeat":"2026-09-17T10:42:00Z"},"afterRest":{"id":"W-002","title":"Combat log panel","kind":"feature","collegium":"engineering","sella":"builder-1","state":"building","probationes":{"tests":{"status":"passed","evidence":"ci/W-002-tests-6b416199.log","certifies":"tree:6b4161990d0381a22f465d2702c376c82d672a67"},"lint":{"status":"passed","evidence":"ci/W-002-lint-6b416199.log","certifies":"tree:6b4161990d0381a22f465d2702c376c82d672a67"},"types":{"status":"passed","evidence":"ci/W-002-types-6b416199.log","certifies":"tree:6b4161990d0381a22f465d2702c376c82d672a67"}},"tokens":470000,"heartbeat":"2026-09-17T10:42:00Z"}}
+PASS  handoff: traditio updated as requested                     {"sella":"builder-1","stage":"building","next":"ship the filter","blocked_on":"none","at":"2026-09-18T14:00:00.000Z"}
+--stage "review" does not match opus state "building"
+PASS  handoff: --stage mismatching opus state exits 2            2
+unknown sella "nobody" — not declared in bisellium.yml
+PASS  handoff: unknown sella exits 2                             2
+cli:0: workflow.custom
+PASS  emit: exitCode 0                                           0
+PASS  emit: exactly one event on disk                            1
+PASS  emit: event name preserved                                 {"id":"cli:0","name":"workflow.custom","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"foo":"bar","workflow.source":"cli","workflow.source.seq":0}}
+PASS  emit: event ts is pinned now                               2026-09-18T14:00:00.000Z
+PASS  emit: attrs carried through                                {"foo":"bar","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit: attrs stamped with source=cli                        {"foo":"bar","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit: attrs stamped with seq 0                             {"foo":"bar","workflow.source":"cli","workflow.source.seq":0}
+cli:1: workflow.custom
+PASS  emit: second event exitCode 0                              0
+PASS  emit: seq increments off the log length                    1
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+PASS  emit: invalid JSON exits 2                                 
+emit: event needs a non-empty string "name"
+PASS  emit: missing name exits 2                                 
+cli:0: gen_ai.usage
+PASS  emit --usage: exitCode 0                                   0
+PASS  emit --usage: exactly one event on disk                    [{"id":"cli:0","name":"gen_ai.usage","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}}]
+PASS  emit --usage: event name is gen_ai.usage                   {"id":"cli:0","name":"gen_ai.usage","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}}
+PASS  emit --usage: gen_ai.usage.total_tokens carried            {"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit --usage: workflow.item.id is the opus                 {"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit --usage: workflow.actor.role is the sella             {"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit --usage: gen_ai.request.model carried                 {"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}
+PASS  emit --usage: workflow.department is the opus's collegium  {"gen_ai.usage.total_tokens":1234,"gen_ai.request.model":"claude-sonnet-5","workflow.item.id":"W-002","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+PASS  emit --usage: missing --sella exits 2                      
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+PASS  emit --usage: non-numeric --usage exits 2                  
+unknown opus: W-999
+PASS  emit --usage: unknown --opus exits 2                       
+A-1: resolved
+PASS  answer: exitCode 0                                         0
+PASS  answer: appends a [stated] line to the body                Drag-and-drop grew a second screen (split stacks). Accept the scope drift and
+ship both, or cut split stacks to a new item?
+
+
+[stated] 2026-09-18T14:00:00.000Z patron: Ship both screens.
+PASS  answer: state -> resolved                                  {"id":"A-1","opus":"W-004","from":"eng-lead","to":"patron","state":"resolved","opened":"2026-09-17T09:58:00Z"}
+PASS  answer: studio passes check                                
+A-1: awaiting_reply
+PASS  answer --ask-back: exitCode 0                              0
+PASS  answer --ask-back: state -> awaiting_reply                 awaiting_reply
+PASS  answer --ask-back: from is now the patron                  {"id":"A-1","opus":"W-004","from":"patron","to":"eng-lead","state":"awaiting_reply","opened":"2026-09-17T09:58:00Z"}
+PASS  answer --ask-back: to is the original asker                {"id":"A-1","opus":"W-004","from":"patron","to":"eng-lead","state":"awaiting_reply","opened":"2026-09-17T09:58:00Z"}
+PASS  answer --ask-back: studio passes check                     
+A-1: awaiting_reply
+PASS  double ask-back: first call exitCode 0                     0
+--ask-back requires petitio "A-1" to be needs_you (currently awaiting_reply)
+PASS  double ask-back: second call exits 2                       2
+PASS  double ask-back: file unchanged by the refused second call {"before":"---\nid: A-1\nopus: W-004\nfrom: patron\nto: eng-lead\nstate: awaiting_reply\nopened: 2026-09-17T09:58:00Z\n---\nDrag-and-drop grew a second screen (split stacks). Accept the scope drift and\nship both, or cut split stacks to a new item?\n\n\n[stated] 2026-09-18T14:00:00.000Z patron: What about QA?","after":"---\nid: A-1\nopus: W-004\nfrom: patron\nto: eng-lead\nstate: awaiting_reply\nopened: 2026-09-17T09:58:00Z\n---\nDrag-and-drop grew a second screen (split stacks). Accept the scope drift and\nship both, or cut split stacks to a new item?\n\n\n[stated] 2026-09-18T14:00:00.000Z patron: What about QA?"}
+A-1: resolved
+PASS  answer --charter-gap: exitCode 0                           0
+PASS  answer --charter-gap: one new acta file                    ["2026-09-18-lex-gap-drag-and-drop-grew-a-second-screen-split.md"]
+PASS  answer --charter-gap: author is the patron                 patron
+PASS  answer --charter-gap: kind is decision                     decision
+PASS  answer --charter-gap: title proposes a lex gap             Lex gap: Drag-and-drop grew a second screen (split stacks). Accept the scope drift and
+PASS  answer --charter-gap: studio passes check                  
+A-1: resolved
+PASS  16. answer --opus: exitCode 0                              0
+FAIL  16. answer --opus: opus set on the petitio                 {"id":"A-1","opus":"W-004","from":"eng-lead","to":"patron","state":"resolved","opened":"2026-09-17T09:58:00Z"}
+FAIL  16. answer --opus: recorded in the Patron timeline         {"role":"patron","at":"2026-09-18T14:00:00.000Z","action":"answer","petitio":"A-1","state":"resolved","ask_back":false,"charter_gap":false}
+PASS  16. answer --opus: studio passes check                     
+A-1: resolved
+FAIL  17. answer --opus <unknown>: exits 2                       0
+FAIL  17. answer --opus <unknown>: petitio byte-identical        {"before":"---\nid: A-1\nopus: W-004\nfrom: eng-lead\nto: patron\nstate: needs_you\nopened: 2026-09-17T09:58:00Z\n---\nDrag-and-drop grew a second screen (split stacks). Accept the scope drift and\nship both, or cut split stacks to a new item?\n","after":"---\nid: A-1\nopus: W-004\nfrom: eng-lead\nto: patron\nstate: resolved\nopened: 2026-09-17T09:58:00Z\n---\nDrag-and-drop grew a second screen (split stacks). Accept the scope drift and\nship both, or cut split stacks to a new item?\n\n\n[stated] 2026-09-18T14:00:00.000Z patron: Ship it."}
+A-1: resolved
+PASS  answer without --opus: exitCode 0                          0
+FAIL  answer without --opus: stderr note on resolve              
+W-007: greenlit
+PASS  greenlight: first call exitCode 0                          0
+PASS  greenlight: W-007 is now greenlit                          greenlit
+PASS  greenlight: exactly one greenlight event                   1
+PASS  greenlight: event name is workflow.greenlight              {"id":"cli:0","name":"workflow.greenlight","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-007","workflow.greenlight":"granted","workflow.source":"cli","workflow.source.seq":0}}
+PASS  greenlight: event records granted                          {"workflow.item.id":"W-007","workflow.greenlight":"granted","workflow.source":"cli","workflow.source.seq":0}
+W-007 is not in backlog (state: greenlit)
+PASS  greenlight: second call exits 2 (no longer in backlog)     2
+PASS  greenlight: studio passes check                            
+W-007: declined (not this sprint)
+PASS  greenlight --decline: exitCode 0                           0
+PASS  greenlight --decline: stays in backlog                     backlog
+PASS  greenlight --decline: records the reason                   not this sprint
+PASS  greenlight --decline: event records declined               {"workflow.item.id":"W-007","workflow.greenlight":"declined","reason":"not this sprint","workflow.source":"cli","workflow.source.seq":0}
+2026-W39: engineering = 2500000 tokens
+PASS  budget: exitCode 0                                         0
+PASS  budget: creates 2026-W39.yml                               
+PASS  budget: period matches                                     2026-W39
+PASS  budget: tokens recorded                                    {"engineering":{"stipendium_tokens":2500000}}
+PASS  budget: studio passes check                                
+PASS  budget: refuses --burn-anything                            2
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+PASS  budget: file untouched after the refused call              {"engineering":{"stipendium_tokens":2500000}}
+PASS  budget: malformed period exits 2                           2
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+PASS  budget: unknown collegium exits 2                          2
+2026-W39: art = 100000 tokens / 40 hours
+PASS  budget: --hours accepted                                   0
+PASS  budget: --hours recorded, engineering untouched            {"engineering":{"stipendium_tokens":2500000},"art":{"stipendium_tokens":100000,"stipendium_hours":40}}
