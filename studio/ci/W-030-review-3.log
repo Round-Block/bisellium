@@ -1,0 +1,325 @@
+# W-030 qa-lead review — round 3 (PR #3)
+# reviewer: qa-lead (Censor)
+# model: claude-opus-5
+# at: 2026-09-20
+# pr: https://github.com/edckt/bisellium/pull/3  (opus/W-030 -> master)
+# commit under review: b47bb433adf784db5af5ee587d7653cfece97540
+# master at review time: f7c967f (moved 16 commits since round 2's 0819ea2)
+# prior: studio/ci/W-030-review-1.log (FAIL), studio/ci/W-030-review-2.log (FAIL)
+# verdict: PASS
+
+## 0. Harness
+
+$ git worktree add --detach $TMPDIR/w030r3-$$ b47bb43      -> /tmp/claude-1000/w030r3-2
+$ cp -a <repo>/node_modules <scratch>/node_modules
+$ readlink -f <scratch>/node_modules/@bisellium/{shim,commands,core,adapter-native,schema,pipeline,providers}
+    /tmp/claude-1000/w030r3-2/packages/shim
+    /tmp/claude-1000/w030r3-2/packages/commands
+    /tmp/claude-1000/w030r3-2/packages/core
+    /tmp/claude-1000/w030r3-2/adapters/native
+    /tmp/claude-1000/w030r3-2/packages/schema
+    /tmp/claude-1000/w030r3-2/packages/pipeline
+    /tmp/claude-1000/w030r3-2/packages/providers
+All seven workspace links resolve INSIDE the scratch. Every result below is
+b47bb43's own code, not the parent checkout's.
+
+`git status --porcelain` empty in the scratch before and after every mutation.
+Nothing pushed. Two extra throwaway worktrees (branch base 756eade, merge
+preview 3d5b574) built for the comparisons in §4; all three removed at the end.
+
+## 1. The count pin bites — reproduced, not read (round 2's blocking finding)
+
+Clean tree:
+$ node --import tsx packages/commands/src/usage.test.ts .
+    30 x PASS  <file>:<CONST> line in USAGE
+    PASS  scanned every known usage constant                                30
+    exit 0
+
+The committed mutation script, run by me:
+$ node scripts/w030-usage-guard-mutation.mjs
+    PASS  packages/commands/src/lifecycle.ts:READY_USAGE  line in USAGE
+    PASS  packages/commands/src/lifecycle.ts:DONE_USAGE   line in USAGE
+    PASS  packages/commands/src/lifecycle.ts:REVIEW_USAGE line in USAGE
+    PASS  packages/commands/src/lifecycle.ts:RED_USAGE    line in USAGE
+    PASS  packages/commands/src/pause.ts:USAGE_PAUSE      line in USAGE
+    PASS  packages/commands/src/pause.ts:USAGE_RESUME     line in USAGE
+    FAIL  scanned every known usage constant                                 6
+    [mutation] usage.test.ts exited 1 under M13 (21 constants annotated)
+    exit 1
+$ git status --porcelain      (empty — the `finally` restore is real)
+
+Byte-identical to the last 8 lines of studio/ci/reds/W-030/07.log, and to my
+own round-2 numbers (30 clean / 6 mutated). The red is a genuine red: the
+script exits with usage.test.ts's exit code, so `bisellium red` — which
+refuses exit 0 — could only have recorded it on a real failure. The
+`git diff --quiet` guard in the `finally` means a record left behind by a
+half-reverted tree would have thrown instead of being written.
+
+Wired in, not orphaned:
+$ grep -o "usage.test.ts" package.json                    -> present
+$ grep "scanned every known" <full npm test output>       -> PASS ... 30
+The guard runs inside `npm test`, so it is a regression gate, not a script
+someone has to remember.
+
+## 2. Mutations of my own — eight, against the pinned assertion
+
+Harness: a script that edits real files in the scratch, runs usage.test.ts,
+reverts in a `finally` and asserts `git diff --quiet` after every case.
+Kept at $TMPDIR/w030r3-mutations.mjs and $TMPDIR/w030r3-mut2.mjs (scratch,
+not committed — this is the reviewer's probe, not the opus's evidence).
+
+  N1  ONE constant annotated `: string` (round 1's own survivor)
+      CAUGHT  exit 1   seen=29
+  N2  N1 PLUS one duplicated banner line added to another constant
+      SURVIVED exit 0  seen=30                             <- see §5, the ceiling
+  N3  one constant converted to a template literal
+      CAUGHT  exit 1   seen=29
+  N4  one constant renamed off the `*_USAGE` convention
+      CAUGHT  exit 1   seen=29
+  N5' constant renamed out of BOTH the `*_USAGE`/`USAGE_*` prefixes
+      CAUGHT  exit 1   seen=29
+  N6  INFLATION probe — a decoy `DECOY_USAGE` whose text is already a banner
+      line, added to pad the scan
+      CAUGHT  exit 1   seen=31
+  N7  a `;` inside the literal, breaking the non-greedy declaration regex
+      CAUGHT  exit 1   seen=29
+  N8  a banner line deleted from USAGE, its constant left alone
+      CAUGHT  exit 1   seen=30 but FAIL on prune.ts:PRUNE_USAGE's line
+  N9  a banner line with NO backing constant drifts (`check`)
+      SURVIVED exit 0                                      <- declared out of scope
+
+The task asked specifically whether `seen` can be inflated by a false-positive
+scan. N6 answers it: it can be inflated, and inflation fails the assertion
+exactly as deflation does (31 != 30). A decoy cannot be used to pad the count
+back to 30 after knocking a real constant out — it overshoots. Only an exactly
+compensating edit survives (N2).
+
+N1 is the one that matters for the round-2 finding: the OLD `sawAny` guard
+survived 21 constants dropping out; the new pin fails on ONE. That is the
+whole class, not the M13 instance, and I verified it directly.
+
+N9 is A3, already named in the brief's Out of scope as of this PR: `check`,
+`init`, `context`, `query` have no backing constant and can drift. Honest
+limit of a scoped feature, unchanged ruling from round 2.
+
+## 3. Hashes recomputed, not trusted
+
+Replicating shim/src/sourceTree.ts in plain shell (sha1 over `git ls-tree -r
+<ref>` lines, excluding the studio dir, `.bisellium/` and the manifest's
+`source_excludes: [examples/]` — studio/bisellium.yml:28):
+
+$ git ls-tree -r <ref> | grep -v -P '^[^\t]*\t(studio/|\.bisellium/|examples/)' | sha1sum
+    b47bb43  0c5e9389bc12d47c549bd49c9d64449030d47a0c     <- the branch
+    d3fec62  3df97d7e8894aecf7b1c08479de57f1f0ac98d9c     <- round 2's tree
+    f7c967f  e63d48f9e6d8bf0b0256289598b1f8a976e03bb9     <- master today
+
+studio/opera/W-030.md on b47bb43 carries, on all three automated gates:
+    certifies: tree:0c5e9389bc12d47c549bd49c9d64449030d47a0c
+That is exactly the number I computed. The certificates name the branch's
+source tree. The three logs' headers agree:
+    W-030-tests-0c5e9389.log   command: npm test -s          exit code: 0
+    W-030-lint-0c5e9389.log    command: npm run -s lint      exit code: 0
+    W-030-types-0c5e9389.log   command: npm run -s typecheck exit code: 0
+
+Re-run by me in the scratch, on b47bb43:
+$ npm test              exit 0 · 1124 PASS · 0 FAIL
+$ npm run -s typecheck  exit 0
+$ npm run -s lint       exit 0 (2 pre-existing warnings, same two as round 2)
+
+The old 3df97d7e certificates are still in the tree alongside the new ones;
+harmless, but they are dead files now.
+
+Source-level carry-over, checked rather than assumed:
+$ git diff --stat d3fec62 b47bb43 -- . ':!studio'
+    packages/commands/src/usage.test.ts    | 13 +++--
+    scripts/gemini.mjs                     |  5 +-       (came in via rebase)
+    scripts/w030-usage-guard-mutation.mjs  | 97 +++++
+No production source changed since round 1's 50-cell pointer matrix, so
+M1-M10 carry over. Spot-checked anyway at a tight budget:
+$ bisellium context --sella {qa-lead,builder-a,eng-lead,architect,producer} \
+    studio --max-tokens 600
+  all five render "## CLI usage" with the flag-shape-free pointer text.
+
+## 4. The three round-2 findings — each closed, each verified independently
+
+(1) The count pin — §1 and §2 above. CLOSED.
+
+(2) traditio.present on W-030. CLOSED.
+    studio/opera/W-030.md on b47bb43 now carries a `traditio:` block
+    (sella builder-a, stage building, next "Count pinned at 30; awaiting
+    round-3 review."). Recorded through the CLI, not by hand — the shape
+    matches every other CLI-written handoff.
+    $ bisellium check studio --repo .   on b47bb43
+      W-030's only rows are advisories: probatio.certifies x2,
+      process.cascade x1. No blocking finding names W-030.
+
+(3) The opus-record conflict with master. CLOSED, and I tested the merge.
+    $ git show f7c967f:studio/opera/W-030.md
+        review: { status: failed, evidence: ci/W-030-review-2.log, ... }
+    $ git show b47bb43:studio/opera/W-030.md
+        review: { status: failed, evidence: ci/W-030-review-2.log, ... }
+        + spec/tests/lint/types, state: building, traditio
+    Master's round-2 verdict is PRESERVED in the branch's record, not
+    overwritten. Five of five declared probationes present (round 2's
+    complaint was four of five, `review` absent).
+    $ git merge-tree --write-tree f7c967f b47bb43
+        exit 0, tree d984e51 — NO CONFLICT. Round 2's conflict is gone.
+
+    The fair before/after for `check`, since master has moved 16 commits:
+    branch BASE 756eade      FAIL — 9 blocking, 79 advisory
+    MERGE PREVIEW 3d5b574    FAIL — 7 blocking, 81 advisory
+    The PR REMOVES two blocking findings from the trunk (W-026's, which
+    landed on master meanwhile) and adds none. The two added advisories are
+    W-030's own probatio.certifies on spec and the process.cascade noted below.
+
+    And I ran the suite on the merged tree, which nobody had:
+    $ npm test   (worktree at merge preview 3d5b574)   exit 0 · 1173 PASS · 0 FAIL
+      including "PASS  scanned every known usage constant   30" — master added
+      no usage constants, so the pin is still exact after the merge.
+
+## 5. Judging the bare literal `30` — the builder's reasoning holds
+
+The builder kept `seen === 30` as a bare literal and argued that (a) deriving
+it from anything recomputable from the same source is blind to the same regex
+gap, and (b) an independent expected-list duplicates the source of truth.
+
+(a) is correct and is the decisive half. Any derived expectation — "count the
+banner lines that have a backing constant" — walks the same
+`extractUsageConstants`, so a constant made unparseable lowers BOTH sides and
+the assertion becomes vacuous. That is precisely the `sawAny` failure mode
+wearing a number. The literal is the only value that does not move when the
+scanner's coverage does. I accept the reasoning.
+
+(b) is the weaker half, and N2 is its ceiling: the count is a scalar, so a
+pair of edits that cancel (one constant drops out, one line added elsewhere)
+holds it at 30. A pinned SET of the 30 `file:CONST:line` identities would
+catch N2 and would not duplicate the usage TEXT (only the inventory of which
+constants exist). I am not requiring it:
+  - N2 needs two coordinated edits that happen to cancel exactly; N1 — the
+    realistic single regression, and the actual historical one — is caught;
+  - the QA lex §2 is explicit that one mutation demonstrating the suite bites
+    is enough to pass review, and eight of mine agree that it bites;
+  - the constant's own comment already states the ceiling honestly ("30 is
+    exact for this tree today; it is meant to move only when a deliberate
+    edit ... moves it, in the same commit").
+Recorded as a known ceiling, not a defect. If a future opus touches this
+guard, the set-of-identities form is the upgrade.
+
+## 6. Findings — instance or class (charter clause, 2026-09-20)
+
+F1  The `: string`/unparseable-constant blind spot — CLASS, and the class is
+    now closed by ONE assertion. I enumerated the class by mutation rather
+    than by grep, because the members are shapes the regex cannot parse, not
+    strings: `: string` annotation (N1), template literal (N3), renamed off
+    the convention (N4, N5'), `;` inside the literal (N7), file moved out of
+    the two scanned directories (deflates the count, therefore caught),
+    decoy inflation (N6). Every member changes `seen`, and `seen === 30`
+    fails on every one. Searched: all 30 constants across the 16 files the
+    scan reaches, all six shapes above, both directions (29 and 31).
+
+F2  "A scan guard asserting only that the scan was non-empty" — CLASS, and I
+    went looking for siblings, because that is the defect W-030 was fixing.
+    Searched:
+      $ grep -rln 'readdirSync' packages apps adapters scripts --include='*.test.ts' --include='*.test.mjs'
+          8 files: instructions, process, tick, writes (cli), harness, shim,
+          talk (shim), usage (commands)
+      $ grep -rn 'at least one\|sawAny\|sawOne\|let saw \|anySeen' <same globs>
+          1 hit, and it is usage.test.ts's own comment describing the fix
+      $ grep -rn 'check(.*\.some(' <same globs>
+          ~45 hits, ALL over a fixture the test itself built (a findings
+          array, a logs array) — ".some()" asserting a specific member is
+          present, not "the scan found something". Not the class.
+    Of the 8 filesystem-scanning tests, 7 scan an `mkdtempSync` fixture and
+    assert an exact count or delta (e.g. process.test.ts:268
+    `readdirSync(...).length === beforeAbs`). Only usage.test.ts scanned an
+    open-ended real-source population. Conclusion: F2's class has exactly one
+    member in this suite, and this PR is its fix. No sibling to dispatch.
+
+F3  ONE near-sibling, out of scope, pre-existing, not W-030's:
+    packages/cli/src/instructions.test.ts:293
+        report("commands.dir.listing", true, JSON.stringify(files));
+    A hardcoded `true` — D-010's "a test that cannot fail is not evidence".
+    INSTANCE, not class: it is the only literal-`true` assertion outside a
+    deliberate exemption marker (line 290's `command.retro.exempted(W-018)`).
+    Already on Retrospectio 4b's pruning list ("inflating the PASS count by
+    one. Drop it."), still unpruned. Not in W-030's declared files; a
+    prune-list item, not a round-4 condition.
+
+F4  The compensating-pair ceiling (N2) — INSTANCE of the general property of
+    any scalar pin, documented in §5. Not a round-4 condition.
+
+## 7. The process.cascade advisory — honest, and left alone
+
+$ bisellium check studio --repo .    (branch)
+  process.cascade   opera/W-030.md   sella "qa-lead" recorded for both spec
+                                     and review — one context built and
+                                     reviewed its own work
+
+$ git diff --stat 756eade b47bb43 -- packages/cli/src/rules packages/cli/src/check.ts studio/bisellium.yml
+  (empty)
+The rule is untouched. No suppression, no re-signing to silence it — the
+branch carries the advisory. studio/petitiones/P-008.md is real, is
+`needs_you`, states the collision against QA lex §1, names its own precedent
+honestly ("W-031's spec gate was re-signed from qa-lead to eng-lead purely to
+silence the rule — backfilled evidence, caught at round 2"), and offers three
+options. Carrying an advisory you cannot clear, and filing the question, is
+the correct behaviour. Removing it would have been the sin. Not a finding.
+
+## 8. Not this opus's defect, but live on this PR
+
+`probatio.certifies.stale` x3 on the MERGE PREVIEW: the gates certify
+tree:0c5e9389 (the branch) while the merged tree is
+tree:ef0c539b01cef978887a5da5e853ba2adb142736 — master moved under
+`packages/` since verify ran (the W-026 merge fixes). This is D-015's named,
+open gap, flagged with numbers in round 2 §5, and now the subject of W-033.
+Unchanged ruling: not W-030's to solve. What is NEW this round is that I
+tested the consequence instead of only naming it — the merged tree is green
+(§4, 1173 PASS / 0 FAIL), so a re-verify after rebase will re-certify, not
+discover a break.
+
+Also live, also not W-030's: recording THIS verdict writes to master's
+studio/opera/W-030.md, not the branch's — the same provenance split round 2
+found, and the subject of W-033. The branch will need one more reconcile
+before merge. Stated here so it is not discovered after.
+
+## 9. Verdict
+
+PASS — round 3.
+
+What convinces me, specifically:
+
+  - I ran `node scripts/w030-usage-guard-mutation.mjs` in an isolated
+    worktree at b47bb43 and watched the pin fail at 6 with exit 1, then
+    watched `git status --porcelain` come back empty. The committed red is
+    reproducible, and it is a red the tool could not have recorded had the
+    assertion not genuinely failed.
+  - I wrote eight of my own mutations and the pin caught seven. It fails on
+    ONE constant dropping out (29), which the old `sawAny` did not; it fails
+    on inflation (31), so the count cannot be padded; it fails on a banner
+    line deleted underneath a constant. The one survivor, N2, needs two
+    edits that cancel exactly, and its cheaper upgrade path is written down
+    in §5.
+  - I recomputed 0c5e9389bc12d47c549bd49c9d64449030d47a0c by hand from
+    `git ls-tree -r b47bb43` with the manifest's own exclude set, and all
+    three automated gates certify that exact hash. I then re-ran all three
+    commands and got their recorded exit codes.
+  - `git merge-tree` is clean, master's round-2 verdict survives in the
+    branch's record, and `check` on the merge preview has two FEWER blocking
+    findings than the branch's base and none naming W-030.
+  - I built the merge preview and ran the full suite on it: 1173 PASS, 0
+    FAIL, pin still exactly 30.
+
+Round 1: the evidence did not say what it claimed. Round 2: the evidence was
+true but the guard could be hollowed out silently. Round 3: the guard fails
+on a single missing constant, and I proved it by removing one.
+
+DO NOT MERGE on this verdict alone — §8's two open items (certificate
+staleness against today's master, and where this verdict lands) are the
+integrator's, and W-033/D-015 own them.
+
+## 10. Cleanup
+
+$ git worktree remove <scratch>; git worktree remove <base>; git worktree remove <merge-preview>
+$ git worktree prune
+No push to origin at any point. The merge-preview commit 3d5b574 is a
+dangling object with no ref, left for git gc.
