@@ -109,6 +109,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "probatio.waived.reason",
   "process.cascade",
   "process.checkpoint",
+  "process.history",
   "process.review_tier",
   "process.tdd",
   "receipt.shape",
