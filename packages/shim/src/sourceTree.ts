@@ -20,8 +20,12 @@ import { createHash } from "node:crypto";
 
 const TIMEOUT_MS = 30_000;
 
-function normalizeExclude(dir: string): string {
-  return dir.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
+export function normalizeExclude(dir: string): string {
+  let d = dir.replaceAll("\\", "/");
+  if (d.startsWith("./")) d = d.slice(2);
+  let end = d.length;
+  while (end > 0 && d.charCodeAt(end - 1) === 47 /* "/" */) end -= 1;
+  return d.slice(0, end);
 }
 
 function isUnderExcluded(path: string, excludes: string[]): boolean {

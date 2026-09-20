@@ -1,0 +1,67 @@
+# behaviour: 2
+# command: node --import tsx packages/shim/test/shim.test.ts .
+# exit: 1
+# at: 2026-09-20T06:47:10.369Z
+# sella: builder-a
+# tree: dirty:ab98117f3635ef6548e0bc6136508bc51683c6e0
+
+PASS  acquire: worktree path exists                        /tmp/claude-1000/shim-git-repo-A1Dz6x/.bisellium/worktrees/builder-1-1
+PASS  acquire: branch is bisellium/builder-1/1             bisellium/builder-1/1
+PASS  acquire: `git worktree list` includes the new worktree /tmp/claude-1000/shim-git-repo-A1Dz6x                                   b9469eb [master]
+/tmp/claude-1000/shim-git-repo-A1Dz6x/.bisellium/worktrees/builder-1-1  b9469eb [bisellium/builder-1/1]
+
+PASS  release: worktree path removed                       
+PASS  release: branch deleted                              ""
+PASS  run true: exitCode 0                                 0
+PASS  run true: receipt exitCode 0                         {"sella":"builder-1","sessionId":"20260918T090000000Z-0034","startedAt":"2026-09-18T09:00:00.000Z","cwd":"/tmp/claude-1000/shim-studio-pj9ltm","cmd":["true"],"harness":"run","endedAt":"2026-09-20T06:47:10.622Z","exitCode":0,"durationMs":3}
+PASS  run true: receipt has endedAt                        {"sella":"builder-1","sessionId":"20260918T090000000Z-0034","startedAt":"2026-09-18T09:00:00.000Z","cwd":"/tmp/claude-1000/shim-studio-pj9ltm","cmd":["true"],"harness":"run","endedAt":"2026-09-20T06:47:10.622Z","exitCode":0,"durationMs":3}
+PASS  run false: exitCode 1                                1
+PASS  run false: receipt exitCode 1                        {"sella":"builder-1","sessionId":"20260918T090000000Z-0035","startedAt":"2026-09-18T09:00:00.000Z","cwd":"/tmp/claude-1000/shim-studio-pj9ltm","cmd":["false"],"harness":"run","endedAt":"2026-09-20T06:47:10.629Z","exitCode":1,"durationMs":2}
+unknown sella "nobody" — not declared in /tmp/claude-1000/shim-studio-pj9ltm/bisellium.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+PASS  run: unknown sella exits 2                           2
+PASS  run: missing '--' exits 2                            2
+PASS  run: empty cmd exits 2                               2
+PASS  checkStudio: receipt.shape fires on garbage receipt  ["wip.declared","lex.declared","manifest.probationes","acta.daily","receipt.shape","hook.dead","aerarium.present"]
+--token=abc123
+PASS  run echo --token=abc123: exitCode 0                  0
+PASS  run: receipt cmd masks token=... rather than storing it verbatim ["echo","--token=***"]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+PASS  run: --sella --no-worktree does not swallow the flag as a value 2
+PASS  run: --studio as the last arg (no value) exits 2     2
+PASS  run: child killed by SIGTERM exits 128+15            143
+PASS  filterEnv: GIT_CONFIG_* family dropped atomically (none kept) []
+PASS  filterEnv: unrelated secret-shaped var still dropped ["PATH"]
+PASS  filterEnv: PATH still passed through                 {"PATH":"/usr/bin"}
+PASS  filterEnv: no GIT_CONFIG_* present -> nothing to drop, PATH kept {"PATH":"/usr/bin"}
+PASS  localPipeline: `git rev-parse HEAD` passes under a GIT_CONFIG_*-injecting env {"tests":{"status":"passed","evidence":"W-GITCONFIG-tests-00000000.log","certifies":"tree:0000000000000000000000000000000000000"}}
+PASS  normalizeExclude("examples/") === "examples"         "examples"
+PASS  normalizeExclude("studio/") === "studio"             "studio"
+PASS  normalizeExclude("examples/fixtures/") === "examples/fixtures" "examples/fixtures"
+PASS  normalizeExclude("docs") === "docs"                  "docs"
+PASS  normalizeExclude("./docs/") === "docs"               "docs"
+PASS  normalizeExclude("vendor//") === "vendor"            "vendor"
+PASS  normalizeExclude(".bisellium") === ".bisellium"      ".bisellium"
+PASS  normalizeExclude("a/b/c/d/e/f/g/h/i/j/") === "a/b/c/d/e/f/g/h/i/j" "a/b/c/d/e/f/g/h/i/j"
+PASS  normalizeExclude("packages\\shim\\src\\") === "packages/shim/src" "packages/shim/src"
+PASS  normalizeExclude("./") === ""                        ""
+PASS  normalizeExclude("/") === ""                         ""
+PASS  normalizeExclude("//") === ""                        ""
+PASS  normalizeExclude("") === ""                          ""
+PASS  normalizeExclude("a//b//c//") === "a//b//c"          "a//b//c"
+PASS  normalizeExclude("./a/./b/") === "a/./b"             "a/./b"
+PASS  normalizeExclude("x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/") === "x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x" "x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x/x"
+PASS  sourceTreeHash: trailing slash normalizes away (examples/ === examples) ba2380fcd3b2c14277c993f719dcbb4e3d95f012 vs ba2380fcd3b2c14277c993f719dcbb4e3d95f012
+PASS  sourceTreeHash: the exclude still actually excludes (differs from no exclusions) ba2380fcd3b2c14277c993f719dcbb4e3d95f012 vs de35874a49b6628e1cde3341f070682a2dd427fa
+PASS  normalizeExclude(pathological): unchanged (no trailing slash to strip) len 200001
+FAIL  normalizeExclude(pathological): completes under 500ms (took 10162.38ms) 10162.379942ms

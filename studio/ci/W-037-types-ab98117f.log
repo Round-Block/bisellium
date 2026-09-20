@@ -1,0 +1,5 @@
+certifies: dirty:ab98117f3635ef6548e0bc6136508bc51683c6e0
+command: npm run -s typecheck
+exit code: 0
+
+
