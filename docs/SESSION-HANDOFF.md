@@ -76,7 +76,7 @@ lex, a decision, or a check rule and delete it here.
   WSL. From a Windows-hosted session run `wsl -e bash -lc "cd ~/projects/bisellium && …"`.
   From a session whose project directory is this repo, run commands directly.
 - Commit with `-c user.name=edckt -c user.email=edene.chankt@gmail.com` and the
-  trailer `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`.
+  trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 - The Workflow tool is allowed without a prompt (`.claude/settings.json`).
 - Codex weekly quota was exhausted until 2026-09-21; quota-axi cannot read the
   Claude Code login (`auth_required`), so Claude posture is observed/unknown.

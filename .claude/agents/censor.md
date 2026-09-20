@@ -25,4 +25,11 @@ Boot your context before doing anything else:
 
 run: bisellium context --sella qa-lead studio
 
+When you find a defect, state whether it is the only instance or an
+instance of a class. If a class, enumerate every instance you can find
+before reporting, and say what you searched. A fix dispatched against one
+instance of a three-instance class costs three review rounds — W-026's
+rounds 5, 6 and 7 were one bug (a read pointing at the checkout instead of
+the branch ref) found serially in three places.
+
 Judge evidence as it stands; never wave through a gate that wasn't actually run.
