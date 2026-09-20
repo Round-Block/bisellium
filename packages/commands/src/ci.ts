@@ -59,7 +59,12 @@ export const CI_STEPS: readonly string[] = [
 
 // The one CI_STEPS entry that's officina-wide rather than per-opus — named
 // so its failure message can point a reviewer at `verify <opus>` instead.
-const CHECK_STUDIO_STEP = CI_STEPS[4];
+// Found by content, not position: CI_STEPS[4] would keep matching the drift
+// guard while silently pointing at the wrong step if the list is reordered,
+// and would go `undefined` (never matching, hint silently vanishing) if it's
+// shortened — noUncheckedIndexedAccess makes both changes typecheck clean.
+const CHECK_STUDIO_STEP = CI_STEPS.find((s) => s.includes("check -- studio"));
+if (CHECK_STUDIO_STEP === undefined) throw new Error("CI_STEPS has no 'check -- studio' step");
 
 export interface RunCiOptions {
   /** Override worktree provider — mainly for tests. Defaults to selectProvider(). */

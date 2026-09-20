@@ -1,0 +1,78 @@
+# behaviour: 10
+# command: node --import tsx packages/cli/src/ci.test.ts 10
+# exit: 1
+# at: 2026-09-20T05:26:43.678Z
+# sella: guest
+# tree: dirty:c1548a8dba515f494960777135e86eb48389889c
+
+
+> test
+> node ci-marker.mjs test
+
+
+> test
+> node ci-marker.mjs test
+
+bisellium ci: step failed (exit 1): npm run -s typecheck
+
+added 1 package in 168ms
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+bisellium ci: step failed (exit 1): npm test
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+
+> test
+> node -e "process.exit(0)"
+
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-998fa2e1.log
+lint: passed  ci/W-001-lint-998fa2e1.log
+types: passed  ci/W-001-types-998fa2e1.log
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-998fa2e1.log
+lint: passed  ci/W-001-lint-998fa2e1.log
+types: passed  ci/W-001-types-998fa2e1.log
+
+> test
+> node -e "process.exit(0)"
+
+
+> test
+> node -e "process.exit(0)"
+
+
+> test
+> node -e "require('fs').writeFileSync('dirtied-by-test.txt','x')"
+
+working tree is dirty; commit or pass --allow-dirty
+FAIL  --ref keeps passing --allow-dirty when a step dirties the scratch checkout mid-run exit=2
+---
+id: "W-001"
+title: "ci ref+opus opus"
+kind: "task"
+collegium: "production"
+state: backlog
+probationes: {}
+---
+
