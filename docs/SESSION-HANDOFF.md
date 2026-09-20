@@ -206,6 +206,21 @@ success against master.
   had to correct invocations written from memory, and one wrote a real gate
   citing a brief as its evidence while probing for syntax.
 
+### GitHub ruleset `master_protection` (Patron, 2026-09-20)
+
+Active on `master`: no deletion, no force-push, **all changes via PR**
+(required approvals set to 0 after the initial 1 deadlocked — authors
+cannot approve their own PRs and every PR here is authored by `edckt`),
+no required status checks (so the billing-blocked red CI does not block
+merges). Consequences:
+
+- **Direct pushes to master are rejected.** All bookkeeping — verdicts,
+  petitiones, checkpoints, handoffs — now rides short-lived branches
+  merged via `gh pr merge --rebase`. This answers W-033's provenance
+  question by force: everything lands via branches.
+- The ruleset is the mechanical twin of D-015's `pr.required: true` —
+  GitHub now refuses what the officina config already stopped short of.
+
 ### CI
 
 `.github/workflows/ci.yml` **has never executed once** — GitHub Actions is
