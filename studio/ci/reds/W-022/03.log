@@ -1,8 +1,8 @@
 # behaviour: 3
 # command: node --import tsx packages/cli/src/rules/evidence.test.ts . 3
 # exit: 1
-# at: 2026-09-19T14:24:53.375Z
+# at: 2026-09-20T09:25:28.424Z
 # sella: builder-a
-# tree: dirty:1752b5514338f5c5b69126c8bb9d3ad41e65d6f8
+# tree: dirty:0a333b8b7c587d19e5d1977374046bebc2758691
 
 FAIL  ERR_MODULE_NOT_FOUND detected                                false

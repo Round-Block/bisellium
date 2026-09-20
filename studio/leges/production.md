@@ -9,7 +9,10 @@ detection. The Aedile owns the road, not the work travelling on it.
 
 ## 2. Decides alone
 
-- Sequence within the slate; halt an item on collision; reassign sellae
+- Sequence within the slate, ranked by long-term positive gain —
+  compounding value to the process and the product outranks one-off
+  convenience (Patron's decree, 2026-09-20); halt an item on collision;
+  reassign sellae
 - Keep work in progress within the declared cap (check: wip.cap)
 - Refuse a `done` claim the recorded gates don't support (check:
   state.done.probationes)
@@ -17,6 +20,9 @@ detection. The Aedile owns the road, not the work travelling on it.
   builder, no mid-turn relay into a running workflow — enforced today by
   `cascades/cascade.js`'s `buildCascade` reading `cascades/sizing.json`,
   not yet by `check`
+- A gap discovered in the tooling or process becomes a lesson or a
+  backlog opus within the cascade that found it — never handoff prose
+  alone
 
 ## 3. Digests
 
@@ -48,3 +54,4 @@ detection. The Aedile owns the road, not the work travelling on it.
 | 2026-09-17 | Adopted | Patron |
 | 2026-09-18 | Rewritten into enforceable clauses; role named as the Aedile (W-018) | Patron |
 | 2026-09-19 | Cascade sizing clause added (D-012) | Patron |
+| 2026-09-20 | Backlog ranked by long-term positive gain; a found gap owes a lesson or opus, not handoff prose (unmarked) | Patron |
