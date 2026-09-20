@@ -43,7 +43,10 @@ const targets = [
   ["packages/commands/src/run.ts", ["USAGE"]],
   ["packages/commands/src/talk.ts", ["USAGE"]],
   ["packages/commands/src/verify.ts", ["USAGE"]],
-  ["packages/commands/src/writes.ts", ["HANDOFF_USAGE", "EMIT_USAGE", "ANSWER_USAGE", "GREENLIGHT_USAGE", "BUDGET_USAGE"]],
+  [
+    "packages/commands/src/writes.ts",
+    ["HANDOFF_USAGE", "EMIT_USAGE", "ANSWER_USAGE", "GREENLIGHT_USAGE", "BUDGET_USAGE"],
+  ],
 ];
 
 const originals = new Map();
@@ -93,5 +96,7 @@ try {
   }
 }
 
-console.log(`\n[mutation] usage.test.ts exited ${testExit} under M13 (21 constants annotated, pause.ts/lifecycle.ts intact)`);
+console.log(
+  `\n[mutation] usage.test.ts exited ${testExit} under M13 (21 constants annotated, pause.ts/lifecycle.ts intact)`,
+);
 process.exit(testExit);

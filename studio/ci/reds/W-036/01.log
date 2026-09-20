@@ -1,0 +1,10 @@
+# behaviour: 1
+# command: npm run -s format:check
+# exit: 1
+# at: 2026-09-20T06:03:54.715Z
+# sella: guest
+# tree: tree:5d25eb5ab8e4a5dea910a8348fa59d66211a8d86
+
+Checking formatting...
+[warn] scripts/w030-usage-guard-mutation.mjs
+[warn] Code style issues found in the above file. Run Prettier with --write to fix.
