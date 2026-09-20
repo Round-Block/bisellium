@@ -1,9 +1,9 @@
 # behaviour: 18
 # command: node --import tsx packages/cli/src/retro.test.ts .
 # exit: 1
-# at: 2026-09-20T07:37:44.294Z
-# sella: builder-b
-# tree: dirty:f48d8538b95279ba709cf01c0ac1d13a70bbf088
+# at: 2026-09-20T08:08:39.606Z
+# sella: builder-a
+# tree: dirty:6ecf88f1015002d87daca070730ca8dcb9717b21
 
 PASS  10a. retro doc has section "## Numbers"                    
 PASS  10a. retro doc has section "## Findings by class"          
@@ -44,6 +44,10 @@ at: 2026-09-18T20:00:00.000Z
 ## Recurrence
 
 - "flaky" recurs across cascades 3, 4
+
+## Addressed
+
+- "flaky" → nothing yet
 
 ## Proposals
 
@@ -99,6 +103,10 @@ at: 2026-09-18T20:00:00.000Z
 
 - no class recurs across two or more cascades yet
 
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
+
 ## Proposals
 
 - (none)
@@ -135,6 +143,10 @@ at: 2026-09-18T20:00:00.000Z
 ## Recurrence
 
 - no class recurs across two or more cascades yet
+
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
 
 ## Proposals
 
@@ -185,6 +197,10 @@ at: 2026-09-18T20:00:00.000Z
 
 - no class recurs across two or more cascades yet
 
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
+
 ## Proposals
 
 - (none)
@@ -233,6 +249,10 @@ at: 2026-09-18T20:00:00.000Z
 ## Recurrence
 
 - no class recurs across two or more cascades yet
+
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
 
 ## Proposals
 
@@ -283,6 +303,10 @@ at: 2026-09-18T20:00:00.000Z
 
 - no class recurs across two or more cascades yet
 
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
+
 ## Proposals
 
 - (none)
@@ -331,6 +355,10 @@ at: 2026-09-18T20:00:00.000Z
 ## Recurrence
 
 - no class recurs across two or more cascades yet
+
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
 
 ## Proposals
 
@@ -381,6 +409,10 @@ at: 2026-09-18T20:00:00.000Z
 
 - no class recurs across two or more cascades yet
 
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
+
 ## Proposals
 
 - (none)
@@ -429,6 +461,10 @@ at: 2026-09-18T20:00:00.000Z
 ## Recurrence
 
 - no class recurs across two or more cascades yet
+
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
 
 ## Proposals
 
@@ -479,6 +515,10 @@ at: 2026-09-18T20:00:00.000Z
 
 - no class recurs across two or more cascades yet
 
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
+
 ## Proposals
 
 - (none)
@@ -527,6 +567,10 @@ at: 2026-09-18T20:00:00.000Z
 ## Recurrence
 
 - no class recurs across two or more cascades yet
+
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
 
 ## Proposals
 
@@ -577,6 +621,10 @@ at: 2026-09-18T20:00:00.000Z
 
 - no class recurs across two or more cascades yet
 
+## Addressed
+
+- (none — no class recurs across two or more cascades yet)
+
 ## Proposals
 
 - (none)
@@ -597,9 +645,9 @@ at: 2026-09-18T20:00:00.000Z
 - Posture:
   - engineering: ok (this cascade 15000 / 100000 tokens, 2026-W38)
 
-FAIL  18a. no petitio filed for the addressed class              ["petitiones/P-001.md","petitiones/P-003.md","petitiones/P-006.md"]
-FAIL  18b. petitio ids are consecutive                           [1,3,6]
-FAIL  18c. '## Addressed' lists the addressed class with its target ---
+PASS  18a. no petitio filed for the addressed class              ["petitiones/P-001.md","petitiones/P-002.md"]
+PASS  18b. petitio ids are consecutive                           [1,2]
+PASS  18c. '## Addressed' lists the addressed class with its target ---
 author: qa-lead
 kind: decision
 title: "Retrospectio 5"
@@ -634,17 +682,22 @@ at: 2026-09-18T20:00:00.000Z
 - "unaddressed-a" recurs across cascades 1, 5
 - "unaddressed-b" recurs across cascades 1, 5
 
+## Addressed
+
+- "addressed-class" → some.rule.id (rule)
+- "unaddressed-a" → nothing yet
+- "unaddressed-b" → nothing yet
+
 ## Proposals
 
-- "addressed-class": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
-- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-003.md
-- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-006.md
+- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-002.md
 
 ## Pruning candidates
 
 - (none — no decision's kill_when matches this cascade's findings)
 
-FAIL  18d. '## Addressed' lists both unaddressed classes as unresolved ---
+PASS  18d. '## Addressed' lists both unaddressed classes as unresolved ---
 author: qa-lead
 kind: decision
 title: "Retrospectio 5"
@@ -679,17 +732,22 @@ at: 2026-09-18T20:00:00.000Z
 - "unaddressed-a" recurs across cascades 1, 5
 - "unaddressed-b" recurs across cascades 1, 5
 
+## Addressed
+
+- "addressed-class" → some.rule.id (rule)
+- "unaddressed-a" → nothing yet
+- "unaddressed-b" → nothing yet
+
 ## Proposals
 
-- "addressed-class": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
-- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-003.md
-- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-006.md
+- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-002.md
 
 ## Pruning candidates
 
 - (none — no decision's kill_when matches this cascade's findings)
 
-FAIL  18e. the addressed class is not proposed for a petitio in '## Proposals' ---
+PASS  18e. the addressed class is not proposed for a petitio in '## Proposals' ---
 author: qa-lead
 kind: decision
 title: "Retrospectio 5"
@@ -724,14 +782,103 @@ at: 2026-09-18T20:00:00.000Z
 - "unaddressed-a" recurs across cascades 1, 5
 - "unaddressed-b" recurs across cascades 1, 5
 
+## Addressed
+
+- "addressed-class" → some.rule.id (rule)
+- "unaddressed-a" → nothing yet
+- "unaddressed-b" → nothing yet
+
 ## Proposals
 
-- "addressed-class": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
-- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-003.md
-- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-006.md
+- "unaddressed-a": blocking-rule/lex-wording change — petitio filed at petitiones/P-001.md
+- "unaddressed-b": blocking-rule/lex-wording change — petitio filed at petitiones/P-002.md
 
 ## Pruning candidates
 
 - (none — no decision's kill_when matches this cascade's findings)
 
-FAIL  18f. '## Addressed' section sits between '## Recurrence' and '## Proposals' 
+PASS  18f. '## Addressed' section sits between '## Recurrence' and '## Proposals' 
+PASS  18g. path-traversal addressed_by: draftRetro never throws  
+FAIL  18h. path-traversal addressed_by: nothing outside studioRoot is read into the acta ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 6"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 6
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- traversal-class: 1
+
+## Lessons filed
+
+- L-202 (traversal-class) → lessons/L-202.md
+
+## Recurrence
+
+- "traversal-class" recurs across cascades 1, 6
+
+## Addressed
+
+- "traversal-class" → ../../bisellium-retro-outside-16-1789891719861/opera/secret (opus, SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA)
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+FAIL  18i. path-traversal addressed_by: '## Addressed' lists the class as unresolved, not an opus ---
+author: qa-lead
+kind: decision
+title: "Retrospectio 6"
+at: 2026-09-18T20:00:00.000Z
+---
+# Retrospectio 6
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 1
+- Fix rounds: 0
+- Mutations caught: 0
+- Agents:
+  - (none recorded)
+
+## Findings by class
+
+- traversal-class: 1
+
+## Lessons filed
+
+- L-202 (traversal-class) → lessons/L-202.md
+
+## Recurrence
+
+- "traversal-class" recurs across cascades 1, 6
+
+## Addressed
+
+- "traversal-class" → ../../bisellium-retro-outside-16-1789891719861/opera/secret (opus, SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA)
+
+## Proposals
+
+- (none)
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+
+FAIL  18j. path-traversal addressed_by: the recurring class still files its petitio []
