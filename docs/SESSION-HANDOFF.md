@@ -83,12 +83,12 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-20, first PR merged)
+## Where things stand (2026-09-20, cascade 22)
 
-Cascades 1–17 are in the dossier progress log. The session of 2026-09-19/20
-moved the project onto D-015's branch → PR → QA → merge flow and put four
-opera through it. Read the four review logs named below before touching any
-of this work; they are far more precise than this summary.
+Cascades 1–21 are in the dossier progress log. The branch → PR → QA → merge
+flow (D-015) has now landed six PRs. Read the review logs in `studio/ci/`
+before touching any of this work; they are far more precise than this
+summary.
 
 ### The flow, as actually operated
 
@@ -102,44 +102,30 @@ has cost a round each time.
 
 ### Open PRs
 
+None open — every PR to date has merged.
+
 | PR | Opus | State |
 |----|------|-------|
-| [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | **MERGED** at round 8 |
-| [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | **MERGED** at round 3 (2026-09-20) |
-| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round-3 PASS, done on branch; merge blocked by W-037's CodeQL alert |
-| [#7](https://github.com/edckt/bisellium/pull/7) | W-036 | **MERGED** |
+| [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | MERGED (round 8) |
+| [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | MERGED (round 3) |
+| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | MERGED (rebase + re-verify on the post-W-037 tree) |
+| [#7](https://github.com/edckt/bisellium/pull/7) | W-036 | MERGED |
+| [#12](https://github.com/edckt/bisellium/pull/12) | W-037 | MERGED (round 2; retracted round 1's tree-hash false positive) |
+| [#13](https://github.com/edckt/bisellium/pull/13) | gap filings | MERGED (W-038–041, D-016, P-010) |
 | [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
 
-W-035 (improvement loop) is specced — architect signed the spec gate,
-brief carries 18 behaviours and the builder seam split. Its build
-dispatches once #4 merges (usage-banner seam). P-008 (process.cascade vs
-the QA lex) and P-009 (the lex amendment, architect-corrected wording)
-await the Patron.
+W-035 (improvement loop) is **building** — two Sonnet builders in parallel
+worktrees. Three petitiones await the Patron: **P-008** (`process.cascade`
+vs the QA lex), **P-009** (QA-lex amendment, architect-corrected wording),
+**P-010** (production-lex amendment: rank by long-term gain, a found gap
+owes a lesson or opus).
 
-### What W-031 owes (PR #4, round 2, `ci/W-031-review-2.log`)
+### W-031 and W-030 — resolved
 
-1. **The spec gate was re-signed, and that is backfilled evidence.** The
-   orchestrating session changed `spec: { sella: qa-lead }` to `eng-lead`
-   one minute after the fix commit, to stop `process.cascade` firing, with
-   a commit message naming the rule as the reason. Nothing shows an
-   eng-lead context ever read that brief. Clear it by *producing* the
-   eng-lead gate, or restore `qa-lead` and file a petitio — the QA lex has
-   the Censor drive the first hour and close the last, so qa-lead on both
-   spec and review may be the designed shape and `process.cascade` may be
-   the thing that is wrong. **Do not re-attribute a signature to satisfy a
-   rule.**
-2. `--allow-dirty`'s split is correct and **completely unenforced** — both
-   ways of undoing it survive the full 1066-assertion suite.
-3. `packages/cli/src/main.ts:60`'s usage line lacks `--allow-dirty`, which
-   `ci.ts`'s own USAGE has. One line, and it is the drift class behaviour 7
-   guards, one layer up.
-
-### What W-030 owes (PR #3, round 2, `ci/W-030-review-2.log`)
-
-Round 2's blocking finding (the drift guard could be made to scan almost
-nothing) is fixed and pushed — the count is pinned at 30. Round 3 has not
-been dispatched. Advisories A2/A3 were folded in; the opus record conflict
-and the missing handoff were reconciled.
+Both merged. Round-by-round findings (the spec-gate backfill scare, the
+`--allow-dirty` gap, the drift-guard pin) are recorded in
+`studio/ci/W-031-review-3.log` and `studio/ci/W-030-review-3.log` — not
+repeated here.
 
 ### New opera opened, none started
 
@@ -161,6 +147,9 @@ and the missing handoff were reconciled.
 - **D-015** — integration strategy is configuration. Its original claim
   that rebase forces re-verification "for free" was **disproved** and is
   struck with the finding cited; `merge` now does the check itself.
+- **D-016** — the CLI wraps a git operation only when refusing it is the
+  point; `branch`/`merge`/`close`/`pr` stay in, raw git/gh stays out.
+  `kill_when` names W-033 as the trigger to revisit.
 
 ### Why W-026 took eight rounds
 
@@ -231,10 +220,10 @@ CI check does not block merges). Consequences:
   publication: `.env` was never committed, no key-shaped strings anywhere
   in history — clean.
 - **CodeQL's first analysis found a real high-severity alert**: polynomial
-  ReDoS in `packages/shim/src/sourceTree.ts`, the tree-hashing path every
-  certificate depends on. Filed as **W-037** (architect speccing, a
-  hash-stability constraint in the brief); it blocks PR #4's merge under
-  the new `code_scanning` gate.
+  ReDoS in `packages/shim/src/sourceTree.ts`. Filed and fixed as **W-037**
+  (regex-free `normalizeExclude`); merged PR #12, alert cleared. It had
+  blocked PR #4's merge under the `code_scanning` gate; #4 (W-031) is now
+  merged too.
 - **The API now reports the repo under the `Round-Block` org**
   (`Round-Block/bisellium`). The local remote still says `edckt/bisellium`
   and works via redirect — flagged for a deliberate remote update, not
@@ -259,44 +248,35 @@ found the repo had been failing its own `format:check` since `6e84979`.
 
 ### Backlog
 
-1. W-037 (ReDoS in sourceTree regex, CodeQL high) — in flight; then #4
-   merges, then W-035's builders.
-2. W-030 round 3 (fix already pushed).
-3. W-033 — architect's decision, blocks W-034's defect 2.
-4. W-032 — the PR gate.
-5. **Settings screen** (Patron): surface officina and harness config.
+1. **W-035** in flight (two Sonnet builders, parallel worktrees) → censor →
+   merge.
+2. Then **W-033** (architect's decision on bookkeeping provenance; blocks
+   W-034's defect 2), per the architect's ranking: W-033 → W-041 → W-039 →
+   W-038 → W-032 → W-040 → W-028 → prettierignore.
+3. **W-034** — `done` cannot honour a Patron waiver, and writes to whichever
+   ref it is run from. Defect 1 is independent; defect 2 is blocked on W-033.
+4. **Settings screen** (Patron): surface officina and harness config.
    UI/UX is Patron-only; needs design input before a brief.
-6. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
-7. **Two CLI gaps found by being forced around them (2026-09-20).**
-   (a) Nothing creates a petitio outside `retro` and a `talk` reply's
-   `PETITIO:` line — P-004 and P-008 were hand-written for want of a
-   `bisellium petitio` command. (b) Nothing corrects a gate the CLI wrote
-   wrongly: `ready` refuses to re-sign from `building`, so W-031's
-   restored spec gate was a byte-for-byte hand-restoration of a prior
-   CLI-written value. Both are candidate opera; (b) overlaps W-033.
-8. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
+5. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
+6. **CLI/process gaps** — filed as **W-038** (petitio command), **W-039**
+   (guest-sella red rule), **W-040** (gate correction, append-only),
+   **W-041** (generated backlog page); **D-016** records why git stays raw
+   where the CLI has nothing to refuse. The prose that used to describe
+   these gaps here is rot — read those records instead.
+7. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
    `packages/cli/src/instructions.template.md` — edit the template.
-8. Old item, still open: `branch.ts:172` hardcoded "into master" — **fixed**
-   in W-026; this line retained only to note it landed. A repo on `main` now
-     repo on `main` merges into main and reports master — same family as
-   reports `main`.
+8. Old item, still open: `branch.ts:172` hardcoded "into master" — fixed
+   in W-026; a repo on `main` merges into main and reports master.
 9. **`run --opus` → `merge` is a broken chain** (found by dogfooding).
    `run --opus W-026` forks the worktree from `opus/W-026`'s commit
    correctly, then puts the work on `bisellium/<sella>/<n>`, while
    `mergeOpusBranch` only ever reads `opus/<id>`. A builder's commits never
    reach the branch `merge` merges, and nothing moves one to the other.
-   This is why W-026's behaviour 7 "has no test coverage" mattered — the
-   wiring was verified by inspection, never run. Round 5 noted behaviour
-   7's test asserts where the worktree forked *from* and nothing about
-   where work lands, and its `finally` deletes the very branch it lands on.
 10. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
     harness's own worktrees under `.claude/worktrees/` are invisible to
     them, and several stale ones are on disk. `git worktree prune`
     deregisters them but cannot unlink the admin dirs under the sandbox
     ("Device or resource busy") — needs a shell outside it.
-11. **`# sella: guest` red-log class** (6 logs: W-028 17/18/19/21, W-036
-    01/02; dispatches never set `$BISELLIUM_SELLA`) — no rule covers it;
-    candidate check rule, retro material.
 
 ### Also on disk
 
