@@ -106,7 +106,8 @@ has cost a round each time.
 |----|------|-------|
 | [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | **MERGED** at round 8 |
 | [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | **MERGED** at round 3 (2026-09-20) |
-| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round-2 fixes rebased and pushed; censor round 3 running |
+| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round-3 PASS, done on branch; merge blocked by W-037's CodeQL alert |
+| [#7](https://github.com/edckt/bisellium/pull/7) | W-036 | **MERGED** |
 | [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
 
 W-035 (improvement loop) is specced — architect signed the spec gate,
@@ -229,6 +230,11 @@ CI check does not block merges). Consequences:
   analysis run started. A history scan for secrets ran before/at
   publication: `.env` was never committed, no key-shaped strings anywhere
   in history — clean.
+- **CodeQL's first analysis found a real high-severity alert**: polynomial
+  ReDoS in `packages/shim/src/sourceTree.ts`, the tree-hashing path every
+  certificate depends on. Filed as **W-037** (architect speccing, a
+  hash-stability constraint in the brief); it blocks PR #4's merge under
+  the new `code_scanning` gate.
 - **The API now reports the repo under the `Round-Block` org**
   (`Round-Block/bisellium`). The local remote still says `edckt/bisellium`
   and works via redirect — flagged for a deliberate remote update, not
@@ -241,15 +247,20 @@ GitHub Actions was billing-blocked, so every run died in ~3s with an empty
 `steps: []` and an annotation visible only through the API; the red check
 on every PR from that period means nothing. **As of 2026-09-20 the repo is
 public, Actions is free, and CodeQL default setup is enabled** — the first
-real runs (CodeQL analysis and this workflow) are pending/underway. The
-red-check-means-nothing caveat no longer applies to new runs.
+real runs executed. CI's first real run failed honestly on two counts:
+`format:check` (a file committed unformatted with W-030, fixed as
+**W-036**, merged as PR #7 after a one-round pass) and `check studio`
+(real officina debt, stays red until it burns down — not a CI defect).
+The architect separately proved `npm test` never failed on any runner.
+The red-check-means-nothing caveat no longer applies to new runs.
 
 `bisellium ci` (W-031, PR #4) is the local replacement. Its first real run
 found the repo had been failing its own `format:check` since `6e84979`.
 
 ### Backlog
 
-1. W-031 round-2 fixes, then round 3.
+1. W-037 (ReDoS in sourceTree regex, CodeQL high) — in flight; then #4
+   merges, then W-035's builders.
 2. W-030 round 3 (fix already pushed).
 3. W-033 — architect's decision, blocks W-034's defect 2.
 4. W-032 — the PR gate.
@@ -283,6 +294,9 @@ found the repo had been failing its own `format:check` since `6e84979`.
     them, and several stale ones are on disk. `git worktree prune`
     deregisters them but cannot unlink the admin dirs under the sandbox
     ("Device or resource busy") — needs a shell outside it.
+11. **`# sella: guest` red-log class** (6 logs: W-028 17/18/19/21, W-036
+    01/02; dispatches never set `$BISELLIUM_SELLA`) — no rule covers it;
+    candidate check rule, retro material.
 
 ### Also on disk
 
