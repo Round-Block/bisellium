@@ -369,8 +369,18 @@ function cpDir(src: string, dest: string): void {
 // `--ref` acquires checks out its own stale copy of `studio/` that a
 // correct exclusion must ignore exactly like the direct path does.
 // ---------------------------------------------------------------------------
+// `check`'s own marker script — mirrors ORDER_MARKER's fail-on-demand shape,
+// but keyed on the `check` step's own positional arg ("studio" vs
+// "examples/sample-studio") rather than the step label, so a test can make
+// step 5 (and only step 5) fail by dropping `fail-check.txt` next to it.
+const CHECK_MARKER = `import { existsSync, readFileSync } from "node:fs";
+const arg = process.argv[2];
+if (existsSync("fail-check.txt") && readFileSync("fail-check.txt", "utf8").trim() === arg) process.exit(1);
+`;
+
 function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
   const dir = mkdtempSync(join(tmpdir(), "ci-ref-opus-repo-"));
+  writeFileSync(join(dir, "check-marker.mjs"), CHECK_MARKER);
   writeFileSync(
     join(dir, "package.json"),
     JSON.stringify(
@@ -382,14 +392,17 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
           lint: "node -e \"process.exit(0)\"",
           "format:check": "node -e \"process.exit(0)\"",
           test: "node -e \"process.exit(0)\"",
-          check: "node -e \"process.exit(0)\"",
+          check: "node check-marker.mjs",
         },
       },
       null,
       2,
     ),
   );
-  const studioDir = join(dir, "studio");
+  // Named "officina", not "studio" — A1: a fixture literally named "studio"
+  // cannot tell a computed exclusion from ci.ts hardcoding the string
+  // "studio", the same shape of gap behaviours 5/6 had one level down.
+  const studioDir = join(dir, "officina");
   const init = initStudio(studioDir, { now: new Date("2026-09-19T00:00:00Z") });
   if (!init.ok) throw new Error(`initStudio failed: ${init.message}`);
   const manifestPath = join(studioDir, "bisellium.yml");
@@ -420,14 +433,14 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
     cpDir(repoSrc, repoDirect);
     cpDir(repoSrc, repoRef);
 
-    const directResult = await runCi(["--repo", repoDirect, "--studio", join(repoDirect, "studio"), "--opus", opusId]);
+    const directResult = await runCi(["--repo", repoDirect, "--studio", join(repoDirect, "officina"), "--opus", opusId]);
     const refResult = await runCi(
-      ["--repo", repoRef, "--ref", "HEAD", "--studio", join(repoRef, "studio"), "--opus", opusId],
+      ["--repo", repoRef, "--ref", "HEAD", "--studio", join(repoRef, "officina"), "--opus", opusId],
       { provider: gitWorktreeProvider, installDeps: () => {} },
     );
 
-    const direct = readFileSync(join(repoDirect, "studio", "opera", `${opusId}.md`), "utf8");
-    const ref = readFileSync(join(repoRef, "studio", "opera", `${opusId}.md`), "utf8");
+    const direct = readFileSync(join(repoDirect, "officina", "opera", `${opusId}.md`), "utf8");
+    const ref = readFileSync(join(repoRef, "officina", "opera", `${opusId}.md`), "utf8");
 
     check(
       8,
@@ -440,6 +453,105 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
   } finally {
     rmSync(repoSrc, { recursive: true, force: true });
     rmSync(repoDirect, { recursive: true, force: true });
+    rmSync(repoRef, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// behaviour 9: on the current-tree path, a dirty source tree without
+// --allow-dirty makes `ci --opus` exit 2 and write nothing — the exact
+// refusal `verify` alone gives. Round 2's finding 2: a hardcoded, always-on
+// `verifyArgs.push("--allow-dirty")` would make this pass (exit 0, write a
+// `dirty:` certificate) instead. Same fixture also covers the step-5
+// "officina-wide" stderr hint (round 2's advisory), which nothing tested.
+// ---------------------------------------------------------------------------
+{
+  const { dir: repoSrc, opusId } = makeCiRepoWithNestedStudio();
+  const repoDirty = `${repoSrc}-dirty`;
+  const repoHint = `${repoSrc}-hint`;
+  try {
+    cpDir(repoSrc, repoDirty);
+    const opusPath = join(repoDirty, "officina", "opera", `${opusId}.md`);
+    const before = readFileSync(opusPath, "utf8");
+    // Dirty the repo OUTSIDE the officina — never committed.
+    writeFileSync(join(repoDirty, "untracked.txt"), "dirty\n");
+
+    const origError = console.error;
+    let dirtyStderr = "";
+    console.error = (msg?: unknown) => {
+      dirtyStderr += `${String(msg)}\n`;
+    };
+    const dirtyResult = await runCi(["--repo", repoDirty, "--studio", join(repoDirty, "officina"), "--opus", opusId]);
+    console.error = origError;
+
+    const after = readFileSync(opusPath, "utf8");
+    const dirtyOk =
+      dirtyResult.exitCode === 2 &&
+      after === before &&
+      !existsSync(join(repoDirty, "officina", "ci")) &&
+      dirtyStderr.includes("--allow-dirty");
+
+    // Same fixture, a clean copy: step 5 ("check -- studio") fails on its
+    // own — the officina-wide hint should fire with no --opus in play.
+    cpDir(repoSrc, repoHint);
+    writeFileSync(join(repoHint, "fail-check.txt"), "studio\n");
+    let hintStderr = "";
+    console.error = (msg?: unknown) => {
+      hintStderr += `${String(msg)}\n`;
+    };
+    const hintResult = await runCi(["--repo", repoHint]);
+    console.error = origError;
+    const hintOk = hintResult.exitCode !== 0 && hintStderr.includes('"npm run -s check -- studio" is officina-wide');
+
+    check(
+      9,
+      "ci --opus on a dirty tree without --allow-dirty exits 2 and writes nothing; step-5 hint fires",
+      dirtyOk && hintOk,
+      `dirty: exit=${dirtyResult.exitCode} changed=${after !== before} stderr=${dirtyStderr.trim()} | ` +
+        `hint: exit=${hintResult.exitCode} stderr=${hintStderr.trim()}`,
+    );
+  } finally {
+    rmSync(repoSrc, { recursive: true, force: true });
+    rmSync(repoDirty, { recursive: true, force: true });
+    rmSync(repoHint, { recursive: true, force: true });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// behaviour 10: the --ref path keeps passing --allow-dirty downstream even
+// when the caller didn't ask for it, because the scratch checkout can be
+// dirtied mid-run by a step (a real `test` step's coverage output, `lint
+// --fix`, …) after it was acquired clean. Round 2's finding 2, the other
+// half: dropping `|| ref !== undefined` from the --allow-dirty push would
+// make this refuse (exit 2) instead of certifying `dirty:`.
+// ---------------------------------------------------------------------------
+{
+  const { dir: repoSrc, opusId } = makeCiRepoWithNestedStudio();
+  const repoRef = `${repoSrc}-b10`;
+  try {
+    cpDir(repoSrc, repoRef);
+    // Make the "test" step dirty its own checkout, uncommitted — exactly
+    // the shape of dirt a real step can leave behind mid-run.
+    const pkgPath = join(repoRef, "package.json");
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { scripts: Record<string, string> };
+    pkg.scripts.test = "node -e \"require('fs').writeFileSync('dirtied-by-test.txt','x')\"";
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+    commitAll(repoRef, "test step dirties its own checkout");
+
+    const result = await runCi(
+      ["--repo", repoRef, "--ref", "HEAD", "--studio", join(repoRef, "officina"), "--opus", opusId],
+      { provider: gitWorktreeProvider, installDeps: () => {} },
+    );
+    const opus = readFileSync(join(repoRef, "officina", "opera", `${opusId}.md`), "utf8");
+
+    check(
+      10,
+      "--ref keeps passing --allow-dirty when a step dirties the scratch checkout mid-run",
+      result.exitCode === 0 && /certifies: dirty:/.test(opus),
+      `exit=${result.exitCode}\n${opus}`,
+    );
+  } finally {
+    rmSync(repoSrc, { recursive: true, force: true });
     rmSync(repoRef, { recursive: true, force: true });
   }
 }

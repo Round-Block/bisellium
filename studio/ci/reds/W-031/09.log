@@ -1,0 +1,75 @@
+# behaviour: 9
+# command: node --import tsx packages/cli/src/ci.test.ts 9
+# exit: 1
+# at: 2026-09-20T05:25:33.052Z
+# sella: guest
+# tree: dirty:c1548a8dba515f494960777135e86eb48389889c
+
+
+> test
+> node ci-marker.mjs test
+
+
+> test
+> node ci-marker.mjs test
+
+bisellium ci: step failed (exit 1): npm run -s typecheck
+
+added 1 package in 173ms
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+
+> test
+> node -e "process.exit(require('@fixture/foo').value===1?0:1)"
+
+bisellium ci: step failed (exit 1): npm test
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+tests: passed  ci/W-001-tests-670c0394.log
+lint: passed  ci/W-001-lint-670c0394.log
+types: passed  ci/W-001-types-670c0394.log
+
+> test
+> node -e "process.exit(0)"
+
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-998fa2e1.log
+lint: passed  ci/W-001-lint-998fa2e1.log
+types: passed  ci/W-001-types-998fa2e1.log
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-998fa2e1.log
+lint: passed  ci/W-001-lint-998fa2e1.log
+types: passed  ci/W-001-types-998fa2e1.log
+
+> test
+> node -e "process.exit(0)"
+
+tests: passed  ci/W-001-tests-998fa2e1.log
+lint: passed  ci/W-001-lint-998fa2e1.log
+types: passed  ci/W-001-types-998fa2e1.log
+
+> test
+> node -e "process.exit(0)"
+
+FAIL  ci --opus on a dirty tree without --allow-dirty exits 2 and writes nothing; step-5 hint fires dirty: exit=0 changed=true stderr= | hint: exit=1 stderr=bisellium ci: step failed (exit 1): npm run -s check -- studio --repo .
+bisellium ci: "npm run -s check -- studio" is officina-wide; "bisellium verify <opus>" is the per-opus gate.
+
+> test
+> node -e "require('fs').writeFileSync('dirtied-by-test.txt','x')"
+
+tests: passed  ci/W-001-tests-b93128b9.log
+lint: passed  ci/W-001-lint-b93128b9.log
+types: passed  ci/W-001-types-b93128b9.log
