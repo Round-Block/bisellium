@@ -1,0 +1,66 @@
+# behaviour: 2
+# command: node /tmp/claude-1000/w036-behaviour2-red-assert.mjs /tmp/claude-1000/w036-ee3BXt
+# exit: 1
+# at: 2026-09-20T06:08:01.267Z
+# sella: guest
+# tree: dirty:5d25eb5ab8e4a5dea910a8348fa59d66211a8d86
+
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'tsx' imported from /tmp/claude-1000/w036-ee3BXt/
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:628:32) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v25.9.0
+node:internal/modules/package_json_reader:301
+  throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+        ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'tsx' imported from /tmp/claude-1000/w036-ee3BXt/
+    at Object.getPackageJSONURL (node:internal/modules/package_json_reader:301:9)
+    at packageResolve (node:internal/modules/esm/resolve:764:81)
+    at moduleResolve (node:internal/modules/esm/resolve:855:18)
+    at defaultResolve (node:internal/modules/esm/resolve:988:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:746:52)
+    at #resolve (node:internal/modules/esm/loader:679:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:599:35)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:628:32) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v25.9.0
+
+[mutation] usage.test.ts exited 1 under M13 (21 constants annotated, pause.ts/lifecycle.ts intact)
+
+[behaviour 2 assertion] script exit: 1 (expect non-zero)
+[behaviour 2 assertion] git status --porcelain after: DIRTY
+ M packages/cli/src/branch.ts
+ M packages/cli/src/close.ts
+ M packages/cli/src/docs.ts
+ M packages/cli/src/hooks.ts
+ M packages/cli/src/instructions.ts
+ M packages/cli/src/new.ts
+ M packages/cli/src/providers.ts
+ M packages/cli/src/prune.ts
+ M packages/cli/src/retro.ts
+ M packages/cli/src/serve.ts
+ M packages/cli/src/tick.ts
+ M packages/commands/src/run.ts
+ M packages/commands/src/talk.ts
+ M packages/commands/src/verify.ts
+ M packages/commands/src/writes.ts
+
