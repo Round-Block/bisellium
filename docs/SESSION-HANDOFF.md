@@ -102,23 +102,42 @@ has cost a round each time.
 
 ### Open PRs
 
-None open — every PR to date has merged.
+One open — **PR #17 (W-035), PAUSED by the Patron 2026-09-20**. It is
+mergeable: censor round 2 PASSED (0 blocking), `done` recorded on the
+branch, rebased onto master through the CI-history fix, re-verified
+(`tree:a312c047`), gates green. Merge on the Patron's go — nothing else
+is outstanding on it. Until it merges, master's officina check shows
+`opus.red_evidence` for W-035's 18 behaviours: the red logs live on
+`opus/W-035`; the finding is *caused by* the pause, not by a defect.
 
 | PR | Opus | State |
 |----|------|-------|
-| [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | MERGED (round 8) |
-| [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | MERGED (round 3) |
-| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | MERGED (rebase + re-verify on the post-W-037 tree) |
-| [#7](https://github.com/edckt/bisellium/pull/7) | W-036 | MERGED |
-| [#12](https://github.com/edckt/bisellium/pull/12) | W-037 | MERGED (round 2; retracted round 1's tree-hash false positive) |
-| [#13](https://github.com/edckt/bisellium/pull/13) | gap filings | MERGED (W-038–041, D-016, P-010) |
+| [#2](https://github.com/edckt/bisellium/pull/2)–[#16](https://github.com/edckt/bisellium/pull/16), [#18](https://github.com/edckt/bisellium/pull/18) | W-026/30/31/36/37, checkpoints, gap filings, CI gate/permissions/history | ALL MERGED |
+| [#17](https://github.com/Round-Block/bisellium/pull/17) | W-035 | **OPEN — PAUSED, awaiting Patron's go** |
 | [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
 
-W-035 (improvement loop) is **building** — two Sonnet builders in parallel
-worktrees. Three petitiones await the Patron: **P-008** (`process.cascade`
-vs the QA lex), **P-009** (QA-lex amendment, architect-corrected wording),
-**P-010** (production-lex amendment: rank by long-term gain, a found gap
-owes a lesson or opus).
+W-035 (improvement loop) took two review rounds: round 1 FAILED on a path
+traversal in `classifyAddressedTarget` (the very class L-022 stamps as
+addressed — the censor caught what the stamped rule cannot see) and a
+`link.dead` gap in RULE_IDS; both fixed red-first, round 2 PASSED with an
+fs-interposition proof (83 calls, 0 outside the officina). During the
+final rebase, W-035's own drift guard made its **first live catch**:
+`process.history` (added by PR #18) was unregistered, and behaviour 7
+refused until it entered the registry.
+
+**Awaiting the Patron (everything else is stopped, conserve-credits order):**
+
+1. **PR #17 go/no-go** (see above).
+2. **P-008** (`process.cascade` vs the QA lex), **P-009** (QA-lex
+   amendment; orchestrator recommends accept as written), **P-010**
+   (production lex: rank by long-term gain; a found gap owes a lesson or
+   opus). Once #17 merges, answer with `bisellium answer --petitio P-nnn
+   … --opus W-nnn` — dogfoods W-035's new flag.
+3. **Stale-opera ruling**: W-022/23/27/28 sit in `building` with no
+   handoffs and (for 27/28) unproducible reds. Halt/close them + accept
+   the dead reds by decision → the officina check goes green → flip the
+   `officina` CI job to a required check → full GitHub reliance (the
+   Patron's stated goal). Until then every Actions run shows a red X.
 
 ### W-031 and W-030 — resolved
 
@@ -203,8 +222,12 @@ Active on `master`: no deletion, no force-push, **all changes via PR**
 cannot approve their own PRs and every PR here is authored by `edckt`).
 Two more rules were added after this section was first written:
 **code_scanning** (CodeQL, errors threshold, high+ security alerts) and
-**code_quality** (errors severity). No required status checks (so a red
-CI check does not block merges). Consequences:
+**code_quality** (errors severity). **As of 2026-09-20 (Patron decree)
+`gates` is a required status check** with the strict up-to-date policy —
+PRs must rebase onto current master (`gh pr update-branch --rebase`) and
+pass `gates` before merging; GitHub now enforces what was previously
+orchestrator discipline. The `officina` job stays informational until the
+stale-opera debt clears, then it too becomes required. Consequences:
 
 - **Direct pushes to master are rejected — verified empirically.** A real
   push to master was rejected with "push declined due to repository rule
@@ -245,6 +268,38 @@ The red-check-means-nothing caveat no longer applies to new runs.
 
 `bisellium ci` (W-031, PR #4) is the local replacement. Its first real run
 found the repo had been failing its own `format:check` since `6e84979`.
+
+**CI split + hardening (2026-09-20, Patron decree "make the gate live"):**
+the workflow is two jobs — `gates` (required: typecheck, lint,
+format:check, test, sample-studio check — `bisellium ci` minus the studio
+debt; the drift guard `scripts/ci-workflow.test.mjs` asserts the parity
+gap explicitly) and `officina` (`check studio` alone, honestly red,
+non-required until the debt clears). Same day: `GITHUB_TOKEN` scoped
+`contents: read` (PR #16, cleared CodeQL actions alert 4); `fetch-depth: 2`
++ checkout/setup-node v4→v5 (PR #18) after the Patron spotted a
+`HEAD~1` fatal in a job log — shallow clones had silently skipped
+`process.tdd`/`process.checkpoint` on every runner ever; the silent catch
+now emits a `process.history` advisory instead.
+
+**Retro material from cascade 22** (cite the review logs):
+- A red's `# tree:` header is computed by the code under test
+  (W-037 round 2's self-retraction — `W-037-review-2.log`).
+- A `--allow-dirty` verify at the same HEAD silently overwrites the clean
+  certificate in place — filename carries only the source hash
+  (`pipeline/src/index.ts:99`; W-035 round 2 advisory A1).
+- An expected-red CI job hides real anomalies inside it: the `HEAD~1`
+  fatal sat unread in the officina job's log because the job was "known
+  red". Silence inside an expected failure is a class.
+- The stamped rule for `review×path-traversal-from-ids` did not cover the
+  instance the censor found in the same diff (`collectIdRefs` walks only
+  sella/collegium/probationes keys) — "a rule exists" ≠ "the rule covers
+  the class".
+- W-035's drift guard and the required `gates` check each caught a real
+  drift within hours of existing — every gate added this cascade fired.
+
+The cascade-22 progress-page row covers up to the gap filings; a follow-up
+row for the CI-gate work + W-035's rounds is **deferred on the Patron's
+conserve-credits order** — write it at the next funded checkpoint.
 
 ### Backlog
 
