@@ -1,0 +1,348 @@
+W-035 — censor review, round 1
+sella: qa-lead   model: claude-opus-5
+branch: opus/W-035 @ 1616299 (rebased on master efb272d)
+source tree: tree:6ecf88f1015002d87daca070730ca8dcb9717b21 (matches all three certificates)
+spec of record: studio/briefs/W-035.md (architect-signed, 18 behaviours)
+
+VERDICT: FAIL — 2 blocking, 5 advisory, 3 brief defects.
+
+===============================================================================
+GATES RE-RUN BY THE CENSOR (not taken on the builders' word)
+===============================================================================
+  npm run -s typecheck   exit 0
+  npm test -s            exit 0 — 1243 PASS, 0 FAIL
+  npm run -s lint        exit 0 — 0 errors, 2 pre-existing warnings
+                                  (close.test.ts:5, tick.test.ts:203)
+  sourceTreeHash(repo, ["studio","examples"]) @ HEAD
+                         = 6ecf88f1015002d87daca070730ca8dcb9717b21
+                         = the certifies: value on all three gates. Not stale.
+
+All 18 new behaviours observed PASSing inside that run (grep of the suite
+output): behaviours 1-7 in rules/lex.test.ts, 8-15 in rules.test.ts, 16-17 +
+"answer without --opus" in cli/writes.test.ts, 18a-18f in retro.test.ts.
+
+===============================================================================
+BLOCKING FINDINGS
+===============================================================================
+
+F1 (BLOCK) — packages/cli/src/retro.ts: `classifyAddressedTarget` joins an
+unvalidated front-matter id straight onto a path and reads it. Two instances,
+one class.
+
+  packages/cli/src/retro.ts:141   const opusPath = join(studioRoot, "opera", `${target}.md`);
+  packages/cli/src/retro.ts:154   if (existsSync(join(studioRoot, "decisions", `${target}.md`))) ...
+
+`target` is `addressedTarget()`'s return: the raw capture of
+`/^addressed_by:\s*"?([^"\n]+)"?\s*$/m` from a lesson's front matter
+(retro.ts:114). `[^"\n]+` admits `../`. Neither site does a containment
+check.
+
+The brief states the requirement literally, in the paragraph that specifies
+this function (studio/briefs/W-035.md:321):
+
+    "A blank line after the heading and after the list, like every other
+     section. Never throws, never reads outside `studioRoot`."
+
+Reproduced (scratch officina, copy of studio/, nothing in the repo touched):
+
+  $ printf -- '---\nstate: "SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA"\n---\n' \
+      > $S/trav/outside/opera/secret.md
+  $ # studio/lessons/L-002.md gains: addressed_by: "../../outside/opera/secret"
+  $ bisellium retro --cascade 9 --from in.json --studio $S/trav/studio \
+      --now 2026-09-20T09:00:00Z
+  $ sed -n '/## Addressed/,/## Proposals/p' \
+      $S/trav/studio/acta/2026-09-20-retro-9.md
+  ## Addressed
+
+  - "review×mechanical-work-by-hand" → ../../outside/opera/secret (opus, SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA)
+  - "review×no-builder-isolation" → nothing yet
+
+`draftRetro` read a file outside the officina and wrote its contents, plus
+the unredacted traversal string, verbatim into a tracked acta. It also
+suppressed that class's petitio (`addressedTarget() !== undefined`), so a
+traversal value buys retro silence.
+
+The brief's stated defence ("by the time a retro reads a lesson, `check` has
+already blocked an unresolvable value") is procedural, not mechanical:
+`runRetro` does not invoke `checkStudio`. Confirmed both halves —
+
+  $ bisellium check $S/trav/studio --level block
+    lesson.addressed_by  lessons/L-002.md  addressed_by "../../outside/opera/secret" names no opus, rule id, or decision
+
+check does block it if you run check. The retro above ran to completion and
+wrote the file without anyone running check.
+
+This is the officina's own recurrent class `review×path-traversal-from-ids`
+(L-004, L-011, L-022) — the class this very opus stamps as addressed by
+`path.id.unvalidated` in studio/lessons/L-022.md. P-007's decree is explicit:
+"any id or path reaching a filesystem write or front-matter path field goes
+through it, a raw join failing review." `path.id.unvalidated` does not cover
+this value: `collectIdRefs` (packages/cli/src/rules/paths.ts:49) walks only
+`sella`/`collegium` keys plus `probationes` keys, never `addressed_by`.
+
+Scope of the class — searched, and it is confined to these two lines:
+  - every `join(studioRoot, ...)` / `join(root, ...)` in retro.ts (13 sites):
+    95,164,239,359,404,517 are constant directory names; 213 takes `period`
+    from `isoWeek(now)`; 340,430,520,523 are pre-existing (W-018) and out of
+    this opus's diff. Only 141 and 154 are new and data-derived.
+  - packages/commands/src/writes.ts `runAnswer --opus` uses `safeItemPath`
+    correctly — verified live: `--opus "../leges/qa"` → `unknown opus:
+    ../leges/qa`, exit 2, petitio byte-identical.
+  - packages/cli/src/rules/process.ts resolves `addressed_by` through
+    `Map.has`/`Set.has` only. No path join. Correct.
+
+F2 (BLOCK) — `RULE_IDS` is missing `link.dead`, and behaviour 7's harvest is
+by construction blind to the call shape that emits it. One missing id, two
+call sites, one regex shape.
+
+  packages/cli/src/check.ts:450   checkLink("link.dead", where, ev as string, `gate "${gid}" evidence`);
+  packages/cli/src/check.ts:617   else checkLink("link.dead", where, href, "digest evidence");
+
+`checkLink` (check.ts:372) forwards to `add(rule, "block", where, ...)`
+(check.ts:376), so `checkStudio` can and does emit `link.dead`. Observed live
+on a copy of the real officina:
+
+  $ bisellium check $S/a4/studio --level block
+    link.dead   acta/2026-09-17-kickoff.md   digest evidence "../README.md" not found under studio (dead link)
+
+`link.dead` is absent from packages/cli/src/rules/ids.ts. Both new rules
+therefore misjudge it:
+
+  (a) FALSE BLOCK. A lesson honestly stamped with a real rule id is blocked:
+      $ # lessons/L-001.md: addressed_by: "link.dead"
+      $ bisellium check $S/a4/studio --level block
+        lesson.addressed_by  lessons/L-001.md  addressed_by "link.dead" names no opus, rule id, or decision
+
+  (b) FALSE ADVISORY. A lex clause citing it is called nonexistent:
+      $ # leges/qa.md §3 clause gains "(check: link.dead)"
+      $ bisellium check $S/a4/studio | grep marker_unknown
+        lex.marker_unknown  leges/design.md  1 clause(s) cite a rule that does not exist: docs.arch.stale
+        lex.marker_unknown  leges/qa.md      1 clause(s) cite a rule that does not exist: link.dead
+
+Behaviour 7 passes anyway because the harvest regex the brief specified
+(briefs/W-035.md:133, copied verbatim into rules/lex.test.ts:25) captures only
+`add("literal"` and `rule: "literal"`. `checkLink("link.dead", ...)` is a
+third shape. The guard is under-inclusive, so "RULE_IDS equals the harvest"
+is true and still wrong. The brief calls its regex "the two shapes
+`checkStudio` actually uses" — there are three.
+
+Census method, so the next round does not have to guess: I enumerated every
+double-quoted dotted literal matching the rule-id shape in check.ts plus
+every rules/*.ts (excluding ids.ts and *.test.ts), filtered out filenames,
+and diffed against RULE_IDS. Exactly one id came back — `link.dead`, at the
+two sites above. Independently, I re-ran the brief's own harvest by hand:
+123 ids over 8 files, equal to the registry, confirming the registry is
+complete *with respect to the under-inclusive regex*. I also cross-checked
+every rule id emitted live by `check studio` and `check examples/sample-studio`
+against RULE_IDS: 18 distinct ids, all present. No `add(<variable>)` call
+sites exist except check.ts:376 (the `checkLink` forwarder itself).
+
+===============================================================================
+WHAT PASSED — acceptance criteria verified by the censor
+===============================================================================
+
+A3. `bisellium check studio --repo .` on the branch, full set-diff of
+    (rule, where, message) against master @ efb272d:
+
+    NEW, all intended:
+      lesson.recurrent ×4, each ending "— no lesson names what addresses it"
+        (mechanical-work-by-hand, no-builder-isolation,
+         unredacted-writes-to-tracked-files, tests-that-agree-with-the-bug)
+      lex.marker_unknown leges/design.md "1 clause(s) cite a rule that does
+        not exist: docs.arch.stale"  — fires exactly once, on design.md only
+      lex.unchecked design 7→4, engineering 14→11, production 7→4
+      process.checkpoint HEAD (see A5 below)
+
+    GONE:
+      the six old bare lesson.recurrent messages
+      opus.red_evidence opera/W-035.md (18 logs now present)
+
+    SILENT, as designed: review×evidence-backfilled-or-absent (L-021 →
+      opus.red_content) and review×path-traversal-from-ids (L-022 →
+      path.id.unvalidated). Both resolve to a rule, so no finding at all.
+
+    Blocking count 8 → 7. No new blocking finding anywhere. The remaining 7
+    (traditio.present ×4, wip.cap, opus.red_evidence W-027/W-028) are
+    pre-existing and identical on master.
+
+A4. Block fires and clears, on a scratch copy of studio/:
+      baseline                          FAIL — 8 blocking
+      + addressed_by: "W-999" on L-001  FAIL — 9 blocking
+        lesson.addressed_by  lessons/L-001.md  addressed_by "W-999" names no opus, rule id, or decision
+      key removed again                 FAIL — 8 blocking (identical set)
+
+A5. Retro dedup, two scratch officinae:
+      two unaddressed recurrent classes → petitiones/P-011.md and
+        petitiones/P-012.md — CONSECUTIVE, no skip. "## Addressed" lists both
+        as "→ nothing yet".
+      one class stamped addressed_by: "D-010" → one petitio (P-011) only, and
+        - "review×mechanical-work-by-hand" → D-010 (decision)
+        - "review×no-builder-isolation" → nothing yet
+        with the stamped class absent from "## Proposals".
+      no recurrent class at all → the single line
+        - (none — no class recurs across two or more cascades yet)
+      Section sits between "## Recurrence" and "## Proposals" in all three.
+
+A6. `answer --opus`, on a scratch copy of examples/sample-studio:
+      --opus W-005 on a petitio with no opus key → exit 0, `opus: W-005`
+        written into the front matter, and the timeline line reads
+        {"role":"patron",...,"state":"resolved","opus":"W-004",...} with the
+        key between `state` and `ask_back`.
+      --opus W-999 → "unknown opus: W-999", exit 2, petitio byte-identical
+        (diff clean).
+      --opus "../leges/qa" → "unknown opus: ../leges/qa", exit 2, petitio
+        byte-identical. safeItemPath holds.
+      no --opus, resolving → exit 0 plus one stderr line
+        "resolved without --opus — nothing records what work this becomes",
+        and the timeline line carries NO opus key (byte-identical shape).
+      --ask-back with no --opus → exit 0, no note. Correct: not a resolution.
+
+A2/A7 drift guards:
+      usage pin: packages/commands/src/usage.test.ts:88 still asserts
+        `seen === 31` — unchanged, correct (the brief's Timing note says 30;
+        W-031 moved it to 31 before this opus landed, see BD3). The new
+        `[--opus <id>]` line is present and verbatim-identical in both
+        ANSWER_USAGE (writes.ts:413) and USAGE (usage.ts:29); the
+        set-membership assertion passes in the suite run above.
+      docs/ARCHITECTURE.md: `node scripts/arch-graph.mjs` re-run by me; its
+        mermaid block is byte-identical to the one in the file, 37 lines,
+        11 workspaces / 25 edges. No regeneration was owed (see BD2).
+
+Seam integrity: nothing in Builder B's file set imports `./ids.js` or
+references `RULE_IDS` other than a comment at retro.ts:137 explaining why it
+does not. grep over retro.ts, retro.test.ts, commands/writes.ts,
+commands/usage.ts, cli/writes.test.ts, docs/ADOPTION.md. Clean.
+
+===============================================================================
+RED EVIDENCE — 18 logs, provenance audited
+===============================================================================
+Headers: all 18 carry `# behaviour:`, `# command:`, `# exit: 1`, `# at:`,
+`# sella:` and `# tree: dirty:f48d8538...`. Sella is builder-a on 01-15 and
+builder-b on 16-18. No `guest`. Every body is assertion-level (a FAIL line
+from the local `check()` harness); none is a module-load error.
+
+Pre-implementation reds (1-4, 6, 7, 12-15) are internally consistent with
+Builder A's stated order (lex folding → ids.ts → process.ts →
+lex.marker_unknown): 01/02 show the old unfolded `bulletClauses` output,
+03 shows the pre-fold `lex.unchecked` overcount, 04/06 show `[]` (rule not
+yet emitting), 07 shows `staleInRegistry: ["lesson.addressed_by",
+"lex.marker_unknown"]` (registry ahead of the emitters — exactly the stated
+order), 12 shows `[]` (rule absent), 13/14/15 show the OLD bare
+`lesson.recurrent` message with no suffix.
+
+Mutation-record reds (5, 8, 9, 10, 11) — REPRODUCED. In a detached scratch
+worktree at 1616299 I applied each claimed mutation, ran the recorded
+command, compared to the recorded body, then restored:
+
+  b5   mutation: drop "decision.kill" from RULE_IDS (rules/ids.ts)
+       got:      FAIL  lex.marker_unknown is silent when every marker names a real id         [{"rule":"lex.marker_unknown","level":"advise","where":"leges/fixture.md","message":"1 clause(s) cite a rule that does not exist: decision.kill"}]
+       recorded: identical, byte for byte.
+  b8   mutation: collect addressed_by unconditionally (drop the
+                 `!== undefined` guard, rules/process.ts:214)
+       got / recorded: identical, byte for byte.
+  b9   mutation: resolveAddressedBy always returns undefined
+       got / recorded: identical  (W-900 unresolved)
+  b10  same mutation, --only 10
+       got / recorded: identical  (decision.kill unresolved)
+  b11  same mutation, --only 11
+       got / recorded: identical  (D-1100 unresolved)
+
+After each restore `git status --porcelain` was empty. No stub is present in
+any commit on the branch: the diff efb272d..1616299 contains no mutation, the
+worktree at 1616299 is clean, and `npm test` is green on it.
+
+===============================================================================
+ADVISORY FINDINGS
+===============================================================================
+
+A1 (advise) — reds 16 and 17 are not isolated to one behaviour each.
+`packages/cli/src/writes.test.ts` and `packages/cli/src/retro.test.ts` have
+no `--only` selector (they read only `process.argv[2]` as the repo root),
+unlike `rules.test.ts:37` and `rules/lex.test.ts:43`, so both logs record
+`# command: node --import tsx packages/cli/src/writes.test.ts .` and both
+carry behaviour-16 FAILs. 17 does contain genuine behaviour-17 assertion
+failures ("17. answer --opus <unknown>: exits 2 → 0" and a non-identical
+petitio), so the builder's account — captured after flag recognition, before
+resolution logic — is honest and the red is real. `opus.red_content` does not
+fire (the bodies are not identical after header strip). But the engineering
+lex's "never two behaviours sharing one output" is only technically met.
+Cheapest durable fix is a `--only` selector in writes.test.ts and
+retro.test.ts, not a re-capture; it is a separate opus.
+
+A2 (advise) — five officina files are written outside the brief's "Files
+owned" list: studio/lessons/L-021.md, studio/lessons/L-022.md,
+studio/petitiones/P-003.md, P-005.md, P-007.md. The two lesson stamps are
+required by acceptance 3 and 5 and are correct. The three petitio `opus:`
+backfills are named verbatim under the brief's Out of scope ("Parsing
+`[stated]` prose to backfill `opus:` onto P-003/P-005/P-007. Three files, by
+hand, outside this opus."). I checked the values against the `[stated]`
+prose and the opera titles and they are substantively right (P-003 → W-020
+"lifecycle and evidence writes: bisellium ready, done, red"; P-005 → W-022
+"evidence content rules ... (P-005)"; P-007 → W-023 "... P-007 ..."), and
+`petitio.opus` accepts all three. Correct work in the wrong opus. Not worth a
+revert; worth naming so the next brief's Out of scope is believed.
+
+A3 (advise) — `process.checkpoint HEAD: last commit changed opera without
+updating SESSION-HANDOFF.md or dossier progress`. New on the branch, raised
+by 1616299 (chore: verify + handoff). A landing-step advisory for the
+orchestrator, not a builder defect.
+
+A4 (nit) — docs/ADOPTION.md:126-127 wraps a code span across a newline
+(`` `lesson\n.addressed_by` ``), which Markdown renders as `lesson
+.addressed_by` with a space. Same paragraph, the `--opus` prose runs straight
+into the next sentence ("...exit code still 0. `greenlight <opus>`
+requires...") on one line instead of starting a new one.
+
+A5 (nit) — the brief asked for "a one-line comment at each site saying why
+the two differ" for the petitio/lesson sequence split. The petitio site
+(retro.ts:404-410) explains both; the `lessonSeq` site keeps its original
+W-018 comment and does not mention petitiones. Half satisfied.
+
+===============================================================================
+BRIEF DEFECTS — the spec is wrong, the builders are not
+===============================================================================
+
+BD1 — acceptance 3 claims "`lex.unchecked`'s counts drop on all four leges
+(today: design 7, engineering 14, production 7, qa 10 — all overcounted
+because wrapped markers were invisible)". qa stayed at 10 and Builder A's
+flag is correct. studio/leges/qa.md's §2/§3/§4 hold 12 top-level bullets; 3
+of them wrap (§2 "One mutation per opus...", §2 "Adopting an advisory-only
+rule proposal alone...", §4 "A blocking-rule or lex-wording proposal..."),
+and none of the three carries a `(check: ...)` marker on either line. Only 2
+clauses in qa.md have a marker at all (`probatio.declared`, `lesson.recurrent`),
+both single-line. Folding cannot change a count unless a marker was on a
+continuation line, so 12 − 2 = 10 before and after. The brief's "all four"
+was an unverified generalisation.
+
+BD2 — acceptance 7 requires docs/ARCHITECTURE.md be regenerated "since
+`rules/ids.ts` is a new module edge". scripts/arch-graph.mjs builds a
+WORKSPACE graph (`WORKSPACE_DIRS = ["packages","apps","adapters"]`, edges from
+each workspace's package.json plus its `@bisellium/*` specifiers).
+`rules/ids.ts` is intra-package, so it adds no edge; I re-ran the script and
+its output is byte-identical to the block already in the file. The acceptance
+criterion's premise is false and nothing was owed.
+
+BD3 — the Timing section pins `packages/commands/src/usage.test.ts` at "30"
+scanned usage-constant lines. It is 31 on master (usage.test.ts:73 records
+that W-031's `ci.ts` constant moved it). The brief was written against a
+pre-W-031 tree. Builder B correctly left the pin alone; the number is
+incidental to `ANSWER_USAGE`, which is one line before and after.
+
+===============================================================================
+WHAT ROUND 2 NEEDS
+===============================================================================
+1. F1 — containment-check `target` in `classifyAddressedTarget` before either
+   join, both sites. `safeItemPath` is already exported from
+   packages/commands/src/writes.ts:103 and packages/cli already depends on
+   @bisellium/commands (packages/cli/src/writes.ts re-exports it), so this is
+   a reuse, not a new helper and not a new package edge. A red first: a lesson
+   whose `addressed_by` contains `../` must leave `## Addressed` reading
+   "nothing yet" (or an explicit non-target), read nothing outside
+   `studioRoot`, and still file the class's petitio.
+2. F2 — add `"link.dead"` to RULE_IDS, and widen behaviour 7's harvest to the
+   third shape so the guard can catch the next one. A red first: the harvest
+   must report `missingFromRegistry: ["link.dead"]` against today's registry.
+   Fix the brief's regex alongside, or the next rule added via a forwarder
+   repeats this exactly.
+3. Nothing else blocks. A1-A5 and BD1-BD3 are for the retro and the next
+   brief, not for this round.
