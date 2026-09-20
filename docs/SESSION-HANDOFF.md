@@ -105,8 +105,14 @@ has cost a round each time.
 | PR | Opus | State |
 |----|------|-------|
 | [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | **MERGED** at round 8 |
-| [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | round 2 FAIL — fix pushed, round 3 not dispatched |
-| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round 2 FAIL — **not yet fixed** |
+| [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | **MERGED** at round 3 (2026-09-20) |
+| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round-2 fix building; then censor round 3 |
+
+W-035 (improvement loop) is specced — architect signed the spec gate,
+brief carries 18 behaviours and the builder seam split. Its build
+dispatches once #4 merges (usage-banner seam). P-008 (process.cascade vs
+the QA lex) and P-009 (the lex amendment, architect-corrected wording)
+await the Patron.
 | [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
 
 ### What W-031 owes (PR #4, round 2, `ci/W-031-review-2.log`)
