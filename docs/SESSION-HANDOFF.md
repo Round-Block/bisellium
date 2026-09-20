@@ -220,7 +220,14 @@ found the repo had been failing its own `format:check` since `6e84979`.
 5. **Settings screen** (Patron): surface officina and harness config.
    UI/UX is Patron-only; needs design input before a brief.
 6. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
-7. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
+7. **Two CLI gaps found by being forced around them (2026-09-20).**
+   (a) Nothing creates a petitio outside `retro` and a `talk` reply's
+   `PETITIO:` line — P-004 and P-008 were hand-written for want of a
+   `bisellium petitio` command. (b) Nothing corrects a gate the CLI wrote
+   wrongly: `ready` refuses to re-sign from `building`, so W-031's
+   restored spec gate was a byte-for-byte hand-restoration of a prior
+   CLI-written value. Both are candidate opera; (b) overlaps W-033.
+8. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
    `packages/cli/src/instructions.template.md` — edit the template.
 8. Old item, still open: `branch.ts:172` hardcoded "into master" — **fixed**
    in W-026; this line retained only to note it landed. A repo on `main` now
