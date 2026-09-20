@@ -1,0 +1,254 @@
+cascade-23 cleanup branch — censor review (bookkeeping review, not an opus round)
+reviewer: qa-lead (the Censor, claude-opus-5)
+at: 2026-09-20 (review session)
+branch: chore/cascade-23-cleanup
+commit under review: 1fadfb64fdce73c9fcc32368c4f0161805ce77f2
+parent: 5d0c4a4ee4ad1fcf776eb42853cea52fa137bab0 (the Patron's decrees)
+scratch worktree: .claude/worktrees/agent-aad64eb4b58e525de (origin's 1fadfb6)
+no `bisellium review` verdict is recorded here: the branch is not one opus.
+
+VERDICT: 1 blocking finding, 1 report correction, 2 advisories. Everything
+else in the dispatch's seven points verified true.
+
+0. Stray bookkeeping from an earlier, dead run — found and reverted
+-------------------------------------------------------------------
+This worktree arrived carrying uncommitted work I did not produce:
+
+  M  studio/opera/W-022.md        (tests/lint/types repointed to 9b996052)
+  ?? studio/ci/W-022-tests-9b996052.log
+  ?? studio/ci/W-022-lint-9b996052.log
+  ?? studio/ci/W-022-types-9b996052.log
+
+That is the prior attempt's `bisellium verify W-022` output, as its dying
+note said. Reverted (`git checkout -- studio/opera/W-022.md`, `rm` the three
+logs); `git status --porcelain` empty before any evidence below was produced.
+Noted for the record: those certificates were *correct for the branch tip* —
+see finding F1, which they are the fix for.
+
+Also still registered, from some earlier run, not mine and not touched:
+  /tmp/claude-1000/w037r2-rep/verdict  (detached 666af5c, W-037 round-2 work)
+  M studio/opera/W-037.md, ?? studio/ci/W-037-review-2.log
+Left in place — it holds an uncommitted W-037 verdict that is not mine to
+destroy. Remove it once W-037's round 2 is landed.
+
+1. Lex amendments against the decreed text — TRUE, verbatim
+------------------------------------------------------------
+Compared mechanically, not by eye: every `>`-quoted block in P-009.md and
+P-010.md, whitespace-normalised, searched in the amended lex
+($TMPDIR/lexdiff.mjs, 8/8 PRESENT):
+
+  P-009 -> leges/qa.md          §2 addressed_by clause            PRESENT
+                                §3 recurrence replacement         PRESENT
+                                §4 unmarked deadline clause       PRESENT
+                                §7 addressed-ledger paragraph     PRESENT
+                                §9 row                            PRESENT
+  P-010 -> leges/production.md  §2 sequencing replacement         PRESENT
+                                §2 found-gap clause (unmarked)    PRESENT
+                                §9 row                            PRESENT
+
+`git diff 5d0c4a4 1fadfb6 -- studio/leges/` confirms the two "replace"
+amendments are replacements (old §3 recurrence bullet and old §2 sequencing
+bullet are gone, not duplicated), and that §4's and production §2's new
+clauses carry no `(check:)` marker, as the petitiones asked and the Patron
+accepted knowingly. `lex.marker_unknown` fires only on leges/design.md
+(docs.arch.stale, pre-existing); `lesson.addressed_by` cited by the new qa
+§2 clause is a real rule id (packages/cli/src/rules/ids.ts:48).
+
+P-008(b)'s first-hour rewrite (qa §1) and its §9 row: the decree states the
+substance, not lex text, so verbatim comparison does not apply. The rewrite
+("advisory only — it does not sign the spec gate, which belongs to the
+architect") is a faithful rendering of "the Censor drives the first hour
+without signing the spec gate; spec signatures move to the architect".
+W-030/W-031's two `process.cascade` advisories still stand, as the decree
+required.
+
+2. D-017 / D-018 — shape and content TRUE
+-------------------------------------------
+Both carry D-016's front matter set (id, title, at, provenance, by,
+kill_when) with a non-empty kill_when. `decision.shape` and `decision.kill`
+are silent in the full check run (no decision.* finding of any level).
+
+  D-017  W-023 + W-027 halted by acceptance; stale certs and missing reds
+         accepted as historical, explicitly not backfilled; kill_when =
+         resurrection reopens the obligation in full. Matches the decree.
+  D-018  pre-W-026 gates/reviews grandfathered without identity, advisories
+         stay visible and are not silenced; kill_when = reopen or re-record.
+         Matches the decree.
+
+Both are `provenance: stated, by: patron`, correct for a decree (D-016 is
+`observed/architect`, its own correct value).
+
+3. W-022's new evidence — TRUE, with F1 attached
+--------------------------------------------------
+- red 03 re-recorded: body is now `FAIL  ERR_MODULE_NOT_FOUND detected
+  false` — an assertion line, not a module-load trace (the old body was the
+  trace; see `git diff 5d0c4a4 1fadfb6 -- studio/ci/reds/W-022/03.log`).
+- no commit carries the mutation: `git log --oneline -S "MODULE_LOAD_RE"
+  --all` and `git log -p --all -S "const MODULE_LOAD_RE" --
+  packages/cli/src/rules/evidence.ts` show exactly one definition ever
+  written, in the original feature commit ea4c2dd. The regex at HEAD is the
+  original.
+- all six reds reproduced by me under mutation — see ci/W-022-review-3.log.
+- certificates W-022-{tests,lint,types}-0a333b8b.log exist and name
+  tree:0a333b8b. That tree is the source tree at **5d0c4a4**, the parent —
+  not at the branch tip. F1.
+- `opus.red_content` on W-022 is NOT gone. F2.
+
+F1 (BLOCKING, do not land / do not `done W-022` as it stands)
+  W-022's three certificates are stale at the commit that records them.
+  Computed with the CLI's own hasher (sourceTreeHash, excludes
+  [studio, .bisellium, examples/]):
+      5d0c4a4 -> 0a333b8b7c587d19e5d1977374046bebc2758691   (what the certs name)
+      1fadfb6 -> 9b996052b4c1a3ab785caa434a513978910dc6d8   (the tip)
+  Cause, single and exact: the cleanup commit's only non-studio file is
+  scripts/sweep-traditio-stage.mjs (`git diff --name-only 5d0c4a4 1fadfb6 |
+  grep -v ^studio/` returns that one path). studio/ is excluded from the
+  hash, so the bookkeeping did not move the tree — the script did. Gates
+  were cut before the script was committed.
+  `check` agrees, three instances, and that is the whole class on this
+  branch: probatio.certifies.stale on W-022 tests, lint and types. The other
+  nine stale-cert advisories are W-023/W-027 (accepted by D-017) and W-028
+  (already blocking on its own gates) and are not this branch's doing.
+  Fix is one command on the committed tip, and it needs no code change:
+      bisellium verify W-022 --studio studio --repo .
+  (safe with my logs present: they live under studio/, which verify's
+  dirty check excludes). I did not run it — minting gate certificates is
+  not the Censor's to do, and the deleted 9b996052 logs at section 0 were
+  exactly its output. I independently re-ran all three gates at the tip and
+  all three are green, so the re-cut is expected to certify identically.
+
+F2 (report correction, non-blocking)
+  The builder's report that the `opus.red_content` advisory on W-022 is gone
+  is false. Live output at the tip:
+      opus.red_content  opera/W-022.md  red(s) for behaviour(s) 3 are
+      module-load failures, not assertion-level
+  The red is genuinely assertion-level. The rule tests the WHOLE log text
+  (evidence.ts:213 `isModuleLoadFailure(logText)`), and behaviour 3's
+  assertion is *named* "ERR_MODULE_NOT_FOUND detected", so MODULE_LOAD_RE
+  matches the test name. W-022's round-2 log predicted this exact
+  self-reference and graded it non-blocking; I agree, and it cannot be
+  cleared by re-recording — only by renaming the assertion or narrowing the
+  rule, neither of which is in W-022's brief. Record it as accepted noise,
+  do not chase it.
+
+4. Lesson stamps — TRUE, not a green board (one wording correction)
+--------------------------------------------------------------------
+Read all three decisions in full.
+  L-013 -> D-009  TRUE. D-009 adopts `write.unredacted` (advise) and names
+                  lessons/L-013.md in its own Evidence paragraph.
+  L-014 -> D-010  TRUE. D-010 adopts `tests.tautological` (advise) and names
+                  lessons/L-014.md in its own Evidence paragraph.
+  L-009 -> D-005  TRUE in substance, but the builder's blanket claim that
+                  "each decision explicitly cites the class's lessons as its
+                  own evidence" does not hold for this one: D-005 cites no
+                  lesson id (it predates the lesson files by an hour). The
+                  link runs the other way — L-009's own `evidence:` already
+                  lists decisions/D-005.md and its body says "The origin of
+                  D-005" — and D-005 is squarely the class's remedy
+                  ("Mechanical, repeatable work is written as a script",
+                  carried into the engineering lex §2). Stamp stands; the
+                  justification was overstated.
+  Both advisory rules were adopted alone by the Censor, so all three stamps
+  sit inside qa §2's stamping authority.
+  `review×no-builder-isolation` (L-003, L-010) is still unstamped and still
+  advised — confirmed live, it is the only `lesson.recurrent` finding left.
+  The five silent classes check out: three stamped here, plus L-021 ->
+  opus.red_content and L-022 -> path.id.unvalidated stamped earlier by
+  W-035 (`git log -S "addressed_by:" -- studio/lessons` = 6332b6d, 1fadfb6).
+
+5. The sweep — TRUE
+---------------------
+scripts/sweep-traditio-stage.mjs reads opera front matter and shells out to
+the real CLI (`node --import tsx packages/cli/src/main.ts handoff --opus
+<id> --sella producer --stage done --next ... --studio <dir>`, line 71-91).
+It writes no front matter itself: the only fs imports are readFileSync and
+readdirSync (line 16). Its selector (state done + traditio.stage !== done)
+is the advisory's own shape.
+`traditio.stage` findings at the tip: 0.
+Swept records: 10 — W-016, W-017, W-018, W-019, W-020, W-021, W-030, W-031,
+W-035, W-037 (W-022/W-023/W-027's traditio changes are separate, and
+correctly so: those three are not `done`).
+The entries look CLI-written, and one detail proves it rather than
+decorating it: quoting style varies per file (W-016 `next:` and
+`blocked_on:` double-quoted, W-030 both plain, W-035 mixed) and in every
+case matches the style that file's *previous* traditio values carried. That
+is a round-tripping YAML writer preserving existing scalar styles — not
+something a hand edit or a templated string would produce. Timestamps are
+sequential across the ten (09:31:00.083 .. 09:31:01.824), one process per
+opus.
+
+6. The refusals — TRUE, reproduced
+------------------------------------
+  $ bisellium done W-022 --sella qa-lead --studio studio
+    W-022: gates not passed: review
+    exit=1
+  $ bisellium close W-028 --studio studio --repo .
+    W-028: gates not passed: review
+    done failed (exit 1)
+    exit=1
+  `git status --porcelain` empty after both: neither refusal wrote anything.
+Both reported accurately. One wording note: the commit message calls the
+W-028 refusal a missing-abandon-verb gap; the CLI's actual refusal is the
+gates-not-passed one, which is the correct refusal for W-028's record.
+
+7. Gates and check at the tip — as claimed except the advisory count
+----------------------------------------------------------------------
+  npm test -s            exit 0, 0 FAIL lines
+  npm run -s typecheck   exit 0
+  npm run -s lint        exit 0
+  npm run -s format:check exit 0
+  bisellium check studio --repo .   exit 1, blocks 3, advisories 76
+
+BLOCKING (3) — exactly the expected set:
+  traditio.present    opera/W-028.md  active item (building) has no handoff
+  opus.red_evidence   opera/W-027.md  missing red log(s) for behaviour(s) 1, 2, 4, 5
+  opus.red_evidence   opera/W-028.md  missing red log(s) for behaviour(s) 1, 2, 3, 4, 5
+
+advisories 76, not ~72. The four-finding delta is accounted for exactly, and
+both parts are F1 and F2:
+  +3  probatio.certifies.stale on W-022 {tests,lint,types} — these appear
+      only once the sweep script is *committed*; counted before the commit,
+      they do not exist (the certs name the then-current tree).
+  +1  opus.red_content on W-022 — never went away.
+By rule: probatio.certifies 38, probatio.certifies.stale 12,
+process.review_tier 11, acta.daily 4, lex.unchecked 4, process.cascade 2,
+aerarium.missing 1, lesson.recurrent 1, process.checkpoint 1,
+lex.marker_unknown 1, opus.red_content 1. No finding outside that set, and
+no new rule fires against the branch's own work.
+
+F3 (advisory) — a gap class this branch names but does not file
+-----------------------------------------------------------------
+The production lex clause adopted *in this very commit* says a gap found in
+the tooling becomes a lesson or a backlog opus within the cascade that found
+it, never handoff prose alone. This branch names three CLI gaps. Searched
+all seven backlog opera titles, `grep -rn addressed_by packages/cli/src`
+(non-test), and the verb list `bisellium` prints:
+  - no per-opus halt verb (D-017, and both halted opera's `blocked_on`) —
+    NO backlog opus, NO lesson. Recorded only in decision/handoff prose.
+  - no verb stamping `addressed_by` on a lesson — retro.ts only *reads* it
+    (retro.ts:115), nothing writes it, so this commit's three stamps are
+    hand-written lesson front matter — NO backlog opus, NO lesson.
+  - no verb re-stamping identity onto an existing gate (D-018) — covered,
+    W-040 "gate correction: re-sign a wrongly-signed gate without erasing
+    it". No action needed on this one.
+Two instances, not three. Both want a one-line backlog opus (or a lesson)
+before the cascade closes, or the clause is dead on its first day.
+
+F4 (advisory) — see section 4, D-005 cites no lesson id.
+
+Commands run for this log
+--------------------------
+git worktree list; git status --porcelain; git diff studio/opera/W-022.md
+node --import tsx packages/cli/src/main.ts context --sella qa-lead studio
+node $TMPDIR/lexdiff.mjs                     (8 decreed blocks vs the two leges)
+git diff 5d0c4a4 1fadfb6 -- studio/leges/ studio/lessons/ studio/opera/ studio/ci/reds/W-022/03.log
+git diff --name-only 5d0c4a4 1fadfb6 | grep -v '^studio/'
+git log --oneline -S "MODULE_LOAD_RE" --all
+git log --oneline -S "addressed_by:" -- studio/lessons
+node --import tsx $TMPDIR/treehash.mjs       (sourceTreeHash at HEAD/5d0c4a4/1fadfb6)
+npm test -s; npm run -s typecheck; npm run -s lint; npm run -s format:check
+node --import tsx packages/cli/src/main.ts check studio --repo . --json
+node --import tsx packages/cli/src/main.ts done W-022 --sella qa-lead --studio studio
+node --import tsx packages/cli/src/main.ts close W-028 --studio studio --repo .
+bash $TMPDIR/mutate-w022.sh                  (4 mutations x 6 behaviours, restored)
+node --import tsx packages/cli/src/main.ts check $TMPDIR/w022-offc   (synthetic officina)

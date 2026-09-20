@@ -1,0 +1,164 @@
+W-022 — censor review, round 3
+reviewer: qa-lead (the Censor, claude-opus-5)
+at: 2026-09-20 (review session)
+branch: chore/cascade-23-cleanup
+commit under review: 1fadfb64fdce73c9fcc32368c4f0161805ce77f2
+deliverable commit: ea4c2dd445b3afef3a6b1626604bc0417eeea8f4 (unchanged since)
+opus certificates certify tree:0a333b8b (stale against the tip 9b996052 —
+see "One condition attached", below)
+
+VERDICT: passed
+
+Mandate for this round: round 2 failed on two blocking findings and set
+round 3's bar — behaviours renumbered 1..6 in evidence.test.ts, then six
+genuine reds per behaviour, not re-labelled passing runs, and certificates
+re-cut. Judged as it stands on this branch, from the brief, not from the
+builder's account of it.
+
+1. Round 2 finding (b) — behaviour numbering — CLEARED
+--------------------------------------------------------
+evidence.test.ts now numbers 1..6, matching the brief's list, matching
+countBehaviours()'s 1..N, and matching the ci/reds/<id>/NN.log contract.
+Round 2's exact probe, re-run at the tip:
+
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 6
+    PASS  empty body not flagged                                false
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 1
+    PASS  same body after header = duplicate                     true
+
+Behaviour 6 is reachable; behaviour 1 is the brief's behaviour 1. The
+off-by-one that made round 2's prescribed remediation impossible is gone.
+
+2. Round 2 finding (a) — no red evidence — CLEARED, and verified by
+   reproduction rather than by reading the logs
+---------------------------------------------------------------------
+Six reds exist (ci/reds/W-022/01..06.log), all `# exit: 1`, all
+assertion-level FAIL lines, no two identical after header strip.
+
+A red is only evidence if a broken implementation produces it. I mutated
+the implementation four ways and ran all six behaviours under each
+(script $TMPDIR/mutate-w022.sh, `git checkout --` restore in an EXIT trap;
+`git status --porcelain` empty afterwards):
+
+  A  isModuleLoadFailure -> return false
+  B  isModuleLoadFailure -> return true
+  C  isDuplicateRed      -> return false
+  D  isDuplicateRed      -> return true
+
+Every recorded red is byte-identical to a line one of those mutations
+produces, and each behaviour dies under at least one mutation:
+
+  red 01  FAIL  same body after header = duplicate     false   <- C
+  red 02  FAIL  different body = not duplicate         true    <- D
+  red 03  FAIL  ERR_MODULE_NOT_FOUND detected          false   <- A
+  red 04  FAIL  import SyntaxError detected            false   <- A
+  red 05  FAIL  assertion failure not flagged          true    <- B
+  red 06  FAIL  empty body not flagged                 true    <- B
+
+Unmutated, all six PASS. So the suite bites on both exported functions in
+both directions (false negative and false positive), which is more than the
+one mutation qa §2 requires. The reds are the shape a stubbed/broken
+implementation emits — not passing runs re-labelled, which is what round 2
+warned against.
+
+Provenance of the mutation, checked rather than taken on trust:
+  $ git log --oneline -S "MODULE_LOAD_RE" --all
+  $ git log -p --all -S "const MODULE_LOAD_RE" -- packages/cli/src/rules/evidence.ts
+Exactly one definition has ever been written, in ea4c2dd, and it is the
+regex at HEAD. No commit anywhere carries a mutated MODULE_LOAD_RE.
+
+3. The brief's six behaviours against the delivered code
+----------------------------------------------------------
+All six are asserted in packages/cli/src/rules/evidence.test.ts and all six
+pass at the tip; evidence.test.ts is wired into `npm test` (package.json),
+so they gate. The two exported signatures match the brief's Interfaces
+section exactly (isDuplicateRed(a,b): boolean at evidence.ts:144,
+isModuleLoadFailure(text): boolean at :152).
+
+4. The acceptance line, re-derived end to end (not borrowed from round 2)
+---------------------------------------------------------------------------
+Brief: "`bisellium check` blocks duplicate reds and advises on module-load
+reds." Built my own synthetic officina ($TMPDIR/w022-offc: bisellium.yml
+copied from studio, opera/W-900.md state=building, briefs/W-900.md with 3
+numbered behaviours, reds 01/02 identical bodies under *different* headers,
+red 03 a real ERR_MODULE_NOT_FOUND trace):
+
+  $ node --import tsx packages/cli/src/main.ts check $TMPDIR/w022-offc
+    BLOCKING   opus.red_content  opera/W-900.md  red logs for behaviours 1 and 2 are identical after header strip
+    advisory   opus.red_content  opera/W-900.md  red(s) for behaviour(s) 3 are module-load failures, not assertion-level
+
+Block for duplicates, advise for module-load, both reached through the real
+`check` entry point, and the header-strip really strips (the two duplicate
+bodies carry different headers). Acceptance holds. The rule has been live
+and enforcing for weeks; the record should carry the irony plainly — the
+first real red it caught was W-022's own module-load red at round 2, and
+L-021 names `opus.red_content` as what addresses the very class
+(review×evidence-backfilled-or-absent) whose 4th recurrence W-022 was.
+
+5. Gates at the tip, run by me
+--------------------------------
+  npm test -s             exit 0, 0 FAIL
+  npm run -s typecheck    exit 0
+  npm run -s lint         exit 0
+  npm run -s format:check exit 0
+
+6. Residual, recorded and graded, none blocking
+-------------------------------------------------
+- `opus.red_content` still advises on W-022 itself: "red(s) for behaviour(s)
+  3 are module-load failures, not assertion-level". The red is genuinely
+  assertion-level; the rule tests the whole log text (evidence.ts:213) and
+  behaviour 3's assertion is *named* "ERR_MODULE_NOT_FOUND detected", so the
+  regex matches the name. Round 2 identified this self-reference and graded
+  it non-blocking; I reach the same grade independently. It cannot be
+  cleared by re-recording, and neither renaming the assertion nor narrowing
+  the rule is in this brief. Accepted noise — but the claim that this
+  advisory is gone (builder's report) is simply false, and the record should
+  not carry it.
+- MODULE_LOAD_RE's `.` without the `s` flag still misses a SyntaxError
+  wrapped across lines. Round 2's finding, unchanged, non-blocking, outside
+  the brief.
+- isDuplicateRed is byte-equality after header strip, so it catches copied
+  files only. Matches the brief as written; not a defect against spec.
+
+One condition attached to this pass (bookkeeping, not code)
+-------------------------------------------------------------
+W-022's tests/lint/types certificates name tree:0a333b8b, which is the
+source tree at the *parent* commit 5d0c4a4. The cleanup commit added
+scripts/sweep-traditio-stage.mjs — its only non-studio file — which moved
+the tip's source tree to 9b996052, so `check` reports all three as
+probatio.certifies.stale. This is not a W-022 defect: `git diff --stat
+5d0c4a4 1fadfb6 -- packages/` is empty, so the certified tree and the tip
+carry byte-identical W-022 code, and I re-ran all three gates green at the
+tip myself, which is fresher evidence than the certificate. The verdict
+rests on that, not on the stale certificate.
+
+Before `done W-022`, re-cut them on the committed tip:
+    bisellium verify W-022 --studio studio --repo .
+(my review logs live under studio/, which verify's dirty check excludes, so
+they do not obstruct it). `done` will not enforce this — stale certificates
+are advisory — so it is on the orchestrator, and it is also finding F1 of
+ci/cascade-23-cleanup-review.log, where the cause belongs.
+
+Disposition
+-----------
+Passed. Both of round 2's blocking findings are cleared and were verified
+by reproduction, not by reading the builder's account: the behaviour
+numbering is aligned with the reds contract, and all six reds are provably
+the output of a broken implementation. The rule meets every behaviour in
+the brief and its acceptance line holds through `bisellium check`. The one
+open item is a stale certificate created by the cleanup commit's file
+ordering, fixed by one command and recorded above.
+
+Commands run for this log
+--------------------------
+node --import tsx packages/cli/src/main.ts context --sella qa-lead studio
+node --import tsx packages/cli/src/rules/evidence.test.ts . {1..6}
+bash $TMPDIR/mutate-w022.sh          (mutations A-D x behaviours 1-6, restored)
+git log --oneline -S "MODULE_LOAD_RE" --all
+git log -p --all -S "const MODULE_LOAD_RE" -- packages/cli/src/rules/evidence.ts
+git diff --stat 5d0c4a4 1fadfb6 -- packages/
+node --import tsx $TMPDIR/treehash.mjs
+node --import tsx packages/cli/src/main.ts check $TMPDIR/w022-offc
+node --import tsx packages/cli/src/main.ts check studio --repo . --json
+node --import tsx packages/cli/src/main.ts done W-022 --sella qa-lead --studio studio   (refused, pre-verdict)
+npm test -s; npm run -s typecheck; npm run -s lint; npm run -s format:check
