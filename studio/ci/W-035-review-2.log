@@ -1,0 +1,258 @@
+W-035 — censor review, round 2
+sella: qa-lead   model: claude-opus-5
+branch: opus/W-035 @ f0071a4 (fix commits ef4295b + f0071a4 over the round-1
+        FAIL commit ddc42ca; branch is one commit behind master 786fa2a)
+source tree: tree:0eacc4a0ae19f968a87249c5616c7c8b8b478e7f
+             = sourceTreeHash(repo, ["studio",".bisellium","examples"], f0071a4)
+             recomputed by me; equal at ef4295b and f0071a4, and equal to the
+             certifies: value on all three referenced certificates.
+scope: the two round-1 blockers plus regression. Round-1 PASSing acceptance
+       criteria not re-litigated except where ef4295b/f0071a4 touched them.
+
+VERDICT: PASS — 0 blocking, 2 advisory.
+
+===============================================================================
+F1 — REMEDIED AND VERIFIED (round-1 blocker: addressed_by path traversal)
+===============================================================================
+Fix: packages/cli/src/retro.ts:150-151,165 — both former raw joins now go
+through `safeItemPath` (reused from packages/commands/src/writes.ts:103, no
+new helper, no new package edge); kind gains "unresolvable"; retro.ts:420-423
+makes "unresolvable" NOT suppress the class's petitio; retro.ts:461 renders it
+as "nothing yet".
+
+(a) MY ROUND-1 EXFILTRATION REPRO, RE-RUN ON THE BRANCH.
+    Scratch copy of studio/, an outside file at ../../outside/opera/secret.md
+    containing state: "SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA", L-002 stamped
+    addressed_by: "../../outside/opera/secret", two recurrent classes supplied
+    as reviewFindings:
+
+      $ bisellium retro --cascade 9 --from in2.json --studio $S/trav2/studio \
+          --now 2026-09-20T09:00:00Z
+
+      ## Addressed
+      - "review×mechanical-work-by-hand" → nothing yet
+      - "review×no-builder-isolation" → nothing yet
+
+      ## Proposals
+      - "review×mechanical-work-by-hand": ... petitio filed at petitiones/P-011.md
+      - "review×no-builder-isolation":    ... petitio filed at petitiones/P-012.md
+
+      $ grep -rn "SECRET-LEAKED" $S/trav2/studio/{acta,petitiones,lessons}
+        (no match)
+
+    Round 1's acta line
+      - "review×mechanical-work-by-hand" → ../../outside/opera/secret (opus, SECRET-LEAKED-FROM-OUTSIDE-THE-OFFICINA)
+    is gone; the traversal string itself no longer reaches the acta at all;
+    the class still files, and petitio ids stay consecutive (P-011, P-012).
+
+(b) POSITIVE PROOF THAT NOTHING OUTSIDE studioRoot IS READ.
+    I monkey-patched fs.existsSync/readFileSync/readdirSync/statSync/openSync
+    to record every resolved path, then called draftRetro() directly on the
+    same traversal officina:
+
+      fs calls total: 83
+      OUTSIDE studioRoot: []        (module-loader paths filtered out)
+      markdown mentions SECRET: false
+      markdown mentions "../":  false
+
+    Zero filesystem calls escape studioRoot. The pre-fix behaviour is on
+    record in studio/ci/reds/W-035/18.log:833,874, which shows the same acta
+    line carrying the outside file's contents.
+
+(c) CLASS SCOPE — BOTH FORMER SITES, AND NO THIRD ONE.
+    I re-enumerated every path-touching call in retro.ts (grep for
+    join(/resolve(/existsSync(/readFileSync(/readdirSync(/writeFileSync():
+      96,99,106   lessons dir       — constant
+      150,151     opera/decisions   — NOW safeItemPath-guarded (the F1 sites)
+      153,156,165 use only the guarded results
+      175,178,185 decisions dir     — constant
+      224,227,228 aerarium/<period> — period from isoWeek(now)
+      250,253,268 acta dir          — constant
+      351         join(studioRoot, href)  — pre-existing (W-018), data-derived
+                  but NOT in this opus's diff; confirmed by
+                  `git diff efb272d..f0071a4 -- packages/cli/src/retro.ts`,
+                  whose only existsSync/readFileSync/join(studioRoot hunks are
+                  lines 150,151,153,156,165. Same scoping as round 1.
+      370,415,444,532,535,538  internally constructed write paths (W-018)
+    No third data-derived read site appeared.
+
+(d) KIND REGRESSION — all four classifications, on copies of the real studio:
+      target "W-020"               → - "…" → W-020 (opus, done)        1 petitio
+      target "D-010"               → - "…" → D-010 (decision)          1 petitio
+      target "path.id.unvalidated" → - "…" → path.id.unvalidated (rule) 1 petitio
+      target "../../outside/…"     → - "…" → nothing yet               2 petitiones
+      target "..\\outside"         → - "…" → nothing yet               2 petitiones
+      target "/etc/passwd"         → - "…" → nothing yet               2 petitiones
+      target ".."                  → - "…" → nothing yet               2 petitiones
+    draftRetro never threw on any of them. Round-1 acceptance A5's suppression
+    behaviour (a stamped class is absent from "## Proposals", ids consecutive)
+    is intact for opus/decision/rule and correctly NOT applied to unresolvable.
+
+(e) RED. studio/ci/reds/W-035/18.log, re-recorded, `# sella: builder-a`,
+    `# exit: 1`, `# tree: dirty:6ecf88f1…`, `# at: 2026-09-20T08:08:39.606Z`.
+    Body ends on "FAIL  18j. path-traversal addressed_by: the recurring class
+    still files its petitio []" and embeds the leaking acta. Assertion-level,
+    not a module-load error. The test (retro.test.ts:343-397) builds the
+    outside dir with `relative()` — the same traversal shape I used.
+
+===============================================================================
+F2 — REMEDIED AND VERIFIED (round-1 blocker: RULE_IDS misses link.dead)
+===============================================================================
+Fix: packages/cli/src/rules/ids.ts:57 adds "link.dead" in sorted position
+(lex.unchecked < link.dead < manifest.collegia); rules/lex.test.ts:32 widens
+HARVEST_RE to any call whose first argument is a dotted rule-id literal;
+lex.test.ts:189 adds an explicit RULE_IDS.has("link.dead") assertion.
+
+(a) MY OWN CENSUS, RE-RUN INDEPENDENTLY OF THE TEST'S REGEX.
+    Every double-quoted dotted lowercase-initial literal in check.ts plus every
+    rules/*.ts (excluding ids.ts and *.test.ts), filename-shaped literals
+    dropped, diffed against RULE_IDS:
+
+      literals harvested: 124        RULE_IDS size: 124
+      MISSING FROM REGISTRY: []
+      IN REGISTRY, NOT FOUND AS A LITERAL: []
+      filename-shaped literals dropped: ["bisellium.yml","usage.yml"]
+
+    Set equality now holds. It was 123 vs 124 before the fix.
+
+(b) NO FALSE POSITIVES FROM THE WIDENED REGEX. Old vs new harvest over the
+    same file set (whole-file matching, as harvestRuleIds does):
+      old: 123   new: 124   registry: 124
+      ADDED by widening: ["link.dead"]
+        check.ts:450  checkLink("link.dead", …)
+        check.ts:617  checkLink("link.dead", …)
+      LOST by widening: []
+      capture sites that are NOT add( / checkLink( / rule: shaped: 0
+    The widening adds exactly the two forwarder sites round 1 named and
+    nothing else. (The builder's comment claims this; I verified it rather
+    than taking it.)
+
+(c) THE TWO ROUND-1 MISJUDGEMENTS, BOTH CLEARED, on a scratch copy of studio/:
+      baseline                              FAIL — 8 blocking
+      lessons/L-001.md + addressed_by: "link.dead"
+                                            FAIL — 8 blocking, IDENTICAL SET
+                                            (no lesson.addressed_by finding)
+      leges/qa.md §3 clause + "(check: link.dead)"
+        lex.marker_unknown  leges/design.md  … docs.arch.stale
+        (and nothing for leges/qa.md)
+    Round 1's false block and false advisory are both gone.
+
+(d) RED. studio/ci/reds/W-035/07.log, re-recorded, `# sella: builder-a`,
+    `# exit: 1`, `# tree: dirty:6ecf88f1…`:
+      FAIL  RULE_IDS equals the harvest of check.ts + rules/*.ts   {"missingFromRegistry":["link.dead"],"staleInRegistry":[]}
+    REPRODUCED: I ran the widened harvest against ddc42ca's ids.ts
+    (`git show ddc42ca:packages/cli/src/rules/ids.ts`) and got
+      {"missingFromRegistry":["link.dead"],"staleInRegistry":[]}
+    byte-identical to the recorded detail payload.
+
+===============================================================================
+REGRESSION
+===============================================================================
+DIFF CONTAINMENT. `git diff --stat ddc42ca..f0071a4 -- packages/` touches
+exactly retro.ts (+25/-... ), retro.test.ts, rules/ids.ts, rules/lex.test.ts.
+No other package file moved.
+
+GATES, ALL RE-RUN BY ME ON f0071a4 (working tree clean before and after,
+`git status --porcelain` empty):
+  npm test -s           exit 0 — 1248 PASS, 0 FAIL
+  npm run -s typecheck  exit 0
+  npm run -s lint       exit 0 — 0 errors, 2 warnings (close.test.ts:5,
+                                 tick.test.ts:203 — both pre-existing)
+  npm run -s format:check  exit 0 — "All matched files use Prettier code style!"
+
+CERTIFICATES. studio/ci/W-035-{tests,lint,types}-0eacc4a0.log each carry
+`certifies: tree:0eacc4a0ae19f968a87249c5616c7c8b8b478e7f` — `tree:`, not
+`dirty:` — and that hash is the one I recomputed for f0071a4's committed
+source tree. opera/W-035.md's probationes point at exactly these three. The
+tests log is 204 lines with 24 PASS lines; that is the house-wide tail cap
+(every *-tests-*.log in studio/ci is 204 lines), not truncation peculiar to
+this opus.
+
+CHECK. `bisellium check studio --repo .` on f0071a4:
+  FAIL — 7 blocking, 88 advisory   (exit 1)
+  blocking: traditio.present ×4 (W-022/023/027/028), wip.cap,
+            opus.red_evidence W-027, opus.red_evidence W-028
+            — identical to round 1's set; all pre-existing on master.
+  lesson.recurrent ×4, each ending "— no lesson names what addresses it"
+            (mechanical-work-by-hand, no-builder-isolation,
+             unredacted-writes-to-tracked-files, tests-that-agree-with-the-bug)
+  lex.marker_unknown  leges/design.md  docs.arch.stale   — fires once, design.md only
+  lex.unchecked  design 4, engineering 11, production 4, qa 10
+  process.checkpoint HEAD (landing-step advisory, same as round 1's A3)
+  lesson.addressed_by: no finding anywhere. The two stamped classes (L-021 →
+  opus.red_content, L-022 → path.id.unvalidated) are silent, as designed.
+Same finding set as round 1's acceptance-3 diff. No regressions, no new
+blockings.
+
+RED HEADERS. Both re-recorded logs carry `# tree: dirty:6ecf88f1…`.
+sourceTreeHash at ddc42ca (the HEAD they were recorded against) is
+6ecf88f1015002d87daca070730ca8dcb9717b21 — I recomputed it — and the working
+tree carried the new test files at the time, so `dirty:` is the honest prefix.
+Neither ef4295b nor f0071a4 touches packages/shim/src/sourceTree.ts, so the
+W-037 hazard (a red's tree hash computed by the code under test) does not
+apply; the hashes reproduce straightforwardly.
+
+===============================================================================
+ADVISORY FINDINGS
+===============================================================================
+
+A1 (advise) — THE ROUND-1 CERTIFICATES WERE OVERWRITTEN IN PLACE, NOT LEFT AS
+RESIDUE. f0071a4 does not merely add the 0eacc4a0 trio; it rewrites all three
+round-1-era files:
+
+  studio/ci/W-035-lint-6ecf88f1.log   -certifies: tree:6ecf88f1…  +certifies: dirty:6ecf88f1…
+  studio/ci/W-035-types-6ecf88f1.log  -certifies: tree:6ecf88f1…  +certifies: dirty:6ecf88f1…
+  studio/ci/W-035-tests-6ecf88f1.log  -certifies: tree:6ecf88f1…  +certifies: dirty:6ecf88f1…
+
+Three files, one class, and I checked there is no fourth: those are the only
+studio/ci paths modified (as opposed to added) in ddc42ca..f0071a4, per
+`git log --name-status`. The tests log's body also moved (per-request timings
+1ms→2ms), so this was a genuine re-run, not a hand edit.
+
+Root cause, and it is not W-035's code: packages/pipeline/src/index.ts:99
+names the log `${opus.id}-${probatioId}-${tree8}.log` from the source hash
+alone, while line 70 puts the dirty/clean distinction only in the body's
+`certifies:` line. A `--allow-dirty` run at the same HEAD therefore silently
+clobbers the clean certificate for that same source tree. The builder's dirty
+round-2 run at HEAD=ddc42ca (source 6ecf88f1) landed on top of the clean
+round-1 certificates for 6ecf88f1.
+
+Not blocking: the three clobbered files are unreferenced (nothing in studio/
+names them — I grepped), opera/W-035.md points only at the honest 0eacc4a0
+trio, and studio/ci/W-035-review-1.log itself is untouched. But my round-1
+verdict's header cites those three as `tree:`, and on the branch they no
+longer read that way. The mechanism is pre-existing and has bitten before
+(same in-place flip visible in the W-037 and ci-round-2 commits), so it is a
+tool gap for the retro, not a W-035 defect: a certificate filename should
+carry the dirty/clean distinction, or a dirty run should refuse to overwrite
+a clean certificate at the same hash.
+
+A2 (advise) — REBASE WILL STALE THE CERTIFICATES. Master has moved to 786fa2a
+(.github/workflows/ci.yml permissions). `.github/` is inside the source tree
+hash, so rebasing opus/W-035 onto master moves the source hash off
+0eacc4a0 and `probatio.certifies.stale` will fire on all three gates.
+It is advisory only (check.ts:464), so `check` will not fail — but the gates
+must be re-run after the rebase before the merge gate is meaningful. This is
+the orchestrator's landing step, flagged here only so it is not forgotten.
+
+Round-1 advisories A1-A5 and brief defects BD1-BD3 stand unchanged and were
+not in round 2's scope. Round-1 A1 in particular still holds: 18.log records
+`# command: node --import tsx packages/cli/src/retro.test.ts .` and carries
+behaviours 10-18, because retro.test.ts still has no `--only` selector.
+`opus.red_content` does not fire.
+
+===============================================================================
+WHAT I RE-RAN, IN ONE LIST
+===============================================================================
+  sourceTreeHash at ddc42ca / ef4295b / f0071a4
+  npm test -s, npm run -s typecheck, npm run -s lint, npm run -s format:check
+  bisellium check studio --repo .            (on the branch)
+  bisellium check <scratch studio> --level block  (baseline / +link.dead stamp)
+  bisellium check <scratch studio>           (+"(check: link.dead)" lex clause)
+  bisellium retro --cascade 9 --from … --studio <traversal scratch officina>
+  draftRetro() under an fs-call recorder, traversal officina
+  draftRetro() across 7 addressed_by target shapes
+  independent rule-id census (all dotted literals, no call-shape assumption)
+  old-vs-new HARVEST_RE differential + non-add/checkLink capture-site audit
+  behaviour 7's red reproduced against ddc42ca's ids.ts
+  git log --name-status / git diff over ddc42ca..f0071a4 and efb272d..f0071a4
