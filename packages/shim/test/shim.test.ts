@@ -7,13 +7,15 @@
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { gitWorktreeProvider, filterEnv } from "../src/index.js";
+import { join, resolve } from "node:path";
+import { gitWorktreeProvider, filterEnv, sourceTreeHash } from "../src/index.js";
+import { normalizeExclude } from "../src/sourceTree.js";
 import { runCommand } from "../../cli/src/run.js";
 import { checkStudio } from "../../cli/src/check.js";
 import { localPipeline } from "../../pipeline/src/index.js";
 
 const NOW = new Date("2026-09-18T09:00:00Z");
+const repo = resolve(process.argv[2] ?? ".");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -204,6 +206,63 @@ function readReceipt(studio: string, sella: string): { path: string; data: Recor
     rmSync(repo, { recursive: true, force: true });
     rmSync(logDir, { recursive: true, force: true });
   }
+}
+
+// ---- W-037 behaviour 1: normalizeExclude is byte-identical to the ---------
+// ---- shipped (regex) implementation, so no certified tree hash moves -----
+// Golden table generated at HEAD, before sourceTree.ts's ReDoS fix, by
+// running the shipped implementation directly:
+//   node -e 'const f=(d)=>d.replace(/\\/g,"/").replace(/^\.\//,"").replace(/\/+$/,"");
+//   ["examples/","studio/","examples/fixtures/","docs","./docs/","vendor//",
+//    ".bisellium","a/b/c/d/e/f/g/h/i/j/","packages\\shim\\src\\","./","/","//","",
+//    "a//b//c//","./a/./b/","x/".repeat(50)].forEach(i =>
+//      console.log(JSON.stringify(i), "->", JSON.stringify(f(i))))'
+
+{
+  const golden: Array<[string, string]> = [
+    ["examples/", "examples"],
+    ["studio/", "studio"],
+    ["examples/fixtures/", "examples/fixtures"],
+    ["docs", "docs"],
+    ["./docs/", "docs"],
+    ["vendor//", "vendor"],
+    [".bisellium", ".bisellium"],
+    ["a/b/c/d/e/f/g/h/i/j/", "a/b/c/d/e/f/g/h/i/j"],
+    ["packages\\shim\\src\\", "packages/shim/src"],
+    ["./", ""],
+    ["/", ""],
+    ["//", ""],
+    ["", ""],
+    ["a//b//c//", "a//b//c"],
+    ["./a/./b/", "a/./b"],
+    ["x/".repeat(50), "x/".repeat(49) + "x"],
+  ];
+  for (const [input, expected] of golden) {
+    const got = normalizeExclude(input);
+    check(`normalizeExclude(${JSON.stringify(input)}) === ${JSON.stringify(expected)}`, got === expected, JSON.stringify(got));
+  }
+
+  // Second layer: the end-to-end consequence against this repo — needs no
+  // frozen literal so it cannot drift with the next commit. The trailing
+  // slash in the live manifest entry (`source_excludes: [examples/]`) still
+  // normalizes away, and the exclude still actually excludes.
+  const withSlash = sourceTreeHash(repo, ["examples/"]);
+  const withoutSlash = sourceTreeHash(repo, ["examples"]);
+  const noExclusions = sourceTreeHash(repo, []);
+  check("sourceTreeHash: trailing slash normalizes away (examples/ === examples)", withSlash === withoutSlash, `${withSlash} vs ${withoutSlash}`);
+  check("sourceTreeHash: the exclude still actually excludes (differs from no exclusions)", withSlash !== noExclusions, `${withSlash} vs ${noExclusions}`);
+}
+
+// ---- W-037 behaviour 2: a pathological exclude entry completes in --------
+// ---- linear time (CodeQL js/polynomial-redos on the old /\/+$/ regex) ----
+
+{
+  const pathological = "/".repeat(200_000) + "x";
+  const start = process.hrtime.bigint();
+  const got = normalizeExclude(pathological);
+  const ms = Number(process.hrtime.bigint() - start) / 1_000_000;
+  check("normalizeExclude(pathological): unchanged (no trailing slash to strip)", got === pathological, `len ${got.length}`);
+  check(`normalizeExclude(pathological): completes under 500ms (took ${ms.toFixed(2)}ms)`, ms < 500, `${ms}ms`);
 }
 
 function mktemp(prefix: string): string {
