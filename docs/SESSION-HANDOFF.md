@@ -106,14 +106,14 @@ has cost a round each time.
 |----|------|-------|
 | [#2](https://github.com/edckt/bisellium/pull/2) | W-026 | **MERGED** at round 8 |
 | [#3](https://github.com/edckt/bisellium/pull/3) | W-030 | **MERGED** at round 3 (2026-09-20) |
-| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round-2 fix building; then censor round 3 |
+| [#4](https://github.com/edckt/bisellium/pull/4) | W-031 | round-2 fixes rebased and pushed; censor round 3 running |
+| [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
 
 W-035 (improvement loop) is specced — architect signed the spec gate,
 brief carries 18 behaviours and the builder seam split. Its build
 dispatches once #4 merges (usage-banner seam). P-008 (process.cascade vs
 the QA lex) and P-009 (the lex amendment, architect-corrected wording)
 await the Patron.
-| [#1](https://github.com/edckt/bisellium/pull/1) | — | closed, superseded by #3 |
 
 ### What W-031 owes (PR #4, round 2, `ci/W-031-review-2.log`)
 
@@ -210,24 +210,39 @@ success against master.
 
 Active on `master`: no deletion, no force-push, **all changes via PR**
 (required approvals set to 0 after the initial 1 deadlocked — authors
-cannot approve their own PRs and every PR here is authored by `edckt`),
-no required status checks (so the billing-blocked red CI does not block
-merges). Consequences:
+cannot approve their own PRs and every PR here is authored by `edckt`).
+Two more rules were added after this section was first written:
+**code_scanning** (CodeQL, errors threshold, high+ security alerts) and
+**code_quality** (errors severity). No required status checks (so a red
+CI check does not block merges). Consequences:
 
-- **Direct pushes to master are rejected.** All bookkeeping — verdicts,
-  petitiones, checkpoints, handoffs — now rides short-lived branches
-  merged via `gh pr merge --rebase`. This answers W-033's provenance
-  question by force: everything lands via branches.
+- **Direct pushes to master are rejected — verified empirically.** A real
+  push to master was rejected with "push declined due to repository rule
+  violations"; that rejected commit became this very branch. All
+  bookkeeping — verdicts, petitiones, checkpoints, handoffs — now rides
+  short-lived branches merged via `gh pr merge --rebase`. This answers
+  W-033's provenance question by force: everything lands via branches.
 - The ruleset is the mechanical twin of D-015's `pr.required: true` —
   GitHub now refuses what the officina config already stopped short of.
+- **The repo went public 2026-09-20.** GitHub Actions is now free (the CI
+  billing block is gone); CodeQL default setup was enabled and its first
+  analysis run started. A history scan for secrets ran before/at
+  publication: `.env` was never committed, no key-shaped strings anywhere
+  in history — clean.
+- **The API now reports the repo under the `Round-Block` org**
+  (`Round-Block/bisellium`). The local remote still says `edckt/bisellium`
+  and works via redirect — flagged for a deliberate remote update, not
+  yet done.
 
 ### CI
 
-`.github/workflows/ci.yml` **has never executed once** — GitHub Actions is
-billing-blocked on this account, so every run dies in ~3s with an empty
-`steps: []` and an annotation visible only through the API. **The red check
-on every PR means nothing.** Unblocking it is the Patron's, in GitHub's
-Billing & plans.
+`.github/workflows/ci.yml` **never executed while the repo was private** —
+GitHub Actions was billing-blocked, so every run died in ~3s with an empty
+`steps: []` and an annotation visible only through the API; the red check
+on every PR from that period means nothing. **As of 2026-09-20 the repo is
+public, Actions is free, and CodeQL default setup is enabled** — the first
+real runs (CodeQL analysis and this workflow) are pending/underway. The
+red-check-means-nothing caveat no longer applies to new runs.
 
 `bisellium ci` (W-031, PR #4) is the local replacement. Its first real run
 found the repo had been failing its own `format:check` since `6e84979`.
