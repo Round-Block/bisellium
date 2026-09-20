@@ -18,6 +18,7 @@ export const USAGE =
   "       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>\n" +
   "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]\n" +
   "       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]\n" +
+  "       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]\n" +
   "       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>\n" +
   "       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]\n" +
   "       bisellium pause [--studio <dir>] [--reason <text>]\n" +

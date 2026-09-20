@@ -70,9 +70,11 @@ const files = [join(repo, "packages", "cli", "src"), join(repo, "packages", "com
 // no-op, so a constant made unparseable (a template literal, a `: string`
 // annotation) silently dropped out of coverage instead of failing anything
 // — up to 21 of 30 lines, verified by mutation (see the opus's evidence
-// log). 30 is exact for this tree today; it is meant to move only when a
-// deliberate edit to a *_USAGE constant's line count moves it, in the same
-// commit — the assertion is the thing forcing that edit to be conscious.
+// log). 31 is exact for this tree today (W-031's `ci.ts` USAGE constant is
+// the one that moved it from 30); it is meant to move only when a
+// deliberate edit to a *_USAGE constant's line count — or a whole new
+// constant — moves it, in the same commit — the assertion is the thing
+// forcing that edit to be conscious.
 let seen = 0;
 for (const file of files) {
   const src = readFileSync(file, "utf8");
@@ -83,6 +85,6 @@ for (const file of files) {
     }
   }
 }
-check("scanned every known usage constant", seen === 30, `${seen}`);
+check("scanned every known usage constant", seen === 31, `${seen}`);
 
 process.exit(failed ? 1 : 0);
