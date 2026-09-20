@@ -5,7 +5,11 @@ on:
   pull_request:
 
 jobs:
-  build:
+  # Required status check. Runs everything `bisellium ci` runs except the
+  # studio officina check (see the `officina` job below) — this is the job a
+  # branch protection rule can require, since every step here is expected to
+  # pass on a clean tree.
+  gates:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,5 +21,17 @@ jobs:
       - run: npm run -s lint
       - run: npm run -s format:check
       - run: npm test
-      - run: npm run -s check -- studio --repo .
       - run: npm run -s check -- examples/sample-studio --repo .
+
+  # Deliberately NOT required (W-028's ruling): `check -- studio` fails on
+  # known officina debt, so this job stays honestly red until that debt
+  # clears rather than being marked continue-on-error or dropped.
+  officina:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+      - run: npm ci
+      - run: npm run -s check -- studio --repo .
