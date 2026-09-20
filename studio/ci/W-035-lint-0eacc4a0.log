@@ -1,4 +1,4 @@
-certifies: dirty:6ecf88f1015002d87daca070730ca8dcb9717b21
+certifies: tree:0eacc4a0ae19f968a87249c5616c7c8b8b478e7f
 command: npm run -s lint
 exit code: 0
 
