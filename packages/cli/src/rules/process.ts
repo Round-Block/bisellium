@@ -13,12 +13,15 @@ import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
 import type { Finding, Level, RuleOpts } from "../check.js";
+import { RULE_IDS } from "./ids.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
 
 const PROVENANCE = ["stated", "observed", "inferred", "suggested"] as const;
+
+type AddressedKind = "opus" | "rule" | "decision";
 
 function safeFront(path: string): Dict | undefined {
   try {
@@ -118,8 +121,14 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   const rel = (p: string) => (p.startsWith(root) ? p.slice(root.length + 1).replace(/\\/g, "/") : p);
 
   // ---- decisions/D-nnn.md --------------------------------------------------
+  // decisionIds: hoisted here (not a new directory read) so lesson.addressed_by
+  // and lesson.recurrent, evaluated later, can resolve a decision target —
+  // existence on disk is what counts, so a decision is registered even when
+  // its own shape is otherwise invalid.
+  const decisionIds = new Set<string>();
   for (const p of safeList(join(root, "decisions"))) {
     const where = rel(p);
+    decisionIds.add(basename(p, ".md"));
     const data = safeFront(p);
     if (!data) { add("decision.shape", "block", where, "unreadable, or front matter is not a mapping"); continue; }
 
@@ -160,6 +169,15 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // lesson.recurrent below.
   const byClassCascade = new Map<string, Map<number, Set<string>>>();
 
+  // addressedClaims: one entry per lesson whose front matter has
+  // addressed_by !== undefined, for lesson.addressed_by below. claimsByClass:
+  // class -> the non-empty string addressed_by values, in lesson-file order,
+  // for lesson.recurrent's three-way resolution. This loop only collects —
+  // it runs before the opera loop, which is what resolveAddressedBy needs
+  // for an "opus" target, so both new behaviours are evaluated after it.
+  const addressedClaims: { where: string; value: unknown }[] = [];
+  const claimsByClass = new Map<string, string[]>();
+
   for (const p of safeList(join(root, "lessons"))) {
     const where = rel(p);
     const data = safeFront(p);
@@ -194,7 +212,15 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       }
     }
 
+    if (data["addressed_by"] !== undefined) addressedClaims.push({ where, value: data["addressed_by"] });
+
     const cls = str(data["class"]);
+    const ab = str(data["addressed_by"]);
+    if (cls && ab) {
+      if (!claimsByClass.has(cls)) claimsByClass.set(cls, []);
+      claimsByClass.get(cls)!.push(ab);
+    }
+
     const cascade = data["cascade"];
     if (cls && typeof cascade === "number" && Number.isFinite(cascade)) {
       if (!byClassCascade.has(cls)) byClassCascade.set(cls, new Map());
@@ -204,36 +230,82 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     }
   }
 
-  // lesson.recurrent (advise): a class appearing in >=2 distinct cascade
-  // values across >=2 distinct lesson entries — a single lesson can't be
-  // "recurrent" on its own, and a class re-filed twice in the same cascade
-  // isn't recurrence, it's duplication.
-  for (const [cls, byCascade] of byClassCascade) {
-    if (byCascade.size < 2) continue;
-    const entries = new Set<string>();
-    for (const s of byCascade.values()) for (const x of s) entries.add(x);
-    if (entries.size < 2) continue;
-    add(
-      "lesson.recurrent",
-      "advise",
-      "lessons/",
-      `class "${cls}" recurs across ${byCascade.size} cascades (${[...entries].sort().join(", ")})`,
-    );
-  }
-
   // ---- opera/*.md probationes (process.cascade, process.review_tier) ------
   // Shape errors (bad gate mappings etc.) are check.ts's job; these rules
   // only ask whether a readable opus's recorded review gate looks right.
+  // operaStates: hoisted here (state, keyed by the canonical filename id) so
+  // resolveAddressedBy below can recognise an "opus" target — the lessons
+  // loop above only collects, since it runs before this one.
+  const operaStates = new Map<string, string | undefined>();
   for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
     const data = safeFront(p);
     if (!data) continue;
+    operaStates.set(basename(p, ".md"), str(data["state"]));
     if (sameSellaBuiltAndReviewed(data["probationes"])) {
       const sella = gateSella(data["probationes"], "spec");
       add("process.cascade", "advise", where, `sella "${sella}" recorded for both spec and review — one context built and reviewed its own work`);
     }
     const tierMsg = reviewTierAdvisory(data["probationes"]);
     if (tierMsg) add("process.review_tier", "advise", where, tierMsg);
+  }
+
+  // resolveAddressedBy: first match wins, in that fixed order. The three id
+  // spaces are disjoint in practice (bisellium new / draftRetro allocate
+  // W-nnn/D-nnn/L-nnn/P-nnn, and every rule id contains a "."), so there is
+  // no ambiguity to detect or report — a second finding for one condition.
+  function resolveAddressedBy(v: string): AddressedKind | undefined {
+    if (operaStates.has(v)) return "opus";
+    if (RULE_IDS.has(v)) return "rule";
+    if (decisionIds.has(v)) return "decision";
+    return undefined;
+  }
+
+  // lesson.addressed_by (block): validates whenever the key is present,
+  // regardless of whether the lesson's class is recurrent — a key that does
+  // not resolve is wrong on a one-off class too.
+  for (const { where, value } of addressedClaims) {
+    if (typeof value !== "string" || value.length === 0) {
+      add("lesson.addressed_by", "block", where, `"addressed_by" must be a non-empty string`);
+      continue;
+    }
+    if (resolveAddressedBy(value) === undefined) {
+      add("lesson.addressed_by", "block", where, `addressed_by "${value}" names no opus, rule id, or decision`);
+    }
+  }
+
+  // lesson.recurrent (advise): a class appearing in >=2 distinct cascade
+  // values across >=2 distinct lesson entries — a single lesson can't be
+  // "recurrent" on its own, and a class re-filed twice in the same cascade
+  // isn't recurrence, it's duplication. Three-way: silent once some claim
+  // for the class resolves to a rule, a decision, or a done opus; otherwise
+  // in-flight (naming the lexicographically smallest not-done opus) or
+  // unaddressed. A value that does not resolve at all counts as addressing
+  // nothing — a typo must not be able to buy silence.
+  for (const [cls, byCascade] of byClassCascade) {
+    if (byCascade.size < 2) continue;
+    const entries = new Set<string>();
+    for (const s of byCascade.values()) for (const x of s) entries.add(x);
+    if (entries.size < 2) continue;
+
+    let silent = false;
+    let inflightOpus: string | undefined;
+    for (const v of claimsByClass.get(cls) ?? []) {
+      const kind = resolveAddressedBy(v);
+      if (kind === "rule" || kind === "decision") { silent = true; break; }
+      if (kind === "opus") {
+        if (operaStates.get(v) === "done") { silent = true; break; }
+        if (inflightOpus === undefined || v < inflightOpus) inflightOpus = v;
+      }
+    }
+    if (silent) continue;
+
+    const prefix = `class "${cls}" recurs across ${byCascade.size} cascades (${[...entries].sort().join(", ")})`;
+    if (inflightOpus !== undefined) {
+      add("lesson.recurrent", "advise", "lessons/", `${prefix} — addressed by ${inflightOpus} (${operaStates.get(inflightOpus) ?? "unknown"}), not yet done`);
+    } else {
+      add("lesson.recurrent", "advise", "lessons/", `${prefix} — no lesson names what addresses it`);
+    }
   }
 
   if (_opts.repo) {

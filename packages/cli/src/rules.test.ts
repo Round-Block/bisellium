@@ -19,6 +19,7 @@ import { stringify } from "yaml";
 import { checkStudio } from "./check.js";
 import { checkEvidence, countBehaviours } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
+import { checkProcess } from "./rules/process.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const NOW = new Date("2026-09-19T13:00:00Z");
@@ -27,6 +28,16 @@ let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(70)} ${detail}`);
   if (!ok) failed++;
+};
+
+// W-035 behaviours 8-15 (lesson.addressed_by / three-way lesson.recurrent)
+// are numbered so `bisellium red` can isolate one behaviour's output —
+// `--only` off process.argv[3], same shape as rules/process.test.ts. When
+// unset (the plain `npm test` invocation), every check below still runs.
+const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
+const checkNumbered = (behaviour: number, name: string, ok: boolean, detail = "") => {
+  if (only !== undefined && only !== behaviour) return;
+  check(name, ok, detail);
 };
 
 const dirs: string[] = [];
@@ -43,6 +54,20 @@ function writeManifest(dir: string): void {
 function writeOpus(dir: string, id: string, front: Record<string, unknown>): string {
   mkdirSync(join(dir, "opera"), { recursive: true });
   const p = join(dir, "opera", `${id.replace(/[/\\]/g, "_")}.md`);
+  writeFileSync(p, `---\n${stringify(front)}---\n\nbody\n`);
+  return p;
+}
+
+function writeLesson(dir: string, id: string, front: Record<string, unknown>): string {
+  mkdirSync(join(dir, "lessons"), { recursive: true });
+  const p = join(dir, "lessons", `${id}.md`);
+  writeFileSync(p, `---\n${stringify(front)}---\n\nbody\n`);
+  return p;
+}
+
+function writeDecision(dir: string, id: string, front: Record<string, unknown>): string {
+  mkdirSync(join(dir, "decisions"), { recursive: true });
+  const p = join(dir, "decisions", `${id}.md`);
   writeFileSync(p, `---\n${stringify(front)}---\n\nbody\n`);
   return p;
 }
@@ -122,6 +147,10 @@ const untrackedFindings = (root: string, opts: { now: Date; repo?: string }) => 
 const redFindings = (root: string, opts: { now: Date; repo?: string }) => checkEvidence(root, opts).filter((f) => f.rule === "opus.red_evidence");
 
 try {
+  // W-035 isolation: a labeled block, not an `if`, so the pre-existing
+  // (W-021/P-004) checks below keep their original indentation untouched.
+  legacyChecks: {
+    if (only !== undefined) break legacyChecks;
   // ==== opus.untracked (behaviours 1-4) ====================================
   {
     // behaviour 1: opera/<id>.md itself untracked, blocks, clears once tracked
@@ -400,6 +429,127 @@ try {
     const r = checkStudio(studio, NOW, { repo });
     const blockingPathFindings = r.findings.filter((f) => f.rule.startsWith("path.") && f.level === "block");
     check("studio: no BLOCKING path.* finding (the insurance clause)", blockingPathFindings.length === 0, JSON.stringify(blockingPathFindings));
+  }
+  } // legacyChecks
+
+  // ==== W-035: lesson.addressed_by / three-way lesson.recurrent (behaviours 8-15) ====
+  {
+    // behaviour 8: silent when the key is absent (the 29-lesson landing)
+    const dir = freshDir("addressed-absent");
+    writeManifest(dir);
+    writeLesson(dir, "L-800", { id: "L-800", at: "2026-09-19T00:00:00Z", class: "cls-800", evidence: ["studio/x"] });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.addressed_by");
+    checkNumbered(8, "lesson.addressed_by: silent when the key is absent", findings.length === 0, JSON.stringify(findings));
+  }
+  {
+    // behaviour 9: accepts an existing opus id
+    const dir = freshDir("addressed-opus");
+    writeManifest(dir);
+    writeOpus(dir, "W-900", { id: "W-900", state: "building" });
+    writeLesson(dir, "L-900", { id: "L-900", at: "2026-09-19T00:00:00Z", class: "cls-900", evidence: ["studio/x"], addressed_by: "W-900" });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.addressed_by");
+    checkNumbered(9, "lesson.addressed_by: accepts an existing opus id", findings.length === 0, JSON.stringify(findings));
+  }
+  {
+    // behaviour 10: accepts an id in RULE_IDS
+    const dir = freshDir("addressed-rule");
+    writeManifest(dir);
+    writeLesson(dir, "L-1000", { id: "L-1000", at: "2026-09-19T00:00:00Z", class: "cls-1000", evidence: ["studio/x"], addressed_by: "decision.kill" });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.addressed_by");
+    checkNumbered(10, "lesson.addressed_by: accepts an id in RULE_IDS", findings.length === 0, JSON.stringify(findings));
+  }
+  {
+    // behaviour 11: accepts an existing decision id
+    const dir = freshDir("addressed-decision");
+    writeManifest(dir);
+    writeDecision(dir, "D-1100", { id: "D-1100", title: "fixture decision", at: "2026-09-19T00:00:00Z", provenance: "stated", by: "patron", kill_when: "never" });
+    writeLesson(dir, "L-1100", { id: "L-1100", at: "2026-09-19T00:00:00Z", class: "cls-1100", evidence: ["studio/x"], addressed_by: "D-1100" });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.addressed_by");
+    checkNumbered(11, "lesson.addressed_by: accepts an existing decision id", findings.length === 0, JSON.stringify(findings));
+  }
+  {
+    // behaviour 12: blocks on an unresolvable id, and on a non-string or empty value
+    const dir = freshDir("addressed-bad");
+    writeManifest(dir);
+    writeLesson(dir, "L-1200", { id: "L-1200", at: "2026-09-19T00:00:00Z", class: "cls-1200a", evidence: ["studio/x"], addressed_by: "W-999" });
+    writeLesson(dir, "L-1201", { id: "L-1201", at: "2026-09-19T00:00:00Z", class: "cls-1200b", evidence: ["studio/x"], addressed_by: "" });
+    writeLesson(dir, "L-1202", { id: "L-1202", at: "2026-09-19T00:00:00Z", class: "cls-1200c", evidence: ["studio/x"], addressed_by: 123 });
+    writeLesson(dir, "L-1203", { id: "L-1203", at: "2026-09-19T00:00:00Z", class: "cls-1200d", evidence: ["studio/x"], addressed_by: [] });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.addressed_by");
+    checkNumbered(
+      12,
+      "lesson.addressed_by: blocks an unresolvable id",
+      findings.some((f) => f.where.includes("L-1200") && f.level === "block" && f.message.includes("names no opus, rule id, or decision")),
+      JSON.stringify(findings),
+    );
+    checkNumbered(
+      12,
+      "lesson.addressed_by: blocks an empty string",
+      findings.some((f) => f.where.includes("L-1201") && f.level === "block" && f.message === `"addressed_by" must be a non-empty string`),
+      JSON.stringify(findings),
+    );
+    checkNumbered(
+      12,
+      "lesson.addressed_by: blocks a non-string value (number)",
+      findings.some((f) => f.where.includes("L-1202") && f.level === "block" && f.message === `"addressed_by" must be a non-empty string`),
+      JSON.stringify(findings),
+    );
+    checkNumbered(
+      12,
+      "lesson.addressed_by: blocks a non-string value (list)",
+      findings.some((f) => f.where.includes("L-1203") && f.level === "block" && f.message === `"addressed_by" must be a non-empty string`),
+      JSON.stringify(findings),
+    );
+  }
+  {
+    // behaviour 13: unaddressed recurrent class
+    const dir = freshDir("recurrent-unaddressed");
+    writeManifest(dir);
+    writeLesson(dir, "L-1300", { id: "L-1300", at: "2026-09-19T00:00:00Z", class: "recur-unaddressed", cascade: 1, evidence: ["studio/x"] });
+    writeLesson(dir, "L-1301", { id: "L-1301", at: "2026-09-19T00:00:00Z", class: "recur-unaddressed", cascade: 2, evidence: ["studio/x"] });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.recurrent");
+    checkNumbered(
+      13,
+      `lesson.recurrent: unaddressed class reports "no lesson names what addresses it"`,
+      findings.some((f) => f.message.includes("recur-unaddressed") && f.message.endsWith("no lesson names what addresses it")),
+      JSON.stringify(findings),
+    );
+  }
+  {
+    // behaviour 14: in-flight opus (not done)
+    const dir = freshDir("recurrent-inflight");
+    writeManifest(dir);
+    writeOpus(dir, "W-1400", { id: "W-1400", state: "building" });
+    writeLesson(dir, "L-1400", { id: "L-1400", at: "2026-09-19T00:00:00Z", class: "recur-inflight", cascade: 1, evidence: ["studio/x"], addressed_by: "W-1400" });
+    writeLesson(dir, "L-1401", { id: "L-1401", at: "2026-09-19T00:00:00Z", class: "recur-inflight", cascade: 2, evidence: ["studio/x"] });
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.recurrent");
+    checkNumbered(
+      14,
+      "lesson.recurrent: in-flight opus reports the not-yet-done message",
+      findings.some((f) => f.message.includes("recur-inflight") && f.message.includes("addressed by W-1400 (building), not yet done")),
+      JSON.stringify(findings),
+    );
+  }
+  {
+    // behaviour 15: silent for a done opus, a rule id, or a decision id
+    const dir = freshDir("recurrent-silent");
+    writeManifest(dir);
+    writeOpus(dir, "W-1500", { id: "W-1500", state: "done" });
+    writeDecision(dir, "D-1500", { id: "D-1500", title: "fixture", at: "2026-09-19T00:00:00Z", provenance: "stated", by: "patron", kill_when: "never" });
+
+    writeLesson(dir, "L-1500", { id: "L-1500", at: "2026-09-19T00:00:00Z", class: "recur-done-opus", cascade: 1, evidence: ["studio/x"], addressed_by: "W-1500" });
+    writeLesson(dir, "L-1501", { id: "L-1501", at: "2026-09-19T00:00:00Z", class: "recur-done-opus", cascade: 2, evidence: ["studio/x"] });
+
+    writeLesson(dir, "L-1502", { id: "L-1502", at: "2026-09-19T00:00:00Z", class: "recur-rule", cascade: 1, evidence: ["studio/x"], addressed_by: "decision.kill" });
+    writeLesson(dir, "L-1503", { id: "L-1503", at: "2026-09-19T00:00:00Z", class: "recur-rule", cascade: 2, evidence: ["studio/x"] });
+
+    writeLesson(dir, "L-1504", { id: "L-1504", at: "2026-09-19T00:00:00Z", class: "recur-decision", cascade: 1, evidence: ["studio/x"], addressed_by: "D-1500" });
+    writeLesson(dir, "L-1505", { id: "L-1505", at: "2026-09-19T00:00:00Z", class: "recur-decision", cascade: 2, evidence: ["studio/x"] });
+
+    const findings = checkProcess(dir, { now: NOW }).filter((f) => f.rule === "lesson.recurrent");
+    checkNumbered(15, "lesson.recurrent: silent for a done opus", !findings.some((f) => f.message.includes("recur-done-opus")), JSON.stringify(findings));
+    checkNumbered(15, "lesson.recurrent: silent for a rule id", !findings.some((f) => f.message.includes("recur-rule")), JSON.stringify(findings));
+    checkNumbered(15, "lesson.recurrent: silent for a decision id", !findings.some((f) => f.message.includes("recur-decision")), JSON.stringify(findings));
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
