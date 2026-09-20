@@ -94,6 +94,7 @@ at: 2026-09-18T21:00:00Z
 class: "tests×flaky"                           # "<probatio>×<kind>"
 evidence: ["ci/retro-3.log"]                   # required, non-empty, no dead hrefs
 cascade: 4                                     # optional
+addressed_by: "opus.red_content"               # optional (W-035) — see below
 ---
 ```
 
@@ -106,6 +107,34 @@ contract `bisellium retro` refuses to violate — see below). `lesson
 .recurrent` advises when a `class` shows up across two or more distinct
 `cascade` values on two or more distinct lessons — the same mistake made
 once is a lesson; made twice, it's a pattern the lex should probably name.
+
+`addressed_by` (optional, W-035) names what closes the loop on a recurring
+class — a lesson that reports a pattern is not, by itself, a record of
+whether anything was done about it. It resolves to one of three id spaces,
+tried in that fixed order (they're disjoint in practice: every rule id
+contains a `.`, an opus/decision id never does):
+
+```yaml
+addressed_by: "opus.red_content"   # a rule id — a check now catches it
+addressed_by: "W-035"              # an opus — work is open (state) or done
+addressed_by: "D-016"              # a decision — formally accepted, unenforced
+```
+
+Absence means the class is simply ignored — the default, and every lesson on
+disk before W-035 is absent-by-construction, so adopting the key costs no
+migration. A decision target means "formally accepted, unenforced": since
+`decision.kill` already refuses a decision with no `kill_when`, an
+acceptance carries its own expiry for free — nothing new to invent. `lesson
+.addressed_by` blocks when the key is present but isn't a non-empty string,
+or when it's a non-empty string that names no opus, rule id, or decision.
+Once *any* value resolves — a rule, a decision, or an opus whose `state` is
+`done` — `lesson.recurrent` goes quiet for that class instead of reporting
+it as unaddressed; a value naming an opus still `building` (or otherwise not
+`done`) gets its own in-flight wording instead of silence. `bisellium retro`
+reads the same key: a recurring class with an existing `addressed_by` files
+no petitio (re-filing one for work already open, accepted or ruled-on is the
+duplication this closes) and is instead listed, with its target and — for an
+opus — its current state, under the retro's "## Addressed" section.
 
 ## bisellium retro
 
@@ -120,7 +149,11 @@ validated, it drafts `acta/<date>-retro-<N>.md`: numbers (verifier issues,
 tests, fix rounds, mutations caught, agents), findings by class, one lesson
 stub per distinct class (`lessons/L-nnn.md`), recurrence (the same
 `lesson.recurrent` computation `check` runs, against history plus this
-cascade), proposals (a recurring class files a petitio to the Patron; a
+cascade), addressed (W-035: every recurrent class this cascade saw, its
+`addressed_by` target if any existing lesson of that class names one, and —
+for an opus target — its current state; unaddressed reads "nothing yet"),
+proposals (a recurring, unaddressed class files a petitio to the Patron; an
+addressed one files nothing — it already appears under "## Addressed"; a
 one-off is adopted alone as an advisory rule), and pruning candidates
 (decisions whose `kill_when` text matches a class this cascade actually
 saw — listed, never edited).
@@ -511,7 +544,7 @@ unparseable sibling opus / dirty source tree without `--allow-dirty`.
 ```bash
 npm run bisellium -- handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- emit '{"name":"workflow.custom","attrs":{"k":"v"}}' [--studio <dir>] [--now <iso>]
-npm run bisellium -- answer --petitio <id> <reply…> [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+npm run bisellium -- answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
 npm run bisellium -- greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
 npm run bisellium -- budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
 ```
@@ -557,7 +590,14 @@ becomes the asker and sets `state: awaiting_reply` (matching `check`'s
 before the sella has replied can't flip `from`/`to` a second time and
 corrupt the record; `--charter-gap` additionally files a `kind:
 decision` acta proposing a lex amendment, titled `Lex gap: <first line of
-the petitio>`. `greenlight <opus>` requires the opus be `state: backlog`
+the petitio>`. `--opus <id>` (W-035) records what work the Patron's reply
+commissions: it sets `opus: <id>` on the petitio (the same key
+`petitio.opus` validates) and on the Patron timeline entry, resolved against
+`opera/` before anything is written — an unknown opus exits 2 with the
+petitio byte-identical, same rollback contract as any other failure here.
+Answering without `--opus` stays allowed (most answers aren't commissions);
+resolving one without it prints one stderr note — `resolved without --opus —
+nothing records what work this becomes` — exit code still 0. `greenlight <opus>` requires the opus be `state: backlog`
 (exit 2 otherwise) and either sets `state: greenlit` or, with `--decline
 <reason>`, leaves it in backlog and records `declined: <reason>` — either
 way it emits a `workflow.greenlight` (`granted`/`declined`) event. `budget

@@ -87,10 +87,11 @@ function nextId(dir: string, prefix: string): string {
 }
 
 /** All existing lessons on disk, keyed by class, mapping to the (cascade,
- *  lesson-id) pairs already filed — used for the recurrence computation so
- *  it sees history, not just this run's new lessons. Never throws. */
-function existingLessonsByClass(studioRoot: string): Map<string, { cascade: number; id: string }[]> {
-  const out = new Map<string, { cascade: number; id: string }[]>();
+ *  lesson-id, addressedBy) entries already filed — used for the recurrence
+ *  computation so it sees history, not just this run's new lessons, and for
+ *  the "## Addressed" section's target lookup. Never throws. */
+function existingLessonsByClass(studioRoot: string): Map<string, { cascade: number; id: string; addressedBy?: string }[]> {
+  const out = new Map<string, { cascade: number; id: string; addressedBy?: string }[]>();
   const dir = join(studioRoot, "lessons");
   let files: string[] = [];
   try {
@@ -110,14 +111,48 @@ function existingLessonsByClass(studioRoot: string): Map<string, { cascade: numb
     const classMatch = /^class:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
     const idMatch = /^id:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
     const cascadeMatch = /^cascade:\s*(\d+)\s*$/m.exec(m[1]!);
+    const addressedByMatch = /^addressed_by:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
     if (!classMatch || !cascadeMatch) continue;
     const cls = classMatch[1]!.trim();
     const cascade = Number(cascadeMatch[1]);
     const id = idMatch ? idMatch[1]!.trim() : f.replace(/\.md$/, "");
+    const addressedBy = addressedByMatch ? addressedByMatch[1]!.trim() : undefined;
     if (!out.has(cls)) out.set(cls, []);
-    out.get(cls)!.push({ cascade, id });
+    out.get(cls)!.push({ cascade, id, ...(addressedBy ? { addressedBy } : {}) });
   }
   return out;
+}
+
+/** The first non-empty `addressedBy` among a class's existing (on-disk)
+ *  lessons, in `existingLessonsByClass` insertion order — undefined when no
+ *  existing lesson of that class names one. Never validates the value: a
+ *  typo or a dangling id is `lesson.addressed_by`'s job (rules/process.ts),
+ *  which blocks before a retro would ever read it. */
+function addressedTarget(existingByClass: Map<string, { cascade: number; id: string; addressedBy?: string }[]>, cls: string): string | undefined {
+  for (const entry of existingByClass.get(cls) ?? []) if (entry.addressedBy) return entry.addressedBy;
+  return undefined;
+}
+
+/** Classifies an `addressed_by` target by what exists on disk — never by
+ *  `RULE_IDS` (retro.ts doesn't import `ids.ts`; see the opus's "Files
+ *  owned" seam note) — and, for an opus target, reads its `state:` with the
+ *  same regex style `existingLessonsByClass` already uses. */
+function classifyAddressedTarget(studioRoot: string, target: string): { kind: "opus" | "decision" | "rule"; state?: string } {
+  const opusPath = join(studioRoot, "opera", `${target}.md`);
+  if (existsSync(opusPath)) {
+    let state = "unknown";
+    try {
+      const raw = readFileSync(opusPath, "utf8");
+      const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
+      const stateMatch = m ? /^state:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!) : null;
+      if (stateMatch) state = stateMatch[1]!.trim();
+    } catch {
+      /* state stays "unknown" */
+    }
+    return { kind: "opus", state };
+  }
+  if (existsSync(join(studioRoot, "decisions", `${target}.md`))) return { kind: "decision" };
+  return { kind: "rule" };
 }
 
 /** Case-insensitive substring match of a finding class inside a decision's
@@ -360,18 +395,25 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
   }
   const recurrentClasses = new Set(recurrence.map((r) => r.class));
 
-  // ---- proposals: a recurring class is a blocking-rule/lex-wording
-  // proposal (files a petitio); a one-off is advisory, adopted alone.
+  // ---- proposals: a recurring class not yet addressed is a blocking-rule/
+  // lex-wording proposal (files a petitio); a one-off is advisory, adopted
+  // alone. A recurring class that already names what addresses it (any
+  // existing lesson's `addressed_by`) files no petitio at all — re-filing
+  // one for work already open, accepted or ruled-on is the duplication this
+  // opus exists to end. It appears under "## Addressed" instead.
   const petitionesDir = join(studioRoot, "petitiones");
   const petitiones: string[] = [];
   const proposals: { class: string; kind: "adopt-alone" | "petitio"; petitioPath?: string }[] = [];
-  let petitioSeq = 0;
   for (const cls of classesInOrder) {
     if (recurrentClasses.has(cls)) {
-      petitioSeq++;
-      const base = nextId(petitionesDir, "P");
-      const baseNum = Number(/P-(\d+)/.exec(base)![1]);
-      const pid = `P-${String(baseNum + petitioSeq - 1).padStart(3, "0")}`;
+      if (addressedTarget(existingByClass, cls) !== undefined) continue;
+      // Petitiones are written *inside* this loop (just below), so `nextId`
+      // already sees every one filed earlier in the same run — unlike
+      // `lessonSeq` above (lessons are written after their loop, so
+      // `nextId` alone would see none of them), no manual offset is needed
+      // here, and adding one double-counts (the numbering-skip bug this
+      // opus fixes).
+      const pid = nextId(petitionesDir, "P");
       const ppath = `petitiones/${pid}.md`;
       const pmarkdown = [
         "---",
@@ -392,6 +434,19 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
       proposals.push({ class: cls, kind: "adopt-alone" });
     }
   }
+
+  // ---- addressed: every recurrent class this cascade saw, its target (if
+  // any) and, for an opus target, its current state — the periodic
+  // exception review a class accepted in one cascade gets read aloud again
+  // in the next.
+  const addressedLines: string[] = recurrence.length
+    ? recurrence.map(({ class: cls }) => {
+        const target = addressedTarget(existingByClass, cls);
+        if (target === undefined) return `- "${cls}" → nothing yet`;
+        const { kind, state } = classifyAddressedTarget(studioRoot, target);
+        return kind === "opus" ? `- "${cls}" → ${target} (opus, ${state})` : `- "${cls}" → ${target} (${kind})`;
+      })
+    : ["- (none — no class recurs across two or more cascades yet)"];
 
   // ---- pruning candidates: decisions whose kill_when mentions a class
   // this cascade actually saw — listed, never edited.
@@ -434,6 +489,10 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
     ...(recurrence.length
       ? recurrence.map((r) => `- "${r.class}" recurs across cascades ${r.cascades.join(", ")}`)
       : ["- no class recurs across two or more cascades yet"]),
+    "",
+    "## Addressed",
+    "",
+    ...addressedLines,
     "",
     "## Proposals",
     "",

@@ -410,11 +410,12 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
 // 3. answer (Patron write)
 // ---------------------------------------------------------------------------
 
-const ANSWER_USAGE = "usage: bisellium answer --petitio <id> <reply…> [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]";
+const ANSWER_USAGE =
+  "usage: bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]";
 
 export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
-    valued: ["--petitio", "--studio", "--now"],
+    valued: ["--petitio", "--opus", "--studio", "--now"],
     boolean: ["--ask-back", "--charter-gap"],
   });
   if ("error" in parsed) {
@@ -453,6 +454,18 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
   if (!existsSync(petitioPath)) {
     console.error(`unknown petitio: ${petitioId}`);
     return { exitCode: 2 };
+  }
+
+  // Resolved before the try block, same as petitioPath above: a bad --opus
+  // id must exit 2 with the petitio untouched (runAnswer's rollback
+  // contract), not roll back a partially-applied write.
+  const opusId = values.get("--opus");
+  if (opusId !== undefined) {
+    const opusPath = safeItemPath(join(root, "opera"), opusId);
+    if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+      console.error(`unknown opus: ${opusId}`);
+      return { exitCode: 2 };
+    }
   }
 
   let firstLine = "";
@@ -504,6 +517,8 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
         doc.setIn(["to"], askTo);
       }
       doc.setIn(["state"], newState);
+      // The key petitio.opus (check.ts:575) already validates.
+      if (opusId) doc.setIn(["opus"], opusId);
       return `${body}\n\n[stated] ${now.toISOString()} ${patronId}: ${reply}`;
     });
 
@@ -525,6 +540,9 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
       action: "answer",
       petitio: petitioId,
       state: newState,
+      // Conditional so an answer without --opus writes byte-identically to
+      // before this key existed.
+      ...(opusId ? { opus: opusId } : {}),
       ask_back: askBack,
       charter_gap: charterGap,
     });
@@ -544,6 +562,12 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
     console.error(`answer failed: ${(e as Error).message}`);
     return { exitCode: 2 };
   }
+
+  // Most answers are not commissions — refusing to answer without --opus
+  // would just train a --force-shaped workaround. A resolved answer with no
+  // --opus still leaves a mark, so it's worth naming: --ask-back is not a
+  // resolution, so it gets no note.
+  if (newState === "resolved" && !opusId) console.error("resolved without --opus — nothing records what work this becomes");
 
   console.log(`${petitioId}: ${newState}`);
   return { exitCode: 0 };

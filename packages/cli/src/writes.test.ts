@@ -217,6 +217,64 @@ try {
     check("answer --charter-gap: studio passes check", result.ok, result.ok ? "" : `blocked by ${blockIds(dir).join(", ")}`);
   }
 
+  // ---- answer --opus: sets opus: on the petitio, records it in the Patron
+  // timeline (behaviour 16, W-035) -----------------------------------------
+  {
+    const dir = freshStudio("answer-opus");
+    const r = runAnswer(["--petitio", "A-1", "Ship", "it.", "--opus", "W-002", "--studio", dir], { now: NOW });
+    check("16. answer --opus: exitCode 0", r.exitCode === 0, String(r.exitCode));
+
+    const front = readFront<{ opus: string; state: string }>(join(dir, "petitiones", "A-1.md")).data;
+    check("16. answer --opus: opus set on the petitio", front.opus === "W-002", JSON.stringify(front));
+
+    const timelinePath = join(dir, "timeline", "patron.jsonl");
+    const timelineLines = existsSync(timelinePath)
+      ? readFileSync(timelinePath, "utf8")
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((l) => JSON.parse(l) as Record<string, unknown>)
+      : [];
+    const last = timelineLines[timelineLines.length - 1];
+    check("16. answer --opus: recorded in the Patron timeline", last?.["opus"] === "W-002", JSON.stringify(last));
+
+    const result = checkStudio(dir, NOW);
+    check("16. answer --opus: studio passes check", result.ok, result.ok ? "" : `blocked by ${blockIds(dir).join(", ")}`);
+  }
+
+  // ---- answer --opus <unknown>: exits 2, petitio byte-identical
+  // (behaviour 17, W-035) ---------------------------------------------------
+  {
+    const dir = freshStudio("answer-opus-unknown");
+    const petitioPath = join(dir, "petitiones", "A-1.md");
+    const before = readFileSync(petitioPath, "utf8");
+
+    const r = runAnswer(["--petitio", "A-1", "Ship", "it.", "--opus", "W-999", "--studio", dir], { now: NOW });
+    check("17. answer --opus <unknown>: exits 2", r.exitCode === 2, String(r.exitCode));
+
+    const after = readFileSync(petitioPath, "utf8");
+    check("17. answer --opus <unknown>: petitio byte-identical", after === before, JSON.stringify({ before, after }));
+  }
+
+  // ---- answer resolved without --opus: allowed, one stderr note (W-035
+  // acceptance 6 — not a numbered behaviour, demonstrated alongside 16/17) --
+  {
+    const dir = freshStudio("answer-no-opus-note");
+    const origError = console.error;
+    let stderr = "";
+    console.error = (...parts: unknown[]) => {
+      stderr += parts.map(String).join(" ") + "\n";
+    };
+    let r: { exitCode: number };
+    try {
+      r = runAnswer(["--petitio", "A-1", "Ship", "it.", "--studio", dir], { now: NOW });
+    } finally {
+      console.error = origError;
+    }
+    check("answer without --opus: exitCode 0", r.exitCode === 0, String(r.exitCode));
+    check("answer without --opus: stderr note on resolve", stderr.includes("resolved without --opus"), stderr);
+  }
+
   // ---- greenlight: W-007 backlog -> greenlit, second call exits 2 -------
   {
     const dir = freshStudio("greenlight");
