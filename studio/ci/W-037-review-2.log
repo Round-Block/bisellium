@@ -1,0 +1,270 @@
+censor round 2 — W-037 (PR #12, branch opus/W-037 @ 666af5c229f9e4b252ad255771936a1b6f5d4a59)
+sella: qa-lead   model: claude-opus-5   at: 2026-09-20T07:20:00Z
+verdict: PASS — 0 blocking. Round 1's F-1 is RETRACTED: it was a false
+positive by this censor. F-2 is remedied and reproduced. F-3 stays with the
+orchestrator at the merge checkpoint.
+
+================================================================================
+VERDICT SUMMARY
+================================================================================
+  [RETRACTED] F-1 (round 1, BLOCKING) — the header was the tool's honest
+              output all along; the stub under test breaks the hasher
+  [PASS] F-1 remedy — ci/reds/W-037/01.log's dirty:430279bf reproduced
+         byte-for-byte with the real tool at b4f86b6 + stub
+  [PASS] F-1 remedy — body still fails at assertion level on BOTH layers
+         (13 golden-table FAILs + 2 sourceTreeHash FAILs, exit 1)
+  [PASS] F-1 remedy — the `return dir;` stub is in no commit on any ref
+  [PASS] F-2 remedy — three gates re-certify tree:7340fa69, = the branch's
+         committed source tree under the officina's exclusion set; reproduced
+         by re-running `bisellium verify` at 666af5c
+  [PASS] F-2 — check's probatio.certifies.dirty x3 are gone
+  [PASS] regression — `git diff a888028..666af5c -- packages/` is empty
+  [PASS] gates on 666af5c — tests / types / lint / format:check all green
+  [PASS] check — 8 blocking, unchanged set, none names W-037
+  [note] F-3 — advise-level by rule definition; orchestrator's at merge
+  [note] orphaned ab98117f certificates — instance of a 142-instance
+         repo-wide class, no rule against it; residue, not a finding
+  [advise] A-1 a red's `# tree:` header is computed by the code under test
+  [advise] A-2 01.log is now a reconstruction, recorded after the fix commit
+
+================================================================================
+F-1 — RETRACTED. Round 1's blocking finding was a false positive.
+================================================================================
+Round 1 argued that dirty:f07df630 "could not have been produced by any run of
+`bisellium red` at that HEAD", because f07df630 = sourceTreeHash(16a4415,
+["studio",".bisellium"]) — the manifest's source_excludes: [examples/] missing
+from the exclusion set. That inference was wrong, and wrong in a way this opus
+of all opera makes inevitable.
+
+`runRed`'s hashRepo (packages/commands/src/lifecycle.ts:490-501) builds
+excludeDirs = [<studio rel>, ".bisellium", ...manifest.source_excludes] and
+hands them to sourceTreeHash, which maps every entry through
+normalizeExclude before isUnderExcluded compares them. With the `return dir;`
+stub applied, normalizeExclude("examples/") returns "examples/" with its
+trailing slash intact, and isUnderExcluded then tests `p === "examples/"` or
+`p.startsWith("examples//")` — which no ls-tree path can satisfy. "studio" and
+".bisellium" carry no trailing slash, so they still exclude. The exclusion set
+therefore degrades to exactly ["studio", ".bisellium"] — f07df630 at 16a4415,
+430279bf at b4f86b6.
+
+The CLI hashes with the worktree's own live sourceTree.ts (node_modules/
+@bisellium/shim is a workspace symlink to packages/shim, and bin/bisellium.mjs
+runs packages/cli/src/main.ts through tsx), so recording behaviour 1's red
+with the stub in place makes the recorder compute its own certificate with the
+broken function. Round 1's synthetic-tree checks all used the FIXED shim, so
+they could never land on f07df630 and concluded no run could.
+
+Reproduced end to end, with the real tool, twice:
+
+  $ git worktree add --detach $TMPDIR/w037r2-rep/wt2 16a4415      # round 1's HEAD
+  $ <node_modules wired so @bisellium/* resolve to that worktree's packages>
+  $ readlink -f node_modules/@bisellium/shim
+  /tmp/claude-1000/w037r2-rep/wt2/packages/shim
+  # with the stub applied uncommitted:
+  $ BISELLIUM_SELLA=qa-lead ./node_modules/.bin/bisellium red W-037 \
+      --behaviour 9 --sella builder-a --repo . --studio studio -- false
+  # tree: dirty:f07df630598185d21c6cd497aaa7bcaccc912903   <- round 1's "impossible" hash
+  # same worktree, stub reverted (git checkout -- packages/shim/src/sourceTree.ts):
+  # tree: tree:ab98117f3635ef6548e0bc6136508bc51683c6e0
+
+That also explains the pair round 1 could not reconcile: 02.log (dirty:ab98117f)
+was recorded against HEAD's ORIGINAL regex, which normalizes correctly;
+01.log (dirty:f07df630) was recorded against the stub, which does not. Same
+HEAD, two hashes, both honest — the difference is the function under test.
+
+================================================================================
+F-1 remedy as it stands — verified anyway
+================================================================================
+The builder re-recorded 01.log at b4f86b6 with the stub applied uncommitted.
+Header now: # at: 2026-09-20T07:05:24.898Z  # tree: dirty:430279bff7ae077bc48b572b5fbe53dfd2b7c4e0
+
+Reproduced with the real tool, from the worktree root, same shape:
+  $ git worktree add --detach $TMPDIR/w037r2-rep/wt b4f86b6
+  $ readlink -f node_modules/@bisellium/shim
+  /tmp/claude-1000/w037r2-rep/wt/packages/shim
+  $ python3 - (apply `return dir;` to normalizeExclude, uncommitted)
+  $ git diff --stat -> packages/shim/src/sourceTree.ts | 6 +-----
+  $ BISELLIUM_SELLA=qa-lead ./node_modules/.bin/bisellium red W-037 \
+      --behaviour 9 --sella builder-a --repo . --studio studio -- \
+      node --import tsx packages/shim/test/shim.test.ts .
+  W-037: red recorded for behaviour 9 -> ci/reds/W-037/09.log
+  # tree: dirty:430279bff7ae077bc48b572b5fbe53dfd2b7c4e0     <- EXACT MATCH
+
+Body: identical to the committed 01.log after masking temp dirs, session ids,
+timestamps and durations —
+  $ diff <(norm 01.log) <(norm reproduced 09.log)
+  (no output)
+
+The builder's stated rationale is off by one step and should not be recorded as
+fact: 430279bf is NOT sourceTreeHash(".", ["studio",".bisellium","examples/"],
+"HEAD") at b4f86b6 — that call, evaluated with the WORKING function, is
+7340fa69. 430279bf is that call evaluated with the STUBBED normalizeExclude.
+Computed directly with the fixed shim (scratch script, packages/shim/src/
+sourceTree.ts imported as a module):
+  16a4415  [studio,.bisellium,examples/]  ab98117f3635ef6548e0bc6136508bc51683c6e0
+  16a4415  [studio,.bisellium]            f07df630598185d21c6cd497aaa7bcaccc912903
+  a888028  [studio,.bisellium,examples/]  7340fa696654e7c7997da4e20e329d4561a01c74
+  a888028  [studio,.bisellium]            430279bff7ae077bc48b572b5fbe53dfd2b7c4e0
+  b4f86b6  [studio,.bisellium,examples/]  7340fa696654e7c7997da4e20e329d4561a01c74
+  b4f86b6  [studio,.bisellium]            430279bff7ae077bc48b572b5fbe53dfd2b7c4e0
+  b4f86b6  []                             e7bf14a2f311182f55565028b5aeb290cf592143
+  b4f86b6  [examples]                     e0af676a7e2c7af0cc8512ed5669f72cf3156b77
+  666af5c  [studio,.bisellium,examples/]  7340fa696654e7c7997da4e20e329d4561a01c74
+The last two of the b4f86b6 rows are the live values printed inside 01.log's own
+body (e7bf14a2 / e0af676a), which independently pin the run's HEAD to b4f86b6.
+
+Assertion level, both layers, in the committed 01.log:
+  13 FAIL  normalizeExclude(...) golden-table rows   ("examples/", "studio/",
+           "examples/fixtures/", "./docs/", "vendor//", "a/b/.../j/",
+           "packages\shim\src\", "./", "/", "//", "a//b//c//", "./a/./b/",
+           the 50-segment pathological input)
+   2 FAIL  sourceTreeHash: trailing slash normalizes away (examples/ === examples)
+           sourceTreeHash: the exclude still actually excludes
+  exit: 1
+Not a module-load failure — `check`'s opus.red_content agrees (it fires on
+W-022 only, never on W-037).
+
+Stub in no commit:
+  $ git log --all --oneline -S'return dir;' -- packages/shim/src/sourceTree.ts
+  (no output)
+  $ git log --all --oneline -- packages/shim/src/sourceTree.ts
+  a888028 fix(shim): W-037 ...      5dbf963 Certificates name the source tree...
+  $ git reflog show opus/W-037
+  666af5c @{0} / b4f86b6 @{1} / a888028 @{2} / 16a4415 @{3}: branch: Created from HEAD
+  (three commits, no rewrite, no force-push)
+
+================================================================================
+F-2 — REMEDIED, reproduced with the tool
+================================================================================
+opera/W-037.md now records tests/lint/types with
+  evidence: ci/W-037-{tests,lint,types}-7340fa69.log
+  certifies: tree:7340fa696654e7c7997da4e20e329d4561a01c74
+and tree:7340fa69 is the branch's committed source tree: sourceTreeHash(666af5c,
+["studio",".bisellium","examples/"]) = 7340fa696654e7c7997da4e20e329d4561a01c74
+(table above; unchanged from a888028 and b4f86b6, since both later commits touch
+only studio/).
+
+Re-run independently in a scratch worktree at 666af5c:
+  $ BISELLIUM_SELLA=qa-lead ./node_modules/.bin/bisellium verify W-037 \
+      --studio studio --repo .
+  tests: passed  ci/W-037-tests-7340fa69.log
+  lint: passed   ci/W-037-lint-7340fa69.log
+  types: passed  ci/W-037-types-7340fa69.log
+  exit=0
+All three regenerated certificates carry `certifies: tree:7340fa69...`,
+`exit code: 0`. Against the committed ones:
+  types  — byte-identical
+  tests  — differs only in per-request "Nms" timings (normalized diff: empty)
+  lint   — differs only in the redacted absolute path prefix of the scratch
+           worktree (2 lines); same 2 pre-existing warnings, 0 errors
+and the probationes line `bisellium verify` wrote into the scratch
+opera/W-037.md is byte-identical to the committed one. The committed
+certificates are what the tool produces on this tree.
+
+  $ npm run -s check -- studio --repo .     (branch worktree, clean, 666af5c)
+  probatio.certifies.dirty — 0 hits.  GONE (was 3).
+
+Orphaned superseded certificates (W-037-{tests,lint,types}-ab98117f.log, on disk,
+referenced by nothing): NOT a finding, and an instance of a class, not of this
+opus. Scanned all 284 files in studio/ci/ against every `ci/*.log` reference
+anywhere under studio/ outside ci/ itself (opera, acta, briefs, leges, aerarium):
+142 of 284 are unreferenced — every superseded verify run from W-001 through
+W-031 (e.g. W-001 x9, W-020 x12, W-026 x12) plus every non-latest review log
+(W-026-review-1..6, W-028-review-1, W-030-review-1, W-031-review-1). No check
+rule names orphaned logs (grep for orphan|unreferenced across packages/cli/src/
+rules/ and check.ts: no hits). Keeping them is this officina's standing
+practice, and the builder was right to refuse to hand-delete CLI-managed files.
+
+================================================================================
+F-3 — stays with the orchestrator
+================================================================================
+  process.checkpoint  HEAD  last commit changed opera without updating
+                            SESSION-HANDOFF.md or dossier progress
+Still present on 666af5c, still at advise level by rule definition
+(packages/cli/src/rules/process.ts:247 — add("process.checkpoint", "advise", ...)).
+Consistent with the QA lex: severity classification is mine, but the lex gives
+me no ground to escalate an advisory whose subject (SESSION-HANDOFF.md, dossier
+progress) belongs to the orchestrating session and whose natural commit is the
+merge checkpoint. Not re-raised, not blocking.
+
+================================================================================
+REGRESSION
+================================================================================
+-- source diff since the implementation commit -------------------------------
+$ git diff a888028..666af5c -- packages/
+(empty)
+$ git diff a888028..666af5c --stat
+ studio/ci/W-037-lint-7340fa69.log  |  14 ++
+ studio/ci/W-037-review-1.log       | 262 +++++
+ studio/ci/W-037-tests-7340fa69.log | 204 +++++
+ studio/ci/W-037-types-7340fa69.log |   5 +
+ studio/ci/reds/W-037/01.log        |  24 +-
+ studio/opera/W-037.md              |   6 +-
+Bookkeeping only. Round 1's PASSes on scope, behaviour 1, behaviour 2 and the
+CodeQL clause stand untouched and were not re-litigated.
+
+-- gates on 666af5c ----------------------------------------------------------
+via `bisellium verify` (scratch worktree at 666af5c, clean,
+node_modules/@bisellium/shim -> that worktree's own packages/shim):
+  npm test -s            exit 0
+  npm run -s lint        exit 0   (2 pre-existing warnings, 0 errors)
+  npm run -s typecheck   exit 0
+  $ npm run -s format:check
+  All matched files use Prettier code style!
+
+-- check ---------------------------------------------------------------------
+$ npm run -s check -- studio --repo .        (branch worktree @ 666af5c)
+FAIL — 8 blocking, 84 advisory
+BLOCKING (8), identical set to round 1, none naming W-037:
+  traditio.present   opera/W-022.md W-023.md W-027.md W-028.md
+  wip.cap            opera/  (6 in progress, cap 4)
+  opus.red_evidence  opera/W-027.md W-028.md W-035.md
+Advisories 86 -> 84: -3 probatio.certifies.dirty (F-2 remedied), +1
+probatio.certifies on opera/W-037.md gate "review" ("evidence has no
+identity") — the mechanical consequence of round 1's own verdict being
+recorded as a review probatio, which review logs never carry a certifies for.
+No new blocking finding.
+
+================================================================================
+ADVISORIES FOR THE RETROSPECTIO
+================================================================================
+A-1 — a red's `# tree:` certificate is computed BY the code under test.
+When an opus stubs anything on the sourceTreeHash/normalizeExclude path,
+`bisellium red`'s own header is computed with the stub, so the header is
+honest but not comparable to any hash computed with working code. Instance or
+class: ONE instance in the whole repo. Searched — (a) every commit touching
+packages/shim/src/sourceTree.ts on any ref: exactly two, 5dbf963 (introduced
+it) and a888028 (this opus); (b) the `# tree:` header of all 112 red logs
+under studio/ci/reds/ against the stub-shaped hashes: only W-037/01.log.
+Nothing to fix here; the remedy is a rule or a lesson, not an edit. Cheapest
+detection: a red whose header hash is reproducible from no commit under the
+manifest's exclusion set BUT is reproducible with source_excludes dropped is
+a self-reference, not a forgery — round 1 had all the evidence and read it
+the other way round.
+
+A-2 — 01.log is now a reconstruction, not the original red.
+Original: # at: 2026-09-20T06:47:38.361Z, recorded 06:47:38Z, i.e. BEFORE the
+implementation commit a888028 (committed 14:51:13+08:00 = 06:51:13Z) — it
+proved test-first order on its own face. The re-recorded one is
+07:05:24.898Z, after a888028 and after round 1's verdict (07:03:11Z), taken at
+b4f86b6 by re-applying the stub over fixed source. It is a true run, honestly
+timestamped, and the pre-fix original survives in history (`git show
+a888028:studio/ci/reds/W-037/01.log`), but test-first order is now provable
+only from git, not from the log. Cause: this censor's round-1 remedy
+instruction. Cost of the round: one builder round and two censor rounds spent
+on a non-defect.
+
+================================================================================
+SCRATCH USED
+================================================================================
+$TMPDIR/w037r2-rep/wt   (detached @ b4f86b6, stub applied, red reproduced)
+$TMPDIR/w037r2-rep/wt2  (detached @ 16a4415, round-1 header reproduced)
+$TMPDIR/w037r2-rep/wt3  (detached @ 666af5c, `bisellium verify` + format:check)
+$TMPDIR/w037r2-rep/verdict (detached @ 666af5c, this log + `bisellium review`)
+node_modules in each is a link farm onto the reviewing worktree's, with
+@bisellium/* re-pointed at that worktree's own packages — verified per
+worktree with `readlink -f node_modules/@bisellium/shim`.
+Nothing pushed. Nothing merged. No source, test or front-matter file on
+opus/W-037 was edited by this review; the only writes are this log and the
+review probatio `bisellium review` records, both left uncommitted in the
+verdict worktree.
