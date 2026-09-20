@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { isAbsolute, join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek } from "@bisellium/adapter-native";
+import { safeItemPath } from "@bisellium/commands/writes.js";
 
 export interface RetroFinding {
   class: string;
@@ -136,9 +137,19 @@ function addressedTarget(existingByClass: Map<string, { cascade: number; id: str
 /** Classifies an `addressed_by` target by what exists on disk — never by
  *  `RULE_IDS` (retro.ts doesn't import `ids.ts`; see the opus's "Files
  *  owned" seam note) — and, for an opus target, reads its `state:` with the
- *  same regex style `existingLessonsByClass` already uses. */
-function classifyAddressedTarget(studioRoot: string, target: string): { kind: "opus" | "decision" | "rule"; state?: string } {
-  const opusPath = join(studioRoot, "opera", `${target}.md`);
+ *  same regex style `existingLessonsByClass` already uses.
+ *
+ *  `target` is a raw front-matter capture (`[^"\n]+`), never validated —
+ *  P-007's containment-helper decree applies: both lookups go through
+ *  `safeItemPath` (packages/commands/src/writes.ts), so a `../` (or any
+ *  other id `safeItemPath` rejects) never reaches a filesystem read outside
+ *  `studioRoot` and classifies as `"unresolvable"` — the caller treats that
+ *  exactly like "no target at all" (still unaddressed, still files its
+ *  petitio). Never throws. */
+function classifyAddressedTarget(studioRoot: string, target: string): { kind: "opus" | "decision" | "rule" | "unresolvable"; state?: string } {
+  const opusPath = safeItemPath(join(studioRoot, "opera"), target);
+  const decisionPath = safeItemPath(join(studioRoot, "decisions"), target);
+  if (typeof opusPath !== "string" || typeof decisionPath !== "string") return { kind: "unresolvable" };
   if (existsSync(opusPath)) {
     let state = "unknown";
     try {
@@ -151,7 +162,7 @@ function classifyAddressedTarget(studioRoot: string, target: string): { kind: "o
     }
     return { kind: "opus", state };
   }
-  if (existsSync(join(studioRoot, "decisions", `${target}.md`))) return { kind: "decision" };
+  if (existsSync(decisionPath)) return { kind: "decision" };
   return { kind: "rule" };
 }
 
@@ -406,7 +417,10 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
   const proposals: { class: string; kind: "adopt-alone" | "petitio"; petitioPath?: string }[] = [];
   for (const cls of classesInOrder) {
     if (recurrentClasses.has(cls)) {
-      if (addressedTarget(existingByClass, cls) !== undefined) continue;
+      const targetForProposal = addressedTarget(existingByClass, cls);
+      // An unresolvable (e.g. path-traversal) target is never "addressed":
+      // the class still needs the Patron's attention, so it still files.
+      if (targetForProposal !== undefined && classifyAddressedTarget(studioRoot, targetForProposal).kind !== "unresolvable") continue;
       // Petitiones are written *inside* this loop (just below), so `nextId`
       // already sees every one filed earlier in the same run — unlike
       // `lessonSeq` above (lessons are written after their loop, so
@@ -444,6 +458,7 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
         const target = addressedTarget(existingByClass, cls);
         if (target === undefined) return `- "${cls}" → nothing yet`;
         const { kind, state } = classifyAddressedTarget(studioRoot, target);
+        if (kind === "unresolvable") return `- "${cls}" → nothing yet`;
         return kind === "opus" ? `- "${cls}" → ${target} (opus, ${state})` : `- "${cls}" → ${target} (${kind})`;
       })
     : ["- (none — no class recurs across two or more cascades yet)"];
