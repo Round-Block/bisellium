@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   # Required status check. Runs everything `bisellium ci` runs except the
   # studio officina check (see the `officina` job below) — this is the job a
