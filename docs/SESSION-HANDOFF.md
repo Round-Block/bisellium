@@ -76,17 +76,22 @@ lex, a decision, or a check rule and delete it here.
   WSL. From a Windows-hosted session run `wsl -e bash -lc "cd ~/projects/bisellium && …"`.
   From a session whose project directory is this repo, run commands directly.
 - Commit with `-c user.name=edckt -c user.email=edene.chankt@gmail.com` and the
-  trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
+  trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` — or
+  whichever session model actually ran (Fable 5 or Opus 5.5).
 - The Workflow tool is allowed without a prompt (`.claude/settings.json`).
-- Codex weekly quota was exhausted until 2026-09-21; quota-axi cannot read the
-  Claude Code login (`auth_required`), so Claude posture is observed/unknown.
+- **Codex operational** (cascade 24): sandbox allows `~/.codex` writes +
+  OpenAI domains in `.claude/settings.local.json`; `codex exec -c
+  model_provider=openai -m gpt-5.6-luna` works — provider is OpenAI direct,
+  not tokenharbor (tokenharbor is key storage convenience only). Luna does
+  bounded clerk-shaped work; review still gates through the Opus-tier censor
+  (D-014).
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-20, cascade 22)
+## Where things stand (2026-09-23, cascade 24)
 
-Cascades 1–21 are in the dossier progress log. The branch → PR → QA → merge
-flow (D-015) has now landed six PRs. Read the review logs in `studio/ci/`
+Cascades 1–23 are in the dossier progress log. The branch → PR → QA → merge
+flow (D-015) has landed PRs through #28. Read the review logs in `studio/ci/`
 before touching any of this work; they are far more precise than this
 summary.
 
@@ -125,31 +130,41 @@ catch during the final rebase (`process.history` unregistered). Review
 logs: `studio/ci/W-035-review-{1,2}.log`, `cascade-23-cleanup-review.log`,
 `W-022-review-3.log`.
 
-**Board after cascade 23: 3 blocking, ~80 advisory.** The 3 blockings
-are W-028 (`traditio.present` + `red_evidence`) and W-027
-(`red_evidence`) — both waiting SOLELY on **W-042 (halt/abandon verb)**:
-no CLI verb takes an opus out of play without completing it (`close`
-gates on passed reviews; `pause` is officina-wide; nothing writes
-`state: halted` though readers accept it). W-043 (addressed_by stamped
-via CLI, never by hand) filed from the same review. Both filed per
-P-010's own gap clause, briefs are CLI scaffolds — **architect must spec
-them before greenlight**.
+**Cascade 24 closed the officina-debt era.** W-042 (halt verb) shipped as
+PR #25 after 2 rounds — decision-anchored, no new state id, probationes
+survive; round 1 failed on untested traversal guards (mutation-survivable),
+fixed red-first. Class finding filed as **W-047** (safeItemPath contract
+tests).
+
+**The halts executed** (PR #28): W-023/W-027 halted on **D-017**, W-028
+abandoned on **D-019** (`close` refused as designed — abandonment recorded,
+not closed). `check studio`: **PASS, 0 blocking, 75 advisory — first ever**.
+The `officina` job ran green and is now a **required status check**
+alongside `gates` (ruleset 23720000). Full GitHub CI reliance achieved; the
+interim "orchestrator reads around known-red officina" practice is retired.
+
+**D-014 amended again** (Patron, PR #27): the opus-tier pin reads as the
+TIER, not a frozen model id — the censor honestly recorded
+`claude-opus-5-5`, surfacing model drift instead of hiding it.
+
+**Research** (PR #23): Laya reviewed, not integrated (memo in
+`docs/research/`); Mast persistence audit filed **W-044** (talk profile is
+a permission boundary — SECURITY: the read-only profile admits
+`Bash(bisellium *)`, reaching arbitrary execution) and **W-045** (record
+resilience); **W-046** (provider portability) filed from the landscape doc;
+**P-011** decreed (c) — deferred until first playable is scheduled.
 
 **Resume point for the next funded session (in order):**
 
-1. Spec + build **W-042** (architect → builder → censor). Then: halt
-   W-023/W-027 and abandon W-028 through the new verb, officina goes
-   green, flip the `officina` job to a required check (`gh api` PUT on
-   ruleset 23720000, same pattern as `gates`) → full GitHub CI reliance.
-2. Retro nit: `retro --cascade 23` printed "no class recurs" in
-   `## Addressed` while `lesson.recurrent` still advises
-   `review×no-builder-isolation` — recurrence detection likely needs
-   `--from` findings JSON. Small defect, file or fix with W-043.
-3. Then the architect's standing ranking: W-033 → W-041 → W-039 →
-   W-038 → W-032 → W-040 → prettierignore.
-4. Deferred checkpoint rows (conserve-credits order): progress page owes
-   rows for the CI-gate work + W-035's rounds + cascade 23; masthead
-   stale at cascade 22. Artifacts last republished at checkpoint 22.
+1. **W-033** (bookkeeping provenance, architect) is next per the standing
+   ranking. **W-044** (security: talk-profile permission boundary) is the
+   candidate to jump the queue — Patron's call.
+2. Then: W-041 → W-039 → W-038 → W-046 → W-047 → W-032 → W-040 → W-045.
+3. Lesson/rule candidate: W-042 round 2's advisory A-1 found 12 scratch-path
+   reds sharing one class — worth a stamped `lesson.recurrent` or check
+   rule, not left as a one-off advisory.
+4. Progress page still owes rows for cascades 23–24; masthead updated this
+   checkpoint.
 
 **Patron's standing order (2026-09-20): before starting any task, judge
 whether the credit balance can finish it; if not, pause and write the
@@ -247,8 +262,10 @@ Two more rules were added after this section was first written:
 `gates` is a required status check** with the strict up-to-date policy —
 PRs must rebase onto current master (`gh pr update-branch --rebase`) and
 pass `gates` before merging; GitHub now enforces what was previously
-orchestrator discipline. The `officina` job stays informational until the
-stale-opera debt clears, then it too becomes required. Consequences:
+orchestrator discipline. **As of cascade 24 the `officina` job is also
+required** — the stale-opera debt cleared via the halt verb (D-017/D-019),
+and the job was flipped to required the same way as `gates` (`gh api` PUT
+on ruleset 23720000). Consequences:
 
 - **Direct pushes to master are rejected — verified empirically.** A real
   push to master was rejected with "push declined due to repository rule
@@ -294,13 +311,13 @@ found the repo had been failing its own `format:check` since `6e84979`.
 the workflow is two jobs — `gates` (required: typecheck, lint,
 format:check, test, sample-studio check — `bisellium ci` minus the studio
 debt; the drift guard `scripts/ci-workflow.test.mjs` asserts the parity
-gap explicitly) and `officina` (`check studio` alone, honestly red,
-non-required until the debt clears). Same day: `GITHUB_TOKEN` scoped
-`contents: read` (PR #16, cleared CodeQL actions alert 4); `fetch-depth: 2`
-+ checkout/setup-node v4→v5 (PR #18) after the Patron spotted a
-`HEAD~1` fatal in a job log — shallow clones had silently skipped
-`process.tdd`/`process.checkpoint` on every runner ever; the silent catch
-now emits a `process.history` advisory instead.
+gap explicitly) and `officina` (`check studio` alone — red until cascade
+24, now green and required too, see "Where things stand"). Same day:
+`GITHUB_TOKEN` scoped `contents: read` (PR #16, cleared CodeQL actions
+alert 4); `fetch-depth: 2` + checkout/setup-node v4→v5 (PR #18) after the
+Patron spotted a `HEAD~1` fatal in a job log — shallow clones had
+silently skipped `process.tdd`/`process.checkpoint` on every runner ever;
+the silent catch now emits a `process.history` advisory instead.
 
 **Retro material from cascade 22** (cite the review logs):
 - A red's `# tree:` header is computed by the code under test
@@ -319,40 +336,40 @@ now emits a `process.history` advisory instead.
   drift within hours of existing — every gate added this cascade fired.
 
 The cascade-22 progress-page row covers up to the gap filings; a follow-up
-row for the CI-gate work + W-035's rounds is **deferred on the Patron's
-conserve-credits order** — write it at the next funded checkpoint.
+row for the CI-gate work + W-035's rounds + cascades 23–24 is **deferred
+on the Patron's conserve-credits order** — write it at the next funded
+checkpoint.
 
 ### Backlog
 
-1. **W-035** in flight (two Sonnet builders, parallel worktrees) → censor →
-   merge.
-2. Then **W-033** (architect's decision on bookkeeping provenance; blocks
-   W-034's defect 2), per the architect's ranking: W-033 → W-041 → W-039 →
-   W-038 → W-032 → W-040 → W-028 → prettierignore.
-3. **W-034** — `done` cannot honour a Patron waiver, and writes to whichever
+1. Ranked next work: see **Resume point** under "Where things stand" above
+   — W-033 first (candidate to be jumped by **W-044**, security, Patron's
+   call), then W-041 → W-039 → W-038 → W-046 → W-047 → W-032 → W-040 →
+   W-045.
+2. **W-034** — `done` cannot honour a Patron waiver, and writes to whichever
    ref it is run from. Defect 1 is independent; defect 2 is blocked on W-033.
-4. **Settings screen** (Patron): surface officina and harness config.
+3. **Settings screen** (Patron): surface officina and harness config.
    UI/UX is Patron-only; needs design input before a brief.
-5. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
-6. **CLI/process gaps** — filed as **W-038** (petitio command), **W-039**
+4. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
+5. **CLI/process gaps** — filed as **W-038** (petitio command), **W-039**
    (guest-sella red rule), **W-040** (gate correction, append-only),
    **W-041** (generated backlog page); **D-016** records why git stays raw
    where the CLI has nothing to refuse. The prose that used to describe
    these gaps here is rot — read those records instead.
-7. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
+6. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
    `packages/cli/src/instructions.template.md` — edit the template.
-8. Old item, still open: `branch.ts:172` hardcoded "into master" — fixed
+7. Old item, still open: `branch.ts:172` hardcoded "into master" — fixed
    in W-026; a repo on `main` merges into main and reports master.
-9. **`run --opus` → `merge` is a broken chain** (found by dogfooding).
+8. **`run --opus` → `merge` is a broken chain** (found by dogfooding).
    `run --opus W-026` forks the worktree from `opus/W-026`'s commit
    correctly, then puts the work on `bisellium/<sella>/<n>`, while
    `mergeOpusBranch` only ever reads `opus/<id>`. A builder's commits never
    reach the branch `merge` merges, and nothing moves one to the other.
-10. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
-    harness's own worktrees under `.claude/worktrees/` are invisible to
-    them, and several stale ones are on disk. `git worktree prune`
-    deregisters them but cannot unlink the admin dirs under the sandbox
-    ("Device or resource busy") — needs a shell outside it.
+9. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
+   harness's own worktrees under `.claude/worktrees/` are invisible to
+   them, and several stale ones are on disk. `git worktree prune`
+   deregisters them but cannot unlink the admin dirs under the sandbox
+   ("Device or resource busy") — needs a shell outside it.
 
 ### Also on disk
 
