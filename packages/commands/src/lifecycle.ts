@@ -95,6 +95,15 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
+  // D-021 (W-033 round-1 A1): right after the record-existence check, before
+  // any state/spec check, so a trunk caller gets the ownership message
+  // rather than a "not greenlit or halted"/"no spec" refusal.
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
   const currentState = readState(opusPath);
   if (typeof currentState !== "string") {
     console.error(currentState.error);
@@ -112,12 +121,6 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   }
   if (!existsSync(join(root, specRel))) {
     console.error(`${opusId}: no spec at ${specRel} — not ready`);
-    return { exitCode: 2 };
-  }
-
-  const refusal = recordOwnerRefusal(root, opusId);
-  if (refusal !== undefined) {
-    console.error(refusal);
     return { exitCode: 2 };
   }
 
@@ -188,6 +191,15 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
+  // D-021 (W-033 round-1 A1): right after the record-existence check, before
+  // any state/gate check, so a trunk caller gets the ownership message
+  // rather than "not building, verifying or review" or a gate refusal.
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
   // Read off disk with readFront, never a regex over raw YAML (that was
   // opus-close.ts's own shortcut, and the reason it's deleted).
   const front = readFront<OpusFront>(opusPath).data;
@@ -218,12 +230,6 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
   if (missing.length) {
     console.error(`${opusId}: gates not passed: ${missing.join(", ")}`);
     return { exitCode: 1 };
-  }
-
-  const refusal = recordOwnerRefusal(root, opusId);
-  if (refusal !== undefined) {
-    console.error(refusal);
-    return { exitCode: 2 };
   }
 
   const sella = resolveSella(values.get("--sella"));
@@ -609,6 +615,15 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
+  // D-021 (W-033 round-1 A1): right after the record-existence check, before
+  // any state check, so a trunk caller gets the ownership message rather
+  // than "already halted"/"already done".
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
   const currentState = readState(opusPath);
   if (typeof currentState !== "string") {
     console.error(currentState.error);
@@ -620,12 +635,6 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   // amending a halt in place is out of scope (see the brief).
   if (currentState === "done" || currentState === "halted") {
     console.error(`${opusId} is already ${currentState} — halt refused`);
-    return { exitCode: 2 };
-  }
-
-  const refusal = recordOwnerRefusal(root, opusId);
-  if (refusal !== undefined) {
-    console.error(refusal);
     return { exitCode: 2 };
   }
 
