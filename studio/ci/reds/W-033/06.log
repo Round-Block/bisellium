@@ -1,0 +1,15 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T15:40:06.330Z
+# sella: builder-a
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+Preparing worktree (checking out 'opus/W-140')
+W-140: refused unconditionally (W-033 red-recording stage 2 stub)
+FAIL  W-033 b6: cwd=trunk, --studio=owning worktree exits 0            2
+FAIL  W-033 b6: the worktree's record is now done                      building
+PASS  W-033 b6: the trunk's record stays byte-identical                
+W-140: refused unconditionally (W-033 red-recording stage 2 stub)
+PASS  W-033 b6 mirror: cwd=worktree, --studio=trunk exits 2            2
+PASS  W-033 b6 mirror: the trunk's record still stays byte-identical   

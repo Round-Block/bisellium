@@ -1,0 +1,10 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T15:40:06.804Z
+# sella: builder-a
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+W-150: refused unconditionally (W-033 red-recording stage 2 stub)
+FAIL  W-033 b7: done on an untracked record exits 0 even though opus/W-150 exists 2
+FAIL  W-033 b7: state -> done                                          building

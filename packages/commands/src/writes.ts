@@ -17,6 +17,7 @@
  * is `bisellium run` sessions) and from `events.jsonl` (which is derived
  * workflow telemetry).
  */
+import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
@@ -182,6 +183,136 @@ function slugify(s: string, maxLen = 48): string {
 }
 
 // ---------------------------------------------------------------------------
+// D-021 / W-033: one writer per opus record
+// ---------------------------------------------------------------------------
+
+const GIT_TIMEOUT_MS = 30_000;
+
+/** The one definition of an opus's branch name — `branch.ts` re-exports this
+ *  rather than keeping its own copy (W-033: if the guard and `merge` ever
+ *  spelled the prefix differently, the guard would never fire). */
+export function opusBranchName(opusId: string): string {
+  return `opus/${opusId}`;
+}
+
+interface GitCallResult {
+  /** Process exit code, or -1 when the call never produced one (git missing,
+   *  timed out, or otherwise didn't run — see `broken`). */
+  code: number;
+  stdout: string;
+  /** True when git itself could not be invoked/completed — as opposed to
+   *  running and exiting non-zero for an ordinary reason (untracked path,
+   *  detached HEAD, ref not found). Only meaningful once the caller already
+   *  knows git is usable (step 1 passed). */
+  broken: boolean;
+}
+
+function runGit(args: string[], cwd: string): GitCallResult {
+  try {
+    const stdout = execFileSync("git", args, { cwd, encoding: "utf8", timeout: GIT_TIMEOUT_MS, stdio: ["ignore", "pipe", "ignore"] });
+    return { code: 0, stdout, broken: false };
+  } catch (e) {
+    const err = e as NodeJS.ErrnoException & { status?: number | null; stdout?: string | Buffer };
+    if (typeof err.status === "number") {
+      const stdout = typeof err.stdout === "string" ? err.stdout : (err.stdout?.toString("utf8") ?? "");
+      return { code: err.status, stdout, broken: false };
+    }
+    // Spawn itself failed (git missing, timed out, killed) — never a normal
+    // exit code, so callers past step 1 must treat this as a git failure.
+    return { code: -1, stdout: "", broken: true };
+  }
+}
+
+/** `detached HEAD at <sha7>` for a refusal message when HEAD isn't on any
+ *  branch — falls back to a vague description rather than throwing if even
+ *  `rev-parse` can't resolve it. */
+function describeDetached(studioRoot: string): string {
+  const r = runGit(["rev-parse", "--short", "HEAD"], studioRoot);
+  return r.code === 0 ? `detached HEAD at ${r.stdout.trim()}` : "an unresolvable ref";
+}
+
+const D021_NOTE = "D-021";
+
+/**
+ * D-021's ownership rule, enforced. `studioRoot` is the studio the caller is
+ * about to write into (already resolved by `openStudio` or equivalent).
+ * Returns `undefined` to allow the write, or a refusal message to print
+ * as-is (the caller writes nothing and exits 2).
+ *
+ * 1. `opera/<id>.md` isn't tracked in a git work tree at `studioRoot` (no
+ *    repo, or the file isn't in the index there) → allow. Git refs cannot
+ *    own an untracked file — this is the one place a git failure allows.
+ * 2. HEAD of the checkout containing `studioRoot` is `refs/heads/opus/<id>`
+ *    → allow.
+ * 3. HEAD is `refs/heads/opus/<other>` → refuse; that branch carries only
+ *    its own record.
+ * 4. `refs/heads/opus/<id>` exists (also covers a detached HEAD sitting at
+ *    that branch's own tip) → refuse.
+ * 5. Otherwise → allow (trunk-side, no branch cut yet).
+ *
+ * Any git failure in steps 2–4 (not step 1) refuses rather than allowing —
+ * a guard that fails open here is how W-026 round 5 happened.
+ */
+export function recordOwnerRefusal(studioRoot: string, opusId: string): string | undefined {
+  const branch = opusBranchName(opusId);
+  const recordRel = join("opera", `${opusId}.md`);
+
+  // Step 1: not a repo, or the record isn't tracked there → allow.
+  const tracked = runGit(["ls-files", "--error-unmatch", "--", recordRel], studioRoot);
+  if (tracked.code !== 0) return undefined;
+
+  // Step 2/3: what branch (if any) is this checkout's HEAD on. `-q` makes a
+  // detached HEAD exit 1 rather than print an error — that's an expected
+  // outcome here (fall through to step 4), not a git failure.
+  const symbolic = runGit(["symbolic-ref", "-q", "HEAD"], studioRoot);
+  if (symbolic.broken) return gitFailureRefusal(opusId, branch);
+  const headRef = symbolic.code === 0 ? symbolic.stdout.trim() : undefined;
+
+  if (headRef === `refs/heads/${branch}`) return undefined; // step 2: allow
+
+  if (headRef !== undefined) {
+    const otherMatch = /^refs\/heads\/(opus\/.+)$/.exec(headRef);
+    if (otherMatch) return refusalOtherBranch(opusId, branch, otherMatch[1]!); // step 3
+  }
+
+  // Step 4: does the opus's own branch exist at all (regardless of what's
+  // checked out here)? `--quiet` still exits 1 for "no such ref", the
+  // expected non-match — not a git failure.
+  const branchRef = runGit(["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], studioRoot);
+  if (branchRef.broken) return gitFailureRefusal(opusId, branch);
+  if (branchRef.code === 0) {
+    const here = headRef !== undefined && headRef.startsWith("refs/heads/") ? headRef.slice("refs/heads/".length) : describeDetached(studioRoot);
+    return refusalBranchExists(opusId, branch, here);
+  }
+
+  // Step 5: trunk-side write, the branch hasn't been cut (or has merged).
+  return undefined;
+}
+
+function refusalBranchExists(opusId: string, branch: string, here: string): string {
+  return (
+    `${opusId}: opera/${opusId}.md is owned by ${branch} while that branch exists (${D021_NOTE}); ` +
+    `this checkout is on ${here} — run it in the worktree that has ${branch} checked out ` +
+    `(git worktree list), or delete ${branch} if it has already merged`
+  );
+}
+
+function refusalOtherBranch(opusId: string, branch: string, otherBranch: string): string {
+  const otherId = otherBranch.startsWith("opus/") ? otherBranch.slice("opus/".length) : otherBranch;
+  return (
+    `${opusId}: opera/${opusId}.md is owned by ${branch} while that branch exists (${D021_NOTE}); ` +
+    `this checkout is on ${otherBranch}, which carries only ${otherId}'s record`
+  );
+}
+
+function gitFailureRefusal(opusId: string, branch: string): string {
+  return (
+    `${opusId}: could not determine whether this checkout owns ${branch}'s record (${D021_NOTE}) — ` +
+    `git failed; refusing rather than risking a write from the wrong ref`
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 1. handoff
 // ---------------------------------------------------------------------------
 
@@ -244,6 +375,12 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     return { exitCode: 2 };
   }
   const stage = stageArg ?? currentState;
+
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
 
   try {
     editOpusFrontMatter(opusPath, (doc) => {
@@ -626,6 +763,12 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
   }
 
   const decline = values.get("--decline");
+
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
 
   // Same discipline as answer: the opus front-matter edit, the
   // workflow.greenlight event and the Patron timeline line must land

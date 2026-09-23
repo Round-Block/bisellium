@@ -1,0 +1,27 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T15:39:42.264Z
+# sella: builder-a
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+W-110: spec=briefs/W-110.md state=building
+FAIL  W-033 b3: ready refused from trunk                               0
+FAIL  W-033 b3: ready message names opus/W-110 and D-021               
+FAIL  W-033 b3: ready record byte-identical                            
+FAIL  W-033 b3: ready appends no event                                 
+W-111: state=halted by=D-910
+FAIL  W-033 b3: halt refused from trunk                                0
+FAIL  W-033 b3: halt message names opus/W-111 and D-021                
+FAIL  W-033 b3: halt record byte-identical                             
+FAIL  W-033 b3: halt appends no event                                  
+W-112: traditio -> sella=builder-1 stage=backlog next="n" blocked_on=none
+FAIL  W-033 b3: handoff refused from trunk                             0
+FAIL  W-033 b3: handoff message names opus/W-112 and D-021             
+FAIL  W-033 b3: handoff record byte-identical                          
+PASS  W-033 b3: handoff appends no event                               
+W-113: greenlit
+FAIL  W-033 b3: greenlight refused from trunk                          0
+FAIL  W-033 b3: greenlight message names opus/W-113 and D-021          
+FAIL  W-033 b3: greenlight record byte-identical                       
+FAIL  W-033 b3: greenlight appends no event                            

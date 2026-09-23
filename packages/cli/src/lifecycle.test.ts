@@ -10,17 +10,20 @@
  * behaviour runs, exactly as before this existed.
  */
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
+import type { MergePipeline } from "@bisellium/pipeline";
 import { WF } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
 import { checkStudio } from "./check.js";
 import { splitFront } from "./frontmatter.js";
 import { runReady, runDone, runReview, runRed, runHalt } from "./lifecycle.js";
+import { runVerify } from "./verify.js";
+import { runGreenlight, runHandoff, type WriteResult } from "./writes.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
@@ -67,6 +70,113 @@ function writeOpus(dir: string, id: string, contents: string): string {
   const path = join(dir, "opera", `${id}.md`);
   writeFileSync(path, contents);
   return path;
+}
+
+// =============================================================================
+// W-033 fixtures — behaviours 23-29 need a REAL git repo with the studio
+// committed inside it (the W-026 blind spot: a studio outside the repo, or
+// never committed, collapses branch and trunk copies into one file and the
+// guard never has anything to refuse).
+// =============================================================================
+
+/** `git init -b master`, copy `examples/sample-studio` to `<repo>/studio` —
+ *  not yet committed, so callers can still add/overwrite opera files before
+ *  the one `gitCommitAll` that puts the studio under version control. */
+function tmpGitStudioRepo(tag: string): string {
+  const dir = mkdtempSync(join(tmpdir(), `bisellium-w033-${tag}-`));
+  execFileSync("git", ["init", "-q", "-b", "master"], { cwd: dir });
+  execFileSync("git", ["config", "user.name", "test"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "test@test"], { cwd: dir });
+  cpSync(sampleStudio, join(dir, "studio"), { recursive: true });
+  dirs.push(dir);
+  return dir;
+}
+
+/** Same as `tmpGitStudioRepo`, but `studio/` is committed as *ignored* — so
+ *  every record inside it stays untracked (behaviour 7). */
+function tmpGitRepoIgnoredStudio(tag: string): string {
+  const dir = mkdtempSync(join(tmpdir(), `bisellium-w033-${tag}-`));
+  execFileSync("git", ["init", "-q", "-b", "master"], { cwd: dir });
+  execFileSync("git", ["config", "user.name", "test"], { cwd: dir });
+  execFileSync("git", ["config", "user.email", "test@test"], { cwd: dir });
+  writeFileSync(join(dir, ".gitignore"), "studio/\n");
+  execFileSync("git", ["add", "-A"], { cwd: dir });
+  execFileSync("git", ["commit", "-q", "-m", "ignore studio"], { cwd: dir });
+  cpSync(sampleStudio, join(dir, "studio"), { recursive: true });
+  dirs.push(dir);
+  return dir;
+}
+
+function gitCommitAll(repo: string, msg: string): void {
+  execFileSync("git", ["add", "-A"], { cwd: repo });
+  execFileSync("git", ["commit", "-q", "-m", msg], { cwd: repo });
+}
+
+function gitBranch(repo: string, name: string): void {
+  execFileSync("git", ["branch", name], { cwd: repo });
+}
+
+function gitCheckout(repo: string, ref: string): void {
+  execFileSync("git", ["checkout", "-q", ref], { cwd: repo });
+}
+
+/** A linked worktree at a fresh temp dir, checked out at `ref` (`flags` is
+ *  e.g. `["--detach"]`, or `[]` for an attached branch checkout). Tracked in
+ *  `dirs` for cleanup like any other fixture dir; the repo itself is what
+ *  owns `.git/worktrees/`, so removing this directory without `git worktree
+ *  remove` is fine once the whole repo is thrown away too. */
+function gitWorktreeAdd(repo: string, flags: string[], ref: string): string {
+  const path = mkdtempSync(join(tmpdir(), "bisellium-w033-wt-"));
+  rmSync(path, { recursive: true, force: true }); // git worktree add creates path itself
+  execFileSync("git", ["worktree", "add", ...flags, path, ref], { cwd: repo });
+  dirs.push(path);
+  return path;
+}
+
+function gitStatusPorcelain(repo: string): string {
+  return execFileSync("git", ["status", "--porcelain"], { cwd: repo, encoding: "utf8" });
+}
+
+/** Passing tests/lint/types/qa/review the way `runDone` demands them, so a
+ *  fixture opus in `building` would pass `done` were the D-021 guard not
+ *  there — every behaviour-23/28/29 opus that needs `done` to "would
+ *  succeed without the guard" uses this front matter verbatim. */
+function passingOpusFrontMatter(id: string, title: string): string {
+  return [
+    "---",
+    `id: ${id}`,
+    `title: ${title}`,
+    "kind: feature",
+    "collegium: engineering",
+    "state: building",
+    "probationes:",
+    "  tests: { status: passed, evidence: ci/x.log, certifies: tree:deadbeef }",
+    "  lint: { status: passed, evidence: ci/x.log, certifies: tree:deadbeef }",
+    "  types: { status: passed, evidence: ci/x.log, certifies: tree:deadbeef }",
+    "  qa: { status: passed }",
+    "  review: { status: passed }",
+    "---",
+    "Body.",
+    "",
+  ].join("\n");
+}
+
+/** Replaces `console.error` for the duration of `fn` (sync or async) and
+ *  returns whatever it printed alongside its result — same pattern
+ *  writes.test.ts's answer-without-opus case uses, generalised so each
+ *  W-033 refusal block doesn't repeat the save/restore dance. */
+async function withStderr<T>(fn: () => T | Promise<T>): Promise<{ result: T; stderr: string }> {
+  const orig = console.error;
+  let stderr = "";
+  console.error = (...parts: unknown[]) => {
+    stderr += parts.map(String).join(" ") + "\n";
+  };
+  try {
+    const result = await fn();
+    return { result, stderr };
+  } finally {
+    console.error = orig;
+  }
 }
 
 try {
@@ -812,6 +922,219 @@ try {
       after["halted_at"] === undefined && after["reason"] === undefined && after["resume_when"] === undefined && after["halted_by"] === undefined,
       JSON.stringify(after),
     );
+  }
+
+  // =========================================================================
+  // W-033 — D-021's one-writer guard. Every fixture here is a real git repo
+  // with the studio committed inside it (studio/briefs/W-033.md: the W-026
+  // blind spot). Blocks 23-29 map to this opus's behaviours 1-7.
+  // =========================================================================
+
+  // ---- behaviour 23 (opus behaviour 1): `done` from a trunk checkout is
+  //      refused while opus/<id> exists (W-034 defect 2) --------------------
+  if (runs(23)) {
+    const repo = tmpGitStudioRepo("done-trunk");
+    const studioDir = join(repo, "studio");
+    writeOpus(studioDir, "W-100", passingOpusFrontMatter("W-100", "Done from trunk while branch exists"));
+    gitCommitAll(repo, "init");
+    gitBranch(repo, "opus/W-100"); // repo itself stays on master
+
+    const opusPath = join(studioDir, "opera", "W-100.md");
+    const before = readFileSync(opusPath, "utf8");
+    const eventsPath = join(studioDir, EVENTS_LOG_REL);
+    const eventsBefore = existsSync(eventsPath) ? readFileSync(eventsPath, "utf8") : undefined;
+
+    const { result: r, stderr } = await withStderr(() => runDone(["W-100", "--studio", studioDir], { now: NOW }));
+    check("W-033 b1: done from trunk refused while opus/W-100 exists", r.exitCode === 2, String(r.exitCode));
+    check("W-033 b1: refusal names opus/W-100 and D-021", stderr.includes("opus/W-100") && stderr.includes("D-021"), stderr);
+    check("W-033 b1: record byte-identical", readFileSync(opusPath, "utf8") === before);
+    check(
+      "W-033 b1: events log unchanged (absence counts as unchanged)",
+      (existsSync(eventsPath) ? readFileSync(eventsPath, "utf8") : undefined) === eventsBefore,
+    );
+    check("W-033 b1: git status is clean", gitStatusPorcelain(repo).trim() === "", gitStatusPorcelain(repo));
+  }
+
+  // ---- behaviour 24 (opus behaviour 2): `review` from a detached worktree
+  //      at the branch tip is refused (W-030/W-031) -------------------------
+  if (runs(24)) {
+    const repo = tmpGitStudioRepo("review-detached");
+    const studioDir = join(repo, "studio");
+    writeOpus(
+      studioDir,
+      "W-101",
+      ["---", "id: W-101", "title: Review from a detached worktree at the branch tip", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join(
+        "\n",
+      ),
+    );
+    gitCommitAll(repo, "init");
+    gitBranch(repo, "opus/W-101");
+
+    const wtPath = gitWorktreeAdd(repo, ["--detach"], "opus/W-101");
+    const wtStudioDir = join(wtPath, "studio");
+    mkdirSync(join(wtStudioDir, "ci"), { recursive: true });
+    writeFileSync(join(wtStudioDir, "ci", "W-101-review.log"), "evidence\n");
+
+    const opusPath = join(wtStudioDir, "opera", "W-101.md");
+    const before = readFileSync(opusPath, "utf8");
+
+    const { result: r, stderr } = await withStderr(() =>
+      runReview(["W-101", "--pass", "--evidence", "ci/W-101-review.log", "--studio", wtStudioDir], { now: NOW }),
+    );
+    check("W-033 b2: review refused from a detached worktree at the branch tip", r.exitCode === 2, String(r.exitCode));
+    check("W-033 b2: refusal names opus/W-101 and D-021 even though HEAD == branch tip", stderr.includes("opus/W-101") && stderr.includes("D-021"), stderr);
+    check("W-033 b2: record byte-identical", readFileSync(opusPath, "utf8") === before);
+  }
+
+  // ---- behaviour 25 (opus behaviour 3): every other record writer refuses
+  //      the same way from the trunk (ready/halt/handoff/greenlight) -------
+  if (runs(25)) {
+    const repo = tmpGitStudioRepo("other-writers-trunk");
+    const studioDir = join(repo, "studio");
+
+    const briefsDir = join(studioDir, "briefs");
+    mkdirSync(briefsDir, { recursive: true });
+    writeFileSync(join(briefsDir, "W-110.md"), "Brief for W-110.\n");
+    writeOpus(studioDir, "W-110", ["---", "id: W-110", "title: ready target", "kind: feature", "collegium: engineering", "state: greenlit", "probationes: {}", "---", "Body.", ""].join("\n"));
+
+    const decisionsDir = join(studioDir, "decisions");
+    mkdirSync(decisionsDir, { recursive: true });
+    writeFileSync(join(decisionsDir, "D-910.md"), "# D-910\n");
+    writeOpus(studioDir, "W-111", ["---", "id: W-111", "title: halt target", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join("\n"));
+
+    writeOpus(studioDir, "W-112", ["---", "id: W-112", "title: handoff target", "kind: feature", "collegium: engineering", "state: backlog", "probationes: {}", "---", "Body.", ""].join("\n"));
+    writeOpus(studioDir, "W-113", ["---", "id: W-113", "title: greenlight target", "kind: feature", "collegium: engineering", "state: backlog", "probationes: {}", "---", "Body.", ""].join("\n"));
+
+    gitCommitAll(repo, "init");
+    for (const id of ["W-110", "W-111", "W-112", "W-113"]) gitBranch(repo, `opus/${id}`);
+
+    const cases: { label: string; id: string; run: () => WriteResult }[] = [
+      { label: "ready", id: "W-110", run: () => runReady(["W-110", "--studio", studioDir], { now: NOW }) },
+      {
+        label: "halt",
+        id: "W-111",
+        run: () => runHalt(["W-111", "--reason", "r", "--resume-when", "rw", "--decision", "D-910", "--studio", studioDir], { now: NOW }),
+      },
+      { label: "handoff", id: "W-112", run: () => runHandoff(["--opus", "W-112", "--sella", "builder-1", "--next", "n", "--studio", studioDir], { now: NOW }) },
+      { label: "greenlight", id: "W-113", run: () => runGreenlight(["W-113", "--studio", studioDir], { now: NOW }) },
+    ];
+
+    for (const { label, id, run } of cases) {
+      const opusPath = join(studioDir, "opera", `${id}.md`);
+      const before = readFileSync(opusPath, "utf8");
+      const eventsBefore = readEventLines(studioDir).length;
+      const { result: r, stderr } = await withStderr(run);
+      check(`W-033 b3: ${label} refused from trunk`, r.exitCode === 2, String(r.exitCode));
+      check(`W-033 b3: ${label} message names opus/${id} and D-021`, stderr.includes(`opus/${id}`) && stderr.includes("D-021"), stderr);
+      check(`W-033 b3: ${label} record byte-identical`, readFileSync(opusPath, "utf8") === before);
+      check(`W-033 b3: ${label} appends no event`, readEventLines(studioDir).length === eventsBefore);
+    }
+  }
+
+  // ---- behaviour 26 (opus behaviour 4): `verify` refuses before running
+  //      anything ------------------------------------------------------------
+  if (runs(26)) {
+    const repo = tmpGitStudioRepo("verify-trunk");
+    const studioDir = join(repo, "studio");
+    writeOpus(studioDir, "W-120", ["---", "id: W-120", "title: verify target", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join("\n"));
+    gitCommitAll(repo, "init");
+    gitBranch(repo, "opus/W-120");
+
+    const opusPath = join(studioDir, "opera", "W-120.md");
+    const before = readFileSync(opusPath, "utf8");
+    const ciDir = join(studioDir, "ci");
+    const ciCountBefore = existsSync(ciDir) ? readdirSync(ciDir).length : 0;
+
+    let called = false;
+    const stubPipeline: MergePipeline = {
+      id: "stub",
+      run: async () => {
+        called = true;
+        return {};
+      },
+    };
+
+    const { result: r, stderr } = await withStderr(() => runVerify(["W-120", "--studio", studioDir, "--repo", repo], { pipeline: stubPipeline }));
+    check("W-033 b4: verify refused from trunk", r.exitCode === 2, String(r.exitCode));
+    check("W-033 b4: the pipeline was never called", called === false);
+    check("W-033 b4: refusal names opus/W-120 and D-021", stderr.includes("opus/W-120") && stderr.includes("D-021"), stderr);
+    check("W-033 b4: no new file under studio/ci/", (existsSync(ciDir) ? readdirSync(ciDir).length : 0) === ciCountBefore);
+    check("W-033 b4: record byte-identical", readFileSync(opusPath, "utf8") === before);
+  }
+
+  // ---- behaviour 27 (opus behaviour 5): an opus branch cannot write
+  //      another opus's record ----------------------------------------------
+  if (runs(27)) {
+    const repo = tmpGitStudioRepo("branch-cross-write");
+    const studioDir = join(repo, "studio");
+    writeOpus(studioDir, "W-130", ["---", "id: W-130", "title: the checkout's own opus", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join("\n"));
+    writeOpus(studioDir, "W-131", ["---", "id: W-131", "title: a different opus, no branch of its own", "kind: feature", "collegium: engineering", "state: backlog", "probationes: {}", "---", "Body.", ""].join("\n"));
+    gitCommitAll(repo, "init");
+    gitBranch(repo, "opus/W-130");
+    gitCheckout(repo, "opus/W-130"); // opus/W-131 is never created
+
+    const opusPathX = join(studioDir, "opera", "W-131.md");
+    const before = readFileSync(opusPathX, "utf8");
+
+    const { result: r, stderr } = await withStderr(() =>
+      runHandoff(["--opus", "W-131", "--sella", "builder-1", "--next", "n", "--studio", studioDir], { now: NOW }),
+    );
+    check("W-033 b5: handoff on W-131 refused from an opus/W-130 checkout", r.exitCode === 2, String(r.exitCode));
+    check("W-033 b5: message names opus/W-130, this checkout's own branch", stderr.includes("opus/W-130"), stderr);
+    check("W-033 b5: W-131's record byte-identical", readFileSync(opusPathX, "utf8") === before);
+  }
+
+  // ---- behaviour 28 (opus behaviour 6): ownership is decided by the
+  //      checkout that holds `--studio`, not by `process.cwd()` ------------
+  if (runs(28)) {
+    const repo = tmpGitStudioRepo("cwd-vs-studio");
+    const studioDir = join(repo, "studio");
+    writeOpus(studioDir, "W-140", passingOpusFrontMatter("W-140", "cwd vs --studio"));
+    gitCommitAll(repo, "init");
+    gitBranch(repo, "opus/W-140");
+    const wtPath = gitWorktreeAdd(repo, [], "opus/W-140"); // attached, not detached
+    const wtStudioDir = join(wtPath, "studio");
+
+    const trunkOpusPath = join(studioDir, "opera", "W-140.md");
+    const wtOpusPath = join(wtStudioDir, "opera", "W-140.md");
+    const trunkBefore = readFileSync(trunkOpusPath, "utf8");
+
+    const origCwd = process.cwd();
+    let r1: { exitCode: number };
+    try {
+      process.chdir(repo); // cwd sits in the trunk checkout...
+      r1 = runDone(["W-140", "--studio", wtStudioDir], { now: NOW }); // ...but --studio names the owning worktree
+    } finally {
+      process.chdir(origCwd);
+    }
+    check("W-033 b6: cwd=trunk, --studio=owning worktree exits 0", r1.exitCode === 0, String(r1.exitCode));
+    const wtAfter = readFront<{ state: string }>(wtOpusPath).data;
+    check("W-033 b6: the worktree's record is now done", wtAfter.state === "done", wtAfter.state);
+    check("W-033 b6: the trunk's record stays byte-identical", readFileSync(trunkOpusPath, "utf8") === trunkBefore);
+
+    let r2: { exitCode: number };
+    try {
+      process.chdir(wtStudioDir); // mirror: cwd sits in the owning worktree...
+      r2 = runDone(["W-140", "--studio", studioDir], { now: NOW }); // ...but --studio names the trunk
+    } finally {
+      process.chdir(origCwd);
+    }
+    check("W-033 b6 mirror: cwd=worktree, --studio=trunk exits 2", r2.exitCode === 2, String(r2.exitCode));
+    check("W-033 b6 mirror: the trunk's record still stays byte-identical", readFileSync(trunkOpusPath, "utf8") === trunkBefore);
+  }
+
+  // ---- behaviour 29 (opus behaviour 7): an untracked record is left
+  //      alone ---------------------------------------------------------------
+  if (runs(29)) {
+    const repo = tmpGitRepoIgnoredStudio("untracked-record");
+    const studioDir = join(repo, "studio");
+    writeOpus(studioDir, "W-150", passingOpusFrontMatter("W-150", "an untracked record"));
+    gitBranch(repo, "opus/W-150"); // the branch exists; the record is never tracked
+
+    const r = runDone(["W-150", "--studio", studioDir], { now: NOW });
+    check("W-033 b7: done on an untracked record exits 0 even though opus/W-150 exists", r.exitCode === 0, String(r.exitCode));
+    const after = readFront<{ state: string }>(join(studioDir, "opera", "W-150.md")).data;
+    check("W-033 b7: state -> done", after.state === "done", after.state);
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

@@ -1,0 +1,12 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T15:39:42.718Z
+# sella: builder-a
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+FAIL  W-033 b4: verify refused from trunk                              0
+FAIL  W-033 b4: the pipeline was never called                          
+FAIL  W-033 b4: refusal names opus/W-120 and D-021                     
+PASS  W-033 b4: no new file under studio/ci/                           
+PASS  W-033 b4: record byte-identical                                  

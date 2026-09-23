@@ -16,7 +16,7 @@ Read this before anything else in this repo.
 - `npm test`
 - `npm run -s typecheck`
 - `npm run -s check -- <officina> --repo .`
-- `bisellium verify <opus> --studio studio --repo .`
+- `bisellium verify <opus> --studio studio --repo .` (on the opus branch)
 - `bisellium talk --sella <id> --studio studio`
 - `bisellium tick --studio studio`
 - `bisellium retro --cascade N --studio studio`

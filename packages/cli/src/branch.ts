@@ -15,8 +15,16 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
+import { opusBranchName } from "@bisellium/commands/writes.js";
 import { sourceTreeHash } from "@bisellium/shim";
 import { parse as parseYaml } from "yaml";
+
+// One definition of the branch name lives in @bisellium/commands/writes.js
+// (W-033: the guard `recordOwnerRefusal` and this module must never spell
+// the prefix differently, or the guard would never fire) — re-exported here
+// so every existing "./branch.js" import (main.ts, branch.test.ts) keeps
+// working unchanged.
+export { opusBranchName };
 
 interface BranchResult {
   ok: boolean;
@@ -258,10 +266,6 @@ function staleCertificateError(
 function git(args: string[], cwd: string): { status: number; stdout: string; stderr: string } {
   const r = spawnSync("git", args, { cwd, encoding: "utf8", timeout: 30_000 });
   return { status: r.status ?? -1, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
-}
-
-export function opusBranchName(opusId: string): string {
-  return `opus/${opusId}`;
 }
 
 export function createOpusBranch(repo: string, opusId: string): BranchResult {
