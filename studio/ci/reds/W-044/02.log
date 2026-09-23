@@ -1,77 +1,78 @@
 # behaviour: 2
-# command: node --import tsx packages/cli/src/talk-boundary.test.ts .
+# command: bash /tmp/claude-1000/w044-scratch/red-b2-m5.sh
 # exit: 1
-# at: 2026-09-23T15:34:42.442Z
+# at: 2026-09-23T16:01:17.795Z
 # sella: builder-b
-# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+# tree: dirty:f6eae92b1751442ec44de32ec6c234f96f5d8c58
 
+# mutation-provenance: M5 (censor W-044 review round 1, F1) applied to packages/shim/src/harness/claude-code.ts resume(): a duplicate --allowedTools "Bash(bisellium *)" appended after the POLICY_FLAGS spread, mimicking a talk profile that emits the correct policy then widens it. Mutation applied for this capture only and reverted immediately after; git diff -- packages/shim is empty once this red is recorded. This red is against the F1-fixed talk-boundary.test.ts (valuesAfterAll unions every --allowedTools group; checkPolicy asserts each policy flag occurs exactly once) and is expected to FAIL, showing the fix now catches the widening the round-1 matcher missed.
 PASS  behaviour 2 guard: derived verb universe contains run/red/greenlight/answer/budget/talk/tick/providers check,init,new,instructions,retro,context,query,providers,run,verify,ci,talk,tick,pause,resume,handoff,emit,answer,greenlight,budget,ready,halt,done,review,red,serve,hooks,hook-event,branch,merge,close,prune,docs
 PASS  behaviour 2 start: bisellium check admitted                                
 PASS  behaviour 2 start: bisellium check --probe x admitted                      
-FAIL  behaviour 2 start: bisellium init denied                                   
-FAIL  behaviour 2 start: bisellium init --probe x denied                         
-FAIL  behaviour 2 start: bisellium new denied                                    
-FAIL  behaviour 2 start: bisellium new --probe x denied                          
-FAIL  behaviour 2 start: bisellium instructions denied                           
-FAIL  behaviour 2 start: bisellium instructions --probe x denied                 
-FAIL  behaviour 2 start: bisellium retro denied                                  
-FAIL  behaviour 2 start: bisellium retro --probe x denied                        
+PASS  behaviour 2 start: bisellium init denied                                   
+PASS  behaviour 2 start: bisellium init --probe x denied                         
+PASS  behaviour 2 start: bisellium new denied                                    
+PASS  behaviour 2 start: bisellium new --probe x denied                          
+PASS  behaviour 2 start: bisellium instructions denied                           
+PASS  behaviour 2 start: bisellium instructions --probe x denied                 
+PASS  behaviour 2 start: bisellium retro denied                                  
+PASS  behaviour 2 start: bisellium retro --probe x denied                        
 PASS  behaviour 2 start: bisellium context admitted                              
 PASS  behaviour 2 start: bisellium context --probe x admitted                    
 PASS  behaviour 2 start: bisellium query admitted                                
 PASS  behaviour 2 start: bisellium query --probe x admitted                      
-FAIL  behaviour 2 start: bisellium providers denied                              
-FAIL  behaviour 2 start: bisellium providers --probe x denied                    
-FAIL  behaviour 2 start: bisellium run denied                                    
-FAIL  behaviour 2 start: bisellium run --probe x denied                          
-FAIL  behaviour 2 start: bisellium verify denied                                 
-FAIL  behaviour 2 start: bisellium verify --probe x denied                       
-FAIL  behaviour 2 start: bisellium ci denied                                     
-FAIL  behaviour 2 start: bisellium ci --probe x denied                           
-FAIL  behaviour 2 start: bisellium talk denied                                   
-FAIL  behaviour 2 start: bisellium talk --probe x denied                         
-FAIL  behaviour 2 start: bisellium tick denied                                   
-FAIL  behaviour 2 start: bisellium tick --probe x denied                         
-FAIL  behaviour 2 start: bisellium pause denied                                  
-FAIL  behaviour 2 start: bisellium pause --probe x denied                        
-FAIL  behaviour 2 start: bisellium resume denied                                 
-FAIL  behaviour 2 start: bisellium resume --probe x denied                       
-FAIL  behaviour 2 start: bisellium handoff denied                                
-FAIL  behaviour 2 start: bisellium handoff --probe x denied                      
-FAIL  behaviour 2 start: bisellium emit denied                                   
-FAIL  behaviour 2 start: bisellium emit --probe x denied                         
-FAIL  behaviour 2 start: bisellium answer denied                                 
-FAIL  behaviour 2 start: bisellium answer --probe x denied                       
-FAIL  behaviour 2 start: bisellium greenlight denied                             
-FAIL  behaviour 2 start: bisellium greenlight --probe x denied                   
-FAIL  behaviour 2 start: bisellium budget denied                                 
-FAIL  behaviour 2 start: bisellium budget --probe x denied                       
-FAIL  behaviour 2 start: bisellium ready denied                                  
-FAIL  behaviour 2 start: bisellium ready --probe x denied                        
-FAIL  behaviour 2 start: bisellium halt denied                                   
-FAIL  behaviour 2 start: bisellium halt --probe x denied                         
-FAIL  behaviour 2 start: bisellium done denied                                   
-FAIL  behaviour 2 start: bisellium done --probe x denied                         
-FAIL  behaviour 2 start: bisellium review denied                                 
-FAIL  behaviour 2 start: bisellium review --probe x denied                       
-FAIL  behaviour 2 start: bisellium red denied                                    
-FAIL  behaviour 2 start: bisellium red --probe x denied                          
-FAIL  behaviour 2 start: bisellium serve denied                                  
-FAIL  behaviour 2 start: bisellium serve --probe x denied                        
-FAIL  behaviour 2 start: bisellium hooks denied                                  
-FAIL  behaviour 2 start: bisellium hooks --probe x denied                        
-FAIL  behaviour 2 start: bisellium hook-event denied                             
-FAIL  behaviour 2 start: bisellium hook-event --probe x denied                   
-FAIL  behaviour 2 start: bisellium branch denied                                 
-FAIL  behaviour 2 start: bisellium branch --probe x denied                       
-FAIL  behaviour 2 start: bisellium merge denied                                  
-FAIL  behaviour 2 start: bisellium merge --probe x denied                        
-FAIL  behaviour 2 start: bisellium close denied                                  
-FAIL  behaviour 2 start: bisellium close --probe x denied                        
-FAIL  behaviour 2 start: bisellium prune denied                                  
-FAIL  behaviour 2 start: bisellium prune --probe x denied                        
-FAIL  behaviour 2 start: bisellium docs denied                                   
-FAIL  behaviour 2 start: bisellium docs --probe x denied                         
+PASS  behaviour 2 start: bisellium providers denied                              
+PASS  behaviour 2 start: bisellium providers --probe x denied                    
+PASS  behaviour 2 start: bisellium run denied                                    
+PASS  behaviour 2 start: bisellium run --probe x denied                          
+PASS  behaviour 2 start: bisellium verify denied                                 
+PASS  behaviour 2 start: bisellium verify --probe x denied                       
+PASS  behaviour 2 start: bisellium ci denied                                     
+PASS  behaviour 2 start: bisellium ci --probe x denied                           
+PASS  behaviour 2 start: bisellium talk denied                                   
+PASS  behaviour 2 start: bisellium talk --probe x denied                         
+PASS  behaviour 2 start: bisellium tick denied                                   
+PASS  behaviour 2 start: bisellium tick --probe x denied                         
+PASS  behaviour 2 start: bisellium pause denied                                  
+PASS  behaviour 2 start: bisellium pause --probe x denied                        
+PASS  behaviour 2 start: bisellium resume denied                                 
+PASS  behaviour 2 start: bisellium resume --probe x denied                       
+PASS  behaviour 2 start: bisellium handoff denied                                
+PASS  behaviour 2 start: bisellium handoff --probe x denied                      
+PASS  behaviour 2 start: bisellium emit denied                                   
+PASS  behaviour 2 start: bisellium emit --probe x denied                         
+PASS  behaviour 2 start: bisellium answer denied                                 
+PASS  behaviour 2 start: bisellium answer --probe x denied                       
+PASS  behaviour 2 start: bisellium greenlight denied                             
+PASS  behaviour 2 start: bisellium greenlight --probe x denied                   
+PASS  behaviour 2 start: bisellium budget denied                                 
+PASS  behaviour 2 start: bisellium budget --probe x denied                       
+PASS  behaviour 2 start: bisellium ready denied                                  
+PASS  behaviour 2 start: bisellium ready --probe x denied                        
+PASS  behaviour 2 start: bisellium halt denied                                   
+PASS  behaviour 2 start: bisellium halt --probe x denied                         
+PASS  behaviour 2 start: bisellium done denied                                   
+PASS  behaviour 2 start: bisellium done --probe x denied                         
+PASS  behaviour 2 start: bisellium review denied                                 
+PASS  behaviour 2 start: bisellium review --probe x denied                       
+PASS  behaviour 2 start: bisellium red denied                                    
+PASS  behaviour 2 start: bisellium red --probe x denied                          
+PASS  behaviour 2 start: bisellium serve denied                                  
+PASS  behaviour 2 start: bisellium serve --probe x denied                        
+PASS  behaviour 2 start: bisellium hooks denied                                  
+PASS  behaviour 2 start: bisellium hooks --probe x denied                        
+PASS  behaviour 2 start: bisellium hook-event denied                             
+PASS  behaviour 2 start: bisellium hook-event --probe x denied                   
+PASS  behaviour 2 start: bisellium branch denied                                 
+PASS  behaviour 2 start: bisellium branch --probe x denied                       
+PASS  behaviour 2 start: bisellium merge denied                                  
+PASS  behaviour 2 start: bisellium merge --probe x denied                        
+PASS  behaviour 2 start: bisellium close denied                                  
+PASS  behaviour 2 start: bisellium close --probe x denied                        
+PASS  behaviour 2 start: bisellium prune denied                                  
+PASS  behaviour 2 start: bisellium prune --probe x denied                        
+PASS  behaviour 2 start: bisellium docs denied                                   
+PASS  behaviour 2 start: bisellium docs --probe x denied                         
 PASS  behaviour 2 start: bare bisellium admitted                                 
 PASS  behaviour 2 resume: bisellium check admitted                               
 PASS  behaviour 2 resume: bisellium check --probe x admitted                     
