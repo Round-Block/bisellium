@@ -1,0 +1,149 @@
+# W-044 review round 1 — censor sella qa-lead (claude-opus-5-5)
+# reviewed: opus/W-044 @ 279b6df4ebc4ea6deaa4038b1817a368c991ac09 (PR #31)
+# scratch: fresh clone at /tmp/claude-1000/w044r1, node_modules copied from the parent checkout
+# worktree trap: readlink -f node_modules/@bisellium/shim -> /tmp/claude-1000/w044r1/packages/shim
+# VERDICT: FAIL — one finding (F1, medium, one instance class in one file). Everything else passes.
+
+## F1 — behaviour 1/4's "argv is the policy" is blind to a repeated policy flag (FAIL)
+talk-boundary.test.ts reads each logged argv with two first-occurrence helpers:
+  flagsIn()     -> new Set(...)          duplicates collapse, so the flag-set equality passes
+  valuesAfter() -> argv.indexOf(flag)    only the first group of values is judged
+So a profile that emits the full correct policy and then appends a widening flag passes all four
+behaviours. Mutation evidence (script kept below, each mutation restored, tree clean after):
+  M5 resume: + "--allowedTools","Bash(bisellium *)"        exit=0  b1..b4 FAIL=0
+  M6 POLICY_FLAGS + "--allowedTools","Bash(bisellium *)"    exit=0  b1..b4 FAIL=0
+  M7 POLICY_FLAGS + "--tools","WebFetch"                    exit=0  b1..b4 FAIL=0
+  M8 POLICY_FLAGS + "--permission-mode","acceptEdits"       exit=0  b1..b4 FAIL=0
+These are real widenings on the installed vendor CLI (claude 2.1.252), captured from the
+system/init event before the API call (no model turn):
+  baseline argv                      -> permissionMode dontAsk      tools [Bash,Glob,Grep,Read]
+  + --tools WebFetch                 -> permissionMode dontAsk      tools [Bash,Glob,Grep,Read,WebFetch]
+  + --permission-mode acceptEdits    -> permissionMode acceptEdits  tools [Bash,Glob,Grep,Read]
+Repeated --tools is unioned and repeated --permission-mode is last-wins. --allowedTools is the same
+variadic option type as --tools, so M5/M6 are expected to union too. This is inferred: init does
+not echo approval rules.
+Why it blocks: the brief's own ruling names "a tick-specific profile or widening flag" as the
+regression this opus must keep out, and an appended widening flag is exactly the one the suite
+does not catch.
+Class, all instances (searched every call site of flagsIn/valuesAfter in talk-boundary.test.ts):
+  1. checkPolicy flag-set equality via flagsIn (behaviour 1 start/resume, behaviour 4 talk+tick)
+  2. checkPolicy --permission-mode via valuesAfter (b1, b4)
+  3. checkPolicy --tools via valuesAfter (b1, b4)
+  4. checkPolicy --allowedTools via valuesAfter (b1, b4)
+  5. behaviour 2's allowlist via valuesAfter(argv,"--allowedTools") (start, resume)
+  6. behaviour 3's allowlist via the same call (start, resume)
+One fix covers all six: each policy flag must occur exactly once. Alternatively, assert each form's
+argv equals the literal expected array, with the temp prompt path and session id as the only
+variables. Behaviours 2 and 3 should then judge the union of every --allowedTools group.
+Source (claude-code.ts) is correct today: no duplicates. The defect is in the test's reach. The
+brief's "the set of --flags" wording invited it, and the fix stays inside the owned test file. No
+spec change is needed.
+
+## Mutations requested by the brief (the suite bites)
+  M0 control (no change)                    exit=0  b1 0  b2 0    b3 0  b4 0
+  M1 re-add Bash(bisellium *) to allowlist  exit=1  b1 2  b2 120  b3 4  b4 7   (all four behaviours)
+  M2 WebFetch back into --tools             exit=1  b1 2  b2 0    b3 0  b4 7   (b1, b4)
+  M3 WebFetch back into --allowedTools      exit=1  b1 2  b2 0    b3 0  b4 7   (b1, b4)
+  M4 drop --restricted                      exit=1  b1 2  b2 0    b3 0  b4 7   (b1, b4)
+  M9 comma-joined "Glob,Bash(bisellium *)"  exit=1  b1 2  b2 0    b3 0  b4 7   (b1 set-equality covers the matcher's non-"Bash"-prefixed blind spot)
+
+## 1. Deny-by-default (pass, apart from F1)
+- claude-code.ts: TOOLS "Read,Grep,Glob,Bash"; ALLOWED_TOOLS = Read, Grep, Glob and the 7 Bash rules
+  (bare, context, context *, query, query *, check, check *). WebFetch and providers are gone. One
+  module constant POLICY_FLAGS is spread into both start and resume: --restricted
+  --strict-mcp-config --permission-mode dontAsk --tools --allowedTools.
+- Only claude spawn site in packages/apps/adapters/scripts: claude-code.ts:105 (plus :142, --version).
+- Matcher: Bash(P) exact, Bash(P *) prefix+space. A non-Bash(...) shape, a ':' or a '*' elsewhere
+  admits everything. Conservative as briefed.
+- Verb universe: regex over USAGE lines plus zz-future-verb, and a guard asserts run/red/greenlight/
+  answer/budget/talk/tick/providers. Cross-checked against main.ts dispatch: every dispatched verb
+  appears in USAGE, and the verb is always argv[0].
+
+## 2. Reds (pass)
+Reproduced 01–04 by checking out ffa41d9's claude-code.ts into the scratch tree (test file from
+279b6df) and restoring it afterwards:
+  behaviour 1 exit=1 PASS=1  FAIL=8    | committed 01.log PASS=1  FAIL=8    body md5 match (after normalising tmp paths and session ids)
+  behaviour 2 exit=1 PASS=15 FAIL=120  | committed 02.log PASS=15 FAIL=120  match; includes "run --probe x denied" and "greenlight --probe x denied" FAILs for start and resume
+  behaviour 3 exit=1 PASS=0  FAIL=4    | committed 03.log                   match
+  behaviour 4 exit=1 PASS=8  FAIL=28   | committed 04.log                   match
+All four are assertion-level, distinct, "# sella: builder-b", exit 1.
+Tree "dirty:7ca44d7a…" is the source-tree hash of 4c632e3/d3b1b15/ffa41d9 (recomputed with
+shim sourceTreeHash, excludes studio,.bisellium,examples/). That is the pre-fix source plus the
+uncommitted test file, which is honest. Reds at 15:34:31Z–15:35:00Z, fix commit 7b80eb6 at
+15:38:27Z. No exploit artifact: the stub claude only logs argv, probe strings are only matched,
+and there is no injection fixture in the diff.
+
+## 3. Live smoke (partly run; the model half could NOT run)
+Temp copy of examples/sample-studio at /tmp/claude-1000/w044r1-live/studio (never studio/).
+The real claude was wrapped by a tee shim on PATH.
+  npm run -s bisellium -- talk --sella eng-lead --model-only --studio <copy> "<six-command message:
+  context; check .; greenlight W-007; greenlight --probe x; check . && greenlight --probe x;
+  context && greenlight W-007>"
+  -> talk exit 1, "eng-lead: claude-code exited 1". The envelope says api_error_status 401,
+     "OAuth access token has expired". No model turn ran and permission_denials=[].
+The argv talk actually handed the real claude (argv-0.json):
+  -p --output-format json --append-system-prompt-file <tmp> --restricted --strict-mcp-config
+  --permission-mode dontAsk --tools Read,Grep,Glob,Bash --allowedTools Read Grep Glob
+  Bash(bisellium) Bash(bisellium context) Bash(bisellium context *) Bash(bisellium query)
+  Bash(bisellium query *) Bash(bisellium check) Bash(bisellium check *)
+claude 2.1.252 accepted every policy flag (no usage error; it got as far as the API). Its init event
+for this argv: permissionMode=dontAsk, tools=[Bash,Glob,Grep,Read], mcp_servers=[], cwd=<copy>.
+Fixture: the sha256 of all 69 files is identical before and after, and W-007 is still backlog.
+NOT VERIFIED: vendor-side denial of `bisellium greenlight --probe x` and of the chained
+`check … && greenlight …`, plus a successful `bisellium check <dir>` inside a talked session. That
+needs a model turn and the OAuth token has expired. I did not refresh the user's credential. The
+attended smoke is still owed before merge.
+
+## 4. Behaviour 4 / tick (pass)
+Reproduced in the reds and the green run. runTick takes the real talkOnce seam, writes 5 dailies,
+and logs 5 claude calls: 4 start and 1 resume (eng-lead). Every call carries the policy.
+Verified in source, not taken on trust: tick.ts writeDailyActum writes acta/<date>-<sella>-daily.md
+itself from result.reply (redacted). DAILY_MESSAGE asks for three lines of text, so the model needs
+no tool for the daily. A resumed session refreshes through `bisellium context`, which is admitted.
+talk.ts:317–318 passes cwd=studio root, which is the root --restricted confines Read/Grep/Glob to.
+No tick accommodation is needed.
+
+## 6. Gates on 279b6df (pass)
+  npm test           exit 0 — 1488 PASS / 0 FAIL (208 of them talk-boundary behaviour lines)
+  typecheck          exit 0
+  lint               exit 0 — 0 errors, 2 pre-existing warnings (close.test.ts:5, tick.test.ts:203; outside scope)
+  format:check       exit 0
+  check studio       PASS — 0 blocking, 69 advisory
+  check examples/sample-studio  PASS — 0 blocking
+Certificates tree:f6eae92b… name the source tree of 7b80eb6, and 279b6df has the same source tree
+because studio/ and examples/ are excluded. The certificate names the source, not the bookkeeping
+commit that recorded it. That is the rule working as intended, and it is satisfied.
+
+## 7. Scope (pass)
+4c632e3..279b6df touches claude-code.ts, talk-boundary.test.ts, package.json (the test script line
+only: talk-boundary appended after tick.test), docs/ADOPTION.md (one paragraph in "Running talk")
+and bookkeeping (ci logs, reds, opera/W-044.md). Nothing else. The header comment was rewritten and
+no longer promises "talk to other sellae".
+Advisory, not blocking: the ADOPTION paragraph could add that managed/policy settings still apply
+under --restricted. The brief's Out of scope already says so.
+
+## Mutation script (kept: /tmp/claude-1000/w044r1-ev/mutate.sh)
+#!/usr/bin/env bash
+# W-044 review 1 mutation runner: apply one literal substitution to claude-code.ts,
+# run talk-boundary.test.ts, report per-behaviour FAIL counts, restore.
+set -u
+cd /tmp/claude-1000/w044r1
+F=packages/shim/src/harness/claude-code.ts
+mut() { # name, from, to
+  node -e 'const fs=require("fs");const [f,a,b]=process.argv.slice(1);const s=fs.readFileSync(f,"utf8");if(!s.includes(a)){console.error("anchor missing");process.exit(3)}fs.writeFileSync(f,s.replace(a,b))' "$F" "$2" "$3" || return
+  out=$(node --import tsx packages/cli/src/talk-boundary.test.ts . 2>&1); rc=$?
+  printf '%-44s exit=%s' "$1" "$rc"
+  for b in 1 2 3 4; do printf '  b%s FAIL=%s' "$b" "$(grep '^FAIL' <<<"$out" | grep -c "behaviour $b")"; done; echo
+  git checkout -q -- "$F"
+}
+mut "M0 none (control)"                     'const TOOLS = "Read,Grep,Glob,Bash";' 'const TOOLS = "Read,Grep,Glob,Bash";'
+mut "M1 re-add Bash(bisellium *) to allowlist" '"Bash(bisellium check *)",' '"Bash(bisellium check *)", "Bash(bisellium *)",'
+mut "M2 WebFetch back in --tools"            'const TOOLS = "Read,Grep,Glob,Bash";' 'const TOOLS = "Read,Grep,Glob,Bash,WebFetch";'
+mut "M3 WebFetch back in --allowedTools"     '  "Glob",' '  "Glob", "WebFetch",'
+mut "M4 drop --restricted"                   '"--restricted", ' ''
+mut "M5 resume: dup --allowedTools Bash(bisellium *)" '"json", ...POLICY_FLAGS];' '"json", ...POLICY_FLAGS, "--allowedTools", "Bash(bisellium *)"];'
+mut "M6 start+resume: POLICY + dup --allowedTools" '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--allowedTools", "Bash(bisellium *)"];'
+mut "M7 POLICY + dup --tools WebFetch"       '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--tools", "WebFetch"];'
+mut "M8 POLICY + dup --permission-mode acceptEdits" '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--permission-mode", "acceptEdits"];'
+mut "M9 comma-joined extra allow entry"      '"Bash(bisellium check *)",' '"Bash(bisellium check *)", "Glob,Bash(bisellium *)",'
+git status --short
