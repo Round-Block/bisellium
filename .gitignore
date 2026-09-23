@@ -63,3 +63,4 @@ studio/events.jsonl
 .claude/scheduled_tasks.json
 .claude/skills
 .claude/workflows
+.claude/.claude/
