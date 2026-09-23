@@ -18,8 +18,9 @@ import { readFront } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
+import { checkStudio } from "./check.js";
 import { splitFront } from "./frontmatter.js";
-import { runReady, runDone, runReview, runRed } from "./lifecycle.js";
+import { runReady, runDone, runReview, runRed, runHalt } from "./lifecycle.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
@@ -556,6 +557,246 @@ try {
       "review --model omitted: does not carry over a stale model from a previous round",
       after2.probationes.review?.model === undefined,
       JSON.stringify(after2.probationes.review),
+    );
+  }
+  // =========================================================================
+  // W-042 halt — behaviours 18-22 (this opus's own behaviours 1-5). See
+  // studio/briefs/W-042.md "Order of work": behaviour 5 (block 22) is
+  // written and its red recorded first, at HEAD, with no lifecycle.ts
+  // changes — it only exercises `runReady`, already landed, and fails
+  // because `runReady` today deletes three keys, not four.
+  // =========================================================================
+
+  // ---- behaviour 18 (opus behaviour 1): halt moves a building opus to
+  //      halted and writes all five keys, body untouched, one event -------
+  if (runs(18)) {
+    const dir = freshStudio("halt-building");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-900.md"), "# D-900\n\nDecision fixture.\n");
+
+    const opusPath = join(dir, "opera", "W-002.md");
+    const before = readFileSync(opusPath, "utf8");
+    const beforeSplit = splitFront(before)!;
+
+    const r = runHalt(["W-002", "--reason", "blocked on vendor", "--resume-when", "vendor responds", "--decision", "D-900", "--sella", "builder-a", "--studio", dir], { now: NOW });
+    check("halt: building -> halted exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const after = readFront<Record<string, unknown>>(opusPath).data;
+    check("halt: state -> halted", after["state"] === "halted", String(after["state"]));
+    check("halt: halted_at set to now", after["halted_at"] === NOW.toISOString(), String(after["halted_at"]));
+    check("halt: reason set from --reason", after["reason"] === "blocked on vendor", String(after["reason"]));
+    check("halt: resume_when set from --resume-when", after["resume_when"] === "vendor responds", String(after["resume_when"]));
+    check("halt: halted_by set from --decision", after["halted_by"] === "D-900", String(after["halted_by"]));
+
+    const afterSplit = splitFront(readFileSync(opusPath, "utf8"))!;
+    check("halt: body byte-identical", afterSplit.body === beforeSplit.body, JSON.stringify({ before: beforeSplit.body, after: afterSplit.body }));
+
+    const events = readEventLines(dir);
+    check("halt: exactly one workflow.state_changed event", events.length === 1 && events[0]?.["name"] === "workflow.state_changed", JSON.stringify(events));
+    const attrs = events[0]?.["attrs"] as Record<string, unknown> | undefined;
+    check(
+      "halt: event carries item/from/to/actor",
+      attrs?.[WF.ITEM_ID] === "W-002" && attrs?.[WF.STATE_FROM] === "building" && attrs?.[WF.STATE_TO] === "halted" && attrs?.[WF.ACTOR_ROLE] === "builder-a",
+      JSON.stringify(attrs),
+    );
+  }
+
+  // ---- behaviour 19 (opus behaviour 2): every refusal exits 2 and writes
+  //      nothing (no file change, no event) --------------------------------
+  if (runs(19)) {
+    const dir = freshStudio("halt-refuse");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-901.md"), "# D-901\n");
+
+    writeOpus(
+      dir,
+      "W-101",
+      [
+        "---",
+        "id: W-101",
+        "title: Halted already",
+        "kind: feature",
+        "collegium: engineering",
+        "state: halted",
+        "halted_at: 2026-09-01T00:00:00Z",
+        "reason: prior reason",
+        "resume_when: prior resume",
+        "halted_by: D-800",
+        "probationes: {}",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+
+    const good = ["--reason", "r", "--resume-when", "rw", "--decision", "D-901"];
+    const cases: { label: string; opusId: string; args: string[] }[] = [
+      { label: "done source state", opusId: "W-001", args: [...good] },
+      { label: "halted source state", opusId: "W-101", args: [...good] },
+      { label: "unknown opus id", opusId: "W-999", args: [...good] },
+      { label: "missing --reason", opusId: "W-002", args: ["--resume-when", "rw", "--decision", "D-901"] },
+      { label: "missing --resume-when", opusId: "W-002", args: ["--reason", "r", "--decision", "D-901"] },
+      { label: "missing --decision", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw"] },
+      { label: "--decision naming a nonexistent file", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw", "--decision", "D-does-not-exist"] },
+      { label: "--decision of ../../etc/passwd", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw", "--decision", "../../etc/passwd"] },
+    ];
+
+    for (const { label, opusId, args } of cases) {
+      const opusPath = join(dir, "opera", `${opusId}.md`);
+      const before = existsSync(opusPath) ? readFileSync(opusPath, "utf8") : undefined;
+      const eventsBefore = readEventLines(dir).length;
+      const r = runHalt([opusId, ...args, "--studio", dir], { now: NOW });
+      check(`halt: refuses on ${label} with exit 2`, r.exitCode === 2, String(r.exitCode));
+      if (before !== undefined) check(`halt: ${label} leaves the opus file unchanged`, readFileSync(opusPath, "utf8") === before);
+      check(`halt: ${label} appends no event`, readEventLines(dir).length === eventsBefore);
+    }
+
+    // A positive control, a fully valid case distinct from behaviour 1's own
+    // (a different opus, a different decision) — every case above expects
+    // exit 2, which an always-refusing stub satisfies unconditionally; this
+    // is the assertion that makes the block a genuine red instead of one a
+    // stub trivially passes.
+    writeOpus(dir, "W-960", ["---", "id: W-960", "title: Valid halt target", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join("\n"));
+    const validPath = join(dir, "opera", "W-960.md");
+    const rValid = runHalt(["W-960", "--reason", "r2", "--resume-when", "rw2", "--decision", "D-901", "--sella", "builder-a", "--studio", dir], { now: NOW });
+    check("halt: a fully valid case (source state + real decision) exits 0", rValid.exitCode === 0, String(rValid.exitCode));
+    const afterValid = readFront<Record<string, unknown>>(validPath).data;
+    check("halt: the valid case actually wrote state=halted", afterValid["state"] === "halted", String(afterValid["state"]));
+  }
+
+  // ---- behaviour 20 (opus behaviour 3): a failed review gate survives the
+  //      halt untouched — the anti-dodge guard -----------------------------
+  if (runs(20)) {
+    const dir = freshStudio("halt-review-survives");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-017.md"), "# D-017\n");
+
+    const opusPath = writeOpus(
+      dir,
+      "W-950",
+      [
+        "---",
+        "id: W-950",
+        "title: Failed review, halted anyway",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "probationes:",
+        "  review: { status: failed, evidence: ci/W-028-review-3.log, sella: eng-lead, at: 2026-09-18T10:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+
+    const before = readFront<{ probationes: Record<string, unknown> }>(opusPath).data.probationes;
+
+    const r = runHalt(["W-950", "--reason", "dodging nothing, see D-017", "--resume-when", "never", "--decision", "D-017", "--studio", dir], { now: NOW });
+    check("halt: succeeds on a building opus with a failed review", r.exitCode === 0, String(r.exitCode));
+
+    const after = readFront<{ state: string; probationes: Record<string, unknown> }>(opusPath).data;
+    check("halt: state -> halted", after.state === "halted", after.state);
+    check(
+      "halt: probationes deep-equal before and after — the failed review is never edited",
+      JSON.stringify(after.probationes) === JSON.stringify(before),
+      JSON.stringify({ before, after: after.probationes }),
+    );
+  }
+
+  // ---- behaviour 21 (opus behaviour 4): check reports a halted opus's
+  //      active-state debt only while it is active -------------------------
+  if (runs(21)) {
+    const dir = freshStudio("halt-check-active");
+    mkdirSync(join(dir, "ci", "reds"), { recursive: true });
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-902.md"), "# D-902\n");
+    const briefsDir = join(dir, "briefs");
+    mkdirSync(briefsDir, { recursive: true });
+    writeFileSync(join(briefsDir, "W-970.md"), ["# W-970", "", "## Behaviours to test", "", "1. First behaviour.", "2. Second behaviour.", ""].join("\n"));
+    writeOpus(
+      dir,
+      "W-970",
+      [
+        "---",
+        "id: W-970",
+        "title: Halt regression fixture",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/W-970.md",
+        "probationes: {}",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+
+    const before = checkStudio(dir, NOW);
+    const beforeFor970 = before.findings.filter((f) => f.where.includes("W-970"));
+    check("check: W-970 blocks on opus.red_evidence before halt", beforeFor970.some((f) => f.rule === "opus.red_evidence" && f.level === "block"), JSON.stringify(beforeFor970));
+    check("check: W-970 blocks on traditio.present before halt", beforeFor970.some((f) => f.rule === "traditio.present" && f.level === "block"), JSON.stringify(beforeFor970));
+    check("check: W-970 counts toward wip.cap before halt", before.findings.some((f) => f.rule === "wip.cap"), JSON.stringify(before.findings.filter((f) => f.rule === "wip.cap")));
+
+    const r = runHalt(["W-970", "--reason", "regression guard", "--resume-when", "never", "--decision", "D-902", "--studio", dir], { now: NOW });
+    check("halt: W-970 building -> halted exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const after = checkStudio(dir, NOW);
+    const afterFor970 = after.findings.filter((f) => f.where.includes("W-970"));
+    check("check: W-970 has no blocking findings once halted", afterFor970.every((f) => f.level !== "block"), JSON.stringify(afterFor970));
+    check(
+      "check: halted.exit/halted.at do not fire — the verb wrote what they read",
+      !afterFor970.some((f) => f.rule === "halted.exit" || f.rule === "halted.at"),
+      JSON.stringify(afterFor970),
+    );
+    check("check: wip.cap no longer counts W-970", !after.findings.some((f) => f.rule === "wip.cap"), JSON.stringify(after.findings.filter((f) => f.rule === "wip.cap")));
+
+    const r2 = runReady(["W-970", "--studio", dir], { now: NOW });
+    check("ready: W-970 halted -> building exits 0", r2.exitCode === 0, String(r2.exitCode));
+
+    const afterReady = checkStudio(dir, NOW);
+    check(
+      "check: opus.red_evidence fires again once resurrected",
+      afterReady.findings.some((f) => f.where.includes("W-970") && f.rule === "opus.red_evidence" && f.level === "block"),
+      JSON.stringify(afterReady.findings.filter((f) => f.where.includes("W-970"))),
+    );
+  }
+
+  // ---- behaviour 22 (opus behaviour 5): ready clears halted_by with the
+  //      rest of the halt entry --------------------------------------------
+  if (runs(22)) {
+    const dir = freshStudio("ready-clears-halted-by");
+    writeOpus(
+      dir,
+      "W-980",
+      [
+        "---",
+        "id: W-980",
+        "title: Halted, resurrected",
+        "kind: feature",
+        "collegium: engineering",
+        "state: halted",
+        "halted_at: 2026-09-01T00:00:00Z",
+        "reason: waiting on a decision",
+        "resume_when: decision made",
+        "halted_by: D-017",
+        "probationes: {}",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const briefsDir = join(dir, "briefs");
+    mkdirSync(briefsDir, { recursive: true });
+    writeFileSync(join(briefsDir, "W-980.md"), "Brief for W-980.\n");
+
+    const r = runReady(["W-980", "--studio", dir], { now: NOW });
+    check("ready: W-980 halted -> building exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const after = readFront<Record<string, unknown>>(join(dir, "opera", "W-980.md")).data;
+    check(
+      "ready: halted_at/reason/resume_when/halted_by all cleared",
+      after["halted_at"] === undefined && after["reason"] === undefined && after["resume_when"] === undefined && after["halted_by"] === undefined,
+      JSON.stringify(after),
     );
   }
 } finally {
