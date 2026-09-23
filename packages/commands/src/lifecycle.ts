@@ -26,6 +26,7 @@ import {
   openStudio,
   parseFlags,
   readState,
+  recordOwnerRefusal,
   resolveNow,
   safeItemPath,
   type WriteOptions,
@@ -111,6 +112,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   }
   if (!existsSync(join(root, specRel))) {
     console.error(`${opusId}: no spec at ${specRel} — not ready`);
+    return { exitCode: 2 };
+  }
+
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
     return { exitCode: 2 };
   }
 
@@ -213,6 +220,12 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 1 };
   }
 
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
   const sella = resolveSella(values.get("--sella"));
 
   editOpusFrontMatter(opusPath, (doc) => {
@@ -292,6 +305,12 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   const opusPath = safeItemPath(join(root, "opera"), opusId);
   if (typeof opusPath !== "string" || !existsSync(opusPath)) {
     console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
     return { exitCode: 2 };
   }
 
@@ -601,6 +620,12 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   // amending a halt in place is out of scope (see the brief).
   if (currentState === "done" || currentState === "halted") {
     console.error(`${opusId} is already ${currentState} — halt refused`);
+    return { exitCode: 2 };
+  }
+
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
     return { exitCode: 2 };
   }
 

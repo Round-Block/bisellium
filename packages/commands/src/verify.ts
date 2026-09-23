@@ -15,6 +15,7 @@ import { readManifest, snapshotDir } from "@bisellium/adapter-native";
 import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline } from "@bisellium/pipeline";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
+import { recordOwnerRefusal } from "./writes.js";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -135,6 +136,12 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   const opusPath = join(studioDir, "opera", `${opusId}.md`);
   if (!existsSync(opusPath)) {
     console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  const refusal = recordOwnerRefusal(studioDir, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
     return { exitCode: 2 };
   }
 
