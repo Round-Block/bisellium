@@ -100,15 +100,14 @@ the Opus architect and gpt-6-astra converged independently; Astra's take in
 fails closed; the censor recorded both verdicts from the branch checkout
 because the guard under review refused it anywhere else). The manual
 reconcile recipe is dead; no `reconcile` command will exist (D-016 clause
-settled). **W-044 is at round-2 FAIL on `opus/W-044`** (`d787701`): the
-literal-argv fix, an honest re-record of red 02 (wrapper must apply the
-mutation inside the recorded run and live in the repo), and the architect's
-call on the **`ANTHROPIC_BASE_URL` env leak** (talk's redact passes the
-base URL through — a talked session would send the Patron's login to an
-ambient URL; spec amendment or new opus) are the round-3 queue. The
-attended smoke's deny-half is captured clean (both greenlight attempts
-denied, plain and chained, scrubbed env, Patron-attended); the allow-half
-re-run is parked. **D-020 amended twice** (gpt-6-astra escalation tier;
+settled). **W-044 MERGED** (PR #31) after FOUR rounds — untested traversal
+guards, multi-value flag widening, a copied-slot regression, and a
+mislabelled red, each caught and fixed red-first; the attended smoke's
+deny-half was Patron-attended and accepted; rounds 3–4 ran the new
+Terra-verified pipeline and the censor's cost fell 117k→92k→84k tokens.
+Round-4 advisories A1/A2 (test hardening: sysprompt temp-dir pin, fixed
+fake session id) and the smoke's 127 allow-half residue fold into
+**W-049** (env base-URL leak, filed) — its spec should take all three. **D-020 amended twice** (gpt-6-astra escalation tier;
 Terra pre-review verification + Sol brief red-team as standing pipeline
 slots — Patron decrees). Patron-interface & cost-model direction captured
 in `docs/design/DIRECTION.md`. Tokenharbor is fully dormant: codex default
@@ -118,11 +117,15 @@ day; throttle order stands)** — shift bounded work to codex tiers per
 D-020; the W-048 codex-build trial (one opus, Sonnet→Sol, censor gate
 unchanged as the benchmark) is proposed, not yet decreed.
 
-**Resume order:** 1. W-044 round 3 (Sol brief red-team + Terra pre-review
-now standard — first live use). 2. W-034 defect 1 (waived gates; defect 2
-absorbed by W-033's guard). 3. The architect ranking: W-041 → W-039 →
-W-038 → W-046 → W-047 → W-032 → W-040 → W-045 → W-048. 4. Cascade-25
-checkpoint rows + retro are OWED (deferred under the throttle).
+**Resume order:** 1. W-034 defect 1 (waived gates; defect 2 absorbed by
+W-033's guard) — full pipeline: Sol brief red-team → architect spec →
+builder → Terra pre-review → censor. 2. The architect ranking: W-041 →
+W-039 → W-038 → W-046 (carries the codex transport lessons: stdin closed
+with </dev/null, output non-empty check, no nested sandbox, no -C after
+exec, full capture never tailed) → W-047 → W-032 → W-040 → W-045 →
+W-049 → W-048 (codex-build trial, proposed not decreed). Mode: slow-serial
+— one Claude stream, tokens tallied per dispatch and reported; codex lanes
+free in parallel. Cascade-25 checkpoint + retro: done 2026-09-24.
 
 ### The flow, as actually operated
 
