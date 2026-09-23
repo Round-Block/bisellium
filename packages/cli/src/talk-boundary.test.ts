@@ -53,49 +53,11 @@ const EXPECTED_ALLOWED_TOOLS = [
   "Bash(bisellium check)",
   "Bash(bisellium check *)",
 ];
-const START_FLAGS = new Set([
-  "-p",
-  "--output-format",
-  "--append-system-prompt-file",
-  "--restricted",
-  "--strict-mcp-config",
-  "--permission-mode",
-  "--tools",
-  "--allowedTools",
-]);
-const RESUME_FLAGS = new Set([
-  "-p",
-  "--resume",
-  "--output-format",
-  "--restricted",
-  "--strict-mcp-config",
-  "--permission-mode",
-  "--tools",
-  "--allowedTools",
-]);
-
-function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
-  if (a.size !== b.size) return false;
-  for (const v of a) if (!b.has(v)) return false;
-  return true;
-}
-
 // ---------------------------------------------------------------------------
 // argv parsing helpers — a logged argv is a flat string[], flags start with
 // "-", and none of this profile's flag *values* (session ids, "dontAsk",
 // tool names) do.
 // ---------------------------------------------------------------------------
-function flagsIn(argv: string[]): Set<string> {
-  return new Set(argv.filter((a) => a.startsWith("-")));
-}
-
-function valuesAfter(argv: string[], flag: string): string[] {
-  const i = argv.indexOf(flag);
-  if (i === -1) return [];
-  const out: string[] = [];
-  for (let j = i + 1; j < argv.length && !argv[j]!.startsWith("-"); j++) out.push(argv[j]!);
-  return out;
-}
 
 /** Every value from EVERY occurrence of `flag`, concatenated — a repeated
  * variadic flag (`--tools`, `--allowedTools`) merges on the installed vendor
@@ -108,15 +70,6 @@ function valuesAfterAll(argv: string[], flag: string): string[] {
     for (let j = i + 1; j < argv.length && !argv[j]!.startsWith("-"); j++) out.push(argv[j]!);
   }
   return out;
-}
-
-/** How many times `flag` itself appears in argv. A widening profile that
- * appends a second copy of a policy flag (duplicate `--allowedTools`,
- * `--tools`, `--permission-mode`) must fail here even when the vendor CLI's
- * own merge/last-wins semantics would make the first-occurrence value look
- * innocent (F1, W-044 review round 1). */
-function countOf(argv: string[], flag: string): number {
-  return argv.filter((a) => a === flag).length;
 }
 
 /**
@@ -209,28 +162,42 @@ function freshStudio(tag: string): string {
   return dir;
 }
 
-/** Behaviour-1 style policy assertions against one logged argv. */
+/**
+ * The full policy tail shared by `start` and `resume` — literal, in the
+ * exact order claude-code.ts's POLICY_FLAGS emits it. Round-2 review (F2):
+ * a first-VALUE read of a variadic flag (`valuesAfter(argv, "--tools")[0]`)
+ * missed a second token appended inside the same `--tools` group; comparing
+ * the whole argv literally is the one fix that also catches a stray token
+ * after any other flag (F2's siblings, M11–M14).
+ */
+const POLICY_TAIL = [
+  "--restricted",
+  "--strict-mcp-config",
+  "--permission-mode",
+  "dontAsk",
+  "--tools",
+  EXPECTED_TOOLS.join(","),
+  "--allowedTools",
+  ...EXPECTED_ALLOWED_TOOLS,
+];
+
+/** The exact expected argv. The system-prompt temp file path (start) and the
+ *  resume session id (resume) are the only tokens neither side can predict
+ *  in advance — both are pulled from the actual argv at the fixed position
+ *  claude-code.ts's header documents, so a widening or reordering anywhere
+ *  else in the array still fails the deep-equality check below. */
+function expectedStartArgv(sysPromptFile: string): string[] {
+  return ["-p", "--output-format", "json", "--append-system-prompt-file", sysPromptFile, ...POLICY_TAIL];
+}
+function expectedResumeArgv(sessionId: string): string[] {
+  return ["-p", "--resume", sessionId, "--output-format", "json", ...POLICY_TAIL];
+}
+
+/** Behaviour-1 style policy assertion against one logged argv: the argv
+ *  deep-equals the literal expected array. */
 function checkPolicy(name: string, argv: string[], form: "start" | "resume"): void {
-  const expectedFlags = form === "start" ? START_FLAGS : RESUME_FLAGS;
-  const actualFlags = flagsIn(argv);
-  check(`${name}: flag set is exactly the ${form} set`, setsEqual(actualFlags, expectedFlags), [...actualFlags].join(" "));
-  // A profile that emits the whole correct policy and then appends a second
-  // copy of one policy flag (a widening `--allowedTools`/`--tools`/
-  // `--permission-mode`) still passes the set-equality check above (a Set
-  // collapses the duplicate) and the first-occurrence reads below (they never
-  // see the appended group). Each policy flag must occur exactly once.
-  for (const flag of expectedFlags) {
-    check(`${name}: ${flag} appears exactly once`, countOf(argv, flag) === 1, `${countOf(argv, flag)} occurrences`);
-  }
-  check(`${name}: --permission-mode is dontAsk`, valuesAfter(argv, "--permission-mode")[0] === "dontAsk", JSON.stringify(argv));
-  const tools = (valuesAfter(argv, "--tools")[0] ?? "").split(",").filter((s) => s.length > 0);
-  check(`${name}: --tools is exactly {Read,Grep,Glob,Bash}`, setsEqual(new Set(tools), new Set(EXPECTED_TOOLS)), tools.join(","));
-  const allowed = valuesAfter(argv, "--allowedTools");
-  check(
-    `${name}: --allowedTools is exactly the ten expected entries`,
-    setsEqual(new Set(allowed), new Set(EXPECTED_ALLOWED_TOOLS)),
-    allowed.join(","),
-  );
+  const expected = form === "start" ? expectedStartArgv(argv[4] ?? "") : expectedResumeArgv(argv[2] ?? "");
+  check(`${name}: argv is exactly the ${form} policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
 }
 
 try {
