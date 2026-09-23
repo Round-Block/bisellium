@@ -97,6 +97,28 @@ function valuesAfter(argv: string[], flag: string): string[] {
   return out;
 }
 
+/** Every value from EVERY occurrence of `flag`, concatenated — a repeated
+ * variadic flag (`--tools`, `--allowedTools`) merges on the installed vendor
+ * CLI, so a caller judging "what does this admit" must see every group, not
+ * just the first (F1, W-044 review round 1). */
+function valuesAfterAll(argv: string[], flag: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] !== flag) continue;
+    for (let j = i + 1; j < argv.length && !argv[j]!.startsWith("-"); j++) out.push(argv[j]!);
+  }
+  return out;
+}
+
+/** How many times `flag` itself appears in argv. A widening profile that
+ * appends a second copy of a policy flag (duplicate `--allowedTools`,
+ * `--tools`, `--permission-mode`) must fail here even when the vendor CLI's
+ * own merge/last-wins semantics would make the first-occurrence value look
+ * innocent (F1, W-044 review round 1). */
+function countOf(argv: string[], flag: string): number {
+  return argv.filter((a) => a === flag).length;
+}
+
 /**
  * The conservative Bash-rule matcher (brief: "unrecognized rule shapes count
  * as admitting everything"):
@@ -192,6 +214,14 @@ function checkPolicy(name: string, argv: string[], form: "start" | "resume"): vo
   const expectedFlags = form === "start" ? START_FLAGS : RESUME_FLAGS;
   const actualFlags = flagsIn(argv);
   check(`${name}: flag set is exactly the ${form} set`, setsEqual(actualFlags, expectedFlags), [...actualFlags].join(" "));
+  // A profile that emits the whole correct policy and then appends a second
+  // copy of one policy flag (a widening `--allowedTools`/`--tools`/
+  // `--permission-mode`) still passes the set-equality check above (a Set
+  // collapses the duplicate) and the first-occurrence reads below (they never
+  // see the appended group). Each policy flag must occur exactly once.
+  for (const flag of expectedFlags) {
+    check(`${name}: ${flag} appears exactly once`, countOf(argv, flag) === 1, `${countOf(argv, flag)} occurrences`);
+  }
   check(`${name}: --permission-mode is dontAsk`, valuesAfter(argv, "--permission-mode")[0] === "dontAsk", JSON.stringify(argv));
   const tools = (valuesAfter(argv, "--tools")[0] ?? "").split(",").filter((s) => s.length > 0);
   check(`${name}: --tools is exactly {Read,Grep,Glob,Bash}`, setsEqual(new Set(tools), new Set(EXPECTED_TOOLS)), tools.join(","));
@@ -237,7 +267,7 @@ try {
         check(`behaviour 2 ${form}: argv logged`, false);
         continue;
       }
-      const allowed = valuesAfter(argv, "--allowedTools");
+      const allowed = valuesAfterAll(argv, "--allowedTools");
       for (const v of VERBS) {
         const expectAdmit = v === "context" || v === "query" || v === "check";
         check(
@@ -265,7 +295,7 @@ try {
         check(`behaviour 3 ${form}: argv logged`, false);
         continue;
       }
-      const allowed = valuesAfter(argv, "--allowedTools");
+      const allowed = valuesAfterAll(argv, "--allowedTools");
       check(`behaviour 3 ${form}: bisellium ${FUTURE_VERB} denied`, !admits(allowed, `bisellium ${FUTURE_VERB}`));
       check(`behaviour 3 ${form}: bisellium ${FUTURE_VERB} --probe x denied`, !admits(allowed, `bisellium ${FUTURE_VERB} --probe x`));
     }
