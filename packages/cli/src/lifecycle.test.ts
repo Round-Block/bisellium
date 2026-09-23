@@ -20,6 +20,8 @@ import type { MergePipeline } from "@bisellium/pipeline";
 import { WF } from "@bisellium/schema";
 import { sourceTreeHash } from "@bisellium/shim";
 import { checkStudio } from "./check.js";
+import { executeClose } from "./close.js";
+import { runCi } from "./ci.js";
 import { splitFront } from "./frontmatter.js";
 import { runReady, runDone, runReview, runRed, runHalt } from "./lifecycle.js";
 import { runVerify } from "./verify.js";
@@ -953,6 +955,27 @@ try {
       (existsSync(eventsPath) ? readFileSync(eventsPath, "utf8") : undefined) === eventsBefore,
     );
     check("W-033 b1: git status is clean", gitStatusPorcelain(repo).trim() === "", gitStatusPorcelain(repo));
+
+    // ---- round-1 B1: a git FAILURE in steps 2/4 (not the benign "no")
+    //      refuses rather than allowing. `git pack-refs` then a garbage line
+    //      appended to .git/packed-refs makes both `symbolic-ref -q HEAD` and
+    //      `show-ref --verify --quiet` exit 128 — the round-1 defect read any
+    //      non-zero exit as the benign negative and fell through to ALLOW. ---
+    execFileSync("git", ["pack-refs", "--all"], { cwd: repo });
+    const packedRefsPath = join(repo, ".git", "packed-refs");
+    const packedRefsBefore = readFileSync(packedRefsPath, "utf8");
+    writeFileSync(packedRefsPath, `${packedRefsBefore}garbage not a valid ref line\n`);
+    const beforeCorrupt = readFileSync(opusPath, "utf8");
+    let r3: { exitCode: number };
+    let stderr3: string;
+    try {
+      ({ result: r3, stderr: stderr3 } = await withStderr(() => runDone(["W-100", "--studio", studioDir], { now: NOW })));
+    } finally {
+      writeFileSync(packedRefsPath, packedRefsBefore);
+    }
+    check("W-033 b1: a git failure (corrupt packed-refs, exit 128) refuses rather than allowing", r3.exitCode === 2, String(r3.exitCode));
+    check("W-033 b1: git-failure refusal names D-021", stderr3.includes("D-021"), stderr3);
+    check("W-033 b1: record byte-identical after the git-failure refusal", readFileSync(opusPath, "utf8") === beforeCorrupt);
   }
 
   // ---- behaviour 24 (opus behaviour 2): `review` from a detached worktree
@@ -1008,18 +1031,27 @@ try {
     gitCommitAll(repo, "init");
     for (const id of ["W-110", "W-111", "W-112", "W-113"]) gitBranch(repo, `opus/${id}`);
 
-    const cases: { label: string; id: string; run: () => WriteResult }[] = [
+    // `emitsEvent: false` for handoff (round-1 A3): runHandoff never calls
+    // emitEvent even on success, so "appends no event" can't fail either
+    // way for it — the guard is what makes handoff's write a no-op, and
+    // that's what "record byte-identical" above already tests.
+    const cases: { label: string; id: string; emitsEvent?: boolean; run: () => WriteResult }[] = [
       { label: "ready", id: "W-110", run: () => runReady(["W-110", "--studio", studioDir], { now: NOW }) },
       {
         label: "halt",
         id: "W-111",
         run: () => runHalt(["W-111", "--reason", "r", "--resume-when", "rw", "--decision", "D-910", "--studio", studioDir], { now: NOW }),
       },
-      { label: "handoff", id: "W-112", run: () => runHandoff(["--opus", "W-112", "--sella", "builder-1", "--next", "n", "--studio", studioDir], { now: NOW }) },
+      {
+        label: "handoff",
+        id: "W-112",
+        emitsEvent: false,
+        run: () => runHandoff(["--opus", "W-112", "--sella", "builder-1", "--next", "n", "--studio", studioDir], { now: NOW }),
+      },
       { label: "greenlight", id: "W-113", run: () => runGreenlight(["W-113", "--studio", studioDir], { now: NOW }) },
     ];
 
-    for (const { label, id, run } of cases) {
+    for (const { label, id, emitsEvent, run } of cases) {
       const opusPath = join(studioDir, "opera", `${id}.md`);
       const before = readFileSync(opusPath, "utf8");
       const eventsBefore = readEventLines(studioDir).length;
@@ -1027,7 +1059,7 @@ try {
       check(`W-033 b3: ${label} refused from trunk`, r.exitCode === 2, String(r.exitCode));
       check(`W-033 b3: ${label} message names opus/${id} and D-021`, stderr.includes(`opus/${id}`) && stderr.includes("D-021"), stderr);
       check(`W-033 b3: ${label} record byte-identical`, readFileSync(opusPath, "utf8") === before);
-      check(`W-033 b3: ${label} appends no event`, readEventLines(studioDir).length === eventsBefore);
+      if (emitsEvent !== false) check(`W-033 b3: ${label} appends no event`, readEventLines(studioDir).length === eventsBefore);
     }
   }
 
@@ -1045,12 +1077,18 @@ try {
     const ciDir = join(studioDir, "ci");
     const ciCountBefore = existsSync(ciDir) ? readdirSync(ciDir).length : 0;
 
+    // Round-1 A3: a stub that returns {} makes "no new file under ci/" and
+    // "record byte-identical" pass whether or not the guard runs (an
+    // unguarded verify with an empty result set still writes nothing new).
+    // Return one passed gate and write its evidence file, the way a real
+    // pipeline would, so both assertions actually bite if the guard is removed.
     let called = false;
     const stubPipeline: MergePipeline = {
       id: "stub",
-      run: async () => {
+      run: async (opts) => {
         called = true;
-        return {};
+        writeFileSync(join(opts.logDir, "W-120-tests-stub.log"), "stub\n");
+        return { tests: { status: "passed", evidence: "ci/W-120-tests-stub.log", certifies: `tree:${opts.treeHash}` } };
       },
     };
 
@@ -1135,6 +1173,57 @@ try {
     check("W-033 b7: done on an untracked record exits 0 even though opus/W-150 exists", r.exitCode === 0, String(r.exitCode));
     const after = readFront<{ state: string }>(join(studioDir, "opera", "W-150.md")).data;
     check("W-033 b7: state -> done", after.state === "done", after.state);
+  }
+
+  // ---- behaviour 30 (round-1 A5): `close` and `ci --opus` inherit the
+  //      refusal through executeClose -> runDone and ci -> runVerify -------
+  if (runs(30)) {
+    const repo = tmpGitStudioRepo("close-ci-inherit");
+    const studioDir = join(repo, "studio");
+    writeOpus(studioDir, "W-160", passingOpusFrontMatter("W-160", "close inherits the guard"));
+    writeOpus(
+      studioDir,
+      "W-161",
+      ["---", "id: W-161", "title: ci --opus inherits the guard", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join("\n"),
+    );
+    // CI_STEPS' six commands need something real (but trivial) to run
+    // against — same fixture shape ci.test.ts's makeCiRepo uses, so `ci`
+    // actually reaches the `--opus` verify call instead of failing earlier.
+    writeFileSync(
+      join(repo, "package.json"),
+      JSON.stringify(
+        {
+          name: "close-ci-inherit-fixture",
+          private: true,
+          scripts: {
+            typecheck: 'node -e "process.exit(0)"',
+            lint: 'node -e "process.exit(0)"',
+            "format:check": 'node -e "process.exit(0)"',
+            test: 'node -e "process.exit(0)"',
+            check: 'node -e "process.exit(0)"',
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    gitCommitAll(repo, "init");
+    gitBranch(repo, "opus/W-160");
+    gitBranch(repo, "opus/W-161");
+
+    const closePath = join(studioDir, "opera", "W-160.md");
+    const closeBefore = readFileSync(closePath, "utf8");
+    const { result: closeResult, stderr: closeStderr } = await withStderr(() => executeClose(studioDir, "W-160"));
+    check("W-033 A5: close refused while opus/W-160 exists", closeResult.ok === false, JSON.stringify(closeResult));
+    check("W-033 A5: close's underlying refusal names opus/W-160 and D-021", closeStderr.includes("opus/W-160") && closeStderr.includes("D-021"), closeStderr);
+    check("W-033 A5: close leaves the record byte-identical", readFileSync(closePath, "utf8") === closeBefore);
+
+    const ciPath = join(studioDir, "opera", "W-161.md");
+    const ciBefore = readFileSync(ciPath, "utf8");
+    const { result: ciResult, stderr: ciStderr } = await withStderr(() => runCi(["--repo", repo, "--studio", studioDir, "--opus", "W-161"]));
+    check("W-033 A5: ci --opus refused while opus/W-161 exists", ciResult.exitCode === 2, String(ciResult.exitCode));
+    check("W-033 A5: ci --opus message names opus/W-161 and D-021", ciStderr.includes("opus/W-161") && ciStderr.includes("D-021"), ciStderr);
+    check("W-033 A5: ci --opus leaves the record byte-identical", readFileSync(ciPath, "utf8") === ciBefore);
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

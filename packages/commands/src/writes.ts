@@ -263,9 +263,12 @@ export function recordOwnerRefusal(studioRoot: string, opusId: string): string |
 
   // Step 2/3: what branch (if any) is this checkout's HEAD on. `-q` makes a
   // detached HEAD exit 1 rather than print an error — that's an expected
-  // outcome here (fall through to step 4), not a git failure.
+  // outcome here (fall through to step 4), not a git failure. Any other
+  // non-zero status (e.g. 128 from a corrupt .git/packed-refs) is a git
+  // failure, not the benign negative — conflating the two is how a guard
+  // fails open (round-1 B1).
   const symbolic = runGit(["symbolic-ref", "-q", "HEAD"], studioRoot);
-  if (symbolic.broken) return gitFailureRefusal(opusId, branch);
+  if (symbolic.broken || (symbolic.code !== 0 && symbolic.code !== 1)) return gitFailureRefusal(opusId, branch);
   const headRef = symbolic.code === 0 ? symbolic.stdout.trim() : undefined;
 
   if (headRef === `refs/heads/${branch}`) return undefined; // step 2: allow
@@ -277,9 +280,10 @@ export function recordOwnerRefusal(studioRoot: string, opusId: string): string |
 
   // Step 4: does the opus's own branch exist at all (regardless of what's
   // checked out here)? `--quiet` still exits 1 for "no such ref", the
-  // expected non-match — not a git failure.
+  // expected non-match — not a git failure. Any other non-zero status is a
+  // git failure (same reasoning as step 2 above).
   const branchRef = runGit(["show-ref", "--verify", "--quiet", `refs/heads/${branch}`], studioRoot);
-  if (branchRef.broken) return gitFailureRefusal(opusId, branch);
+  if (branchRef.broken || (branchRef.code !== 0 && branchRef.code !== 1)) return gitFailureRefusal(opusId, branch);
   if (branchRef.code === 0) {
     const here = headRef !== undefined && headRef.startsWith("refs/heads/") ? headRef.slice("refs/heads/".length) : describeDetached(studioRoot);
     return refusalBranchExists(opusId, branch, here);
@@ -297,11 +301,16 @@ function refusalBranchExists(opusId: string, branch: string, here: string): stri
   );
 }
 
+/** Step 3's refusal: this checkout is on a *different* opus branch. Never
+ *  claims `branch` (the target's own) exists — step 3 fires before step 4
+ *  checks that, and `${branch}` may not exist at all (round-1 A2: the old
+ *  wording said "while that branch exists" even then). */
 function refusalOtherBranch(opusId: string, branch: string, otherBranch: string): string {
   const otherId = otherBranch.startsWith("opus/") ? otherBranch.slice("opus/".length) : otherBranch;
   return (
-    `${opusId}: opera/${opusId}.md is owned by ${branch} while that branch exists (${D021_NOTE}); ` +
-    `this checkout is on ${otherBranch}, which carries only ${otherId}'s record`
+    `${opusId}: opera/${opusId}.md cannot be written from ${otherBranch} (${D021_NOTE}); ` +
+    `an opus branch carries only its own record — this checkout is on ${otherBranch}, which carries ` +
+    `only ${otherId}'s record. Switch to trunk or the worktree that has ${branch} checked out.`
   );
 }
 
@@ -365,6 +374,15 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     return { exitCode: 2 };
   }
 
+  // D-021 (W-033 round-1 A1): right after the record-existence check, before
+  // the --stage/state check, so a trunk caller gets the ownership message
+  // rather than a "--stage does not match" refusal.
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
   const currentState = readState(opusPath);
   if (typeof currentState !== "string") {
     console.error(currentState.error);
@@ -375,12 +393,6 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     return { exitCode: 2 };
   }
   const stage = stageArg ?? currentState;
-
-  const refusal = recordOwnerRefusal(root, opusId);
-  if (refusal !== undefined) {
-    console.error(refusal);
-    return { exitCode: 2 };
-  }
 
   try {
     editOpusFrontMatter(opusPath, (doc) => {
@@ -752,6 +764,15 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
     return { exitCode: 2 };
   }
 
+  // D-021 (W-033 round-1 A1): right after the record-existence check, before
+  // the state check, so a trunk caller gets the ownership message rather
+  // than "is not in backlog".
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
   const currentState = readState(opusPath);
   if (typeof currentState !== "string") {
     console.error(currentState.error);
@@ -763,12 +784,6 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
   }
 
   const decline = values.get("--decline");
-
-  const refusal = recordOwnerRefusal(root, opusId);
-  if (refusal !== undefined) {
-    console.error(refusal);
-    return { exitCode: 2 };
-  }
 
   // Same discipline as answer: the opus front-matter edit, the
   // workflow.greenlight event and the Patron timeline line must land

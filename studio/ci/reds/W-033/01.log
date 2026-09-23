@@ -1,15 +1,17 @@
 # behaviour: 1
 # command: node --import tsx packages/cli/src/lifecycle.test.ts .
 # exit: 1
-# at: 2026-09-23T15:39:23.273Z
+# at: 2026-09-23T16:05:39.894Z
 # sella: builder-a
-# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+# tree: dirty:f1bec0b3baab7f107417705d96274ce6b526c135
 
+PASS  W-033 b1: done from trunk refused while opus/W-100 exists        2
+PASS  W-033 b1: refusal names opus/W-100 and D-021                     W-100: opera/W-100.md is owned by opus/W-100 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-100 checked out (git worktree list), or delete opus/W-100 if it has already merged
+
+PASS  W-033 b1: record byte-identical                                  
+PASS  W-033 b1: events log unchanged (absence counts as unchanged)     
+PASS  W-033 b1: git status is clean                                    
 W-100: done
-FAIL  W-033 b1: done from trunk refused while opus/W-100 exists        0
-FAIL  W-033 b1: refusal names opus/W-100 and D-021                     
-FAIL  W-033 b1: record byte-identical                                  
-FAIL  W-033 b1: events log unchanged (absence counts as unchanged)     
-FAIL  W-033 b1: git status is clean                                     M studio/opera/W-100.md
-?? studio/.bisellium/
-
+FAIL  W-033 b1: a git failure (corrupt packed-refs, exit 128) refuses rather than allowing 0
+FAIL  W-033 b1: git-failure refusal names D-021                        
+FAIL  W-033 b1: record byte-identical after the git-failure refusal    
