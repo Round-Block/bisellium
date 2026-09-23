@@ -1,0 +1,168 @@
+# W-044 review round 2 — censor sella qa-lead (claude-opus-5-5)
+# reviewed: opus/W-044 @ 7566459d126ae9131a148aa96955f02c95a3c02d (PR #31); remedy 21650ce..7566459
+# scratch: detached worktree /tmp/claude-1000/w044r2, node_modules copied from the parent checkout
+# worktree trap: readlink -f node_modules/@bisellium/shim -> /tmp/claude-1000/w044r2/packages/shim
+# vendor CLI: claude 2.1.280 (round 1 was on 2.1.252)
+# VERDICT: FAIL. F1 is fixed: all six round-1 instances are killed and M5/M7/M8 now fail the suite.
+# One finding, F2, is F1's sibling. It is a first-VALUE read where F1 was a first-OCCURRENCE read.
+# My round-1 census missed it, so this round is on me as much as on the builder.
+
+## F1 remedy (pass)
+- git diff 21650ce..7566459 -- packages/shim is empty. Outside studio/, the only change since
+  279b6df is packages/cli/src/talk-boundary.test.ts (+32 -2).
+- countOf plus the exactly-once loop over expectedFlags in checkPolicy. It covers census #1–#4:
+  the flagsIn set-equality and the three valuesAfter reads on lines 225/226/228 all sit in the same
+  checkPolicy call as the loop.
+- valuesAfterAll replaces valuesAfter for behaviours 2 and 3 (lines 270 and 298). It covers
+  census #5 and #6.
+- No seventh first-occurrence read was added. I checked every call site of flagsIn, valuesAfter,
+  valuesAfterAll, countOf, indexOf and includes in the file: lines 216, 223, 225, 226, 228, 270,
+  298, 321, 322 and 336. Lines 321/322/336 are whole-argv includes("--resume") calls and only
+  choose the form.
+- Mutations: I re-ran my own round-1 set plus new probes, with the script kept below. After each
+  mutation the file was restored, the tree was clean and the shim diff was empty.
+  M0  control                                        exit=0  b1 0  b2 0    b3 0  b4 0
+  M1  re-add Bash(bisellium *) to allowlist          exit=1  b1 2  b2 120  b3 4  b4 7
+  M2  WebFetch back in --tools                       exit=1  b1 2  b2 0    b3 0  b4 7
+  M3  WebFetch back in --allowedTools                exit=1  b1 2  b2 0    b3 0  b4 7
+  M4  drop --restricted                              exit=1  b1 4  b2 0    b3 0  b4 14
+  M5  resume: dup --allowedTools Bash(bisellium *)   exit=1  b1 1  b2 60   b3 2  b4 2    (round 1: exit=0)
+  M6  POLICY + dup --allowedTools                    exit=1  b1 2  b2 120  b3 4  b4 7    (round 1: exit=0)
+  M7  POLICY + dup --tools WebFetch                  exit=1  b1 2  b2 0    b3 0  b4 7    (round 1: exit=0)
+  M8  POLICY + dup --permission-mode acceptEdits     exit=1  b1 2  b2 0    b3 0  b4 7    (round 1: exit=0)
+  M9  comma-joined extra allow entry                 exit=1  b1 2  b2 0    b3 0  b4 7
+  M16 POLICY + kebab alias --allowed-tools           exit=1  b1 2  b2 0    b3 0  b4 7
+  M17 POLICY + --tools=WebFetch (equals form)        exit=1  b1 2  b2 0    b3 0  b4 7
+
+## F2 — a second value token inside the single --tools group survives (FAIL)
+checkPolicy line 226 reads `valuesAfter(argv, "--tools")[0]`, which is only the FIRST value of the
+group. `--tools <tools...>` is variadic (claude --help). So a profile that emits
+`"--tools", TOOLS, "WebFetch"` still has exactly one --tools flag, and the exactly-once loop passes.
+The [0] read sees "Read,Grep,Glob,Bash" and the suite goes green.
+  M10 "--tools", TOOLS, "WebFetch"  (start + resume)  exit=0  b1 0  b2 0  b3 0  b4 0
+  M15 same shape, resume() only                      exit=0  b1 0  b2 0  b3 0  b4 0
+This is a real widening on the installed vendor CLI. I captured the system/init event and killed
+the process on init, so no model turn ran (script: /tmp/claude-1000/w044r2-ev/init-probe.mjs):
+  baseline                              -> permissionMode=dontAsk tools=[Bash,Glob,Grep,Read]
+  --tools Read,Grep,Glob,Bash WebFetch  -> permissionMode=dontAsk tools=[Bash,Glob,Grep,Read,WebFetch]
+That is the same resolved tool set as M7, which round 1 failed. The suite's assertion "--tools is
+exactly {Read,Grep,Glob,Bash}" is false for M10, and the assertion passes.
+Why it blocks: the same ground as F1. The brief names "a widening flag" as the regression to keep
+out, and claude-code.ts's header drops WebFetch as the profile's only egress.
+Why round 1 missed it: my round-1 census counted reads of a flag's first OCCURRENCE. It did not
+count reads of a group's first VALUE. My round-1 prescription ("each policy flag must occur
+exactly once") would not kill it, and the builder implemented that prescription faithfully.
+The literal-argv alternative I offered in round 1 would have killed it.
+
+Class: "argv tokens the suite never accounts for". I checked every read site listed above, and
+put a mutation after every flag position of the profile:
+  1. line 226 --tools [0]: second token in the group. M10 and M15 survive. VENDOR-VERIFIED
+     WIDENING. Blocking.
+  2. line 225 --permission-mode [0]: M11 "dontAsk","acceptEdits" survives. The vendor init keeps
+     permissionMode=dontAsk, so the extra token is a positional, not a widening. Advisory.
+  3. Stray tokens after the boolean or single-value flags survive:
+     M12 after --strict-mcp-config, M13 after --restricted, M14 after --output-format json.
+     Init for M12/M13 is unchanged (dontAsk, [Bash,Glob,Grep,Read]). Not a widening. Advisory.
+     The header's "message goes over stdin, never positional" contract is still unasserted.
+  (--allowedTools is covered: its whole group is read and compared by set equality. Alias and
+   equals-form flags are covered by b1/b4 set equality. Behaviours 2/3 read only the camelCase
+   spelling, but b1 backstops that.)
+One fix covers all three: assert that each form's argv deep-equals the literal expected array.
+The only variables are the --append-system-prompt-file path (start) and the --resume session id
+(resume). The file already writes the policy out literally, so that is a few lines. It kills
+M5–M17 in one stroke. The minimum for the blocking instance alone would be reading --tools with
+valuesAfterAll and requiring exactly one token. That leaves #2 and #3 open, so I recommend the
+literal equality. claude-code.ts is correct today, and the fix stays inside the owned test file.
+
+## Red 02 (honest in substance; provenance is asserted, not produced — advisory)
+- The header (behaviour 2, exit 1, 16:01:17Z, builder-b, tree dirty:f6eae92b) is tool-written.
+  f6eae92b is the source tree of 21650ce/7b80eb6, recomputed. The red predates 37bab39
+  (16:03:15Z). That fits capturing it with the fix uncommitted in the working tree.
+- The "# mutation-provenance" line is inside the recorded output. But the recorded command
+  (/tmp/claude-1000/w044-scratch/red-b2-m5.sh) only ECHOES that prose and then runs the test.
+  The script neither applies M5 nor prints the diff. M5 was applied by hand outside the capture,
+  and the line says "reverted immediately after; git diff -- packages/shim is empty once this
+  red is recorded" before the revert happened. So the annotation is hand-written and placed
+  inside the capture. It is not a mechanical record.
+- The claim is corroborated anyway. The captured failure shape is 60 FAIL / 75 PASS, all of it
+  behaviour 2 resume, with start fully passing. That matches my independent M5 row
+  (b2 FAIL=60) exactly. The unmutated fixed tree gives 0, and the pre-fix source gives 120 across
+  both forms. I do not doubt it.
+- Round 3: have the wrapper apply the mutation, print `git diff -- packages/shim`, run the test
+  and revert, all inside the recorded command. Keep the script in the repo, since the standing
+  rule is "a script you write, run and keep". A /tmp path in "# command:" is not kept.
+- Also: the re-record overwrote behaviour 2's original test-first red (pre-fix source,
+  PASS=15 FAIL=120). It now survives only at 279b6df:studio/ci/reds/W-044/02.log. Reds 01, 03
+  and 04 are unchanged (git diff 279b6df..7566459 -- studio/ci/reds touches 02.log only).
+
+## Regression gates on 7566459 (pass)
+  npm test        exit 0 — 1560 PASS / 0 FAIL (matches the claim)
+  typecheck       exit 0
+  lint            exit 0 — 0 errors, 2 warnings (close.test.ts, tick.test.ts:203), both pre-existing and outside scope
+  format:check    exit 0
+  check studio    PASS — 0 blocking, 70 advisory
+  verify W-044    tests/lint/types passed, ci/W-044-*-eb2c7b4b.log (verify's rewrite of the tests log was
+                  timing-only noise, 0 FAIL lines; restored in scratch)
+Certificates: sourceTreeHash(excludes studio, .bisellium, examples/) gives
+  7566459 = 37bab39 = eb2c7b4b84829482f8d1a4446990385144982acc   (certified tree)
+  21650ce = 7b80eb6 = f6eae92b1751442ec44de32ec6c234f96f5d8c58   (round-1 tree)
+So eb2c7b4b names the committed source tree of the fix, not the bookkeeping commit on top of it.
+Round-1 passes, spot-checked: claude-code.ts is byte-identical (the shim diff is empty), so the
+deny-by-default profile, the matcher reach, the tick behaviour (b4 green in the full run) and the
+scope (4c632e3..7566459 touches the same files as round 1) all stand.
+
+## Attended live smoke — STILL OPEN (not run; named pre-merge obligation)
+I did not run it. It cannot run cleanly from this session. ANTHROPIC_BASE_URL and
+ANTHROPIC_AUTH_TOKEN are still ambient (names checked, not values). talk's filterEnv
+(packages/shim/src/redact.ts) drops *TOKEN* but passes ANTHROPIC_BASE_URL through. A talked child
+claude would therefore send the Patron's stored OAuth to the ambient base URL, which is the reroute
+the Patron is fixing. I did not strip env or touch credentials to route around it.
+Still owed, human-attended, before merge: in a real talked session (a temp copy of
+examples/sample-studio, never studio/), confirm the vendor denies `bisellium greenlight --probe x`
+and the chained `check … && greenlight …`, and admits `bisellium check <dir>`. Record the
+permission_denials from the envelope.
+Out of scope for W-044 (filterEnv is pre-existing): the Patron may want ANTHROPIC_BASE_URL on the
+talk env denylist as part of their fix.
+
+## Mutation script (kept: /tmp/claude-1000/w044r2-ev/mutate.sh; output mutations.txt)
+#!/usr/bin/env bash
+# W-044 review 2 mutation runner (round-1 set + M10/M11): apply one literal substitution to claude-code.ts,
+# run talk-boundary.test.ts, report per-behaviour FAIL counts, restore.
+set -u
+cd /tmp/claude-1000/w044r2
+F=packages/shim/src/harness/claude-code.ts
+mut() { # name, from, to
+  node -e 'const fs=require("fs");const [f,a,b]=process.argv.slice(1);const s=fs.readFileSync(f,"utf8");if(!s.includes(a)){console.error("anchor missing");process.exit(3)}fs.writeFileSync(f,s.replace(a,b))' "$F" "$2" "$3" || return
+  out=$(node --import tsx packages/cli/src/talk-boundary.test.ts . 2>&1); rc=$?
+  printf '%-44s exit=%s' "$1" "$rc"
+  for b in 1 2 3 4; do printf '  b%s FAIL=%s' "$b" "$(grep '^FAIL' <<<"$out" | grep -c "behaviour $b")"; done; echo
+  git checkout -q -- "$F"
+}
+mut "M0 none (control)"                     'const TOOLS = "Read,Grep,Glob,Bash";' 'const TOOLS = "Read,Grep,Glob,Bash";'
+mut "M1 re-add Bash(bisellium *) to allowlist" '"Bash(bisellium check *)",' '"Bash(bisellium check *)", "Bash(bisellium *)",'
+mut "M2 WebFetch back in --tools"            'const TOOLS = "Read,Grep,Glob,Bash";' 'const TOOLS = "Read,Grep,Glob,Bash,WebFetch";'
+mut "M3 WebFetch back in --allowedTools"     '  "Glob",' '  "Glob", "WebFetch",'
+mut "M4 drop --restricted"                   '"--restricted", ' ''
+mut "M5 resume: dup --allowedTools Bash(bisellium *)" '"json", ...POLICY_FLAGS];' '"json", ...POLICY_FLAGS, "--allowedTools", "Bash(bisellium *)"];'
+mut "M6 start+resume: POLICY + dup --allowedTools" '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--allowedTools", "Bash(bisellium *)"];'
+mut "M7 POLICY + dup --tools WebFetch"       '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--tools", "WebFetch"];'
+mut "M8 POLICY + dup --permission-mode acceptEdits" '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--permission-mode", "acceptEdits"];'
+mut "M9 comma-joined extra allow entry"      '"Bash(bisellium check *)",' '"Bash(bisellium check *)", "Glob,Bash(bisellium *)",'
+mut "M10 second value token in the --tools group" '"--tools", TOOLS,' '"--tools", TOOLS, "WebFetch",'
+mut "M11 second value token in --permission-mode" '"--permission-mode", "dontAsk",' '"--permission-mode", "dontAsk", "acceptEdits",'
+mut "M12 stray token after --strict-mcp-config" '"--strict-mcp-config",' '"--strict-mcp-config", "WebFetch",'
+mut "M13 stray token after --restricted"        '"--restricted",' '"--restricted", "WebFetch",'
+mut "M14 stray token after --output-format json (start)" '"json", "--append-system-prompt-file"' '"json", "WebFetch", "--append-system-prompt-file"'
+mut "M15 second --tools value, resume only" '"json", ...POLICY_FLAGS];' '"json", ...POLICY_FLAGS.slice(0, 6), "WebFetch", ...POLICY_FLAGS.slice(6)];'
+mut "M16 POLICY + kebab alias --allowed-tools" '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--allowed-tools", "Bash(bisellium *)"];'
+mut "M17 POLICY + --tools=WebFetch equals form" '"--allowedTools", ...ALLOWED_TOOLS];' '"--allowedTools", ...ALLOWED_TOOLS, "--tools=WebFetch"];'
+git status --short
+git diff --stat -- packages/shim
+
+## init-probe outputs (kept: /tmp/claude-1000/w044r2-ev/init-probe.txt, /tmp/claude-1000/w044r2-ev/init-probe-2.txt)
+baseline                 permissionMode=dontAsk tools=["Bash","Glob","Grep","Read"]
+M10_tools_second_value   permissionMode=dontAsk tools=["Bash","Glob","Grep","Read","WebFetch"]
+M11_mode_second_value    permissionMode=dontAsk tools=["Bash","Glob","Grep","Read"]
+baseline                 permissionMode=dontAsk tools=["Bash","Glob","Grep","Read"]
+M12_after_strict_mcp     permissionMode=dontAsk tools=["Bash","Glob","Grep","Read"]
+M13_after_restricted     permissionMode=dontAsk tools=["Bash","Glob","Grep","Read"]
