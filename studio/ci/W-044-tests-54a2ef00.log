@@ -1,0 +1,204 @@
+certifies: tree:54a2ef00b1b43e0ea561bdf4876f0a8bd55abba9
+command: npm test -s
+exit code: 0
+
+PASS  burn: color is amber at allowance                                      amber
+PASS  burn: color is amber past allowance                                    amber
+PASS  posture: word is the posture itself                                    ok
+PASS  posture: reason names burn, allowance and period                       1,084,475 / 3,000,000 tokens this 2026-W38
+PASS  nav: chrome budget height is 44px (DIRECTION.md §3)                    44
+PASS  nav: badge hidden when needs-you count is 0                            
+PASS  nav: badge visible when needs-you count > 0                            
+PASS  route: "#/inbox" -> inbox                                              inbox
+PASS  route: "#/officina" -> officina                                        officina
+PASS  route: "" (no hash) -> inbox                                           inbox
+PASS  route: "#/" (root hash) -> inbox                                       inbox
+PASS  officina layout: has postureAndBurn panel                              postureAndBurn,processHealth,lexStatus
+PASS  officina layout: has processHealth panel                               postureAndBurn,processHealth,lexStatus
+PASS  officina layout: has lexStatus panel                                   postureAndBurn,processHealth,lexStatus
+unknown sella "nobody" — not declared in /********.yml
+bisellium run: missing "--" before the command
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+bisellium run: empty command after "--"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--sella needs a value, got flag "--no-worktree"
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+--studio needs a value
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+working tree is dirty; commit or pass --allow-dirty
+--stage "review" does not match opus state "building"
+unknown sella "nobody" — not declared in bisellium.yml
+emit: invalid JSON: Unexpected token 'o', "not json" is not valid JSON
+emit: event needs a non-empty string "name"
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+usage: bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+unknown opus: W-999
+resolved without --opus — nothing records what work this becomes
+--ask-back requires petitio "A-1" to be needs_you (currently awaiting_reply)
+resolved without --opus — nothing records what work this becomes
+unknown opus: W-999
+W-007 is not in backlog (state: greenlit)
+unknown flag "--burn-anything"
+usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+period "2026-39" must match YYYY-Www (e.g. 2026-W39)
+unknown collegium "no-such" — not declared in bisellium.yml
+hooks print: --harness must be "claude-code" (got "codex")
+usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+hook-event start: payload session_id is not a plain id (no path separators)
+hook-event stop: payload session_id is not a plain id (no path separators)
+hook-event start: --sella must be a plain id (no path separators)
+GET /api/officina 200 6ms
+GET /api/inbox 200 13ms
+GET /api/aerarium 200 4ms
+GET /api/opus/W-004 200 1ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+GET /api/events?limit=-5 200 1ms
+GET /api/timeline/builder-1?limit=-5 200 1ms
+GET /api/events?limit=0 200 0ms
+GET /api/timeline/builder-1?limit=0 200 1ms
+GET /api/events?limit=99999 200 0ms
+GET /api/timeline/builder-1?limit=99999 200 1ms
+GET /api/events?limit=abc 200 1ms
+GET /api/timeline/builder-1?limit=abc 200 1ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 0ms
+POST /api/greenlight 413 3ms
+POST /api/greenlight 200 7ms
+GET /api/opus/W-007 200 1ms
+POST /api/_poll 200 11ms
+GET /api/events 200 0ms
+POST /api/_poll 200 12ms
+GET /api/events 200 0ms
+GET /api/events 200 1ms
+POST /api/_poll 404 0ms
+GET /api/events 200 1ms
+GET /api/events 200 0ms
+GET /api/live 200 101ms
+POST /api/_poll 200 9ms
+GET /api/officina 200 1ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 264ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+POST /api/talk 200 82ms
+POST /api/talk 200 116ms
+fatal: not a git repository (or any of the parent directories): .git
+--spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
+--spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+--spec "briefs/../../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+/********.yml not found — not a studio
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+GET /api/health 200 29ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 200 8ms
+W-007 is not greenlit or halted (state: backlog)
+W-002 is not greenlit or halted (state: building)
+W-003 is not greenlit or halted (state: verifying)
+W-004 is not greenlit or halted (state: review)
+W-001 is not greenlit or halted (state: done)
+W-006: no spec at briefs/W-006.md — not ready
+W-310: gates not passed: tests
+W-311: gates not passed: tests
+W-312: gates not passed: tests
+W-313: gates not passed: qa
+W-314: gates not passed: patron
+exactly one of --pass/--fail is required
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+exactly one of --pass/--fail is required
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+--evidence "ci/does-not-exist.log" not found under studio
+red: command exited 0 — that command passed, nothing recorded
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+missing "--" separator before the command
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+empty command after "--"
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+invalid opus id ".."
+invalid opus id "sub/dir"
+W-006: --spec "../../../../../etc/hostname" resolves outside the officina (D-008) — refused
+W-004: --evidence "../../../../../etc/hostname" resolves outside the officina (D-008) — refused
+W-001 is already done — halt refused
+W-101 is already halted — halt refused
+unknown opus: W-999
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+W-002: --decision "D-does-not-exist" not found under decisions/
+W-002: --decision "../../etc/passwd" not found under decisions/
+W-002: --decision "../leges/qa" not found under decisions/
+unknown opus: ../petitiones/A-1
+Preparing worktree (detached HEAD 728487b)
+Preparing worktree (checking out 'opus/W-140')
+W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
+fatal: not a git repository (or any of the parent directories): .git
+bisellium run: --opus and --base are mutually exclusive
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+W-099: gates not passed: spec
+W-099 closed, but dossier rebuild failed — run docs/design/dossier/build.sh manually
+bisellium ci: step failed (exit 1): npm run -s typecheck
+bisellium ci: step failed (exit 1): npm test
+
