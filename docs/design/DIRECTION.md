@@ -276,3 +276,50 @@ Banned as generic or as kitsch. A build containing one of these fails review.
   reveals.**
 - **All-caps tracked-out eyebrow labels**, `A · B · C` middle-dot meta strings,
   and `→` appended to link or button text.
+
+## Patron interface & cost model (captured direction, 2026-09-23/24 — not adopted)
+
+**Principle: authority never transits a model.** The Patron's intent becomes a
+record only by the Patron's own act — a click, a command, a decree typed into
+the record layer. Any model between the Patron and the officina may *draft*;
+none may *relay*. A relay holding delegated authority is the Mast-`send` class
+(a peer channel mistaken for a permission boundary) — the same class W-044
+closes for talk — and the standing rule "never relay a mid-turn Patron message
+into a running workflow" already recorded its failure empirically.
+
+**Three interface tiers, by cost:**
+
+| tier | answers | cost profile | may never |
+|---|---|---|---|
+| Deterministic (console, `check`/`query`/`context`, generated views) | status: the board, what's blocking, what awaits the Patron | zero model tokens | — |
+| Concierge (fast tier — Haiku/Luna class) | conversation, drafting records from rambling intent, explaining findings plainly | pennies; always-on is affordable | hold authority, relay live, sign anything; output is a draft in the Inbox awaiting the Patron's click |
+| Orchestrator (frontier tier — Fable/Astra class) | driving cascades: dispatch, adjudication, merge mechanics | metered per cascade, not per hour | be a chat presence — chat through it is the most expensive possible UI (two spend-limit deaths in one week) |
+
+**The record bus is the async channel.** Petitio → answer, greenlight,
+decision: the Inbox *is* the chat interface for the asynchronous half.
+Provenance is structural — the Patron's click writes the record; nothing
+paraphrases law. The concierge's whole contract is draft-and-confirm.
+
+**The orchestrator is a burst worker.** Wakes on a decree, a ready queue, or a
+D-020 escalation trigger; boots from `bisellium context` (bounded,
+task-specific bundle); drives one cascade; writes the handoff; exits.
+Consequences: cost becomes bundle × cascades instead of presence × hours;
+context bloat inverts (a fresh boot ~15–20k tokens is smaller than a lived-in
+session, and burst resets bloat rather than accruing it); the stable bundle
+prefix rides prompt caching; the `context` command is the enforcement point
+for per-section caps, staleness and duplication — a bloated bundle is a check
+finding, not a slow death; any frontier model can hold the seat, because truth
+lives in records (D-021, the Mast discipline — proven by two mid-week model
+swaps with zero loss). The named residual: a crash loses only work since the
+last handoff, so handoff-at-every-stage-transition is the discipline that
+bounds it.
+
+**Escalation ladder**: the concierge invokes upward only on D-020's named
+triggers. No trigger, no frontier spend.
+
+**Not**: a second review gate (D-014 untouched); an org decision (seats live
+in D-020 and churn with releases); adopted — preconditions are Web II
+(the console Inbox work) being scheduled, since building the concierge before
+the record bus it drafts into would invert the dependency. Revisit triggers:
+provider pricing/limit changes; concierge drafts proving unfaithful; Web II
+scheduling, which makes this section the spec input.
