@@ -88,12 +88,41 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-23, cascade 24)
+## Where things stand (2026-09-24, cascade 25)
 
-Cascades 1–23 are in the dossier progress log. The branch → PR → QA → merge
-flow (D-015) has landed PRs through #28. Read the review logs in `studio/ci/`
-before touching any of this work; they are far more precise than this
-summary.
+Cascades 1–24 are in the dossier progress log. PRs through #32 are merged.
+Read the review logs in `studio/ci/` before touching any of this work.
+
+**Cascade 25 (2026-09-23/24):** D-021 ruled (one writer per opus record —
+the Opus architect and gpt-6-astra converged independently; Astra's take in
+`docs/research/w033-provenance-astra.md`). **W-033 built and MERGED** (PR
+#32, round-2 pass after a fail-open-on-git-errors round 1 — the guard now
+fails closed; the censor recorded both verdicts from the branch checkout
+because the guard under review refused it anywhere else). The manual
+reconcile recipe is dead; no `reconcile` command will exist (D-016 clause
+settled). **W-044 is at round-2 FAIL on `opus/W-044`** (`d787701`): the
+literal-argv fix, an honest re-record of red 02 (wrapper must apply the
+mutation inside the recorded run and live in the repo), and the architect's
+call on the **`ANTHROPIC_BASE_URL` env leak** (talk's redact passes the
+base URL through — a talked session would send the Patron's login to an
+ambient URL; spec amendment or new opus) are the round-3 queue. The
+attended smoke's deny-half is captured clean (both greenlight attempts
+denied, plain and chained, scrubbed env, Patron-attended); the allow-half
+re-run is parked. **D-020 amended twice** (gpt-6-astra escalation tier;
+Terra pre-review verification + Sol brief red-team as standing pipeline
+slots — Patron decrees). Patron-interface & cost-model direction captured
+in `docs/design/DIRECTION.md`. Tokenharbor is fully dormant: codex default
+provider flipped to `openai`, zshrc auto-sourcing removed by the Patron,
+no repo references. **Claude spend was heavy (~1.5M subagent tokens in a
+day; throttle order stands)** — shift bounded work to codex tiers per
+D-020; the W-048 codex-build trial (one opus, Sonnet→Sol, censor gate
+unchanged as the benchmark) is proposed, not yet decreed.
+
+**Resume order:** 1. W-044 round 3 (Sol brief red-team + Terra pre-review
+now standard — first live use). 2. W-034 defect 1 (waived gates; defect 2
+absorbed by W-033's guard). 3. The architect ranking: W-041 → W-039 →
+W-038 → W-046 → W-047 → W-032 → W-040 → W-045 → W-048. 4. Cascade-25
+checkpoint rows + retro are OWED (deferred under the throttle).
 
 ### The flow, as actually operated
 
