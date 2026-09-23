@@ -2,6 +2,44 @@
 
 Analysis input for the architect's W-044 spec; produced read-only, verified non-empty by the orchestrator. Not the spec.
 
+From either ingress, these concrete sinks are reachable:
+
+- Arbitrary execution:
+
+  ```text
+  → bisellium run --sella <declared> --studio studio --no-worktree -- sh -c '<payload>'
+  → spawn(payload)
+  ```
+
+  ```text
+  → bisellium red <opus> --behaviour 1 --sella <declared>
+      --studio studio --cwd . -- sh -c '<payload>'
+  → spawn(payload)
+  ```
+
+- Studio-configured shell execution, omitted by the research note:
+
+  ```text
+  → bisellium verify <opus> --studio studio --repo .
+  → bisellium.yml probationes[].command
+  → spawnSync(command, shell=true)
+  ```
+
+- Patron impersonation: `main.ts` unconditionally sets `BISELLIUM_ROLE=patron`; it authenticates neither caller nor sella.
+
+  ```text
+  → bisellium greenlight <opus> --studio studio
+  → opus transition + timeline/patron.jsonl {role:"patron"}
+
+  → bisellium answer --petitio <id> --studio studio '<reply>'
+  → petitio/acta mutation + Patron timeline stamp
+
+  → bisellium budget <period> --collegium <id> --tokens <n> --studio studio
+  → aerarium mutation + Patron timeline stamp
+  ```
+
+Other currently admitted verbs also execute fixed repository tooling: `ci` runs npm scripts, `close` runs `docs/design/dossier/build.sh`, and `providers` may run `npx --yes quota-axi`.
+
 ## 2. Useful minimum and narrowing costs
 
 Recommended CLI surface: exact bare `bisellium` for usage, plus only `context`, `query`, `check`, and—if its subprocess is accepted—`providers`.
