@@ -1,0 +1,55 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/talk-boundary.test.ts .
+# exit: 1
+# at: 2026-09-23T15:35:00.487Z
+# sella: builder-b
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+ack
+PASS  behaviour 4: first runTalk call exit 0                                     0
+ack
+PASS  behaviour 4: second runTalk call exit 0                                    0
+PASS  behaviour 4: two talk calls logged                                         2
+PASS  behaviour 4: first call has no --resume (start)                            
+PASS  behaviour 4: second call carries --resume                                  
+FAIL  behaviour 4 talk start: flag set is exactly the start set                  -p --output-format --append-system-prompt-file --allowedTools
+FAIL  behaviour 4 talk start: --permission-mode is dontAsk                       ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-oeX9L3/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 talk start: --tools is exactly {Read,Grep,Glob,Bash}           
+FAIL  behaviour 4 talk start: --allowedTools is exactly the ten expected entries Read,Grep,Glob,WebFetch,Bash(bisellium *)
+FAIL  behaviour 4 talk resume: flag set is exactly the resume set                -p --resume --output-format --allowedTools
+FAIL  behaviour 4 talk resume: --permission-mode is dontAsk                      ["-p","--resume","sess-jc1wo2p1","--output-format","json","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 talk resume: --tools is exactly {Read,Grep,Glob,Bash}          
+FAIL  behaviour 4 talk resume: --allowedTools is exactly the ten expected entries Read,Grep,Glob,WebFetch,Bash(bisellium *)
+wrote /tmp/claude-1000/bisellium-talk-boundary-b4-4WjuLh/acta/2026-09-23-producer-daily.md
+wrote /tmp/claude-1000/bisellium-talk-boundary-b4-4WjuLh/acta/2026-09-23-architect-daily.md
+wrote /tmp/claude-1000/bisellium-talk-boundary-b4-4WjuLh/acta/2026-09-23-eng-lead-daily.md
+wrote /tmp/claude-1000/bisellium-talk-boundary-b4-4WjuLh/acta/2026-09-23-art-lead-daily.md
+wrote /tmp/claude-1000/bisellium-talk-boundary-b4-4WjuLh/acta/2026-09-23-qa-lead-daily.md
+due: aerarium — 2026-W39
+due: traditio — W-002
+due: traditio — W-003
+due: traditio — W-004
+due: traditio — W-005
+PASS  behaviour 4: tick exit 0                                                   0
+PASS  behaviour 4: tick writes one daily acta per due magister                   2026-09-23-architect-daily.md, 2026-09-23-art-lead-daily.md, 2026-09-23-eng-lead-daily.md, 2026-09-23-producer-daily.md, 2026-09-23-qa-lead-daily.md
+PASS  behaviour 4: tick logged one call per due magister                         5
+FAIL  behaviour 4 tick call: flag set is exactly the start set                   -p --output-format --append-system-prompt-file --allowedTools
+FAIL  behaviour 4 tick call: --permission-mode is dontAsk                        ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-WxP0g4/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 tick call: --tools is exactly {Read,Grep,Glob,Bash}            
+FAIL  behaviour 4 tick call: --allowedTools is exactly the ten expected entries  Read,Grep,Glob,WebFetch,Bash(bisellium *)
+FAIL  behaviour 4 tick call: flag set is exactly the start set                   -p --output-format --append-system-prompt-file --allowedTools
+FAIL  behaviour 4 tick call: --permission-mode is dontAsk                        ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-TmnEGx/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 tick call: --tools is exactly {Read,Grep,Glob,Bash}            
+FAIL  behaviour 4 tick call: --allowedTools is exactly the ten expected entries  Read,Grep,Glob,WebFetch,Bash(bisellium *)
+FAIL  behaviour 4 tick call: flag set is exactly the resume set                  -p --resume --output-format --allowedTools
+FAIL  behaviour 4 tick call: --permission-mode is dontAsk                        ["-p","--resume","sess-jitqkgku","--output-format","json","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 tick call: --tools is exactly {Read,Grep,Glob,Bash}            
+FAIL  behaviour 4 tick call: --allowedTools is exactly the ten expected entries  Read,Grep,Glob,WebFetch,Bash(bisellium *)
+FAIL  behaviour 4 tick call: flag set is exactly the start set                   -p --output-format --append-system-prompt-file --allowedTools
+FAIL  behaviour 4 tick call: --permission-mode is dontAsk                        ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-8DJvuz/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 tick call: --tools is exactly {Read,Grep,Glob,Bash}            
+FAIL  behaviour 4 tick call: --allowedTools is exactly the ten expected entries  Read,Grep,Glob,WebFetch,Bash(bisellium *)
+FAIL  behaviour 4 tick call: flag set is exactly the start set                   -p --output-format --append-system-prompt-file --allowedTools
+FAIL  behaviour 4 tick call: --permission-mode is dontAsk                        ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-BvC1qA/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 4 tick call: --tools is exactly {Read,Grep,Glob,Bash}            
+FAIL  behaviour 4 tick call: --allowedTools is exactly the ten expected entries  Read,Grep,Glob,WebFetch,Bash(bisellium *)

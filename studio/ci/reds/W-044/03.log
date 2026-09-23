@@ -1,0 +1,11 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/talk-boundary.test.ts .
+# exit: 1
+# at: 2026-09-23T15:34:52.863Z
+# sella: builder-b
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+FAIL  behaviour 3 start: bisellium zz-future-verb denied                         
+FAIL  behaviour 3 start: bisellium zz-future-verb --probe x denied               
+FAIL  behaviour 3 resume: bisellium zz-future-verb denied                        
+FAIL  behaviour 3 resume: bisellium zz-future-verb --probe x denied              
