@@ -1,0 +1,138 @@
+censor round 1 — W-042 (PR #25, branch opus/W-042 @ a5b6e9f7ab03ca5b763eef0a0235a7f37cab9481)
+sella: qa-lead   model: claude-opus-5-5   at: 2026-09-23 (see verdict stamp)
+verdict: FAIL — 1 blocking finding (a class of 2 instances in this opus), 2 advisory.
+The verb itself is correct. Its containment guards are not tested: the suite stays
+green with either guard removed.
+
+================================================================================
+VERDICT SUMMARY
+================================================================================
+  [PASS] verb shape — halt <opus> --reason --resume-when --decision [--sella] [--studio] [--now];
+         all three required flags missing -> usage + exit 2; no opus -> usage + exit 2;
+         unknown flag -> error + usage + exit 2
+  [PASS] front matter — top-level state/halted_at/reason/resume_when/halted_by (the keys
+         check.ts:537-538 reads); body byte-identical; probationes untouched
+  [PASS] refusals (real code) — done, halted (re-halt), unknown opus, nonexistent decision,
+         --decision "../leges/qa", "../../etc/passwd", ".." -> exit 2, file unchanged, 0 events
+  [PASS] event — one workflow.state_changed with the four existing WF.* attrs (+ emitEvent's
+         own workflow.source/.seq); no new workflow.* name, no schema diff
+  [PASS] runReady's cleanup loop clears halted_by (lifecycle.ts:130)
+  [PASS] behaviour 3 — failed review survives halt verbatim (mutant m3 that deletes
+         probationes is caught by block 20)
+  [PASS] reds — 01-05 each exit 1, five distinct bodies (md5 differ), assertion-level,
+         "# sella: builder-a"; tree dirty:92cf4505 == sourceTreeHash(6c285cc) recomputed
+  [PASS] red 05 reproduced at base lifecycle.ts (6c285cc), body byte-identical
+  [PASS] reds 01-04 reproduced against a usage-printing stub (same PASS/FAIL lines)
+  [PASS] mapping — "# behaviour: N" matches brief behaviour N (blocks 18-22 = brief 1-5);
+         opus.red_evidence silent for W-042 on the branch
+  [PASS] usage drift guard — 32, same commit (b28aba3) as the banner line; banner line
+         and HALT_USAGE spell the flags identically
+  [PASS] gates on a5b6e9f — npm test exit 0 (0 FAIL / 1298 PASS), typecheck 0, lint 0
+         (2 warnings, pre-existing: close.test.ts:5, tick.test.ts:203), format:check 0
+  [PASS] certificates — tree:254e8fe8 == sourceTreeHash(b28aba3) == sourceTreeHash(a5b6e9f)
+  [PASS] check studio — 3 blocking, same W-027/W-028 debt; only W-042 line is the
+         pre-existing spec-gate "no identity" advisory. sample-studio PASS (0 blocking)
+  [PASS] scope — brief's files + usage.test.ts (the drift guard; forced by the banner
+         line) + bookkeeping. PR #25's file list == local diff; head == a5b6e9f
+  [FAIL] D-008 containment on halt's two ids is not tested — class, 2 instances   (BLOCKING)
+  [warn] runHalt is inserted inside §4: runRed now sits under the §5 banner
+  [warn] red 02's failing lines are only the positive control
+
+================================================================================
+F-1 (BLOCKING) — halt's id containment survives removal; class of 2 in this opus
+================================================================================
+The brief says: "--decision ... that safeItemPath(join(root, "decisions"), id) rejects
+(D-008 containment — the same helper, not a fresh join)". The implementation does this
+correctly (lifecycle.ts:468 opus, :491 decision). The tests cannot tell whether it does.
+
+Instance (a): --decision. Block 19's only traversal case is "../../etc/passwd".
+safeItemPath appends ".md", so a raw join resolves it to /etc/passwd.md. That file
+never exists, and the existsSync refusal masks the missing containment.
+  Mutant: lifecycle.ts:491  safeItemPath(join(root,"decisions"), decisionId)
+                         -> join(root, "decisions", `${decisionId}.md`)
+  BISELLIUM_ONLY_BEHAVIOUR=19 lifecycle.test.ts -> 0 FAIL, exit 0 (mutant survives)
+  Exploit on the mutant, sample-studio copy:
+    halt W-002 --reason r --resume-when rw --decision ../leges/qa
+    -> "W-002: state=halted by=../leges/qa", exit 0, halted_by: ../leges/qa written
+  Real code: exit 2, file unchanged, 0 events.
+
+Instance (b): the opus id. The brief's refusal list covers "unknown opus id, or one
+safeItemPath rejects", but block 19 has no opus-id traversal case.
+  Mutant: lifecycle.ts:468  safeItemPath(join(root,"opera"), opusId)
+                         -> join(root, "opera", `${opusId}.md`)
+  BISELLIUM_ONLY_BEHAVIOUR=19 -> 0 FAIL (mutant survives)
+  Exploit on the mutant: halt ../petitiones/A-1 --reason r --resume-when rw --decision D-1
+    -> "../petitiones/A-1: state=halted by=D-1", exit 0: a petitio rewritten as halted.
+  Real code: "unknown opus: ../petitiones/A-1", exit 2.
+
+The house precedent aims traversal cases at a file that EXISTS
+(lifecycle.test.ts:414 and :428 use ../../../../../etc/hostname), so that only
+containment can refuse them. Instance (a) is the brief's own literal case, so the
+defect started in the spec. The builder copied it faithfully, but it still does not
+test the property the brief demands.
+
+Fix, in block 19's existing table (freshStudio copies sample-studio, which has
+leges/qa.md and petitiones/A-1.md):
+  - { label: "--decision of ../leges/qa", opusId: "W-002", args: [...,"--decision","../leges/qa"] }
+  - { label: "opus id ../petitiones/A-1", opusId: "../petitiones/A-1", args: [...good] }
+Assert that exit is 2, that no event is appended, AND that the TARGET file is
+unchanged: petitiones/A-1.md and opera/W-002.md. The table's current "opus file
+unchanged" read uses join(dir,"opera",`${opusId}.md`), which already resolves to the
+petitio for case 2, so it works if the label/path wiring is kept. Show that both
+cases fail against the raw-join mutant before landing; round 2 will re-run both
+mutants.
+
+Search done: every safeItemPath( call site in packages/apps/adapters, each mutated to
+a raw join in turn, with lifecycle/writes/process/close tests run:
+  W-042-owned (blocking here): lifecycle.ts:468, lifecycle.ts:491
+  Pre-existing, same gap, NOT W-042's (0 FAIL each):
+    lifecycle.ts:91 (ready), :178 (done), :292 (review);
+    writes.ts:227, :360, :449 (petitio id), :464, :608
+    retro.ts:150-151: same pattern; not mutated
+  safeItemPath has no direct unit test anywhere (grep: no test file names it).
+  Recommend a follow-up opus or lesson (class: containment guard untested because the
+  traversal target does not exist), one existing-target case per verb. Out of scope
+  for W-042.
+
+================================================================================
+F-2 (advisory) — §5 halt is spliced into the middle of §4 red
+================================================================================
+lifecycle.ts: the §4 banner (:356) is followed by RED_USAGE, isGitRepo, findGitRoot,
+safeRedsDir and runCapture. Then the §5 halt banner (:425), HALT_USAGE and runHalt,
+and only then runRed (:519). runRed now reads as part of §5. Single instance: the
+other three sections are contiguous. Fix: move the §5 block to after runRed
+(end of file). No behaviour change.
+
+================================================================================
+F-3 (advisory, reasoning accepted) — what red 02 proves
+================================================================================
+The builder's reasoning is correct. An always-refusing stub trivially satisfies an
+all-refusal table, so without a positive control `red` would refuse to record.
+The brief's step 3 prescribes such a control. But the only FAILs in 02 are the
+positive control ("valid case exits 0", "wrote state=halted"). Every refusal
+assertion PASSes in that log. So 02 proves the block bites, not that its refusals do.
+Under a stub, only an accepting mutation can make a refusal red.
+Independent mutations on the real body, this round:
+  m1 drop done/halted refusal  -> block 19 FAIL (caught)
+  m2 drop decision existsSync  -> block 19 FAIL (caught)
+  m3 halt deletes probationes  -> block 20 FAIL (caught)
+  m4 halt omits halted_at      -> blocks 18, 21 FAIL (caught; halted.at fires)
+  m5 ready keeps halted_by     -> block 22 FAIL (caught)
+  m6/m7 raw-join containment   -> SURVIVE (F-1)
+No re-record of 02 is required. The red is valid and distinct.
+
+Note (pre-existing, not W-042): a red's "# command:" header omits
+BISELLIUM_ONLY_BEHAVIOUR, so the header alone reruns the whole file, and the
+behaviour N -> block N+17 mapping lives only in the test comments. That is a
+property of `red`/the W-020 harness.
+
+================================================================================
+Commands run (scratch worktree $TMPDIR/w042r1, detached at a5b6e9f)
+================================================================================
+  npm test; npm run -s typecheck; npm run -s lint; npm run -s format:check
+  npm run -s check -- studio --repo . [--level block]; ... examples/sample-studio --repo .
+  sourceTreeHash(".", ["studio",".bisellium","examples/"], 6c285cc|b28aba3|a5b6e9f)
+    -> 92cf4505... | 254e8fe8... | 254e8fe8...
+  red 05 repro: base lifecycle.ts + test import minus runHalt, ONLY=22
+  reds 01-04 repro: runHalt body -> usage + {exitCode:2}, ONLY=18..21
+  mutants m1-m7 as above; every mutation reverted with git checkout (tree clean)
