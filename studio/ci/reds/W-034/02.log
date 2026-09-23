@@ -1,0 +1,22 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:41:01.618Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+W-601: gates not passed: tests
+PASS  done b2: tests unrecorded exits 1                                1
+W-602: gates not passed: tests
+PASS  done b2: tests pending exits 1                                   1
+W-603: gates not passed: tests
+PASS  done b2: tests failed exits 1                                    1
+W-604: gates not passed: tests
+PASS  done b2: tests stale exits 1                                     1
+W-605: gates not passed: tests
+PASS  done b2: tests passed with a dirty certificate exits 1           1
+W-606: done
+PASS  done b2: tests passed with a tree certificate exits 0 (control)  0
+PASS  done b2: tests waived exits 1                                    1
+FAIL  done b2: tests waived stderr names tests, probatio.waived.automated and revert W-607: gates not passed: tests
+

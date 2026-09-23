@@ -17,7 +17,7 @@ import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { readFront } from "@bisellium/adapter-native";
+import { readFront, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
 import { editOpusFrontMatter } from "./frontmatter.js";
@@ -44,7 +44,7 @@ function resolveSella(flagValue: string | undefined): string {
 
 interface OpusFront {
   state?: unknown;
-  probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown }>;
+  probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown; reason?: unknown; waived_by?: unknown }>;
 }
 
 /** True when `relPath` resolved against `root` stays inside it — D-008's
@@ -213,22 +213,56 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
 
   const recorded = front.probationes ?? {};
   const missing: string[] = [];
+  // Per-gate refusal detail (W-034): the first line ("gates not passed: …")
+  // names every refused gate id; this carries the *why* for a waived one —
+  // never for an ordinary unrecorded/pending/failed/stale gate, which the
+  // first line already explains completely.
+  const detail: string[] = [];
+  // Honourable human-gate waivers `done` actually honours — named
+  // permanently on stdout (never a silent pass): "done (waived: patron by
+  // D-900)". A waiver is never rewritten into a `passed`.
+  const honoured: { id: string; decision: string }[] = [];
   for (const p of manifest.probationes) {
     const rec = recorded[p.id];
     const status = typeof rec?.status === "string" ? rec.status : undefined;
     const certifies = typeof rec?.certifies === "string" ? rec.certifies : undefined;
     if (p.kind === "automated") {
-      if (status !== "passed" || !certifies?.startsWith("tree:")) missing.push(p.id);
+      if (status === "waived") {
+        missing.push(p.id);
+        detail.push(
+          `${p.id}: probatio.waived.automated — no CLI verb writes a waived automated gate; ` +
+            `revert the out-of-band write with git, then run "bisellium verify"`,
+        );
+      } else if (status !== "passed" || !certifies?.startsWith("tree:")) {
+        missing.push(p.id);
+      }
     } else if (p.kind === "agent") {
-      if (status !== "passed" && status !== "waived") missing.push(p.id);
+      if (status === "waived") {
+        missing.push(p.id);
+        detail.push(`${p.id}: probatio.waived.agent`);
+      } else if (status !== "passed") {
+        missing.push(p.id);
+      }
     } else if (p.kind === "human") {
       // An unrecorded human gate is not demanded — same asymmetry
       // check.ts's state.done.probationes rule already has.
-      if (rec !== undefined && status !== "passed" && status !== "waived") missing.push(p.id);
+      if (rec === undefined || status === "passed") continue;
+      if (status === "waived") {
+        const reason = rec.reason;
+        const reasonOk = typeof reason === "string" && reason.trim().length > 0;
+        const problem = reasonOk ? patronDecisionProblem(root, manifest, rec.waived_by) : `gate "${p.id}" waived with no reason`;
+        if (problem === undefined) honoured.push({ id: p.id, decision: rec.waived_by as string });
+        else {
+          missing.push(p.id);
+          detail.push(`${p.id}: ${problem}`);
+        }
+      } else {
+        missing.push(p.id);
+      }
     }
   }
   if (missing.length) {
-    console.error(`${opusId}: gates not passed: ${missing.join(", ")}`);
+    console.error([`${opusId}: gates not passed: ${missing.join(", ")}`, ...detail].join("\n"));
     return { exitCode: 1 };
   }
 
@@ -246,7 +280,8 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     [WF.ACTOR_ROLE]: sella,
   });
 
-  console.log(`${opusId}: done`);
+  const trace = honoured.length ? ` (waived: ${honoured.map((h) => `${h.id} by ${h.decision}`).join(", ")})` : "";
+  console.log(`${opusId}: done${trace}`);
   return { exitCode: 0 };
 }
 
@@ -666,5 +701,146 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   });
 
   console.log(`${opusId}: state=halted by=${decisionId}`);
+  return { exitCode: 0 };
+}
+
+/**
+ * Whether `decisionId` names an honourable Patron decision: a non-empty
+ * string that `safeItemPath` resolves under `<root>/decisions` to a file
+ * that exists, whose front matter parses, and whose `by` equals
+ * `manifest.patron ?? "patron"`. Never throws — every failure comes back as
+ * a problem string naming the decision id (or "waived_by" when there is no
+ * usable id at all). The one predicate `runWaive` (step 9) and `runDone`'s
+ * human-gate branch both call (studio/briefs/W-034.md, "One predicate, two
+ * callers") — never re-derived at either call site.
+ */
+function patronDecisionProblem(root: string, manifest: Manifest, decisionId: unknown): string | undefined {
+  if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
+  const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
+  if (typeof decisionPath !== "string" || !existsSync(decisionPath)) return `decision "${decisionId}" not found`;
+  let data: Record<string, unknown>;
+  try {
+    data = readFront<Record<string, unknown>>(decisionPath).data;
+  } catch {
+    return `decision "${decisionId}" could not be read`;
+  }
+  const by = data["by"];
+  if (typeof by !== "string" || by.length === 0) return `decision "${decisionId}" has no "by"`;
+  const patronId = manifest.patron ?? "patron";
+  if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
+// 6. waive — building|verifying|review: an honourable Patron waiver on a
+//    kind: human gate only (W-034). The one writer of `status: waived`;
+//    `runDone`'s human branch above is the one reader that trusts it.
+// ---------------------------------------------------------------------------
+
+const WAIVE_USAGE =
+  "usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
+  const parsed = parseFlags(args, { valued: ["--gate", "--reason", "--decision", "--sella", "--studio", "--now"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${WAIVE_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, positionals } = parsed;
+  const opusId = positionals[0];
+  const gateId = values.get("--gate");
+  const reason = values.get("--reason");
+  const decisionId = values.get("--decision");
+  if (!opusId || !gateId || !reason || !reason.trim() || !decisionId) {
+    console.error(WAIVE_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+
+  const opusPath = safeItemPath(join(root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+    console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  // D-021 (W-033 round-1 A1): right after the record-existence check, before
+  // any state/gate/decision check, so a trunk caller gets the ownership
+  // message rather than a deeper refusal (opus behaviour 7).
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
+  const currentState = readState(opusPath);
+  if (typeof currentState !== "string") {
+    console.error(currentState.error);
+    return { exitCode: 2 };
+  }
+  if (!DONE_FROM_STATES.has(currentState)) {
+    console.error(`${opusId} is not building, verifying or review (state: ${currentState || "?"})`);
+    return { exitCode: 2 };
+  }
+
+  const probatio = manifest.probationes.find((p) => p.id === gateId);
+  if (!probatio) {
+    console.error(`${opusId}: gate "${gateId}" not declared`);
+    return { exitCode: 2 };
+  }
+  if (probatio.kind === "automated") {
+    console.error(`${opusId}: gate "${gateId}" cannot be waived (probatio.waived.automated)`);
+    return { exitCode: 2 };
+  }
+  if (probatio.kind === "agent") {
+    console.error(`${opusId}: gate "${gateId}" cannot be waived (probatio.waived.agent)`);
+    return { exitCode: 2 };
+  }
+
+  const front = readFront<OpusFront>(opusPath).data;
+  const rec = (front.probationes ?? {})[gateId];
+  const currentStatus = typeof rec?.status === "string" ? rec.status : undefined;
+  if (currentStatus === "passed" || currentStatus === "failed" || currentStatus === "waived") {
+    console.error(`${opusId}: gate "${gateId}" is already ${currentStatus}`);
+    return { exitCode: 2 };
+  }
+
+  const problem = patronDecisionProblem(root, manifest, decisionId);
+  if (problem !== undefined) {
+    console.error(`${opusId}: ${problem}`);
+    return { exitCode: 2 };
+  }
+
+  const sella = resolveSella(values.get("--sella"));
+
+  editOpusFrontMatter(opusPath, (doc) => {
+    doc.setIn(["probationes", gateId, "status"], "waived");
+    doc.setIn(["probationes", gateId, "reason"], reason);
+    doc.setIn(["probationes", gateId, "waived_by"], decisionId);
+    doc.setIn(["probationes", gateId, "sella"], sella);
+    doc.setIn(["probationes", gateId, "at"], now.toISOString());
+    return undefined;
+  });
+
+  emitEvent(root, manifest, "workflow.gate_evaluated", now, {
+    [WF.ITEM_ID]: opusId,
+    [WF.GATE_ID]: gateId,
+    [WF.GATE_STATUS]: "waived",
+    [WF.GATE_EVIDENCE]: `decisions/${decisionId}.md`,
+    [WF.ACTOR_ROLE]: sella,
+  });
+
+  console.log(`${opusId}: ${gateId} waived by ${decisionId}`);
   return { exitCode: 0 };
 }

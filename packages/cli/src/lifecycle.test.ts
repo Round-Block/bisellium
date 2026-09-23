@@ -23,7 +23,7 @@ import { checkStudio } from "./check.js";
 import { executeClose } from "./close.js";
 import { runCi } from "./ci.js";
 import { splitFront } from "./frontmatter.js";
-import { runReady, runDone, runReview, runRed, runHalt } from "./lifecycle.js";
+import { runReady, runDone, runReview, runRed, runHalt, runWaive } from "./lifecycle.js";
 import { runVerify } from "./verify.js";
 import { runGreenlight, runHandoff, type WriteResult } from "./writes.js";
 
@@ -72,6 +72,36 @@ function writeOpus(dir: string, id: string, contents: string): string {
   const path = join(dir, "opera", `${id}.md`);
   writeFileSync(path, contents);
   return path;
+}
+
+/** W-034: a `decisions/<id>.md` fixture with full `decision.shape` keys
+ *  (`id`, `title`, `at`, `provenance`, `by`, `kill_when`) unless `raw` is
+ *  given, for the unparseable-YAML case (D-903) — a decision `waive`/`done`
+ *  must be able to name in a refusal even though it can't be read. */
+function writeDecision(dir: string, id: string, opts: { by?: unknown; raw?: string } = {}): string {
+  const decisionsDir = join(dir, "decisions");
+  mkdirSync(decisionsDir, { recursive: true });
+  const p = join(decisionsDir, `${id}.md`);
+  if (opts.raw !== undefined) {
+    writeFileSync(p, opts.raw);
+    return p;
+  }
+  const byLine = opts.by === undefined ? "by: patron" : `by: ${typeof opts.by === "string" ? opts.by : JSON.stringify(opts.by)}`;
+  const lines = ["---", `id: ${id}`, `title: Fixture decision ${id}`, "at: 2026-09-24T00:00:00Z", "provenance: stated"];
+  if (opts.by !== false) lines.push(byLine); // false: omit the "by" key entirely (D-904)
+  lines.push('kill_when: "never"', "---", "Body.", "");
+  writeFileSync(p, lines.join("\n"));
+  return p;
+}
+
+/** Sets/overwrites the manifest's top-level `patron:` id — the literal
+ *  "patron" comparison bug behaviours 3/6 exist to catch (an implementation
+ *  that hardcodes "patron" instead of reading `manifest.patron`). */
+function setManifestPatron(dir: string, patronId: string): void {
+  const path = join(dir, "bisellium.yml");
+  const doc = parseDocument(readFileSync(path, "utf8"));
+  doc.setIn(["patron"], patronId);
+  writeFileSync(path, doc.toString({ lineWidth: 0 }));
 }
 
 // =============================================================================
@@ -178,6 +208,23 @@ async function withStderr<T>(fn: () => T | Promise<T>): Promise<{ result: T; std
     return { result, stderr };
   } finally {
     console.error = orig;
+  }
+}
+
+/** Same as `withStderr`, for stdout — W-034's trace assertions (`done`'s
+ *  "waived: patron by D-900" line) read what the command printed, not just
+ *  its exit code. */
+async function withStdout<T>(fn: () => T | Promise<T>): Promise<{ result: T; stdout: string }> {
+  const orig = console.log;
+  let stdout = "";
+  console.log = (...parts: unknown[]) => {
+    stdout += parts.map(String).join(" ") + "\n";
+  };
+  try {
+    const result = await fn();
+    return { result, stdout };
+  } finally {
+    console.log = orig;
   }
 }
 
@@ -299,7 +346,7 @@ try {
     "  tests: { status: passed, evidence: ci/x.log, certifies: tree:abc123 }",
     "  lint: { status: passed, evidence: ci/x.log, certifies: tree:abc123 }",
     "  types: { status: passed, evidence: ci/x.log, certifies: tree:abc123 }",
-    "  qa: { status: waived, reason: not needed, evidence: n/a }",
+    "  qa: { status: passed, evidence: reviews/x.md }",
     "  review: { status: passed, evidence: reviews/x.md, certifies: tree:abc123 }",
   ];
   const passingProbationes = passingLines.join("\n");
@@ -1224,6 +1271,635 @@ try {
     check("W-033 A5: ci --opus refused while opus/W-161 exists", ciResult.exitCode === 2, String(ciResult.exitCode));
     check("W-033 A5: ci --opus message names opus/W-161 and D-021", ciStderr.includes("opus/W-161") && ciStderr.includes("D-021"), ciStderr);
     check("W-033 A5: ci --opus leaves the record byte-identical", readFileSync(ciPath, "utf8") === ciBefore);
+  }
+
+  // =========================================================================
+  // W-034 — `done` honours a Patron waiver, human gates only. Behaviour n is
+  // block 30+n for n=1-9 and n=11; behaviour 10 is
+  // examples/fixtures/bad-waived-agent/, picked up by test.ts, not here.
+  // =========================================================================
+
+  /** Every gate `runDone` demands, all passed by default — behaviours 1/2/3/
+   *  4/9/11's shared baseline. `overrides` replaces (or, with `undefined`,
+   *  drops) one gate's line; a dropped gate is "unrecorded". `spec`/`legal`
+   *  are never in the base — only present when a caller's manifest declares
+   *  them and passes an explicit override. */
+  function w034Lines(overrides: Record<string, string | undefined> = {}): string {
+    const base: Record<string, string | undefined> = {
+      tests: "{ status: passed, evidence: ci/x.log, certifies: tree:abc123 }",
+      lint: "{ status: passed, evidence: ci/x.log, certifies: tree:abc123 }",
+      types: "{ status: passed, evidence: ci/x.log, certifies: tree:abc123 }",
+      qa: "{ status: passed, evidence: reviews/x.md }",
+      review: "{ status: passed, evidence: reviews/x.md }",
+      ...overrides,
+    };
+    return Object.entries(base)
+      .filter((e): e is [string, string] => e[1] !== undefined)
+      .map(([id, v]) => `  ${id}: ${v}`)
+      .join("\n");
+  }
+
+  // ---- behaviour 1 (block 31): the agent row, cell by cell — qa, review,
+  //      spec (added to the manifest for this block only) -----------------
+  if (runs(31)) {
+    const dir = freshStudio("done-agent-row");
+    addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
+    let n = 0;
+    const nextId = () => `W-5${String(++n).padStart(2, "0")}`;
+
+    for (const gate of ["qa", "review", "spec"] as const) {
+      const passLine = gate === "spec" ? "{ status: passed, evidence: briefs/x.md }" : "{ status: passed, evidence: reviews/x.md }";
+
+      for (const status of ["unrecorded", "pending", "failed", "stale"] as const) {
+        const id = nextId();
+        const line = status === "unrecorded" ? undefined : status === "failed" ? "{ status: failed, evidence: reviews/x.md }" : `{ status: ${status} }`;
+        writeOpus(dir, id, opusWithProbationes(id, "building", w034Lines({ spec: passLine, [gate]: line })));
+        const r = runDone([id, "--studio", dir], { now: NOW });
+        check(`done b1: ${gate} ${status} exits 1`, r.exitCode === 1, `${gate}/${status}: ${r.exitCode}`);
+      }
+
+      // The positive control: passed exits 0.
+      const idPass = nextId();
+      writeOpus(dir, idPass, opusWithProbationes(idPass, "building", w034Lines({ spec: passLine, [gate]: passLine })));
+      const rPass = runDone([idPass, "--studio", dir], { now: NOW });
+      check(`done b1: ${gate} passed exits 0 (control)`, rPass.exitCode === 0, String(rPass.exitCode));
+
+      // Waived, in two shapes — both refuse, an agent gate is never waivable.
+      for (const [shape, line] of [
+        ["honourable-shaped", "{ status: waived, reason: x, waived_by: D-900, sella: guest, at: 2026-01-01T00:00:00Z }"],
+        ["bare", "{ status: waived }"],
+      ] as const) {
+        const idW = nextId();
+        writeOpus(dir, idW, opusWithProbationes(idW, "building", w034Lines({ spec: passLine, [gate]: line })));
+        const { result: rW, stderr } = await withStderr(() => runDone([idW, "--studio", dir], { now: NOW }));
+        check(`done b1: ${gate} waived (${shape}) exits 1`, rW.exitCode === 1, String(rW.exitCode));
+        check(`done b1: ${gate} waived (${shape}) stderr names the gate and probatio.waived.agent`, stderr.includes(gate) && stderr.includes("probatio.waived.agent"), stderr);
+      }
+    }
+  }
+
+  // ---- behaviour 2 (block 32): the automated row, cell by cell — tests ---
+  if (runs(32)) {
+    const dir = freshStudio("done-automated-row");
+    let n = 0;
+    const nextId = () => `W-6${String(++n).padStart(2, "0")}`;
+
+    for (const status of ["unrecorded", "pending", "failed", "stale"] as const) {
+      const id = nextId();
+      const line = status === "unrecorded" ? undefined : status === "failed" ? "{ status: failed, evidence: ci/x.log, certifies: tree:abc123 }" : `{ status: ${status} }`;
+      writeOpus(dir, id, opusWithProbationes(id, "building", w034Lines({ tests: line })));
+      const r = runDone([id, "--studio", dir], { now: NOW });
+      check(`done b2: tests ${status} exits 1`, r.exitCode === 1, String(r.exitCode));
+    }
+
+    const idDirty = nextId();
+    writeOpus(dir, idDirty, opusWithProbationes(idDirty, "building", w034Lines({ tests: "{ status: passed, evidence: ci/x.log, certifies: dirty:abc123 }" })));
+    const rDirty = runDone([idDirty, "--studio", dir], { now: NOW });
+    check("done b2: tests passed with a dirty certificate exits 1", rDirty.exitCode === 1, String(rDirty.exitCode));
+
+    const idPass = nextId();
+    writeOpus(dir, idPass, opusWithProbationes(idPass, "building", w034Lines({ tests: "{ status: passed, evidence: ci/x.log, certifies: tree:abc123 }" })));
+    const rPass = runDone([idPass, "--studio", dir], { now: NOW });
+    check("done b2: tests passed with a tree certificate exits 0 (control)", rPass.exitCode === 0, String(rPass.exitCode));
+
+    const idW = nextId();
+    writeOpus(dir, idW, opusWithProbationes(idW, "building", w034Lines({ tests: "{ status: waived, reason: x, waived_by: D-900 }" })));
+    const { result: rW, stderr: sW } = await withStderr(() => runDone([idW, "--studio", dir], { now: NOW }));
+    check("done b2: tests waived exits 1", rW.exitCode === 1, String(rW.exitCode));
+    check(
+      "done b2: tests waived stderr names tests, probatio.waived.automated and revert",
+      sW.includes("tests") && sW.includes("probatio.waived.automated") && sW.includes("revert"),
+      sW,
+    );
+  }
+
+  // ---- behaviour 3 (block 33): the human row's refusals, cell by cell —
+  //      patron ---------------------------------------------------------
+  if (runs(33)) {
+    const dir = freshStudio("done-human-refuse");
+    writeDecision(dir, "D-900", { by: "patron" });
+    writeDecision(dir, "D-901", { by: "architect" });
+    writeDecision(dir, "D-903", { raw: "---\nid: D-903\n\tbad: [unclosed\n---\nBody.\n" });
+    writeDecision(dir, "D-904", { by: false });
+    writeDecision(dir, "D-905", { by: ["patron"] });
+    // The containment sentinel: a valid Patron decision, written OUTSIDE
+    // decisions/ at the officina root — only safeItemPath's containment
+    // guard (never a raw join) refuses "../D-777" as a --decision value.
+    writeFileSync(
+      join(dir, "D-777.md"),
+      ["---", "id: D-777", "title: Containment sentinel", "at: 2026-09-24T00:00:00Z", "provenance: stated", "by: patron", 'kill_when: "never"', "---", "Body.", ""].join("\n"),
+    );
+
+    let n = 0;
+    const nextId = () => `W-7${String(++n).padStart(2, "0")}`;
+
+    for (const status of ["pending", "failed", "stale"] as const) {
+      const id = nextId();
+      const line = status === "failed" ? "{ status: failed, evidence: ci/x.log }" : `{ status: ${status} }`;
+      writeOpus(dir, id, opusWithProbationes(id, "building", w034Lines({ patron: line })));
+      const r = runDone([id, "--studio", dir], { now: NOW });
+      check(`done b3: patron ${status} exits 1`, r.exitCode === 1, String(r.exitCode));
+    }
+
+    const waiverRows: [string, string, string][] = [
+      ["reason absent", "{ status: waived, waived_by: D-900 }", "reason"],
+      ["reason blank", '{ status: waived, reason: "   ", waived_by: D-900 }', "reason"],
+      ["reason not a string", "{ status: waived, reason: 42, waived_by: D-900 }", "reason"],
+      ["waived_by absent", "{ status: waived, reason: x }", "waived_by"],
+      ["waived_by empty", '{ status: waived, reason: x, waived_by: "" }', "waived_by"],
+      ["waived_by not a string", "{ status: waived, reason: x, waived_by: 900 }", "waived_by"],
+      ["waived_by not found", "{ status: waived, reason: x, waived_by: D-404 }", "D-404"],
+      ["waived_by wrong signer", "{ status: waived, reason: x, waived_by: D-901 }", "D-901"],
+      ["waived_by unparseable", "{ status: waived, reason: x, waived_by: D-903 }", "D-903"],
+      ["waived_by no by", "{ status: waived, reason: x, waived_by: D-904 }", "D-904"],
+      ["waived_by by not a string", "{ status: waived, reason: x, waived_by: D-905 }", "D-905"],
+      ["waived_by containment sentinel", '{ status: waived, reason: x, waived_by: "../D-777" }', "../D-777"],
+    ];
+    for (const [label, line, token] of waiverRows) {
+      const id = nextId();
+      writeOpus(dir, id, opusWithProbationes(id, "building", w034Lines({ patron: line })));
+      const { result: r, stderr } = await withStderr(() => runDone([id, "--studio", dir], { now: NOW }));
+      check(`done b3: ${label} exits 1`, r.exitCode === 1, String(r.exitCode));
+      check(`done b3: ${label} stderr names patron and "${token}"`, stderr.includes("patron") && stderr.includes(token), stderr);
+    }
+  }
+
+  // ---- behaviour 4 (block 34): the human row's passes, and the trace -----
+  if (runs(34)) {
+    const dir = freshStudio("done-human-pass");
+    writeDecision(dir, "D-900", { by: "patron" });
+    // Real evidence files, so the checkStudio call below reports only what
+    // this behaviour is actually about (link.dead is a pre-existing rule,
+    // not one of the three this assertion names, but a fixture that leaves
+    // it firing is still noise worth avoiding).
+    writeFileSync(join(dir, "ci", "x.log"), "ok\n");
+    mkdirSync(join(dir, "reviews"), { recursive: true });
+    writeFileSync(join(dir, "reviews", "x.md"), "Reviewed.\n");
+    mkdirSync(join(dir, "acta"), { recursive: true });
+    writeFileSync(join(dir, "acta", "x.md"), "Acta.\n");
+
+    const idUnrec = "W-800";
+    writeOpus(dir, idUnrec, opusWithProbationes(idUnrec, "building", w034Lines({})));
+    const { result: rUnrec, stdout: outUnrec } = await withStdout(() => runDone([idUnrec, "--studio", dir], { now: NOW }));
+    check("done b4: unrecorded patron exits 0", rUnrec.exitCode === 0, String(rUnrec.exitCode));
+    check("done b4: unrecorded patron stdout has no 'waived:'", !outUnrec.includes("waived:"), outUnrec);
+
+    const idPassed = "W-801";
+    writeOpus(dir, idPassed, opusWithProbationes(idPassed, "building", w034Lines({ patron: "{ status: passed, evidence: acta/x.md }" })));
+    const { result: rPassed, stdout: outPassed } = await withStdout(() => runDone([idPassed, "--studio", dir], { now: NOW }));
+    check("done b4: passed patron exits 0", rPassed.exitCode === 0, String(rPassed.exitCode));
+    check("done b4: passed patron stdout has no 'waived:'", !outPassed.includes("waived:"), outPassed);
+
+    const idHon = "W-802";
+    writeOpus(
+      dir,
+      idHon,
+      opusWithProbationes(idHon, "review", w034Lines({ patron: "{ status: waived, reason: docs-only opus, waived_by: D-900, sella: guest, at: 2026-09-24T00:00:00Z }" })),
+    );
+    const opusPathHon = join(dir, "opera", `${idHon}.md`);
+    const beforeProbationes = readFront<{ probationes: Record<string, unknown> }>(opusPathHon).data.probationes;
+    const beforeSplit = splitFront(readFileSync(opusPathHon, "utf8"))!;
+
+    const { result: rHon, stdout: outHon } = await withStdout(() => runDone([idHon, "--studio", dir], { now: NOW }));
+    check("done b4: honourable waiver exits 0", rHon.exitCode === 0, String(rHon.exitCode));
+    check(
+      "done b4: honourable waiver stdout names waived/patron/D-900",
+      outHon.includes("waived:") && outHon.includes("patron") && outHon.includes("D-900"),
+      outHon,
+    );
+
+    const after = readFront<{ state: string; probationes: Record<string, { status: string }> }>(opusPathHon).data;
+    check("done b4: honourable waiver state -> done", after.state === "done", after.state);
+    check(
+      "done b4: probationes deep-equal before and after — the waiver is never rewritten",
+      JSON.stringify(after.probationes) === JSON.stringify(beforeProbationes),
+      JSON.stringify({ before: beforeProbationes, after: after.probationes }),
+    );
+    check("done b4: patron.status is still waived", after.probationes.patron?.status === "waived", JSON.stringify(after.probationes.patron));
+    const afterSplit = splitFront(readFileSync(opusPathHon, "utf8"))!;
+    check("done b4: body byte-identical", afterSplit.body === beforeSplit.body, JSON.stringify({ before: beforeSplit.body, after: afterSplit.body }));
+
+    const findings = checkStudio(dir, NOW).findings.filter((f) => f.where.includes(idHon));
+    check(
+      "done b4: check reports no state.done.probationes/probatio.waived.agent/probatio.waived.reason for the honoured opus",
+      !findings.some((f) => ["state.done.probationes", "probatio.waived.agent", "probatio.waived.reason"].includes(f.rule)),
+      JSON.stringify(findings),
+    );
+  }
+
+  // ---- behaviour 5 (block 35): `waive` writes a Patron waiver on every
+  //      admitted state and status ----------------------------------------
+  if (runs(35)) {
+    const dir = freshStudio("waive-writes");
+    writeDecision(dir, "D-900", { by: "patron" });
+
+    const idBase = "W-900";
+    writeOpus(dir, idBase, opusWithProbationes(idBase, "building", w034Lines({ patron: "{ status: pending, note: keep-me }" })));
+    const opusPathBase = join(dir, "opera", `${idBase}.md`);
+    const beforeSplit = splitFront(readFileSync(opusPathBase, "utf8"))!;
+    const beforeProbationes = readFront<{ probationes: Record<string, unknown> }>(opusPathBase).data.probationes;
+
+    const r = runWaive([idBase, "--gate", "patron", "--reason", "docs-only opus", "--decision", "D-900", "--sella", "guest", "--studio", dir], { now: NOW });
+    check("waive b5: base case exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const after = readFront<{ state: string; probationes: Record<string, Record<string, unknown>> }>(opusPathBase).data;
+    const patronAfter = after.probationes["patron"];
+    check(
+      "waive b5: the five keys are set from the CLI arguments",
+      patronAfter?.["status"] === "waived" &&
+        patronAfter?.["reason"] === "docs-only opus" &&
+        patronAfter?.["waived_by"] === "D-900" &&
+        patronAfter?.["sella"] === "guest" &&
+        patronAfter?.["at"] === NOW.toISOString(),
+      JSON.stringify(patronAfter),
+    );
+    check("waive b5: the sibling key 'note' survives", patronAfter?.["note"] === "keep-me", JSON.stringify(patronAfter));
+    check("waive b5: no stray key beyond the five plus 'note'", Object.keys(patronAfter ?? {}).length === 6, JSON.stringify(patronAfter));
+    check("waive b5: state stays building", after.state === "building", after.state);
+    const afterSplit = splitFront(readFileSync(opusPathBase, "utf8"))!;
+    check("waive b5: body byte-identical", afterSplit.body === beforeSplit.body, JSON.stringify({ before: beforeSplit.body, after: afterSplit.body }));
+    const { patron: _beforePatron, ...beforeRest } = beforeProbationes;
+    const { patron: _afterPatron, ...afterRest } = after.probationes;
+    check("waive b5: every other gate is deep-equal to before", JSON.stringify(afterRest) === JSON.stringify(beforeRest), JSON.stringify({ beforeRest, afterRest }));
+
+    const events = readEventLines(dir);
+    check("waive b5: exactly one workflow.gate_evaluated event", events.length === 1 && events[0]?.["name"] === "workflow.gate_evaluated", JSON.stringify(events));
+    const attrs = events[0]?.["attrs"] as Record<string, unknown> | undefined;
+    check(
+      "waive b5: event carries item/gate/status/evidence/actor",
+      attrs?.[WF.ITEM_ID] === idBase &&
+        attrs?.[WF.GATE_ID] === "patron" &&
+        attrs?.[WF.GATE_STATUS] === "waived" &&
+        attrs?.[WF.GATE_EVIDENCE] === "decisions/D-900.md" &&
+        attrs?.[WF.ACTOR_ROLE] === "guest",
+      JSON.stringify(attrs),
+    );
+
+    // Repeat the base case with one thing changed each time.
+    const variants: { label: string; state: string; patronLine: string | undefined }[] = [
+      { label: "state verifying", state: "verifying", patronLine: "{ status: pending }" },
+      { label: "state review", state: "review", patronLine: "{ status: pending }" },
+      { label: "patron recorded as stale", state: "building", patronLine: "{ status: stale }" },
+      { label: "patron unrecorded", state: "building", patronLine: undefined },
+    ];
+    let vn = 0;
+    for (const v of variants) {
+      vn++;
+      const id = `W-91${vn}`;
+      writeOpus(dir, id, opusWithProbationes(id, v.state, w034Lines({ patron: v.patronLine })));
+      const rv = runWaive([id, "--gate", "patron", "--reason", "r", "--decision", "D-900", "--sella", "guest", "--studio", dir], { now: NOW });
+      check(`waive b5: ${v.label} exits 0`, rv.exitCode === 0, String(rv.exitCode));
+      const av = readFront<{ probationes: Record<string, { status: string }> }>(join(dir, "opera", `${id}.md`)).data;
+      check(`waive b5: ${v.label} writes status: waived`, av.probationes.patron?.status === "waived", JSON.stringify(av.probationes.patron));
+    }
+
+    // A temp manifest with patron: edene, and a decision with by: edene.
+    const dir2 = freshStudio("waive-writes-custom-patron");
+    setManifestPatron(dir2, "edene");
+    writeDecision(dir2, "D-950", { by: "edene" });
+    const idCustom = "W-920";
+    writeOpus(dir2, idCustom, opusWithProbationes(idCustom, "building", w034Lines({ patron: "{ status: pending }" })));
+    const rCustom = runWaive([idCustom, "--gate", "patron", "--reason", "r", "--decision", "D-950", "--sella", "guest", "--studio", dir2], { now: NOW });
+    check("waive b5: manifest patron: edene, decision by: edene exits 0", rCustom.exitCode === 0, String(rCustom.exitCode));
+    const aCustom = readFront<{ probationes: Record<string, { status: string }> }>(join(dir2, "opera", `${idCustom}.md`)).data;
+    check("waive b5: custom patron id writes status: waived", aCustom.probationes.patron?.status === "waived", JSON.stringify(aCustom.probationes.patron));
+  }
+
+  // ---- behaviour 6 (block 36): every `waive` refusal exits 2, leaves the
+  //      record unchanged, and names its own cause -------------------------
+  if (runs(36)) {
+    const dir = freshStudio("waive-refuse");
+    writeDecision(dir, "D-900", { by: "patron" });
+    writeDecision(dir, "D-901", { by: "architect" });
+    writeDecision(dir, "D-903", { raw: "---\nid: D-903\n\tbad: [unclosed\n---\nBody.\n" });
+    writeDecision(dir, "D-904", { by: false });
+    writeDecision(dir, "D-905", { by: ["patron"] });
+    writeFileSync(
+      join(dir, "D-777.md"),
+      ["---", "id: D-777", "title: Containment sentinel", "at: 2026-09-24T00:00:00Z", "provenance: stated", "by: patron", 'kill_when: "never"', "---", "Body.", ""].join("\n"),
+    );
+
+    let n = 0;
+    const nextId = () => `W-93${String(++n).padStart(2, "0")}`;
+    const opusPathFor = (id: string) => join(dir, "opera", `${id}.md`);
+    function freshBuildingOpus(patronLine: string | undefined): string {
+      const id = nextId();
+      writeOpus(dir, id, opusWithProbationes(id, "building", w034Lines({ patron: patronLine })));
+      return id;
+    }
+
+    async function assertRefusal(label: string, opusPath: string | undefined, args: string[], tokens: string[]): Promise<void> {
+      const before = opusPath !== undefined && existsSync(opusPath) ? readFileSync(opusPath, "utf8") : undefined;
+      const eventsBefore = readEventLines(dir).length;
+      let r: WriteResult;
+      let stderr: string;
+      try {
+        ({ result: r, stderr } = await withStderr(() => runWaive(args, { now: NOW })));
+      } catch (e) {
+        check(`waive b6: ${label} does not throw`, false, (e as Error).message);
+        return;
+      }
+      check(`waive b6: ${label} exits 2`, r.exitCode === 2, String(r.exitCode));
+      if (before !== undefined) check(`waive b6: ${label} record unchanged`, readFileSync(opusPath!, "utf8") === before);
+      check(`waive b6: ${label} events unchanged`, readEventLines(dir).length === eventsBefore);
+      check(`waive b6: ${label} stderr names ${JSON.stringify(tokens)}`, tokens.every((t) => stderr.includes(t)), stderr);
+    }
+
+    for (const [label, args] of [
+      ["missing --gate", ["--reason", "r", "--decision", "D-900"]],
+      ["missing --reason", ["--gate", "patron", "--decision", "D-900"]],
+      ["missing --decision", ["--gate", "patron", "--reason", "r"]],
+      ["blank --reason", ["--gate", "patron", "--reason", "   ", "--decision", "D-900"]],
+    ] as [string, string[]][]) {
+      const id = freshBuildingOpus("{ status: pending }");
+      await assertRefusal(label, opusPathFor(id), [id, ...args, "--studio", dir], ["usage:"]);
+    }
+
+    await assertRefusal("unknown opus", undefined, ["W-9999", "--gate", "patron", "--reason", "r", "--decision", "D-900", "--studio", dir], ["unknown opus"]);
+
+    for (const state of ["greenlit", "halted", "done"] as const) {
+      const id = nextId();
+      const extra = state === "halted" ? ["halted_at: 2026-01-01T00:00:00Z", "reason: r", "resume_when: rw"] : [];
+      writeOpus(
+        dir,
+        id,
+        [
+          "---",
+          `id: ${id}`,
+          "title: state refusal",
+          "kind: feature",
+          "collegium: engineering",
+          `state: ${state}`,
+          ...extra,
+          "probationes:",
+          w034Lines({ patron: "{ status: pending }" }),
+          "---",
+          "Body.",
+          "",
+        ].join("\n"),
+      );
+      await assertRefusal(`state ${state}`, opusPathFor(id), [id, "--gate", "patron", "--reason", "r", "--decision", "D-900", "--studio", dir], ["is not building", state]);
+    }
+
+    {
+      const id = freshBuildingOpus("{ status: pending }");
+      await assertRefusal("--gate nope", opusPathFor(id), [id, "--gate", "nope", "--reason", "r", "--decision", "D-900", "--studio", dir], ["not declared"]);
+    }
+    {
+      const id = freshBuildingOpus("{ status: pending }");
+      await assertRefusal("--gate tests", opusPathFor(id), [id, "--gate", "tests", "--reason", "r", "--decision", "D-900", "--studio", dir], ["probatio.waived.automated"]);
+    }
+    for (const gate of ["qa", "review"] as const) {
+      const id = freshBuildingOpus("{ status: pending }");
+      await assertRefusal(`--gate ${gate}`, opusPathFor(id), [id, "--gate", gate, "--reason", "r", "--decision", "D-900", "--studio", dir], ["probatio.waived.agent"]);
+    }
+    for (const status of ["passed", "failed", "waived"] as const) {
+      const line =
+        status === "passed"
+          ? "{ status: passed, evidence: acta/x.md }"
+          : status === "failed"
+            ? "{ status: failed, evidence: acta/x.md }"
+            : "{ status: waived, reason: x, waived_by: D-900 }";
+      const id = freshBuildingOpus(line);
+      await assertRefusal(`patron already ${status}`, opusPathFor(id), [id, "--gate", "patron", "--reason", "r", "--decision", "D-900", "--studio", dir], [`already ${status}`]);
+    }
+    for (const [label, decisionId, tokens] of [
+      ["decision not found", "D-404", ["D-404", "not found"]],
+      ["decision containment sentinel", "../D-777", ["../D-777"]],
+      ["decision wrong signer", "D-901", ["D-901", "patron"]],
+      ["decision unparseable", "D-903", ["D-903"]],
+      ["decision no by", "D-904", ["D-904"]],
+      ["decision by not a string", "D-905", ["D-905"]],
+    ] as [string, string, string[]][]) {
+      const id = freshBuildingOpus("{ status: pending }");
+      await assertRefusal(label, opusPathFor(id), [id, "--gate", "patron", "--reason", "r", "--decision", decisionId, "--studio", dir], tokens);
+    }
+
+    // The literal "patron" comparison bug: a manifest with a custom patron
+    // id, and a decision signed by the LITERAL string "patron" (not the
+    // manifest's own patron id) — must fail, naming "edene".
+    const dir2 = freshStudio("waive-refuse-literal-patron");
+    setManifestPatron(dir2, "edene");
+    writeDecision(dir2, "D-960", { by: "patron" });
+    const idLit = "W-940";
+    writeOpus(dir2, idLit, opusWithProbationes(idLit, "building", w034Lines({ patron: "{ status: pending }" })));
+    const litPath = join(dir2, "opera", `${idLit}.md`);
+    const litBefore = readFileSync(litPath, "utf8");
+    const { result: rLit, stderr: sLit } = await withStderr(() =>
+      runWaive([idLit, "--gate", "patron", "--reason", "r", "--decision", "D-960", "--studio", dir2], { now: NOW }),
+    );
+    check("waive b6: manifest patron: edene, decision by: patron exits 2", rLit.exitCode === 2, String(rLit.exitCode));
+    check("waive b6: stderr names edene, not the literal 'patron'", sLit.includes("edene"), sLit);
+    check("waive b6: record unchanged", readFileSync(litPath, "utf8") === litBefore);
+  }
+
+  // ---- behaviour 7 (block 37): `waive` obeys D-021, and the guard runs
+  //      straight after the record lookup ---------------------------------
+  if (runs(37)) {
+    const gitRepo = tmpGitStudioRepo("waive-d021");
+    const studioDir = join(gitRepo, "studio");
+    writeDecision(studioDir, "D-900", { by: "patron" });
+    writeOpus(studioDir, "W-950", opusWithProbationes("W-950", "building", w034Lines({ patron: "{ status: pending }" })));
+    writeOpus(
+      studioDir,
+      "W-951",
+      [
+        "---",
+        "id: W-951",
+        "title: halted target",
+        "kind: feature",
+        "collegium: engineering",
+        "state: halted",
+        "halted_at: 2026-01-01T00:00:00Z",
+        "reason: r",
+        "resume_when: rw",
+        "probationes: {}",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    gitCommitAll(gitRepo, "init");
+    gitBranch(gitRepo, "opus/W-950");
+    gitBranch(gitRepo, "opus/W-951");
+
+    const path950 = join(studioDir, "opera", "W-950.md");
+    const before950 = readFileSync(path950, "utf8");
+    const { result: r1, stderr: s1 } = await withStderr(() =>
+      runWaive(["W-950", "--gate", "tests", "--reason", "r", "--decision", "D-900", "--studio", studioDir], { now: NOW }),
+    );
+    check("waive b7: trunk refuses (automated gate, chosen on purpose) with exit 2", r1.exitCode === 2, String(r1.exitCode));
+    check(
+      "waive b7: refusal names opus/W-950 and D-021, and none of the deeper checks",
+      s1.includes("opus/W-950") &&
+        s1.includes("D-021") &&
+        !s1.includes("probatio.waived.automated") &&
+        !s1.includes("is not building") &&
+        !s1.includes("not declared") &&
+        !s1.includes("not found"),
+      s1,
+    );
+    check("waive b7: W-950 record unchanged", readFileSync(path950, "utf8") === before950);
+
+    const path951 = join(studioDir, "opera", "W-951.md");
+    const before951 = readFileSync(path951, "utf8");
+    const { result: r2, stderr: s2 } = await withStderr(() =>
+      runWaive(["W-951", "--gate", "nope", "--decision", "D-404", "--reason", "r", "--studio", studioDir], { now: NOW }),
+    );
+    check("waive b7: trunk refuses (halted + unknown gate + bad decision, all at once) with exit 2", r2.exitCode === 2, String(r2.exitCode));
+    check(
+      "waive b7: second refusal also names only opus/W-951 and D-021",
+      s2.includes("opus/W-951") &&
+        s2.includes("D-021") &&
+        !s2.includes("probatio.waived.automated") &&
+        !s2.includes("is not building") &&
+        !s2.includes("not declared") &&
+        !s2.includes("not found"),
+      s2,
+    );
+    check("waive b7: W-951 record unchanged", readFileSync(path951, "utf8") === before951);
+    check("waive b7: git status is clean", gitStatusPorcelain(gitRepo).trim() === "", gitStatusPorcelain(gitRepo));
+
+    const wtPath = gitWorktreeAdd(gitRepo, [], "opus/W-950");
+    const wtStudioDir = join(wtPath, "studio");
+    const r3 = runWaive(["W-950", "--gate", "patron", "--reason", "r", "--decision", "D-900", "--studio", wtStudioDir], { now: NOW });
+    check("waive b7: worktree with opus/W-950 checked out exits 0", r3.exitCode === 0, String(r3.exitCode));
+    check("waive b7: the trunk's record stays byte-identical", readFileSync(path950, "utf8") === before950);
+  }
+
+  // ---- behaviour 8 (block 38): end to end through the real CLI entry, with
+  //      no front matter written by the test after setup -------------------
+  if (runs(38)) {
+    const dir = freshStudio("waive-e2e");
+    writeDecision(dir, "D-900", { by: "patron" });
+    const id = "W-960";
+    writeOpus(dir, id, opusWithProbationes(id, "building", w034Lines({ patron: "{ status: pending }" })));
+
+    const mainPath = join(repo, "packages/cli/src/main.ts");
+    const runMain = (args: string[]): { status: number; stdout: string; stderr: string } => {
+      try {
+        const stdout = execFileSync(process.execPath, ["--import", "tsx", mainPath, ...args], { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+        return { status: 0, stdout, stderr: "" };
+      } catch (e) {
+        const err = e as { status?: number; stdout?: string; stderr?: string };
+        return { status: err.status ?? 1, stdout: err.stdout ?? "", stderr: err.stderr ?? "" };
+      }
+    };
+
+    const r1 = runMain(["done", id, "--studio", dir, "--now", NOW.toISOString()]);
+    check("waive b8: done before waiving exits 1", r1.status === 1, String(r1.status));
+    check("waive b8: done before waiving names patron", r1.stderr.includes("patron"), r1.stderr);
+
+    const r2 = runMain(["waive", id, "--gate", "patron", "--reason", "docs-only opus", "--decision", "D-900", "--sella", "guest", "--studio", dir, "--now", NOW.toISOString()]);
+    check("waive b8: waive exits 0", r2.status === 0, `${r2.status} ${r2.stderr}`);
+
+    const r3 = runMain(["done", id, "--studio", dir, "--now", NOW.toISOString()]);
+    check("waive b8: done after waiving exits 0", r3.status === 0, String(r3.status));
+    check("waive b8: done after waiving stdout names the waiver", r3.stdout.includes("waived: patron"), r3.stdout);
+    const after = readFront<{ state: string }>(join(dir, "opera", `${id}.md`)).data;
+    check("waive b8: record reads state: done", after.state === "done", after.state);
+
+    const r4 = runMain([]);
+    check("waive b8: main.ts with no arguments exits 2", r4.status === 2, String(r4.status));
+    const bannerLine = r4.stderr
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.startsWith("bisellium waive <opus> --gate <id> --reason <text> --decision <id>"));
+    check("waive b8: the usage banner lists bisellium waive with its exact flags", bannerLine !== undefined, r4.stderr);
+  }
+
+  // ---- behaviour 9 (block 39): `close` inherits both halves --------------
+  if (runs(39)) {
+    const dir = freshStudio("close-inherits-waiver");
+    writeDecision(dir, "D-900", { by: "patron" });
+
+    const idAgent = "W-810";
+    writeOpus(
+      dir,
+      idAgent,
+      opusWithProbationes(idAgent, "building", w034Lines({ qa: "{ status: waived, reason: x, waived_by: D-900, sella: guest, at: 2026-09-24T00:00:00Z }" })),
+    );
+    const opusPathAgent = join(dir, "opera", `${idAgent}.md`);
+    const beforeAgent = readFileSync(opusPathAgent, "utf8");
+    const closeAgent = executeClose(dir, idAgent);
+    check("close b9: an honourable-shaped agent-gate waiver still refuses", closeAgent.ok === false, JSON.stringify(closeAgent));
+    check("close b9: the record is unchanged", readFileSync(opusPathAgent, "utf8") === beforeAgent);
+
+    const idHuman = "W-811";
+    writeOpus(
+      dir,
+      idHuman,
+      opusWithProbationes(idHuman, "building", w034Lines({ patron: "{ status: waived, reason: x, waived_by: D-900, sella: guest, at: 2026-09-24T00:00:00Z }" })),
+    );
+    const opusPathHuman = join(dir, "opera", `${idHuman}.md`);
+    const closeHuman = executeClose(dir, idHuman);
+    check("close b9: a Patron-waived human gate reaches done", closeHuman.ok === true, JSON.stringify(closeHuman));
+    const afterHuman = readFront<{ state: string }>(opusPathHuman).data;
+    check("close b9: state -> done", afterHuman.state === "done", afterHuman.state);
+  }
+
+  // ---- behaviour 11 (block 41): every waived gate is reported, not just
+  //      the first -----------------------------------------------------
+  if (runs(41)) {
+    const dir = freshStudio("done-multi-gate-report");
+    addProbatio(dir, { id: "legal", name: "Legal sign-off", kind: "human" });
+    writeDecision(dir, "D-900", { by: "patron" });
+    writeDecision(dir, "D-902", { by: "patron" });
+
+    const idRefuse = "W-820";
+    writeOpus(
+      dir,
+      idRefuse,
+      opusWithProbationes(
+        idRefuse,
+        "building",
+        w034Lines({
+          tests: "{ status: waived, reason: x, waived_by: D-900 }",
+          qa: "{ status: waived, reason: x, waived_by: D-900, sella: guest, at: 2026-09-24T00:00:00Z }",
+          patron: "{ status: waived, reason: x, waived_by: D-404 }",
+        }),
+      ),
+    );
+    const opusPathRefuse = join(dir, "opera", `${idRefuse}.md`);
+    const beforeRefuse = readFileSync(opusPathRefuse, "utf8");
+    const { result: rRefuse, stderr: sRefuse } = await withStderr(() => runDone([idRefuse, "--studio", dir], { now: NOW }));
+    check("done b11: refuses when multiple gates are wrongly waived", rRefuse.exitCode === 1, String(rRefuse.exitCode));
+    check("done b11: record unchanged", readFileSync(opusPathRefuse, "utf8") === beforeRefuse);
+    check(
+      "done b11: stderr names every offender, not just the first",
+      sRefuse.includes("tests") &&
+        sRefuse.includes("probatio.waived.automated") &&
+        sRefuse.includes("qa") &&
+        sRefuse.includes("probatio.waived.agent") &&
+        sRefuse.includes("patron") &&
+        sRefuse.includes("D-404"),
+      sRefuse,
+    );
+
+    const idSuccess = "W-821";
+    writeOpus(
+      dir,
+      idSuccess,
+      opusWithProbationes(
+        idSuccess,
+        "building",
+        w034Lines({
+          patron: "{ status: waived, reason: x, waived_by: D-900, sella: guest, at: 2026-09-24T00:00:00Z }",
+          legal: "{ status: waived, reason: y, waived_by: D-902, sella: guest, at: 2026-09-24T00:00:00Z }",
+        }),
+      ),
+    );
+    const { result: rSuccess, stdout: outSuccess } = await withStdout(() => runDone([idSuccess, "--studio", dir], { now: NOW }));
+    check("done b11: exits 0 when every waived gate is honourable", rSuccess.exitCode === 0, String(rSuccess.exitCode));
+    check(
+      "done b11: stdout names every honoured waiver",
+      outSuccess.includes("waived:") &&
+        outSuccess.includes("patron") &&
+        outSuccess.includes("D-900") &&
+        outSuccess.includes("legal") &&
+        outSuccess.includes("D-902"),
+      outSuccess,
+    );
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

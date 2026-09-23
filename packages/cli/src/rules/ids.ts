@@ -105,6 +105,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "probatio.kind",
   "probatio.shape",
   "probatio.status",
+  "probatio.waived.agent",
   "probatio.waived.automated",
   "probatio.waived.reason",
   "process.cascade",

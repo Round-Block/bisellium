@@ -1,0 +1,21 @@
+# behaviour: 10
+# command: node --import tsx packages/cli/src/test.ts .
+# exit: 1
+# at: 2026-09-23T23:33:50.354Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+PASS  sample-studio                  0 blocking, 5 advisory
+PASS  bad-dead-link                  blocked by link.dead
+PASS  bad-empty-budget               blocked by aerarium.parse
+PASS  bad-halted-no-exit             blocked by halted.at, halted.exit
+PASS  bad-mirrored-burn              blocked by aerarium.mirror
+PASS  bad-missing-handoff            blocked by traditio.present
+PASS  bad-non-string-id              blocked by opus.keys.type
+PASS  bad-review-failed-tests        blocked by state.review.automated
+PASS  bad-unsupported-state          blocked by state.review.automated
+FAIL  bad-waived-agent               expected [probatio.waived.agent] got []
+PASS  bad-waived-automated           blocked by probatio.waived.automated, probatio.waived.reason
+PASS  bad-wip-cap                    blocked by wip.cap
+PASS  good-minimal                   passes, as expected
+PASS  not-a-studio                   manifest.present, no throw

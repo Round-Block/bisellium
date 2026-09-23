@@ -1,0 +1,55 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:41:01.077Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+W-501: gates not passed: qa
+PASS  done b1: qa unrecorded exits 1                                   qa/unrecorded: 1
+W-502: gates not passed: qa
+PASS  done b1: qa pending exits 1                                      qa/pending: 1
+W-503: gates not passed: qa
+PASS  done b1: qa failed exits 1                                       qa/failed: 1
+W-504: gates not passed: qa
+PASS  done b1: qa stale exits 1                                        qa/stale: 1
+W-505: done
+PASS  done b1: qa passed exits 0 (control)                             0
+W-506: done
+FAIL  done b1: qa waived (honourable-shaped) exits 1                   0
+FAIL  done b1: qa waived (honourable-shaped) stderr names the gate and probatio.waived.agent 
+W-507: done
+FAIL  done b1: qa waived (bare) exits 1                                0
+FAIL  done b1: qa waived (bare) stderr names the gate and probatio.waived.agent 
+W-508: gates not passed: review
+PASS  done b1: review unrecorded exits 1                               review/unrecorded: 1
+W-509: gates not passed: review
+PASS  done b1: review pending exits 1                                  review/pending: 1
+W-510: gates not passed: review
+PASS  done b1: review failed exits 1                                   review/failed: 1
+W-511: gates not passed: review
+PASS  done b1: review stale exits 1                                    review/stale: 1
+W-512: done
+PASS  done b1: review passed exits 0 (control)                         0
+W-513: done
+FAIL  done b1: review waived (honourable-shaped) exits 1               0
+FAIL  done b1: review waived (honourable-shaped) stderr names the gate and probatio.waived.agent 
+W-514: done
+FAIL  done b1: review waived (bare) exits 1                            0
+FAIL  done b1: review waived (bare) stderr names the gate and probatio.waived.agent 
+W-515: gates not passed: spec
+PASS  done b1: spec unrecorded exits 1                                 spec/unrecorded: 1
+W-516: gates not passed: spec
+PASS  done b1: spec pending exits 1                                    spec/pending: 1
+W-517: gates not passed: spec
+PASS  done b1: spec failed exits 1                                     spec/failed: 1
+W-518: gates not passed: spec
+PASS  done b1: spec stale exits 1                                      spec/stale: 1
+W-519: done
+PASS  done b1: spec passed exits 0 (control)                           0
+W-520: done
+FAIL  done b1: spec waived (honourable-shaped) exits 1                 0
+FAIL  done b1: spec waived (honourable-shaped) stderr names the gate and probatio.waived.agent 
+W-521: done
+FAIL  done b1: spec waived (bare) exits 1                              0
+FAIL  done b1: spec waived (bare) stderr names the gate and probatio.waived.agent 
