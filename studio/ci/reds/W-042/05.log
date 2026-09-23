@@ -1,0 +1,10 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T14:06:16.755Z
+# sella: builder-a
+# tree: dirty:92cf4505dbd36067ea05123fff9df12cf7cb9ec1
+
+W-980: spec=briefs/W-980.md state=building
+PASS  ready: W-980 halted -> building exits 0                          0
+FAIL  ready: halted_at/reason/resume_when/halted_by all cleared        {"id":"W-980","title":"Halted, resurrected","kind":"feature","collegium":"engineering","state":"building","halted_by":"D-017","probationes":{},"spec":"briefs/W-980.md"}

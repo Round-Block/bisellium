@@ -1,0 +1,18 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T14:09:01.997Z
+# sella: builder-a
+# tree: dirty:92cf4505dbd36067ea05123fff9df12cf7cb9ec1
+
+PASS  check: W-970 blocks on opus.red_evidence before halt             [{"rule":"traditio.present","level":"block","where":"opera/W-970.md","message":"active item (building) has no handoff"},{"rule":"opus.red_evidence","level":"block","where":"opera/W-970.md","message":"missing red log(s) for behaviour(s) 1, 2"}]
+PASS  check: W-970 blocks on traditio.present before halt              [{"rule":"traditio.present","level":"block","where":"opera/W-970.md","message":"active item (building) has no handoff"},{"rule":"opus.red_evidence","level":"block","where":"opera/W-970.md","message":"missing red log(s) for behaviour(s) 1, 2"}]
+PASS  check: W-970 counts toward wip.cap before halt                   [{"rule":"wip.cap","level":"block","where":"opera/","message":"4 items in progress, WIP cap is 3"}]
+FAIL  halt: W-970 building -> halted exits 0                           2
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  check: W-970 has no blocking findings once halted                [{"rule":"traditio.present","level":"block","where":"opera/W-970.md","message":"active item (building) has no handoff"},{"rule":"opus.red_evidence","level":"block","where":"opera/W-970.md","message":"missing red log(s) for behaviour(s) 1, 2"}]
+PASS  check: halted.exit/halted.at do not fire — the verb wrote what they read [{"rule":"traditio.present","level":"block","where":"opera/W-970.md","message":"active item (building) has no handoff"},{"rule":"opus.red_evidence","level":"block","where":"opera/W-970.md","message":"missing red log(s) for behaviour(s) 1, 2"}]
+FAIL  check: wip.cap no longer counts W-970                            [{"rule":"wip.cap","level":"block","where":"opera/","message":"4 items in progress, WIP cap is 3"}]
+W-970 is not greenlit or halted (state: building)
+FAIL  ready: W-970 halted -> building exits 0                          2
+PASS  check: opus.red_evidence fires again once resurrected            [{"rule":"traditio.present","level":"block","where":"opera/W-970.md","message":"active item (building) has no handoff"},{"rule":"opus.red_evidence","level":"block","where":"opera/W-970.md","message":"missing red log(s) for behaviour(s) 1, 2"}]

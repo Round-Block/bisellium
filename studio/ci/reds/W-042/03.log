@@ -1,0 +1,11 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T14:09:01.581Z
+# sella: builder-a
+# tree: dirty:92cf4505dbd36067ea05123fff9df12cf7cb9ec1
+
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  halt: succeeds on a building opus with a failed review           2
+FAIL  halt: state -> halted                                            building
+PASS  halt: probationes deep-equal before and after — the failed review is never edited {"before":{"review":{"status":"failed","evidence":"ci/W-028-review-3.log","sella":"eng-lead","at":"2026-09-18T10:00:00Z"}},"after":{"review":{"status":"failed","evidence":"ci/W-028-review-3.log","sella":"eng-lead","at":"2026-09-18T10:00:00Z"}}}
