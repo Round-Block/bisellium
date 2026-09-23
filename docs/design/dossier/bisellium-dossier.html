@@ -274,7 +274,7 @@
   <p class="thesis">An agent team run like a product officina &mdash; collegia with leges, budgets and acta &mdash; and the console that renders it: work moving through states past probationes, over any source.</p>
   <div class="meta-row">
     <span>date <b>2026-09-23</b></span>
-    <span>status <b>cascade 24 &mdash; officina check green and now a required status check alongside gates, full GitHub CI reliance; W-042 (halt verb) shipped, W-023/27/28 halted/abandoned by decision (D-017/D-019); W-044 (talk-profile security) next question; codex worker live</b></span>
+    <span>status <b>cascade 24 &mdash; officina check green and now a required status check alongside gates, full GitHub CI reliance; W-042 (halt verb) shipped; W-023/27/28 halted by decision; W-044 security next question; codex workers live</b></span>
     <span>reference instance <b>epoch0</b></span>
     <span>repo <b>~/projects/bisellium</b></span>
   </div>
@@ -286,3 +286,516 @@
     <p><strong>Five decisions bound the project.</strong> <em>Conventions first, plus a reference harness for magistri</em>: the officina state is files and any toolchain can produce them; Bisellium also hosts each magister&rsquo;s conversation by driving the vendor CLIs you already use, so you can talk to a magister from the console &mdash; nothing is locked in, and builders run wherever they run. <em>Standalone first</em>: the app runs on its own sample officina before any external project is wired. <em>Nobody updates a card</em>: the console is a projection; the Patron&rsquo;s four writes are the only exception. <em>Rules are checked, not read</em>: a convention exists only if <code>check</code> can fail it. <em>Mistakes, not adversaries</em>: the threat model is agents that drift, not agents that attack; identity and provenance catch the former and are not claimed to stop the latter.</p>
   </div>
 </section>
+
+<div class="part-rule">
+  <span class="part-tag">Part I</span>
+  <h2>The officina model</h2>
+</div>
+
+<section>
+  <h3>Vocabulary</h3>
+  <div class="prose"><p>Names follow the bisellium&rsquo;s own world &mdash; Roman civic and guild life, where a double seat of honor was granted by decree to a distinguished member of a <em>collegium</em>. File names and manifest keys stay English in the code until the contract rename.</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Term</th><th>English</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Patron</strong> (<em>patronus</em>)</td><td>Owner</td><td>The human. A role id in the manifest, singular today; a second human is a manifest edit, not a schema change.</td></tr>
+        <tr><td><strong>Officina</strong></td><td>studio</td><td>One directory; the workshop.</td></tr>
+        <tr><td><strong>Collegium</strong></td><td>department</td><td>A guild: a discipline with a Magister, a lex, a budget, an acta stream.</td></tr>
+        <tr><td><strong>Magister</strong> / <strong>Sella</strong> / <strong>Socius</strong></td><td>lead / seat / worker</td><td>The agent holding a collegium&rsquo;s authority / any agent role / a member seat.</td></tr>
+        <tr><td><strong>Aedile</strong>, <strong>Censor</strong></td><td>Production lead, QA lead</td><td>The magistrate over works and the calendar; the keeper of the rolls whose verdict admits or strikes.</td></tr>
+        <tr><td><strong>Fabri</strong>, <strong>Pictores</strong>, <strong>Scaenici</strong></td><td>Engineering, Art, UX</td><td>The builders&rsquo; guild, the painters&rsquo; guild, the stage arts.</td></tr>
+        <tr><td><strong>Lex</strong></td><td>charter</td><td>The guild&rsquo;s bylaws: what a Magister decides alone, reports, or petitions. One file per collegium.</td></tr>
+        <tr><td><strong>Stipendium</strong> / <strong>Aerarium</strong></td><td>allowance / budgets file</td><td>Stipendium per collegium per period, set by the Patron; burn is always derived.</td></tr>
+        <tr><td><strong>Acta</strong> (<em>acta diurna</em>)</td><td>digest (daily)</td><td>Inform-and-proceed report. Never needs a reply; silence binds nothing.</td></tr>
+        <tr><td><strong>Petitio</strong></td><td>ask</td><td>A question to the Patron that is <em>not</em> about one opus (scope, budget, lex). Item questions are probationes.</td></tr>
+        <tr><td><strong>Opus</strong> / <em>opera</em></td><td>work item</td><td>One file per opus.</td></tr>
+        <tr><td><strong>Probatio</strong> / <em>testimonium</em></td><td>gate / evidence</td><td>A verdict an opus must pass; automated, agent, or human. A pending human probatio is an arbitrium.</td></tr>
+        <tr><td><strong>Arbitrium</strong></td><td>taste call</td><td>The Patron&rsquo;s judgment on a human probatio.</td></tr>
+        <tr><td><strong>Traditio</strong></td><td>handoff</td><td>Sella, stage, next action, blocked-on, timestamp; required on every active opus.</td></tr>
+        <tr><td><strong>Fasti</strong> / <strong>Decretum</strong></td><td>slate / greenlight</td><td>The committed, ranked calendar of work / the Patron&rsquo;s decree that puts an opus on it.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Collegia</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Collegium</th><th>Owns</th><th>Magister decides alone</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Production</strong> &mdash; the Aedile</td><td>fasti, WIP caps, dependencies, collision detection, cadence, routing</td><td>sequence, halt, reassign</td></tr>
+        <tr><td><strong>Fabri</strong> (engineering)</td><td>code, contracts, migrations</td><td>refactors, tests, deps; acta architecture</td></tr>
+        <tr><td><strong>Scaenici</strong> (UX)</td><td>flows, screen specs, design tokens, copy</td><td>interaction within adopted flows; acta pattern choices; taste is a human probatio</td></tr>
+        <tr><td><strong>Pictores</strong> (art)</td><td>assets, style, pipeline &mdash; delivers <em>to</em> UX</td><td>style within the bible; acta taste</td></tr>
+        <tr><td><strong>QA</strong> &mdash; the Censor</td><td>verdicts, evidence, regression; <strong>the improvement loop</strong> (lessons, recurrence, rule proposals, pruning)</td><td>reject autonomously; add <em>advisory</em> detection rules alone; acta failure patterns; blocking rules and lex wording go to the Patron as petitiones</td></tr>
+        <tr><td><strong>Design</strong> <span class="chip pend">the Aedile acts as Design until it unfolds</span></td><td>specs, rules, balance; holds the <code>spec</code> probatio (definition of ready)</td><td>spec changes inside decreed scope; a second opinion on a spec is a consultation actum</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p>Business functions are mechanisms, not sellae. <strong>Finance</strong>: stipendia per collegium per period; cost per opus as COGS; postures on burn. <strong>Staffing</strong>: roster + leges; model routing is seniority; widening a lex is a promotion; receipts and heartbeats are performance. <strong>Comms</strong>: acta feed, inbox, timelines. <strong>Operations</strong>: provider limits as supply, surge lanes, reset windows. <strong>Governance</strong>: probationes, leges, amendment logs.</p>
+    <p>Collegia are added only when one class of decision keeps escalating &mdash; never speculatively. Named-but-unstaffed until their trigger fires: narrative/content, audio, localization, data/analytics, release management, community.</p>
+  </div>
+
+  <h3>The Patron&rsquo;s four touchpoints are four writes</h3>
+  <div class="prose"><p>Each is a write to one file under the Patron role, made by editing the file or through the console, which writes via the native adapter. External adapters without <code>send()</code> degrade to an inbox file their magister absorbs.</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Touchpoint</th><th>Write</th><th>Event</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Decretum</strong> &mdash; a portfolio decision, not a queue pop</td><td><code>work/&lt;id&gt;.md</code> state <code>backlog &rarr; greenlit</code>, or <code>declined: reason</code></td><td><code>workflow.greenlight</code></td></tr>
+        <tr><td><strong>Budget allocation</strong></td><td><code>budgets/&lt;period&gt;.yml</code> &mdash; stipendia only</td><td><code>workflow.digest</code> (decision)</td></tr>
+        <tr><td><strong>Arbitrium</strong></td><td>the <code>owner</code> probatio in <code>work/&lt;id&gt;.md</code>: passed / failed / waived + one-line reason</td><td><code>workflow.gate_evaluated</code></td></tr>
+        <tr><td><strong>Lex change</strong></td><td>edit the lex + an amendment-log row</td><td><code>workflow.digest</code> (decision)</td></tr>
+        <tr><td>Answering a petitio</td><td>append a <code>[stated]</code> reply to <code>asks/&lt;id&gt;.md</code>; optional <code>charter_gap: true</code> auto-generates an amendment proposal &mdash; the defect stays with the lex, not the magister</td><td><code>workflow.attention = answered</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Communication classes</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Class</th><th>About</th><th>Goes to</th><th>Reply</th></tr></thead>
+      <tbody>
+        <tr><td>Probatio (human)</td><td>one opus</td><td>Inbox, as needs-you</td><td>required; blocks the item</td></tr>
+        <tr><td>Petitio</td><td>not one item: scope, budget, lex, routing</td><td>Inbox, as needs-you; capped per collegium per period</td><td>required; blocks the asker</td></tr>
+        <tr><td>Acta &mdash; consultation, daily</td><td>anything</td><td>acta feed</td><td>never</td></tr>
+        <tr><td>Acta &mdash; decision</td><td>a magister&rsquo;s decision inside its lex</td><td>acta feed</td><td>never; the Patron may redirect within a window, after which it is final</td></tr>
+        <tr><td>Chatter</td><td>&mdash;</td><td>timelines</td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose"><p>Strict admission keeps the inbox answerable: only human probationes and petitiones enter it, and both escalate on age. Patron overload is detected by the officina, not by tracking whether the Patron reads: open petitiones per collegium are capped like tokens, and petitio age is a health check.</p></div>
+
+  <h3>Availability</h3>
+  <div class="prose">
+    <p><strong>Posture <code>limited</code> is not absence.</strong> An over-budget collegium stops <em>starting</em> work; items in flight keep their live sella. <strong>Absence is a missed heartbeat</strong> (Defaults): then Production is acting magister for routing, petitiones addressed to the sella are re-addressed or held with visible age, and the acta-diurna obligation is waived and shown as such. If Production itself is the stale sella, the manifest&rsquo;s fallback chain applies and one aggregated &ldquo;routing down&rdquo; ask reaches the Patron. Items in flight keep their traditio, which is what makes pickup possible.</p>
+  </div>
+
+  <h3>Cadence</h3>
+  <div class="prose"><p><strong>Daily</strong> &mdash; one acta entry per Magister. <strong>Decretum review</strong> &mdash; Patron + Production, fasti changes. <strong>Budget review</strong> &mdash; next period&rsquo;s stipendia. <strong>Postmortem</strong> &mdash; the failing collegium&rsquo;s Magister: acta + lex amendment proposal. <strong>Retrospectio</strong> &mdash; the Censor, once per cascade or period: the improvement loop below.</p></div>
+
+  <h3>Autonomy: a declared ladder and a tick</h3>
+  <div class="prose"><p>Authority (what a magister decides alone) and mechanism (<code>run</code>, <code>talk</code>) do not by themselves make an officina act; sellae are reactive and nothing starts sessions. Autonomy is therefore declared per collegium in its lex and driven by one scheduler:</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Level</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td><strong>L0 manual</strong></td><td>sellae act only when talked to</td></tr>
+        <tr><td><strong>L1 scheduled</strong></td><td>the tick runs cadence work: dailies, repo review, <code>check</code>, consolidation</td></tr>
+        <tr><td><strong>L2 dispatching</strong></td><td>the Aedile&rsquo;s loop walks the fasti: starts <em>ready</em> opera (decreed and spec-passed) into worktrees within WIP and posture, advances opera whose probationes passed, closes done</td></tr>
+        <tr><td><strong>L3 continuous</strong></td><td>magistri also self-assign follow-ups inside &ldquo;decides alone&rdquo; &mdash; hygiene from repo review, fixes for failed probationes &mdash; without waiting for dispatch</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p><strong><code>bisellium tick</code></strong> is a thin scheduler (cron, a service, or the desktop app&rsquo;s background task) that runs due cadence work and, at L2 and above, the Aedile&rsquo;s dispatch pass &mdash; through the same <code>run</code>/<code>talk</code> shim, so every autonomous action has a receipt and appears on the timeline. Agents do not live in the tick; it only starts them.</p>
+    <p><strong>The edge is the fasti.</strong> Autonomy never crosses a Patron touchpoint: the officina runs every greenlit item to <code>done</code> and then idles, visibly (&ldquo;idle: fasti empty, 3 items awaiting decretum&rdquo;). A week away costs nothing but decrees. <strong>Brakes:</strong> halts are per item; <code>bisellium pause</code> is the officina brake &mdash; stop <em>starting</em>, finish what is in flight; posture <code>limited</code> is the same brake per collegium, and autonomous starts stop at <code>closeout</code>. Process health shows the level and state: running, paused, idle since.</p>
+  </div>
+
+  <h3>Adoption contract</h3>
+  <div class="prose"><p>A Bisellium officina is a directory. Agents and humans write these files; the console reads them. <code>examples/sample-studio</code> is a complete instance; <code>bisellium init</code> creates an empty one that passes <code>check</code>.</p></div>
+  <pre>bisellium.yml            <span class="k">bisellium: 1</span> (contract version), timezone, owner role, departments + fallback chain,
+                         seats, gates, transitions with permitted actors, wip_limit, doc kinds + caps
+charters/&lt;dept&gt;.md       one charter per department
+work/&lt;id&gt;.md             one file per work item; ids allocated by <span class="k">bisellium new</span>, which requires kind + department
+asks/&lt;id&gt;.md             questions to the Patron not about one opus; threads the Patron opened
+digest/&lt;date&gt;-&lt;slug&gt;.md  inform-and-proceed entries
+budgets/&lt;period&gt;.yml     stipendia only, Patron-written; burn is derived from events
+usage.yml                observed provider limit telemetry
+memory/seats/&lt;seat&gt;.md   per-seat long-term memory
+decisions/&lt;id&gt;.md        supersedable decisions with provenance and kill condition
+lessons/&lt;id&gt;.md          [observed] failure lessons with evidence and a failure class; input to the recurrence gate
+briefs/&lt;opus&gt;.md         the spec an opus must carry before building (kind brief | ux-spec)
+cascades/                 the committed build-workflow template; the plan is data, not prose
+archive/                 cold tier, frozen
+
+<span class="c"># work/W-004.md — state is asserted by the lead; check fails a state the evidence cannot support</span>
+---
+id: W-004
+title: Inventory drag-and-drop
+kind: feature                 <span class="c"># feature | hygiene | art-batch | spike …</span>
+department: engineering
+owner: builder-1
+state: review
+gates:
+  tests:  { status: passed, evidence: ci/815.log, certifies: tree:9c1e… }
+  review: { status: passed, evidence: reviews/W-004.md, certifies: tree:9c1e… }
+  owner:  { status: pending }   <span class="c"># human gate pending ⇒ needs you</span>
+handoff: { seat: builder-1, stage: review, next: await owner call, blocked_on: owner, at: 2026-09-17T10:42Z }
+---</pre>
+
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Native state</th><th>Phase (one board across lifecycles)</th><th>Permitted actors (declared on the transition)</th></tr></thead>
+      <tbody>
+        <tr><td><code>backlog</code></td><td><code>backlog</code></td><td>anyone may create via <code>new</code>; nothing starts</td></tr>
+        <tr><td><code>greenlit</code></td><td><code>planned</code></td><td>Patron (decretum)</td></tr>
+        <tr><td><code>building</code></td><td><code>in_progress</code></td><td>collegium magister, within WIP cap, and only when the opus is <strong>ready</strong>: it carries <code>spec:</code> (a registered brief or ux-spec) and its <code>spec</code> probatio, kind agent, held by Design, has passed &mdash; <code>check</code> rule <code>state.building.spec</code></td></tr>
+        <tr><td><code>verifying</code></td><td><code>verifying</code></td><td>automated probationes + QA</td></tr>
+        <tr><td><code>review</code></td><td><code>awaiting_review</code></td><td>magister review; then <code>owner</code> probatio where the lex names one</td></tr>
+        <tr><td><code>done</code></td><td><code>done</code></td><td>merge script</td></tr>
+        <tr><td><code>halted</code></td><td><code>halted</code></td><td>Production; requires <code>reason</code> + <code>resume_when</code>; halted past one period is a health failure</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p><strong>Canonical probatio ladder</strong>, declared in the manifest: agent <code>spec</code> (before building); automated <code>tests &middot; lint &middot; types</code>; agent <code>qa &middot; review</code>; human <code>owner</code> (only where a lex names it). Automated probationes are re-run by CI on the candidate merge commit; agent probationes certify the branch-tip <em>tree hash</em> and go <code>stale</code> only if the tree changes. &ldquo;Substantive&rdquo; is deterministic: any tree change outside the manifest&rsquo;s non-code globs. The <strong>merge-blocking subset</strong>: automated probationes green on the merge commit, <code>review</code> passed and current, traditio present.</p>
+    <p><strong>Posture</strong> per collegium is derived from burn/stipendium on whichever unit the budget sets (worse of both if both): &ge;60% conserve, &ge;85% closeout, &ge;100% limited; no data &rarr; unknown, never assumed ok. Burn is the sum of usage events attributed to the collegium&rsquo;s items and sellae.</p>
+    <p><strong>A certificate is judged only while the opus is active.</strong> <code>stale</code>, <code>dirty</code> and <code>mismatch</code> apply to opera in building, verifying or review; a done opus&rsquo;s certificate is history and is never re-judged against a newer source tree. Two officinae in one repository (a real one and a sample) must list each other in <code>source_excludes</code> so neither counts the other as source.</p>
+    <p><strong>One directory is one officina.</strong> A portfolio is the console over several; the Board spans them by phase, the Officina screen is per officina. Contract changes bump <code>bisellium:</code>; <code>check</code> refuses an unknown major; <code>migrate</code> rewrites files forward.</p>
+  </div>
+</section>
+
+<div class="part-rule">
+  <span class="part-tag">Part II</span>
+  <h2>Memory, docs, enforcement</h2>
+</div>
+
+<section>
+  <div class="verdict prose">
+    <p><strong>A rule is real only when something machine-reads it and something fails when it is violated.</strong> Rules that live only in a document agents are asked to re-read decay to prose. Evidence (n&nbsp;=&nbsp;1, an anecdote): an audit of one mature markdown-run project found script-produced rules honored at ~90% and document-only rules at 0&ndash;10%, with two lifecycle hooks silently dead. A widely shared practitioner write-up (&ldquo;Markdown Is All You Need&rdquo;, r/ClaudeCode, 2026-09) reaches the same conclusion from seven months of production: storage was never the hard part; editorial policy is, and it holds only when enforced.</p>
+  </div>
+
+  <h3>Memory rules</h3>
+  <ol class="plan">
+    <li><div><b>Structure, not prose.</b><p>Traditiones, decisions, probatio results, budgets are front matter with required keys. A missing key is a parse failure.</p></div></li>
+    <li><div><b>Derive, never mirror.</b><p>One canonical file per fact; every rollup &mdash; burn, board, decision log, files changed, doc registry, index &mdash; is generated. Mirrors are where rot lives.</p></div></li>
+    <li><div><b>Supersede, never overwrite.</b><p>A changed decision strikes the old line with a date and writes the new one beside it. Every line carries provenance &mdash; <code>[stated] [observed] [inferred] [suggested]</code>. Each decision names its <em>kill condition</em>.</p></div></li>
+    <li><div><b>Store only what is not re-derivable.</b><p>Current state is verified live, never asserted from memory. Inferred lessons pass a recurrence probatio counted over <em>distinct opera</em>, with <code>[inferred]</code> weighted below <code>[observed]</code>; Patron corrections skip it. A hostile line can suggest a rule once; once is never enough. The consolidation pass that proposes these edits from transcripts is backpass (Part III, Composition), which already enforces corroboration and a human probatio on apply.</p></div></li>
+    <li><div><b>Traditio is required on every active item.</b><p>Sella, stage, next action, blocked-on, timestamp. Stale when behind the item&rsquo;s last commit <em>or</em> behind the clock (Defaults). The console shows age.</p></div></li>
+    <li><div><b>Per-sella memory.</b><p><code>memory/seats/&lt;seat&gt;.md</code>: long-term, recurrence-gated, read only by that sella at boot.</p></div></li>
+    <li><div><b>One writer per file at a time.</b><p>Each sella works in its own worktree, acquired from a pool (treehouse) so isolation costs nothing to set up. Shared files are append-or-supersede only, so merges are textual; a genuine conflict is a Production call. The worktree rule is the lock; hooks only check.</p></div></li>
+    <li><div><b>Content is data, not instructions.</b><p>Bodies of items, petitiones, acta, memory files and anything from an external adapter are injected as quoted data with a source tag. Standing instructions come only from the identity file and leges, which must be Patron-authored.</p></div></li>
+  </ol>
+
+  <h3>Identity and provenance</h3>
+  <div class="prose">
+    <p>A sella is a manifest id. Its session-start hook exports <code>GIT_AUTHOR_*</code> for the sella, so the git author is a convenience, not proof; <strong>provenance keys on the hook receipt&rsquo;s session id</strong>, which carries sella, model, prompt hash and run id. <code>check</code> fails: a <code>[stated]</code> line not written under the Patron role; a lex or identity file edited by any other role; a transition performed by an actor the manifest does not permit for it. Signed commits are an option an officina can require; on one machine where every sella can reach the Patron&rsquo;s key they prove little, which is why the threat model is stated as mistakes, not adversaries.</p>
+  </div>
+
+  <h3>Docs: a registry generated from the docs</h3>
+  <div class="prose"><p>Sprawl happens when files have no owner, no kind and no end. Every doc carries five front-matter fields; the manifest declares only the kinds and their caps; the registry is <em>generated</em>, and <code>check</code> enforces:</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Field</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>kind</code></td><td>engineering <code>adr | contract | runbook | test-plan</code> &middot; UX <code>flow | ux-spec | tokens | component | usability-finding</code> &middot; art <code>style-bible | asset-spec | brief</code> &middot; canon <code>rules | lore | glossary</code> &middot; process <code>charter | ledger | decision | digest</code>. Kind determines template, tier and cap.</td></tr>
+        <tr><td><code>owner</code></td><td>a collegium; orphans fail</td></tr>
+        <tr><td><code>tier</code></td><td><strong>hot</strong> (index, active work, this week&rsquo;s acta; capped) &middot; <strong>warm</strong> (decisions, leges, specs) &middot; <strong>cold</strong> (<code>archive/</code>; frozen, retired whole)</td></tr>
+        <tr><td><code>review</code></td><td>cadence; past-due is stale; docs asserting current state carry a last-verified date</td></tr>
+        <tr><td><code>kill</code></td><td>what makes the doc obsolete; when true it is archived</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose"><p>Lifecycle <code>draft &rarr; adopted &rarr; superseded &rarr; archived</code>. Authored vs <strong>generated</strong> is explicit; generated docs are never hand-edited. Human-facing explanation and agent-facing instruction are separate files; only instructions load at boot, capped. One <code>GLOSSARY.md</code>. Dead cross-links fail <code>check</code>.</p></div>
+
+  <h3>Hooks: where conventions plug into a toolchain</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Family</th><th>Can verify</th><th>Cannot</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Git hooks</strong> (pre-commit, pre-push)</td><td>the sella&rsquo;s own files: keys, provenance, traditio, doc fields</td><td>anything cross-sella &mdash; a worktree sees only its branch</td></tr>
+        <tr><td><strong>CI / <code>check</code> over main</strong></td><td>cross-sella rules: WIP caps, collisions, one-writer, certificate currency on the merge commit, the merge-blocking subset</td><td>&mdash;</td></tr>
+        <tr><td><strong>Harness hooks</strong> (session start, pre/post compaction, stop, post-tool)</td><td>the memory write path at the right moments; receipts; they <em>are</em> the event-native adapter</td><td>anything the harness never fires</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <pre><span class="c"># hook targets — wiring a harness is a short config profile per harness</span>
+bisellium check    [dir]        <span class="c"># validator: keys, identity, state-vs-evidence, handoff age, certificates, registry, receipts, caps</span>
+bisellium context  --seat S     <span class="c"># boot bundle for one seat, hard token cap; the read path</span>
+bisellium handoff  --item W     <span class="c"># write/validate handoff; blocking exit on a state change without one</span>
+bisellium emit     &lt;event&gt;      <span class="c"># one workflow.* event to the store</span>
+
+<span class="c"># harness shim — makes any CLI a tier-1 harness (receipts, git author env, boot bundle)</span>
+bisellium run      --seat S -- &lt;harness cmd&gt;    <span class="c"># e.g. claude -p …, codex exec …; wraps start/stop, exports GIT_AUTHOR_*</span>
+bisellium talk     --seat S "&lt;message&gt;"        <span class="c"># the direct line: resumes the seat's session in its worktree; streams the reply</span>
+
+<span class="c"># sella and Patron commands</span>
+bisellium new      --kind K --dept D   <span class="c"># allocate a work item id; the only way an item is born</span>
+bisellium query    "&lt;question&gt;"        <span class="c"># bounded answer from the core, not a file read</span>
+bisellium answer   --ask A | greenlight W | budget P   <span class="c"># the Patron's writes, under the patron role</span>
+bisellium init | migrate
+bisellium retro    --cascade N     <span class="c"># drafts the retro actum and lesson stubs from run data; the Censor finishes it</span>
+bisellium tick                         <span class="c"># the studio clock: due cadence work, then Production's dispatch pass at L2+</span>
+bisellium pause | resume               <span class="c"># studio brake: stop starting, finish what is in flight</span></pre>
+  <div class="prose"><p><strong>Hooks leave receipts.</strong> Every run stamps a heartbeat; <code>check</code> flags a declared hook not seen for the configured number of sessions. <strong>Block rarely, advise less.</strong> Blocking exits only for the merge-critical set; nag text is the first thing an agent learns to ignore. Never inject the same content on both sides of a compaction.</p></div>
+
+  <h3>Context budget</h3>
+  <div class="prose">
+    <p>Many files bog down context only if the read path is unbounded; the tool bounds it. <strong>Boot is a budgeted bundle</strong>: this sella&rsquo;s lex, the pointer index, its active traditiones, items addressed to it &mdash; truncated by priority over cap, and it says so. <strong>Collegium is a boundary for leges and acta</strong>, not for adopted docs an item references: a builder loads the UX spec its item cites. <strong>Query the store, don&rsquo;t read the tree</strong>; drill-downs read one file, narrowest first. <strong>Tiers with caps</strong>; consolidation (daily &rarr; weekly, done &rarr; archive) is a script. <strong>Process overhead is a tracked cost</strong>: hooks report tokens injected; overhead ratio per sella is on the budget panel. Memory chores run as code where possible and on the cheapest model where judgment is needed; nothing here claims to be judgment-free.</p>
+  </div>
+
+  <h3>Code hygiene</h3>
+  <div class="prose">
+    <p><strong>A lane with a budget:</strong> <code>kind: hygiene</code> holds a fixed share of Engineering&rsquo;s stipendium that features cannot borrow; inside &ldquo;decides alone&rdquo; up to a size threshold. Every hygiene item carries an evidence link &mdash; a repo-review finding, a FAIL loop, a postmortem, or a review comment &mdash; so the reserved share buys debt, not trivia. <strong>Repo review is a generated acta</strong>: stale branches, unpruned worktrees, dead code, duplicate modules, warning counts, coverage drift, dependency advisories, churn hotspots, modules behind repeated FAIL loops; findings become backlog items with evidence. <strong>Clean code is a probatio</strong>: <code>lint</code> and <code>types</code> in the ladder; changed files may not increase warnings. <strong>Done includes cleanup</strong>: merge prunes branch and worktree, archives the journal. <strong>Debt has a kill condition.</strong> <strong>Postmortems feed refactors</strong> through the recurrence probatio, with failure class as a fixed taxonomy (probatio id &times; item kind).</p>
+  </div>
+
+  <h3>Mechanical or judgment: the class on every finding</h3>
+  <div class="prose">
+    <p>Every probatio result and every <code>check</code> finding carries a class. <strong>Mechanical</strong>: the fix is determinable from the finding &mdash; a wrong exit code, a missing key, a dead link, a rename. It is fixed inside &ldquo;decides alone&rdquo;, re-verified, and never escalated. <strong>Judgment</strong>: the finding changes what the opus <em>is</em> &mdash; scope, a lex boundary, a taste question. It escalates as a petitio or an arbitrium. This is no-mistakes&rsquo; auto-fix-versus-escalate split lifted from code to the officina, and it is the autonomy ladder&rsquo;s stopping rule: L3 may act on mechanical findings unasked, never on judgment ones.</p>
+    <p><strong>Evidence must be produced, never backfilled.</strong> Observed on this project: a builder added lint/types probatio results to older opera by pointing at existing logs, to satisfy new gates it had just declared. That is the laundering failure the provenance rules exist for, one level down. The counter is mechanical: an automated probatio&rsquo;s log must name the tree it certifies (<code>probatio.evidence.tree</code>), <code>verify</code> refuses a dirty tree, and <code>check --repo</code> compares certificates to the real tree.</p>
+    <p><strong>Mechanical work leaves a script as its testimonium.</strong> A transform a regex could express &mdash; renames, moves, key changes, formatting &mdash; is done by a script the sella writes, runs, and commits beside the change: near-zero tokens, reproducible, reviewable as one file. Measured on this project: a contract rename done by hand-editing cost 361k tokens and 230 tool calls in one agent, a quarter of its cascade; the same change as a script would have cost a few thousand.</p>
+  </div>
+
+  <h3>The process is data, not memory</h3>
+  <div class="prose">
+    <p>Everything this document says about how work is done must exist as an officina artifact that <code>check</code> can fail; otherwise it is prose that decays. Concretely: the rules live in the leges of the repo&rsquo;s own <code>studio/</code> (the Fabri lex says test-first with a recorded red and mechanical work is a script; the Censor lex says drive the CLI as a first-hour user and mutate one behaviour per opus; the Design lex holds the definition of ready); sellae receive their rules as their boot bundle from <code>context</code>, not from a prompt; every rule that can be checked has a <code>check</code> rule, and a lex clause without one is listed as <em>unchecked</em> in process health; decisions live in <code>decisions/</code> with provenance and a kill condition; and the build workflow itself is a committed template in <code>cascades/</code>, parameterized by opera ids, whose specs are the opera&rsquo;s briefs. A session&rsquo;s memory file is reduced to pointers.</p>
+    <p><strong>The architecture is data on the same terms</strong> (decreed 2026-09-19): <a href="https://claude.ai/artifact/WUBAJ9JceMAX5qEhgjoyuN"><code>docs/ARCHITECTURE.md</code></a>, owned by the architect, carries the system&rsquo;s Mermaid views &mdash; module graph, opus lifecycle, cascade flow, console data flow. Its module-graph block is <em>generated</em> by <code>scripts/arch-graph.mjs</code> from the real package.jsons and imports, never drawn from memory; a design-lex clause obliges any cascade that changes a dependency edge, seam, lifecycle transition or route to update the doc in the same cascade; the cascade template&rsquo;s close prompt makes the Censor confirm it; and a <code>docs.arch.stale</code> drift rule (W-023) re-runs the script and advises when the doc disagrees with the tree &mdash; the <code>instructions.stale</code> pattern applied to architecture.</p>
+  </div>
+
+  <h3>The improvement loop: retrospectio, owned by the Censor</h3>
+  <div class="prose"><p>The Censor keeps the standards the way the Roman office kept the rolls. Once per cascade or period:</p></div>
+  <ol class="plan">
+    <li><div><b>Inputs are data, and usage is one of them.</b><p>Verifier issues, the final review, <code>check</code> advisory counts, fix-round count, mutation-catch rate &mdash; and the run&rsquo;s usage: tokens and minutes per agent, per opus, per role and model tier; the checking-to-building ratio; waste (re-runs after a cutoff, refused tasks, fix rounds caused by tree churn); the provider quota state at the time. The cascade template records each agent&rsquo;s usage into the officina as <code>gen_ai.usage</code> events attributed to opus and sella (<code>emit --usage</code>), so burn derives from real spend, cascades fall under the same stipendia as everything else, and the retro proposes sizing rules from numbers rather than impressions.</p></div></li>
+    <li><div><b>Findings become lessons.</b><p><code>lessons/L-nnn.md</code>, each <code>[observed]</code> with evidence links and a failure class from the fixed taxonomy (probatio &times; opus kind). No lesson without evidence.</p></div></li>
+    <li><div><b>The recurrence probatio decides what becomes a rule.</b><p>A class seen in two or more cascades on distinct opera yields a proposal, split on the mechanical/judgment line: an <em>advisory detection rule</em> the Censor adopts alone (it only makes something visible); a <em>blocking rule or lex wording change</em> is a lex change &mdash; a Patron touchpoint &mdash; and arrives as a capped petitio.</p></div></li>
+    <li><div><b>Adopted rules leave a trail.</b><p>A decision with provenance and a kill condition, a lex amendment row, and a <code>check</code> rule or an explicit <em>unchecked</em> label.</p></div></li>
+    <li><div><b>Pruning is part of the job.</b><p>Kill condition met &rarr; superseded with a date, never deleted; lessons with no recurrence after the configured periods &rarr; archived; exactly one retro actum per cascade.</p></div></li>
+    <li><div><b>The loop&rsquo;s own health is a screen.</b><p>Lessons open, rules proposed / adopted / retired, fix-round rate and tokens per opus across cascades.</p></div></li>
+  </ol>
+  <div class="prose"><p><code>bisellium retro</code> drafts the retro actum from the run&rsquo;s data (a script, zero tokens); the Censor writes the judgment part, files lessons, computes recurrence and raises petitiones. It is clean by construction because <code>check</code> owns the shape of <code>lessons/</code> and <code>decisions/</code>, and the Censor&rsquo;s lex says exactly what it may adopt alone.</p></div>
+
+  <h3>Process health is a screen</h3>
+  <div class="prose"><p>The checks render per officina on the Officina view: autonomy level and state (running / paused / idle since), hooks alive, ledgers present, index under cap, traditio freshness, certificate staleness, state-vs-evidence, halted age, backlog depth per collegium, open petitiones per collegium, docs past review, overhead ratio, lex clauses without a check rule, lessons open and rules proposed / adopted / retired. <strong>Healthy</strong> means every merge-blocking check passes and no advisory check has been red longer than one period; anything else is shown as the list of failing checks, not a score.</p></div>
+
+  <h3>Defaults</h3>
+  <div class="prose"><p>Every number here is a default in <code>bisellium.yml</code>, chosen to be reasonable rather than proven.</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Setting</th><th>Default</th></tr></thead>
+      <tbody>
+        <tr><td>Period / timezone / session</td><td>ISO week / manifest <code>timezone</code> / one harness run, start hook to stop hook</td></tr>
+        <tr><td>Boot bundle &middot; index &middot; hot doc</td><td>4,000 tokens &middot; 15,000 chars &middot; 8,000 chars</td></tr>
+        <tr><td>Traditio stale</td><td>&gt;24h behind the item&rsquo;s last commit, or &gt;3 days behind the clock while in progress</td></tr>
+        <tr><td>Sella stale</td><td>no receipt for 30 min <em>and</em> no open tool span</td></tr>
+        <tr><td>Hook dead</td><td>no receipt for 3 consecutive sessions</td></tr>
+        <tr><td>Posture</td><td>60% conserve &middot; 85% closeout &middot; 100% limited</td></tr>
+        <tr><td>Recurrence probatio</td><td>3 distinct opera across 2 sessions; <code>[inferred]</code> counts half; older than 30 days counts half</td></tr>
+        <tr><td>Decision redirect window</td><td>2 working days</td></tr>
+        <tr><td>Open petitiones per collegium</td><td>3</td></tr>
+        <tr><td>Hygiene share / size</td><td>20% of Engineering stipendium / one builder-day per item</td></tr>
+        <tr><td>Halted / backlog</td><td>halted flagged after 1 period; backlog depth flagged above 20 per collegium</td></tr>
+        <tr><td>Advisory red tolerated</td><td>one period</td></tr>
+        <tr><td>Autonomy</td><td>lex default L1; tick every 15 minutes; autonomous starts stop at <code>closeout</code>; idle is reported after one tick with nothing to do</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="part-rule">
+  <span class="part-tag">Part III</span>
+  <h2>The console</h2>
+</div>
+
+<section>
+  <div class="prose"><p>Four layers: the schema is the contract; adapters are the only per-source code; the core store owns history; views read the store and nothing else. Seven screens: six on the <a href="https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f">design canvas</a> plus Officina. <strong>The Patron&rsquo;s day starts on Inbox</strong>, then Officina, then Board only to drill in.</p></div>
+
+  <h3>Screens</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Screen</th><th>Officina role</th><th>Shows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Inbox</strong></td><td>the Patron&rsquo;s desk</td><td>human probationes and petitiones addressed to you, replies in threads you opened; nothing else</td></tr>
+        <tr><td><strong>Officina</strong></td><td>the four touchpoints</td><td>fasti + decretum queue, autonomy state and the pause brake, stipendia vs derived burn with posture, lex status, last daily per Magister, process health</td></tr>
+        <tr><td><strong>Board</strong></td><td>the floor</td><td>phase columns across officinae, needs-you strip, WIP caps, probatio-dot cards, drawer with probatio ladder, cost, events, adapter extension slot</td></tr>
+        <tr><td><strong>Acta</strong></td><td>the all-hands</td><td>consultations, decisions (with redirect window), dailies, evidence chips; posture rail</td></tr>
+        <tr><td><strong>Agents</strong></td><td>org chart + payroll</td><td>roster, current work, per-sella cost and overhead ratio, provider limits, direct line</td></tr>
+        <tr><td><strong>Swimlane</strong></td><td>the day</td><td>actors &times; time; the Patron is a lane, so time blocked on you is visible</td></tr>
+        <tr><td><strong>Graph</strong></td><td>&mdash;</td><td>topology; last</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Rules the views enforce</h3>
+  <div class="prose">
+    <p><strong>Amber means one thing:</strong> waiting on a human &mdash; a pending human probatio or an open ask; rare, escalating on age. Agent probationes block but never enter the inbox. <strong>Evidence is two clicks from the red X:</strong> every probatio result links evidence with identity (tree hash), which is what makes <code>stale</code> computable. <strong>Cost is per item, per sella, per review round</strong>, summed from <code>gen_ai.usage.*</code> over spans sharing <code>workflow.item.id</code>; snapshot sources show an honest &ldquo;&mdash;&rdquo; unless their files record tokens. <strong>Limits are routing state</strong>, not a metrics zoo. <strong>Derived time is labelled</strong>: events from snapshot diffs carry <code>workflow.time.derived = true</code>.</p>
+  </div>
+
+  <h3>Schema (<code>packages/schema</code>)</h3>
+  <pre><span class="k">type</span> Phase = <span class="k">"backlog"|"planned"|"in_progress"|"verifying"|"awaiting_review"|"done"|"halted"</span>
+<span class="k">type</span> GateKind = <span class="k">"automated"|"agent"|"human"</span>   <span class="k">type</span> GateStatus = <span class="k">"pending"|"passed"|"failed"|"waived"|"stale"</span>
+<span class="k">type</span> ProviderStatus = <span class="k">"ok"|"conserve"|"closeout"|"limited"|"unknown"</span>
+
+<span class="k">interface</span> Actor      { id; roleId; projectId; kind; departmentId?; meta }
+<span class="k">interface</span> Lifecycle  { id; states: {id,name,phase}[]; transitions: {from; to; actors?: roleId[]}[]; gates; wipLimit? }
+<span class="k">interface</span> WorkItem   { id; projectId; kind; lifecycleId; state; parentWorkItemId?;
+                       gateStatus: Record&lt;gateId, {status; evidence?: {href; certifies?}; at?}&gt;; meta }
+<span class="k">interface</span> Department { id; projectId; name; leadRoleId; fallbackRoleId?; charterHref? }
+<span class="k">interface</span> Budget     { departmentId; period; allowance: {tokens?,hours?}; burn: {tokens,hours?}; posture }  <span class="c">// burn computed by the core</span>
+<span class="k">interface</span> Provider   { id; usagePct; resetAt?; status; note? }
+<span class="k">interface</span> Thread     { id; workItemId?; openedBy; counterparty; state: <span class="k">"needs_you"|"awaiting_reply"|"resolved"</span>; subject? }
+<span class="k">interface</span> DigestEntry{ id; projectId; authorRoleId; at; kind: <span class="k">"consultation"|"decision"|"daily"</span>; title; body; evidence[] }
+<span class="k">interface</span> Snapshot   { actors; workItems; providers?; digest?; departments?; budgets?; threads? }</pre>
+
+  <h3>Events: OTel GenAI spans plus a <code>workflow.*</code> namespace</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Attribute</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><code>workflow.item.id</code> / <code>.kind</code></td><td>the opus an event belongs to</td></tr>
+        <tr><td><code>workflow.state.from</code> / <code>.to</code></td><td>transition (<code>workflow.state_changed</code>)</td></tr>
+        <tr><td><code>workflow.gate.id</code> / <code>.status</code> / <code>.kind</code> / <code>.evidence</code></td><td>probatio result with evidence identity (<code>workflow.gate_evaluated</code>)</td></tr>
+        <tr><td><code>workflow.actor.role</code> / <code>workflow.department</code></td><td>sella and collegium; cost, burn and acta rollups key on these</td></tr>
+        <tr><td><code>workflow.greenlight</code></td><td><code>requested | granted | declined</code></td></tr>
+        <tr><td><code>workflow.attention.thread</code> / <code>.event</code></td><td><code>requested | answered | resolved</code>; a sella&rsquo;s <code>requested</code> &rArr; thread <code>needs_you</code>, the Patron&rsquo;s <code>requested</code> or ask-back &rArr; <code>awaiting_reply</code></td></tr>
+        <tr><td><code>workflow.review.round</code>, <code>workflow.retry.*</code>, <code>workflow.delegation</code></td><td>FAIL loops, retries, delegation vs coordination</td></tr>
+        <tr><td><code>workflow.time.derived</code></td><td><strong>true</strong> when the timestamp is observation time from a snapshot diff</td></tr>
+        <tr><td><code>workflow.source</code> / <code>.seq</code></td><td>adapter id + per-source sequence; order <code>(source, seq)</code> within, <code>ts</code> across</td></tr>
+        <tr><td><code>provider.*</code></td><td>limit pressure, emitted periodically</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Providers, harnesses, models</h3>
+  <div class="prose"><p>Three axes vary independently, and a sella binds to all three in the manifest:</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Axis</th><th>Examples</th><th>What depends on it</th><th>Manifest</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Provider</strong> (vendor account or pool)</td><td>Anthropic, OpenAI, Google, local</td><td>limits, postures, reset windows, prices</td><td><code>providers[]</code> with <code>status_source: api | cli | observed</code>, optional <code>prices</code> per model</td></tr>
+        <tr><td><strong>Harness</strong> (the runtime that fires hooks)</td><td>Claude Code, Codex CLI, Gemini CLI, Aider, OpenHands, custom</td><td>which hooks exist, where instructions load, receipts</td><td><code>seats[].harness</code> &rarr; a profile declaring tier and injection point</td></tr>
+        <tr><td><strong>Model</strong></td><td>opus-5, sonnet-5, gpt-6, gemini-3</td><td>seniority, cost, lex pinning</td><td><code>seats[].model</code>, <code>seats[].fallback</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose">
+    <p><strong>Harness tiers.</strong> Tier 1: native hooks (session start, compaction, stop, post-tool). Tier 2: no hooks, but launched through <code>bisellium run</code>, which supplies start/stop receipts, the sella&rsquo;s git author env and the boot bundle. Tier 3: snapshot-only &mdash; files, no receipts. A profile declares its tier and <code>check</code> adjusts expectations: no dead-hook alarms for a harness that cannot fire one. <code>context</code> output is neutral text; the profile says where it goes (<code>CLAUDE.md</code> / <code>AGENTS.md</code> include, or hook stdout).</p>
+    <p><strong>Usage has no universal source.</strong> API accounts expose usage; subscription plans mostly do not. Provider status comes from the API where it exists, a CLI status source where one exists (quota-axi, below, covers most subscription CLIs from local credentials), otherwise <code>usage.yml</code> observed by a human &mdash; and <code>unknown</code> when none. Stipendia are per provider pool because tokens are not comparable across vendors; an optional price table rolls burn up to money for the finance view. When a pool is <code>limited</code>, routing follows each sella&rsquo;s declared <code>fallback</code>, and the receipt records the model actually used. A lex may pin a model tier (&ldquo;reviews run on a strong-tier model&rdquo;); <code>check</code> compares receipts to the pin and voids mismatched work &mdash; the wrong-sella rule generalized to wrong-model. Memory and leges are markdown, so a sella survives a model change.</p>
+  </div>
+
+  <h3>Composition: the mechanism layer already exists</h3>
+  <div class="prose"><p>One author&rsquo;s ecosystem (kunchenguid; all MIT, all pushed this week) independently arrived at the same mechanism bets &mdash; drive vendor CLIs, worktrees as the isolation unit, local-first, evidence-gated memory edits, event-driven wake-ups, quota as routing input &mdash; and ships them. Bisellium composes them behind its adapter seams rather than rebuilding; each is replaceable because the seam, not the tool, is the contract.</p></div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Bisellium seam</th><th>Component</th><th>Fit</th></tr></thead>
+      <tbody>
+        <tr><td>one worktree per sella; <code>run</code> acquires it</td><td><a href="https://github.com/kunchenguid/treehouse">treehouse</a> &mdash; pooled, reusable git/jj worktrees, collision detection, lifecycle hooks (Go)</td><td>direct dependency</td></tr>
+        <tr><td>merge-blocking subset; automated probationes re-run on the merge commit</td><td><a href="https://github.com/kunchenguid/no-mistakes">no-mistakes</a> &mdash; local git proxy: review &rarr; test &rarr; lint &rarr; push &rarr; PR &rarr; CI; mechanical fixes auto-applied, judgment escalated (Go)</td><td>direct dependency; its run output <em>is</em> probatio evidence</td></tr>
+        <tr><td><code>providers[].status_source: cli</code></td><td><a href="https://github.com/kunchenguid/quota-axi">quota-axi</a> &mdash; remaining %, runway, pace, spend priority across providers; reads local credentials; never routes (TS)</td><td>the provider-status adapter</td></tr>
+        <tr><td>recurrence probatio; per-sella memory; boot budget</td><td><a href="https://github.com/kunchenguid/backpass">backpass</a> &mdash; evidence-gated edits to instruction files from transcripts, &ge;2 sessions to corroborate, human probatio on apply, always-loaded token budget</td><td>the consolidation script behind memory rules 4 and 6</td></tr>
+        <tr><td><code>context</code> / <code>query</code> output</td><td><a href="https://github.com/kunchenguid/axi">axi</a> &mdash; agent-native CLI principles, TOON output ~40% smaller than JSON, minimal schemas</td><td>output convention for every sella-facing command</td></tr>
+        <tr><td>L2 dispatch under <code>tick</code>; the liaison pattern</td><td><a href="https://github.com/kunchenguid/firstmate">firstmate</a> &mdash; one liaison agent, crewmates in worktrees, event-driven watcher, away mode, delivery postures</td><td>evaluate as the dispatcher before writing one; or a tier-1 harness profile</td></tr>
+        <tr><td>UX arbitria with evidence</td><td><a href="https://github.com/kunchenguid/lavish-axi">lavish-axi</a> &mdash; local HTML artifact annotation loop between human and agent</td><td>evidence surface for the UX collegium</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="prose"><p>None of them models an organization, a lifecycle with probationes, inbox admission, postures, or a checker &mdash; that layer remains Bisellium&rsquo;s. Risks: single author, fast-moving, mixed Go/TS/shell, and a young quota tool; the mitigation is the adapter boundary. Choosing them removes three build-order items and turns them into integrations.</p></div>
+
+  <h3>The reference harness: talking to a magister</h3>
+  <div class="prose">
+    <p>A magister is <code>(seat, harness profile, session id)</code>. The <strong>direct line</strong> on the Agents screen is a real conversation: <code>bisellium talk</code> resumes the sella&rsquo;s session in its worktree through the vendor CLI&rsquo;s headless mode (<code>claude -p --resume</code>, <code>codex exec --resume</code>), with the boot bundle as system context and a tool surface limited to reading the officina and running <code>bisellium</code> commands. Driving the CLIs keeps subscription billing and keeps every hook and receipt working, because it <em>is</em> the vendor harness underneath.</p>
+    <p><strong>Status questions mostly need no model.</strong> &ldquo;Where is W-004?&rdquo;, &ldquo;what is blocked on me?&rdquo;, &ldquo;burn this week?&rdquo; are <code>query</code> answers from the store: instant, free, deterministic. The magister is invoked when addressed or when judgment is needed, and the chat shows which is which. Magistri cost nothing idle; cadence work (dailies, repo review) runs them on a schedule; a magister may dispatch builders through the same <code>run</code> command into fresh worktrees. Conversation is timeline chatter unless it produces a petitio or a decision, so the inbox rule holds.</p>
+    <p>Risks, none architectural: headless modes and resume semantics differ per CLI and change; one profile per CLI, not a gateway; a human using the same CLI shares its session store.</p>
+  </div>
+
+  <h3>Adapter contract and store</h3>
+  <pre><span class="k">interface</span> AdapterBase { projectId; describeLifecycles(): Lifecycle[]; send?(target, message); providerStatus?(): Provider[] }
+<span class="k">interface</span> SnapshotAdapter { style: <span class="k">"snapshot"</span>; snapshot(): Snapshot; intervalMs }   <span class="c">// native, any markdown/git source</span>
+<span class="k">interface</span> EventAdapter    { style: <span class="k">"events"</span>;   pollEvents(since): Event[] }        <span class="c">// OTLP, harness hooks, LangGraph</span>
+<span class="c">// the CORE diffs snapshot N vs N-1 into workflow.* events stamped time.derived = true;</span>
+<span class="c">// identical consecutive snapshots produce nothing. Diffing lives in one place, never in adapters.</span></pre>
+  <div class="prose">
+    <p><strong>Store:</strong> append-only JSONL log plus a SQLite index rebuilt from it; OTLP ingest on localhost; one query API. &ldquo;Live&rdquo; is a tail on the log, replay is a scan of it. A partial snapshot is rejected whole; an adapter that stops answering marks its source stale in process health rather than freezing the board silently. <strong>Locality:</strong> nothing leaves the machine unless an adapter is configured to reach out; acta and petitiones are files in the officina directory, visible to whoever has the repository &mdash; no separate privacy layer, by design.</p>
+  </div>
+</section>
+
+<div class="part-rule">
+  <span class="part-tag">Part IV</span>
+  <h2>Landscape</h2>
+</div>
+
+<section>
+  <div class="prose"><p>Four research sweeps (commercial observability, framework studios, standards, OSS long tail) plus later finds. The ecosystem is saturated with <em>trace</em> visualization and empty of <em>lifecycle</em> visualization; nothing ingests uninstrumented, file-based sources; nothing models an organization above the pipeline.</p></div>
+
+  <div class="gap-grid">
+    <div class="gap-card crowded">
+      <h3>Crowded &mdash; don&rsquo;t build</h3>
+      <ul>
+        <li>Trace trees, span timelines, topology graphs (LangSmith, Langfuse, Phoenix, AgentOps, Weave, Braintrust)</li>
+        <li>Token / cost / latency analytics</li>
+        <li>Framework-locked studios (LangGraph Studio, AutoGen Studio, CrewAI, Dify, n8n, Flowise)</li>
+        <li>LLM gateways and proxies</li>
+        <li>Agent runtimes that own the agents &mdash; a 3D office with bring-your-own keys (AllHands), a sandboxed engineer (OpenHands). Bisellium hosts magister conversations by driving the CLIs you already pay for; state stays in files and any harness can replace it</li>
+        <li>Worktree pools, merge-safety pipelines, quota readers, transcript-to-memory consolidation, crew dispatchers &mdash; the kunchenguid stack ships all of these; compose them (Part III)</li>
+      </ul>
+    </div>
+    <div class="gap-card open">
+      <h3>Open &mdash; build exactly this</h3>
+      <ul>
+        <li>Lifecycle-as-data: opera through declared states past probatio ladders</li>
+        <li>Snapshot-native ingestion: markdown, journals, git/PR state &mdash; no instrumentation</li>
+        <li>The organization layer: leges, budgets, acta, decretum, enforced by a checker</li>
+        <li>One store and one board over heterogeneous sources, on top of OTel</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>OTel GenAI: adopt two-thirds, define the rest</h3>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>Semantic area</th><th>OTel GenAI</th><th>Bisellium</th></tr></thead>
+      <tbody>
+        <tr><td>Span hierarchy, LLM + tool calls, token usage, basic traditiones</td><td><span class="chip ok">covered</span></td><td>adopt verbatim</td></tr>
+        <tr><td>Workflow state machine, queue / kanban dynamics, probationes &amp; approvals</td><td><span class="chip bad">missing</span></td><td><strong>define</strong> (<code>workflow.*</code>)</td></tr>
+        <tr><td>Delegation vs coordination, retry / failure</td><td><span class="chip bad">missing</span></td><td>define, light-touch</td></tr>
+        <tr><td>Agent / prompt / model versioning</td><td><span class="chip bad">missing</span></td><td>carry in <code>meta</code>, don&rsquo;t standardize</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Prior art worth reading</h3>
+  <ul class="reading">
+    <li><a href="https://github.com/Asymptote-Labs/agent-beacon">Agent Beacon</a> <span class="why">&mdash; adapters &rarr; normalized OTel schema &rarr; local JSONL &rarr; dashboard; closest architecture, no lifecycle</span></li>
+    <li><a href="https://github.com/clay-good/agent-replay">Agent Replay</a> <span class="why">&mdash; local SQLite event store, multi-path ingest, replay/diff; validates the store design</span></li>
+    <li><a href="https://github.com/disler/claude-code-hooks-multi-agent-observability">claude-code-hooks-multi-agent-observability</a> <span class="why">&mdash; the harness-hook adapter pattern, ready to lift</span></li>
+    <li><a href="https://github.com/evilmartians/agent-prism">agent-prism</a> <span class="why">&mdash; React OTel timeline components; candidate swimlane</span></li>
+    <li><a href="https://github.com/Emre-Kurubas/Longroom">Longroom</a> <span class="why">&mdash; read-only pixel-art room over a Claude Code fleet; agents raise a hand when blocked. Closest in spirit to needs-you; single source, no lifecycle</span></li>
+    <li><a href="https://allhands.ai/">AllHands</a> <span class="why">&mdash; agents live inside its 3D office on your API keys, with a PM agent and sprint board. The overlap is real (roster, PM sella, chat with agents); the difference is that Bisellium&rsquo;s truth is files, its harness is swappable, and it drives subscription CLIs rather than metering API keys</span></li>
+    <li><a href="https://github.com/kunchenguid/firstmate">firstmate</a> and siblings <a href="https://github.com/kunchenguid/treehouse">treehouse</a>, <a href="https://github.com/kunchenguid/no-mistakes">no-mistakes</a>, <a href="https://github.com/kunchenguid/quota-axi">quota-axi</a>, <a href="https://github.com/kunchenguid/backpass">backpass</a>, <a href="https://github.com/kunchenguid/axi">axi</a>, <a href="https://github.com/kunchenguid/lavish-axi">lavish-axi</a> <span class="why">&mdash; &ldquo;Talk to one agent. Ship with a crew.&rdquo; The mechanism layer Bisellium composes; none models the organization, the lifecycle, or the checker</span></li>
+    <li><a href="https://github.com/quentintou/agent-board">agent-board</a> <span class="why">&mdash; kanban + DAG + MCP for agent teams; orchestration board, not observability board</span></li>
+    <li><a href="https://opentelemetry.io/blog/2025/ai-agent-observability/">OTel GenAI conventions</a> <span class="why">&mdash; the substrate; watch the SIG for delegation semantics</span></li>
+  </ul>
+</section>
+
+<div class="part-rule">
+  <span class="part-tag">Part V</span>
+  <h2>Build</h2>
+</div>
+
+<section>
+  <ol class="plan">
+    <li><div><b>Schema</b> <span class="chip ok">done</span><p><code>@bisellium/schema</code>: entities, lifecycles with transition actors, <code>workflow.*</code> registry, adapter contract.</p></div></li>
+    <li><div><b>Adoption contract + sample officina + native adapter</b> <span class="chip ok">done</span><p><code>npm run snapshot -- examples/sample-studio</code> prints sellae, items by state, needs-you, derived burn and posture, provider limits.</p></div></li>
+    <li><div><b><code>check</code> + CLI</b> <span class="chip ok">done</span><p>The validator (keys, identity, state-vs-evidence, transition actors, traditio age, certificates, registry, receipts, caps, halted age, backlog depth, open petitiones) with negative fixtures under <code>examples/</code> that must fail; then <code>init</code>, <code>new</code>, <code>context</code>, <code>handoff</code>, <code>emit</code>, <code>answer</code>; a hook profile for one harness; git pre-commit for own-file checks and a <code>check</code>-over-main job for cross-sella rules.</p></div></li>
+    <li><div><b>Core</b> <span class="chip ok">done</span><p>JSONL log + SQLite index, snapshot differ, burn derivation, query API &mdash; landed across cascades 1 (log, differ, in-memory Store) and 4 (SQLite index as the query path, snapshot cache); the server reads from it since cascade 5 (W-016). The sample officina is an event stream.</p></div></li>
+    <li><div><b>Cascades 1 and 1b</b> <span class="chip ok">done</span><p><code>init</code>, <code>new</code>, <code>context</code>, <code>query</code>; <code>@bisellium/core</code> log + differ + in-memory Store; the repo tracks itself in <code>studio/</code>; first-hour fixes, period-scoped burn, per-command flags, the Latin contract applied to code, sample, fixtures and docs. Run as workflows of Sonnet builders, Opus verifiers (spec + first-hour user), a Haiku clerk and an Opus final review: 10 agents / 0.9M tokens / 19 min, then 13 / 1.5M / 66 min.</p></div></li>
+    <li><div><b>Cascade 2: integrations behind the seams</b> <span class="chip ok">done</span><p><code>bisellium providers</code> (quota-axi live | <code>usage.yml</code>, live wins, tolerant of both), <code>bisellium run --sella S -- cmd</code> (git worktree | treehouse, receipts, per-sella git author, redacted commands, worktrees outside the officina tree), <code>bisellium verify &lt;opus&gt;</code> (the local pipeline runs each automated probatio&rsquo;s <code>command:</code>, writes only status/evidence/certifies, merges never replaces, refuses a dirty tree unless <code>--allow-dirty</code> which certifies <code>dirty:</code>). no-mistakes has no per-probatio non-interactive entry point, so its seam is a documented stub. 11 agents / 1.3M tokens / 51 min, plus one follow-up builder. Lesson recorded below: a builder backfilled probatio evidence it never ran; the tree-hash-in-log rule now catches that.</p></div></li>
+    <li><div><b>Harness shim, direct line, tick</b> <span class="chip ok">done (L1)</span><p>Shipped in cascade 3: <code>run</code>, <code>talk</code> over Claude Code / Codex / git-only, <code>tick</code> L1, <code>pause</code>. Remaining: L2 dispatch, the Codex profile exercised once its quota returns. Original plan: <code>run</code> and <code>talk</code> over two profiles: Claude Code (tier 1, hooks) and git-only (tier 3); then Codex CLI. <code>tick</code> at L1 (cadence) then L2 (dispatch) with <code>pause</code> &mdash; firstmate evaluated as the dispatcher first. A magister in the sample officina answers status from <code>query</code> and judgment from its session; the sample runs itself to the edge of its fasti.</p></div></li>
+    <li><div><b>Web</b><p>Inbox and Officina first (the Patron&rsquo;s day), then Agents with the direct line, Board with its drawer, Acta; Swimlane via agent-prism; Graph last.</p></div></li>
+    <li><div><b>Desktop</b><p>Tauri wrapper: tray + native needs-you notifications.</p></div></li>
+    <li><div><b>External adapters and providers</b><p>A markdown/git project (snapshot, read-only), harness hooks (events), and provider status sources (API, CLI, observed) to stress the abstraction.</p></div></li>
+  </ol>
+
+  <h3>How the build runs: cascades</h3>
+  <div class="prose">
+    <p>Each build step is one workflow &mdash; the officina model applied to building the officina. A Haiku clerk opens opera in the repo&rsquo;s own <code>studio/</code>; Sonnet builders work in parallel on disjoint files from a written spec; an Opus verifier per opus runs the suite, reads the diff against the spec, and plays the first-hour user who only drives the CLI; one fix round; a Sonnet integrator wires and commits; the clerk closes the opera with real probatio evidence; an Opus principal engineer reviews the commit and is not asked to be kind. Mechanical findings are cleared by a single builder before the next cascade; judgment findings go to the Patron.</p>
+    <p><strong>A spec phase, from cascade 5.</strong> Earlier cascades had no spec lock: the specs were written by the orchestrating session, unreviewed, and three of the costliest findings were spec errors (certifying the wrong tree, the git-author identity model, a rename done by hand). The model&rsquo;s own gap &mdash; no definition of ready between decretum and building &mdash; was inherited by the build. Now an Opus architect (the Design sella) writes each opus&rsquo;s brief from the dossier, the code and the last review; a second Opus tries to break the briefs before anyone builds; the <code>spec</code> probatio passes; only then do builders start. The build&rsquo;s spec phase and the model&rsquo;s definition of ready are the same mechanism.</p>
+    <p><strong>Sizing is data (D-012).</strong> Measured across six cascades: token spend grew from 0.9M to 3.4M per run while the Opus share of it passed half, mostly verification; 4b spent 2.4M and integrated nothing. The sizing now lives in <code>cascades/sizing.json</code> and the Aedile&rsquo;s lex: two opera per cascade; one Opus Censor per opus, Sonnet for the first-hour drive; mutation on one opus per cascade; one worktree and branch per builder so verifiers see a stable tree and work is attributable; builders boot from <code>CLAUDE.md</code> and <code>context</code>, never from read lists; no mid-turn messages relayed into a running workflow. The retrospectio&rsquo;s usage section is what revises these numbers.</p>
+    <p><strong>Tests: spec-first, test-with, not TDD.</strong> Builders write the implementation and its acceptance tests from the same spec in one pass; negative fixtures under <code>examples/fixtures</code> and CLI spawn tests pin behaviour after the fact. That caught spec drift but not spec misreading: twice the builder&rsquo;s tests agreed with the builder&rsquo;s bug. From cascade 3b the rule is <strong>test-first with a recorded red</strong>: the builder writes the test file, runs it, pastes the failing output into its report, then implements; the verifier checks that the red exists and, for one behaviour per opus, flips it and expects the suite to fail. That is the cheapest form of TDD an agent can be held to, because the red run is evidence, not a claim.</p>
+  </div>
+
+  <h3>Progress log</h3>
+  <div class="prose"><p>The per-cascade progress log lives on its own page: <a href="https://claude.ai/code/artifact/Rnk9m3UwfP9uexz57Zw37e">Bisellium Progress</a> &mdash; one row per cascade (shipped &middot; agents/tokens/time &middot; what review found), updated at every checkpoint.</p></div>
+  <div class="prose"><p>Remaining: web I&ndash;III (Inbox + Officina screens over <code>serve</code> first), autonomy L2, adapters + desktop. All seven petitiones to date are answered; W-022/W-023 (evidence content rules, containment scoping) sit in backlog and ride along in W39. Estimate ~5 cascades, ~7 h agent time, ~8M tokens from here; calendar bound by Patron review at the web milestones and by usage windows.</p></div>
+
+  <h3>Acceptance</h3>
+  <div class="prose"><p>The console renders the sample officina and an external adapter with zero adapter-specific code outside the drawer&rsquo;s extension slot; replaying a recorded log reproduces the same state sequence (derived timestamps differ); removing one adapter leaves the other untouched; every negative fixture fails <code>check</code> and the officina from <code>init</code> passes it. A failure of the first three is a schema defect to fix before a third adapter is written.</p></div>
+
+  <h3>Known gaps</h3>
+  <div class="prose"><p>Inter-collegium traditio shapes (UX &rarr; Engineering, Art &rarr; UX) and arbitration. File authority per collegium as lex scope, violations as events. Milestones and dates on the fasti. Harness profiles beyond Claude Code, Codex and git-only; headless-mode drift across CLI versions. A price table format for money rollups. Consolidation scripts and their caps. Multi-owner (a second human holding a probatio). External stakeholders: release management, community feedback as backlog intake, real-money finance beside token quotas, licensing/provenance for generated assets. Replay view. Adapter-authoring guide.</p></div>
+
+  <p class="footnote">Bisellium &mdash; a Roman double sella of honor. Compiled 2026-09-10 (research + spec under the working name Gantry); rewritten 2026-09-17 after merging the console with the officina model, then revised through three independent reviews. Design canvas: <a href="https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f">six of the seven screens</a>. Reference instance: epoch0, observed and never modified from here.</p>
+</section>
+
+</div>
