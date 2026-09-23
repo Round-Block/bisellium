@@ -639,6 +639,20 @@ try {
       { label: "missing --decision", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw"] },
       { label: "--decision naming a nonexistent file", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw", "--decision", "D-does-not-exist"] },
       { label: "--decision of ../../etc/passwd", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw", "--decision", "../../etc/passwd"] },
+      // D-008: a plain join() (no safeItemPath) resolves "../leges/qa" to a
+      // file that actually EXISTS in the sample studio, so only the
+      // containment guard — never the missing-file check — refuses this one
+      // (round-1 F-1a: "../../etc/passwd" above is defeated by a raw join
+      // too, but its ".md"-suffixed target never exists either way).
+      { label: "--decision of ../leges/qa", opusId: "W-002", args: ["--reason", "r", "--resume-when", "rw", "--decision", "../leges/qa"] },
+      // D-008 on the opus id itself (round-1 F-1b): no prior case ever tried
+      // traversal on the positional <opus>. "../petitiones/A-1" resolves
+      // under a plain join to a real file (petitiones/A-1.md), so again only
+      // the guard — not the missing-file check — can refuse it. The loop's
+      // own opusPath (join(dir,"opera",`${opusId}.md`)) collapses the same
+      // way and lands on that same petitio, so "leaves the file unchanged"
+      // below is already asserting the traversal target, not just the id.
+      { label: "opus id ../petitiones/A-1", opusId: "../petitiones/A-1", args: [...good] },
     ];
 
     for (const { label, opusId, args } of cases) {

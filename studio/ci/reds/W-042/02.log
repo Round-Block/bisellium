@@ -1,26 +1,28 @@
 # behaviour: 2
-# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# command: sh /tmp/claude-1000/-home-edckt-projects-bisellium/54cefaf8-a6df-46b5-9f84-fcbde1e23b2f/scratchpad/w042-mutants.sh
 # exit: 1
-# at: 2026-09-23T14:09:01.164Z
+# at: 2026-09-23T14:27:10.701Z
 # sella: builder-a
-# tree: dirty:92cf4505dbd36067ea05123fff9df12cf7cb9ec1
+# tree: dirty:254e8fe8c892fcec4393b7efc0797f55a4fe28cd
 
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+================================================================
+MUTATION 1 of 2 -- lifecycle.ts:491 (the --decision guard)
+  safeItemPath(join(root,"decisions"), decisionId) -> raw join+.md
+================================================================
+W-001 is already done — halt refused
 PASS  halt: refuses on done source state with exit 2                   2
 PASS  halt: done source state leaves the opus file unchanged           
 PASS  halt: done source state appends no event                         
+W-101 is already halted — halt refused
 PASS  halt: refuses on halted source state with exit 2                 2
 PASS  halt: halted source state leaves the opus file unchanged         
 PASS  halt: halted source state appends no event                       
+unknown opus: W-999
 PASS  halt: refuses on unknown opus id with exit 2                     2
 PASS  halt: unknown opus id appends no event                           
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
 PASS  halt: refuses on missing --reason with exit 2                    2
 PASS  halt: missing --reason leaves the opus file unchanged            
 PASS  halt: missing --reason appends no event                          
@@ -30,12 +32,77 @@ PASS  halt: missing --resume-when appends no event
 PASS  halt: refuses on missing --decision with exit 2                  2
 PASS  halt: missing --decision leaves the opus file unchanged          
 PASS  halt: missing --decision appends no event                        
+W-002: --decision "D-does-not-exist" not found under decisions/
 PASS  halt: refuses on --decision naming a nonexistent file with exit 2 2
 PASS  halt: --decision naming a nonexistent file leaves the opus file unchanged 
 PASS  halt: --decision naming a nonexistent file appends no event      
+W-002: --decision "../../etc/passwd" not found under decisions/
 PASS  halt: refuses on --decision of ../../etc/passwd with exit 2      2
 PASS  halt: --decision of ../../etc/passwd leaves the opus file unchanged 
 PASS  halt: --decision of ../../etc/passwd appends no event            
-FAIL  halt: a fully valid case (source state + real decision) exits 0  2
+W-002: state=halted by=../leges/qa
+FAIL  halt: refuses on --decision of ../leges/qa with exit 2           0
+FAIL  halt: --decision of ../leges/qa leaves the opus file unchanged   
+FAIL  halt: --decision of ../leges/qa appends no event                 
+unknown opus: ../petitiones/A-1
+PASS  halt: refuses on opus id ../petitiones/A-1 with exit 2           2
+PASS  halt: opus id ../petitiones/A-1 leaves the opus file unchanged   
+PASS  halt: opus id ../petitiones/A-1 appends no event                 
+W-960: state=halted by=D-901
+PASS  halt: a fully valid case (source state + real decision) exits 0  0
+PASS  halt: the valid case actually wrote state=halted                 halted
+mutant 1 exit: 1
+
+================================================================
+MUTATION 2 of 2 -- lifecycle.ts:468 (the opus-id guard)
+  safeItemPath(join(root,"opera"), opusId) -> raw join+.md
+================================================================
+W-001 is already done — halt refused
+PASS  halt: refuses on done source state with exit 2                   2
+PASS  halt: done source state leaves the opus file unchanged           
+PASS  halt: done source state appends no event                         
+W-101 is already halted — halt refused
+PASS  halt: refuses on halted source state with exit 2                 2
+PASS  halt: halted source state leaves the opus file unchanged         
+PASS  halt: halted source state appends no event                       
+unknown opus: W-999
+PASS  halt: refuses on unknown opus id with exit 2                     2
+PASS  halt: unknown opus id appends no event                           
+PASS  halt: refuses on missing --reason with exit 2                    2
+PASS  halt: missing --reason leaves the opus file unchanged            
+PASS  halt: missing --reason appends no event                          
+PASS  halt: refuses on missing --resume-when with exit 2               2
+PASS  halt: missing --resume-when leaves the opus file unchanged       
+PASS  halt: missing --resume-when appends no event                     
 usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-FAIL  halt: the valid case actually wrote state=halted                 building
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+PASS  halt: refuses on missing --decision with exit 2                  2
+PASS  halt: missing --decision leaves the opus file unchanged          
+PASS  halt: missing --decision appends no event                        
+W-002: --decision "D-does-not-exist" not found under decisions/
+PASS  halt: refuses on --decision naming a nonexistent file with exit 2 2
+PASS  halt: --decision naming a nonexistent file leaves the opus file unchanged 
+PASS  halt: --decision naming a nonexistent file appends no event      
+W-002: --decision "../../etc/passwd" not found under decisions/
+PASS  halt: refuses on --decision of ../../etc/passwd with exit 2      2
+PASS  halt: --decision of ../../etc/passwd leaves the opus file unchanged 
+PASS  halt: --decision of ../../etc/passwd appends no event            
+W-002: --decision "../leges/qa" not found under decisions/
+PASS  halt: refuses on --decision of ../leges/qa with exit 2           2
+PASS  halt: --decision of ../leges/qa leaves the opus file unchanged   
+PASS  halt: --decision of ../leges/qa appends no event                 
+../petitiones/A-1: state=halted by=D-901
+FAIL  halt: refuses on opus id ../petitiones/A-1 with exit 2           0
+FAIL  halt: opus id ../petitiones/A-1 leaves the opus file unchanged   
+FAIL  halt: opus id ../petitiones/A-1 appends no event                 
+W-960: state=halted by=D-901
+PASS  halt: a fully valid case (source state + real decision) exits 0  0
+PASS  halt: the valid case actually wrote state=halted                 halted
+mutant 2 exit: 1
+
+================================================================
+both mutants reverted; git diff -- packages/commands/src/lifecycle.ts:
+(empty above means fully restored)
+================================================================
+summary: mutant1(decision,:491) exit=1  mutant2(opus-id,:468) exit=1
