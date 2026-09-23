@@ -422,100 +422,6 @@ function runCapture(cmd: string[], cwd: string): Promise<{ exitCode: number; out
   });
 }
 
-// ---------------------------------------------------------------------------
-// 5. halt — any active state -> halted (W-042). Terminal ("abandon") is a
-//    halt whose resume_when is "never" (see the brief's Intent): one verb,
-//    one state id, no second terminal id to plumb through six readers.
-// ---------------------------------------------------------------------------
-
-const HALT_USAGE =
-  "usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]";
-
-export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
-  const parsed = parseFlags(args, { valued: ["--reason", "--resume-when", "--decision", "--sella", "--studio", "--now"] });
-  if ("error" in parsed) {
-    console.error(`${parsed.error}\n${HALT_USAGE}`);
-    return { exitCode: 2 };
-  }
-  const { values, positionals } = parsed;
-  const opusId = positionals[0];
-  if (!opusId) {
-    console.error(HALT_USAGE);
-    return { exitCode: 2 };
-  }
-
-  const reason = values.get("--reason");
-  const resumeWhen = values.get("--resume-when");
-  const decisionId = values.get("--decision");
-  if (!reason || !resumeWhen || !decisionId) {
-    console.error(HALT_USAGE);
-    return { exitCode: 2 };
-  }
-
-  const now = resolveNow(values.get("--now"), opts.now);
-  if (!now) {
-    console.error("--now must be an ISO date");
-    return { exitCode: 2 };
-  }
-
-  const opened = openStudio(values.get("--studio"));
-  if ("error" in opened) {
-    console.error(opened.error);
-    return { exitCode: 2 };
-  }
-  const { root, manifest } = opened;
-
-  const opusPath = safeItemPath(join(root, "opera"), opusId);
-  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
-    console.error(`unknown opus: ${opusId}`);
-    return { exitCode: 2 };
-  }
-
-  const currentState = readState(opusPath);
-  if (typeof currentState !== "string") {
-    console.error(currentState.error);
-    return { exitCode: 2 };
-  }
-  // Mirrors describeLifecycle's own transition table (every state but
-  // `done` can reach `halted`), plus re-halting refused outright: it would
-  // silently overwrite a recorded reason/decision with a new one, and
-  // amending a halt in place is out of scope (see the brief).
-  if (currentState === "done" || currentState === "halted") {
-    console.error(`${opusId} is already ${currentState} — halt refused`);
-    return { exitCode: 2 };
-  }
-
-  // D-008 containment via the shared helper — `--decision` is an id, not a
-  // caller-supplied path, so this is safeItemPath (like --opus above), never
-  // a fresh join() or ready's isContained (which is for paths).
-  const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
-  if (typeof decisionPath !== "string" || !existsSync(decisionPath)) {
-    console.error(`${opusId}: --decision "${decisionId}" not found under decisions/`);
-    return { exitCode: 2 };
-  }
-
-  const sella = resolveSella(values.get("--sella"));
-
-  editOpusFrontMatter(opusPath, (doc) => {
-    doc.setIn(["state"], "halted");
-    doc.setIn(["halted_at"], now.toISOString());
-    doc.setIn(["reason"], reason);
-    doc.setIn(["resume_when"], resumeWhen);
-    doc.setIn(["halted_by"], decisionId);
-    return undefined;
-  });
-
-  emitEvent(root, manifest, "workflow.state_changed", now, {
-    [WF.ITEM_ID]: opusId,
-    [WF.STATE_FROM]: currentState,
-    [WF.STATE_TO]: "halted",
-    [WF.ACTOR_ROLE]: sella,
-  });
-
-  console.log(`${opusId}: state=halted by=${decisionId}`);
-  return { exitCode: 0 };
-}
-
 export async function runRed(args: string[], opts: WriteOptions = {}): Promise<WriteResult> {
   if (args.length === 0) {
     console.error(RED_USAGE);
@@ -632,5 +538,99 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   writeFileSync(logPath, `${header}\n\n${output}`);
 
   console.log(`${opusId}: red recorded for behaviour ${behaviour} -> ci/reds/${opusId}/${nn}.log`);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// 5. halt — any active state -> halted (W-042). Terminal ("abandon") is a
+//    halt whose resume_when is "never" (see the brief's Intent): one verb,
+//    one state id, no second terminal id to plumb through six readers.
+// ---------------------------------------------------------------------------
+
+const HALT_USAGE =
+  "usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
+  const parsed = parseFlags(args, { valued: ["--reason", "--resume-when", "--decision", "--sella", "--studio", "--now"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${HALT_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, positionals } = parsed;
+  const opusId = positionals[0];
+  if (!opusId) {
+    console.error(HALT_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const reason = values.get("--reason");
+  const resumeWhen = values.get("--resume-when");
+  const decisionId = values.get("--decision");
+  if (!reason || !resumeWhen || !decisionId) {
+    console.error(HALT_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+
+  const opusPath = safeItemPath(join(root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+    console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  const currentState = readState(opusPath);
+  if (typeof currentState !== "string") {
+    console.error(currentState.error);
+    return { exitCode: 2 };
+  }
+  // Mirrors describeLifecycle's own transition table (every state but
+  // `done` can reach `halted`), plus re-halting refused outright: it would
+  // silently overwrite a recorded reason/decision with a new one, and
+  // amending a halt in place is out of scope (see the brief).
+  if (currentState === "done" || currentState === "halted") {
+    console.error(`${opusId} is already ${currentState} — halt refused`);
+    return { exitCode: 2 };
+  }
+
+  // D-008 containment via the shared helper — `--decision` is an id, not a
+  // caller-supplied path, so this is safeItemPath (like --opus above), never
+  // a fresh join() or ready's isContained (which is for paths).
+  const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
+  if (typeof decisionPath !== "string" || !existsSync(decisionPath)) {
+    console.error(`${opusId}: --decision "${decisionId}" not found under decisions/`);
+    return { exitCode: 2 };
+  }
+
+  const sella = resolveSella(values.get("--sella"));
+
+  editOpusFrontMatter(opusPath, (doc) => {
+    doc.setIn(["state"], "halted");
+    doc.setIn(["halted_at"], now.toISOString());
+    doc.setIn(["reason"], reason);
+    doc.setIn(["resume_when"], resumeWhen);
+    doc.setIn(["halted_by"], decisionId);
+    return undefined;
+  });
+
+  emitEvent(root, manifest, "workflow.state_changed", now, {
+    [WF.ITEM_ID]: opusId,
+    [WF.STATE_FROM]: currentState,
+    [WF.STATE_TO]: "halted",
+    [WF.ACTOR_ROLE]: sella,
+  });
+
+  console.log(`${opusId}: state=halted by=${decisionId}`);
   return { exitCode: 0 };
 }
