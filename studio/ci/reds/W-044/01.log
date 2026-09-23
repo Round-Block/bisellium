@@ -1,0 +1,16 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/talk-boundary.test.ts .
+# exit: 1
+# at: 2026-09-23T15:34:31.050Z
+# sella: builder-b
+# tree: dirty:7ca44d7aa59a1c1fc6850b8f80b27f507c2cece8
+
+PASS  behaviour 1: two calls logged (start, resume)                              [["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-7v1ELe/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"],["-p","--resume","sess-fixture","--output-format","json","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]]
+FAIL  behaviour 1 start: flag set is exactly the start set                       -p --output-format --append-system-prompt-file --allowedTools
+FAIL  behaviour 1 start: --permission-mode is dontAsk                            ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-7v1ELe/system-prompt.md","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 1 start: --tools is exactly {Read,Grep,Glob,Bash}                
+FAIL  behaviour 1 start: --allowedTools is exactly the ten expected entries      Read,Grep,Glob,WebFetch,Bash(bisellium *)
+FAIL  behaviour 1 resume: flag set is exactly the resume set                     -p --resume --output-format --allowedTools
+FAIL  behaviour 1 resume: --permission-mode is dontAsk                           ["-p","--resume","sess-fixture","--output-format","json","--allowedTools","Read","Grep","Glob","WebFetch","Bash(bisellium *)"]
+FAIL  behaviour 1 resume: --tools is exactly {Read,Grep,Glob,Bash}               
+FAIL  behaviour 1 resume: --allowedTools is exactly the ten expected entries     Read,Grep,Glob,WebFetch,Bash(bisellium *)
