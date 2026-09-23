@@ -1,10 +1,29 @@
 /**
  * @bisellium/shim/harness — the 'claude-code' profile: `claude -p` with JSON
- * output, session resume, an appended system prompt (the sella's boot
- * bundle from `bisellium context`), and an allowed-tools list restricted to
- * read-only tools plus `Bash(bisellium *)` — a magister talking to the
- * Patron can look around and run bisellium's own CLI, never edit the repo.
- * The message is sent over stdin, never as a positional argv token: `claude
+ * output and session resume. W-044: the talk profile is a permission
+ * boundary, deny-by-default. `Bash(bisellium *)` used to admit the whole
+ * CLI (`run`/`red`'s arbitrary passthrough, the Patron-stamped
+ * `answer`/`greenlight`/`budget`, git-moving `branch`/`merge`/`close`), and
+ * `--allowedTools` alone never restricted which tools exist or which
+ * settings files loaded. Both `start` and `resume` now pass the full policy
+ * below on every call:
+ *
+ *  - `--restricted`: ignores user/project/local settings files, refuses
+ *    `bypassPermissions`, confines file tools to the working directory
+ *    (the studio root, for talk).
+ *  - `--strict-mcp-config` with no `--mcp-config`: no MCP servers.
+ *  - `--permission-mode dontAsk`: anything not pre-approved is denied, never
+ *    prompted for.
+ *  - `--tools`: exactly Read, Grep, Glob, Bash are available. `WebFetch` is
+ *    dropped — paired with `Read` it would be the profile's only egress.
+ *  - `--allowedTools`: Read, Grep, Glob, and seven `Bash(bisellium …)` rules
+ *    admitting only `context`, `query`, `check` and the bare usage banner —
+ *    `providers` is cut (its default source spawns `npx --yes quota-axi`,
+ *    a network fetch plus third-party code neither talk nor tick needs).
+ *
+ * A `claude` that doesn't know `--restricted`/`dontAsk` exits non-zero, and
+ * talk relays that failure — it fails closed, which is intended. The
+ * message is sent over stdin, never as a positional argv token: `claude
  * --allowedTools <tools...>` is variadic and would otherwise happily eat a
  * trailing prompt argument as one more "tool name". The boot bundle (the
  * system prompt) similarly never travels as an argv token: it's written to a
@@ -22,10 +41,30 @@ import { USAGE_LIMIT_EXIT_CODE } from "./types.js";
 const TIMEOUT_MS = 120_000;
 const MAX_BUFFER = 64 * 1024 * 1024;
 
-/** Read-only built-ins plus the one write path a magister is allowed:
- *  bisellium's own CLI (new items, talk to other sellae, etc. — never a raw
- *  shell). */
-const READ_ONLY_TOOLS = ["Read", "Grep", "Glob", "WebFetch", "Bash(bisellium *)"];
+/** Built-in tools available at all — availability, not approval
+ *  (`--allowedTools` below is approval). `WebFetch` is deliberately absent. */
+const TOOLS = "Read,Grep,Glob,Bash";
+
+/** Approval list: Read/Grep/Glob plus exactly the Bash rules that admit
+ *  `context`, `query`, `check` and the bare `bisellium` usage banner —
+ *  nothing else, including `providers` (cut; see file header). */
+const ALLOWED_TOOLS = [
+  "Read",
+  "Grep",
+  "Glob",
+  "Bash(bisellium)",
+  "Bash(bisellium context)",
+  "Bash(bisellium context *)",
+  "Bash(bisellium query)",
+  "Bash(bisellium query *)",
+  "Bash(bisellium check)",
+  "Bash(bisellium check *)",
+];
+
+/** The five settings-isolation flags shared by both `start` and `resume` —
+ *  argv is the only boundary, since permissions aren't saved with a
+ *  session. */
+const POLICY_FLAGS = ["--restricted", "--strict-mcp-config", "--permission-mode", "dontAsk", "--tools", TOOLS, "--allowedTools", ...ALLOWED_TOOLS];
 
 /** Matches only against the JSON envelope's own `subtype`/`error` fields (or
  *  stderr) — never against `result`, the reply text. A sella talking ABOUT a
@@ -109,15 +148,7 @@ export const claudeCodeProfile: HarnessProfile = {
     const file = join(dir, "system-prompt.md");
     try {
       writeFileSync(file, opts.systemPrompt);
-      const args = [
-        "-p",
-        "--output-format",
-        "json",
-        "--append-system-prompt-file",
-        file,
-        "--allowedTools",
-        ...READ_ONLY_TOOLS,
-      ];
+      const args = ["-p", "--output-format", "json", "--append-system-prompt-file", file, ...POLICY_FLAGS];
       return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -125,7 +156,7 @@ export const claudeCodeProfile: HarnessProfile = {
   },
 
   async resume(opts: HarnessResumeOpts): Promise<Turn> {
-    const args = ["-p", "--resume", opts.sessionId, "--output-format", "json", "--allowedTools", ...READ_ONLY_TOOLS];
+    const args = ["-p", "--resume", opts.sessionId, "--output-format", "json", ...POLICY_FLAGS];
     return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
   },
 };

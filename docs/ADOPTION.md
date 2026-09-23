@@ -821,6 +821,21 @@ reported a usage/rate limit, printed as `<sella> is limited on <harness>;
 try again after <reset if known>` · anything else is the harness's own exit
 code, relayed as-is.
 
+**The `claude-code` profile's talk boundary is deny-by-default (W-044).**
+Both `start` and `resume` pass `--restricted` (ignores every user/project/
+local settings file, confines file tools to the studio root), `--strict-mcp-
+config` (no MCP servers), `--permission-mode dontAsk` (anything not
+pre-approved is denied, never prompted for), `--tools Read,Grep,Glob,Bash`
+(`WebFetch` is not admitted — paired with `Read` it would be the profile's
+only egress), and an `--allowedTools` list admitting exactly `Read`, `Grep`,
+`Glob`, and seven `Bash(bisellium …)` rules for `context`, `query`, `check`
+and the bare `bisellium` usage banner. `providers` is not admitted either —
+its default source spawns `npx --yes quota-axi`, a network fetch plus
+third-party code that neither `talk` nor `tick`'s unattended daily needs; the
+cached provider posture is already in the boot bundle. A `claude` binary
+that doesn't recognize `--restricted`/`dontAsk` exits non-zero and `talk`
+relays that failure closed, which is intended.
+
 ## Harness hooks (Claude Code)
 
 ```bash
