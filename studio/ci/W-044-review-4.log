@@ -1,0 +1,184 @@
+# W-044 review round 4 — censor sella qa-lead (claude-opus-5-5)
+# reviewed: opus/W-044 @ 3c44a55588e6ac8e53585baf9ed5de1802e94402 (PR #31); remedy 9c7921c..3c44a55
+# scratch: detached worktree /tmp/claude-1000/w044r4, node_modules copied from the parent checkout
+# worktree trap: readlink -f node_modules/@bisellium/shim -> /tmp/claude-1000/w044r4/packages/shim
+# vendor CLI: claude 2.1.280
+# Terra-verified round (D-020). Terra's sheet is attached verbatim at the end. The file on disk,
+# /tmp/claude-1000/w044-terra-sheet-r4.md (31 lines), is TRUNCATED. It begins mid-claim-4, so
+# claims 1-3 and claim 4's command are absent. I could not rely on the missing claims, so I re-ran
+# them myself (see "Re-run of what the sheet lost").
+#
+# VERDICT: PASS. F3 and F4 are both closed. Nothing from rounds 1-3 is disturbed. Three advisories
+# below, none blocking.
+
+## Re-run of what the sheet lost (claims 1-4) — on 3c44a55, in /tmp/claude-1000/w044r4
+  npm test exit=0 (0 FAIL lines) | typecheck exit=0 | lint exit=0 (0 errors, 2 warnings) | format:check exit=0
+  git diff --name-only 9c7921c..3c44a55: talk-boundary.test.ts, scripts/w044-mutation-check.mjs (added),
+    scripts/w044-red02-mutation.mjs (deleted), studio/ci/W-044-{lint,tests,types}-54a2ef00.log,
+    studio/ci/reds/W-044/02.log, studio/opera/W-044.md. Nothing else.
+  git diff --stat d787701..3c44a55 -- packages/shim: empty. The shim has been untouched since round 2.
+  certificates: sourceTreeHash(".", ["studio","examples"], ref) = 54a2ef00b1b4… for both 0981af9 and 3c44a55.
+    (bisellium.yml source_excludes [examples/] plus the officina itself.) This matches all three
+    `certifies: tree:54a2ef00…` lines.
+  npm run -s check -- studio --repo .: exit 0, "PASS — 0 blocking, 73 advisory". There is NO
+    opus.red_evidence or red_content finding. The W-044 advisories are the probatio.certifies ones
+    on the spec/review gates only.
+
+## Judgment 1: F4 remedy — CLOSED. A fourth shape exists. It is out of the class and not blocking.
+The remedy is exactly as prescribed:
+  - b1 resume is expected literally as "sess-fixture".
+  - Every other copied token is rejected if it is empty or starts with "-".
+  - The start file must end in "/system-prompt.md".
+Mutations (mutate.sh + mutations.txt below; the tree was clean after):
+  M18 / M19 / M21 (the round-3 survivors) all exit=1 now (b1 2/1/2, b4 2/5/2).
+  M10–M15 and M20 all still exit=1.
+The fourth shape. I probed non-dash tokens in both variable slots:
+  - M22 resume slot -> "WebFetch", and M23 resume slot -> opts.sella: exit=1, KILLED. b1's literal
+    pins claude-code.ts's single resume construction site, so every substitution in that slot
+    dies there.
+  - The b4 resume id (talk/tick path) is still shape-checked only. It cannot become a flag (the
+    leading "-" is rejected). A non-dash token is taken as `-r, --resume [value]`'s value.
+    Round 3's offline probe shows print mode then resumes a matching session or exits 1 ("No
+    conversation found").
+  - A colliding or wrong id resumes a different transcript. It does NOT change permissions: the
+    full policy tail is re-passed literally on every call ("permissions aren't saved with a
+    session", claude-code.ts:64-66) and is pinned by b1/b4 literal equality.
+  - M24 start slot -> "/tmp/system-prompt.md", and M25 start slot -> "x/system-prompt.md":
+    exit=0, SURVIVE. This is not F4's class:
+    - `--append-system-prompt-file <file>` takes a REQUIRED value. Round 3 proved on 2.1.280 that
+      even "--allowedTools=Bash" there is consumed as a filename. No token in that slot can widen
+      tools or permissions on the vendor.
+    - What survives is the ORIGIN of the appended prompt. That is prompt integrity (a
+      predictable path another local writer could pre-seed), not the permission boundary W-044
+      owns. The shipped shim uses mkdtemp.
+Class census: the only positional reads that feed an expected argv are checkPolicy's argv[4] and
+argv[2] (talk-boundary.test.ts:206, :216). There are no other instances. valuesAfterAll and the
+.includes("--resume") form picks are unchanged since round 3's census.
+  A1 (advisory): assert the start file sits under os.tmpdir()/bisellium-sysprompt-*/, which kills
+     M24/M25.
+  A2 (advisory): the stub mints session_id with Math.random(). The stub is the test's own, so a
+     fixed id (or reading sessions/<sella>.json) would let b4 assert its resume id literally too.
+     The header's "genuinely can't be predicted" is true only because the test chooses a random
+     stub.
+
+## Judgment 2: F3 remedy — CLOSED. It is a restoration, not a backfill.
+  - git diff --quiet 279b6df 3c44a55 -- studio/ci/reds/W-044/02.log: exit 0, BYTE-IDENTICAL to
+    the tool-written original.
+  - Header: "# behaviour: 2", "# exit: 1", "# at: 2026-09-23T15:34:42.442Z", sella builder-b,
+    tree dirty:7ca44d7a…. The `at` is 3m45s earlier than the profile change 7b80eb6
+    (2026-09-23T15:38:27Z).
+  - Body: 135 assertions, ALL behaviour 2 (PASS=15 FAIL=120), which matches the figure I cited in
+    round 3.
+  - 01/03/04.log are also byte-identical to 279b6df, and all four `at`s are before 7b80eb6. The
+    brief's clause "recorded before the profile changed" now holds for all four.
+  - The distinction holds: nothing was re-run or re-stamped. The record is the one the tool wrote
+    at its own time, returned to its own path.
+  - The behaviour-scoping env (BISELLIUM_ONLY_BEHAVIOUR) is not in the recorded command line.
+    That is true of 01/03/04 too, rounds 1-3 accepted it, and it is unchanged.
+  - The script is renamed to scripts/w044-mutation-check.mjs. Its header says its output "belongs
+    in a censor round's review log, never in ci/reds/W-044/". The old name is gone, and nothing
+    in ci/reds references either name (Terra 8). The script's code is identical apart from the
+    error-message name. This settles my provenance concern: mutation output has no path to a
+    reds slot and no claim to one.
+  A3 (advisory, cosmetic): the header and commit 0981af9 attribute "one mutation per opus" to
+     "engineering lex §2". It is QA lex §2 (leges/qa.md:17).
+
+## Judgment 3: regression from the two fixes — none
+  - The shim is byte-unchanged since d787701. The round-1/2 shim passes stand: the deny-by-default
+    profile, matcher reach, tick behaviour and scope.
+  - The test delta is confined to checkPolicy and the b1 call site. It only adds assertions. M0
+    control is green, and every earlier kill still kills. M14's b4 count rose (5 -> 10) because
+    the shape check now also fires.
+  - The round-3 smoke acceptance stands (its checkout's shim equals this shim). The W-049 residue
+    stands as recommended, not required: the 127/PATH usability smoke and the base-URL env leak.
+
+## Evidence scripts and outputs (kept under /tmp/claude-1000/w044r4-ev/)
+### gates.txt
+npm_test_exit=0
+typecheck_exit=0
+lint_exit=0
+format_exit=0
+### mutate.sh
+#!/usr/bin/env bash
+# W-044 review 4 mutation runner (same shape as round 3's): one literal substitution,
+# run talk-boundary.test.ts, report per-behaviour FAIL counts, restore.
+set -u
+cd "$TMPDIR/w044r4"
+mut() { # file, name, from, to
+  local F=$1
+  node -e 'const fs=require("fs");const [f,a,b]=process.argv.slice(1);const s=fs.readFileSync(f,"utf8");if(!s.includes(a)){console.error("anchor missing");process.exit(3)}fs.writeFileSync(f,s.replace(a,b))' "$F" "$3" "$4" || return
+  out=$(node --import tsx packages/cli/src/talk-boundary.test.ts . 2>&1); rc=$?
+  printf '%-58s exit=%s' "$2" "$rc"
+  for b in 1 2 3 4; do printf '  b%s FAIL=%s' "$b" "$(grep '^FAIL' <<<"$out" | grep -c "behaviour $b")"; done; echo
+  git checkout -q -- "$F"
+}
+S=packages/shim/src/harness/claude-code.ts
+mut $S "M0 none (control)"                                   'const TOOLS = "Read,Grep,Glob,Bash";' 'const TOOLS = "Read,Grep,Glob,Bash";'
+# round-3 survivors (F4)
+mut $S "M18 resume slot: sessionId -> --allowedTools=Bash"   '"--resume", opts.sessionId,' '"--resume", "--allowedTools=Bash",'
+mut $S "M19 start slot: file -> --allowedTools=Bash"         '"--append-system-prompt-file", file,' '"--append-system-prompt-file", "--allowedTools=Bash",'
+mut $S "M21 resume slot: sessionId -> --tools=WebFetch"      '"--resume", opts.sessionId,' '"--resume", "--tools=WebFetch",'
+# round-2/3 kills, must still fail
+mut $S "M10 second value token in --tools"                   '"--tools", TOOLS,' '"--tools", TOOLS, "WebFetch",'
+mut $S "M11 second value token in --permission-mode"         '"--permission-mode", "dontAsk",' '"--permission-mode", "dontAsk", "acceptEdits",'
+mut $S "M12 stray token after --strict-mcp-config"           '"--strict-mcp-config",' '"--strict-mcp-config", "WebFetch",'
+mut $S "M13 stray token after --restricted"                  '"--restricted",' '"--restricted", "WebFetch",'
+mut $S "M14 stray token after --output-format json (start)"  '"json", "--append-system-prompt-file"' '"json", "WebFetch", "--append-system-prompt-file"'
+mut $S "M15 second --tools value, resume only"               '"json", ...POLICY_FLAGS];' '"json", ...POLICY_FLAGS.slice(0, 6), "WebFetch", ...POLICY_FLAGS.slice(6)];'
+mut $S "M20 reorder --restricted/--strict-mcp-config"        '"--restricted", "--strict-mcp-config",' '"--strict-mcp-config", "--restricted",'
+# fourth shape: non-dash tokens in the variable slots
+mut $S "M22 resume slot: sessionId -> WebFetch (non-dash)"   '"--resume", opts.sessionId,' '"--resume", "WebFetch",'
+mut $S "M23 resume slot: sessionId -> opts.sella (non-dash)" '"--resume", opts.sessionId,' '"--resume", opts.sella,'
+mut $S "M24 start slot: file -> fixed /tmp/system-prompt.md" '"--append-system-prompt-file", file,' '"--append-system-prompt-file", "/tmp/system-prompt.md",'
+mut $S "M25 start slot: file -> relative system-prompt.md"   '"--append-system-prompt-file", file,' '"--append-system-prompt-file", "x/system-prompt.md",'
+git status --short
+git diff --stat -- packages/shim
+### mutations.txt
+M0 none (control)                                          exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M18 resume slot: sessionId -> --allowedTools=Bash          exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=2
+M19 start slot: file -> --allowedTools=Bash                exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=5
+M21 resume slot: sessionId -> --tools=WebFetch             exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=2
+M10 second value token in --tools                          exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M11 second value token in --permission-mode                exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M12 stray token after --strict-mcp-config                  exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M13 stray token after --restricted                         exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M14 stray token after --output-format json (start)         exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=10
+M15 second --tools value, resume only                      exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=2
+M20 reorder --restricted/--strict-mcp-config               exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M22 resume slot: sessionId -> WebFetch (non-dash)          exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M23 resume slot: sessionId -> opts.sella (non-dash)        exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M24 start slot: file -> fixed /tmp/system-prompt.md        exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M25 start slot: file -> relative system-prompt.md          exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+
+## Attached: Terra facts sheet, /tmp/claude-1000/w044-terra-sheet-r4.md (verbatim, as found — truncated at source)
+   - Tail:
+     ```text
+     red_cmp_exit=0
+     # behaviour: 2
+     # at: 2026-09-23T15:34:42.442Z
+     timestamp_before_cutoff=true
+     ```
+
+5. **VERIFIED** — all three certificates contain `certifies: tree:54a2ef00`.
+   - Command: `rg -n -F 'certifies: tree:54a2ef00' studio/ci/W-044-{tests,lint,types}-54a2ef00.log`
+   - Tail: all three files matched.
+
+6. **VERIFIED** — each mutation failed the boundary suite and the shim diff was empty after each revert.
+   - M18 `--allowedTools=Bash`: `test_exit=1 shim_diff_exit=0`
+   - M19 `--append-system-prompt-file`: `test_exit=1 shim_diff_exit=0`
+   - M21 `--tools=WebFetch` resume ID: `test_exit=1 shim_diff_exit=0`
+   - M10 second `WebFetch` tools value: `test_exit=1 shim_diff_exit=0`
+   - M20 swapped adjacent policy flags: `test_exit=1 shim_diff_exit=0`
+
+7. **VERIFIED** — untouched control suite is green.
+   - Command: `node --import tsx packages/cli/src/talk-boundary.test.ts .`
+   - Tail: `control_talk_boundary_exit=0`
+
+8. **VERIFIED** — new script exists, old script is absent, and no red evidence references either.
+   - Command: `test -f scripts/w044-mutation-check.mjs; test ! -e scripts/w044-red02-mutation.mjs; rg -n 'w044-(red02-mutation|mutation-check)\.mjs' studio/ci/reds`
+   - Tail: new exists; old absent; no `rg` matches.
+
+Detached worktree was confirmed at `3c44a55588e6ac8e53585baf9ed5de1802e94402` and removed afterward.
+
+Summary: 8 VERIFIED, 0 FALSE
+
