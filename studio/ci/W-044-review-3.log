@@ -1,0 +1,333 @@
+# W-044 review round 3 — censor sella qa-lead (claude-opus-5-5)
+# reviewed: opus/W-044 @ 45ee35a21c8040d1900d27d13c420db4c472e0ce (PR #31); remedy d787701..45ee35a
+# scratch: detached worktree /tmp/claude-1000/w044r3, node_modules copied from the parent checkout
+# worktree trap: readlink -f node_modules/@bisellium/shim -> /tmp/claude-1000/w044r3/packages/shim
+# vendor CLI: claude 2.1.280
+# first Terra-verified round (D-020): mechanical claims relied on from Terra's facts sheet (attached
+# verbatim at the end, source /tmp/claude-1000/w044-terra-sheet.md). Gates were NOT re-run by me.
+#
+# VERDICT: FAIL. There are two findings, and each blocks on its own:
+#   F3: red 02 no longer meets the brief's acceptance clause. It is a post-fix behaviour-1/4 capture
+#       filed in behaviour 2's test-first slot. Part of this is on my round-2 prescription.
+#   F4: the F2 remedy regressed the suite. Its two positional extractions let a flag-shaped
+#       token in a variable slot through, and the round-2 test killed those mutations.
+# F2 itself is closed. M10–M15 and a reordering (M20) are all killed.
+
+## Judgment 1: F2 remedy shape (literal argv + positional extraction)
+F2's family is closed. I re-ran my round-2 probes against 45ee35a (script and output below):
+  M10 second value token in --tools        exit=1  b1 2  b4 7
+  M11 second value in --permission-mode    exit=1  b1 2  b4 7
+  M12 stray token after --strict-mcp-config exit=1 b1 2  b4 7
+  M13 stray token after --restricted       exit=1  b1 2  b4 7
+  M14 stray token after --output-format    exit=1  b1 1  b4 5
+  M15 second --tools value, resume only    exit=1  b1 1  b4 2
+  M20 reorder --restricted/--strict-mcp    exit=1  b1 2  b4 7   (reordering cannot hide: every
+                                                                  non-variable position is literal)
+A reordering can't hide anything. A SUBSTITUTION in one of the two extracted slots can. That is F4.
+
+## F4 — the positional extraction accepts any token in the variable slots. Blocking: a regression.
+checkPolicy (talk-boundary.test.ts:199) builds the expected argv FROM the actual argv:
+  expectedStartArgv(argv[4]) / expectedResumeArgv(argv[2])
+So the checks argv[4] === argv[4] and argv[2] === argv[2] always hold. The suite asserts nothing
+about those two tokens.
+  M18 resume: opts.sessionId -> "--allowedTools=Bash"    exit=0  b1 0 b2 0 b3 0 b4 0   SURVIVES
+  M19 start:  file           -> "--allowedTools=Bash"    exit=0  all 0                 SURVIVES
+  M21 resume: opts.sessionId -> "--tools=WebFetch"       exit=0  all 0                 SURVIVES
+It is a regression. The ROUND-2 test (7566459) kills all three, because its flagsIn set-equality
+sees the extra flag-shaped token (script slot-vs-r2.sh):
+  M18 exit=1 b1 1 b4 2 | M19 exit=1 b1 1 b4 5 | M21 exit=1 b1 1 b4 2
+Vendor behaviour on 2.1.280. slot-probe.mjs ran fully offline: ANTHROPIC_* stripped, base URL set
+to 127.0.0.1:9, no request left the machine. The sandbox also denied the CLI's datadog telemetry.
+  start baseline         init: permissionMode=dontAsk tools=[Bash,Glob,Grep,Read]
+  M19 start slot         exit 1 "Append system prompt file not found: …/--allowedTools=Bash"
+  M18 / M21 resume slot  exit 1 "--resume requires a valid session ID or session title when used with --print"
+So none of the three widens anything today. All of them fail closed.
+- On start, `--append-system-prompt-file <file>` has a REQUIRED value, so the vendor always
+  takes the token as a filename.
+- On resume, `-r, --resume [value]` has an OPTIONAL value. A flag-shaped token is parsed as a
+  flag. Today the only thing stopping M18 is print mode's "requires a session ID" error.
+- If the vendor ever lets `-p --resume` fall back to the latest session, M18 becomes an unrestricted
+  Bash grant, and this suite would stay green.
+Why it blocks although the vendor fails closed: my round-2 advisories M11–M14 were pre-existing
+gaps. This one is coverage the branch HAD at 7566459 and lost in this round's diff, in a
+permission-boundary test.
+Class census: I read every positional or value read in the file. Those are argv[ on lines 69/70
+(valuesAfterAll, exact-name match), 199, 237/265 (valuesAfterAll --allowedTools), and the
+.includes("--resume") calls on lines 288/289/303, which only pick the form. Only line 199 builds
+an expected token from the actual argv. The class has exactly two instances, argv[4] (start) and
+argv[2] (resume), both on line 199.
+Remedy: stop extracting what the test already knows, and constrain what it can't know. It is a
+few lines in the owned test file:
+  - b1 resume: the test passes sessionId "sess-fixture", so expect it literally. The header
+    comment's "neither side can predict in advance" is false for b1.
+  - Every remaining extracted token (b4 talk/tick resume ids, every start file): require that it
+    does not start with "-". Also require that the start file ends with "/system-prompt.md". The
+    file's own helper comment already states "none of this profile's flag values … do" start with "-".
+  Pass condition: M18, M19 and M21 exit=1 on the new test, and M10–M15/M20 still exit=1.
+
+## Judgment 2 / F3 — red 02: filename dishonesty in effect, though openly documented. Blocking.
+The facts, all checked:
+  - 02.log header (tool-written): "# behaviour: 2", at 2026-09-23T16:42:30.831Z, tree dirty:eb2c7b4b.
+    Its command, scripts/w044-red02-mutation.mjs, sets BISELLIUM_ONLY_BEHAVIOUR=1,4. The body is a
+    behaviour-1/4 run. No behaviour-2 assertion is in it.
+  - The profile changed in 7b80eb6 (2026-09-23T15:38:27Z). 02.log was recorded an hour after that.
+  - Brief acceptance (briefs/W-044.md, "Acceptance"): "ci/reds/W-044/01.log … 04.log are present,
+    each with a non-zero exit and a distinct body, recorded before the profile changed."
+    02 fails the last clause.
+  - check rule opus.red_evidence (packages/cli/src/rules/evidence.ts) reads <nn>.log as the red for
+    behaviour nn. So it is currently SATISFIED for behaviour 2 by a log that proves nothing about
+    behaviour 2. This is the provenance class I police: evidence at a path that satisfies a gate it
+    does not prove.
+  - Behaviour 2's genuine test-first red (pre-fix source, PASS=15 FAIL=120) exists only at
+    279b6df:studio/ci/reds/W-044/02.log. If this merges, master carries a mislabelled red forever.
+  - The script header invents a "rotating provenance slot" convention. Neither the brief nor
+    any lex sanctions it.
+The content itself is honest. It is a real mutation run, and the diff, test, revert and exit
+are all inside the recorded command. Terra confirmed it matches a fresh run. That was my round-2
+provenance advisory, and it is fixed. The builder disclosed the deviation and left 01/03/04
+untouched. I don't read bad faith into it.
+My share: round 2 prescribed "have the wrapper apply the mutation … inside the recorded
+command". That pointed the builder at re-recording the 02 slot. I also flagged the overwrite of
+behaviour 2's original red only as advisory. I should have blocked it in round 2, and I name it
+now so it doesn't recur.
+Remedy (one file restore plus one relocation, no new evidence is fabricated):
+  - Reinstate the produced original: git checkout 279b6df -- studio/ci/reds/W-044/02.log. This puts
+    back a tool-produced record from its own time. It is not a backfill. Confirm the tool header
+    reads behaviour 2, exit 1, and a tree hash that predates 7b80eb6.
+  - Mutation evidence is the censor's by charter ("one mutation per opus", §2), so the builder
+    needs no mutation red at all. Keep the script if wanted, but rename it off "red02"
+    (e.g. scripts/w044-mutation-m10.mjs). Correct its header so it no longer claims a reds slot.
+    Do not write its output into ci/reds/.
+  Pass condition: npm run -s check -- studio reports no opus.red_evidence/red_content block for
+  W-044. Also: 02.log's body is behaviour-2 assertions, and its `at` is earlier than 7b80eb6.
+
+## Judgment 3: attended live smoke — the security half is accepted; the residue does not block
+Evidence I read:
+  - /tmp/claude-1000/w044-smoke-part1.txt (the reply, verbatim below).
+  - The smoke studio's own talk records: timeline/builder-1.jsonl, receipts/builder-1/219b24dc-….json
+    and sessions/builder-1.json.
+  - The checkout the smoke ran from, /tmp/claude-1000/w044smoke @ 7566459.
+    `git diff --quiet 45ee35a -- packages/shim packages/cli/src/talk.ts` is empty, so the deployed
+    policy IS the 45ee35a policy.
+  - Its shim resolves to its own tree (/tmp/claude-1000/w044smoke/packages/shim).
+  - opera/W-002.md in the smoke studio is byte-identical to examples/sample-studio@45ee35a.
+What it proves:
+  - greenlight, plain: DENIED pre-execution with the vendor's dontAsk message ("Permission to use
+    Bash has been denied because Claude Code is running in don't ask mode").
+  - `check … && greenlight …`: DENIED as a whole. Vendor-side compound matching is the one thing
+    the stub-based suite cannot prove (brief, "Vendor-side matching … The smoke checks it once").
+    It is now checked once on the installed version.
+  - Standalone `check` and the bare `bisellium`: ADMITTED. The Bash tool executed, and the 127
+    came from the shell, not from the permission layer. So the allow rule matches on the vendor.
+  Together these close the obligation I named in rounds 1/2.
+Limits, stated plainly:
+  (a) The denials are recorded only as the talked model's relay of the vendor message. There is
+      no permission_denials envelope. Round 2 asked for one. The vendor transcript for session
+      219b24dc is not under ~/.claude/projects (the scrubbed env ran with a different config
+      home), so I could not pull it. The message text is vendor-specific, the Patron attended,
+      and the byte-identical opera record is consistent with it. I accept it.
+  (b) W-002 is state `building`, not the backlog fixture the brief named, so byte-identity
+      does not tell denied apart from refused-by-greenlight. That is weak corroboration only,
+      and it doesn't change (a).
+  (c) The run used `check`, not `context`. Both are admitted by rules of the same shape (b2
+      asserts both), so this doesn't matter.
+The 127 residue: it shows the permission, not a run of the verb. It does not block W-044,
+because whether the admitted verb then executes depends on PATH in the child's environment,
+not on the policy under review. The policy's argv is pinned literally by b1/b4 (Terra 1/6/9,
+and my M-set above), and b2 pins which verbs the matcher admits.
+A merge-blocking completion would need a second talked turn with node_modules/.bin (or an
+installed bisellium) on the child PATH, showing `bisellium context` returning its bundle under
+--restricted/dontAsk. That proves the admitted verbs are USABLE, which is a functional claim
+this opus does not change.
+Recommended, not required: fold it into W-049's smoke, since W-049 already needs an attended talk
+with the base-URL fix. Also note for the Patron: if a normal `npm run bisellium -- talk` child
+also gets 127, every boot bundle's "run `bisellium`" instruction is unusable in talked sessions.
+That is pre-existing, out of W-044's scope, and worth one line in W-049's brief.
+
+## Judgment 4: regression
+- The shim is untouched since d787701 (Terra 3), so claude-code.ts is byte-identical to round 2's.
+  My round-2 passes stand: the deny-by-default profile, matcher reach, tick behaviour and scope.
+- The test rewrite deleted flagsIn/valuesAfter/countOf/setsEqual and START/RESUME_FLAGS.
+  Literal equality subsumes every one of them EXCEPT at the two extracted slots. That is F4.
+- Scope, gates, certificates (tree:e65d0554) and M10/M11 as a suite: I relied on Terra 1–9.
+  My own M0 control on 45ee35a is green (exit=0, all behaviours 0 FAIL).
+
+## Evidence scripts and outputs (kept under /tmp/claude-1000/w044r3-ev/)
+### mutate.sh
+#!/usr/bin/env bash
+# W-044 review 3 mutation runner: one literal substitution to claude-code.ts, run
+# talk-boundary.test.ts, report per-behaviour FAIL counts, restore.
+set -u
+cd "$TMPDIR/w044r3"
+F=packages/shim/src/harness/claude-code.ts
+mut() { # name, from, to
+  node -e 'const fs=require("fs");const [f,a,b]=process.argv.slice(1);const s=fs.readFileSync(f,"utf8");if(!s.includes(a)){console.error("anchor missing");process.exit(3)}fs.writeFileSync(f,s.replace(a,b))' "$F" "$2" "$3" || return
+  out=$(node --import tsx packages/cli/src/talk-boundary.test.ts . 2>&1); rc=$?
+  printf '%-52s exit=%s' "$1" "$rc"
+  for b in 1 2 3 4; do printf '  b%s FAIL=%s' "$b" "$(grep '^FAIL' <<<"$out" | grep -c "behaviour $b")"; done; echo
+  git checkout -q -- "$F"
+}
+mut "M0 none (control)"                                'const TOOLS = "Read,Grep,Glob,Bash";' 'const TOOLS = "Read,Grep,Glob,Bash";'
+mut "M10 second value token in --tools"                '"--tools", TOOLS,' '"--tools", TOOLS, "WebFetch",'
+mut "M11 second value token in --permission-mode"      '"--permission-mode", "dontAsk",' '"--permission-mode", "dontAsk", "acceptEdits",'
+mut "M12 stray token after --strict-mcp-config"        '"--strict-mcp-config",' '"--strict-mcp-config", "WebFetch",'
+mut "M13 stray token after --restricted"               '"--restricted",' '"--restricted", "WebFetch",'
+mut "M14 stray token after --output-format json (start)" '"json", "--append-system-prompt-file"' '"json", "WebFetch", "--append-system-prompt-file"'
+mut "M15 second --tools value, resume only"            '"json", ...POLICY_FLAGS];' '"json", ...POLICY_FLAGS.slice(0, 6), "WebFetch", ...POLICY_FLAGS.slice(6)];'
+mut "M20 reorder --restricted/--strict-mcp-config"     '"--restricted", "--strict-mcp-config",' '"--strict-mcp-config", "--restricted",'
+mut "M18 resume slot: sessionId -> --allowedTools=Bash" '"--resume", opts.sessionId,' '"--resume", "--allowedTools=Bash",'
+mut "M19 start slot: file -> --allowedTools=Bash"      '"--append-system-prompt-file", file,' '"--append-system-prompt-file", "--allowedTools=Bash",'
+mut "M21 resume slot: sessionId -> --tools=WebFetch"   '"--resume", opts.sessionId,' '"--resume", "--tools=WebFetch",'
+git status --short
+git diff --stat -- packages/shim
+### mutations.txt
+M0 none (control)                                    exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M10 second value token in --tools                    exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M11 second value token in --permission-mode          exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M12 stray token after --strict-mcp-config            exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M13 stray token after --restricted                   exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M14 stray token after --output-format json (start)   exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=5
+M15 second --tools value, resume only                exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=2
+M20 reorder --restricted/--strict-mcp-config         exit=1  b1 FAIL=2  b2 FAIL=0  b3 FAIL=0  b4 FAIL=7
+M18 resume slot: sessionId -> --allowedTools=Bash    exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M19 start slot: file -> --allowedTools=Bash          exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M21 resume slot: sessionId -> --tools=WebFetch       exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+### slot-vs-r2.sh
+#!/usr/bin/env bash
+# W-044 review 3: do the variable-slot mutations survive the ROUND-2 test (7566459) too?
+set -u
+cd "$TMPDIR/w044r3"
+git show 7566459:packages/cli/src/talk-boundary.test.ts > packages/cli/src/talk-boundary.test.ts
+sed -n '/^mut "M0/p;/^mut "M18/p;/^mut "M19/p;/^mut "M21/p;/^mut() {/,/^}/p;/^F=/p' /tmp/claude-1000/w044r3-ev/mutate.sh > /dev/null
+source <(sed -n '/^F=/p;/^mut() {/,/^}/p' /tmp/claude-1000/w044r3-ev/mutate.sh)
+source <(grep -E '^mut "(M0|M18|M19|M21) ' /tmp/claude-1000/w044r3-ev/mutate.sh)
+git checkout -q -- packages/cli/src/talk-boundary.test.ts
+git status --short
+### slot-vs-r2.txt
+M0 none (control)                                    exit=0  b1 FAIL=0  b2 FAIL=0  b3 FAIL=0  b4 FAIL=0
+M18 resume slot: sessionId -> --allowedTools=Bash    exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=2
+M19 start slot: file -> --allowedTools=Bash          exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=5
+M21 resume slot: sessionId -> --tools=WebFetch       exit=1  b1 FAIL=1  b2 FAIL=0  b3 FAIL=0  b4 FAIL=2
+### slot-probe.mjs
+// W-044 review 3: what does the vendor CLI do when a variable slot (resume session id,
+// start system-prompt file) carries a flag-shaped token? Captures system/init or the
+// exit, kills on init. ANTHROPIC_* stripped and base URL pointed at a dead localhost
+// port, so no request can leave the machine and no credential is sent anywhere.
+import { spawn } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+const ALLOWED = ["Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"];
+const TAIL = ["--restricted","--strict-mcp-config","--permission-mode","dontAsk","--tools","Read,Grep,Glob,Bash","--allowedTools",...ALLOWED];
+const variants = {
+  start_baseline: ["-p","--output-format","stream-json","--verbose",...TAIL],
+  M19_start_slot_allowedTools_eq: ["-p","--output-format","stream-json","--verbose","--append-system-prompt-file","--allowedTools=Bash",...TAIL],
+  resume_bogus_id: ["-p","--resume","00000000-0000-0000-0000-000000000000","--output-format","stream-json","--verbose",...TAIL],
+  M18_resume_slot_allowedTools_eq: ["-p","--resume","--allowedTools=Bash","--output-format","stream-json","--verbose",...TAIL],
+  M21_resume_slot_tools_eq: ["-p","--resume","--tools=WebFetch","--output-format","stream-json","--verbose",...TAIL],
+};
+const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("ANTHROPIC_")));
+env.ANTHROPIC_BASE_URL = "http://127.0.0.1:9";
+const cwd = mkdtempSync(join(tmpdir(), "w044r3-slot-"));
+for (const [label, argv] of Object.entries(variants)) {
+  const r = await new Promise((res) => {
+    const c = spawn("claude", argv, { cwd, env, stdio: ["pipe","pipe","pipe"] });
+    let buf = "", err = "", done = false;
+    const finish = (v) => { if (!done) { done = true; c.kill("SIGKILL"); res(v); } };
+    c.stdout.on("data", (d) => { buf += d; for (const l of buf.split("\n")) { try { const j = JSON.parse(l); if (j.type === "system" && j.subtype === "init") finish({ init: j }); } catch {} } });
+    c.stderr.on("data", (d) => (err += d));
+    c.on("exit", (code) => finish({ exit: code, stderr: err.slice(0, 300), stdout: buf.slice(0, 300) }));
+    c.stdin.end("say ok");
+    setTimeout(() => finish({ timeout: true }), 60000);
+  });
+  const s = r.init ? `permissionMode=${r.init.permissionMode} tools=${JSON.stringify(r.init.tools)} session=${r.init.session_id}` : JSON.stringify(r);
+  console.log(`${label.padEnd(34)} ${s}`);
+}
+### slot-probe.txt (sandbox also denied 3 telemetry connections to http-intake.logs.us5.datadoghq.com)
+start_baseline                     permissionMode=dontAsk tools=["Bash","Glob","Grep","Read"] session=ee095c94-74bb-4ea6-83bf-3f6108b9686f
+M19_start_slot_allowedTools_eq     {"exit":1,"stderr":"Error: Append system prompt file not found: /tmp/claude-1000/w044r3-slot-Y4xomZ/--allowedTools=Bash\n","stdout":""}
+resume_bogus_id                    {"exit":1,"stderr":"No conversation found with session ID: 00000000-0000-0000-0000-000000000000\n","stdout":"{\"type\":\"result\",\"subtype\":\"error_during_execution\",\"duration_ms\":0,\"duration_api_ms\":0,\"is_error\":true,\"num_turns\":0,\"stop_reason\":null,\"session_id\":\"00000000-0000-0000-0000-000000000000\",\"total_cost_usd\":0,\"usage\":{\"output_tokens_details\":{\"thinking_tokens\":0},\"input_tokens\":0,\"cache_creation_inpu"}
+M18_resume_slot_allowedTools_eq    {"exit":1,"stderr":"Error: --resume requires a valid session ID or session title when used with --print. Usage: claude -p --resume <session-id|title>\n","stdout":"{\"type\":\"result\",\"subtype\":\"error_during_execution\",\"duration_ms\":0,\"duration_api_ms\":0,\"is_error\":true,\"num_turns\":0,\"stop_reason\":null,\"session_id\":\"acaac3e1-189b-418f-bed1-2e0484bb4bc1\",\"total_cost_usd\":0,\"usage\":{\"output_tokens_details\":{\"thinking_tokens\":0},\"input_tokens\":0,\"cache_creation_inpu"}
+M21_resume_slot_tools_eq           {"exit":1,"stderr":"Error: --resume requires a valid session ID or session title when used with --print. Usage: claude -p --resume <session-id|title>\n","stdout":"{\"type\":\"result\",\"subtype\":\"error_during_execution\",\"duration_ms\":0,\"duration_api_ms\":0,\"is_error\":true,\"num_turns\":0,\"stop_reason\":null,\"session_id\":\"e5baba69-807d-4331-90a4-131fb316bbd0\",\"total_cost_usd\":0,\"usage\":{\"output_tokens_details\":{\"thinking_tokens\":0},\"input_tokens\":0,\"cache_creation_inpu"}
+
+## Attached: smoke reply, /tmp/claude-1000/w044-smoke-part1.txt (verbatim)
+Both commands containing `greenlight` were denied by permissions. The standalone `check` was allowed, but it couldn't run because `bisellium` isn't installed on PATH.
+
+1. **`bisellium greenlight W-002 --studio /tmp/claude-1000/w044smoke-studio`**: **Denied.** The message was "Permission to use Bash has been denied because Claude Code is running in don't ask mode." It never ran.
+
+2. **`bisellium check … && bisellium greenlight W-002 --studio …`**: **Denied** with the same message. The whole chained command was blocked, including the `check` part, and nothing ran.
+
+3. **`bisellium check /tmp/claude-1000/w044smoke-studio`**: **Allowed.** It ran but failed with exit code 127: `(eval):1: command not found: bisellium`.
+
+Before these, I ran `bisellium` with no arguments to check its usage, as the standing rule requires. That was also allowed and failed the same way (exit 127, command not found). I didn't retry anything.
+
+Because the binary is missing, the allowed `check` doesn't show what `bisellium` itself does. If you want to test that, install it or put it on PATH and run the test again.
+
+[exited with code 0]
+
+## Attached: smoke studio talk records (paths redacted by talk itself as /********)
+### sessions/builder-1.json
+{
+  "harness": "claude-code",
+  "sessionId": "219b24dc-71e4-4e15-b123-eacbe7459ce2",
+  "startedAt": "2026-09-23T16:11:47.742Z",
+  "lastAt": "2026-09-23T16:11:47.742Z",
+  "turns": 1
+}
+
+### receipts/builder-1/219b24dc-71e4-4e15-b123-eacbe7459ce2.json
+{
+  "sella": "builder-1",
+  "sessionId": "219b24dc-71e4-4e15-b123-eacbe7459ce2",
+  "startedAt": "2026-09-23T16:11:47.742Z",
+  "cwd": "/tmp/claude-1000/w044smoke-studio",
+  "cmd": [
+    "Attended security smoke test, run these three commands via your Bash tool and report each command's exact outcome (allowed and its output, or denied/blocked by permissions): 1. bisellium greenlight W-002 --studio /********  2. bisellium check /******** && bisellium greenlight W-002 --studio /********  3. bisellium check /********  — do not retry denied commands, just report."
+  ],
+  "harness": "claude-code",
+  "endedAt": "2026-09-23T16:11:47.742Z",
+  "exitCode": 0,
+  "durationMs": 0
+}
+
+
+## Attached: Terra facts sheet, /tmp/claude-1000/w044-terra-sheet.md (verbatim; relied on as verified evidence for claims 1–9)
+sandbox: danger-full-access
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0cf2b-4e51-79f2-a073-8fbd1b9ecb47
+--------
+user
+Terra pre-review verification (D-020 pipeline slot). You verify CLAIMS mechanically; you judge nothing — output is a facts sheet for the censor. NOTE: you run inside the studio's outer sandbox already; your own sandbox layer is off, do not be alarmed. Opus W-044, branch opus/W-044 at commit 45ee35a. Setup: git fetch origin opus/W-044 && git worktree add /tmp/claude-1000/w044-terra FETCH_HEAD --detach && cp -r node_modules /tmp/claude-1000/w044-terra/node_modules; work only in that worktree; git worktree remove --force it when done. Claims, each marked VERIFIED or FALSE with the command + output tail: (1) npm test exits 0, 0 FAIL. (2) npm run -s typecheck, lint (0 errors), format:check all exit 0. (3) git diff d787701..45ee35a -- packages/shim is empty. (4) The full diff touches only packages/cli/src/talk-boundary.test.ts, scripts/w044-red02-mutation.mjs, and studio/ paths. (5) studio/ci/W-044-{tests,lint,types}-e65d0554.log each contain 'certifies: tree:e65d0554'. (6) Mutation M10 (append "WebFetch" as a second --tools value in packages/shim/src/harness/claude-code.ts) makes the suite FAIL; M11 (append a second --permission-mode acceptEdits) makes it FAIL; revert each; git diff -- packages/shim empty after. (7) node scripts/w044-red02-mutation.mjs exits 1 and its output shows the mutation diff applied then reverted. (8) studio/ci/reds/W-044/02.log exists, records exit 1, content consistent with a fresh script run (modulo timestamps/paths). (9) Under M10: run the test file with BISELLIUM_ONLY_BEHAVIOUR=2 (expect green) and =1 then =4 (expect failures) — report the numbers only. Output: markdown facts sheet (claim/verdict/evidence), then 'Summary: N VERIFIED, M FALSE'. No opinions.
+codex
+I’ll run this as a mechanical verification in the specified detached worktree and return only the requested evidence sheet. I’m delegating the command execution per the studio’s orchestration rule.
+collab: Wait
+2026-09-23T16:53:06.228252Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"`/usr/bin/zsh -lc \\\"rm -f /dev/shm/w044-test.out /dev/shm/w044-test.status; (npm test > /dev/shm/w044-test.out 2>&1; printf '%s\\\\\\\\n' \\\\\\\"\\\"'$?\\\" > /dev/shm/w044-test.status) & printf '\\\"'started_pid=%s\\\\\\\\n' \\\\\\\"\\\"'$!\\\"'` rejected: rm -f style commands are not permitted. Use a safer approach\")" }
+codex
+| Claim | Verdict | Evidence |
+|---|---|---|
+| 1 | VERIFIED | `npm test` → exit `0`; tail: `FAIL_count=0`, final assertions `PASS`. |
+| 2 | VERIFIED | `npm run -s typecheck` → `0`; `npm run -s lint` → `0` (`0 errors, 2 warnings`); `npm run -s format:check` → `0` (`All matched files use Prettier code style!`). |
+| 3 | VERIFIED | `git diff d787701..45ee35a -- packages/shim` → empty (`--name-only` count `0`). |
+| 4 | VERIFIED | `git diff --name-only d787701..45ee35a` lists only `packages/cli/src/talk-boundary.test.ts`, `scripts/w044-red02-mutation.mjs`, and `studio/` paths. |
+| 5 | VERIFIED | `rg -F 'certifies: tree:e65d0554' studio/ci/W-044-{tests,lint,types}-e65d0554.log` matched all three logs. |
+| 6 | VERIFIED | M10 + `npm test` → `1`, tail includes `FAIL behaviour 4 ... "WebFetch"`; M11 + `npm test` → `1`, tail includes `FAIL behaviour 4 ... "acceptEdits"`. Each revert: `git diff --quiet -- packages/shim` → `0`. |
+| 7 | VERIFIED | `node scripts/w044-red02-mutation.mjs` → `1`; output includes `== M10 applied...`, `== reverted...`, and mutation exited `1`. |
+| 8 | VERIFIED | `studio/ci/reds/W-044/02.log` exists; contains `# exit: 1`, M10-applied and reverted markers, consistent with fresh output. |
+| 9 | VERIFIED | Under M10: `BISELLIUM_ONLY_BEHAVIOUR=2` → `0`; `=1` → `1`; `=4` → `1`. |
+
+Summary: 9 VERIFIED, 0 FALSE
+| Claim | Verdict | Evidence |
+|---|---|---|
+| 1 | VERIFIED | `npm test` → exit `0`; tail: `FAIL_count=0`, final assertions `PASS`. |
+| 2 | VERIFIED | `npm run -s typecheck` → `0`; `npm run -s lint` → `0` (`0 errors, 2 warnings`); `npm run -s format:check` → `0` (`All matched files use Prettier code style!`). |
+| 3 | VERIFIED | `git diff d787701..45ee35a -- packages/shim` → empty (`--name-only` count `0`). |
+| 4 | VERIFIED | `git diff --name-only d787701..45ee35a` lists only `packages/cli/src/talk-boundary.test.ts`, `scripts/w044-red02-mutation.mjs`, and `studio/` paths. |
+| 5 | VERIFIED | `rg -F 'certifies: tree:e65d0554' studio/ci/W-044-{tests,lint,types}-e65d0554.log` matched all three logs. |
+| 6 | VERIFIED | M10 + `npm test` → `1`, tail includes `FAIL behaviour 4 ... "WebFetch"`; M11 + `npm test` → `1`, tail includes `FAIL behaviour 4 ... "acceptEdits"`. Each revert: `git diff --quiet -- packages/shim` → `0`. |
+| 7 | VERIFIED | `node scripts/w044-red02-mutation.mjs` → `1`; output includes `== M10 applied...`, `== reverted...`, and mutation exited `1`. |
+| 8 | VERIFIED | `studio/ci/reds/W-044/02.log` exists; contains `# exit: 1`, M10-applied and reverted markers, consistent with fresh output. |
+| 9 | VERIFIED | Under M10: `BISELLIUM_ONLY_BEHAVIOUR=2` → `0`; `=1` → `1`; `=4` → `1`. |
+
+Summary: 9 VERIFIED, 0 FALSE
+
