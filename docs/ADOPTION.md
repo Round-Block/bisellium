@@ -316,8 +316,22 @@ support: `review` needs every automated gate and every other agent gate passed;
 `done` needs all non-human gates passed and any recorded human gate passed or
 waived — **except** a gate exempted by `since` (above), which is dropped from
 what's demanded entirely, for either state. `waived` needs a `reason` and is
-never allowed on an automated gate. WIP counts `building` + `verifying`;
+never allowed on an automated or agent gate (`probatio.waived.automated`,
+`probatio.waived.agent`). WIP counts `building` + `verifying`;
 `review` waits on someone else.
+
+Only a `kind: human` gate is waivable, and only `bisellium waive` writes
+`status: waived` (W-034): it merges five keys into the gate's existing node —
+`status: waived`, `reason`, `waived_by` (a decision id), `sella` and `at` —
+never replacing the node, so any other key already on it survives. A waiver
+is **honourable** only when `reason` is a non-blank string and `waived_by`
+resolves (via `safeItemPath`, under `<studio>/decisions`) to a decision file
+that exists, parses, and whose `by` equals `manifest.patron ?? "patron"`.
+`done` accepts an honourable waiver on a human gate and names it permanently
+on stdout (`done (waived: patron by D-900)`) and in the record itself — a
+waiver is never rewritten into a `passed`. A waiver that isn't honourable, or
+that sits on an automated or agent gate, is a `done` refusal, not a silent
+pass.
 
 `state.building.spec` (**block**) fires only when the manifest declares a
 probatio with id `spec` — a studio that never opts in stays untouched. Where
@@ -517,11 +531,12 @@ list`) is left alone and reported as kept.
 `status`/`evidence`/`certifies` back into that opus's front matter — it
 touches only those three keys on each gate it runs, merged into the existing
 probatio node so sibling keys (`waived_by`, a `note`, comments, …) and every
-other gate survive untouched. `handoff` and `greenlight` (below) are the
-other tool-written changes to an opus, and go through the exact same
+other gate survive untouched. `handoff`, `greenlight` and `waive` (below) are
+the other tool-written changes to an opus, and go through the exact same
 merge-not-replace seam (`editOpusFrontMatter`, packages/cli/src/frontmatter.ts):
 each touches only the keys its own contract names — `traditio`'s five keys
-for `handoff`, `state`/`declined` for `greenlight` — never anything else.
+for `handoff`, `state`/`declined` for `greenlight`, and `status`/`reason`/
+`waived_by`/`sella`/`at` on one human gate for `waive` — never anything else.
 A gate already `status: waived` is skipped entirely (not run, not
 overwritten) and printed as `<id>: waived (untouched)`. Before running,
 `verify` requires a clean SOURCE tree in `--repo` — `git status --porcelain`

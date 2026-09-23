@@ -1,0 +1,115 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:45:09.956Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+PASS  waive b6: missing --gate exits 2                                 2
+PASS  waive b6: missing --gate record unchanged                        
+PASS  waive b6: missing --gate events unchanged                        
+PASS  waive b6: missing --gate stderr names ["usage:"]                 usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: missing --reason exits 2                               2
+PASS  waive b6: missing --reason record unchanged                      
+PASS  waive b6: missing --reason events unchanged                      
+PASS  waive b6: missing --reason stderr names ["usage:"]               usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: missing --decision exits 2                             2
+PASS  waive b6: missing --decision record unchanged                    
+PASS  waive b6: missing --decision events unchanged                    
+PASS  waive b6: missing --decision stderr names ["usage:"]             usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: blank --reason exits 2                                 2
+PASS  waive b6: blank --reason record unchanged                        
+PASS  waive b6: blank --reason events unchanged                        
+PASS  waive b6: blank --reason stderr names ["usage:"]                 usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: unknown opus exits 2                                   2
+PASS  waive b6: unknown opus events unchanged                          
+FAIL  waive b6: unknown opus stderr names ["unknown opus"]             usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: state greenlit exits 2                                 2
+PASS  waive b6: state greenlit record unchanged                        
+PASS  waive b6: state greenlit events unchanged                        
+FAIL  waive b6: state greenlit stderr names ["is not building","greenlit"] usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: state halted exits 2                                   2
+PASS  waive b6: state halted record unchanged                          
+PASS  waive b6: state halted events unchanged                          
+FAIL  waive b6: state halted stderr names ["is not building","halted"] usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: state done exits 2                                     2
+PASS  waive b6: state done record unchanged                            
+PASS  waive b6: state done events unchanged                            
+FAIL  waive b6: state done stderr names ["is not building","done"]     usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: --gate nope exits 2                                    2
+PASS  waive b6: --gate nope record unchanged                           
+PASS  waive b6: --gate nope events unchanged                           
+FAIL  waive b6: --gate nope stderr names ["not declared"]              usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: --gate tests exits 2                                   2
+PASS  waive b6: --gate tests record unchanged                          
+PASS  waive b6: --gate tests events unchanged                          
+FAIL  waive b6: --gate tests stderr names ["probatio.waived.automated"] usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: --gate qa exits 2                                      2
+PASS  waive b6: --gate qa record unchanged                             
+PASS  waive b6: --gate qa events unchanged                             
+FAIL  waive b6: --gate qa stderr names ["probatio.waived.agent"]       usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: --gate review exits 2                                  2
+PASS  waive b6: --gate review record unchanged                         
+PASS  waive b6: --gate review events unchanged                         
+FAIL  waive b6: --gate review stderr names ["probatio.waived.agent"]   usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: patron already passed exits 2                          2
+PASS  waive b6: patron already passed record unchanged                 
+PASS  waive b6: patron already passed events unchanged                 
+FAIL  waive b6: patron already passed stderr names ["already passed"]  usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: patron already failed exits 2                          2
+PASS  waive b6: patron already failed record unchanged                 
+PASS  waive b6: patron already failed events unchanged                 
+FAIL  waive b6: patron already failed stderr names ["already failed"]  usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: patron already waived exits 2                          2
+PASS  waive b6: patron already waived record unchanged                 
+PASS  waive b6: patron already waived events unchanged                 
+FAIL  waive b6: patron already waived stderr names ["already waived"]  usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: decision not found exits 2                             2
+PASS  waive b6: decision not found record unchanged                    
+PASS  waive b6: decision not found events unchanged                    
+FAIL  waive b6: decision not found stderr names ["D-404","not found"]  usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: decision containment sentinel exits 2                  2
+PASS  waive b6: decision containment sentinel record unchanged         
+PASS  waive b6: decision containment sentinel events unchanged         
+FAIL  waive b6: decision containment sentinel stderr names ["../D-777"] usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: decision wrong signer exits 2                          2
+PASS  waive b6: decision wrong signer record unchanged                 
+PASS  waive b6: decision wrong signer events unchanged                 
+FAIL  waive b6: decision wrong signer stderr names ["D-901","patron"]  usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: decision unparseable exits 2                           2
+PASS  waive b6: decision unparseable record unchanged                  
+PASS  waive b6: decision unparseable events unchanged                  
+FAIL  waive b6: decision unparseable stderr names ["D-903"]            usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: decision no by exits 2                                 2
+PASS  waive b6: decision no by record unchanged                        
+PASS  waive b6: decision no by events unchanged                        
+FAIL  waive b6: decision no by stderr names ["D-904"]                  usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: decision by not a string exits 2                       2
+PASS  waive b6: decision by not a string record unchanged              
+PASS  waive b6: decision by not a string events unchanged              
+FAIL  waive b6: decision by not a string stderr names ["D-905"]        usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: manifest patron: edene, decision by: patron exits 2    2
+FAIL  waive b6: stderr names edene, not the literal 'patron'           usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b6: record unchanged                                       

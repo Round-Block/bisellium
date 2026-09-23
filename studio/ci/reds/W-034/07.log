@@ -1,0 +1,20 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:45:10.386Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+PASS  waive b7: trunk refuses (automated gate, chosen on purpose) with exit 2 2
+FAIL  waive b7: refusal names opus/W-950 and D-021, and none of the deeper checks usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b7: W-950 record unchanged                                 
+PASS  waive b7: trunk refuses (halted + unknown gate + bad decision, all at once) with exit 2 2
+FAIL  waive b7: second refusal also names only opus/W-951 and D-021    usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  waive b7: W-951 record unchanged                                 
+PASS  waive b7: git status is clean                                    
+Preparing worktree (checking out 'opus/W-950')
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  waive b7: worktree with opus/W-950 checked out exits 0           2
+PASS  waive b7: the trunk's record stays byte-identical                

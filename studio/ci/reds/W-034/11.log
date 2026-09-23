@@ -1,0 +1,14 @@
+# behaviour: 11
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:41:03.269Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+PASS  done b11: refuses when multiple gates are wrongly waived         1
+PASS  done b11: record unchanged                                       
+FAIL  done b11: stderr names every offender, not just the first        W-820: gates not passed: tests
+
+PASS  done b11: exits 0 when every waived gate is honourable           0
+FAIL  done b11: stdout names every honoured waiver                     W-821: done
+

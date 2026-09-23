@@ -31,6 +31,7 @@ export const USAGE =
   "       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>\n" +

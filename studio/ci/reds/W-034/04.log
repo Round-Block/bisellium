@@ -1,0 +1,21 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:41:02.461Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+PASS  done b4: unrecorded patron exits 0                               0
+PASS  done b4: unrecorded patron stdout has no 'waived:'               W-800: done
+
+PASS  done b4: passed patron exits 0                                   0
+PASS  done b4: passed patron stdout has no 'waived:'                   W-801: done
+
+PASS  done b4: honourable waiver exits 0                               0
+FAIL  done b4: honourable waiver stdout names waived/patron/D-900      W-802: done
+
+PASS  done b4: honourable waiver state -> done                         done
+PASS  done b4: probationes deep-equal before and after — the waiver is never rewritten {"before":{"tests":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"lint":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"types":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"qa":{"status":"passed","evidence":"reviews/x.md"},"review":{"status":"passed","evidence":"reviews/x.md"},"patron":{"status":"waived","reason":"docs-only opus","waived_by":"D-900","sella":"guest","at":"2026-09-24T00:00:00Z"}},"after":{"tests":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"lint":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"types":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"qa":{"status":"passed","evidence":"reviews/x.md"},"review":{"status":"passed","evidence":"reviews/x.md"},"patron":{"status":"waived","reason":"docs-only opus","waived_by":"D-900","sella":"guest","at":"2026-09-24T00:00:00Z"}}}
+PASS  done b4: patron.status is still waived                           {"status":"waived","reason":"docs-only opus","waived_by":"D-900","sella":"guest","at":"2026-09-24T00:00:00Z"}
+PASS  done b4: body byte-identical                                     {"before":"Body.\n","after":"Body.\n"}
+PASS  done b4: check reports no state.done.probationes/probatio.waived.agent/probatio.waived.reason for the honoured opus [{"rule":"probatio.certifies","level":"advise","where":"opera/W-802.md","message":"gate \"qa\" evidence has no identity (certifies)"},{"rule":"probatio.certifies","level":"advise","where":"opera/W-802.md","message":"gate \"review\" evidence has no identity (certifies)"}]

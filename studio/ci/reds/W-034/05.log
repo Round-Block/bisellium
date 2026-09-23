@@ -1,0 +1,32 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:45:09.464Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  waive b5: base case exits 0                                      2
+FAIL  waive b5: the five keys are set from the CLI arguments           {"status":"pending","note":"keep-me"}
+PASS  waive b5: the sibling key 'note' survives                        {"status":"pending","note":"keep-me"}
+FAIL  waive b5: no stray key beyond the five plus 'note'               {"status":"pending","note":"keep-me"}
+PASS  waive b5: state stays building                                   building
+PASS  waive b5: body byte-identical                                    {"before":"Body.\n","after":"Body.\n"}
+PASS  waive b5: every other gate is deep-equal to before               {"beforeRest":{"tests":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"lint":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"types":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"qa":{"status":"passed","evidence":"reviews/x.md"},"review":{"status":"passed","evidence":"reviews/x.md"}},"afterRest":{"tests":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"lint":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"types":{"status":"passed","evidence":"ci/x.log","certifies":"tree:abc123"},"qa":{"status":"passed","evidence":"reviews/x.md"},"review":{"status":"passed","evidence":"reviews/x.md"}}}
+FAIL  waive b5: exactly one workflow.gate_evaluated event              []
+FAIL  waive b5: event carries item/gate/status/evidence/actor          
+FAIL  waive b5: state verifying exits 0                                2
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  waive b5: state verifying writes status: waived                  {"status":"pending"}
+FAIL  waive b5: state review exits 0                                   2
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  waive b5: state review writes status: waived                     {"status":"pending"}
+FAIL  waive b5: patron recorded as stale exits 0                       2
+FAIL  waive b5: patron recorded as stale writes status: waived         {"status":"stale"}
+FAIL  waive b5: patron unrecorded exits 0                              2
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  waive b5: patron unrecorded writes status: waived                
+usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+FAIL  waive b5: manifest patron: edene, decision by: edene exits 0     2
+FAIL  waive b5: custom patron id writes status: waived                 {"status":"pending"}

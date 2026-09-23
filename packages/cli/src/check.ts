@@ -486,6 +486,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       }
       if (gs === "waived") {
         if (probatioKind.get(gid) === "automated") add("probatio.waived.automated", "block", where, `automated gate "${gid}" cannot be waived`);
+        if (probatioKind.get(gid) === "agent") add("probatio.waived.agent", "block", where, `agent gate "${gid}" cannot be waived`);
         if (!str(gv["reason"])) add("probatio.waived.reason", "block", where, `gate "${gid}" waived without a reason`);
       }
     }

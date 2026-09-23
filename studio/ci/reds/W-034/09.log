@@ -1,0 +1,13 @@
+# behaviour: 9
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:41:02.890Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+W-810: done
+FAIL  close b9: an honourable-shaped agent-gate waiver still refuses   {"ok":true}
+FAIL  close b9: the record is unchanged                                
+W-811: done
+PASS  close b9: a Patron-waived human gate reaches done                {"ok":true}
+PASS  close b9: state -> done                                          done

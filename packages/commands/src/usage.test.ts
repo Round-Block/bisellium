@@ -86,6 +86,6 @@ for (const file of files) {
     }
   }
 }
-check("scanned every known usage constant", seen === 32, `${seen}`);
+check("scanned every known usage constant", seen === 33, `${seen}`);
 
 process.exit(failed ? 1 : 0);

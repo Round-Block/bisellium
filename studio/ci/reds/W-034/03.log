@@ -1,0 +1,49 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-23T23:41:02.013Z
+# sella: builder-a
+# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3
+
+W-701: gates not passed: patron
+PASS  done b3: patron pending exits 1                                  1
+W-702: gates not passed: patron
+PASS  done b3: patron failed exits 1                                   1
+W-703: gates not passed: patron
+PASS  done b3: patron stale exits 1                                    1
+W-704: done
+FAIL  done b3: reason absent exits 1                                   0
+FAIL  done b3: reason absent stderr names patron and "reason"          
+W-705: done
+FAIL  done b3: reason blank exits 1                                    0
+FAIL  done b3: reason blank stderr names patron and "reason"           
+W-706: done
+FAIL  done b3: reason not a string exits 1                             0
+FAIL  done b3: reason not a string stderr names patron and "reason"    
+W-707: done
+FAIL  done b3: waived_by absent exits 1                                0
+FAIL  done b3: waived_by absent stderr names patron and "waived_by"    
+W-708: done
+FAIL  done b3: waived_by empty exits 1                                 0
+FAIL  done b3: waived_by empty stderr names patron and "waived_by"     
+W-709: done
+FAIL  done b3: waived_by not a string exits 1                          0
+FAIL  done b3: waived_by not a string stderr names patron and "waived_by" 
+W-710: done
+FAIL  done b3: waived_by not found exits 1                             0
+FAIL  done b3: waived_by not found stderr names patron and "D-404"     
+W-711: done
+FAIL  done b3: waived_by wrong signer exits 1                          0
+FAIL  done b3: waived_by wrong signer stderr names patron and "D-901"  
+W-712: done
+FAIL  done b3: waived_by unparseable exits 1                           0
+FAIL  done b3: waived_by unparseable stderr names patron and "D-903"   
+W-713: done
+FAIL  done b3: waived_by no by exits 1                                 0
+FAIL  done b3: waived_by no by stderr names patron and "D-904"         
+W-714: done
+FAIL  done b3: waived_by by not a string exits 1                       0
+FAIL  done b3: waived_by by not a string stderr names patron and "D-905" 
+W-715: done
+FAIL  done b3: waived_by containment sentinel exits 1                  0
+FAIL  done b3: waived_by containment sentinel stderr names patron and "../D-777" 
