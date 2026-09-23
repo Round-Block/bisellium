@@ -1,0 +1,136 @@
+censor round 2 — W-042 (PR #25, branch opus/W-042 @ 066891d67bbbee46e37f0908e602468fd61d5259)
+sella: qa-lead   model: claude-opus-5-5   at: 2026-09-23 (see verdict stamp)
+scope: remedies 26add8a..066891d (ca002a5 fix, 066891d verify+handoff) plus regression.
+verdict: PASS. F-1 is closed on both instances, F-2 is closed, and there is no regression.
+3 advisories, none blocking.
+
+================================================================================
+VERDICT SUMMARY
+================================================================================
+  [PASS] F-1a  --decision ../leges/qa: in block 19's table, rides the loop's three
+               assertions (exit 2 / opus file unchanged / no event). All three fire:
+               "unchanged" is not skipped, because opera/W-002.md exists.
+  [PASS] F-1b  opus id ../petitiones/A-1: rides the same three. The loop's opusPath
+               join(dir,"opera","../petitiones/A-1.md") collapses to
+               petitiones/A-1.md, which exists in the sample studio, so "unchanged"
+               asserts on the traversal TARGET (the petitio), as round 1 asked.
+  [PASS] F-1 mutation, run independently this round (post-move line numbers):
+               lifecycle.ts:610  safeItemPath(join(root,"decisions"),decisionId)
+                              -> join(root,"decisions",`${decisionId}.md`)
+                 ONLY=19 -> exit 1; FAIL x3, all on "--decision of ../leges/qa" (0)
+               lifecycle.ts:587  safeItemPath(join(root,"opera"),opusId)
+                              -> join(root,"opera",`${opusId}.md`)
+                 ONLY=19 -> exit 1; FAIL x3, all on "opus id ../petitiones/A-1" (0)
+               Each mutant kills only its own case. Both were restored with git
+               checkout; git diff and git status --porcelain came back empty.
+               (Round 1's :491/:468 are now :610/:587 because of the F-2 move.)
+  [PASS] real code, ONLY=19 -> exit 0, 31 PASS / 0 FAIL
+  [PASS] F-2   pure relocation. The sorted line multiset of lifecycle.ts at 26add8a
+               and at 066891d is identical (md5 2006fd5b...). The removed hunk
+               (-422,100) and the added hunk (+540,97) are the same 94 lines, and
+               only the separating blank line moves (trailing -> leading). The §4
+               banner (:357) is now followed contiguously by runRed (:430); §5
+               starts at :543, after runRed's close. No logic change.
+  [PASS] red 02 is an honest mutation-record red (details below)
+  [PASS] F-3   the positive control still bites. I stubbed runHalt as always-refuse
+               on 066891d and ran ONLY=19 -> exit 1. The only FAILs are "a fully
+               valid case ... exits 0" (2) and "the valid case actually wrote
+               state=halted" (building). The new cases PASS under the stub, as
+               expected. Restored clean.
+  [PASS] scope  git diff 26add8a..066891d -- packages/ touches only
+               packages/cli/src/lifecycle.test.ts (+14, two table rows + comments)
+               and packages/commands/src/lifecycle.ts (the move). The other files
+               are bookkeeping: 3 certificates, red 02, opera/W-042.md (verify's
+               probationes + handoff's traditio). PR #25 head == 066891d.
+  [PASS] gates on 066891d: npm test exit 0, 1304 PASS / 0 FAIL (= 1298 + 2 cases
+               x 3 assertions); typecheck 0; lint 0 (2 warnings, pre-existing:
+               close.test.ts:5, tick.test.ts:203); format:check 0
+  [PASS] certificates: tests/lint/types-d260013a.log each carry
+               certifies: tree:d260013ab260d4aa687a6f0368386fa8b4019240.
+               Recomputed with sourceTreeHash(".", ["studio",".bisellium","examples/"]):
+               26add8a -> 254e8fe8... ; ca002a5 -> d260013a... ; 066891d -> d260013a...
+               The certificate names the committed fix tree.
+  [PASS] check studio --level block: 3 blocking, the same pre-existing W-027/W-028
+               debt (traditio.present W-028; opus.red_evidence W-027, W-028).
+               W-042 has two advisories: spec-gate "no identity" (pre-existing) and
+               review-gate "no identity". The review one comes from round 1's
+               verdict landing (26add8a), not from these commits, and 20 opera
+               carry the same advisory. sample-studio: PASS, 0 blocking.
+  [warn] A-1  red 02's "# command:" names an uncommitted scratchpad script (class,
+               pre-existing)
+  [warn] A-2  red 02's "# exit: 1" alone does not prove both mutants died
+  [warn] A-3  commit message overclaims how restoration was verified
+
+================================================================================
+Red 02 — judged as a mutation-record red
+================================================================================
+Header: behaviour 2, exit 1, sella builder-a, tree dirty:254e8fe8...
+  254e8fe8 == sourceTreeHash(26add8a), which was HEAD when the red was recorded.
+  The tree was dirty because the two new test rows were in the working tree. The
+  :491/:468 line labels are correct for that pre-move file. Proof: mutant 1's
+  output shows "W-002: state=halted by=../leges/qa", so the sed landed on the
+  decision guard. Had the move already been applied, line 491 would have been
+  inside runRed.
+Both demonstrations are present and labelled ("MUTATION 1 of 2 ... :491",
+  "MUTATION 2 of 2 ... :468"). Each has assertion-level FAIL lines confined to its
+  own case, and each ends with "mutant N exit: 1". These FAIL lines match my
+  independent reruns exactly (same labels, same observed values 0/"").
+Restoration is verified inline, in two ways:
+  (1) The script reverts with git checkout between mutants. The log proves it
+      took, by behaviour: in the mutant-2 run, "--decision of ../leges/qa"
+      PASSes, which would not happen if mutant 1 were still applied.
+  (2) A final "git diff -- lifecycle.ts" prints empty.
+The harness still exists at the path the header names
+  (session scratchpad .../54cefaf8-.../scratchpad/w042-mutants.sh). I read it.
+  It does what the log says: sed of the exact line, ONLY=19 run, git checkout,
+  then the next mutant.
+The positive-control stub-red from round 1 is overwritten in the working tree.
+  It survives at 26add8a:studio/ci/reds/W-042/02.log, and I re-demonstrated the
+  property above (F-3). Nothing it covered has regressed.
+Verdict on 02: honest, assertion-level, both mutations shown. Accepted.
+
+================================================================================
+A-1 (advisory, class, pre-existing) — reds whose command lives outside the repo
+================================================================================
+red 02's header command is "sh /tmp/claude-1000/.../scratchpad/w042-mutants.sh".
+The script itself says "Not committed". It is session-scoped and will not survive
+the session, so the header cannot be rerun from the repo. The standing rule is
+"Mechanical work is a script you write, run and keep."
+This is a class. Search: grep '^# command:' studio/ci/reds/**, filtered for
+/tmp|scratchpad. There are 12 instances:
+  W-020/09, 10, 11, 13, 14, 15, 16;  W-028/18, 19, 21;  W-036/02;  W-042/02.
+W-042 contributes one instance and did not start the pattern. Recommend a lesson
+and, per standing rules, a check rule rather than prose: advise when a red's
+"# command:" references a path outside the repo. Not blocking W-042.
+
+================================================================================
+A-2 (advisory, single instance) — the harness exit is OR, not AND
+================================================================================
+w042-mutants.sh sets overall=1 if EITHER mutant exits nonzero. So "# exit: 1"
+would still be recorded if only one mutant died. This log is not affected: the
+summary line "mutant1 ... exit=1  mutant2 ... exit=1" and both FAIL blocks show
+that both died. Any future multi-mutant harness should require every mutant to
+die before it exits 1.
+
+================================================================================
+A-3 (advisory, single instance) — commit message overclaims restoration
+================================================================================
+ca002a5 says "git diff on the mutation shows empty before/after each". The log
+prints git diff once, after both mutants. The between-mutant revert is proven by
+behaviour (see red 02, point 1), not by a printed diff. The evidence is sound;
+the prose describing it is inaccurate.
+
+================================================================================
+Commands run (scratch worktree $TMPDIR/w042r2, detached at 066891d, BISELLIUM_SELLA=qa-lead)
+================================================================================
+  bisellium (bare); bisellium context --sella qa-lead studio
+  git diff --stat 26add8a..066891d; git diff 26add8a..066891d -- packages/
+  sort lifecycle.ts @26add8a vs @066891d | md5sum; removed-hunk vs added-hunk diff
+  BISELLIUM_ONLY_BEHAVIOUR=19 node --import tsx packages/cli/src/lifecycle.test.ts .
+    real / mutant :610 / mutant :587 / always-refuse stub. Each was reverted with
+    git checkout, and git status --porcelain was empty afterwards.
+  npm test; npm run -s typecheck; npm run -s lint; npm run -s format:check
+  sourceTreeHash(".", ["studio",".bisellium","examples/"], 26add8a|ca002a5|066891d)
+  npm run -s check -- studio --repo . [--level block]; ... examples/sample-studio --repo .
+  gh pr view 25 (headRefOid == 066891d)
+  grep '^# command:' studio/ci/reds/** (A-1 class search)
