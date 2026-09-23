@@ -1,0 +1,139 @@
+# W-033 review round 2 — PR #32, opus/W-033 @ 7c84515
+# sella: qa-lead (censor) · model: claude-opus-5-5 · at: 2026-09-24
+# scope: remedies 8ea15ea..7c84515 (B1, red 01, A1, A2, A3, A5) + regression
+# scratch: detached worktree /tmp/claude-1000/w033r2 @ 7c84515 (round-1
+#   worktree w033r1 removed), node_modules copied. Scripts kept in the
+#   session scratchpad: b1repro.sh, a1a2live.sh, mutate.sh.
+VERDICT: PASS — 0 blocking. 2 advisories (non-blocking). A4 stays accepted.
+
+== B1 (round-1 BLOCKING): FIXED
+Both instances of the class are fixed. writes.ts:271 (step 2, symbolic-ref)
+and :286 (step 4, show-ref) now return gitFailureRefusal when
+`broken || (code !== 0 && code !== 1)`. Re-enumerated every runGit call
+site in writes.ts (4 total): ls-files (step 1, allows on any non-zero,
+which is the brief's design), symbolic-ref (fixed), show-ref (fixed),
+rev-parse in describeDetached (message text only). No other instance.
+Round-1 repro rerun against the round-2 source (real repo, record
+tracked, opus/W-9 exists, HEAD=master, `pack-refs --all`, then one
+garbage line appended to .git/packed-refs):
+  ls-files --error-unmatch opera/W-9.md    -> exit 0 (step 1 passes)
+  symbolic-ref -q HEAD                     -> exit 128
+  show-ref --verify --quiet refs/heads/opus/W-9 -> exit 128
+  recordOwnerRefusal(<repo>/studio, W-9)   -> REFUSE "could not determine
+      whether this checkout owns opus/W-9's record (D-021) — git failed;
+      refusing ..."   (round 1: ALLOW)
+  packed-refs restored, same call          -> REFUSE (ownership message)
+Note on the repro: with no packed-refs file, a lone garbage line
+yields a packed-refs that git accepts (all exits 0), so the repro needs
+`pack-refs` first. The builder's test does this.
+Step 1's allow-on-error is untouched: an untracked record with corrupt
+packed-refs -> ls-files exit 1 -> ALLOW. A studio outside any repo ->
+ALLOW.
+
+== Red 01 re-record: HONEST, and it reproduces
+Header `tree: dirty:f1bec0b3…` is exactly the source tree of 8ea15ea (the
+HEAD when the red ran), and it carries the dirty flag. Recomputed:
+8db570d = 2eb2e68 = 8ea15ea = f1bec0b3…. Timeline: review-1 was committed
+at 15:54Z, the red was recorded at 16:05:39Z, and the fix was committed at
+16:09:37Z. Reproduced it by reverting only the two B1 hunks (mutate.sh
+revert-b1, BISELLIUM_ONLY_BEHAVIOUR=23): 5 PASS (the original b1
+assertions) plus the same 3 FAIL lines as the log ("a git failure ...
+refuses rather than allowing 0", "names D-021", "record byte-identical
+after the git-failure refusal"). This is assertion for assertion identical
+to the recorded log, and it confirms the builder's claim that only the new
+assertions fail.
+Observation: the re-record overwrote the original behaviour-1 red, which
+showed the guard absent and `done` writing. That red survives only in
+history, at 2eb2e68:studio/ci/reds/W-033/01.log. `red` keys each log by
+behaviour number, so the tool forced the overwrite. Not a finding.
+
+== A1 guard placement: FIXED (all 5 instances)
+Read all 7 callers. Each guard now comes right after the unknown-opus /
+existence check (ready :101, done :197, review :317, halt :621,
+handoff writes.ts:380, greenlight writes.ts:770, verify verify.ts:142).
+Only arg/now/studio/sella validation comes before any of them.
+Live, via the branch CLI in a real repo where the trunk shows the records
+as `greenlit` and opus/W-900 and opus/W-901 exist:
+  done W-900        -> exit 2, D-021 ownership message (round 1: "not building")
+  ready W-900       -> exit 2, D-021 (not the "no spec" refusal)
+  greenlight W-901  -> exit 2, D-021 (not "not in backlog")
+  halt W-901        -> exit 2, D-021
+  handoff W-901 --stage review -> exit 2, D-021 (not the stage mismatch)
+  records sha256 unchanged.
+
+== A2 step-3 message: FIXED, honest
+From opus/W-900, writing W-902 (opus/W-902 does not exist):
+  "W-902: opera/W-902.md cannot be written from opus/W-900 (D-021); an opus
+  branch carries only its own record — this checkout is on opus/W-900,
+  which carries only W-900's record. Switch to trunk or the worktree that
+  has opus/W-902 checked out."
+It no longer claims that opus/W-902 exists. Every assertion in it is
+something step 3 knows. The either/or advice covers both cases step 3
+cannot tell apart. It names opus/W-900 twice, a cosmetic redundancy only.
+
+== A3 vacuous assertions: FIXED (3 instances)
+b3: handoff's "appends no event" is now skipped via `emitsEvent: false`
+(runHandoff never emits, so the assertion could not bite). b4's stub now
+writes ci/W-120-tests-stub.log and returns a passed gate.
+Always-allow mutation (`return undefined` at the top of
+recordOwnerRefusal), behaviours 23-30:
+  b1 6 FAIL, b2 3, b3 15 (every per-verb assertion that remains; 0 PASS),
+  b4 5 (round 1: 3; "no new file under studio/ci/" and "record
+  byte-identical" now FAIL), b5 3, b6 mirror 2, A5 6.
+  b6/b7 positive controls PASS as expected.
+Blocks 25 and 26 have no assertion left that passes under always-allow.
+
+== A5 close / ci --opus inheritance: COVERED
+Block 30 (real repo, opus/W-160 and opus/W-161 branches): executeClose
+-> ok:false, D-021 in stderr, record byte-identical. runCi --opus -> exit
+2, D-021, record byte-identical. It passes on 7c84515. Under always-allow
+all 6 assertions FAIL (close returns {"ok":true}), so the block bites.
+
+== Advisories (non-blocking)
+R2-A1 Step 4's B1 hunk (writes.ts:286) has no test that bites. If I
+  revert that hunk alone (mutate.sh revert-b1-step4), behaviours 23-30
+  have 0 FAIL. Corrupting packed-refs trips step 2 first. A broken loose
+  ref makes show-ref exit 1 (git's own "not found"), not 128. So in
+  practice no fixture reaches step 4's failure branch on its own. Verified
+  by reading instead: it is symmetric with step 2. Also, the new b1
+  assertion checks "D-021", which both refusal messages carry, rather than
+  the git-failure wording. A regression that refused for the wrong reason
+  would still pass. Worth pinning if this path is touched again.
+R2-A2 (carried, accepted) A4: `ci --opus` from the trunk still runs every
+  CI step before verify refuses. Unchanged, and outside the brief.
+
+== Regression on 7c84515 (rerun here)
+npm test: exit 0, 0 FAIL, 1351 PASS (47 W-033 lines). typecheck: exit 0.
+lint: exit 0, 0 errors; the 2 warnings are pre-existing (close.test.ts,
+tick.test.ts). format:check: clean. `check studio --repo .`: PASS, 0
+blocking. `check examples/sample-studio --repo .`: PASS, 0 blocking. Its
+only advisory delta against master is process.checkpoint (HEAD-derived).
+instructions.stale on AGENTS.md is already on master.
+Certificates: sourceTreeHash(repo, [studio, .bisellium, examples/]) is
+db9b1b79… at both 8dc57c8 and 7c84515, matching all three probationes.
+The committed gate logs show exit code 0. The tests log's trailing "ci:
+step failed" lines are ci.test.ts output and were in round 1's log too.
+Scope: `git diff --stat 8ea15ea..7c84515 -- packages/` touches only
+packages/commands/src/{writes,lifecycle}.ts and
+packages/cli/src/lifecycle.test.ts. Plus studio bookkeeping (red 01,
+gate logs, opera/W-033.md).
+Spot-checks against round 1: reds 02-07 are untouched (only 01.log is in
+the diff). The spec-gate sequence is unchanged (e355b00 first). Block 30
+is a real repo (tmpGitStudioRepo, git init + commit + branch). `bisellium
+instructions --studio studio --repo . --write` gives an empty git diff for
+CLAUDE.md and AGENTS.md. The seven guarded verbs are unchanged in number.
+The scratch tree is clean after every mutation (git status --porcelain is
+empty).
+
+== The guard refusing this reviewer (live evidence)
+From the detached scratch worktree at the opus/W-033 tip (step 4), using
+the branch's own CLI: `review W-033 --pass --evidence
+ci/W-033-r2-probe.log --round 2 --sella qa-lead --model claude-opus-5-5
+--studio /tmp/claude-1000/w033r2/studio` -> exit 2:
+  "W-033: opera/W-033.md is owned by opus/W-033 while that branch exists
+  (D-021); this checkout is on detached HEAD at 7c84515 — run it in the
+  worktree that has opus/W-033 checked out ..."
+The record's sha256 is unchanged (ecc7907e…), and no studio/.bisellium/ was
+created. The probe was removed, and the tree is clean. This verdict was
+then recorded from the opus/W-033 checkout
+(.claude/worktrees/agent-af70544b2fa3ec127).
