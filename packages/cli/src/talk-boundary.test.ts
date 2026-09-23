@@ -181,11 +181,14 @@ const POLICY_TAIL = [
   ...EXPECTED_ALLOWED_TOOLS,
 ];
 
-/** The exact expected argv. The system-prompt temp file path (start) and the
- *  resume session id (resume) are the only tokens neither side can predict
- *  in advance — both are pulled from the actual argv at the fixed position
- *  claude-code.ts's header documents, so a widening or reordering anywhere
- *  else in the array still fails the deep-equality check below. */
+/** The exact expected argv. The resume session id in behaviour 1 IS
+ *  predictable (the test passes "sess-fixture" itself) and is checked
+ *  against that literal below. The system-prompt temp file (start, always)
+ *  and the resume session id in behaviour 4 (talk/tick generate their own)
+ *  genuinely can't be predicted in advance, so those slots are read from the
+ *  actual argv — but only after each is shape-checked (round-3 review F4):
+ *  a copied token must not start with "-", and the start file must end in
+ *  "/system-prompt.md". */
 function expectedStartArgv(sysPromptFile: string): string[] {
   return ["-p", "--output-format", "json", "--append-system-prompt-file", sysPromptFile, ...POLICY_TAIL];
 }
@@ -194,10 +197,30 @@ function expectedResumeArgv(sessionId: string): string[] {
 }
 
 /** Behaviour-1 style policy assertion against one logged argv: the argv
- *  deep-equals the literal expected array. */
-function checkPolicy(name: string, argv: string[], form: "start" | "resume"): void {
-  const expected = form === "start" ? expectedStartArgv(argv[4] ?? "") : expectedResumeArgv(argv[2] ?? "");
-  check(`${name}: argv is exactly the ${form} policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
+ *  deep-equals the literal expected array. `knownResumeId`, when given, is
+ *  the literal value the test itself passed as the resume session id (only
+ *  behaviour 1 knows this in advance); otherwise the resume id is read from
+ *  argv and merely shape-checked, never taken on faith. */
+function checkPolicy(name: string, argv: string[], form: "start" | "resume", knownResumeId?: string): void {
+  if (form === "start") {
+    const file = argv[4] ?? "";
+    check(
+      `${name}: start file (argv[4]) is a real system-prompt path, not a copied flag`,
+      file.length > 0 && !file.startsWith("-") && file.endsWith("/system-prompt.md"),
+      file,
+    );
+    const expected = expectedStartArgv(file);
+    check(`${name}: argv is exactly the start policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
+    return;
+  }
+  const sessionId = argv[2] ?? "";
+  if (knownResumeId !== undefined) {
+    check(`${name}: resume session id (argv[2]) is the literal fixture, not a copy`, sessionId === knownResumeId, sessionId);
+  } else {
+    check(`${name}: resume session id (argv[2]) is not a copied flag`, sessionId.length > 0 && !sessionId.startsWith("-"), sessionId);
+  }
+  const expected = expectedResumeArgv(knownResumeId ?? sessionId);
+  check(`${name}: argv is exactly the resume policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
 }
 
 try {
@@ -214,7 +237,7 @@ try {
       JSON.stringify(readLog(logPath)),
     );
     if (startArgv) checkPolicy("behaviour 1 start", startArgv, "start");
-    if (resumeArgv) checkPolicy("behaviour 1 resume", resumeArgv, "resume");
+    if (resumeArgv) checkPolicy("behaviour 1 resume", resumeArgv, "resume", "sess-fixture");
   }
 
   // ---- 2: every existing CLI verb outside {context, query, check} denied -
