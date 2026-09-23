@@ -117,8 +117,9 @@ Declared per collegium in its lex, driven by one scheduler:
 | L3 continuous | magistri self-assign follow-ups inside "decides alone" |
 
 The edge is the fasti: autonomy never crosses a Patron touchpoint; the studio runs to the
-end of the greenlit work and idles visibly. Brakes: per-item halt, `bisellium pause`
-(stop starting), posture `limited` per collegium, no autonomous starts at `closeout`.
+end of the greenlit work and idles visibly. Brakes: `bisellium halt` (per-item),
+`bisellium pause` (stop starting), posture `limited` per collegium, no autonomous
+starts at `closeout`.
 
 ## 11. Decisions and open questions
 
