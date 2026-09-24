@@ -323,3 +323,27 @@ in D-020 and churn with releases); adopted — preconditions are Web II
 the record bus it drafts into would invert the dependency. Revisit triggers:
 provider pricing/limit changes; concierge drafts proving unfaithful; Web II
 scheduling, which makes this section the spec input.
+
+## Patron decrees, 2026-09-24 — Web II starts
+
+Recorded verbatim from the Patron, 2026-09-24:
+
+> the live canvas uses a side panel instead of a top panel. at this point,
+> i prefer the side panel.
+
+> that also means that we need to start with the agent model selection and
+> task type delegation.
+
+**Consequences.** (1) The **side panel is the console's navigation**, as the
+canvas designs draw it; the shipped top-bar layout (Inbox/Officina) migrates
+to it. Every Web II spec builds to the side panel. (2) Web II's **first opus
+is the agent-model-selection and task-type-delegation surface** (W-065),
+ahead of the Board (W-064). This is the Patron's decree surface made
+clickable: which model holds which seat, and which task types are delegated
+to which tier — the D-020 mapping as UI, with the Patron as the only
+authority who writes it. It is the concrete arrival of the standing
+direction that everything below the human-only line (UI/UX, architecture)
+becomes delegable by toggle/checklist. Design authority note: the writes
+this screen performs are decree-writes (manifest seats, tier mapping);
+they must land as records with the Patron's identity, never a model's —
+the same rule as the Inbox record bus above.
