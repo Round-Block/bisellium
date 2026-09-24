@@ -17,6 +17,7 @@ Read this before anything else in this repo.
 - `npm run -s typecheck`
 - `npm run -s check -- <officina> --repo .`
 - `bisellium verify <opus> --studio studio --repo .` (on the opus branch)
+- `bisellium ci` (the CI workflow's steps, run locally; `--opus <id> --studio studio` then runs `verify`, on the opus branch)
 - `bisellium talk --sella <id> --studio studio`
 - `bisellium tick --studio studio`
 - `bisellium retro --cascade N --studio studio`

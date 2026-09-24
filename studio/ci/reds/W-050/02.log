@@ -1,0 +1,34 @@
+# behaviour: 2
+# command: node scripts/ci-workflow.test.mjs
+# exit: 1
+# at: 2026-09-24T05:49:03.728Z
+# sella: builder-sol
+# tree: tree:dd61028690c956b10c344c8a3394ace30c5c4286
+
+PASS  parses as YAML                                     
+PASS  has a typecheck step                               
+PASS  has a lint step                                    
+PASS  has a format:check step                            
+PASS  has a test step                                    
+PASS  has a check --repo . step naming studio            
+PASS  has a check --repo . step naming examples/sample-studio 
+PASS  the string 'verify' appears nowhere in the file    
+PASS  CI_STEPS reads from packages/commands/src/ci.ts    ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]
+PASS  CI_STEPS has a 'check -- studio' entry             ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]
+PASS  workflow has exactly two jobs: gates, officina     
+PASS  gates job's run: steps equal CI_STEPS minus the studio check, in order gates: ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- examples/sample-studio --repo ."]  vs  expected: ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- examples/sample-studio --repo ."]
+PASS  officina job's run: steps are exactly the studio check, alone officina: ["npm run -s check -- studio --repo ."]
+PASS  (documented divergence, expected false) gates+officina flattened does NOT reproduce CI_STEPS' order flattened: ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- examples/sample-studio --repo .","npm run -s check -- studio --repo ."]  vs  CI_STEPS: ["npm run -s typecheck","npm run -s lint","npm run -s format:check","npm test","npm run -s check -- studio --repo .","npm run -s check -- examples/sample-studio --repo ."]
+PASS  instructions template: ci line follows verify line 
+PASS  CLAUDE.md carries the ci line                      
+PASS  AGENTS.md carries the ci line                      
+FAIL  ADOPTION.md: "## Running ci" follows "## Running run and verify" 
+FAIL  ADOPTION "Running ci" shows ci's usage             
+FAIL  ADOPTION "Running ci" names step: npm run -s typecheck 
+FAIL  ADOPTION "Running ci" names step: npm run -s lint  
+FAIL  ADOPTION "Running ci" names step: npm run -s format:check 
+FAIL  ADOPTION "Running ci" names step: npm test         
+FAIL  ADOPTION "Running ci" names step: npm run -s check -- studio --repo . 
+FAIL  ADOPTION "Running ci" names step: npm run -s check -- examples/sample-studio --repo . 
+FAIL  ADOPTION "Running ci" names CI_STEPS, ci.ts and this guard 
+FAIL  ADOPTION "Running ci" names the gates and officina jobs 

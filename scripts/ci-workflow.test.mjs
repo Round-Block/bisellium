@@ -162,4 +162,78 @@ check(
   `flattened: ${JSON.stringify(flatWorkflowSteps)}  vs  CI_STEPS: ${JSON.stringify(ciSteps)}`,
 );
 
+// W-050 guards the ci documentation here because this script already owns
+// CI_STEPS and the workflow's gates/officina split, so the docs drift with
+// those sources instead of silently drifting apart from them.
+const VERIFY_LINE = "- `bisellium verify <opus> --studio studio --repo .` (on the opus branch)";
+const CI_LINE =
+  "- `bisellium ci` (the CI workflow's steps, run locally; `--opus <id> --studio studio` then runs `verify`, on the opus branch)";
+const instructionsTemplate = readFileSync(join(REPO_ROOT, "packages/cli/src/instructions.template.md"), "utf8").split(
+  /\r?\n/,
+);
+const verifyLineIndex = instructionsTemplate.indexOf(VERIFY_LINE);
+check(
+  "instructions template: ci line follows verify line",
+  verifyLineIndex !== -1 && instructionsTemplate[verifyLineIndex + 1] === CI_LINE,
+);
+
+const claudeInstructions = readFileSync(join(REPO_ROOT, "CLAUDE.md"), "utf8").split(/\r?\n/);
+check(
+  "CLAUDE.md carries the ci line",
+  claudeInstructions.some((line) => line === CI_LINE),
+);
+
+const agentInstructions = readFileSync(join(REPO_ROOT, "AGENTS.md"), "utf8").split(/\r?\n/);
+check(
+  "AGENTS.md carries the ci line",
+  agentInstructions.some((line) => line === CI_LINE),
+);
+
+const norm = (s) => s.replace(/\s+/g, " ");
+const adoption = readFileSync(join(REPO_ROOT, "docs/ADOPTION.md"), "utf8").split(/\r?\n/);
+const adoptionHeadingIndex = adoption.indexOf("## Running ci");
+const adoptionSectionEnd =
+  adoptionHeadingIndex === -1
+    ? adoption.length
+    : adoption.findIndex((line, index) => index > adoptionHeadingIndex && line.startsWith("## "));
+const section =
+  adoptionHeadingIndex === -1
+    ? ""
+    : norm(
+        adoption
+          .slice(adoptionHeadingIndex + 1, adoptionSectionEnd === -1 ? adoption.length : adoptionSectionEnd)
+          .join(" "),
+      );
+const previousAdoptionHeading =
+  adoptionHeadingIndex === -1
+    ? undefined
+    : adoption.slice(0, adoptionHeadingIndex).findLast((line) => line.startsWith("## "));
+check(
+  'ADOPTION.md: "## Running ci" follows "## Running run and verify"',
+  adoptionHeadingIndex !== -1 && previousAdoptionHeading === "## Running run and verify",
+);
+
+const ciSource = readFileSync(join(REPO_ROOT, "packages/commands/src/ci.ts"), "utf8");
+const usageMatch = ciSource.match(/const USAGE = "usage: bisellium ci ([^"]*)";/);
+check(
+  'ADOPTION "Running ci" shows ci\'s usage',
+  usageMatch !== null && section.includes("npm run bisellium -- ci " + usageMatch[1]),
+  usageMatch === null ? "USAGE not found in ci.ts" : "",
+);
+
+for (const step of ciSteps) {
+  check(`ADOPTION "Running ci" names step: ${step}`, section.includes(step));
+}
+
+check(
+  'ADOPTION "Running ci" names CI_STEPS, ci.ts and this guard',
+  section.includes("`CI_STEPS`") &&
+    section.includes("`packages/commands/src/ci.ts`") &&
+    section.includes("`scripts/ci-workflow.test.mjs`"),
+);
+check(
+  'ADOPTION "Running ci" names the gates and officina jobs',
+  section.includes("`gates`") && section.includes("`officina`"),
+);
+
 process.exit(failed ? 1 : 0);
