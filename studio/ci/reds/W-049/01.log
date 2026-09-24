@@ -1,0 +1,24 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/harness-env.test.ts .
+# exit: 1
+# at: 2026-09-24T02:34:08.420Z
+# sella: builder-b
+# tree: dirty:7ab7a6b0a8cbebea70fa1d46c440ef3d10b2ac1d
+
+PASS  behaviour 1: SYNTH contains the whole guard set                                
+PASS  behaviour 1: http_proxy is absent from SYNTH                                   
+PASS  behaviour 1: start adds exactly one record                                     1
+PASS  behaviour 1 start: bin is claude                                               claude
+PASS  behaviour 1 start: kind is turn                                                turn
+PASS  behaviour 1 start: argv form has no --resume                                   ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-GSAOKY/system-prompt.md","--restricted","--strict-mcp-config","--permission-mode","dontAsk","--tools","Read,Grep,Glob,Bash","--allowedTools","Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]
+FAIL  behaviour 1 start: env name set is exactly the allowlist projection            expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[ALL_PROXY,ANTHROPIC_API_KEY,ANTHROPIC_AUTH_TOKEN,ANTHROPIC_BASE_URL,ANTHROPIC_BEDROCK_BASE_URL,ANTHROPIC_MODEL,ANTHROPIC_VERTEX_BASE_URL,BISELLIUM_FAKE_MODE,CLAUDECODE,CLAUDE_CODE_ENTRYPOINT,CLAUDE_CODE_HOST_SESSION_ID,CLAUDE_CODE_MESSAGING_SOCKET,CLAUDE_CODE_OAUTH_SCOPES,CLAUDE_CODE_OAUTH_TOKEN,CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH,CLAUDE_CODE_SESSION_ID,CLAUDE_CODE_USE_BEDROCK,CLAUDE_CODE_USE_VERTEX,CLAUDE_CONFIG_DIR,CODEX_HOME,HOME,HTTPS_PROXY,HTTPS_PROXY_ZZ,HTTP_PROXY,LANG,LC_ALL,NODE_EXTRA_CA_CERTS,NODE_OPTIONS,NODE_TLS_REJECT_UNAUTHORIZED,NO_PROXY,OPENAI_API_KEY,OPENAI_BASE_URL,PATH,PATH_ZZ,Path,SHELL,SSL_CERT_FILE,STUB_SCENARIO,TALK_STUB_LOG,TMPDIR,USE_LOCAL_OAUTH,USE_STAGING_OAUTH,ZZ_FUTURE_VENDOR_BASE_URL,ZZ_HOME,home,https_proxy,no_proxy]
+PASS  behaviour 1 start: every surviving value is identical to the parent's          mismatched=[]
+PASS  behaviour 1 start: http_proxy is absent from the child env                     
+PASS  behaviour 1: resume adds exactly one more record                               2
+PASS  behaviour 1 resume: bin is claude                                              claude
+PASS  behaviour 1 resume: kind is turn                                               turn
+PASS  behaviour 1 resume: argv is --resume sess-fixture                              ["-p","--resume","sess-fixture","--output-format","json","--restricted","--strict-mcp-config","--permission-mode","dontAsk","--tools","Read,Grep,Glob,Bash","--allowedTools","Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]
+FAIL  behaviour 1 resume: env name set is exactly the allowlist projection           expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[ALL_PROXY,ANTHROPIC_API_KEY,ANTHROPIC_AUTH_TOKEN,ANTHROPIC_BASE_URL,ANTHROPIC_BEDROCK_BASE_URL,ANTHROPIC_MODEL,ANTHROPIC_VERTEX_BASE_URL,BISELLIUM_FAKE_MODE,CLAUDECODE,CLAUDE_CODE_ENTRYPOINT,CLAUDE_CODE_HOST_SESSION_ID,CLAUDE_CODE_MESSAGING_SOCKET,CLAUDE_CODE_OAUTH_SCOPES,CLAUDE_CODE_OAUTH_TOKEN,CLAUDE_CODE_SDK_HAS_HOST_AUTH_REFRESH,CLAUDE_CODE_SESSION_ID,CLAUDE_CODE_USE_BEDROCK,CLAUDE_CODE_USE_VERTEX,CLAUDE_CONFIG_DIR,CODEX_HOME,HOME,HTTPS_PROXY,HTTPS_PROXY_ZZ,HTTP_PROXY,LANG,LC_ALL,NODE_EXTRA_CA_CERTS,NODE_OPTIONS,NODE_TLS_REJECT_UNAUTHORIZED,NO_PROXY,OPENAI_API_KEY,OPENAI_BASE_URL,PATH,PATH_ZZ,Path,SHELL,SSL_CERT_FILE,STUB_SCENARIO,TALK_STUB_LOG,TMPDIR,USE_LOCAL_OAUTH,USE_STAGING_OAUTH,ZZ_FUTURE_VENDOR_BASE_URL,ZZ_HOME,home,https_proxy,no_proxy]
+PASS  behaviour 1 resume: every surviving value is identical to the parent's         mismatched=[]
+PASS  behaviour 1 resume: http_proxy is absent from the child env                    
+PASS  behaviour 1: SYNTH not mutated by start+resume                                 onlyA=[] onlyB=[] changed=[]
