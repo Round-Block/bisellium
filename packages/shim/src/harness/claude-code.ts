@@ -35,6 +35,27 @@
  * temp file and passed via `--append-system-prompt-file`, deleted once the
  * call returns — an argv-sized prompt risks the platform's argv length limit
  * and shows up in `ps`, neither of which is a problem for a file.
+ *
+ * W-046: `HarnessStartOpts.model`/`HarnessResumeOpts.model` (the manifest's
+ * `sellae[].model`, D-020's decreed tier) is passed as `--model <id>` when
+ * present — absent means no override, the vendor decides. `--allowedTools`
+ * is variadic and terminal, so `--model` MUST be placed before POLICY_FLAGS
+ * in argv (right after `--output-format json`); a flag appended after
+ * POLICY_FLAGS would be silently eaten as one more tool name. A `claude`
+ * that doesn't recognize the requested model exits non-zero with a
+ * parseable envelope (`is_error: true`, the cause in `result`) AND a
+ * separate `[claude-code:unrecognized_model]` line on stderr — the manifest
+ * declaring a model that doesn't belong to this harness is a bug in the
+ * manifest, not something this profile papers over.
+ *
+ * W-046 round 3 (F-4): a parsed envelope's `raw` may carry a `stderr` key
+ * the vendor never emitted — `runClaude` adds it when stdout parsed AND
+ * stderr is non-empty AND the envelope has no `stderr` key of its own
+ * (never overwriting a real vendor field). Both streams can be useful at
+ * once (the case above does both: `result` names the problem, stderr gives
+ * the vendor's own error code), and `raw` used to discard whichever one
+ * wasn't the reply — `packages/commands/src/talk.ts`'s `vendorDiagnostic`
+ * is the one place that reads it back out.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -135,7 +156,15 @@ function runClaude(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; 
     reply: parsed.is_error ? "" : (parsed.result ?? ""),
     model: parsed.model,
     usage: parsed.usage ? { input: parsed.usage.input_tokens, output: parsed.usage.output_tokens } : undefined,
-    raw: parsed,
+    // W-046 round 3 (F-4, I-1): the envelope can parse AND stderr can carry
+    // something useful at the same time (a mismatched model does both —
+    // `result` names the problem, stderr gives the vendor's own error code).
+    // `raw` used to be the bare envelope, discarding a stream already
+    // captured a few lines up. Carried in only when there's something to
+    // carry and the vendor hasn't (yet) shipped its own `stderr` key on the
+    // envelope — never overwrite a real vendor field; a version that starts
+    // shipping one is F-1's inference lesson, not something to assume away.
+    raw: stderr && !("stderr" in parsed) ? { ...parsed, stderr } : parsed,
     exitCode: parsed.is_error ? (r.status && r.status !== 0 ? r.status : 1) : (r.status ?? 0),
   };
 }
@@ -154,7 +183,8 @@ export const claudeCodeProfile: HarnessProfile = {
     const file = join(dir, "system-prompt.md");
     try {
       writeFileSync(file, opts.systemPrompt);
-      const args = ["-p", "--output-format", "json", "--append-system-prompt-file", file, ...POLICY_FLAGS];
+      const modelArgs = opts.model ? ["--model", opts.model] : [];
+      const args = ["-p", "--output-format", "json", ...modelArgs, "--append-system-prompt-file", file, ...POLICY_FLAGS];
       return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -162,7 +192,8 @@ export const claudeCodeProfile: HarnessProfile = {
   },
 
   async resume(opts: HarnessResumeOpts): Promise<Turn> {
-    const args = ["-p", "--resume", opts.sessionId, "--output-format", "json", ...POLICY_FLAGS];
+    const modelArgs = opts.model ? ["--model", opts.model] : [];
+    const args = ["-p", "--resume", opts.sessionId, "--output-format", "json", ...modelArgs, ...POLICY_FLAGS];
     return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
   },
 };

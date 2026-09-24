@@ -1,0 +1,25 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T09:43:19.076Z
+# sella: builder-c
+# tree: dirty:4be5d60bdab0de432884759af4c932c62e659566
+
+ack
+PASS  behaviour 5: claude call exit 0                                                0
+ack
+PASS  behaviour 5: codex call exit 0                                                 0
+PASS  behaviour 5: two calls logged                                                  2
+PASS  behaviour 5: session ends pinned to codex                                      {"harness":"codex","sessionId":"thr-w046","startedAt":"2026-09-24T09:43:19.429Z","lastAt":"2026-09-24T09:43:19.429Z","turns":1}
+PASS  behaviour 5: session sessionId is thr-w046                                     {"harness":"codex","sessionId":"thr-w046","startedAt":"2026-09-24T09:43:19.429Z","lastAt":"2026-09-24T09:43:19.429Z","turns":1}
+PASS  behaviour 5: session turns is 1 (harness switch restarted)                     {"harness":"codex","sessionId":"thr-w046","startedAt":"2026-09-24T09:43:19.429Z","lastAt":"2026-09-24T09:43:19.429Z","turns":1}
+PASS  behaviour 5: exactly four timeline lines                                       4
+PASS  behaviour 5: two out lines                                                     2
+PASS  behaviour 5: first out line model is the claude vendor echo                    {"at":"2026-09-24T09:43:19.269Z","sella":"eng-lead","direction":"out","text":"ack","sessionId":"sess-w046","model":"claude-opus-5-20260101"}
+FAIL  behaviour 5: second out line model is the requested model (codex echoes none)  {"at":"2026-09-24T09:43:19.429Z","sella":"eng-lead","direction":"out","text":"ack","sessionId":"thr-w046","usage":{"input":10,"output":5}}
+PASS  behaviour 5: exactly two receipts                                              sess-w046.json,thr-w046.json
+PASS  behaviour 5: receipts name each harness                                        ["claude-code","codex"]
+PASS  behaviour 5: claude call's system-prompt file carried a non-empty boot bundle line "## CLI usage"
+PASS  behaviour 5: codex call's stdin carries the same boot-bundle line              "## CLI usage"
+FAIL  behaviour 5: claude argv carries its own harness's model and policy            ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-uJqq7z/system-prompt.md","--restricted","--strict-mcp-config","--permission-mode","dontAsk","--tools","Read,Grep,Glob,Bash","--allowedTools","Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]
+FAIL  behaviour 5: codex argv carries its own harness's model and policy             ["exec","--json","--skip-git-repo-check","-"]
