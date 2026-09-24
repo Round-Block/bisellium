@@ -1,0 +1,10 @@
+# behaviour: 9
+# command: node scripts/backlog-page.test.mjs 9
+# exit: 1
+# at: 2026-09-24T00:50:56.321Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+FAIL  [9] nothing inside --studio is written                                     
+PASS  [9] --out itself was written                                               
+PASS  [9] nothing outside --out was written                                      ["backlog-body.html"]

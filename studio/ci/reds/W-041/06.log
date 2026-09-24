@@ -1,0 +1,11 @@
+# behaviour: 6
+# command: node scripts/backlog-page.test.mjs 6
+# exit: 1
+# at: 2026-09-24T00:50:54.754Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+FAIL  [6] title markup is escaped, not injected                                  
+FAIL  [6] title ampersand is escaped                                             
+FAIL  [6] resume_when markup is escaped                                          
+FAIL  [6] kill_when markup is escaped                                            

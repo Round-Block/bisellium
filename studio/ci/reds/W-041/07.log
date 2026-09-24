@@ -1,0 +1,11 @@
+# behaviour: 7
+# command: node scripts/backlog-page.test.mjs 7
+# exit: 1
+# at: 2026-09-24T00:50:55.536Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+FAIL  [7] a slate heading makes the generator exit non-zero                      
+FAIL  [7] --out is not created when the heading guard fires                      
+FAIL  [7] a ranked chain wrapped across two lines makes the generator exit non-zero 
+FAIL  [7] --out is not created when the chain guard fires                        

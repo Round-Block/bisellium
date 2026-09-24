@@ -1,0 +1,14 @@
+# behaviour: 2
+# command: node scripts/backlog-page.test.mjs 2
+# exit: 1
+# at: 2026-09-24T00:50:51.603Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+FAIL  [2] quoted-opus open petitio appears                                       
+FAIL  [2] bare-opus open petitio appears                                         
+FAIL  [2] traditio.blocked_on appears alongside petitiones                       
+PASS  [2] resolved petitio does not appear                                       
+FAIL  [2] halted opus shows halted_by                                            
+FAIL  [2] halted opus shows resume_when                                          
+PASS  [2] halted opus's stale traditio.blocked_on is not shown                   

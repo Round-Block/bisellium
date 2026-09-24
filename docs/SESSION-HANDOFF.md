@@ -55,6 +55,13 @@ lex, a decision, or a check rule and delete it here.
 - Design tokens: ink #16211E, accent #0B6E5F, amber #B7791F = waiting on a human
   only, ok #2E9E64, bad #C64A3A; Bricolage Grotesque / Instrument Sans /
   IBM Plex Mono.
+- Backlog (W-041; generated from the officina's own front matter — opera,
+  petitiones, decisions, never from prose; source
+  `docs/design/dossier/backlog-body.html`, built into
+  `bisellium-backlog.html` by the same `build.sh`): not yet published as an
+  artifact — publish at the next checkpoint. The page links, and never
+  writes, the current ranking: `studio/acta/2026-09-24-ranking.md` is the
+  source of record for order.
 
 ## Environment facts
 
@@ -119,13 +126,15 @@ unchanged as the benchmark) is proposed, not yet decreed.
 
 **Resume order:** 1. W-034 defect 1 (waived gates; defect 2 absorbed by
 W-033's guard) — full pipeline: Sol brief red-team → architect spec →
-builder → Terra pre-review → censor. 2. The architect ranking: W-041 →
-W-039 → W-038 → W-046 (carries the codex transport lessons: stdin closed
+builder → Terra pre-review → censor. 2. Then the architect's ranking — see
+the [backlog page](design/dossier/bisellium-backlog.html) (W-041) and the
+source-of-record [ranking acta](../studio/acta/2026-09-24-ranking.md); it
+starts at W-041. W-046 carries the codex transport lessons: stdin closed
 with </dev/null, output non-empty check, no nested sandbox, no -C after
-exec, full capture never tailed) → W-047 → W-032 → W-040 → W-045 →
-W-049 → W-048 (codex-build trial, proposed not decreed). Mode: slow-serial
-— one Claude stream, tokens tallied per dispatch and reported; codex lanes
-free in parallel. Cascade-25 checkpoint + retro: done 2026-09-24.
+exec, full capture never tailed; W-048 (codex-build trial) is proposed, not
+decreed. Mode: slow-serial — one Claude stream, tokens tallied per dispatch
+and reported; codex lanes free in parallel. Cascade-25 checkpoint + retro:
+done 2026-09-24.
 
 ### The flow, as actually operated
 
@@ -191,12 +200,20 @@ resilience); **W-046** (provider portability) filed from the landscape doc;
 1. **W-033** (bookkeeping provenance, architect) is next per the standing
    ranking. **W-044** (security: talk-profile permission boundary) is the
    candidate to jump the queue — Patron's call.
-2. Then: W-041 → W-039 → W-038 → W-046 → W-047 → W-032 → W-040 → W-045.
+2. Then the architect's ranking — see the
+   [backlog page](design/dossier/bisellium-backlog.html) and the
+   [ranking acta](../studio/acta/2026-09-24-ranking.md).
 3. Lesson/rule candidate: W-042 round 2's advisory A-1 found 12 scratch-path
    reds sharing one class — worth a stamped `lesson.recurrent` or check
    rule, not left as a one-off advisory.
 4. Progress page still owes rows for cascades 23–24; masthead updated this
    checkpoint.
+
+**Dropped from this handoff, not filed (Patron's call, W-041 PR):** the
+Settings screen (surface officina and harness config) and Web II (Board
+screen, drawer, live SSE) are UI/UX, decided by humans only — not opera,
+and not represented on the generated backlog page. See the ranking acta's
+"Not ranked" section. They get filed when the Patron schedules them.
 
 **Patron's standing order (2026-09-20): before starting any task, judge
 whether the credit balance can finish it; if not, pause and write the
@@ -213,18 +230,6 @@ Both merged. Round-by-round findings (the spec-gate backfill scare, the
 `--allow-dirty` gap, the drift-guard pin) are recorded in
 `studio/ci/W-031-review-3.log` and `studio/ci/W-030-review-3.log` — not
 repeated here.
-
-### New opera opened, none started
-
-- **W-032** — the PR gate. `gh pr create` bypasses the CLI, so unlike
-  `close` nothing can refuse an ungated opus. Behaviour 5 is pointed
-  deliberately: a refusal must hold on *every* run.
-- **W-033** — bookkeeping provenance. Three blocking findings in one day
-  from the same class; poses the question rather than answering it.
-  **Architect's call before any code.**
-- **W-034** — `done` cannot honour a Patron waiver, and writes to whichever
-  ref it is run from. Defect 1 is independent; **defect 2 is blocked on
-  W-033.**
 
 ### Decisions
 
@@ -371,37 +376,6 @@ The cascade-22 progress-page row covers up to the gap filings; a follow-up
 row for the CI-gate work + W-035's rounds + cascades 23–24 is **deferred
 on the Patron's conserve-credits order** — write it at the next funded
 checkpoint.
-
-### Backlog
-
-1. Ranked next work: see **Resume point** under "Where things stand" above
-   — W-033 first (candidate to be jumped by **W-044**, security, Patron's
-   call), then W-041 → W-039 → W-038 → W-046 → W-047 → W-032 → W-040 →
-   W-045.
-2. **W-034** — `done` cannot honour a Patron waiver, and writes to whichever
-   ref it is run from. Defect 1 is independent; defect 2 is blocked on W-033.
-3. **Settings screen** (Patron): surface officina and harness config.
-   UI/UX is Patron-only; needs design input before a brief.
-4. Web II (Board screen, drawer, SSE live) — needs Patron UI/arch input.
-5. **CLI/process gaps** — filed as **W-038** (petitio command), **W-039**
-   (guest-sella red rule), **W-040** (gate correction, append-only),
-   **W-041** (generated backlog page); **D-016** records why git stays raw
-   where the CLI has nothing to refuse. The prose that used to describe
-   these gaps here is rot — read those records instead.
-6. `bisellium ci` appears in no documentation. CLAUDE.md is generated from
-   `packages/cli/src/instructions.template.md` — edit the template.
-7. Old item, still open: `branch.ts:172` hardcoded "into master" — fixed
-   in W-026; a repo on `main` merges into main and reports master.
-8. **`run --opus` → `merge` is a broken chain** (found by dogfooding).
-   `run --opus W-026` forks the worktree from `opus/W-026`'s commit
-   correctly, then puts the work on `bisellium/<sella>/<n>`, while
-   `mergeOpusBranch` only ever reads `opus/<id>`. A builder's commits never
-   reach the branch `merge` merges, and nothing moves one to the other.
-9. `run --reclaim` and `prune` only know `.bisellium/worktrees/`. The
-   harness's own worktrees under `.claude/worktrees/` are invisible to
-   them, and several stale ones are on disk. `git worktree prune`
-   deregisters them but cannot unlink the admin dirs under the sandbox
-   ("Device or resource busy") — needs a shell outside it.
 
 ### Also on disk
 
