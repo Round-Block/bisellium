@@ -95,10 +95,31 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-24, cascade 31)
+## Where things stand (2026-09-25, cascade 32)
 
-Cascades 1–30 are in the dossier progress log. PRs through #61 are merged.
+Cascades 1–31 are in the dossier progress log. PRs through #65 are merged.
 Read the review logs in `studio/ci/` before touching any of this work.
+
+**Cascade 32 (2026-09-24/25): the console became an actor.** **W-067
+MERGED** (PR #64, round-1 pass — the write path: origin tuple, pasted
+token, ok:false contract, required web-e2e CI gate; the Inbox answer
+button lives; reds accepted on tree-hash ancestry — a red-ordering CHECK
+RULE is raised as a petitio, awaiting the Patron's grant). **W-065
+MERGED** (PR #65, 2 rounds — the decree surface: Seats & Delegation, all
+five Patron decrees shipped as decreed; review logs
+`studio/ci/W-065-review-{1,2}.log` — round 1 measured a phantom index row
+from the spec's own event-reuse instruction; the architect overturned one
+censor finding with a counter-fixture). **W-070 filed + D-023 amended**
+(remote via Tailscale Serve, no public port, PWA shell — after W-067).
+Carried advisories for the next UI round: the dropped-emit regression
+guard (one line in behaviour 7's home), the `listingTtlMs` seam for the
+5.2s TTL sleep in server.test.ts, censor F-2's `.spec.ts` census
+exclusion gap, F-3's fixture fragility (own opus candidate). **O-14
+retracted**: claude auth measured working (a transient access-token
+expiry; `auth status` true was correct). UI track: **W-064** (Board)
+next, then W-070; **W-069** (probe battery) unblocked and feeds the
+Seats dropdown real data. Non-UI queue: W-038, W-052, W-059, W-066,
+W-068.
 
 **Cascade 31 (2026-09-24): W-046 MERGED** (PR #61, 3 rounds, each catching
 something real — review logs `studio/ci/W-046-review-{1,2,3}.log`; the
