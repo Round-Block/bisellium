@@ -10,6 +10,7 @@ export { sourceTreeHash, isDirtyOutside } from "./sourceTree.js";
 export type { HarnessProfile, HarnessStartOpts, HarnessResumeOpts, Turn, TurnUsage, ListedModel } from "./harness/index.js";
 export {
   USAGE_LIMIT_EXIT_CODE,
+  DEFAULT_HARNESS,
   HARNESS_PROFILES,
   resolveHarness,
   claudeCodeProfile,

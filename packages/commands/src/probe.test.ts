@@ -381,6 +381,33 @@ if (runs(4)) {
   check(4, "run2: control still runs first", order[0] === "aaa-ctrl", JSON.stringify(order));
   check(4, "run2: previously-skipped pair heads the (non-control) queue", order[1] === "ddd-never", JSON.stringify(order));
   check(4, "run2 positive control: the pair that completed in run1 is probed LAST", order[order.length - 1] === "zzz-completes", JSON.stringify(order));
+
+  // Virgin-record case (censor round 1, finding 3): NO priming of prior `at`
+  // values at all — a completely fresh studio, no pre-existing models.json.
+  // A first battery has no evidence to be "oldest"; the rotation must still
+  // hold once it starts producing some. Ids are chosen so alphabetical
+  // order (the only tiebreak available on a virgin record) puts the
+  // "completes" pair before the "limit" pair in run1's own processing.
+  const dirVirgin = freshDir("b4-virgin");
+  writeManifest(dirVirgin, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: aaa-ctrl } ]\nprobationes: []");
+  const virginPairs: Candidate[] = [
+    { id: "aaa-ctrl", harness: "claude-code" },
+    { id: "bbb-completes", harness: "claude-code" },
+    { id: "mmm-limit", harness: "claude-code" },
+    { id: "zzz-never", harness: "claude-code" },
+  ];
+  const virginTurns = { "aaa-ctrl": okTurn("OK"), "bbb-completes": okTurn("fine"), "mmm-limit": limitTurn(), "zzz-never": okTurn("must not run") } as Record<string, Turn>;
+  const virginRun1 = makeStub("claude-code", { turnFor: (model) => virginTurns[model ?? ""] ?? okTurn() });
+  const virginResult1 = await probeBattery({ studio: dirVirgin, now: NOW, only: virginPairs, harnesses: { "claude-code": virginRun1.profile }, listModels: async () => [], versions: async () => ({}) });
+  check(4, "virgin: run1 processes in id order with no priming at all (control, then bbb, mmm, stop)", virginRun1.calls.start.map((c) => c.model).join(",") === "aaa-ctrl,bbb-completes,mmm-limit", virginRun1.calls.start.map((c) => c.model).join(","));
+  check(4, "virgin: zzz-never is unreached on a record with zero prior evidence", virginResult1.skipped.some((c) => c.id === "zzz-never"), JSON.stringify(virginResult1.skipped));
+
+  const virginRun2 = makeStub("claude-code", { turnFor: () => okTurn("run2") });
+  await probeBattery({ studio: dirVirgin, now: later(NOW, 10_000), only: virginPairs, harnesses: { "claude-code": virginRun2.profile }, listModels: async () => [], versions: async () => ({}) });
+  const virginOrder2 = virginRun2.calls.start.map((c) => c.model);
+  check(4, "virgin: run2 still runs the control first", virginOrder2[0] === "aaa-ctrl", JSON.stringify(virginOrder2));
+  check(4, "virgin: the pair a fresh record never touched heads run2's queue, with NO priming ever seeding it there", virginOrder2[1] === "zzz-never", JSON.stringify(virginOrder2));
+  check(4, "virgin positive control: the pair that completed in run1 is not first in run2", virginOrder2[1] !== "bbb-completes", JSON.stringify(virginOrder2));
 }
 
 // ===========================================================================
@@ -465,7 +492,7 @@ if (runs(6)) {
       only: [{ id: "aaa", harness: "claude-code" }],
       harnesses: { "claude-code": profile },
       listModels: async () => [], versions: async () => ({}),
-      fs: { writeFileSync, renameSync: stubRename, existsSync },
+      fs: { writeFileSync, renameSync: stubRename },
     });
     check(6, "(a) renameSync called with models.json.tmp -> models.json", renameCalls.some(([from, to]) => from === join(resolve(dir), "models.json.tmp") && to === join(resolve(dir), "models.json")), JSON.stringify(renameCalls));
   }
@@ -492,7 +519,7 @@ if (runs(6)) {
         only: [{ id: "aaa", harness: "claude-code" }],
         harnesses: { "claude-code": profile },
         listModels: async () => [], versions: async () => ({}),
-        fs: { writeFileSync, renameSync: throwingRename, existsSync },
+        fs: { writeFileSync, renameSync: throwingRename },
       });
     } catch {
       threw = true;
@@ -735,8 +762,8 @@ if (runs(9)) {
   const markedRow = rNoTurn.record.models.find((m) => m.id === "never-turned");
   check(9, "(ii) a row marked but never turned carries no harnessVersion", markedRow?.probes[0]?.harnessVersion === undefined, JSON.stringify(markedRow));
 
-  // (iii): a defined prior version, an undefined live lookup -> both the
-  // per-pair and the top-level snapshot are preserved.
+  // (iii) SNAPSHOT half: a defined prior top-level version, an undefined
+  // live lookup -> the snapshot is preserved.
   const dirPreserve = freshDir("b9-iii");
   writeManifest(dirPreserve, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: seeded } ]\nprobationes: []");
   const seededRecord: ModelsRecord = {
@@ -756,6 +783,38 @@ if (runs(9)) {
     versions: async () => ({}), // undefined live lookup for both vendors
   });
   check(9, "(iii) the top-level snapshot is preserved when the live lookup fails", rPreserve.record.harnessVersions.codex === "codex-cli 0.100.0", JSON.stringify(rPreserve.record.harnessVersions));
+
+  // (iii) PER-PAIR half (censor round 1, finding 1): a row carrying a
+  // DEFINED prior harnessVersion AND a defined prior `at`, run through a
+  // battery that spends ZERO turns on it (no codex seat in this manifest,
+  // so codex has no control and every codex row is condemned via the
+  // no-control branch) — a writer that stamps `nowIso` or drops
+  // `harnessVersion` on a no-turn write fails this. Distinct from behaviour
+  // 10(a)'s verbatim-retention case: that one is for a model no longer a
+  // CANDIDATE at all; this one IS due this run and still gets no turn.
+  const dirPerPair = freshDir("b9-iii-perpair");
+  writeManifest(dirPerPair, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: unrelated } ]\nprobationes: []");
+  const vintageAt = "2020-01-01T00:00:00.000Z";
+  const perPairSeed: ModelsRecord = {
+    schema: 1,
+    at: NOW.toISOString(),
+    harnessVersions: {},
+    models: [{ id: "vintage-pair", state: "unverified", harness: "codex", probes: [{ harness: "codex", state: "unverified", at: vintageAt, note: "probe due", harnessVersion: "codex-cli 0.099.0" }] }],
+  };
+  writeFileSync(join(dirPerPair, "models.json"), JSON.stringify(perPairSeed, null, 2) + "\n");
+  const { profile: perPairProfile, calls: perPairCalls } = makeStub("codex", { turnFor: () => okTurn("must not run") });
+  const rPerPair = await probeBattery({
+    studio: dirPerPair,
+    now: later(NOW, 999_999),
+    only: [{ id: "vintage-pair", harness: "codex" }],
+    harnesses: { codex: perPairProfile },
+    listModels: async () => [],
+    versions: async () => ({ codex: "codex-cli 9.9.9" }), // a live version IS available — must still not be stamped on a no-turn row
+  });
+  check(9, "(iii) per-pair: zero turns actually spent on the no-control pair", perPairCalls.start.length === 0, String(perPairCalls.start.length));
+  const vintageAfter = rPerPair.record.models.find((m) => m.id === "vintage-pair")?.probes[0];
+  check(9, "(iii) per-pair: a no-turn write PRESERVES the prior harnessVersion", vintageAfter?.harnessVersion === "codex-cli 0.099.0", JSON.stringify(vintageAfter));
+  check(9, "(iii) per-pair: a no-turn write PRESERVES the prior `at` (does not stamp nowIso)", vintageAfter?.at === vintageAt, JSON.stringify(vintageAfter));
 
   // disagreement warning: gpt-6-astra disagrees (codex available, claude-code
   // unavailable) — printed, naming the id and both verdicts.
@@ -848,14 +907,20 @@ if (runs(10)) {
     };
     writeFileSync(join(dir, "models.json"), JSON.stringify(seeded, null, 2) + "\n");
     const { profile, calls } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
+    // The `only` array is deliberately NOT in the asserted output order
+    // (censor round 1, finding 2): with the input already sorted, a
+    // NaN-coercing comparator's stable sort leaves bbb-corrupt in place and
+    // the assertion passes for the wrong reason (ECMA-262 SortCompare
+    // treats NaN as 0, so V8's stable sort is a no-op on ties). Shuffled
+    // input makes the assertion depend on the comparator actually running.
     const r = await probeBattery({
       studio: dir,
       now: later(NOW, 1),
       only: [
-        { id: "aaa-ctrl", harness: "claude-code" },
-        { id: "bbb-corrupt", harness: "claude-code" },
-        { id: "ccc-old", harness: "claude-code" },
         { id: "ddd-recent", harness: "claude-code" },
+        { id: "ccc-old", harness: "claude-code" },
+        { id: "bbb-corrupt", harness: "claude-code" },
+        { id: "aaa-ctrl", harness: "claude-code" },
       ],
       harnesses: { "claude-code": profile },
       listModels: async () => [], versions: async () => ({}),

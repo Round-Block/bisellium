@@ -18,6 +18,7 @@
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
+  DEFAULT_HARNESS,
   HARNESS_PROFILES,
   USAGE_LIMIT_EXIT_CODE,
   codexListModels as realCodexListModels,
@@ -38,14 +39,17 @@ function readManifestSafe(studio: string): Manifest | undefined {
   }
 }
 
-/** Duplicated from packages/cli/src/tick.ts's `harnessForSella` rather than
- *  imported (see the build report): packages/commands cannot depend on
- *  packages/cli — cli already depends on commands, and the reverse would be
- *  a real package cycle; packages/commands/tsconfig.json's `rootDir: "src"`
- *  also makes a relative cross-package import a typecheck failure. One-line
- *  default, unlikely to drift from tick.ts's own copy. */
+/** Round 2 drift guard (censor deviation-4 ruling): `packages/cli/src/
+ *  tick.ts`'s `harnessForSella` still can't be IMPORTED here — commands
+ *  cannot depend on cli (cli already depends on commands; the reverse is a
+ *  real package cycle) and `rootDir: "src"` makes a relative cross-package
+ *  import a typecheck failure regardless. But the DEFAULT the two functions
+ *  fall back to no longer needs to be two separately-typed literals: both
+ *  read `@bisellium/shim`'s `DEFAULT_HARNESS`, so the one thing that
+ *  actually mattered (does a harness-less seat resolve the same way in
+ *  `talk`/`tick` as it does in `probe`) can't silently diverge. */
 function defaultHarness(row: { harness?: string }): string {
-  return row.harness ?? "claude-code";
+  return row.harness ?? DEFAULT_HARNESS;
 }
 
 /** The manifest's own seated candidates — the pairs the studio ASSERTS it
@@ -83,6 +87,17 @@ function shortCircuitStatus(turn: Turn): number | undefined {
  *  profile appends an empty file, the codex profile sends the bare message. */
 const PROBE_MESSAGE = "Reply OK and stop";
 const PROBE_SELLA = "probe";
+
+/** An `at` that never parses as a valid date (censor round 1, finding 3):
+ *  the value a truly virgin pair's mark-before-spend write carries, so
+ *  `priorAtMs` — which already treats an absent or corrupt `at` as
+ *  never-probed — keeps sorting it first on every subsequent run, exactly
+ *  like the spec's own "an unparseable probes[].at is treated as never
+ *  probed" rule, until a REAL turn gives it a real timestamp. Stamping a
+ *  virgin pair with the battery's own clock instead (the bug) made it
+ *  indistinguishable in age from the pairs that completed this run,
+ *  degrading the next run's ordering to the (id, harness) tiebreak. */
+const NEVER_PROBED_AT = "";
 
 export type ModelState = "available" | "unavailable" | "unverified";
 
@@ -126,18 +141,20 @@ export interface ProbeBatteryOptions {
   listModels?: () => Promise<ListedModel[]>;
   versions?: () => Promise<{ claude?: string; codex?: string }>;
   /** Test seam for behaviour 6 (atomic-write interruption): injected in
-   *  place of node:fs's writeFileSync/renameSync/existsSync. Absent means
-   *  the real ones. Not in the brief's published Interfaces text — an
-   *  addition, documented in the build report: every other external effect
+   *  place of node:fs's writeFileSync/renameSync. Absent means the real
+   *  ones. Not in the brief's published Interfaces text — an addition,
+   *  documented in the build report: every other external effect
    *  probeBattery has (a turn, a listing call, a version call) is already
    *  injectable the same way, and a test cannot monkey-patch node:fs's own
    *  named ESM exports (Node's CJS/ESM interop makes them read-only from
    *  outside the module), so this is the only way behaviour 6's
-   *  write-interruption case is hermetically testable at all. */
+   *  write-interruption case is hermetically testable at all. `existsSync`
+   *  dropped round 2 (censor note): neither `persist()` nor
+   *  `readModelsRecord` ever routed through an injected one — a dead seam
+   *  member that looked like coverage but wasn't. */
   fs?: {
     writeFileSync: (path: string, data: string) => void;
     renameSync: (from: string, to: string) => void;
-    existsSync: (path: string) => boolean;
   };
 }
 
@@ -281,6 +298,26 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     recomputeAggregate(entry);
   }
 
+  /** THE ROOT of every no-turn write (censor round 1, findings 1 and 3 — one
+   *  class, five call sites). A pair that spends no real turn this battery
+   *  must not lose the evidence a real turn once gave it: `at` and
+   *  `harnessVersion` are carried through WHOLESALE from the prior probe,
+   *  untouched, because only a real turn (`turnFor`'s own writes, below)
+   *  is allowed to advance either. A pair with no prior probe at all — a
+   *  true virgin — gets `NEVER_PROBED_AT` rather than `nowIso`: the run
+   *  clock would make it indistinguishable in age from pairs that DID
+   *  complete this run, starving it on the next run's tiebreak. Every one
+   *  of mark-before-spend, condemnHarness, the no-control branch, the
+   *  unknown-harness branch and the harness-unavailable branch routes
+   *  through this one function now — fixing the mark-before-spend instance
+   *  alone would have left the other four broken. */
+  function noTurnProbe(c: Candidate, note: string): HarnessProbe {
+    const prior = priorProbeByKey.get(`${c.id}\u0000${c.harness}`);
+    const probe: HarnessProbe = { harness: c.harness, state: "unverified", at: prior?.at ?? NEVER_PROBED_AT, note };
+    if (prior?.harnessVersion !== undefined) probe.harnessVersion = prior.harnessVersion;
+    return probe;
+  }
+
   // Oldest-evidence-first: never-probed pairs first, then ascending `at`,
   // then by (id, harness) — a rotation with no cursor, so a stopped run's
   // tail heads next run's queue on its own (Interfaces, "Order: oldest
@@ -337,13 +374,11 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
 
   // Step 2 (Order of operations): every due pair set to `unverified`,
   // carrying `note: "probe due"` and keeping the superseded evidence's own
-  // `at`, BEFORE any turn is spent — durable and atomic (behaviour 6). From
-  // this instant on, an interruption, a rate limit, a failed control or a
-  // crash can only leave a pair `unverified`, never falsely `available`.
-  for (const c of due) {
-    const prior = priorProbeByKey.get(`${c.id}\u0000${c.harness}`);
-    upsert(c.id, c.harness, { harness: c.harness, state: "unverified", at: prior?.at ?? nowIso, note: "probe due" });
-  }
+  // `at`/`harnessVersion`, BEFORE any turn is spent — durable and atomic
+  // (behaviour 6). From this instant on, an interruption, a rate limit, a
+  // failed control or a crash can only leave a pair `unverified`, never
+  // falsely `available`.
+  for (const c of due) upsert(c.id, c.harness, noTurnProbe(c, "probe due"));
   persist();
 
   let turns = 0;
@@ -357,7 +392,7 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   async function turnFor(c: Candidate): Promise<TurnOutcome> {
     const profile = harnesses[c.harness];
     if (!profile) {
-      upsert(c.id, c.harness, { harness: c.harness, state: "unverified", at: nowIso, note: `unknown harness "${c.harness}"` });
+      upsert(c.id, c.harness, noTurnProbe(c, `unknown harness "${c.harness}"`));
       return { state: "unverified", stopHarness: false };
     }
     let available: boolean;
@@ -367,7 +402,7 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
       available = false;
     }
     if (!available) {
-      upsert(c.id, c.harness, { harness: c.harness, state: "unverified", at: nowIso, note: "harness unavailable" });
+      upsert(c.id, c.harness, noTurnProbe(c, "harness unavailable"));
       return { state: "unverified", stopHarness: false };
     }
 
@@ -417,7 +452,7 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     const note = `control failed: ${harness}`;
     for (const cc of due) {
       if (cc.harness !== harness || cc.id === control.id) continue;
-      upsert(cc.id, cc.harness, { harness, state: "unverified", at: nowIso, note });
+      upsert(cc.id, cc.harness, noTurnProbe(cc, note));
     }
     persist();
   }
@@ -432,7 +467,7 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     const control = controlFor(c.harness);
     if (!control) {
       if (!harnessBroken.has(c.harness)) {
-        for (const cc of due) if (cc.harness === c.harness) upsert(cc.id, cc.harness, { harness: cc.harness, state: "unverified", at: nowIso, note: "no control" });
+        for (const cc of due) if (cc.harness === c.harness) upsert(cc.id, cc.harness, noTurnProbe(cc, "no control"));
         harnessBroken.add(c.harness);
         persist();
       }

@@ -17,7 +17,7 @@
 import { basename, dirname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { listMd, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
-import { makeSessionId, receiptPath, redact } from "@bisellium/shim";
+import { DEFAULT_HARNESS, makeSessionId, receiptPath, redact } from "@bisellium/shim";
 import { checkStudio, type CheckOptions } from "./check.js";
 import { isoWeek } from "./init.js";
 import { readPauseState } from "./pause.js";
@@ -63,9 +63,13 @@ async function loadRealTalkOnce(): Promise<TalkFn> {
 }
 
 /** A sella's harness profile id (@bisellium/shim's HARNESS_PROFILES) —
- *  the manifest's own default (adapter-native: Manifest#sellae.harness). */
+ *  the manifest's own default (adapter-native: Manifest#sellae.harness).
+ *  The default itself is `@bisellium/shim`'s `DEFAULT_HARNESS` (W-069
+ *  round 2 drift guard) — `packages/commands/src/probe.ts`'s own
+ *  seat-resolution reads the same constant, so the two can never silently
+ *  diverge on which harness an unqualified seat runs on. */
 export function harnessForSella(sellaRow: { harness?: string } | undefined): string {
-  return sellaRow?.harness ?? "claude-code";
+  return sellaRow?.harness ?? DEFAULT_HARNESS;
 }
 
 const DAILY_MESSAGE = "Write today's acta diurna for your collegium in three lines";

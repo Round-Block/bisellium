@@ -9,7 +9,7 @@ import { gitOnlyProfile } from "./git-only.js";
 import { fakeProfile } from "./fake.js";
 
 export type { HarnessProfile, HarnessStartOpts, HarnessResumeOpts, Turn, TurnUsage } from "./types.js";
-export { USAGE_LIMIT_EXIT_CODE } from "./types.js";
+export { USAGE_LIMIT_EXIT_CODE, DEFAULT_HARNESS } from "./types.js";
 export { claudeCodeProfile } from "./claude-code.js";
 export { codexProfile } from "./codex.js";
 export { gitOnlyProfile } from "./git-only.js";
