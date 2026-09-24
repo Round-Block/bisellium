@@ -153,8 +153,8 @@ try {
     const manifestPath = join(dir, "bisellium.yml");
     const raw = readFileSync(manifestPath, "utf8");
     const patched = raw.replace(
-      "{ id: art,         name: Art,         magister: art-lead,  lex: leges/art.md }",
-      "{ id: art,         name: Art,         magister: art-lead,  lex: leges/art.md, autonomy: L9 }",
+      "{ id: art, name: Art, magister: art-lead, lex: leges/art.md }",
+      "{ id: art, name: Art, magister: art-lead, lex: leges/art.md, autonomy: L9 }",
     );
     check("test setup: manifest actually patched", patched !== raw);
     writeFileSync(manifestPath, patched);
@@ -273,26 +273,31 @@ try {
     const raw = readFileSync(manifestPath, "utf8");
     const patched = raw
       .replace(
-        "{ id: producer,  collegium: production,  kind: orchestrator, model: claude-opus-5 }",
-        "{ id: producer,  collegium: production,  kind: orchestrator, model: claude-opus-5, harness: fake }",
+        "{ id: producer, collegium: production, kind: orchestrator, model: claude-opus-5 }",
+        "{ id: producer, collegium: production, kind: orchestrator, model: claude-opus-5, harness: fake }",
       )
       .replace(
-        "{ id: architect, collegium: design,      kind: agent,        model: claude-opus-5 }",
-        "{ id: architect, collegium: design,      kind: agent,        model: claude-opus-5, harness: fake }",
+        "{ id: architect, collegium: design, kind: agent, model: claude-opus-5 }",
+        "{ id: architect, collegium: design, kind: agent, model: claude-opus-5, harness: fake }",
       )
       .replace(
-        "{ id: eng-lead,  collegium: engineering, kind: agent,        model: claude-opus-5 }",
-        "{ id: eng-lead,  collegium: engineering, kind: agent,        model: claude-opus-5, harness: fake }",
+        "{ id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }",
+        "{ id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5, harness: fake }",
       )
       .replace(
-        "{ id: art-lead,  collegium: art,         kind: agent,        model: gpt-6-astra }",
-        "{ id: art-lead,  collegium: art,         kind: agent,        model: gpt-6-astra, harness: fake }",
+        "{ id: art-lead, collegium: art, kind: agent, model: gpt-6-astra }",
+        "{ id: art-lead, collegium: art, kind: agent, model: gpt-6-astra, harness: fake }",
       )
       .replace(
-        "{ id: qa-lead,   collegium: qa,          kind: agent,        model: claude-sonnet-5 }",
-        "{ id: qa-lead,   collegium: qa,          kind: agent,        model: claude-sonnet-5, harness: fake }",
+        "{ id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5 }",
+        "{ id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5, harness: fake }",
       );
-    check("real seam setup: all five magistri patched to harness: fake", patched !== raw && !patched.includes("model: claude-opus-5 }"));
+    // Counts ", harness: fake }" occurrences directly rather than asserting
+    // no bare "model: claude-opus-5 }" survives — D-023's tiers (W-065) added
+    // a `review` tier holder of exactly that model, unrelated to any sella,
+    // which made the old substring-absence check a false negative.
+    const harnessFakeCount = (patched.match(/, harness: fake \}/g) ?? []).length;
+    check("real seam setup: all five magistri patched to harness: fake", patched !== raw && harnessFakeCount === 5, `${harnessFakeCount}`);
     writeFileSync(manifestPath, patched);
 
     const before = readdirSync(join(dir, "acta"));
