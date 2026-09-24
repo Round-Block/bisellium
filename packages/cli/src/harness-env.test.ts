@@ -387,10 +387,17 @@ try {
 
     const original = swapEnv(synth);
     try {
+      // Each call's added records are found by snapshotting the log length
+      // immediately before the call and slicing from there — never a fixed
+      // offset, so a call that logs the wrong count (an extra vendor launch,
+      // a skipped probe) fails on that call, not by shifting a later one's
+      // window (censor round 1, F1a/F1b).
+      const beforeFirst = readLog(logPath).length;
       const first = await runTalk(["--sella", "eng-lead", "--model-only", "--studio", studioDir, "hello"]);
       check("behaviour 4: first runTalk exit 0", first.exitCode === 0, String(first.exitCode));
       let log = readLog(logPath);
-      const seg1 = log.slice(0, 2);
+      const seg1 = log.slice(beforeFirst);
+      check("behaviour 4: first runTalk adds exactly 2 records", seg1.length === 2, String(seg1.length));
       check(
         "behaviour 4: first runTalk logs exactly [version, turn]",
         seg1.length === 2 && seg1[0]?.kind === "version" && seg1[1]?.kind === "turn",
@@ -406,10 +413,12 @@ try {
         checkProjection("behaviour 4 first-call turn", seg1[1], synth);
       }
 
+      const beforeSecond = log.length;
       const second = await runTalk(["--sella", "eng-lead", "--model-only", "--studio", studioDir, "hello again"]);
       check("behaviour 4: second runTalk exit 0", second.exitCode === 0, String(second.exitCode));
       log = readLog(logPath);
-      const seg2 = log.slice(2, 4);
+      const seg2 = log.slice(beforeSecond);
+      check("behaviour 4: second runTalk adds exactly 2 records", seg2.length === 2, String(seg2.length));
       check(
         "behaviour 4: second runTalk logs exactly [version, turn]",
         seg2.length === 2 && seg2[0]?.kind === "version" && seg2[1]?.kind === "turn",
@@ -425,6 +434,13 @@ try {
         checkProjection("behaviour 4 second-call turn", seg2[1], synth);
       }
 
+      // Before the tick: every magister that already resumed above holds a
+      // session file. That count is the exact number of resumes the tick
+      // must produce ("a magister whose session file exists resumes;
+      // every other magister starts" — the brief's per-call spawn map, F1c).
+      const sessionsDir = join(studioDir, "sessions");
+      const sessionCountBeforeTick = existsSync(sessionsDir) ? readdirSync(sessionsDir).filter((f) => f.endsWith(".json")).length : 0;
+      const beforeTick = log.length;
       const before = readdirSync(join(studioDir, "acta"));
       const tickResult = await runTick(["--studio", studioDir], { now: NOW });
       check("behaviour 4: tick exit 0", tickResult.exitCode === 0, String(tickResult.exitCode));
@@ -433,8 +449,10 @@ try {
       check("behaviour 4: tick writes one daily acta per due magister", added.length === 5, added.join(", "));
 
       log = readLog(logPath);
-      const tickSeg = log.slice(4);
-      check("behaviour 4: tick logs exactly one [version, turn] pair per due magister", tickSeg.length === added.length * 2, String(tickSeg.length));
+      const tickSeg = log.slice(beforeTick);
+      check("behaviour 4: tick adds exactly 2 records per due magister", tickSeg.length === added.length * 2, String(tickSeg.length));
+      let resumeCount = 0;
+      let startCount = 0;
       for (let i = 0; i < tickSeg.length; i += 2) {
         const versionRec = tickSeg[i];
         const turnRec = tickSeg[i + 1];
@@ -446,6 +464,8 @@ try {
         }
         if (turnRec) {
           const form = claudeForm(turnRec.args);
+          if (form.form === "resume") resumeCount++;
+          else startCount++;
           check(
             `behaviour 4 tick pair ${pair}: turn is a start, or a resume of sess-w049`,
             form.form === "start" || (form.form === "resume" && form.resumeId === "sess-w049"),
@@ -454,6 +474,11 @@ try {
           checkProjection(`behaviour 4 tick pair ${pair} turn`, turnRec, synth);
         }
       }
+      check(
+        "behaviour 4 tick: exactly one resume per pre-existing session file, every other magister starts",
+        resumeCount === sessionCountBeforeTick && startCount === added.length - sessionCountBeforeTick,
+        `resumeCount=${resumeCount} startCount=${startCount} expectedResumes=${sessionCountBeforeTick} expectedStarts=${added.length - sessionCountBeforeTick}`,
+      );
 
       check("behaviour 4: process.env still deep-equals SYNTH after the whole flow", envDeepEqual(process.env, synth), diffNames(process.env, synth));
     } finally {
