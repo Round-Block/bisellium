@@ -21,6 +21,11 @@
  *    `providers` is cut (its default source spawns `npx --yes quota-axi`,
  *    a network fetch plus third-party code neither talk nor tick needs).
  *
+ * W-049: every spawn below — `start`, `resume` and `available()` — hands
+ * `claude` `harnessEnv(…)`, never the caller's `opts.env`/`process.env`
+ * verbatim. That's the ten-name allowlist projection (harness/env.ts), not
+ * this file's permission boundary; see docs/ADOPTION.md, "Running talk".
+ *
  * A `claude` that doesn't know `--restricted`/`dontAsk` exits non-zero, and
  * talk relays that failure — it fails closed, which is intended. The
  * message is sent over stdin, never as a positional argv token: `claude
@@ -35,6 +40,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { harnessEnv } from "./env.js";
 import type { HarnessProfile, HarnessResumeOpts, HarnessStartOpts, Turn } from "./types.js";
 import { USAGE_LIMIT_EXIT_CODE } from "./types.js";
 
@@ -104,7 +110,7 @@ function envelopeIsUsageLimited(parsed: ClaudeJsonResult | undefined): boolean {
 function runClaude(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; message: string }): Turn {
   const r = spawnSync("claude", args, {
     cwd: opts.cwd,
-    env: opts.env,
+    env: harnessEnv(opts.env),
     input: opts.message,
     encoding: "utf8",
     timeout: TIMEOUT_MS,
@@ -139,7 +145,7 @@ export const claudeCodeProfile: HarnessProfile = {
   tier: 1,
 
   async available(): Promise<boolean> {
-    const r = spawnSync("claude", ["--version"], { encoding: "utf8", timeout: 10_000 });
+    const r = spawnSync("claude", ["--version"], { env: harnessEnv(process.env), encoding: "utf8", timeout: 10_000 });
     return !r.error && r.status === 0;
   },
 
