@@ -1,0 +1,14 @@
+certifies: tree:9175960745b01410a7996f0153f4f182beaf963b
+command: npm run -s lint
+exit code: 0
+
+
+/********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/********.test.ts
+  203:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+✖ 2 problems (0 errors, 2 warnings)
+
+
