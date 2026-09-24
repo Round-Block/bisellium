@@ -1,0 +1,351 @@
+# W-067 — censor round 1 — qa-lead (Claude Fable 5) — 2026-09-24
+# branch opus/W-067 @ 5aca782 · worktree /tmp/claude-1000/w067-build · tree clean at start and end
+#
+# VERDICT: PASS. Three advisory findings, none blocking; one is not W-067's.
+
+================================================================================
+1. GATES RE-RUN (not taken from the builder's or Terra's report)
+================================================================================
+npm test                                   exit 0
+npm run -s typecheck                       exit 0
+npm run -s lint                            exit 0  (2 pre-existing warnings, 0 errors:
+                                                   close.test.ts:5, tick.test.ts:203 — neither a W-067 file)
+npm run -s format:check                    exit 0  "All matched files use Prettier code style!"
+npm run -s check -- examples/sample-studio PASS — 0 blocking, 26 advisory
+npm run -s check -- studio --repo .        PASS — 0 blocking, 95 advisory
+
+rm -rf apps/web/dist && build @bisellium/web   ✓ built (index-TFjYNsXW.js, 233.65 kB)
+npm run -s test:e2e  --workspace @bisellium/web   5 passed (existing ./tests suite, unchanged)
+npm run -s test:serve --workspace @bisellium/web  5 passed — FROM A FRESHLY REMOVED dist
+
+ADVISORY MOVEMENT (the brief requires it explained). Brief baseline: 103.
+Measured here: 95 on the branch, 108 on master in-repo. Per-rule diff, master -> branch:
+  hook.dead        9 -> 0   ENVIRONMENTAL. hook.dead reads .claude/ session receipts,
+                            which do not exist in a /tmp worktree. Not a W-067 change.
+  backlog.depth    1 -> 0   master-only: W-069/W-070 filed after this branch's base (f608745).
+  probatio.certifies 58 -> 57 \
+  traditio.stage   13 -> 12  | W-067 moving greenlit -> building with three certificates
+  process.review_tier 14 -> 13 / and a traditio — each removes one "missing" advisory.
+No new advisory RULE appears on the branch. W-067's own only finding is
+`probatio.certifies — gate "spec" evidence has no identity (certifies)`, which is one of
+57 repo-wide instances of a pre-existing class, not a regression.
+
+================================================================================
+2. THE ACCEPTANCE: W-024's ANSWER BUTTON, VERIFIED TWO WAYS
+================================================================================
+(a) answer.spec.ts read line by line against the brief's five-step Acceptance.
+    apps/web/tests-serve/answer.spec.ts asserts the FULL chain, no step elided:
+      :43-47  token prompt visible -> fill served.token -> submit -> prompt hidden
+      :50     exactly one needs-you row before (sample-studio's A-1; A-2 is
+              awaiting_reply and correctly stays off the list)
+      :57-64  row clicked, reply typed, approve clicked, POST /api/answer awaited
+      :67-69  response.status() === 200 AND body.ok === true   (both, not just the status)
+      :72-74  <tmp>/petitiones/<id>.md contains the reply text
+      :76-79  <tmp>/timeline/patron.jsonl gained EXACTLY ONE line, role === "patron",
+              petitio === the target id  (a count delta, not a mere "contains")
+      :82-83  .inbox__row count drops to 0 and the subject is gone
+(b) Executed by me against a dist rebuilt from scratch: PASSED (582ms).
+    The studio is a mkdtemp copy of examples/sample-studio (harness.ts:56-57);
+    nothing points at studio/. Readiness is a polled GET /api/officina until 200
+    (harness.ts:33-46), not a sleep. Port and token are scraped from the child's
+    own stdout — no webServer block, as the brief requires.
+
+THE ACCEPTANCE HOLDS.
+
+================================================================================
+3. LIVE ORIGIN-TUPLE PROBES (real `bisellium serve`, temp studio copy, curl)
+================================================================================
+Bound port 43909, real 48-char generated token. Every refusal also sha256-compared
+petitiones/A-1.md before and after. 17/17 as specified:
+
+  ACCEPTANCE ITEM — the 401 check with the server UP:
+    no Origin, NO token                         401  record unchanged  ✓
+  ACCEPTED:
+    no Origin + valid token                     200  (record changes — a real write)
+    Origin http://127.0.0.1:43909               200
+    Origin http://localhost:43909               200
+  REFUSED 403, record unchanged every time:
+    Origin: null (the literal string)           403
+    Origin http://127.0.0.1:43910 (wrong port)  403
+    Origin https://127.0.0.1:43909 (scheme)     403
+    Origin http://[::1]:43909                   403
+    Origin https://evil.example                 403
+  NOT NAMED IN THE BRIEF — the "For Sol" §2 comparison-bug question, probed live:
+    Origin http://127.0.0.1:43909/  (trailing slash)   403  ✓ no normalization bug
+    Origin HTTP://127.0.0.1:43909   (upper scheme)     403  ✓ no case-folding bug
+    two Origin headers, both individually valid        403  ✓ node joins them "a, b",
+                                                            which matches neither string
+  LADDER ORDER AND HEADER TRUST:
+    valid Origin + wrong token                  401  (origin gate passed, token refused)
+    foreign Origin + wrong token                403  (Origin checked FIRST — order intact)
+    Host: evil.example, no Origin               200  (no trust from Host)
+    X-Forwarded-Host: 127.0.0.1:P + foreign Origin  403
+    X-Forwarded-For: 127.0.0.1  + foreign Origin    403
+
+W-016 BEHAVIOUR 5 SURVIVES, verified directly rather than taken on the claim
+(brief "For Sol" §6): the only request the new rule admits that the old one refused
+is a same-origin browser write carrying a valid token. Every no-token case is still
+401 and every foreign-origin case is still 403; loopback still authorizes nothing.
+
+================================================================================
+4. CENSOR MUTATION RUN (review log only — never written to ci/reds/)
+================================================================================
+Each mutation applied to a clean tree, the named suite run, then reverted;
+`git status --porcelain` verified empty after every batch. 11 of 11 bite.
+
+  M1  accept any Origin                    CAUGHT  server.test.ts: "valid token + Origin -> 403" got 200
+  M2  refuse all Origins (the old rule)    CAUGHT  both tuple 200 cases got 403
+  M3  compare against opts.port            CAUGHT  both tuple 200 cases got 403 (suite binds port 0)
+  M4  accept Origin: null                  CAUGHT  "Origin (the literal string null) -> 403" got 200
+  M5  trust X-Forwarded-Host               CAUGHT  "X-Forwarded-Host spoofed + foreign Origin" got 200
+  M6  restore import.meta.env fallback     CAUGHT  — but NOT by the test the brief names. See F-1.
+  M7  prompt on emptiness, not on 401      CAUGHT  precisely and only by the stale-token case
+                                                   (auth.spec.ts:68); the other 3 still pass, which is
+                                                   exactly the seam the brief predicted
+  M8  persist the token to localStorage    CAUGHT BY REVIEW, as the brief instructed the censor to look:
+                                                   grep of apps/web/src + test + tests + tests-serve finds
+                                                   NO `localStorage` at all, no `import.meta.env` read, and
+                                                   no token in any URL. api.ts:47-55 writes sessionStorage
+                                                   only. .env.example is deleted and no env file is tracked.
+  M9  branch on res.ok alone in postWrite  CAUGHT  api.test.ts: "200 + ok:false -> kind refused" got kind "ok"
+  M10a web-e2e continue-on-error           CAUGHT  ci-workflow.test.mjs
+  M10b web-e2e points at test:e2e          CAUGHT  ci-workflow.test.mjs
+  M11 CI skips rm -rf apps/web/dist        CAUGHT  ci-workflow.test.mjs ("rm@-1 build@1")
+
+================================================================================
+5. RED EVIDENCE — ORDERING PROVED BY TREE HASH, NOT BY CLOCK
+================================================================================
+Reds for behaviours 1, 3 and 4 are committed INSIDE their fix commits. Timestamp
+ordering alone would be weak: `bisellium red` accepts `--now <iso>`, so `at` is a
+flag, not a witness. But each log's `# tree:` header is NOT a clock — runRed calls
+sourceTreeHash(repo, excludes, "HEAD") (packages/commands/src/lifecycle.ts:576-583),
+a sha1 over `git ls-tree -r HEAD` with the officina excluded. I recomputed that hash
+for every commit on the branch and matched it against each log:
+
+  log     recorded tree           = HEAD at          its fix commit    verdict
+  01.log  dirty:8d44a97a...       6db2011            c14a486           red ran on the PARENT
+  03.log  dirty:0074278c...       c14a486            a9cec97           red ran on the PARENT
+  04.log  dirty:d1c6eb72...       a9cec97            fc85565           red ran on the PARENT
+  02.log  dirty:aba8ab50...       fc85565            718ae31           red ran on the PARENT
+
+Every red's own header names, cryptographically, the commit immediately BEFORE the
+commit that fixed it, and every one is marked `dirty` (the uncommitted test file).
+This is verifiable by DESIGN, not by luck — materially different from the W-046
+stash case, where nothing in the artifact fixed the tree it ran against. Combined
+with the log bodies, which betray the pre-fix implementation in their own text
+("postWrite: not implemented" x8 in 03.log; "has a web-e2e job" FAIL in 04.log;
+403 on both tuple 200 cases in 01.log), red-first holds in substance here.
+
+Distinct bodies, non-zero exits, all four present: yes.
+
+================================================================================
+6. CERTIFICATES
+================================================================================
+I independently computed sourceTreeHash(HEAD, [studio, .bisellium, examples/]) =
+3aff5222a0056218ba9c857325afa4b312cbcaa5, which is exactly what all three
+certificates carry. All three read `exit code: 0`, and I re-ran all three commands
+myself on this tree with the same result. The tests certificate's trailing
+"step failed (exit 1)" lines are ci.test.ts's own negative-path FIXTURE output
+(fixture opus W-099), not real failures: the file contains zero FAIL lines and the
+recorded exit is 0.
+
+`bisellium verify` was NOT re-run, deliberately. It was already run and its output
+committed (5aca782). It is a bookkeeping-WRITING verb with no read-only mode, and
+re-running it on an unchanged tree reproduces the W-035 same-hash-overwrite class
+that already fired once on this opus. Its substantive claim — that the three
+certificates name the current source tree — is verified above by direct
+recomputation, which is stronger evidence than a second write would be.
+
+================================================================================
+7. FINDINGS
+================================================================================
+
+F-1  ADVISORY — the bundle-grep test cannot catch the mutation the brief assigns it.
+     apps/web/tests-serve/auth.spec.ts:90 "the built dist carries no copy of the live
+     write-auth token" greps the dist for `served.token`. That token is
+     randomBytes(24).toString("hex"), freshly generated at every serve start
+     (packages/cli/src/serve.ts:117), with no env override. A value baked into the
+     bundle at BUILD time can therefore never equal it, so the test passes
+     unconditionally against the regression it is named for.
+     DEMONSTRATED, not argued: I restored the import.meta.env fallback in api.ts and
+     rebuilt with VITE_BISELLIUM_TOKEN=baked-secret-abc123. The secret DID land in
+     apps/web/dist/assets/index-CykhaL5u.js — and that very test still passed. What
+     actually caught M6 were three OTHER specs failing, because a baked token makes
+     hasToken() true so the prompt never opens.
+     So the suite bites (the gate is sound) but the brief's attribution is wrong and
+     the test is near-vacuous for its stated purpose. A test that would bite:
+     assert the dist contains no long hex run matching /[0-9a-f]{48}/, or grep for
+     the literal string "VITE_BISELLIUM_TOKEN" in the built assets.
+     ONLY INSTANCE of its kind here: I checked the other three behaviour-2 specs and
+     all four behaviour-4 workflow assertions; each was independently proved to bite
+     by M7/M10a/M10b/M11 above.
+
+F-2  ADVISORY — a false statement about its own mechanism, inside W-047's signed census.
+     packages/cli/src/containment.test.ts:250-251 justifies the new 30th entry with
+     "the census is source-wide by construction (no test-file exclusion for inventory
+     B, unlike inventory A's non-test filter)". There is no such asymmetry. Both
+     inventories run over the same sourceFiles(), which applies one shared filter,
+     isExcludedRel (:54-59). The real reason answer.spec.ts was pulled in is narrower
+     and more useful: line 58 excludes "*.test.ts" but NOT "*.spec.ts", so Playwright
+     specs sit inside the census source set while unit tests do not.
+     Consequence: every future .spec.ts that joins an id onto a ".md" path will keep
+     being forced into a hand-signed security census. Either exclude ".spec.ts"
+     alongside ".test.ts", or say plainly that spec files are in scope — but the
+     comment as written will mislead the next builder.
+     SEARCHED: read isExcludedRel and sourceFiles in full, and enumerated the census
+     source set at runtime (94 files) to confirm .spec.ts files are present and
+     .test.ts files are not. ONLY INSTANCE — no other comment in this file makes a
+     mechanism claim about the filter.
+
+F-3  ADVISORY, PRE-EXISTING, NOT W-067's — latent cross-test fixture poisoning.
+     packages/cli/src/writes.test.ts:31 does cpSync(examples/sample-studio, tmp,
+     {recursive:true}), which copies the gitignored .bisellium/ directory along with
+     the officina. Lines :203 and :230 then assert "exactly one event on disk". Any
+     `bisellium serve --studio examples/sample-studio` run against the IN-TREE fixture
+     seeds .bisellium/events.jsonl and permanently breaks `npm test` until someone
+     deletes that untracked file by hand. This is what fired during pre-review triage.
+     It predates W-067 and W-067 does not make it worse: this opus's own harness
+     (apps/web/tests-serve/harness.ts:56-57) copies the fixture TO a temp dir and
+     serves THAT, never the fixture itself — I confirmed after my own live probe run
+     that examples/sample-studio/.bisellium/events.jsonl still does not exist.
+     Recommend filing as its own opus: have freshStudio() skip .bisellium, or have
+     the emit assertions count only events they wrote.
+     SEARCHED for the class: grepped every cpSync/cp -r of sample-studio across
+     packages/, apps/ and scripts/. Two sites — writes.test.ts:31 (vulnerable, asserts
+     an absolute event count) and tests-serve/harness.ts:56 (not vulnerable, asserts
+     nothing about pre-existing events). No third.
+
+NOT DEFECTS, checked and cleared:
+ - "For Sol" §3 (an XSS sink for server `output` in the Inbox): InboxView.tsx:76
+   renders {error} as a React text child. No dangerouslySetInnerHTML or innerHTML
+   anywhere in apps/web/src; the only style={} expressions are pre-existing and
+   numeric. No title/href is built from officina content.
+ - "For Sol" §4 (a fifth WriteResult outcome): api.ts:117-146 handles a thrown
+   network error, a 401, any other non-2xx including 5xx, unparseable JSON, and a
+   200 whose `ok` is absent or non-boolean — the last mapped to "error", never "ok",
+   and pinned by api.test.ts. No outcome is mis-filed as success.
+ - startServer's acceptedOrigins is a `let` seeded ["",""] and set immediately after
+   listen() resolves (http.ts:724-752); route() reads it through the closure per
+   request, so there is no window in which the empty pair is consulted.
+ - docs/ADOPTION.md §"Writing from a browser (W-067)" carries all four items the
+   brief mandates — the tuple, the token-paste flow, the explicit
+   "Reverse-proxy access is unsupported", and the ok:false contract — and every
+   statement in it matches what I measured live in §3.
+
+================================================================================
+8. RULINGS REQUESTED BY THE ORCHESTRATOR
+================================================================================
+TERRA FALSE-1 (verify residue): RESTORATION IS CLEAN. git status --porcelain empty
+  on entry; all three certificates byte-identical to HEAD; the certified hash equals
+  the hash I recomputed from the tree. examples/sample-studio/.bisellium holds only
+  index/index.db and snapshots/query.json — no events.jsonl, so the 42 seeded events
+  are gone. The fixture fragility is real and filed as F-3. Terra running a
+  bookkeeping-writing verb is a dispatch-prompt gap, noted for the retro: a
+  pre-review sella should be given a read-only verb list.
+
+TERRA FALSE-2 (01.log exit 1 vs the report's exit 2): THE LOG IS HONEST; THE REPORT
+  WAS WRONG, AND HARMLESSLY SO. Exit 1 is what the harness returns for assertion
+  failures; exit 2 is a usage/crash path. The brief's "Recording the reds" section
+  demands assertion-level failures rather than one module-load error — and 01.log's
+  body shows exactly five named assertion FAILs (the two tuple 200 cases and the
+  401/415/400 ladder, all reading 403 under the old refuse-all rule) among otherwise
+  passing tests. A recorded exit of 2 would have been the suspicious one. NOT A DEFECT.
+
+TERRA FALSE-3 (two files outside "Files owned"):
+  (a) apps/web/tests-serve/harness.ts — IN SCOPE. The brief's Files-owned block names
+      tests-serve/ as W-067's to create and mandates behaviour (spawn serve, scrape
+      the token, poll for readiness, temp-copy the studio) that has to live somewhere
+      shared; putting it in a third file instead of duplicating it across two specs
+      is the smaller diff. Unlisted, not unowned. NOT A VIOLATION.
+  (b) packages/cli/src/containment.test.ts — HONEST CONSEQUENCE, NOT A VIOLATION.
+      W-047's census self-checks (PINNED_B.length === scanB.length, :350), so the new
+      spec's raw id-to-path join made this edit mandatory: the builder could not have
+      left the file alone and stayed green.
+  ON THE BUILDER PINNING ITS OWN SITE'S DISPOSITION: ACCEPTABLE, NO ESCALATION NEEDED,
+  because the census is a disclosure mechanism, not a waiver. Its own header says a
+  disposition "is a judgment call, not a derivation, so it is recorded here rather
+  than computed" — recorded by the builder, REVIEWED by the censor. That review is
+  this gate, and I performed it rather than assuming it: the claim is that target.id
+  comes from the served instance's own /api/inbox and is joined against a mkdtemp
+  scratch studio the same test creates and deletes. Verified against
+  answer.spec.ts:62 (target from /api/inbox), :72 (join onto served.studioDir), and
+  harness.ts:56/:105 (mkdtemp, then rmSync). A traversal there reaches nothing but
+  the test's own throwaway directory. "bypass" is the correct disposition.
+  What DOES need correcting is the comment's false account of why the site surfaced
+  at all — F-2. The disposition is right; its stated reason is not.
+  (Had this been a production site rather than a test-only read, my ruling would be
+  the opposite: a builder should not self-dispose a live traversal site.)
+
+BUILDER DISCLOSURE 1 (behaviour 2's honest-regression red): ACCEPTED, AND THE
+  DISCLOSURE IS DURABLE. 718ae31's commit message states the mechanism in full — the
+  temporary revert of App.tsx's TokenPrompt wiring, the rebuild, the recorded red,
+  the checkout-restore — and names which sub-test survives and why (the bundle grep
+  holds regardless of App.tsx). 02.log betrays its own pre-fix tree in its body:
+  three failures all reading "locator('.token-prompt') ... element(s) not found",
+  which is precisely a build with no prompt mounted, and the fourth passing. The
+  W-046 round-3 precedent is correctly applied.
+  (F-1 notes the irony that the surviving sub-test is the weak one — but that is
+  orthogonal to the disclosure's honesty.)
+
+BUILDER DISCLOSURE 2 (reds bundled into fix commits): SATISFIED IN SUBSTANCE HERE —
+  see §5. The `tree:` header, not the timestamp, is what carries it, and it is a
+  content hash written by the tool. I am explicitly NOT ruling that timestamp
+  ordering suffices; it does not, and I would not have passed on `at` alone.
+  ON WHETHER THIS NEEDS A CHECK RULE: YES, AND I AM RAISING IT AS A PETITIO RATHER
+  THAN ADOPTING IT. This is now the third case-by-case ruling on red ordering
+  (W-046 round 3, this opus's disclosures 1 and 2). The studio's own standing rule
+  is that process enforcement is a check rule or a hook, never a memory or prose —
+  three rulings in prose is exactly the shape that rule forbids. The rule I would
+  propose is NOT "reds must be in separate commits" (a commit is not evidence), but
+  the stronger and already-available one: a red log's `tree:` hash must equal the
+  source-tree hash of an ANCESTOR of the commit that introduces it. That is
+  mechanically checkable from what `bisellium red` already records, it would have
+  passed this opus without argument, and it would have caught a backdated red that
+  a separate-commit rule would wave through. Filed for the retro; a blocking rule
+  is the Patron's to grant, not mine (qa lex §4).
+
+BUILDER DISCLOSURE 3 (the brief self-contradiction): RESOLVED CORRECTLY, AND
+  DISCLOSING IT IS WHAT MAKES IT ACCEPTABLE. The brief's Out-of-scope says the token
+  UI is "inside W-024's Inbox"; the Token-delivery section mandates an App-level,
+  screen-agnostic prompt twice, argues for it explicitly ("An Inbox-local prompt
+  would satisfy this opus's own behaviours while making W-065's mounted 401 case
+  unbuildable; that is the seam, and this is which side it falls on"), and the
+  Files-owned block lists App.tsx and a new components/TokenPrompt.tsx while saying
+  the Inbox change is "the failure message only ... adds no token UI here". The
+  detailed section is specific, reasoned and thrice-stated; the Out-of-scope line is
+  a one-clause summary that did not get updated when the opus was carved out of
+  W-065. Following the detailed section is right, and the implementation matches it
+  exactly (App.tsx:46 mounts it once, Inbox.tsx carries no token UI).
+  This is the class W-047's F-1 punished — but W-047 punished SILENCE, not judgment.
+  Disclosed, argued, and matching the brief's own stated reasoning is the correct
+  handling of a brief conflict. NOT A FINDING.
+  The brief's Out-of-scope bullet should be corrected on merge so the next reader of
+  the spec of record is not misled.
+
+BUILDER DISCLOSURE 4 (.env.example deleted): CORRECT AND REQUIRED. The brief mandates
+  removing the import.meta.env fallback; leaving a file whose entire content is
+  "VITE_BISELLIUM_TOKEN=<token>" would document a path that no longer exists and
+  contradict D-023's PATRON-5 amendment. Deletion is the smaller and more honest
+  diff. NOT A VIOLATION.
+
+================================================================================
+9. VERDICT
+================================================================================
+PASS.
+
+The opus does what it claims. A browser can write; W-024's answer button works end
+to end against a served build, verified by me from a dist removed and rebuilt; the
+origin tuple is exact under 17 live probes including three the brief never named;
+W-016 behaviour 5 is intact by direct test, not by assertion; the suite bites under
+all eleven mutations the brief names. Reds are red-first by cryptographic tree
+identity rather than by clock.
+
+The three findings are advisory. F-3 is not this opus's and belongs to a new one.
+F-1 and F-2 are both "the artifact is right, its stated justification is not" —
+worth a follow-up, not worth another review round: fixing either changes no
+behaviour this opus is responsible for, and holding the branch would cost more than
+it buys.
+
+For the retro: two process items, not code — the pre-review dispatch that permitted
+a bookkeeping-writing verb, and the red-ordering check rule proposed under
+disclosure 2, which should be a petitio rather than a fourth prose ruling.

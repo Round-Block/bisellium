@@ -7,6 +7,10 @@ export interface InboxViewProps {
   opera: InboxResponse["opera"];
   focusIndex: number;
   reason: string;
+  /** W-067: one line for a "refused" or "error" WriteResult. `null` when
+   *  there's nothing to say — never rendered any other way (no title/style/
+   *  href built from it: it's server `output`, i.e. officina content). */
+  error?: string | null;
   onReasonChange: (value: string) => void;
   onFocusChange: (index: number) => void;
   onSubmit: (petitioId: string, verb: Verb) => void;
@@ -20,7 +24,7 @@ const VERBS: { verb: Verb; key: string }[] = [
 ];
 
 export function InboxView(props: InboxViewProps): JSX.Element {
-  const { petitiones, opera, focusIndex, reason, onReasonChange, onFocusChange, onSubmit } = props;
+  const { petitiones, opera, focusIndex, reason, error, onReasonChange, onFocusChange, onSubmit } = props;
 
   if (petitiones.length === 0 && opera.length === 0) {
     return (
@@ -69,6 +73,7 @@ export function InboxView(props: InboxViewProps): JSX.Element {
             )}
           </div>
           <div className="inbox__decision-panel">
+            {error && <p className="inbox__error">{error}</p>}
             <input
               className="inbox__input-ratio"
               value={reason}

@@ -30,14 +30,19 @@ export function Inbox(): JSX.Element {
   const [data, setData] = useState<InboxResponse>(EMPTY);
   const [focusIndex, setFocusIndex] = useState(0);
   const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const demo = location.search.includes("demo");
 
-  useEffect(() => {
-    if (demo) { setData(DEV_DATA); return; }
+  function reload(): void {
     fetchInbox()
       .then(setData)
       .catch(() => setData(DEV_DATA));
+  }
+
+  useEffect(() => {
+    if (demo) { setData(DEV_DATA); return; }
+    reload();
   }, []);
 
   const petitiones = data.petitiones;
@@ -57,8 +62,19 @@ export function Inbox(): JSX.Element {
   }, [petitiones.length, focusedId, reason]);
 
   function submit(petitioId: string, verb: Verb): void {
-    void submitAnswer(petitioId, buildReply(verb, reason));
-    setReason("");
+    setError(null);
+    void submitAnswer(petitioId, buildReply(verb, reason)).then((result) => {
+      // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
+      // no local handling here. "ok"/"refused"/"error" are this screen's.
+      if (result.kind === "ok") {
+        setReason("");
+        if (!demo) reload();
+      } else if (result.kind === "refused") {
+        setError(result.output || "refused");
+      } else if (result.kind === "error") {
+        setError("error submitting the answer");
+      }
+    });
   }
 
   return (
@@ -67,6 +83,7 @@ export function Inbox(): JSX.Element {
       opera={data.opera}
       focusIndex={focusIndex}
       reason={reason}
+      error={error}
       onReasonChange={setReason}
       onFocusChange={setFocusIndex}
       onSubmit={submit}
