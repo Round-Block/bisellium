@@ -505,6 +505,15 @@ export async function runProbe(args: string[], opts: RunProbeOptions = {}): Prom
     return { exitCode: 2 };
   }
 
+  // --model/--harness are a pair: either both or neither. No "unknown id
+  // with an unresolved harness" case — the operator names the harness.
+  const model = values.get("--model");
+  const harness = values.get("--harness");
+  if ((model === undefined) !== (harness === undefined)) {
+    console.error(`--model and --harness must be given together\n${PROBE_USAGE}`);
+    return { exitCode: 2 };
+  }
+
   const now = resolveNow(values.get("--now"), undefined);
   if (!now) {
     console.error(`--now must be an ISO date\n${PROBE_USAGE}`);
@@ -518,8 +527,9 @@ export async function runProbe(args: string[], opts: RunProbeOptions = {}): Prom
   }
   const { root } = opened;
   const dryRun = flags.has("--dry-run");
+  const only = model !== undefined && harness !== undefined ? [{ id: model, harness }] : undefined;
 
-  const result = await probeBattery({ studio: root, now, dryRun, harnesses: opts.harnesses, listModels: opts.listModels, versions: opts.versions });
+  const result = await probeBattery({ studio: root, now, dryRun, only, harnesses: opts.harnesses, listModels: opts.listModels, versions: opts.versions });
 
   if (dryRun) {
     console.log(`bisellium probe --dry-run: ${result.skipped.length} candidate pair(s), zero spent`);
