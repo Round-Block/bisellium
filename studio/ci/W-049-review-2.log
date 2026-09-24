@@ -1,0 +1,271 @@
+# W-049 review round 2 — censor sella qa-lead (claude-opus-5-5)
+# reviewed: opus/W-049 @ 06c1eaea18bc215e25957db302f5438b0fc92e7b (PR #43); remedy range f0d6221..06c1eae
+# scope: round-1 remedies (F1 behaviour-4 spawn map, F2 ADOPTION attribution) plus regression. Smoke not re-run:
+#   the scrub was proven live in round 1 (W-049-review-1.log, Judgment 4) and no source file changed since.
+# scratch: detached worktree $TMPDIR/w049r2/wt at 06c1eae, node_modules copied (cp -a);
+#   readlink -f node_modules/@bisellium/shim -> /tmp/claude-1000/w049r2/wt/packages/shim (its own tree).
+#
+# VERDICT: PASS. F1 and F2 are remedied. M13, M14 and M15 are each killed by harness-env.test.ts ALONE,
+# and so are both round-1 spot-checks. Gates are green on 06c1eae and the certificates recompute to
+# d28661b3. One advisory (A1): the tick census inherits state written by the code under test, and two
+# session-store mutations survive the full suite because of it. The remedy is exactly what my round-1 R2
+# prescribed, so this is a gap in my own spec rather than a builder miss, and it doesn't touch the scrub.
+# One-line hardening, filed against W-056.
+
+## Judgment 1: must-kills against harness-env.test.ts alone — ALL KILLED
+  Baseline (unmutated 06c1eae): harness-env.test.ts exit=0 PASS=129 FAIL=0.
+  The driver is my round-1 w049-mutate.mjs (extracted verbatim from W-049-review-1.log), narrowed to the
+  single suite, with M15/M16 added. Source below.
+    M13  KILLED  exit=1 FAIL=1  "behaviour 4 tick: exactly one resume per pre-existing session file ..." resumeCount=0 startCount=5 expectedResumes=1 expectedStarts=4
+    M14  KILLED  exit=1 FAIL=1  same check: resumeCount=5 startCount=0 expectedResumes=1 expectedStarts=4
+    M15  KILLED  exit=1 FAIL=4  first: "behaviour 4: first runTalk adds exactly 2 records" 3
+  Round-1 spot-checks (two of the brief mutations):
+    M06a (drop harnessEnv at runClaude)  KILLED  exit=1 FAIL=9  first: behaviour 1 start env name set
+    M09c (skip probe when session exists) KILLED exit=1 FAIL=10 first: "behaviour 4: second runTalk adds exactly 2 records" 1
+      (M09c is now killed by the new per-call count, not only through an offset shift.)
+  Restore: git checkout after each mutation; "clean: yes"; `git diff --quiet -- packages` clean afterwards.
+  The builder's kept scripts/w049-mutation-check.mjs also kills all three (M13 FAIL=1, M14 FAIL=1, M15 FAIL=4,
+  each "[mutation] ... exited 1"). It leaves the tree clean.
+
+## Judgment 2: session-census honesty — HONEST AGAINST THE TICK, GAMEABLE BY THE PRE-TICK TALKS (advisory A1)
+  The census (`readdirSync(sessions).filter(.json).length`) is taken after both runTalk calls and before runTick.
+  Nothing runTick writes or deletes can move it, so M13/M14-style tick routing cannot game it. The expected
+  resume count is still NOT pinned, though. It is whatever the code under test left in sessions/ during the
+  two runTalk calls, and the test knows it talked only to eng-lead. Two mutations of talk.ts's session store
+  show this (my choice, one inflating the census and one deflating it):
+    M16 census inflation: `writeSession(sessPath, {` -> on the modelOnly path, also write the same record to
+        sessions/producer.json (cross-sella session bleed).
+        Phase probe: tick = [v,resume, v,start, v,resume, v,start, v,start], so producer resumes eng-lead's session.
+        harness-env alone: SURVIVED (exit=0 FAIL=0). Full npm test: SURVIVED (exit=0 FAIL=0 PASS=1916).
+    M17 census deflation: after writeSession, `if (params.modelOnly && existing) rmSync(sessPath)` (a resume
+        deletes its own session file).
+        Phase probe: tick = 5x [v,start], which is M13's observable (eng-lead never resumes on the tick).
+        Full npm test: SURVIVED (exit=0 FAIL=0 PASS=1922).
+  Both are session-store bugs in talk.ts, not scrub or spawn-count bugs: every spawn still carries the exact
+  projection, and the map is exact relative to the state on disk. My round-1 R2 said a count "derived from
+  the session files present before the tick ... is enough", and the builder implemented that literally, so
+  this is not a remedy defect and does not block. The handoff's summary "(1 resume for eng-lead, 4 starts)" is
+  stronger than what is asserted. Nothing pins the 1 or eng-lead.
+  Remedy (one line, harness-env.test.ts): before runTick, assert
+    readdirSync(sessionsDir).filter(f => f.endsWith(".json")) deep-equals ["eng-lead.json"].
+    This kills M16 and M17, and the existing census check then carries "1 resume, 4 starts" exactly.
+  Class (expected value derived from state written by the code under test). I searched every readdirSync and
+  sessions/ read in harness-env.test.ts, talk-boundary.test.ts and packages/shim/test/talk.test.ts, and
+  this is the only instance. behaviour 4's other derived expectation, `added`, is pinned to 5. talk.test.ts
+  checks that sessions/eng-lead.json exists but never that no other sella file exists, and never that it
+  survives a resume, which is why M16/M17 also survive the full suite. Recommend folding both into W-056.
+
+## Judgment 3: red 04 provenance — SOUND (one advisory note)
+  studio/ci/reds/W-049/04.log: `# command: node scripts/w049-mutation-check.mjs M13`, exit 1, sella builder-b,
+  tree dirty:f2415a01... The capture shows, in order: an empty pre-mutation diff of talk.ts, then the M13 hunk
+  applied (index c54723a..7978581), then behaviour 4's run with exactly one FAIL (the new census check,
+  resumeCount=0 startCount=5), then an empty post-revert diff, then "[mutation] ... exited 1 under M13". So the
+  mutation was applied and reverted inside the captured command. The script is kept at
+  scripts/w049-mutation-check.mjs.
+  Base tree: I recomputed sourceTreeHash(f0d6221) = f2415a0114fa9aa652db7ca1fe9fe57a9dcc8dac, which is round 1's
+  certified source tree. The only dirt at red time was the uncommitted test edit, which is test-first.
+  Note (advisory, no action required): the script exits 1 both when the mutation is killed AND when it SURVIVES
+  (after printing SURVIVED), so `bisellium red` would accept a survivor. For a record made with this script,
+  the log text is the proof, not the exit code, and this log shows the FAIL. The re-record also replaced the
+  original behaviour-4 red, which showed the scrub absent at runTalk/tick (env-projection FAILs). That red now
+  exists only in history (f0d6221:studio/ci/reds/W-049/04.log). Behaviours 1-3's reds still show the scrub-absent red.
+
+## Judgment 4: W-055 / W-056 scaffolds — ACCURATE
+  W-055: "the timeline model field is absent for a real claude turn (envelope carries modelUsage, not a top-level
+    model), so a canary model string can never fail the check that reads it." Matches round-1 Judgment 4.
+  W-056: "talk-boundary.test.ts:246 and :341 accept the spawn map by fixed offset/inference rather than an exact
+    per-call count." Matches round-1 Judgment 2. It is slightly compressed: :246 asserts presence, not a count
+    of exactly 2, and M13 survives :341. That is adequate for a backlog scaffold. Add A1 to it.
+  Both are backlog, with TODO sections (expected for a filed scaffold, not a spec).
+
+## Judgment 5: regression — CLEAN
+  Diff f0d6221..06c1eae touches only these files: docs/ADOPTION.md, packages/cli/src/harness-env.test.ts,
+    scripts/w049-mutation-check.mjs, studio/{briefs,opera}/W-05{5,6}.md, studio/ci/W-049-*-d28661b3.log,
+    studio/ci/reds/W-049/04.log and studio/opera/W-049.md. No production source changed.
+  F2: ADOPTION.md now reads "(`harnessEnv`, `packages/shim/src/harness/env.ts` — not a `@bisellium/shim` export)". Remedied.
+  Gates on 06c1eae (scratch tree, clean):
+    npm test exit=0 PASS=1919 FAIL=0 | typecheck exit=0 | lint exit=0 (0 errors, 2 warnings: close.test.ts:5,
+    tick.test.ts:203, both pre-existing, as in round 1) | format:check exit=0 ("All matched files use Prettier
+    code style!")
+    (A first format run flagged my own probe file, which I had left in the scratch tree. I removed it and re-ran.)
+    check studio --repo .: "PASS — 0 blocking, 81 advisory"
+    check examples/sample-studio --repo .: "PASS — 0 blocking, 26 advisory"
+  Certificates: sourceTreeHash(repo, [studio, .bisellium, examples/], ref) =
+    06c1eae -> d28661b3000c31312002a8239ca785ff4d4b0047
+    7ace2ba -> d28661b3000c31312002a8239ca785ff4d4b0047
+    f0d6221 -> f2415a0114fa9aa652db7ca1fe9fe57a9dcc8dac
+    The tests/lint/types probationes certify tree:d28661b3..., which matches exactly.
+
+## Findings
+  (none blocking)
+  A1 advisory: the tick census is gameable by the pre-tick talks (M16/M17 survive the full npm test). Pin sessions/ to
+     ["eng-lead.json"] before runTick. Fold into W-056.
+  A2 advisory: w049-mutation-check.mjs exits 1 on SURVIVED as well as on a kill, so read the red log text, not the
+     exit code. Red 04's replacement retired the scrub-absent behaviour-4 red to history.
+
+### r2-driver.mjs
+// W-049 round-2 censor mutation driver (round-1 driver, suites narrowed to harness-env.test.ts alone; M15/M16 added). Each mutation: exact-string replace
+// (must match exactly once), run the three suites, record exit codes and the
+// first FAIL names, restore via git checkout. Kept in the review log.
+import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+const wt = process.argv[2];
+const E = "packages/shim/src/harness/env.ts", CC = "packages/shim/src/harness/claude-code.ts", CX = "packages/shim/src/harness/codex.ts", T = "packages/commands/src/talk.ts", TB = "packages/cli/src/talk-boundary.test.ts";
+const LOOP = "  for (const name of ALLOWLIST) {\n    const value = parent[name];\n    if (value !== undefined) out[name] = value;\n  }";
+const byKey = (pred) => `  for (const [k, v] of Object.entries(parent)) if (v !== undefined && (${pred})) out[k] = v;`;
+const M = [
+  ["M01 list += ANTHROPIC_BASE_URL", [[E, `"no_proxy"])`, `"no_proxy", "ANTHROPIC_BASE_URL"])`]]],
+  ["M02 match by startsWith", [[E, LOOP, byKey("ALLOWLIST.some((n) => k.startsWith(n))")]]],
+  ["M03 match by unanchored-end regex", [[E, LOOP, byKey(`new RegExp("^(" + ALLOWLIST.join("|") + ")").test(k)`)]]],
+  ["M04 case-insensitive compare", [[E, LOOP, byKey("ALLOWLIST.some((n) => n.toLowerCase() === k.toLowerCase())")]]],
+  ["M05 re-add LC_/NODE_ pattern", [[E, LOOP, byKey("ALLOWLIST.includes(k) || /^(LC_|NODE_)/.test(k)")]]],
+  ["M06a drop harnessEnv: claude runClaude", [[CC, "env: harnessEnv(opts.env),", "env: opts.env,"]]],
+  ["M06b drop harnessEnv: claude available()", [[CC, `{ env: harnessEnv(process.env), encoding`, `{ encoding`]]],
+  ["M06c drop harnessEnv: codex runCodex (= codex-only passthrough)", [[CX, "env: harnessEnv(opts.env) }", "env: opts.env }"]]],
+  ["M06d drop harnessEnv: codex available()", [[CX, `, { env: harnessEnv(process.env) })`, `)`]]],
+  ["M07 scrub by deleting from parent in place", [[E, "  return out;", "  for (const k of Object.keys(parent)) if (!ALLOWLIST.includes(k)) delete parent[k];\n  return parent;"]]],
+  ["M08a spawn start twice (claude profile)", [[CC, "      return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });", "      runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });\n      return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });"]]],
+  ["M08b spawn start twice (performTalk)", [[T, ": await profile.start({ cwd: root, sella, systemPrompt, message, env });", ": (await profile.start({ cwd: root, sella, systemPrompt, message, env }), await profile.start({ cwd: root, sella, systemPrompt, message, env }));"]]],
+  ["M08c spawn resume twice (performTalk)", [[T, "? await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env })", "? (await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env }), await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env }))"]]],
+  ["M09a skip available() probe in performTalk (always)", [[T, "isAvailable = await profile.available();", "isAvailable = true;"]]],
+  ["M09b skip available() probe on tick path only", [[T, "isAvailable = await profile.available();", "isAvailable = params.modelOnly === undefined ? true : await profile.available();"]]],
+  ["M09c skip available() probe when a session file exists", [[T, "isAvailable = await profile.available();", `isAvailable = existsSync(join(root, "sessions", sella + ".json")) ? true : await profile.available();`]]],
+  ["M10 inject a default for an absent name", [[E, "if (value !== undefined) out[name] = value;", `out[name] = value ?? "";`]]],
+  ["M11a W-044 M24: fixed <tmpdir>/system-prompt.md", [[CC, `const file = join(dir, "system-prompt.md");`, `const file = join(tmpdir(), "system-prompt.md");`]]],
+  ["M11b W-044 M25: relative x/system-prompt.md in argv", [[CC, `"--append-system-prompt-file", file,`, `"--append-system-prompt-file", "x/system-prompt.md",`]]],
+  ["M12a A2: stub replies a random session_id", [[TB, `{ session_id: "sess-stub", result`, `{ session_id: "sess-" + Math.random().toString(36).slice(2), result`]]],
+  ["M12b A2: talk resumes an id other than the one returned", [[T, "sessionId: existing.sessionId, message, env })", `sessionId: existing.sessionId + "-x", message, env })`]]],
+  ["M13 tick path never resumes (always starts)", [[T, "existing && existing.harness === harnessId", "existing && existing.harness === harnessId && params.modelOnly !== undefined"]]],
+  ["M14 tick path resumes sess-w049 for every magister", [[T, "existing && existing.harness === harnessId\n", "(params.modelOnly === undefined || (existing && existing.harness === harnessId))\n"], [T, "sessionId: existing.sessionId, message, env })", `sessionId: existing?.sessionId ?? "sess-w049", message, env })`]]],
+  ["M15 per-call count shift across the two runTalk phases", [
+    [T, "isAvailable = await profile.available();", `isAvailable = params.modelOnly && existsSync(sessionPathFor(root, sella)) ? true : await profile.available();`],
+    [T, ": await profile.start({ cwd: root, sella, systemPrompt, message, env });", `: await profile.start({ cwd: root, sella, systemPrompt, message, env }).then(async (t) => (params.modelOnly ? await profile.available() : undefined, t));`],
+  ]],
+  ["M16 census inflation: runTalk also writes eng-lead's session as producer's", [[T, "  writeSession(sessPath, {", "  for (const p of params.modelOnly ? [sessPath, sessionPathFor(root, \"producer\")] : [sessPath]) writeSession(p, {"]]],
+];
+const suites = ["packages/cli/src/harness-env.test.ts"];
+const only = process.argv[3] ? new Set(process.argv[3].split(",")) : undefined;
+for (const [name, edits] of M) {
+  if (only && !only.has(name.split(" ")[0])) continue;
+  const files = [...new Set(edits.map((e) => e[0]))];
+  try {
+    for (const [f, from, to] of edits) {
+      const p = `${wt}/${f}`, src = readFileSync(p, "utf8");
+      const n = src.split(from).length - 1;
+      if (n !== 1) throw new Error(`${f}: anchor matched ${n}x`);
+      writeFileSync(p, src.replace(from, () => to));
+    }
+    const res = suites.map((s) => {
+      const r = spawnSync(process.execPath, ["--import", "tsx", s, "."], { cwd: wt, encoding: "utf8", timeout: 240_000 });
+      const out = (r.stdout ?? "") + (r.stderr ?? "");
+      const fails = out.split("\n").filter((l) => l.startsWith("FAIL")).length;
+      const first = out.split("\n").find((l) => l.startsWith("FAIL"))?.replace(/\s+/g, " ").slice(0, 170) ?? (r.status ? out.trim().split("\n").pop()?.slice(0, 170) : "");
+      return { s: s.split("/").pop(), exit: r.status, fails, first };
+    });
+    const killed = res.some((r) => r.exit !== 0);
+    console.log(`${killed ? "KILLED  " : "SURVIVED"} ${name}`);
+    for (const r of res) console.log(`    ${r.s}: exit=${r.exit} FAIL=${r.fails}${r.first ? `  first: ${r.first}` : ""}`);
+  } catch (e) {
+    console.log(`ERROR    ${name}: ${e.message}`);
+  } finally {
+    execFileSync("git", ["checkout", "--", ...files], { cwd: wt });
+  }
+}
+console.log("clean:", execFileSync("git", ["status", "--porcelain"], { cwd: wt, encoding: "utf8" }).trim() === "" ? "yes" : "NO");
+### m16-full.mjs
+// W-049 round-2: M16 applied, phase probe + FULL npm test, restore via git checkout.
+import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+const wt = process.argv[2], T = "packages/commands/src/talk.ts", p = `${wt}/${T}`;
+const src = readFileSync(p, "utf8"), from = "  writeSession(sessPath, {";
+if (src.split(from).length !== 2) throw new Error("anchor");
+writeFileSync(p, src.replace(from, () => '  for (const p of params.modelOnly ? [sessPath, sessionPathFor(root, "producer")] : [sessPath]) writeSession(p, {'));
+try {
+  console.log(execFileSync("git", ["--no-pager", "diff", "--stat"], { cwd: wt, encoding: "utf8" }).trim());
+  const pr = spawnSync(process.execPath, ["--import", "tsx", "w049-probe-phases.mts", wt], { cwd: wt, encoding: "utf8" });
+  console.log("probe exit=" + pr.status + "\n" + pr.stdout + pr.stderr);
+  const r = spawnSync("npm", ["test"], { cwd: wt, encoding: "utf8", timeout: 900_000, maxBuffer: 64 * 1024 * 1024 });
+  const out = (r.stdout ?? "") + (r.stderr ?? "");
+  const fails = out.split("\n").filter((l) => l.startsWith("FAIL"));
+  console.log(`${r.status !== 0 ? "KILLED  " : "SURVIVED"} M16 full npm test exit=${r.status} FAIL=${fails.length} PASS=${out.split("\n").filter((l) => l.startsWith("PASS")).length}`);
+  for (const l of fails.slice(0, 4)) console.log("    " + l.replace(/\s+/g, " ").slice(0, 200));
+} finally {
+  execFileSync("git", ["checkout", "--", T], { cwd: wt });
+}
+console.log("clean:", execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { cwd: wt, encoding: "utf8" }).trim() === "" ? "yes" : "NO");
+### m17-full.mjs
+// W-049 round-2: M17 applied, phase probe + FULL npm test, restore via git checkout.
+import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+const wt = process.argv[2], T = "packages/commands/src/talk.ts", p = `${wt}/${T}`;
+const src = readFileSync(p, "utf8"), from = "  // 6. Timeline: chatter";
+if (src.split(from).length !== 2) throw new Error("anchor");
+writeFileSync(p, src.replace(from, () => '  if (params.modelOnly && existing) (await import("node:fs")).rmSync(sessPath);\n  // 6. Timeline: chatter'));
+try {
+  console.log(execFileSync("git", ["--no-pager", "diff"], { cwd: wt, encoding: "utf8" }).trim());
+  const pr = spawnSync(process.execPath, ["--import", "tsx", "w049-probe-phases.mts", wt], { cwd: wt, encoding: "utf8" });
+  console.log("probe exit=" + pr.status + "\n" + pr.stdout + pr.stderr);
+  const r = spawnSync("npm", ["test"], { cwd: wt, encoding: "utf8", timeout: 900_000, maxBuffer: 64 * 1024 * 1024 });
+  const out = (r.stdout ?? "") + (r.stderr ?? "");
+  const fails = out.split("\n").filter((l) => l.startsWith("FAIL"));
+  console.log(`${r.status !== 0 ? "KILLED  " : "SURVIVED"} M17 full npm test exit=${r.status} FAIL=${fails.length} PASS=${out.split("\n").filter((l) => l.startsWith("PASS")).length}`);
+  for (const l of fails.slice(0, 4)) console.log("    " + l.replace(/\s+/g, " ").slice(0, 200));
+} finally {
+  execFileSync("git", ["checkout", "--", T], { cwd: wt });
+}
+console.log("clean:", execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { cwd: wt, encoding: "utf8" }).trim() === "" ? "yes" : "NO");
+### cert.mts
+import { sourceTreeHash } from "@bisellium/shim";
+import { readFileSync } from "node:fs";
+const y = readFileSync("studio/bisellium.yml", "utf8");
+const m = y.match(/source_excludes:\s*\[([^\]]*)\]/);
+const ex = m ? m[1]!.split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean) : [];
+for (const ref of ["06c1eae", "7ace2ba", "f0d6221"]) console.log(ref, sourceTreeHash(".", ["studio", ".bisellium", ...ex], ref), "excludes=", JSON.stringify(ex));
+### r2-mutations.out
+KILLED   M06a drop harnessEnv: claude runClaude
+    harness-env.test.ts: exit=1 FAIL=9  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[AL
+KILLED   M09c skip available() probe when a session file exists
+    harness-env.test.ts: exit=1 FAIL=10  first: FAIL behaviour 4: second runTalk adds exactly 2 records 1
+KILLED   M13 tick path never resumes (always starts)
+    harness-env.test.ts: exit=1 FAIL=1  first: FAIL behaviour 4 tick: exactly one resume per pre-existing session file, every other magister starts resumeCount=0 startCount=5 expectedResumes=1 expectedStarts=4
+KILLED   M14 tick path resumes sess-w049 for every magister
+    harness-env.test.ts: exit=1 FAIL=1  first: FAIL behaviour 4 tick: exactly one resume per pre-existing session file, every other magister starts resumeCount=5 startCount=0 expectedResumes=1 expectedStarts=4
+KILLED   M15 per-call count shift across the two runTalk phases
+    harness-env.test.ts: exit=1 FAIL=4  first: FAIL behaviour 4: first runTalk adds exactly 2 records 3
+SURVIVED M16 census inflation: runTalk also writes eng-lead's session as producer's
+    harness-env.test.ts: exit=0 FAIL=0
+clean: yes
+### m16-full.out
+packages/commands/src/talk.ts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+probe exit=0
+ack
+runTalk #1       ["version","turn:start"]
+ack
+runTalk #2       ["version","turn:resume"]
+runTick          ["version","turn:resume","version","turn:start","version","turn:resume","version","turn:start","version","turn:start"]
+
+SURVIVED M16 full npm test exit=0 FAIL=0 PASS=1916
+clean: yes
+### m17-full.out (diff + probe + full suite)
+diff --git a/packages/commands/src/talk.ts b/packages/commands/src/talk.ts
+index c54723a..a7faef1 100644
+--- a/packages/commands/src/talk.ts
++++ b/packages/commands/src/talk.ts
+@@ -351,6 +351,7 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
+     turns: sameHarness ? existing.turns + 1 : 1,
+   });
+ 
++  if (params.modelOnly && existing) (await import("node:fs")).rmSync(sessPath);
+   // 6. Timeline: chatter, in both directions. Redacted the same way receipts
+   // are (docs/ADOPTION.md: a credential passed in a message must not become
+   // plaintext evidence sitting in the repo).
+probe exit=0
+ack
+runTalk #1       ["version","turn:start"]
+ack
+runTalk #2       ["version","turn:resume"]
+runTick          ["version","turn:start","version","turn:start","version","turn:start","version","turn:start","version","turn:start"]
+
+SURVIVED M17 full npm test exit=0 FAIL=0 PASS=1922
+clean: yes
