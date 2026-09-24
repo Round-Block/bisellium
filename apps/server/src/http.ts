@@ -252,14 +252,37 @@ function tokensMatch(expected: string, given: string | undefined): boolean {
   return timingSafeEqual(a, b);
 }
 
-/** Order matters, and is exactly what the spec's four cases pin down: an
- *  Origin header (this is a local tool, never a CORS-enabled API — any
- *  Origin at all means a browser made this request, cross-site or not, and
- *  neither is welcome here) is refused before the token is even looked at;
- *  then the token; then Content-Type. Returns the status to answer with, or
+/** The two `Origin` values the served console may legitimately carry: the
+ *  bound loopback socket, addressed as `127.0.0.1` or `localhost` (a
+ *  browser's Origin follows the URL the page was loaded from, and both
+ *  reach the same socket on every platform this runs on). Computed once at
+ *  startup from `server.address().port` — the port actually bound, not
+ *  `opts.port` (`0`/`undefined` in exactly the cases that matter, including
+ *  every test here) — and threaded in rather than recomputed per request. */
+export type AcceptedOrigins = readonly [string, string];
+
+export function acceptedOriginsFor(port: number): AcceptedOrigins {
+  return [`http://127.0.0.1:${port}`, `http://localhost:${port}`];
+}
+
+/** Order matters, and is exactly what the spec's cases pin down: Origin
+ *  (this is a local tool, never a CORS-enabled API) is checked before the
+ *  token is even looked at; then the token; then Content-Type. An absent
+ *  Origin is accepted outright (curl, the CLI, every non-browser caller) —
+ *  the token is what authorizes those, unchanged (W-016 behaviour 5). A
+ *  present Origin must equal one of the two accepted strings exactly:
+ *  `Origin: null` (a value, not an absence — a sandboxed iframe, `file://`,
+ *  some redirect chains) and a wrong port/scheme/host all fall through to
+ *  the same 403 as a foreign origin, since none of them equal either
+ *  accepted string. No trust is derived from `Host` or any
+ *  `X-Forwarded-*` header — only `Origin`, compared against the pair
+ *  computed from the bound socket. Returns the status to answer with, or
  *  `undefined` when the request is authorized to proceed. */
-function checkWriteAuth(req: IncomingMessage, token: string): number | undefined {
-  if (req.headers["origin"] !== undefined) return 403;
+function checkWriteAuth(req: IncomingMessage, token: string, acceptedOrigins: AcceptedOrigins): number | undefined {
+  const origin = req.headers["origin"];
+  if (origin !== undefined) {
+    if (typeof origin !== "string" || !acceptedOrigins.includes(origin)) return 403;
+  }
   if (!tokensMatch(token, req.headers["x-bisellium-token"] as string | undefined)) return 401;
   const contentType = (req.headers["content-type"] ?? "").toString();
   if (!/^application\/json(\s*;.*)?$/i.test(contentType.trim())) return 415;
@@ -458,6 +481,7 @@ async function route(
   checkStudio: StartServerOptions["checkStudio"],
   runners: StartServerOptions["runners"],
   token: string,
+  acceptedOrigins: AcceptedOrigins,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -465,11 +489,12 @@ async function route(
   const pathname = url.pathname;
   const method = req.method ?? "GET";
 
-  // ---- writes: token + no-Origin + application/json required. Loopback
-  // (the bind itself) is never sufficient on its own — see checkWriteAuth. --
+  // ---- writes: token + accepted-origin + application/json required.
+  // Loopback (the bind itself) is never sufficient on its own — see
+  // checkWriteAuth. --------------------------------------------------------
   const WRITE_PATHS = new Set(["/api/answer", "/api/greenlight", "/api/budget", "/api/handoff", "/api/talk", "/api/pause", "/api/resume"]);
   if (method === "POST" && WRITE_PATHS.has(pathname)) {
-    const authStatus = checkWriteAuth(req, token);
+    const authStatus = checkWriteAuth(req, token, acceptedOrigins);
     if (authStatus !== undefined) {
       const message = authStatus === 401 ? "missing or invalid X-Bisellium-Token" : authStatus === 403 ? "cross-origin writes are refused" : "Content-Type must be application/json";
       sendJson(res, authStatus, { error: message });
@@ -696,6 +721,13 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   // out from (W-016 behaviour 8) — never one listener per client.
   const sseHub = createSseHub(store);
 
+  // Set for real right after listen() resolves, below — no request can
+  // arrive before that (nothing has called startServer's caller back yet).
+  // A `let`, not a `const`, read fresh by `route()` on every request via
+  // closure: the accepted pair depends on the bound port, only known once
+  // the socket is actually listening.
+  let acceptedOrigins: AcceptedOrigins = ["", ""];
+
   const server = createServer((req, res) => {
     const start = Date.now();
     const method = req.method ?? "GET";
@@ -707,7 +739,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
       // response body instead of the terminal.
       process.stderr.write(`${method} ${url} ${res.statusCode} ${Date.now() - start}ms\n`);
     });
-    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, token, req, res).catch((e) => serverError(res, e));
+    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
   });
 
   await new Promise<void>((resolvePromise, reject) => {
@@ -717,6 +749,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
 
   const address = server.address();
   const port = typeof address === "object" && address !== null ? address.port : (opts.port ?? DEFAULT_PORT);
+  acceptedOrigins = acceptedOriginsFor(port);
 
   let closed = false;
   const close = async (): Promise<void> => {

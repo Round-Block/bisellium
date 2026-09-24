@@ -101,6 +101,41 @@ async function postJson(base: string, path: string, payload: unknown, headers: R
   return { status: res.status, body };
 }
 
+/** postJson, but over raw node:http instead of fetch — the only way to set
+ *  a header (`Host`, `X-Forwarded-Host`) that Fetch's forbidden-header list
+ *  won't let a caller override (W-067 behaviour 1's "no trust from Host"
+ *  case needs an actually-spoofed Host, not the request's real one). */
+function rawPostJson(port: number, path: string, payload: unknown, headers: Record<string, string> = {}): Promise<JsonResponse> {
+  return new Promise((resolvePromise, reject) => {
+    const body = JSON.stringify(payload);
+    const req = httpRequest(
+      {
+        host: "127.0.0.1",
+        port,
+        path,
+        method: "POST",
+        headers: { "content-type": "application/json", "x-bisellium-token": TEST_TOKEN, ...headers },
+      },
+      (res: IncomingMessage) => {
+        let raw = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk: string) => (raw += chunk));
+        res.on("end", () => {
+          let parsedBody: unknown;
+          try {
+            parsedBody = raw ? JSON.parse(raw) : undefined;
+          } catch {
+            parsedBody = raw;
+          }
+          resolvePromise({ status: res.statusCode ?? 0, body: parsedBody });
+        });
+      },
+    );
+    req.on("error", reject);
+    req.end(body);
+  });
+}
+
 /** A minimal SSE client for /api/live: parses "data: <json>\n\n" frames off
  *  the raw response stream (node:http, not fetch — we want the connection
  *  to stay open and keep pushing). */
@@ -291,7 +326,8 @@ async function main(): Promise<void> {
       }
     }
 
-    // ---- W-016 behaviour 5: write auth matrix --------------------------------
+    // ---- W-016 behaviour 5: write auth matrix (still holds — the token is
+    // still what authorizes, unchanged by W-067 below) --------------------
     {
       const r1 = await postJson(base, "/api/greenlight", { opus: "NOPE-AUTH" }, { origin: "https://evil.test" });
       check("auth: valid token + Origin -> 403", r1.status === 403, String(r1.status));
@@ -301,6 +337,70 @@ async function main(): Promise<void> {
 
       const r3 = await postJson(base, "/api/greenlight", { opus: "NOPE-AUTH" }, { "content-type": "text/plain" });
       check("auth: token + text/plain -> 415", r3.status === 415, String(r3.status));
+    }
+
+    // ---- W-067 behaviour 1: the accepted-origin pair (D-023 PATRON-5).
+    // http://127.0.0.1:<boundPort> and http://localhost:<boundPort> — the
+    // ACTUAL bound port (server.address().port), computed once at startup
+    // and never recomputed per request. No trust is derived from Host or
+    // any X-Forwarded-* header. W-016 behaviour 5 above still holds: Origin
+    // is a second, independent gate, checked first — the token is still
+    // what authorizes. W-002 (state: building, not backlog) is the target:
+    // greenlight fails validation cleanly without ever writing the file, so
+    // its bytes staying identical proves a refused write never reached the
+    // record. -------------------------------------------------------------
+    {
+      const P = started.port;
+      const targetPath = join(dir, "opera", "W-002.md");
+      const targetBefore = readFileSync(targetPath, "utf8");
+      const assertUnchanged = (label: string): void => {
+        check(`auth: ${label} — W-002.md unchanged`, readFileSync(targetPath, "utf8") === targetBefore);
+      };
+
+      for (const origin of [undefined, `http://127.0.0.1:${P}`, `http://localhost:${P}`]) {
+        const headers: Record<string, string> = {};
+        if (origin !== undefined) headers["origin"] = origin;
+        const r = await postJson(base, "/api/greenlight", { opus: "W-002" }, headers);
+        check(`auth: Origin ${origin ?? "(absent)"} -> 200 (auth passes)`, r.status === 200, String(r.status));
+      }
+      assertUnchanged("the accepted-origin block");
+
+      const refused403: readonly (readonly [string, string])[] = [
+        ["the literal string null", "null"],
+        ["right host, wrong port", `http://127.0.0.1:${P + 1}`],
+        ["https instead of http", `https://127.0.0.1:${P}`],
+        ["the ::1 loopback form", `http://[::1]:${P}`],
+        ["a foreign host", "https://evil.example"],
+      ];
+      for (const [label, origin] of refused403) {
+        const r = await postJson(base, "/api/greenlight", { opus: "W-002" }, { origin });
+        check(`auth: Origin (${label}) -> 403`, r.status === 403, String(r.status));
+      }
+      assertUnchanged("the 403 block");
+
+      {
+        const originOk = `http://127.0.0.1:${P}`;
+        const r401 = await postJson(base, "/api/greenlight", { opus: "W-002" }, { origin: originOk, "x-bisellium-token": "wrong" });
+        check("auth: valid Origin + wrong token -> 401", r401.status === 401, String(r401.status));
+        const r415 = await postJson(base, "/api/greenlight", { opus: "W-002" }, { origin: originOk, "content-type": "text/plain" });
+        check("auth: valid Origin + text/plain -> 415", r415.status === 415, String(r415.status));
+        const r400 = await postJson(base, "/api/greenlight", {}, { origin: originOk });
+        check("auth: valid Origin + missing field -> 400", r400.status === 400, String(r400.status));
+      }
+      assertUnchanged("the token/content-type/body block");
+
+      // Host and X-Forwarded-Host are request-supplied headers `fetch`
+      // refuses to let a caller override (they're forbidden request
+      // headers) — a raw node:http request is what actually lets a test
+      // send them, same as connectSSE() above needs the raw module for SSE.
+      const rHost = await rawPostJson(P, "/api/greenlight", { opus: "W-002" }, { host: "evil.example" });
+      check("auth: Host: evil.example, no Origin -> 200 (no trust from Host)", rHost.status === 200, String(rHost.status));
+      const rXfh = await rawPostJson(P, "/api/greenlight", { opus: "W-002" }, {
+        "x-forwarded-host": `127.0.0.1:${P}`,
+        origin: "https://evil.example",
+      });
+      check("auth: X-Forwarded-Host spoofed + foreign Origin -> still 403", rXfh.status === 403, String(rXfh.status));
+      assertUnchanged("the Host/X-Forwarded-Host block");
     }
 
     // ---- W-016 behaviour 6: an oversized body is 413 with a JSON body,
