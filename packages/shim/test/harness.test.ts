@@ -9,10 +9,13 @@
  * going through `--append-system-prompt-file` (a temp file, deleted after)
  * instead of argv, and codex's `item.completed`-wrapped agent messages.
  *
- * Drives real stub executables (never the real `claude`/`codex` CLIs),
- * written to a temp bin dir and prepended to PATH for each call.
+ * Drives real stub executables (never the real `claude`/`codex` CLIs). Each
+ * scenario gets its own bin directory (W-049 test hardening): the stub's
+ * behaviour is baked into its source text, and the scenario is selected by
+ * which directory PATH points at — never an env var (an env-carried
+ * scenario flag would itself be scrubbed by W-049's harness env allowlist).
  */
-import { chmodSync, existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { claudeCodeProfile, codexProfile } from "../src/index.js";
@@ -25,8 +28,7 @@ const check = (name: string, ok: boolean, detail = "") => {
 
 const binDir = mkdtempSync(join(tmpdir(), "bisellium-harness-bin-"));
 
-const CLAUDE_STUB = `#!/usr/bin/env node
-import { readFileSync } from "node:fs";
+const CLAUDE_PREAMBLE = `import { readFileSync } from "node:fs";
 function readStdin() {
   return new Promise((resolve) => {
     let data = "";
@@ -43,27 +45,21 @@ const promptFileContent = promptFilePath ? readFileSync(promptFilePath, "utf8") 
 const inlineIdx = args.indexOf("--append-system-prompt");
 const inlinePrompt = inlineIdx !== -1 ? args[inlineIdx + 1] : undefined;
 const message = (await readStdin()).trim();
-const scenario = process.env.STUB_SCENARIO ?? "normal";
-function out(obj) { process.stdout.write(JSON.stringify(obj) + "\\n"); }
-if (scenario === "limited_envelope") {
-  out({ session_id: "sess-limited", is_error: true, subtype: "usage_limit_error", error: "You have exceeded your usage limit for this period." });
-  process.exit(0);
-}
-if (scenario === "limited_stderr") {
-  out({ session_id: "sess-x", result: "fine", is_error: false });
-  process.stderr.write("error: rate limit exceeded, please retry later\\n");
-  process.exit(1);
-}
-if (scenario === "prompt_echo") {
-  out({ session_id: "sess-prompt", result: "PROMPT:" + (promptFileContent ?? ""), promptFilePath: promptFilePath ?? null, inlinePrompt: inlinePrompt ?? null, model: "stub" });
-  process.exit(0);
-}
-out({ session_id: "sess-normal", result: "echo:" + message + " (mentions: rate limit, 429, quota exceeded)", is_error: false, model: "stub" });
-process.exit(0);
-`;
+function out(obj) { process.stdout.write(JSON.stringify(obj) + "\\n"); }`;
 
-const CODEX_STUB = `#!/usr/bin/env node
-function readStdin() {
+const CLAUDE_SCENARIOS: Record<string, string> = {
+  normal: `out({ session_id: "sess-normal", result: "echo:" + message + " (mentions: rate limit, 429, quota exceeded)", is_error: false, model: "stub" });
+process.exit(0);`,
+  limited_envelope: `out({ session_id: "sess-limited", is_error: true, subtype: "usage_limit_error", error: "You have exceeded your usage limit for this period." });
+process.exit(0);`,
+  limited_stderr: `out({ session_id: "sess-x", result: "fine", is_error: false });
+process.stderr.write("error: rate limit exceeded, please retry later\\n");
+process.exit(1);`,
+  prompt_echo: `out({ session_id: "sess-prompt", result: "PROMPT:" + (promptFileContent ?? ""), promptFilePath: promptFilePath ?? null, inlinePrompt: inlinePrompt ?? null, model: "stub" });
+process.exit(0);`,
+};
+
+const CODEX_PREAMBLE = `function readStdin() {
   return new Promise((resolve) => {
     let data = "";
     process.stdin.setEncoding("utf8");
@@ -73,39 +69,43 @@ function readStdin() {
   });
 }
 const message = (await readStdin()).trim();
-const scenario = process.env.STUB_SCENARIO ?? "normal";
-function line(obj) { process.stdout.write(JSON.stringify(obj) + "\\n"); }
-if (scenario === "limited_error_event") {
-  line({ type: "session.created", session_id: "codex-limited" });
-  line({ type: "error", message: "usage limit reached for this workspace" });
-  process.exit(1);
-}
-if (scenario === "limited_stderr") {
-  line({ type: "session.created", session_id: "codex-stderr" });
-  line({ type: "agent_message", message: "all good here" });
-  process.stderr.write("rate limit hit, backoff required\\n");
-  process.exit(1);
-}
-if (scenario === "item_completed") {
-  line({ type: "session.created", session_id: "codex-item" });
-  line({ type: "item.completed", item: { type: "agent_message", text: "wrapped:" + message } });
-  process.exit(0);
-}
-line({ type: "session.created", session_id: "codex-normal" });
+function line(obj) { process.stdout.write(JSON.stringify(obj) + "\\n"); }`;
+
+const CODEX_SCENARIOS: Record<string, string> = {
+  normal: `line({ type: "session.created", session_id: "codex-normal" });
 line({ type: "agent_message", message: "echo:" + message + " (mentions: rate limit, 429, quota)" });
-process.exit(0);
-`;
+process.exit(0);`,
+  limited_error_event: `line({ type: "session.created", session_id: "codex-limited" });
+line({ type: "error", message: "usage limit reached for this workspace" });
+process.exit(1);`,
+  limited_stderr: `line({ type: "session.created", session_id: "codex-stderr" });
+line({ type: "agent_message", message: "all good here" });
+process.stderr.write("rate limit hit, backoff required\\n");
+process.exit(1);`,
+  item_completed: `line({ type: "session.created", session_id: "codex-item" });
+line({ type: "item.completed", item: { type: "agent_message", text: "wrapped:" + message } });
+process.exit(0);`,
+};
 
-function writeStub(name: string, content: string): void {
-  const p = join(binDir, name);
-  writeFileSync(p, content);
+function writeScenarioStub(bin: "claude" | "codex", scenario: string, preamble: string, action: string): string {
+  const dir = join(binDir, `${bin}-${scenario}`);
+  mkdirSync(dir, { recursive: true });
+  const p = join(dir, bin);
+  writeFileSync(p, `#!/usr/bin/env node\n${preamble}\n${action}\n`);
   chmodSync(p, 0o755);
+  return dir;
 }
-writeStub("claude", CLAUDE_STUB);
-writeStub("codex", CODEX_STUB);
 
-function envFor(scenario: string): NodeJS.ProcessEnv {
-  return { ...process.env, PATH: `${binDir}:${process.env["PATH"] ?? ""}`, STUB_SCENARIO: scenario };
+const claudeDirs: Record<string, string> = {};
+for (const [scenario, action] of Object.entries(CLAUDE_SCENARIOS)) claudeDirs[scenario] = writeScenarioStub("claude", scenario, CLAUDE_PREAMBLE, action);
+const codexDirs: Record<string, string> = {};
+for (const [scenario, action] of Object.entries(CODEX_SCENARIOS)) codexDirs[scenario] = writeScenarioStub("codex", scenario, CODEX_PREAMBLE, action);
+
+function envForClaude(scenario: string): NodeJS.ProcessEnv {
+  return { ...process.env, PATH: `${claudeDirs[scenario]}:${process.env["PATH"] ?? ""}` };
+}
+function envForCodex(scenario: string): NodeJS.ProcessEnv {
+  return { ...process.env, PATH: `${codexDirs[scenario]}:${process.env["PATH"] ?? ""}` };
 }
 
 try {
@@ -116,7 +116,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "you are eng-lead",
       message: "status?",
-      env: envFor("normal"),
+      env: envForClaude("normal"),
     });
     check("claude-code normal: exitCode 0", turn.exitCode === 0, String(turn.exitCode));
     check(
@@ -131,7 +131,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "you are eng-lead",
       message: "status?",
-      env: envFor("limited_envelope"),
+      env: envForClaude("limited_envelope"),
     });
     check("claude-code limited envelope: exitCode 3", turn.exitCode === 3, String(turn.exitCode));
   }
@@ -141,7 +141,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "you are eng-lead",
       message: "status?",
-      env: envFor("limited_stderr"),
+      env: envForClaude("limited_stderr"),
     });
     check("claude-code limited stderr: exitCode 3", turn.exitCode === 3, String(turn.exitCode));
   }
@@ -154,7 +154,7 @@ try {
       sella: "eng-lead",
       systemPrompt,
       message: "status?",
-      env: envFor("prompt_echo"),
+      env: envForClaude("prompt_echo"),
     });
     check("claude-code prompt file: exitCode 0", turn.exitCode === 0, String(turn.exitCode));
     check("claude-code prompt file: content reached the process via the file", turn.reply === `PROMPT:${systemPrompt}`, turn.reply);
@@ -173,7 +173,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "",
       message: "status?",
-      env: envFor("normal"),
+      env: envForCodex("normal"),
     });
     check("codex normal: exitCode 0", turn.exitCode === 0, String(turn.exitCode));
     check(
@@ -188,7 +188,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "",
       message: "status?",
-      env: envFor("limited_error_event"),
+      env: envForCodex("limited_error_event"),
     });
     check("codex limited error event: exitCode 3", turn.exitCode === 3, String(turn.exitCode));
   }
@@ -198,7 +198,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "",
       message: "status?",
-      env: envFor("limited_stderr"),
+      env: envForCodex("limited_stderr"),
     });
     check("codex limited stderr: exitCode 3", turn.exitCode === 3, String(turn.exitCode));
   }
@@ -208,7 +208,7 @@ try {
       sella: "eng-lead",
       systemPrompt: "",
       message: "hello",
-      env: envFor("item_completed"),
+      env: envForCodex("item_completed"),
     });
     check("codex item.completed: exitCode 0", turn.exitCode === 0, String(turn.exitCode));
     check("codex item.completed: agent message text extracted", turn.reply === "wrapped:hello", turn.reply);
