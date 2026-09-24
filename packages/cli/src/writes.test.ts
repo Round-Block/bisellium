@@ -46,6 +46,38 @@ function readEventLines(dir: string): Record<string, unknown>[] {
     .map((l) => JSON.parse(l) as Record<string, unknown>);
 }
 
+/** Replaces `console.error` for the duration of `fn` and returns whatever it
+ *  printed alongside its result — the answer-without-opus block's own
+ *  save/restore dance, hoisted (W-047) so behaviour 2's sentinel cases share
+ *  it. Sync, not async like lifecycle.test.ts's withStderr: all five verbs
+ *  writes.ts owns return synchronously. */
+function withStderr<T>(fn: () => T): { result: T; stderr: string } {
+  const orig = console.error;
+  let stderr = "";
+  console.error = (...parts: unknown[]) => {
+    stderr += parts.map(String).join(" ") + "\n";
+  };
+  try {
+    const result = fn();
+    return { result, stderr };
+  } finally {
+    console.error = orig;
+  }
+}
+
+/** The collision-sentinel recipe (W-047, behaviours 2/3): a copy of a real
+ *  record OUTSIDE the target directory (what a raw `join()` mutation
+ *  collapses "../X" onto) and a copy INSIDE it under the traversal id's own
+ *  basename (what a caller-sanitizing mutation collapses "../X" onto
+ *  instead, once it strips the leading "../"). `safeItemPath` refuses the id
+ *  outright and touches neither. */
+function seedSentinels(dir: string, opusSourceId: string): void {
+  cpSync(join(dir, "opera", `${opusSourceId}.md`), join(dir, "W-777.md"));
+  cpSync(join(dir, "opera", `${opusSourceId}.md`), join(dir, "opera", "W-777.md"));
+  cpSync(join(dir, "petitiones", "A-1.md"), join(dir, "A-777.md"));
+  cpSync(join(dir, "petitiones", "A-1.md"), join(dir, "petitiones", "A-777.md"));
+}
+
 try {
   // ---- behaviour 1 (W-047): safeItemPath's contract, over every row of one
   //      hostile-id table in one loop — a refusal is never a sanitize, and
@@ -405,6 +437,116 @@ try {
     check("budget: --hours accepted", withHours.exitCode === 0, String(withHours.exitCode));
     const withHoursParsed = parseYaml(readFileSync(path, "utf8")) as { collegia: Record<string, { stipendium_tokens: number; stipendium_hours: number }> };
     check("budget: --hours recorded, engineering untouched", withHoursParsed.collegia["art"]?.stipendium_hours === 40 && withHoursParsed.collegia["engineering"]?.stipendium_tokens === 2500000, JSON.stringify(withHoursParsed.collegia));
+  }
+
+  // ---- behaviour 2 (W-047): every safeItemPath call site in writes.ts
+  //      refuses a traversal id that resolves onto a real file, and refuses
+  //      it rather than laundering it — rows 1-5 of the sentinel table.
+  //      Every case's target exists (an outside copy AND an in-directory
+  //      collision record), so a raw-join mutation and a caller-sanitizing
+  //      mutation each land on a real file instead of a missing one. -------
+
+  // row 1: handoff --opus ../W-777
+  {
+    const dir = freshStudio("b2-handoff");
+    seedSentinels(dir, "W-007");
+    const outsidePath = join(dir, "W-777.md");
+    const insidePath = join(dir, "opera", "W-777.md");
+    const outsideBefore = readFileSync(outsidePath, "utf8");
+    const insideBefore = readFileSync(insidePath, "utf8");
+    const eventsBefore = readEventLines(dir).length;
+
+    const { result: r, stderr } = withStderr(() => runHandoff(["--opus", "../W-777", "--sella", "builder-1", "--next", "x", "--studio", dir], { now: NOW }));
+
+    check("row1 handoff: exits 2", r.exitCode === 2, String(r.exitCode));
+    check("row1 handoff: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+    check("row1 handoff: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+    check("row1 handoff: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+    check("row1 handoff: no event appended", readEventLines(dir).length === eventsBefore);
+  }
+
+  // row 2: emit --usage --opus ../W-777
+  {
+    const dir = freshStudio("b2-emit-usage");
+    seedSentinels(dir, "W-007");
+    const outsidePath = join(dir, "W-777.md");
+    const insidePath = join(dir, "opera", "W-777.md");
+    const outsideBefore = readFileSync(outsidePath, "utf8");
+    const insideBefore = readFileSync(insidePath, "utf8");
+    const eventsBefore = readEventLines(dir).length;
+
+    const { result: r, stderr } = withStderr(() =>
+      runEmit(["--usage", "10", "--opus", "../W-777", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW }),
+    );
+
+    check("row2 emit-usage: exits 2", r.exitCode === 2, String(r.exitCode));
+    check("row2 emit-usage: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+    check("row2 emit-usage: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+    check("row2 emit-usage: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+    check("row2 emit-usage: no event appended", readEventLines(dir).length === eventsBefore, JSON.stringify(readEventLines(dir)));
+  }
+
+  // row 3: answer --petitio ../A-777
+  {
+    const dir = freshStudio("b2-answer-petitio");
+    seedSentinels(dir, "W-007");
+    const outsidePath = join(dir, "A-777.md");
+    const insidePath = join(dir, "petitiones", "A-777.md");
+    const outsideBefore = readFileSync(outsidePath, "utf8");
+    const insideBefore = readFileSync(insidePath, "utf8");
+    const eventsBefore = readEventLines(dir).length;
+
+    const { result: r, stderr } = withStderr(() => runAnswer(["--petitio", "../A-777", "Ship", "it.", "--studio", dir], { now: NOW }));
+
+    check("row3 answer-petitio: exits 2", r.exitCode === 2, String(r.exitCode));
+    check("row3 answer-petitio: stderr names unknown petitio ../A-777", stderr.includes("unknown petitio: ../A-777"), stderr);
+    check("row3 answer-petitio: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+    check("row3 answer-petitio: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+    check("row3 answer-petitio: no event appended", readEventLines(dir).length === eventsBefore);
+  }
+
+  // row 4: answer --opus ../W-777 (a real --petitio A-1) — the traversal id
+  // is checked before any write, so a refusal must leave A-1 itself
+  // untouched too, not just the two W-777 sentinels (which this verb never
+  // writes to either way — its own discriminator is A-1, not the sentinels).
+  {
+    const dir = freshStudio("b2-answer-opus");
+    seedSentinels(dir, "W-007");
+    const outsidePath = join(dir, "W-777.md");
+    const insidePath = join(dir, "opera", "W-777.md");
+    const outsideBefore = readFileSync(outsidePath, "utf8");
+    const insideBefore = readFileSync(insidePath, "utf8");
+    const petitioPath = join(dir, "petitiones", "A-1.md");
+    const petitioBefore = readFileSync(petitioPath, "utf8");
+    const eventsBefore = readEventLines(dir).length;
+
+    const { result: r, stderr } = withStderr(() => runAnswer(["--petitio", "A-1", "Ship", "it.", "--opus", "../W-777", "--studio", dir], { now: NOW }));
+
+    check("row4 answer-opus: exits 2", r.exitCode === 2, String(r.exitCode));
+    check("row4 answer-opus: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+    check("row4 answer-opus: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+    check("row4 answer-opus: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+    check("row4 answer-opus: no event appended", readEventLines(dir).length === eventsBefore);
+    check("row4 answer-opus: the real petitio A-1 is byte-identical", readFileSync(petitioPath, "utf8") === petitioBefore);
+  }
+
+  // row 5: greenlight ../W-777
+  {
+    const dir = freshStudio("b2-greenlight");
+    seedSentinels(dir, "W-007");
+    const outsidePath = join(dir, "W-777.md");
+    const insidePath = join(dir, "opera", "W-777.md");
+    const outsideBefore = readFileSync(outsidePath, "utf8");
+    const insideBefore = readFileSync(insidePath, "utf8");
+    const eventsBefore = readEventLines(dir).length;
+
+    const { result: r, stderr } = withStderr(() => runGreenlight(["../W-777", "--studio", dir], { now: NOW }));
+
+    check("row5 greenlight: exits 2", r.exitCode === 2, String(r.exitCode));
+    check("row5 greenlight: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+    check("row5 greenlight: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+    check("row5 greenlight: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+    check("row5 greenlight: no event appended", readEventLines(dir).length === eventsBefore);
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
