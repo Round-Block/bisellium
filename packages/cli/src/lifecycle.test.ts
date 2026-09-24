@@ -107,6 +107,16 @@ function writeOpus(dir: string, id: string, contents: string): string {
   return path;
 }
 
+/** W-047's collision-sentinel recipe: a copy of a real opus record OUTSIDE
+ *  `opera/` at the officina root (what a raw `join()` mutation collapses
+ *  "../X" onto) and a copy INSIDE `opera/` under the traversal id's own
+ *  basename (what a caller-sanitizing mutation collapses "../X" onto
+ *  instead). `safeItemPath` refuses the id outright and touches neither. */
+function seedOpusSentinels(dir: string, opusSourceId: string): void {
+  cpSync(join(dir, "opera", `${opusSourceId}.md`), join(dir, "W-777.md"));
+  cpSync(join(dir, "opera", `${opusSourceId}.md`), join(dir, "opera", "W-777.md"));
+}
+
 /** W-034: a `decisions/<id>.md` fixture with full `decision.shape` keys
  *  (`id`, `title`, `at`, `provenance`, `by`, `kill_when`) unless `raw` is
  *  given, for the unparseable-YAML case (D-903) — a decision `waive`/`done`
@@ -2038,6 +2048,110 @@ try {
       check(`red-sella b3 (${row.tag}): records`, r.exitCode === 0, String(r.exitCode));
       const header = readFileSync(join(redsDir, "01.log"), "utf8").split("\n");
       check(`red-sella b3 (${row.tag}): header names ${row.want}`, header[4] === `# sella: ${row.want}`, header[4]);
+    }
+  }
+
+  // =========================================================================
+  // W-047 behaviour 3 (block 45): the four uncovered safeItemPath call sites
+  // in lifecycle.ts (ready, done, review, waive's positional <opus>) each
+  // refuse a traversal id that resolves onto a real file, rather than
+  // laundering it — rows 6-9 of the sentinel table. Both sentinel copies are
+  // opera/W-002.md (state building), per the brief's sentinel recipe.
+  // =========================================================================
+  if (runs(45)) {
+    // row 6: ready <opus> ../W-777. `building` is neither greenlit nor
+    // halted, so a mutant that reaches the state check still refuses — but
+    // with ready's own "not greenlit or halted" message, never the guard's
+    // "unknown opus", which is the discriminator this case actually bites on.
+    {
+      const dir = freshStudio("b3-ready");
+      seedOpusSentinels(dir, "W-002");
+      const outsidePath = join(dir, "W-777.md");
+      const insidePath = join(dir, "opera", "W-777.md");
+      const outsideBefore = readFileSync(outsidePath, "utf8");
+      const insideBefore = readFileSync(insidePath, "utf8");
+      const eventsBefore = readEventLines(dir).length;
+
+      const { result: r, stderr } = await withStderr(() => runReady(["../W-777", "--sella", "builder-a", "--studio", dir], { now: NOW }));
+
+      check("row6 ready: exits 2", r.exitCode === 2, String(r.exitCode));
+      check("row6 ready: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+      check("row6 ready: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+      check("row6 ready: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+      check("row6 ready: no event appended", readEventLines(dir).length === eventsBefore);
+    }
+
+    // row 7: done <opus> ../W-777. `building` IS one of done's accepted
+    // source states, so a mutant that reaches the gate check refuses on
+    // missing gates instead (exit 1, not 2) — both the exit code and the
+    // stderr differ from the guard's own refusal.
+    {
+      const dir = freshStudio("b3-done");
+      seedOpusSentinels(dir, "W-002");
+      const outsidePath = join(dir, "W-777.md");
+      const insidePath = join(dir, "opera", "W-777.md");
+      const outsideBefore = readFileSync(outsidePath, "utf8");
+      const insideBefore = readFileSync(insidePath, "utf8");
+      const eventsBefore = readEventLines(dir).length;
+
+      const { result: r, stderr } = await withStderr(() => runDone(["../W-777", "--sella", "builder-a", "--studio", dir], { now: NOW }));
+
+      check("row7 done: exits 2", r.exitCode === 2, String(r.exitCode));
+      check("row7 done: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+      check("row7 done: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+      check("row7 done: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+      check("row7 done: no event appended", readEventLines(dir).length === eventsBefore);
+    }
+
+    // row 8: review <opus> --pass --evidence ../W-777. review has no state
+    // precondition at all, so a mutant that reaches the opus lookup writes a
+    // passed probatio straight into whichever sentinel it resolved, and
+    // emits the gate_evaluated event — the strongest of the four rows: exit
+    // code, file bytes and event count all move.
+    {
+      const dir = freshStudio("b3-review");
+      seedOpusSentinels(dir, "W-002");
+      writeFileSync(join(dir, "ci", "review-w047-b3.log"), "review notes\n");
+      const outsidePath = join(dir, "W-777.md");
+      const insidePath = join(dir, "opera", "W-777.md");
+      const outsideBefore = readFileSync(outsidePath, "utf8");
+      const insideBefore = readFileSync(insidePath, "utf8");
+      const eventsBefore = readEventLines(dir).length;
+
+      const { result: r, stderr } = await withStderr(() =>
+        runReview(["../W-777", "--pass", "--evidence", "ci/review-w047-b3.log", "--sella", "builder-a", "--studio", dir], { now: NOW }),
+      );
+
+      check("row8 review: exits 2", r.exitCode === 2, String(r.exitCode));
+      check("row8 review: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+      check("row8 review: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+      check("row8 review: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+      check("row8 review: no event appended", readEventLines(dir).length === eventsBefore);
+    }
+
+    // row 9: waive <opus> --gate patron --decision D-999 (a decision that
+    // does not exist). `building` is an accepted source state and "patron"
+    // is unrecorded on the W-002 sentinel, so a mutant that reaches the opus
+    // lookup gets all the way to the decision check — refusing there
+    // instead, with a message that never mentions "unknown opus".
+    {
+      const dir = freshStudio("b3-waive");
+      seedOpusSentinels(dir, "W-002");
+      const outsidePath = join(dir, "W-777.md");
+      const insidePath = join(dir, "opera", "W-777.md");
+      const outsideBefore = readFileSync(outsidePath, "utf8");
+      const insideBefore = readFileSync(insidePath, "utf8");
+      const eventsBefore = readEventLines(dir).length;
+
+      const { result: r, stderr } = await withStderr(() =>
+        runWaive(["../W-777", "--gate", "patron", "--reason", "r", "--decision", "D-999", "--sella", "guest", "--studio", dir], { now: NOW }),
+      );
+
+      check("row9 waive: exits 2", r.exitCode === 2, String(r.exitCode));
+      check("row9 waive: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+      check("row9 waive: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+      check("row9 waive: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+      check("row9 waive: no event appended", readEventLines(dir).length === eventsBefore);
     }
   }
 } finally {

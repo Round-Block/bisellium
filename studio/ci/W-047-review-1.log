@@ -1,0 +1,450 @@
+# W-047 review, round 1 — censor (qa-lead, claude-fable-5)
+# opus: W-047 "safeItemPath has a contract test and every call site a traversal case"
+# branch: opus/W-047 @ 470d735 · fork point 2484c8d · spec-gate commit 0122972
+# worktree: /tmp/claude-1000/w047-build · mutation scratch in-place, restored after each
+# VERDICT: FAIL (1 blocking finding, 3 advisory findings, 2 observations, 0 corrections to Terra)
+
+## 0. Trap check and preconditions
+
+  git status --porcelain            -> empty (before every probe and at the end)
+  git rev-parse HEAD                -> 470d7356e30f7b63ca101d24741def20cd82b741
+  git branch --show-current         -> opus/W-047
+  readlink -f node_modules/@bisellium/shim
+    -> /tmp/claude-1000/w047-build/packages/shim
+  Resolves INSIDE the worktree. Every run below tested the branch's own packages/.
+
+## 1. Gates, re-run by me in the worktree at 470d735
+
+  npm test                                                 exit 0  (0 lines matching ^FAIL)
+  npm run -s typecheck                                     exit 0
+  node --import tsx packages/cli/src/main.ts check studio --repo .
+                                                           exit 0  PASS — 0 blocking, 91 advisory
+  node --import tsx packages/cli/src/main.ts verify W-047 --studio studio --repo .
+                                                           tests/lint/types: passed
+    This re-run rewrote studio/ci/W-047-tests-7a02a35c.log with timing noise only
+    (74 insertions/74 deletions, all `GET /api/... 200 <n>ms` lines). Restored with
+    `git checkout --`; porcelain empty afterwards. Independent confirmation that the
+    three committed certificates name the current source tree: verify recomputed the
+    same tree hash 7a02a35c and did not rename the files.
+
+  node scripts/safe-item-path-mutants.mjs all              exit 1
+    last line: `all 33 mutants matched (28 dead, 5 alive)`
+    33 `=== mutant` banners; 28 `-> matched (dead)`, 5 `-> matched (alive)`.
+    git status --porcelain empty immediately afterwards: every mutation restored.
+
+  The only W-047 line in check's output is the advisory `probatio.certifies` for
+  opera/W-047.md. Not a W-047 finding.
+
+## 2. The mandated censor-only inventory-bite checks (brief, Acceptance)
+
+Driver: $TMPDIR/w047-censor/bite.mjs — saves each touched file's bytes, applies
+one scratch edit (or writes one new file), runs
+`node --import tsx packages/cli/src/containment.test.ts .` from the worktree
+root, restores in a `finally`, deletes any created file, then reads
+`git status --porcelain`. Nothing was committed. Porcelain was empty after every
+case and at the end.
+
+  (a) safeItemPath call added inside an existing function
+      (appended `__censorA` to packages/commands/src/writes.ts)
+      expected: inventory A FAILS      -> exit 1, 3 FAIL lines           BITES
+        FAIL  inventory A: pinned list length matches the scan's own count  pinned=14 scan=15
+        FAIL  inventory A: every safeItemPath call site is pinned, none missing
+        FAIL  inventory A: scan order matches the pinned order exactly
+
+  (b) safeItemPath call in a NEW file under packages/
+      (created packages/cli/src/__censor_new.ts importing the helper)
+      expected: inventory A FAILS      -> exit 1, 3 FAIL lines           BITES
+        scanA gained "packages/cli/src/__censor_new.ts:censorNew:opera#1"
+
+  (c) existing import aliased: `import { safeItemPath as sp }`
+      (packages/cli/src/retro.ts, import and both call sites renamed)
+      expected: NO CHANGE              -> exit 0, 0 FAIL                 CORRECT
+      Alias-proof: keys are `rel:fn:dir#n`, never the binding name.
+
+  (d) an existing call split across lines
+      (runGreenlight's call in packages/commands/src/writes.ts, 3 lines)
+      expected: NO CHANGE              -> exit 0, 0 FAIL                 CORRECT
+      No false drift: no line numbers are pinned anywhere.
+
+  (e) raw ``join(x, "opera", `${id}.md`)`` added — the brief's literal shape
+      (appended `__censorE` to packages/cli/src/close.ts)
+      expected: inventory B FAILS      -> exit 0, 0 FAIL       *** DOES NOT BITE ***
+
+  (e2) control, same shape, identifier renamed `opusId`
+      (appended `__censorE2` to packages/cli/src/close.ts)
+      expected: inventory B FAILS      -> exit 1, 3 FAIL lines           BITES
+        scanB gained "packages/cli/src/close.ts:__censorE2#1"
+
+  Four of five as specified. (e) is finding F-1.
+
+## 3. F-1 (BLOCKING) — inventory B scans a narrower shape than the brief specifies
+
+  ROOT CAUSE, one line:
+    packages/cli/src/containment.test.ts:205
+        if (exprText.endsWith("Id")) {
+
+  THE SPEC it diverges from, studio/briefs/W-047.md:363-365:
+    "Inventory B — raw id-to-path joins. Every `TemplateExpression` with at
+     least one substitution whose final literal chunk ends in `.md`, anywhere
+     in the source set, yielding `${rel}:${fn}#${nth}` plus a disposition"
+
+  There is no `*Id`-suffix condition in the spec. The implementation adds one and
+  filters on the *source text* of the last substitution
+  (containment.test.ts:202-205), so the scan sees a raw join only when the id is
+  spelled with a trailing "Id".
+
+  ONE ROOT CAUSE, BUT A CLASS OF MISSES. What I searched and what I found:
+  I re-implemented inventory B's scan exactly as the brief specifies it (no "Id"
+  filter), ran it over the same source set — every non-test, non-.d.ts `.ts` under
+  packages/, apps/ and adapters/, excluding node_modules and dist — and diffed
+  against the committed implementation. 17 template joins at HEAD match the
+  brief's rule and are silently dropped:
+
+    apps/server/src/store.ts:224            expr "id"        `${id}.md`
+    packages/cli/src/init.ts:108            expr "isoDateInZone(now, timezone)"
+    packages/cli/src/new.ts:68              expr "id"        `${id}.md`
+    packages/cli/src/new.ts:179             expr "id"        `briefs/${id}.md`
+    packages/cli/src/new.ts:194             expr "id"        `${id}.md`
+    packages/cli/src/new.ts:196             expr "id"        `${id}.md`
+    packages/cli/src/retro.ts:395           expr "id"        `lessons/${id}.md`
+    packages/cli/src/retro.ts:431           expr "pid"       `petitiones/${pid}.md`
+    packages/cli/src/retro.ts:534           expr "cascade"   `acta/${dateStr}-retro-${cascade}.md`
+    packages/cli/src/tick.ts:246            expr "sella"     `${today}-${sella}-daily.md`
+    packages/commands/src/context.ts:187    expr "d.id"      `acta/${d.id}.md`
+    packages/commands/src/talk.ts:187       expr "id"        `${id}.md`
+    packages/commands/src/talk.ts:206       expr "slug"      `${date}-${slug}.md`
+    packages/commands/src/talk.ts:207       expr "n"         `${date}-${slug}-${n}.md`
+    packages/commands/src/writes.ts:107     expr "id"        `${id}.md`
+    packages/commands/src/writes.ts:679     expr "slug"      `${dateStr}-${slug}.md`
+    packages/commands/src/writes.ts:680     expr "n"         `${dateStr}-${slug}-${n}.md`
+
+  Most are almost certainly `derived` — nextId output, dates, slugs. That is not
+  the point. The brief's design is scan wide, then pin a DISPOSITION per entry
+  (`guarded` / `derived` / `bypass`); the implementation instead narrows the SCAN
+  by an undocumented heuristic so the pinned list stays at 12. Those are different
+  guards. One of the 17 (writes.ts:107) is safeItemPath's own join; several others
+  (store.ts:224, talk.ts:187) I did not adjudicate, because adjudicating them is
+  exactly the work the brief assigned and it has not been done.
+
+  FOUR CONSEQUENCES, each verified:
+
+  1. The acceptance criterion assigned to me (brief:540) fails as written:
+     "adding a raw ``join(x, "opera", `${id}.md`)`` anywhere must fail inventory B."
+     Measured in section 2(e): exit 0, 0 FAIL. It does not fail.
+
+  2. Red 04 does not demonstrate what it claims. mF's "dead" verdict is an
+     artifact of the harness naming its own probe parameter `probeOpusId`
+     (scripts/safe-item-path-mutants.mjs:251):
+        "export function __w047MutantProbeF(dir: string, probeOpusId: string):
+         string {\n  return `${dir}/${probeOpusId}.md`;\n}"
+     Rename that parameter to `id` and mF survives. The mutant tests the "Id"
+     filter, not the property behaviour 4 exists to prove.
+
+  3. The opus's own stated purpose for inventory B is not achieved. brief:63:
+     "see behaviour 4, whose second inventory pins every entry above so a ninth
+     bypass cannot appear unnoticed." brief:560: "Inventory B pins them meanwhile,
+     with dispositions, so the debt is visible and countable rather than implied."
+     A ninth bypass written as ``join(dir, `${id}.md`)`` appears unnoticed today.
+
+  4. The risk is live, not hypothetical, and lands on the follow-up this opus
+     files. The repo's own naming is split: branch.ts / close.ts / verify.ts use
+     `opusId`; new.ts / talk.ts / retro.ts / store.ts use `id` / `pid` / `slug`.
+     W-059 routes verify, close, branch, merge and prune through the helper. A
+     builder who renames a local while refactoring one of those five silently
+     drops its inventory-B pin, and the census stays green.
+
+  AGGRAVATING — the amendment channel was live and was not used for this.
+  The brief instructs (brief:384-387): "The builder verifies each disposition
+  against the source before pinning it and reports any disagreement with this
+  table rather than editing the source." The builder did exactly that for the
+  prune.ts function name — pinned the scan's answer and filed an inline NOTE at
+  containment.test.ts:245-250 — and the architect amended the brief for it in
+  683a5c7. The inventory-B narrowing got no such report. It appears only as a
+  descriptive header comment (containment.test.ts:12-14) phrased as if it were
+  the spec: "a template literal whose last substitution is an identifier ending
+  in 'Id' and whose last literal chunk ends in '.md' — the exact shape of the
+  repo-wide scan the brief's Intent describes." It is not the shape the brief
+  describes. The brief's own red-team prompt (brief:610-613) asked precisely this
+  question — "Name a bypass shape it cannot see" — and the answer went unrecorded.
+
+  WHAT WOULD CLOSE IT. Either is legitimate; both belong to the architect, not
+  the builder acting alone:
+    (i) drop the `endsWith("Id")` condition, re-pin inventory B with the ~29
+        entries the brief's rule yields and a disposition for each, re-record
+        red 04, rename mF's probe parameter to `id` so the mutant tests the
+        property rather than the filter; or
+    (ii) amend the brief to specify the narrowed derivation, state the bypass
+        shapes it cannot see, and correct acceptance check (e) — which weakens
+        the opus's central claim and should be signed, not assumed.
+
+## 4. Advisory findings
+
+  F-2 (one instance; I checked every row of the table)
+    packages/cli/src/writes.test.ts, behaviour 1's refused branch:
+        check(`${label}: error names the id`, r.error.includes(id), r.error);
+    For the `""` row this is vacuous — `anyString.includes("")` is always true.
+    The companion `refused` assertion still bites (mA's log line
+    `FAIL  1. safeItemPath(""): refused` proves it), so nothing is unguarded;
+    the error-names-the-id half is simply dead for that one row. `""` is the only
+    empty-string row in the table.
+
+  F-3 (one instance, group-scoped)
+    scripts/safe-item-path-mutants.mjs, contract group: mA, mB and mC all carry
+    the same single kills label `1. safeItemPath("")`. The brief (brief:183-186)
+    specifies kills as "a list of exact `check(...)` label substrings that must
+    appear on ^FAIL lines of the mutated run", and behaviour 1 (brief:462-465)
+    says "mA, mB and mC each make writes.test.ts fail on the named table rows".
+    One shared label credits all three by the same assertion. Not contrary to the
+    brief's letter, and the verbatim FAIL lines in 01.log do discriminate them
+    (5 / 26 / 10 lines, distinct row sets), so I am not failing on it. Worth
+    per-mutant labels in the follow-up.
+
+  F-4 (one instance)
+    The red re-record (section 5) is disclosed nowhere durable. studio/opera/
+    W-047.md's traditio says only "Behaviours 1-4 green; orchestrator runs
+    verify, then Terra pre-review and censor round 1". The disclosure reached me
+    only through an agent-to-agent message. CLAUDE.md's standing rule is
+    "Process enforcement is a check rule or a hook, never a memory or prose" —
+    an oral-only deviation notice is weaker than either. A one-line
+    `bisellium handoff --next` naming the re-record would have made it durable.
+    Advisory, because the committed harness does carry the reason (section 5).
+
+## 5. RULING — the red re-record: HONEST CORRECTION, not evidence backfilling
+
+  WHAT I OBSERVED. All four logs carry the same tree hash
+  `# tree: dirty:f51320c5e597de3a948c0a06bb1f09a58b9ba148` and timestamps
+  07:26:14, 07:26:16, 07:26:22, 07:26:24 — four reds recorded within ten seconds
+  of each other from one tree state that already held all four behaviours'
+  tests. The trace is visible in the evidence itself: 01.log's mB mutant prints
+  `FAIL row1 handoff:` through `FAIL row5 greenlight:` alongside the contract
+  rows, because behaviour 2's block existed when 01 was recorded.
+
+  I RULE IT HONEST CORRECTION. Five reasons, in order of weight:
+
+  1. The defect was in the recorder, not in the recorded behaviour. The mutant
+     set, the mutations, the assertions and their outcomes are unchanged; only
+     the transcript's leading whitespace moved. The house rule "never run red
+     twice for one behaviour" exists to stop a builder re-running until the
+     RESULT looks right. Here the result was identical before and after.
+
+  2. The correction is verifiable at HEAD, not merely asserted. The committed
+     harness carries its own reason, in source, where the next builder will read
+     it (scripts/safe-item-path-mutants.mjs, the print loop):
+        "Printed verbatim, never indented: these are the red's assertion-level
+         content, and the acceptance gate greps the log for `^FAIL` lines — an
+         indented copy would never match."
+     That is the fix and its rationale committed as code, which is the studio's
+     preferred form over prose. I re-ran the harness (section 1) and got content
+     consistent with the committed logs.
+
+  3. A log whose FAIL lines cannot be grepped is not evidence. The brief's own
+     acceptance (brief:526-532) greps `^FAIL`; the pairwise `sed '1,/^$/d'` diffs
+     read the same bodies. Indented logs would have passed every eye and failed
+     every gate. Re-recording was the only way to produce evidence that could be
+     checked at all — it made the reds MORE checkable, not less.
+
+  4. The logs were not scrubbed to look like first-take reds. 01.log openly
+     contains behaviour 2's labels. Backfilling hides its own seam; this did the
+     opposite, and the seam is what let me confirm the account independently.
+
+  5. It was caught before any review and self-reported rather than found by me.
+
+  WHAT WOULD HAVE MADE IT CLEANER, for the retro: record the deviation in the
+  traditio (F-4), and re-record each red from the tree its own behaviour was
+  written at rather than all four from the final tree. The latter is cosmetic
+  for a mutation-record red — the claim is "mutant X kills labels Y", which does
+  not depend on which other tests exist — but it would have kept each log's body
+  scoped to its own behaviour.
+
+## 6. RULING — the brief amendment: HANDLED HONESTLY
+
+  Sequence, verified in git:
+    683a5c7  studio/briefs/W-047.md only    (spec amended first)
+    faf5bf4  scripts/safe-item-path-mutants.mjs only  (code follows the spec)
+  Spec-before-code, each in its own commit, neither touching the other's files.
+
+  1. FOUND BY THE BUILDER, NOT SMOOTHED OVER. The builder hit a mutant whose
+     expectation did not match reality and stopped, rather than flipping the
+     mutant's `expect` to fit — which is the exact failure mode the brief
+     anticipated (brief:515-517: "including a `legacy` sanitize mutant that
+     unexpectedly dies ... the brief is what needs correcting").
+
+  2. VERIFIED AND AMENDED BY THE ARCHITECT. 683a5c7 is signed
+     `Co-Authored-By: architect via Claude Fable 5` with builder-b as second
+     co-author. The architect, not the builder, changed the spec of record.
+
+  3. PROVENANCE IS IN THE ARTIFACT, not only the commit. brief:104-106 marks it
+     inline: "found by the builder, confirmed against source and by the harness,
+     2026-09-24; this paragraph and the two `expect` flags below are the only
+     amendment to the signed brief."
+
+  4. IT SAYS THE ORIGINAL WAS WRONG, IN PLAIN WORDS, in two places rather than
+     rewriting the record: brief:568 "the brief's original `expect: alive` for it
+     was wrong"; brief:622 "one fewer than the signed brief predicted, because
+     site 13+14's sanitize mutant dies on a return path the architect's analysis
+     missed."
+
+  5. THE ARITHMETIC WAS CORRECTED EVERYWHERE IT APPEARS, not just at the
+     acceptance line: brief:508 (27/6 -> 28/5), the mutant table brief:262-263
+     (4 x sanitize alive -> 3 alive + 1 dead), Out of scope brief:563-568 (five
+     cases -> three), and the red-team prompt brief:620-625 (six -> five).
+     I found no surviving 27/6 or "four legacy sanitize" text anywhere.
+
+  6. THE TECHNICAL CLAIM CHECKS OUT, INDEPENDENTLY. I read the source rather
+     than the brief's account of it:
+       packages/cli/src/retro.ts:166   `return { kind: "rule" };`
+         — reached when neither existsSync(opusPath) nor existsSync(decisionPath)
+       packages/cli/src/retro.ts:423   `if (targetForProposal !== undefined &&
+         classifyAddressedTarget(studioRoot, targetForProposal).kind !==
+         "unresolvable") continue;`
+     A sanitized target resolves to no file, lands in `rule`, is counted as
+     addressed, the petitio is skipped, and 18i/18j fail while 18h stays green —
+     exactly as amended. Both cited line numbers are exact.
+
+  7. IT PRODUCED NEW WORK INSTEAD OF BURYING THE OBSERVATION. The amendment adds
+     an Out-of-scope entry (brief:569-581) recommending the `rule`-fallback be
+     filed as its own opus, with the design choice named. An amendment that only
+     relaxed an expectation would not have done that.
+
+  8. IT CARRIED A SECOND CORRECTION OF THE SAME KIND — prune.ts's function name,
+     `pruneBranches` -> `pruneStaleOpusBranches` (brief:377) — which the builder
+     additionally pinned with an inline NOTE at containment.test.ts:245-250.
+
+  This is the standard I would want. It also sharpens F-1: the same builder used
+  this channel correctly, twice, and did not use it for inventory B's derivation.
+
+## 7. The contract table (behaviour 1) — read against what the brief promises
+
+  packages/cli/src/writes.test.ts, behaviour 1 block. Helper under test:
+  packages/commands/src/writes.ts:104-110.
+
+  Shape guard is `!id || /[\\/]/.test(id) || id === "." || id === ".."`.
+  Every disjunct has at least one row:
+    empty          `""`
+    "." segment    `.`
+    ".." segment   `..`, `../W-001`, `../../etc/passwd`, `opera/../../x`
+    "/" separator  `a/b`, `/etc/passwd`, `../W-001`, `opera/../../x`
+    "\" separator  `..\..\win.ini`, `C:\Windows\win.ini`
+  Absolute paths: `/etc/passwd` (POSIX) and `C:\Windows\win.ini` (Windows shape).
+  The brief's promised coverage — dot-dot, absolute, separators, empty, the shape
+  guard — is met, with no disjunct resting on a single row.
+
+  NON-SANITIZATION is proved the right way round, on both sides:
+    accepted rows assert `basename(r) === id + ".md"` — the id is used verbatim;
+    refused rows assert `typeof r !== "string"` — a refusal is never a quiet
+    rewrite. `../W-001` is a REFUSED row, so mC (sanitize-in-helper) cannot pass
+    by laundering it into `W-001.md`; 01.log confirms mC kills 10 rows including
+    every refused one.
+  The accepted-and-contained rows (`..W-001`, `%2e%2e%2fW-001`, U+2215 `∕W-001`,
+  `W-001\u0000x`) pin the harder half — that the helper decodes nothing and
+  normalizes nothing, and that containment holds anyway. The NUL row additionally
+  asserts `existsSync(r)` does not throw. `..W-001` correctly documents that ".."
+  is a prefix here, not a segment.
+  The two base-shape assertions (trailing separator, cwd-relative base) ride the
+  block as specified, both by JSON-identity against the canonical answer.
+
+  ONE weak row: F-2, the vacuous `r.error.includes("")`.
+  Otherwise the table covers what the brief promises and mD's `expect: alive`
+  reading is correct — with the shape guard in place, `dirname(join(resolvedDir,
+  id + ".md"))` cannot differ from `resolvedDir`, so removing only that check is
+  unobservable. Carrying it as a RUN mutant rather than a prose claim is the
+  right device, and 01.log records `exit=0 FAIL-count=0 -> matched (alive)`.
+
+  THE IN-DIRECTORY COLLISION SENTINELS prove non-sanitization as designed.
+  seedSentinels (writes.test.ts) and seedOpusSentinels (lifecycle.test.ts:110-117)
+  each build both targets, so the three landing places are distinguished:
+    raw join       -> `<dir>/W-777.md`         (outside sentinel)
+    sanitizing     -> `<dir>/opera/W-777.md`   (collision record)
+    safeItemPath   -> neither; refuses
+  Each of the nine rows asserts exit 2, the guard's own `unknown opus/petitio:
+  ../W-777` on stderr, BOTH sentinels byte-identical, and no event appended —
+  five assertions, which is what makes the stderr discriminator do real work.
+  02.log and 03.log confirm both halves bite: under the raw-join mutant
+  `row1 handoff: outside sentinel byte-identical` FAILs; under row6's mutant the
+  stderr line FAILs with the mutant's own wording
+  (`../W-777 is not greenlit or halted (state: building)`), which is the
+  discriminator W-042's `--decision ../../etc/passwd` case lacked.
+  Row 4 correctly adds the `petitiones/A-1.md` byte-identity assertion, since
+  answer's own discriminator is A-1 and not the sentinels.
+
+## 8. Reds — headers, baselines, protocol
+
+  01.log  # behaviour: 1  # exit: 1  # sella: builder-b  # command: node scripts/safe-item-path-mutants.mjs contract
+          baseline: 0 FAIL — --import tsx packages/cli/src/writes.test.ts .
+          4 banners, kills labels on ^FAIL lines, mD alive. 70 lines.
+  02.log  # behaviour: 2  # exit: 1  # sella: builder-b  # command: ... writes
+          baseline line present before the first mutant. 10 banners. 92 lines.
+  03.log  # behaviour: 3  # exit: 1  # sella: builder-b  # command: ... lifecycle
+          baseline names BISELLIUM_ONLY_BEHAVIOUR=45. 8 banners. 66 lines.
+  04.log  # behaviour: 4  # exit: 1  # sella: builder-b  # command: ... census
+          3 banners; mG alive. 30 lines.
+  Every `# command:` names a committed path (scripts/), never a scratchpad —
+  W-042 round 2's advisory A-1 is satisfied.
+
+  The harness's protocol matches the brief where it matters, and I read it rather
+  than trusting the logs: baseline per distinct test command before any mutation
+  with exit 3 on failure; `died = exitCode !== 0 && every kills label seen on a
+  ^FAIL line`, so exit code alone never kills; restore from in-memory originals in
+  a `finally` with a byte-equality re-read and exit 3 on mismatch, never
+  `git checkout --`; empty group exit 2; inverted exits 1/0. My own `all` run
+  left porcelain empty, which exercises the restore path 33 times.
+
+  Red 04's content is where F-1 lands: its mF banner demonstrates the "Id" filter,
+  not inventory B's specified property.
+
+## 9. Observations (not findings)
+
+  O1  The diff contains two path groups the brief's diff-scope line (brief:541-546)
+      does not list: studio/briefs/W-047.md and the three
+      studio/ci/W-047-{tests,lint,types}-7a02a35c.log certificates. Neither is a
+      defect. An amendment to the spec of record cannot appear in a scope list
+      written before the amendment existed, and the certificates are produced by
+      `verify`, not written by hand. Recorded so the next reader does not
+      re-derive it. Terra flagged the same two groups as VERIFIED content of the
+      diff; I concur with the data and add the ruling.
+
+  O2  Commit order (brief:547-550) holds exactly: 9b9ca16 pairs 01.log with
+      behaviour 1's block and the script; 7a83c87, 1345091 and 398b3c5 each pair
+      their red with their block; 398b3c5 carries the one package.json line. No
+      commit in the range touches runtime source. faf5bf4 changes only the legacy
+      group, which appears in no red log — the commit message states this and I
+      confirmed it against the four `# command:` lines.
+
+## 10. Terra's sheet
+
+  Seven claims, all consistent with what I ran independently: the five acceptance
+  commands, the 33/28/5 mutant result with the same five alive (mD, mG, sites
+  9/10/11 sanitize), the four red headers and baselines, the diff scope, the
+  one-line package.json change, and check's 0 blocking / 91 advisory. Zero
+  corrections. Note that Terra's brief was mechanical verification of stated
+  claims; F-1 is a claim the sheet was not asked to test — whether inventory B
+  scans what the brief says it scans — and it is mine under D-014.
+
+## 11. Mutation scratch
+
+  Every scratch edit was applied and restored in a `finally` by
+  $TMPDIR/w047-censor/bite.mjs; created files were deleted in the same block. The
+  brief-spec re-implementation of inventory B ($TMPDIR/w047-censor/scanB.mjs, run
+  from the worktree root for its typescript resolution and removed immediately)
+  read source only and wrote nothing. Nothing was committed.
+  `git status --porcelain` empty after every case, after the `all` run, after the
+  verify certificate restore, and at the close of this review.
+
+## 12. Verdict
+
+  FAIL, round 1. One blocking finding (F-1): inventory B — behaviour 4's whole
+  reason for existing — scans a narrower shape than the spec of record specifies,
+  the narrowing was never reported through the amendment channel the builder
+  otherwise used correctly twice, the brief's own censor-only acceptance check (e)
+  does not bite, and red 04's mF passes only because the harness named its probe
+  parameter to fit the filter.
+
+  Everything else in this opus is sound and should be kept as it stands: four
+  gates green, the contract table covers what it promises, the collision-sentinel
+  recipe does real work at all nine rows, inventory A is alias- and reformat-proof
+  and bites on both required cases, the harness's kills-AND and restore discipline
+  are faithful to the brief, the brief amendment is the standard I would want, and
+  the red re-record is honest correction rather than backfilling.
+
+  Fix scope for round 2 is F-1 alone, plus F-2 and F-3 if the architect wants them
+  folded in; F-4 is a retro item.

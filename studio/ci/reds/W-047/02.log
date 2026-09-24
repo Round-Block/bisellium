@@ -1,0 +1,92 @@
+# behaviour: 2
+# command: node scripts/safe-item-path-mutants.mjs writes
+# exit: 1
+# at: 2026-09-24T07:26:16.964Z
+# sella: builder-b
+# tree: dirty:f51320c5e597de3a948c0a06bb1f09a58b9ba148
+
+baseline: 0 FAIL — --import tsx packages/cli/src/writes.test.ts .
+
+=== mutant: row1 handoff raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row1 handoff"]: seen
+FAIL  row1 handoff: exits 2                                      0
+FAIL  row1 handoff: stderr names unknown opus ../W-777           
+FAIL  row1 handoff: outside sentinel byte-identical              
+-> matched (dead)
+
+=== mutant: row2 emit-usage raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row2 emit-usage"]: seen
+FAIL  row2 emit-usage: exits 2                                   0
+FAIL  row2 emit-usage: stderr names unknown opus ../W-777        
+FAIL  row2 emit-usage: no event appended                         [{"id":"cli:0","name":"gen_ai.usage","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"gen_ai.usage.total_tokens":10,"gen_ai.request.model":"m","workflow.item.id":"../W-777","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}}]
+-> matched (dead)
+
+=== mutant: row3 answer-petitio raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row3 answer-petitio"]: seen
+FAIL  row3 answer-petitio: exits 2                               0
+FAIL  row3 answer-petitio: stderr names unknown petitio ../A-777 resolved without --opus — nothing records what work this becomes
+FAIL  row3 answer-petitio: outside sentinel byte-identical       
+-> matched (dead)
+
+=== mutant: row4 answer-opus raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row4 answer-opus"]: seen
+FAIL  row4 answer-opus: exits 2                                  0
+FAIL  row4 answer-opus: stderr names unknown opus ../W-777       
+FAIL  row4 answer-opus: the real petitio A-1 is byte-identical   
+-> matched (dead)
+
+=== mutant: row5 greenlight raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=4
+kills["row5 greenlight"]: seen
+FAIL  row5 greenlight: exits 2                                   0
+FAIL  row5 greenlight: stderr names unknown opus ../W-777        
+FAIL  row5 greenlight: outside sentinel byte-identical           
+FAIL  row5 greenlight: no event appended                         
+-> matched (dead)
+
+=== mutant: row1 handoff sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row1 handoff"]: seen
+FAIL  row1 handoff: exits 2                                      0
+FAIL  row1 handoff: stderr names unknown opus ../W-777           
+FAIL  row1 handoff: in-directory collision record byte-identical 
+-> matched (dead)
+
+=== mutant: row2 emit-usage sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row2 emit-usage"]: seen
+FAIL  row2 emit-usage: exits 2                                   0
+FAIL  row2 emit-usage: stderr names unknown opus ../W-777        
+FAIL  row2 emit-usage: no event appended                         [{"id":"cli:0","name":"gen_ai.usage","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"gen_ai.usage.total_tokens":10,"gen_ai.request.model":"m","workflow.item.id":"../W-777","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}}]
+-> matched (dead)
+
+=== mutant: row3 answer-petitio sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row3 answer-petitio"]: seen
+FAIL  row3 answer-petitio: exits 2                               0
+FAIL  row3 answer-petitio: stderr names unknown petitio ../A-777 resolved without --opus — nothing records what work this becomes
+FAIL  row3 answer-petitio: in-directory collision record byte-identical 
+-> matched (dead)
+
+=== mutant: row4 answer-opus sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["row4 answer-opus"]: seen
+FAIL  row4 answer-opus: exits 2                                  0
+FAIL  row4 answer-opus: stderr names unknown opus ../W-777       
+FAIL  row4 answer-opus: the real petitio A-1 is byte-identical   
+-> matched (dead)
+
+=== mutant: row5 greenlight sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=4
+kills["row5 greenlight"]: seen
+FAIL  row5 greenlight: exits 2                                   0
+FAIL  row5 greenlight: stderr names unknown opus ../W-777        
+FAIL  row5 greenlight: in-directory collision record byte-identical 
+FAIL  row5 greenlight: no event appended                         
+-> matched (dead)
+
+all 10 mutants matched (10 dead, 0 alive)

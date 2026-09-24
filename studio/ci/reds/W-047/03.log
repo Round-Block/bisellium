@@ -1,0 +1,66 @@
+# behaviour: 3
+# command: node scripts/safe-item-path-mutants.mjs lifecycle
+# exit: 1
+# at: 2026-09-24T07:26:22.001Z
+# sella: builder-b
+# tree: dirty:f51320c5e597de3a948c0a06bb1f09a58b9ba148
+
+baseline: 0 FAIL — --import tsx packages/cli/src/lifecycle.test.ts . BISELLIUM_ONLY_BEHAVIOUR=45
+
+=== mutant: row6 ready raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=1
+kills["row6 ready"]: seen
+FAIL  row6 ready: stderr names unknown opus ../W-777                   ../W-777 is not greenlit or halted (state: building)
+-> matched (dead)
+
+=== mutant: row7 done raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=2
+kills["row7 done"]: seen
+FAIL  row7 done: exits 2                                               1
+FAIL  row7 done: stderr names unknown opus ../W-777                    ../W-777: gates not passed: qa, review
+-> matched (dead)
+
+=== mutant: row8 review raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=4
+kills["row8 review"]: seen
+FAIL  row8 review: exits 2                                             0
+FAIL  row8 review: stderr names unknown opus ../W-777                  
+FAIL  row8 review: outside sentinel byte-identical                     
+FAIL  row8 review: no event appended                                   
+-> matched (dead)
+
+=== mutant: row9 waive raw-join (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=1
+kills["row9 waive"]: seen
+FAIL  row9 waive: stderr names unknown opus ../W-777                   ../W-777: decision "D-999" not found
+-> matched (dead)
+
+=== mutant: row6 ready sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=1
+kills["row6 ready"]: seen
+FAIL  row6 ready: stderr names unknown opus ../W-777                   ../W-777 is not greenlit or halted (state: building)
+-> matched (dead)
+
+=== mutant: row7 done sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=2
+kills["row7 done"]: seen
+FAIL  row7 done: exits 2                                               1
+FAIL  row7 done: stderr names unknown opus ../W-777                    ../W-777: gates not passed: qa, review
+-> matched (dead)
+
+=== mutant: row8 review sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=4
+kills["row8 review"]: seen
+FAIL  row8 review: exits 2                                             0
+FAIL  row8 review: stderr names unknown opus ../W-777                  
+FAIL  row8 review: in-directory collision record byte-identical        
+FAIL  row8 review: no event appended                                   
+-> matched (dead)
+
+=== mutant: row9 waive sanitize (expect: dead) ===
+resolved: file(s)=packages/commands/src/lifecycle.ts exit=1 FAIL-count=1
+kills["row9 waive"]: seen
+FAIL  row9 waive: stderr names unknown opus ../W-777                   ../W-777: decision "D-999" not found
+-> matched (dead)
+
+all 8 mutants matched (8 dead, 0 alive)

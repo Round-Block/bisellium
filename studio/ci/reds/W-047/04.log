@@ -1,0 +1,30 @@
+# behaviour: 4
+# command: node scripts/safe-item-path-mutants.mjs census
+# exit: 1
+# at: 2026-09-24T08:19:23.930Z
+# sella: builder-b
+# tree: dirty:7a02a35c3600df5bcff6764cfae09fa00ee8b804
+
+baseline: 0 FAIL — --import tsx packages/cli/src/containment.test.ts .
+
+=== mutant: mE new helper call site (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=3
+kills["inventory A"]: seen
+FAIL  inventory A: pinned list length matches the scan's own count           pinned=14 scan=15
+FAIL  inventory A: every safeItemPath call site is pinned, none missing      a containment call site changed — see studio/briefs/W-047.md; a new call site needs a traversal case, a new bypass needs a decision — added: ["packages/commands/src/writes.ts:__w047MutantProbeE:?#1"] removed: []
+FAIL  inventory A: scan order matches the pinned order exactly               {"scanA":["packages/cli/src/retro.ts:classifyAddressedTarget:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1","packages/commands/src/lifecycle.ts:runReady:opera#1","packages/commands/src/lifecycle.ts:runDone:opera#1","packages/commands/src/lifecycle.ts:runReview:opera#1","packages/commands/src/lifecycle.ts:runHalt:opera#1","packages/commands/src/lifecycle.ts:runHalt:decisions#1","packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1","packages/commands/src/lifecycle.ts:runWaive:opera#1","packages/commands/src/writes.ts:runHandoff:opera#1","packages/commands/src/writes.ts:runEmit:opera#1","packages/commands/src/writes.ts:runAnswer:petitiones#1","packages/commands/src/writes.ts:runAnswer:opera#1","packages/commands/src/writes.ts:runGreenlight:opera#1","packages/commands/src/writes.ts:__w047MutantProbeE:?#1"],"PINNED_A":["packages/cli/src/retro.ts:classifyAddressedTarget:opera#1","packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1","packages/commands/src/lifecycle.ts:runReady:opera#1","packages/commands/src/lifecycle.ts:runDone:opera#1","packages/commands/src/lifecycle.ts:runReview:opera#1","packages/commands/src/lifecycle.ts:runHalt:opera#1","packages/commands/src/lifecycle.ts:runHalt:decisions#1","packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1","packages/commands/src/lifecycle.ts:runWaive:opera#1","packages/commands/src/writes.ts:runHandoff:opera#1","packages/commands/src/writes.ts:runEmit:opera#1","packages/commands/src/writes.ts:runAnswer:petitiones#1","packages/commands/src/writes.ts:runAnswer:opera#1","packages/commands/src/writes.ts:runGreenlight:opera#1"]}
+-> matched (dead)
+
+=== mutant: mF new raw id join (expect: dead) ===
+resolved: file(s)=packages/cli/src/close.ts exit=1 FAIL-count=3
+kills["inventory B"]: seen
+FAIL  inventory B: pinned list length matches the scan's own count           pinned=29 scan=30
+FAIL  inventory B: every raw id-to-path join is pinned, none missing         a containment call site changed — see studio/briefs/W-047.md; a new call site needs a traversal case, a new bypass needs a decision — added: ["packages/cli/src/close.ts:__w047MutantProbeF#1"] removed: []
+FAIL  inventory B: scan order matches the pinned order exactly               {"scanB":["apps/server/src/store.ts:opus#1","packages/cli/src/branch.ts:readOpusRecord#1","packages/cli/src/branch.ts:readOpusRecord#2","packages/cli/src/branch.ts:readOpusRecord#3","packages/cli/src/branch.ts:mergeOpusBranch#1","packages/cli/src/branch.ts:runBranch#1","packages/cli/src/branch.ts:runMerge#1","packages/cli/src/close.ts:closeChecks#1","packages/cli/src/close.ts:__w047MutantProbeF#1","packages/cli/src/init.ts:initStudio#1","packages/cli/src/new.ts:newItem#1","packages/cli/src/new.ts:runNew#1","packages/cli/src/new.ts:runNew#2","packages/cli/src/new.ts:runNew#3","packages/cli/src/prune.ts:pruneStaleOpusBranches#1","packages/cli/src/retro.ts:draftRetro#1","packages/cli/src/retro.ts:draftRetro#2","packages/cli/src/retro.ts:draftRetro#3","packages/cli/src/tick.ts:writeDailyActum#1","packages/commands/src/context.ts:buildContextFor#1","packages/commands/src/lifecycle.ts:runReady#1","packages/commands/src/lifecycle.ts:runWaive#1","packages/commands/src/talk.ts:openPetitio#1","packages/commands/src/talk.ts:writeActum#1","packages/commands/src/talk.ts:writeActum#2","packages/commands/src/verify.ts:runVerify#1","packages/commands/src/writes.ts:safeItemPath#1","packages/commands/src/writes.ts:recordOwnerRefusal#1","packages/commands/src/writes.ts:runAnswer#1","packages/commands/src/writes.ts:runAnswer#2"],"pinnedBKeys":["apps/server/src/store.ts:opus#1","packages/cli/src/branch.ts:readOpusRecord#1","packages/cli/src/branch.ts:readOpusRecord#2","packages/cli/src/branch.ts:readOpusRecord#3","packages/cli/src/branch.ts:mergeOpusBranch#1","packages/cli/src/branch.ts:runBranch#1","packages/cli/src/branch.ts:runMerge#1","packages/cli/src/close.ts:closeChecks#1","packages/cli/src/init.ts:initStudio#1","packages/cli/src/new.ts:newItem#1","packages/cli/src/new.ts:runNew#1","packages/cli/src/new.ts:runNew#2","packages/cli/src/new.ts:runNew#3","packages/cli/src/prune.ts:pruneStaleOpusBranches#1","packages/cli/src/retro.ts:draftRetro#1","packages/cli/src/retro.ts:draftRetro#2","packages/cli/src/retro.ts:draftRetro#3","packages/cli/src/tick.ts:writeDailyActum#1","packages/commands/src/context.ts:buildContextFor#1","packages/commands/src/lifecycle.ts:runReady#1","packages/commands/src/lifecycle.ts:runWaive#1","packages/commands/src/talk.ts:openPetitio#1","packages/commands/src/talk.ts:writeActum#1","packages/commands/src/talk.ts:writeActum#2","packages/commands/src/verify.ts:runVerify#1","packages/commands/src/writes.ts:safeItemPath#1","packages/commands/src/writes.ts:recordOwnerRefusal#1","packages/commands/src/writes.ts:runAnswer#1","packages/commands/src/writes.ts:runAnswer#2"]}
+-> matched (dead)
+
+=== mutant: mG reformat across two lines (expect: alive) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=0 FAIL-count=0
+-> matched (alive)
+
+all 3 mutants matched (2 dead, 1 alive)
