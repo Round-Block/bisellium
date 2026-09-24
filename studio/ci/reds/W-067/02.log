@@ -1,0 +1,101 @@
+# behaviour: 2
+# command: npx playwright test --config=playwright.serve.config.ts -g token delivery, mounted
+# exit: 1
+# at: 2026-09-24T13:33:26.684Z
+# sella: builder-d
+# tree: dirty:aba8ab503ee1458e643832ba90e9c73cfa357ab2
+
+
+Running 4 tests using 4 workers
+
+  ✓  4 [chromium] › tests-serve/auth.spec.ts:90:3 › token delivery, mounted (W-067 behaviour 2) › the built dist carries no copy of the live write-auth token (383ms)
+  ✘  2 [chromium] › tests-serve/auth.spec.ts:39:3 › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty (5.7s)
+  ✘  1 [chromium] › tests-serve/auth.spec.ts:45:3 › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting (5.7s)
+  ✘  3 [chromium] › tests-serve/auth.spec.ts:68:3 › token delivery, mounted (W-067 behaviour 2) › a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds (5.8s)
+
+
+  1) [chromium] › tests-serve/auth.spec.ts:39:3 › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.token-prompt')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.token-prompt') with timeout 5000ms
+      - waiting for locator('.token-prompt')
+
+
+      40 |     served = await startServed("auth-empty");
+      41 |     await page.goto(served.baseURL);
+    > 42 |     await expect(page.locator(".token-prompt")).toBeVisible();
+         |                                                 ^
+      43 |   });
+      44 |
+      45 |   test("the entered token is used on the next write and survives a reload without re-prompting", async ({ page }) => {
+        at /tmp/claude-1000/w067-build/apps/web/tests-serve/auth.spec.ts:42:49
+
+    Error Context: test-results/auth-token-delivery-mounte-2c09b-hen-sessionStorage-is-empty-chromium/error-context.md
+
+  2) [chromium] › tests-serve/auth.spec.ts:45:3 › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.token-prompt')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.token-prompt') with timeout 5000ms
+      - waiting for locator('.token-prompt')
+
+
+      46 |     served = await startServed("auth-survive");
+      47 |     await page.goto(served.baseURL);
+    > 48 |     await expect(page.locator(".token-prompt")).toBeVisible();
+         |                                                 ^
+      49 |
+      50 |     await page.locator("#token-prompt-input").fill(served.token);
+      51 |     await page.locator(".token-prompt__submit").click();
+        at /tmp/claude-1000/w067-build/apps/web/tests-serve/auth.spec.ts:48:49
+
+    Error Context: test-results/auth-token-delivery-mounte-b4075-reload-without-re-prompting-chromium/error-context.md
+
+  3) [chromium] › tests-serve/auth.spec.ts:68:3 › token delivery, mounted (W-067 behaviour 2) › a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.token-prompt')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.token-prompt') with timeout 5000ms
+      - waiting for locator('.token-prompt')
+
+
+      76 |
+      77 |     await approveFirstPetitio(page, "approve: wrong token first");
+    > 78 |     await expect(page.locator(".token-prompt")).toBeVisible();
+         |                                                 ^
+      79 |
+      80 |     await page.locator("#token-prompt-input").fill(served.token);
+      81 |     await page.locator(".token-prompt__submit").click();
+        at /tmp/claude-1000/w067-build/apps/web/tests-serve/auth.spec.ts:78:49
+
+    Error Context: test-results/auth-token-delivery-mounte-074c9-e-replacement-then-succeeds-chromium/error-context.md
+
+  3 failed
+    [chromium] › tests-serve/auth.spec.ts:39:3 › token delivery, mounted (W-067 behaviour 2) › prompts for a token when sessionStorage is empty 
+    [chromium] › tests-serve/auth.spec.ts:45:3 › token delivery, mounted (W-067 behaviour 2) › the entered token is used on the next write and survives a reload without re-prompting 
+    [chromium] › tests-serve/auth.spec.ts:68:3 › token delivery, mounted (W-067 behaviour 2) › a wrong token in sessionStorage produces a 401 that reopens the prompt, and the replacement then succeeds 
+  1 passed (6.7s)
+npm notice
+npm notice New minor version of npm available! 11.13.0 -> 11.20.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.20.0
+npm notice To update run: npm install -g npm@11.20.0
+npm notice
