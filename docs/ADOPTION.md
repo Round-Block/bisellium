@@ -801,7 +801,8 @@ a conversation doesn't. Every vendor spawn a harness profile makes —
 the rule holds even for a bare `--version` probe — hands the child process
 only ten env names (`PATH`, `HOME`, `SHELL`, `TMPDIR`, `HTTPS_PROXY`,
 `https_proxy`, `HTTP_PROXY`, `http_proxy`, `NO_PROXY`, `no_proxy`), each
-copied verbatim from the parent if set (`harnessEnv`, `@bisellium/shim`).
+copied verbatim from the parent if set (`harnessEnv`,
+`packages/shim/src/harness/env.ts` — not a `@bisellium/shim` export).
 Everything else is dropped, an endpoint or auth override and a vendor
 variable that doesn't exist yet included: a talked session authenticates
 only with the vendor login stored under `HOME`, never an ambient
