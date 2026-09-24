@@ -28,6 +28,7 @@ import {
 } from "@bisellium/shim";
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
 import { vendorDiagnostic } from "./talk.js";
+import { openStudio, parseFlags, resolveNow } from "./writes.js";
 
 function readManifestSafe(studio: string): Manifest | undefined {
   try {
@@ -200,6 +201,19 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     listing = undefined; // a listing failure degrades; it never empties the record (behaviour 8)
   }
   const due = opts.only ?? gatherCandidates({ studio: opts.studio, listing });
+
+  // --dry-run: report the candidate set and spend nothing — no turn, no
+  // version/mark/atomic write. Every due pair is "not reached" by
+  // definition, which is exactly what `skipped` already means.
+  if (opts.dryRun) {
+    let existing: ModelsRecord | undefined;
+    try {
+      existing = readModelsRecord(opts.studio);
+    } catch {
+      existing = undefined;
+    }
+    return { turns: 0, skipped: due, record: existing ?? { schema: 1, at: nowIso, harnessVersions: {}, models: [] } };
+  }
 
   // Step 1 (Order of operations): live versions, gathered once, up front —
   // the authoritative per-pair evidence (`HarnessProbe.harnessVersion`,
@@ -462,8 +476,58 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   return { turns, skipped, record };
 }
 
-export async function runProbe(_args: string[]): Promise<{ exitCode: number }> {
-  return { exitCode: 1 };
+const PROBE_USAGE = "usage: bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]";
+export { PROBE_USAGE };
+
+/** Test seam only — matches every other CLI verb's `runX(args, opts = {})`
+ *  convention (`runTalk`/`RunTalkOptions`, `runTick`/`RunTickOptions`),
+ *  which exists for exactly this reason: no unit test may spend a live
+ *  vendor turn or depend on an installed vendor binary. Not in the brief's
+ *  published `runProbe(args: string[])` signature — an addition, documented
+ *  in the build report. `runProbe(args)` (one argument) behaves exactly as
+ *  specified; this is a second, optional, defaulted parameter no caller is
+ *  forced to know about. */
+export interface RunProbeOptions {
+  harnesses?: Record<string, HarnessProfile>;
+  listModels?: () => Promise<ListedModel[]>;
+  versions?: () => Promise<{ claude?: string; codex?: string }>;
+}
+
+export async function runProbe(args: string[], opts: RunProbeOptions = {}): Promise<{ exitCode: number }> {
+  const parsed = parseFlags(args, { valued: ["--studio", "--model", "--harness", "--now"], boolean: ["--dry-run"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${PROBE_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, flags, positionals } = parsed;
+  if (positionals.length > 0) {
+    console.error(`unexpected argument "${positionals[0]}"\n${PROBE_USAGE}`);
+    return { exitCode: 2 };
+  }
+
+  const now = resolveNow(values.get("--now"), undefined);
+  if (!now) {
+    console.error(`--now must be an ISO date\n${PROBE_USAGE}`);
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root } = opened;
+  const dryRun = flags.has("--dry-run");
+
+  const result = await probeBattery({ studio: root, now, dryRun, harnesses: opts.harnesses, listModels: opts.listModels, versions: opts.versions });
+
+  if (dryRun) {
+    console.log(`bisellium probe --dry-run: ${result.skipped.length} candidate pair(s), zero spent`);
+    for (const c of result.skipped) console.log(`  ${c.id} / ${c.harness}`);
+  } else {
+    console.log(`bisellium probe: ${result.turns} turn(s) spent, ${result.skipped.length} skipped`);
+  }
+  return { exitCode: 0 };
 }
 
 function isModelState(v: unknown): v is ModelState {

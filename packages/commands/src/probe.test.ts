@@ -878,10 +878,12 @@ if (runs(10)) {
 if (runs(11)) {
   const dir = freshDir("b11");
   writeManifest(dir, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: solo } ]\nprobationes: []");
+  const stubOpts = { listModels: async () => [], versions: async () => ({}) };
+  const { profile: soloProfile } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
 
   // unknown flag -> usage line, exit 2, zero spend, before any file write
   {
-    const r = await runProbe(["--studio", dir, "--nonsense"]);
+    const r = await runProbe(["--studio", dir, "--nonsense"], stubOpts);
     check(11, "an unknown flag exits 2", r.exitCode === 2, String(r.exitCode));
     check(11, "an unknown flag writes no file", !existsSync(join(dir, "models.json")));
   }
@@ -893,7 +895,7 @@ if (runs(11)) {
     console.log = (...a: unknown[]) => logs.push(a.map(String).join(" "));
     let r;
     try {
-      r = await runProbe(["--studio", dir, "--dry-run"]);
+      r = await runProbe(["--studio", dir, "--dry-run"], stubOpts);
     } finally {
       console.log = orig;
     }
@@ -904,7 +906,7 @@ if (runs(11)) {
 
   // positive control: the same studio, without --dry-run, writes one.
   {
-    const r = await runProbe(["--studio", dir]);
+    const r = await runProbe(["--studio", dir], { ...stubOpts, harnesses: { "claude-code": soloProfile } });
     check(11, "positive control: without --dry-run exits 0", r.exitCode === 0, String(r.exitCode));
     check(11, "positive control: without --dry-run WRITES models.json", existsSync(join(dir, "models.json")));
   }
@@ -919,11 +921,13 @@ if (runs(12)) {
     dir,
     "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: aaa-ctrl } ]\nprobationes: []",
   );
+  const stubOpts = { listModels: async () => [], versions: async () => ({}) };
+  const { profile: claudeStub } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
 
   {
-    const r1 = await runProbe(["--studio", dir, "--model", "x"]);
+    const r1 = await runProbe(["--studio", dir, "--model", "x"], stubOpts);
     check(12, "--model alone refuses, exit 2", r1.exitCode === 2, String(r1.exitCode));
-    const r2 = await runProbe(["--studio", dir, "--harness", "claude-code"]);
+    const r2 = await runProbe(["--studio", dir, "--harness", "claude-code"], stubOpts);
     check(12, "--harness alone refuses, exit 2", r2.exitCode === 2, String(r2.exitCode));
     check(12, "neither writes a file before any spend", !existsSync(join(dir, "models.json")));
   }
@@ -941,7 +945,7 @@ if (runs(12)) {
     writeFileSync(join(dir, "models.json"), JSON.stringify(seeded, null, 2) + "\n");
     const before = readRaw(dir);
 
-    const r = await runProbe(["--studio", dir, "--model", "unlisted-id", "--harness", "claude-code"]);
+    const r = await runProbe(["--studio", dir, "--model", "unlisted-id", "--harness", "claude-code"], { ...stubOpts, harnesses: { "claude-code": claudeStub } });
     check(12, "a targeted pair with an id in no source still exits 0", r.exitCode === 0, String(r.exitCode));
     const after = readRaw(dir);
     const models = (after?.["models"] as { id: string }[]) ?? [];
@@ -956,7 +960,8 @@ if (runs(12)) {
   {
     const dir2 = freshDir("b12-path");
     writeManifest(dir2, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: aaa } ]\nprobationes: []");
-    const r = await runProbe(["--studio", dir2, "--model", "../../etc/evil", "--harness", "claude-code"]);
+    const { profile: claudeStub2 } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
+    const r = await runProbe(["--studio", dir2, "--model", "../../etc/evil", "--harness", "claude-code"], { ...stubOpts, harnesses: { "claude-code": claudeStub2 } });
     check(12, "a path-shaped id does not crash the command", r.exitCode === 0, String(r.exitCode));
     check(12, "models.json still lives only inside the studio dir", existsSync(join(dir2, "models.json")));
     check(12, "no file was written outside the studio dir", !existsSync(join(dir2, "..", "evil")) && !existsSync("/tmp/evil") && !existsSync(join(dir2, "..", "..", "etc", "evil")));
