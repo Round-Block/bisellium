@@ -191,24 +191,36 @@ const POLICY_TAIL = [
  *  path-checked (round-3 review F4, W-049's A1): a copied token must not
  *  start with "-", the file must end in "/system-prompt.md", its basename
  *  must be exactly that, its directory must match
- *  `bisellium-sysprompt-XXXXXX`, and its parent must be `os.tmpdir()`. */
-function expectedStartArgv(sysPromptFile: string): string[] {
-  return ["-p", "--output-format", "json", "--append-system-prompt-file", sysPromptFile, ...POLICY_TAIL];
+ *  `bisellium-sysprompt-XXXXXX`, and its parent must be `os.tmpdir()`.
+ *
+ *  W-046 test hardening (not a numbered behaviour — see the brief): a model
+ *  slot, `["--model", model]` placed right after `--output-format json` and
+ *  before everything else, exactly like claude-code.ts emits it. `model` is
+ *  omitted for behaviour 1's direct `claudeCodeProfile` calls (which pass no
+ *  model) and given `"claude-opus-5"` for behaviour 4's `runTalk`/`runTick`
+ *  calls against the fixture (`eng-lead`'s manifest model, W-046). */
+function expectedStartArgv(sysPromptFile: string, model?: string): string[] {
+  const modelArgs = model ? ["--model", model] : [];
+  return ["-p", "--output-format", "json", ...modelArgs, "--append-system-prompt-file", sysPromptFile, ...POLICY_TAIL];
 }
-function expectedResumeArgv(sessionId: string): string[] {
-  return ["-p", "--resume", sessionId, "--output-format", "json", ...POLICY_TAIL];
+function expectedResumeArgv(sessionId: string, model?: string): string[] {
+  const modelArgs = model ? ["--model", model] : [];
+  return ["-p", "--resume", sessionId, "--output-format", "json", ...modelArgs, ...POLICY_TAIL];
 }
 
 /** Behaviour-1 style policy assertion against one logged argv: the argv
  *  deep-equals the literal expected array. `knownResumeId`, when given, is
  *  the literal value the test itself passed as the resume session id (only
  *  behaviour 1 knows this in advance); otherwise the resume id is read from
- *  argv and merely shape-checked, never taken on faith. */
-function checkPolicy(name: string, argv: string[], form: "start" | "resume", knownResumeId?: string): void {
+ *  argv and merely shape-checked, never taken on faith. `model`, when given,
+ *  is the literal decreed model this call is expected to carry (W-046 test
+ *  hardening) — omitted entirely for a call that passes none. */
+function checkPolicy(name: string, argv: string[], form: "start" | "resume", knownResumeId?: string, model?: string): void {
   if (form === "start") {
-    const file = argv[4] ?? "";
+    const fileIdx = argv.indexOf("--append-system-prompt-file");
+    const file = fileIdx !== -1 ? (argv[fileIdx + 1] ?? "") : "";
     check(
-      `${name}: start file (argv[4]) is a real system-prompt path, not a copied flag`,
+      `${name}: start file (--append-system-prompt-file value) is a real system-prompt path, not a copied flag`,
       file.length > 0 && !file.startsWith("-") && file.endsWith("/system-prompt.md"),
       file,
     );
@@ -222,7 +234,7 @@ function checkPolicy(name: string, argv: string[], form: "start" | "resume", kno
       basename(dirname(file)),
     );
     check(`${name}: start file's parent directory is os.tmpdir()`, dirname(dirname(file)) === tmpdir(), dirname(dirname(file)));
-    const expected = expectedStartArgv(file);
+    const expected = expectedStartArgv(file, model);
     check(`${name}: argv is exactly the start policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
     return;
   }
@@ -232,7 +244,7 @@ function checkPolicy(name: string, argv: string[], form: "start" | "resume", kno
   } else {
     check(`${name}: resume session id (argv[2]) is not a copied flag`, sessionId.length > 0 && !sessionId.startsWith("-"), sessionId);
   }
-  const expected = expectedResumeArgv(knownResumeId ?? sessionId);
+  const expected = expectedResumeArgv(knownResumeId ?? sessionId, model);
   check(`${name}: argv is exactly the resume policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
 }
 
@@ -321,10 +333,12 @@ try {
       if (talkLog.length === 2) {
         check("behaviour 4: first call has no --resume (start)", !talkLog[0]!.includes("--resume"));
         check("behaviour 4: second call carries --resume", talkLog[1]!.includes("--resume"));
-        checkPolicy("behaviour 4 talk start", talkLog[0]!, "start");
+        // W-046: eng-lead's manifest model (examples/sample-studio) is
+        // "claude-opus-5" — both calls are expected to carry it.
+        checkPolicy("behaviour 4 talk start", talkLog[0]!, "start", undefined, "claude-opus-5");
         // W-049's A2: the stub's session_id is now the fixed "sess-stub",
         // so this resume argv's id is checked literally, not just shaped.
-        checkPolicy("behaviour 4 talk resume", talkLog[1]!, "resume", "sess-stub");
+        checkPolicy("behaviour 4 talk resume", talkLog[1]!, "resume", "sess-stub", "claude-opus-5");
       }
 
       const beforeActa = readdirSync(join(dir, "acta"));
@@ -339,7 +353,16 @@ try {
       check("behaviour 4: tick logged one call per due magister", tickLog.length === 5, String(tickLog.length));
       for (const argv of tickLog) {
         const form = argv.includes("--resume") ? "resume" : "start";
-        checkPolicy("behaviour 4 tick call", argv, form, form === "resume" ? "sess-stub" : undefined);
+        // W-046: the five magistri don't share one decreed model (producer/
+        // architect/eng-lead are claude-opus-5, qa-lead claude-sonnet-5,
+        // art-lead gpt-6-astra) — read whichever one this call actually
+        // carries and assert it sits in the exact right slot, rather than
+        // hardcoding a value that's wrong for four of the five calls. Which
+        // literal belongs to which sella is provider-portability.test.ts's
+        // job (behaviours 1/2/4/5), not this file's.
+        const modelIdx = argv.indexOf("--model");
+        const model = modelIdx !== -1 ? argv[modelIdx + 1] : undefined;
+        checkPolicy("behaviour 4 tick call", argv, form, form === "resume" ? "sess-stub" : undefined, model);
       }
     } finally {
       if (origPath === undefined) delete process.env["PATH"];

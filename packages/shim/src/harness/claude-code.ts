@@ -35,6 +35,17 @@
  * temp file and passed via `--append-system-prompt-file`, deleted once the
  * call returns — an argv-sized prompt risks the platform's argv length limit
  * and shows up in `ps`, neither of which is a problem for a file.
+ *
+ * W-046: `HarnessStartOpts.model`/`HarnessResumeOpts.model` (the manifest's
+ * `sellae[].model`, D-020's decreed tier) is passed as `--model <id>` when
+ * present — absent means no override, the vendor decides. `--allowedTools`
+ * is variadic and terminal, so `--model` MUST be placed before POLICY_FLAGS
+ * in argv (right after `--output-format json`); a flag appended after
+ * POLICY_FLAGS would be silently eaten as one more tool name. A `claude`
+ * that doesn't recognize the requested model exits non-zero
+ * (`[claude-code:unrecognized_model]`), and talk relays that failure closed
+ * — the manifest declaring a model that doesn't belong to this harness is a
+ * bug in the manifest, not something this profile papers over.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
@@ -154,7 +165,8 @@ export const claudeCodeProfile: HarnessProfile = {
     const file = join(dir, "system-prompt.md");
     try {
       writeFileSync(file, opts.systemPrompt);
-      const args = ["-p", "--output-format", "json", "--append-system-prompt-file", file, ...POLICY_FLAGS];
+      const modelArgs = opts.model ? ["--model", opts.model] : [];
+      const args = ["-p", "--output-format", "json", ...modelArgs, "--append-system-prompt-file", file, ...POLICY_FLAGS];
       return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -162,7 +174,8 @@ export const claudeCodeProfile: HarnessProfile = {
   },
 
   async resume(opts: HarnessResumeOpts): Promise<Turn> {
-    const args = ["-p", "--resume", opts.sessionId, "--output-format", "json", ...POLICY_FLAGS];
+    const modelArgs = opts.model ? ["--model", opts.model] : [];
+    const args = ["-p", "--resume", opts.sessionId, "--output-format", "json", ...modelArgs, ...POLICY_FLAGS];
     return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
   },
 };

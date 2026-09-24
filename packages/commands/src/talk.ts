@@ -310,12 +310,17 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   // parent process's credentials than one is.
   const env = filterEnv(process.env);
 
+  // W-046: the decreed model (sellae[].model) travels into the profile
+  // verbatim — never read from process.env, a vendor config file, or the
+  // session being resumed. Absent means no bisellium override.
+  const requestedModel = sellaRow.model;
+
   let turn: Turn;
   try {
     turn =
       existing && existing.harness === harnessId
-        ? await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env })
-        : await profile.start({ cwd: root, sella, systemPrompt, message, env });
+        ? await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env, model: requestedModel })
+        : await profile.start({ cwd: root, sella, systemPrompt, message, env, model: requestedModel });
   } catch (e) {
     return { ok: false, exitCode: 2, message: `${sella}: ${(e as Error).message}` };
   }
@@ -329,6 +334,16 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
       ok: false,
       exitCode: turn.exitCode,
       message: `${sella}: ${harnessId} exited ${turn.exitCode}${turn.reply ? ` — ${turn.reply}` : ""}`,
+    };
+  }
+  // W-046 (behaviour 3): a turn that exits 0 with an empty reply is a
+  // failure, not a recorded success — nothing is persisted below (no
+  // session, no timeline, no receipt).
+  if (turn.reply === "") {
+    return {
+      ok: false,
+      exitCode: 1,
+      message: `${sella}: ${harnessId} exited 0 with an empty reply (requested model: ${requestedModel ?? "none"})`,
     };
   }
 
@@ -364,7 +379,10 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
       direction: "out",
       text: redact(turn.reply),
       sessionId: timelineSessionId,
-      model: turn.model,
+      // W-046: the vendor's own echo wins when it gives one (the truth about
+      // what actually ran); otherwise the requested model — never overwrite
+      // an echoed model with the request unconditionally.
+      model: turn.model ?? requestedModel,
       usage: turn.usage,
       ...noSessionIdNote,
     },
