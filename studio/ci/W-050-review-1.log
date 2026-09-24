@@ -1,0 +1,382 @@
+# W-050 review, round 1 — censor (qa-lead, claude-fable-5)
+# opus: W-050 "bisellium ci enters the documentation: template edit, CLAUDE.md regenerated" · PR #48
+# branch: opus/W-050 @ 233668a · fork point 1ab8c82 · spec-gate commit 1ab8c82
+# worktree: /tmp/claude-1000/w050-sol · mutation scratch in-place, restored after each
+# trial: D-020 codex-build (builder gpt-5.6-sol, seat builder-sol); judged as any Sonnet build
+# VERDICT: PASS (0 blocking findings, 4 observations, 0 corrections to Terra)
+
+## 0. Trap check and preconditions
+
+  git status --porcelain            -> empty (before and after every probe)
+  git rev-parse HEAD                -> 233668ac2a764ac0ccd9c6d53b5e64f05671a3c8
+  readlink -f node_modules/@bisellium/shim
+    -> /tmp/claude-1000/w050-sol/packages/shim
+  Resolves INSIDE the worktree. Every run below tested the branch's own packages/.
+
+## 1. Gates, re-run by me in the worktree at 233668a
+
+  node scripts/ci-workflow.test.mjs                        exit 0
+    27 checks, 27 PASS, 0 FAIL. 14 pre-existing + 13 new (W-050).
+  npm test                                                 exit 0  (0 lines matching ^FAIL)
+  npm run -s typecheck                                     exit 0
+  node --import tsx packages/cli/src/main.ts check studio --repo .
+                                                           exit 0  PASS — 0 blocking, 83 advisory
+  npx prettier --check <the five changed files>            exit 0  ("All matched files use Prettier code style!")
+  npx eslint scripts/ci-workflow.test.mjs                  exit 0  (no output)
+
+  Render parity, re-run by me (not taken from Terra):
+    node --import tsx packages/cli/src/main.ts instructions --studio studio --repo . --write
+      exit 0; git status --porcelain -> empty; git diff --stat -> empty.
+    The committed CLAUDE.md, AGENTS.md and GLOSSARY.md are byte-identical to the
+    renderer's output at this commit. GLOSSARY.md is absent from the diff, as required.
+
+  No instructions or red findings, re-run by me:
+    check studio --repo . --json | filter /^(instructions\.|cap\.instructions$|opus\.red_)/
+      -> 0   exit 0
+
+  The only W-050 line in check's output is `probatio.certifies  opera/W-050.md
+  gate "spec" evidence has no identity (certifies)` — advisory, 51 instances
+  officina-wide, inherent to spec gates citing a brief rather than a tree hash.
+  Not a W-050 finding.
+
+## 2. The mandated mutation run (five mutations, script + in-place restore)
+
+Driver: $TMPDIR/mutate.mjs — reads baselines, applies one mutation, runs
+`node scripts/ci-workflow.test.mjs` from the worktree root, restores in a
+`finally`. Nothing was committed; `git status --porcelain` was empty before
+and after. Final restored run: exit 0, 0 FAIL.
+
+  M1  delete CI_LINE from the template only
+      exit 1 — BITES
+      FAIL  instructions template: ci line follows verify line
+      (CLAUDE.md/AGENTS.md checks still PASS, so the assertion isolates the
+      template as intended.)
+
+  M2  delete `npm run -s typecheck` from the ADOPTION section
+      exit 1 — BITES
+      FAIL  ADOPTION "Running ci" names step: npm run -s typecheck
+
+  M3  move the section above `## Running run and verify`
+      exit 1 — BITES
+      FAIL  ADOPTION.md: "## Running ci" follows "## Running run and verify"
+      (Section body moved intact; only the ordering assertion fires, so the
+      check is testing position and not content.)
+
+  M4  append a seventh entry ("npm run -s seventh") to CI_STEPS in
+      packages/commands/src/ci.ts
+      exit 1 — BITES
+      FAIL  gates job's run: steps equal CI_STEPS minus the studio check, in order
+      FAIL  ADOPTION "Running ci" names step: npm run -s seventh
+      The pre-existing workflow assertion fires too, but the NEW doc assertion
+      fires independently and by name, which is what this mutation is for.
+
+  M5  add a flag ([--bogus]) to ci.ts's USAGE
+      exit 1 — BITES
+      FAIL  ADOPTION "Running ci" shows ci's usage
+
+All five make the guard exit 1. The suite bites.
+
+## 3. The known residual (one-direction drift) — probed, and I concur
+
+The brief accepts: a step removed from CI_STEPS leaves its text behind in the
+"Today those are" sentence, and no documentation assertion rejects that.
+
+Probed directly ($TMPDIR/residual.mjs, same restore discipline):
+
+  R1  remove `npm run -s lint` from CI_STEPS only
+      exit 1 — FAIL  gates job's run: steps equal CI_STEPS minus the studio check, in order
+      (Matches the brief's claim that removal fails the existing comparison.)
+
+  R2  coordinated removal: drop lint from CI_STEPS AND from ci.yml's gates job,
+      leave docs untouched
+      exit 1 — FAIL  has a lint step
+      docs still claim `npm run -s lint` is a step: true
+
+So the residual is NARROWER than the architect credited. The guard's
+pre-existing per-step assertions ("has a typecheck/lint/format:check/test
+step", "has a check --repo . step naming studio", "... naming
+examples/sample-studio") hardcode all six CI_STEPS entries against ci.yml, so
+a coordinated two-file removal is still caught incidentally. The stale doc
+text survives uncaught only on a THREE-place edit that also removes the
+hardcoded assertion from this very script — and whoever is editing that line
+is sitting three lines above the doc assertions.
+
+I CONCUR with the acceptance. Closing it honestly would mean asserting that
+the "Today those are" prose list equals CI_STEPS exactly, which means parsing
+an English sentence; that is a more brittle guard than the gap it closes, and
+it would fight the section's own prose ("Today those are ... and ...").
+Not worth an opus. Recorded here so the next reader does not re-derive it.
+
+## 4. Prose accuracy — every claim in the ADOPTION section against source
+
+Mapping per the brief's Interfaces section. docs/ADOPTION.md:557-596.
+
+  ADOPTION:560  usage line
+    ci.ts:87 `const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>]
+    [--studio <dir>] [--repo <dir>] [--allow-dirty]";` — flags and order match
+    exactly; the `npm run bisellium --` prefix matches every other section of
+    ADOPTION.md (retro:142, run/verify:510-512, writes:602-606, serve:709,
+    tick:762-764, talk:800, hooks:910-912). package.json:15 defines the
+    `bisellium` script. ACCURATE.
+  "the commands in CI_STEPS (packages/commands/src/ci.ts), in order, in --repo
+    (default the current directory), stopping at the first that fails"
+    ci.ts:52-59 CI_STEPS; ci.ts:166 `execRepo = resolve(repoFlag ?? ".")`;
+    ci.ts:178-194 the loop with the early `return { exitCode: 1 }`. ACCURATE.
+    (On the `--ref` path `--repo` names the root to fork from, not where steps
+    run; the `--ref` sentence at :584 states that, so the section is not
+    self-contradictory.)
+  "Today those are ..." (six commands, in order)
+    Identical, verbatim and in order, to ci.ts:53-58. ACCURATE.
+  "ci.yml runs the same commands, each after `npm ci`, split across two jobs"
+    ci.yml gates: npm ci, typecheck, lint, format:check, test, check
+    examples/sample-studio. ci.yml officina: npm ci, check studio. ACCURATE.
+  "gates runs every step except the studio check, in CI_STEPS order, and is the
+    one a branch protection rule can require"
+    gates' five run: lines == CI_STEPS minus the studio entry, same relative
+    order; ci.yml's own comment says "Required status check ... the job a
+    branch protection rule can require". ACCURATE.
+  "officina runs `npm run -s check -- studio --repo .` alone and is deliberately
+    not required, since it stays red on known officina debt (W-028's ruling)"
+    ci.yml's officina comment says exactly this, naming W-028. ACCURATE.
+  "So the runner does not reproduce ci's single sequence, and that divergence is
+    deliberate"
+    Confirmed live by the guard's own check
+    "(documented divergence, expected false) gates+officina flattened does NOT
+    reproduce CI_STEPS' order" — PASS. ACCURATE.
+  "scripts/ci-workflow.test.mjs, part of npm test"
+    package.json:16 contains `node scripts/ci-workflow.test.mjs`. ACCURATE.
+  "fails when they drift: when gates differs from CI_STEPS minus the studio
+    check, when officina is anything but that one check, or when this section
+    stops naming a CI_STEPS command or ci's usage"
+    First two are the pre-existing checks; the last two are demonstrated by
+    M2 and M5 above. ACCURATE.
+  "The workflow never runs verify, so no certificate is ever written from a
+    runner"
+    Guard check "the string 'verify' appears nowhere in the file" — PASS.
+    ACCURATE.
+  "A failed studio check also prints that it is officina-wide and that
+    `bisellium verify <opus>` is the per-opus gate"
+    ci.ts:61-67 CHECK_STUDIO_STEP (found by content, not index) and
+    ci.ts:186-191 the hint. ACCURATE.
+  "--ref <ref> runs the steps in a scratch worktree of <ref> instead, after a
+    from-scratch `npm ci` there against a throwaway cache (... would resolve
+    @bisellium/* through the parent checkout and test the wrong code), and
+    releases the worktree afterwards"
+    ci.ts:151-165 acquire; ci.ts:169-176 installDeps; ci.ts:106-120
+    defaultInstallDeps (mkdtempSync cache, `npm ci --no-audit --no-fund
+    --cache`); ci.ts:225-232 the finally release. The parenthetical restates
+    ci.ts:19-24's own header comment. ACCURATE.
+
+  --- the two the red-team flagged ---
+
+  "--opus <id> runs `bisellium verify <id>` against the same tree once every
+    step has passed, forwarding --studio, so the automated gates' certificates
+    come from verify itself; run it on the opus branch (D-021)"
+    ci.ts:196-221: verifyArgs = [opusId, "--repo", execRepo]; `--studio` pushed
+    only when given; `runVerify` called only after the whole CI_STEPS loop
+    completed without an early return. ACCURATE.
+
+  "--allow-dirty is passed to that verify, and on the --ref path it always is,
+    since the scratch checkout is untouched"
+    ci.ts:206 `if (allowDirty || ref !== undefined) verifyArgs.push("--allow-dirty");`
+    Both halves hold: the user's flag is forwarded, and the --ref path forces it
+    regardless. The stated reason matches ci.ts:199-205's comment ("fresh `git
+    worktree add` of ref, never touched by hand — clean by construction").
+    ACCURATE — the wording is compressed but the second clause disambiguates the
+    first, so it cannot be read as "always passed".
+
+  "Exit codes: 0 every step passed (with --opus, verify's own exit code
+    instead), 1 a step or --ref's install failed, 2 usage error, no git repo for
+    --ref, or a ref that cannot be checked out"
+    Enumerated EVERY return in runCi and matched each to a clause:
+      ci.ts:130  parseFlags error                -> 2   "usage error"
+      ci.ts:135  unexpected positional           -> 2   "usage error"
+      ci.ts:154  gitRoot undefined on --ref      -> 2   "no git repo for --ref"
+      ci.ts:161  provider.acquire threw          -> 2   "a ref that cannot be checked out"
+      ci.ts:174  installDeps threw               -> 1   "--ref's install failed"
+      ci.ts:192  a step returned non-zero        -> 1   "a step ... failed"
+      ci.ts:219  runVerify's result returned as-is -> "verify's own exit code instead"
+      ci.ts:223  fall-through                    -> 0   "every step passed"
+    No return path is unaccounted for and no clause is unbacked.
+    Propagation confirmed: main.ts:86 `if (cmd === "ci") return (await
+    runCi(rest)).exitCode;` and main.ts:222 `(code) => process.exit(code)`.
+    main.ts imports "./ci.js", which is packages/cli/src/ci.ts, a one-line
+    `export * from "@bisellium/commands/ci.js"` re-export shim — so the section
+    naming packages/commands/src/ci.ts names the real source, not the shim.
+    ACCURATE.
+
+  The worktree-release failure at ci.ts:227-231 logs but does not change the
+  exit code. The section makes no claim about it. Not a gap.
+
+  RESULT: 0 inaccurate claims. Both red-team targets check out.
+
+## 5. The new assertions — read against the brief's Interfaces
+
+scripts/ci-workflow.test.mjs:165-236. Append-only: everything precedes the
+unchanged `process.exit(failed ? 1 : 0)`; no existing check was touched
+(confirmed in the diff, and all 14 pre-existing checks still PASS).
+
+  Names: all 13 check() names are character-for-character the brief's.
+  REPO_ROOT is used for every file read (:171, :177, :183, :195, :221) — never
+  the argv[2] target, as the brief required. The only caller of this script is
+  package.json:16 with no argument; grepped the whole tree for
+  "ci-workflow" (excluding node_modules/.git) — no fixture caller passes
+  argv[2], so ignoring it has no live consequence.
+  norm, the line split /\r?\n/, the section slice, the previous-heading lookup
+  (findLast), the USAGE regex and the `"npm run bisellium -- ci " + m[1]`
+  needle all match the brief. The detail argument is omitted where the brief
+  did not specify one; check() is `(name, ok, detail = "")` at :39, so that is
+  the house form, not a deviation.
+  The W-050 comment block (:165-167) names the opus and gives the reason.
+
+## 6. Reds — honest, distinct, correctly staged
+
+  01.log  # behaviour: 1  # exit: 1  # sella: builder-sol  # tree: dirty:9dec38f0...
+          14 PASS / 13 FAIL. Every new check FAILs; all 14 pre-existing PASS.
+          Includes "FAIL  CLAUDE.md carries the ci line".
+  02.log  # behaviour: 2  # exit: 1  # sella: builder-sol  # tree: tree:dd610286...
+          17 PASS / 10 FAIL. Behaviour 1's three checks have flipped to PASS;
+          every behaviour-2 check FAILs.
+          Includes "PASS  CLAUDE.md carries the ci line" and
+          "FAIL  ADOPTION.md: \"## Running ci\" follows ...".
+  Bodies are necessarily distinct (13 FAIL vs 10 FAIL). Both are
+  assertion-level over content absent at the time — no broken module, no
+  manufactured fixture. The sequencing the brief relied on held.
+  02.log's header reads `tree:` not `dirty:` — behaviour 1 was committed before
+  red 2 was recorded, exactly the order step 4 prescribes.
+
+## 7. Commit order and scope
+
+  git log --name-only --format=%h 1ab8c82..233668a
+    079a301  scripts/ci-workflow.test.mjs, studio/ci/reds/W-050/01.log
+             (no template, no CLAUDE.md, no AGENTS.md, no ADOPTION.md)
+    f493f32  AGENTS.md, CLAUDE.md, packages/cli/src/instructions.template.md
+             (no ADOPTION.md)
+    322d9e1  docs/ADOPTION.md, studio/ci/reds/W-050/02.log
+    788c9f0  studio/opera/W-050.md            (handoff)
+    233668a  studio/ci/W-050-{lint,tests,types}-91759607.log, studio/opera/W-050.md
+             (orchestrator's verify)
+  Matches the brief's commit-order requirement exactly.
+  Diff scope matches the brief's eight paths plus the orchestrator's three
+  certificates. GLOSSARY.md absent. Nothing outside the declared files.
+
+## 8. The provenance transcript — my judgment
+
+The brief (Acceptance, "Render parity") designates the builder's step-3
+transcript as "the only provenance evidence" that CLAUDE.md and AGENTS.md came
+from the renderer rather than a byte-identical hand edit.
+
+What was delivered (/tmp/claude-1000/w050-builder-report.md:10-19):
+
+     Verbatim `instructions --write` step output (`instructions --write` itself was silent):
+      M AGENTS.md
+      M CLAUDE.md
+      M packages/cli/src/instructions.template.md
+     1	0	AGENTS.md
+     1	0	CLAUDE.md
+     1	0	packages/cli/src/instructions.template.md
+
+It does NOT satisfy me as provenance, for two reasons, and the second is the
+one that matters:
+
+  (a) It is a reconstruction, not a capture. There is no prompt, no command
+      echo, no interleaving; the `instructions --write` invocation appears only
+      as a parenthetical assertion that it printed nothing. The brief asked for
+      the transcript "from the `instructions --write` command through the
+      `git diff --numstat` output". What arrived is the concatenated stdout of
+      two later commands.
+
+  (b) Even a perfect terminal capture of these two commands could not make the
+      discrimination it was assigned. `git status` and `git diff --numstat`
+      AFTER `--write` are identical whether the renderer wrote the two files or
+      a hand edit did. The one observation that would discriminate is a
+      `git status --porcelain` taken BETWEEN the template edit and the
+      `--write` run, showing ONLY the template modified — one line, and it is
+      absent from the brief's step 3.
+
+I do not fail the opus on this, and I want the reasoning on the record:
+
+  - The artifact is verifiably correct independent of provenance. I re-ran
+    `instructions --studio studio --repo . --write` myself at 233668a and got a
+    zero diff (section 1). The committed bytes ARE the render.
+  - Divergence cannot persist: the `instructions.stale` check rule re-derives
+    this on every check run, and the studio check is a CI_STEPS entry. A hand
+    edit that matched byte-for-byte is indistinguishable from the render
+    because it IS the render; a hand edit that did not match would have been
+    caught by that rule before this review.
+  - The brief's own text concedes render parity "cannot prove *how* they were
+    produced". The transcript was the attempt to close that residual, and it
+    does not close it. The gap is the brief's, not the builder's: Sol produced
+    what step 8 asked for, in the form step 8 asked for it.
+
+OBSERVATION O1 (single instance, for the retro, not a defect in this opus):
+  An evidence artifact was specified that cannot bear the weight assigned to
+  it — "the only provenance evidence" is a self-reported after-the-fact
+  transcript of two commands whose output is provenance-blind. The fix is one
+  line in the next brief of this shape: require `git status --porcelain`
+  BEFORE the `--write` run, showing only the template modified.
+  Searched for other instances: grepped all of studio/briefs/*.md for
+  "transcript" and for "provenance". W-050 is the only brief that designates a
+  builder-reported transcript as evidence; W-044:243 puts a transcript in
+  review evidence (the censor's own, not the builder's), and the "provenance"
+  hits in W-018/W-033/W-034/W-039/W-041/W-049 are the decisions/D-nnn.md
+  front-matter field or W-044's unrelated round-3 fault. NOT a class — one
+  instance.
+
+## 9. Observations (none blocking)
+
+O1  see section 8 — provenance evidence that cannot discriminate. Retro item.
+
+O2  (class of 4, fully enumerated) Commit trailers name the model, not the
+    sella. CLAUDE.md's Commits rule says "a Co-Authored-By: trailer naming the
+    sella that wrote it", and the brief's "For the trial builder" section
+    mandates `Co-Authored-By: builder-sol (gpt-5.6-sol) <noreply@openai.com>`.
+    All four of Sol's commits instead carry
+    `Co-Authored-By: GPT-5.6 Sol <noreply@openai.com>`:
+      079a301, f493f32, 322d9e1, 788c9f0.
+    Enumerated by `git log --format='%h%n%B' 1ab8c82..233668a | grep
+    Co-Authored-By` over the whole branch; the orchestrator's two commits
+    (1ab8c82, 233668a) carry their own correct trailers.
+    Origin is an orchestrator-dispatch override, not builder drift — the
+    builder's report (:56) states the dispatch's trailer "took precedence over
+    their differing older forms in the brief". The officina's attribution of
+    record is unaffected and correct: traditio `sella: builder-sol`, and both
+    red logs carry `# sella: builder-sol`. Git-trailer cosmetics only.
+    Not blocking; raised so the next codex dispatch quotes the brief's trailer
+    verbatim rather than restating it.
+
+O3  (class of 3, fully enumerated) Commit subjects deviate from the brief's
+    prescribed strings. Same origin as O2, same enumeration command:
+      f493f32 "docs(W-050): bisellium ci in generated instructions"
+              vs brief: "docs(W-050): bisellium ci in the instructions
+              template; CLAUDE.md and AGENTS.md regenerated"
+      322d9e1 "docs(W-050): document running ci with behaviour 2 red"
+              vs brief: "docs(W-050): Running ci in ADOPTION, red for
+              behaviour 2"
+      788c9f0 "chore(W-050): record builder handoff"
+              vs brief: "chore(W-050): traditio handoff for verify"
+    079a301 matches the brief exactly. All four are conventional, present
+    tense, scoped to one opus. Cosmetic.
+
+O4  The known residual is narrower than the brief credits — see section 3.
+    No action; recorded so a future reader does not over-estimate the gap.
+
+## 10. Trial note (D-020)
+
+Judged by the same standard as any Sonnet build. What I checked and what I
+found: 27/27 guard checks, four gates green, five mandated mutations all
+biting, thirteen assertion names character-exact against the spec,
+append-only guard changes, correct red staging with distinct honest bodies,
+correct commit ordering, verbatim ADOPTION section, zero inaccurate prose
+claims across fourteen mapped assertions, zero blocking findings. The three
+deviations I found (O1-O3) are a brief gap and two orchestrator-instruction
+cosmetics; none is a build defect. Terra's ten claims: all ten independently
+consistent with what I ran; no corrections.
+
+## 11. Mutation scratch
+
+Every mutation was applied and restored in a `finally` by
+$TMPDIR/mutate.mjs and $TMPDIR/residual.mjs. Nothing was committed.
+`git status --porcelain` empty after the mutation run, after the residual
+probe, and after the render-parity re-run. Final guard run after restore:
+exit 0, 0 FAIL.
