@@ -1,35 +1,36 @@
 # behaviour: 1
 # command: node scripts/safe-item-path-mutants.mjs contract
 # exit: 1
-# at: 2026-09-24T07:26:14.365Z
+# at: 2026-09-24T08:19:27.550Z
 # sella: builder-b
-# tree: dirty:f51320c5e597de3a948c0a06bb1f09a58b9ba148
+# tree: dirty:7a02a35c3600df5bcff6764cfae09fa00ee8b804
 
 baseline: 0 FAIL — --import tsx packages/cli/src/writes.test.ts .
 
 === mutant: mA no-shape-guard (expect: dead) ===
 resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=5
-kills["1. safeItemPath(\"\")"]: seen
-FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/.md"
-FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/..md"
-FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/...md"
-FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/..\\..\\win.ini.md"
-FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/C:\\Windows\\win.ini.md"
+kills["1. safeItemPath(\".\")"]: seen
+kills["1. safeItemPath(\"..\")"]: seen
+FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-n1hOaY/.md"
+FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-n1hOaY/..md"
+FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-n1hOaY/...md"
+FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-n1hOaY/..\\..\\win.ini.md"
+FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-n1hOaY/C:\\Windows\\win.ini.md"
 -> matched (dead)
 
 === mutant: mB no-guard (expect: dead) ===
 resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=26
-kills["1. safeItemPath(\"\")"]: seen
-FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/.md"
-FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/..md"
-FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/...md"
+kills["1. safeItemPath(\"../W-001\")"]: seen
+FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/.md"
+FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/..md"
+FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/...md"
 FAIL  1. safeItemPath("../W-001"): refused                       "/tmp/claude-1000/W-001.md"
 FAIL  1. safeItemPath("../../etc/passwd"): refused               "/tmp/etc/passwd.md"
-FAIL  1. safeItemPath("/etc/passwd"): refused                    "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/etc/passwd.md"
-FAIL  1. safeItemPath("a/b"): refused                            "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/a/b.md"
+FAIL  1. safeItemPath("/etc/passwd"): refused                    "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/etc/passwd.md"
+FAIL  1. safeItemPath("a/b"): refused                            "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/a/b.md"
 FAIL  1. safeItemPath("opera/../../x"): refused                  "/tmp/claude-1000/x.md"
-FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/..\\..\\win.ini.md"
-FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/C:\\Windows\\win.ini.md"
+FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/..\\..\\win.ini.md"
+FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-LTYW0F/C:\\Windows\\win.ini.md"
 FAIL  row1 handoff: exits 2                                      0
 FAIL  row1 handoff: stderr names unknown opus ../W-777           
 FAIL  row1 handoff: outside sentinel byte-identical              
@@ -50,17 +51,17 @@ FAIL  row5 greenlight: no event appended
 
 === mutant: mC sanitize-in-helper (expect: dead) ===
 resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=10
-kills["1. safeItemPath(\"\")"]: seen
-FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/_.md"
-FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/_.md"
-FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/_.md"
-FAIL  1. safeItemPath("../W-001"): refused                       "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/..W-001.md"
-FAIL  1. safeItemPath("../../etc/passwd"): refused               "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/....etcpasswd.md"
-FAIL  1. safeItemPath("/etc/passwd"): refused                    "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/etcpasswd.md"
-FAIL  1. safeItemPath("a/b"): refused                            "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/ab.md"
-FAIL  1. safeItemPath("opera/../../x"): refused                  "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/opera....x.md"
-FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/....win.ini.md"
-FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/C:Windowswin.ini.md"
+kills["1. safeItemPath(\"/etc/passwd\")"]: seen
+FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/_.md"
+FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/_.md"
+FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/_.md"
+FAIL  1. safeItemPath("../W-001"): refused                       "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/..W-001.md"
+FAIL  1. safeItemPath("../../etc/passwd"): refused               "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/....etcpasswd.md"
+FAIL  1. safeItemPath("/etc/passwd"): refused                    "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/etcpasswd.md"
+FAIL  1. safeItemPath("a/b"): refused                            "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/ab.md"
+FAIL  1. safeItemPath("opera/../../x"): refused                  "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/opera....x.md"
+FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/....win.ini.md"
+FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-CT4tvR/C:Windowswin.ini.md"
 -> matched (dead)
 
 === mutant: mD no-dirname-check (expect: alive) ===

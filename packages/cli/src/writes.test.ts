@@ -110,7 +110,11 @@ try {
       const label = `1. safeItemPath(${JSON.stringify(id)})`;
       if (expected === "refused") {
         check(`${label}: refused`, typeof r !== "string", JSON.stringify(r));
-        if (typeof r !== "string") check(`${label}: error names the id`, r.error.includes(id), r.error);
+        // The helper's own quoted form (`invalid id "<id>"`), not a bare
+        // substring check [censor round 1, F-2]: `r.error.includes(id)` is
+        // vacuous on the "" row, since every string includes the empty
+        // string. The quoted form bites on every row, "" included.
+        if (typeof r !== "string") check(`${label}: error names the id`, r.error.includes(`"${id}"`), r.error);
       } else {
         check(`${label}: accepted`, typeof r === "string", JSON.stringify(r));
         if (typeof r === "string") {

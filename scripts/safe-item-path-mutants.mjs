@@ -242,13 +242,17 @@ function censusInsertHelperCallEdit() {
 }
 
 function censusInsertRawJoinEdit() {
-  // mF: a new raw `${...Id}.md` join, in a different existing file, never
-  // routed through the helper.
+  // mF: a new raw `${id}.md` join, in a different existing file, never
+  // routed through the helper. The parameter is named `id`, never `*Id`
+  // [censor round 1, F-1]: a probe spelled to fit a scan's filter tests the
+  // filter, not the property behaviour 4 exists to prove — inventory B now
+  // scans every such join regardless of spelling, so this name is no longer
+  // load-bearing, but it must still not be the thing that makes mF die.
   const file = "packages/cli/src/close.ts";
   const abs = join(REPO_ROOT, file);
   const text = readFileSync(abs, "utf8");
   const insertion =
-    "\nexport function __w047MutantProbeF(dir: string, probeOpusId: string): string {\n  return `${dir}/${probeOpusId}.md`;\n}\n";
+    "\nexport function __w047MutantProbeF(dir: string, id: string): string {\n  return `${dir}/${id}.md`;\n}\n";
   return { file, edits: [{ start: text.length, end: text.length, replacement: insertion }] };
 }
 
@@ -318,18 +322,25 @@ function site(label, file, fn, dirs, kind, expect, kills, testCmd) {
   return { label, file, fn, dirs, kind, expect, kills, testCmd };
 }
 
-// All three of mA/mB/mC make the empty-id row (`safeItemPath(base, "")`,
-// expected refused) wrongly succeed — mA and mB by disabling the guard that
-// refuses it, mC by laundering it into "_" instead of refusing it — so all
-// three share this kill label alongside whichever other rows they also
-// break.
-const EMPTY_ID_KILL = ['1. safeItemPath("")'];
+// Distinct kills per mutant [censor round 1, F-3]: a shared label is not a
+// kill, it is three mutants trusting one failure. mA (shape guard alone
+// disabled) is observable only on rows with no "/" or "\" at all — the
+// dirname check it leaves standing still refuses anything that introduces a
+// path separator — so its own rows are "." and "..". mB (both guards
+// disabled) is the only one of the three that also breaks a separator row,
+// since only it removes the dirname check too: "../W-001". mC
+// (sanitize-in-helper) launders every id it would otherwise refuse, so its
+// kill is the never-sanitize assertion on a refused row not already claimed
+// by mA or mB: "/etc/passwd".
+const MA_KILLS = ['1. safeItemPath(".")', '1. safeItemPath("..")'];
+const MB_KILLS = ['1. safeItemPath("../W-001")'];
+const MC_KILLS = ['1. safeItemPath("/etc/passwd")'];
 const CONTRACT_MUTANTS = [
   {
     label: "mA no-shape-guard",
     kind: "mA",
     expect: "dead",
-    kills: EMPTY_ID_KILL,
+    kills: MA_KILLS,
     group: "contract",
     testCmd: WRITES_CMD,
     edits: () => [contractEdit("mA")],
@@ -338,7 +349,7 @@ const CONTRACT_MUTANTS = [
     label: "mB no-guard",
     kind: "mB",
     expect: "dead",
-    kills: EMPTY_ID_KILL,
+    kills: MB_KILLS,
     group: "contract",
     testCmd: WRITES_CMD,
     edits: () => [contractEdit("mB")],
@@ -347,7 +358,7 @@ const CONTRACT_MUTANTS = [
     label: "mC sanitize-in-helper",
     kind: "mC",
     expect: "dead",
-    kills: EMPTY_ID_KILL,
+    kills: MC_KILLS,
     group: "contract",
     testCmd: WRITES_CMD,
     edits: () => [contractEdit("mC")],
