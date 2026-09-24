@@ -270,12 +270,17 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   // Oldest-evidence-first: never-probed pairs first, then ascending `at`,
   // then by (id, harness) — a rotation with no cursor, so a stopped run's
   // tail heads next run's queue on its own (Interfaces, "Order: oldest
-  // evidence first"). Naive at this stage: an unparseable `at` yields NaN,
-  // which a comparator can't order (fixed in behaviour 10).
+  // evidence first"). A corrupt `at` is classified as never-probed too
+  // (behaviour 10c) — never left to fall through as NaN.
   function priorAtMs(c: Candidate): number {
     const prior = priorProbeByKey.get(`${c.id}\u0000${c.harness}`);
     if (!prior) return -Infinity;
-    return new Date(prior.at).getTime();
+    const ms = new Date(prior.at).getTime();
+    // An unparseable `at` is classified as never-probed, same as an absent
+    // one (behaviour 10c) — NaN must never reach the comparator below: two
+    // NaN operands compare as neither <, >, nor === under `-`, which sorts
+    // a corrupt pair unpredictably instead of first.
+    return Number.isNaN(ms) ? -Infinity : ms;
   }
   const orderedDue = [...due].sort((a, b) => {
     const ta = priorAtMs(a);
@@ -461,32 +466,64 @@ export async function runProbe(_args: string[]): Promise<{ exitCode: number }> {
   return { exitCode: 1 };
 }
 
-interface RawModelEntry {
-  id: string;
-  state: ModelState;
-  harness?: string;
-  vendorDiagnostic?: string;
-  probes?: HarnessProbe[];
+function isModelState(v: unknown): v is ModelState {
+  return v === "available" || v === "unavailable" || v === "unverified";
 }
 
-/** Reads and validates `<studio>/models.json` — happy-path stage (behaviour
- *  10 hardens this against corruption; behaviours 4-9 only ever seed
- *  well-formed fixtures). Absent file -> undefined, which every caller
- *  already treats as "start from an empty record". */
+/** A malformed probe is skipped rather than trusted — same tolerance as a
+ *  malformed model entry, one level down. */
+function parseProbe(raw: unknown): HarnessProbe | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const r = raw as Record<string, unknown>;
+  if (typeof r["harness"] !== "string" || !isModelState(r["state"]) || typeof r["at"] !== "string") return undefined;
+  const probe: HarnessProbe = { harness: r["harness"], state: r["state"], at: r["at"] };
+  if (typeof r["exit"] === "number") probe.exit = r["exit"];
+  if (typeof r["reply"] === "boolean") probe.reply = r["reply"];
+  if (typeof r["vendorDiagnostic"] === "string") probe.vendorDiagnostic = r["vendorDiagnostic"];
+  if (typeof r["note"] === "string") probe.note = r["note"];
+  if (typeof r["harnessVersion"] === "string") probe.harnessVersion = r["harnessVersion"];
+  return probe;
+}
+
+function parseModelEntry(raw: unknown): ModelEntry | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const r = raw as Record<string, unknown>;
+  if (typeof r["id"] !== "string" || !isModelState(r["state"])) return undefined;
+  const probes: HarnessProbe[] = [];
+  if (Array.isArray(r["probes"])) for (const p of r["probes"]) { const parsed = parseProbe(p); if (parsed) probes.push(parsed); }
+  const entry: ModelEntry = { id: r["id"], state: r["state"], probes };
+  if (typeof r["harness"] === "string") entry.harness = r["harness"];
+  if (typeof r["vendorDiagnostic"] === "string") entry.vendorDiagnostic = r["vendorDiagnostic"];
+  return entry;
+}
+
+/** Advisory data, never instructions (standing rule): an absent,
+ *  unparseable or wrong-shaped file yields `undefined` rather than
+ *  throwing, and a malformed individual entry (or probe) is skipped rather
+ *  than trusted, never failing the whole read (behaviour 10b). */
 export function readModelsRecord(studio: string): ModelsRecord | undefined {
   const path = join(resolve(studio), "models.json");
   if (!existsSync(path)) return undefined;
-  const raw = readFileSync(path, "utf8");
-  const parsed = JSON.parse(raw) as { at?: unknown; harnessVersions?: unknown; models: RawModelEntry[] };
-  const models: ModelEntry[] = parsed.models.map((m) => ({
-    id: m.id,
-    state: m.state,
-    harness: m.harness,
-    vendorDiagnostic: m.vendorDiagnostic,
-    probes: m.probes ?? [],
-  }));
-  const harnessVersions = (parsed.harnessVersions ?? {}) as { claude?: string; codex?: string };
-  return { schema: 1, at: typeof parsed.at === "string" ? parsed.at : "", harnessVersions, models };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    return undefined;
+  }
+  if (typeof parsed !== "object" || parsed === null) return undefined;
+  const p = parsed as Record<string, unknown>;
+  if (!Array.isArray(p["models"])) return undefined;
+
+  const models: ModelEntry[] = [];
+  for (const raw of p["models"]) {
+    const entry = parseModelEntry(raw);
+    if (entry) models.push(entry);
+  }
+  const hv = typeof p["harnessVersions"] === "object" && p["harnessVersions"] !== null ? (p["harnessVersions"] as Record<string, unknown>) : {};
+  const harnessVersions: { claude?: string; codex?: string } = {};
+  if (typeof hv["claude"] === "string") harnessVersions.claude = hv["claude"];
+  if (typeof hv["codex"] === "string") harnessVersions.codex = hv["codex"];
+  return { schema: 1, at: typeof p["at"] === "string" ? p["at"] : "", harnessVersions, models };
 }
 
 /** The candidate union — two sources, and nothing else (Interfaces,

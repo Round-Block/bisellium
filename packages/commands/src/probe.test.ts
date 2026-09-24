@@ -135,7 +135,7 @@ if (runs(1)) {
     now: NOW,
     only: [{ id: "solo-model", harness: "claude-code" }],
     harnesses: { "claude-code": profile },
-    listModels: async () => [],
+    listModels: async () => [], versions: async () => ({}),
   });
 
   check(1, "exactly one start call", calls.start.length === 1, String(calls.start.length));
@@ -157,7 +157,7 @@ if (runs(2)) {
   // exit 0, non-empty reply -> available
   {
     const { profile } = makeStub("claude-code", { turnFor: () => okTurn("Hi") });
-    const r = await probeBattery({ studio: dir, now: NOW, only: [{ id: "m-avail", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+    const r = await probeBattery({ studio: dir, now: NOW, only: [{ id: "m-avail", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
     const entry = r.record.models.find((m) => m.id === "m-avail");
     check(2, "exit0+nonempty -> available", entry?.state === "available", JSON.stringify(entry));
     check(2, "exit0+nonempty: probe.exit === 0", entry?.probes[0]?.exit === 0, JSON.stringify(entry));
@@ -168,7 +168,7 @@ if (runs(2)) {
     const dir2 = freshDir("b2-empty");
     writeManifest(dir2, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: m-empty } ]\nprobationes: []");
     const { profile } = makeStub("claude-code", { turnFor: () => emptyTurn() });
-    const r = await probeBattery({ studio: dir2, now: NOW, only: [{ id: "m-empty", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+    const r = await probeBattery({ studio: dir2, now: NOW, only: [{ id: "m-empty", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
     const entry = r.record.models.find((m) => m.id === "m-empty");
     check(2, "exit0+empty -> unavailable", entry?.state === "unavailable", JSON.stringify(entry));
     check(2, "exit0+empty: reply === false", entry?.probes[0]?.reply === false, JSON.stringify(entry));
@@ -187,7 +187,7 @@ if (runs(2)) {
       const id = `m-fail-${i}`;
       writeManifest(dir2, `sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: ${id} } ]\nprobationes: []`);
       const { profile } = makeStub("claude-code", { turnFor: () => failTurn(7, raw) });
-      const r = await probeBattery({ studio: dir2, now: NOW, only: [{ id, harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+      const r = await probeBattery({ studio: dir2, now: NOW, only: [{ id, harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
       const entry = r.record.models.find((m) => m.id === id);
       check(2, `raw shape ${i}: nonzero exit -> unavailable`, entry?.state === "unavailable", JSON.stringify(entry));
       check(2, `raw shape ${i}: exit equals vendor's own code`, entry?.probes[0]?.exit === 7, String(entry?.probes[0]?.exit));
@@ -199,7 +199,7 @@ if (runs(2)) {
     const dir2 = freshDir("b2-unavail");
     writeManifest(dir2, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: m-unavail } ]\nprobationes: []");
     const { profile, calls } = makeStub("claude-code", { availableFn: () => false });
-    const r = await probeBattery({ studio: dir2, now: NOW, only: [{ id: "m-unavail", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+    const r = await probeBattery({ studio: dir2, now: NOW, only: [{ id: "m-unavail", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
     const entry = r.record.models.find((m) => m.id === "m-unavail");
     check(2, "harness unavailable -> unverified", entry?.state === "unverified", JSON.stringify(entry));
     check(2, "harness unavailable -> note", entry?.probes[0]?.note === "harness unavailable", JSON.stringify(entry));
@@ -228,7 +228,7 @@ if (runs(3)) {
       now: NOW,
       only: [{ id: "aaa-ctrl", harness: "claude-code" }, { id: "zzz-other", harness: "claude-code" }],
       harnesses: { "claude-code": profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
     });
     check(3, "(a) exactly one start call (the control)", calls.start.length === 1, String(calls.start.length));
     const ctrl = r.record.models.find((m) => m.id === "aaa-ctrl");
@@ -250,7 +250,7 @@ if (runs(3)) {
       now: NOW,
       only: [{ id: "aaa-ctrl", harness: "claude-code" }, { id: "zzz-later", harness: "claude-code" }],
       harnesses: { "claude-code": profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
     });
     const ctrl = r.record.models.find((m) => m.id === "aaa-ctrl");
     const later0 = r.record.models.find((m) => m.id === "zzz-later");
@@ -268,7 +268,7 @@ if (runs(3)) {
       now: NOW,
       only: [{ id: "orphan-a", harness: "codex" }, { id: "orphan-b", harness: "codex" }],
       harnesses: { codex: profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
     });
     check(3, "(c) zero turns when harness has no seated candidate", calls.start.length === 0, String(calls.start.length));
     const a = r.record.models.find((m) => m.id === "orphan-a");
@@ -299,7 +299,7 @@ if (runs(3)) {
         { id: "cx-ctrl", harness: "codex" },
       ],
       harnesses: { "claude-code": claude.profile, codex: codex.profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
     });
     check(3, `(d) ${status}: exactly two claude-code start calls (control + the blocked one)`, claude.calls.start.length === 2, String(claude.calls.start.length));
     const blocked = r.record.models.find((m) => m.id === "zzz-blocked");
@@ -320,7 +320,7 @@ if (runs(3)) {
       now: NOW,
       only: [{ id: "aaa-ctrl", harness: "claude-code" }, { id: "zzz-500", harness: "claude-code" }],
       harnesses: { "claude-code": claude.profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
     });
     check(3, "(d) negative: a 500 does not short-circuit (two turns spent)", claude.calls.start.length === 2, String(claude.calls.start.length));
     const entry500 = r.record.models.find((m) => m.id === "zzz-500");
@@ -352,7 +352,7 @@ if (runs(4)) {
   let primeCalls = 0;
   const primingStub = makeStub("claude-code", { turnFor: () => okTurn("primed") });
   for (const [i, id] of ["zzz-completes", "bbb-limit", "ddd-never"].entries()) {
-    await probeBattery({ studio: dir, now: later(NOW, i * 1000), only: [{ id, harness: "claude-code" }], harnesses: { "claude-code": primingStub.profile }, listModels: async () => [] });
+    await probeBattery({ studio: dir, now: later(NOW, i * 1000), only: [{ id, harness: "claude-code" }], harnesses: { "claude-code": primingStub.profile }, listModels: async () => [] , versions: async () => ({})});
     primeCalls++;
   }
   // Each priming call also probes the control (aaa-ctrl), so it's two turns
@@ -364,7 +364,7 @@ if (runs(4)) {
   // the usage limit (stopping the harness), ddd-never is never reached.
   const run1Turns = { "aaa-ctrl": okTurn("OK"), "zzz-completes": okTurn("still fine"), "bbb-limit": limitTurn(), "ddd-never": okTurn("must not run") } as Record<string, Turn>;
   const run1 = makeStub("claude-code", { turnFor: (model) => run1Turns[model ?? ""] ?? okTurn() });
-  const result1 = await probeBattery({ studio: dir, now: later(NOW, 10_000), only: pairs, harnesses: { "claude-code": run1.profile }, listModels: async () => [] });
+  const result1 = await probeBattery({ studio: dir, now: later(NOW, 10_000), only: pairs, harnesses: { "claude-code": run1.profile }, listModels: async () => [] , versions: async () => ({})});
 
   check(4, "run1: exit===3 recorded unverified, note 'usage limit', no exit/reply", (() => {
     const e = result1.record.models.find((m) => m.id === "bbb-limit");
@@ -378,7 +378,7 @@ if (runs(4)) {
   // that DID complete in run 1 (zzz-completes) is probed LAST among the
   // three non-control pairs.
   const run2 = makeStub("claude-code", { turnFor: () => okTurn("run2 ok") });
-  await probeBattery({ studio: dir, now: later(NOW, 20_000), only: pairs, harnesses: { "claude-code": run2.profile }, listModels: async () => [] });
+  await probeBattery({ studio: dir, now: later(NOW, 20_000), only: pairs, harnesses: { "claude-code": run2.profile }, listModels: async () => [] , versions: async () => ({})});
   const order = run2.calls.start.map((c) => c.model);
   check(4, "run2: control still runs first", order[0] === "aaa-ctrl", JSON.stringify(order));
   check(4, "run2: previously-skipped pair heads the (non-control) queue", order[1] === "ddd-never", JSON.stringify(order));
@@ -434,7 +434,7 @@ if (runs(5)) {
       { id: "cx-other", harness: "codex" },
     ],
     harnesses: { "claude-code": claude.profile, codex: codex.profile },
-    listModels: async () => [],
+    listModels: async () => [], versions: async () => ({}),
   });
 
   const finalRecord = readRaw(dir);
@@ -466,7 +466,7 @@ if (runs(6)) {
       now: NOW,
       only: [{ id: "aaa", harness: "claude-code" }],
       harnesses: { "claude-code": profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
       fs: { writeFileSync, renameSync: stubRename, existsSync },
     });
     check(6, "(a) renameSync called with models.json.tmp -> models.json", renameCalls.some(([from, to]) => from === join(resolve(dir), "models.json.tmp") && to === join(resolve(dir), "models.json")), JSON.stringify(renameCalls));
@@ -493,7 +493,7 @@ if (runs(6)) {
         now: later(NOW, 1),
         only: [{ id: "aaa", harness: "claude-code" }],
         harnesses: { "claude-code": profile },
-        listModels: async () => [],
+        listModels: async () => [], versions: async () => ({}),
         fs: { writeFileSync, renameSync: throwingRename, existsSync },
       });
     } catch {
@@ -514,7 +514,7 @@ if (runs(6)) {
 
     // Positive control: the same battery, no injected throw, DOES change models.json.
     const { profile: profile2 } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
-    await probeBattery({ studio: dir, now: later(NOW, 2), only: [{ id: "aaa", harness: "claude-code" }], harnesses: { "claude-code": profile2 }, listModels: async () => [] });
+    await probeBattery({ studio: dir, now: later(NOW, 2), only: [{ id: "aaa", harness: "claude-code" }], harnesses: { "claude-code": profile2 }, listModels: async () => [] , versions: async () => ({})});
     const afterOk = readFileSync(join(dir, "models.json"), "utf8");
     check(6, "(b) positive control: an uninterrupted battery DOES change models.json", afterOk !== before, "");
   }
@@ -525,7 +525,7 @@ if (runs(6)) {
     writeManifest(dir, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: aaa } ]\nprobationes: []");
     writeFileSync(join(dir, "models.json.tmp"), "{ not even close to valid json");
     const { profile } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
-    const r = await probeBattery({ studio: dir, now: NOW, only: [{ id: "aaa", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+    const r = await probeBattery({ studio: dir, now: NOW, only: [{ id: "aaa", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
     check(6, "(c) a stale .tmp does not corrupt the run", r.turns === 1, String(r.turns));
     const final = readRaw(dir);
     check(6, "(c) the final file parses and holds the fresh result", (final?.["models"] as { id: string }[] | undefined)?.some((m) => m.id === "aaa") === true, JSON.stringify(final));
@@ -585,7 +585,7 @@ if (runs(8)) {
       harnesses: { "claude-code": profile },
       listModels: async () => {
         throw new Error("simulated listing failure");
-      },
+      }, versions: async () => ({}),
     });
     check(8, "(a) the seated candidate still gets probed despite the listing failing", r.record.models.some((m) => m.id === "seated-model" && m.state === "available"), JSON.stringify(r.record.models));
     check(8, "(a) the previously-recorded codex entry is retained intact", r.record.models.some((m) => m.id === "old-codex-entry" && m.state === "available"), JSON.stringify(r.record.models));
@@ -795,7 +795,7 @@ if (runs(10)) {
     };
     writeFileSync(join(dir, "models.json"), JSON.stringify(seeded, null, 2) + "\n");
     const { profile } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
-    const r = await probeBattery({ studio: dir, now: later(NOW, 1), only: [{ id: "still-here", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+    const r = await probeBattery({ studio: dir, now: later(NOW, 1), only: [{ id: "still-here", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
     const gone = r.record.models.find((m) => m.id === "long-gone");
     check(10, "(a) retained verbatim (state)", gone?.state === "available", JSON.stringify(gone));
     check(10, "(a) retained verbatim (probe count, zero new turns)", gone?.probes.length === 1 && gone.probes[0]?.at === NOW.toISOString(), JSON.stringify(gone));
@@ -828,7 +828,7 @@ if (runs(10)) {
     writeManifest(dir, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: fresh-model } ]\nprobationes: []");
     writeFileSync(join(dir, "models.json"), "{ not json");
     const { profile } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
-    const r = await probeBattery({ studio: dir, now: NOW, only: [{ id: "fresh-model", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+    const r = await probeBattery({ studio: dir, now: NOW, only: [{ id: "fresh-model", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
     check(10, "(b) a battery over an unparseable file still produces a fresh complete record", r.record.models.some((m) => m.id === "fresh-model" && m.state === "available"), JSON.stringify(r.record));
   }
   // (c) a corrupt `at` is classified as never-probed, shown by probe ORDER.
@@ -860,7 +860,7 @@ if (runs(10)) {
         { id: "ddd-recent", harness: "claude-code" },
       ],
       harnesses: { "claude-code": profile },
-      listModels: async () => [],
+      listModels: async () => [], versions: async () => ({}),
     });
     const order = calls.start.map((c) => c.model);
     check(10, "(c) control still first", order[0] === "aaa-ctrl", JSON.stringify(order));
@@ -978,7 +978,7 @@ if (runs(13)) {
   const before = linesOf();
 
   const { profile } = makeStub("claude-code", { turnFor: () => okTurn("OK") });
-  const battery = await probeBattery({ studio: dir, now: NOW, only: [{ id: "claude-opus-5", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] });
+  const battery = await probeBattery({ studio: dir, now: NOW, only: [{ id: "claude-opus-5", harness: "claude-code" }], harnesses: { "claude-code": profile }, listModels: async () => [] , versions: async () => ({})});
   check(13, "positive control: probeBattery actually did something (turns > 0, a parseable available row)", battery.turns > 0 && battery.record.models.some((m) => m.state === "available"), JSON.stringify({ turns: battery.turns }));
 
   const manifestBefore = readFileSync(join(dir, "bisellium.yml"), "utf8");
