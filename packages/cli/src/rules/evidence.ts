@@ -251,6 +251,24 @@ function checkRedEvidence(root: string): Finding[] {
         where,
         message: `red log(s) for behaviour(s) ${notRed.join(", ")} record a passing run, not a red`,
       });
+
+    // W-039: opus.red_sella (advise). logTexts is already scoped to this
+    // opus's in-contract behaviours 1..n — an off-contract file (e.g.
+    // close-bugs-red.log) was never read into it. A log names no one when
+    // its header has no `sella` key, or the trimmed value is empty or
+    // "guest" (the anonymity this rule flags, not the name itself).
+    const noSella: string[] = [];
+    for (const [nn, logText] of logTexts) {
+      const sella = parseLogHeader(logText).get("sella")?.trim();
+      if (sella === undefined || sella === "" || sella === "guest") noSella.push(`${String(nn).padStart(2, "0")}.log`);
+    }
+    if (noSella.length)
+      findings.push({
+        rule: "opus.red_sella",
+        level: "advise",
+        where: `ci/reds/${id}/`,
+        message: `${noSella.length} red log(s) record no sella: ${noSella.join(", ")}`,
+      });
   }
   return findings;
 }

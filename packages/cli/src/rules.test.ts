@@ -145,6 +145,7 @@ function gitFixture(tag: string): { repoDir: string; studioDir: string; commitAl
 
 const untrackedFindings = (root: string, opts: { now: Date; repo?: string }) => checkEvidence(root, opts).filter((f) => f.rule === "opus.untracked");
 const redFindings = (root: string, opts: { now: Date; repo?: string }) => checkEvidence(root, opts).filter((f) => f.rule === "opus.red_evidence");
+const redSellaFindings = (root: string, opts: { now: Date; repo?: string }) => checkEvidence(root, opts).filter((f) => f.rule === "opus.red_sella");
 
 try {
   // W-035 isolation: a labeled block, not an `if`, so the pre-existing
@@ -550,6 +551,86 @@ try {
     checkNumbered(15, "lesson.recurrent: silent for a done opus", !findings.some((f) => f.message.includes("recur-done-opus")), JSON.stringify(findings));
     checkNumbered(15, "lesson.recurrent: silent for a rule id", !findings.some((f) => f.message.includes("recur-rule")), JSON.stringify(findings));
     checkNumbered(15, "lesson.recurrent: silent for a decision id", !findings.some((f) => f.message.includes("recur-decision")), JSON.stringify(findings));
+  }
+
+  // ==== W-039: opus.red_sella (behaviours 16-19) ============================
+  {
+    // behaviour 4 (block 16): exactly one finding for a building opus whose
+    // 01.log and 02.log headers have no sella line
+    const dir = freshDir("red-sella-basic");
+    writeManifest(dir);
+    writeOpus(dir, "W-970", { id: "W-970", state: "building", spec: "briefs/W-970.md" });
+    writeBrief(dir, "briefs/W-970.md", briefWithBehaviours(2));
+    writeRedLog(dir, "W-970", 1, { behaviour: "1", exit: "1" }); // no sella line
+    writeRedLog(dir, "W-970", 2, { behaviour: "2", exit: "1" }); // no sella line
+
+    const findings = redSellaFindings(dir, { now: NOW });
+    checkNumbered(16, "opus.red_sella: exactly one finding", findings.length === 1, JSON.stringify(findings));
+    checkNumbered(16, "opus.red_sella: level advise", findings[0]?.level === "advise", JSON.stringify(findings));
+    checkNumbered(16, "opus.red_sella: where names the reds directory", findings[0]?.where === "ci/reds/W-970/", JSON.stringify(findings));
+    checkNumbered(
+      16,
+      "opus.red_sella: exact message shape",
+      findings[0]?.message === "2 red log(s) record no sella: 01.log, 02.log",
+      JSON.stringify(findings),
+    );
+  }
+  {
+    // behaviour 5 (block 17): fires for a guest sella and an empty sella,
+    // naming both, and does not name a third log with a real sella
+    const dir = freshDir("red-sella-guest-and-empty");
+    writeManifest(dir);
+    writeOpus(dir, "W-971", { id: "W-971", state: "building", spec: "briefs/W-971.md" });
+    writeBrief(dir, "briefs/W-971.md", briefWithBehaviours(3));
+    writeRedLog(dir, "W-971", 1, { behaviour: "1", exit: "1", sella: "guest" });
+    writeRedLog(dir, "W-971", 2, { behaviour: "2", exit: "1", sella: "" });
+    writeRedLog(dir, "W-971", 3, { behaviour: "3", exit: "1", sella: "builder-a" });
+
+    const findings = redSellaFindings(dir, { now: NOW });
+    checkNumbered(
+      17,
+      "opus.red_sella: names the guest and empty logs, not the builder-a log",
+      findings.length === 1 && findings[0]?.message === "2 red log(s) record no sella: 01.log, 02.log",
+      JSON.stringify(findings),
+    );
+  }
+  {
+    // behaviour 6 (block 18): ignores off-contract logs
+    const dir = freshDir("red-sella-off-contract");
+    writeManifest(dir);
+    writeOpus(dir, "W-972", { id: "W-972", state: "building", spec: "briefs/W-972.md" });
+    writeBrief(dir, "briefs/W-972.md", briefWithBehaviours(1));
+    writeRedLog(dir, "W-972", 1, { behaviour: "1", exit: "1" }); // no sella line
+    writeFileSync(join(dir, "ci", "reds", "W-972", "close-bugs-red.log"), "no header on this one either\n");
+
+    const findings = redSellaFindings(dir, { now: NOW });
+    checkNumbered(
+      18,
+      "opus.red_sella: names only the in-contract log, not close-bugs-red.log",
+      findings.length === 1 && findings[0]?.message === "1 red log(s) record no sella: 01.log",
+      JSON.stringify(findings),
+    );
+  }
+  {
+    // behaviour 7 (block 19): reaches active opera only
+    const dir = freshDir("red-sella-reach");
+    writeManifest(dir);
+    writeOpus(dir, "W-973", { id: "W-973", state: "building", spec: "briefs/W-973.md" });
+    writeBrief(dir, "briefs/W-973.md", briefWithBehaviours(1));
+    writeRedLog(dir, "W-973", 1, { behaviour: "1", exit: "1", sella: "guest" });
+
+    writeOpus(dir, "W-974", { id: "W-974", state: "done", spec: "briefs/W-974.md" });
+    writeBrief(dir, "briefs/W-974.md", briefWithBehaviours(1));
+    writeRedLog(dir, "W-974", 1, { behaviour: "1", exit: "1", sella: "guest" });
+
+    writeOpus(dir, "W-975", { id: "W-975", state: "halted", spec: "briefs/W-975.md" });
+    writeBrief(dir, "briefs/W-975.md", briefWithBehaviours(1));
+    writeRedLog(dir, "W-975", 1, { behaviour: "1", exit: "1", sella: "guest" });
+
+    const findings = redSellaFindings(dir, { now: NOW });
+    checkNumbered(19, "opus.red_sella: fires for the building opus", findings.some((f) => f.where === "ci/reds/W-973/"), JSON.stringify(findings));
+    checkNumbered(19, "opus.red_sella: silent for the done opus", !findings.some((f) => f.where === "ci/reds/W-974/"), JSON.stringify(findings));
+    checkNumbered(19, "opus.red_sella: silent for the halted opus", !findings.some((f) => f.where === "ci/reds/W-975/"), JSON.stringify(findings));
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

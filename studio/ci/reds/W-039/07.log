@@ -1,0 +1,10 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/rules.test.ts . 19
+# exit: 1
+# at: 2026-09-24T05:38:58.746Z
+# sella: builder-a
+# tree: dirty:9dec38f0bf0269542b9e8d83b8e8dffc015905cd
+
+FAIL  opus.red_sella: fires for the building opus                            []
+PASS  opus.red_sella: silent for the done opus                               []
+PASS  opus.red_sella: silent for the halted opus                             []

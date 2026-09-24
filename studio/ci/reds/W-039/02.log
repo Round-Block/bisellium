@@ -1,0 +1,22 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-24T05:38:40.811Z
+# sella: builder-a
+# tree: dirty:9dec38f0bf0269542b9e8d83b8e8dffc015905cd
+
+W-971: red recorded for behaviour 1 -> ci/reds/W-971/01.log
+FAIL  red-sella b2 (env-empty): exits 2                                0
+FAIL  red-sella b2 (env-empty): the preseeded directory is byte-identical, nothing written 
+W-971: red recorded for behaviour 1 -> ci/reds/W-971/01.log
+FAIL  red-sella b2 (env-whitespace): exits 2                           0
+FAIL  red-sella b2 (env-whitespace): the preseeded directory is byte-identical, nothing written 
+W-971: red recorded for behaviour 1 -> ci/reds/W-971/01.log
+FAIL  red-sella b2 (flag-empty-no-env): exits 2                        0
+FAIL  red-sella b2 (flag-empty-no-env): the preseeded directory is byte-identical, nothing written 
+W-971: red recorded for behaviour 1 -> ci/reds/W-971/01.log
+FAIL  red-sella b2 (flag-whitespace-no-env): exits 2                   0
+FAIL  red-sella b2 (flag-whitespace-no-env): the preseeded directory is byte-identical, nothing written 
+W-971: red recorded for behaviour 1 -> ci/reds/W-971/01.log
+FAIL  red-sella b2 (flag-repeated-last-empty): exits 2                 0
+FAIL  red-sella b2 (flag-repeated-last-empty): the preseeded directory is byte-identical, nothing written 
