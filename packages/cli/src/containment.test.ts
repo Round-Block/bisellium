@@ -9,13 +9,14 @@
  * in writes.ts) rather than grepping a literal name, and locates a call by
  * `fn`+`nth`-call-in-that-function rather than by line number.
  *
- * Inventory B is every raw id-to-path join Sol's repo-wide scan found: a
- * template literal whose last substitution is an identifier ending in "Id"
- * and whose last literal chunk ends in ".md" — the shape a caller-supplied id
- * takes when it reaches a path without going through the helper. Each entry
- * carries a disposition (`guarded`, `derived`, `bypass`, or the one
- * `bypass-via-verify` special case) that this file pins by hand, verified
- * against the source at HEAD — the AST proves the *site*, not the
+ * Inventory B is every raw id-to-path join: any `TemplateExpression` whose
+ * last literal chunk ends in ".md", anywhere in the source set — no filter
+ * on how the interpolated expression is spelled [censor round 1, F-1: an
+ * earlier draft filtered on the substitution ending in "Id", which dropped
+ * 17 of 29 real matches and made the class of miss invisible]. Each entry
+ * carries a disposition (`guarded`, `derived`, `bypass`, `helper`, or the one
+ * `bypass-via-verify` special case) and a one-line why, both pinned by hand,
+ * verified against the source at HEAD — the AST proves the *site*, not the
  * disposition; a disposition is a judgment call, not a derivation, so it is
  * recorded here rather than computed.
  *
@@ -185,9 +186,10 @@ function collectInventoryA(root: string, rel: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Inventory B — every raw id-to-path join: a TemplateExpression whose last
-// literal chunk ends in ".md" and whose last substitution's text ends in
-// "Id" — the exact shape of the repo-wide scan the brief's Intent describes.
+// Inventory B — every raw id-to-path join: any TemplateExpression whose last
+// literal chunk ends in ".md", anywhere in the source set. No filter on how
+// the interpolated expression is spelled is permitted [censor round 1,
+// F-1] — scan wide, then adjudicate each entry's disposition in the pin.
 // ---------------------------------------------------------------------------
 
 function collectInventoryB(root: string, rel: string): string[] {
@@ -199,15 +201,10 @@ function collectInventoryB(root: string, rel: string): string[] {
       const spans = node.templateSpans;
       const lastSpan = spans[spans.length - 1];
       if (lastSpan && lastSpan.literal.text.endsWith(".md")) {
-        const exprText = ts.isIdentifier(lastSpan.expression)
-          ? lastSpan.expression.text
-          : sf.text.slice(lastSpan.expression.getStart(sf), lastSpan.expression.getEnd());
-        if (exprText.endsWith("Id")) {
-          const fn = enclosingFunctionName(node);
-          const n = (counts.get(fn) ?? 0) + 1;
-          counts.set(fn, n);
-          keys.push(`${rel}:${fn}#${n}`);
-        }
+        const fn = enclosingFunctionName(node);
+        const n = (counts.get(fn) ?? 0) + 1;
+        counts.set(fn, n);
+        keys.push(`${rel}:${fn}#${n}`);
       }
     }
     ts.forEachChild(node, visit);
@@ -240,27 +237,70 @@ const PINNED_A: string[] = [
 interface PinnedB {
   key: string;
   disposition: string;
+  why: string;
 }
 
-// NOTE (deviation from studio/briefs/W-047.md, reported per the brief's own
-// rule that "the scan's answer is authoritative and the brief's table is the
-// thing that was wrong"): the brief's Inventory B row for prune.ts names the
-// enclosing function `pruneBranches`. At HEAD the function is
-// `pruneStaleOpusBranches` (packages/cli/src/prune.ts:22) — there is no
-// `pruneBranches` anywhere in the file. Pinned here as the scan reads it.
+// Re-derived with this file's own AST rule (no spelling filter) at HEAD,
+// 2026-09-24, and confirmed entry-for-entry against studio/briefs/W-047.md's
+// signed 29-entry table before pinning [censor round 1, F-1; brief amendment
+// 2]: same 29 keys, same order, no disagreement to report. The twelve
+// entries pinned in round 1 (including pruneStaleOpusBranches, corrected
+// from the brief's original `pruneBranches`) keep their keys and #nth
+// unchanged.
 const PINNED_B: PinnedB[] = [
-  { key: "packages/cli/src/branch.ts:readOpusRecord#1", disposition: "bypass" },
-  { key: "packages/cli/src/branch.ts:readOpusRecord#2", disposition: "bypass" },
-  { key: "packages/cli/src/branch.ts:readOpusRecord#3", disposition: "bypass" },
-  { key: "packages/cli/src/branch.ts:mergeOpusBranch#1", disposition: "bypass" },
-  { key: "packages/cli/src/branch.ts:runBranch#1", disposition: "bypass" },
-  { key: "packages/cli/src/branch.ts:runMerge#1", disposition: "bypass" },
-  { key: "packages/cli/src/close.ts:closeChecks#1", disposition: "bypass" },
-  { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived" },
-  { key: "packages/commands/src/lifecycle.ts:runReady#1", disposition: "guarded" },
-  { key: "packages/commands/src/lifecycle.ts:runWaive#1", disposition: "guarded" },
-  { key: "packages/commands/src/verify.ts:runVerify#1", disposition: "bypass" },
-  { key: "packages/commands/src/writes.ts:recordOwnerRefusal#1", disposition: "bypass-via-verify" },
+  { key: "apps/server/src/store.ts:opus#1", disposition: "guarded", why: 'safeId(id) refuses one line above (":223")' },
+  { key: "packages/cli/src/branch.ts:readOpusRecord#1", disposition: "bypass", why: "positional <opus-id>, into a git pathspec" },
+  { key: "packages/cli/src/branch.ts:readOpusRecord#2", disposition: "bypass", why: "same value, same pathspec, error path" },
+  { key: "packages/cli/src/branch.ts:readOpusRecord#3", disposition: "bypass", why: "same value, filesystem read fallback" },
+  { key: "packages/cli/src/branch.ts:mergeOpusBranch#1", disposition: "bypass", why: "positional <opus-id>, read + named in an error" },
+  { key: "packages/cli/src/branch.ts:runBranch#1", disposition: "bypass", why: "positional <opus-id>, existence gate before branching" },
+  { key: "packages/cli/src/branch.ts:runMerge#1", disposition: "bypass", why: "positional <opus-id>, existence gate before merging" },
+  { key: "packages/cli/src/close.ts:closeChecks#1", disposition: "bypass", why: "positional <opus-id> from runClose (:68-74)" },
+  {
+    key: "packages/cli/src/init.ts:initStudio#1",
+    disposition: "derived",
+    why: "isoDateInZone(now, timezone) — Intl output, digits and hyphens; an invalid zone throws, it does not escape",
+  },
+  { key: "packages/cli/src/new.ts:newItem#1", disposition: "derived", why: "W-### from a counter over opera/" },
+  { key: "packages/cli/src/new.ts:runNew#1", disposition: "derived", why: "same counter id, front-matter spec: value" },
+  { key: "packages/cli/src/new.ts:runNew#2", disposition: "derived", why: "same counter id, briefs/ write" },
+  { key: "packages/cli/src/new.ts:runNew#3", disposition: "derived", why: "same counter id, opera/ write" },
+  { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
+  { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from nextId" },
+  { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from nextId" },
+  {
+    key: "packages/cli/src/retro.ts:draftRetro#3",
+    disposition: "derived",
+    why: "--cascade passes Number() + Number.isFinite in runRetro (:565-567); a finite number carries no separator",
+  },
+  {
+    key: "packages/cli/src/tick.ts:writeDailyActum#1",
+    disposition: "bypass",
+    why: "sella id read from bisellium.yml, unguarded at the join, and it writes acta/<date>-<sella>-daily.md. Mitigation, not a guard: path.id.unvalidated blocks a non-id sella at check time. Newly surfaced — see Intent",
+  },
+  {
+    key: "packages/commands/src/context.ts:buildContextFor#1",
+    disposition: "derived",
+    why: "a display label inside the context bundle; never reaches the filesystem",
+  },
+  { key: "packages/commands/src/lifecycle.ts:runReady#1", disposition: "guarded", why: "opusId passed safeItemPath at :109" },
+  { key: "packages/commands/src/lifecycle.ts:runWaive#1", disposition: "guarded", why: "decisionId passed patronDecisionProblem -> safeItemPath" },
+  { key: "packages/commands/src/talk.ts:openPetitio#1", disposition: "derived", why: "P-### from a counter" },
+  { key: "packages/commands/src/talk.ts:writeActum#1", disposition: "derived", why: "slugify strips to [a-z0-9-], capped at 40" },
+  { key: "packages/commands/src/talk.ts:writeActum#2", disposition: "derived", why: "same slug plus a numeric suffix" },
+  {
+    key: "packages/commands/src/verify.ts:runVerify#1",
+    disposition: "bypass",
+    why: "positional id, unvalidated (:54-84), and verify writes probationes to what it resolves",
+  },
+  { key: "packages/commands/src/writes.ts:safeItemPath#1", disposition: "helper", why: "the containment helper's own join — the one join that is allowed to be raw" },
+  {
+    key: "packages/commands/src/writes.ts:recordOwnerRefusal#1",
+    disposition: "bypass-via-verify",
+    why: "guarded at its lifecycle.ts callers, raw when verify.ts calls it",
+  },
+  { key: "packages/commands/src/writes.ts:runAnswer#1", disposition: "derived", why: "--charter-gap acta path; slugify as above" },
+  { key: "packages/commands/src/writes.ts:runAnswer#2", disposition: "derived", why: "same slug plus a numeric suffix" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -308,7 +348,7 @@ check("inventory B: pinned list length matches the scan's own count", PINNED_B.l
   );
   check("inventory B: scan order matches the pinned order exactly", JSON.stringify(scanB) === JSON.stringify(pinnedBKeys), JSON.stringify({ scanB, pinnedBKeys }));
 }
-const knownDispositions = new Set(["guarded", "derived", "bypass", "bypass-via-verify"]);
+const knownDispositions = new Set(["guarded", "derived", "bypass", "helper", "bypass-via-verify"]);
 check("inventory B: every pinned disposition is a recognized value", PINNED_B.every((p) => knownDispositions.has(p.disposition)), JSON.stringify(PINNED_B.map((p) => p.disposition)));
 
 process.exit(failed ? 1 : 0);
