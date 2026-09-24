@@ -830,6 +830,14 @@ async function main(): Promise<void> {
 
       await getJson(base, "/api/models");
       check("models: two calls inside the TTL invoke the listing once", calls === 1, String(calls));
+
+      // Finding B (amended brief): the TTL assertion pinned only the lower
+      // bound ("at most once inside the window") and never that a call PAST
+      // the window actually refreshes — a listing cached forever satisfied
+      // it just as well. Wait past the real TTL and confirm a second call.
+      await new Promise((r) => setTimeout(r, 5_200));
+      await getJson(base, "/api/models");
+      check("models: a call AFTER the TTL refreshes the listing", calls === 2, String(calls));
     } finally {
       await s.close();
     }
@@ -866,6 +874,10 @@ async function main(): Promise<void> {
       const r = await getJson(base, "/api/models");
       check("models: a failing listing still answers 200 from the record alone", r.status === 200 && Array.isArray(r.body) && r.body.length === 1, JSON.stringify(r.body));
       check("models: the dropdown is not emptied", r.body[0]?.id === "gpt-5.6-sol", JSON.stringify(r.body));
+      // A failed listing must not be treated as "ok" — the record's own
+      // recorded state survives untouched (never downgraded to unverified,
+      // which is what withdrawal-on-a-false-success would do).
+      check("models: the record's state is untouched by a failed listing (not downgraded)", r.body[0]?.state === "available", JSON.stringify(r.body));
     } finally {
       await s.close();
     }

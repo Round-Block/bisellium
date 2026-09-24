@@ -65,13 +65,32 @@ function isCRLF(text: string): boolean {
 }
 
 /** Every refusal case: nonzero exit, manifest bytes unchanged, timeline
- *  length unchanged. */
-function assertRefused(behaviour: number, label: string, dir: string, args: string[]): void {
+ *  length unchanged, AND a distinctive fragment of the message naming the
+ *  layer that actually refused it (amended brief, ruling A.4/behaviour 5 —
+ *  an incidental crash that happens to exit non-zero must never satisfy
+ *  this: it is caught here by requiring the specific expected wording, not
+ *  just a truthy exit code). `console.error` is captured for the duration
+ *  of the call so the fragment can be asserted against what was actually
+ *  printed, not re-derived from the exit code alone. */
+function assertRefused(behaviour: number, label: string, dir: string, args: string[], expectedMessageFragment: string): void {
   const manifestPath = join(dir, "bisellium.yml");
   const before = readFileSync(manifestPath);
   const timelineBefore = timelineLines(dir).length;
-  const r = runDelegate(args, { now: NOW });
+
+  const origError = console.error;
+  let stderr = "";
+  console.error = (...parts: unknown[]) => {
+    stderr += parts.map(String).join(" ") + "\n";
+  };
+  let r: { exitCode: number };
+  try {
+    r = runDelegate(args, { now: NOW });
+  } finally {
+    console.error = origError;
+  }
+
   check(behaviour, `${label}: refused (nonzero exit)`, r.exitCode !== 0, String(r.exitCode));
+  check(behaviour, `${label}: message names the refusing layer ("${expectedMessageFragment}")`, stderr.includes(expectedMessageFragment), stderr);
   const after = readFileSync(manifestPath);
   check(behaviour, `${label}: manifest bytes unchanged`, Buffer.compare(before, after) === 0);
   check(behaviour, `${label}: timeline length unchanged`, timelineLines(dir).length === timelineBefore, String(timelineLines(dir).length));
@@ -172,40 +191,66 @@ for (const fixtureName of ["manifest-flow.yml", "manifest-block.yml", "manifest-
 }
 
 // ---------------------------------------------------------------------------
-// Behaviour 5: refusals write nothing, and a positive case (so a
-// refuse-everything stub cannot pass).
+// Behaviour 5: refusals write nothing, and each names the layer that
+// refused it (amended brief, ruling A.4). `openStudio`'s three document-
+// level forms all refuse with its own "unparseable — not a studio" message;
+// `delegate`'s own two forms (shared nodes; a merge key with no alias) each
+// refuse with their own distinctive message — a positive case closes the
+// loop so a refuse-everything stub cannot pass.
 // ---------------------------------------------------------------------------
-{
-  const dir = freshStudio("5-refusals");
-  assertRefused(5, "no flags", dir, []);
-  assertRefused(5, "--sella without --model", dir, ["--sella", "builder-1", "--studio", dir]);
-  assertRefused(5, "both shapes", dir, ["--sella", "builder-1", "--model", "x", "--munus", "audit", "--tier", "mid", "--studio", dir]);
-  assertRefused(5, "unknown sella", dir, ["--sella", "nonexistent", "--model", "x", "--studio", dir]);
-  assertRefused(5, "unknown munus", dir, ["--munus", "nonexistent", "--tier", "mid", "--studio", dir]);
-  assertRefused(5, "unknown tier", dir, ["--munus", "audit", "--tier", "nonexistent", "--studio", dir]);
-}
+const UNPARSEABLE = "unparseable — not a studio";
 
 {
+  const dir = freshStudio("5-refusals");
+  assertRefused(5, "no flags", dir, [], "usage: bisellium delegate");
+  assertRefused(5, "--sella without --model", dir, ["--sella", "builder-1", "--studio", dir], "usage: bisellium delegate");
+  assertRefused(5, "both shapes", dir, ["--sella", "builder-1", "--model", "x", "--munus", "audit", "--tier", "mid", "--studio", dir], "accepts exactly one shape, not both");
+  assertRefused(5, "unknown sella", dir, ["--sella", "nonexistent", "--model", "x", "--studio", dir], 'unknown sella "nonexistent"');
+  assertRefused(5, "unknown munus", dir, ["--munus", "nonexistent", "--tier", "mid", "--studio", dir], 'unknown munus "nonexistent"');
+  assertRefused(5, "unknown tier", dir, ["--munus", "audit", "--tier", "nonexistent", "--studio", dir], 'unknown tier "nonexistent"');
+}
+
+// -- openStudio's forms: refused upstream of delegate's own whitelist, each
+// with openStudio's "unparseable — not a studio" wording, never a delegate
+// message (ruling 2026-09-25: delegate no longer re-checks these at all). --
+{
   const dir = freshManifestOnly("5-parse-error", "sellae: [\n  - this is not valid yaml: [[[\n");
-  assertRefused(5, "manifest with parse errors", dir, ["--sella", "builder-1", "--model", "x", "--studio", dir]);
+  assertRefused(5, "manifest with parse errors (openStudio)", dir, ["--sella", "builder-1", "--model", "x", "--studio", dir], UNPARSEABLE);
 }
 
 {
   const dir = freshManifestOnly("5-dup-key", "sellae:\n  - { id: builder-1, collegium: engineering, model: x }\nsellae:\n  - { id: builder-2, collegium: engineering, model: y }\n");
-  assertRefused(5, "manifest with a DUPLICATE_KEY", dir, ["--sella", "builder-1", "--model", "x", "--studio", dir]);
+  assertRefused(5, "manifest with a DUPLICATE_KEY (openStudio)", dir, ["--sella", "builder-1", "--model", "x", "--studio", dir], UNPARSEABLE);
 }
 
 {
   const dir = freshManifestOnly("5-multi-doc", "sellae:\n  - { id: builder-1, collegium: engineering, model: x }\n---\nfoo: bar\n");
-  assertRefused(5, "a multi-document manifest", dir, ["--sella", "builder-1", "--model", "x", "--studio", dir]);
+  assertRefused(5, "a multi-document manifest (openStudio)", dir, ["--sella", "builder-1", "--model", "x", "--studio", dir], UNPARSEABLE);
+}
+
+// -- delegate's own forms. ---------------------------------------------------
+{
+  // A merge key WITH an alias: the anchor/alias scan fires first (the
+  // amended brief's own table), so this refuses with the anchor/alias
+  // message, not the merge-key one.
+  const dir = freshManifestOnly(
+    "5-merge-key-with-alias",
+    "defaults: &def\n  model: x\nsellae:\n  - { id: builder-1, collegium: engineering, <<: *def }\n",
+  );
+  assertRefused(5, "manifest containing a merge key with an alias (anchor scan fires first)", dir, ["--sella", "builder-1", "--model", "y", "--studio", dir], "anchors and aliases are not a supported form");
 }
 
 {
+  // A merge key with NO alias anywhere in the document (`<<: { ... }`) —
+  // legal YAML, parses cleanly, carries no anchor, and reaches delegate
+  // because nothing upstream rejects it and the anchor scan cannot catch
+  // it. This is the merge-key check's own red: with the anchor scan alone,
+  // this fixture would succeed and silently accept a form the brief refuses.
   const dir = freshManifestOnly(
-    "5-merge-key",
-    "defaults: &def\n  model: x\nsellae:\n  - { id: builder-1, collegium: engineering, <<: *def }\n",
+    "5-merge-key-no-alias",
+    "studio: Fixture\nsellae:\n  - { id: builder-1, collegium: engineering, model: x, <<: { extra: 1 } }\n",
   );
-  assertRefused(5, "manifest containing a merge key", dir, ["--sella", "builder-1", "--model", "y", "--studio", dir]);
+  assertRefused(5, "manifest containing a merge key with no alias in the document", dir, ["--sella", "builder-1", "--model", "y", "--studio", dir], 'a merge key ("<<")');
 }
 
 {
@@ -215,7 +260,7 @@ for (const fixtureName of ["manifest-flow.yml", "manifest-block.yml", "manifest-
     "5-anchor-alias",
     "sellae:\n  - &sa { id: builder-1, collegium: engineering, model: x }\nbackup: *sa\n",
   );
-  assertRefused(5, "manifest with an anchor on the target and an alias elsewhere", dir, ["--sella", "builder-1", "--model", "y", "--studio", dir]);
+  assertRefused(5, "manifest with an anchor on the target and an alias elsewhere", dir, ["--sella", "builder-1", "--model", "y", "--studio", dir], "anchors and aliases are not a supported form");
 }
 
 // Positive cases: one ordinary manifest, and one with an empty `munera:`,
@@ -310,22 +355,31 @@ function spawnMain(args: string[], env: Record<string, string | undefined>): { s
   }
 }
 
-// Rollback's own failure: timeline/ unwritable AND the manifest made
-// read-only after the first read -> a DIFFERENT exit code (4), naming the
-// manifest as possibly inconsistent.
+// Rollback's own failure: the manifest is made read-only BEFORE delegate
+// ever runs (reconciled 2026-09-25, censor round 1 finding E — the old
+// comment here narrated "read-only after the first write", but a single
+// synchronous writeFileSync gives no seam to interject between a successful
+// write and the restore attempt; making the manifest unwritable from the
+// start fails the FIRST write for the same reason it then fails the
+// restore, which is the only way this scenario is reachable at all with the
+// current write shape). timeline/ is left writable — no assertion here
+// depends on it being otherwise, so chmod'ing it was vestigial noise.
 {
   const dir = freshStudio("7-rollback-failure");
   const manifestPath = join(dir, "bisellium.yml");
-  const timelineDir = join(dir, "timeline");
-  mkdirSync(timelineDir, { recursive: true });
-  chmodSync(timelineDir, 0o000);
   chmodSync(manifestPath, 0o444);
+  const origError = console.error;
+  let stderr = "";
+  console.error = (...parts: unknown[]) => {
+    stderr += parts.map(String).join(" ") + "\n";
+  };
   try {
     const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
     check(7, "rollback failure: a DIFFERENT exit code (4)", r.exitCode === 4, String(r.exitCode));
+    check(7, "rollback failure: message names the manifest as possibly inconsistent", stderr.includes("may be left changed or partially written"), stderr);
   } finally {
+    console.error = origError;
     chmodSync(manifestPath, 0o644);
-    chmodSync(timelineDir, 0o755);
   }
 }
 

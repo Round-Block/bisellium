@@ -52,7 +52,20 @@ const HOSTILE = '<img src=x onerror=alert(1)>';
   check(10, "roster: collegium shown", html.includes("engineering"), html);
   check(10, "roster: kind rendered as static text", html.includes("agent"), html);
   check(10, "roster: a <select> with an accessible name is present", /<select[^>]*aria-label="[^"]*builder-a[^"]*"/.test(html), html);
-  check(10, "roster: exactly availableModels' three ids appear as <option> values", ["claude-sonnet-5", "gpt-5.6-sol", "claude-fable-5"].every((id) => html.includes(`value="${id}"`)), html);
+  {
+    // Exactly props.availableModels — no more, no fewer (amended brief,
+    // finding B: the old check only asserted "no fewer", via `.every`, which
+    // an extra unrelated <option> survives). munera is empty in this
+    // fixture, so every <option> in the markup belongs to the model select.
+    const optionValues = [...html.matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]);
+    const expectedIds = ["claude-sonnet-5", "gpt-5.6-sol", "claude-fable-5"];
+    check(
+      10,
+      "roster: <option> values are EXACTLY availableModels' ids — no more, no fewer",
+      optionValues.length === expectedIds.length && expectedIds.every((id) => optionValues.includes(id)),
+      JSON.stringify(optionValues),
+    );
+  }
   check(10, "roster: no free-text <input> anywhere", !html.includes("<input"), html);
   check(10, "roster: no <datalist> anywhere", !html.includes("<datalist"), html);
   check(10, "roster: available option has no disabled attribute", /<option value="claude-sonnet-5"[^>]*>/.test(html) && !/<option value="claude-sonnet-5"[^>]*disabled/.test(html), html);
@@ -118,7 +131,9 @@ const HOSTILE = '<img src=x onerror=alert(1)>';
   check(11, "delegation: one row with the munus id", html.includes("audit"), html);
   check(11, "delegation: the tier <select> contains every declared tier, including an unused one", html.includes('value="mid"') && html.includes('value="orphan"'), html);
   check(11, "delegation: each option's text is formatted `<tier> · <holder>`", html.includes("mid · gpt-5.6-terra") && html.includes("orphan · gpt-x"), html);
-  check(11, "delegation: no resolved-model column (a bare cell of just the holder)", !/<td>gpt-5\.6-terra<\/td>/.test(html), html);
+  // Any <td>, attributes or not (a classed cell must be caught too, not just
+  // a bare one — amended brief, finding B).
+  check(11, "delegation: no resolved-model column (no cell, classed or not, of just the holder)", !/<td[^>]*>gpt-5\.6-terra<\/td>/.test(html), html);
   check(11, "delegation: the tier legend below the card lists every declared tier, including the unused one", html.includes("seats__tier-legend") && html.includes("orphan · gpt-x"), html);
 }
 

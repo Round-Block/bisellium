@@ -3,8 +3,9 @@
  * CLI half of D-023's two decree records (`sellae[].model`,
  * `tiers`/`munera`). Same discipline `greenlight`/`budget` (writes.ts)
  * already use: one read of the manifest, a whitelist of supported YAML
- * forms refused-without-write, the write + event + Patron-timeline append
- * inside one `try`, best-effort rollback from the pre-read bytes on any
+ * forms refused-without-write, the write + Patron-timeline append (no
+ * workflow.* event — see the ruling at the write step below) inside one
+ * `try`, best-effort rollback from the pre-read bytes on any
  * throw — except that here a *restore* failure is distinguished (exit 4)
  * from an ordinary write failure (exit 2), per the brief's stated ceiling.
  *
@@ -15,9 +16,8 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { isAlias, parseAllDocuments, parseDocument, visit } from "yaml";
-import { WF } from "@bisellium/schema";
-import { appendPatronTimeline, emitEvent, openStudio, parseFlags, resolveNow, type WriteOptions, type WriteResult } from "./writes.js";
+import { isAlias, parseDocument, visit } from "yaml";
+import { appendPatronTimeline, openStudio, parseFlags, resolveNow, type WriteOptions, type WriteResult } from "./writes.js";
 
 const DELEGATE_USAGE =
   "usage: bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]\n" +
@@ -130,16 +130,15 @@ export function runDelegate(args: string[], opts: WriteOptions = {}): WriteResul
   const crlf = before.includes("\r\n");
 
   // ---- Supported-forms whitelist — refused, without writing, before the
-  // target is even resolved. ------------------------------------------------
-  if (parseAllDocuments(before).length > 1) {
-    console.error(`${manifestPath}: multiple YAML documents are not a supported form for delegate`);
-    return { exitCode: 2 };
-  }
+  // target is even resolved. Document-level malformation (multiple
+  // documents, a duplicate key, any other parse error) is NOT re-checked
+  // here: `openStudio` above already parsed these exact bytes with the same
+  // library and would have refused them first (ruling 2026-09-25, censor
+  // round 1 finding A) — a second guard for bytes that can never reach this
+  // line is dead code that looks like a test but isn't. `delegate` owns only
+  // what survives `openStudio`: shared nodes (anchors/aliases) and merge
+  // keys, neither of which `openStudio` treats as an error. ------------------
   const doc = parseDocument(before);
-  if (doc.errors.length > 0) {
-    console.error(`${manifestPath}: ${doc.errors[0]!.message}`);
-    return { exitCode: 2 };
-  }
   if (countAnchorsAndAliases(doc) > 0) {
     console.error(`${manifestPath}: anchors and aliases are not a supported form for delegate — a shared node cannot be edited field-by-field without collateral changes`);
     return { exitCode: 2 };
@@ -182,9 +181,19 @@ export function runDelegate(args: string[], opts: WriteOptions = {}): WriteResul
     return { exitCode: 3 };
   }
 
-  // ---- Write + event + timeline, together; roll the manifest back from
-  // `before` on any throw. A failure of the restore ITSELF is a distinct,
-  // stated ceiling (exit 4), not swallowed into the ordinary failure path. --
+  // ---- Write + timeline, together; roll the manifest back from `before` on
+  // any throw. A failure of the restore ITSELF is a distinct, stated ceiling
+  // (exit 4), not swallowed into the ordinary failure path.
+  //
+  // Neither shape emits a workflow.* event (amended 2026-09-25, censor round
+  // 1 finding D — the phantom opera_state row): `workflow.actor_assigned`
+  // means "this actor was assigned to this item"; a delegate write assigns
+  // no actor to any item, seat or munus alike, so emitting it invented a row
+  // in every view keyed on actor assignment for work nobody did. The record
+  // of the decree is the Patron timeline line below, which both shapes
+  // write; configuration is read live (`/api/officina` re-reads the
+  // manifest on every call), so no event is needed to make the change
+  // visible. --------------------------------------------------------------
   try {
     if (target.kind === "sella") {
       doc.setIn(["sellae", (manifest.sellae ?? []).findIndex((s) => s.id === target.id), "model"], target.value);
@@ -194,10 +203,6 @@ export function runDelegate(args: string[], opts: WriteOptions = {}): WriteResul
     let after = doc.toString({ lineWidth: 0 });
     if (crlf) after = after.replace(/\r?\n/g, "\r\n");
     writeFileSync(manifestPath, after);
-
-    if (target.kind === "sella") {
-      emitEvent(root, manifest, "workflow.actor_assigned", now, { [WF.ITEM_ID]: target.id, [WF.ACTOR_ROLE]: target.value });
-    }
 
     appendPatronTimeline(root, {
       at: now.toISOString(),
