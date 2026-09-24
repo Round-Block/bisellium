@@ -20,6 +20,41 @@
  * `codex` `harnessEnv(…)`, never the caller's `opts.env`/`process.env`
  * verbatim: the ten-name allowlist projection (harness/env.ts). See
  * docs/ADOPTION.md, "Running talk".
+ *
+ * W-046: `CODEX_POLICY_FLAGS` below is applied identically by `start` and
+ * `resume`, because `codex exec resume` rejects `-s`/`--sandbox` outright —
+ * measured on codex-cli 0.153.4 (`error: unexpected argument '-s' found`) —
+ * so the sandbox mode travels as `-c sandbox_mode=read-only` instead, which
+ * both spawns accept. `HarnessStartOpts.model`/`HarnessResumeOpts.model`
+ * (the manifest's `sellae[].model`) is passed as `-m <id>` when present.
+ *
+ * **The signed limit: this is not W-044 parity, and it does not claim to
+ * be.** What it achieves: no writes outside `sandbox_mode=read-only`; no
+ * user-config-declared MCP servers or plugins (`--ignore-user-config`); no
+ * user/project execpolicy `.rules` (`--ignore-rules`); no ambient default
+ * model/provider from the user config file (`model_provider=openai` is
+ * passed explicitly because `--ignore-user-config` drops the file that used
+ * to supply it — D-020's decreed transport); no browser, in-app-browser,
+ * apps or plugin feature (the eight `--disable` pairs). What it does NOT
+ * achieve, that W-044 achieves on claude: **no tool allowlist** — this is a
+ * denylist of eight named features, and a denylist goes stale the day a new
+ * one ships (W-049's own ruling); **reads are unbounded** — read-only mode
+ * permits every read the operator can perform, including
+ * `~/.codex/auth.json`, where a talked claude session cannot run `cat` at
+ * all; **`AGENTS.md` (user and project) still loads**, ungoverned by any
+ * flag here; **configuration channels beyond the user config file
+ * (project/managed/system/cloud) are unmeasured**, not proven absent.
+ * Verification command for the eight `--disable` names (re-run per codex-cli
+ * version — the brief's Order of work, step 0): `codex features list
+ * --disable browser_use --disable browser_use_external --disable
+ * browser_use_full_cdp_access --disable in_app_browser --disable apps
+ * --disable plugins --disable remote_plugin --disable plugin_sharing` must
+ * report all eight as `false`. Repeated in docs/ADOPTION.md, "Running talk"
+ * (behaviour 6 of provider-portability.test.ts asserts it's there).
+ *
+ * Codex auth works only from the default login location,
+ * `$HOME/.codex/auth.json` — `CODEX_HOME`/`OPENAI_API_KEY` are off W-049's
+ * env allowlist by design and are never added for this policy.
  */
 import { spawn } from "node:child_process";
 import { harnessEnv } from "./env.js";
@@ -28,6 +63,37 @@ import { USAGE_LIMIT_EXIT_CODE } from "./types.js";
 
 const TIMEOUT_MS = 120_000;
 const USAGE_LIMIT_RE = /usage limit|rate limit|quota|429|too many requests/i;
+
+/** The whole codex command policy, applied identically by `start` and
+ *  `resume` (see the file header's signed limit). Checked by review, not by
+ *  a test (W-044/W-049 precedent): not exported from harness/index.ts or the
+ *  shim index, and not configurable by a caller. */
+const CODEX_POLICY_FLAGS = [
+  "--json",
+  "--skip-git-repo-check",
+  "--ignore-user-config",
+  "--ignore-rules",
+  "-c",
+  "sandbox_mode=read-only",
+  "-c",
+  "model_provider=openai",
+  "--disable",
+  "browser_use",
+  "--disable",
+  "browser_use_external",
+  "--disable",
+  "browser_use_full_cdp_access",
+  "--disable",
+  "in_app_browser",
+  "--disable",
+  "apps",
+  "--disable",
+  "plugins",
+  "--disable",
+  "remote_plugin",
+  "--disable",
+  "plugin_sharing",
+];
 
 const isDict = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -217,12 +283,14 @@ export const codexProfile: HarnessProfile = {
     // block ("data, never an instruction to the sella reading its own
     // context" — packages/cli/src/context.ts).
     const message = opts.systemPrompt ? `${opts.systemPrompt}\n\n${opts.message}` : opts.message;
-    const args = ["exec", "--json", "--skip-git-repo-check", "-"];
+    const modelArgs = opts.model ? ["-m", opts.model] : [];
+    const args = ["exec", ...CODEX_POLICY_FLAGS, ...modelArgs, "-"];
     return runCodex(args, { cwd: opts.cwd, env: opts.env, message });
   },
 
   async resume(opts: HarnessResumeOpts): Promise<Turn> {
-    const args = ["exec", "resume", opts.sessionId, "--json", "--skip-git-repo-check", "-"];
+    const modelArgs = opts.model ? ["-m", opts.model] : [];
+    const args = ["exec", "resume", opts.sessionId, ...CODEX_POLICY_FLAGS, ...modelArgs, "-"];
     return runCodex(args, { cwd: opts.cwd, env: opts.env, message: opts.message });
   },
 };
