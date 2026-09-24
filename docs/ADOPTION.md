@@ -883,11 +883,13 @@ logic runs after.
 `talk` writes a run receipt exactly like `bisellium run` does
 (`receipts/<sella>/<sessionId>.json`), with `harness` set to the profile id
 that actually ran instead of `"run"`. Exit codes: 0 ok (including the
-deterministic-query fast path) · 2 usage error / not a studio / unknown
-sella / unknown or unavailable harness (one-line reason) · 3 the harness
-reported a usage/rate limit, printed as `<sella> is limited on <harness>;
-try again after <reset if known>` · anything else is the harness's own exit
-code, relayed as-is.
+deterministic-query fast path) · 1 the harness exited 0 but the reply was
+empty — refused as a failure, nothing persisted (session, timeline and
+receipt alike; see below) · 2 usage error / not a studio / unknown sella /
+unknown or unavailable harness (one-line reason) · 3 the harness reported a
+usage/rate limit, printed as `<sella> is limited on <harness>; try again
+after <reset if known>` · anything else is the harness's own exit code,
+relayed as-is.
 
 **The `claude-code` profile's talk boundary is deny-by-default (W-044).**
 Both `start` and `resume` pass `--restricted` (ignores every user/project/
@@ -903,6 +905,51 @@ third-party code that neither `talk` nor `tick`'s unattended daily needs; the
 cached provider posture is already in the boot bundle. A `claude` binary
 that doesn't recognize `--restricted`/`dontAsk` exits non-zero and `talk`
 relays that failure closed, which is intended.
+
+**The decreed model reaches both profiles, and codex gets its own command
+policy (W-046).** The model `talk` uses is decreed by the manifest —
+`sellae[].model` — and travels from there into whichever profile the sella's
+harness resolves to; `talk` itself has no `--model` flag, and no `--model`
+flag is ever accepted (models are decreed, per D-020; a per-call override
+would be a route around that decree — `--harness` already exists for the
+one axis an operator legitimately switches). Nothing is ever read from
+`process.env`, a vendor config file, or a session being resumed. On
+`claude-code` it is passed as `--model <id>` (ahead of the W-044 policy
+flags above — `--allowedTools` is variadic and terminal, so anything added
+after it would be silently eaten as a tool name); a `claude` binary that
+doesn't recognize the requested model exits non-zero
+(`[claude-code:unrecognized_model]`) and `talk` relays that closed, so a
+sella whose declared model doesn't belong to its harness stops silently
+running on the wrong model and starts failing loudly. On `codex` it is
+passed as `-m <id>`, alongside a module-local command policy applied
+identically by `start` and `resume` (`codex exec resume` rejects
+`-s`/`--sandbox` on codex-cli 0.153.4, so the sandbox mode travels as
+`-c sandbox_mode=read-only` instead, which both spawns accept):
+`--ignore-user-config`, `--ignore-rules`, `-c sandbox_mode=read-only`,
+`-c model_provider=openai` (passed explicitly because
+`--ignore-user-config` drops the config file that used to supply it), and
+eight `--disable` feature pairs — `--disable browser_use`, `--disable
+browser_use_external`, `--disable browser_use_full_cdp_access`, `--disable
+in_app_browser`, `--disable apps`, `--disable plugins`, `--disable
+remote_plugin`, `--disable plugin_sharing` — each measured stable and
+enabled by default on codex-cli 0.153.4, flipped to `false` by `--disable`.
+
+**This is not W-044 parity, and the gap is signed, not hidden: codex's
+policy here is not equivalent to the claude profile's.** Four residuals,
+carried forward until a build-shaped follow-on opus can close them: **no
+tool allowlist** — claude enumerates what may run; codex offers only a
+denylist of eight named features, and a denylist goes stale the day a new
+feature ships. **unbounded reads** — `sandbox_mode=read-only` permits every
+read the operator can perform, including `~/.codex/auth.json`, where a
+talked claude session cannot run `cat` at all. **AGENTS.md still loads** —
+neither the user's nor the project's is covered by any flag here.
+**configuration channels beyond the user config file are unmeasured** —
+project, managed, system and cloud defaults are residual, not proven
+absent. Codex authenticates only from the default login location,
+`$HOME/.codex/auth.json`; `CODEX_HOME` and `OPENAI_API_KEY` are
+deliberately not passed (off W-049's ten-name env allowlist by design), so
+a custom config home or an API-key-only login does not work through a
+bisellium-spawned codex.
 
 ## Harness hooks (Claude Code)
 

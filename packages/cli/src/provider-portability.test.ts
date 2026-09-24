@@ -472,7 +472,11 @@ try {
   // ---- 6: the documented contract names the codex policy and its limits --
   if (runs(6)) {
     const doc = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
-    const section = extractSection(doc, "## Running talk");
+    // Prose is hard-wrapped at ~80 columns, so a literal can straddle a line
+    // break (a newline where prose would render a plain space) — collapse
+    // whitespace before matching so a check names a genuinely missing claim,
+    // never a mid-phrase wrap.
+    const section = extractSection(doc, "## Running talk").replace(/\s+/g, " ");
     check("behaviour 6: 'Running talk' section found", section.length > 0);
 
     const items: [string, string][] = [
@@ -499,7 +503,8 @@ try {
       ["CODEX_HOME not passed named", "CODEX_HOME"],
       ["OPENAI_API_KEY not passed named", "OPENAI_API_KEY"],
     ];
-    for (const [name, needle] of items) check(`behaviour 6: ${name}`, section.includes(needle), needle);
+    const sectionLower = section.toLowerCase();
+    for (const [name, needle] of items) check(`behaviour 6: ${name}`, sectionLower.includes(needle.toLowerCase()), needle);
   }
 } finally {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
