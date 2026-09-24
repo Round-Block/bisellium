@@ -693,6 +693,26 @@ async function main(): Promise<void> {
     }
   }
 
+  // ---- W-067 behaviour 3: a command refusal is not a success. Against a
+  // runner stub that always exits 3, the route answers HTTP 200 with
+  // ok:false and exitCode:3 — never a 4xx. writeResponse already does this
+  // for every write (it always sends 200; `ok` is exitCode === 0), so this
+  // is regression coverage for that envelope, pinned down explicitly for
+  // W-067 rather than left implicit in the greenlight-failure cases above. --
+  {
+    const dirStub = freshStudio("exit3-stub");
+    const stubRunners: StartServerOptions["runners"] = { ...realRunners, greenlight: () => ({ exitCode: 3 }) };
+    const sStub = await startServer(baseOpts(dirStub, { port: 0, once: true, now: NOW, runners: stubRunners }));
+    try {
+      const stubBase = `http://127.0.0.1:${sStub.port}`;
+      const r = await postJson(stubBase, "/api/greenlight", { opus: "W-007" });
+      check("stub runner (exit 3): HTTP 200, not a 4xx", r.status === 200, String(r.status));
+      check("stub runner (exit 3): ok:false, exitCode:3", r.body?.ok === false && r.body?.exitCode === 3, JSON.stringify(r.body));
+    } finally {
+      await sStub.close();
+    }
+  }
+
 }
 
 main()
