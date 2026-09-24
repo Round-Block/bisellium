@@ -1,0 +1,27 @@
+# behaviour: 2
+# command: node --import tsx packages/commands/src/probe.test.ts . 2
+# exit: 1
+# at: 2026-09-24T19:34:05.125Z
+# sella: builder-b
+# tree: dirty:e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+FAIL  b2 exit0+nonempty -> available                                                                
+FAIL  b2 exit0+nonempty: probe.exit === 0                                                           
+FAIL  b2 exit0+nonempty: probe.reply === true                                                       
+FAIL  b2 exit0+empty -> unavailable                                                                 
+FAIL  b2 exit0+empty: reply === false                                                               
+FAIL  b2 raw shape 0: nonzero exit -> unavailable                                                   
+FAIL  b2 raw shape 0: exit equals vendor's own code                                                 undefined
+FAIL  b2 raw shape 0: vendorDiagnostic equals talk.ts's own extractor                               {"want":"boom"}
+FAIL  b2 raw shape 1: nonzero exit -> unavailable                                                   
+FAIL  b2 raw shape 1: exit equals vendor's own code                                                 undefined
+FAIL  b2 raw shape 1: vendorDiagnostic equals talk.ts's own extractor                               {"want":"bad model"}
+FAIL  b2 raw shape 2: nonzero exit -> unavailable                                                   
+FAIL  b2 raw shape 2: exit equals vendor's own code                                                 undefined
+FAIL  b2 raw shape 2: vendorDiagnostic equals talk.ts's own extractor                               {"want":"spawn failed"}
+FAIL  b2 raw shape 3: nonzero exit -> unavailable                                                   
+FAIL  b2 raw shape 3: exit equals vendor's own code                                                 undefined
+FAIL  b2 raw shape 3: vendorDiagnostic equals talk.ts's own extractor                               {"want":"spawn object failed"}
+FAIL  b2 harness unavailable -> unverified                                                          
+FAIL  b2 harness unavailable -> note                                                                
+FAIL  b2 harness unavailable -> zero start calls                                                    1

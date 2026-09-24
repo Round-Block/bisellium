@@ -1,0 +1,14 @@
+# behaviour: 11
+# command: node --import tsx packages/commands/src/probe.test.ts . 11
+# exit: 1
+# at: 2026-09-24T20:01:57.973Z
+# sella: builder-b
+# tree: tree:cc1f036af2d2ee213574ff98b0525387c9d26057
+
+FAIL  b11 an unknown flag exits 2                                                                    1
+PASS  b11 an unknown flag writes no file                                                             
+FAIL  b11 --dry-run exits 0                                                                          1
+PASS  b11 --dry-run writes no file                                                                   
+FAIL  b11 --dry-run prints the candidate pairs and their harnesses                                   
+FAIL  b11 positive control: without --dry-run exits 0                                                1
+FAIL  b11 positive control: without --dry-run WRITES models.json                                     

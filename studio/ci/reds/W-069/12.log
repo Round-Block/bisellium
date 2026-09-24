@@ -1,0 +1,21 @@
+# behaviour: 12
+# command: node --import tsx packages/commands/src/probe.test.ts . 12
+# exit: 1
+# at: 2026-09-24T20:06:57.000Z
+# sella: builder-b
+# tree: tree:0918444fdc240ed16ebf201f52abd7c41d5c8d7b
+
+bisellium probe: 1 turn(s) spent, 0 skipped
+FAIL  b12 --model alone refuses, exit 2                                                              0
+bisellium probe: 1 turn(s) spent, 0 skipped
+FAIL  b12 --harness alone refuses, exit 2                                                            0
+FAIL  b12 neither writes a file before any spend                                                     
+bisellium probe: 1 turn(s) spent, 0 skipped
+PASS  b12 a targeted pair with an id in no source still exits 0                                      0
+FAIL  b12 the targeted id was probed                                                                 ["aaa-ctrl","untouched-entry"]
+PASS  b12 the control (aaa-ctrl) was also probed (one extra turn)                                    ["aaa-ctrl","untouched-entry"]
+PASS  b12 every other entry is byte-identical                                                        {"id":"untouched-entry","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]} vs {"id":"untouched-entry","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]}
+bisellium probe: 1 turn(s) spent, 0 skipped
+PASS  b12 a path-shaped id does not crash the command                                                0
+PASS  b12 models.json still lives only inside the studio dir                                         
+PASS  b12 no file was written outside the studio dir                                                 

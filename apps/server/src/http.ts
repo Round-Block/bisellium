@@ -30,12 +30,12 @@
  * directory sharing WEB_DIST's name as a prefix could pass).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { execFile } from "node:child_process";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GantryEvent } from "@bisellium/schema";
+import { codexListModels } from "@bisellium/shim";
 import { Store, type ModelRecordEntry } from "./store.js";
 
 export interface StartServerOptions {
@@ -244,41 +244,6 @@ async function asPatron<T>(fn: () => Promise<T> | T): Promise<T> {
     if (prev === undefined) delete process.env["BISELLIUM_ROLE"];
     else process.env["BISELLIUM_ROLE"] = prev;
   }
-}
-
-// ---------------------------------------------------------------------------
-// W-065: the live vendor listing GET /api/models layers over the probe
-// record. "A candidate is offered only after a probe has passed. A listing
-// never promotes anything by itself" (Patron decree) — this only gathers
-// candidate ids; codex's own `visibility` field is the one filter applied
-// here, and even a `visibility: "list"` id stays "unverified" until a probe
-// (a different opus's job) says otherwise.
-// ---------------------------------------------------------------------------
-
-/** `codex debug models` — "a cheap local catalog call, no turn, no metered
- *  tokens" (the brief's own survey). Degrades to `[]` on any failure
- *  (missing binary, non-zero exit, unparseable JSON) — a listing failure
- *  must never throw into the route. */
-async function codexListModels(): Promise<{ id: string; harness: string }[]> {
-  return new Promise((resolvePromise) => {
-    execFile("codex", ["debug", "models"], { timeout: 5_000 }, (err, stdout) => {
-      if (err) {
-        resolvePromise([]);
-        return;
-      }
-      try {
-        const parsed = JSON.parse(stdout) as { models?: { slug?: unknown; visibility?: unknown }[] };
-        const models = Array.isArray(parsed.models) ? parsed.models : [];
-        resolvePromise(
-          models
-            .filter((m) => m.visibility === "list" && typeof m.slug === "string")
-            .map((m) => ({ id: m.slug as string, harness: "codex" })),
-        );
-      } catch {
-        resolvePromise([]);
-      }
-    });
-  });
 }
 
 const MODELS_LISTING_TTL_MS = 5_000;

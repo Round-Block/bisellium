@@ -1,0 +1,20 @@
+# behaviour: 10
+# command: node --import tsx packages/commands/src/probe.test.ts . 10
+# exit: 1
+# at: 2026-09-24T19:58:10.892Z
+# sella: builder-b
+# tree: tree:ff7b7bd36bf2cfc8e873c41b7f9a037c7ce9afc5
+
+PASS  b10 (a) retained verbatim (state)                                                              {"id":"long-gone","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]}
+PASS  b10 (a) retained verbatim (probe count, zero new turns)                                        {"id":"long-gone","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]}
+<anonymous_script>:1
+{ not json
+  ^
+
+SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+    at JSON.parse (<anonymous>)
+    at readModelsRecord (/tmp/claude-1000/w069-build/packages/commands/src/probe.ts:480:23)
+    at <anonymous> (/tmp/claude-1000/w069-build/packages/commands/src/probe.test.ts:808:52)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+
+Node.js v25.9.0

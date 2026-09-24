@@ -1,0 +1,15 @@
+# behaviour: 6
+# command: node --import tsx packages/commands/src/probe.test.ts . 6
+# exit: 1
+# at: 2026-09-24T19:49:53.115Z
+# sella: builder-b
+# tree: dirty:e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+FAIL  b6 (a) renameSync called with models.json.tmp -> models.json                                  []
+FAIL  b6 (b) the interrupted write propagates a failure                                             
+FAIL  b6 (b) models.json is byte-identical to its pre-write content                                 
+PASS  b6 (b) models.json still parses                                                               
+FAIL  b6 (b) the temp file was actually written (real interruption, not a no-op)                    
+PASS  b6 (b) positive control: an uninterrupted battery DOES change models.json                     
+PASS  b6 (c) a stale .tmp does not corrupt the run                                                  1
+PASS  b6 (c) the final file parses and holds the fresh result                                       {"schema":1,"at":"2026-09-25T12:00:00.000Z","harnessVersions":{},"models":[{"id":"aaa","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"claude-code"}]}

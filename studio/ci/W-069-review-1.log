@@ -1,0 +1,549 @@
+# W-069 — censor review, round 1
+# sella: qa-lead (the Censor) · model: claude-fable-5
+# branch: opus/W-069 @ 99e9bb1177677b14ba7f1d1c7d5c3b256b2d775b
+# worktree: /tmp/claude-1000/w069-build (porcelain clean at start and end)
+# spec of record: studio/briefs/W-069.md revision 4
+# VERDICT: FAIL — 3 findings, 2 of them one class with 5 code instances.
+
+================================================================================
+0. PROVENANCE — recomputed, not taken on trust
+================================================================================
+`bisellium verify` was NOT run (standing instruction). The certified source tree
+hash was recomputed independently, reimplementing @bisellium/shim's
+sourceTreeHash over `git ls-tree -r <ref>` with verify.ts's own excludeDirs
+(["studio", ".bisellium", "examples/"]):
+
+  HEAD      559eba97aa04e0e10f035a8dd3970bd777c7b154   <- matches all 3 gates
+  6ed731d   559eba97aa04e0e10f035a8dd3970bd777c7b154
+  4dbe8df   9c27da2695b3bcf8a5d42608b61c152923ff1086
+  master    e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+opera/W-069.md certifies tree:559eba97aa04e0e10f035a8dd3970bd777c7b154 on
+tests/lint/types. The certificates are honest and not stale.
+
+Diff scope vs master: 33 files, matching the brief's *Files owned* exactly, plus
+packages/commands/package.json (disclosed deviation 3). No file outside the
+declared set. apps/server/src/http.ts is bounded to the three named edits
+(delete the declaration + header comment, delete the node:child_process import,
+add the @bisellium/shim import); the route, createListingCache,
+LISTED_HARNESSES, mergeModelsWithListing and checkWriteAuth are untouched.
+
+================================================================================
+1. GATES — re-run by the censor, not inherited
+================================================================================
+npm run -s typecheck                        exit 0
+npm test                                    exit 0, 0 FAIL lines
+npm run -s check -- studio --repo .         PASS — 0 blocking, 108 advisory
+npm run -s check -- examples/sample-studio  PASS — 0 blocking,  26 advisory
+
+Independent no-real-vendor-spend sentinel (the censor's own, not Terra's):
+`claude` and `codex` shadowed on PATH by exit-127 stubs that append every
+invocation to a log; full `npm test` re-run under that PATH.
+
+  SENTINEL_NPMTEST_EXIT=0
+  sentinel invocations logged: 0
+  FAIL lines: 0
+
+The suite passes with both vendor binaries absent and provably invokes neither.
+Behaviour 8(b)'s stub binary is prepended on its own temp PATH, ahead of the
+sentinel, so it is correctly not a hit. The near-miss the builder disclosed
+(deviation 2) is closed on the evidence.
+
+Behaviour 13 re-run alone by the censor (node ... probe.test.ts . 13):
+  PASS b13 positive control: probeBattery did something (turns > 0, available row)
+  PASS b13 positive control: runDelegate did something (exit 0, manifest changed, timeline appended)
+  PASS b13 events.jsonl grew by zero lines   0 -> 0
+examples/sample-studio is cpSync'd to a temp dir first; nothing writes in-tree.
+`timeline/patron.jsonl` does not pre-exist in the fixture, so existsSync is a
+real control, not a vacuous one.
+
+Reds: 13 logs, one per behaviour, assertion-level (each shows several FAIL lines
+plus at least one PASS, i.e. the module loaded — the brief's skeleton-first
+requirement). 7 distinct base trees across the 13, consistent with an
+incremental red-then-green sequence. Reds 1-6 carry `dirty:e4cb7429…` — the
+spec-gate tree with the skeletons on disk uncommitted, which is the CLI's own
+honest marker, not a backfill.
+
+================================================================================
+2. MUTATIONS (QA lex §2: one suffices; four run)
+================================================================================
+Each applied by sed to packages/commands/src/probe.ts, the single behaviour run,
+then `git checkout --` restored. Porcelain clean after.
+
+  M1  atomic write -> truncate-in-place (write straight to models.json)   b6  BITES (exit 1)
+  M2  corrupt `at` falls through as NaN instead of -Infinity             b10 *** DOES NOT BITE *** (exit 0)
+  M3  drop the mark-before-spend persist (step 2)                        b5  BITES (exit 1)
+  M4  401/403 short-circuit widened to any api_error_status              b3  BITES (exit 1)
+
+M2 is FINDING 2 below.
+
+================================================================================
+3. THE ATTENDED BATTERY (Patron-authorized) — verbatim
+================================================================================
+Run against a TEMP COPY of studio/ (cp -a to $TMPDIR/censor/battery/studio),
+never in place. Real vendors. The vendor binaries were shimmed by passthrough
+tee wrappers that record each envelope verbatim and exec the real binary — no
+bisellium source was modified; the instrumentation is at the binary boundary.
+
+Vendor versions observed (match the brief's survey exactly):
+  claude --version   2.1.280 (Claude Code)
+  codex  --version   codex-cli 0.153.4
+
+--- 3.1 dry run: `probe --studio <temp> --dry-run` -----------------------------
+bisellium probe --dry-run: 7 candidate pair(s), zero spent
+  claude-opus-5   / claude-code
+  claude-sonnet-5 / claude-code
+  gpt-5.5         / codex
+  gpt-5.6-luna    / codex
+  gpt-5.6-sol     / codex
+  gpt-5.6-terra   / codex
+  gpt-6-astra     / codex
+exit 0. No models.json written (verified by ls). 7 pairs, exactly the brief's
+survey table — the 8th (gpt-6-astra/claude-code) is absent, i.e. ui-lead's
+`harness: codex` fix working.
+
+--- 3.2 the real battery: `probe --studio <temp>` ------------------------------
+start 2026-09-24T22:15:24Z   end 2026-09-24T22:15:47Z
+stdout: `bisellium probe: 6 turn(s) spent, 1 skipped`
+NO disagreement warning printed — the brief's stated expectation, met.
+
+EVERY PAIR PROBED, WITH ITS VERDICT AND EVIDENCE LINE:
+
+  claude-opus-5   / claude-code   unverified  note "api error 401: claude-code"
+        harnessVersion "2.1.280 (Claude Code)"   1 turn, $0.00
+        vendor envelope, verbatim (redacted: nothing; no token-shaped strings present):
+        "is_error":true, "api_error_status":401, "subtype":"success",
+        "result":"Failed to authenticate. API Error: 401 OAuth access token has
+                  expired. Re-authenticate to continue.",
+        "total_cost_usd":0, usage all-zero (input 0, cache_creation 0, cache_read 0,
+        output 0), "terminal_reason":"api_error", "duration_ms":2688
+  claude-sonnet-5 / claude-code   unverified  note "control failed: claude-code"
+        no harnessVersion, no exit, no reply — ZERO turns. Not condemned.
+  gpt-5.5         / codex   available  exit 0, reply true, harnessVersion "codex-cli 0.153.4"
+        usage {"input_tokens":10564,"cached_input_tokens":8576,"cache_write_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0}
+  gpt-5.6-luna    / codex   available  exit 0, reply true, harnessVersion "codex-cli 0.153.4"
+        usage {"input_tokens":10149,"cached_input_tokens":8960,"cache_write_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0}
+  gpt-5.6-sol     / codex   available  exit 0, reply true, harnessVersion "codex-cli 0.153.4"
+        usage {"input_tokens":11650,"cached_input_tokens":10112,"cache_write_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0}
+  gpt-5.6-terra   / codex   available  exit 0, reply true, harnessVersion "codex-cli 0.153.4"
+        usage {"input_tokens":11650,"cached_input_tokens":9984,"cache_write_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0}
+  gpt-6-astra     / codex   available  exit 0, reply true, harnessVersion "codex-cli 0.153.4"
+        usage {"input_tokens":12864,"cached_input_tokens":11136,"cache_write_input_tokens":0,"output_tokens":5,"reasoning_output_tokens":0}
+All five codex replies were exactly "OK".
+
+TOTAL TURNS: 6 (1 claude + 5 codex). Skipped: 1 (claude-sonnet-5).
+CLAUDE-SIDE COST FROM THE ENVELOPES: $0.00 — the only claude turn 401'd before
+any request was billed ("total_cost_usd":0, all-zero usage). The brief's expected
+$0.043 could NOT be measured; see §3.3.
+CODEX SIDE: 5 metered `codex exec` turns; the CLI reports no USD figure on a
+ChatGPT-account auth, so none is invented — exactly as the brief predicted.
+
+BOOT-BUNDLE LEAK CHECK (the brief: "materially more than that is a defect — most
+likely the boot bundle leaking back into systemPrompt"): NO LEAK. The claude argv
+carries `--append-system-prompt-file <tmp>/system-prompt.md` over an EMPTY file
+plus W-044's POLICY_FLAGS (--restricted --strict-mcp-config --permission-mode
+dontAsk --tools Read,Grep,Glob,Bash --allowedTools …), i.e. the brief's measured
+"W-044 policy, empty system prompt" variant. Codex input_tokens 10k-13k is
+codex's own baseline instruction set, an order of magnitude below talk's ~42k
+bundle. The claude-side token count is UNMEASURED (the 401 preceded any request)
+and is stated as unmeasured rather than assumed.
+
+--- 3.3 the inconclusive path, exercised LIVE ---------------------------------
+The claude half is VENDOR-CONDITIONAL, not a W-069 failure. The Patron's claude
+OAuth token has expired ("401 OAuth access token has expired"). This is the
+exact live 401 Sol finding 7 predicted and W-046's round-3 review observed.
+
+The control rule handled it correctly and at the minimum possible cost:
+  - the control (claude-opus-5, lowest-id seated candidate on claude-code) was
+    probed FIRST;
+  - the structured short-circuit fired on raw.api_error_status === 401 and
+    stopped the harness after exactly ONE turn;
+  - the 401 was recorded `unverified`, never `unavailable` — no model was
+    condemned on an auth failure;
+  - claude-sonnet-5 was recorded `unverified` / "control failed: claude-code"
+    with zero turns;
+  - the codex half ran to completion, unaffected.
+The control rule does handle the vendor-conditional case, verified live. This is
+NOT counted against the opus.
+
+--- 3.4 the record produced (structure verbatim; nothing redacted) ------------
+7 entries, models[] unique by id and sorted, probes[] one per entry (no
+disagreement), schema 1, ISO `at`, harnessVersions snapshot carrying both live
+values. Full file: $TMPDIR/censor/battery/studio/models.json. Representative:
+
+  { "schema": 1, "at": "2026-09-24T22:15:25.078Z",
+    "harnessVersions": { "claude": "2.1.280 (Claude Code)", "codex": "codex-cli 0.153.4" },
+    "models": [
+      { "id": "claude-opus-5", "state": "unverified",
+        "probes": [ { "harness": "claude-code", "state": "unverified",
+                      "at": "2026-09-24T22:15:25.078Z",
+                      "note": "api error 401: claude-code",
+                      "harnessVersion": "2.1.280 (Claude Code)" } ] },
+      { "id": "claude-sonnet-5", "state": "unverified",
+        "probes": [ { "harness": "claude-code", "state": "unverified",
+                      "at": "2026-09-24T22:15:25.078Z",
+                      "note": "control failed: claude-code" } ] },
+      { "id": "gpt-6-astra", "state": "available", "harness": "codex",
+        "probes": [ { "harness": "codex", "state": "available",
+                      "at": "2026-09-24T22:15:25.078Z", "exit": 0, "reply": true,
+                      "harnessVersion": "codex-cli 0.153.4" } ] } ] }
+
+No token-shaped string appears anywhere in the record or the envelopes; nothing
+required redaction.
+
+--- 3.5 the gitignore expectation ---------------------------------------------
+  $ git check-ignore -v studio/models.json
+  .gitignore:22:**/models.json	studio/models.json
+and the brief's own command, run reversibly (the battery's record copied in,
+checked, removed; porcelain clean after):
+  $ git status --ignored --short studio/models.json
+  !! studio/models.json
+
+--- 3.6 the seam end to end ---------------------------------------------------
+`serve --studio <temp> --port 4477` (never examples/sample-studio in-tree), then
+`curl -s localhost:4477/api/models`:
+
+  [ {"id":"claude-opus-5","state":"unverified"},
+    {"id":"claude-sonnet-5","state":"unverified"},
+    {"id":"gpt-5.5","state":"available","harness":"codex"},
+    {"id":"gpt-5.6-luna","state":"available","harness":"codex"},
+    {"id":"gpt-5.6-sol","state":"available","harness":"codex"},
+    {"id":"gpt-5.6-terra","state":"available","harness":"codex"},
+    {"id":"gpt-6-astra","state":"available","harness":"codex"} ]
+
+7 rows; every id appears exactly once (7 unique of 7). W-065's route is
+unmodified and reads the record as written.
+
+--- 3.7 the version read-back, the brief's own one-liner ----------------------
+  [('claude-opus-5',   ['2.1.280 (Claude Code)']),
+   ('claude-sonnet-5', [None]),
+   ('gpt-5.5',         ['codex-cli 0.153.4']),
+   ('gpt-5.6-luna',    ['codex-cli 0.153.4']),
+   ('gpt-5.6-sol',     ['codex-cli 0.153.4']),
+   ('gpt-5.6-terra',   ['codex-cli 0.153.4']),
+   ('gpt-6-astra',     ['codex-cli 0.153.4'])]
+Every probe that ran a turn carries its harness's live version string verbatim
+(behaviour 9(i) live). claude-sonnet-5 ran no turn and carries none (9(ii) live).
+
+--- 3.8 mark-before-spend, attended ------------------------------------------
+Observed twice, live, on a real record.
+
+(a) Continuous on-disk observation through a full battery, sampled every second
+    (the vendor's apparent latency slowed by a wrapper sleep; bisellium
+    unmodified). fresh = pairs carrying a real reply from THIS run; marked =
+    pairs carrying note "probe due":
+      t+1s   fresh=5 marked=0 rewritten=0   (the PRE-RUN record: 5 `available`)
+      t+2s   fresh=0 marked=7 rewritten=1   <- step 2: all 7 due pairs are
+                                               `unverified`/"probe due" on disk
+                                               BEFORE any turn of this run
+      t+5s   fresh=0 marked=5               (claude's two resolved by 401+condemn)
+      t+16s  fresh=1 marked=4
+      t+27s  fresh=2 marked=3
+      t+38s  fresh=3 marked=2
+      t+49s  fresh=4 marked=1
+      t+61s  fresh=5 marked=0
+    At no instant did a pair read `available` on evidence this run had superseded.
+
+(b) A genuine SIGINT after the first reply, against a record in which all five
+    codex pairs read `available`/exit 0:
+      >>> SIGINT at t+20s   -> battery terminated by signal, exit 130
+    models.json PARSES. No stray models.json.tmp.
+      claude-opus-5    unverified  "api error 401: claude-code"
+      claude-sonnet-5  unverified  "control failed: claude-code"
+      gpt-5.6-sol      available   exit 0        <- the one reply that landed
+      gpt-5.5          unverified  "probe due"   <- was `available` a moment before
+      gpt-5.6-luna     unverified  "probe due"
+      gpt-5.6-terra    unverified  "probe due"
+      gpt-6-astra      unverified  "probe due"
+    UNREACHED PAIRS READING "available": NONE.
+    Mark-before-spend and the atomic write hold on a killed process.
+
+--- 3.9 turns spent, in total, and honestly -----------------------------------
+  battery of record                 1 claude (401, $0.00) + 5 codex
+  targeted probe (finding 1 demo)   1 claude (401, $0.00)
+  SIGINT attempt 1 (aborted early)  0 turns
+  SIGINT attempt 2                  1 claude (401, $0.00) + 5 codex
+  SIGINT attempt 3                  1 claude (401, $0.00) + 5 codex  <- censor error:
+       a zsh `set --` word-splitting bug in the censor's poll loop meant the
+       interrupt never fired and the run completed. 5 codex turns spent to no
+       purpose. Recorded rather than quietly absorbed.
+  SIGINT attempt 4 (the clean one)  1 claude (401, $0.00) + 1 codex
+  TOTAL: 5 claude turns at $0.00, 16 metered codex turns, claude-side cost $0.00.
+
+================================================================================
+4. FINDINGS
+================================================================================
+
+--------------------------------------------------------------------------------
+FINDING 1 — BLOCKING. A CLASS, 5 instances, all in packages/commands/src/probe.ts.
+A record write for a pair that spent NO TURN destroys that pair's own
+due-trigger evidence: `harnessVersion` is dropped everywhere, and `at` is
+overwritten with the run's clock in 4 of the 5 paths.
+--------------------------------------------------------------------------------
+This reintroduces, in the writer, the stranding class Sol's closure-pass carve
+finding 4 raised — the finding the brief itself calls "the one finding that is
+lost work, not wasted spend" and for which revision 4 moved the version onto the
+probe. The brief's own invariant:
+
+  "a skipped pair keeps its OLD harnessVersion, so it stays version-due next
+   tick and the tail drains — exactly the rotation the ordering promises"
+                                     (*Why the version lives on the probe*)
+
+It does not keep it.
+
+EVERY INSTANCE (I read all of probe.ts and enumerated every upsert that writes a
+row without a turn; `git grep -n "upsert("` in probe.ts returns 6 call sites, 5
+of which are no-turn writes):
+
+  i.   probe.ts:345  step 2, mark-before-spend
+         upsert(c.id, c.harness, { harness, state:"unverified",
+                                   at: prior?.at ?? nowIso, note:"probe due" })
+       Preserves prior `at` (correct) but DROPS prior `harnessVersion`, and
+       synthesizes `at: nowIso` for a pair that was never probed — which
+       destroys the never-probed classification (see FINDING 3).
+  ii.  probe.ts:420  condemnHarness (control failed)
+         at: nowIso — OVERWRITES the prior `at`, drops `harnessVersion`. Zero turns.
+  iii. probe.ts:435  the no-control branch
+         at: nowIso — same, for every candidate on a control-less harness. Zero turns.
+  iv.  probe.ts:360  unknown harness
+         at: nowIso — same. Zero turns.
+  v.   probe.ts:370  harness available() false ("harness unavailable")
+         at: nowIso — same. Zero turns.
+
+PROOF A — hermetic, reproducible. Script: $TMPDIR/censor/censor-probe.mts.
+A record seeded with two claude-code pairs, each carrying
+harnessVersion "2.1.270 (Claude Code)"; the control hits a usage limit so the
+tail is condemned with zero turns:
+  turns: 1   skipped: [{"id":"zzz-tail","harness":"claude-code"}]
+  prior harnessVersion on the skipped tail: "2.1.270 (Claude Code)"
+  after:  {"harness":"claude-code","state":"unverified",
+           "at":"2026-09-25T12:00:05.000Z","note":"control failed: claude-code"}
+  RESULT: DROPPED (harnessVersion lost); `at` also advanced 12:00:00 -> 12:00:05
+  top-level snapshot: preserved (that half is correct)
+
+PROOF B — live, on the real battery record (§3.8(b)'s SIGINT).
+Four codex pairs carried harnessVersion "codex-cli 0.153.4" before the run and
+spent no turn during it:
+  BEFORE                                      AFTER (zero turns spent on each)
+  gpt-5.5       'codex-cli 0.153.4'    ->     None   note 'probe due'
+  gpt-5.6-luna  'codex-cli 0.153.4'    ->     None   note 'probe due'
+  gpt-5.6-terra 'codex-cli 0.153.4'    ->     None   note 'probe due'
+  gpt-6-astra   'codex-cli 0.153.4'    ->     None   note 'probe due'
+They are now indistinguishable from "never probed". W-071's trigger fires on
+defined-vs-defined only, so it can never fire for them again.
+
+PROOF C — live, the `at` overwrite (instance ii), one free claude turn:
+  BEFORE  claude-sonnet-5  at 2026-09-24T22:15:25.078Z  "control failed: claude-code"
+  run     `probe --model claude-sonnet-5 --harness claude-code` -> 1 turn spent
+          (the control; claude-sonnet-5 itself spent ZERO)
+  AFTER   claude-sonnet-5  at 2026-09-24T22:17:29.682Z  "control failed: claude-code"
+A pair that has never once been probed now carries a two-minutes-ago evidence
+timestamp. Repeat the run and its `at` tracks "now" forever while it is never
+probed — and `at` is what W-071's age trigger reads. A harness with a broken
+control stamps its entire candidate set fresh on every run, so when the control
+heals, nothing on that harness is age-due either.
+
+WHY THE SUITE DID NOT CATCH IT — a spec-mandated assertion is missing.
+Behaviour 9(iii) is specified as:
+  "the resulting ModelsRecord preserves BOTH the prior probes[].harnessVersion
+   on unprobed rows AND the prior top-level snapshot value — a writer that
+   overwrites EITHER with undefined fails."
+probe.test.ts implements only the second half (one check: "(iii) the top-level
+snapshot is preserved when the live lookup fails"). Its seeded row carries no
+harnessVersion at all and IS probed, so the per-pair half is asserted nowhere.
+Reading "unprobed rows" as "rows that are not candidates" would make the
+assertion vacuous — already covered by behaviour 10(a)'s verbatim retention —
+and vacuous assertions are what Sol finding 9 closed.
+
+Two candidate roots, both in scope for one fix; the choice is the builder's:
+  (a) carry the prior probe's `at` AND `harnessVersion` through every no-turn
+      write, only a real turn updating either; and/or
+  (b) stamp each turn with its own clock reading rather than one `nowIso` per
+      battery — the brief's own seam example shows three distinct per-probe
+      times inside one battery ("12:00:01", "12:00:04", "12:00:06"), which
+      also fixes FINDING 3 for free.
+Whichever is taken, behaviour 9(iii)'s missing per-pair case must land with it.
+
+--------------------------------------------------------------------------------
+FINDING 2 — BLOCKING. Behaviour 10(c) does not discriminate. The exact
+assertion Sol's closure pass REOPENED on discrimination grounds is still
+non-discriminating, for a second reason.
+--------------------------------------------------------------------------------
+The brief: "A classifier that treats corrupt as fresh sorts it last and fails;
+one that lets NaN fall through a comparator sorts it unpredictably and fails."
+The second clause does not hold.
+
+The shipped implementation is CORRECT (probe.ts:297 maps an unparseable `at` to
+-Infinity). The TEST is what fails to bite: probe.test.ts's `only` array for
+10(c) is already in the asserted order —
+  [aaa-ctrl, bbb-corrupt, ccc-old, ddd-recent]
+— and the assertion is that the start calls arrive in exactly that order. With
+NaN reaching the comparator, ECMA-262 SortCompare coerces a NaN result to +0, so
+the corrupt pair compares "equal" to everything and V8's stable sort leaves it
+where the input put it: position 2. The assertion passes.
+
+MUTATION M2, `return Number.isNaN(ms) ? -Infinity : ms;` -> `return ms;`:
+  node --import tsx packages/commands/src/probe.test.ts . 10   exit 0   NO BITE
+
+PROOF — the same three seeded pairs, the only change being the order the pairs
+are presented in (script: $TMPDIR/censor/b10c-discrim.mts):
+
+  SHIPPED code (-Infinity):
+    input == asserted order   order=aaa-ctrl,bbb-corrupt,ccc-old,ddd-recent  matches=true
+    shuffled input            order=aaa-ctrl,bbb-corrupt,ccc-old,ddd-recent  matches=true
+  MUTATED code (NaN falls through):
+    input == asserted order   order=aaa-ctrl,bbb-corrupt,ccc-old,ddd-recent  matches=true   <- passes
+    shuffled input            order=aaa-ctrl,ccc-old,ddd-recent,bbb-corrupt  matches=false  <- bites
+
+Reordering the `only` array by one line makes the assertion bite and M2 fail.
+The correct implementation is order-independent, which is the property worth
+asserting. Behaviour 4's order assertion was checked for the same weakness and
+is sound — its input order differs from the asserted order, so it discriminates.
+10(c) is the only instance.
+
+--------------------------------------------------------------------------------
+FINDING 3 — BLOCKING (same class as FINDING 1, instance i). The rotation the
+brief promises — "whatever a stopped run skipped has the oldest evidence next
+run, so it heads the queue" — fails on a virgin record, which is the real first
+battery. A pair can be starved indefinitely.
+--------------------------------------------------------------------------------
+Step 2 stamps a never-probed pair with `at: nowIso`, the SAME value every pair
+probed in that run receives (one `nowIso` per battery). The skipped pair is then
+not older than the pairs that completed, so next run's tiebreak falls to
+(id, harness) — a deterministic order plus a stop, which is exactly the
+starvation Sol finding 4's second half named.
+
+PROOF — hermetic, no pre-seeded record, a usage limit on the 2nd turn every run
+(script: $TMPDIR/censor/censor-probe.mts, section B):
+  run1 order: ["aaa-ctrl","bbb-limit"]   skipped: ["zzz-tail"]
+  run1 record: aaa-ctrl at=12:00:00  bbb-limit at=12:00:00 'usage limit'
+               zzz-tail at=12:00:00 'probe due'      <- same instant as the probed pairs
+  run2 order: ["aaa-ctrl","bbb-limit"]   <- zzz-tail skipped AGAIN
+  run3 order: ["aaa-ctrl","zzz-tail","bbb-limit"]
+  zzz-tail probed in run2? False   in run3? True
+
+Behaviour 4 asserts this very property and passes only because its test primes
+three distinct prior `at` values through three single-candidate batteries first
+(probe.test.ts:348-359, "Prime distinct `at` values in the desired relative age
+order"). With prior evidence the property holds; with none it does not, and a
+first battery has none. The behaviour needs a virgin-record case.
+
+Not permanent starvation in every configuration (it drained on run 3 above, at
+the cost of a wasted turn), but it is not the promised rotation, and with a
+recurring stop at a fixed position it does not drain at all.
+
+================================================================================
+5. RULINGS ON THE FIVE DISCLOSED DEVIATIONS
+================================================================================
+
+(1) ProbeBatteryOptions.fs — ACCEPTED as a necessary seam, with one note.
+    The empirical claim is correct: node:fs's named ESM exports are not
+    writable from outside the module, so behaviour 6(b) — "the stub throws
+    AFTER the temp file exists and BEFORE the rename" — is not hermetically
+    testable any other way. It is the same shape as the three seams the brief
+    already publishes (harnesses / listModels / versions) and the brief itself
+    asks in *For Sol* 5 whether that guard is implementable hermetically; this
+    is the answer. Mutation M1 confirms the guard bites. NOT interface creep.
+    Note, non-blocking: the seam declares `existsSync` and nothing uses it —
+    persist() never calls it and readModelsRecord uses the real one. Dead
+    member; drop it.
+
+(2) runProbe(args, opts = {}) — ACCEPTED, and the near-miss handled correctly.
+    It matches runTalk/runTick verbatim and is a defaulted second parameter, so
+    `runProbe(args)` behaves exactly as the published signature says.
+    On the near-miss: the builder's own tests silently spent a real claude turn
+    and called real `codex debug models`, caught only because a sandbox
+    network-violation log surfaced it. The fix is verified — my own sentinel run
+    (§1) shows zero vendor invocations across the whole suite with both binaries
+    shadowed. Credit for disclosing it.
+    RULING ON THE CLASS: this needs a STANDING GUARD, and it is not this
+    round's fix. Nothing in the repo currently prevents the next verb's tests
+    from spending real money; the only thing that caught it was a sandbox log
+    nobody is obliged to read, and the injection discipline it was fixed with
+    is a memory, not a rule — which CLAUDE.md's own standing rule forbids
+    ("Process enforcement is a check rule or a hook, never a memory or prose").
+    The guard should be test-harness-level and mechanical: a sentinel PATH
+    shadowing `claude`/`codex` for the duration of `npm test`, failing the run
+    if either is invoked. My §1 run is a working prototype of exactly that in
+    ~6 lines of shell. FILED FOR THE RETRO as its own check-rule or test-infra
+    opus; a fix attempted inside W-069 would be scope creep.
+
+(3) @bisellium/server devDep in packages/commands — ACCEPTED.
+    Test-only, and the reverse precedent already exists (apps/server declares
+    @bisellium/commands as a devDependency). Behaviour 9 is REQUIRED by the
+    brief to assert through the public `new Store({…}).api.officina().models`
+    precisely so store.ts stays untouched (Sol finding 8), so the dependency is
+    the brief's own consequence. No runtime dependency is added and no cycle
+    exists at runtime. package.json is an undeclared file in the diff, but it is
+    the mechanical consequence of a declared requirement, disclosed.
+
+(4) The duplicated `row.harness ?? "claude-code"` — ACCEPTED as unavoidable,
+    BUT IT NEEDS A DRIFT GUARD AND HAS NONE. Non-blocking on its own; fold it
+    into the round-2 fix.
+    The impossibility claim checks out: packages/cli already depends on
+    packages/commands, so the import direction is a real cycle, and
+    packages/commands/tsconfig.json's rootDir:"src" makes a relative
+    cross-package import a typecheck failure. The comment says "unlikely to
+    drift", which is a hope, not a guard.
+    There is NO test pinning the two definitions equal — I searched: no test
+    imports both `harnessForSella` (packages/cli/src/tick.ts) and
+    `defaultHarness` (probe.ts, which is module-private and unexported), and no
+    test asserts any shared constant. Two silently divergable definitions of
+    which harness an unqualified seat runs on. If they diverge, `probe` probes
+    one harness and `talk` uses another, and the record is confidently wrong
+    about a pair that was never tested.
+    The lazy guard: hoist the literal `"claude-code"` default into
+    @bisellium/shim (which both packages already depend on) and have both read
+    it — one line each, no new file, no cycle, and the duplication disappears
+    rather than being policed. Failing that, a test that asserts the two
+    resolvers agree on a harness-less row.
+
+(5) The third collision-fixture seat — IN SCOPE, and in fact REQUIRED.
+    Behaviour 9 mandates that "against the collision fixture, a battery whose
+    probes for one id disagree across harnesses prints a warning line". The
+    control rule makes that impossible without a codex-seated candidate: with no
+    codex seat, codex has no control, every codex row is "no control" with zero
+    turns, and no disagreement can arise. `codex-lead / gpt-5.6-sol / harness:
+    codex` is the minimum that makes the brief's own behaviour 9 reachable. The
+    fixture is a declared file; no scope creep.
+
+================================================================================
+6. OBSERVATIONS — non-blocking, recorded, no action required this round
+================================================================================
+a. Every probe in one battery shares the battery's `nowIso`, but HarnessProbe.at
+   is specified as "when this pair's turn ran" and the brief's seam example
+   shows three distinct times inside one battery. Immaterial to a day-scale
+   staleness threshold, but it is the proximate cause of FINDING 3 and fixing
+   it fixes both.
+b. The disagreement warning iterates every entry in the record, including
+   entries this battery did not probe, so a stale disagreement from an earlier
+   run re-prints. The brief says "a battery whose probes for one id disagree".
+   Cosmetic.
+c. A targeted `--model X --harness H` run spends the control's turn WITHOUT
+   marking the control first — the control is not in `due`, so step 2 skips it.
+   The window is one turn wide and the control's own row is rewritten
+   immediately after, so nothing false is durable; noting it because the brief
+   says the control is "added to the run".
+d. `bisellium probe` discards `total_cost_usd` from the claude envelope. No
+   behaviour requires recording it, but the brief's own acceptance asks the
+   censor for "the claude-side cost from the envelopes", which the shipped verb
+   cannot supply — I had to shim the binary boundary to read it. Worth a field
+   or a printed line in some later opus.
+e. codexListModels correctly does NOT pass harnessEnv, faithful to "a rewrite is
+   not a move"; harnessVersions correctly does. Both as specified.
+f. The hoist is exactly the three bounded edits; `async` dropped from the moved
+   function's signature is semantically identical for a Promise-returning
+   function. apps/server's suite passes unchanged — the evidence for the move.
+
+================================================================================
+7. WHAT TO FIX FOR ROUND 2 — one dispatch, not three rounds
+================================================================================
+FINDINGS 1 and 3 are ONE class with FIVE code instances (probe.ts:345, 360, 370,
+420, 435). Fix the class at its root, not the instance the report names first;
+patching only the mark-before-spend path leaves the four condemnation paths
+broken. FINDING 2 is a separate one-line test change (reorder behaviour 10(c)'s
+`only` array so the assertion is order-independent, and confirm M2 then bites).
+Behaviour 9(iii)'s missing per-pair case and behaviour 4's missing
+virgin-record case must land with the fix — a fix without them is untested.
+Deviation 4's drift guard folds into the same round. Deviation 2's standing
+sentinel does NOT: it is a retro item and its own opus.

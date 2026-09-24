@@ -1,0 +1,303 @@
+# W-069 — censor review, round 2
+# sella: qa-lead (the Censor) · model: claude-fable-5
+# branch: opus/W-069 @ 88ef9ab48f713da1950aa067345fa03a98bb7721
+# remedy under review: 4f9829b "close the no-turn-write class at the root"
+# spec of record: studio/briefs/W-069.md revision 4 — NOT amended; round 1's
+#   findings were implementation defects against correct invariants.
+# VERDICT: PASS. All three round-1 findings closed, structurally and live.
+#   One non-blocking finding and one mutant note recorded below.
+
+================================================================================
+0. PROVENANCE
+================================================================================
+`bisellium verify` NOT run. Certified source tree hash recomputed independently
+over `git ls-tree -r` with verify.ts's excludeDirs ["studio",".bisellium","examples/"]:
+  HEAD      0994a3b25bc740f34ccf6a48c4e17dcc70a647e9
+  4f9829b   0994a3b25bc740f34ccf6a48c4e17dcc70a647e9
+opera/W-069.md certifies tree:0994a3b25bc740f34ccf6a48c4e17dcc70a647e9 on
+tests/lint/types. Honest, not stale. Round-1 verdict (ci/W-069-review-1.log)
+intact in the front matter.
+
+Remedy diff e87a3f8..HEAD: 10 files, 374+/37-. Source touched:
+probe.ts, probe.test.ts, shim/harness/types.ts, shim/harness/index.ts,
+shim/index.ts, cli/tick.ts. No file outside round 1's declared set plus the two
+shim export lines the DEFAULT_HARNESS hoist requires. No brief amendment.
+
+================================================================================
+1. THE STRUCTURAL CHECK — is the class closed BY CONSTRUCTION?
+================================================================================
+YES. Verified by enumeration, not by reading the commit message.
+
+Every `upsert(` call site in probe.ts — 8 sites plus the definition:
+  289  function upsert(...)                          (definition)
+  381  noTurnProbe(c, "probe due")                   <- mark-before-spend
+  395  noTurnProbe(c, `unknown harness "..."`)       <- unknown harness
+  405  noTurnProbe(c, "harness unavailable")         <- harness unavailable
+  420  probe  (literal)                              <- AFTER profile.start(), turns++
+  429  probe  (literal)                              <- AFTER profile.start(), turns++
+  440  probe  (literal)                              <- AFTER profile.start(), turns++
+  455  noTurnProbe(cc, note)                         <- condemnHarness
+  470  noTurnProbe(cc, "no control")                 <- no-control branch
+
+Every `HarnessProbe` construction in probe.ts:
+  316  inside noTurnProbe            at: prior?.at ?? NEVER_PROBED_AT   + prior hv carry
+  418  inside turnFor, line 411 is `turns++` — a real turn ran          at: nowIso
+  427  inside turnFor, after turns++                                    at: nowIso
+  435  inside turnFor, after turns++                                    at: nowIso
+  588  inside parseProbe — the READER, echoing the file's own value
+  (282 and 292 are a Map declaration and a ModelEntry, not probes)
+
+Read probe.ts:405-443 directly to confirm the three `at: nowIso` literals all
+sit after `profile.start()` and `turns++`. They do.
+
+CONCLUSION: NO no-turn site constructs a HarnessProbe literal outside
+noTurnProbe. All five round-1 instances route through one function; the only
+`nowIso` stamps are behind a real turn. The class is closed by construction —
+five patches were not applied, one root was.
+
+================================================================================
+2. GATES — re-run
+================================================================================
+npm run -s typecheck                        exit 0
+npm test (under the PATH sentinel, below)   exit 0, 0 FAIL lines
+npm run -s check -- studio --repo .         PASS — 0 blocking, 110 advisory
+npm run -s check -- examples/sample-studio  PASS — 0 blocking,  26 advisory
+(110 vs round 1's 108: the two extra advisories are the round-1/round-2 review
+logs and opera edits — bookkeeping, advisory only, 0 blocking throughout.)
+
+Independent no-real-vendor sentinel, re-run: `claude` and `codex` shadowed on
+PATH by exit-127 loggers, full `npm test`:
+  SENTINEL_NPMTEST_EXIT=0 · sentinel invocations: 0 · FAIL lines: 0
+Still spends nothing and still needs no vendor binary.
+
+Behaviours 4, 9, 10 standalone:
+  behaviour  4: exit 0, 13 PASS, 0 FAIL
+  behaviour  9: exit 0, 18 PASS, 0 FAIL
+  behaviour 10: exit 0, 10 PASS, 0 FAIL
+The three new/repaired cases, verbatim:
+  PASS b4  virgin: run1 processes in id order with no priming at all   aaa-ctrl,bbb-completes,mmm-limit
+  PASS b4  virgin: zzz-never is unreached on a record with zero prior evidence
+  PASS b4  virgin: the pair a fresh record never touched heads run2's queue, with NO priming ever seeding it there   ["aaa-ctrl","zzz-never","bbb-completes","mmm-limit"]
+  PASS b4  virgin positive control: the pair that completed in run1 is not first in run2
+  PASS b9  (iii) per-pair: zero turns actually spent on the no-control pair   0
+  PASS b9  (iii) per-pair: a no-turn write PRESERVES the prior harnessVersion   {...,"at":"2020-01-01T00:00:00.000Z","note":"no control","harnessVersion":"codex-cli 0.099.0"}
+  PASS b9  (iii) per-pair: a no-turn write PRESERVES the prior `at` (does not stamp nowIso)
+  PASS b10 (c) corrupt `at` is treated as never-probed and sorts FIRST among the rest   ["aaa-ctrl","bbb-corrupt","ccc-old","ddd-recent"]
+Behaviour 9(iii)'s per-pair case injects a DEFINED live version
+("codex-cli 9.9.9") while asserting the prior "codex-cli 0.099.0" survives, so a
+writer that stamps the live value on a no-turn row fails. That is the right
+shape — the round-1 gap was a vacuous assertion, and this one cannot be.
+Behaviour 10(c)'s `only` array is now the exact REVERSE of the asserted order,
+which is maximal discrimination for an ordering assertion.
+
+================================================================================
+3. MUTATIONS — 13 mutants
+================================================================================
+Each applied by sed, the relevant target run, then `git checkout --`. Porcelain
+clean after the whole battery.
+
+--- round 1's four, re-run -----------------------------------------------------
+  M1  atomic write -> truncate-in-place                     b6   exit 1  BITES
+  M2  corrupt `at` falls through as NaN  (ROUND-1 FINDING 2) b10  exit 1  BITES  2 FAILs
+        FAIL b10 (c) corrupt `at` ... sorts FIRST     ["aaa-ctrl","ccc-old","ddd-recent","bbb-corrupt"]
+        FAIL b10 (c) then ascending age: old before recent
+  M3  drop the mark-before-spend persist                    b5   exit 1  BITES
+  M4  401/403 widened to any api_error_status               b3   exit 1  BITES
+M2 is the mutant that survived round 1. It now bites with two genuine FAILs and
+the failing order shows the corrupt pair sorted LAST — exactly the
+non-discrimination Sol's closure pass reopened 10(c) to catch. FINDING 2 CLOSED.
+
+--- new mutants the single-path design invites ---------------------------------
+  M5  noTurnProbe stamps nowIso (round 1's `at` bug)        all  exit 1  BITES  4 FAILs
+        FAIL b4 run2: previously-skipped pair heads the (non-control) queue
+        FAIL b4 virgin: the pair a fresh record never touched heads run2's queue
+        FAIL b4 virgin positive control: the pair that completed in run1 is not first in run2
+  M6  noTurnProbe drops the harnessVersion carry            all  exit 1  BITES  1 FAIL
+        FAIL b9 (iii) per-pair: a no-turn write PRESERVES the prior harnessVersion
+  M7  NEVER_PROBED_AT made a PARSEABLE old date             all  exit 0  does not bite
+  M8  shim DEFAULT_HARNESS -> "codex"                  b7 + tick  exit 1  BITES (both)
+Both halves of the shared root — the `at` carry and the harnessVersion carry —
+are pinned by a biting mutant. That is the coverage that matters: a future edit
+to noTurnProbe itself cannot pass silently. FINDINGS 1 and 3 CLOSED at the root.
+
+M7 is an EQUIVALENT MUTANT, not a coverage gap, and I say so rather than
+counting it. `NEVER_PROBED_AT = ""` is unparseable, so `priorAtMs` maps it to
+-Infinity; a fixed old parseable date sorts first too, for every timestamp this
+studio will ever produce, so no observable ordering changes. The two differ only
+in honesty, not behaviour: an unparseable sentinel says "no evidence time",
+whereas a fabricated date is exactly the alternative the brief refuses by name
+("*Zero a stranded pair's `at`*: it makes the record lie about when the pair was
+last seen"). Asserting the sentinel's literal value would test the
+implementation rather than the behaviour. No action.
+
+--- one-site regression probes: revert each no-turn site individually ----------
+  S1  site 1/5  mark-before-spend  -> literal `at: nowIso`  all  exit 1  BITES  3 FAILs
+  S2  site 2/5  unknown harness    -> literal               all  exit 0  does not bite
+  S3  site 3/5  harness unavailable-> literal               all  exit 0  does not bite
+  S4  site 4/5  condemnHarness     -> literal               all  exit 0  does not bite
+  S5  site 5/5  no control         -> literal               all  exit 1  BITES  2 FAILs
+This is FINDING A below. It is a regression-coverage observation, not a present
+defect: the shipped code at all five sites calls noTurnProbe (§1), and S2/S3/S4
+are mutants I introduced.
+
+--- the drift guard (round-1 deviation-4 ruling) -------------------------------
+DEFAULT_HARNESS = "claude-code" now lives once, in
+packages/shim/src/harness/types.ts. `grep '"claude-code"'` over both resolvers
+returns the constant's own definition and nothing else — tick.ts:72 reads
+`sellaRow?.harness ?? DEFAULT_HARNESS`, probe.ts:52 reads
+`row.harness ?? DEFAULT_HARNESS`. (probe.ts:248's "claude-code" is
+`versionKeyFor`, a harness-id -> version-key map, not the seat default.)
+Mutant M8 flips the single constant to "codex": probe.test.ts behaviour 7 exits 1
+AND tick.test.ts exits 1. Both readers move together off one edit; they can no
+longer silently diverge on which harness an unqualified seat runs on.
+DEVIATION 4 CLOSED. The dead `existsSync` seam member is gone (probe.ts's `fs`
+seam is now writeFileSync + renameSync, and behaviour 6's two injection sites
+were updated) — deviation-1 note closed.
+
+================================================================================
+4. THE LIVE PRESERVATION RE-CHECK (authorized) — round 1 showed the loss;
+   this shows the survival, on the real record
+================================================================================
+Temp copy of studio/ (never in place). Real vendors, binaries shimmed by
+passthrough tee wrappers that record each envelope and exec the real binary; the
+codex wrapper additionally sleeps 8s before each `exec` turn so the attended
+interrupt has a window. No bisellium source modified.
+
+RUN 1 — full battery, virgin record. 22:52:20Z -> 22:53:22Z
+  `bisellium probe: 6 turn(s) spent, 1 skipped`   (1 claude 401 + 5 codex)
+  no disagreement warning.
+  claude-opus-5    unverified  at=22:52:20.574Z  hv="2.1.280 (Claude Code)"  "api error 401: claude-code"
+  claude-sonnet-5  unverified  at=''             hv=None                     "control failed: claude-code"
+  gpt-5.5          available   at=22:52:20.574Z  hv="codex-cli 0.153.4"
+  gpt-5.6-luna     available   at=22:52:20.574Z  hv="codex-cli 0.153.4"
+  gpt-5.6-sol      available   at=22:52:20.574Z  hv="codex-cli 0.153.4"
+  gpt-5.6-terra    available   at=22:52:20.574Z  hv="codex-cli 0.153.4"
+  gpt-6-astra      available   at=22:52:20.574Z  hv="codex-cli 0.153.4"
+  snapshot { claude "2.1.280 (Claude Code)", codex "codex-cli 0.153.4" }
+Note claude-sonnet-5 already: a VIRGIN pair condemned through condemnHarness now
+carries `at: ''` (NEVER_PROBED_AT), not the run clock. In round 1 that same pair,
+on that same path, was stamped with the battery's own time.
+
+RUN 2 — immediately after, SIGINT at t+20s (after the first codex reply, inside
+the next codex window). Exit 130. models.json parses, no stray .tmp.
+
+pair              turned?  at run1        at run2        hv run1              hv run2              verdict
+claude-opus-5     True     22:52:20.574Z  22:54:12.761Z  2.1.280 (Claude Code) 2.1.280 (Claude Code) probed -> advances (correct)
+claude-sonnet-5   False    ''             ''             None                 None                 NO TURN -> PRESERVED
+gpt-5.5           False    22:52:20.574Z  22:52:20.574Z  codex-cli 0.153.4    codex-cli 0.153.4    NO TURN -> PRESERVED
+gpt-5.6-luna      False    22:52:20.574Z  22:52:20.574Z  codex-cli 0.153.4    codex-cli 0.153.4    NO TURN -> PRESERVED
+gpt-5.6-sol       True     22:52:20.574Z  22:54:12.761Z  codex-cli 0.153.4    codex-cli 0.153.4    probed -> advances (correct)
+gpt-5.6-terra     False    22:52:20.574Z  22:52:20.574Z  codex-cli 0.153.4    codex-cli 0.153.4    NO TURN -> PRESERVED
+gpt-6-astra       False    22:52:20.574Z  22:52:20.574Z  codex-cli 0.153.4    codex-cli 0.153.4    NO TURN -> PRESERVED
+
+  PAIRS THAT LOST EVIDENCE ON A NO-TURN WRITE: NONE
+  run2 notes: opus-5 "api error 401", sonnet-5 "control failed: claude-code",
+              the four unreached codex pairs "probe due"
+
+Round 1, same three assertions, same real vendors:
+  PROOF B  four codex pairs lost harnessVersion "codex-cli 0.153.4" -> None
+  PROOF C  claude-sonnet-5's `at` advanced 22:15:25 -> 22:17:29 with zero turns
+Round 2: both preserved. BOTH ROUND-1 LIVE PROOFS INVERTED.
+
+And the rotation follows for free: the four unreached codex pairs are now
+strictly older (22:52:20) than the one that completed (22:54:12), so they head
+run 3's queue with no cursor and no new state — the property the brief promises.
+
+This also gives BEHAVIOURAL coverage of the condemnHarness path (FINDING A's
+uncovered mutant S4) on the real record, which is why I ran it.
+
+Vendor accounting, live:
+  claude: 2 turns, BOTH `"api_error_status":401`, `"total_cost_usd":0`,
+          `"result":"... 401 OAuth access token has expired. Re-authenticate to
+          continue."` — the known vendor rhythm; the control rule handled it
+          identically both runs (control first, unverified not unavailable, one
+          turn, nothing condemned). VENDOR-CONDITIONAL, not a W-069 failure.
+  CLAUDE-SIDE COST: $0.00.
+  codex: 6 metered `codex exec` turns (5 in run 1, 1 in run 2), every reply
+         exactly "OK", no USD figure reported by the CLI:
+           {"input_tokens":11652,"cached_input_tokens":10112,"output_tokens":5,...}
+           {"input_tokens":10566,"cached_input_tokens":9600,"output_tokens":5,...}
+           {"input_tokens":10151,"cached_input_tokens":8960,"output_tokens":5,...}
+           {"input_tokens":11652,"cached_input_tokens":0,"output_tokens":5,...}
+           {"input_tokens":12866,"cached_input_tokens":0,"output_tokens":5,...}
+           {"input_tokens":11652,"cached_input_tokens":10112,"output_tokens":5,...}
+  No boot-bundle leak: 10k-13k input is codex's own baseline, an order of
+  magnitude under talk's ~42k bundle. The claude-side token count remains
+  UNMEASURED (the 401 precedes any request) and is stated as unmeasured.
+TOTAL ROUND-2 LIVE SPEND: 2 claude turns at $0.00, 6 metered codex turns.
+
+================================================================================
+5. FINDINGS
+================================================================================
+
+--------------------------------------------------------------------------------
+FINDING A — NON-BLOCKING. Three of the five no-turn call sites have no
+regression test: reverting `condemnHarness`, `unknown harness` or `harness
+unavailable` individually to a `nowIso` literal leaves the suite green.
+--------------------------------------------------------------------------------
+Mutants S2, S3, S4 above. The class is closed by CONSTRUCTION (§1) — the shipped
+code routes all five through noTurnProbe, and mutants M5/M6 pin the shared
+helper's own contract, so an edit to noTurnProbe cannot pass silently. What is
+unpinned is a future edit that reintroduces a literal at one of those three
+sites specifically.
+
+Why this is not blocking:
+  - no present defect: §1's enumeration and §4's live run both show the invariant
+    holding at every site, including condemnHarness;
+  - the brief requires a positive control per BEHAVIOUR, not per call site, and
+    no behaviour enumerates the five sites;
+  - the two sites that ARE pinned (S1 mark-before-spend, S5 no-control) plus
+    M5/M6 cover the shared root, which is where a regression would actually land;
+  - a third round for a change that cannot alter behaviour is worse than the
+    exposure it removes.
+
+Worth noting sharply, though: S4's site — condemnHarness — is the exact path
+round 1's PROOF A and PROOF C both used. The site the finding came from is now
+verified by construction and by §4's live run, but not by a unit test. The cheap
+close is to parameterize behaviour 9(iii)'s per-pair case over the
+control-failure path as well as the no-control path: the same seeded vintage row,
+a manifest WITH a codex seat whose control fails, asserting the same two
+preservations. A handful of lines against fixtures that already exist. RECORDED
+FOR THE RETRO as the general class — "a fix that collapses N call sites into one
+helper should pin the helper AND leave at least one behavioural case per
+collapsed site, or say why not" — rather than held against this opus.
+
+--------------------------------------------------------------------------------
+NOTE — the NEVER_PROBED_AT sentinel writes "" into a field typed as an ISO date.
+Accepted, reasoned, no action.
+--------------------------------------------------------------------------------
+`HarnessProbe.at` is non-optional, so a pair with no evidence time must carry
+SOME string. "" is the honest choice and is self-consistent with the brief's own
+reader rule ("an unparseable `probes[].at` is treated as never probed"), which is
+also what `priorAtMs` implements. It adds no state, which the brief demanded
+("no cursor and no new state"). No shipped consumer is misled: store.ts ignores
+`at` and `probes` entirely, and /api/models never sees either. The alternative —
+a fabricated old date — is the one the brief refuses by name. Recorded so the
+choice is visible rather than discovered.
+
+--------------------------------------------------------------------------------
+CARRIED FROM ROUND 1, unchanged and still not this opus's work
+--------------------------------------------------------------------------------
+The vendor-spend sentinel class (round-1 deviation-2 ruling): nothing in the repo
+mechanically prevents the next verb's tests from spending real money. The
+builder's near-miss was caught by a sandbox log nobody is obliged to read, and
+the fix is injection discipline — a memory, which CLAUDE.md's own standing rule
+forbids as enforcement. My §2 sentinel run is a working ~6-line prototype of the
+guard. STILL FILED FOR THE RETRO as its own check-rule or test-infra opus.
+
+Round-1 observations (a) per-battery clock granularity, (b) the disagreement
+warning re-printing stale disagreements, (c) a targeted run's control spending a
+turn before being marked, (d) `probe` discarding total_cost_usd from the claude
+envelope: all still true, all still non-blocking, none regressed. (a) is now
+harmless for ordering because a no-turn row no longer takes the run clock.
+
+================================================================================
+6. VERDICT
+================================================================================
+PASS. Round-1 findings 1, 2 and 3 are closed — 1 and 3 at a single root that the
+structural enumeration shows is the sole no-turn write path, 2 by an assertion
+that my own surviving mutant now fails. Both round-1 live proofs are inverted on
+the real record. Deviation 4's drift guard and deviation 1's dead seam member are
+both closed. All four gates green, 0 blocking. Two items go to the retro as
+classes (the vendor-spend sentinel, and regression coverage per collapsed call
+site); neither belongs in W-069.

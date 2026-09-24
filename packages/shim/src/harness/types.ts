@@ -69,3 +69,12 @@ export interface HarnessProfile {
 /** A Turn at this exitCode means the vendor reported a usage/rate limit —
  *  talk.ts maps it to posture "limited", never to a generic failure. */
 export const USAGE_LIMIT_EXIT_CODE = 3;
+
+/** The one definition of "which harness an unqualified seat runs on"
+ *  (W-069 round 2, censor deviation-4 ruling): a manifest `sellae` row with
+ *  no `harness` field defaults here. Both `packages/cli/src/tick.ts`'s
+ *  `harnessForSella` and `packages/commands/src/probe.ts`'s
+ *  `gatherCandidates`/`seatedCandidatesFor` read this constant rather than
+ *  each carrying their own copy of the literal — two silently divergable
+ *  definitions of the same default was the drift risk the censor flagged. */
+export const DEFAULT_HARNESS = "claude-code";

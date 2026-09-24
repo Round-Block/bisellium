@@ -15,6 +15,9 @@
     "@bisellium/shim": "*",
     "yaml": "^2.6.0"
   },
+  "devDependencies": {
+    "@bisellium/server": "*"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   }

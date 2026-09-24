@@ -1,0 +1,22 @@
+# behaviour: 9
+# command: node --import tsx packages/commands/src/probe.test.ts . 9
+# exit: 1
+# at: 2026-09-24T19:55:09.383Z
+# sella: builder-b
+# tree: dirty:0fd63c3c4104840a18626680a6c0482b40753589
+
+PASS  b9 schema: 1                                                                                  
+PASS  b9 at is an ISO string                                                                        2026-09-25T12:00:00.000Z
+FAIL  b9 harnessVersions snapshot carries both live values                                          {}
+PASS  b9 collision entry has probes sorted by harness                                               {"id":"gpt-6-astra","state":"available","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"claude cannot run gpt-6-astra"},{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}
+PASS  b9 models[] unique by id                                                                      ["claude-opus-5","gpt-5.6-sol","gpt-6-astra"]
+PASS  b9 models[] sorted by id                                                                      
+FAIL  b9 (i) a probed row carries harnessVersion equal to the injected live value                   {"id":"claude-opus-5","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"claude-code"}
+PASS  b9 (ii) a row marked but never turned carries no harnessVersion                               {"id":"never-turned","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"2026-09-25T12:00:00.000Z","note":"no control"}]}
+PASS  b9 (iii) the top-level snapshot is preserved when the live lookup fails                       {"codex":"codex-cli 0.100.0"}
+FAIL  b9 a disagreement warning names the id                                                        
+FAIL  b9 the warning names both harnesses' verdicts                                                 
+PASS  b9 aggregation is optimistic: any available -> available                                      {"id":"gpt-6-astra","state":"available","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"claude cannot run gpt-6-astra"},{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}
+PASS  b9 Store round-trip: no id appears twice                                                      ["claude-opus-5","gpt-5.6-sol","gpt-6-astra"]
+PASS  b9 Store round-trip: id/state/harness survive                                                 {"id":"claude-opus-5","state":"available","harness":"claude-code"}
+PASS  b9 Store round-trip: the optimistic aggregate's harness/state survive                         {"id":"gpt-6-astra","state":"available","harness":"codex"}

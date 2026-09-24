@@ -1,0 +1,14 @@
+# behaviour: 7
+# command: node --import tsx packages/commands/src/probe.test.ts . 7
+# exit: 1
+# at: 2026-09-24T19:51:27.330Z
+# sella: builder-b
+# tree: tree:9a6e6a3e0eecf6f69c5010f4795c315ced0eec61
+
+FAIL  b7 the harness-less seat's model yields BOTH (id, codex) and (id, claude-code)                []
+FAIL  b7 a tier model resolvable only via the listing gets the listing's harness                    []
+PASS  b7 a tier model resolvable through NOTHING yields no entry                                    []
+PASS  b7 a model named only in an event log is not a candidate (nothing here reads one)             
+PASS  b7 no duplicates: unique by (id, harness)                                                     []
+FAIL  b7 listing undefined: manifest-derived pair (harness-less seat, claude-code default) still present []
+PASS  b7 listing undefined: no codex pair invented from nothing                                     []

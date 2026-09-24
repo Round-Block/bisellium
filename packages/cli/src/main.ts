@@ -23,6 +23,7 @@ import { runTick } from "./tick.js";
 import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
 import { runDelegate } from "./delegate.js";
+import { runProbe } from "./probe.js";
 import { runReady, runDone, runReview, runRed, runHalt, runWaive } from "./lifecycle.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
@@ -95,6 +96,9 @@ async function main(argv: string[]): Promise<number> {
   // ACTING role — same treatment as handoff above, deliberately unlike
   // answer/greenlight/budget below).
   if (cmd === "delegate") return runDelegate(rest).exitCode;
+  // probe is bookkeeping (a battery of real turns recording provenance),
+  // not a decree — not added to the force-BISELLIUM_ROLE=patron list.
+  if (cmd === "probe") return (await runProbe(rest)).exitCode;
   if (cmd === "emit") return runEmit(rest).exitCode;
   if (cmd === "ready") return runReady(rest).exitCode;
   if (cmd === "halt") return runHalt(rest).exitCode;
