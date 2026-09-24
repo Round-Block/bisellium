@@ -1,0 +1,131 @@
+# W-041 review, round 2 — censor (qa-lead, claude-opus-5-5), 2026-09-24
+# Subject: branch opus/W-041 at d5b2e07. Remedies are 2501661..d5b2e07 (dbe6508 fix, d5b2e07 verify+handoff).
+# Scratch worktree: $TMPDIR/w041r2 (detached d5b2e07, node_modules copied, removed after).
+# Verdict: PASS. Round 1's blockers B1 (6 instances), B2 and B3 (3 instances) are closed,
+# and so is the escaper advisory (GHAS alerts 6–8). 3 new advisories, none blocking.
+
+## Terra pre-review (facts sheet, embedded)
+8 VERIFIED, 1 FALSE.
+ 1 npm test exit 0, 0 FAIL.  2 typecheck clean, lint 0 err/2 warn, format:check clean.
+ 3 check studio PASS 0 blocking/78 advisory. sample-studio 0/26.
+ 4 dbe6508 and d5b2e07 both compute tree ade8404d04af294f53ab8d214d84c8f3e025ca14, and the
+   W-041-{tests,lint,types}-ade8404d.log files name that tree with exit 0.
+ 5 git diff 2501661 d5b2e07 touches only the handoff, the generated dossier HTML, the page and
+   its test, the new mutation script, and studio/ bookkeeping.
+ 6 m7-chain-arrow, m2-caption, esc-quote and blocked-on-none each fail (exit 1), and the tree is
+   clean after each.
+ 7 The three stale strings have 0 grep hits in the committed handoff. The guard returns [].
+ 8 FALSE: rg -F '"><' backlog-body.html gives 39 hits. The W-041 blocked-on cell is correctly "—".
+ 9 Reds 01/02/07 exit 1, sella builder-a, distinct bodies. Reds 03–06/08/09 are blob-identical
+   to 2501661.
+
+## Terra claim 8 — closed. The grep pattern was wrong; there is no defect.
+'"><' is how every legitimate row opens (<tr data-id="W-041"><td>), so a zero-hit condition
+could never hold. An injection check on generated HTML has to assert structure, not the absence
+of a byte sequence:
+  (i)   every tag is in an allowlist (div header p h1 h2 section table thead tbody tr th td a code);
+  (ii)  every attribute is double-quoted, named in an allowlist (class, href, data-id), and its
+        value contains no raw " < >;
+  (iii) text content, with the tags removed, contains no raw < or >.
+I ran that audit ($TMPDIR/w041r2-inject.mjs) on:
+  - the committed backlog-body.html: clean. hrefs = [bisellium-progress.html,
+    ../../../studio/acta/2026-09-24-ranking.md].
+  - a render of a fixture officina in which EVERY interpolated field is hostile
+    (X"'><img src=x onerror=alert(1)> & <script>alert(2)</script>): opus id, title, collegium,
+    traditio.blocked_on, halted_by, resume_when, petitio id and state, decision id, title and
+    kill_when, and the ranking-acta FILENAME: clean. The hostile petitio reaches its cell, and it
+    arrives escaped.
+
+## Asked items
+1. B1 closed (all six instances).
+   Round-1 method re-run (grep -cF over scripts/backlog-page.test.mjs): D-021 3, "State as
+   recorded" 1, "earned its opus" 1, ranking 10, "New opera" 3, → 3, PRE-EXISTING 2.
+   Every round-1 zero is now non-zero.
+   All 8 kept mutations in scripts/w041-mutation-check.mjs were run by me:
+     m2-caption 1 FAIL [1] · m4-footnote 1 FAIL [1] · m5-ranking-link 1 FAIL [1] ·
+     m6-heading-alt 2 FAIL [7] · m7-chain-arrow 2 FAIL [7] · out-not-modified 8 FAIL [7] ·
+     blocked-on-none 2 FAIL [2] · esc-quote 1 FAIL [6]. The tree was clean after each.
+   (f) "not modified" is now pinned in isolation. My own probe write-before-guard (clobber
+   --out, then run the guard, exit 1 kept) is CAUGHT by "a pre-existing file survives
+   byte-for-byte". out-not-modified alone would not show this, because it also flips the exit
+   code.
+   Residual: see A1 (the caption tail).
+2. The escaper is complete for the injection class in this generator.
+   Interpolation sites (read scripts/backlog-page.mjs in full; every ${…} in renderBacklogPage,
+   opusRow, decisionRow and rankingLink):
+     opusRow:153     data-id=esc(id), id, title, collegium, state, blockedOnCell, gatesCell (7, all esc)
+     decisionRow:157 data-id=esc(id), id, title, kill_when (4, all esc)
+     rankingLink:169 href=esc(relative path), link text=esc(acta id) (2, all esc)
+   The remaining ${…} are whole already-escaped row strings joined, or the static masthead.
+   Every attribute is double-quoted. There is no unquoted attribute, no event handler, and no
+   script/style context. The only URL context is the ranking href, built from a repo filename
+   relative to --out (starts ../ or acta/, so no scheme). esc() covers & < > " ' with & first,
+   which is the full set for quoted-attribute and text contexts. build.sh only concatenates
+   head.html with the body, and interpolates nothing.
+   Residual: the code is correct at every site, but three sites are unpinned by tests (A2).
+3. B3 closed. Nothing lost.
+   The deletions were (a) "Resume order: 1. W-034 defect 1 … full pipeline …", (b) item 1
+   "W-033 … next; W-044 candidate to jump the queue", and (c) "it starts at W-041".
+   Each fact is either obsolete or still held:
+   - W-033, W-034 and W-044 are all state: done, so the ordering claims are dead.
+   - The pipeline shape ("Terra pre-review … Sol brief red-team as standing pipeline") is at
+     handoff:118 and in D-020.
+   - "defect 2 absorbed" is in studio/briefs/W-034.md:22,32.
+   - "Starts at W-041" is item 1 of studio/acta/2026-09-24-ranking.md.
+   The remaining items were renumbered 3→2 and 4→3, with their text unchanged.
+   Whole-file sweep: every handoff line containing next/first/then/in order/resume/candidate,
+   checked for opus ids whose state is done. Only 2 hits, both history and not order: :199
+   (W-042's advisory as a lesson candidate) and :337 (W-031's first ci run).
+   The guard on the committed handoff returns [].
+4. Reds 01/02/07 provenance is sound, with one caveat.
+   Caveat: the mutation label is NOT inside the recorded log. `bisellium red` captures only the
+   child command, so the # command: header is the bare test invocation. The script's header says
+   this and names itself as the provenance.
+   I closed the gap by reproduction. Each recorded FAIL set is byte-identical (trailing space
+   trimmed) to my run of the named kept mutation, and unique to it among the 8:
+     01 == m2-caption (1 line) · 02 == blocked-on-none (2) · 07 == m7-chain-arrow (2).
+   The reds were recorded at 01:27–01:28Z on tree dirty:f9613615 (round 1's certified tree plus
+   the uncommitted fix). That is before dbe6508 at 01:33:01Z. They are mutation-demonstrated
+   reds (the fix is reverted by the script), the same shape as w044-mutation-check.mjs, which
+   passed W-044. 03–06/08/09 are unchanged (Terra 9).
+5. Regression: round 1's passes stand.
+   npm test exit 0, 0 FAIL (my own run). check studio PASS 0/78. sample-studio PASS 0/26.
+   node scripts/backlog-page.test.mjs: all PASS, including [8] (real handoff, violations []).
+   The guard against the pre-edit handoff (682e6f8~1) still exits 1 with the same 9 locations
+   (217, 375; 122, 125×2, 194×2, 379×2), and --out is not created.
+   build.sh run twice at d5b2e07 leaves the tree clean, so round 1's claim-6 residue does not
+   exist at this head (the page matches the officina).
+   Advisory 77→78: the one new advisory is probatio.certifies on W-041's review gate. That is my
+   own round-1 log, and it is the known structural advisory (agent verdicts carry no tree
+   identity, W-018 review-2 A2). It is not a builder defect.
+
+## BLOCKING
+(none)
+
+## ADVISORY (non-blocking; a follow-up opus or the next touch of the file)
+A1 (instance) The caption assertion pins only a prefix of the verbatim caption. [1] checks
+   "State as recorded … still reads". The brief's tail "`greenlit` — its live state is on
+   `opus/<id>`" is unpinned.
+   Probe caption-tail (delete " &mdash; its live state is on <code>opus/&lt;id&gt;</code>.")
+   SURVIVES. grep "its live state is on" gives 0 in the test.
+   The rendered caption IS verbatim today (checked against brief :165–167). Deleting the caption
+   is caught, so round 1's B1(c) is closed. Fix: assert the whole string.
+A2 (class, 3 instances) esc() sites that are correct but unpinned. The hostile fixture only feeds
+   an opus id and title, so these probes SURVIVE:
+     (a) decisionRow data-id without esc
+     (b) ranking href without esc
+     (c) esc() without the ' → &#39; replace (grep &#39; = 0 in the test)
+   Probes that are CAUGHT: opusRow data-id without esc, and title cell without esc.
+   searched: every ${…} site listed in item 2, one removal probe each where an attribute context
+   exists.
+   Not blocking: my hostile-everything audit shows the code is correct at every site, and qa lex
+   §2 says one mutation per opus is enough to show the suite bites.
+   Fix if touched: add a hostile decision id and a hostile ranking-acta filename to [6]'s
+   fixture. (c) is defence-in-depth only, because every attribute is double-quoted.
+A3 (carried from round 1) The post-merge checkpoint must run build.sh, or trunk will list W-041
+   as building. Round 1 A2 (unknown state dropped silently) still stands, unchanged and low.
+
+## Probes kept outside the tree (the censor has no write to scripts/)
+$TMPDIR/w041r2-probe.mjs (7 probes: caption-tail, apos-esc, decision-dataid-noesc,
+opus-dataid-noesc, href-noesc, title-noesc, write-before-guard) and $TMPDIR/w041r2-inject.mjs
+(the structural audit). Their results are recorded above.
