@@ -1,0 +1,14 @@
+# behaviour: 1
+# command: node --import tsx apps/web/src/lib/route.test.ts . 1
+# exit: 1
+# at: 2026-09-24T14:27:07.458Z
+# sella: builder-a
+# tree: dirty:c5cbcc7bf57790724a0b97e81bcd032c83a18339
+
+FAIL  route: "#/seats" -> seats                                              inbox
+FAIL  route: "#/board" -> board                                              inbox
+PASS  route: "#/inbox" unchanged                                             inbox
+PASS  route: "#/officina" unchanged                                          officina
+PASS  route: "" unchanged                                                    inbox
+PASS  route: "#/" unchanged                                                  inbox
+PASS  route: unknown hash falls back to inbox                                inbox

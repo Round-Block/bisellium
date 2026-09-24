@@ -70,13 +70,53 @@ export function setUnauthorizedListener(fn: (() => void) | undefined): void {
 
 // ── W-025 types ──────────────────────────────────────────────────────
 
+// ── W-065 types (D-023's decree surface) ────────────────────────────
+//
+// `tiers`/`munera`/`models` are all optional: a manifest (or a models.json)
+// that declares none of this parses, checks and serves exactly as before —
+// see studio/briefs/W-065.md "The record shape".
+export interface TierEntry {
+  id: string;
+  model?: string;
+}
+export interface MunusEntry {
+  id: string;
+  tier: string;
+}
+/** One of D-023's three named states — never dispatched on, only rendered.
+ *  "withdrawn" is not a fourth state: a record entry a live listing no
+ *  longer offers is downgraded to "unverified" (kept, not dropped) rather
+ *  than growing the enum. */
+export type ModelState = "available" | "unavailable" | "unverified";
+/** The shape of one entry in `<studio>/models.json`'s `models` array (the
+ *  probe-battery opus's record — W-065 only ever reads it) and of
+ *  `GET /api/models`'s merged response. Never carries `seated`: that flag is
+ *  a function of the *manifest*, computed client-side by `availableModels`
+ *  (apps/web/src/lib/delegation.ts), not of the record. */
+export interface ModelRecordEntry {
+  id: string;
+  harness?: string;
+  state: ModelState;
+  /** W-046 behaviour 7's surface, reused verbatim — present only when
+   *  state is "unavailable". */
+  vendorDiagnostic?: string;
+}
+
 export interface OfficinaResponse {
   studio: string;
   patron: string;
   collegia: { id: string; name: string; magister: string; fallback?: string; autonomy: string }[];
-  sellae: { id: string; name: string; collegium: string }[];
+  sellae: { id: string; collegium: string; kind?: string; model?: string; harness?: string }[];
   probationes: { id: string; kind: string }[];
   wip_limit?: number;
+  /** Absent when the manifest declares neither key (no migration). */
+  tiers?: TierEntry[];
+  munera?: MunusEntry[];
+  /** From `<studio>/models.json` as written by the probe-battery opus;
+   *  absent when that file doesn't exist or doesn't parse — this route never
+   *  throws on bookkeeping it did not write. Unmerged with any live vendor
+   *  listing; `fetchModels`/`GET /api/models` is the merged view. */
+  models?: ModelRecordEntry[];
 }
 
 export interface HealthResponse {
@@ -188,4 +228,22 @@ export function fetchOpera(filters?: { state?: string; collegium?: string }): Pr
   if (filters?.collegium) params.set("collegium", filters.collegium);
   const qs = params.toString();
   return getJSON(`/api/opera${qs ? `?${qs}` : ""}`);
+}
+
+// ── W-065 fetchers ───────────────────────────────────────────────────
+
+/** POST /api/delegate, via postWrite (W-067) — see WriteResult. Exactly one
+ *  of {sella, model} or {munus, tier} — the same two shapes runDelegate
+ *  accepts. `from` is always sent (the console's stale-draft precondition;
+ *  see studio/briefs/W-065.md "A narrowed claim"). */
+export function submitDelegate(target: { sella: string; model: string; from?: string } | { munus: string; tier: string; from?: string }): Promise<WriteResult> {
+  return postWrite("/api/delegate", target);
+}
+
+/** GET /api/models: the live-listing-merged view of the probe record — the
+ *  screen's actual source for `availableModels`, refreshed on every screen
+ *  load (studio/briefs/W-065.md "Refresh policy"). Degrades to the record
+ *  alone (or `[]`) on any failure; never throws, never empties the dropdown. */
+export function fetchModels(): Promise<ModelRecordEntry[]> {
+  return getJSON("/api/models");
 }
