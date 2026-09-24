@@ -22,6 +22,7 @@ import { runTalk } from "./talk.js";
 import { runTick } from "./tick.js";
 import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
+import { runDelegate } from "./delegate.js";
 import { runReady, runDone, runReview, runRed, runHalt, runWaive } from "./lifecycle.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
@@ -89,6 +90,11 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "pause") return (await runPause(rest)).exitCode;
   if (cmd === "resume") return (await runResume(rest)).exitCode;
   if (cmd === "handoff") return runHandoff(rest).exitCode;
+  // delegate is NOT force-patron'd (D-023 §3: both the Patron and the
+  // producer may write the decree mapping, and every write records the
+  // ACTING role — same treatment as handoff above, deliberately unlike
+  // answer/greenlight/budget below).
+  if (cmd === "delegate") return runDelegate(rest).exitCode;
   if (cmd === "emit") return runEmit(rest).exitCode;
   if (cmd === "ready") return runReady(rest).exitCode;
   if (cmd === "halt") return runHalt(rest).exitCode;

@@ -30,12 +30,13 @@
  * directory sharing WEB_DIST's name as a prefix could pass).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { execFile } from "node:child_process";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { GantryEvent } from "@bisellium/schema";
-import { Store } from "./store.js";
+import { Store, type ModelRecordEntry } from "./store.js";
 
 export interface StartServerOptions {
   studioDir: string;
@@ -65,7 +66,17 @@ export interface StartServerOptions {
     talk: (args: string[]) => Promise<{ exitCode: number }>;
     pause: (args: string[]) => Promise<{ exitCode: number }>;
     resume: (args: string[]) => Promise<{ exitCode: number }>;
+    /** W-065: `bisellium delegate` — the Patron's write, like
+     *  answer/greenlight/budget below. */
+    delegate: (args: string[]) => { exitCode: number };
   };
+  /** W-065: GET /api/models' live vendor-listing call — `codex debug models`
+   *  by default, injected so tests never spawn a real vendor CLI and can
+   *  assert "no route runs a vendor turn" with a stub that fails the test if
+   *  called past a listing (never a turn). Cheap and local; still raced
+   *  against a timeout here, since a hung stub or a hung real process must
+   *  never block the route. */
+  listModels?: () => Promise<{ id: string; harness: string }[]>;
 }
 
 export interface StartServerResult {
@@ -236,6 +247,104 @@ async function asPatron<T>(fn: () => Promise<T> | T): Promise<T> {
 }
 
 // ---------------------------------------------------------------------------
+// W-065: the live vendor listing GET /api/models layers over the probe
+// record. "A candidate is offered only after a probe has passed. A listing
+// never promotes anything by itself" (Patron decree) — this only gathers
+// candidate ids; codex's own `visibility` field is the one filter applied
+// here, and even a `visibility: "list"` id stays "unverified" until a probe
+// (a different opus's job) says otherwise.
+// ---------------------------------------------------------------------------
+
+/** `codex debug models` — "a cheap local catalog call, no turn, no metered
+ *  tokens" (the brief's own survey). Degrades to `[]` on any failure
+ *  (missing binary, non-zero exit, unparseable JSON) — a listing failure
+ *  must never throw into the route. */
+async function codexListModels(): Promise<{ id: string; harness: string }[]> {
+  return new Promise((resolvePromise) => {
+    execFile("codex", ["debug", "models"], { timeout: 5_000 }, (err, stdout) => {
+      if (err) {
+        resolvePromise([]);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stdout) as { models?: { slug?: unknown; visibility?: unknown }[] };
+        const models = Array.isArray(parsed.models) ? parsed.models : [];
+        resolvePromise(
+          models
+            .filter((m) => m.visibility === "list" && typeof m.slug === "string")
+            .map((m) => ({ id: m.slug as string, harness: "codex" })),
+        );
+      } catch {
+        resolvePromise([]);
+      }
+    });
+  });
+}
+
+const MODELS_LISTING_TTL_MS = 5_000;
+const MODELS_LISTING_TIMEOUT_MS = 3_000;
+
+interface ListingResult {
+  /** True only when a listing genuinely succeeded (now, or within the TTL
+   *  window) — false means "we have never obtained real data", which must
+   *  NOT be read as "the vendor listed nothing" (see mergeModelsWithListing:
+   *  withdrawal requires `ok`, precisely so a failure or a cold start never
+   *  empties the dropdown by mistake). */
+  ok: boolean;
+  listing: { id: string; harness: string }[];
+}
+
+/** Wraps `listModels` with the TTL + timeout the brief's refresh policy
+ *  requires: an in-process TTL so an SSE-driven re-render burst doesn't
+ *  spawn a subprocess per event, and a hard timeout independent of whatever
+ *  `listModels` does — a hung stub or a hung real process degrades to the
+ *  last-known-GOOD listing (or, with none yet, `{ ok: false, listing: [] }`)
+ *  exactly like an outright failure, and never blocks the route. */
+function createListingCache(listModels: () => Promise<{ id: string; harness: string }[]>): () => Promise<ListingResult> {
+  let cache: { at: number; result: ListingResult } | undefined;
+  return async () => {
+    const now = Date.now();
+    if (cache && now - cache.at < MODELS_LISTING_TTL_MS) return cache.result;
+    try {
+      const listing = await Promise.race([
+        listModels(),
+        new Promise<never>((_resolve, reject) => setTimeout(() => reject(new Error("listing timed out")), MODELS_LISTING_TIMEOUT_MS)),
+      ]);
+      cache = { at: now, result: { ok: true, listing } };
+    } catch {
+      cache = { at: now, result: cache?.result ?? { ok: false, listing: [] } };
+    }
+    return cache.result;
+  };
+}
+
+/** Harnesses this system knows how to list at all (the brief's own survey:
+ *  "one vendor of two can enumerate, and only through a debug verb" — codex
+ *  has `debug models`, claude has no listing verb). Fixed, not inferred from
+ *  one call's own (possibly empty) result — inferring it that way could never
+ *  tell "codex listed zero models" apart from "codex wasn't asked". */
+const LISTED_HARNESSES = new Set(["codex"]);
+
+/** Layers a live listing over the probe record: a listed id with no record
+ *  entry is a fresh "unverified" candidate; a record entry the listing no
+ *  longer offers is flagged withdrawn by downgrading it to "unverified"
+ *  (kept, not dropped — never a fourth state). The listing never promotes
+ *  anything to "available" by itself, and withdrawal only ever fires when
+ *  `ok` — a failed or never-yet-successful listing changes nothing. */
+function mergeModelsWithListing(record: ModelRecordEntry[], { ok, listing }: ListingResult): ModelRecordEntry[] {
+  const listedIds = new Set(listing.map((m) => m.id));
+  const byId = new Map<string, ModelRecordEntry>();
+  for (const entry of record) {
+    const withdrawn = ok && entry.state !== "unverified" && entry.harness !== undefined && LISTED_HARNESSES.has(entry.harness) && !listedIds.has(entry.id);
+    byId.set(entry.id, withdrawn ? { ...entry, state: "unverified" } : entry);
+  }
+  for (const m of listing) {
+    if (!byId.has(m.id)) byId.set(m.id, { id: m.id, harness: m.harness, state: "unverified" });
+  }
+  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+}
+
+// ---------------------------------------------------------------------------
 // Write auth: token + no-Origin + application/json. "Loopback alone never
 // authorizes" (W-016 behaviour 5) — the server binding to 127.0.0.1 is still
 // true but is no longer treated as sufficient on its own.
@@ -322,6 +431,7 @@ const ROUTE_INDEX_HTML = `<!doctype html>
 <p>apps/web/dist is not built. API routes:</p>
 <ul>
 <li>GET /api/officina</li>
+<li>GET /api/models</li>
 <li>GET /api/opera?state=&amp;collegium=</li>
 <li>GET /api/opus/:id</li>
 <li>GET /api/inbox</li>
@@ -333,7 +443,7 @@ const ROUTE_INDEX_HTML = `<!doctype html>
 <li>GET /api/events?since=&amp;limit=</li>
 <li>GET /api/receipts?sella=</li>
 <li>GET /api/live (SSE)</li>
-<li>POST /api/answer, /api/greenlight, /api/budget, /api/handoff, /api/talk, /api/pause, /api/resume (X-Bisellium-Token required)</li>
+<li>POST /api/answer, /api/greenlight, /api/budget, /api/handoff, /api/talk, /api/pause, /api/resume, /api/delegate (X-Bisellium-Token required)</li>
 </ul>
 </body>
 </html>`;
@@ -480,6 +590,7 @@ async function route(
   sseHub: SseHub,
   checkStudio: StartServerOptions["checkStudio"],
   runners: StartServerOptions["runners"],
+  getListing: () => Promise<ListingResult>,
   token: string,
   acceptedOrigins: AcceptedOrigins,
   req: IncomingMessage,
@@ -492,7 +603,7 @@ async function route(
   // ---- writes: token + accepted-origin + application/json required.
   // Loopback (the bind itself) is never sufficient on its own — see
   // checkWriteAuth. --------------------------------------------------------
-  const WRITE_PATHS = new Set(["/api/answer", "/api/greenlight", "/api/budget", "/api/handoff", "/api/talk", "/api/pause", "/api/resume"]);
+  const WRITE_PATHS = new Set(["/api/answer", "/api/greenlight", "/api/budget", "/api/handoff", "/api/talk", "/api/pause", "/api/resume", "/api/delegate"]);
   if (method === "POST" && WRITE_PATHS.has(pathname)) {
     const authStatus = checkWriteAuth(req, token, acceptedOrigins);
     if (authStatus !== undefined) {
@@ -503,6 +614,17 @@ async function route(
   }
 
   if (method === "GET" && pathname === "/api/officina") return sendJson(res, 200, store.api.officina());
+
+  // W-065: the merged view GET /api/officina's own `models` field does not
+  // attempt — that field is the record alone, unmerged (see store.ts). This
+  // route layers the live listing over it on every call (TTL-cached, timed
+  // out independently of whatever `getListing` does); a listing failure or
+  // timeout degrades to the record alone and never empties the dropdown.
+  if (method === "GET" && pathname === "/api/models") {
+    const record = store.api.officina().models ?? [];
+    const listing = await getListing();
+    return sendJson(res, 200, mergeModelsWithListing(record, listing));
+  }
 
   if (method === "GET" && pathname === "/api/opera") {
     const state = url.searchParams.get("state") ?? undefined;
@@ -673,6 +795,27 @@ async function route(
     return writeResponse(res, result.exitCode, stdout, stderr);
   }
 
+  if (method === "POST" && pathname === "/api/delegate") {
+    const body = await readJsonBodyOr400(req, res);
+    if (body === undefined) return;
+    const args = ["--studio", store.studioDir];
+    if (typeof body["sella"] === "string" && typeof body["model"] === "string") {
+      args.push("--sella", body["sella"], "--model", body["model"]);
+    } else if (typeof body["munus"] === "string" && typeof body["tier"] === "string") {
+      args.push("--munus", body["munus"], "--tier", body["tier"]);
+    } else {
+      sendJson(res, 400, { error: "either {sella, model} or {munus, tier} are required" });
+      return;
+    }
+    if (typeof body["from"] === "string") args.push("--from", body["from"]);
+    // A write from the console is the Patron's — asPatron, like
+    // answer/greenlight/budget above. (D-023 §3's "acting role" concern is
+    // about main.ts's CLI path, not the console: every console write IS the
+    // Patron's, same as the other six.)
+    const { result, stdout, stderr } = await withWriteLock(() => asPatron(() => withCapturedConsole(() => runners.delegate(args))));
+    return writeResponse(res, result.exitCode, stdout, stderr);
+  }
+
   // ---- static -----------------------------------------------------------
   if (method === "GET" && serveStatic(pathname, res)) return;
 
@@ -717,6 +860,9 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
 
   // Every write route serializes through this (see createWriteLock's docs).
   const withWriteLock = createWriteLock();
+  // GET /api/models' live listing: TTL-cached + timed out per-server-instance
+  // (see createListingCache's docs).
+  const getListing = createListingCache(opts.listModels ?? codexListModels);
   // One store "event" listener for every connected /api/live client to fan
   // out from (W-016 behaviour 8) — never one listener per client.
   const sseHub = createSseHub(store);
@@ -739,7 +885,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
       // response body instead of the terminal.
       process.stderr.write(`${method} ${url} ${res.statusCode} ${Date.now() - start}ms\n`);
     });
-    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
+    route(store, doPoll, withWriteLock, sseHub, opts.checkStudio, opts.runners, getListing, token, acceptedOrigins, req, res).catch((e) => serverError(res, e));
   });
 
   await new Promise<void>((resolvePromise, reject) => {

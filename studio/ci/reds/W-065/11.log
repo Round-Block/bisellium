@@ -1,0 +1,15 @@
+# behaviour: 11
+# command: node --import tsx test/seatsview.test.ts 11
+# exit: 1
+# at: 2026-09-24T15:09:46.869Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+FAIL  delegation: the card precedes the roster card in document order                -1 < -1
+FAIL  delegation: one row with the munus id                                          <div></div>
+FAIL  delegation: the tier <select> contains every declared tier, including an unused one <div></div>
+FAIL  delegation: each option's text is formatted `<tier> · <holder>`                <div></div>
+PASS  delegation: no resolved-model column (a bare cell of just the holder)          <div></div>
+FAIL  delegation: the tier legend below the card lists every declared tier, including the unused one <div></div>
+FAIL  delegation: an undeclared tier renders as an additional selected disabled option marked unresolved <div></div>
+FAIL  delegation: the undeclared-tier munus still offers the declared tier as a normal option too <div></div>

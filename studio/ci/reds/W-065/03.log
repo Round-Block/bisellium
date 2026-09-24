@@ -1,0 +1,21 @@
+# behaviour: 3
+# command: node --import tsx apps/web/src/lib/delegation.test.ts . 3
+# exit: 1
+# at: 2026-09-24T14:31:42.687Z
+# sella: builder-a
+# tree: dirty:c5cbcc7bf57790724a0b97e81bcd032c83a18339
+
+FAIL  seatRows: carries kind/model/harness                                           []
+FAIL  tierRows: returns every declared tier, including an unused one                 []
+PASS  munusRows: does not throw on an undeclared tier                                
+FAIL  munusRows: resolves a declared tier's model                                    
+FAIL  munusRows: an undeclared tier yields tierKnown:false, model:undefined          
+FAIL  availableModels: a record entry keeps state/harness/vendorDiagnostic           
+FAIL  availableModels: a seated model is always seated:true, whatever the record says 
+FAIL  availableModels: a seated model absent from the record is unverified           
+PASS  availableModels: absent record does not throw                                  
+PASS  availableModels: absent record — every row unverified                          []
+FAIL  availableModels: absent record — seated model present                          []
+FAIL  availableModels: a listed-but-unprobed candidate stays "unverified"            
+FAIL  availableModels: deduplicated (alpha appears once)                             []
+PASS  availableModels: sorted by id                                                  []

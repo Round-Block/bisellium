@@ -67,6 +67,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "manifest.timezone",
   "manifest.unique",
   "manifest.version",
+  "munus.tier",
   "opus.collegium",
   "opus.id.duplicate",
   "opus.id.filename",

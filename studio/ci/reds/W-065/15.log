@@ -1,0 +1,43 @@
+# behaviour: 15
+# command: npx playwright test -c playwright.serve.config.ts -g behaviour 15
+# exit: 1
+# at: 2026-09-24T15:35:39.217Z
+# sella: builder-a
+# tree: dirty:e083aa9ed762921f5612c9cad4cab564555b3ef6
+
+
+Running 5 tests using 5 workers
+
+  ✓  1 [chromium] › tests-serve/layout.spec.ts:32:3 › computed layout (W-065 behaviour 15) › 800px: the rail is 72px, labels present at 11px (not display:none) (602ms)
+  ✓  3 [chromium] › tests-serve/layout.spec.ts:55:3 › computed layout (W-065 behaviour 15) › a focused model select has a visible focus indicator (595ms)
+  ✓  4 [chromium] › tests-serve/layout.spec.ts:23:3 › computed layout (W-065 behaviour 15) › 1280px: the rail is 220px, link text visible (606ms)
+  ✓  5 [chromium] › tests-serve/layout.spec.ts:44:3 › computed layout (W-065 behaviour 15) › 500px: the shell is a top row, labels still readable (623ms)
+  ✘  2 [chromium] › tests-serve/layout.spec.ts:69:3 › computed layout (W-065 behaviour 15) › with the confirm bar open, the last roster row does not sit under it (644ms)
+
+
+  1) [chromium] › tests-serve/layout.spec.ts:69:3 › computed layout (W-065 behaviour 15) › with the confirm bar open, the last roster row does not sit under it 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 812
+    Received:    904.5
+
+      90 |       const rowBottom = rowBox.y + rowBox.height;
+      91 |       // No vertical overlap: the row's bottom sits at or above the bar's top.
+    > 92 |       expect(rowBottom).toBeLessThanOrEqual(barBox.y + 1);
+         |                         ^
+      93 |     }
+      94 |   });
+      95 | });
+        at /tmp/claude-1000/w065-build/apps/web/tests-serve/layout.spec.ts:92:25
+
+    Error Context: test-results/layout-computed-layout-W-0-43132-r-row-does-not-sit-under-it-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests-serve/layout.spec.ts:69:3 › computed layout (W-065 behaviour 15) › with the confirm bar open, the last roster row does not sit under it 
+  4 passed (1.2s)
+npm notice
+npm notice New minor version of npm available! 11.13.0 -> 11.20.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.20.0
+npm notice To update run: npm install -g npm@11.20.0
+npm notice

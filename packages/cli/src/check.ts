@@ -333,6 +333,28 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const col = str(s["collegium"]);
     if (!col || !collegiumIds.has(col)) add("sella.collegium", "block", `bisellium.yml#${id}`, `sella collegium "${col ?? ""}" not declared`);
   }
+
+  // D-023 §2 / W-065: tiers and munera are both optional — a manifest
+  // declaring neither produces no finding. `uniq` already covers id
+  // presence/format/uniqueness (manifest.shape/manifest.id.format/
+  // manifest.unique); `munus.tier` is the one new rule, for the shape this
+  // feature adds: a tier's required model, a munus's required tier, and a
+  // munus naming a tier that isn't declared.
+  const tiers = listOf("tiers");
+  const munera = listOf("munera");
+  const tierIds = uniq("tiers", tiers);
+  uniq("munera", munera);
+  for (const t of tiers) {
+    const id = str(t["id"]) ?? "?";
+    if (!str(t["model"])) add("munus.tier", "block", `bisellium.yml#${id}`, `tier "${id}" has no model`);
+  }
+  for (const mu of munera) {
+    const id = str(mu["id"]) ?? "?";
+    const tier = str(mu["tier"]);
+    if (!tier) add("munus.tier", "block", `bisellium.yml#${id}`, `munus "${id}" has no tier`);
+    else if (!tierIds.has(tier)) add("munus.tier", "block", `bisellium.yml#${id}`, `munus "${id}" references undeclared tier "${tier}"`);
+  }
+
   if (probationes.length === 0) add("manifest.probationes", "advise", "bisellium.yml", "no probationes declared — nothing can be verified");
   for (const g of probationes) {
     const k = str(g["kind"]) ?? "";

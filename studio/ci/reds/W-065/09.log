@@ -1,0 +1,207 @@
+# behaviour: 9
+# command: node --import tsx apps/server/test/server.test.ts .
+# exit: 1
+# at: 2026-09-24T14:59:51.989Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+PASS  module graph: apps/server/src/index.ts never reaches @bisellium/cli or @bisellium/commands []
+PASS  index: .bisellium/index/index.db exists after startServer /tmp/claude-1000/bisellium-server-main-EXscSN/.bisellium/index/index.db
+PASS  index: store.query.opera() (the real Index) returns the studio's opera ["W-001","W-002","W-003","W-004","W-005","W-006","W-007"]
+GET /api/officina 200 5ms
+PASS  officina: 200                                        200
+PASS  officina: 5 collegia                                 [{"id":"production","name":"Production","magister":"producer","fallback":"eng-lead","autonomy":"L1"},{"id":"design","name":"Design","magister":"architect","autonomy":"L1"},{"id":"engineering","name":"Engineering","magister":"eng-lead","autonomy":"L1"},{"id":"art","name":"Art","magister":"art-lead","autonomy":"L1"},{"id":"qa","name":"QA","magister":"qa-lead","autonomy":"L1"}]
+PASS  events-log: no stray events.jsonl at studio root     /tmp/claude-1000/bisellium-server-main-EXscSN/events.jsonl
+PASS  events-log: real log exists at .bisellium/events.jsonl /tmp/claude-1000/bisellium-server-main-EXscSN/.bisellium/events.jsonl
+GET /api/inbox 200 6ms
+PASS  inbox: 200                                           200
+PASS  inbox: lists W-004                                   ["W-004"]
+PASS  inbox: lists A-1                                     ["A-1"]
+GET /api/aerarium 200 4ms
+PASS  aerarium: 200                                        200
+PASS  aerarium: engineering posture conserve               {"collegium":"engineering","period":"2026-W38","allowance":{"tokens":3000000},"burn":{"tokens":1880000},"posture":"conserve"}
+GET /api/opus/W-004 200 0ms
+PASS  opus/W-004: 200                                      200
+PASS  opus/W-004: has traditio                             {"sella":"builder-1","stage":"review","next":"await patron call","blocked_on":"patron","at":"2026-09-17T09:58:00Z"}
+GET /api/opus/NOPE 404 0ms
+PASS  opus/NOPE: 404                                       404
+PASS  opus/NOPE: {error}                                   {"error":"unknown opus"}
+GET /api/timeline/nobody 404 2ms
+PASS  timeline/nobody: 404                                 404
+PASS  timeline/nobody: {error}                             {"error":"unknown sella"}
+GET /api/events?limit=-5 200 1ms
+PASS  events limit=-5: never throws (200)                  200
+GET /api/timeline/builder-1?limit=-5 200 2ms
+PASS  timeline limit=-5: never throws (200)                200
+GET /api/events?limit=0 200 1ms
+PASS  events limit=0: never throws (200)                   200
+GET /api/timeline/builder-1?limit=0 200 1ms
+PASS  timeline limit=0: never throws (200)                 200
+GET /api/events?limit=99999 200 0ms
+PASS  events limit=99999: never throws (200)               200
+GET /api/timeline/builder-1?limit=99999 200 1ms
+PASS  timeline limit=99999: never throws (200)             200
+GET /api/events?limit=abc 200 1ms
+PASS  events limit=abc: never throws (200)                 200
+GET /api/timeline/builder-1?limit=abc 200 1ms
+PASS  timeline limit=abc: never throws (200)               200
+POST /api/greenlight 403 0ms
+PASS  auth: valid token + Origin -> 403                    403
+POST /api/greenlight 401 1ms
+PASS  auth: no Origin, no token -> 401                     401
+POST /api/greenlight 415 0ms
+PASS  auth: token + text/plain -> 415                      415
+POST /api/greenlight 200 5ms
+PASS  auth: Origin (absent) -> 200 (auth passes)           200
+POST /api/greenlight 200 3ms
+PASS  auth: Origin http://127.0.0.1:33705 -> 200 (auth passes) 200
+POST /api/greenlight 200 3ms
+PASS  auth: Origin http://localhost:33705 -> 200 (auth passes) 200
+PASS  auth: the accepted-origin block — W-002.md unchanged 
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (the literal string null) -> 403        403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (right host, wrong port) -> 403         403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (https instead of http) -> 403          403
+POST /api/greenlight 403 1ms
+PASS  auth: Origin (the ::1 loopback form) -> 403          403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (a foreign host) -> 403                 403
+PASS  auth: the 403 block — W-002.md unchanged             
+POST /api/greenlight 401 0ms
+PASS  auth: valid Origin + wrong token -> 401              401
+POST /api/greenlight 415 0ms
+PASS  auth: valid Origin + text/plain -> 415               415
+POST /api/greenlight 400 0ms
+PASS  auth: valid Origin + missing field -> 400            400
+PASS  auth: the token/content-type/body block — W-002.md unchanged 
+POST /api/greenlight 200 3ms
+PASS  auth: Host: evil.example, no Origin -> 200 (no trust from Host) 200
+POST /api/greenlight 403 0ms
+PASS  auth: X-Forwarded-Host spoofed + foreign Origin -> still 403 403
+PASS  auth: the Host/X-Forwarded-Host block — W-002.md unchanged 
+POST /api/greenlight 413 2ms
+PASS  body cap: oversized POST answers 413                 413
+PASS  body cap: 413 body is real JSON with an error        {"error":"request body too large"}
+POST /api/greenlight 200 8ms
+PASS  greenlight: 200                                      200
+PASS  greenlight: ok true, exitCode 0                      {"ok":true,"exitCode":0,"output":"W-007: greenlit"}
+GET /api/opus/W-007 200 0ms
+PASS  opus/W-007: state greenlit                           {"id":"W-007","title":"Seasonal event framework","kind":"feature","collegium":"engineering","state":"greenlit","probationes":{}}
+POST /api/_poll 200 12ms
+PASS  _poll: absorbs the greenlight diff                   {"ok":true,"ingested":1}
+GET /api/events 200 0ms
+PASS  sse setup: W-002's state line found and replaced     
+POST /api/_poll 200 12ms
+PASS  _poll: 200                                           {"ok":true,"ingested":1}
+GET /api/events 200 0ms
+PASS  events: a write made after start is reflected without a restart 83 -> 84
+PASS  sse: exactly one state_changed event for W-002       [{"id":"server:42","name":"workflow.state_changed","ts":"2026-09-18T17:00:00.000Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-002","workflow.department":"engineering","workflow.state.from":"building","workflow.state.to":"verifying","workflow.source":"server","workflow.source.seq":42,"workflow.time.derived":true}}]
+GET /api/events 200 0ms
+PASS  events: seq is present on every event                
+PASS  events: seq strictly increasing and non-colliding across interleaved sources [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83]
+POST /api/_poll 404 0ms
+PASS  _poll: 404 outside NODE_ENV=test                     404
+GET /api/events 200 0ms
+PASS  close: port released                                 
+GET /api/events 200 1ms
+PASS  events-log: greenlight's own cli event visible after restart ["workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.state_changed","workflow.state_changed","workflow.greenlight"]
+PASS  events-log: restart does not replay item_appeared events again before=14 after=14
+GET /api/live 200 100ms
+PASS  close: resolves within 3s with an open SSE client connected elapsedMs=0
+PASS  close: resolves within 3s after the SSE client aborted elapsedMs=1
+PASS  sse: exactly one store 'event' listener with three clients connected 1
+POST /api/_poll 200 16ms
+PASS  sse: fan-out reaches every connected client from the single listener [1,1,1]
+GET /api/officina 200 2ms
+PASS  sse: an errored client is dropped without taking the server down 200
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+PASS  sse: a client past MAX_SSE_CLIENTS gets 503          503
+GET /api/live 200 270ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 269ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 268ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 240ms
+GET /api/live 200 239ms
+GET /api/live 200 239ms
+PASS  containment: a sibling dir sharing WEB_DIST's name as a prefix is rejected /tmp/claude-1000/w065-build/apps/web/dist vs /tmp/claude-1000/w065-build/apps/web/dist-evil/x
+PASS  containment: the same sibling path WOULD have passed a bare startsWith() (the bug this replaces) /tmp/claude-1000/w065-build/apps/web/dist-evil/x
+PASS  containment: a real file under WEB_DIST is accepted  /tmp/claude-1000/w065-build/apps/web/dist/assets/app.js
+POST /api/talk 200 92ms
+POST /api/talk 200 135ms
+PASS  talk overlap: request A (message 'one') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: ONE"}
+PASS  talk overlap: request B (message 'two') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: TWO"}
+PASS  talk overlap: console.log restored to the real console afterwards 
+PASS  talk overlap: console.error restored to the real console afterwards 
+POST /api/greenlight 200 0ms
+PASS  stub runner (exit 3): HTTP 200, not a 4xx            200
+PASS  stub runner (exit 3): ok:false, exitCode:3           {"ok":false,"exitCode":3,"output":""}
+POST /api/delegate 404 0ms
+FAIL  delegate (patron over seeded role): HTTP 200, ok:true {"error":"not found"}
+FAIL  delegate (patron over seeded role): recorded role is patron 
+PASS  delegate (patron over seeded role): BISELLIUM_ROLE restored after success builder-a
+POST /api/delegate 404 0ms
+FAIL  delegate (rejected): refused, not a 4xx              {"error":"not found"}
+PASS  delegate (rejected): BISELLIUM_ROLE restored after a rejection too builder-a
+POST /api/delegate 404 0ms
+POST /api/delegate 404 0ms
+FAIL  delegate lock: overlapping call A succeeds           {"error":"not found"}
+FAIL  delegate lock: overlapping call B succeeds           {"error":"not found"}
+FAIL  delegate lock: two well-formed timeline lines        []
+PASS  delegate lock: the manifest is still a parseable single document 
+GET /api/officina 200 1ms
+FAIL  officina: tiers matches the fixture                  
+FAIL  officina: munera matches the fixture                 
+PASS  officina: models absent when models.json is absent   
+PASS  officina: sellae rows still carry kind/model/harness [{"id":"producer","collegium":"production","kind":"orchestrator","model":"claude-opus-5"},{"id":"architect","collegium":"design","kind":"agent","model":"claude-opus-5"},{"id":"eng-lead","collegium":"engineering","kind":"agent","model":"claude-opus-5"},{"id":"builder-1","collegium":"engineering","kind":"agent","model":"claude-sonnet-5"},{"id":"builder-2","collegium":"engineering","kind":"agent","model":"claude-sonnet-5"},{"id":"art-lead","collegium":"art","kind":"agent","model":"gpt-6-astra"},{"id":"qa-lead","collegium":"qa","kind":"agent","model":"claude-sonnet-5"}]
+GET /api/officina 200 1ms
+PASS  officina: an unparseable models.json degrades to absent, still 200 
+GET /api/models 404 1ms
+TypeError: rows.find is not a function
+    at main (/tmp/claude-1000/w065-build/apps/server/test/server.test.ts:828:69)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)

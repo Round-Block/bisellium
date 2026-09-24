@@ -1,0 +1,19 @@
+# behaviour: 2
+# command: node --import tsx test/sidebar.test.ts 2
+# exit: 1
+# at: 2026-09-24T14:29:54.252Z
+# sella: builder-a
+# tree: dirty:c5cbcc7bf57790724a0b97e81bcd032c83a18339
+
+FAIL  sidebar: all four hrefs present                                        <nav class="sidebar"><span class="sidebar__wordmark">Bisellium</span><a class="sidebar__link sidebar__link--active" href="#/inbox"><span class="sidebar__link-text">Inbox</span></a><a class="sidebar__link" href="#/officina"><span class="sidebar__link-text">Officina</span></a><div class="sidebar__bottom"><span class="sidebar__meta">studio/</span></div></nav>
+PASS  sidebar: entries appear in D-023 §1's order (Inbox, Board, Seats, Officina) [116,205]
+PASS  sidebar: route "inbox" — exactly one active entry                      ["#/inbox"]
+PASS  sidebar: route "inbox" — the active entry is #/inbox                   #/inbox
+PASS  sidebar: route "board" — exactly one active entry                      ["#/inbox"]
+FAIL  sidebar: route "board" — the active entry is #/board                   #/inbox
+PASS  sidebar: route "seats" — exactly one active entry                      ["#/inbox"]
+FAIL  sidebar: route "seats" — the active entry is #/seats                   #/inbox
+PASS  sidebar: route "officina" — exactly one active entry                   ["#/officina"]
+PASS  sidebar: route "officina" — the active entry is #/officina             #/officina
+PASS  sidebar: needs-you badge shown when count > 0                          <nav class="sidebar"><span class="sidebar__wordmark">Bisellium</span><a class="sidebar__link sidebar__link--active" href="#/inbox"><span class="sidebar__link-text">Inbox</span><span class="sidebar__badge">3</span></a><a class="sidebar__link" href="#/officina"><span class="sidebar__link-text">Officina</span></a><div class="sidebar__bottom"><span class="sidebar__meta">studio/</span></div></nav>
+PASS  sidebar: needs-you badge hidden when count is 0                        <nav class="sidebar"><span class="sidebar__wordmark">Bisellium</span><a class="sidebar__link sidebar__link--active" href="#/inbox"><span class="sidebar__link-text">Inbox</span></a><a class="sidebar__link" href="#/officina"><span class="sidebar__link-text">Officina</span></a><div class="sidebar__bottom"><span class="sidebar__meta">studio/</span></div></nav>

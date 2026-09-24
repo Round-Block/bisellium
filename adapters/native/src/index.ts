@@ -68,6 +68,14 @@ export interface Manifest {
    *  sibling studios or fixtures. See check.ts/verify.ts. */
   source_excludes?: string[];
   standing_rules?: string[];
+  /** D-023 §2: the six role-named tiers (fast/mid/high/escalation/build/
+   *  review) and their current model holders. Optional — a manifest
+   *  declaring neither this nor `munera` parses, checks and serves exactly
+   *  as before (no migration). The screen renders from these records; it
+   *  dispatches on neither (W-065). */
+  tiers?: { id: string; model?: string }[];
+  /** D-023 §2: the nine munera (task types) mapped to a tier id. */
+  munera?: { id: string; tier: string }[];
   /** D-015: how an opus branch reaches the trunk is a setting, not a fixed
    *  flow. Absent entirely ⇒ today's only behaviour (fast-forward only, no
    *  push, no PR) — `bisellium merge` (packages/cli/src/branch.ts) is the

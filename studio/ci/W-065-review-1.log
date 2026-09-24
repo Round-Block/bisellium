@@ -1,0 +1,239 @@
+# W-065 — censor review, round 1
+# sella: qa-lead (censor) · model: claude-fable-5 · at: 2026-09-24T16:57:45Z
+# worktree: /tmp/claude-1000/w065-build · branch: opus/W-065 · HEAD: d605afd
+# VERDICT: FAIL (round 1)
+
+== 0. preconditions ==
+porcelain clean at review start; in-tree shim node_modules/.bin/bisellium -> ../@bisellium/cli/bin/bisellium.mjs
+spec of record read in full: studio/briefs/W-065.md @ HEAD (1458 lines)
+`bisellium verify` NOT run (per brief); its substantive claim recomputed independently below.
+
+== 1. gates, re-run by the censor ==
+npm test          -> 2455 PASS, 0 FAIL (exit 0)
+### typecheck
+### lint
+
+/tmp/claude-1000/w065-build/packages/cli/src/close.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/tmp/claude-1000/w065-build/packages/cli/src/tick.test.ts
+  203:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+
+### format:check
+Checking formatting...
+All matched files use Prettier code style!
+### check sample-studio
+  instructions.stale         CLAUDE.md                      CLAUDE.md differs from the current render — run `bisellium instructions --write`
+  instructions.stale         AGENTS.md                      AGENTS.md differs from the current render — run `bisellium instructions --write`
+
+PASS — 0 blocking, 26 advisory
+### check studio
+### check studio
+  lex.unchecked              leges/production.md            5 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+  lex.unchecked              leges/qa.md                    11 clause(s) in §2/§3/§4 with no "(check: <rule.id>)" marker
+
+PASS — 0 blocking, 104 advisory
+
+-- clean rebuilt dist + both browser suites (censor's own run) --
+✓ built in 106ms
+  5 passed (1.8s)
+  16 passed (2.5s)
+test:e2e 5/5; test:serve 16/16 (5 W-067 auth/answer + 5 layout + 6 seats), from rm -rf apps/web/dist
+
+== 2. tree hash, recomputed independently (W-046 r3 method) ==
+excludeDirs = [studio, .bisellium, examples/]  (verify.ts:153-157)
+sha1 over `git ls-tree -r <ref>` lines, excluded paths skipped (shim/src/sourceTree.ts:44):
+  d605afd (HEAD) f60302c9fb479a94633549492ac08762f1058eb0   286 files
+  1cbf0c1        f60302c9fb479a94633549492ac08762f1058eb0   286 files
+  4f46a31        044ad2b4caefb07cba17ed99591c75fb7587eb2d
+  e8317a8 (base) c5cbcc7bf57790724a0b97e81bcd032c83a18339   273 files
+MATCHES the certificate in studio/opera/W-065.md (tests/lint/types certifies tree:f60302c9...). CONFIRMED.
+
+== 3. FINDING A (blocking) — behaviour 5's refusal evidence does not bite ==
+Five synthetic-manifest refusal fixtures in packages/commands/src/delegate.test.ts.
+assertRefused (delegate.test.ts:~168) asserts only exitCode !== 0 + unchanged bytes;
+it never asserts WHICH refusal fired. Measured, one fixture at a time:
+  :189 5-parse-error  claims delegate.ts:139  -> actually 'unparseable — not a studio' (openStudio, delegate.ts:113)
+  :194 5-dup-key      claims delegate.ts:139  -> actually 'Map keys must be unique' (openStudio)
+  :199 5-multi-doc    claims delegate.ts:134  -> actually 'Source contains multiple documents' (openStudio)
+  :204 5-merge-key    claims hasMergeKey :147 -> actually the anchor/alias scan :143 (fixture uses &def/*def)
+  :214 5-anchor-alias claims :143 — with :143 disabled it still exits 2, via a CRASH:
+        "delegate failed: Cannot read properties of undefined (reading 'toLowerCase')"
+Consequences:
+  - delegate.ts:134-137 (multi-document) and delegate.ts:51-60/147-150 (hasMergeKey) are
+    UNREACHABLE by any test: openStudio parses first with the same library and rejects
+    every document-level malformation before the whitelist is consulted.
+  - the brief's own mutant 'Narrow the anchor/alias check back to alias-on-the-path' SURVIVES.
+Root cause is one helper: assertRefused takes no expected-message argument.
+
+== 4. FINDING B (blocking, class of 4) — one-sided assertions ==
+The suite pins the lower bound and never the upper. Enumerated by running the brief's
+entire Acceptance mutation list (46 mutants) mechanically; these four SURVIVED:
+  b5  narrow the anchor/alias check           -> see Finding A
+  b10 add an <option> not in availableModels  -> seatsview.test.ts:55 is [...].every(id => html.includes(id)):
+      'no fewer' only. The brief says 'exactly props.availableModels — no more, no fewer'.
+  b9  cache the listing forever (no refresh)  -> server.test.ts asserts 'two calls inside the TTL invoke
+      the listing once' and never that a call AFTER the TTL refreshes.
+  b11 resolved-model column with a class attr -> the guard is !/<td>gpt-5\.6-terra<\/td>/, bare-<td> only.
+      (a plain <td> IS killed; any classed cell is not.)
+
+== 5. FINDING C (blocking) — harnessVersions is unimplemented, untested, and mis-disclosed ==
+grep -rn harnessVersions apps packages adapters docs  ->  ZERO occurrences.
+The brief requires it in three places: Interfaces (models.json), behaviour 3 ('an entry whose
+harnessVersions differ from the live ones reads unverified, not its stale state'), and the
+mutation list. apps/server/src/store.ts readModelsRecord parses only models[] and discards
+harnessVersions; mergeModelsWithListing never consults it.
+Builder disclosure 2 says the 'attested' and 'live harness versions' clauses were 'deferred to
+the server'. Measured: the server implements NEITHER. The deferral was not honoured anywhere.
+(availableModels' actual floor is seated ∪ tier-holders — defensible, matching the brief's own
+ decree text at 'the union of D-023's tier holders and every model already seated'; but the
+ 'seated ∪ attested' floor of behaviour 3 is absent and behaviour 3's assertions were narrowed
+ to match the code rather than the spec.)
+
+== 6. FINDING D (advisory, measured) — the phantom opera_state row ==
+packages/commands/src/delegate.ts:199 emits workflow.actor_assigned with ITEM_ID = a SELLA id
+and ACTOR_ROLE = a MODEL name. Measured end to end on a temp copy of examples/sample-studio:
+  $ bisellium delegate --sella builder-1 --model gpt-5.6-sol --studio <tmp>
+  .bisellium/events.jsonl:
+    {"id":"cli:0","name":"workflow.actor_assigned","attrs":{"workflow.item.id":"builder-1",
+     "workflow.actor.role":"gpt-5.6-sol",...}}
+  after `query --from-index` built the index, SELECT * FROM opera_state:
+    {"id":"builder-1","state":"","collegium":null,"sella":"gpt-5.6-sol","probationes":"{}", ...}
+  Index.stats()      -> opera: 8   (seven real opera + the ghost)
+  Index.opera()      -> W-001..W-007, builder-1
+  Index.opera({state:""}) -> the ghost alone
+  Index.timeline("gpt-5.6-sol") -> returns the delegate event (a MODEL behaves as a sella)
+  Index.timeline("builder-1")   -> does NOT contain its own delegate event
+TWO consumers, not one: packages/core/src/index-db.ts:368 (SQLite) and packages/core/src/store.ts:309
+(replay()). The builder's disclosure named core/differ.ts, which PRODUCES actor_assigned; it does
+not consume it.
+Blast radius today: NOT user-visible. apps/server/src/store.ts's .api.opera re-reads opera/*.md
+(measured: GET /api/opera returned 7, not 8), and core/query.ts's statusAnswer is only reachable
+for a W-<id>. So this is silent corruption of the derived index with no shipped surface — but it
+breaks opera_state's one-row-per-opus invariant and nothing tests it.
+Severity: advisory, NOT blocking — shipped under the spec's literal instruction, and a new
+workflow.* name is a stop-and-ask (CLAUDE.md / brief 'Out of scope'). Lowest-cost close: drop the
+emit for the --sella shape (delegate.ts:198-200). The brief already exempts the --munus shape as
+'manifest configuration, not an item lifecycle transition' — a seat's model is the same thing.
+
+== 7. FINDING E (advisory) — behaviour 7's restore-failure case does not meet its stated setup ==
+delegate.test.ts:316-330 chmods the manifest 0444 BEFORE the first write; the brief says
+'made read-only AFTER the first write'. In the shipped scenario the first writeFileSync fails,
+so nothing is ever written and the exit-4 message ('may be left changed or partially written')
+describes a state the test never produces. The timeline/ chmod at :321 is vestigial there.
+The exit-4 BRANCH is genuinely covered (mutant 'swallow the restore failure' was KILLED).
+
+== 8. advisory count: 103 -> 104, explained (brief's Acceptance requires this) ==
+check -- studio --repo . : PASS, 0 blocking, 104 advisory (base e8317a8: 103).
+Set-diff of the two JSON finding lists, exactly one new entry, no entries lost:
+  probatio.certifies | opera/W-065.md | gate "spec" evidence has no identity (certifies)
+W-065's own spec gate (commit caf9557), identical in kind to the 60 pre-existing instances.
+Benign; no code change caused it. NOTE: the builder's report and the fact-check sheet both
+claimed 'the brief's exact 103-advisory baseline'. That is false; measured 104.
+check -- examples/sample-studio --repo . : PASS, 0 blocking, 26 advisory.
+
+== 9. mutation battery — the brief's Acceptance list, run in full ==
+Script kept at $TMPDIR/mut/mutate{,2,3}.py. Each mutant: patch by exact substring, run the
+named behaviour, require failure, `git checkout --` restore. Browser mutants rebuild dist.
+KILLED (39):
+  01 drop asPatron                          03 add delegate to main.ts force-patron
+  04 toString() without lineWidth:0         05 re-serialized plain object
+  06 drop CRLF restoration                  08 re-read the manifest before writing
+  09 swallow the restore failure            10 ignore --from
+  11 validate the tier after writing        12 branch on res.ok not WriteResult.kind
+  14 POST inside onDraft                    15 remove the repeat-click guard
+  16 clear the draft on a failed write      17 <select> -> free-text <input>
+  18 add a <datalist>                       19 drop the aria-label
+  21 omit an option that IS available       22 drop seated models
+  23 omit unavailable options               24 drop the vendorDiagnostic text
+  25 enable an unverified non-seated option 26 disable a seated option
+  28 throw instead of the floor             31 drop the TTL
+  32 empty the dropdown on listing failure  33 listing alone renders available
+  34 drop a withdrawn model silently        35b restore the resolved-model column (bare <td>)
+  36 drop the ' · <holder>' suffix          37 drop the tier legend
+  38 dangerouslySetInnerHTML                39 unresolved tier as an empty cell
+  40 silent fallback to the first tier      41 move the honesty line into the card
+  42 reword the honesty line by one word    43 restore route !== "officina"
+  44 hide link text below 900px             45a drop tiers from officina()
+  45b drop munera from officina()           46 delete the tiers: line from ADOPTION.md
+SURVIVED — real gaps (4): see Findings A and B (mutants 07, 20, 30, 35-with-class).
+SURVIVED — equivalent mutants, not test gaps (2):
+  02 drop withWriteLock from /api/delegate. runDelegate is fully SYNCHRONOUS, so two HTTP
+     handlers cannot interleave on one event loop. The brief's claim that removing the lock
+     'interleaves the console capture and fails this' is false for a sync runner. The lock is
+     still correct and consistent with the other six write routes; behaviour 8's lock
+     assertions simply cannot discriminate lock from no-lock.
+  13 make onDraft call onConfirm. onConfirm reads `pending` from a stale closure, so the
+     injected call is a no-op on the first change. Mutant 14 covers the same intent: KILLED.
+
+== 10. live negative + positive probes (serve on a temp copy of studio/) ==
+POST /api/delegate, no token          -> HTTP 401 {"error":"missing or invalid X-Bisellium-Token"}; manifest unchanged
+POST /api/delegate, wrong token       -> HTTP 401
+POST /api/delegate, valid token       -> {"ok":true,"exitCode":0,...}
+POST with a STALE --from              -> HTTP 200 {"ok":false,"exitCode":3,"output":"sella \"builder-a\": --from ... does not match ..."}
+manifest diff vs HEAD                 -> EXACTLY ONE LINE (the normalization claim holds as shipped)
+timeline/patron.jsonl                 -> exactly one line, role:"patron"
+
+== 11. check rule munus.tier, verified independently ==
+RULE_IDS registry: 'munus.tier' present (packages/cli/src/rules/ids.ts:70).
+Scratch officina with an undeclared tier + a tier missing its model:
+  munus.tier  bisellium.yml#review  tier "review" has no model
+  munus.tier  bisellium.yml#audit   munus "audit" references undeclared tier "nosuchtier"
+Silent on both shipped manifests (0 blocking in section 1).
+
+== 12. diff-scope rulings (the two files in neither Files owned nor the disclosures) ==
+packages/commands/src/writes.ts  -> FORCED BY SPEC, not scope creep. One word: `function` ->
+  `export function appendPatronTimeline`. The brief's Interfaces, step 6, instructs it verbatim:
+  'append one line to timeline/patron.jsonl via the EXISTING appendPatronTimeline (export it;
+  do not copy it)'. Undisclosed-but-forced: the spec text is its own disclosure.
+packages/cli/src/delegate.ts     -> NECESSARY WIRING, house pattern, undisclosed-AND-chosen.
+  A 6-line `export * from "@bisellium/commands/delegate.js"` shim, byte-for-byte the pattern of
+  packages/cli/src/{writes,usage,talk,pause}.ts (all four read identically). main.ts could have
+  imported the subpath directly, as serve.ts does, so this WAS a choice — but it is the choice
+  the house already made four times. Zero risk; should have been disclosed; not scope creep.
+No other file outside Files owned + disclosures. apps/{web,server}/package.json devDeps (yaml,
+@bisellium/commands) are forced by the new test files' imports; the brief's carve-out names
+apps/web/package.json's SCRIPTS, which are untouched.
+
+== 13. other disclosures, verified ==
+1 GET /api/models: accepted. Behaviour 9 names the route explicitly; Files owned naming only
+  POST /api/delegate is an under-specification. Route is listing-only + TTL + 3s timeout; no
+  probe turn anywhere in apps/ (verified: mutants 31/32/33/34 all KILLED).
+5 tick.test.ts fix (1cbf0c1): STRENGTHENED, not weakened. Old guard was
+  `patched !== raw && !patched.includes("model: claude-opus-5 }")` — true if ANY ONE of five
+  replacements landed. New guard counts `, harness: fake }` === 5, i.e. all five magistri
+  really are on the fake harness. My own sweep for the coupling class (grep for hardcoded
+  manifest substrings across packages/apps/adapters/scripts) found tick.test.ts only; the other
+  hits (init.ts, process/retro/instructions/pipeline/run/shim tests) build their own manifests.
+6 both fixes are tested, not narrated: the controlled-value snap-back by seats.spec.ts:55
+  (Cancel returns to the record's value) and :160 (a refusal retains the draft); the busy-guard
+  race by seats.spec.ts:103-110 (three native clicks in one synchronous pass behind a deferred
+  barrier). Mutant 15 (remove the guard) KILLED against a rebuilt dist.
+7 w025.css min-height -> height: no regression found. The only other height-dependent rule is
+  .inbox--split { height: 100% } (w025.css:492), which previously resolved against an
+  INDEFINITE parent and now resolves correctly — the change improves Inbox rather than
+  regressing it, and test:e2e's Inbox specs pass 5/5. Officina has no height dependency.
+  Minor: the rail width is duplicated in four places (.shell grid-template-columns plus three
+  .seats__confirm-bar left: 220px/72px/0).
+8 devDeps + the dropped Sidebar css import: sound. App.tsx statically imports Officina, which
+  pulls FastiStrip/GateLadder/BurnBar, each of which imports w025.css — so the one bundle always
+  carries it (confirmed by layout.spec.ts measuring the computed 220px/72px rail). The ponytail
+  comment names the dependency.
+Minor: SeatsView.tsx:68 passes `selected` on an <option> inside a value-controlled <select>.
+  Redundant (React SSR already emits selected= for the matching option) — measured: no React
+  warning in the browser console. Behaviour 11's `ghostOption.includes("selected")` therefore
+  passes from React's own rendering, not from the prop.
+
+== 14. verdict ==
+FAIL, round 1. Gates are green and the feature works end to end; the failure is EVIDENCE.
+Findings A, B and C are blocking and all three lie inside W-065's own files:
+  A behaviour 5's refusals pass for the wrong reason (5 fixtures), leaving two shipped
+    code paths unreachable by any test. One fix: give assertRefused an expected-message arg.
+  B four of the brief's own mutants survive, one shape: assertions pin only the lower bound.
+  C behaviour 3's harnessVersions clause is unimplemented, unasserted and mis-disclosed as
+    'deferred to the server' when the server does not implement it either.
+Findings D and E are advisory and should be filed, not fixed under this gate — D needs a
+stop-and-ask on the workflow.* name (or the one-line drop of the emit), E is a limit of a
+single writeFileSync with no seam.

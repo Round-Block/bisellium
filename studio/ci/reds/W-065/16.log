@@ -1,0 +1,32 @@
+# behaviour: 16
+# command: node --import tsx packages/cli/src/check.test.ts .
+# exit: 1
+# at: 2026-09-24T15:13:39.096Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+PASS  setup: W-001 actually patched                              
+PASS  done opus: no probatio.certifies.mismatch                  
+PASS  done opus: no probatio.certifies.stale                     
+PASS  done opus: no probatio.certifies.dirty                     
+PASS  done opus: no probatio.evidence.tree                       
+PASS  active opus: probatio.certifies.mismatch fires             probatio.certifies.stale, probatio.certifies.dirty, probatio.certifies.mismatch
+PASS  active opus: probatio.certifies.dirty fires                probatio.certifies.stale, probatio.certifies.dirty, probatio.certifies.mismatch
+PASS  halted opus: no probatio.certifies.stale                   traditio.stage
+PASS  source_excludes: non-list value blocks manifest.shape      manifest.shape, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  setup: docs/ is nonempty enough to move the hash           7ba7abd129bb3352a8be46dd8812fd235afabef8 vs 2c0c83515ccd61d90483daeb58d05cb50eb69d0b
+PASS  no source_excludes: certificate matches the baseline hash, not stale probatio.evidence.tree
+PASS  source_excludes: [docs/] changes the comparison hash, certificate now stale probatio.certifies.stale, probatio.evidence.tree
+PASS  integration: non-mapping value blocks manifest.shape       manifest.shape, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration.strategy: invalid value blocks manifest.shape  manifest.shape, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration.push: non-boolean value blocks manifest.shape  manifest.shape, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration.pr.reviewer: unknown sella blocks integration.pr.reviewer integration.pr.reviewer, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration: a well-formed block adds no manifest.shape or integration.* blocking findings 
+FAIL  munus.tier: a munus naming an undeclared tier blocks, naming both ids 
+FAIL  munus.tier: a duplicate tiers[].id blocks (manifest.unique) 
+FAIL  munus.tier: a duplicate munera[].id blocks (manifest.unique) 
+FAIL  munus.tier: a tier row missing its required model string blocks 
+FAIL  munus.tier: a munus row missing its required tier string blocks 
+FAIL  munus.tier: an id failing manifest.id.format blocks        
+PASS  munus.tier: a manifest with neither key produces no finding probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+FAIL  munus.tier is in the rule-id registry                      

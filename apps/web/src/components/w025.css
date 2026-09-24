@@ -1,8 +1,9 @@
 /**
  * apps/web/src/components/w025.css — styles for W-025 components
- * (Nav, FastiStrip, GateLadder, BurnBar, Officina) plus W-026
+ * (FastiStrip, GateLadder, BurnBar, Officina) plus W-026
  * refinements (panel differentiation, data rows, Inbox structure).
- * Every gap and radius is from DIRECTION.md §3.
+ * Every gap and radius is from DIRECTION.md §3. Nav.tsx (the pre-Sidebar
+ * top bar) is dead since W-025; deleted in W-065.
  */
 
 /* ── Shell ────────────────────────────────────────────────────────── */
@@ -10,25 +11,13 @@
 .shell {
   display: grid;
   grid-template-columns: 220px 1fr;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .shell__main {
   min-width: 0;
+  height: 100%;
   overflow-y: auto;
-}
-
-@media (max-width: 899px) {
-  .shell { grid-template-columns: 48px 1fr; }
-  .sidebar__wordmark { font-size: 0; }
-  .sidebar__wordmark::first-letter { font-size: 17px; }
-  .sidebar__link-text { display: none; }
-}
-
-@media (max-width: 599px) {
-  .shell { grid-template-columns: 1fr; grid-template-rows: 48px 1fr; }
-  .sidebar { flex-direction: row; border-right: none; border-bottom: 1px solid var(--rule); padding: 0 16px; }
-  .sidebar__bottom { display: none; }
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────── */
@@ -73,6 +62,11 @@
   background: var(--rule);
 }
 
+.sidebar__link--disabled {
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
 .sidebar__badge {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -94,6 +88,24 @@
   font-size: 11px;
   line-height: 14px;
   color: var(--ink-3);
+}
+
+/* These two breakpoints must stay AFTER every base `.sidebar*` rule above —
+ * equal specificity means source order decides, and the 599px block's three
+ * declarations were dead for exactly that reason before W-065 (ui-lead pass
+ * finding 8). */
+@media (max-width: 899px) {
+  .shell { grid-template-columns: 72px 1fr; }
+  .sidebar__wordmark { font-size: 0; }
+  .sidebar__wordmark::first-letter { font-size: 17px; }
+  .sidebar__link { flex-direction: column; gap: 2px; text-align: center; }
+  .sidebar__link-text { font-size: 11px; line-height: 13px; }
+}
+
+@media (max-width: 599px) {
+  .shell { grid-template-columns: 1fr; grid-template-rows: 48px 1fr; }
+  .sidebar { flex-direction: row; border-right: none; border-bottom: 1px solid var(--rule); padding: 0 16px; }
+  .sidebar__bottom { display: none; }
 }
 
 /* ── Fasti strip ──────────────────────────────────────────────────── */
@@ -695,4 +707,172 @@
   font-size: 15px;
   line-height: 22px;
   color: var(--ink-3);
+}
+
+/* ── Seats (W-065) ────────────────────────────────────────────────── */
+
+.seats {
+  padding: 24px;
+  padding-bottom: 96px; /* reserves space for the sticky confirm bar below */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.seats__heading {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 22px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.seats__honesty {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+  margin: 0;
+}
+
+.seats__card {
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.seats__card-heading {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+  margin: 0;
+}
+
+.seats__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.seats__row {
+  height: 40px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.seats__row td {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink);
+  padding: 4px 8px 4px 0;
+}
+
+.seats__munus-id,
+.seats__seat-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--verdigris);
+}
+
+.seats__seat-kind {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.seats__row select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 4px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.seats__row select:focus {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.seats__tier-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.seats__tier-legend-item {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.seats__confirm-bar {
+  position: fixed;
+  left: 220px;
+  right: 0;
+  bottom: 0;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #ffffff;
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -2px 8px rgba(22, 33, 30, 0.06);
+}
+
+@media (max-width: 899px) {
+  .seats__confirm-bar { left: 72px; }
+}
+
+@media (max-width: 599px) {
+  .seats__confirm-bar { left: 0; flex-wrap: wrap; }
+}
+
+.seats__confirm-from,
+.seats__confirm-to {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.seats__confirm-destination {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.seats__confirm-error {
+  color: var(--bad);
+  font-size: 12px;
+}
+
+.seats__confirm-btn,
+.seats__cancel-btn {
+  height: 28px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 12px;
+  border-radius: 2px;
+  border: 1px solid var(--rule);
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.seats__confirm-btn:hover,
+.seats__cancel-btn:hover {
+  background: var(--wash);
+}
+
+.seats__confirm-btn:disabled,
+.seats__cancel-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }

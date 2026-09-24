@@ -197,6 +197,18 @@ collegia:
   - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md, autonomy: L1 }
 sellae:
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5, harness: claude-code }
+tiers:                             # optional (D-023 §2); rung id -> current holder model
+  - { id: fast,       model: gpt-5.6-luna }
+  - { id: mid,        model: gpt-5.6-terra }
+  - { id: high,       model: gpt-5.6-sol }
+  - { id: escalation, model: gpt-6-astra }
+  - { id: build,      model: claude-sonnet-5 }
+  - { id: review,     model: claude-opus-5 }
+munera:                            # optional (D-023 §2); task-type id -> tier id
+  - { id: aggregation, tier: fast }
+  - { id: audit,       tier: mid }
+  - { id: build,       tier: build }
+  - { id: review,      tier: review }
 probationes:
   - { id: tests,  name: Tests,        kind: automated, command: "npm test" }
   - { id: spec,   name: Spec,         kind: agent, since: 2026-09-18T19:00:00Z }
@@ -223,6 +235,15 @@ digest is named after one), so `check` blocks anything that isn't safe to
 join into a path (`manifest.id.format`). Every magister and fallback must be
 a declared sella. A lex, if declared, must exist and should contain "Decides
 alone", "Digests" and "Asks" sections.
+
+`tiers`/`munera` (D-023 §2, W-065) are both optional and independent of each
+other's presence: a manifest declaring neither parses, checks and serves
+exactly as before. `munera[].tier` must name a declared `tiers[].id`
+(`munus.tier`); both keys' ids go through the same `manifest.id.format`
+validation every other id does, and a duplicate id in either list blocks
+(`manifest.unique`). `bisellium delegate` is the only writer of either key's
+values; the Web console renders both — recorded and attributed, per D-023 —
+but nothing in this repo dispatches on them yet.
 
 `collegia[].autonomy` (`L0`–`L3`, dossier §10) defaults to `L1` when absent;
 `check` blocks any other value (`collegium.autonomy`). `bisellium tick`'s
@@ -719,7 +740,8 @@ only, ingests one snapshot at start, and (unless `--once`) polls again every
 directly (see the file header comment on `apps/server/src/store.ts`). Reads:
 
 ```
-GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit
+GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?
+GET  /api/models                   D-023's model rows: the models.json record, merged with a live vendor listing (W-065)
 GET  /api/opera?state=&collegium=  every opus, filterable
 GET  /api/opus/:id                 one opus's front matter + body + probationes + traditio
 GET  /api/inbox                    needs-you: pending human gates + petitiones needing a reply
@@ -745,6 +767,7 @@ POST /api/handoff      {opus, sella, next, stage?, blockedOn?}
 POST /api/talk         {sella, message, harness?}
 POST /api/pause        {reason?}
 POST /api/resume       {}
+POST /api/delegate     {sella, model, from?} or {munus, tier, from?}
 ```
 
 Every write route serializes through one per-server async lock, so two

@@ -16,8 +16,16 @@ import { join, resolve } from "node:path";
 import { USAGE } from "./usage.js";
 
 const repo = resolve(process.argv[2] ?? ".");
+// W-065 behaviour 17: this file gained a selector because it had none — a
+// red recorded against it before had no way to isolate the new delegate
+// lines from the ~33 pre-existing ones. Every check here is this file's own
+// single concern (does every *_USAGE constant, delegate's included, appear
+// in the banner) so the whole file IS behaviour 17's territory; `only`
+// simply lets `--behaviour 17` be named explicitly rather than implied.
+const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
+  if (only !== undefined && only !== 17) return;
   console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(70)} ${detail}`);
   if (!ok) failed++;
 };
@@ -86,6 +94,19 @@ for (const file of files) {
     }
   }
 }
-check("scanned every known usage constant", seen === 33, `${seen}`);
+check("scanned every known usage constant", seen === 35, `${seen}`);
+
+// W-065 behaviour 17: the contract is documented — this opus's half of it.
+// Asserts nothing about the origin tuple, the token-paste flow or the proxy
+// statement — those are W-067's paragraphs and W-067's behaviour.
+{
+  const adoption = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
+  const biselliumYmlSection = adoption.slice(adoption.indexOf("\n## bisellium.yml"), adoption.indexOf("\n## ", adoption.indexOf("\n## bisellium.yml") + 1));
+  check("ADOPTION.md §bisellium.yml contains tiers:", biselliumYmlSection.includes("tiers:"));
+  check("ADOPTION.md §bisellium.yml contains munera:", biselliumYmlSection.includes("munera:"));
+
+  const runningServeSection = adoption.slice(adoption.indexOf("\n## Running serve"), adoption.indexOf("\n## ", adoption.indexOf("\n## Running serve") + 1));
+  check("ADOPTION.md §Running serve's write-route list contains POST /api/delegate", runningServeSection.includes("POST /api/delegate"));
+}
 
 process.exit(failed ? 1 : 0);

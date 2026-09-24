@@ -1,0 +1,16 @@
+# behaviour: 7
+# command: node --import tsx packages/commands/src/delegate.test.ts . 7
+# exit: 1
+# at: 2026-09-24T14:45:28.481Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+FAIL  attribution: exits 0 under BISELLIUM_ROLE=patron                               status=2 stderr=
+FAIL  attribution: exactly one timeline line                                         0
+FAIL  attribution: role is "patron"                                                  
+FAIL  attribution: names the target/from/to                                          
+FAIL  attribution: exits 0 under BISELLIUM_ROLE=producer (main.ts does not force patron) status=2 stderr=
+FAIL  attribution: acting role "producer" is recorded faithfully, not laundered to patron 
+PASS  rollback: timeline/ unwritable -> exit 2                                       2
+PASS  rollback: manifest byte-identical after a failed write                         
+FAIL  rollback failure: a DIFFERENT exit code (4)                                    2
