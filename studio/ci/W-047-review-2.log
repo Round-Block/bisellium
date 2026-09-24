@@ -1,0 +1,353 @@
+# W-047 review, round 2 — censor (qa-lead, claude-fable-5)
+# opus: W-047 "safeItemPath has a contract test and every call site a traversal case"
+# branch: opus/W-047 @ 71dd3bb · fork point 2484c8d · round-1 verdict 7b82236
+# worktree: /tmp/claude-1000/w047-build · mutation scratch in-place, restored after each
+# VERDICT: PASS (0 blocking findings; F-1, F-2, F-3 closed, F-4 closed for this round; 3 observations)
+
+## 0. Trap check and preconditions
+
+  git status --porcelain            -> empty (before every probe and at the end)
+  git rev-parse HEAD                -> 71dd3bbcc24786af735eb613fbcfa72b6fac5f44
+  git branch --show-current         -> opus/W-047
+  readlink -f node_modules/@bisellium/shim
+    -> /tmp/claude-1000/w047-build/packages/shim
+  Resolves INSIDE the worktree. Every run below tested the branch's own packages/.
+
+  Round-2 commits on top of my round-1 verdict:
+    43399da  studio/briefs/W-047.md            brief amendment 2 (architect + censor)
+    93f6663  containment.test.ts, 04.log       F-1
+    0cf9676  writes.test.ts, mutants.mjs, 01.log  F-2/F-3
+    3e16cce  studio/opera/W-047.md             traditio
+    71dd3bb  studio/ci/W-047-*-a970dbf2.log    verify certificates
+
+## 1. Gates, re-run by me in the worktree at 71dd3bb
+
+  npm test                                                 exit 0  (0 lines matching ^FAIL)
+  npm run -s typecheck                                     exit 0
+  node --import tsx packages/cli/src/main.ts check studio --repo .
+                                                           exit 0  PASS — 0 blocking, 93 advisory
+  node --import tsx packages/cli/src/main.ts verify W-047 --studio studio --repo .
+                                                           tests/lint/types: passed, at tree a970dbf2
+    As in round 1 this rewrote the tests certificate with timing noise only; restored
+    with `git checkout --`, porcelain empty after. Independent confirmation that the
+    round-2 certificates name the round-2 source tree: verify recomputed a970dbf2 and
+    did not rename the files.
+
+  node scripts/safe-item-path-mutants.mjs all              exit 1
+    last line: `all 33 mutants matched (28 dead, 5 alive)`
+    28 `-> matched (dead)`, 5 `-> matched (alive)`; porcelain empty immediately after,
+    so all 33 restores held.
+
+  check --json, W-047's own findings: `blocks: 0`; no `opus.red_evidence` and no
+  `opus.red_content`. Three advisories name opera/W-047.md: `probatio.certifies`
+  twice (spec and review gates cite a document, not a tree hash — inherent, 51+
+  instances officina-wide) and `process.review_tier` (see O3).
+
+## 2. F-1 — CLOSED. The bite checks, both spellings, verbatim
+
+Driver: $TMPDIR/w047-censor/bite.mjs, unchanged from round 1 — same scratch edits,
+same restore-in-a-`finally`, same porcelain read after each case. Verbatim output:
+
+  === a: safeItemPath call added inside an existing function (runBudget)
+  expected: inventory A FAILS | exit=1 | FAIL lines=3 | tree restored: true
+    FAIL  inventory A: pinned list length matches the scan's own count           pinned=14 scan=15
+    FAIL  inventory A: every safeItemPath call site is pinned, none missing      a containment call site changed …
+    FAIL  inventory A: scan order matches the pinned order exactly               {"scanA":[…
+
+  === b: safeItemPath call in a NEW file under packages/
+  expected: inventory A FAILS | exit=1 | FAIL lines=3 | tree restored: true
+    FAIL  inventory A: pinned list length matches the scan's own count           pinned=14 scan=15
+    FAIL  inventory A: every safeItemPath call site is pinned, none missing      a containment call site changed …
+    FAIL  inventory A: scan order matches the pinned order exactly               {"scanA":["packages/cli/src/__censor_new.ts:censorNew:opera#1", …
+
+  === c: existing import aliased: import { safeItemPath as sp }
+  expected: NO CHANGE (green) | exit=0 | FAIL lines=0 | tree restored: true
+
+  === d: an existing call split across lines (runGreenlight)
+  expected: NO CHANGE (green) | exit=0 | FAIL lines=0 | tree restored: true
+
+  === e: raw join(x, "opera", `${id}.md`) added — brief's literal shape
+  expected: inventory B FAILS | exit=1 | FAIL lines=3 | tree restored: true
+    FAIL  inventory B: pinned list length matches the scan's own count           pinned=29 scan=30
+    FAIL  inventory B: every raw id-to-path join is pinned, none missing         a containment call site changed …
+    FAIL  inventory B: scan order matches the pinned order exactly               {"scanB":["apps/server/src/store.ts:opus#1", …
+
+  === e2: raw join(x, "opera", `${opusId}.md`) — identifier ends in Id
+  expected: inventory B FAILS | exit=1 | FAIL lines=3 | tree restored: true
+    FAIL  inventory B: pinned list length matches the scan's own count           pinned=29 scan=30
+    FAIL  inventory B: every raw id-to-path join is pinned, none missing         a containment call site changed …
+    FAIL  inventory B: scan order matches the pinned order exactly               {"scanB":["apps/server/src/store.ts:opus#1", …
+
+  FINAL porcelain: ""
+
+  SIX of six as the amended Acceptance requires. Round 1's failing case — (e) with
+  the identifier spelled `id` — now bites identically to (e2). I measured both
+  rather than taking the builder's report, which the coordinator flagged as garbled;
+  the exit codes above are mine.
+
+  The filter is gone at source, not merely compensated for. Grepping
+  packages/cli/src/containment.test.ts for every `endsWith`/`startsWith`/`includes`
+  in the scan path leaves only the brief's own rules: the source-set exclusions at
+  :56-58 (`node_modules`, `dist`, non-`.ts`, `.test.ts`, `.d.ts`) and the shape test
+  at :203 (`lastSpan.literal.text.endsWith(".md")`). No filter on how the
+  interpolated expression is spelled survives anywhere.
+
+## 3. The 29-entry pin — confirmed against my own re-derivation, not the test's
+
+I did not read the test's scan and agree with it. I wrote an independent derivation
+($TMPDIR/w047-censor/ … run as __censor_r2.mjs from the worktree root for typescript
+resolution, removed immediately; it reads source and writes nothing): the brief's
+rule, my own enclosing-function walk, my own `#nth` counting, my own source-set
+traversal. Then I compared key-for-key against PINNED_B parsed out of the committed
+test source.
+
+  my independent derivation: 29 keys
+  committed PINNED_B:        29 entries
+  ORDER-EXACT MATCH: true
+  only in my scan: []
+  only in the pin: []
+
+  round-1's 12 keys all still pinned, #nth unchanged: true
+  newly pinned this round: 17
+
+  DISPOSITION TALLY: {"guarded":3,"bypass":9,"derived":15,"helper":1,"bypass-via-verify":1}
+
+  CONTINUITY WITH MY ROUND-1 FINDING. The 17 newly pinned entries are exactly the
+  17 I enumerated in W-047-review-1.log §3 as dropped by the filter — same files,
+  same lines, one for one:
+    apps/server/src/store.ts:224          -> apps/server/src/store.ts:opus#1              guarded
+    packages/cli/src/init.ts:108          -> packages/cli/src/init.ts:initStudio#1        derived
+    packages/cli/src/new.ts:68            -> packages/cli/src/new.ts:newItem#1            derived
+    packages/cli/src/new.ts:179           -> packages/cli/src/new.ts:runNew#1             derived
+    packages/cli/src/new.ts:194           -> packages/cli/src/new.ts:runNew#2             derived
+    packages/cli/src/new.ts:196           -> packages/cli/src/new.ts:runNew#3             derived
+    packages/cli/src/retro.ts:395         -> packages/cli/src/retro.ts:draftRetro#1       derived
+    packages/cli/src/retro.ts:431         -> packages/cli/src/retro.ts:draftRetro#2       derived
+    packages/cli/src/retro.ts:534         -> packages/cli/src/retro.ts:draftRetro#3       derived
+    packages/cli/src/tick.ts:246          -> packages/cli/src/tick.ts:writeDailyActum#1   BYPASS
+    packages/commands/src/context.ts:187  -> …:buildContextFor#1                          derived
+    packages/commands/src/talk.ts:187     -> …:openPetitio#1                              derived
+    packages/commands/src/talk.ts:206     -> …:writeActum#1                               derived
+    packages/commands/src/talk.ts:207     -> …:writeActum#2                               derived
+    packages/commands/src/writes.ts:107   -> …:safeItemPath#1                             HELPER
+    packages/commands/src/writes.ts:679   -> …:runAnswer#1                                derived
+    packages/commands/src/writes.ts:680   -> …:runAnswer#2                                derived
+  12 + 17 = 29. Nothing was dropped to make the arithmetic work, and nothing was
+  invented: the pin is the union of round 1's list and round 1's finding.
+
+  THE NINTH BYPASS IS PINNED AS SUCH.
+    packages/cli/src/tick.ts:writeDailyActum#1   disposition: bypass
+    why: "sella id read from bisellium.yml, unguarded at the join, and it writes
+          acta/<date>-<sella>-daily.md. Mitigation, not a guard: path.id.unvalidated
+          blocks a non-id sella at check time. Newly surfaced — see Intent"
+  Nine `bypass`-class entries in total (eight `bypass` + one `bypass-via-verify`),
+  matching Intent's amended count of nine, and W-059's scope was widened to match
+  (brief Out of scope, "route … and `tick`'s sella … through the shared helper").
+
+  ATTACKING THE DISPOSITION COLUMN (the brief's own red-team question). I did not
+  audit all 29; I read the three where a wrong `guarded`/`derived` would hide a live
+  bypass, and the `why` on each cites the right place:
+    apps/server/src/store.ts:opus#1 — `guarded`. `if (!safeId(id)) return undefined;`
+      is literally the line above the join. HTTP-reachable and correctly guarded; the
+      `why`'s cited `:223` is exact.
+    packages/commands/src/context.ts:buildContextFor#1 — `derived`. The template is
+      the first argument of `dataBlock(…, d.body.trim())` — a label printed beside a
+      body already in memory. It reaches no filesystem call. `why` accurate.
+    packages/cli/src/retro.ts:draftRetro#3 — `derived`, and it DOES write
+      (`writeFileSync(join(studioRoot, actaPath), …)`), so this one matters. `cascade`
+      passes `Number(cascadeRaw)` + `Number.isFinite` at :565-567 as the `why` claims;
+      I checked the escape shapes myself — a finite Number stringifies to digits, a
+      sign, a decimal point or an exponent, none of which is `/`, `\` or `..`. Holds.
+
+## 4. F-2 — CLOSED, and closed non-vacuously
+
+  packages/cli/src/writes.test.ts now asserts
+    r.error.includes(`"${id}"`)
+  against the helper's own message shape `invalid id "<id>"`.
+
+  A reworded tautology would still be a tautology, so I probed falsifiability rather
+  than reading the diff. $TMPDIR/w047-censor/f2probe.mjs scratch-mutates
+  packages/commands/src/writes.ts's refusal to drop the quotes
+  (`invalid id "${id}"` -> `invalid id ${id}`), runs behaviour 1, restores in a
+  `finally` with a byte-equality re-read:
+
+    unquoted-id mutant: exit=1, FAIL lines=10
+      FAIL  1. safeItemPath(""): error names the id                    invalid id
+      FAIL  1. safeItemPath("."): error names the id                   invalid id .
+      FAIL  1. safeItemPath(".."): error names the id                  invalid id ..
+      FAIL  1. safeItemPath("../W-001"): error names the id            invalid id ../W-001
+      FAIL  1. safeItemPath("../../etc/passwd"): error names the id    invalid id ../../etc/passwd
+      FAIL  1. safeItemPath("/etc/passwd"): error names the id         invalid id /etc/passwd
+      FAIL  1. safeItemPath("a/b"): error names the id                 invalid id a/b
+      FAIL  1. safeItemPath("opera/../../x"): error names the id       invalid id opera/../../x
+      FAIL  1. safeItemPath("..\\..\\win.ini"): error names the id     invalid id ..\..\win.ini
+      FAIL  1. safeItemPath("C:\\Windows\\win.ini"): error names the id invalid id C:\Windows\win.ini
+    the "" row's "error names the id" assertion FAILED: true
+    porcelain: ""
+
+  All ten refused rows now fail, the `""` row included. Round 1's
+  `r.error.includes(id)` would have passed every one of them — it could not fail for
+  any implementation. The assertion has gone from unfalsifiable to falsifiable, which
+  is what F-2 asked for, and the fix improved nine rows I had not complained about.
+
+## 5. F-3 — CLOSED
+
+  scripts/safe-item-path-mutants.mjs now carries per-mutant kills:
+    mA `1. safeItemPath(".")`, `1. safeItemPath("..")`
+    mB `1. safeItemPath("../W-001")`
+    mC `1. safeItemPath("/etc/passwd")`
+
+  Pairwise disjoint as sets. I also checked the substring-collision question the
+  brief's red-team section raises, since these labels nest by construction:
+    `1. safeItemPath(".")`  is NOT a substring of `1. safeItemPath("..")`
+      — the needle needs `("."` followed by `)`; the haystack has `("..")`.
+    `1. safeItemPath("..")` is NOT a substring of `1. safeItemPath("../W-001")`
+      or of `1. safeItemPath("../../etc/passwd")` — `/` follows, not `"`.
+    `1. safeItemPath("../W-001")` is a prefix of nothing else in the table.
+  The prefixing design survives contact.
+
+  DISCRIMINATION IS REAL, not just distinct spelling. From the committed 01.log,
+  mA's complete FAIL set is
+    "", ".", "..", "..\\..\\win.ini", "C:\\Windows\\win.ini"   (5 lines)
+  It contains neither `../W-001` (mB's label) nor `/etc/passwd` (mC's label) — 0
+  occurrences of each. So mB's and mC's labels are assertions mA demonstrably cannot
+  produce, and the round-1 situation (one label crediting three mutants) is gone.
+  The rationale committed alongside the constants is correct on the mechanism: mA
+  leaves the dirname check standing, so it is observable only on rows that introduce
+  no separator; mB is the only contract mutant that removes the dirname check too.
+
+## 6. RULING — the two re-recorded reds: HONEST, and better-governed than round 1
+
+  01.log and 04.log were overwritten; 02.log and 03.log were not.
+
+  I MEASURED THE "UNCHANGED" CLAIM RATHER THAN ACCEPTING IT. I ran all four groups
+  fresh and diffed each committed red's body (`sed '1,/^$/d'`) against its run:
+    02 writes    BYTE-IDENTICAL to a fresh run
+    03 lifecycle BYTE-IDENTICAL to a fresh run
+    04 census    BYTE-IDENTICAL to a fresh run
+    01 contract  44 differing lines — ALL of them the random `mkdtemp` suffix in the
+                 FAIL details. Normalizing `bisellium-safeitempath-[A-Za-z0-9]+` makes
+                 01 byte-identical too, with no other difference anywhere.
+  So the builder's claim about 02/03 is exactly true, and both re-recorded logs
+  reproduce on demand.
+
+  WHAT ACTUALLY CHANGED IN EACH:
+    01.log — the three `kills[…]: seen` lines, the timestamp, the tree hash, and the
+      random temp paths. FAIL-counts (5 / 26 / 10) and every FAIL line are unchanged;
+      mD still `exit=0 FAIL-count=0 -> matched (alive)`. The mutants behaved
+      identically; only what the harness asserts about them was tightened.
+    04.log — `pinned=12 scan=13` -> `pinned=29 scan=30` and the two list dumps, inside
+      mF alone. mE's and mG's stanzas are untouched, mG still alive.
+  Neither re-record moved a verdict. Both are the mechanical consequence of the fix
+  the architect signed.
+
+  THIS IS NOT THE ROUND-1 SITUATION, AND IT IS BETTER GOVERNED. Round 1 I ruled a
+  batch re-record honest on the strength of the reason being committed in the harness
+  and the logs not being scrubbed. Round 2 clears a higher bar on every axis:
+    - AUTHORIZED IN ADVANCE, IN THE SPEC. Brief amendment 2 adds an Acceptance clause
+      naming these two logs and only these two: "Re-recorded in the fix round: 04.log
+      (the census changed and mF's probe is renamed) and 01.log (the contract group's
+      kills changed, and the "" row's assertion changed) … that is correct here and
+      only here: the test it certifies changed in the same round. 02.log and 03.log
+      are not touched unless their output changes."
+    - THE UNDERLYING TESTS GENUINELY CHANGED. A red certifies that a mutation kills
+      named assertions. Behaviour 1's assertion set and behaviour 4's census both
+      changed this round, so the old logs certified tests that no longer exist. A
+      stale red here would be the defect; re-recording is the only honest option.
+    - THE RESTRAINT IS DEMONSTRATED, NOT ASSERTED. 02 and 03 were left alone and I
+      confirmed byte-for-byte that leaving them alone was correct.
+    - DURABLE DISCLOSURE, which is F-4's remedy: both commit messages name the
+      re-record and its justification, and the traditio (3e16cce) says "reds 01 and 04
+      re-recorded, 02/03 confirmed unchanged". Round 1's re-record reached me only
+      through an agent message; this one is in the officina.
+  RULING: honest correction, correctly scoped, and correctly recorded. F-4's pattern
+  is closed for this round.
+
+  Headers and protocol re-checked on all four: `# exit: 1`, `# sella: builder-b`, a
+  `# command:` naming a committed `scripts/` path, and a `baseline: 0 FAIL` line
+  before the first mutant in each. All six pairwise body diffs non-empty.
+  01.log's and 04.log's `# tree: dirty:7a02a35c…` is consistent with the account:
+  7a02a35c is round 1's certified source tree, and `dirty:` records the round-2 edits
+  not yet committed at 08:19 — the reds were taken before their own commits, not
+  reconstructed after.
+
+## 7. Scope, and what did not change
+
+  git diff --name-only 7b82236 HEAD
+    containment.test.ts, writes.test.ts, scripts/safe-item-path-mutants.mjs,
+    studio/briefs/W-047.md, the three a970dbf2 certificates, 01.log, 04.log,
+    studio/opera/W-047.md
+  git diff --name-only <fork> HEAD -- packages apps adapters
+    packages/cli/src/containment.test.ts
+    packages/cli/src/lifecycle.test.ts
+    packages/cli/src/writes.test.ts
+  Three test files and nothing else. The opus is still tests-only after two rounds:
+  no runtime source, nothing under packages/commands/src, nothing in apps/ or
+  adapters/. The nine bypasses — including the newly surfaced tick.ts one — are
+  pinned and filed, not fixed here, exactly as Out of scope requires.
+
+  Inventory A is unchanged this round and still holds: bite checks (a) and (b) fail
+  it, (c) and (d) leave it green.
+
+## 8. Observations (none blocking)
+
+  O1  The pinned `why` is never asserted. All 29 entries carry a non-empty `why`
+      (I checked), but containment.test.ts asserts only that each `disposition` is a
+      recognized value; a future edit could blank a `why` and stay green. The `why`
+      is the part a human reads when the census fires, so it is worth one line —
+      `check("inventory B: every entry carries a why", PINNED_B.every(p => p.why.trim()))`.
+      Not raised as a finding: the brief specifies the entry shape and the table, both
+      of which are honoured, and no unasserted field is currently wrong.
+
+  O2  The brief's own closing note is the right one to carry forward: "the proxy
+      remains a proxy: the next miss will be a shape, not a spelling." Inventory B
+      still cannot see a raw join built by string concatenation
+      (`dir + "/" + id + ".md"`), by an array `.join()`, by `join(dir, id + ".md")`
+      with no template at all, or by an id handed to a helper that appends the
+      extension. These are declared limits, not defects — they are named in the brief
+      and in the For-Sol section. Recorded here so the W-059 reviewer starts from the
+      declared boundary rather than re-deriving it.
+
+  O3  check advises `process.review_tier — review sella "qa-lead" ran on
+      claude-fable-5, not an opus-tier model`. That is a finding about me, not about
+      W-047. Noted so nobody reads it as a defect in the opus.
+
+## 9. Mutation scratch
+
+  Every scratch edit was applied and restored in a `finally` by
+  $TMPDIR/w047-censor/bite.mjs and $TMPDIR/w047-censor/f2probe.mjs, the latter with a
+  byte-equality re-read after restore; created files were deleted in the same block.
+  My independent inventory-B derivation read source only. `git status --porcelain`
+  was empty after every case, after the `all` run, after the four fresh group runs,
+  after the verify-certificate restore, and at the close of this review.
+
+## 10. Verdict
+
+  PASS, round 2. All three round-1 findings are closed, and each was closed at the
+  root rather than at the symptom:
+
+    F-1  the spelling filter is deleted, not worked around; inventory B scans the
+         shape the brief specifies; the pin widened from 12 to 29 with a disposition
+         and a why for each; both spellings of acceptance check (e) now bite; mF's
+         probe no longer reads as spelled to fit a scan; a ninth bypass the filter had
+         been hiding (tick.ts:writeDailyActum) was surfaced, pinned `bypass`, and
+         added to W-059's scope. My own independent re-derivation agrees with the pin
+         entry for entry, in order, with nothing added or dropped.
+    F-2  the refused-row assertion is falsifiable on all ten rows, proved by a mutant
+         round 1's form could not have detected.
+    F-3  mA/mB/mC carry disjoint, non-colliding, mutant-specific kills, and mA's
+         recorded FAIL set demonstrably excludes mB's and mC's labels.
+    F-4  the pattern is closed for this round: the deviation is authorized in the
+         spec in advance, and disclosed in two commit messages and the traditio.
+
+  The round-2 remedy also did the thing that most distinguishes a real fix from a
+  patched symptom: widening the scan surfaced a bypass nobody had counted, and the
+  builder reported it up rather than quietly pinning it — brief amendment 2 carries it
+  into Intent, into the count, and into the follow-up opus.
+
+  Everything I passed in round 1 still holds at 71dd3bb: four gates green, 33 mutants
+  matching, the contract table's coverage, the collision-sentinel recipe at all nine
+  rows, inventory A's alias- and reformat-proofing, and the harness's baseline,
+  kills-AND and restore discipline.
+
+  No conditions. W-047 is done as specified.
