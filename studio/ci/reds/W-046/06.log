@@ -1,0 +1,30 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T09:43:24.641Z
+# sella: builder-c
+# tree: dirty:4be5d60bdab0de432884759af4c932c62e659566
+
+PASS  behaviour 6: 'Running talk' section found                                      
+FAIL  behaviour 6: policy token --ignore-user-config present                         --ignore-user-config
+FAIL  behaviour 6: policy token --ignore-rules present                               --ignore-rules
+FAIL  behaviour 6: policy token sandbox_mode=read-only present                       sandbox_mode=read-only
+FAIL  behaviour 6: policy token model_provider=openai present                        model_provider=openai
+FAIL  behaviour 6: --disable browser_use present                                     --disable browser_use
+FAIL  behaviour 6: --disable browser_use_external present                            --disable browser_use_external
+FAIL  behaviour 6: --disable browser_use_full_cdp_access present                     --disable browser_use_full_cdp_access
+FAIL  behaviour 6: --disable in_app_browser present                                  --disable in_app_browser
+FAIL  behaviour 6: --disable apps present                                            --disable apps
+FAIL  behaviour 6: --disable plugins present                                         --disable plugins
+FAIL  behaviour 6: --disable remote_plugin present                                   --disable remote_plugin
+FAIL  behaviour 6: --disable plugin_sharing present                                  --disable plugin_sharing
+FAIL  behaviour 6: decreed model source sellae[].model named                         sellae[].model
+FAIL  behaviour 6: talk has no --model flag, stated                                  no `--model` flag
+FAIL  behaviour 6: codex policy stated not equivalent to claude's                    not equivalent to the claude profile
+FAIL  behaviour 6: residual: no tool allowlist named                                 no tool allowlist
+FAIL  behaviour 6: residual: unbounded reads named                                   unbounded reads
+FAIL  behaviour 6: residual: AGENTS.md still loads named                             AGENTS.md still loads
+FAIL  behaviour 6: residual: configuration channels beyond user config unmeasured named configuration channels beyond the user config file
+FAIL  behaviour 6: codex auth location named                                         $HOME/.codex/auth.json
+FAIL  behaviour 6: CODEX_HOME not passed named                                       CODEX_HOME
+FAIL  behaviour 6: OPENAI_API_KEY not passed named                                   OPENAI_API_KEY

@@ -1,0 +1,18 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T09:42:55.170Z
+# sella: builder-c
+# tree: dirty:4be5d60bdab0de432884759af4c932c62e659566
+
+ack
+PASS  behaviour 1: first runTalk call exit 0                                         0
+ack
+PASS  behaviour 1: second runTalk call exit 0                                        0
+PASS  behaviour 1: two calls logged (start, resume)                                  2
+FAIL  behaviour 1 start: argv deep-equals the expected policy with --model           ["-p","--output-format","json","--append-system-prompt-file","/tmp/claude-1000/bisellium-sysprompt-swfXsy/system-prompt.md","--restricted","--strict-mcp-config","--permission-mode","dontAsk","--tools","Read,Grep,Glob,Bash","--allowedTools","Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]
+FAIL  behaviour 1 start: index of --model is lower than index of --allowedTools      -1 vs 11
+PASS  behaviour 1 start: --allowedTools is terminal with exactly W-044's ten values  ["Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]
+FAIL  behaviour 1 resume: argv deep-equals the expected policy with --model          ["-p","--resume","sess-w046","--output-format","json","--restricted","--strict-mcp-config","--permission-mode","dontAsk","--tools","Read,Grep,Glob,Bash","--allowedTools","Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]
+FAIL  behaviour 1 resume: index of --model is lower than index of --allowedTools     -1 vs 11
+PASS  behaviour 1 resume: --allowedTools is terminal with exactly W-044's ten values ["Read","Grep","Glob","Bash(bisellium)","Bash(bisellium context)","Bash(bisellium context *)","Bash(bisellium query)","Bash(bisellium query *)","Bash(bisellium check)","Bash(bisellium check *)"]

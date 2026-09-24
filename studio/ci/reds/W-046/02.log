@@ -1,0 +1,22 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T09:43:00.928Z
+# sella: builder-c
+# tree: dirty:4be5d60bdab0de432884759af4c932c62e659566
+
+ack
+PASS  behaviour 2: first runTalk call exit 0                                         0
+ack
+PASS  behaviour 2: second runTalk call exit 0                                        0
+PASS  behaviour 2: two calls logged (start, resume)                                  2
+FAIL  behaviour 2 start: argv deep-equals exec + POLICY + -m + -                     ["exec","--json","--skip-git-repo-check","-"]
+PASS  behaviour 2 start: no token is -C or --cd                                      exec --json --skip-git-repo-check -
+PASS  behaviour 2 start: no token starts with --dangerously-bypass                   exec --json --skip-git-repo-check -
+PASS  behaviour 2 start: logged cwd is the studio root                               /tmp/claude-1000/bisellium-w046-b2-kHnzml
+PASS  behaviour 2 start: logged stdin is non-empty and ends with the message         "ider posture\nclaude · 81% · conserve · resets 2026-09-18T14:00:00Z\ncodex · 34% · ok · resets 2026-09-17T22:38:00Z\n\nhello"
+FAIL  behaviour 2 resume: argv deep-equals exec resume + POLICY + -m + -             ["exec","resume","thr-w046","--json","--skip-git-repo-check","-"]
+PASS  behaviour 2 resume: no token is -C or --cd                                     exec resume thr-w046 --json --skip-git-repo-check -
+PASS  behaviour 2 resume: no token starts with --dangerously-bypass                  exec resume thr-w046 --json --skip-git-repo-check -
+PASS  behaviour 2 resume: logged cwd is the studio root                              /tmp/claude-1000/bisellium-w046-b2-kHnzml
+PASS  behaviour 2 resume: logged stdin is non-empty and ends with the message        "hello again"
