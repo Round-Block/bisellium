@@ -246,9 +246,18 @@ interface PinnedB {
 // 2]: same 29 keys, same order, no disagreement to report. The twelve
 // entries pinned in round 1 (including pruneStaleOpusBranches, corrected
 // from the brief's original `pruneBranches`) keep their keys and #nth
-// unchanged.
+// unchanged. A 30th entry (apps/web/tests-serve/answer.spec.ts) was added by
+// W-067: the census is source-wide by construction (no test-file exclusion
+// for inventory B, unlike inventory A's non-test filter), so a new spec that
+// joins an id onto a ".md" path surfaces here too — dispositioned "bypass"
+// above rather than silently exempted.
 const PINNED_B: PinnedB[] = [
   { key: "apps/server/src/store.ts:opus#1", disposition: "guarded", why: 'safeId(id) refuses one line above (":223")' },
+  {
+    key: "apps/web/tests-serve/answer.spec.ts:<module>#1",
+    disposition: "bypass",
+    why: "W-067 acceptance smoke, test-only: target.id is read back from the served instance's own /api/inbox response and joined against a mkdtemp scratch studio this same test creates and deletes — a traversal here reaches nothing but the test's own throwaway temp dir, never studio/ or examples/sample-studio itself",
+  },
   { key: "packages/cli/src/branch.ts:readOpusRecord#1", disposition: "bypass", why: "positional <opus-id>, into a git pathspec" },
   { key: "packages/cli/src/branch.ts:readOpusRecord#2", disposition: "bypass", why: "same value, same pathspec, error path" },
   { key: "packages/cli/src/branch.ts:readOpusRecord#3", disposition: "bypass", why: "same value, filesystem read fallback" },

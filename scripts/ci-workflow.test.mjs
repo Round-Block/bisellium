@@ -256,18 +256,26 @@ const webE2eSteps = webE2eStepList.map((step) => step.run).filter((run) => typeo
 
 const rmDistIdx = webE2eSteps.findIndex((s) => s.includes("rm -rf") && s.includes("apps/web/dist"));
 const buildWebIdx = webE2eSteps.findIndex((s) => s.includes("build") && s.includes("@bisellium/web"));
-check("web-e2e: removes apps/web/dist before building it (no stale bundle)", rmDistIdx !== -1 && buildWebIdx !== -1 && rmDistIdx < buildWebIdx, `rm@${rmDistIdx} build@${buildWebIdx}`);
+check(
+  "web-e2e: removes apps/web/dist before building it (no stale bundle)",
+  rmDistIdx !== -1 && buildWebIdx !== -1 && rmDistIdx < buildWebIdx,
+  `rm@${rmDistIdx} build@${buildWebIdx}`,
+);
 
 check(
   "web-e2e: provisions chromium with playwright install --with-deps",
   webE2eSteps.some((s) => s.includes("playwright install") && s.includes("--with-deps") && s.includes("chromium")),
 );
 
-check("web-e2e: runs test:serve", webE2eSteps.some((s) => s.includes("test:serve")));
+check(
+  "web-e2e: runs test:serve",
+  webE2eSteps.some((s) => s.includes("test:serve")),
+);
 
 check(
   "web-e2e: job carries no continue-on-error, at job or step level",
-  webE2eJob?.["continue-on-error"] === undefined && webE2eStepList.every((step) => step["continue-on-error"] === undefined),
+  webE2eJob?.["continue-on-error"] === undefined &&
+    webE2eStepList.every((step) => step["continue-on-error"] === undefined),
 );
 
 check(
@@ -278,7 +286,8 @@ check(
 const webPackageJson = JSON.parse(readFileSync(join(REPO_ROOT, "apps/web/package.json"), "utf8"));
 check(
   "apps/web/package.json: test:serve points at playwright.serve.config.ts",
-  typeof webPackageJson?.scripts?.["test:serve"] === "string" && webPackageJson.scripts["test:serve"].includes("playwright.serve.config.ts"),
+  typeof webPackageJson?.scripts?.["test:serve"] === "string" &&
+    webPackageJson.scripts["test:serve"].includes("playwright.serve.config.ts"),
 );
 check(
   "apps/web/package.json: test:e2e still selects ./tests (untouched, 'playwright test')",

@@ -756,6 +756,54 @@ deterministically, never a route a real client should call. `close()` ends
 every open `/api/live` connection before closing the HTTP server, so a
 connected SSE client never makes shutdown hang.
 
+### Writing from a browser (W-067)
+
+A write also requires an acceptable `Origin`. `checkWriteAuth` computes
+exactly two accepted strings once at startup, from the socket's own bound
+port (`server.address().port` — never `opts.port`, which is `0`/undefined
+in exactly the cases that matter):
+
+```
+http://127.0.0.1:<boundPort>
+http://localhost:<boundPort>
+```
+
+Both hosts are accepted deliberately: the server binds `127.0.0.1` only, but
+a browser's `Origin` follows the URL the page was loaded from, and
+`http://localhost:<port>/` reaches the same socket on every platform this
+runs on — accepting both admits nothing the other doesn't. An **absent**
+`Origin` is still accepted (curl, the CLI, every non-browser caller) — the
+token is what authorizes those, unchanged. A **present** `Origin` refuses
+with 403 unless it equals one of the two strings exactly: the literal
+`Origin: null` (a sandboxed iframe, `file://`, a redirect chain — a value,
+never confused with an absence), the right host on the wrong port,
+`https://` instead of `http://`, `http://[::1]:<port>`, and any foreign host
+all refuse the same way. No trust is ever derived from `Host` or any
+`X-Forwarded-*` header. **Reverse-proxy access is unsupported**: a proxy's
+`Origin` won't match either accepted string, and the remedy is to reach
+`serve` directly, never a header allowlist. Order is unchanged — Origin
+(403), then token (401), then Content-Type (415) — and the token is still
+required and still what authorizes: loopback plus a matching Origin alone
+authorizes nothing (W-016 behaviour 5, unbroken).
+
+The served console (`apps/web`) never has the token baked in. It reads
+`sessionStorage.getItem("bisellium.token")` only — `serve` prints a fresh
+random token to stdout at every start, and pasting it into the console's
+one-field prompt (mounted once in `App.tsx`, above the routed screen) is
+the only way the page learns it. The prompt reopens on any write's 401, not
+on the field merely being empty, so a stale or wrong token re-prompts
+instead of looping silent 401s. Nothing ever writes the token to
+`localStorage`, to disk, or into a URL.
+
+`POST /api/*`'s response is always HTTP 200 with `{ ok, exitCode, output }`
+for a *completed* command, success or refusal alike — a refused command
+(unknown record, a failed validation, any nonzero exit) is never a 4xx. A
+client's `res.ok` therefore means only "the HTTP call completed"; telling
+success from refusal means reading the body's own `ok` field, which is what
+`apps/web/src/api.ts`'s `postWrite` does (`WriteResult`: `"ok"`,
+`"refused"` for a 200/`ok:false`, `"unauthorized"` for a 401, `"error"` for
+anything else, including a thrown network failure).
+
 ## Running tick, pause and resume
 
 ```bash
