@@ -169,7 +169,10 @@ const READ_STDIN = `function readStdin() {
   });
 }`;
 
-function claudeStubSource(logPath: string, opts: { reply?: string; model?: string; sessionId?: string; failStderr?: string } = {}): string {
+function claudeStubSource(
+  logPath: string,
+  opts: { reply?: string; model?: string; sessionId?: string; failStderr?: string; envelopeOwnStderr?: string } = {},
+): string {
   const reply = opts.reply ?? "ack";
   const model = opts.model ?? "claude-opus-5-20260101";
   const sessionId = opts.sessionId ?? "sess-w046";
@@ -179,6 +182,18 @@ ${READ_STDIN}
 const args = process.argv.slice(2);
 if (args.length === 1 && (args[0] === "--version" || args[0] === "-V")) process.exit(0);
 ${opts.failStderr !== undefined ? `await readStdin();\nprocess.stderr.write(${JSON.stringify(opts.failStderr)} + "\\n");\nprocess.exit(1);\n` : ""}
+${
+  opts.envelopeOwnStderr !== undefined
+    ? `await readStdin();
+// A hypothetical future vendor envelope that ships its OWN "stderr" field
+// (round-3 mutation R5: the capture guard must never overwrite this with
+// the real process stderr, which carries a deliberately different string).
+process.stdout.write(JSON.stringify({ session_id: ${JSON.stringify(sessionId)}, is_error: true, api_error_status: 500, result: "synthetic failure", stderr: ${JSON.stringify(opts.envelopeOwnStderr)} }) + "\\n");
+process.stderr.write("REAL-PROCESS-STDERR-MUST-NOT-APPEAR\\n");
+process.exit(1);
+`
+    : ""
+}
 const modelIdx = args.indexOf("--model");
 const requestedModel = modelIdx !== -1 ? args[modelIdx + 1] : undefined;
 if (requestedModel !== undefined && !requestedModel.startsWith("claude-")) {
@@ -759,6 +774,98 @@ try {
         check("behaviour 7 truncate: some of the diagnostic reaches the message", stderr.includes("word0 word1 word2"), stderr);
         check("behaviour 7 truncate: the diagnostic is bounded, not carried whole", !stderr.includes("word99"), stderr);
         assertNothingPersisted("behaviour 7 truncate", dir, "eng-lead");
+      });
+    }
+
+    // The 300-character budget applies to the JOINED string, not once per
+    // collected part: two parts each well under 300 alone (so a per-part
+    // budget would let both through whole), joined past 300 together.
+    {
+      const dir = freshFixture("b7-joined-budget");
+      const partA = Array.from({ length: 35 }, (_, i) => `alpha${i}`).join(" "); // 269 chars, under budget alone
+      const partB = Array.from({ length: 35 }, (_, i) => `beta${i}`).join(" "); // 234 chars, under budget alone — 506 joined
+      const jointBudgetProfile = {
+        ...claudeCodeProfile,
+        async available() {
+          return true;
+        },
+        async start() {
+          return { sessionId: "", reply: "", exitCode: 1, raw: { is_error: true, result: partA, stderr: partB } };
+        },
+      };
+      const { result, stderr } = await withCapturedStderr(() =>
+        runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"], { harnesses: { "claude-code": jointBudgetProfile } }),
+      );
+      check("behaviour 7 joined-budget: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+      // Collection order is stderr, then result (behaviour 7's "widened
+      // read, exactly") — so partB (stderr) lands first, whole, and partA
+      // (result) is what the shared 300-char budget cuts into.
+      check("behaviour 7 joined-budget: the first collected part reaches the message whole", stderr.includes("beta0 beta1") && stderr.includes("beta34"), stderr);
+      check(
+        "behaviour 7 joined-budget: the second part is cut short — one budget for the joined string, not one per part",
+        !stderr.includes("alpha34"),
+        stderr,
+      );
+      assertNothingPersisted("behaviour 7 joined-budget", dir, "eng-lead");
+    }
+
+    // Additional assertions, not their own lettered scenario: gaps the
+    // round-3 mutation run itself exposed while drafting this round (kept
+    // rather than shipped as a red mutation run). Each uses runTalk's
+    // `harnesses`/stub seams to reach a Turn.raw shape the real profiles
+    // don't happen to produce today, to pin a property that must hold
+    // regardless — a future vendor version is exactly what F-1 says never
+    // to assume safe by omission.
+
+    // `result` must be read only when `is_error === true` — a raw shape
+    // that merely happens to carry a `result` key (no real profile
+    // produces one without is_error, so this is deliberately synthetic)
+    // must never leak it into the message.
+    {
+      const dir = freshFixture("b7-result-gate");
+      const gatedProfile = {
+        ...claudeCodeProfile,
+        async available() {
+          return true;
+        },
+        async start() {
+          return {
+            sessionId: "",
+            reply: "",
+            exitCode: 1,
+            raw: { is_error: false, result: "GATED-RESULT-MUST-NOT-APPEAR", stderr: "real diagnostic text" },
+          };
+        },
+      };
+      const { result, stderr } = await withCapturedStderr(() =>
+        runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"], { harnesses: { "claude-code": gatedProfile } }),
+      );
+      check("behaviour 7 result-gate: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+      check(
+        "behaviour 7 result-gate: result is not surfaced when is_error is not true",
+        !stderr.includes("GATED-RESULT-MUST-NOT-APPEAR"),
+        stderr,
+      );
+      check("behaviour 7 result-gate: stderr is still surfaced", stderr.includes("real diagnostic text"), stderr);
+      assertNothingPersisted("behaviour 7 result-gate", dir, "eng-lead");
+    }
+
+    // claude-code.ts's capture guard must never overwrite an envelope's OWN
+    // `stderr` key with the real process stderr — real stub, real profile.
+    {
+      const dir = freshFixture("b7-own-stderr");
+      const binDir = tmpBinDir("b7-own-stderr");
+      writeStub(binDir, "claude", claudeStubSource(join(binDir, "log.jsonl"), { envelopeOwnStderr: "ENVELOPE-OWN-STDERR-VALUE" }));
+      await withPath(binDir, async () => {
+        const { result, stderr } = await withCapturedStderr(() => runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"]));
+        check("behaviour 7 own-stderr: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+        check("behaviour 7 own-stderr: the envelope's own stderr key is preserved", stderr.includes("ENVELOPE-OWN-STDERR-VALUE"), stderr);
+        check(
+          "behaviour 7 own-stderr: the real process stderr never overwrites it",
+          !stderr.includes("REAL-PROCESS-STDERR-MUST-NOT-APPEAR"),
+          stderr,
+        );
+        assertNothingPersisted("behaviour 7 own-stderr", dir, "eng-lead");
       });
     }
 

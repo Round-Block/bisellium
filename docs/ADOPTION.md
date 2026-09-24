@@ -917,12 +917,16 @@ one axis an operator legitimately switches). Nothing is ever read from
 `claude-code` it is passed as `--model <id>` (ahead of the W-044 policy
 flags above — `--allowedTools` is variadic and terminal, so anything added
 after it would be silently eaten as a tool name); a `claude` binary that
-doesn't recognize the requested model exits non-zero
-(`[claude-code:unrecognized_model]`), and `talk` relays the exit code **and**
-the vendor's own captured diagnostic in its failure message — bounded,
-redacted, never parsed or branched on (behaviour 7) — and nothing stronger,
-so a sella whose declared model doesn't belong to its harness stops silently
-running on the wrong model and starts failing loudly and readably. On
+doesn't recognize the requested model exits non-zero with a parseable
+envelope on stdout whose own `result` names the problem (e.g. "There's an
+issue with the selected model…") and a separate stderr line
+(`[claude-code:unrecognized_model] {…}`) — both useful, both different. On
+any failed turn, `talk` relays the exit code **and both** of the vendor's
+own captured diagnostics — the envelope's own error text and the vendor's
+stderr line, whichever of them exist — joined, bounded, redacted, never
+parsed or branched on (behaviour 7) — and nothing stronger, so a sella
+whose declared model doesn't belong to its harness stops silently running
+on the wrong model and starts failing loudly and readably. On
 `codex` it is
 passed as `-m <id>`, alongside a module-local command policy applied
 identically by `start` and `resume` (`codex exec resume` rejects

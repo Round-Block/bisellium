@@ -227,26 +227,58 @@ function extractResetHint(raw: unknown): string | undefined {
   return undefined;
 }
 
-/** W-046 round 2 (behaviour 7, F-2): both `claude-code.ts` and `codex.ts`
- *  put `{ stdout, stderr }` in `Turn.raw` when no envelope parses (an
- *  unparseable failure is exactly the shape a vendor's own error text takes
- *  — a mismatched model, a vanished resume session id, a bad provider name).
- *  Prefers stderr (where a CLI's own diagnostic almost always lands), falls
- *  back to stdout, redacts it the same pass every timeline entry gets (a
- *  secret-shaped token in vendor stderr must not become plaintext evidence
- *  either), and truncates to a fixed character budget. This is a diagnostic
- *  for a human, never a signal: the text is never parsed, matched or
- *  branched on anywhere — only ever appended to a message string. */
+/** W-046 round 2 (behaviour 7, F-2), widened round 3 (F-4): a failed turn's
+ *  `Turn.raw` takes one of four shapes across the two profiles, and the
+ *  vendor's own diagnostic can live in any of them:
+ *   - `{ stdout, stderr }` when no envelope parses (claude-code.ts, codex.ts)
+ *     — a vanished resume session id, a bad provider name;
+ *   - a parsed `is_error` envelope itself (claude-code.ts) — the vendor's
+ *     structured error response, e.g. a mismatched model. `raw` here is the
+ *     envelope, not a wrapper, so `result` (the vendor's own prose) and
+ *     `api_error_status` live directly on it. Reading `result` *because*
+ *     `is_error === true` is reading structured metadata, not "branching on
+ *     the diagnostic" — the profile already branches on `is_error` itself
+ *     (claude-code.ts's `reply` line); this function never inspects the
+ *     diagnostic's own text to decide anything;
+ *   - `{ error }` on a spawn failure (claude-code.ts, codex.ts) — the
+ *     binary couldn't be launched at all.
+ *  Collects every value present, in this fixed order — `stderr`, `result`
+ *  (only under `is_error`), `error` (a string, or an object's `.message`) —
+ *  falls back to `stdout` alone when nothing else is there, joins with
+ *  " · ", then redacts (the same pass every timeline entry gets — a
+ *  secret-shaped token in vendor output must not become plaintext evidence
+ *  either) and truncates to ONE fixed budget for the whole joined string,
+ *  never one per part. An `api_error_status` under `is_error` prefixes the
+ *  result. Still a diagnostic for a human, never a signal: no part of this
+ *  text is ever parsed, matched or branched on — only ever appended to a
+ *  message string. */
 const VENDOR_DIAGNOSTIC_BUDGET = 300;
 function vendorDiagnostic(raw: unknown): string | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const obj = raw as Record<string, unknown>;
-  const stderr = typeof obj["stderr"] === "string" ? obj["stderr"].trim() : "";
+  const isError = obj["is_error"] === true;
+
+  const parts: string[] = [];
+  const collect = (v: unknown): void => {
+    if (typeof v === "string" && v.trim().length > 0) parts.push(v.trim());
+  };
+  collect(obj["stderr"]);
+  if (isError) collect(obj["result"]);
+  const errVal = obj["error"];
+  if (typeof errVal === "string") collect(errVal);
+  else if (typeof errVal === "object" && errVal !== null) collect((errVal as Record<string, unknown>)["message"]);
+
   const stdout = typeof obj["stdout"] === "string" ? obj["stdout"].trim() : "";
-  const text = stderr || stdout;
-  if (!text) return undefined;
-  const bounded = text.length > VENDOR_DIAGNOSTIC_BUDGET ? `${text.slice(0, VENDOR_DIAGNOSTIC_BUDGET)}…` : text;
-  return redact(bounded);
+  const collected = parts.length > 0 ? parts : stdout.length > 0 ? [stdout] : [];
+  if (collected.length === 0) return undefined;
+
+  const joined = collected.join(" · ");
+  const redacted = redact(joined);
+  const bounded = redacted.length > VENDOR_DIAGNOSTIC_BUDGET ? `${redacted.slice(0, VENDOR_DIAGNOSTIC_BUDGET)}…` : redacted;
+
+  const status = obj["api_error_status"];
+  const hasStatus = isError && (typeof status === "number" || typeof status === "string");
+  return hasStatus ? `status ${status}: ${bounded}` : bounded;
 }
 
 // ---------------------------------------------------------------------------
