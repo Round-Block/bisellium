@@ -3,16 +3,25 @@
  * W-046.md): the decreed model (`sellae[].model`) travels from the manifest
  * through `performTalk` into both vendor profiles, and the codex profile
  * gains a command policy of its own. Eight behaviours (7 and 8 added by the
- * censor's round-1 review, F-1/F-2), driven against a temp copy of
+ * censor's round-1 review, F-1/F-2; 7 re-specced by round 2's review, F-4 —
+ * the count stays eight), driven against a temp copy of
  * `examples/sample-studio` (`eng-lead` there is `claude-opus-5`, `art-lead`
  * is `gpt-6-astra` — a mismatch on the default claude-code harness, used by
  * behaviour 7) through stub `claude`/`codex` binaries that log their own
  * argv, stdin and cwd and never execute what they're handed — evidence here
  * is string-level, never a working vendor call.
  *
- * Imports only what exists at HEAD — `claudeCodeProfile`/`codexProfile`
- * aren't even touched directly here (only through `runTalk`) — so every red
- * is assertion-level, never a module-load error.
+ * Imports only what exists at HEAD. `claudeCodeProfile`/`codexProfile` are
+ * used directly by behaviour 7's spawn-failure scenarios (D/E, round 3):
+ * PATH resolution happens before argv is looked at, so no stub file can
+ * fail a real turn's spawn without failing `--version` identically — there
+ * is no shape that makes `available()` succeed and the real spawn fail.
+ * Instead, a thin wrapper whose `available()` always answers true and whose
+ * `start`/`resume` delegate to the real profile with a PATH pointed at
+ * nothing runs the REAL profile code and produces the REAL
+ * `Turn.raw = { error }` shape, through `runTalk`'s `harnesses` override —
+ * an intended test seam, not a race. Every red here is still
+ * assertion-level, never a module-load error.
  *
  * `BISELLIUM_ONLY_BEHAVIOUR` (comma-separated behaviour numbers) restricts
  * the run to those blocks — same pattern as lifecycle.test.ts and
@@ -22,6 +31,7 @@
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { claudeCodeProfile, codexProfile } from "@bisellium/shim";
 import { runTalk } from "./talk.js";
 
 const repo = resolve(process.argv[2] ?? ".");
@@ -172,10 +182,26 @@ ${opts.failStderr !== undefined ? `await readStdin();\nprocess.stderr.write(${JS
 const modelIdx = args.indexOf("--model");
 const requestedModel = modelIdx !== -1 ? args[modelIdx + 1] : undefined;
 if (requestedModel !== undefined && !requestedModel.startsWith("claude-")) {
-  // The real vendor's own literal (measured 2026-09-24): a JSON-shaped
-  // detail after the bracketed error code, on stderr, nothing on stdout.
+  // The real vendor's MEASURED shape (censor round 2, F-4, re-measured by
+  // the architect on claude 2.1.280 with streams separated): a VALID,
+  // PARSEABLE envelope on stdout (is_error true, api_error_status 404,
+  // subtype "success", no "error" key, the cause in "result") AND a
+  // separate stderr line — never "nothing on stdout" (round 2's stub
+  // shape, which is why F-4 passed review).
   await readStdin();
-  process.stderr.write("[claude-code:unrecognized_model] " + JSON.stringify({ model: requestedModel }) + "\\n");
+  process.stdout.write(
+    JSON.stringify({
+      session_id: "sess-w046",
+      is_error: true,
+      api_error_status: 404,
+      subtype: "success",
+      result:
+        "There's an issue with the selected model (" +
+        requestedModel +
+        "). It may not exist or you may not have access to it. Run --model to pick a different model.",
+    }) + "\\n",
+  );
+  process.stderr.write("[claude-code:unrecognized_model] " + JSON.stringify({ model: requestedModel, query_source: "sdk" }) + "\\n");
   process.exit(1);
 }
 const fileIdx = args.indexOf("--append-system-prompt-file");
@@ -565,8 +591,17 @@ try {
         check("behaviour 7 claude-model: stderr names the sella", stderr.includes("art-lead"), stderr);
         check("behaviour 7 claude-model: stderr names the harness", stderr.includes("claude-code"), stderr);
         check("behaviour 7 claude-model: stderr names the requested model", stderr.includes("gpt-6-astra"), stderr);
+        // Re-specced, round 3 (F-4b): the real vendor emits BOTH a parseable
+        // envelope (result sentence) and a stderr line, and both are useful
+        // — the seam must carry both, not just whichever one used to be
+        // reachable through the old (unmeasured) stub shape.
         check(
-          "behaviour 7 claude-model: stderr carries a non-empty substring of the vendor's own diagnostic",
+          "behaviour 7 claude-model: message carries a substring of the envelope's own result sentence",
+          stderr.includes("issue with the selected model"),
+          stderr,
+        );
+        check(
+          "behaviour 7 claude-model: message carries a substring of the vendor's stderr line",
           stderr.includes("unrecognized_model"),
           stderr,
         );
@@ -626,7 +661,73 @@ try {
       });
     }
 
-    // Scenario D — the redact pass-through: a secret-shaped token in the
+    // Scenario D — spawn failure, claude (NEW, round 3, F-4c: instance I-2).
+    // No stub file can fail the real spawn without failing `--version`
+    // identically (PATH resolution happens before argv is even looked at),
+    // so `available()` and the real call can never diverge through a plain
+    // stub. Instead: a thin wrapper around the REAL claudeCodeProfile whose
+    // `available()` always answers true and whose `start`/`resume` force
+    // `env.PATH` to somewhere with no claude — the real profile code still
+    // runs and still produces the real `Turn.raw = { error }` shape
+    // (claude-code.ts's `spawnSync` `r.error` branch), through the real
+    // `performTalk`/`vendorDiagnostic` pipeline via `runTalk`'s `harnesses`
+    // override (an intended test seam).
+    {
+      const dir = freshFixture("b7-spawn-claude");
+      const brokenPathClaude = {
+        ...claudeCodeProfile,
+        async available() {
+          return true;
+        },
+        async start(opts: Parameters<typeof claudeCodeProfile.start>[0]) {
+          return claudeCodeProfile.start({ ...opts, env: { PATH: "/nonexistent-w046-bin" } });
+        },
+        async resume(opts: Parameters<typeof claudeCodeProfile.resume>[0]) {
+          return claudeCodeProfile.resume({ ...opts, env: { PATH: "/nonexistent-w046-bin" } });
+        },
+      };
+      const { result, stderr } = await withCapturedStderr(() =>
+        runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"], { harnesses: { "claude-code": brokenPathClaude } }),
+      );
+      check("behaviour 7 spawn-claude: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+      check("behaviour 7 spawn-claude: stderr names the sella", stderr.includes("eng-lead"), stderr);
+      check("behaviour 7 spawn-claude: stderr names the harness", stderr.includes("claude-code"), stderr);
+      check("behaviour 7 spawn-claude: stderr names the requested model", stderr.includes("claude-opus-5"), stderr);
+      check("behaviour 7 spawn-claude: stderr carries a non-empty substring of the spawn error", stderr.includes("ENOENT"), stderr);
+      assertNothingPersisted("behaviour 7 spawn-claude", dir, "eng-lead");
+    }
+
+    // Scenario E — spawn failure, codex (NEW, round 3, F-4c: instance I-3).
+    // Same shape, same read, the other profile — separate from D so a
+    // one-profile fix cannot pass (codex.ts needs no capture change: both
+    // its non-zero returns already carry stderr, only I-3's spawn-error
+    // shape was ever unread).
+    {
+      const dir = freshFixture("b7-spawn-codex");
+      const brokenPathCodex = {
+        ...codexProfile,
+        async available() {
+          return true;
+        },
+        async start(opts: Parameters<typeof codexProfile.start>[0]) {
+          return codexProfile.start({ ...opts, env: { PATH: "/nonexistent-w046-bin" } });
+        },
+        async resume(opts: Parameters<typeof codexProfile.resume>[0]) {
+          return codexProfile.resume({ ...opts, env: { PATH: "/nonexistent-w046-bin" } });
+        },
+      };
+      const { result, stderr } = await withCapturedStderr(() =>
+        runTalk(["--sella", "eng-lead", "--harness", "codex", "--model-only", "--studio", dir, "hello"], { harnesses: { codex: brokenPathCodex } }),
+      );
+      check("behaviour 7 spawn-codex: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+      check("behaviour 7 spawn-codex: stderr names the sella", stderr.includes("eng-lead"), stderr);
+      check("behaviour 7 spawn-codex: stderr names the harness", stderr.includes("codex"), stderr);
+      check("behaviour 7 spawn-codex: stderr names the requested model", stderr.includes("claude-opus-5"), stderr);
+      check("behaviour 7 spawn-codex: stderr carries a non-empty substring of the spawn error", stderr.includes("ENOENT"), stderr);
+      assertNothingPersisted("behaviour 7 spawn-codex", dir, "eng-lead");
+    }
+
+    // Scenario F — the redact pass-through: a secret-shaped token in the
     // vendor's own stderr must not reach the printed message.
     {
       const dir = freshFixture("b7-redact");
@@ -642,7 +743,7 @@ try {
       });
     }
 
-    // Scenario E — bounded, deliberately: a long vendor stderr is truncated,
+    // Scenario G — bounded, deliberately: a long vendor stderr is truncated,
     // never carried whole. Spaced words, not one long run — a 32+ character
     // unbroken run is exactly redact()'s secret-shaped pattern and would be
     // masked to "*".repeat(8) regardless of length, which would prove
@@ -659,6 +760,17 @@ try {
         check("behaviour 7 truncate: the diagnostic is bounded, not carried whole", !stderr.includes("word99"), stderr);
         assertNothingPersisted("behaviour 7 truncate", dir, "eng-lead");
       });
+    }
+
+    // One doc assertion, in behaviour 7 (round 3, F-4) — not behaviour 8,
+    // whose log is valid and unmoved. The "Running talk" section's sentence
+    // about a mismatched model must name BOTH diagnostics scenario A proves
+    // are printed, and promise nothing scenario A doesn't check.
+    {
+      const doc = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
+      const section = extractSection(doc, "## Running talk").replace(/\s+/g, " ").toLowerCase();
+      check("behaviour 7 doc: names the envelope's own error text", section.includes("the envelope's own error text"), section);
+      check("behaviour 7 doc: names the vendor's stderr line", section.includes("the vendor's stderr line"), section);
     }
   }
 
