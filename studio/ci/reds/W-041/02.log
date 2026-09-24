@@ -1,14 +1,24 @@
 # behaviour: 2
 # command: node scripts/backlog-page.test.mjs 2
 # exit: 1
-# at: 2026-09-24T00:50:51.603Z
+# at: 2026-09-24T01:28:54.182Z
 # sella: builder-a
-# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+# tree: dirty:f9613615b3a5993ed20d24a7e8a90edc2832f9de
 
-FAIL  [2] quoted-opus open petitio appears                                       
-FAIL  [2] bare-opus open petitio appears                                         
-FAIL  [2] traditio.blocked_on appears alongside petitiones                       
+PASS  [2] quoted-opus open petitio appears                                       
+PASS  [2] bare-opus open petitio appears                                         
+PASS  [2] traditio.blocked_on appears alongside petitiones                       
 PASS  [2] resolved petitio does not appear                                       
-FAIL  [2] halted opus shows halted_by                                            
-FAIL  [2] halted opus shows resume_when                                          
+PASS  [2] halted opus shows halted_by                                            
+PASS  [2] halted opus shows resume_when                                          
 PASS  [2] halted opus's stale traditio.blocked_on is not shown                   
+FAIL  [2] blocked_on: none with no open petitio renders an em dash, not the word none 
+FAIL  [2] blocked_on: none with an open petitio shows only the petitio, not the word none 
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/heading-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/outA.html:
+  line 3: slate-heading: ### Backlog
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/new-opera-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/outC.html:
+  line 3: slate-heading: ### New opera opened, none started
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/chain-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/outB.html:
+  line 1: ranked-chain: W-001 -> W-002 -> W-003
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/arrow-chain-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-9ulMFr/outD.html:
+  line 1: ranked-chain: W-041 → W-039 → W-038

@@ -79,6 +79,20 @@ function decisionFixture(dir, { id, title = id, killWhen }) {
   );
 }
 
+/** A ranking acta the generator only ever links to (findLatestRankingActa
+ *  matches `*-ranking.md`; content is never parsed). */
+function rankingActaFixture(dir, filename) {
+  writeFile(join(dir, "acta", filename), `---\nkind: daily\nauthor: architect\n---\nranking body\n`);
+}
+
+/** Escapes a string for embedding in a double-quoted YAML scalar, so a
+ *  hostile fixture value (a literal `"` or `\`) still parses as one field —
+ *  behaviour 6's attribute-escaping test needs this; opusFixture's naive
+ *  `"${id}"` interpolation would otherwise corrupt the front matter itself. */
+function yamlDq(s) {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 function tmp(prefix) {
   return mkdtempSync(join(tmpdir(), `bisellium-backlog-${prefix}-`));
 }
@@ -126,9 +140,11 @@ function runCli(args) {
       extra: `halted_at: 2026-01-01T00:00:00Z\nhalted_by: D-999\nresume_when: "never"\n`,
     });
     opusFixture(dir, { id: "W-005", state: "done" });
+    rankingActaFixture(dir, "2026-09-24-ranking.md");
 
     const officina = readOfficina(dir);
-    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+    const outPath = join(dir, "out.html");
+    const html = renderBacklogPage({ ...officina, outPath });
 
     check(1, "greenlit opus appears", html.includes('data-id="W-002"'));
     check(1, "building opus appears", html.includes('data-id="W-003"'));
@@ -151,6 +167,34 @@ function runCli(args) {
         w003 < backlogSection &&
         w001 > backlogSection &&
         w004 > backlogSection,
+    );
+
+    // D-021: the In-flight table must state it shows this checkout's trunk
+    // view, verbatim, not silently pass off `greenlit` as live state.
+    check(
+      1,
+      "the In-flight table carries the D-021 trunk-view caption",
+      html.includes(
+        "State as recorded in this checkout&rsquo;s officina. On the trunk, per D-021, an opus being built still reads",
+      ),
+    );
+
+    // The revisit-trigger footnote is the whole reason `rank:` stays out of
+    // scope (see studio/briefs/W-041.md, "Ordering").
+    check(
+      1,
+      "the revisit-trigger footnote is present",
+      html.includes(
+        "If a hand-written ordering of these items appears anywhere outside an acta twice more, <code>rank:</code> has earned its opus.",
+      ),
+    );
+
+    // The page never ranks; it links the latest ranking acta as the source
+    // of record for order.
+    check(
+      1,
+      "the latest ranking acta is linked as the source of record for order",
+      html.includes('href="acta/2026-09-24-ranking.md"') && html.includes(">2026-09-24-ranking<"),
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -179,6 +223,21 @@ function runCli(args) {
       extra: `traditio:\n  sella: producer\n  stage: building\n  blocked_on: "stale text should not show"\n  at: 2026-01-01T00:00:00Z\nhalted_at: 2026-01-01T00:00:00Z\nhalted_by: D-099\nresume_when: "test resume"\n`,
     });
 
+    // `bisellium handoff` writes the literal sentinel "none" when
+    // --blocked-on is omitted — that is "no blocker recorded", not a
+    // blocker named "none" (studio/ci/W-041-review-1.log, B2).
+    opusFixture(dir, {
+      id: "W-030",
+      state: "backlog",
+      extra: `traditio:\n  sella: producer\n  stage: building\n  blocked_on: "none"\n  at: 2026-01-01T00:00:00Z\n`,
+    });
+    opusFixture(dir, {
+      id: "W-031",
+      state: "backlog",
+      extra: `traditio:\n  sella: producer\n  stage: building\n  blocked_on: "none"\n  at: 2026-01-01T00:00:00Z\n`,
+    });
+    petitioFixture(dir, { id: "P-040", opus: "W-031", quoted: true, state: "needs_you" });
+
     const officina = readOfficina(dir);
     const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
 
@@ -189,6 +248,21 @@ function runCli(args) {
     check(2, "halted opus shows halted_by", html.includes("D-099"));
     check(2, "halted opus shows resume_when", html.includes("test resume"));
     check(2, "halted opus's stale traditio.blocked_on is not shown", !html.includes("stale text should not show"));
+
+    const row = (id) => {
+      const start = html.indexOf(`data-id="${id}"`);
+      return html.slice(start, html.indexOf("</tr>", start));
+    };
+    check(
+      2,
+      "blocked_on: none with no open petitio renders an em dash, not the word none",
+      row("W-030").includes(">—<") && !/\bnone\b/i.test(row("W-030")),
+    );
+    check(
+      2,
+      "blocked_on: none with an open petitio shows only the petitio, not the word none",
+      row("W-031").includes("P-040 (needs_you)") && !/\bnone\b/i.test(row("W-031")),
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -322,6 +396,44 @@ function runCli(args) {
   }
 }
 
+// GHAS js/incomplete-html-attribute-sanitization (esc() missed `"`, feeding
+// data-id and the ranking href): a hostile id/title reaches both an
+// attribute context (data-id, on the very same row) and a text context (the
+// title cell). opusFixture's naive `"${id}"` interpolation can't carry a
+// literal `"`, so this fixture is written directly with proper YAML escaping.
+{
+  const dir = tmp("b6esc");
+  try {
+    scaffoldStudio(dir);
+    const hostile = `W-069"><script>alert(1)</script>`;
+    writeFile(
+      join(dir, "opera", "W-069.md"),
+      `---\nid: "${yamlDq(hostile)}"\ntitle: "${yamlDq(hostile)}"\nkind: "task"\ncollegium: "engineering"\nstate: backlog\nprobationes: {}\n---\n`,
+    );
+
+    const officina = readOfficina(dir);
+    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+
+    check(
+      6,
+      "a hostile id cannot break out of the data-id attribute",
+      !html.includes(`data-id="${hostile}"`) && !html.includes('data-id="W-069">'),
+    );
+    check(
+      6,
+      "the attribute-context quote and markup are escaped",
+      html.includes('data-id="W-069&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;"'),
+    );
+    check(
+      6,
+      "the same hostile value in text content (the title cell) is escaped, not injected",
+      !html.includes("<script>alert(1)</script>") && html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 // ---------------------------------------------------------------------------
 // behaviour 7: the guard fires
 // ---------------------------------------------------------------------------
@@ -334,6 +446,7 @@ function runCli(args) {
     const headingHandoff = join(dir, "heading-handoff.md");
     writeFile(headingHandoff, "# Session handoff\n\n### Backlog\n\n1. something\n");
     const outA = join(dir, "outA.html");
+    writeFile(outA, "PRE-EXISTING-CONTENT");
     let failedA = false;
     try {
       runCli(["--studio", dir, "--out", outA, "--handoff", headingHandoff]);
@@ -341,7 +454,23 @@ function runCli(args) {
       failedA = true;
     }
     check(7, "a slate heading makes the generator exit non-zero", failedA);
-    check(7, "--out is not created when the heading guard fires", !existsSync(outA));
+    check(
+      7,
+      "--out is not modified when the heading guard fires (a pre-existing file survives byte-for-byte)",
+      readFileSync(outA, "utf8") === "PRE-EXISTING-CONTENT",
+    );
+
+    const newOperaHandoff = join(dir, "new-opera-handoff.md");
+    writeFile(newOperaHandoff, "# Session handoff\n\n### New opera opened, none started\n\n- W-070\n");
+    const outC = join(dir, "outC.html");
+    let failedC = false;
+    try {
+      runCli(["--studio", dir, "--out", outC, "--handoff", newOperaHandoff]);
+    } catch {
+      failedC = true;
+    }
+    check(7, "the 'New opera' slate heading makes the generator exit non-zero", failedC);
+    check(7, "--out is not created when the 'New opera' heading guard fires", !existsSync(outC));
 
     const chainHandoff = join(dir, "chain-handoff.md");
     writeFile(chainHandoff, "Ranked order: W-001 ->\nW-002 -> W-003 next up.\n");
@@ -354,6 +483,20 @@ function runCli(args) {
     }
     check(7, "a ranked chain wrapped across two lines makes the generator exit non-zero", failedB);
     check(7, "--out is not created when the chain guard fires", !existsSync(outB));
+
+    // Every real chain in the handoff uses the Unicode arrow, not ASCII
+    // "->" (studio/ci/W-041-review-1.log, B1 worst instance: M7).
+    const arrowChainHandoff = join(dir, "arrow-chain-handoff.md");
+    writeFile(arrowChainHandoff, "The architect ranking: W-041 →\nW-039 → W-038 next.\n");
+    const outD = join(dir, "outD.html");
+    let failedD = false;
+    try {
+      runCli(["--studio", dir, "--out", outD, "--handoff", arrowChainHandoff]);
+    } catch {
+      failedD = true;
+    }
+    check(7, "a ranked chain using the Unicode → arrow makes the generator exit non-zero", failedD);
+    check(7, "--out is not created when the → chain guard fires", !existsSync(outD));
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

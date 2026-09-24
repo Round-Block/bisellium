@@ -124,12 +124,9 @@ day; throttle order stands)** — shift bounded work to codex tiers per
 D-020; the W-048 codex-build trial (one opus, Sonnet→Sol, censor gate
 unchanged as the benchmark) is proposed, not yet decreed.
 
-**Resume order:** 1. W-034 defect 1 (waived gates; defect 2 absorbed by
-W-033's guard) — full pipeline: Sol brief red-team → architect spec →
-builder → Terra pre-review → censor. 2. Then the architect's ranking — see
-the [backlog page](design/dossier/bisellium-backlog.html) (W-041) and the
-source-of-record [ranking acta](../studio/acta/2026-09-24-ranking.md); it
-starts at W-041. W-046 carries the codex transport lessons: stdin closed
+**Resume order:** see the [backlog page](design/dossier/bisellium-backlog.html)
+(W-041) and the source-of-record
+[ranking acta](../studio/acta/2026-09-24-ranking.md). W-046 carries the codex transport lessons: stdin closed
 with </dev/null, output non-empty check, no nested sandbox, no -C after
 exec, full capture never tailed; W-048 (codex-build trial) is proposed, not
 decreed. Mode: slow-serial — one Claude stream, tokens tallied per dispatch
@@ -197,16 +194,12 @@ resilience); **W-046** (provider portability) filed from the landscape doc;
 
 **Resume point for the next funded session (in order):**
 
-1. **W-033** (bookkeeping provenance, architect) is next per the standing
-   ranking. **W-044** (security: talk-profile permission boundary) is the
-   candidate to jump the queue — Patron's call.
-2. Then the architect's ranking — see the
-   [backlog page](design/dossier/bisellium-backlog.html) and the
+1. See the [backlog page](design/dossier/bisellium-backlog.html) and the
    [ranking acta](../studio/acta/2026-09-24-ranking.md).
-3. Lesson/rule candidate: W-042 round 2's advisory A-1 found 12 scratch-path
+2. Lesson/rule candidate: W-042 round 2's advisory A-1 found 12 scratch-path
    reds sharing one class — worth a stamped `lesson.recurrent` or check
    rule, not left as a one-off advisory.
-4. Progress page still owes rows for cascades 23–24; masthead updated this
+3. Progress page still owes rows for cascades 23–24; masthead updated this
    checkpoint.
 
 **Dropped from this handoff, not filed (Patron's call, W-041 PR):** the
