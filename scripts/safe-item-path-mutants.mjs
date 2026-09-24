@@ -391,8 +391,17 @@ const LIFECYCLE_SITES = [
 const RETRO_TS = "packages/cli/src/retro.ts";
 // Legacy sites 9, 10, 11, and the 13+14 pair — each already has a
 // traversal case (pre-dating W-047) whose target exists, which is what
-// makes a raw-join mutant observable at all; none has an in-directory
-// collision record, which is the recorded gap a sanitize mutant exposes.
+// makes a raw-join mutant observable at all. Sites 9-11 have no
+// in-directory collision record, which is the recorded gap their sanitize
+// mutants expose (expect: alive). Site 13+14 is different (brief amendment,
+// 2026-09-24): its sanitize mutant dies anyway, not via a collision record
+// but via classifyAddressedTarget's own third return path — a sanitized
+// target that resolves to neither an opus nor a decision file falls through
+// to `{ kind: "rule" }`, not "unresolvable", which draftRetro treats as
+// addressed (no petitio filed, "(rule)" instead of "nothing yet"). Its
+// sanitize expect is therefore "dead", with the same kills as its raw-join
+// (both observed FAIL lines carry the same "path-traversal addressed_by"
+// label — the architect's confirmation, not a new case).
 const LEGACY_SITES = [
   {
     name: "site9 runHalt:opera",
@@ -401,6 +410,8 @@ const LEGACY_SITES = [
     dirs: ["opera"],
     testCmd: LIFECYCLE_LEGACY_CMD,
     deadKills: ["opus id ../petitiones/A-1"],
+    sanitizeExpect: "alive",
+    sanitizeKills: [],
   },
   {
     name: "site10 runHalt:decisions",
@@ -409,6 +420,8 @@ const LEGACY_SITES = [
     dirs: ["decisions"],
     testCmd: LIFECYCLE_LEGACY_CMD,
     deadKills: ["--decision of ../leges/qa"],
+    sanitizeExpect: "alive",
+    sanitizeKills: [],
   },
   {
     name: "site11 patronDecisionProblem:decisions",
@@ -417,6 +430,8 @@ const LEGACY_SITES = [
     dirs: ["decisions"],
     testCmd: LIFECYCLE_LEGACY_CMD,
     deadKills: ["waived_by containment sentinel"],
+    sanitizeExpect: "alive",
+    sanitizeKills: [],
   },
   {
     name: "site13+14 classifyAddressedTarget (pair)",
@@ -425,6 +440,8 @@ const LEGACY_SITES = [
     dirs: ["opera", "decisions"],
     testCmd: RETRO_CMD,
     deadKills: ["path-traversal addressed_by"],
+    sanitizeExpect: "dead",
+    sanitizeKills: ["path-traversal addressed_by"],
   },
 ];
 
@@ -442,8 +459,8 @@ function buildLegacyMutants() {
     mutants.push({
       label: `${s.name} sanitize`,
       group: "legacy",
-      expect: "alive",
-      kills: [],
+      expect: s.sanitizeExpect,
+      kills: s.sanitizeKills,
       testCmd: s.testCmd,
       edits: (textByFile) => [siteEdits(s.file, s.fn, s.dirs, "sanitize", textByFile)],
     });
