@@ -2,11 +2,13 @@
  * packages/cli/src/provider-portability.test.ts — W-046 (studio/briefs/
  * W-046.md): the decreed model (`sellae[].model`) travels from the manifest
  * through `performTalk` into both vendor profiles, and the codex profile
- * gains a command policy of its own. Six behaviours, driven against a temp
- * copy of `examples/sample-studio` (`eng-lead` there is `claude-opus-5`)
- * through stub `claude`/`codex` binaries that log their own argv, stdin and
- * cwd and never execute what they're handed — evidence here is
- * string-level, never a working vendor call.
+ * gains a command policy of its own. Eight behaviours (7 and 8 added by the
+ * censor's round-1 review, F-1/F-2), driven against a temp copy of
+ * `examples/sample-studio` (`eng-lead` there is `claude-opus-5`, `art-lead`
+ * is `gpt-6-astra` — a mismatch on the default claude-code harness, used by
+ * behaviour 7) through stub `claude`/`codex` binaries that log their own
+ * argv, stdin and cwd and never execute what they're handed — evidence here
+ * is string-level, never a working vendor call.
  *
  * Imports only what exists at HEAD — `claudeCodeProfile`/`codexProfile`
  * aren't even touched directly here (only through `runTalk`) — so every red
@@ -17,7 +19,7 @@
  * talk-boundary.test.ts, since each behaviour's red is recorded from its own
  * single-behaviour run.
  */
-import { chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { runTalk } from "./talk.js";
@@ -157,7 +159,7 @@ const READ_STDIN = `function readStdin() {
   });
 }`;
 
-function claudeStubSource(logPath: string, opts: { reply?: string; model?: string; sessionId?: string } = {}): string {
+function claudeStubSource(logPath: string, opts: { reply?: string; model?: string; sessionId?: string; failStderr?: string } = {}): string {
   const reply = opts.reply ?? "ack";
   const model = opts.model ?? "claude-opus-5-20260101";
   const sessionId = opts.sessionId ?? "sess-w046";
@@ -166,10 +168,14 @@ import { appendFileSync, readFileSync } from "node:fs";
 ${READ_STDIN}
 const args = process.argv.slice(2);
 if (args.length === 1 && (args[0] === "--version" || args[0] === "-V")) process.exit(0);
+${opts.failStderr !== undefined ? `await readStdin();\nprocess.stderr.write(${JSON.stringify(opts.failStderr)} + "\\n");\nprocess.exit(1);\n` : ""}
 const modelIdx = args.indexOf("--model");
 const requestedModel = modelIdx !== -1 ? args[modelIdx + 1] : undefined;
 if (requestedModel !== undefined && !requestedModel.startsWith("claude-")) {
-  process.stderr.write("error: [claude-code:unrecognized_model] " + requestedModel + "\\n");
+  // The real vendor's own literal (measured 2026-09-24): a JSON-shaped
+  // detail after the bracketed error code, on stderr, nothing on stdout.
+  await readStdin();
+  process.stderr.write("[claude-code:unrecognized_model] " + JSON.stringify({ model: requestedModel }) + "\\n");
   process.exit(1);
 }
 const fileIdx = args.indexOf("--append-system-prompt-file");
@@ -181,7 +187,10 @@ process.exit(0);
 `;
 }
 
-function codexStubSource(logPath: string, opts: { includeAgentMessage?: boolean; sessionId?: string; reply?: string } = {}): string {
+function codexStubSource(
+  logPath: string,
+  opts: { includeAgentMessage?: boolean; sessionId?: string; reply?: string; failStderr?: string } = {},
+): string {
   const includeAgentMessage = opts.includeAgentMessage ?? true;
   const sessionId = opts.sessionId ?? "thr-w046";
   const reply = opts.reply ?? "ack";
@@ -195,9 +204,11 @@ const args = process.argv.slice(2);
 if (args.length === 1 && (args[0] === "--version" || args[0] === "-V")) process.exit(0);
 const isResume = args[0] === "exec" && args[1] === "resume";
 if (isResume && (args.includes("-s") || args.includes("--sandbox") || args.includes("-C") || args.includes("--cd"))) {
+  await readStdin();
   process.stderr.write("error: unexpected argument found\\n");
   process.exit(2);
 }
+${opts.failStderr !== undefined ? `await readStdin();\nprocess.stderr.write(${JSON.stringify(opts.failStderr)} + "\\n");\nprocess.exit(1);\n` : ""}
 const stdin = await readStdin();
 appendFileSync(${JSON.stringify(logPath)}, JSON.stringify({ bin: "codex", args, stdin, cwd: process.cwd() }) + "\\n");
 process.stdout.write(JSON.stringify({ type: "thread.started", thread_id: ${JSON.stringify(sessionId)} }) + "\\n");
@@ -253,6 +264,23 @@ function extractSection(doc: string, heading: string): string {
   const rest = lines.slice(startIdx + 1);
   const endOffset = rest.findIndex((l) => /^##\s/.test(l));
   return (endOffset === -1 ? rest : rest.slice(0, endOffset)).join("\n");
+}
+
+/** The file's leading `/** ... *\/` block comment (behaviour 8: codex.ts's
+ *  header, where the signed limit lives), with each line's `* ` JSDoc
+ *  continuation marker stripped — left in, a phrase that wraps across
+ *  comment lines picks up a stray "*" splitting it (e.g. "in-app-browser,
+ *  apps" becomes "in-app-browser, * apps"), which would corrupt exactly the
+ *  literal-substring matching this behaviour depends on. */
+function extractHeaderComment(source: string): string {
+  const start = source.indexOf("/**");
+  if (start === -1) return "";
+  const end = source.indexOf("*/", start);
+  const raw = end === -1 ? source.slice(start) : source.slice(start, end);
+  return raw
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*\*\s?/, ""))
+    .join("\n");
 }
 
 try {
@@ -505,6 +533,168 @@ try {
     ];
     const sectionLower = section.toLowerCase();
     for (const [name, needle] of items) check(`behaviour 6: ${name}`, sectionLower.includes(needle.toLowerCase()), needle);
+  }
+
+  // ---- 7: a failed turn's message carries the vendor's own diagnostic -----
+  // (round 2, censor F-2). Each scenario its own fresh fixture and stub dir.
+  if (runs(7)) {
+    function assertNothingPersisted(label: string, dir: string, sella: string): void {
+      check(`${label}: no sessions/${sella}.json`, !existsSync(join(dir, "sessions", `${sella}.json`)));
+      check(`${label}: no timeline/${sella}.jsonl`, !existsSync(join(dir, "timeline", `${sella}.jsonl`)));
+      const receiptsDir = join(dir, "receipts", sella);
+      const noReceipts = !existsSync(receiptsDir) || readdirSync(receiptsDir).length === 0;
+      check(`${label}: no receipt under receipts/${sella}/`, noReceipts, existsSync(receiptsDir) ? readdirSync(receiptsDir).join(",") : "(no dir)");
+    }
+    function seedSession(dir: string, sella: string, harness: string, sessionId: string): void {
+      const sessDir = join(dir, "sessions");
+      mkdirSync(sessDir, { recursive: true });
+      const now = new Date().toISOString();
+      writeFileSync(join(sessDir, `${sella}.json`), JSON.stringify({ harness, sessionId, startedAt: now, lastAt: now, turns: 1 }, null, 2) + "\n");
+    }
+
+    // Scenario A — claude, real vendor literal: a mismatched model
+    // (art-lead's fixture model gpt-6-astra can't run on the default
+    // claude-code harness), driven through the start path.
+    {
+      const dir = freshFixture("b7-claude-model");
+      const binDir = tmpBinDir("b7-claude-model");
+      writeStub(binDir, "claude", claudeStubSource(join(binDir, "log.jsonl")));
+      await withPath(binDir, async () => {
+        const { result, stderr } = await withCapturedStderr(() => runTalk(["--sella", "art-lead", "--model-only", "--studio", dir, "hello"]));
+        check("behaviour 7 claude-model: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+        check("behaviour 7 claude-model: stderr names the sella", stderr.includes("art-lead"), stderr);
+        check("behaviour 7 claude-model: stderr names the harness", stderr.includes("claude-code"), stderr);
+        check("behaviour 7 claude-model: stderr names the requested model", stderr.includes("gpt-6-astra"), stderr);
+        check(
+          "behaviour 7 claude-model: stderr carries a non-empty substring of the vendor's own diagnostic",
+          stderr.includes("unrecognized_model"),
+          stderr,
+        );
+        assertNothingPersisted("behaviour 7 claude-model", dir, "art-lead");
+      });
+    }
+
+    // Scenario B — codex, real vendor literal: a bad model provider, driven
+    // through the start path.
+    {
+      const dir = freshFixture("b7-codex-provider");
+      const binDir = tmpBinDir("b7-codex-provider");
+      writeStub(binDir, "codex", codexStubSource(join(binDir, "log.jsonl"), { failStderr: "Error: Model provider `zzbogus` not found" }));
+      await withPath(binDir, async () => {
+        const { result, stderr } = await withCapturedStderr(() =>
+          runTalk(["--sella", "eng-lead", "--harness", "codex", "--model-only", "--studio", dir, "hello"]),
+        );
+        check("behaviour 7 codex-provider: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+        check("behaviour 7 codex-provider: stderr names the sella", stderr.includes("eng-lead"), stderr);
+        check("behaviour 7 codex-provider: stderr names the harness", stderr.includes("codex"), stderr);
+        check("behaviour 7 codex-provider: stderr names the requested model", stderr.includes("claude-opus-5"), stderr);
+        check(
+          "behaviour 7 codex-provider: stderr carries a non-empty substring of the vendor's own diagnostic",
+          stderr.includes("Model provider"),
+          stderr,
+        );
+        assertNothingPersisted("behaviour 7 codex-provider", dir, "eng-lead");
+      });
+    }
+
+    // Scenario C — claude, real vendor literal from the live smoke: a
+    // resumed session the vendor no longer recognizes. Seeded so the ONLY
+    // runTalk call here takes the resume branch; the pre-existing session
+    // record must survive untouched (never overwritten by a refused turn).
+    {
+      const dir = freshFixture("b7-claude-resume");
+      const binDir = tmpBinDir("b7-claude-resume");
+      writeStub(binDir, "claude", claudeStubSource(join(binDir, "log.jsonl"), { failStderr: "No conversation found with session ID: sess-w046" }));
+      seedSession(dir, "eng-lead", "claude-code", "sess-w046");
+      const seeded = readFileSync(join(dir, "sessions", "eng-lead.json"), "utf8");
+      await withPath(binDir, async () => {
+        const { result, stderr } = await withCapturedStderr(() => runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"]));
+        check("behaviour 7 claude-resume: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+        check("behaviour 7 claude-resume: stderr names the sella", stderr.includes("eng-lead"), stderr);
+        check("behaviour 7 claude-resume: stderr names the harness", stderr.includes("claude-code"), stderr);
+        check("behaviour 7 claude-resume: stderr names the requested model", stderr.includes("claude-opus-5"), stderr);
+        check(
+          "behaviour 7 claude-resume: stderr carries a non-empty substring of the vendor's own diagnostic",
+          stderr.includes("No conversation found"),
+          stderr,
+        );
+        check("behaviour 7 claude-resume: the pre-existing session record is untouched", readFileSync(join(dir, "sessions", "eng-lead.json"), "utf8") === seeded);
+        check("behaviour 7 claude-resume: no timeline/eng-lead.jsonl", !existsSync(join(dir, "timeline", "eng-lead.jsonl")));
+        const receiptsDir = join(dir, "receipts", "eng-lead");
+        const noReceipts = !existsSync(receiptsDir) || readdirSync(receiptsDir).length === 0;
+        check("behaviour 7 claude-resume: no receipt under receipts/eng-lead/", noReceipts);
+      });
+    }
+
+    // Scenario D — the redact pass-through: a secret-shaped token in the
+    // vendor's own stderr must not reach the printed message.
+    {
+      const dir = freshFixture("b7-redact");
+      const binDir = tmpBinDir("b7-redact");
+      const secret = "abcdefabcdefabcdefabcdefabcdefabcdef1234567890";
+      writeStub(binDir, "claude", claudeStubSource(join(binDir, "log.jsonl"), { failStderr: `auth failed, token=${secret} please retry` }));
+      await withPath(binDir, async () => {
+        const { result, stderr } = await withCapturedStderr(() => runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"]));
+        check("behaviour 7 redact: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+        check("behaviour 7 redact: the secret-shaped token does not reach the printed message", !stderr.includes(secret), stderr);
+        check("behaviour 7 redact: the redacted diagnostic still reaches the message", stderr.includes("token=***") || stderr.includes("auth failed"), stderr);
+        assertNothingPersisted("behaviour 7 redact", dir, "eng-lead");
+      });
+    }
+
+    // Scenario E — bounded, deliberately: a long vendor stderr is truncated,
+    // never carried whole. Spaced words, not one long run — a 32+ character
+    // unbroken run is exactly redact()'s secret-shaped pattern and would be
+    // masked to "*".repeat(8) regardless of length, which would prove
+    // nothing about truncation.
+    {
+      const dir = freshFixture("b7-truncate");
+      const binDir = tmpBinDir("b7-truncate");
+      const long = Array.from({ length: 100 }, (_, i) => `word${i}`).join(" ");
+      writeStub(binDir, "claude", claudeStubSource(join(binDir, "log.jsonl"), { failStderr: long }));
+      await withPath(binDir, async () => {
+        const { result, stderr } = await withCapturedStderr(() => runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"]));
+        check("behaviour 7 truncate: runTalk returns non-zero exit", result.exitCode !== 0, String(result.exitCode));
+        check("behaviour 7 truncate: some of the diagnostic reaches the message", stderr.includes("word0 word1 word2"), stderr);
+        check("behaviour 7 truncate: the diagnostic is bounded, not carried whole", !stderr.includes("word99"), stderr);
+        assertNothingPersisted("behaviour 7 truncate", dir, "eng-lead");
+      });
+    }
+  }
+
+  // ---- 8: the documented contract names the egress residual --------------
+  // (round 2, censor F-1). Same mechanism as behaviour 6, numbered
+  // separately because `red` overwrites 06.log by behaviour number.
+  if (runs(8)) {
+    const doc = readFileSync(join(repo, "docs", "ADOPTION.md"), "utf8");
+    const docSection = extractSection(doc, "## Running talk").replace(/\s+/g, " ");
+    const codexSource = readFileSync(join(repo, "packages/shim/src/harness/codex.ts"), "utf8");
+    const codexHeader = extractHeaderComment(codexSource).replace(/\s+/g, " ");
+    check("behaviour 8: 'Running talk' section found", docSection.length > 0);
+    check("behaviour 8: codex.ts header comment found", codexHeader.length > 0);
+
+    const texts: [string, string][] = [
+      ["docs/ADOPTION.md 'Running talk'", docSection],
+      ["codex.ts header", codexHeader],
+    ];
+    for (const [label, text] of texts) {
+      const lower = text.toLowerCase();
+      check(
+        `behaviour 8: ${label} states a vendor-side web fetch/search channel survives, closed by none of the eight --disable names`,
+        lower.includes("web fetch/search") && lower.includes("closed by none of the eight"),
+        text,
+      );
+      check(
+        `behaviour 8: ${label} has no unqualified "no browser ... feature" claim reading as no egress`,
+        !lower.includes("no browser, in-app-browser, apps or plugin feature"),
+        text,
+      );
+      check(
+        `behaviour 8: ${label} pairs the egress residual with unbounded reads, naming W-044's refusal of that pairing`,
+        lower.includes("paired with unbounded reads") && lower.includes("w-044") && lower.includes("refused"),
+        text,
+      );
+    }
   }
 } finally {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });

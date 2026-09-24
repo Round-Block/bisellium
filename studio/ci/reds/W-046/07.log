@@ -1,0 +1,59 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T10:53:37.508Z
+# sella: builder-c
+# tree: dirty:899b0de375c6b58ff10c7eb501e3e91f055bfff9
+
+PASS  behaviour 7 claude-model: runTalk returns non-zero exit                        1
+PASS  behaviour 7 claude-model: stderr names the sella                               art-lead: claude-code exited 1
+
+PASS  behaviour 7 claude-model: stderr names the harness                             art-lead: claude-code exited 1
+
+FAIL  behaviour 7 claude-model: stderr names the requested model                     art-lead: claude-code exited 1
+
+FAIL  behaviour 7 claude-model: stderr carries a non-empty substring of the vendor's own diagnostic art-lead: claude-code exited 1
+
+PASS  behaviour 7 claude-model: no sessions/art-lead.json                            
+PASS  behaviour 7 claude-model: no timeline/art-lead.jsonl                           
+PASS  behaviour 7 claude-model: no receipt under receipts/art-lead/                  (no dir)
+PASS  behaviour 7 codex-provider: runTalk returns non-zero exit                      1
+PASS  behaviour 7 codex-provider: stderr names the sella                             eng-lead: codex exited 1
+
+PASS  behaviour 7 codex-provider: stderr names the harness                           eng-lead: codex exited 1
+
+FAIL  behaviour 7 codex-provider: stderr names the requested model                   eng-lead: codex exited 1
+
+FAIL  behaviour 7 codex-provider: stderr carries a non-empty substring of the vendor's own diagnostic eng-lead: codex exited 1
+
+PASS  behaviour 7 codex-provider: no sessions/eng-lead.json                          
+PASS  behaviour 7 codex-provider: no timeline/eng-lead.jsonl                         
+PASS  behaviour 7 codex-provider: no receipt under receipts/eng-lead/                (no dir)
+PASS  behaviour 7 claude-resume: runTalk returns non-zero exit                       1
+PASS  behaviour 7 claude-resume: stderr names the sella                              eng-lead: claude-code exited 1
+
+PASS  behaviour 7 claude-resume: stderr names the harness                            eng-lead: claude-code exited 1
+
+FAIL  behaviour 7 claude-resume: stderr names the requested model                    eng-lead: claude-code exited 1
+
+FAIL  behaviour 7 claude-resume: stderr carries a non-empty substring of the vendor's own diagnostic eng-lead: claude-code exited 1
+
+PASS  behaviour 7 claude-resume: the pre-existing session record is untouched        
+PASS  behaviour 7 claude-resume: no timeline/eng-lead.jsonl                          
+PASS  behaviour 7 claude-resume: no receipt under receipts/eng-lead/                 
+PASS  behaviour 7 redact: runTalk returns non-zero exit                              1
+PASS  behaviour 7 redact: the secret-shaped token does not reach the printed message eng-lead: claude-code exited 1
+
+FAIL  behaviour 7 redact: the redacted diagnostic still reaches the message          eng-lead: claude-code exited 1
+
+PASS  behaviour 7 redact: no sessions/eng-lead.json                                  
+PASS  behaviour 7 redact: no timeline/eng-lead.jsonl                                 
+PASS  behaviour 7 redact: no receipt under receipts/eng-lead/                        (no dir)
+PASS  behaviour 7 truncate: runTalk returns non-zero exit                            1
+FAIL  behaviour 7 truncate: some of the diagnostic reaches the message               eng-lead: claude-code exited 1
+
+PASS  behaviour 7 truncate: the diagnostic is bounded, not carried whole             eng-lead: claude-code exited 1
+
+PASS  behaviour 7 truncate: no sessions/eng-lead.json                                
+PASS  behaviour 7 truncate: no timeline/eng-lead.jsonl                               
+PASS  behaviour 7 truncate: no receipt under receipts/eng-lead/                      (no dir)
