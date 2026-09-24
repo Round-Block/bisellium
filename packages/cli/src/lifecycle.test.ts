@@ -31,6 +31,13 @@ const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-19T13:00:00Z");
 
+// W-039: a stray $BISELLIUM_SELLA on the host would let a `red` call that
+// passes no --sella slip past the new refusal on a local run and fail only
+// in CI (or vice versa). Deleted once, up front, so every behaviour in this
+// file sees the same environment; a test that needs the env var sets it
+// itself and is responsible for its own cleanup.
+delete process.env["BISELLIUM_SELLA"];
+
 const only = process.env["BISELLIUM_ONLY_BEHAVIOUR"];
 const selected = only ? new Set(only.split(",").map(Number)) : undefined;
 const runs = (behaviour: number): boolean => selected === undefined || selected.has(behaviour);
@@ -47,6 +54,32 @@ function freshStudio(tag: string): string {
   cpSync(sampleStudio, dir, { recursive: true });
   dirs.push(dir);
   return dir;
+}
+
+/** W-039 behaviours 1-2: preseeds `<redsDir>/01.log` and `.../02.log` with
+ *  known bytes so a refusal test can prove, byte for byte, that it wrote
+ *  nothing — a directory that's merely absent afterward would miss a
+ *  refusal that overwrote an existing log. */
+function preseedReds(dir: string, id: string): string {
+  const redsDir = join(dir, "ci", "reds", id);
+  mkdirSync(redsDir, { recursive: true });
+  writeFileSync(join(redsDir, "01.log"), "PRESEEDED-01\n");
+  writeFileSync(join(redsDir, "02.log"), "PRESEEDED-02\n");
+  return redsDir;
+}
+
+/** Sorted file listing plus every file's bytes — the snapshot a refusal
+ *  test takes before and compares against after. */
+function snapshotDir(dir: string): { names: string[]; bytes: Map<string, string> } {
+  const names = readdirSync(dir).sort();
+  return { names, bytes: new Map(names.map((n) => [n, readFileSync(join(dir, n), "utf8")])) };
+}
+
+function sameSnapshot(dir: string, before: { names: string[]; bytes: Map<string, string> }): boolean {
+  const after = snapshotDir(dir);
+  if (after.names.length !== before.names.length || after.names.some((n, i) => n !== before.names[i])) return false;
+  for (const n of after.names) if (after.bytes.get(n) !== before.bytes.get(n)) return false;
+  return true;
 }
 
 function readEventLines(dir: string): Record<string, unknown>[] {
@@ -489,7 +522,7 @@ try {
   if (runs(10)) {
     const dir = freshStudio("red-exit0");
     const redsDir = join(dir, "ci", "reds", "W-901");
-    const r = await runRed(["W-901", "--behaviour", "5", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(0)"], {});
+    const r = await runRed(["W-901", "--behaviour", "5", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(0)"], {});
     check("red: a passing command refuses with exit 1", r.exitCode === 1, String(r.exitCode));
     check("red: no directory created for a passing command", !existsSync(redsDir));
   }
@@ -497,9 +530,9 @@ try {
   if (runs(10)) {
     const dir = freshStudio("red-overwrite");
     const redsDir = join(dir, "ci", "reds", "W-902");
-    await runRed(["W-902", "--behaviour", "1", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first'); process.exit(1)"], {});
-    await runRed(["W-902", "--behaviour", "2", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('second'); process.exit(1)"], {});
-    await runRed(["W-902", "--behaviour", "1", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first-rerun'); process.exit(1)"], {});
+    await runRed(["W-902", "--behaviour", "1", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first'); process.exit(1)"], {});
+    await runRed(["W-902", "--behaviour", "2", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('second'); process.exit(1)"], {});
+    await runRed(["W-902", "--behaviour", "1", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first-rerun'); process.exit(1)"], {});
 
     const log1 = readFileSync(join(redsDir, "01.log"), "utf8");
     const log2 = readFileSync(join(redsDir, "02.log"), "utf8");
@@ -648,7 +681,23 @@ try {
     // ---- --cwd runs the wrapped command there and certifies that repo ----
     {
       const r = await runRed(
-        ["W-961", "--behaviour", "1", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", inner, "--", "node", "-e", "require('node:fs').writeFileSync('ran-here.txt', 'x'); process.exit(1)"],
+        [
+          "W-961",
+          "--behaviour",
+          "1",
+          "--sella",
+          "builder-a",
+          "--studio",
+          studioDir,
+          "--now",
+          NOW.toISOString(),
+          "--cwd",
+          inner,
+          "--",
+          "node",
+          "-e",
+          "require('node:fs').writeFileSync('ran-here.txt', 'x'); process.exit(1)",
+        ],
         {},
       );
       check("red --cwd: recording exits 0", r.exitCode === 0, String(r.exitCode));
@@ -664,7 +713,7 @@ try {
       const prevCwd = process.cwd();
       process.chdir(inner);
       try {
-        const r = await runRed(["W-962", "--behaviour", "1", "--studio", studioDir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
+        const r = await runRed(["W-962", "--behaviour", "1", "--sella", "builder-a", "--studio", studioDir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
         check("red: default (no --cwd/--repo) exits 0", r.exitCode === 0, String(r.exitCode));
         const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-962", "01.log"), "utf8").split("\n")[5];
         check("red: default names the actual cwd's repo, not the officina's parent", treeLine === `# tree: ${innerHash}` && treeLine !== `# tree: ${outerHash}`, treeLine);
@@ -676,7 +725,7 @@ try {
     // ---- --cwd naming a directory outside any git repo -> "none" ---------
     {
       const plain = mkdtempSync(join(tmpdir(), "bisellium-w020-b16-none-"));
-      const r = await runRed(["W-963", "--behaviour", "1", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", plain, "--", "node", "-e", "process.exit(1)"], {});
+      const r = await runRed(["W-963", "--behaviour", "1", "--sella", "builder-a", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", plain, "--", "node", "-e", "process.exit(1)"], {});
       check("red --cwd (no enclosing git repo): exits 0", r.exitCode === 0, String(r.exitCode));
       const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-963", "01.log"), "utf8").split("\n")[5];
       check('red --cwd (no enclosing git repo): "# tree: none"', treeLine === "# tree: none", treeLine);
@@ -1900,6 +1949,96 @@ try {
         outSuccess.includes("D-902"),
       outSuccess,
     );
+  }
+
+  // =========================================================================
+  // W-039 behaviour 1 (block 42): the fallback-resolution refusal, then the
+  // explicit --sella guest recording (matrix rows 1 and 9)
+  // =========================================================================
+  if (runs(42)) {
+    const dir = freshStudio("red-sella-fallback");
+    const id = "W-970";
+    const redsDir = preseedReds(dir, id);
+    const before = snapshotDir(redsDir);
+
+    delete process.env["BISELLIUM_SELLA"];
+    const { result: refused, stderr } = await withStderr(() =>
+      runRed([id, "--behaviour", "1", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {}),
+    );
+    check("red-sella b1: no --sella, no env -> exits 2", refused.exitCode === 2, String(refused.exitCode));
+    check(
+      "red-sella b1: refusal names the fix",
+      stderr.includes("red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)"),
+      stderr,
+    );
+    check("red-sella b1: the preseeded directory is byte-identical, nothing written", sameSnapshot(redsDir, before));
+
+    const recorded = await runRed(
+      [id, "--behaviour", "1", "--sella", "guest", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"],
+      {},
+    );
+    check("red-sella b1: an explicit --sella guest records", recorded.exitCode === 0, String(recorded.exitCode));
+    const header = readFileSync(join(redsDir, "01.log"), "utf8").split("\n");
+    check("red-sella b1: header reads # sella: guest", header[4] === "# sella: guest", header[4]);
+  }
+
+  // =========================================================================
+  // W-039 behaviour 2 (block 43): every other refusal row of the matrix
+  // writes nothing
+  // =========================================================================
+  if (runs(43)) {
+    const rows: { tag: string; env: string | undefined; args: string[] }[] = [
+      { tag: "env-empty", env: "", args: [] },
+      { tag: "env-whitespace", env: "  ", args: [] },
+      { tag: "flag-empty-no-env", env: undefined, args: ["--sella", ""] },
+      { tag: "flag-whitespace-no-env", env: undefined, args: ["--sella", "  "] },
+      { tag: "flag-repeated-last-empty", env: undefined, args: ["--sella", "builder-a", "--sella", ""] },
+    ];
+    for (const row of rows) {
+      const dir = freshStudio(`red-sella-refuse-${row.tag}`);
+      const id = "W-971";
+      const redsDir = preseedReds(dir, id);
+      const before = snapshotDir(redsDir);
+
+      if (row.env === undefined) delete process.env["BISELLIUM_SELLA"];
+      else process.env["BISELLIUM_SELLA"] = row.env;
+      const r = await runRed(
+        [id, "--behaviour", "1", ...row.args, "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"],
+        {},
+      );
+      delete process.env["BISELLIUM_SELLA"];
+      check(`red-sella b2 (${row.tag}): exits 2`, r.exitCode === 2, String(r.exitCode));
+      check(`red-sella b2 (${row.tag}): the preseeded directory is byte-identical, nothing written`, sameSnapshot(redsDir, before));
+    }
+  }
+
+  // =========================================================================
+  // W-039 behaviour 3 (block 44): every other recording row writes the
+  // named sella into the header
+  // =========================================================================
+  if (runs(44)) {
+    const rows: { tag: string; env: string | undefined; args: string[]; want: string }[] = [
+      { tag: "env-alone", env: "builder-b", args: [], want: "builder-b" },
+      { tag: "flag-empty-env-set", env: "builder-b", args: ["--sella", ""], want: "builder-b" },
+      { tag: "flag-repeated-last-wins", env: undefined, args: ["--sella", "", "--sella", "builder-a"], want: "builder-a" },
+      { tag: "flag-over-env", env: "builder-b", args: ["--sella", "builder-a"], want: "builder-a" },
+    ];
+    for (const row of rows) {
+      const dir = freshStudio(`red-sella-record-${row.tag}`);
+      const id = "W-972";
+      const redsDir = join(dir, "ci", "reds", id);
+
+      if (row.env === undefined) delete process.env["BISELLIUM_SELLA"];
+      else process.env["BISELLIUM_SELLA"] = row.env;
+      const r = await runRed(
+        [id, "--behaviour", "1", ...row.args, "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"],
+        {},
+      );
+      delete process.env["BISELLIUM_SELLA"];
+      check(`red-sella b3 (${row.tag}): records`, r.exitCode === 0, String(r.exitCode));
+      const header = readFileSync(join(redsDir, "01.log"), "utf8").split("\n");
+      check(`red-sella b3 (${row.tag}): header names ${row.want}`, header[4] === `# sella: ${row.want}`, header[4]);
+    }
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

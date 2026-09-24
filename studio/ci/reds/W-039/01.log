@@ -1,0 +1,14 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-24T05:38:35.443Z
+# sella: builder-a
+# tree: dirty:9dec38f0bf0269542b9e8d83b8e8dffc015905cd
+
+W-970: red recorded for behaviour 1 -> ci/reds/W-970/01.log
+FAIL  red-sella b1: no --sella, no env -> exits 2                      0
+FAIL  red-sella b1: refusal names the fix                              
+FAIL  red-sella b1: the preseeded directory is byte-identical, nothing written 
+W-970: red recorded for behaviour 1 -> ci/reds/W-970/01.log
+PASS  red-sella b1: an explicit --sella guest records                  0
+PASS  red-sella b1: header reads # sella: guest                        # sella: guest

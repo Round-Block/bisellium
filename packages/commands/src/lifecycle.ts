@@ -42,6 +42,23 @@ function resolveSella(flagValue: string | undefined): string {
   return flagValue ?? process.env["BISELLIUM_SELLA"] ?? "guest";
 }
 
+/** `red`'s own resolver (W-039): a red log is permanent evidence — once its
+ *  behaviour is implemented the same red can never be recorded again — so,
+ *  unlike `resolveSella`, this never falls back to "guest" on its own.
+ *  Returns the first of `flagValue`/`$BISELLIUM_SELLA` whose value is
+ *  non-empty after trim, or `undefined` when neither names anyone. Empty
+ *  and whitespace-only count as unset in both places; a repeated `--sella`
+ *  is `parseFlags`' own last-value-wins (`writes.ts`), not scanned here.
+ *  Reads `process.env` once. Not exported: `runRed` is the only caller, and
+ *  keeping it unexported turns an import-shape mistake in a test into a
+ *  module-load failure rather than a silently-passing red. */
+function namedSella(flagValue: string | undefined): string | undefined {
+  const envValue = process.env["BISELLIUM_SELLA"];
+  if (flagValue !== undefined && flagValue.trim() !== "") return flagValue;
+  if (envValue !== undefined && envValue.trim() !== "") return envValue;
+  return undefined;
+}
+
 interface OpusFront {
   state?: unknown;
   probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown; reason?: unknown; waived_by?: unknown }>;
@@ -537,7 +554,15 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     return { exitCode: 2 };
   }
 
-  const sella = resolveSella(values.get("--sella"));
+  // W-039: refused here, after safeRedsDir and before the tree hash,
+  // runCapture and mkdirSync — no command runs and nothing is written for
+  // an unattributed red. --sella guest is accepted deliberately: the
+  // refusal targets anonymity, not the name guest.
+  const sella = namedSella(values.get("--sella"));
+  if (sella === undefined) {
+    console.error("red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)");
+    return { exitCode: 2 };
+  }
   const cwdFlag = values.get("--cwd");
   const execCwd = cwdFlag !== undefined ? resolve(cwdFlag) : process.cwd();
 
