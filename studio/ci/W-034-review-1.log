@@ -1,0 +1,417 @@
+# W-034 review, round 1 — censor (qa-lead, claude-opus-5-5)
+# opus: W-034 "done honours a Patron waiver — human gates only" · PR #37
+# branch: opus/W-034 @ 1091a08 · fork point babba83 · spec-gate commit ec553fa
+# scratch: $TMPDIR/w034r1 (detached worktree), probes in $TMPDIR/w034r1-probe
+# VERDICT: PASS (0 blocking findings, 3 advisories, 1 correction to Terra)
+
+## 0. Terra mechanical facts sheet (embedded verbatim, /tmp/claude-1000/w034-terra-sheet.md)
+
+    https://github.com/Round-Block/bisellium/pull/37
+    
+    The requested scratch worktree was removed.
+    
+    Summary: 8 VERIFIED, 1 FALSE
+    ## W-034 mechanical facts sheet — 1091a08
+    
+    1. VERIFIED — `npm test` exit 0; scanned output had 0 `FAIL` lines.
+    
+       Tail: `PASS officina layout…`; `FAIL-lines=0`.
+    
+    2. VERIFIED — `npm run -s typecheck` exit 0; `npm run -s lint` exit 0 with 0 errors (2 warnings); `npm run -s format:check` exit 0.
+    
+       Tail: `✖ 2 problems (0 errors, 2 warnings)`; `All matched files use Prettier code style!`
+    
+    3. VERIFIED — `npm run -s check -- studio --repo .` exit 0: `PASS — 0 blocking, 75 advisory`. Sample fixture exit 0: `PASS — 0 blocking, 26 advisory`.
+    
+    4. VERIFIED — recomputed excluded source-tree hash:
+    
+       `git ls-tree -r HEAD | awk …exclude studio, examples, .bisellium… | sha1sum`
+    
+       Output: `1a48d5a4bec3a50e94ece16fc9f28bf8096ea40e`.
+    
+       All three certificate `certifies:` lines name `tree:1a48d5a4bec3a50e94ece16fc9f28bf8096ea40e`.
+    
+    5. VERIFIED — 11 logs exist: `studio/ci/reds/W-034/01.log` through `11.log`; all headers have `# exit: 1` and `# sella: builder-a`. Body MD5 count: 11 distinct.
+    
+    6. FALSE — on detached `ec553fa`, the seven recorded commands did not reproduce the red failures:
+    
+       - 01–04, 09, 11: `node --import tsx packages/cli/src/lifecycle.test.ts .` → exit 0.
+       - 10: `node --import tsx packages/cli/src/test.ts .` → exit 0.
+    
+       Logs 05–08 do show the stated stub pattern: usage-form rows pass initially, then waiver/unknown-opus-and-later assertions fail with the waive usage banner, consistent with a refuse-all stub. The reproduction conjunct is false.
+    
+    7. VERIFIED — `git diff --name-only babba83..1091a08` contains only the stated source paths, `examples/fixtures/bad-waived-agent/`, `docs/ADOPTION.md`, and `studio/` bookkeeping.
+    
+    8. VERIFIED — `usage.test.ts:89` pins `seen === 33`; `usage.ts:34` contains the `bisellium waive <opus> --gate …` banner.
+    
+    9. VERIFIED — temporary mutations each produced a failing test result, then were reverted.
+    
+       - Accept waived agent gates: lifecycle suite exit 1; tail includes `FAIL close b9… agent-gate waiver still refuses`.
+       - Skip `patronDecisionProblem`: lifecycle suite exit 1.
+       - Replace waiver decision containment with raw `join`: focused behavior 33 exit 1; tail includes `FAIL … containment sentinel exits 1 0`.
+    
+       Final check: `git diff --exit-code -- packages/commands/src/lifecycle.ts` exit 0; scratch worktree status clean.
+    
+    The requested scratch worktree was removed.
+    
+    Summary: 8 VERIFIED, 1 FALSE
+    
+
+## 1. Terra claim 6 (reds do not reproduce) — FALSE as a conclusion; reds are HONEST
+
+Terra's command was vacuous. The ec553fa lifecycle.test.ts contains no W-034
+block (grep -c "waived.agent|runWaive" = 0), and bad-waived-agent/ is absent,
+so the recorded commands pass trivially on a wholesale checkout.
+
+The naive overlay is also not a reproduction:
+  git checkout 1091a08 -- packages/cli/src/lifecycle.test.ts examples/fixtures/bad-waived-agent
+  -> SyntaxError: The requested module './lifecycle.js' does not provide an export named 'runWaive'
+The final test file imports runWaive (added at the stub step, i.e. after reds
+01-04/09-11). A link error is not any behaviour's named assertion.
+
+Correct reproduction: old source (ec553fa, lifecycle.ts/check.ts/ids.ts/main.ts
+untouched, git diff on them empty) + the overlay + ONE test-file-only edit that
+drops runWaive from the import and binds a throwing sentinel
+(`const runWaive: any = () => { throw new Error("REPRO: no runWaive on ec553fa") }`).
+The sentinel was never hit (grep -c REPRO = 0 on every output).
+
+  BISELLIUM_ONLY_BEHAVIOUR=<b> node --import tsx packages/cli/src/lifecycle.test.ts .
+  b31 exit=1 FAIL=12 PASS=15   (all 12 = qa/review/spec waived {honourable,bare} exit 0 + stderr lacks probatio.waived.agent)
+  b32 exit=1 FAIL=1  PASS=7    (tests waived stderr lacks probatio.waived.automated/revert)
+  b33 exit=1 FAIL=24 PASS=3    (all 12 waiver rows exit 0 + token absent; pending/failed/stale pins pass)
+  b34 exit=1 FAIL=1  PASS=10   (honourable waiver stdout lacks waived/patron/D-900)
+  b39 exit=1 FAIL=2  PASS=2    (close qa-waiver returns {"ok":true}; record changed)
+  b41 exit=1 FAIL=2  PASS=3    (stderr lacks every offender; success stdout lacks waived:)
+  node --import tsx packages/cli/src/test.ts .  exit=1
+    FAIL  bad-waived-agent  expected [probatio.waived.agent] got []
+
+Every failure is exactly the brief's predicted changed cell ("Order of work"
+step 1); every today's-behaviour cell passes as a pin.
+
+Byte comparison, recorded log body (header lines 1-7 stripped) vs reproduction
+output, /tmp paths masked:
+  log 01 vs b31: 0 differing lines   log 02 vs b32: 0   log 03 vs b33: 0
+  log 04 vs b34: 0   log 09 vs b39: 0   log 11 vs b41: 0   log 10 vs test.ts: 0
+The reds are honest pre-implementation records, reproduced byte-for-byte.
+Reds 05-08 (stub provenance): accepted on Terra's textual confirmation; headers
+23:45:09-10Z, same tree header, consistent with an uncommitted stub on ec553fa.
+
+### What the `# tree:` headers honestly name
+All 11 read `# tree: dirty:19fb55c3c974da0d851e0ebd202d5ad09082ade3`.
+hashRepo (lifecycle.ts:515) = sourceTreeHash(repo, excludes, "HEAD") over
+`git ls-tree -r HEAD` + an isDirtyOutside flag. Recomputed with the same
+function and excludes [studio, .bisellium, examples/]:
+  babba83 19fb55c3c974da0d851e0ebd202d5ad09082ade3
+  ec553fa 19fb55c3c974da0d851e0ebd202d5ad09082ade3
+  b67066f 1a48d5a4bec3a50e94ece16fc9f28bf8096ea40e
+  1091a08 1a48d5a4bec3a50e94ece16fc9f28bf8096ea40e
+So the header truthfully says "committed source = fork point, working tree had
+uncommitted non-excluded edits". It does NOT fingerprint the tested content:
+the test file and a (hypothetically) edited lifecycle.ts would produce the same
+header. That is why log 10 (23:33Z) and 01-04/09/11 (23:41Z) share one hash.
+Old-source provenance of the reds is established by the reproduction above,
+not by the header. Class note (pre-existing, not W-034's): 161 of 172 reds in
+studio/ci/reds carry `dirty:` (W-020..W-044), inherent to test-first recording
+on an uncommitted test. Candidate retro lesson; no W-034 action.
+
+## 2. Waiver contract — holds
+Probe script $TMPDIR/w034r1-probe/probe.sh on a copy of examples/sample-studio,
+opus W-004 (state review, all gates passed, patron pending), via main.ts.
+
+waive --decision probes (every one exit 2, record sha unchanged, no events):
+  ../D-777 (containment sentinel at officina root, by: patron) -> decision "../D-777" not found
+  D-777 (bare)            -> not found      /abs/D-900 -> not found     D-900.md -> not found
+  D-903 invalid YAML      -> could not be read
+  D-904 no by             -> has no "by"    D-905 by: [patron] -> has no "by"
+  D-906 empty front matter-> could not be read   D-907 scalar fm -> has no "by"
+  D-908 list fm           -> has no "by"    D-909 no fm -> could not be read
+  D-910 is a directory    -> could not be read   D-911 `null` fm -> has no "by"
+  D-901 by: architect     -> is by "architect", not patron "patron"
+  " " (blank)             -> waived_by is missing or not a string
+safeItemPath rejects any id containing / or \ before join; a raw-join mutation
+is caught (Terra 9). patronDecisionProblem never throws across 12 malformed
+shapes; the same seven hand-typed human waivers through `done` each exit 1
+naming patron + the decision problem.
+
+Happy path + permanence:
+  waive W-004 --gate patron --reason docs-only --decision D-900 --sella qa-lead --now 2026-09-24T12:00:00Z
+    -> W-004: patron waived by D-900 [exit 0]
+    record: patron: { status: waived, reason: docs-only, waived_by: D-900, sella: qa-lead, at: 2026-09-24T12:00:00.000Z }
+  waive again -> gate "patron" is already waived [exit 2]
+  done W-004 -> W-004: done (waived: patron by D-900) [exit 0]; state: done; status: waived kept
+  verify W-004 afterwards -> patron still waived (count 1); check: no state.done.probationes / probatio.waived.* for W-004
+
+Multi-gate (behaviour 11 shape) through the CLI:
+  W-004: gates not passed: tests, qa, patron
+  tests: probatio.waived.automated — no CLI verb writes a waived automated gate; revert the out-of-band write with git, then run "bisellium verify"
+  qa: probatio.waived.agent
+  patron: decision "D-404" not found            [exit 1]
+Two-waiver success is pinned by b41 (green at 1091a08).
+
+## 3. Review bypass closes — both layers, independently
+W-004 with hand-typed `review: { status: waived, reason: x }`:
+  A1 done alone (check never run): "W-004: gates not passed: review, patron / review: probatio.waived.agent" [exit 1], record unchanged
+  A2 check alone, state review: probatio.waived.agent  opera/W-004.md  agent gate "review" cannot be waived (block)
+  A3 same record hand-set to state: done: probatio.waived.agent still fires (every-state scope);
+     state.done.probationes names only patron, because notPassed still accepts
+     waived, as the brief intends (one defect reported once).
+(The copied sample studio carries unrelated baseline blocks: certificates, traditio.stale. Only the W-004 probatio lines are read.)
+Other `waived` consumers swept (grep "waived" packages adapters apps, non-test):
+check.ts:489/496/510, verify.ts:208-247 (skips waived automated only),
+branch.ts:216-223 (merge compares certificates only, never status),
+gateLadder.ts:27 (render). No other site treats a waived agent gate as a pass.
+
+## 4. Ownership-first ordering (b7) and close inheritance (b9)
+BISELLIUM_ONLY_BEHAVIOUR=37,39 at 1091a08: 13 PASS, 0 FAIL. Full lifecycle.test.ts: 408 PASS, 0 FAIL.
+Mutation (mine, the one this round): moved runWaive's recordOwnerRefusal block
+below the state guard. b37 -> exit 1:
+  FAIL waive b7: second refusal also names only opus/W-951 and D-021    W-951 is not building, verifying or review (state: halted)
+Only the halted-opus case catches it; the building case alone would not, which is why the brief designed it. Reverted, tree clean.
+
+## 5. Scope
+Diff babba83..1091a08: exactly the brief's file list + packages/commands/src/usage.test.ts (32 -> 33) + studio bookkeeping.
+lifecycle.test.ts deletes exactly two existing lines: the import (adds runWaive) and passingLines' qa line; brief allows exactly this.
+usage.test.ts: correct to touch. Its own header says it pins the count of
+*_USAGE constants against the banner; adding WAIVE_USAGE (brief-mandated) forces
+the pin in the same commit, and leaving it would be a red suite. The brief's
+file list missed this knock-on. That was an architect omission, not builder scope creep.
+
+## 6. Findings
+BLOCKING: none.
+
+ADVISORY a1 (class, pre-existing; W-034 adds one instance): gate-node writers
+call doc.setIn(["probationes", <gate>, ...]) without checking the node is a
+mapping. A scalar node (`patron: pending`) makes the writer throw an uncaught
+"Expected YAML collection at patron. Remaining path: status" (exit 1, stack
+trace), not an exit-2 refusal. Nothing is written and no event is emitted, and check
+already blocks the input (probatio.shape "gate is not a mapping").
+Searched: grep 'setIn(["probationes"' packages/commands/src packages/cli/src (non-test).
+Instances: lifecycle.ts:133-136 (ready/spec, by inspection), :379-389 (review,
+CONFIRMED by run: same error at "review"), :828-832 (waive, CONFIRMED),
+verify.ts:239-241 (by inspection). One fix site would be a shared guard before editOpusFrontMatter. Separate opus.
+
+ADVISORY a2 (single instance): runWaive step 8 is a denylist
+(passed/failed/waived refuse) where the brief says "unrecorded, pending or stale" are
+admitted. A non-enum status (`patron: { status: bogus }`) is overwritten, exit 0.
+All five PROBATIO_STATUSES behave per spec, and check blocks non-enum statuses.
+An allowlist is the literal reading. Low severity; fold into a1's opus or W-040.
+
+ADVISORY a3 (single instance, prose drift outside the file list):
+branch.ts:222-223's comment still says the removed rule "can no longer trap a
+legitimately waived agent/human gate". After W-034 no agent-gate waiver is
+legitimate. The comment is stale, not wrong in behaviour.
+
+OBSERVATION (for retro): the red-header ceiling in section 1 (dirty:<HEAD hash> does not
+fingerprint tested content) and the Terra reproduction method (a wholesale
+checkout loses the new test file). A red reproduction must overlay the test
+at red time on the old source.
+
+## 7. Gates
+Not re-run by me (Terra verified 1-5, 7-9 at 1091a08): npm test, typecheck,
+lint, format:check, check studio and sample, cert recompute tree:1a48d5a4.
+My hash recompute in section 1 independently agrees 1091a08 = 1a48d5a4.
+Re-run by me: lifecycle.test.ts full (408/0), b37/b39, reds reproduction, probes, one mutation.
+
+## Appendix: probe script (/tmp/claude-1000/w034r1-probe/probe.sh)
+    #!/usr/bin/env bash
+    # W-034 round-1 censor probes. Run from the 1091a08 scratch tree.
+    set -u
+    T=$TMPDIR/w034r1; P=$TMPDIR/w034r1-probe/s
+    B="node --import tsx $T/packages/cli/src/main.ts"
+    fresh() { rm -rf $P; cp -r $T/examples/sample-studio $P; mkdir -p $P/decisions
+      dec() { printf -- "---\nid: $1\ntitle: t\nat: 2026-09-24T00:00:00Z\nprovenance: probe\nby: $2\nkill_when: never\n---\nbody\n" > $P/decisions/$1.md; }
+      dec D-900 patron; dec D-901 architect
+      printf -- "---\nid: D-777\ntitle: t\nat: 2026-09-24T00:00:00Z\nprovenance: probe\nby: patron\nkill_when: never\n---\n" > $P/D-777.md
+      printf -- "---\nid: [unclosed\nby: patron\n---\n" > $P/decisions/D-903.md
+      printf -- "---\nid: D-904\ntitle: t\nat: x\nprovenance: p\nkill_when: k\n---\n" > $P/decisions/D-904.md
+      printf -- "---\nid: D-905\nby: [patron]\n---\n" > $P/decisions/D-905.md
+      printf -- "---\n---\nempty front matter\n" > $P/decisions/D-906.md
+      printf -- "---\njust a scalar\n---\n" > $P/decisions/D-907.md
+      printf -- "---\n- a\n- b\n---\n" > $P/decisions/D-908.md
+      printf -- "no front matter at all\n" > $P/decisions/D-909.md
+      mkdir -p $P/decisions/D-910.md
+      printf -- "---\nnull\n---\n" > $P/decisions/D-911.md
+    }
+    run() { echo "\$ bisellium $*"; $B "$@" --studio $P 2>&1 | sed "s#$P#<P>#g"; echo "[exit ${PIPESTATUS[0]}]"; }
+    sum() { sha1sum $P/opera/W-004.md | cut -c1-12; }
+    echo "## A. review bypass: hand-typed review: {status: waived}"
+    fresh; sed -i 's#  review: { status: passed, evidence: reviews/W-004.md, certifies: tree:c50a0cef6c7b79d527a88dc8298f446cd5014002 }#  review: { status: waived, reason: x }#' $P/opera/W-004.md
+    grep -n "review:" $P/opera/W-004.md | head -1
+    echo "-- A1 done alone (check never run):"; before=$(sum); run done W-004; echo "record unchanged: $([ "$before" = "$(sum)" ] && echo yes || echo NO)"
+    echo "-- A2 check alone (state review):"; node --import tsx $T/packages/cli/src/main.ts check $P 2>&1 | grep -E "waived|W-004|PASS|FAIL" | sed "s#$P#<P>#g" | head
+    echo "-- A3 same record hand-set to state: done (the jump done now refuses):"; sed -i 's/^state: review/state: done/' $P/opera/W-004.md
+    node --import tsx $T/packages/cli/src/main.ts check $P 2>&1 | grep -E "W-004|PASS|FAIL" | sed "s#$P#<P>#g" | head
+    echo; echo "## B. waive decision probes (patron gate on W-004, state review)"
+    for d in ../D-777 D-777 /abs/D-900 D-903 D-904 D-905 D-906 D-907 D-908 D-909 D-910 D-911 D-901 " " D-900.md; do fresh; before=$(sum); run waive W-004 --gate patron --reason r --decision "$d" --sella qa-lead; echo "unchanged: $([ "$before" = "$(sum)" ] && echo yes || echo NO); events: $(ls $P/.bisellium 2>/dev/null | head -1)"; done
+    echo; echo "## C. done with hand-typed human waivers pointing at malformed decisions"
+    for d in ../D-777 D-906 D-907 D-908 D-909 D-910 D-911; do fresh; sed -i "s#  patron: { status: pending }#  patron: { status: waived, reason: r, waived_by: \"$d\" }#" $P/opera/W-004.md; run done W-004; done
+    echo; echo "## D. happy path + permanence"
+    fresh; run waive W-004 --gate patron --reason "docs-only" --decision D-900 --sella qa-lead --now 2026-09-24T12:00:00Z
+    grep -n "patron" -A5 $P/opera/W-004.md | sed -n 1,7p
+    run waive W-004 --gate patron --reason again --decision D-900
+    run done W-004; grep -n "^state\|status: waived\|waived_by" $P/opera/W-004.md
+    run verify W-004 2>/dev/null | tail -3; grep -c "status: waived" $P/opera/W-004.md
+    node --import tsx $T/packages/cli/src/main.ts check $P 2>&1 | grep -E "W-004|PASS|FAIL" | head -5
+    echo; echo "## E. multi-gate (behaviour 11 shape) through the CLI"
+    fresh; sed -i -e 's#  qa: { status: passed, evidence: qa/W-004.md, certifies: tree:c50a0cef6c7b79d527a88dc8298f446cd5014002 }#  qa: { status: waived, reason: r, waived_by: D-900 }#' -e 's#  patron: { status: pending }#  patron: { status: waived, reason: r, waived_by: D-404 }#' $P/opera/W-004.md
+    perl -0pi -e 's/  tests:\n    status: passed/  tests:\n    status: waived\n    reason: r/' $P/opera/W-004.md
+    run done W-004
+    echo; echo "## F. waive on a scalar / malformed gate node"
+    fresh; sed -i 's#  patron: { status: pending }#  patron: pending#' $P/opera/W-004.md; before=$(sum); run waive W-004 --gate patron --reason r --decision D-900 2>&1 | tail -4; echo "unchanged: $([ "$before" = "$(sum)" ] && echo yes || echo NO)"
+    fresh; sed -i 's#  patron: { status: pending }#  patron: { status: bogus }#' $P/opera/W-004.md; run waive W-004 --gate patron --reason r --decision D-900
+
+## Appendix: probe output
+    ## A. review bypass: hand-typed review: {status: waived}
+    14:  review: { status: waived, reason: x }
+    -- A1 done alone (check never run):
+    $ bisellium done W-004
+    W-004: gates not passed: review, patron
+    review: probatio.waived.agent
+    [exit 1]
+    record unchanged: yes
+    -- A2 check alone (state review):
+      probatio.waived.agent      opera/W-004.md                 agent gate "review" cannot be waived
+      probatio.certifies.mismatch opera/W-004.md                 gates certify different trees: tree:6b4161990d0381a22f465d2702c376c82d672a67, tree:c50a0cef6c7b79d527a88dc8298f446cd5014002
+      traditio.stale             opera/W-004.md                 handoff is 6.6 days old
+    FAIL — 23 blocking, 14 advisory
+    -- A3 same record hand-set to state: done (the jump done now refuses):
+      probatio.waived.agent      opera/W-004.md                 agent gate "review" cannot be waived
+      state.done.probationes     opera/W-004.md                 state "done" but gates not passed: patron
+      traditio.stage             opera/W-004.md                 handoff stage "review" ≠ state "done"
+    FAIL — 24 blocking, 13 advisory
+    
+    ## B. waive decision probes (patron gate on W-004, state review)
+    $ bisellium waive W-004 --gate patron --reason r --decision ../D-777 --sella qa-lead
+    W-004: decision "../D-777" not found
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-777 --sella qa-lead
+    W-004: decision "D-777" not found
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision /abs/D-900 --sella qa-lead
+    W-004: decision "/abs/D-900" not found
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-903 --sella qa-lead
+    W-004: decision "D-903" could not be read
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-904 --sella qa-lead
+    W-004: decision "D-904" has no "by"
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-905 --sella qa-lead
+    W-004: decision "D-905" has no "by"
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-906 --sella qa-lead
+    W-004: decision "D-906" could not be read
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-907 --sella qa-lead
+    W-004: decision "D-907" has no "by"
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-908 --sella qa-lead
+    W-004: decision "D-908" has no "by"
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-909 --sella qa-lead
+    W-004: decision "D-909" could not be read
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-910 --sella qa-lead
+    W-004: decision "D-910" could not be read
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-911 --sella qa-lead
+    W-004: decision "D-911" has no "by"
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-901 --sella qa-lead
+    W-004: decision "D-901" is by "architect", not patron "patron"
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision   --sella qa-lead
+    W-004: waived_by is missing or not a string
+    [exit 2]
+    unchanged: yes; events: 
+    $ bisellium waive W-004 --gate patron --reason r --decision D-900.md --sella qa-lead
+    W-004: decision "D-900.md" not found
+    [exit 2]
+    unchanged: yes; events: 
+    
+    ## C. done with hand-typed human waivers pointing at malformed decisions
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "../D-777" not found
+    [exit 1]
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "D-906" could not be read
+    [exit 1]
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "D-907" has no "by"
+    [exit 1]
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "D-908" has no "by"
+    [exit 1]
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "D-909" could not be read
+    [exit 1]
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "D-910" could not be read
+    [exit 1]
+    $ bisellium done W-004
+    W-004: gates not passed: patron
+    patron: decision "D-911" has no "by"
+    [exit 1]
+    
+    ## D. happy path + permanence
+    $ bisellium waive W-004 --gate patron --reason docs-only --decision D-900 --sella qa-lead --now 2026-09-24T12:00:00Z
+    W-004: patron waived by D-900
+    [exit 0]
+    15:  patron: { status: waived, reason: docs-only, waived_by: D-900, sella: qa-lead, at: 2026-09-24T12:00:00.000Z }
+    16-  lint:
+    17-    status: passed
+    18-    evidence: ci/W-004-lint-6b416199.log
+    19-    certifies: tree:6b4161990d0381a22f465d2702c376c82d672a67
+    20-  types:
+    --
+    $ bisellium waive W-004 --gate patron --reason again --decision D-900
+    W-004: gate "patron" is already waived
+    [exit 2]
+    $ bisellium done W-004
+    W-004: done (waived: patron by D-900)
+    [exit 0]
+    7:state: done
+    15:  patron: { status: waived, reason: docs-only, waived_by: D-900, sella: qa-lead, at: 2026-09-24T12:00:00.000Z }
+    lint: passed  ci/W-004-lint-c302f446.log
+    types: passed  ci/W-004-types-c302f446.log
+    [exit 0]
+    1
+      traditio.stage             opera/W-004.md                 handoff stage "review" ≠ state "done"
+    FAIL — 22 blocking, 13 advisory
+    
+    ## E. multi-gate (behaviour 11 shape) through the CLI
+    $ bisellium done W-004
+    W-004: gates not passed: tests, qa, patron
+    tests: probatio.waived.automated — no CLI verb writes a waived automated gate; revert the out-of-band write with git, then run "bisellium verify"
+    qa: probatio.waived.agent
+    patron: decision "D-404" not found
+    [exit 1]
+    
+    ## F. waive on a scalar / malformed gate node
+        at <anonymous> (/tmp/claude-1000/w034r1/packages/cli/src/main.ts:221:1)
+        at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+        at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    [exit 1]
+    unchanged: yes
+    $ bisellium waive W-004 --gate patron --reason r --decision D-900
+    W-004: patron waived by D-900
+    [exit 0]
