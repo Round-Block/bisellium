@@ -1,0 +1,167 @@
+# W-041 review, round 1 — censor (qa-lead, claude-opus-5-5), 2026-09-24
+# Subject: PR #40, branch opus/W-041 at bc53139 (merge-base 0329c18).
+# Scratch worktree: $TMPDIR/w041r1 (detached bc53139, node_modules copied).
+# Verdict: FAIL — 3 blocking findings (B1 is a class of 6 instances), 3 advisories.
+
+## Terra pre-review (facts sheet, embedded)
+Claims 1–5, 7 and 8 were VERIFIED. Claims 6 and 9 were FALSE.
+ 1 npm test exit 0.  2 typecheck/lint(0 err, 2 warn)/format:check clean.
+ 3 check studio PASS 0 blocking/77 advisory; sample-studio 0/26.
+ 4 certificates tree:f9613615… recomputed and matched.
+ 5 nine reds exist, exit 1, sella builder-a, 9 distinct bodies.
+ 6 FALSE: the generator is deterministic, but the committed backlog-body.html
+   differs from a fresh run (W-041 row: committed "—" and "1/5", fresh "none" and "4/5").
+ 7 guard on the pre-edit handoff: headings 217 and 375, chains 122, 125, 194 and 379;
+   the committed handoff gives [].
+ 8 18 non-done opera, all on the page, no duplicates, no done rows.
+ 9 FALSE: 15 paths were out of scope, measured against babba83.
+Orchestrator's base correction: claim 9 used a stale base (babba83). The true
+merge-base is 0329c18.
+
+## Claim 9 — closed (the base error was the orchestrator's, not the builder's)
+Command: git diff --name-only 0329c18 opus/W-041 lists 20 paths. Each one is an
+owned file (scripts/backlog-page{,.test}.mjs, build.sh, backlog-body.html,
+SESSION-HANDOFF.md, package.json), the build.sh output bisellium-backlog.html,
+or W-041 bookkeeping (opera/W-041.md, ci/W-041-*.log, ci/reds/W-041/*). There
+are 0 out-of-scope paths.
+
+## Claim 6 — ruled: accepted residue, not a W-041 defect
+- At 682e6f8 (the generator commit), running build.sh twice leaves the tree
+  clean, so the page was exact for its own tree. At bc53139, build.sh dirties
+  backlog-body.html and bisellium-backlog.html (the W-041 row only). The
+  bookkeeping commit (verify + handoff) moved the officina after generation.
+- Regenerating inside the bookkeeping commit would still not capture
+  review/done, which are written after it. After merge, trunk will show W-041
+  as `building` until something regenerates the page.
+- The brief puts staleness out of scope and names the checkpoint's build.sh as
+  the regeneration point ("A check rule for page staleness" — Out of scope).
+  That is where honesty lands. The orchestrator MUST run build.sh at the
+  post-merge checkpoint. Until then the trunk page shows one done opus as
+  building.
+- Instance or class: this is an instance. searched: every writeFileSync in
+  scripts/*.mjs and docs/design/dossier/*.mjs, plus build.sh. backlog-page.mjs
+  is the only committed artifact generated from per-opus bookkeeping.
+  progress-body.html and body.html are hand-written, so they go stale the way
+  prose does (the handoff itself notes "progress page still owes rows for
+  cascades 23–24"), not through a generator. build-arch.mjs reads docs/*.md.
+  The structural cousin is scripts/changelog.mjs → CHANGELOG.md, which cannot
+  contain its own commit either. That is the same accepted shape.
+
+## Asked items
+1. The guard. Reproduced with
+   git show 682e6f8~1:docs/SESSION-HANDOFF.md > pre.md; node scripts/backlog-page.mjs --handoff pre.md --out X
+   Result: exit 1, and X is not created. It found 6 locations: headings 217
+   ("### New opera opened, none started") and 375 ("### Backlog"), and chains
+   at 122 (wrapped across lines), 125 (x2), 194 (x2) and 379 (x2). The
+   committed handoff gives findGuardViolations = [], and behaviour 8 passes.
+   The regexes are byte-identical to the brief's.
+2. Mutations. Each was applied in the scratch worktree, the suite was run,
+   then git checkout; git status is empty after each.
+   M1 halted→IN_FLIGHT_STATES (halted list emptied): CAUGHT by [1] grouping and [4] ordering.
+   M2 D-021 caption line deleted: SURVIVES (no assertion).
+   M3 chain regex ≥3 → ≥4 ids: CAUGHT by [7] (both chain assertions).
+   M4 revisit-trigger footnote deleted: SURVIVES.
+   M5 ranking-acta link suppressed: SURVIVES.
+   M6 heading regex loses the `New opera` alternative: SURVIVES.
+   M7 chain regex loses the `→` alternative (keeps `->`): SURVIVES. See B1.
+   M8 waived counted as passed: CAUGHT by [3].
+3. Reds. All 9 have exit 1, sella builder-a and distinct bodies, and every
+   failure is at assertion level. I reproduced 4, each diffing identical to
+   its recorded FAIL lines:
+   08 natural: I put the pre-edit handoff in place and ran test 8. The same
+      9-violation JSON came out.
+   01 stub: "done" added to IN_FLIGHT_STATES. Only "done opus never appears" fails.
+   03 stub: gatesCell returns "". Both [3] assertions fail.
+   06 stub: esc = identity. All four [6] assertions fail.
+   Note: all nine headers read dirty:1db7794…, which is the HEAD (4b29f87 =
+   0329c18) source hash plus a dirty flag (shim/sourceTree.ts). A shared
+   header is therefore expected and not a defect.
+4. Handoff edit. Nothing silently lost. Old ### Backlog items 6, 7, 8 and 9
+   map to W-050 (ci docs), W-051 (default branch), W-052 (run --opus → merge)
+   and W-053 (reclaim/prune worktrees). All four are backlog records with
+   matching titles. Items 3 (Settings) and 4 (Web II) are dropped with a
+   stated reason (UI/UX is Patron-only) and cross-referenced to the acta's
+   "Not ranked" section. Item 1 (a chain) is replaced by links. Item 2
+   (W-034) is done. Item 5 points at W-038..W-041 and D-016, all records.
+   The links resolve, and check reports 0 blocking. BUT see B3.
+5. Data honesty of the committed page. Independent census:
+   grep ^state: studio/opera/*.md → 18 non-done (14 backlog, 3 halted,
+   1 building). The page has exactly those 18, each once, in the right group,
+   with halted after backlog. W-023, W-027 and W-028 show halted_by and
+   resume_when verbatim, and not their stale blocked_on. 21 of 21 decisions
+   are rendered. The D-021 caption is verbatim.
+
+## BLOCKING
+B1 (class, 6 instances). Brief-mandated invariants are not pinned by any
+   assertion, so the suite stays green when they are broken.
+   The worst instance is M7. Every chain in the real pre-edit handoff uses
+   `→`. With the `→` alternative removed, the pre-edit handoff fires only on
+   its two headings, all 6 chain hits pass, and a handoff line
+   "Order: W-041 → W-039 → W-038." passes (exit 0, page written). The suite
+   stays green because [7]'s fixture uses ASCII `->` and [8] only asserts
+   absence. The brief calls the guard "the whole point of this opus".
+   Instances:
+   (a) `→` chain alternative (M7)
+   (b) `New opera…` heading alternative (M6; [7] only fixtures `### Backlog`)
+   (c) D-021 In-flight caption, which the brief says must be verbatim (M2)
+   (d) revisit-trigger footnote (M4)
+   (e) ranking-acta link (M5)
+   (f) [7]'s "--out is not created OR MODIFIED": only "not created" is
+       asserted. No fixture has a pre-existing --out.
+   searched: grep of the test file for D-021 / "State as recorded" /
+   "earned its opus" / ranking / "New opera" / → / mock-caption / footnote
+   (all 0 hits), plus mutations M2 and M4–M7. The survivors are exactly
+   (a)–(e). (f) comes from reading [7].
+   Remedy:
+   - [7]: add a `→` chain fixture (real pre-edit line 122's wrap shape is
+     ideal), a `### New opera opened, none started` fixture, and a
+     pre-existing --out whose bytes must survive.
+   - [1] or a new assertion: caption text, footnote text, and the ranking
+     link's href/id.
+   - Record reds for the behaviours whose assertions change.
+B2 (instance). The `blocked_on: none` sentinel renders as the literal "none",
+   not the em dash.
+   `bisellium handoff` writes blocked_on "none" when --blocked-on is omitted
+   (packages/commands/src/writes.ts:347). blockedOnCell only em-dashes
+   null/undefined/empty, so every handed-off non-halted opus shows "none". A
+   fresh run at bc53139 shows W-041 as "none". With an open petitio it would
+   read "none; P-0xx (needs_you)", which is self-contradictory. The brief's
+   rule: "If there is neither, the cell is an em dash."
+   Instance, not class. searched: every blocked_on reader (hooks.ts:314,
+   query.ts:95, context.ts:146). They print key=value, where "none" reads
+   correctly. The renderer is the only one that merges it with other
+   blockers.
+   Remedy: treat the handoff default "none" as absent in blockedOnCell. Add a
+   [2] fixture with blocked_on: none, with and without an open petitio.
+B3 (class, 3 instances). The handoff still carries hand-written "next" claims
+   naming done opera. This is the Intent's rot #1, surviving.
+   (a) "Resume order: 1. W-034 defect 1 … full pipeline". W-034 is done.
+   (b) "Resume point … 1. W-033 … is next per the standing ranking. W-044 …
+       candidate to jump the queue". W-033 and W-044 are both done.
+   (c) Builder-added "…ranking acta; it starts at W-041". This is a new
+       hand-written ordering fact outside an acta, and it goes stale the
+       moment W-041 merges.
+   The brief keeps only "mode, throttle and checkpoint notes" around the
+   replaced chains. These three are slate statements, not those. Acceptance 4
+   passes literally, but the file still disagrees with itself about what is
+   first, which is exactly the Intent's first bullet.
+   searched: the full post-edit "Resume order" and "Resume point" blocks,
+   plus grep of every W-0xx id in the handoff's edited hunks against its
+   state: field.
+   Remedy: delete (a), (b)'s item 1 and (c), and leave the links. SESSION-HANDOFF.md is an owned file.
+
+## ADVISORY (non-blocking)
+A1 esc() does not escape `"`, but it feeds attributes (data-id, the ranking
+   href). Ids are CLI-validated and the href is built from a filename, so the
+   risk is low. One .replace(/"/g,"&quot;") closes it.
+A2 An opus whose state is outside the seven lifecycle ids is dropped
+   silently (no row, no error). check validates states, so this is low
+   priority.
+A3 The post-merge checkpoint must run build.sh (claim-6 ruling). Otherwise
+   trunk lists W-041 (done) as building.
+
+## Not re-run by me (relying on Terra 1–4, and 8 re-derived independently)
+Full npm test, typecheck, lint and format:check: Terra's claims 1–2, backed
+by the ci certificates. I ran: node scripts/backlog-page.test.mjs (33/33
+PASS), check studio (PASS 0 blocking, 77 advisory), and build.sh twice at
+682e6f8 and at bc53139.
