@@ -1,0 +1,19 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-24T05:38:43.388Z
+# sella: builder-a
+# tree: dirty:9dec38f0bf0269542b9e8d83b8e8dffc015905cd
+
+W-972: red recorded for behaviour 1 -> ci/reds/W-972/01.log
+PASS  red-sella b3 (env-alone): records                                0
+PASS  red-sella b3 (env-alone): header names builder-b                 # sella: builder-b
+W-972: red recorded for behaviour 1 -> ci/reds/W-972/01.log
+PASS  red-sella b3 (flag-empty-env-set): records                       0
+FAIL  red-sella b3 (flag-empty-env-set): header names builder-b        # sella: 
+W-972: red recorded for behaviour 1 -> ci/reds/W-972/01.log
+PASS  red-sella b3 (flag-repeated-last-wins): records                  0
+PASS  red-sella b3 (flag-repeated-last-wins): header names builder-a   # sella: builder-a
+W-972: red recorded for behaviour 1 -> ci/reds/W-972/01.log
+PASS  red-sella b3 (flag-over-env): records                            0
+PASS  red-sella b3 (flag-over-env): header names builder-a             # sella: builder-a

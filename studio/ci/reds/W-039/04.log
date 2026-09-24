@@ -1,0 +1,11 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/rules.test.ts . 16
+# exit: 1
+# at: 2026-09-24T05:38:48.901Z
+# sella: builder-a
+# tree: dirty:9dec38f0bf0269542b9e8d83b8e8dffc015905cd
+
+FAIL  opus.red_sella: exactly one finding                                    []
+FAIL  opus.red_sella: level advise                                           []
+FAIL  opus.red_sella: where names the reds directory                         []
+FAIL  opus.red_sella: exact message shape                                    []

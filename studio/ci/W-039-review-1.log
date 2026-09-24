@@ -1,0 +1,195 @@
+# W-039 review, round 1 — censor (qa-lead, claude-fable-5)
+# opus: W-039 "red logs must name the sella that recorded them" · PR #47
+# branch: opus/W-039 @ 3be0a0b · fork point / source-fix parent f8b4b76
+# scratch: .worktrees/censor-W-039 (branch), .worktrees/censor-W-039-red (parent f8b4b76 + test overlay)
+# VERDICT: PASS (0 blocking findings, 3 advisory notes, 2 corrections to Terra)
+
+## 0. Worktree hygiene (the parent-resolution trap)
+
+Both scratch worktrees were seeded with their own node_modules; every
+@bisellium/* workspace link was confirmed to resolve inside the worktree
+before any gate ran:
+
+    readlink -f node_modules/@bisellium/commands
+      -> .worktrees/censor-W-039/packages/commands
+    readlink -f node_modules/@bisellium/cli
+      -> .worktrees/censor-W-039/packages/cli
+    (same, for censor-W-039-red)
+
+`npm install` is not usable here (the npm cache is read-only in this
+sandbox: EROFS on /home/edckt/.npm/_cacache); node_modules was copied with
+`cp -a`, which preserves the relative workspace symlinks, so they re-target
+into the copying worktree.
+
+## 1. Gates, run by the censor on the branch @ 3be0a0b
+
+    npm test                                                  exit 0   (0 FAIL lines)
+    npm run -s typecheck                                      exit 0
+    npm run -s lint                                           exit 0   (0 errors, 2 warnings — both pre-existing, tick.test.ts)
+    npm run -s format:check                                   exit 0   ("All matched files use Prettier code style!")
+    node --import tsx packages/cli/src/main.ts check studio --repo .
+                                                              exit 0   PASS — 0 blocking, 83 advisory
+    node ... check examples/sample-studio --repo .            exit 0   PASS — 0 blocking, 26 advisory
+    check studio --json | filter rule == "opus.red_sella"     []       (brief's acceptance clause 2 holds)
+    RULE_IDS.size                                             127, has("opus.red_sella") === true
+
+`verify W-039` was not run to completion: it refuses on a detached HEAD by
+design (D-021). Re-run on the branch checkout it is redundant with the
+above; the three certificates all name
+tree:fa98895942e2a9c25632e4a3a89ecec144caad18.
+
+## 2. Terra claim 7 ("red reproduction — FALSE") — CORRECTED. The reds are HONEST.
+
+Terra checked out the pre-fix parent f8b4b76 WHOLESALE. That deletes the
+test blocks this opus added (lifecycle.test.ts blocks 42/43/44,
+rules.test.ts blocks 16-19), so each recorded command ran a file with no
+W-039 assertions in it and trivially exited 0. The result measures the
+method, not the evidence.
+
+Correct method (W-034 round 1 precedent): parent SOURCE + branch TEST files.
+
+    git worktree add --detach .worktrees/censor-W-039-red f8b4b76
+    git checkout 3be0a0b -- packages/cli/src/lifecycle.test.ts packages/cli/src/rules.test.ts
+    grep -c namedSella packages/commands/src/lifecycle.ts   -> 0   (source is pre-fix)
+    grep -c red_sella  packages/cli/src/rules/evidence.ts   -> 0
+    grep -c red_sella  packages/cli/src/rules/ids.ts        -> 0
+
+Result — every one of the seven recorded reds reproduces, exit 1, and the
+body is BYTE-IDENTICAL to the recorded log after stripping the 7-line
+header:
+
+    red 01  BISELLIUM_ONLY_BEHAVIOUR=42 node --import tsx packages/cli/src/lifecycle.test.ts .   exit 1  IDENTICAL
+    red 02  BISELLIUM_ONLY_BEHAVIOUR=43 node --import tsx packages/cli/src/lifecycle.test.ts .   exit 1  IDENTICAL
+    red 03  BISELLIUM_ONLY_BEHAVIOUR=44 node --import tsx packages/cli/src/lifecycle.test.ts .   exit 1  IDENTICAL
+    red 04  node --import tsx packages/cli/src/rules.test.ts . 16                                exit 1  IDENTICAL
+    red 05  node --import tsx packages/cli/src/rules.test.ts . 17                                exit 1  IDENTICAL
+    red 06  node --import tsx packages/cli/src/rules.test.ts . 18                                exit 1  IDENTICAL
+    red 07  node --import tsx packages/cli/src/rules.test.ts . 19                                exit 1  IDENTICAL
+
+The recorded `# command:` for 01-03 carries no selector, so it was also run
+literally (whole file, no BISELLIUM_ONLY_BEHAVIOUR): exit 1 with exactly 14
+FAIL lines, all of them W-039's, and no other block failing.
+
+These logs could not have been written by post-fix code. 01 records the
+pre-fix fallback (`red-sella b1: no --sella, no env -> exits 2   0` — it
+returned 0, and the preseeded directory was overwritten); 03 records the
+pre-fix `"" ?? env` hole (`header names builder-b   # sella: ` — empty).
+Both are behaviours the fixed source cannot produce.
+
+## 3. Terra claim 8 ("--sella missing in 10 of 19 runRed calls — FALSE") — CORRECTED. No missed call site.
+
+The scanner is line-based, so it missed the two multi-line array-form calls
+that DO pass --sella (packages/cli/src/lifecycle.test.ts:683-702 and
+:1976-1979). All 10 flagged calls were classified individually:
+
+  intentional refusal-path / matrix-driven (3) — these MUST NOT carry a literal --sella:
+    lifecycle.test.ts:1966  behaviour 1, matrix row 1: env deleted + no flag -> exit 2
+    lifecycle.test.ts:2005  behaviour 2, five refusal rows, flag supplied via ...row.args
+    lifecycle.test.ts:2033  behaviour 3, four recording rows, flag supplied via ...row.args
+                            (the "env-alone" row deliberately has no flag)
+
+  out of scope, pre-existing, and unreachable by the new guard (7) — behaviour 11's usage refusals:
+    lifecycle.test.ts:548, 551, 554, 557, 560, 563, 566
+    Each refuses BEFORE the new check. Verified against the source order in
+    packages/commands/src/lifecycle.ts: `--` separator (508), empty command
+    (514), parseFlags (520), opus id (525), --behaviour (531), --now (537),
+    openStudio (545), safeRedsDir (550) — the sella refusal is at 561, after
+    all of them. The brief names this placement explicitly ("the existing
+    usage refusals ... keep their own messages"), and the block's closing
+    assertion (`none of the usage refusals created ci/reds`) still holds.
+
+  in-scope-and-missed: NONE.
+
+The brief scoped exactly seven call sites (behaviour 10 and behaviour 16).
+All of them now pass `--sella builder-a`: lifecycle.test.ts:506, 525, 533,
+534, 535, 688 (inside the 683 call), 716, 728.
+
+The decisive mechanical proof is stronger than the scan: lifecycle.test.ts:39
+does `delete process.env["BISELLIUM_SELLA"]` at module top, so the whole file
+runs with no ambient sella, and `npm test` is green. Any in-scope call that
+still lacked a sella would exit 2 and fail its own assertion.
+
+Caller class enumerated repo-wide (`grep -rn runRed packages apps adapters scripts`):
+  packages/cli/src/main.ts:98              production caller, passes `rest` through
+  packages/cli/src/lifecycle.test.ts       the 19 calls above
+  scripts/w041-mutation-check.mjs:119      kept script, passes --sella
+No other invocation of the `red` verb exists in scripts/, .claude/ or docs/
+that the refusal would newly break.
+
+## 4. resolveSella untouched
+
+    git show origin/master:packages/commands/src/lifecycle.ts | sed -n '/^function resolveSella/,/^}/p' > a
+    git show 3be0a0b:packages/commands/src/lifecycle.ts       | sed -n '/^function resolveSella/,/^}/p' > b
+    cmp -s a b   -> exit 0   BYTE-IDENTICAL
+
+    function resolveSella(flagValue: string | undefined): string {
+      return flagValue ?? process.env["BISELLIUM_SELLA"] ?? "guest";
+    }
+
+## 5. Mutations — the suite bites (censor's own, in the scratch worktree)
+
+  A. Refusal removed (namedSella + the exit-2 block -> `resolveSella(...)`),
+     packages/commands/src/lifecycle.ts:561:
+       block 42 -> 3 FAIL, exit 1
+       block 43 -> 10 FAIL, exit 1
+     reverted; `git diff --exit-code 3be0a0b -- packages/commands/src/lifecycle.ts` exit 0
+
+  B. Predicate narrowed (`sella === undefined || sella === "" || sella === "guest"`
+     -> `sella === undefined`), packages/cli/src/rules/evidence.ts:263:
+       rules.test.ts 17 -> 1 FAIL
+       rules.test.ts 19 -> 1 FAIL
+     reverted; `git diff --exit-code 3be0a0b -- packages/cli/src/rules/evidence.ts` exit 0
+
+## 6. Advisory notes (none blocking, none requiring a fix round)
+
+  N1. Reds 01-03 record `# command: node --import tsx packages/cli/src/lifecycle.test.ts .`
+      with no behaviour selector, because lifecycle.test.ts selects blocks
+      through the BISELLIUM_ONLY_BEHAVIOUR environment variable, not argv,
+      and `red` records only the command after `--`. Class: 3 instances
+      (studio/ci/reds/W-039/01.log, 02.log, 03.log line 2); rules.test.ts's
+      reds 04-07 carry their selector correctly because that harness reads
+      argv. The brief's "name that number in the # command:" was therefore
+      not satisfiable as written for this file. Harmless here — the literal
+      command reproduces the red, and opus.red_content compares bodies, which
+      differ — but it is exactly the `# command:` provenance class the brief
+      already routes to W-048.
+
+  N2. `namedSella` (packages/commands/src/lifecycle.ts:53) selects on the
+      trimmed value but returns the RAW one, so `--sella "  builder-a  "`
+      records a padded header. Out of the matrix, untested, and consistent
+      with `resolveSella`, which does not trim either; `opus.red_sella` trims
+      before comparing, so a padded real sella does not trip the advisory.
+      Single instance. Not worth a round.
+
+  N3. RED_USAGE (packages/commands/src/lifecycle.ts:438) and the top-level
+      usage banner still print `[--sella <id>]`. Still literally true — the
+      env var satisfies the requirement — and the refusal message names the
+      fix, so a user recovers in one step. Single instance. Note only.
+
+## 7. Spec conformance
+
+  Piece 1 — namedSella is a sibling of resolveSella, unexported, reads
+  process.env once, empty/whitespace unset in both places, last-wins
+  inherited from parseFlags. The refusal sits after safeRedsDir and before
+  the tree hash / runCapture / mkdirSync; behaviours 1-2 prove byte for byte
+  that a refused call leaves a preseeded 01.log and sibling 02.log untouched
+  and writes no marker. All nine matrix rows are covered: rows 1-4 and the
+  two whitespace rows by behaviours 1-2, rows 5-8 by behaviour 3, row 9 by
+  behaviour 1's second half.
+
+  Piece 2 — opus.red_sella is folded into checkRedEvidence, reads the
+  existing logTexts map and parseLogHeader, adds no directory read and no
+  parser, fires once per opus with the exact `where: ci/reds/<id>/` and
+  message shape, names basenames in ascending order (logTexts is filled
+  1..n, so insertion order is sorted), and is level "advise". Reach is the
+  ACTIVE set only (evidence.ts:165), as the brief ruled. Off-contract files
+  are excluded structurally rather than by a filter, because logTexts only
+  ever holds 1..n.
+
+  Registry — "opus.red_sella" is in RULE_IDS sorted between
+  "opus.red_evidence" and "opus.sella", in the same commit as the rule
+  (b6774bf); 126 -> 127.
+
+  Acceptance — all four clauses met; clause 4 was declared void by the brief.
+
+## VERDICT: PASS
