@@ -42,3 +42,27 @@ jobs:
           node-version: 25
       - run: npm ci
       - run: npm run -s check -- studio --repo .
+
+  # Required status check (W-067): the served console's write path
+  # (apps/server/src/http.ts's accepted-origin pair, the sessionStorage
+  # token, the ok:false contract) has no coverage anywhere else — an
+  # interaction guard that only runs on the builder's own machine is not a
+  # guard. Builds apps/web/dist from scratch (a removed dist first, so a
+  # stale bundle can't quietly satisfy it) and drives it with the
+  # served-dist harness (apps/web/playwright.serve.config.ts). No
+  # continue-on-error, and never merged into the deliberately non-required
+  # `officina` job above.
+  web-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 25
+      - run: npm ci
+      - run: rm -rf apps/web/dist
+      - run: npm run -s build --workspace @bisellium/web
+      - run: npx playwright install --with-deps chromium
+      - run: npm run -s test:serve --workspace @bisellium/web
