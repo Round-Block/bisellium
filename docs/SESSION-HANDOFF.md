@@ -95,10 +95,30 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-24, cascade 29)
+## Where things stand (2026-09-24, cascade 30)
 
-Cascades 1–28 are in the dossier progress log. PRs through #48 are merged.
+Cascades 1–29 are in the dossier progress log. PRs through #52 are merged.
 Read the review logs in `studio/ci/` before touching any of this work.
+
+**Cascade 30 (2026-09-24): W-047 MERGED** (PR #51, 2 rounds) — the
+traversal class closed once: contract table, collision sentinels, 33-mutant
+harness (28/5), AST census pinning all 29 id-to-path joins with signed
+dispositions. Round 1's F-1 (an unspecced `endsWith("Id")` filter narrowed
+the census; 17 sites dropped) was upheld by the architect, spelling filters
+are now prohibited in the brief, and the widened scan surfaced a **ninth**
+raw-join bypass (`tick.ts:writeDailyActum`) — W-059's scope is nine sites.
+Two mid-build brief amendments, both signed with provenance; the censor
+ruled the builder's red re-record honest (review logs:
+`studio/ci/W-047-review-{1,2}.log`). **Herdr landscape memo MERGED** (PR
+#52, `docs/research/herdr-landscape.md`, Sol): watch the platform, adapt
+the multiplexer's socket API as a W-046 transport experiment, integrate
+neither; fleet-view UI named as the console's real gap (human-only).
+**W-060 filed** (retro's silent `rule` fallback — a typo'd `addressed_by`
+reads as addressed). Claude spend this cascade ~890k (builder ~490k,
+architect ~210k, censor ~190k) — the code-opus cost floor under
+slow-serial; codex lanes carried build-trial, red-team, memo, pre-reviews
+free. Next per the ranking acta: **W-046** (the memo's adapter envelope +
+codex transport lessons are its spec inputs), then W-038, W-052.
 
 **Cascade 29 (2026-09-24): two round-1 passes.** **W-039 MERGED** (PR #47)
 — `red` refuses a fallback sella (exit 2 before any write), nine-row
