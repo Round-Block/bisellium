@@ -17,7 +17,7 @@
  */
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { HARNESS_PROFILES, USAGE_LIMIT_EXIT_CODE, type HarnessProfile, type ListedModel, type Turn } from "@bisellium/shim";
+import { HARNESS_PROFILES, USAGE_LIMIT_EXIT_CODE, codexListModels as realCodexListModels, type HarnessProfile, type ListedModel, type Turn } from "@bisellium/shim";
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
 import { vendorDiagnostic } from "./talk.js";
 
@@ -182,9 +182,16 @@ function recomputeAggregate(entry: ModelEntry): void {
 }
 
 export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatteryResult> {
-  const due = opts.only ?? [];
   const harnesses = opts.harnesses ?? HARNESS_PROFILES;
   const nowIso = opts.now.toISOString();
+
+  let listing: ListedModel[] | undefined;
+  try {
+    listing = await (opts.listModels ?? realCodexListModels)();
+  } catch {
+    listing = undefined; // a listing failure degrades; it never empties the record (behaviour 8)
+  }
+  const due = opts.only ?? gatherCandidates({ studio: opts.studio, listing });
 
   const manifest = readManifestSafe(opts.studio);
   const seatedByHarness = new Map<string, Candidate[]>();
@@ -424,6 +431,43 @@ export function readModelsRecord(studio: string): ModelsRecord | undefined {
   return { schema: 1, at: typeof parsed.at === "string" ? parsed.at : "", harnessVersions, models };
 }
 
-export function gatherCandidates(_opts: { studio: string; listing?: ListedModel[] }): Candidate[] {
-  return [];
+/** The candidate union — two sources, and nothing else (Interfaces,
+ *  "Candidates, and how a pair is formed"). `listing: undefined` means the
+ *  listing call failed, which is NOT an empty listing: only the
+ *  manifest-derived pairs are returned, and no codex pair is invented.
+ *  `gen_ai.request.model` (the event log) is deliberately not a source
+ *  (Survey: "the source contributes zero candidates"). */
+export function gatherCandidates(opts: { studio: string; listing?: ListedModel[] }): Candidate[] {
+  const manifest = readManifestSafe(opts.studio);
+  const listingCandidates: Candidate[] = (opts.listing ?? []).map((m) => ({ id: m.id, harness: m.harness }));
+  const seatedCandidates = manifest ? seatedCandidatesFor(manifest) : [];
+
+  const knownHarnessesFor = new Map<string, Set<string>>();
+  for (const c of [...listingCandidates, ...seatedCandidates]) {
+    const set = knownHarnessesFor.get(c.id) ?? new Set<string>();
+    set.add(c.harness);
+    knownHarnessesFor.set(c.id, set);
+  }
+
+  // A tiers[].model carries no harness of its own — paired with one only
+  // if some other source already resolves that id. Unresolvable: no entry,
+  // no turn ("I do not know which vendor to ask" is an honest answer).
+  const tierCandidates: Candidate[] = [];
+  for (const t of manifest?.tiers ?? []) {
+    if (!t.model) continue;
+    const harnesses = knownHarnessesFor.get(t.model);
+    if (!harnesses) continue;
+    for (const h of harnesses) tierCandidates.push({ id: t.model, harness: h });
+  }
+
+  const seen = new Set<string>();
+  const out: Candidate[] = [];
+  for (const c of [...listingCandidates, ...seatedCandidates, ...tierCandidates]) {
+    const key = `${c.id}\u0000${c.harness}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c);
+  }
+  out.sort((a, b) => (a.id === b.id ? a.harness.localeCompare(b.harness) : a.id.localeCompare(b.id)));
+  return out;
 }

@@ -1,0 +1,24 @@
+# behaviour: 8
+# command: node --import tsx packages/commands/src/probe.test.ts . 8
+# exit: 1
+# at: 2026-09-24T19:52:50.382Z
+# sella: builder-b
+# tree: dirty:9a6e6a3e0eecf6f69c5010f4795c315ced0eec61
+
+PASS  b8 (a) the seated candidate still gets probed despite the listing failing                     [{"id":"old-codex-entry","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]},{"id":"seated-model","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.001Z","exit":0,"reply":true}],"harness":"claude-code"}]
+PASS  b8 (a) the previously-recorded codex entry is retained intact                                 [{"id":"old-codex-entry","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]},{"id":"seated-model","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.001Z","exit":0,"reply":true}],"harness":"claude-code"}]
+PASS  b8 (b) missing binary: codexListModels rejects                                                
+PASS  b8 (b) non-zero exit: codexListModels rejects                                                 
+PASS  b8 (b) unparseable JSON: codexListModels rejects                                              
+PASS  b8 (b) wrong-shaped JSON: codexListModels rejects                                             
+/tmp/claude-1000/w069-build/packages/shim/src/harness/catalog.ts:46
+  return Promise.reject(new Error("codexListModels: not yet implemented (behaviour 8)"));
+                        ^
+
+Error: codexListModels: not yet implemented (behaviour 8)
+    at codexListModels (/tmp/claude-1000/w069-build/packages/shim/src/harness/catalog.ts:46:25)
+    at <anonymous> (/tmp/claude-1000/w069-build/packages/commands/src/probe.test.ts:661:30)
+    at withStubBin (/tmp/claude-1000/w069-build/packages/commands/src/probe.test.ts:606:15)
+    at <anonymous> (/tmp/claude-1000/w069-build/packages/commands/src/probe.test.ts:658:11)
+
+Node.js v25.9.0

@@ -30,20 +30,40 @@ export interface ListedModel {
   harness: string;
 }
 
+const LIST_TIMEOUT_MS = 5_000;
 const VERSION_TIMEOUT_MS = 10_000;
 
 /** `codex debug models` — a local catalog call, no turn, no metered tokens.
  *  REJECTS on any failure (missing binary, non-zero exit, unparseable or
  *  wrong-shaped JSON). It does NOT degrade to `[]`: an empty array is a
  *  truthful "codex listed nothing", and conflating the two is the
- *  false-withdrawal bug this move closes (Sol finding 6).
- *
- *  Skeleton (behaviour 8 lands the real body): the exported signature
- *  exists so every other behaviour's module load succeeds, but this always
- *  rejects until behaviour 8's red is recorded and its implementation
- *  lands. */
+ *  false-withdrawal bug this move closes (Sol finding 6). The moved
+ *  function's own timeout, filter and tagging are unchanged — the ONLY
+ *  change from the original (apps/server/src/http.ts:262-282) is that every
+ *  one of these four failure modes now rejects instead of resolving `[]`. */
 export function codexListModels(): Promise<ListedModel[]> {
-  return Promise.reject(new Error("codexListModels: not yet implemented (behaviour 8)"));
+  return new Promise((resolvePromise, reject) => {
+    execFile("codex", ["debug", "models"], { timeout: LIST_TIMEOUT_MS }, (err, stdout) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stdout) as { models?: { slug?: unknown; visibility?: unknown }[] };
+        if (!Array.isArray(parsed.models)) {
+          reject(new Error("codex debug models: response has no models array"));
+          return;
+        }
+        resolvePromise(
+          parsed.models
+            .filter((m) => m.visibility === "list" && typeof m.slug === "string")
+            .map((m) => ({ id: m.slug as string, harness: "codex" })),
+        );
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error(String(e)));
+      }
+    });
+  });
 }
 
 /** Each vendor CLI's `--version` line, trimmed, VERBATIM — never parsed,

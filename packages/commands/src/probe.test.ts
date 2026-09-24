@@ -597,11 +597,18 @@ if (runs(8)) {
     const origPath = process.env["PATH"];
 
     async function withStubBin(script: string | undefined, run: () => Promise<void>): Promise<void> {
+      // "missing binary" must exclude the REAL system codex (this machine
+      // has one installed) — PATH is the stub dir alone, with none of the
+      // real system's bin dirs, so exec genuinely fails to find `codex`.
+      // Every other case needs the system PATH too, so the stub's
+      // "#!/usr/bin/env node" shebang can resolve `env` and `node`.
       if (script !== undefined) {
         writeFileSync(join(binDir, "codex"), script);
         chmodSync(join(binDir, "codex"), 0o755);
+        process.env["PATH"] = `${binDir}:${origPath}`;
+      } else {
+        process.env["PATH"] = binDir;
       }
-      process.env["PATH"] = `${binDir}:${origPath}`;
       try {
         await run();
       } finally {
