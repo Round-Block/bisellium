@@ -1,0 +1,373 @@
+# W-046 review, round 2 — censor (qa-lead, claude-fable-5)
+# opus: W-046 "provider portability: the decreed model and a command policy reach both harnesses"
+# branch: opus/W-046 @ 24672ca · round-1 verdict 01ef187 · brief amendment 11d9f73
+# worktree: /tmp/claude-1000/w046-build · mutation scratch in-place, restored after each
+# one live probe (the art-lead mismatch) authorised for this round; the round-1 smoke stands
+# VERDICT: FAIL (1 blocking finding, F-4, a three-instance class; F-1 and F-3 CLOSED,
+#          F-2 PARTIALLY closed — one of its two live symptoms fixed, the other not)
+
+## 0. Trap check and preconditions
+
+  git status --porcelain            -> empty (before every probe and at the end)
+  git rev-parse HEAD                -> 24672ca78795efb56cc2e90da9ba8339e6d7690f
+  git rev-parse --abbrev-ref HEAD   -> opus/W-046
+  readlink -f node_modules/@bisellium/shim
+    -> /tmp/claude-1000/w046-build/packages/shim   (INSIDE the worktree)
+
+  Round-2 commits on top of my round-1 verdict:
+    11d9f73  studio/briefs/W-046.md            brief amendment (architect)
+    df73e9a  provider-portability.test.ts, 07.log, 08.log
+    30192a7  talk.ts, codex.ts, docs/ADOPTION.md   F-1 + F-2 as one change
+    42ab547  studio/opera/W-046.md              handoff, step-0 in the traditio
+    24672ca  studio/ci/W-046-*-a3558323.log     verify certificates, round 2
+
+  Terra's round-2 delta (7/7 VERIFIED) taken as mechanical fact. All judgment mine (D-014).
+
+  **Censor's own process note, recorded because it affected this log's evidence.**
+  My first reproduction attempt used `git checkout 01ef187 -- <files>`, which STAGES;
+  my cleanup then ran `git checkout -- <files>`, which restores from the index, so the
+  tree stayed pre-fix. The mutation run launched against it reported 11 NOT-APPLIED,
+  and a concurrent `npm test` overlapped the dirty window. Both were discarded and
+  re-run from a verified-clean tree (`git restore --staged --worktree`), and only the
+  re-runs are recorded below. Recorded rather than quietly redone: an evidence log
+  that hides its own false start is the thing this officina keeps reds for.
+
+## 1. Gates, re-run by me at 24672ca on a verified-clean tree
+
+  npm test                                                 exit 0  (0 lines matching ^FAIL)
+  npm run -s typecheck                                     exit 0
+  npm run -s lint                                          exit 0  (0 errors, 2 warnings, pre-existing)
+  npm run -s format:check                                  exit 0
+  npm run -s check -- studio --repo .                      PASS — 0 blocking, 97 advisory
+  npm run -s check -- examples/sample-studio --repo .      PASS — 0 blocking, 26 advisory
+
+  Advisory movement against my round-1 run: nothing removed, two added —
+    probatio.certifies opera/W-046.md gate "review" evidence has no identity
+    process.review_tier  review sella "qa-lead" ran on claude-fable-5, not an opus-tier model
+  Both are consequences of my own round-1 verdict existing (the review gate is new on
+  the record), and the first is the officina-wide pattern every gated opus carries.
+  No builder movement. No new block.
+
+## 2. Are the round-2 reds genuine? Reproduced independently, not taken on trust
+
+  The disclosure under judgment is that the builder implemented BEFORE recording
+  07/08, caught itself, `git stash push --keep-index`'d the three implementation
+  files, recorded both reds against the restored pre-fix tree, then popped. I did not
+  rely on that account. I reconstructed the pre-fix tree myself and re-ran:
+
+    git checkout 01ef187 -- talk.ts codex.ts docs/ADOPTION.md   (round-1 content)
+    BISELLIUM_ONLY_BEHAVIOUR=7 node --import tsx .../provider-portability.test.ts .
+    BISELLIUM_ONLY_BEHAVIOUR=8 node --import tsx .../provider-portability.test.ts .
+
+  my reproduction      behaviour 7:  28 PASS / 8 FAIL      behaviour 8:  3 PASS / 5 FAIL
+  committed 07.log/08.log            28 PASS / 8 FAIL                    3 PASS / 5 FAIL
+
+  Verdict-per-assertion diff against both committed logs: IDENTICAL, every line.
+
+  The logs also carry their own proof independently of that: 07.log's failure detail
+  quotes the round-1 message verbatim (`art-lead: claude-code exited 1`) and 08.log's
+  quotes the round-1 ADOPTION paragraph ("Four residuals…") and the round-1 codex.ts
+  header ("no browser, in-app-browser, apps or plugin feature"). Neither string can
+  exist in a post-fix tree.
+
+  Ordering, against the amended Acceptance:
+    round-1 verdict 01ef187   2026-09-24T10:30:45Z
+    red 07 recorded           2026-09-24T10:53:37Z   } later than the verdict
+    red 08 recorded           2026-09-24T10:53:44Z   }
+    df73e9a (reds committed)  2026-09-24T10:54:11Z
+    30192a7 (implementation)  2026-09-24T10:56:01Z   later than both reds
+  Reds 01–06 unchanged at 09:42–09:43Z; the round-2 diff adds 07/08 and touches no
+  existing red log.
+
+### RULING on the stash (asked for explicitly)
+
+  **It satisfies red-first in substance. It is not the backfill pattern.**
+
+  The distinction that decides it: backfill is evidence that misrepresents a state —
+  a log describing a failure that did not happen, or a "red" run against a tree that
+  already had the fix. Neither occurred, and I did not have to believe anyone to know
+  it: the recorded tree was genuinely pre-fix, and I reproduced both logs
+  assertion-for-assertion from a pre-fix tree I built myself. A red's purpose is to
+  prove the test has grip on unfixed code. That purpose is fully served here.
+
+  The second purpose of test-first — that the test is designed from the spec rather
+  than fitted to the implementation — is served in this instance by the amendment
+  rather than by the ordering: behaviours 7 and 8, their scenarios and their
+  assertions were written by the architect in 11d9f73, before any of this round's
+  code existed. The builder implemented a test it did not get to design.
+
+  Disclosure is better than round 1's and I credit it: `df73e9a`'s commit message
+  says "Recorded red 07 and red 08 against the pre-fix tree (implementation
+  temporarily reverted via git stash, per Order of work step 5)". That is durable,
+  pushed, and reviewable — the limb round 1's aborted verify failed.
+
+  Two qualifications, neither changing the ruling:
+
+  a. The disclosure is durable about the MECHANISM and silent about the REASON.
+     "per Order of work step 5" reads as compliance with a prescribed procedure;
+     step 5 prescribes recording the reds first, not stashing a fix that should not
+     have existed yet. A reader of the history alone would conclude the builder
+     followed the order and stashed unrelated work in progress. The deviation itself
+     — implemented first, caught itself — survives only in the ephemeral report.
+     What would close it: one clause. "Implemented before recording; reverted via
+     stash to record the true pre-fix reds."
+  b. I could verify this one only because the fix happened to be textual, so the red
+     logs quote pre-fix strings and betray their own tree. A subtler fix — a
+     reordering, a changed comparison — would have left a log identical either way,
+     and I would have had nothing but the builder's word. The verifiability here was
+     luck, not design. That is the same control gap as round 1's O-2, and it is why
+     that class's proposed target is a check or a hook rather than a resolution to
+     disclose.
+
+  Class status: this is instance 3 of the class opened in round 1's O-2 — officina
+  bookkeeping or evidence ordering corrected by hand mid-flight, with disclosure
+  depending on an agent remembering. (W-047 round 2, censor's verify, disclosed in a
+  review log; W-046 round 1, builder's verify, disclosed nowhere durable; W-046
+  round 2, builder's stash, disclosed in a commit message.) The trend is improving
+  and the target stands: `verify`/`red` should record or refuse, not rely on memory.
+
+## 3. F-1 — CLOSED. Verified against the live text, not the commit message
+
+  behaviour 8, standalone at HEAD: 8 PASS / 0 FAIL. It checks BOTH shipped texts —
+  docs/ADOPTION.md's "Running talk" section and codex.ts's header comment — for
+  three predicates each.
+
+  Read by me against the amended brief's assertions:
+
+  - docs/ADOPTION.md now carries a "CORRECTED, round 2 (censor F-1)" paragraph
+    stating the live vendor-side web fetch/search channel survives the whole policy,
+    "closed by none of the eight `--disable` names", and that the fetch runs
+    vendor-side so neither bubblewrap nor sandbox_mode=read-only touches it.
+  - The achievement line no longer reads as a boundary: "That list is the whole
+    achievement on the tool surface — those eight names, not 'no egress.'" The
+    round-1 sentence "no browser, in-app-browser, apps or plugin feature" is gone
+    from both texts (behaviour 8 asserts its absence; mutations R9/R10 prove that
+    assertion bites).
+  - Residual count 4 -> 5, egress named FIRST, paired explicitly with unbounded reads
+    and quoting W-044's own reason: "paired with `Read` it would be the profile's
+    only egress". That is exactly what F-1 asked for, including the pairing.
+  - codex.ts's header carries the same correction in the same order.
+  - No egress-closing flag was invented, which is right: none was probed. The brief
+    routes the question to the follow-on as its third named question.
+
+  The amendment also adopted the rule that caused F-1 — "a residual is added to that
+  list by measurement, never removed by inference", and step 0 now carries "what step
+  0 cannot tell you: the feature table is not the tool surface." That is the lesson
+  landing in the process rather than in a review log, which is the right home for it.
+
+## 4. F-3 — CLOSED. The unmeetable acceptance condition is struck, correctly
+
+  The smoke's pass condition now reads "exactly `claude-opus-5` on both turns … the
+  decreed values, arriving through the `turn.model ?? requested` fallback", with the
+  reason recorded (neither installed vendor emits a build id) and the design
+  explicitly unchanged. The brief also records the option considered and declined
+  (`Object.keys(parsed.modelUsage)[0]` returns the same alias) and why it would only
+  matter under silent vendor substitution. Behaviour 4 keeps the stub echo, with a
+  note that the echoing vendor there is the stub — correct: that property must
+  survive a vendor version that starts echoing again. Nothing to re-open.
+
+## 5. F-2 — PARTIALLY closed. One live symptom fixed, the other not. See F-4
+
+  The remedy is real and I credit it precisely. `vendorDiagnostic()` in
+  packages/commands/src/talk.ts is a single shared-site helper, applied to both
+  profiles at the one non-zero-exit return, redacted through the same pass the
+  timeline uses, bounded to 300 characters, never parsed or branched on. The failure
+  message also now names the requested model, which round 1's did not. Behaviour 7's
+  five scenarios all pass, and every mutation against them bites (§7).
+
+  What I measured live, with the exact command the amended Acceptance specifies:
+
+    npm run -s bisellium -- talk --sella art-lead --model-only --studio <sample copy> \
+      "Name the opus you are booted for and stop."
+
+    EXIT 1 · message, quoted rather than paraphrased as the brief requires:
+
+        art-lead: claude-code exited 1 (requested model: gpt-6-astra)
+
+    No session, timeline or receipt written.
+
+  The model is named — that half is fixed and is a genuine improvement. The vendor's
+  own string is NOT there, and the amended Acceptance names it explicitly:
+  "the message names the sella, the harness, the model (`gpt-6-astra`) and the
+  vendor's own string (`[claude-code:unrecognized_model]`)".
+
+## 6. F-4 (BLOCKING) — `vendorDiagnostic` reads two `Turn.raw` keys; the vendor uses
+##       four shapes. Three instances, one covered. Live-measured
+
+  Root cause, measured on claude 2.1.280 with the streams separated:
+
+    claude -p --output-format json --model gpt-6-astra <W-044 policy>   -> exit 1
+      STDOUT (1285 bytes): a VALID JSON envelope —
+        is_error: true, api_error_status: 404, subtype: "success",
+        result: "There's an issue with the selected model (gpt-6-astra). It may not
+                 exist or you may not have access to it. Run --model to pick a
+                 different model."
+      STDERR (78 bytes):
+        [claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"}
+
+  Because stdout parses, `runClaude` does NOT take the `{stdout, stderr}` branch
+  (claude-code.ts:142). It takes claude-code.ts:144-152, which sets
+  `reply: parsed.is_error ? "" : …` — forced to `""` — and `raw: parsed`, an object
+  with neither a `stderr` nor a `stdout` key. `vendorDiagnostic` (talk.ts:239-248)
+  reads only those two keys, so it returns undefined. The operator loses BOTH the
+  stderr string AND the envelope's own `result` sentence — which is the single most
+  useful line available, and is already sitting in `raw`.
+
+  The brief's behaviour-7 preamble diagnosed the mechanism as "`turn.reply` is `""`
+  on exactly the paths where the vendor said something useful — claude-code.ts puts
+  `{stdout, stderr}` in raw when no envelope parses". That is one of the paths, not
+  all of them: `reply` is ALSO forced to `""` at :147 on a parsed `is_error`
+  envelope, where raw is the envelope. The fix was built to an incomplete diagnosis,
+  faithfully.
+
+  ### Every instance, enumerated. I read all four `Turn.raw` constructions in each
+  ### profile (grep "raw:" across claude-code.ts and codex.ts, eight sites total)
+
+  COVERED by vendorDiagnostic today:
+    claude-code.ts:142   raw: { stdout, stderr }            no envelope parsed
+    codex.ts:239         raw: { stdout, stderr, timedOut }  timeout
+    codex.ts:263         raw: { stdout, stderr }            normal non-zero close
+  N/A by design (exit 3 returns earlier in performTalk, before the diagnostic branch):
+    claude-code.ts:140, codex.ts:254   usage-limit paths
+
+  NOT COVERED — the class:
+    I-1  claude-code.ts:149  raw: parsed   parsed envelope with is_error true.
+         LIVE-MEASURED above. This is the exact case the amended Acceptance names,
+         and the only shape the real vendor produces for it. Highest value: it
+         discards two diagnostics, one of them plain English.
+    I-2  claude-code.ts:131  raw: { error: r.error.message }   spawn failure, exit 127
+    I-3  codex.ts:246        raw: { error: err.message }       spawn failure, exit 127
+         I-2/I-3 are the same shape in both profiles and close with the same read.
+         `available()` guards the common case but does not make them unreachable
+         (a spawn can fail after the probe succeeds).
+
+  Measured for contrast, and this is what F-2's remedy DOES fix live:
+
+    claude -p --resume <vanished id> --output-format json --model claude-opus-5 …
+      -> exit 1, STDOUT 0 bytes, STDERR "No conversation found with session ID: …"
+      stdout does not parse -> claude-code.ts:142 -> raw {stdout, stderr} -> CARRIED.
+
+  So F-2's two live symptoms split: the resume symptom (round 1's smoke turn 2) is
+  genuinely fixed; the mismatch symptom (round 1's art-lead case, the one the finding
+  was named on) is not.
+
+  ### Why this blocks
+
+  1. An explicit Acceptance condition, written THIS round to incorporate F-2, is
+     measurably unmet by the round that was dispatched to meet it. I ran the exact
+     specified command and quoted the exact message, as the amended brief asks.
+  2. docs/ADOPTION.md now states, for this exact named case, that a `claude` that
+     doesn't recognize the model "exits non-zero (`[claude-code:unrecognized_model]`),
+     and `talk` relays the exit code **and** the vendor's own captured diagnostic".
+     Live, for that case, it relays the exit code and the requested model, not the
+     vendor's diagnostic. A shipped, behaviour-asserted document claiming more than
+     the code does is F-1's exact defect class, recurring inside F-1's own remedy.
+  3. It is a class of three with one instance covered — the W-026 pattern my charter
+     names, where fixing one instance at a time costs a round each.
+
+  ### What closes it — small, one place, no new call site
+
+  a. Widen `vendorDiagnostic(raw)` in packages/commands/src/talk.ts to the shapes the
+     profiles actually produce: the envelope's own error text (`result` when
+     `is_error` is true, plus `error`/`api_error_status` where present) and the
+     `error` key of the spawn-failure shape — alongside the `stderr`/`stdout` it
+     already reads. Same redaction, same 300-char budget, same never-parsed
+     discipline, same single site. Note for whoever builds it: reading `result`
+     *because* the envelope's structured `is_error` flag is set is not "branching on
+     the diagnostic" — the brief forbids branching on the diagnostic's TEXT, and
+     claude-code.ts:147 already branches on `is_error` itself.
+  b. Stub fidelity, which is what let this through (Sol's round-1 target 5 asked this
+     question exactly). Behaviour 7 scenario A's claude stub models the mismatch as
+     "nothing on stdout, error on stderr, exit 1". The real vendor emits a full
+     parseable envelope on stdout AND the stderr line. Give that scenario the
+     measured shape above, and the red is honest: it fails today.
+  c. One scenario for the `{ error: … }` spawn-failure shape, covering I-2 and I-3.
+
+## 7. The censor's mutation run, round 2 — 13 mutations, all required to fail
+
+  The amended brief's round-2 list, plus the round-1 doc mutations RE-RUN against the
+  rewritten ADOPTION paragraph (a rewrite can loosen a literal predicate's grip).
+  Driver: scratchpad/mutate2.py, revert in a `finally`, porcelain read at the end.
+
+  CAUGHT  R1  drop the vendor diagnostic from the failure message        b7  5 FAIL
+  CAUGHT  R2  carry the diagnostic on the claude path only               b7  1 FAIL
+  CAUGHT  R3  carry raw un-redacted (secret-shaped token reaches stderr) b7  1 FAIL
+  CAUGHT  R4  carry the diagnostic without truncation                    b7  1 FAIL
+  CAUGHT  R5  branch on the diagnostic's text instead of printing it     b7  4 FAIL
+  CAUGHT  R6  drop the requested model from the failure message          b7  2 FAIL
+  CAUGHT  R7  delete the egress residual from docs/ADOPTION.md           b6,8 1 FAIL
+  CAUGHT  R8' delete the egress residual from codex.ts's header          b8  1 FAIL
+  CAUGHT  R9  restore the round-1 "no browser … feature" line (codex.ts) b8  1 FAIL
+  CAUGHT  R10 restore the round-1 "no browser … feature" line (ADOPTION) b8  1 FAIL
+  CAUGHT  R11 [re-run] delete --disable remote_plugin from ADOPTION      b6  1 FAIL
+  CAUGHT  R12'[re-run] delete the unbounded-reads residual from ADOPTION b6,8 2 FAIL
+  CAUGHT  R13 [re-run] delete the no-tool-allowlist residual             b6  1 FAIL
+
+  SUMMARY: 13 caught, 0 survived. git status --porcelain after: empty.
+
+  Method note, recorded because it produced two false SURVIVED/NOT-APPLIED results on
+  my first pass: both shipped texts are hard-wrapped, and behaviours 6 and 8 collapse
+  whitespace before matching — correctly, since a phrase legitimately wraps across a
+  prose line or a JSDoc `*` continuation. A naive literal mutation does not. codex.ts
+  carries "web fetch/search" twice, once on one line (:41) and once wrapped across
+  :55-56 as "web\n * fetch/search"; ADOPTION carries "paired with unbounded\nreads".
+  R8 and R12 only bit once re-run against every site (R8', R12'). The tests are right;
+  my first mutations were under-inclusive. Worth knowing for the next censor.
+
+  Behaviours 1-6 re-run at HEAD: unchanged and green. Round 1's 30 mutations are not
+  re-run — they target claude-code.ts's argv, codex.ts's policy constant and talk.ts's
+  model/no-reply paths, none of which this round touched; R11/R12'/R13 re-cover the
+  only round-1 territory the rewrite disturbed (behaviour 6's doc predicates).
+
+## 8. Observations
+
+  O-8  The traditio now carries step 0's three outputs (42ab547), per the amended
+       wording, and I re-ran them in round 1 into W-046-review-1.log §2. Round 1's O-1
+       is closed: the Acceptance names a real artefact and a real gate. I did not
+       re-run step 0 this round — no vendor version changed and the constant is
+       untouched.
+  O-9  Behaviour 8's "no unqualified claim" predicate is a single exact-literal
+       negative match on "no browser, in-app-browser, apps or plugin feature". It
+       would not catch a differently-worded egress overclaim. It is load-bearing only
+       in combination with the two positive assertions beside it, which do force the
+       residual to be stated — so the block as a whole holds. Noted rather than filed:
+       it is Sol's round-1 target 4 (literal matching over prose is brittle) in its
+       mildest form, and a sharper predicate was not found by either of us.
+  O-10 `extractHeaderComment`'s disclosed bug is real and the disclosure is the right
+       kind. Left in place, the stray `*` from a wrapped JSDoc line would have split
+       exactly the phrase behaviour 8 asserts absent, and the check would have passed
+       falsely. The builder found it while drafting, fixed it, and said so in
+       df73e9a's message. That is the disclosure standard the stash note (§2a) did
+       not quite reach, in the same commit.
+  O-11 The brief amendment 11d9f73 carries `Co-Authored-By: qa-lead (censor)`. I did
+       not write, sign or co-author it. The trailer is presumably meant to credit the
+       findings it incorporates, and nothing turns on it here — but my lex is explicit
+       that specs are signed by the architect and the censor's input is advisory, not
+       gate-signing (P-008). A co-author trailer naming the reviewing sella on a spec
+       could later be read as the censor having signed the spec it then reviews.
+       Advisory; worth a convention decision, not a fix in this opus.
+  O-12 Round 1's F-2 root cause is now partially shared with the filed claude-resume
+       opus: the resume symptom's diagnostic IS carried after this round (§6), so
+       that opus inherits a visible error message to work from, which is what the
+       amended brief predicted it would need.
+
+## 9. Verdict
+
+  FAIL, round 2.
+
+  F-1 and F-3 are closed, and closed well — the egress residual is named first,
+  paired with unbounded reads, quoting W-044's refusal, in both shipped texts, with
+  six assertions and four mutations holding it there; and the amendment carried the
+  causal lesson into step 0 rather than leaving it in my log. F-2's remedy is a
+  correct single-site guard, redacted and bounded, and it fixes one of that finding's
+  two live symptoms.
+
+  It does not fix the other, and that one is the case the finding was named on and
+  the case the amended Acceptance names in writing. `vendorDiagnostic` reads two
+  `Turn.raw` keys; the profiles construct four shapes, and the shape the real vendor
+  produces for a mismatched model is not one of the two. I measured it live with the
+  specified command and quoted the result. Three instances, one place to fix, one
+  stub to give the shape the vendor actually emits.
+
+  Dispatch F-4 as one change across all three instances — not I-1 alone. That is the
+  whole reason the class is enumerated here.

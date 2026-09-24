@@ -1,0 +1,17 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T09:43:12.722Z
+# sella: builder-c
+# tree: dirty:4be5d60bdab0de432884759af4c932c62e659566
+
+ack
+PASS  behaviour 4 codex: runTalk exit 0                                              0
+PASS  behaviour 4 codex: two timeline lines                                          2
+PASS  behaviour 4 codex: in entry carries no model                                   {"at":"2026-09-24T09:43:12.926Z","sella":"eng-lead","direction":"in","text":"hello","sessionId":"thr-w046"}
+FAIL  behaviour 4 codex: out entry model is the requested model (vendor echoed none) {"at":"2026-09-24T09:43:12.926Z","sella":"eng-lead","direction":"out","text":"ack","sessionId":"thr-w046","usage":{"input":10,"output":5}}
+ack
+PASS  behaviour 4 claude: runTalk exit 0                                             0
+PASS  behaviour 4 claude: two timeline lines                                         2
+PASS  behaviour 4 claude: in entry carries no model                                  {"at":"2026-09-24T09:43:13.099Z","sella":"eng-lead","direction":"in","text":"hello","sessionId":"sess-w046"}
+PASS  behaviour 4 claude: out entry model is the vendor-echoed model, not the request {"at":"2026-09-24T09:43:13.099Z","sella":"eng-lead","direction":"out","text":"ack","sessionId":"sess-w046","model":"claude-opus-5-20260101"}

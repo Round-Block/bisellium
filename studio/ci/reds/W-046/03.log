@@ -1,0 +1,23 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/provider-portability.test.ts .
+# exit: 1
+# at: 2026-09-24T09:43:07.044Z
+# sella: builder-c
+# tree: dirty:4be5d60bdab0de432884759af4c932c62e659566
+
+
+FAIL  behaviour 3 claude: runTalk returns non-zero exit                              0
+FAIL  behaviour 3 claude: no sessions/eng-lead.json                                  
+FAIL  behaviour 3 claude: no timeline/eng-lead.jsonl                                 
+FAIL  behaviour 3 claude: no receipt under receipts/eng-lead/                        sess-w046.json
+FAIL  behaviour 3 claude: stderr names the sella                                     
+FAIL  behaviour 3 claude: stderr names the harness                                   
+FAIL  behaviour 3 claude: stderr names the requested model                           
+
+FAIL  behaviour 3 codex: runTalk returns non-zero exit                               0
+FAIL  behaviour 3 codex: no sessions/eng-lead.json                                   
+FAIL  behaviour 3 codex: no timeline/eng-lead.jsonl                                  
+FAIL  behaviour 3 codex: no receipt under receipts/eng-lead/                         thr-w046.json
+FAIL  behaviour 3 codex: stderr names the sella                                      
+FAIL  behaviour 3 codex: stderr names the harness                                    
+FAIL  behaviour 3 codex: stderr names the requested model                            

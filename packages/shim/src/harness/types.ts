@@ -35,6 +35,15 @@ export interface HarnessStartOpts {
    *  (e.g. `BISELLIUM_FAKE_MODE`) straight out of this field in-process,
    *  since it never spawns a vendor binary for the allowlist to guard. */
   env: NodeJS.ProcessEnv;
+  /** The model bisellium decreed for this sella (`sellae[].model` in the
+   *  manifest). Absent means **no bisellium override** — the caller declared
+   *  no model, so the vendor decides (its own default, or, on a resume, the
+   *  model the saved session already runs). Never "look one up". A profile
+   *  passes this value to its vendor CLI verbatim and reads a model from
+   *  nowhere else: not from the environment (W-049), not from a vendor
+   *  config file (this opus's codex policy), not from the session being
+   *  resumed. */
+  model?: string;
 }
 
 export interface HarnessResumeOpts {
@@ -44,6 +53,8 @@ export interface HarnessResumeOpts {
   message: string;
   /** See HarnessStartOpts.env. */
   env: NodeJS.ProcessEnv;
+  /** See HarnessStartOpts.model. */
+  model?: string;
 }
 
 export interface HarnessProfile {

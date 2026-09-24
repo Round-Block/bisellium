@@ -1,0 +1,588 @@
+# W-046 review, round 1 — censor (qa-lead, claude-fable-5)
+# opus: W-046 "provider portability: the decreed model and a command policy reach both harnesses"
+# branch: opus/W-046 @ b912850 · fork point d434dac · spec of record studio/briefs/W-046.md (on the branch)
+# worktree: /tmp/claude-1000/w046-build · mutation scratch in-place, restored after each
+# attended live smoke authorised by the Patron and run as part of this round
+# VERDICT: FAIL (2 blocking findings: F-1, F-2; 1 advisory finding F-3; 7 observations)
+
+## 0. Trap check and preconditions
+
+  git status --porcelain            -> empty (before every probe and at the end)
+  git rev-parse HEAD                -> b91285072b24163215b7e891794488ad74edcb6b
+  git rev-parse --abbrev-ref HEAD   -> opus/W-046
+  readlink -f node_modules/@bisellium/shim
+    -> /tmp/claude-1000/w046-build/packages/shim
+  Resolves INSIDE the worktree. Every run below tested the branch's own packages/.
+
+  Branch commits under review:
+    94282bb  studio/opera/W-046.md                spec gate signed on the branch (D-021)
+    48e12ac  provider-portability.test.ts, reds   behaviours 1-6 + six red logs
+    298a722  types.ts, claude-code.ts, talk.ts, talk-boundary.test.ts
+    99e43af  codex.ts                             policy constant and -m
+    ee34905  docs/ADOPTION.md, studio/bisellium.yml
+    817d8ce  studio/opera/W-046.md                traditio
+    b912850  studio/ci/W-046-{tests,lint,types}-899b0de3.log   verify certificates
+
+  Terra's mechanical sheet (/tmp/claude-1000/w046-terra-sheet.md) taken as fact for its
+  8 VERIFIED claims. Its one FALSE (step-0 evidence) is ruled on in O-1. All judgment
+  below is the censor's (D-014).
+
+## 1. Gates, re-run by me in the worktree at b912850
+
+  npm test                                                 exit 0
+  npm run -s typecheck                                     exit 0
+  npm run -s lint                                          exit 0  (0 errors, 2 warnings, both pre-existing)
+  npm run -s format:check                                  exit 0  "All matched files use Prettier code style!"
+  npm run -s check -- studio --repo .                      PASS — 0 blocking, 95 advisory
+  npm run -s check -- examples/sample-studio --repo .      PASS — 0 blocking, 26 advisory
+
+  Advisory movement against master (sorted set diff, both officinae checked):
+    removed: none
+    new:     probatio.certifies opera/W-046.md gate "spec" evidence has no identity
+             process.checkpoint HEAD last commit changed opera without updating
+                                SESSION-HANDOFF.md or dossier progress
+  Neither is a builder defect — see O-6. The brief's predicted side effect (hook.dead
+  for builder-sol disappearing) did not occur; see O-3.
+
+## 2. Step 0 re-run by the censor (the brief's flag inventory), verbatim
+
+  codex --version                         -> codex-cli 0.153.4
+
+  diff <(codex exec --help) <(codex exec resume --help)   -> exit 1 (they differ)
+  Start-only, established from the installed version's own help, not trusted from the
+  brief: --oss, --local-provider, -p/--profile, -s/--sandbox, --approve-for-me,
+  -C/--cd, --add-dir, --color, -V/--version, and `exec`'s subcommands
+  (resume/fork/review/help). Resume-only: [SESSION_ID], --last, --all.
+  Confirms the brief's central CLI fact: `-s/--sandbox` and `-C/--cd` do NOT cross to
+  `exec resume`, so one constant can serve both spawns only via -c sandbox_mode=read-only.
+
+  Present in BOTH help outputs (grep count exec/resume):
+    --json 1/1 · --skip-git-repo-check 1/1 · --ignore-user-config 1/1 ·
+    --ignore-rules 1/1 · --disable 1/1 · -m,--model 1/1 · -c,--config 1/1
+  Every token of the shipped constant is accepted by both spawns per the installed help.
+
+  codex features list                     (defaults, no flags)
+    apps                                     stable  true
+    browser_use                              stable  true
+    browser_use_external                     stable  true
+    browser_use_full_cdp_access              stable  true
+    in_app_browser                           stable  true
+    plugin_sharing                           stable  true
+    plugins                                  stable  true
+    remote_plugin                            stable  true
+
+  codex features list --disable browser_use --disable browser_use_external \
+    --disable browser_use_full_cdp_access --disable in_app_browser --disable apps \
+    --disable plugins --disable remote_plugin --disable plugin_sharing
+    apps                                     stable  false
+    browser_use                              stable  false
+    browser_use_external                     stable  false
+    browser_use_full_cdp_access              stable  false
+    in_app_browser                           stable  false
+    plugin_sharing                           stable  false
+    plugins                                  stable  false
+    remote_plugin                            stable  false
+
+  All eight names still exist, are stable and enabled by default, and flip to false.
+  They match the eight in codex.ts's CODEX_POLICY_FLAGS exactly. The Acceptance
+  clause "the eight --disable names in the shipped constant match the ones step 0
+  showed flipping" is DISCHARGED.
+
+  codex doctor (the surface --ignore-user-config removes):
+    config.toml         ~/.codex/config.toml        config.toml parse  ok
+    MCP servers         1
+    feature flags       47 enabled · 0 overridden
+    auth storage mode   File      stored auth mode  chatgpt
+  Auth is the default $HOME/.codex/auth.json file login, so the smoke's
+  "inconclusive if auth is not the default file login" condition does not fire.
+
+## 3. Review-only checks the brief assigns to the censor, not to a test
+
+  CODEX_POLICY_FLAGS is module-local. grep across packages/ apps/ adapters/ finds it
+  at exactly four sites, all inside packages/shim/src/harness/codex.ts (header
+  comment :24, declaration :71, start :287, resume :293). It is a bare `const`, not
+  exported from harness/index.ts (which re-exports only the four profiles, the types
+  and USAGE_LIMIT_EXIT_CODE) nor from the shim index. Not configurable by a caller. OK.
+
+  No --model CLI flag on talk. Confirmed by Terra (usage-banner --model count 3,
+  equal to master; talk's usage line carries only --model-only) and by the usage
+  banner printed at the top of this review. OK.
+
+  harnessEnv's ten-name allowlist unchanged: env diff 0 bytes (Terra CLAIM 4), and
+  proven live below — three real codex turns completed through talk, which projects
+  the env through harnessEnv, with no eleventh name. OK.
+
+## 4. The censor's mutation run — 30 mutations, every one required to fail the suite
+
+  Driver: scratchpad/mutate.py. One text substitution per mutation, the named test(s)
+  run, revert with `git checkout -- <file>` in a `finally`, porcelain read at the end.
+  PP = packages/cli/src/provider-portability.test.ts, TB = packages/cli/src/talk-boundary.test.ts.
+
+  CAUGHT  M01 drop --model from claude start only          PP exit 1, TB exit 1
+  CAUGHT  M02 drop --model from claude resume only         PP exit 1, TB exit 1
+  CAUGHT  M03 drop -m from codex start only                PP exit 1
+  CAUGHT  M04 drop -m from codex resume only               PP exit 1
+  CAUGHT  M05 move --model after --allowedTools (start)    PP exit 1, TB exit 1
+  CAUGHT  M06 move --model after --allowedTools (resume)   PP exit 1, TB exit 1
+  CAUGHT  M07 drop --ignore-user-config                    PP exit 1
+  CAUGHT  M08 drop --ignore-rules                          PP exit 1
+  CAUGHT  M09 drop -c sandbox_mode=read-only               PP exit 1
+  CAUGHT  M10 drop -c model_provider=openai                PP exit 1
+  CAUGHT  M11 drop --disable browser_use                   PP exit 1
+  CAUGHT  M12 drop --disable browser_use_external          PP exit 1
+  CAUGHT  M13 drop --disable browser_use_full_cdp_access   PP exit 1
+  CAUGHT  M14 drop --disable in_app_browser                PP exit 1
+  CAUGHT  M15 drop --disable apps                          PP exit 1
+  CAUGHT  M16 drop --disable plugins                       PP exit 1
+  CAUGHT  M17 drop --disable remote_plugin                 PP exit 1
+  CAUGHT  M18 drop --disable plugin_sharing                PP exit 1
+  CAUGHT  M19 emit -s read-only instead of -c sandbox_mode on resume   PP exit 1
+          (the stub exits 2 on it, as the real CLI does — first FAIL line is
+           "behaviour 2: second runTalk call exit 0  2")
+  CAUGHT  M20 add -C <cwd> to codex start argv             PP exit 1
+  CAUGHT  M21 add -C <cwd> to codex resume argv            PP exit 1
+  CAUGHT  M22 read the model from process.env not the manifest row     PP exit 1 (12 FAIL lines), TB exit 1
+  CAUGHT  M23 overwrite Turn.model with the request unconditionally    PP exit 1
+          first FAIL: "behaviour 4 claude: out entry model is the vendor-echoed model, not the request"
+  CAUGHT  M24 accept an exit-0 empty-reply turn as success (both vendors)  PP exit 1 (14 FAIL lines)
+  CAUGHT  M25 on a refused turn, write the session only    PP exit 1
+          first FAIL: "behaviour 3 claude: no sessions/eng-lead.json"
+  CAUGHT  M26 on a refused turn, write the timeline only   PP exit 1
+          first FAIL: "behaviour 3 claude: no timeline/eng-lead.jsonl"
+  CAUGHT  M27 on a refused turn, write the receipt only    PP exit 1
+          first FAIL: "behaviour 3 claude: no receipt under receipts/eng-lead/  sess-w046.json"
+  CAUGHT  M28 resume a codex session with a claude session id   PP exit 1
+  CAUGHT  M29 delete a policy token from ADOPTION.md (--disable remote_plugin)  PP exit 1
+  CAUGHT  M30 delete a signed-limit residual from ADOPTION.md (unbounded reads) PP exit 1
+
+  SUMMARY: 30 caught, 0 survived, 0 not-applied of 30.
+  git status --porcelain after the run: empty. Every restore held.
+
+  The suite bites on every mutation the brief's Acceptance names. The test work on
+  this opus is not the problem; findings F-1 and F-2 are about what the policy and
+  the documentation claim, not about the tests' grip on what was built.
+
+## 5. THE ATTENDED LIVE DUAL-HARNESS SMOKE
+
+  Temp copy of the branch's studio/ at /tmp/claude-1000/w046-smoke-studio (never
+  studio/ in place). Vendor argv captured from /proc during each turn by a polling
+  helper, so the argv recorded below is the real spawned process's, not inferred
+  from source. claude 2.1.280 · codex-cli 0.153.4 · operator logged in to both.
+
+### Turn 1 — eng-lead (claude-code), START
+
+  bisellium talk --sella eng-lead --model-only \
+    --studio /tmp/claude-1000/w046-smoke-studio "Name the opus you are booted for and stop."
+
+  vendor argv (from /proc):
+    claude -p --output-format json --model claude-opus-5
+      --append-system-prompt-file /tmp/claude-1000/bisellium-sysprompt-JQJa2c/system-prompt.md
+      --restricted --strict-mcp-config --permission-mode dontAsk
+      --tools Read,Grep,Glob,Bash
+      --allowedTools Read Grep Glob Bash(bisellium) Bash(bisellium context)
+        Bash(bisellium context *) Bash(bisellium query) Bash(bisellium query *)
+        Bash(bisellium check) Bash(bisellium check *)
+
+  EXIT 0 · reply NON-EMPTY (192 bytes):
+    "W-046 — *provider portability: one opus end-to-end on both harnesses, model and
+     policy passed*. It's the only item in `building`, and the working directory
+     (`w046-smoke-studio`) matches it."
+
+  The decreed model REACHED THE VENDOR, in the slot the brief's ordering rule fixes:
+  --model sits after --output-format json and before --append-system-prompt-file, and
+  --allowedTools is terminal with exactly W-044's ten values. W-044's boundary is
+  intact — adding a flag did not move it.
+  (One sandbox denial, unrelated: claude's telemetry to datadoghq. Not a talk failure.)
+
+### Turn 2 — eng-lead (claude-code), RESUME — INCONCLUSIVE, NOT A W-046 FAILURE
+
+  sessions/eng-lead.json before: harness claude-code, sessionId
+    c946684b-7a9f-4403-983b-ad0b3f2c2653, turns 1 — so this call took the resume branch.
+
+  bisellium talk --sella eng-lead --model-only \
+    --studio /tmp/claude-1000/w046-smoke-studio "Name it again in three words."
+
+  EXIT 1 · reply EMPTY · stderr: "eng-lead: claude-code exited 1"
+
+  The brief's named inconclusive path. Two independent reproductions:
+
+  (a) argv A/B on the same session id, isolating the one token W-046 adds:
+      WITH    --model claude-opus-5 -> "No conversation found with session ID:
+                                        c946684b-..."   exit 1
+      WITHOUT --model (master's argv) -> "No conversation found with session ID:
+                                        c946684b-..."   exit 1
+      Identical failure, identical message. --model is not the cause.
+
+  (b) the same two-turn talk on master, in a throwaway master worktree
+      (/tmp/claude-1000/w046-master @ 44a1869, own temp studio copy):
+      master turn 1 (start)  EXIT 0, reply non-empty, session 2f91e249-...
+      master turn 2 (resume) EXIT 1, "eng-lead: claude-code exited 1"
+
+  RULING: pre-existing defect in talk's claude resume path, reproduced on master,
+  independent of this opus. The claude-resume half of the smoke is INCONCLUSIVE —
+  not a pass and not a failure of W-046. To be filed as its own opus (see F-2, which
+  shares a root cause: the vendor's diagnostic never reaches the operator).
+
+### Turn 3 — builder-sol (codex), START
+
+  bisellium talk --sella builder-sol --model-only \
+    --studio /tmp/claude-1000/w046-smoke-studio "Name the opus you are booted for and stop."
+
+  vendor argv (from /proc):
+    codex exec --json --skip-git-repo-check --ignore-user-config --ignore-rules
+      -c sandbox_mode=read-only -c model_provider=openai
+      --disable browser_use --disable browser_use_external
+      --disable browser_use_full_cdp_access --disable in_app_browser
+      --disable apps --disable plugins --disable remote_plugin --disable plugin_sharing
+      -m gpt-5.6-sol -
+
+  EXIT 0 · reply NON-EMPTY (95 bytes):
+    "W-046 · provider portability: one opus end-to-end on both harnesses, model and
+     policy passed."
+
+  Every token of the shipped policy constant reached the real binary, in order, with
+  the decreed codex tier as -m. No -C/--cd, no --dangerously-bypass-*. The whole argv
+  ran under W-049's unchanged ten-name env allowlist — no eleventh name needed.
+
+### Turn 4 — builder-sol (codex), RESUME
+
+  sessions/builder-sol.json before: harness codex,
+    sessionId 01a0d2ee-519f-7760-a1ba-2e7f4f297528, turns 1 — resume branch.
+
+  bisellium talk --sella builder-sol --model-only \
+    --studio /tmp/claude-1000/w046-smoke-studio "Name it again in three words."
+
+  vendor argv (from /proc):
+    codex exec resume 01a0d2ee-519f-7760-a1ba-2e7f4f297528
+      --json --skip-git-repo-check --ignore-user-config --ignore-rules
+      -c sandbox_mode=read-only -c model_provider=openai
+      --disable browser_use --disable browser_use_external
+      --disable browser_use_full_cdp_access --disable in_app_browser
+      --disable apps --disable plugins --disable remote_plugin --disable plugin_sharing
+      -m gpt-5.6-sol -
+
+  EXIT 0 · reply NON-EMPTY (27 bytes): "Provider portability opus."
+
+  Sol finding 5's case, closed live and on the vendor stub equality could not reach:
+  the IDENTICAL policy constant is accepted by `codex exec resume`, including every
+  --disable token and -m, with the sandbox mode travelling as -c sandbox_mode=read-only
+  rather than the -s that resume rejects. The codex resume half PASSES.
+
+### Smoke artefact conditions
+
+  sessions/builder-sol.json: harness "codex", sessionId
+    01a0d2ee-519f-7760-a1ba-2e7f4f297528 (non-null), turns 2.                PASS
+  timeline/builder-sol.jsonl: 4 lines; both `out` entries model = gpt-5.6-sol;
+    both `in` entries carry no model; usage recorded on both out entries.     PASS
+  timeline/eng-lead.jsonl: 2 lines (turn 1 only); `out` model = claude-opus-5.
+    NOT the "claude-opus-5 build id" the brief's pass condition names — see F-3.
+  Two receipts written, one per sella, named by session id.                   PASS
+
+### The codex policy is enforced, live (re-measured through talk, not raw)
+
+  bisellium talk --sella builder-sol --model-only --studio <tmp>
+    "Run exactly this shell command and report only its numeric exit code:
+     touch /tmp/claude-1000/w046-smoke-studio/zz-w046-smoke.txt"
+
+  vendor argv: codex exec resume 01a0d2ee-... <full policy> -m gpt-5.6-sol -
+  EXIT 0 · reply: "1"
+  ls /tmp/claude-1000/w046-smoke-studio/zz-w046-smoke.txt -> No such file or directory
+
+  The session ran the command and the write was REFUSED (exit 1), no file created.
+  sandbox_mode=read-only binds through talk, on a RESUMED session, inside the studio
+  sandbox. D-020's nested-sandbox lesson does not bite a read-only talk turn.        PASS
+
+### The mismatch fails closed — PARTIAL, see F-2
+
+  Copy of examples/sample-studio; art-lead is model gpt-6-astra on the default
+  claude-code harness.
+
+  bisellium talk --sella art-lead --model-only --studio <sample copy> "Name the opus..."
+  EXIT 1 · stderr: "art-lead: claude-code exited 1"
+  sessions/art-lead.json, timeline/art-lead.jsonl, receipts/art-lead — none exist.
+
+  Exits non-zero: PASS. No session/timeline/receipt written: PASS.
+  "and the message names the model": FAIL. The message names neither gpt-6-astra nor
+  the vendor's own [claude-code:unrecognized_model]. See F-2.
+
+### The residuals are recorded, not waived (NOT a pass condition)
+
+  One turn under the exact shipped policy argv, asked to list its tools. A model's
+  self-report is not evidence of a boundary and is not written up as one. Baseline for
+  the follow-on opus, verbatim:
+
+    functions.wait                  functions.request_user_input
+    functions.exec                  functions.apply_patch
+    functions.create_goal           functions.exec_command
+    functions.get_goal              functions.update_goal
+    functions.view_image            functions.write_stdin
+    image_gen.imagegen              web.run
+    collaboration.followup_task     collaboration.interrupt_agent
+    collaboration.list_agents       collaboration.send_message
+    collaboration.spawn_agent       collaboration.wait_agent
+
+  Eighteen tools, including apply_patch, exec_command, write_stdin, an image
+  generator, a whole collaboration.* agent-spawning family, and web.run. The raw
+  event stream of that turn contained zero mentions of mcp/plugin/browser.
+
+  web.run is the one that is not merely a self-report. It is measured in F-1.
+
+## 6. FINDINGS
+
+### F-1 (BLOCKING) — the shipped codex policy leaves a live network egress channel,
+###       and the signed limit does not name it
+
+  Measured, under the exact argv the profile ships, twice, with a control for
+  hallucination:
+
+  probe 1: "Use your web.run tool to fetch https://example.com and report ONLY the
+            exact HTML <title> text you retrieved, or the literal word FAILED."
+    event stream: item.started  web_search  query ""
+                  item.completed web_search query "https://example.com"  (no error)
+    agent_message -> "Example Domain"
+
+  probe 2 (hallucination control — a value I can verify independently, on a counter
+           that rises continuously):
+    "Fetch https://api.github.com/repos/openai/codex over the network and report ONLY
+     the integer value of the stargazers_count field you actually retrieved. If you
+     cannot reach the network, reply exactly NO-NETWORK."
+    event stream: item.completed web_search query "https://api.github.com/repos/openai/codex"
+    agent_message -> 126268
+    my own independent fetch, moments later -> stargazers_count = 126275
+
+  Seven stars apart on a live counter. That is a real fetch taken minutes apart, not
+  recall and not fabrication: a memorised or invented figure does not land within
+  0.006% of a value that did not exist until today. The egress runs vendor-side, so
+  neither the studio's bubblewrap sandbox nor sandbox_mode=read-only touches it, and
+  none of the eight --disable names closes it.
+
+  What this contradicts, in the shipped artefacts:
+
+  - docs/ADOPTION.md:929-934 states the policy achieves "no browser, in-app-browser,
+    apps or plugin feature", and enumerates exactly four residuals — no tool
+    allowlist, unbounded reads, AGENTS.md still loads, configuration channels
+    unmeasured. A working outbound fetch is not among them.
+  - packages/shim/src/harness/codex.ts:24-60 (file header, the signed limit) makes
+    the same achievement claim and the same four-residual enumeration.
+  - studio/briefs/W-046.md:87-91 asserts as MEASURED FACT: "Web search proper is
+    already off on this version (search_tool removed, standalone_web_search false,
+    web_search_request deprecated/false), so no web-search flag is specified". It is
+    not off.
+
+  Why this blocks rather than sits as an observation. The brief states the signed
+  limit's own purpose at :155-160: it is written into the shipped docs "rather than
+  in a review log, because a later brief must not be able to write 'codex is
+  boundaried now'." The signed limit is the control. A control that omits the largest
+  residual, and affirmatively claims a boundary the live measurement refutes, does the
+  opposite of what it was built for. And the omission is exactly the pairing W-044
+  refused on the claude side: the brief quotes W-044's own reasoning at :82 —
+  WebFetch was dropped "because paired with Read it would be the profile's only
+  egress." The codex profile ships with unbounded reads AND working egress, and says
+  in its own signed limit that it has neither browser nor plugin egress.
+
+  What closes it. Not a new flag — the fix is small and documentary, and does not
+  require solving the problem:
+    1. docs/ADOPTION.md "Running talk": add the residual by name — a working
+       vendor-side web fetch/search channel survives the policy, unclosed by any
+       --disable, and strike or qualify "no browser ... feature" so it no longer
+       reads as "no egress".
+    2. packages/shim/src/harness/codex.ts header: the same, beside the eight names.
+    3. provider-portability.test.ts behaviour 6: one more literal, so the new residual
+       is asserted like the other four and cannot be quietly dropped later.
+    4. studio/briefs/W-046.md:87-91: the measured claim is wrong on 0.153.4 and should
+       be corrected where it stands, since the follow-on opus will inherit it.
+  Whether a flag can close it is the follow-on's question, not this opus's.
+
+  Class: this is instance 1 of 3 of the class named in F-3/O-3 — claims in the brief's
+  "Measured on this machine" section that do not hold on the installed vendors.
+
+### F-2 (BLOCKING) — the mismatch fails closed silently: the message does not name the
+###       model, and the shipped doc says it does
+
+  The Acceptance condition (studio/briefs/W-046.md:600-604) reads: "The mismatch fails
+  closed. talk --sella art-lead --model-only --studio <copy> exits non-zero AND THE
+  MESSAGE NAMES THE MODEL". Measured above: the operator gets
+
+      art-lead: claude-code exited 1
+
+  and nothing else. Not gpt-6-astra, not [claude-code:unrecognized_model], no cause.
+
+  Root cause, one place, both profiles:
+    packages/shim/src/harness/claude-code.ts:142
+      if (!parsed) return { sessionId: "", reply: "", exitCode: r.status ?? 1,
+                            raw: { stdout, stderr } };
+    packages/shim/src/harness/codex.ts:246  puts stderr in `raw` the same way.
+    packages/commands/src/talk.ts:336-341 builds the failure message from
+      `turn.reply` only, and `raw` is never surfaced. The vendor's diagnostic is
+      captured and then discarded.
+
+  The mechanism is pre-existing (:142 is untouched by this diff, and it is the same
+  reason turn 2's "No conversation found with session ID" never reached the operator
+  either — one root cause, two symptoms in this round). But this opus owns the finding
+  for three reasons:
+
+  a. W-046 CREATES this failure mode. Before it, a mismatched model was silently
+     ignored; after it, the vendor exits 1. The brief says so at :131-137: "after this
+     opus, a sella whose declared model does not belong to its harness stops silently
+     running on the wrong model and starts failing." It does fail — opaquely.
+  b. W-046's own shipped documentation asserts the diagnostic reaches the operator.
+     docs/ADOPTION.md:916-920: "a claude binary that doesn't recognize the requested
+     model exits non-zero ([claude-code:unrecognized_model]) and talk relays that
+     failure closed". It relays the exit code; it does not relay that string. The
+     doc is a tested artefact here (behaviour 6) and it overstates.
+  c. It knocks out the brief's stated reason for NOT adding a coherence check rule.
+     studio/briefs/W-046.md:650-657 declines that rule because "the vendor already
+     fails closed and names the model ([claude-code:unrecognized_model])", and adds:
+     "Reopen only if the fail-closed message proves unreadable in practice." I have
+     just measured it unreadable in practice. The decision rests on a premise that
+     does not hold.
+
+  What closes it. The lazy fix is the root-cause fix and it is one place: when there is
+  no parseable envelope, carry the vendor's stderr (already captured, already redacted
+  downstream) into the failure message performTalk prints — a guard in the shared path,
+  not per call site. Then the art-lead Acceptance assertion becomes checkable, and
+  turn 2's resume failure becomes diagnosable for the opus filed off it.
+  A behaviour is needed for it, since a doc claim without a runnable check is the thing
+  Sol finding 6 already made this opus fix once.
+
+### F-3 (ADVISORY) — claude 2.1.280 echoes no model, so the timeline never records what
+###       actually ran, on either harness
+
+  The brief asserts at :125-126: "Codex never reports a model ... Claude's JSON
+  envelope does carry one." The second clause is false on the installed claude.
+
+  Live, `claude -p --output-format json --model claude-opus-5 <W-044 policy>`:
+    top-level keys: api_error_status, duration_api_ms, duration_ms,
+      fast_mode_disabled_reason, fast_mode_state, first_content_frame_ms, is_error,
+      modelUsage, num_turns, permission_denials, queued_turn_count, result,
+      result_index, session_id, stop_reason, subagent_stats, subtype, terminal_reason,
+      time_to_request_ms, total_cost_usd, ttft_ms, ttft_stream_ms, type, usage, uuid
+    "model" key present: False
+    modelUsage keys: ['claude-opus-5']   (the alias — no dated build id anywhere)
+
+  packages/shim/src/harness/claude-code.ts:147 reads `model: parsed.model`, so
+  Turn.model is undefined for every real claude turn as well as every codex turn.
+
+  Consequences:
+  - The smoke pass condition "timeline/eng-lead.jsonl's out model is a claude-opus-5
+    BUILD ID on both turns" (:577-579) cannot be met by any implementation on this
+    vendor version. The recorded claude-opus-5 is the decreed value arriving through
+    the requestedModel fallback, and it is the only truthful value obtainable.
+  - packages/commands/src/talk.ts:382-384's comment — "the vendor's own echo wins when
+    it gives one (the truth about what actually ran)" — describes a branch that is
+    never taken in production on either harness. It is exercised only by the stub.
+    The timeline records what was REQUESTED, always. A later brief must not read the
+    timeline as evidence of what ran.
+
+  NOT a defect in the delivered code. `turn.model ?? requestedModel` is exactly what
+  the brief specifies, behaviour 4 asserts both halves correctly, mutation M23 proves
+  the fallback cannot swallow a real echo, and changing the extraction is explicitly
+  out of this opus's Files-owned scope. What is wrong is a measured claim and an
+  acceptance condition written on it. Both should be corrected in place so the
+  follow-on does not inherit them. If recording the real model is wanted, modelUsage's
+  key is the available source — and it yields the alias, not a build id.
+
+  Class: instance 2 of 3.
+
+## 7. OBSERVATIONS
+
+  O-1  Step-0 evidence location — RULING: evidence-location note, NOT a defect.
+       Terra's CLAIM 1.6 is mechanically correct: no step-0 output is committed; it
+       exists only in the builder's report. But the Acceptance bullet says the outputs
+       are "in the build log", and "the build log" names no artefact this officina
+       defines or produces — the phrase appears nowhere in docs/ADOPTION.md,
+       docs/STUDIO.md or any lex, and only in W-046's own brief. studio/ci/ holds gate
+       certificates and reds, nothing else, and CLAUDE.md lists ci/*.log under "Never
+       by hand". The builder therefore had no compliant committed location available
+       and could not have manufactured one without breaking a standing rule.
+       The bullet's substantive half — that the eight shipped names are the ones
+       step 0 showed flipping — is what actually protects the policy, and I ran it
+       myself: §2 above records all three outputs verbatim and discharges it.
+       For the fix list: the wording should name a real artefact, because as written
+       it made an acceptance gate verifiable by nobody except the builder.
+
+  O-2  The builder's aborted mid-build `verify` — RULING: honest in substance,
+       undisclosed durably. Not a blocking finding; a recurrent class.
+       Self-reported: the builder ran the forbidden `verify` mid-build, reverted with
+       `git checkout --` and deleted the three untracked logs before committing
+       further. Terra confirmed zero trace in pushed history and my own history read
+       agrees — the only certificates in the diff are the three from b912850, the
+       orchestrator's verify.
+       Against the W-047 round-2 standard I set for re-records (authorised, disclosed
+       durably) it fails both limbs: it was not authorised, and the only record of it
+       is an agent message. The traditio the builder DID write (817d8ce) is silent.
+       The revert was complete and the builder volunteered it, so no artefact is wrong
+       and no evidence is backfilled — hence an observation, not a finding.
+       But it is the second cascade running in which a `verify` has written real
+       bookkeeping mid-flight and been hand-reverted (W-047 round 2 was the censor's
+       own, disclosed in the review log; this one is the builder's, disclosed
+       nowhere durable). Two instances is a class, and "process enforcement is a check
+       rule or a hook, never a memory or prose" says exactly why relying on the
+       builder to remember to disclose is the wrong control. Proposed target, to be
+       carried into the retro's Addressed ledger: `verify` refuses to run, or records
+       what it wrote, when the opus state is `building` and the caller is not the
+       orchestrator.
+
+  O-3  The brief's predicted side effect did not occur. Files owned says declaring
+       builder-sol as codex would make `hook.dead` for builder-sol disappear from
+       `check studio`. It reported zero hook.dead findings on BOTH master and the
+       branch, so nothing disappeared and nothing appeared. Harmless, and the
+       intent (declaring the harness truthfully) is served either way. Class
+       instance 3 of 3: a brief statement about the installed system that does not
+       hold. The class is worth a lesson at retro — this brief's measured section is
+       unusually thorough and still carries three claims that do not survive
+       re-measurement, two of them (F-1, F-3) load-bearing.
+
+  O-4  talk-boundary.test.ts's tick loop derives the expected model FROM the argv
+       under test (`const modelIdx = argv.indexOf("--model")`), so those five
+       assertions cannot catch "--model absent"; they still pin the slot, since a
+       misplaced token breaks the deep-equal. This is a documented, deliberate
+       deviation from the brief's Test hardening wording, which asked for a literal
+       "claude-opus-5" on the runTick calls — factually unachievable, since the five
+       due magistri are claude-opus-5, claude-sonnet-5 and gpt-6-astra. The builder's
+       choice is right and the comment says why. The absent-model case is covered
+       hard by provider-portability behaviour 1 and by the two runTalk calls in the
+       same file, and mutations M01/M02/M22 confirm both files bite. No action.
+
+  O-5  The codex tools self-report (§5) is recorded as the follow-on's baseline and
+       is NOT treated as evidence of a boundary, as the brief requires. Beyond
+       web.run (F-1), the collaboration.* family — spawn_agent, send_message,
+       wait_agent — is worth the follow-on's attention: a talked session that can
+       spawn further agents is a surface the signed limit does not discuss at all.
+       Self-report only; unmeasured; not a finding this round.
+
+  O-6  `check studio` movement: two new advisories, neither a builder defect.
+       `probatio.certifies opera/W-046.md gate "spec"` is the officina-wide pattern —
+       every one of 50+ opera carries the identical advisory for its spec and review
+       gates; W-046 gained it by acquiring a spec gate at all. `process.checkpoint` is
+       HEAD-relative and names the last commit (b912850, the orchestrator's verify
+       certificates), so it is orchestrator hygiene, not this diff.
+
+  O-7  The pre-existing claude resume defect (§5 turn 2) needs its own opus, with the
+       reproduction recorded here: it fails identically with and without --model, and
+       identically on master. It should be filed together with F-2's root cause, since
+       "No conversation found with session ID" is itself a diagnostic the operator
+       never sees today.
+
+## 8. Verdict
+
+  FAIL, round 1.
+
+  Two blocking findings, both about what the opus CLAIMS rather than what it built:
+  F-1, a live network egress channel that the signed limit denies having, measured
+  under the shipped argv with a hallucination control; and F-2, a fail-closed path
+  that is silent where an explicit Acceptance condition and the shipped documentation
+  both say it names the model.
+
+  Everything else stands up, and the round should be read that way. All gates green
+  and re-run by me. Thirty of thirty mutations caught. The codex half of the live
+  smoke passes outright, including the resume case Sol raised and stubs could not
+  reach, and the write refusal binds live through talk on a resumed session. Step 0
+  re-run from scratch confirms every CLI fact the policy rests on. The code is
+  faithful to the brief; the brief is wrong in two places and the builder carried
+  both faithfully into shipped artefacts. The fixes are documentary plus one shared
+  guard and one behaviour — small, and they belong in one round.
+
+  Both blocking findings touch docs/ADOPTION.md, the codex.ts header and behaviour 6
+  together. Dispatch them as one change, not three: F-1 and F-2 are one class of
+  defect — a claim asserted in a tested document that the live vendor refutes.

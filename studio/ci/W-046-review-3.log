@@ -1,0 +1,326 @@
+# W-046 review, round 3 — censor (qa-lead, claude-fable-5)
+# opus: W-046 "provider portability: the decreed model and a command policy reach both harnesses"
+# branch: opus/W-046 @ 634116d · round-2 verdict 300aa85 · brief amendment 99d3d0c
+# worktree: /tmp/claude-1000/w046-build · mutation scratch in-place, restored after each
+# one live mismatch probe run (pre-authorized); the round-1 dual-harness smoke stands
+# VERDICT: PASS (0 blocking findings; F-1, F-2, F-3 and F-4 all CLOSED; 6 observations)
+
+## 0. Trap check and preconditions
+
+  git status --porcelain            -> empty (before every probe and at the end)
+  git rev-parse HEAD                -> 634116d84ded426c902ec3c23b937ee6d884c671
+  git rev-parse --abbrev-ref HEAD   -> opus/W-046
+  readlink -f node_modules/@bisellium/shim
+    -> /tmp/claude-1000/w046-build/packages/shim   (INSIDE the worktree)
+
+  Round-3 commits on top of my round-2 verdict:
+    99d3d0c  studio/briefs/W-046.md            brief amendment (architect alone — see O-18)
+    1a5f490  provider-portability.test.ts, 07.log   test re-spec + red, no implementation
+    86cd26f  talk.ts, claude-code.ts, docs/ADOPTION.md   F-4's three instances, one change
+    17c4d16  studio/opera/W-046.md             handoff
+    634116d  studio/ci/W-046-*-614e6e42.log    verify certificates, round 3
+
+  Terra's round-3 delta (6/6 VERIFIED) taken as mechanical fact. All judgment mine (D-014).
+
+## 1. Gates, re-run by me at 634116d on a verified-clean tree
+
+  npm test                                                 exit 0  (0 lines matching ^FAIL)
+  npm run -s typecheck                                     exit 0
+  npm run -s lint                                          exit 0  (0 errors, 2 warnings, pre-existing)
+  npm run -s format:check                                  exit 0
+  npm run -s check -- studio --repo .                      PASS — 0 blocking, 97 advisory
+  npm run -s check -- examples/sample-studio --repo .      PASS — 0 blocking, 26 advisory
+
+  Advisory movement against my round-2 run: three `acta.daily` staleness counters
+  advanced by 0.1 day (5.6 -> 5.7, 6.9 -> 7.0 twice). Clock drift, nothing structural.
+  No new block, nothing removed.
+
+  Red-log scope: `git diff --name-only 300aa85 HEAD -- studio/ci/reds/` returns
+  `07.log` and nothing else. 01–06 and 08 are untouched by this round, as the
+  amendment requires.
+
+## 2. Was `07.log`'s re-recording authorized, and is the red genuine?
+
+  Authorized: behaviour 7's certified scenarios changed (A re-specced to the measured
+  envelope shape, D and E new), so round 2's log no longer described what is claimed.
+  The amendment authorizes re-recording 07 and only 07, and the traditio names the
+  reason and the commit: "07 re-recorded per round-2 verdict". A replacement the
+  censor has to discover is indistinguishable from one that was hidden; this one did
+  not have to be discovered.
+
+  Ordering (all UTC):
+    round-2 verdict 300aa85    11:17:16Z
+    07.log recorded            11:31:45Z   } inside the authorized window
+    1a5f490 (test + red only)  11:32:20Z   }
+    86cd26f (implementation)   11:44:23Z   later than the red
+  `# tree: dirty:a3558323` — round 2's certified tree, dirty with the test re-spec.
+  Exactly right: the implementation files were still at round-2 content.
+
+  Genuine: I rebuilt the red conditions myself rather than trusting the log. Checked
+  out the whole relevant file set at 1a5f490 (test re-specced, implementation still
+  pre-fix) and ran behaviour 7:
+
+    my reproduction   49 PASS / 6 FAIL
+    committed 07.log  49 PASS / 6 FAIL
+    verdict-per-assertion diff: IDENTICAL, every line.
+
+  The six failures are the right six: scenario A's two new assertions (the envelope's
+  `result` sentence, the vendor's stderr line), D and E's spawn-error assertions, and
+  the two new doc assertions. Everything else in the behaviour passed, which is what
+  the amendment predicted and what proves the re-spec did not quietly weaken B, C,
+  F or G.
+
+## 3. RULING on disclosure (c) — the three assertions added after the red
+
+  **The builder's argument holds, and I did not take it on argument. I measured it.**
+
+  The facts first, independently confirmed: `git diff --stat 1a5f490 HEAD` on the test
+  file shows 108 insertions landing in the implementation commit 86cd26f, after
+  `07.log` was recorded. The three blocks are `joined-budget`, `result-gate` and
+  `own-stderr` — the gaps the builder's own round-3 mutation battery exposed.
+
+  The question is whether a red was available for them and skipped. That is
+  answerable by experiment, so I ran it: the CURRENT test file against the PRE-FIX
+  implementation (talk.ts and claude-code.ts at 300aa85), behaviour 7.
+
+    four assertions FAIL — all of them the ones already in 07.log:
+      claude-model: carries the envelope's own result sentence
+      claude-model: carries the vendor's stderr line
+      spawn-claude: carries a substring of the spawn error
+      spawn-codex:  carries a substring of the spawn error
+    all EIGHTEEN assertions in the three post-red blocks PASS:
+      joined-budget  6/6 PASS      result-gate  6/6 PASS      own-stderr  6/6 PASS
+
+  Not one of them could have distinguished red from green. The reason is structural,
+  and it is the builder's reason: round 2's `vendorDiagnostic` reads `stderr` then
+  falls back to `stdout` and does nothing else — it never reads `result`, never reads
+  `error`, never joins parts. So every one of these assertions is *vacuously*
+  satisfied pre-fix. `result-gate` asserts a `result` key does NOT leak when
+  `is_error` is false: pre-fix nothing reads `result` at all, so it trivially holds.
+  `joined-budget` asserts the second part is cut: pre-fix there is no second part.
+  `own-stderr` asserts the capture guard does not overwrite the envelope's own
+  `stderr`: pre-fix there is no capture guard, and `raw: parsed` already surfaces the
+  envelope's own key.
+
+  So the ruling: **these are guard assertions against over-reach in a mechanism that
+  did not exist pre-fix, and a mechanism that does not exist cannot be gripped.**
+  Demanding a red for them would demand a fabricated one — the W-044 round-3
+  provenance fault the brief already names, and the same reasoning the brief itself
+  used to keep `talk-boundary.test.ts`'s hardening unnumbered. Their evidence is not
+  a red; it is the mutation run, and it has to be, because their whole subject is
+  "the fix must not do more than it was asked to". I re-ran that evidence myself
+  (§4: M1, M7 and M8 all CAUGHT), so the assertions demonstrably bite.
+
+  Two things I credit specifically. The builder found these three by mutating its own
+  finished work, which is the discipline that catches what a spec did not think of —
+  and the brief's scenario table genuinely did not think of them. And it disclosed
+  them as gaps in the brief rather than presenting them as planned coverage, which is
+  what let me check the question rather than discover it.
+
+  One qualification, not a finding: the argument I verified is *specific to these
+  three*. "The pre-fix code cannot distinguish it" is a sound reason to skip a red,
+  and a dangerous one to generalise, because it is exactly what someone would say
+  about an assertion that simply fits the implementation. What made it checkable here
+  is that the property is negative and the pre-fix mechanism is absent — both facts a
+  censor can test in one run, as above. Worth writing into the next brief that uses
+  the argument: state it as "this assertion passes against the pre-fix tree, here is
+  the run", not as a claim about intent.
+
+## 4. The censor's mutation run, round 3 — the amended brief's list, plus two
+
+  Driver: scratchpad/mutate3.py, one substitution each, revert in a `finally`,
+  porcelain read at the end. Behaviour 7 throughout.
+
+  CAUGHT  M1   read `result` regardless of is_error (must be gated)      1 FAIL
+               -> behaviour 7 result-gate: result is not surfaced when is_error is not true
+  CAUGHT  M2   drop the `result` read, keep only stderr                  1 FAIL
+  CAUGHT  M3   drop the `error` read entirely                            2 FAIL (D and E)
+  CAUGHT  M4   carry the diagnostic on the claude path only (I-2 w/o I-3) 2 FAIL
+  CAUGHT  M5   carry the diagnostic on the codex path only (I-3 w/o I-2)  9 FAIL
+  CAUGHT  M6   drop claude-code.ts's stderr-preservation guard           1 FAIL
+  CAUGHT  M7   let that guard overwrite the envelope's own stderr key    1 FAIL
+  CAUGHT  M8   per-part budget instead of one joined budget              1 FAIL
+  CAUGHT  M9   delete "the envelope's own error text" from ADOPTION      1 FAIL
+  CAUGHT  M10' delete "the vendor's stderr line" from ADOPTION           1 FAIL
+
+  10 of 10 caught. git status --porcelain after: empty.
+
+  M9/M10' are mine, not on the brief's list: the two NEW doc assertions in behaviour 7
+  are the thing that keeps F-4's doc half from drifting back into an unchecked
+  promise, so they have to bite. They do. (M10 needed the wrap-tolerant form — the
+  phrase wraps in the shipped prose, and behaviour 7 collapses whitespace before
+  matching. Same lesson as round 2's method note.)
+
+  M4/M5 are the strongest available form of "close I-2 without I-3", and the builder's
+  disclosure (d) is correct about why: both spawn shapes are byte-identical —
+  `claude-code.ts:131` and `codex.ts:246` each return `raw: { error: <message> }` —
+  so at the shared read there is no expression that could serve one and not the other.
+  Separating them requires a harness branch upstream in `performTalk`, which is what
+  M4 and M5 install, and both bite. The protection is architectural (one reader, one
+  site) and scenarios D and E independently prove both profiles reach it.
+
+  **C9, the brief's own negative control, does NOT behave as the brief predicts.**
+  Restoring round 2's scenario-A stub shape (nothing on stdout) with the fix in place:
+
+    exit 1 — FAIL behaviour 7 claude-model: message carries a substring of the
+             envelope's own result sentence
+
+  The brief says "the suite must stay green". It cannot: the re-specced scenario A
+  asserts the `result` sentence, and a stub that writes nothing to stdout produces no
+  envelope to take it from. The clause is self-contradictory with the scenario it sits
+  beside. This is a defect in the brief's mutation list, not in the build — and the
+  property the control was reaching for (the widened read must still handle the old
+  `{stdout, stderr}` shape) is already covered by scenarios B and C, which use exactly
+  that shape and pass. Recorded as O-13; nothing to fix in code.
+
+## 5. F-4 — CLOSED. Verified against the live text, the live vendor, and the mutations
+
+  The widened read is one function at one site, exactly as specced
+  (`vendorDiagnostic`, packages/commands/src/talk.ts): collects `stderr`, then
+  `result` **gated on `is_error === true`**, then `error` (string, or an object's
+  `.message`); falls back to `stdout` alone when nothing else is present; joins with
+  " · "; redacts; truncates to the ONE existing 300-character budget; prefixes
+  `status <value>: ` when `is_error` and `api_error_status` are both present. Nothing
+  moved into a profile. The one profile change is a capture fix, not a second reader:
+  `claude-code.ts`'s parsed-envelope return now carries `{ ...parsed, stderr }` only
+  when stderr is non-empty and the envelope has no `stderr` key of its own.
+
+  I checked the two things most likely to be got wrong and both are right: redaction
+  happens BEFORE truncation (so a secret cannot be cut in half and slip past the
+  pattern — round 2's order was the other way and this is an improvement), and the
+  `status` prefix is added after truncation, i.e. deliberately outside the budget,
+  which is what the spec says.
+
+  ### The live probe (pre-authorized), verbatim
+
+    npm run -s bisellium -- talk --sella art-lead --model-only \
+      --studio <copy of examples/sample-studio> "Name the opus you are booted for and stop."
+
+    EXIT 1, and the message — quoted, not paraphrased:
+
+      art-lead: claude-code exited 1 (requested model: gpt-6-astra) — status 401:
+      [claude-code:unrecognized_model] {"model":"gpt-6-astra","query_source":"sdk"} ·
+      Failed to authenticate. API Error: 401 OAuth access token has expired.
+      Re-authenticate to continue.
+
+    No session, timeline or receipt written.
+
+  Every element of the widened read is visible in one line: the `api_error_status`
+  prefix (`status 401:`), the vendor's stderr line — which only reaches the operator
+  because of the `claude-code.ts` capture fix, since the envelope parsed — the ` · `
+  join, and the envelope's own `result` text gated on `is_error`. Round 1's message
+  for this same case was `art-lead: claude-code exited 1`. Round 2's added the model.
+  This one tells the operator what actually happened.
+
+  It is in fact **stronger evidence than the probe I asked for**: the vendor returned
+  a 401 auth failure rather than the 404 model error I measured in round 2 (the
+  operator's OAuth token expired during this session — see O-14), so the read was
+  exercised against a raw shape nobody wrote a stub for, and carried both parts
+  correctly anyway. The mechanism generalises rather than fitting one measured case.
+
+  Honest qualification, O-15: because the vendor answered 401, the specific sentence
+  "There's an issue with the selected model…" was not itself observed reaching the
+  operator live this round. It is pinned by scenario A's stub against the shape I
+  measured in round 2, and mutation M2 proves that assertion bites.
+
+  ### The three instances
+
+  I-1 (parsed `is_error` envelope, claude-code.ts:149) — closed by the capture fix
+       plus the `result`/`api_error_status` reads. Live-proven above; M6 and M2 bite.
+  I-2 (claude spawn failure, claude-code.ts:131) — closed by the `error` read.
+       Scenario D; M3 bites.
+  I-3 (codex spawn failure, codex.ts:246) — same read, same site. Scenario E; M3 and
+       M4 bite. `codex.ts` is untouched this round and correctly so: both its
+       non-zero returns already carried `stderr`, and only the spawn-error shape was
+       ever unread.
+
+  All three in one change, as the amendment required and as my round-2 log asked for.
+  The W-026 pattern — one instance per round — did not happen here.
+
+  ### Disclosure (a), verified rather than accepted
+
+  Scenarios D and E do not stub a spawn failure; they wrap the REAL profiles and force
+  `env.PATH` at a directory with no binary, through `runTalk`'s existing `harnesses`
+  seam. The builder's stated reason is sound and I confirmed it holds: PATH resolution
+  precedes argv inspection, so no stub file can make `available()` succeed while the
+  turn's spawn fails — there is no such shape. Evidence that the wrapper reaches real
+  profile code rather than a synthetic object: the assertions match on `ENOENT`, which
+  only a real `spawnSync`/`child.on("error")` failure produces, and M3 (dropping the
+  `error` read at the shared site) fails both D and E — so both are genuinely routed
+  through the real `Turn.raw = { error }` shape into the real `performTalk` pipeline.
+
+## 6. The earlier findings, re-checked at round 3's HEAD
+
+  F-1 CLOSED (round 2). Behaviour 8 untouched this round, its log unmoved, and it
+      passes at HEAD; egress remains the first named residual in both shipped texts.
+  F-2 CLOSED. Its remaining half was F-4's I-1, now fixed and live-proven.
+  F-3 CLOSED (round 2). Nothing in this round touches `turn.model ?? requestedModel`.
+  F-4 CLOSED, above.
+
+  The seam itself is unchanged since round 1's attended smoke: this round touched
+  `talk.ts`'s failure-message branch, `claude-code.ts`'s `raw` expression and prose.
+  No argv, no policy constant, no env projection. Round 1's four recorded turns
+  therefore stand as the live dual-harness evidence, and `npm test` green covers
+  behaviours 1–6 unchanged.
+
+## 7. Observations
+
+  O-13 The brief's round-3 negative control C9 is self-contradictory — it asks for
+       round 2's stdout-empty scenario-A stub and predicts the suite stays green,
+       but the re-specced scenario A asserts the envelope's `result` sentence, which
+       that stub cannot produce. Measured: exit 1, one FAIL. The property it aimed at
+       is covered by scenarios B and C. Reword or drop the clause; nothing in code.
+  O-14 **Environment, for the orchestrator.** The operator's claude OAuth token
+       expired during this round ("401 OAuth access token has expired. Re-authenticate
+       to continue."). Further live claude turns are inconclusive until re-auth. This
+       does not touch round 1's smoke, which returned real replies on live auth, and
+       it did not weaken this round's probe (O-15). Codex auth was not re-checked.
+  O-15 The live probe exercised a 401 shape, not the 404 model-mismatch shape, so the
+       "There's an issue with the selected model…" sentence is pinned by stub and
+       mutation rather than observed live this round. Stated so a later reader does
+       not over-read the probe.
+  O-16 Scenarios D/E's wrapper is a legitimate use of the `harnesses` test seam and
+       runs real profile code (verified, §5). Worth knowing it exists: it is the only
+       way this suite can reach the spawn-failure shape, and a future reader might
+       otherwise mistake it for a mock.
+  O-17 Three of behaviour 7's assertions (`result-gate`, `own-stderr`, the synthetic
+       half of `joined-budget`) drive `Turn.raw` shapes no current profile produces.
+       That is deliberate and right — F-1's lesson is that omission today is not
+       safety tomorrow — but it means those three are guards against future vendor or
+       profile change, not descriptions of present behaviour. A reader pruning "dead"
+       assertions later should leave them alone; the comments say why.
+  O-18 Round 2's O-11 is addressed and I record it closed: the round-3 amendment
+       commit 99d3d0c carries `Co-Authored-By: architect` alone, and the brief now
+       states in its own header that it is signed by the architect alone, naming the
+       round-2 trailer as the orchestrator's error. The correction is in the record
+       rather than silently applied, which is the right way to close it.
+
+  The disclosure class opened in round 1's O-2 (hand-corrected evidence, disclosed by
+  memory) has now improved across three rounds: nowhere durable -> commit message ->
+  traditio plus commit message plus the brief's own text, with the reason named and
+  the authorizing verdict cited. I am not filing it as unaddressed. The standing
+  proposal for the retro is unchanged and remains worth doing — `verify`/`red` should
+  record or refuse rather than rely on an agent remembering — but the practice here
+  no longer depends on it.
+
+## 8. Verdict
+
+  PASS, round 3.
+
+  F-4 is closed as a class, not an instance: all three `Turn.raw` shapes in one
+  change, one reader at one site, the capture fix confined to the one profile that
+  was discarding a stream it already held. Ten of ten mutations bite, including the
+  three gaps the builder found in the brief's own scenario table and disclosed rather
+  than absorbed. The re-recorded `07.log` was authorized, is disclosed in the
+  traditio, and reproduces assertion-for-assertion from a tree I rebuilt myself. The
+  three post-red assertions are rightly unred, and I say so on the strength of a run
+  rather than an argument.
+
+  And the whole thing is visible in one live line: a message that read
+  `art-lead: claude-code exited 1` at round 1 now tells the operator the status code,
+  the vendor's error identifier and the vendor's own sentence about what went wrong.
+
+  Two things the next opus inherits, both already written into the brief rather than
+  left here: the egress residual and its follow-on question, and the rule this opus
+  cost three rounds to learn — a claim enters a shipped document only with an
+  assertion that fails when it stops being true.
