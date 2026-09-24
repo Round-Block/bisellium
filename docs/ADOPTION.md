@@ -796,9 +796,19 @@ vendor), prints the reply, and appends both sides of the exchange to
 `timeline/<sella>.jsonl` (`at`, `sella`, `direction: in|out`, `text`,
 `sessionId`, `model`, `usage`). `talk` always runs in the studio root, never
 inside a worktree — worktrees are for `run`, which actually changes files;
-a conversation doesn't. The subprocess environment is filtered the same way
-an untrusted probatio command's is (`filterEnv`, `@bisellium/shim`): a
-secret-shaped variable name is dropped before the harness sees it.
+a conversation doesn't. Every vendor spawn a harness profile makes —
+`claude-code`'s and `codex`'s `start`, `resume` and `available()` alike, so
+the rule holds even for a bare `--version` probe — hands the child process
+only ten env names (`PATH`, `HOME`, `SHELL`, `TMPDIR`, `HTTPS_PROXY`,
+`https_proxy`, `HTTP_PROXY`, `http_proxy`, `NO_PROXY`, `no_proxy`), each
+copied verbatim from the parent if set (`harnessEnv`, `@bisellium/shim`).
+Everything else is dropped, an endpoint or auth override and a vendor
+variable that doesn't exist yet included: a talked session authenticates
+only with the vendor login stored under `HOME`, never an ambient
+`ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` or similar left in the
+operator's shell. `run -- <cmd>` is not a harness spawn — it's the
+operator's own command, attributed to a sella, and keeps the operator's
+env unfiltered.
 
 A harness turn that comes back with no usable `sessionId` (empty or
 non-string) is never persisted or resumed against: it's recorded as a fresh

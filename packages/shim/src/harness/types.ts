@@ -28,6 +28,12 @@ export interface HarnessStartOpts {
   sella: string;
   systemPrompt: string;
   message: string;
+  /** W-049: the parent env a vendor profile projects through the harness
+   *  allowlist (`harness/env.ts`'s `harnessEnv`) before it ever reaches a
+   *  vendor spawn — not "the env the child gets" outright. The `fake`
+   *  profile is the one exception: its test double reads test flags
+   *  (e.g. `BISELLIUM_FAKE_MODE`) straight out of this field in-process,
+   *  since it never spawns a vendor binary for the allowlist to guard. */
   env: NodeJS.ProcessEnv;
 }
 
@@ -36,6 +42,7 @@ export interface HarnessResumeOpts {
   sella: string;
   sessionId: string;
   message: string;
+  /** See HarnessStartOpts.env. */
   env: NodeJS.ProcessEnv;
 }
 

@@ -15,8 +15,14 @@
  * `error`-kind event, never in an `agent_message`/`assistant` event (that's
  * reply text; a sella talking ABOUT a rate limit must not be mistaken for
  * one hitting it).
+ *
+ * W-049: every spawn below — `start`, `resume` and `available()` — hands
+ * `codex` `harnessEnv(…)`, never the caller's `opts.env`/`process.env`
+ * verbatim: the ten-name allowlist projection (harness/env.ts). See
+ * docs/ADOPTION.md, "Running talk".
  */
 import { spawn } from "node:child_process";
+import { harnessEnv } from "./env.js";
 import type { HarnessProfile, HarnessResumeOpts, HarnessStartOpts, Turn } from "./types.js";
 import { USAGE_LIMIT_EXIT_CODE } from "./types.js";
 
@@ -135,7 +141,7 @@ function parseEvents(events: unknown[]): Parsed {
 
 function runCodex(args: string[], opts: { cwd: string; env: NodeJS.ProcessEnv; message: string }): Promise<Turn> {
   return new Promise((resolve) => {
-    const child = spawn("codex", args, { cwd: opts.cwd, env: opts.env });
+    const child = spawn("codex", args, { cwd: opts.cwd, env: harnessEnv(opts.env) });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -187,7 +193,7 @@ export const codexProfile: HarnessProfile = {
 
   async available(): Promise<boolean> {
     return new Promise((resolve) => {
-      const child = spawn("codex", ["--version"]);
+      const child = spawn("codex", ["--version"], { env: harnessEnv(process.env) });
       let done = false;
       const settle = (ok: boolean) => {
         if (!done) {
