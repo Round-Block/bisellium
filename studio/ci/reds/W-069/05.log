@@ -1,0 +1,11 @@
+# behaviour: 5
+# command: node --import tsx packages/commands/src/probe.test.ts . 5
+# exit: 1
+# at: 2026-09-24T19:47:47.757Z
+# sella: builder-b
+# tree: dirty:e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+FAIL  b5 before the first turn, models.json already shows every due pair unverified/'probe due'     {"schema":1,"at":"2026-09-25T12:00:00.000Z","harnessVersions":{},"models":[{"id":"aaa-ctrl","state":"available","harness":"claude-code","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]},{"id":"cx-ctrl","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]},{"id":"cx-other","state":"available","harness":"codex","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}]}]}
+PASS  b5 the codex control failed -> the non-control tail stays unverified on disk                  {"id":"cx-other","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"2026-09-25T12:00:01.000Z","note":"control failed: codex"}]}
+PASS  b5 the codex control's own turn ran (exactly one codex start call)                            1
+PASS  b5 positive control: the passing pair's own row is available again at the end                 {"id":"aaa-ctrl","state":"available","harness":"claude-code","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:01.000Z","exit":0,"reply":true}]}

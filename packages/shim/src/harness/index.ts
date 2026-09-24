@@ -14,6 +14,8 @@ export { claudeCodeProfile } from "./claude-code.js";
 export { codexProfile } from "./codex.js";
 export { gitOnlyProfile } from "./git-only.js";
 export { fakeProfile } from "./fake.js";
+export type { ListedModel } from "./catalog.js";
+export { codexListModels, harnessVersions } from "./catalog.js";
 
 /** id -> profile, for every harness talk.ts can pick a sella's `harness` against. */
 export const HARNESS_PROFILES: Record<string, HarnessProfile> = {

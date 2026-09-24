@@ -1,0 +1,13 @@
+# behaviour: 1
+# command: node --import tsx packages/commands/src/probe.test.ts . 1
+# exit: 1
+# at: 2026-09-24T19:33:19.147Z
+# sella: builder-b
+# tree: dirty:e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+FAIL  b1 exactly one start call                                                                     0
+PASS  b1 zero resume calls                                                                          0
+FAIL  b1 systemPrompt is exactly ""                                                                 
+FAIL  b1 message is the probe message (positive control)                                            
+FAIL  b1 model equals the pair's id                                                                 undefined
+FAIL  b1 one turn spent                                                                             0

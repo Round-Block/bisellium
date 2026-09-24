@@ -1,0 +1,15 @@
+# behaviour: 4
+# command: node --import tsx packages/commands/src/probe.test.ts . 4
+# exit: 1
+# at: 2026-09-24T19:46:01.137Z
+# sella: builder-b
+# tree: dirty:e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+PASS  b4 priming spent two turns per call (target + control)                                        6
+FAIL  b4 run1: exit===3 recorded unverified, note 'usage limit', no exit/reply                      {"id":"bbb-limit","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:10.000Z","exit":3,"reply":false}],"harness":"claude-code"}
+FAIL  b4 run1: ddd-never is unreached (skipped)                                                     []
+FAIL  b4 run1: ddd-never got zero turns                                                             ["aaa-ctrl","zzz-completes","bbb-limit","ddd-never"]
+PASS  b4 run1: zzz-completes did complete (positive control)                                        
+PASS  b4 run2: control still runs first                                                             ["aaa-ctrl","zzz-completes","bbb-limit","ddd-never"]
+FAIL  b4 run2: previously-skipped pair heads the (non-control) queue                                ["aaa-ctrl","zzz-completes","bbb-limit","ddd-never"]
+FAIL  b4 run2 positive control: the pair that completed in run1 is probed LAST                      ["aaa-ctrl","zzz-completes","bbb-limit","ddd-never"]

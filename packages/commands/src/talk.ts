@@ -253,7 +253,10 @@ function extractResetHint(raw: unknown): string | undefined {
  *  text is ever parsed, matched or branched on — only ever appended to a
  *  message string. */
 const VENDOR_DIAGNOSTIC_BUDGET = 300;
-function vendorDiagnostic(raw: unknown): string | undefined {
+// W-069: exported (one keyword, no logic change) so packages/commands/src/
+// probe.ts's verdict construction (behaviour 2) reuses the same extractor
+// rather than a second implementation drifting from it.
+export function vendorDiagnostic(raw: unknown): string | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const obj = raw as Record<string, unknown>;
   const isError = obj["is_error"] === true;

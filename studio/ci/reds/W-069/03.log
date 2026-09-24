@@ -1,0 +1,27 @@
+# behaviour: 3
+# command: node --import tsx packages/commands/src/probe.test.ts . 3
+# exit: 1
+# at: 2026-09-24T19:35:03.291Z
+# sella: builder-b
+# tree: dirty:e4cb7429f1a171ffab55aba115f1c714ba43bdc7
+
+FAIL  b3 (a) exactly one start call (the control)                                                   2
+FAIL  b3 (a) control's own row unavailable... no: condemned rows are unverified                     {"id":"aaa-ctrl","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"control is broken"}],"harness":"claude-code","vendorDiagnostic":"control is broken"}
+PASS  b3 (a) control's own diagnostic retained                                                      {"id":"aaa-ctrl","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"control is broken"}],"harness":"claude-code","vendorDiagnostic":"control is broken"}
+FAIL  b3 (a) other candidate unverified, zero turns                                                 {"id":"zzz-other","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"claude-code"}
+FAIL  b3 (a) note names the control/harness                                                         {"id":"zzz-other","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"claude-code"}
+PASS  b3 (b) control passes -> available                                                            {"id":"aaa-ctrl","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"claude-code"}
+PASS  b3 (b) later model alone unavailable                                                          {"id":"zzz-later","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":9,"reply":false,"vendorDiagnostic":"later model broke"}],"harness":"claude-code","vendorDiagnostic":"later model broke"}
+FAIL  b3 (c) zero turns when harness has no seated candidate                                        2
+FAIL  b3 (c) both rows unverified                                                                   [{"id":"orphan-a","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"},{"id":"orphan-b","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}]
+FAIL  b3 (c) note is "no control"                                                                   [{"id":"orphan-a","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"},{"id":"orphan-b","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}]
+PASS  b3 (d) 401: exactly two claude-code start calls (control + the blocked one)                   2
+FAIL  b3 (d) 401: blocked pair is unverified                                                        {"id":"zzz-blocked","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"status 401: blocked 401"}],"harness":"claude-code","vendorDiagnostic":"status 401: blocked 401"}
+PASS  b3 (d) 401: the other harness (codex) unaffected                                              1
+PASS  b3 (d) 401: codex row written normally                                                        {"id":"cx-ctrl","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}
+PASS  b3 (d) 403: exactly two claude-code start calls (control + the blocked one)                   2
+FAIL  b3 (d) 403: blocked pair is unverified                                                        {"id":"zzz-blocked","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"status 403: blocked 403"}],"harness":"claude-code","vendorDiagnostic":"status 403: blocked 403"}
+PASS  b3 (d) 403: the other harness (codex) unaffected                                              1
+PASS  b3 (d) 403: codex row written normally                                                        {"id":"cx-ctrl","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}
+PASS  b3 (d) negative: a 500 does not short-circuit (two turns spent)                               2
+PASS  b3 (d) negative: a 500 gets an ordinary unavailable verdict, not a short-circuit note         {"id":"zzz-500","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"status 500: blocked 500"}],"harness":"claude-code","vendorDiagnostic":"status 500: blocked 500"}
