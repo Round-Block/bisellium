@@ -1,0 +1,238 @@
+# W-065 — censor review, round 2
+# sella: qa-lead (censor) · model: claude-fable-5 · at: 2026-09-24T17:57:29Z
+# worktree: /tmp/claude-1000/w065-build · branch: opus/W-065 · HEAD: 162f27d
+# VERDICT: PASS
+# remedy commits: 091b659 (architect's amendment) · a12d43e (fixes) · 1519f80 · 162f27d
+
+== 0. preconditions ==
+porcelain clean at review start and after every mutation pass. No `bisellium verify` run.
+Amendment 091b659 read in full BEFORE the fixes, as instructed.
+
+== 1. the amendment OVERTURNS one of my round-1 conclusions — I accept it ==
+Round 1 I wrote that hasMergeKey was unreachable dead code. That was wrong, and wrong in a way
+worth naming: I measured ONE spelling (`<<: *def`), saw the anchor scan fire first, and
+generalised from it to the check. An alias-free merge key is a different input. Re-measured
+live at HEAD, one fixture per line, full message:
+  parse-error       exit 2  "... unparseable — not a studio: Flow sequence in block collection..."   [openStudio]
+  dup-key           exit 2  "... unparseable — not a studio: Map keys must be unique ..."            [openStudio]
+  multi-doc         exit 2  "... unparseable — not a studio: Source contains multiple documents"     [openStudio]
+  mergekey-alias    exit 2  "... anchors and aliases are not a supported form for delegate"          [anchor scan]
+  mergekey-NOalias  exit 2  "... a merge key (\"<<\") is not a supported form for delegate"           [MERGE CHECK]
+  anchor-alias      exit 2  "... anchors and aliases are not a supported form for delegate"          [anchor scan]
+Six fixtures, six messages, each naming the layer the amendment assigns. Upheld: multi-doc and
+doc.errors were dead and are deleted. Overturned: the merge-key check is live and is kept.
+
+-- and each surviving check now owns a DISCRIMINATING fixture (measured by disabling it) --
+  anchor scan disabled  + anchor fixture        -> exit 0, "sella \"builder-1\": model x -> y"
+     (round 1 this CRASHED with "Cannot read properties of undefined (reading 'toLowerCase')";
+      the crash path is gone, as a consequence of dropping the emit. Ruling A.4 closed.)
+  merge-key check disabled + alias-free fixture -> exit 0  => the fixture genuinely discriminates
+  anchor scan disabled  + alias-free fixture    -> exit 2 via the merge-key message
+     => the two checks are exercised INDEPENDENTLY, neither borrowing the other's red.
+
+== 2. gates, re-run by the censor ==
+### npm test
+PASS=2473 FAIL=0
+### typecheck
+### lint
+/tmp/claude-1000/w065-build/packages/cli/src/close.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/tmp/claude-1000/w065-build/packages/cli/src/tick.test.ts
+  203:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+
+### format
+Checking formatting...
+All matched files use Prettier code style!
+### check sample
+
+PASS — 0 blocking, 26 advisory
+### check studio
+
+PASS — 0 blocking, 106 advisory
+### clean build
+dist/assets/index-kgJ-NF-8.js   239.26 kB │ gzip: 74.79 kB
+
+✓ built in 92ms
+### e2e
+  5 passed (1.8s)
+### serve
+  16 passed (2.4s)
+
+-- tree hash recomputed independently (excl. studio/, .bisellium/, examples/) --
+  162f27d (HEAD) bdc529fb725534e6208c6198b8f5c245225e2da1  286 files
+  1519f80        bdc529fb725534e6208c6198b8f5c245225e2da1
+  a12d43e        bdc529fb725534e6208c6198b8f5c245225e2da1
+  091b659        f60302c9... (the amendment is studio-only; the SOURCE tree did not move — correct)
+MATCHES the certificate in studio/opera/W-065.md (tests/lint/types -> tree:bdc529fb...). CONFIRMED.
+
+== 3. advisory 103 -> 106, fully accounted for; ZERO caused by code ==
+Set-diff of the JSON finding lists, base e8317a8 (103) vs HEAD (106):
+  NEW  probatio.certifies | opera/W-065.md | gate "spec"   (caf9557, pre-existing from round 1)
+  NEW  probatio.certifies | opera/W-065.md | gate "review" (written by MY OWN round-1 verdict)
+  NEW  process.review_tier | opera/W-065.md | review sella "qa-lead" ran on claude-fable-5,
+       not an opus-tier model  (also my own round-1 verdict; claude-fable-5 is the instructed model)
+  NEW/GONE pair: acta.daily production+qa, 7.1 -> 7.2 days — wall-clock drift, same findings.
+103 + 1 spec gate + 2 from the censor's own verdict = 106. No code-caused advisory.
+Note for the record: this count will climb by ~2 per review round. That is the officina's own
+bookkeeping showing in `check`, which is correct — it is exactly what source_excludes keeps
+OUT of certificates and deliberately does not keep out of check.
+
+== 4. the phantom row is GONE — re-measurement, same procedure as round 1 ==
+Temp copy of examples/sample-studio; BOTH shapes run:
+  $ bisellium delegate --sella builder-1 --model gpt-5.6-sol --studio <tmp>   -> ok
+  $ bisellium delegate --munus audit --tier high --studio <tmp>               -> ok
+
+                              round 1                      round 2
+  .bisellium/events.jsonl     1 actor_assigned line        FILE NOT WRITTEN AT ALL
+  stats().opera               8                            7
+  opera() ids                 W-001..W-007,builder-1       W-001..W-007
+  opus("builder-1")           {id:builder-1,state:"",...}   undefined
+  opera({state:""})           [the ghost]                  []
+  timeline("gpt-5.6-sol")     [the delegate event]         []
+  stats().events              42                           41
+Both decrees still recorded, which is the point — timeline/patron.jsonl:
+  {"role":"patron","action":"delegate","target":{"sella":"builder-1"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"}
+  {"role":"patron","action":"delegate","target":{"munus":"audit"},"from":"mid","to":"high"}
+
+-- and again END TO END through a real `serve` on a temp copy of studio/ (332 events, 70 opera) --
+  events by source: {"cli":2,"server":330}
+  workflow.actor_assigned total: 15
+  ... with a NON-opus workflow.item.id: 0
+  opera_state ids: W-001 .. W-070 — every row a real opus
+  opus("builder-a"): undefined
+(events.jsonl DOES exist in this run — `serve`'s own differ writes it, workflow.source="server",
+ W-016 behaviour, unrelated to delegate. The discriminating query is the one above: zero
+ actor_assigned events carrying a sella id.)
+
+== 5. mutation battery, re-run in full ==
+Scripts kept: $TMPDIR/mut/mutate{,2,3,4}.py. Browser mutants rebuild dist before running.
+
+-- the five round-1 real gaps: ALL NOW KILLED --
+  07  narrow/remove the anchor-alias scan        SURVIVED -> KILLED
+  20  add an <option> not in availableModels     SURVIVED -> KILLED
+  30  cache the listing forever (no refresh)     SURVIVED -> KILLED
+  32  empty the dropdown when the listing fails  SURVIVED -> KILLED
+  35  restore the resolved-model column          SURVIVED -> KILLED (bare <td> AND classed <td>)
+  32c false ok:true on a failed listing — the 5th gap the BUILDER found in its own re-run,
+      not named in my round-1 list and not in the amendment's instructions: KILLED.
+
+-- no regression: every round-1 KILLED mutant is still KILLED (full battery re-run) --
+  01 03 04 05 06 08 09 10 11 12 14 15 16 17 18 19 21 22 23 24 25 26 28 31 33 34 36 37 38 39
+  40 41 42 43 44 45a 45b 46
+  (34 PATCH-MISSes in mutate.py on an indentation drift in MY script, as the builder reported;
+   run from the corrected copy in mutate3.py it is KILLED. My script's defect, not the code's.)
+
+-- four NEW mutants I wrote for the round-2 fixes --
+  R2-a drop the merge-key check the architect saved        KILLED (the new fixture earns its keep)
+  R2-c exit 4 with no diagnostic message                   KILLED (the new message assertion bites)
+  R2-d a refusal prints the WRONG layer's message          KILLED (assertRefused's fragment bites)
+  R2-b re-introduce the real workflow.actor_assigned emit  ** SURVIVED ** — see finding below
+
+-- the two equivalent mutants, unchanged from round 1 and still correctly ruled so --
+  02/02b drop withWriteLock: runDelegate is synchronous, so two HTTP handlers cannot interleave
+         on one event loop. Not a suite gap; the brief's claim about this mutant is false.
+  13     onDraft calls onConfirm: onConfirm reads `pending` from a stale closure, so the
+         injected call no-ops on the first change. Mutant 14 covers the intent: KILLED.
+
+== 6. FINDING (advisory, new, arising from the remedy) — the dropped emit has no regression guard ==
+I re-added the REAL emit — the exact code a12d43e removed:
+    if (target.kind === "sella") {
+      emitEvent(root, manifest, "workflow.actor_assigned", now, { [WF.ITEM_ID]: target.id, [WF.ACTOR_ROLE]: target.value });
+    }
+and ran every plausible guard. NOTHING caught it:
+  delegate.test.ts behaviour 7   rc=0  0 FAIL
+  delegate.test.ts (whole file)  rc=0  0 FAIL
+  apps/server/test/server.test.ts rc=0  0 FAIL
+  packages/core/src/index.test.ts rc=0  0 FAIL
+The amended brief makes this a SPECIFICATION ("Neither shape emits an event ... this paragraph
+is the specification for that drop"). A specification with no assertion is prose, and prose is
+what the standing rule says enforcement must never be. The fix itself is correct and measured
+correct (section 4); what is missing is the guard that keeps it correct.
+Advisory, not blocking, and deliberately so: the amendment's nine instructions did not ask for
+this assertion, so the builder skipped no instruction, and blocking a further round on a guard
+the spec gate did not require would be the censor legislating past the architect. Cost to close
+is one line in behaviour 7, which already builds a fresh studio and runs a successful delegate:
+  check(7, "no workflow.* event is emitted by either shape", !existsSync(join(dir, ".bisellium", "events.jsonl")));
+RECOMMEND filing it rather than carrying it as a memory.
+
+== 7. deviation 1 — the 5.2s real-time TTL wait: ACCEPTABLE, but the seam does exist ==
+server.test.ts now does `await new Promise(r => setTimeout(r, 5_200))` to cross
+MODELS_LISTING_TTL_MS (5_000, a module-level const in http.ts closed over by createListingCache).
+The assertion it buys is real: mutant 30b is KILLED, measured.
+Measured cost: apps/server/test/server.test.ts wall time 10.30s, of which 5.2s is pure sleep —
+more than half that file's runtime, paid on every `npm test`, permanently, for one boolean.
+The builder's "no fake-timer seam existed" is true of the code as written, but the seam is
+already the house pattern of the very interface being used. StartServerOptions carries FIVE
+optional injected knobs today:
+  studioDir · port? · pollMs? · now? · live? · checkStudio · runners · listModels?
+`pollMs?` is already a millisecond timing knob and `now?` is already a clock knob — and
+apps/server/src/store.ts's StoreOptions.now documents itself as "Pinned clock, for reproducible
+query results in tests". A `listingTtlMs?: number` defaulting to MODELS_LISTING_TTL_MS is one
+optional field, matches two existing precedents in the same options object, and turns 5.2s into
+~20ms. Ruling: acceptable for this gate (the test is correct and the mutant dies); advisory,
+with the seam named precisely so it is not reported again as "none existed".
+
+== 8. deviation 2 — the playwright sudo failure: PRE-EXISTING, environmental, not W-065's ==
+The brief's Acceptance line `npx playwright install --with-deps chromium` exits 1 here:
+  Error: Installation process exited with code: 1
+`--with-deps` shells out to apt-get and needs root, which this sandbox does not have. It is
+unrunnable in this environment and always will be. It does not affect the substantive claim the
+line exists to enable: chromium-1243 is cached, and from a clean `rm -rf apps/web/dist` rebuild
+both suites pass — test:e2e 5/5, test:serve 16/16. Not a defect of this opus.
+
+== 9. the 05.log reading: CORRECT ANSWER, WEAKER REASONING THAN IT DESERVES ==
+Verified first that the claim is true: `git log -- studio/ci/reds/W-065/05.log` -> last touched
+at 1c65813; `git diff --stat 1c65813 HEAD -- studio/ci/reds/W-065/` shows only 14.log and 15.log
+(added at 4f46a31, round 1). No red was re-recorded or edited in round 2.
+The builder's stated reason is an ARGUMENT FROM SILENCE — it searched the amended brief for
+language authorizing a re-record and found none. That is the wrong test: absence of permission
+is not the same as presence of a reason, and the same search would have justified the opposite
+answer had it found a stray sentence.
+The affirmative reasons, which is what should have been written:
+  (a) this repo's red UNIT is the behaviour, not the case — one ci/reds/W-065/NN.log per
+      --behaviour N. Behaviour 5 already has a genuine, assertion-level red at 1c65813, and the
+      amendment re-worded behaviour 5's case list without adding a behaviour (still 17).
+  (b) decisively: a red recorded TODAY for behaviour 5 could only be manufactured by reverting
+      working code. That is not a recorded red, it is backfilled evidence, which the standing
+      rule forbids outright. The absence of authorizing language is beside the point; the
+      presence of a rule against it is the point.
+  (c) the thing a red is FOR — proof the new fixture discriminates — I produced instead by
+      mutation, live, in section 1: disable hasMergeKey and the alias-free fixture passes.
+Ruling: the reading is upheld. 05.log stays. The builder reached the right answer; the next
+round should reach it by rule rather than by search.
+
+== 10. residual from round 1, carried forward as advisory ==
+My round-1 finding C had two halves. The amendment struck harnessVersions cleanly and assigned
+staleness to W-069 end to end — verified: still zero occurrences in apps/packages/adapters/docs,
+and behaviour 3 no longer claims it. Correct and complete.
+The OTHER half was not addressed: the brief still says the floor is "seated ∪ attested
+(gen_ai.request.model from the event log)" at three places (lines 496, 1009, 1153), and nothing
+implements attested — not the client (its signature carries no event log) and not the server.
+The shipped floor is seated ∪ tier-holders. No user-visible gap here: in this studio the event
+log names claude-opus-5 and claude-sonnet-5, both already seated, so attested is a subset of
+seated today. Advisory: the clause should be struck like its sibling, or implemented in
+GET /api/models, but it should not keep sitting in the brief unbuilt — that is the same shape
+of claim-the-code-does-not-keep that the amendment itself cited lesson F-1 against.
+
+== 11. live probes, re-run at HEAD ==
+POST /api/delegate no token   -> 401, manifest unchanged
+POST /api/delegate bad token  -> 401
+POST /api/delegate valid      -> {"ok":true,"exitCode":0,...}
+POST with a STALE --from      -> HTTP 200 {"ok":false,"exitCode":3,"output":"... --from ... does not match ..."}
+manifest diff vs HEAD         -> EXACTLY ONE LINE
+timeline/patron.jsonl         -> one line, role:"patron"
+
+== 12. verdict ==
+PASS.
+All three round-1 blocking findings are closed, each verified by measurement rather than by
+reading the fix: A by six live refusal messages plus three check-disabling probes; B by the
+five previously-surviving mutants now dying, with no regression across the other 38; C by the
+amendment striking the clause and the grep confirming nothing was left behind. The phantom row
+is gone both from the CLI path and through a real serve.
+Carried forward as advisory, to be filed rather than fixed under this gate:
+  - the dropped emit has no regression guard (section 6) — one line, highest value of the three
+  - the 5.2s TTL sleep has a seam that matches two existing precedents (section 7)
+  - the unimplemented "attested" clause, sibling of the struck harnessVersions (section 10)
