@@ -17,7 +17,15 @@
  */
 import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { HARNESS_PROFILES, USAGE_LIMIT_EXIT_CODE, codexListModels as realCodexListModels, type HarnessProfile, type ListedModel, type Turn } from "@bisellium/shim";
+import {
+  HARNESS_PROFILES,
+  USAGE_LIMIT_EXIT_CODE,
+  codexListModels as realCodexListModels,
+  harnessVersions as realHarnessVersions,
+  type HarnessProfile,
+  type ListedModel,
+  type Turn,
+} from "@bisellium/shim";
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
 import { vendorDiagnostic } from "./talk.js";
 
@@ -193,6 +201,28 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   }
   const due = opts.only ?? gatherCandidates({ studio: opts.studio, listing });
 
+  // Step 1 (Order of operations): live versions, gathered once, up front —
+  // the authoritative per-pair evidence (`HarnessProbe.harnessVersion`,
+  // stamped only by a real turn) and the human-readable top-level snapshot
+  // both come from this one fetch. A failed vendor call yields `undefined`
+  // for that key, which PRESERVES the prior recorded value rather than
+  // overwriting it (Sol note 12; behaviour 9(iii)).
+  let liveVersions: { claude?: string; codex?: string };
+  try {
+    liveVersions = await (opts.versions ?? realHarnessVersions)();
+  } catch {
+    liveVersions = {};
+  }
+  function versionKeyFor(harness: string): "claude" | "codex" | undefined {
+    if (harness === "claude-code") return "claude";
+    if (harness === "codex") return "codex";
+    return undefined;
+  }
+  function liveVersionFor(harness: string): string | undefined {
+    const key = versionKeyFor(harness);
+    return key ? liveVersions[key] : undefined;
+  }
+
   const manifest = readManifestSafe(opts.studio);
   const seatedByHarness = new Map<string, Candidate[]>();
   for (const c of manifest ? seatedCandidatesFor(manifest) : []) {
@@ -258,6 +288,14 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   const write = opts.fs?.writeFileSync ?? writeFileSync;
   const rename = opts.fs?.renameSync ?? renameSync;
 
+  // Step 4's snapshot — a human-readable last-observed value, computed once
+  // (gathered in step 1, alongside candidates and the listing) rather than
+  // re-fetched per write. A failed/absent live value PRESERVES whatever was
+  // already recorded; nothing here is ever a trigger input.
+  const finalHarnessVersions: { claude?: string; codex?: string } = { ...priorRecord.harnessVersions };
+  if (liveVersions.claude !== undefined) finalHarnessVersions.claude = liveVersions.claude;
+  if (liveVersions.codex !== undefined) finalHarnessVersions.codex = liveVersions.codex;
+
   // Every write is atomic (Order of operations): serialize, writeFileSync
   // to models.json.tmp in the SAME directory, renameSync over models.json.
   // A rename within one filesystem is atomic, so no reader ever observes a
@@ -268,7 +306,7 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     const rec: ModelsRecord = {
       schema: 1,
       at: nowIso,
-      harnessVersions: { ...priorRecord.harnessVersions },
+      harnessVersions: finalHarnessVersions,
       models: [...models.values()].sort((a, b) => a.id.localeCompare(b.id)),
     };
     const path = join(resolve(opts.studio), "models.json");
@@ -317,17 +355,24 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     turnedKeys.add(`${c.id}\u0000${c.harness}`);
     const turn = await profile.start({ cwd: opts.studio, sella: PROBE_SELLA, systemPrompt: "", message: PROBE_MESSAGE, env: process.env, model: c.id });
     turns++;
+    // Written only by a real turn — a pair marked but never turned never
+    // reaches here, so it never carries this field (behaviour 9(ii)).
+    const harnessVersion = liveVersionFor(c.harness);
 
     // A usage limit says nothing about the model — never a verdict.
     if (turn.exitCode === USAGE_LIMIT_EXIT_CODE) {
-      upsert(c.id, c.harness, { harness: c.harness, state: "unverified", at: nowIso, note: "usage limit" });
+      const probe: HarnessProbe = { harness: c.harness, state: "unverified", at: nowIso, note: "usage limit" };
+      if (harnessVersion !== undefined) probe.harnessVersion = harnessVersion;
+      upsert(c.id, c.harness, probe);
       persist(); // step 3: rewrite the whole record after each turn
       return { state: "unverified", stopHarness: true };
     }
 
     const status = shortCircuitStatus(turn);
     if (status === 401 || status === 403) {
-      upsert(c.id, c.harness, { harness: c.harness, state: "unverified", at: nowIso, note: `api error ${status}: ${c.harness}` });
+      const probe: HarnessProbe = { harness: c.harness, state: "unverified", at: nowIso, note: `api error ${status}: ${c.harness}` };
+      if (harnessVersion !== undefined) probe.harnessVersion = harnessVersion;
+      upsert(c.id, c.harness, probe);
       persist();
       return { state: "unverified", stopHarness: true };
     }
@@ -337,6 +382,7 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     if (verdict.exit !== undefined) probe.exit = verdict.exit;
     if (verdict.reply !== undefined) probe.reply = verdict.reply;
     if (verdict.vendorDiagnostic !== undefined) probe.vendorDiagnostic = verdict.vendorDiagnostic;
+    if (harnessVersion !== undefined) probe.harnessVersion = harnessVersion;
     upsert(c.id, c.harness, probe);
     persist();
     return { state: verdict.state, stopHarness: false };
@@ -393,8 +439,20 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     if (outcome.stopHarness) harnessStopped.add(c.harness);
   }
 
+  // The signed consequence (Interfaces, "The aggregation rule, stated
+  // once"): the shipped W-065 reader shows only the optimistic aggregate,
+  // so a model whose probes disagree across harnesses can render available
+  // on a seat whose OWN harness can't run it. This is the operator-facing
+  // witness that replaces the live collision the manifest fix removed.
+  for (const entry of models.values()) {
+    const states = new Set(entry.probes.map((p) => p.state));
+    if (states.size < 2) continue;
+    const verdicts = entry.probes.map((p) => `${p.harness}: ${p.state}`).join(", ");
+    console.log(`probe: ${entry.id} disagrees across harnesses — ${verdicts}`);
+  }
+
   const skipped = due.filter((c) => !turnedKeys.has(`${c.id}\u0000${c.harness}`));
-  const record = persist(); // step 4 lands in behaviour 9 (the harnessVersions snapshot rewrite)
+  const record = persist();
 
   return { turns, skipped, record };
 }
