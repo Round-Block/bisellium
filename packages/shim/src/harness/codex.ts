@@ -34,23 +34,40 @@
  * user/project execpolicy `.rules` (`--ignore-rules`); no ambient default
  * model/provider from the user config file (`model_provider=openai` is
  * passed explicitly because `--ignore-user-config` drops the file that used
- * to supply it — D-020's decreed transport); no browser, in-app-browser,
- * apps or plugin feature (the eight `--disable` pairs). What it does NOT
- * achieve, that W-044 achieves on claude: **no tool allowlist** — this is a
- * denylist of eight named features, and a denylist goes stale the day a new
- * one ships (W-049's own ruling); **reads are unbounded** — read-only mode
- * permits every read the operator can perform, including
- * `~/.codex/auth.json`, where a talked claude session cannot run `cat` at
- * all; **`AGENTS.md` (user and project) still loads**, ungoverned by any
- * flag here; **configuration channels beyond the user config file
- * (project/managed/system/cloud) are unmeasured**, not proven absent.
- * Verification command for the eight `--disable` names (re-run per codex-cli
- * version — the brief's Order of work, step 0): `codex features list
- * --disable browser_use --disable browser_use_external --disable
+ * to supply it — D-020's decreed transport); and the eight named feature
+ * flags off (the `--disable` pairs). That list is the whole achievement on
+ * the tool surface — those eight names, not "no egress."
+ *
+ * **CORRECTED, round 2 (censor F-1): a live vendor-side web fetch/search
+ * channel survives the whole policy, closed by none of the eight
+ * `--disable` names.** Measured under the exact shipped argv, twice, with a
+ * hallucination control: a talked codex session can fetch a live, moving
+ * value over the network (`web.run`) and report it back. The fetch runs
+ * vendor-side, so neither the studio's bubblewrap sandbox nor
+ * `sandbox_mode=read-only` touches it. No egress-closing flag is specified
+ * here, because none was probed; whether one exists is the follow-on's
+ * question.
+ *
+ * What it does NOT achieve, that W-044 achieves on claude, egress first
+ * because it is the largest: **egress is open, paired with unbounded reads
+ * — the exact pairing W-044 refused.** `sandbox_mode=read-only` permits
+ * every read the operator can perform, including `~/.codex/auth.json` (a
+ * talked claude session cannot run `cat` at all), and a live web
+ * fetch/search channel survives alongside it; W-044 dropped `WebFetch` from
+ * the claude profile because, in its own words, "paired with `Read` it
+ * would be the profile's only egress" — the codex profile ships with both
+ * halves of that pairing. **No tool allowlist** — this is a denylist of
+ * eight named features, and a denylist goes stale the day a new one ships
+ * (W-049's own ruling); **`AGENTS.md` (user and project) still loads**,
+ * ungoverned by any flag here; **configuration channels beyond the user
+ * config file (project/managed/system/cloud) are unmeasured**, not proven
+ * absent. Verification command for the eight `--disable` names (re-run per
+ * codex-cli version — the brief's Order of work, step 0): `codex features
+ * list --disable browser_use --disable browser_use_external --disable
  * browser_use_full_cdp_access --disable in_app_browser --disable apps
  * --disable plugins --disable remote_plugin --disable plugin_sharing` must
  * report all eight as `false`. Repeated in docs/ADOPTION.md, "Running talk"
- * (behaviour 6 of provider-portability.test.ts asserts it's there).
+ * (behaviours 6 and 8 of provider-portability.test.ts assert it's there).
  *
  * Codex auth works only from the default login location,
  * `$HOME/.codex/auth.json` — `CODEX_HOME`/`OPENAI_API_KEY` are off W-049's

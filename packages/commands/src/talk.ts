@@ -227,6 +227,28 @@ function extractResetHint(raw: unknown): string | undefined {
   return undefined;
 }
 
+/** W-046 round 2 (behaviour 7, F-2): both `claude-code.ts` and `codex.ts`
+ *  put `{ stdout, stderr }` in `Turn.raw` when no envelope parses (an
+ *  unparseable failure is exactly the shape a vendor's own error text takes
+ *  — a mismatched model, a vanished resume session id, a bad provider name).
+ *  Prefers stderr (where a CLI's own diagnostic almost always lands), falls
+ *  back to stdout, redacts it the same pass every timeline entry gets (a
+ *  secret-shaped token in vendor stderr must not become plaintext evidence
+ *  either), and truncates to a fixed character budget. This is a diagnostic
+ *  for a human, never a signal: the text is never parsed, matched or
+ *  branched on anywhere — only ever appended to a message string. */
+const VENDOR_DIAGNOSTIC_BUDGET = 300;
+function vendorDiagnostic(raw: unknown): string | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const obj = raw as Record<string, unknown>;
+  const stderr = typeof obj["stderr"] === "string" ? obj["stderr"].trim() : "";
+  const stdout = typeof obj["stdout"] === "string" ? obj["stdout"].trim() : "";
+  const text = stderr || stdout;
+  if (!text) return undefined;
+  const bounded = text.length > VENDOR_DIAGNOSTIC_BUDGET ? `${text.slice(0, VENDOR_DIAGNOSTIC_BUDGET)}…` : text;
+  return redact(bounded);
+}
+
 // ---------------------------------------------------------------------------
 // Shared core: everything from the deterministic fast path through
 // escalation, factored out of the CLI entry point so a non-CLI caller
@@ -330,10 +352,20 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
     return { ok: false, exitCode: 3, message: `${sella} is limited on ${harnessId}; try again after ${reset ?? "unknown"}` };
   }
   if (turn.exitCode !== 0) {
+    // W-046 round 2 (behaviour 7, censor F-2): both claude-code.ts and
+    // codex.ts put { stdout, stderr } in Turn.raw when no envelope parses —
+    // the vendor's own diagnostic, captured and then silently discarded.
+    // One guard here, the shared site both profiles' failures pass through,
+    // carries it into the operator-facing message: redacted (the same pass
+    // every timeline entry gets) and bounded to a fixed character budget,
+    // never parsed, matched or branched on — a diagnostic for a human, not
+    // a signal.
+    const diagnostic = vendorDiagnostic(turn.raw);
+    const base = `${sella}: ${harnessId} exited ${turn.exitCode} (requested model: ${requestedModel ?? "none"})${turn.reply ? ` — ${turn.reply}` : ""}`;
     return {
       ok: false,
       exitCode: turn.exitCode,
-      message: `${sella}: ${harnessId} exited ${turn.exitCode}${turn.reply ? ` — ${turn.reply}` : ""}`,
+      message: diagnostic ? `${base} — ${diagnostic}` : base,
     };
   }
   // W-046 (behaviour 3): a turn that exits 0 with an empty reply is a

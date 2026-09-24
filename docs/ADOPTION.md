@@ -918,9 +918,12 @@ one axis an operator legitimately switches). Nothing is ever read from
 flags above — `--allowedTools` is variadic and terminal, so anything added
 after it would be silently eaten as a tool name); a `claude` binary that
 doesn't recognize the requested model exits non-zero
-(`[claude-code:unrecognized_model]`) and `talk` relays that closed, so a
-sella whose declared model doesn't belong to its harness stops silently
-running on the wrong model and starts failing loudly. On `codex` it is
+(`[claude-code:unrecognized_model]`), and `talk` relays the exit code **and**
+the vendor's own captured diagnostic in its failure message — bounded,
+redacted, never parsed or branched on (behaviour 7) — and nothing stronger,
+so a sella whose declared model doesn't belong to its harness stops silently
+running on the wrong model and starts failing loudly and readably. On
+`codex` it is
 passed as `-m <id>`, alongside a module-local command policy applied
 identically by `start` and `resume` (`codex exec resume` rejects
 `-s`/`--sandbox` on codex-cli 0.153.4, so the sandbox mode travels as
@@ -933,19 +936,35 @@ browser_use_external`, `--disable browser_use_full_cdp_access`, `--disable
 in_app_browser`, `--disable apps`, `--disable plugins`, `--disable
 remote_plugin`, `--disable plugin_sharing` — each measured stable and
 enabled by default on codex-cli 0.153.4, flipped to `false` by `--disable`.
+**That list is the whole achievement on the tool surface — those eight
+names, not "no egress."**
+
+**CORRECTED, round 2 (censor F-1): a live vendor-side web fetch/search
+channel survives the whole policy, closed by none of the eight `--disable`
+names.** Measured under the exact shipped argv, twice, with a hallucination
+control: a talked codex session can fetch a live, moving value over the
+network (`web.run`) and report it back. The fetch runs vendor-side, so
+neither the studio's bubblewrap sandbox nor `sandbox_mode=read-only` touches
+it. No egress-closing flag is specified here, because none was probed;
+whether one exists is the follow-on's question.
 
 **This is not W-044 parity, and the gap is signed, not hidden: codex's
-policy here is not equivalent to the claude profile's.** Four residuals,
-carried forward until a build-shaped follow-on opus can close them: **no
-tool allowlist** — claude enumerates what may run; codex offers only a
-denylist of eight named features, and a denylist goes stale the day a new
-feature ships. **unbounded reads** — `sandbox_mode=read-only` permits every
-read the operator can perform, including `~/.codex/auth.json`, where a
-talked claude session cannot run `cat` at all. **AGENTS.md still loads** —
-neither the user's nor the project's is covered by any flag here.
-**configuration channels beyond the user config file are unmeasured** —
-project, managed, system and cloud defaults are residual, not proven
-absent. Codex authenticates only from the default login location,
+policy here is not equivalent to the claude profile's.** Five residuals,
+carried forward until a build-shaped follow-on opus can close them, egress
+first because it is the largest: **egress is open, paired with unbounded
+reads — the exact pairing W-044 refused.** `sandbox_mode=read-only` permits
+every read the operator can perform, including `~/.codex/auth.json` (a
+talked claude session cannot run `cat` at all), and a live web fetch/search
+channel survives alongside it; W-044 dropped `WebFetch` from the claude
+profile because, in its own words, "paired with `Read` it would be the
+profile's only egress" — the codex profile ships with both halves of that
+pairing. **No tool allowlist** — claude enumerates what may run; codex
+offers only a denylist of eight named features, and a denylist goes stale
+the day a new feature ships. **AGENTS.md still loads** — neither the user's
+nor the project's is covered by any flag here. **Configuration channels
+beyond the user config file are unmeasured** — project, managed, system and
+cloud defaults are residual, not proven absent. Codex authenticates only
+from the default login location,
 `$HOME/.codex/auth.json`; `CODEX_HOME` and `OPENAI_API_KEY` are
 deliberately not passed (off W-049's ten-name env allowlist by design), so
 a custom config home or an API-key-only login does not work through a
