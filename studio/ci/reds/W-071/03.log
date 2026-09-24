@@ -1,0 +1,140 @@
+# behaviour: 3
+# command: bash -c node --import tsx packages/cli/src/tick.test.ts . 3; a=$?; node --import tsx packages/commands/src/probe.test.ts . 3; b=$?; exit $(( (a==0 && b==0) ? 0 : 1 ))
+# exit: 1
+# at: 2026-09-24T23:34:02.989Z
+# sella: builder-c
+# tree: dirty:0994a3b25bc740f34ccf6a48c4e17dcc70a647e9
+
+PASS  dry-run: exit 0                                exitCode=0
+PASS  dry-run: lists daily due for producer          
+PASS  dry-run: lists daily due for eng-lead          
+PASS  dry-run: lists daily due for art-lead          
+PASS  dry-run: lists daily due for qa-lead           
+PASS  dry-run: no aerarium due (current week's file exists) 
+PASS  dry-run: no traditio due (all handoffs fresh)  
+PASS  dry-run: no acta files written                 
+PASS  harnessForSella: defaults to claude-code when unset 
+PASS  harnessForSella: honors an explicit override   
+PASS  computeDue: L0 collegium's magister not due    
+PASS  computeDue: L1 (default) collegium's magister still due 
+PASS  pause: writes PAUSED                           
+PASS  paused tick: exit 0 (check passes)             exitCode=0
+PASS  paused tick: prints 'paused since ... : ...'   paused since 2026-09-18T14:00:00.000Z: investigating a bad deploy
+PASS  paused tick: no daily due lines printed        
+PASS  paused tick: no new acta written               
+PASS  paused tick: no receipt written                
+PASS  paused tick: still writes health.json          
+PASS  resume: removes PAUSED                         
+PASS  health tick: exit 0                            
+PASS  health.json written                            
+PASS  health.json: ok matches check                  true vs true
+PASS  health.json: blocks matches check              
+PASS  health.json: advisories matches check          
+PASS  health.json: findingsByRule counts acta.daily = 5 {"probatio.certifies.mismatch":1,"acta.daily":5,"aerarium.missing":1,"lex.unchecked":2}
+PASS  health.json: autonomy.paused is false          
+PASS  health.json: due lists 5 dailies               [{"kind":"daily","sella":"producer"},{"kind":"daily","sella":"architect"},{"kind":"daily","sella":"eng-lead"},{"kind":"daily","sella":"art-lead"},{"kind":"daily","sella":"qa-lead"}]
+PASS  health.json: lastTick set                      
+PASS  test setup: manifest actually patched          
+PASS  check: invalid collegium.autonomy blocks       collegium.autonomy, probatio.certifies.mismatch, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  check: overall not ok                          
+PASS  write tick: exit 0                             exitCode=0 logs=wrote /tmp/claude-1000/bisellium-tick-write-IIGHo2/acta/2026-09-18-producer-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-IIGHo2/acta/2026-09-18-architect-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-IIGHo2/acta/2026-09-18-eng-lead-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-IIGHo2/acta/2026-09-18-art-lead-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-IIGHo2/acta/2026-09-18-qa-lead-daily.md
+PASS  write tick: one acta per due magister          2026-09-18-architect-daily.md, 2026-09-18-art-lead-daily.md, 2026-09-18-eng-lead-daily.md, 2026-09-18-producer-daily.md, 2026-09-18-qa-lead-daily.md
+PASS  write tick: eng-lead daily written at expected path 
+PASS  write tick: author is eng-lead                 author: "eng-lead"
+PASS  write tick: kind is daily                      
+PASS  write tick: evidence points at bisellium.yml (never dead in a clone) 
+PASS  write tick: body carries the fake reply        
+PASS  write tick: harness defaults to claude-code (sample-studio sets none) ---
+author: "eng-lead"
+kind: daily
+title: "eng-lead status stable (claude-code)"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+eng-lead status stable (claude-code)
+nothing blocked
+see you tomorrow
+
+PASS  write tick: receipt written under receipts/tick/ 
+PASS  write tick: second dry-run has nothing due     nothing due
+PASS  redact: exit 0                                 exitCode=0
+PASS  redact: eng-lead daily written                 
+PASS  redact: no raw secret in the acta file         ---
+author: "eng-lead"
+kind: daily
+title: "deploy token=*** status stable"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+deploy token=*** status stable
+nothing blocked
+see you tomorrow
+
+PASS  redact: title/body carry the masked form       ---
+author: "eng-lead"
+kind: daily
+title: "deploy token=*** status stable"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+deploy token=*** status stable
+nothing blocked
+see you tomorrow
+
+PASS  corrupt-at: eng-lead not called again (file untouched) 
+PASS  corrupt-at: eng-lead not counted as talked-to  
+PASS  corrupt-at: the other four magistri were still talked to 4
+PASS  tz-aerarium: sample-studio timezone is Europe/London Europe/London
+PASS  tz-aerarium: 2026-W39 (London-local week) is due [{"kind":"aerarium","period":"2026-W39"}]
+PASS  tz-aerarium: 2026-W38 (UTC week, already on disk) is not due [{"kind":"aerarium","period":"2026-W39"}]
+PASS  real seam setup: all five magistri patched to harness: fake 5
+PASS  real seam: exit 0                              exitCode=0 errs=
+PASS  real seam: one acta per due magister actually written 2026-09-18-architect-daily.md, 2026-09-18-art-lead-daily.md, 2026-09-18-eng-lead-daily.md, 2026-09-18-producer-daily.md, 2026-09-18-qa-lead-daily.md
+PASS  real seam: eng-lead daily written at expected path 
+PASS  real seam: body carries the real fake-harness reply ---
+author: "eng-lead"
+kind: daily
+title: "FAKE: WRITE TODAY'S ACTA DIURNA FOR YOUR COLLEGIUM IN THREE LINES"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+FAKE: WRITE TODAY'S ACTA DIURNA FOR YOUR COLLEGIUM IN THREE LINES
+
+PASS  real seam: receipt written under receipts/tick/ 
+FAIL  b3 tick calls the injected battery exactly once                                             0
+FAIL  b3 tick always passes MAX_PROBE_TURNS_PER_RUN as the cap                                    undefined
+PASS  b3 tick's own exit code is unaffected                                                       0
+bisellium probe: 13 turn(s) spent, 3 skipped
+PASS  b3 runProbe exits 0                                                                         0
+PASS  b3 runProbe passes no cap — all 13 codex candidates get a turn, none left behind            [["codex-rp0","available"],["codex-rp1","available"],["codex-rp10","available"],["codex-rp11","available"],["codex-rp12","available"],["codex-rp2","available"],["codex-rp3","available"],["codex-rp4","available"],["codex-rp5","available"],["codex-rp6","available"],["codex-rp7","available"],["codex-rp8","available"],["codex-rp9","available"]]
+PASS  b3 (a) exactly one start call (the control)                                                   1
+PASS  b3 (a) the control's own row keeps its own honest (unavailable) verdict — only OTHER candidates are condemned {"id":"aaa-ctrl","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"control is broken"}],"harness":"claude-code","vendorDiagnostic":"control is broken"}
+PASS  b3 (a) control's own diagnostic retained                                                      {"id":"aaa-ctrl","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"control is broken"}],"harness":"claude-code","vendorDiagnostic":"control is broken"}
+PASS  b3 (a) other candidate unverified, zero turns                                                 {"id":"zzz-other","state":"unverified","probes":[{"harness":"claude-code","state":"unverified","at":"","note":"control failed: claude-code"}]}
+PASS  b3 (a) note names the control/harness                                                         {"id":"zzz-other","state":"unverified","probes":[{"harness":"claude-code","state":"unverified","at":"","note":"control failed: claude-code"}]}
+PASS  b3 (b) control passes -> available                                                            {"id":"aaa-ctrl","state":"available","probes":[{"harness":"claude-code","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"claude-code"}
+PASS  b3 (b) later model alone unavailable                                                          {"id":"zzz-later","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":9,"reply":false,"vendorDiagnostic":"later model broke"}],"harness":"claude-code","vendorDiagnostic":"later model broke"}
+PASS  b3 (c) zero turns when harness has no seated candidate                                        0
+PASS  b3 (c) both rows unverified                                                                   [{"id":"orphan-a","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"","note":"no control"}]},{"id":"orphan-b","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"","note":"no control"}]}]
+PASS  b3 (c) note is "no control"                                                                   [{"id":"orphan-a","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"","note":"no control"}]},{"id":"orphan-b","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"","note":"no control"}]}]
+PASS  b3 (d) 401: exactly two claude-code start calls (control + the blocked one)                   2
+PASS  b3 (d) 401: blocked pair is unverified                                                        {"id":"zzz-blocked","state":"unverified","probes":[{"harness":"claude-code","state":"unverified","at":"2026-09-25T12:00:00.000Z","note":"api error 401: claude-code"}]}
+PASS  b3 (d) 401: the other harness (codex) unaffected                                              1
+PASS  b3 (d) 401: codex row written normally                                                        {"id":"cx-ctrl","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}
+PASS  b3 (d) 403: exactly two claude-code start calls (control + the blocked one)                   2
+PASS  b3 (d) 403: blocked pair is unverified                                                        {"id":"zzz-blocked","state":"unverified","probes":[{"harness":"claude-code","state":"unverified","at":"2026-09-25T12:00:00.000Z","note":"api error 403: claude-code"}]}
+PASS  b3 (d) 403: the other harness (codex) unaffected                                              1
+PASS  b3 (d) 403: codex row written normally                                                        {"id":"cx-ctrl","state":"available","probes":[{"harness":"codex","state":"available","at":"2026-09-25T12:00:00.000Z","exit":0,"reply":true}],"harness":"codex"}
+PASS  b3 (d) negative: a 500 does not short-circuit (two turns spent)                               2
+PASS  b3 (d) negative: a 500 gets an ordinary unavailable verdict, not a short-circuit note         {"id":"zzz-500","state":"unavailable","probes":[{"harness":"claude-code","state":"unavailable","at":"2026-09-25T12:00:00.000Z","exit":1,"reply":false,"vendorDiagnostic":"status 500: blocked 500"}],"harness":"claude-code","vendorDiagnostic":"status 500: blocked 500"}
+FAIL  b3 w071: capped run makes exactly 2 start calls                                               5
+FAIL  b3 w071: capped run reports turns === 2                                                       5
+FAIL  b3 w071: the other 3 come back in skipped                                                     []
+PASS  b3 w071: the 3 skipped pairs are unverified on disk, never re-spent                           [["p1","available"],["p2","available"],["p3","available"],["p4","available"],["p5","available"]]
+PASS  b3 w071: the 2 turned pairs actually spent a turn (real verdict)                              [["p1","available"],["p2","available"],["p3","available"],["p4","available"],["p5","available"]]
+PASS  b3 w071: a second run against the rewritten record probes exactly the 3 skipped first         {"skipped":[],"states":[]}
+PASS  b3 w071: positive control — no cap yields 5 start calls and an empty skipped                  5

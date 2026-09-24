@@ -330,6 +330,54 @@ try {
     );
   }
   check("munus.tier is in the rule-id registry", RULE_IDS.has("munus.tier"));
+
+  // ---- W-071 behaviour 5: model_probe_stale_days is a declared default,
+  // not an unknown one (check.ts:74's closed DEFAULTS table; Sol finding
+  // 10) — with the two positive controls the brief requires, so the
+  // assertion can't pass by the rule being disabled. ----------------------
+  {
+    const dir = freshStudio("w071-probe-stale-declared");
+    appendYaml(dir, "defaults:\n  model_probe_stale_days: 14\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "w071 b5: declaring model_probe_stale_days earns no manifest.defaults advisory",
+      !r.findings.some((f) => f.rule === "manifest.defaults" && f.message.includes("model_probe_stale_days")),
+      r.findings.filter((f) => f.rule === "manifest.defaults").map((f) => f.message).join(" | "),
+    );
+  }
+  {
+    // Positive control: an actually-unknown sibling key still advises —
+    // required so the first check can't pass merely because the whole rule
+    // is disabled.
+    const dir = freshStudio("w071-probe-stale-unknown-sibling");
+    appendYaml(dir, "defaults:\n  totally_unknown_key: 1\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "w071 b5: positive control — an actually unknown default key still advises",
+      r.findings.some((f) => f.rule === "manifest.defaults" && f.level === "advise" && f.message.includes("totally_unknown_key")),
+      r.findings.filter((f) => f.rule === "manifest.defaults").map((f) => f.message).join(" | "),
+    );
+  }
+  {
+    // Positive control: a non-numeric value still blocks — required so a
+    // declared key isn't silently trusted regardless of its value's shape.
+    const dir = freshStudio("w071-probe-stale-non-numeric");
+    appendYaml(dir, 'defaults:\n  model_probe_stale_days: "soon"\n');
+    const r = checkStudio(dir, NOW);
+    check(
+      "w071 b5: positive control — a non-numeric model_probe_stale_days still blocks",
+      r.findings.some((f) => f.rule === "manifest.defaults" && f.level === "block" && f.message.includes("model_probe_stale_days")),
+      r.findings.filter((f) => f.rule === "manifest.defaults").map((f) => f.message).join(" | "),
+    );
+  }
+  {
+    // Neither shipped manifest declares the key, so this opus changes
+    // nothing about the real studio's or the fixture's own finding counts —
+    // behaviour 5's whole point (asserted operationally too, by the
+    // acceptance script's repeated `bisellium check` runs).
+    const r = checkStudio(sampleStudio, NOW);
+    check("w071 b5: sample-studio's own manifest carries no model_probe_stale_days finding", !r.findings.some((f) => f.message.includes("model_probe_stale_days")));
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

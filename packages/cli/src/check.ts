@@ -81,6 +81,7 @@ const DEFAULTS = {
   daily_stale_days: 1,
   hot_doc_chars: 8000,
   sella_stale_minutes: 30,
+  model_probe_stale_days: 7,
 };
 
 type Dict = Record<string, unknown>;

@@ -219,6 +219,7 @@ review_probatio: review           # probatio id that gates "review" state (defau
 wip_limit: 3                      # items in building + verifying, studio-wide
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
+  model_probe_stale_days: 7       # optional; code default 7 — tick's probe-cadence age trigger (W-071)
 source_excludes: [examples/]      # optional; repo-root-relative paths also excluded from the SOURCE tree hash
 integration:                      # optional (D-015); how an opus branch reaches the trunk — `bisellium merge` reads this
   strategy: rebase                # fast_forward (default) | rebase | merge_commit (declared, refused — not built)
@@ -855,7 +856,23 @@ items get a real acta written (talking to the magister's sella through
 passed through `redact()` first — a tracked, committed acta file must not
 carry a credential the model happened to include, same reasoning as `talk`'s
 own timeline entries — while `aerarium`/`traditio` items are reported only —
-writing either is a Patron/sella act, not tick's. `tick` finishes by writing
+writing either is a Patron/sella act, not tick's.
+
+`tick` also schedules the model probe cadence (W-071, the Patron's decreed
+dynamic refresh — `models.json`'s own writer is `bisellium probe`/W-069's
+battery, never tick itself). At most one `probe` due item per run, firing on
+either of two per-`(model, harness)` pair triggers: **age** — no
+`HarnessProbe` at all, an unparseable `at`, or an `at` older than
+`defaults.model_probe_stale_days` (default 7) — or **version** — the vendor
+CLI's live `--version` line differs from that *same pair's own*
+`probes[].harnessVersion` (never the record's top-level `harnessVersions`
+snapshot, which is a last-observed value, not a trigger). `undefined` on
+either side never fires. `--dry-run` prints `due: probe — N pair(s)` and
+spends nothing; otherwise tick runs the battery itself, capped at
+`MAX_PROBE_TURNS_PER_RUN` (12) turns — a pair the cap skips keeps its old
+evidence and heads the next run's queue, so a capped run never stalls a
+pair forever. A failing battery is reported on stderr and never fails the
+tick, the same posture a failing daily takes. `tick` finishes by writing
 a receipt under `receipts/tick/`. Exit codes: 0 `check` passed (or paused), 1
 `check` had blocking findings, 2 usage error / not a studio.
 

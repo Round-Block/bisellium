@@ -23,8 +23,9 @@ import { chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { claudeCodeProfile, codexProfile } from "@bisellium/shim";
+import { readManifest } from "@bisellium/adapter-native";
 import { runTalk } from "./talk.js";
-import { runTick } from "./tick.js";
+import { harnessForSella, runTick } from "./tick.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
@@ -380,6 +381,24 @@ try {
     const tmpDir = tmp("b4-tmp");
     const studioDir = tmp("b4-studio");
     cpSync(sampleStudio, studioDir, { recursive: true });
+    // Seed every seated pair as already-fresh: W-071's probe cadence
+    // otherwise finds all of them never-probed and adds a `due: probe` item
+    // (and a real battery run through this file's own stub binaries) that
+    // this behaviour's spawn-count assertions never anticipated.
+    {
+      const manifest = readManifest(studioDir);
+      const seen = new Set<string>();
+      const models: unknown[] = [];
+      for (const row of manifest.sellae) {
+        if (!row.model) continue;
+        const harness = harnessForSella(row);
+        const key = `${row.model}\u0000${harness}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        models.push({ id: row.model, state: "available", harness, probes: [{ harness, state: "available", at: NOW.toISOString() }] });
+      }
+      writeFileSync(join(studioDir, "models.json"), JSON.stringify({ schema: 1, at: NOW.toISOString(), harnessVersions: {}, models }, null, 2) + "\n");
+    }
     const logPath = join(binDir, "log.jsonl");
     writeStub(binDir, "claude", claudeStubSource(logPath));
     const synth = buildSynth(binDir, homeDir, tmpDir);
@@ -442,7 +461,7 @@ try {
       const sessionCountBeforeTick = existsSync(sessionsDir) ? readdirSync(sessionsDir).filter((f) => f.endsWith(".json")).length : 0;
       const beforeTick = log.length;
       const before = readdirSync(join(studioDir, "acta"));
-      const tickResult = await runTick(["--studio", studioDir], { now: NOW });
+      const tickResult = await runTick(["--studio", studioDir], { now: NOW, listModels: async () => [], versions: async () => ({}) });
       check("behaviour 4: tick exit 0", tickResult.exitCode === 0, String(tickResult.exitCode));
       const after = readdirSync(join(studioDir, "acta"));
       const added = after.filter((f) => !before.includes(f));

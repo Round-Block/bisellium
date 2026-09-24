@@ -17,7 +17,15 @@
 import { basename, dirname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { listMd, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
-import { DEFAULT_HARNESS, makeSessionId, receiptPath, redact } from "@bisellium/shim";
+import { DEFAULT_HARNESS, codexListModels, harnessVersions, makeSessionId, receiptPath, redact, type ListedModel } from "@bisellium/shim";
+import {
+  gatherCandidates,
+  probeBattery,
+  readModelsRecord,
+  type Candidate,
+  type HarnessProbe,
+  type ModelsRecord,
+} from "@bisellium/commands/probe.js";
 import { checkStudio, type CheckOptions } from "./check.js";
 import { isoWeek } from "./init.js";
 import { readPauseState } from "./pause.js";
@@ -81,9 +89,38 @@ const DAILY_MESSAGE = "Write today's acta diurna for your collegium in three lin
 export interface DueDaily { kind: "daily"; sella: string }
 export interface DueAerarium { kind: "aerarium"; period: string }
 export interface DueTraditio { kind: "traditio"; opus: string }
-export type DueItem = DueDaily | DueAerarium | DueTraditio;
+export interface DueProbe { kind: "probe"; models: Candidate[] }
+export type DueItem = DueDaily | DueAerarium | DueTraditio | DueProbe;
 
 const DEFAULT_TRADITIO_STALE_DAYS = 3;
+const DEFAULT_PROBE_STALE_DAYS = 7;
+
+/** The ceiling on turns one automatic `tick` run may spend on the probe
+ *  battery. `tick` always passes it; `runProbe` (an explicit operator act)
+ *  passes none (W-071 Interfaces). */
+export const MAX_PROBE_TURNS_PER_RUN = 12;
+
+/** Gathered by `runTick` (async), consumed by `computeDue` (pure, sync).
+ *  Absent means "not gathered" — `computeDue` then emits NO probe item, so
+ *  every existing caller and test is unaffected and no test ever depends on
+ *  an installed vendor binary (Sol finding 5, W-071). */
+export interface ProbeInputs {
+  /** undefined = the listing call failed (not an empty listing). */
+  listing?: ListedModel[];
+  versions: { claude?: string; codex?: string };
+  /** undefined = models.json absent or unparseable. */
+  record?: ModelsRecord;
+}
+
+/** `probes[].harness` -> the key `ProbeInputs.versions` carries it under.
+ *  Duplicated from probe.ts's own private `versionKeyFor` rather than
+ *  imported (not a published seam, and this codebase's per-file
+ *  small-helper style — see `localDateStr` above). */
+function versionKeyForHarness(harness: string): "claude" | "codex" | undefined {
+  if (harness === "claude-code") return "claude";
+  if (harness === "codex") return "codex";
+  return undefined;
+}
 
 /** `now`'s calendar date (YYYY-MM-DD) as observed in `timeZone` — mirrors
  *  init.ts's isoDateInZone; duplicated rather than shared, matching this
@@ -111,7 +148,7 @@ function toDate(v: unknown): Date | undefined {
  * never touches it). Never throws: an unreadable opus/acta file is skipped,
  * the same posture check.ts's `safeList`/`safeFront` take.
  */
-export function computeDue(studioRoot: string, manifest: Manifest, now: Date): DueItem[] {
+export function computeDue(studioRoot: string, manifest: Manifest, now: Date, probe?: ProbeInputs): DueItem[] {
   const activeCollegia = manifest.collegia.filter((c) => (c.autonomy ?? "L1") !== "L0");
   if (activeCollegia.length === 0) return [];
 
@@ -174,13 +211,57 @@ export function computeDue(studioRoot: string, manifest: Manifest, now: Date): D
     }
   }
 
+  // ---- probe: age or per-pair version trigger (W-071) --------------------
+  // Pure and synchronous: `probe` is gathered by `runTick`, never fetched
+  // here. Absent `probe` (every existing caller/test) emits no probe item.
+  if (probe) {
+    const staleDays =
+      typeof manifest.defaults?.["model_probe_stale_days"] === "number"
+        ? manifest.defaults["model_probe_stale_days"]
+        : DEFAULT_PROBE_STALE_DAYS;
+
+    // Per-pair evidence, keyed off the RECORD'S OWN probes[] — never the
+    // top-level harnessVersions snapshot, which is a last-observed value,
+    // not the trigger's input (behaviour 2(f)).
+    const probeByKey = new Map<string, HarnessProbe>();
+    if (probe.record) for (const entry of probe.record.models) for (const p of entry.probes) probeByKey.set(`${entry.id}\u0000${p.harness}`, p);
+
+    const candidates = gatherCandidates({ studio: studioRoot, listing: probe.listing });
+    const dueModels: Candidate[] = [];
+    for (const c of candidates) {
+      const prior = probeByKey.get(`${c.id}\u0000${c.harness}`);
+
+      // Age: no probe, an unparseable `at`, or `at` older than the threshold.
+      let ageDue: boolean;
+      if (!prior) ageDue = true;
+      else {
+        const atMs = new Date(prior.at).getTime();
+        ageDue = Number.isNaN(atMs) ? true : (now.getTime() - atMs) / 86_400_000 > staleDays;
+      }
+
+      // Version: per-pair, defined-vs-defined only (Sol note 12) — a pair
+      // with no recorded harnessVersion never fires this trigger (it is
+      // already age-due, which is what draws it in).
+      let versionDue = false;
+      if (!ageDue && prior?.harnessVersion !== undefined) {
+        const key = versionKeyForHarness(c.harness);
+        const live = key ? probe.versions[key] : undefined;
+        if (live !== undefined && live !== prior.harnessVersion) versionDue = true;
+      }
+
+      if (ageDue || versionDue) dueModels.push(c);
+    }
+    if (dueModels.length > 0) due.push({ kind: "probe", models: dueModels });
+  }
+
   return due;
 }
 
 function formatDue(item: DueItem): string {
   if (item.kind === "daily") return `due: daily — ${item.sella}`;
   if (item.kind === "aerarium") return `due: aerarium — ${item.period}`;
-  return `due: traditio — ${item.opus}`;
+  if (item.kind === "traditio") return `due: traditio — ${item.opus}`;
+  return `due: probe — ${item.models.length} pair(s)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -275,6 +356,14 @@ export interface RunTickOptions {
    *  builder A's ./talk.js, which the real (non-dry, non-paused, daily-due)
    *  path loads lazily via a dynamic import. */
   talk?: TalkFn;
+  /** Injected probe battery (W-071) — tests use this so no run ever spends
+   *  a real vendor turn or depends on an installed vendor binary. Absent
+   *  means W-069's real `probeBattery`. */
+  probe?: (opts: { studio: string; now: Date; only: Candidate[]; maxTurns: number }) => Promise<unknown>;
+  /** Injected codex listing call — absent means the real `codexListModels`. */
+  listModels?: () => Promise<ListedModel[]>;
+  /** Injected vendor-version call — absent means the real `harnessVersions`. */
+  versions?: () => Promise<{ claude?: string; codex?: string }>;
 }
 export interface RunTickResult {
   exitCode: number;
@@ -344,7 +433,24 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
   for (const f of result.findings) findingsByRule[f.rule] = (findingsByRule[f.rule] ?? 0) + 1;
 
   const pause = readPauseState(studioRoot);
-  const due = computeDue(studioRoot, manifest, now);
+
+  // Gathered here (async), consumed by `computeDue` (pure, sync) — Sol
+  // finding 5's fix. A rejected listing degrades to `undefined` (not an
+  // empty listing); a rejected version call degrades to `{}` (unknown on
+  // both keys, so the version trigger never fires on it).
+  let listing: ListedModel[] | undefined;
+  try {
+    listing = await (opts.listModels ?? codexListModels)();
+  } catch {
+    listing = undefined;
+  }
+  let versions: { claude?: string; codex?: string };
+  try {
+    versions = await (opts.versions ?? harnessVersions)();
+  } catch {
+    versions = {};
+  }
+  const due = computeDue(studioRoot, manifest, now, { listing, versions, record: readModelsRecord(studioRoot) });
 
   const autonomy: { paused: boolean; since?: string; reason?: string } = { paused: pause.paused };
   if (pause.paused && pause.at) autonomy.since = pause.at;
@@ -389,6 +495,21 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
     }
   }
   for (const item of due) if (item.kind !== "daily") console.log(formatDue(item));
+
+  // Probe: every turn it spends is W-069's `probeBattery`'s, under its own
+  // control rule and record — tick never writes models.json itself. A
+  // failing battery is reported on stderr and never fails the tick, the
+  // same posture a failing daily takes (Interfaces, "Autonomy, pause and
+  // dry-run").
+  const probeItem = due.find((d): d is DueProbe => d.kind === "probe");
+  if (probeItem) {
+    const runBattery = opts.probe ?? probeBattery;
+    try {
+      await runBattery({ studio: studioRoot, now, only: probeItem.models, maxTurns: MAX_PROBE_TURNS_PER_RUN });
+    } catch (e) {
+      console.error(`tick: probe battery failed: ${(e as Error).message}`);
+    }
+  }
 
   // ---- (d) receipt ---------------------------------------------------------
   writeTickReceipt(studioRoot, now);

@@ -1059,6 +1059,63 @@ if (runs(13)) {
   check(13, "events.jsonl grew by zero lines", after === before, `${before} -> ${after}`);
 }
 
+// ===========================================================================
+// W-071 behaviour 3 (the battery half — probe.test.ts's share of the
+// "recorded handoff", studio/briefs/W-071.md): one optional field on
+// `ProbeBatteryOptions`, `maxTurns`, enforced after the oldest-evidence-first
+// ordering and after mark-before-spend. tick.test.ts covers the other half —
+// that `tick` always passes `MAX_PROBE_TURNS_PER_RUN` and `runProbe` passes
+// none. Numbered 3 to match W-071's own brief; unrelated to this file's own
+// behaviour 3 above (W-069's control rule) — both run under `--behaviour 3`
+// with no conflict, since neither's assertions depend on the other.
+// ===========================================================================
+if (runs(3)) {
+  const ids = ["p1", "p2", "p3", "p4", "p5"];
+  const sellaeYaml = `sellae: [ ${ids.map((id) => `{ id: ${id}-sella, collegium: engineering, kind: agent, model: ${id}, harness: codex }`).join(", ")} ]\nprobationes: []`;
+  const dueOnly: Candidate[] = ids.map((id) => ({ id, harness: "codex" }));
+
+  const dir = freshDir("w071-b3");
+  writeManifest(dir, sellaeYaml);
+  const { profile, calls } = makeStub("codex", { turnFor: () => okTurn("OK") });
+  const capped = await probeBattery({ studio: dir, now: NOW, only: dueOnly, maxTurns: 2, harnesses: { codex: profile }, listModels: async () => [], versions: async () => ({}) });
+  const skippedIds = capped.skipped.map((c) => c.id);
+
+  check(3, "w071: capped run makes exactly 2 start calls", calls.start.length === 2, String(calls.start.length));
+  check(3, "w071: capped run reports turns === 2", capped.turns === 2, String(capped.turns));
+  check(3, "w071: the other 3 come back in skipped", capped.skipped.length === 3, JSON.stringify(skippedIds));
+  check(
+    3,
+    "w071: the 3 skipped pairs are unverified on disk, never re-spent",
+    capped.record.models.filter((m) => skippedIds.includes(m.id)).every((m) => m.state === "unverified"),
+    JSON.stringify(capped.record.models.map((m) => [m.id, m.state])),
+  );
+  check(
+    3,
+    "w071: the 2 turned pairs actually spent a turn (real verdict)",
+    capped.record.models.filter((m) => ids.includes(m.id) && !skippedIds.includes(m.id)).every((m) => m.state === "available"),
+    JSON.stringify(capped.record.models.map((m) => [m.id, m.state])),
+  );
+
+  // The tail heads the next run: fed back with no cap, the second run probes
+  // exactly the 3 the first one skipped (oldest-evidence-first, inherited
+  // from W-069 and asserted across the cap rather than assumed).
+  const { profile: profile2 } = makeStub("codex", { turnFor: () => okTurn("OK") });
+  const second = await probeBattery({ studio: dir, now: NOW, only: capped.skipped, harnesses: { codex: profile2 }, listModels: async () => [], versions: async () => ({}) });
+  check(
+    3,
+    "w071: a second run against the rewritten record probes exactly the 3 skipped first",
+    second.skipped.length === 0 && skippedIds.every((id) => second.record.models.find((m) => m.id === id)?.state === "available"),
+    JSON.stringify({ skipped: second.skipped, states: second.record.models.filter((m) => skippedIds.includes(m.id)).map((m) => [m.id, m.state]) }),
+  );
+
+  // Positive control: the same 5 pairs, no cap at all -> 5 start calls, empty skipped.
+  const dir2 = freshDir("w071-b3-nocap");
+  writeManifest(dir2, sellaeYaml);
+  const { profile: profile3, calls: calls3 } = makeStub("codex", { turnFor: () => okTurn("OK") });
+  const uncapped = await probeBattery({ studio: dir2, now: NOW, only: dueOnly, harnesses: { codex: profile3 }, listModels: async () => [], versions: async () => ({}) });
+  check(3, "w071: positive control — no cap yields 5 start calls and an empty skipped", calls3.start.length === 5 && uncapped.skipped.length === 0, String(calls3.start.length));
+}
+
 if (only === undefined) {
   console.log(`\n${failed === 0 ? "ALL PASS" : `${failed} FAILURE(S)`}`);
 }
