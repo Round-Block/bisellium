@@ -554,6 +554,48 @@ right after itself — even without committing anything in between — needs no
 gates that ran passed, 1 at least one failed, 2 usage error / not a studio /
 unparseable sibling opus / dirty source tree without `--allow-dirty`.
 
+## Running ci
+
+```bash
+npm run bisellium -- ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+```
+
+`ci` runs this repository's CI pipeline locally, without a runner: the
+commands in `CI_STEPS` (`packages/commands/src/ci.ts`), in order, in
+`--repo` (default the current directory), stopping at the first that
+fails. Today those are `npm run -s typecheck`, `npm run -s lint`,
+`npm run -s format:check`, `npm test`,
+`npm run -s check -- studio --repo .` and
+`npm run -s check -- examples/sample-studio --repo .`. The steps are fixed
+in code and name this repository's two officinae; `ci` is not an adoption
+feature. `.github/workflows/ci.yml` runs the same commands, each after
+`npm ci`, split across two jobs: `gates` runs every step except the studio
+check, in `CI_STEPS` order, and is the one a branch protection rule can
+require; `officina` runs `npm run -s check -- studio --repo .` alone and is
+deliberately not required, since it stays red on known officina debt
+(W-028's ruling). So the runner does not reproduce `ci`'s single sequence,
+and that divergence is deliberate. `scripts/ci-workflow.test.mjs`, part of
+`npm test`, fails when they drift: when `gates` differs from `CI_STEPS`
+minus the studio check, when `officina` is anything but that one check, or
+when this section stops naming a `CI_STEPS` command or `ci`'s usage. The
+workflow never runs `verify`, so no certificate is ever written from a
+runner.
+
+A failed studio check also prints that it is officina-wide and that
+`bisellium verify <opus>` is the per-opus gate. `--ref <ref>` runs the
+steps in a scratch worktree of `<ref>` instead, after a from-scratch
+`npm ci` there against a throwaway cache (a worktree without its own
+`node_modules` would resolve `@bisellium/*` through the parent checkout and
+test the wrong code), and releases the worktree afterwards. `--opus <id>`
+runs `bisellium verify <id>` against the same tree once every step has
+passed, forwarding `--studio`, so the automated gates' certificates come
+from `verify` itself; run it on the opus branch (D-021). `--allow-dirty` is
+passed to that `verify`, and on the `--ref` path it always is, since the
+scratch checkout is untouched. Exit codes: 0 every step passed (with
+`--opus`, `verify`'s own exit code instead), 1 a step or `--ref`'s install
+failed, 2 usage error, no git repo for `--ref`, or a ref that cannot be
+checked out.
+
 ## Writing to a studio (handoff, emit, answer, greenlight, budget)
 
 ```bash
