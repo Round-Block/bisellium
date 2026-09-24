@@ -95,10 +95,29 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-24, cascade 30)
+## Where things stand (2026-09-24, cascade 31)
 
-Cascades 1–29 are in the dossier progress log. PRs through #52 are merged.
+Cascades 1–30 are in the dossier progress log. PRs through #61 are merged.
 Read the review logs in `studio/ci/` before touching any of this work.
+
+**Cascade 31 (2026-09-24): W-046 MERGED** (PR #61, 3 rounds, each catching
+something real — review logs `studio/ci/W-046-review-{1,2,3}.log`; the
+opus's lesson is in its brief: a claim enters a shipped document only with
+an assertion that fails when it stops being true). **W-066 filed** (the
+smoke's pre-existing claude-resume defect). **The Web II stack**: D-022
+(ui-lead seat — gpt-6-astra, medium effort; dispatch carries
+`-c model_reasoning_effort=medium`), D-023 (munera/tiers as records,
+PATRON-5 same-origin write auth, the dropdown decree, dynamic
+probe-verified models), W-067 carved from W-065 (write path vs decree
+surface; the shipped Inbox answer button is DEAD in the served console —
+W-067 revives it), W-064/W-065/W-067 greenlit, W-068 + W-069 filed. The
+**Seats & Delegation preview artifact**
+(https://claude.ai/artifact/1W7rzHu4dD2iGnTHmrqxhP) is the Patron's live
+decree surface — republish it whenever UI specs/builds move (standing
+instruction, in memory and here). **The operator's claude OAuth expired
+mid-session (W-046 O-14)** — live claude turns are inconclusive until
+re-auth. Build order: W-067 (building) → W-065 → W-064; W-069 after
+W-046's machinery, W-068 anytime. Next non-UI per ranking: W-038, W-052.
 
 **Cascade 30 (2026-09-24): W-047 MERGED** (PR #51, 2 rounds) — the
 traversal class closed once: contract table, collision sentinels, 33-mutant
