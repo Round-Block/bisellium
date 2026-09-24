@@ -1,0 +1,70 @@
+# behaviour: 1
+# command: node scripts/safe-item-path-mutants.mjs contract
+# exit: 1
+# at: 2026-09-24T07:26:14.365Z
+# sella: builder-b
+# tree: dirty:f51320c5e597de3a948c0a06bb1f09a58b9ba148
+
+baseline: 0 FAIL — --import tsx packages/cli/src/writes.test.ts .
+
+=== mutant: mA no-shape-guard (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=5
+kills["1. safeItemPath(\"\")"]: seen
+FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/.md"
+FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/..md"
+FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/...md"
+FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/..\\..\\win.ini.md"
+FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-8GeMbo/C:\\Windows\\win.ini.md"
+-> matched (dead)
+
+=== mutant: mB no-guard (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=26
+kills["1. safeItemPath(\"\")"]: seen
+FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/.md"
+FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/..md"
+FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/...md"
+FAIL  1. safeItemPath("../W-001"): refused                       "/tmp/claude-1000/W-001.md"
+FAIL  1. safeItemPath("../../etc/passwd"): refused               "/tmp/etc/passwd.md"
+FAIL  1. safeItemPath("/etc/passwd"): refused                    "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/etc/passwd.md"
+FAIL  1. safeItemPath("a/b"): refused                            "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/a/b.md"
+FAIL  1. safeItemPath("opera/../../x"): refused                  "/tmp/claude-1000/x.md"
+FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/..\\..\\win.ini.md"
+FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-vAlkw6/C:\\Windows\\win.ini.md"
+FAIL  row1 handoff: exits 2                                      0
+FAIL  row1 handoff: stderr names unknown opus ../W-777           
+FAIL  row1 handoff: outside sentinel byte-identical              
+FAIL  row2 emit-usage: exits 2                                   0
+FAIL  row2 emit-usage: stderr names unknown opus ../W-777        
+FAIL  row2 emit-usage: no event appended                         [{"id":"cli:0","name":"gen_ai.usage","ts":"2026-09-18T14:00:00.000Z","projectId":"sample-studio","attrs":{"gen_ai.usage.total_tokens":10,"gen_ai.request.model":"m","workflow.item.id":"../W-777","workflow.actor.role":"builder-1","workflow.department":"engineering","workflow.source":"cli","workflow.source.seq":0}}]
+FAIL  row3 answer-petitio: exits 2                               0
+FAIL  row3 answer-petitio: stderr names unknown petitio ../A-777 resolved without --opus — nothing records what work this becomes
+FAIL  row3 answer-petitio: outside sentinel byte-identical       
+FAIL  row4 answer-opus: exits 2                                  0
+FAIL  row4 answer-opus: stderr names unknown opus ../W-777       
+FAIL  row4 answer-opus: the real petitio A-1 is byte-identical   
+FAIL  row5 greenlight: exits 2                                   0
+FAIL  row5 greenlight: stderr names unknown opus ../W-777        
+FAIL  row5 greenlight: outside sentinel byte-identical           
+FAIL  row5 greenlight: no event appended                         
+-> matched (dead)
+
+=== mutant: mC sanitize-in-helper (expect: dead) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=1 FAIL-count=10
+kills["1. safeItemPath(\"\")"]: seen
+FAIL  1. safeItemPath(""): refused                               "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/_.md"
+FAIL  1. safeItemPath("."): refused                              "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/_.md"
+FAIL  1. safeItemPath(".."): refused                             "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/_.md"
+FAIL  1. safeItemPath("../W-001"): refused                       "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/..W-001.md"
+FAIL  1. safeItemPath("../../etc/passwd"): refused               "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/....etcpasswd.md"
+FAIL  1. safeItemPath("/etc/passwd"): refused                    "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/etcpasswd.md"
+FAIL  1. safeItemPath("a/b"): refused                            "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/ab.md"
+FAIL  1. safeItemPath("opera/../../x"): refused                  "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/opera....x.md"
+FAIL  1. safeItemPath("..\\..\\win.ini"): refused                "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/....win.ini.md"
+FAIL  1. safeItemPath("C:\\Windows\\win.ini"): refused           "/tmp/claude-1000/bisellium-safeitempath-PM6kqd/C:Windowswin.ini.md"
+-> matched (dead)
+
+=== mutant: mD no-dirname-check (expect: alive) ===
+resolved: file(s)=packages/commands/src/writes.ts exit=0 FAIL-count=0
+-> matched (alive)
+
+all 4 mutants matched (3 dead, 1 alive)

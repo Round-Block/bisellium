@@ -6,14 +6,14 @@
  */
 import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
 import { checkStudio } from "./check.js";
 import { splitFront } from "./frontmatter.js";
-import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
+import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget, safeItemPath } from "./writes.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
@@ -47,6 +47,70 @@ function readEventLines(dir: string): Record<string, unknown>[] {
 }
 
 try {
+  // ---- behaviour 1 (W-047): safeItemPath's contract, over every row of one
+  //      hostile-id table in one loop — a refusal is never a sanitize, and
+  //      no id is ever rewritten. `base` is a temp dir, not a studio: no row
+  //      depends on anything existing on disk. -----------------------------
+  {
+    const base = mkdtempSync(join(tmpdir(), "bisellium-safeitempath-"));
+    dirs.push(base);
+
+    const rows: { id: string; expected: "accepted" | "refused" }[] = [
+      { id: "W-001", expected: "accepted" },
+      { id: "", expected: "refused" },
+      { id: ".", expected: "refused" },
+      { id: "..", expected: "refused" },
+      { id: "../W-001", expected: "refused" },
+      { id: "../../etc/passwd", expected: "refused" },
+      { id: "/etc/passwd", expected: "refused" },
+      { id: "a/b", expected: "refused" },
+      { id: "opera/../../x", expected: "refused" },
+      { id: "..\\..\\win.ini", expected: "refused" },
+      { id: "C:\\Windows\\win.ini", expected: "refused" },
+      { id: "..W-001", expected: "accepted" }, // ".." is not a segment here
+      { id: "%2e%2e%2fW-001", expected: "accepted" }, // contained, never decoded
+      { id: "\u2215W-001", expected: "accepted" }, // U+2215 division slash, not a path separator
+      { id: "W-001\u0000x", expected: "accepted" }, // embedded NUL; existsSync on the result must not throw
+    ];
+
+    for (const { id, expected } of rows) {
+      const r = safeItemPath(base, id);
+      const label = `1. safeItemPath(${JSON.stringify(id)})`;
+      if (expected === "refused") {
+        check(`${label}: refused`, typeof r !== "string", JSON.stringify(r));
+        if (typeof r !== "string") check(`${label}: error names the id`, r.error.includes(id), r.error);
+      } else {
+        check(`${label}: accepted`, typeof r === "string", JSON.stringify(r));
+        if (typeof r === "string") {
+          check(`${label}: dirname is exactly resolve(base)`, dirname(r) === resolve(base), r);
+          check(`${label}: basename is id + ".md" — never sanitized`, basename(r) === `${id}.md`, r);
+          check(`${label}: contained under resolve(base)`, r.startsWith(resolve(base) + sep), r);
+          let existsThrew = false;
+          try {
+            existsSync(r);
+          } catch {
+            existsThrew = true;
+          }
+          check(`${label}: existsSync on the result does not throw`, !existsThrew);
+        }
+      }
+    }
+
+    // Two base-shape assertions, outside the table: the same id answers
+    // identically whether `base` carries a trailing separator, and whether
+    // `base` is relative to process.cwd() — resolve() happens inside the
+    // helper, not at the call site.
+    check(
+      "1. base with a trailing separator answers identically",
+      JSON.stringify(safeItemPath(base + sep, "W-001")) === JSON.stringify(safeItemPath(base, "W-001")),
+    );
+    const relBase = relative(process.cwd(), base) || ".";
+    check(
+      "1. a base relative to process.cwd() answers identically",
+      JSON.stringify(safeItemPath(relBase, "W-001")) === JSON.stringify(safeItemPath(base, "W-001")),
+    );
+  }
+
   // ---- handoff: touches only traditio, everything else round-trips ------
   {
     const dir = freshStudio("handoff");
