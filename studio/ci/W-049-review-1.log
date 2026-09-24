@@ -1,0 +1,480 @@
+# W-049 review round 1 — censor sella qa-lead (claude-opus-5-5)
+# reviewed: opus/W-049 @ 9f516e710f442a0951185325a1b43f7e9a0e8248 (PR #43); range 514af60..9f516e7
+# scratch: detached worktree /tmp/claude-1000/w049r1/wt (left by a prior attempt at this round, which died
+#   before recording anything; I re-ran every result below myself and rely on none of its outputs)
+# worktree trap: readlink -f node_modules/@bisellium/shim -> /tmp/claude-1000/w049r1/wt/packages/shim;
+#   branch checkout agent-a73da5b852ce8f772 -> its own packages/shim. Both are correct.
+# vendor CLI: claude 2.1.280
+# Terra-verified round (D-020). Terra's sheet (9/9 VERIFIED) is attached verbatim at the end. I re-ran its
+#   gate, step-2 and pre-fix-red claims myself (below), with matching results.
+#
+# VERDICT: FAIL. The production change is correct. It holds at every vendor spawn and was proven live by the
+# attended smoke. The failure is in the test. Behaviour 4 does not implement the exact per-call spawn map
+# the brief specifies (Sol's blocker remedy), and two mutations survive the FULL `npm test`. F1 has three
+# instances, all in harness-env.test.ts behaviour 4. F2 is a one-phrase doc fix. Remedy both in one round.
+
+## Gates — re-run on 9f516e7 in the branch-owning checkout
+  npm test exit=0 (FAIL=0, PASS=1916) | typecheck exit=0 | lint exit=0 (0 errors, 2 warnings) | format:check exit=0
+  The two lint warnings are close.test.ts:5 and tick.test.ts:203. W-049 touched neither, so they predate it.
+  check examples/sample-studio --repo .: "PASS — 0 blocking, 26 advisory"
+  check studio --repo .: "PASS — 0 blocking, 80 advisory" (no block)
+  Step 2 (7218a69): `git diff --stat 514af60..7218a69 -- packages/shim/src` is empty, and the commit touches only
+    talk-boundary.test.ts and harness.test.ts. Both suites pass on that tree: talk-boundary exit=0 (PASS=188,
+    FAIL=0) and harness exit=0 (PASS=15, FAIL=0).
+  Reds: 01–04 each have exit 1, distinct bodies (md5 b54067ec/fedff2cc/0dc9d730/4f1ffd25) and at=02:34:08–16Z.
+    The first commit touching packages/shim/src is 9d0ad00 (02:43:42Z), so every red predates it.
+    I re-ran each behaviour at the pre-fix commit 2150941 (BISELLIUM_ONLY_BEHAVIOUR=n). All four exit 1, and the
+    only failing assertion is "env name set is exactly the allowlist projection" (b1 2×, b2 1×, b3 3×, b4 14×).
+    Every count and argv-form assertion passes there, as the brief predicts. At pre-fix, b4 splits 7× (the probes
+    inherit everything) and 6× (the turns, after talk's filterEnv drops only *_TOKEN/*_KEY).
+
+## Judgment 1: projection honesty — HOLDS
+  env.ts: `harnessEnv` builds a new `{}` and loops the module-local `Object.freeze`d 10-name array, reading
+    `parent[name]` and copying it only when the value is not undefined. It never writes to `parent`. There is no
+    regex, no prefix and no case folding, and the list matches the brief's names exactly.
+  Review-checked constraints: `harnessEnv` is imported only by claude-code.ts and codex.ts.
+    harness/index.ts and src/index.ts do not re-export it (rg harnessEnv|harness/env over packages/apps/adapters).
+  All four spawn expressions project: claude-code.ts:113 runClaude `env: harnessEnv(opts.env)`, claude-code.ts:148
+    available() `env: harnessEnv(process.env)`, codex.ts:144 runCodex `harnessEnv(opts.env)`, codex.ts:196
+    available() `{ env: harnessEnv(process.env) }`.
+  Census: I grepped every non-test child_process importer and every spawn/spawnSync/exec*/fork call in
+    packages, apps, adapters and scripts. Outside the shim's harness, no call spawns claude or codex:
+    - providers/src/index.ts:181 runs the fixed `npx --yes quota-axi`. quotaAxiSource({}) is its only caller
+      (cli/providers.ts:51).
+    - commands/ci.ts:117 runs the fixed CI_STEPS npm lines.
+    - commands/run.ts:213 and commands/lifecycle.ts:476 (`red`) run operator argv.
+    - pipeline/index.ts:78 runs probatio commands.
+    - cli/close.ts:49 runs `bash docs/design/dossier/build.sh`. That script mentions claude only in comment URLs.
+    - shim fake.ts:34 runs process.execPath on its own script.
+    - The rest are git and treehouse helpers, plus bin/bisellium.mjs, which runs node.
+    Outside harness/, no `"claude"` or `"codex"` string literal is used as a spawn argument.
+  Advisory, out of scope per the brief: quota-axi runs with the full ambient env. It is a third-party CLI, not a
+    vendor harness, and the brief excludes providers explicitly.
+
+## Judgment 2: per-entry-path mapping — FAIL (F1, one class, three instances)
+  Behaviours 1–3 are exact. After each direct call they assert the cumulative log.length (1, 2, then 3), which is
+  equivalent to taking a snapshot before each call. Behaviour 4 is not exact:
+  F1a harness-env.test.ts:393 `seg1 = log.slice(0, 2)`. The partition is a fixed offset. Nothing asserts that the
+      first runTalk added exactly 2 records. The brief says: "takes the log's length immediately before each call,
+      and partitions the records that call added".
+  F1b harness-env.test.ts:412 `seg2 = log.slice(2, 4)`. Same gap for the second runTalk. The tick's `slice(4)` is
+      also a fixed offset, but its total-count assertion keeps it exact only because the phases before it are.
+  F1c harness-env.test.ts:449-452. Every tick pair accepts `start` OR `resume of sess-w049`. The brief says: "A
+      magister whose session file exists resumes `sess-w049`; every other magister starts." Here eng-lead holds the
+      only session file, so the tick should produce exactly one resume and four starts.
+  Consequence: two mutations survive the FULL `npm test` (npm test exit=0 under each):
+    M13  talk.ts `existing && existing.harness === harnessId` -> `... && params.modelOnly !== undefined`
+         (the tick path never resumes). The phase probe shows tick = 5× [version, turn:start], so eng-lead starts
+         even though it holds a session. Suite: PASS=1919, FAIL=0.
+    M15  runTalk path only: the first call launches an extra `--version` after its start, and a call with a session
+         file skips its probe. The phase probe shows runTalk #1 = [version, turn:start, version] and runTalk #2 =
+         [turn:resume]. That is an extra vendor launch in one call, masked by an omission in the next. It is the
+         aggregate-vs-exact case the brief names ("an extra vendor launch"). It is contrived, two coordinated
+         edits, but it survives only because no per-call count exists. Suite: PASS=1916, FAIL=0.
+    M08b (a double start in performTalk) is killed. Its first FAIL is attributed to the SECOND runTalk
+         ("second runTalk logs exactly [version, turn] ["turn","version"]"), which shows the offset partition at work.
+  The brief's censor mutations are all killed (three-suite driver below; each KILLED line has a non-zero exit):
+    M01 +ANTHROPIC_BASE_URL | M02 startsWith | M03 regex | M04 case-insensitive | M05 LC_/NODE_ pattern |
+    M06a–d drop harnessEnv at each of the four spawn expressions | M07 delete from parent in place | M06c doubles as
+    "opts.env through for codex only" | M08a start twice (profile) | M08b/M08c start/resume twice (performTalk) |
+    M09a/b/c skip the available() probe (always / tick only / when a session exists) | M10 inject a default for an
+    absent name | M11a/b W-044 M24/M25 against A1 | M12a random stub session_id against A2 | M12b resume a
+    different id. M14 (the tick resumes sess-w049 for every magister) is killed ONLY by talk-boundary's `sess-stub`
+    literal. harness-env's behaviour 4 passes it: F1c again.
+  Remedy (all three instances in one round, harness-env.test.ts only):
+    R1  Before each of the three behaviour-4 calls, take `before = readLog(logPath).length`. Assert that the call
+        added exactly 2 records (each runTalk) or exactly 2 × dailies written (tick), and partition by
+        `slice(before)`.
+    R2  Tick form: assert the resume/start mapping. A resume of sess-w049 is expected iff the magister's
+        `sessions/<sella>.json` existed before runTick (here exactly one resume, eng-lead) and a start otherwise.
+        Asserting "exactly one resume and four starts", with the expected count derived from the session files
+        present before the tick, is enough.
+    Must-kill against harness-env.test.ts ALONE: M13, M14, M15. The driver and phase probe below reproduce them.
+  The same class exists in talk-boundary.test.ts, which predates this opus and falls outside its declared edits
+  ("stub log path, A1, A2 only"), so fixing it is not required here:
+    :246 behaviour 1 destructures [start, resume] and asserts only that both are defined, not exactly 2.
+    :341 the tick form is inferred from the argv, so start or resume is accepted for any magister (M13 also
+      survives this file).
+    I recommend filing these separately, or folding them into W-054/W-046 at the architect's call.
+  Searched: every slice(, log.length and .length === line, plus every start/resume form inference, in
+  harness-env.test.ts and talk-boundary.test.ts. harness.test.ts counts no spawns. ci.test.ts's stub logs npm,
+  not a vendor binary.
+
+## Judgment 3: reworked tests — NOT WEAKENED
+  talk-boundary.test.ts: the `check(` name sets at 514af60 and 9f516e7 were compared (single-line and multi-line
+    openers). Nothing was removed. A1 adds three checks (basename, the bisellium-sysprompt-XXXXXX dir, and
+    parent === os.tmpdir()). A2 pins the behaviour 4 talk and tick resume id to "sess-stub" instead of only its
+    shape. The per-behaviour log files became one LOG_PATH with `before` offsets, which is equivalent: behaviour 4
+    still asserts talkLog.length === 2 and tickLog.length === 5. The stub still does not log --version.
+  harness.test.ts: the 13 `check(` names are identical. All 51 lines of the new preambles and scenario bodies occur
+    verbatim in the 514af60 stubs (mechanical line-set check). Only the scenario selector changed, from
+    STUB_SCENARIO to a per-scenario bin dir on PATH. The prior attempt's hint ("moved verbatim, no check( line
+    changed") is now verified.
+  A1 and A2 bite: M11a, M11b and M12a are KILLED (above).
+
+## Judgment 4: attended smoke — SCRUB HALF PROVEN LIVE (pass); allow half recorded
+  Temp copy of examples/sample-studio in my scratchpad (never studio/). The canaries were exported in MY shell:
+    ANTHROPIC_BASE_URL=http://127.0.0.1:9 ANTHROPIC_MODEL=zz-w049-bogus npm run -s bisellium -- talk --sella eng-lead
+    --model-only --studio <copy> "Run bisellium context --sella eng-lead --studio <copy> and report its exit code and
+    first line."
+  Result: talk exit=0, run 03:37:32Z–03:37:41Z. A real reply arrived (786 chars). timeline/eng-lead.jsonl has in
+    and out records with a sessionId, and usage {input:4, output:566}. The receipt's exitCode is 0. Neither canary
+    string appears anywhere in the studio copy.
+  Positive controls, so the pass isn't vacuous. I ran `claude -p` directly (no bisellium, no scrub) with one
+  canary each:
+    A  ANTHROPIC_BASE_URL=http://127.0.0.1:9 hit the timeout (exit 124) with no reply.
+    B  ANTHROPIC_MODEL=zz-w049-bogus got is_error=true, api_error_status=404 ("issue with the selected model
+       (zz-w049-bogus)"), exit 1.
+    So either canary, had it reached the child, would have prevented a reply. The talked turn's reply proves both
+    were scrubbed. The controls' requests went only to a dead localhost port or to the real vendor with a bogus
+    model name, so nothing leaked.
+  The brief's second pass condition (timeline `model` != zz-w049-bogus) is VACUOUS as written. The timeline `model`
+    is absent for real claude turns: claude-code.ts maps `model: parsed.model`, but the real `-p --output-format
+    json` envelope carries `modelUsage`, not a top-level `model`. The receipt has no model either. This predates
+    W-049 and is out of its scope. I recommend filing it. The controls above stand in for it.
+  Allow half (baseline for W-054): the session did not reach `bisellium context`. Its first call was bare
+    `bisellium`, which the boot bundle's "CLI usage" rule tells it to run before any CLI call. That call was denied
+    under dontAsk, so the session reports no exit code: neither 0 nor 127, but "denied". This is a separate
+    observation for W-054/W-044's owner. The boot bundle's usage rule conflicts with the talked session's admitted
+    verbs.
+  The operator's login is valid. The prior attempt's 401 (expired OAuth) no longer reproduces.
+
+## Judgment 5: instance-or-class, and leak greps
+  F1 is one class (behaviour 4's spawn map is aggregate/offset-based rather than exact per call) with three
+    instances, F1a/F1b/F1c, all enumerated above. The two pre-existing talk-boundary instances are listed separately.
+  F2 (single instance): docs/ADOPTION.md, "Running talk", says "(`harnessEnv`, `@bisellium/shim`)". That wording
+    reads as a public export, which contradicts the brief's review-checked constraint that harnessEnv is NOT
+    re-exported. Name the module (`packages/shim/src/harness/env.ts`) instead. I grepped for harnessEnv across
+    docs/: this is the only mention.
+  Value greps. Patterns: the 40 SYNTH sentinel values (`SYNTH-<name>-VALUE`, the proxy sentinel), plus the values
+  of every ANTHROPIC_*, CLAUDE_*, CLAUDECODE, OPENAI_* and proxy var in my shell that is 6 or more chars long.
+  Only counts were printed.
+    - Branch logs (7 files under studio/ci added by the range): sentinel hits 0. The real-value hits come only from
+      CLAUDE_TMPDIR and CLAUDE_CODE_TMPDIR, a 16-char path equal to the sandbox temp root: 01.log ×1 and 04.log
+      ×10. Masked context shows mkdtemp paths (the system-prompt file in argv details, and tick's "wrote …/acta/…"
+      lines), i.e. os.tmpdir() output. It is not an env echo and not a secret, so this is a false positive of the
+      grep and not a leak.
+    - My own outputs (the pre-fix reds, the mutation runs, step 2): sentinel hits 0. This log: see the tail.
+  Positive control on the grep: all 4 reds contain the NAME `SYNTH`, and the guard NAME ANTHROPIC_BASE_URL appears
+    in reds 01–04 (2/1/3/14), so the grep had material to match against.
+
+## Evidence scripts and outputs (kept under /tmp/claude-1000/w049r1-ev/)
+### gates.out
+npm test exit=0
+typecheck exit=0
+lint exit=0
+format exit=0
+check sample exit=0
+check studio exit=0
+### mutations.out (three-suite driver: harness-env, talk-boundary, harness)
+KILLED   M01 list += ANTHROPIC_BASE_URL
+    harness-env.test.ts: exit=1 FAIL=20  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[AN
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M02 match by startsWith
+    harness-env.test.ts: exit=1 FAIL=20  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[HO
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M03 match by unanchored-end regex
+    harness-env.test.ts: exit=1 FAIL=20  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[HO
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M04 case-insensitive compare
+    harness-env.test.ts: exit=1 FAIL=20  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[HO
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M05 re-add LC_/NODE_ pattern
+    harness-env.test.ts: exit=1 FAIL=20  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[HO
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M06a drop harnessEnv: claude runClaude
+    harness-env.test.ts: exit=1 FAIL=9  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[AL
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M06b drop harnessEnv: claude available()
+    harness-env.test.ts: exit=1 FAIL=8  first: FAIL behaviour 2: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[ALL_PROX
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M06c drop harnessEnv: codex runCodex (= codex-only passthrough)
+    harness-env.test.ts: exit=1 FAIL=2  first: FAIL behaviour 3 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[AL
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M06d drop harnessEnv: codex available()
+    harness-env.test.ts: exit=1 FAIL=1  first: FAIL behaviour 3 available: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M07 scrub by deleting from parent in place
+    harness-env.test.ts: exit=1 FAIL=4  first: FAIL behaviour 1: SYNTH not mutated by start+resume onlyA=[] onlyB=[ALL_PROXY,ANTHROPIC_API_KEY,ANTHROPIC_AUTH_TOKEN,ANTHROPIC_BASE_URL,ANTHROPIC_BEDROCK_BASE_URL,ANTHROP
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M08a spawn start twice (claude profile)
+    harness-env.test.ts: exit=1 FAIL=18  first: FAIL behaviour 1: start adds exactly one record 2
+    talk-boundary.test.ts: exit=1 FAIL=4  first: FAIL behaviour 1 resume: resume session id (argv[2]) is the literal fixture, not a copy json
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M08b spawn start twice (performTalk)
+    harness-env.test.ts: exit=1 FAIL=15  first: FAIL behaviour 4: second runTalk logs exactly [version, turn] ["turn","version"]
+    talk-boundary.test.ts: exit=1 FAIL=2  first: FAIL behaviour 4: two talk calls logged 3
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M08c spawn resume twice (performTalk)
+    harness-env.test.ts: exit=1 FAIL=9  first: FAIL behaviour 4: tick logs exactly one [version, turn] pair per due magister 12
+    talk-boundary.test.ts: exit=1 FAIL=2  first: FAIL behaviour 4: two talk calls logged 3
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M09a skip available() probe in performTalk (always)
+    harness-env.test.ts: exit=1 FAIL=8  first: FAIL behaviour 4: first runTalk logs exactly [version, turn] ["turn"]
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M09b skip available() probe on tick path only
+    harness-env.test.ts: exit=1 FAIL=7  first: FAIL behaviour 4: tick logs exactly one [version, turn] pair per due magister 5
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M09c skip available() probe when a session file exists
+    harness-env.test.ts: exit=1 FAIL=6  first: FAIL behaviour 4: second runTalk logs exactly [version, turn] ["turn"]
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M10 inject a default for an absent name
+    harness-env.test.ts: exit=1 FAIL=40  first: FAIL behaviour 1 start: env name set is exactly the allowlist projection expected=[HOME,HTTPS_PROXY,HTTP_PROXY,NO_PROXY,PATH,SHELL,TMPDIR,https_proxy,no_proxy] actual=[HO
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M11a W-044 M24: fixed <tmpdir>/system-prompt.md
+    harness-env.test.ts: exit=0 FAIL=0
+    talk-boundary.test.ts: exit=1 FAIL=12  first: FAIL behaviour 1 start: start file's directory matches bisellium-sysprompt-XXXXXX claude-1000
+    harness.test.ts: exit=1 FAIL=1  first: FAIL claude-code prompt file: temp file deleted after the call /tmp/claude-1000/system-prompt.md
+KILLED   M11b W-044 M25: relative x/system-prompt.md in argv
+    harness-env.test.ts: exit=0 FAIL=0
+    talk-boundary.test.ts: exit=1 FAIL=12  first: FAIL behaviour 1 start: start file's directory matches bisellium-sysprompt-XXXXXX x
+    harness.test.ts: exit=1 FAIL=8  first: FAIL claude-code normal: exitCode 0 1
+KILLED   M12a A2: stub replies a random session_id
+    harness-env.test.ts: exit=0 FAIL=0
+    talk-boundary.test.ts: exit=1 FAIL=4  first: FAIL behaviour 4 talk resume: resume session id (argv[2]) is the literal fixture, not a copy sess-8t06ufcbfal
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M12b A2: talk resumes an id other than the one returned
+    harness-env.test.ts: exit=1 FAIL=2  first: FAIL behaviour 4 second-call turn: is a claude resume of sess-w049 ["-p","--resume","sess-w049-x","--output-format","json","--restricted","--strict-mcp-config","--permiss
+    talk-boundary.test.ts: exit=1 FAIL=4  first: FAIL behaviour 4 talk resume: resume session id (argv[2]) is the literal fixture, not a copy sess-stub-x
+    harness.test.ts: exit=0 FAIL=0
+SURVIVED M13 tick path never resumes (always starts)
+    harness-env.test.ts: exit=0 FAIL=0
+    talk-boundary.test.ts: exit=0 FAIL=0
+    harness.test.ts: exit=0 FAIL=0
+KILLED   M14 tick path resumes sess-w049 for every magister
+    harness-env.test.ts: exit=0 FAIL=0
+    talk-boundary.test.ts: exit=1 FAIL=8  first: FAIL behaviour 4 tick call: resume session id (argv[2]) is the literal fixture, not a copy sess-w049
+    harness.test.ts: exit=0 FAIL=0
+clean: yes
+### mutations-full.out (survivors re-run against the FULL npm test)
+SURVIVED M13 tick path never resumes (always starts)  (npm test exit=0, FAIL=0, PASS=1919)
+SURVIVED M15 per-call count shift across the two runTalk phases (extra launch in call 1, omitted probe in call 2)  (npm test exit=0, FAIL=0, PASS=1916)
+clean: yes
+### phase probe (w049-probe-phases.mts: the records each behaviour-4 call adds)
+### none
+runTalk #1       ["version","turn:start"]
+runTalk #2       ["version","turn:resume"]
+runTick          ["version","turn:start","version","turn:start","version","turn:resume","version","turn:start","version","turn:start"]
+### M13
+runTalk #1       ["version","turn:start"]
+runTalk #2       ["version","turn:resume"]
+runTick          ["version","turn:start","version","turn:start","version","turn:start","version","turn:start","version","turn:start"]
+### M15
+runTalk #1       ["version","turn:start","version"]
+runTalk #2       ["turn:resume"]
+runTick          ["version","turn:start","version","turn:start","version","turn:resume","version","turn:start","version","turn:start"]
+### w049-mutate.mjs
+// W-049 round-1 censor mutation driver. Each mutation: exact-string replace
+// (must match exactly once), run the three suites, record exit codes and the
+// first FAIL names, restore via git checkout. Kept in the review log.
+import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+const wt = process.argv[2];
+const E = "packages/shim/src/harness/env.ts", CC = "packages/shim/src/harness/claude-code.ts", CX = "packages/shim/src/harness/codex.ts", T = "packages/commands/src/talk.ts", TB = "packages/cli/src/talk-boundary.test.ts";
+const LOOP = "  for (const name of ALLOWLIST) {\n    const value = parent[name];\n    if (value !== undefined) out[name] = value;\n  }";
+const byKey = (pred) => `  for (const [k, v] of Object.entries(parent)) if (v !== undefined && (${pred})) out[k] = v;`;
+const M = [
+  ["M01 list += ANTHROPIC_BASE_URL", [[E, `"no_proxy"])`, `"no_proxy", "ANTHROPIC_BASE_URL"])`]]],
+  ["M02 match by startsWith", [[E, LOOP, byKey("ALLOWLIST.some((n) => k.startsWith(n))")]]],
+  ["M03 match by unanchored-end regex", [[E, LOOP, byKey(`new RegExp("^(" + ALLOWLIST.join("|") + ")").test(k)`)]]],
+  ["M04 case-insensitive compare", [[E, LOOP, byKey("ALLOWLIST.some((n) => n.toLowerCase() === k.toLowerCase())")]]],
+  ["M05 re-add LC_/NODE_ pattern", [[E, LOOP, byKey("ALLOWLIST.includes(k) || /^(LC_|NODE_)/.test(k)")]]],
+  ["M06a drop harnessEnv: claude runClaude", [[CC, "env: harnessEnv(opts.env),", "env: opts.env,"]]],
+  ["M06b drop harnessEnv: claude available()", [[CC, `{ env: harnessEnv(process.env), encoding`, `{ encoding`]]],
+  ["M06c drop harnessEnv: codex runCodex (= codex-only passthrough)", [[CX, "env: harnessEnv(opts.env) }", "env: opts.env }"]]],
+  ["M06d drop harnessEnv: codex available()", [[CX, `, { env: harnessEnv(process.env) })`, `)`]]],
+  ["M07 scrub by deleting from parent in place", [[E, "  return out;", "  for (const k of Object.keys(parent)) if (!ALLOWLIST.includes(k)) delete parent[k];\n  return parent;"]]],
+  ["M08a spawn start twice (claude profile)", [[CC, "      return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });", "      runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });\n      return runClaude(args, { cwd: opts.cwd, env: opts.env, message: opts.message });"]]],
+  ["M08b spawn start twice (performTalk)", [[T, ": await profile.start({ cwd: root, sella, systemPrompt, message, env });", ": (await profile.start({ cwd: root, sella, systemPrompt, message, env }), await profile.start({ cwd: root, sella, systemPrompt, message, env }));"]]],
+  ["M08c spawn resume twice (performTalk)", [[T, "? await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env })", "? (await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env }), await profile.resume({ cwd: root, sella, sessionId: existing.sessionId, message, env }))"]]],
+  ["M09a skip available() probe in performTalk (always)", [[T, "isAvailable = await profile.available();", "isAvailable = true;"]]],
+  ["M09b skip available() probe on tick path only", [[T, "isAvailable = await profile.available();", "isAvailable = params.modelOnly === undefined ? true : await profile.available();"]]],
+  ["M09c skip available() probe when a session file exists", [[T, "isAvailable = await profile.available();", `isAvailable = existsSync(join(root, "sessions", sella + ".json")) ? true : await profile.available();`]]],
+  ["M10 inject a default for an absent name", [[E, "if (value !== undefined) out[name] = value;", `out[name] = value ?? "";`]]],
+  ["M11a W-044 M24: fixed <tmpdir>/system-prompt.md", [[CC, `const file = join(dir, "system-prompt.md");`, `const file = join(tmpdir(), "system-prompt.md");`]]],
+  ["M11b W-044 M25: relative x/system-prompt.md in argv", [[CC, `"--append-system-prompt-file", file,`, `"--append-system-prompt-file", "x/system-prompt.md",`]]],
+  ["M12a A2: stub replies a random session_id", [[TB, `{ session_id: "sess-stub", result`, `{ session_id: "sess-" + Math.random().toString(36).slice(2), result`]]],
+  ["M12b A2: talk resumes an id other than the one returned", [[T, "sessionId: existing.sessionId, message, env })", `sessionId: existing.sessionId + "-x", message, env })`]]],
+  ["M13 tick path never resumes (always starts)", [[T, "existing && existing.harness === harnessId", "existing && existing.harness === harnessId && params.modelOnly !== undefined"]]],
+  ["M14 tick path resumes sess-w049 for every magister", [[T, "existing && existing.harness === harnessId\n", "(params.modelOnly === undefined || (existing && existing.harness === harnessId))\n"], [T, "sessionId: existing.sessionId, message, env })", `sessionId: existing?.sessionId ?? "sess-w049", message, env })`]]],
+];
+const suites = ["packages/cli/src/harness-env.test.ts", "packages/cli/src/talk-boundary.test.ts", "packages/shim/test/harness.test.ts"];
+const only = process.argv[3] ? new Set(process.argv[3].split(",")) : undefined;
+for (const [name, edits] of M) {
+  if (only && !only.has(name.split(" ")[0])) continue;
+  const files = [...new Set(edits.map((e) => e[0]))];
+  try {
+    for (const [f, from, to] of edits) {
+      const p = `${wt}/${f}`, src = readFileSync(p, "utf8");
+      const n = src.split(from).length - 1;
+      if (n !== 1) throw new Error(`${f}: anchor matched ${n}x`);
+      writeFileSync(p, src.replace(from, () => to));
+    }
+    const res = suites.map((s) => {
+      const r = spawnSync(process.execPath, ["--import", "tsx", s, "."], { cwd: wt, encoding: "utf8", timeout: 240_000 });
+      const out = (r.stdout ?? "") + (r.stderr ?? "");
+      const fails = out.split("\n").filter((l) => l.startsWith("FAIL")).length;
+      const first = out.split("\n").find((l) => l.startsWith("FAIL"))?.replace(/\s+/g, " ").slice(0, 170) ?? (r.status ? out.trim().split("\n").pop()?.slice(0, 170) : "");
+      return { s: s.split("/").pop(), exit: r.status, fails, first };
+    });
+    const killed = res.some((r) => r.exit !== 0);
+    console.log(`${killed ? "KILLED  " : "SURVIVED"} ${name}`);
+    for (const r of res) console.log(`    ${r.s}: exit=${r.exit} FAIL=${r.fails}${r.first ? `  first: ${r.first}` : ""}`);
+  } catch (e) {
+    console.log(`ERROR    ${name}: ${e.message}`);
+  } finally {
+    execFileSync("git", ["checkout", "--", ...files], { cwd: wt });
+  }
+}
+console.log("clean:", execFileSync("git", ["status", "--porcelain"], { cwd: wt, encoding: "utf8" }).trim() === "" ? "yes" : "NO");
+### w049-mutate-full.mjs
+// W-049 round-1 censor: survivors of the three-suite driver, re-run against the FULL `npm test`.
+// Each mutation: exact-string edits (each anchor must match exactly once), full suite, restore via git checkout.
+import { readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+const wt = process.argv[2];
+const T = "packages/commands/src/talk.ts";
+const PROBE = "isAvailable = await profile.available();";
+const START = ": await profile.start({ cwd: root, sella, systemPrompt, message, env });";
+const M = [
+  ["M13 tick path never resumes (always starts)", [[T, "existing && existing.harness === harnessId", "existing && existing.harness === harnessId && params.modelOnly !== undefined"]]],
+  // Partition probe: on the runTalk path only, the FIRST call launches an extra `--version` after its start,
+  // and a call with a session file skips its probe. Per-call counts are 3 then 1; the aggregate over the
+  // two calls is still 4 and the tick phase is untouched.
+  ["M15 per-call count shift across the two runTalk phases (extra launch in call 1, omitted probe in call 2)", [
+    [T, PROBE, `isAvailable = params.modelOnly && existsSync(sessionPathFor(root, sella)) ? true : await profile.available();`],
+    [T, START, `: await profile.start({ cwd: root, sella, systemPrompt, message, env }).then(async (t) => (params.modelOnly ? await profile.available() : undefined, t));`],
+  ]],
+];
+const only = process.argv[3] ? new Set(process.argv[3].split(",")) : undefined;
+for (const [name, edits] of M) {
+  if (only && !only.has(name.split(" ")[0])) continue;
+  const files = [...new Set(edits.map((e) => e[0]))];
+  try {
+    for (const [f, from, to] of edits) {
+      const p = `${wt}/${f}`, src = readFileSync(p, "utf8");
+      const n = src.split(from).length - 1;
+      if (n !== 1) throw new Error(`${f}: anchor matched ${n}x`);
+      writeFileSync(p, src.replace(from, () => to));
+    }
+    const r = spawnSync("npm", ["test"], { cwd: wt, encoding: "utf8", timeout: 900_000, maxBuffer: 64 * 1024 * 1024 });
+    const out = (r.stdout ?? "") + (r.stderr ?? "");
+    const fails = out.split("\n").filter((l) => l.startsWith("FAIL"));
+    console.log(`${r.status !== 0 ? "KILLED  " : "SURVIVED"} ${name}  (npm test exit=${r.status}, FAIL=${fails.length}, PASS=${out.split("\n").filter((l) => l.startsWith("PASS")).length})`);
+    for (const l of fails.slice(0, 4)) console.log("    " + l.replace(/\s+/g, " ").slice(0, 170));
+  } catch (e) {
+    console.log(`ERROR    ${name}: ${e.message}`);
+  } finally {
+    execFileSync("git", ["checkout", "--", ...files], { cwd: wt });
+  }
+}
+console.log("clean:", execFileSync("git", ["status", "--porcelain"], { cwd: wt, encoding: "utf8" }).trim() === "" ? "yes" : "NO");
+### w049-probe-phases.mts
+// Instrumented replay of harness-env.test.ts behaviour 4 (stub claude, sample-studio copy): prints the
+// records EACH call adds (kind + argv form) so a surviving mutation's effect can be confirmed.
+import { appendFileSync, chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+const W = process.argv[2]!;
+const { runTalk } = await import(join(W, "packages/cli/src/talk.ts"));
+const { runTick } = await import(join(W, "packages/cli/src/tick.ts"));
+const root = mkdtempSync(join(tmpdir(), "w049-probe-"));
+const bin = join(root, "bin"); cpSync(join(W, "examples/sample-studio"), join(root, "studio"), { recursive: true });
+const log = join(root, "log.jsonl");
+writeFileSync(join(root, "keep"), "");
+import("node:fs").then(() => {});
+const stub = `#!/usr/bin/env node
+import { appendFileSync } from "node:fs";
+const a = process.argv.slice(2); const kind = a.length === 1 && a[0] === "--version" ? "version" : "turn";
+appendFileSync(${JSON.stringify(log)}, JSON.stringify({ kind, form: kind === "version" ? "-" : a.includes("--resume") ? "resume" : "start" }) + "\\n");
+if (kind === "version") process.exit(0);
+process.stdout.write(JSON.stringify({ session_id: "sess-w049", result: "ack", is_error: false }) + "\\n");`;
+(await import("node:fs")).mkdirSync(bin); writeFileSync(join(bin, "claude"), stub); chmodSync(join(bin, "claude"), 0o755);
+const orig = process.env["PATH"]; process.env["PATH"] = `${bin}:${dirname(process.execPath)}:/usr/bin:/bin`;
+const read = () => (existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map((l) => JSON.parse(l)) : []);
+const phase = async (name: string, f: () => Promise<unknown>) => { const b = read().length; await f(); console.log(name.padEnd(16), JSON.stringify(read().slice(b).map((r: { kind: string; form: string }) => r.kind === "version" ? "version" : `turn:${r.form}`))); };
+const studio = join(root, "studio");
+try {
+  await phase("runTalk #1", () => runTalk(["--sella", "eng-lead", "--model-only", "--studio", studio, "hello"]));
+  await phase("runTalk #2", () => runTalk(["--sella", "eng-lead", "--model-only", "--studio", studio, "hello again"]));
+  await phase("runTick", () => runTick(["--studio", studio], { now: new Date("2026-09-23T09:00:00Z") }));
+} finally { process.env["PATH"] = orig; rmSync(root, { recursive: true, force: true }); }
+### smoke stdout (talked reply, verbatim)
+I couldn't run the command, so I have no exit code or first line to report.
+
+The session is in "don't ask" mode, which blocks the Bash tool. My first call was the usage check, `bisellium` with no arguments, which the project rules require before any CLI call. It was denied, so I never got to run `bisellium context --sella eng-lead --studio …/smoke-studio`. My other tools can only read and search files, so they can't run it either.
+
+To get a result, you can either:
+- **Allow Bash** for this session (or add `bisellium` to your allowed commands) and ask again. I'll run the usage check and then your command, and report the exit code and first line.
+- **Run it yourself** and paste the output here:
+  ```
+  bisellium context --sella eng-lead --studio <scratchpad>/smoke-studio; echo "exit: $?"
+  ```
+### smoke stderr
+
+## Attached: Terra facts sheet, /tmp/claude-1000/w049-terra-sheet.md (verbatim)
+https://github.com/Round-Block/bisellium/pull/43
+1. **VERIFIED** — `npm test` exited 0; 0 `FAIL` lines. Tail: all final assertions `PASS`.
+
+2. **VERIFIED** — all exited 0:
+   - `npm run -s typecheck` — no errors.
+   - `npm run -s lint` — `0 errors, 2 warnings`.
+   - `npm run -s format:check` — `All matched files use Prettier code style!`
+
+3. **VERIFIED**
+   - `node packages/cli/bin/bisellium.mjs check studio --repo .` → `PASS — 0 blocking, 80 advisory`.
+   - `... check examples/sample-studio --repo .` → `PASS — 0 blocking, 26 advisory`.
+
+4. **VERIFIED** — all `W-049-{tests,lint,types}-f2415a01.log` certificates name `tree:f2415a0114fa9aa652db7ca1fe9fe57a9dcc8dac`; recomputed hash matched exactly.
+
+5. **VERIFIED** — at `7218a69`:
+   - `git diff --stat 514af60..7218a69 -- packages/shim/src` was empty.
+   - `talk-boundary.test.ts` and `harness.test.ts` both exited 0; tails `PASS`.
+
+6. **VERIFIED** — reds `01`–`04` exist, are distinct, each records `# exit: 1` and `# sella: builder-b`.
+   - `rg -l SYNTH` found all four.
+   - Value-shaped environment-pair scan found no leaks; diagnostics contain names-only sets.
+
+7. **VERIFIED** — at pre-fix `2150941`, each recorded red command exited 1:
+   - env-projection set assertion: `FAIL`.
+   - spawn-count and argv-form assertions: `PASS`.
+   - Checkout was restored to `9f516e7`.
+
+8. **VERIFIED** — `harnessEnv` exports exactly:
+   `PATH HOME SHELL TMPDIR HTTPS_PROXY https_proxy HTTP_PROXY http_proxy NO_PROXY no_proxy`.
+   - All four vendor spawn expressions call it.
+   - No non-test shim spawn passes `process.env` directly.
+
+9. **VERIFIED** — all mutations failed the suite and were reverted:
+   - Added `LANG` → unexpected 11th variable failure.
+   - Passed `process.env` in Claude turn spawn → projection failure.
+   - Case-folded lookup → near-miss fixture failure.
+   - `git diff --check`, status, and shim diff clean afterward.
+
+Temporary detached worktree `/tmp/claude-1000/w049-terra` was removed.
+
+Summary: 9 VERIFIED, 0 FALSE
+
+
+## Tail: leak grep on THIS log (run before recording; counts only)
+  sentinel value hits: 0.
+  Real-value hits: CLAUDE_TMPDIR ×6 and CLAUDE_CODE_TMPDIR ×6. Both are the same sandbox temp root, which this log
+    cites deliberately in scratch and evidence paths (e.g. /tmp/claude-1000/w049r1-ev). It is not a secret.
+  CLAUDE_CODE_SESSION_ID: one hit on the first write. The host session id is a segment of my scratchpad path,
+    which the talked reply echoed. Before recording, I replaced that path with <scratchpad> in the smoke stdout
+    above. After masking, 0 hits. (That the reply echoes the operator's prompt path is expected, and says nothing
+    about the scrub.)
