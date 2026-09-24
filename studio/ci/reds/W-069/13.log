@@ -1,0 +1,11 @@
+# behaviour: 13
+# command: node --import tsx packages/commands/src/probe.test.ts . 13
+# exit: 1
+# at: 2026-09-24T20:09:30.403Z
+# sella: builder-b
+# tree: dirty:9c27da2695b3bcf8a5d42608b61c152923ff1086
+
+PASS  b13 positive control: probeBattery actually did something (turns > 0, a parseable available row) {"turns":1}
+sella "builder-1": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  b13 positive control: runDelegate actually did something (exit 0, manifest changed, timeline appended) {"exit":0}
+FAIL  b13 events.jsonl grew by zero lines                                                            0 -> 1
