@@ -1,0 +1,204 @@
+certifies: tree:bdc529fb725534e6208c6198b8f5c245225e2da1
+command: npm test -s
+exit code: 0
+
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 1ms
+POST /api/greenlight 200 5ms
+POST /api/greenlight 200 4ms
+POST /api/greenlight 200 3ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 1ms
+POST /api/greenlight 400 0ms
+POST /api/greenlight 200 3ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 413 2ms
+POST /api/greenlight 200 7ms
+GET /api/opus/W-007 200 0ms
+POST /api/_poll 200 11ms
+GET /api/events 200 0ms
+POST /api/_poll 200 17ms
+GET /api/events 200 1ms
+GET /api/events 200 0ms
+POST /api/_poll 404 0ms
+GET /api/events 200 0ms
+GET /api/events 200 1ms
+GET /api/live 200 100ms
+POST /api/_poll 200 13ms
+GET /api/officina 200 2ms
+GET /api/live 503 0ms
+GET /api/live 503 1ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+POST /api/talk 200 86ms
+POST /api/talk 200 124ms
+POST /api/greenlight 200 1ms
+POST /api/delegate 200 5ms
+POST /api/delegate 200 2ms
+POST /api/delegate 200 3ms
+POST /api/delegate 200 3ms
+GET /api/officina 200 1ms
+GET /api/officina 200 1ms
+GET /api/models 200 5ms
+GET /api/models 200 1ms
+GET /api/models 200 1ms
+GET /api/models 200 2ms
+GET /api/models 200 1ms
+GET /api/models 200 3001ms
+GET /api/models 200 1ms
+fatal: not a git repository (or any of the parent directories): .git
+--spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
+--spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+--spec "briefs/../../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+/********.yml not found — not a studio
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+GET /api/health 200 28ms
+POST /api/greenlight 401 1ms
+POST /api/greenlight 200 9ms
+backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
+  line 3: slate-heading: ### Backlog
+backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
+  line 3: slate-heading: ### New opera opened, none started
+backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
+  line 1: ranked-chain: W-001 -> W-002 -> W-003
+backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
+  line 1: ranked-chain: W-041 → W-039 → W-038
+W-007 is not greenlit or halted (state: backlog)
+W-002 is not greenlit or halted (state: building)
+W-003 is not greenlit or halted (state: verifying)
+W-004 is not greenlit or halted (state: review)
+W-001 is not greenlit or halted (state: done)
+W-006: no spec at briefs/W-006.md — not ready
+W-310: gates not passed: tests
+W-311: gates not passed: tests
+W-312: gates not passed: tests
+W-313: gates not passed: qa
+W-314: gates not passed: patron
+exactly one of --pass/--fail is required
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+exactly one of --pass/--fail is required
+usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+--evidence "ci/does-not-exist.log" not found under studio
+red: command exited 0 — that command passed, nothing recorded
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+--behaviour must be a positive integer
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+missing "--" separator before the command
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+empty command after "--"
+usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+invalid opus id ".."
+invalid opus id "sub/dir"
+W-006: --spec "../../../../../etc/hostname" resolves outside the officina (D-008) — refused
+W-004: --evidence "../../../../../etc/hostname" resolves outside the officina (D-008) — refused
+W-001 is already done — halt refused
+W-101 is already halted — halt refused
+unknown opus: W-999
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+W-002: --decision "D-does-not-exist" not found under decisions/
+W-002: --decision "../../etc/passwd" not found under decisions/
+W-002: --decision "../leges/qa" not found under decisions/
+unknown opus: ../petitiones/A-1
+Preparing worktree (detached HEAD de170c6)
+Preparing worktree (checking out 'opus/W-140')
+W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
+W-501: gates not passed: qa
+W-502: gates not passed: qa
+W-503: gates not passed: qa
+W-504: gates not passed: qa
+W-508: gates not passed: review
+W-509: gates not passed: review
+W-510: gates not passed: review
+W-511: gates not passed: review
+W-515: gates not passed: spec
+W-516: gates not passed: spec
+W-517: gates not passed: spec
+W-518: gates not passed: spec
+W-601: gates not passed: tests
+W-602: gates not passed: tests
+W-603: gates not passed: tests
+W-604: gates not passed: tests
+W-605: gates not passed: tests
+W-701: gates not passed: patron
+W-702: gates not passed: patron
+W-703: gates not passed: patron
+Preparing worktree (checking out 'opus/W-950')
+W-810: gates not passed: qa
+qa: probatio.waived.agent
+red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)
+red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)
+red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)
+red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)
+red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)
+fatal: not a git repository (or any of the parent directories): .git
+bisellium run: --opus and --base are mutually exclusive
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+sella "builder-1": --from "not-the-current-value" does not match the current value "claude-sonnet-5"
+delegate failed: EACCES: permission denied, open '/********.jsonl'
+W-099: gates not passed: spec
+W-099 closed, but dossier rebuild failed — run docs/design/dossier/build.sh manually
+bisellium ci: step failed (exit 1): npm run -s typecheck
+bisellium ci: step failed (exit 1): npm test
+Use the `defaultValue` or `value` props on <select> instead of setting `selected` on <option>.
+
