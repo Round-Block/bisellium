@@ -1,13 +1,24 @@
 # behaviour: 1
 # command: node scripts/backlog-page.test.mjs 1
 # exit: 1
-# at: 2026-09-24T00:50:50.821Z
+# at: 2026-09-24T01:27:27.174Z
 # sella: builder-a
-# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+# tree: dirty:f9613615b3a5993ed20d24a7e8a90edc2832f9de
 
 PASS  [1] greenlit opus appears                                                  
 PASS  [1] building opus appears                                                  
 PASS  [1] backlog opus appears                                                   
 PASS  [1] halted opus appears                                                    
-FAIL  [1] done opus never appears                                                
+PASS  [1] done opus never appears                                                
 PASS  [1] greenlit + building render under In flight, backlog + halted render under Backlog 
+FAIL  [1] the In-flight table carries the D-021 trunk-view caption               
+PASS  [1] the revisit-trigger footnote is present                                
+PASS  [1] the latest ranking acta is linked as the source of record for order    
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-JOA9an/heading-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-JOA9an/outA.html:
+  line 3: slate-heading: ### Backlog
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-JOA9an/new-opera-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-JOA9an/outC.html:
+  line 3: slate-heading: ### New opera opened, none started
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-JOA9an/chain-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-JOA9an/outB.html:
+  line 1: ranked-chain: W-001 -> W-002 -> W-003
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-JOA9an/arrow-chain-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-JOA9an/outD.html:
+  line 1: ranked-chain: W-041 → W-039 → W-038

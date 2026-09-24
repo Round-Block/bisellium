@@ -114,7 +114,9 @@ const esc = (v) =>
   String(v ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 
 const byIdDesc = (a, b) => String(b.id).localeCompare(String(a.id));
 const byIdAsc = (a, b) => String(a.id).localeCompare(String(b.id));
@@ -136,7 +138,13 @@ function blockedOnCell(opus, openPetitionsByOpus) {
   }
   const parts = [];
   const blockedOn = opus?.traditio?.blocked_on;
-  if (blockedOn !== undefined && blockedOn !== null && String(blockedOn).trim() !== "") parts.push(String(blockedOn));
+  // `bisellium handoff` writes the literal sentinel "none" when --blocked-on
+  // is omitted (packages/commands/src/writes.ts). That is the CLI's "no
+  // blocker recorded" value, not a blocker named "none" — treat it the same
+  // as absent so the cell reads an em dash (or just the open petitiones)
+  // instead of the word "none".
+  if (blockedOn !== undefined && blockedOn !== null && String(blockedOn).trim() !== "" && blockedOn !== "none")
+    parts.push(String(blockedOn));
   for (const p of openPetitionsByOpus.get(opus.id) ?? []) parts.push(`${p.id} (${p.state})`);
   return parts.length ? parts.join("; ") : "—";
 }

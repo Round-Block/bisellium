@@ -1,11 +1,21 @@
 # behaviour: 7
 # command: node scripts/backlog-page.test.mjs 7
 # exit: 1
-# at: 2026-09-24T00:50:55.536Z
+# at: 2026-09-24T01:28:58.120Z
 # sella: builder-a
-# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+# tree: dirty:f9613615b3a5993ed20d24a7e8a90edc2832f9de
 
-FAIL  [7] a slate heading makes the generator exit non-zero                      
-FAIL  [7] --out is not created when the heading guard fires                      
-FAIL  [7] a ranked chain wrapped across two lines makes the generator exit non-zero 
-FAIL  [7] --out is not created when the chain guard fires                        
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-ctzwwr/heading-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-ctzwwr/outA.html:
+  line 3: slate-heading: ### Backlog
+PASS  [7] a slate heading makes the generator exit non-zero                      
+PASS  [7] --out is not modified when the heading guard fires (a pre-existing file survives byte-for-byte) 
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-ctzwwr/new-opera-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-ctzwwr/outC.html:
+  line 3: slate-heading: ### New opera opened, none started
+PASS  [7] the 'New opera' slate heading makes the generator exit non-zero        
+PASS  [7] --out is not created when the 'New opera' heading guard fires          
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-ctzwwr/chain-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-ctzwwr/outB.html:
+  line 1: ranked-chain: W-001 -> W-002 -> W-003
+PASS  [7] a ranked chain wrapped across two lines makes the generator exit non-zero 
+PASS  [7] --out is not created when the chain guard fires                        
+FAIL  [7] a ranked chain using the Unicode → arrow makes the generator exit non-zero 
+FAIL  [7] --out is not created when the → chain guard fires                      
