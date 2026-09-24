@@ -1,0 +1,119 @@
+# behaviour: 14
+# command: npx playwright test -c playwright.serve.config.ts -g behaviour 14
+# exit: 1
+# at: 2026-09-24T15:34:49.483Z
+# sella: builder-a
+# tree: dirty:e083aa9ed762921f5612c9cad4cab564555b3ef6
+
+
+Running 6 tests using 6 workers
+
+sella "builder-1": model claude-sonnet-5 -> gpt-5.6-sol
+  ✓  4 [chromium] › tests-serve/seats.spec.ts:184:3 › the decree surface, end to end (W-065 behaviour 14) › editing while a request is pending issues no second request (724ms)
+  ✘  3 [chromium] › tests-serve/seats.spec.ts:77:3 › the decree surface, end to end (W-065 behaviour 14) › Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically (707ms)
+  ✓  1 [chromium] › tests-serve/seats.spec.ts:26:3 › the decree surface, end to end (W-065 behaviour 14) › draft-and-confirm: only Confirm ever writes, exactly once (772ms)
+  ✘  2 [chromium] › tests-serve/seats.spec.ts:166:3 › the decree surface, end to end (W-065 behaviour 14) › a transport error re-opens the token prompt, draft retained (5.7s)
+  ✘  6 [chromium] › tests-serve/seats.spec.ts:130:3 › the decree surface, end to end (W-065 behaviour 14) › a real stale draft: the manifest changes under the console, Confirm reports the conflict and keeps the draft (5.7s)
+  ✘  5 [chromium] › tests-serve/seats.spec.ts:113:3 › the decree surface, end to end (W-065 behaviour 14) › Enter from the confirm bar submits identically to a click (30.0s)
+
+
+  1) [chromium] › tests-serve/seats.spec.ts:77:3 › the decree surface, end to end (W-065 behaviour 14) › Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      108 |     releaseResponse?.();
+      109 |     await expect(page.locator(".seats__confirm-bar")).toBeHidden({ timeout: 10_000 });
+    > 110 |     expect(requestCount).toBe(1);
+          |                          ^
+      111 |   });
+      112 |
+      113 |   test("Enter from the confirm bar submits identically to a click", async ({ page }) => {
+        at /tmp/claude-1000/w065-build/apps/web/tests-serve/seats.spec.ts:110:26
+
+    Error Context: test-results/seats-the-decree-surface-e-815c7-t-Enter-submits-identically-chromium/error-context.md
+
+  2) [chromium] › tests-serve/seats.spec.ts:113:3 › the decree surface, end to end (W-065 behaviour 14) › Enter from the confirm bar submits identically to a click 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.waitForRequest: Test timeout of 30000ms exceeded.
+
+      121 |     await modelSelect.selectOption("claude-opus-5");
+      122 |     const [request] = await Promise.all([
+    > 123 |       page.waitForRequest((r) => r.url().endsWith("/api/delegate") && r.method() === "POST"),
+          |            ^
+      124 |       page.locator(".seats__confirm-bar").press("Enter"),
+      125 |     ]);
+      126 |     expect(request).toBeTruthy();
+        at /tmp/claude-1000/w065-build/apps/web/tests-serve/seats.spec.ts:123:12
+
+    Error Context: test-results/seats-the-decree-surface-e-0a543-mits-identically-to-a-click-chromium/error-context.md
+
+  3) [chromium] › tests-serve/seats.spec.ts:130:3 › the decree surface, end to end (W-065 behaviour 14) › a real stale draft: the manifest changes under the console, Confirm reports the conflict and keeps the draft 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  locator('select[aria-label="model for seat builder-1"]')
+    Expected: "claude-opus-5"
+    Received: "claude-sonnet-5"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" locator('select[aria-label="model for seat builder-1"]') with timeout 5000ms
+      - waiting for locator('select[aria-label="model for seat builder-1"]')
+        14 × locator resolved to <select aria-label="model for seat builder-1">…</select>
+           - unexpected value "claude-sonnet-5"
+
+
+      158 |     await expect(page.locator(".seats__confirm-bar")).toBeVisible();
+      159 |     await expect(page.locator(".seats__confirm-error")).toBeVisible();
+    > 160 |     await expect(modelSelect).toHaveValue("claude-opus-5"); // the draft, not reverted
+          |                               ^
+      161 |
+      162 |     // The manifest on disk stays at the CLI's value.
+      163 |     expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder-1")?.model).toBe("gpt-5.6-sol");
+        at /tmp/claude-1000/w065-build/apps/web/tests-serve/seats.spec.ts:160:31
+
+    Error Context: test-results/seats-the-decree-surface-e-69fc2-onflict-and-keeps-the-draft-chromium/error-context.md
+
+  4) [chromium] › tests-serve/seats.spec.ts:166:3 › the decree surface, end to end (W-065 behaviour 14) › a transport error re-opens the token prompt, draft retained 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  locator('select[aria-label="model for seat builder-1"]')
+    Expected: "claude-opus-5"
+    Received: "claude-sonnet-5"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" locator('select[aria-label="model for seat builder-1"]') with timeout 5000ms
+      - waiting for locator('select[aria-label="model for seat builder-1"]')
+        14 × locator resolved to <select aria-label="model for seat builder-1">…</select>
+           - unexpected value "claude-sonnet-5"
+
+
+      179 |     await expect(page.locator(".token-prompt")).toBeVisible();
+      180 |     await expect(page.locator(".seats__confirm-bar")).toBeVisible();
+    > 181 |     await expect(modelSelect).toHaveValue("claude-opus-5");
+          |                               ^
+      182 |   });
+      183 |
+      184 |   test("editing while a request is pending issues no second request", async ({ page }) => {
+        at /tmp/claude-1000/w065-build/apps/web/tests-serve/seats.spec.ts:181:31
+
+    Error Context: test-results/seats-the-decree-surface-e-b5d23-token-prompt-draft-retained-chromium/error-context.md
+
+  4 failed
+    [chromium] › tests-serve/seats.spec.ts:77:3 › the decree surface, end to end (W-065 behaviour 14) › Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically 
+    [chromium] › tests-serve/seats.spec.ts:113:3 › the decree surface, end to end (W-065 behaviour 14) › Enter from the confirm bar submits identically to a click 
+    [chromium] › tests-serve/seats.spec.ts:130:3 › the decree surface, end to end (W-065 behaviour 14) › a real stale draft: the manifest changes under the console, Confirm reports the conflict and keeps the draft 
+    [chromium] › tests-serve/seats.spec.ts:166:3 › the decree surface, end to end (W-065 behaviour 14) › a transport error re-opens the token prompt, draft retained 
+  2 passed (30.6s)
+npm notice
+npm notice New minor version of npm available! 11.13.0 -> 11.20.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.20.0
+npm notice To update run: npm install -g npm@11.20.0
+npm notice

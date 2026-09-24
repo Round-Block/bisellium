@@ -4,7 +4,7 @@
  * (via `submitDelegate`) raises the app-shell's shared TokenPrompt on a
  * 401, screen-agnostic (W-067).
  */
-import { useEffect, useState, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { fetchModels, fetchOfficina, submitDelegate, type ModelRecordEntry, type OfficinaResponse } from "../api.js";
 import { availableModels, munusRows, seatRows, tierRows } from "../lib/delegation.js";
 import { SeatsView } from "./SeatsView.js";
@@ -19,6 +19,13 @@ export function Seats(): JSX.Element {
   const [pending, setPending] = useState<Pending | undefined>(undefined);
   const [error, setError] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  // A ref, not just the `busy` state: React batches state updates, so two
+  // synchronous clicks arriving in the same tick (a real browser dispatches
+  // a native click on a not-yet-disabled button faster than a re-render can
+  // land) would both still see the stale `busy === false` closure. A ref's
+  // `.current` is read and written synchronously, so the second click is
+  // blocked before it can ever call submitDelegate.
+  const inFlight = useRef(false);
 
   function reload(): void {
     fetchOfficina()
@@ -58,10 +65,12 @@ export function Seats(): JSX.Element {
   }
 
   function onConfirm(): void {
-    if (!pending || busy) return; // no second request while one is pending
+    if (!pending || inFlight.current) return; // no second request while one is pending
+    inFlight.current = true;
     setBusy(true);
     const body = pending.kind === "seat" ? { sella: pending.id, model: pending.to, from: pending.from } : { munus: pending.id, tier: pending.to, from: pending.from };
     void submitDelegate(body).then((result) => {
+      inFlight.current = false;
       setBusy(false);
       // "unauthorized" is handled at the app shell (TokenPrompt reopens) —
       // no local handling here, same convention Inbox.tsx already uses.

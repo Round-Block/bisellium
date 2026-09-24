@@ -60,7 +60,7 @@ export function SeatsView(props: SeatsViewProps): JSX.Element {
                 <td>
                   <select
                     aria-label={`tier for munus ${m.id}`}
-                    value={m.tier}
+                    value={pending?.kind === "munus" && pending.id === m.id ? pending.to : m.tier}
                     disabled={busy}
                     onChange={(e) => onDraft("munus", m.id, e.target.value)}
                   >
@@ -104,7 +104,7 @@ export function SeatsView(props: SeatsViewProps): JSX.Element {
                   {s.kind !== "human" && (
                     <select
                       aria-label={`model for seat ${s.id}`}
-                      value={s.model ?? ""}
+                      value={pending?.kind === "seat" && pending.id === s.id ? pending.to : (s.model ?? "")}
                       disabled={busy}
                       onChange={(e) => onDraft("seat", s.id, e.target.value)}
                     >
@@ -127,6 +127,7 @@ export function SeatsView(props: SeatsViewProps): JSX.Element {
           className="seats__confirm-bar"
           role="region"
           aria-label="confirm change"
+          tabIndex={-1}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !busy) onConfirm();
           }}
