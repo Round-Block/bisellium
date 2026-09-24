@@ -1,0 +1,12 @@
+# behaviour: 8
+# command: node scripts/backlog-page.test.mjs 8
+# exit: 1
+# at: 2026-09-24T00:49:01.405Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-b4EWhQ/heading-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-b4EWhQ/outA.html:
+  line 3: slate-heading: ### Backlog
+backlog-page: /tmp/claude-1000/bisellium-backlog-b7-b4EWhQ/chain-handoff.md still carries hand-written slate state; refusing to write /tmp/claude-1000/bisellium-backlog-b7-b4EWhQ/outB.html:
+  line 1: ranked-chain: W-001 -> W-002 -> W-003
+FAIL  [8] docs/SESSION-HANDOFF.md carries no slate heading and no ranked chain   [{"kind":"slate-heading","line":217,"text":"### New opera opened, none started"},{"kind":"slate-heading","line":375,"text":"### Backlog"},{"kind":"ranked-chain","line":122,"text":"W-041 → W-039 → W-038"},{"kind":"ranked-chain","line":125,"text":"W-047 → W-032 → W-040"},{"kind":"ranked-chain","line":125,"text":"W-045 → W-049 → W-048"},{"kind":"ranked-chain","line":194,"text":"W-041 → W-039 → W-038"},{"kind":"ranked-chain","line":194,"text":"W-046 → W-047 → W-032"},{"kind":"ranked-chain","line":379,"text":"W-041 → W-039 → W-038"},{"kind":"ranked-chain","line":379,"text":"W-046 → W-047 → W-032"}]

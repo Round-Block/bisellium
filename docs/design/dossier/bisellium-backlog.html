@@ -1,0 +1,354 @@
+<title>Bisellium Backlog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F7F9F8;
+    --surface: #FFFFFF;
+    --surface-2: #EFF4F2;
+    --ink: #1A2523;
+    --muted: #5A6B67;
+    --line: #DCE5E2;
+    --accent: #0E7C6B;
+    --accent-soft: #E1F0EC;
+    --ok: #178A50;
+    --ok-soft: #E2F3E9;
+    --warn: #B7791F;
+    --warn-soft: #F7EDDA;
+    --bad: #C0392B;
+    --bad-soft: #F9E6E3;
+    --pend: #7A8783;
+    --pend-soft: #EAEEEC;
+    --code-bg: #14201C;
+    --code-ink: #D9E7E2;
+    --code-accent: #6FD9C2;
+    --shadow: 0 1px 2px rgba(20, 35, 30, .06), 0 4px 16px rgba(20, 35, 30, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101614;
+      --surface: #18201D;
+      --surface-2: #1E2825;
+      --ink: #E6EEEB;
+      --muted: #93A39E;
+      --line: #2A3531;
+      --accent: #3ECFB2;
+      --accent-soft: #163229;
+      --ok: #4CC98A;
+      --ok-soft: #14301F;
+      --warn: #E0A94E;
+      --warn-soft: #34290F;
+      --bad: #E5776A;
+      --bad-soft: #3A1712;
+      --pend: #8B9995;
+      --pend-soft: #232D2A;
+      --code-bg: #0C1210;
+      --code-ink: #CDDCD6;
+      --code-accent: #5FD3B8;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101614;
+    --surface: #18201D;
+    --surface-2: #1E2825;
+    --ink: #E6EEEB;
+    --muted: #93A39E;
+    --line: #2A3531;
+    --accent: #3ECFB2;
+    --accent-soft: #163229;
+    --ok: #4CC98A;
+    --ok-soft: #14301F;
+    --warn: #E0A94E;
+    --warn-soft: #34290F;
+    --bad: #E5776A;
+    --bad-soft: #3A1712;
+    --pend: #8B9995;
+    --pend-soft: #232D2A;
+    --code-bg: #0C1210;
+    --code-ink: #CDDCD6;
+    --code-accent: #5FD3B8;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 16px rgba(0, 0, 0, .25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+  .prose { max-width: 72ch; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Instrument Sans", sans-serif;
+    text-wrap: balance;
+    line-height: 1.15;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; margin: .2em 0 .25em; letter-spacing: -0.01em; }
+  h2 { font-size: 1.7rem; font-weight: 650; margin: 0 0 .5em; }
+  h3 { font-size: 1.18rem; font-weight: 600; margin: 2em 0 .5em; }
+  p { margin: 0 0 1em; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  strong { font-weight: 600; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .86em;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .08em .35em;
+  }
+
+  .eyebrow {
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .6em;
+  }
+  header.masthead { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+  .thesis { font-size: 1.22rem; color: var(--muted); max-width: 60ch; margin: 0; }
+  .meta-row {
+    display: flex; flex-wrap: wrap; gap: 10px 24px;
+    margin-top: 28px;
+    font-size: .82rem; color: var(--muted);
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .meta-row span b { color: var(--ink); font-weight: 500; }
+
+  section { padding: 56px 0 8px; }
+  .part-rule {
+    display: flex; align-items: center; gap: 16px;
+    margin: 64px 0 0;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+  }
+  .part-rule .part-tag {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .75rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 4px 12px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .part-rule h2 { margin: 0; font-size: 2rem; }
+
+  /* verdict card */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 26px 30px;
+    margin: 36px 0 0;
+  }
+  .verdict p:last-child { margin-bottom: 0; }
+
+  /* chips */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem; font-weight: 500;
+    padding: 2px 10px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .chip.ok   { color: var(--ok);   background: var(--ok-soft); }
+  .chip.warn { color: var(--warn); background: var(--warn-soft); }
+  .chip.bad  { color: var(--bad);  background: var(--bad-soft); }
+  .chip.pend { color: var(--pend); background: var(--pend-soft); }
+
+  /* tables */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); margin: 20px 0 28px; }
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 640px; }
+  th, td { text-align: left; padding: 10px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    background: var(--surface-2);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* two-col gap layout */
+  .gap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 24px 0; }
+  @media (max-width: 720px) { .gap-grid { grid-template-columns: 1fr; } }
+  .gap-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .gap-card h3 { margin-top: 0; }
+  .gap-card ul { margin: 0; padding-left: 1.2em; }
+  .gap-card li { margin-bottom: .45em; }
+  .gap-card.crowded h3 { color: var(--bad); }
+  .gap-card.open h3 { color: var(--ok); }
+
+  /* board mock */
+  .board-mock {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 28px 0;
+    overflow-x: auto;
+  }
+  .board-cols { display: flex; gap: 14px; min-width: 700px; }
+  .board-col { flex: 1; }
+  .board-col-title {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px;
+    display: flex; justify-content: space-between;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 14px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .card .slug { font-family: "IBM Plex Mono", monospace; font-size: .78rem; font-weight: 500; margin-bottom: 2px; }
+  .card .who { font-size: .74rem; color: var(--muted); margin-bottom: 8px; }
+  .gates { display: flex; gap: 5px; align-items: center; }
+  .gate { width: 10px; height: 10px; border-radius: 3px; }
+  .gate.passed { background: var(--ok); }
+  .gate.failed { background: var(--bad); }
+  .gate.pending { background: var(--pend-soft); border: 1px solid var(--pend); }
+  .gate-label { font-family: "IBM Plex Mono", monospace; font-size: .64rem; color: var(--muted); margin-left: 4px; }
+  .mock-caption { font-size: .8rem; color: var(--muted); margin: 14px 4px 0; }
+
+  /* code blocks */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .82rem;
+    line-height: 1.55;
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 20px 0 28px;
+  }
+  pre .c { color: color-mix(in srgb, var(--code-ink) 55%, transparent); }
+  pre .k { color: var(--code-accent); }
+
+  /* build plan */
+  ol.plan { counter-reset: step; list-style: none; padding: 0; margin: 24px 0; }
+  ol.plan > li {
+    counter-increment: step;
+    display: grid; grid-template-columns: 44px 1fr; gap: 16px;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+  }
+  ol.plan > li:last-child { border-bottom: none; }
+  ol.plan > li::before {
+    content: counter(step, decimal-leading-zero);
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 1.4rem; font-weight: 700; color: var(--accent);
+    line-height: 1.2;
+  }
+  ol.plan b { font-weight: 600; }
+  ol.plan p { margin: .25em 0 0; font-size: .92rem; color: var(--muted); }
+
+  ul.reading { list-style: none; padding: 0; margin: 20px 0; }
+  ul.reading li { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .94rem; }
+  ul.reading li:last-child { border-bottom: none; }
+  ul.reading .why { color: var(--muted); font-size: .86rem; }
+
+  .footnote { margin-top: 72px; padding-top: 24px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+</style>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Agent studio &middot; the slate</p>
+  <h1>Bisellium Backlog</h1>
+  <p class="thesis">Generated from the officina's own front matter &mdash; opera, petitiones, decisions &mdash; never from prose. A <code>done</code> opus never appears here; that is the <a href="bisellium-progress.html">progress page</a>'s history.</p>
+</header>
+
+<p class="mock-caption">Ranking: <a href="../../../studio/acta/2026-09-24-ranking.md">2026-09-24-ranking</a> is the source of record for the slate's order; this page shows the inputs a ranking is made from and does not rank.</p>
+
+<section>
+<h2>In flight</h2>
+<p class="mock-caption">State as recorded in this checkout&rsquo;s officina. On the trunk, per D-021, an opus being built still reads <code>greenlit</code> &mdash; its live state is on <code>opus/&lt;id&gt;</code>.</p>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Id</th><th>Title</th><th>Collegium</th><th>State</th><th>Blocked on</th><th>Gates</th></tr></thead>
+      <tbody>
+        <tr data-id="W-041"><td>W-041</td><td>generated backlog page: the slate rendered from the officina, never from prose</td><td>design</td><td>building</td><td>—</td><td>1/5</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+<h2>Backlog</h2>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Id</th><th>Title</th><th>Collegium</th><th>State</th><th>Blocked on</th><th>Gates</th></tr></thead>
+      <tbody>
+        <tr data-id="W-053"><td>W-053</td><td>run --reclaim and prune see every worktree, including the harness's</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-052"><td>W-052</td><td>run --opus feeds merge: the worktree branch chain is unbroken</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-051"><td>W-051</td><td>branch and merge respect the repo's default branch, never a hardcoded master</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-050"><td>W-050</td><td>bisellium ci enters the documentation: template edit, CLAUDE.md regenerated</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-049"><td>W-049</td><td>harness env is scrubbed: no ambient base-URL or auth override reaches a spawned session</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-048"><td>W-048</td><td>a red's command must be repo-runnable: advise on scratch-path operands</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-047"><td>W-047</td><td>safeItemPath has a contract test and every call site a traversal case</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-046"><td>W-046</td><td>provider portability: one opus end-to-end on both harnesses, model and policy passed</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-045"><td>W-045</td><td>record resilience: degrade per corrupt record, atomic front-matter writes</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-043"><td>W-043</td><td>addressed_by is stamped through the CLI, never by hand</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-040"><td>W-040</td><td>gate correction: re-sign a wrongly-signed gate without erasing it</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-039"><td>W-039</td><td>red logs must name the sella that recorded them</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-038"><td>W-038</td><td>petitio: file a governance ask through the CLI</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-032"><td>W-032</td><td>PR gate: opening a pull request goes through the CLI and can be refused</td><td>engineering</td><td>backlog</td><td>—</td><td>0/5</td></tr>
+        <tr data-id="W-028"><td>W-028</td><td>patron-as-agent: automated merge, push and cascade orchestration</td><td>production</td><td>halted</td><td>D-019 — never — a successor opus starts from current architecture, see D-019</td><td>4/5</td></tr>
+        <tr data-id="W-027"><td>W-027</td><td>container lifecycle: prune, cleanup and disk-aware cascade start</td><td>engineering</td><td>halted</td><td>D-017 — the opus is resurrected — evidence obligations reopen in full (D-017)</td><td>4/5</td></tr>
+        <tr data-id="W-023"><td>W-023</td><td>containment scoping and helper hoist: P-004 re-promotion, P-007, retro numbering</td><td>engineering</td><td>halted</td><td>D-017 — never — abandoned by acceptance, see D-017</td><td>4/5</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+<h2>Standing constraints</h2>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Id</th><th>Title</th><th>Kill when</th></tr></thead>
+      <tbody>
+        <tr data-id="D-001"><td>D-001</td><td>Every active opus carries a spec before it enters building</td><td>two consecutive cascades show specs adding more review-fail cycles than they prevent, measured against the same collegium's cycle-time digest</td></tr>
+        <tr data-id="D-002"><td>D-002</td><td>The retrospectio is owned by the Censor (qa-lead), not by production</td><td>the Censor collegium is dissolved, or a cascade ships without qa-lead as its magister</td></tr>
+        <tr data-id="D-003"><td>D-003</td><td>Process is data: design, spec, leges, decisions, lessons and retro are all files check can fail</td><td>the rule modules these files feed (rules/process.ts, rules/lex.ts) are removed from checkStudio, or decisions/lessons stop being read by any tool</td></tr>
+        <tr data-id="D-004"><td>D-004</td><td>The role vocabulary stays Latin product-facing, English on the wire</td><td>a wire attribute or state id is renamed to a Latin term, or a Latin term (Sella, Magister, Probatio, …) leaks into workflow.*/gen_ai.*/provider.* attribute names</td></tr>
+        <tr data-id="D-005"><td>D-005</td><td>Mechanical, repeatable work is written as a script, never applied by hand</td><td>a script-authored bulk change is shown to cost more review time than the equivalent hand edit, on a like-for-like change</td></tr>
+        <tr data-id="D-006"><td>D-006</td><td>Evidence is produced, never backfilled</td><td>a probatio's evidence contract is changed to accept evidence dated after the state transition it certifies</td></tr>
+        <tr data-id="D-007"><td>D-007</td><td>Certificate staleness/dirtiness/corroboration is judged for active opera only</td><td>a done or halted opus's certificate is shown to matter operationally (e.g. an audit needs to know a done item's tree hash still matches HEAD)</td></tr>
+        <tr data-id="D-008"><td>D-008</td><td>Every id that reaches a write is containment-checked, and containment is a resolved-path relation</td><td>the check rule fires on a path that is in fact contained, or a cascade passes with the rule removed and no traversal defect is found by the censor</td></tr>
+        <tr data-id="D-009"><td>D-009</td><td>Redaction and escaping belong at the write boundary of every tracked file, not only receipts and ci logs</td><td>a tracked write is shown to be safe without the boundary pass, or redaction at the boundary is shown to destroy evidence a probatio needs</td></tr>
+        <tr data-id="D-010"><td>D-010</td><td>A test that cannot fail is not evidence; the censor's mutation step is what certifies the suite</td><td>two consecutive cascades show the mutation step catching nothing the review did not already find, or the advisory fires on an assertion that is in fact load-bearing</td></tr>
+        <tr data-id="D-011"><td>D-011</td><td>A file that duplicates data the manifest or docs already hold is rendered, and its drift is detected</td><td>a rendered file is shown to need hand edits the renderer cannot express, or the drift rule produces a false positive with no correct action available</td></tr>
+        <tr data-id="D-012"><td>D-012</td><td>Cascade sizing</td><td>usage per opus falls below the sizing.json threshold for 3 consecutive cascades, or the Censor (qa-lead) proposes otherwise</td></tr>
+        <tr data-id="D-013"><td>D-013</td><td>Usage is a retrospectio input</td><td>the usage section is shown to add reviewer/patron time without changing a single cascade-sizing or posture decision, across 3 consecutive cascades</td></tr>
+        <tr data-id="D-014"><td>D-014</td><td>Model pair: Sonnet 5 builds, Opus 5 for opus-tier roles</td><td>retro usage sections show one generation consistently underperforming on review outcomes or cost per opus for 2 consecutive cascades — then consolidate on the winner</td></tr>
+        <tr data-id="D-015"><td>D-015</td><td>Integration strategy is configuration, not a fixed flow</td><td>two officinae in the wild pick the same strategy and never touch the setting for 3 consecutive cascades — then make that one the only path and delete the switch</td></tr>
+        <tr data-id="D-016"><td>D-016</td><td>The CLI wraps a git operation only when refusing it is the point</td><td>W-033 settles provenance and the merge-reconcile recipe still has to be run by hand more than twice in a single cascade — then automate that exact recipe as one command, and only it; or an adopter reports that `branch`/`merge`/`close` are unusable without a git they do not have</td></tr>
+        <tr data-id="D-017"><td>D-017</td><td>W-023 and W-027 are halted by acceptance, missing evidence accepted as historical</td><td>either opus is resurrected — resurrection reopens the evidence obligation in full</td></tr>
+        <tr data-id="D-018"><td>D-018</td><td>Pre-W-026 gates and reviews are grandfathered without identity</td><td>any such opus is reopened, or its gate re-recorded</td></tr>
+        <tr data-id="D-019"><td>D-019</td><td>W-028 (patron-as-agent orchestration) is abandoned</td><td>a successor patron-as-agent opus is filed — its brief must start from current architecture, not W-028's; resurrection of W-028 itself reopens its evidence obligations in full</td></tr>
+        <tr data-id="D-020"><td>D-020</td><td>Codex worker models join the studio's worker pool, spread across task types</td><td>W-046 lands (dispatch moves into the CLI and this decision's interim transport clause dies with it), or a codex-tier worker produces evidence a gate relied on without the censor re-verifying — either fires a review of this decision</td></tr>
+        <tr data-id="D-021"><td>D-021</td><td>An opus record has one writer: its opus branch while that branch exists, the trunk side otherwise</td><td>one opus's record genuinely needs two concurrent writers on different refs (parallel reviewers on one opus, or split builders each committing gates) — then bookkeeping leaves the work tree (a separate ref, or front matter projected from a shared event log) and this decision is replaced, not patched</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<p class="footnote">If a hand-written ordering of these items appears anywhere outside an acta twice more, <code>rank:</code> has earned its opus.</p>
+
+</div>

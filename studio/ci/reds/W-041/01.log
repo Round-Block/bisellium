@@ -1,0 +1,13 @@
+# behaviour: 1
+# command: node scripts/backlog-page.test.mjs 1
+# exit: 1
+# at: 2026-09-24T00:50:50.821Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+PASS  [1] greenlit opus appears                                                  
+PASS  [1] building opus appears                                                  
+PASS  [1] backlog opus appears                                                   
+PASS  [1] halted opus appears                                                    
+FAIL  [1] done opus never appears                                                
+PASS  [1] greenlit + building render under In flight, backlog + halted render under Backlog 

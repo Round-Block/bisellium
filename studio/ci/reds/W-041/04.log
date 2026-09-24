@@ -1,0 +1,10 @@
+# behaviour: 4
+# command: node scripts/backlog-page.test.mjs 4
+# exit: 1
+# at: 2026-09-24T00:50:53.176Z
+# sella: builder-a
+# tree: dirty:1db7794005f9dcbde7eab25c2d49f02ae8fed91c
+
+FAIL  [4] id-descending within backlog, halted rows after backlog rows           {"W-002":1202,"W-001":1082,"W-005":1441,"W-004":1322}
+PASS  [4] identical input renders byte-identical output (in-process)             
+PASS  [4] two CLI runs on identical input are byte-identical on disk             
