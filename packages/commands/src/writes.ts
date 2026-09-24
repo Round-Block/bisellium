@@ -167,7 +167,7 @@ export function emitEvent(root: string, manifest: Manifest, name: string, now: D
  *  Patron's own append-only record. `BISELLIUM_ROLE` is set by the CLI
  *  wrapper around these commands; it defaults to "patron" so calling the
  *  functions directly (as the tests do) needs no wrapper. */
-function appendPatronTimeline(root: string, entry: Record<string, unknown>): void {
+export function appendPatronTimeline(root: string, entry: Record<string, unknown>): void {
   const path = join(root, "timeline", "patron.jsonl");
   mkdirSync(dirname(path), { recursive: true });
   const role = process.env["BISELLIUM_ROLE"] || "patron";

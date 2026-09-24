@@ -19,9 +19,11 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { request as httpRequest, type IncomingMessage } from "node:http";
+import { parse as parseYaml } from "yaml";
 import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/commands/writes.js";
 import { runTalk } from "@bisellium/commands/talk.js";
 import { runPause, runResume } from "@bisellium/commands/pause.js";
+import { runDelegate } from "@bisellium/commands/delegate.js";
 import { startServer, isPathContained, type StartServerOptions } from "../src/index.js";
 
 process.env["NODE_ENV"] = "test";
@@ -54,10 +56,21 @@ const realRunners: StartServerOptions["runners"] = {
   talk: (args) => runTalk(args),
   pause: (args) => runPause(args),
   resume: (args) => runResume(args),
+  delegate: (args) => runDelegate(args),
 };
 
+/** A harmless default for every test that doesn't exercise GET /api/models
+ *  itself — never spawns a real `codex`, so these tests stay hermetic.
+ *  Behaviour 9's own tests below install their own stub (with a call
+ *  counter) instead of this one. */
+const noListing: StartServerOptions["listModels"] = () => Promise.resolve([]);
+
 function baseOpts(studioDir: string, extra: Partial<StartServerOptions> = {}): StartServerOptions {
-  return { studioDir, checkStudio: fakeCheckStudio, runners: realRunners, token: TEST_TOKEN, ...extra };
+  // listModels defaults to "must not be called" — every existing test here
+  // never touches GET /api/models, so this is a standing assertion that no
+  // unrelated route ever triggers a vendor listing; behaviour 9's own tests
+  // override it per case.
+  return { studioDir, checkStudio: fakeCheckStudio, runners: realRunners, listModels: noListing, token: TEST_TOKEN, ...extra };
 }
 
 const dirs: string[] = [];
@@ -168,6 +181,16 @@ function connectSSE(port: number): { events: Record<string, unknown>[]; res: Inc
   });
   req.end();
   return { events, get res() { return response; }, close: () => req.destroy() };
+}
+
+function timelineLines(dir: string): Record<string, unknown>[] {
+  const path = join(dir, "timeline", "patron.jsonl");
+  if (!existsSync(path)) return [];
+  return readFileSync(path, "utf8")
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => JSON.parse(l) as Record<string, unknown>);
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<boolean> {
@@ -713,6 +736,175 @@ async function main(): Promise<void> {
     }
   }
 
+  // ---- W-065 behaviour 8: the server writes as the Patron over a seeded
+  // non-Patron role, and the lock serializes. ------------------------------
+  {
+    const dir = freshStudio("delegate-patron");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    const base = `http://127.0.0.1:${s.port}`;
+    const prevRole = process.env["BISELLIUM_ROLE"];
+    process.env["BISELLIUM_ROLE"] = "builder-a";
+    try {
+      const r = await postJson(base, "/api/delegate", { sella: "builder-1", model: "gpt-5.6-sol" });
+      check("delegate (patron over seeded role): HTTP 200, ok:true", r.status === 200 && r.body?.ok === true, JSON.stringify(r.body));
+      const lines = timelineLines(dir);
+      check("delegate (patron over seeded role): recorded role is patron", lines[lines.length - 1]?.["role"] === "patron", JSON.stringify(lines[lines.length - 1]));
+      check("delegate (patron over seeded role): BISELLIUM_ROLE restored after success", process.env["BISELLIUM_ROLE"] === "builder-a", process.env["BISELLIUM_ROLE"]);
+
+      const rejected = await postJson(base, "/api/delegate", { sella: "no-such-sella", model: "x" });
+      check("delegate (rejected): refused, not a 4xx", rejected.status === 200 && rejected.body?.ok === false, JSON.stringify(rejected.body));
+      check("delegate (rejected): BISELLIUM_ROLE restored after a rejection too", process.env["BISELLIUM_ROLE"] === "builder-a", process.env["BISELLIUM_ROLE"]);
+    } finally {
+      if (prevRole === undefined) delete process.env["BISELLIUM_ROLE"];
+      else process.env["BISELLIUM_ROLE"] = prevRole;
+      await s.close();
+    }
+  }
+
+  {
+    const dir = freshStudio("delegate-lock");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      // Two overlapping POSTs (both issued before either resolves) — removing
+      // withWriteLock interleaves the console capture and fails this.
+      const pA = postJson(base, "/api/delegate", { sella: "builder-1", model: "gpt-5.6-sol" });
+      const pB = postJson(base, "/api/delegate", { munus: "audit", tier: "high" });
+      const [a, b] = await Promise.all([pA, pB]);
+      check("delegate lock: overlapping call A succeeds", a.status === 200 && a.body?.ok === true, JSON.stringify(a.body));
+      check("delegate lock: overlapping call B succeeds", b.status === 200 && b.body?.ok === true, JSON.stringify(b.body));
+      const lines = timelineLines(dir);
+      check("delegate lock: two well-formed timeline lines", lines.length === 2 && lines.every((l) => typeof l["at"] === "string" && typeof l["role"] === "string"), JSON.stringify(lines));
+      let parseable = true;
+      try {
+        parseYaml(readFileSync(join(dir, "bisellium.yml"), "utf8"));
+      } catch {
+        parseable = false;
+      }
+      check("delegate lock: the manifest is still a parseable single document", parseable);
+    } finally {
+      await s.close();
+    }
+  }
+
+  // ---- W-065 behaviour 9: the read surface, and the live listing never
+  // blocks it. --------------------------------------------------------------
+  {
+    const dir = freshStudio("models-read-surface");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/officina");
+      const manifest = parseYaml(readFileSync(join(dir, "bisellium.yml"), "utf8")) as { tiers?: unknown; munera?: unknown };
+      check("officina: tiers matches the fixture", JSON.stringify(r.body.tiers) === JSON.stringify(manifest.tiers), JSON.stringify(r.body.tiers));
+      check("officina: munera matches the fixture", JSON.stringify(r.body.munera) === JSON.stringify(manifest.munera), JSON.stringify(r.body.munera));
+      check("officina: models absent when models.json is absent", r.body.models === undefined, JSON.stringify(r.body.models));
+      check("officina: sellae rows still carry kind/model/harness", Array.isArray(r.body.sellae) && r.body.sellae.every((s: Record<string, unknown>) => "kind" in s), JSON.stringify(r.body.sellae));
+
+      writeFileSync(join(dir, "models.json"), "{ this is not json");
+      const r2 = await getJson(base, "/api/officina");
+      check("officina: an unparseable models.json degrades to absent, still 200", r2.status === 200 && r2.body.models === undefined, JSON.stringify(r2.body.models));
+    } finally {
+      await s.close();
+    }
+  }
+
+  {
+    const dir = freshStudio("models-listing-success");
+    writeFileSync(join(dir, "models.json"), JSON.stringify({ at: NOW.toISOString(), models: [{ id: "gpt-5.6-sol", harness: "codex", state: "available" }] }));
+    let calls = 0;
+    const listModels: StartServerOptions["listModels"] = async () => {
+      calls++;
+      return [
+        { id: "gpt-5.6-sol", harness: "codex" },
+        { id: "gpt-fresh", harness: "codex" },
+      ];
+    };
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/models");
+      const rows = r.body as { id: string; state: string }[];
+      check("models: a newly listed id appears as unverified", rows.find((row) => row.id === "gpt-fresh")?.state === "unverified", JSON.stringify(rows));
+      check("models: a recorded, still-listed id keeps its recorded state", rows.find((row) => row.id === "gpt-5.6-sol")?.state === "available", JSON.stringify(rows));
+
+      await getJson(base, "/api/models");
+      check("models: two calls inside the TTL invoke the listing once", calls === 1, String(calls));
+    } finally {
+      await s.close();
+    }
+  }
+
+  {
+    const dir = freshStudio("models-listing-withdrawn");
+    writeFileSync(
+      join(dir, "models.json"),
+      JSON.stringify({ at: NOW.toISOString(), models: [{ id: "gpt-gone", harness: "codex", state: "available" }] }),
+    );
+    const listModels: StartServerOptions["listModels"] = async () => [];
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/models");
+      const rows = r.body as { id: string; state: string }[];
+      const row = rows.find((x) => x.id === "gpt-gone");
+      check("models: a record id the listing omits is flagged withdrawn (kept, downgraded to unverified)", row?.state === "unverified", JSON.stringify(rows));
+    } finally {
+      await s.close();
+    }
+  }
+
+  {
+    const dir = freshStudio("models-listing-fail");
+    writeFileSync(join(dir, "models.json"), JSON.stringify({ at: NOW.toISOString(), models: [{ id: "gpt-5.6-sol", harness: "codex", state: "available" }] }));
+    const listModels: StartServerOptions["listModels"] = async () => {
+      throw new Error("simulated listing failure");
+    };
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/models");
+      check("models: a failing listing still answers 200 from the record alone", r.status === 200 && Array.isArray(r.body) && r.body.length === 1, JSON.stringify(r.body));
+      check("models: the dropdown is not emptied", r.body[0]?.id === "gpt-5.6-sol", JSON.stringify(r.body));
+    } finally {
+      await s.close();
+    }
+  }
+
+  {
+    const dir = freshStudio("models-listing-hang");
+    const listModels: StartServerOptions["listModels"] = () => new Promise(() => {}); // never resolves
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/models");
+      check("models: a hung listing still answers 200 past its timeout", r.status === 200 && Array.isArray(r.body), JSON.stringify(r.body));
+    } finally {
+      await s.close();
+    }
+  }
+
+  {
+    // No route runs a vendor turn: this route never touches runners.talk (or
+    // any runner) at all — asserted structurally, not by grepping output.
+    const dir = freshStudio("models-no-turn");
+    let listingCalls = 0;
+    const listModels: StartServerOptions["listModels"] = async () => {
+      listingCalls++;
+      return [];
+    };
+    const talkMustNotRun: StartServerOptions["runners"]["talk"] = () => {
+      throw new Error("GET /api/models must never run a runner (a vendor turn)");
+    };
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels, runners: { ...realRunners, talk: talkMustNotRun } }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/models");
+      check("models: no route runs a vendor turn", r.status === 200 && listingCalls === 1, `status=${r.status} listingCalls=${listingCalls}`);
+    } finally {
+      await s.close();
+    }
+  }
 }
 
 main()

@@ -125,6 +125,49 @@ function computeDueSummary(studioDir: string, manifest: Manifest, now: Date): { 
   return due;
 }
 
+// ---------------------------------------------------------------------------
+// W-065: `<studio>/models.json` — the probe-battery opus's record (never
+// written here; this is a reader only, same shape/place as health.json).
+// ---------------------------------------------------------------------------
+
+export type ModelState = "available" | "unavailable" | "unverified";
+export interface ModelRecordEntry {
+  id: string;
+  harness?: string;
+  state: ModelState;
+  vendorDiagnostic?: string;
+}
+
+/** Advisory data, never instructions (standing rule): an absent or
+ *  unparseable file degrades to `undefined` rather than throwing — the
+ *  `/api/officina` route never blocks on bookkeeping it did not write.
+ *  Malformed individual entries are skipped rather than failing the whole
+ *  read, same tolerance `readUsageProviders` already uses. */
+function readModelsRecord(studioDir: string): ModelRecordEntry[] | undefined {
+  const path = join(studioDir, "models.json");
+  if (!existsSync(path)) return undefined;
+  try {
+    const parsed = JSON.parse(readFileSync(path, "utf8")) as { models?: unknown };
+    if (!Array.isArray(parsed.models)) return undefined;
+    const states = new Set(["available", "unavailable", "unverified"]);
+    const models: ModelRecordEntry[] = [];
+    for (const raw of parsed.models) {
+      if (typeof raw !== "object" || raw === null) continue;
+      const r = raw as Record<string, unknown>;
+      if (typeof r["id"] !== "string" || typeof r["state"] !== "string" || !states.has(r["state"])) continue;
+      models.push({
+        id: r["id"],
+        state: r["state"] as ModelState,
+        harness: typeof r["harness"] === "string" ? r["harness"] : undefined,
+        vendorDiagnostic: typeof r["vendorDiagnostic"] === "string" ? r["vendorDiagnostic"] : undefined,
+      });
+    }
+    return models;
+  } catch {
+    return undefined;
+  }
+}
+
 export class Store extends CoreStore {
   readonly projectId: string;
   private readonly live: boolean;
@@ -145,6 +188,10 @@ export class Store extends CoreStore {
 
   private manifest(): Manifest {
     return readManifest(this.studioDir);
+  }
+
+  private modelsRecord(): ModelRecordEntry[] | undefined {
+    return readModelsRecord(this.studioDir);
   }
 
   /** Sella id, or the manifest's patron id — the set of ids the timeline/
@@ -180,6 +227,9 @@ export class Store extends CoreStore {
       sellae: Manifest["sellae"];
       probationes: Manifest["probationes"];
       wip_limit?: number;
+      tiers?: Manifest["tiers"];
+      munera?: Manifest["munera"];
+      models?: ModelRecordEntry[];
     } => {
       const m = this.manifest();
       return {
@@ -195,6 +245,9 @@ export class Store extends CoreStore {
         sellae: m.sellae,
         probationes: m.probationes,
         wip_limit: m.wip_limit,
+        tiers: m.tiers,
+        munera: m.munera,
+        models: this.modelsRecord(),
       };
     },
 

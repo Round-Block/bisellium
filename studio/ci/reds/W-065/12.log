@@ -1,0 +1,10 @@
+# behaviour: 12
+# command: node --import tsx test/seatsview.test.ts 12
+# exit: 1
+# at: 2026-09-24T15:09:47.254Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+FAIL  honesty line: exact wording on a populated screen                              <div></div>
+FAIL  honesty line: exact wording on a seat-only screen (tiers: [], munera: [])      <div></div>
+FAIL  honesty line: appears beneath the screen heading and above both cards          -1 < -1 < -1

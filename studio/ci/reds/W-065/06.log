@@ -1,0 +1,12 @@
+# behaviour: 6
+# command: node --import tsx packages/commands/src/delegate.test.ts . 6
+# exit: 1
+# at: 2026-09-24T14:45:27.709Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+FAIL  --from matching succeeds                                                       2
+PASS  --from not matching exits non-zero                                             2
+PASS  --from not matching: manifest bytes unchanged                                  
+PASS  --from not matching: timeline length unchanged                                 
+FAIL  --from omitted succeeds (it is optional)                                       2

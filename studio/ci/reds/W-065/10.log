@@ -1,0 +1,22 @@
+# behaviour: 10
+# command: node --import tsx test/seatsview.test.ts 10
+# exit: 1
+# at: 2026-09-24T15:09:46.481Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+FAIL  roster: one row with sella id                                                  <div></div>
+FAIL  roster: collegium shown                                                        <div></div>
+FAIL  roster: kind rendered as static text                                           <div></div>
+FAIL  roster: a <select> with an accessible name is present                          <div></div>
+FAIL  roster: exactly availableModels' three ids appear as <option> values           <div></div>
+PASS  roster: no free-text <input> anywhere                                          <div></div>
+PASS  roster: no <datalist> anywhere                                                 <div></div>
+FAIL  roster: available option has no disabled attribute                             <div></div>
+FAIL  roster: unverified option is disabled (rendered, not omitted)                  <div></div>
+FAIL  roster: unavailable option is disabled and carries its vendorDiagnostic        <div></div>
+PASS  roster: a seated option is enabled whatever its state                          <div></div>
+PASS  roster: a human seat emits no <select>                                         <div></div>
+FAIL  roster: a human seat's id still renders                                        <div></div>
+PASS  roster: hostile model id/vendorDiagnostic — no <img tag reaches the markup     <div></div>
+FAIL  roster: hostile model id/vendorDiagnostic — the escaped text is present        <div></div>

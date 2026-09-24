@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { checkStudio } from "./check.js";
+import { RULE_IDS } from "./rules/ids.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
@@ -54,6 +55,28 @@ function stripIntegration(dir: string): void {
     out.push(line);
   }
   writeFileSync(manifestPath, out.join("\n"));
+}
+
+/** Same recipe as stripIntegration, generalized to any top-level key — W-065
+ *  behaviour 16 needs to strip/replace `tiers:`/`munera:` the same way. */
+function stripKeyBlock(dir: string, key: string): void {
+  const manifestPath = join(dir, "bisellium.yml");
+  const lines = readFileSync(manifestPath, "utf8").split("\n");
+  const out: string[] = [];
+  let skipping = false;
+  const keyRe = new RegExp(`^${key}:`);
+  for (const line of lines) {
+    if (keyRe.test(line)) { skipping = true; continue; }
+    if (skipping && (line === "" || /^\s/.test(line))) continue;
+    skipping = false;
+    out.push(line);
+  }
+  writeFileSync(manifestPath, out.join("\n"));
+}
+
+function appendYaml(dir: string, yaml: string): void {
+  const manifestPath = join(dir, "bisellium.yml");
+  writeFileSync(manifestPath, `${readFileSync(manifestPath, "utf8")}\n${yaml}`);
 }
 
 function setSourceExcludes(dir: string, raw: string | undefined): void {
@@ -228,6 +251,85 @@ try {
       r.findings.filter((f) => f.level === "block").map((f) => f.rule).join(", "),
     );
   }
+  // ---- W-065 behaviour 16: the munus.tier check rule --------------------
+  {
+    const dir = freshStudio("munus-tier-undeclared");
+    stripKeyBlock(dir, "munera");
+    appendYaml(dir, "munera:\n  - { id: ghost, tier: nonexistent }\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: a munus naming an undeclared tier blocks, naming both ids",
+      r.findings.some((f) => f.rule === "munus.tier" && f.level === "block" && f.message.includes("ghost") && f.message.includes("nonexistent")),
+      r.findings.filter((f) => f.rule === "munus.tier").map((f) => f.message).join(" | "),
+    );
+  }
+  {
+    const dir = freshStudio("munus-tier-dup-tier-id");
+    stripKeyBlock(dir, "tiers");
+    appendYaml(dir, "tiers:\n  - { id: fast, model: x }\n  - { id: fast, model: y }\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: a duplicate tiers[].id blocks (manifest.unique)",
+      r.findings.some((f) => f.rule === "manifest.unique" && f.where.includes("tiers")),
+      r.findings.filter((f) => f.rule === "manifest.unique").map((f) => f.where).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("munus-tier-dup-munus-id");
+    stripKeyBlock(dir, "munera");
+    appendYaml(dir, "munera:\n  - { id: audit, tier: mid }\n  - { id: audit, tier: high }\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: a duplicate munera[].id blocks (manifest.unique)",
+      r.findings.some((f) => f.rule === "manifest.unique" && f.where.includes("munera")),
+      r.findings.filter((f) => f.rule === "manifest.unique").map((f) => f.where).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("munus-tier-missing-model");
+    stripKeyBlock(dir, "tiers");
+    appendYaml(dir, "tiers:\n  - { id: bare }\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: a tier row missing its required model string blocks",
+      r.findings.some((f) => f.rule === "munus.tier" && f.level === "block" && f.message.includes("bare")),
+      r.findings.filter((f) => f.rule === "munus.tier").map((f) => f.message).join(" | "),
+    );
+  }
+  {
+    const dir = freshStudio("munus-tier-missing-tier");
+    stripKeyBlock(dir, "munera");
+    appendYaml(dir, "munera:\n  - { id: bare-munus }\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: a munus row missing its required tier string blocks",
+      r.findings.some((f) => f.rule === "munus.tier" && f.level === "block" && f.message.includes("bare-munus")),
+      r.findings.filter((f) => f.rule === "munus.tier").map((f) => f.message).join(" | "),
+    );
+  }
+  {
+    const dir = freshStudio("munus-tier-bad-id-format");
+    stripKeyBlock(dir, "munera");
+    appendYaml(dir, "munera:\n  - { id: 'bad/id', tier: mid }\n");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: an id failing manifest.id.format blocks",
+      r.findings.some((f) => f.rule === "manifest.id.format" && f.where.includes("munera")),
+      r.findings.filter((f) => f.rule === "manifest.id.format").map((f) => f.where).join(", "),
+    );
+  }
+  {
+    const dir = freshStudio("munus-tier-neither-key");
+    stripKeyBlock(dir, "tiers");
+    stripKeyBlock(dir, "munera");
+    const r = checkStudio(dir, NOW);
+    check(
+      "munus.tier: a manifest with neither key produces no finding",
+      !r.findings.some((f) => f.rule === "munus.tier"),
+      r.findings.map((f) => f.rule).join(", "),
+    );
+  }
+  check("munus.tier is in the rule-id registry", RULE_IDS.has("munus.tier"));
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

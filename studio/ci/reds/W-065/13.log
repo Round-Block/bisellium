@@ -1,0 +1,18 @@
+# behaviour: 13
+# command: node --import tsx test/seatsview.test.ts 13
+# exit: 1
+# at: 2026-09-24T15:09:47.639Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+PASS  confirm bar: absent with pending undefined                                     <div></div>
+FAIL  confirm bar: present with a pending prop                                       <div></div>
+FAIL  confirm bar: names the target                                                  <div></div>
+FAIL  confirm bar: names the exact from                                              <div></div>
+FAIL  confirm bar: names the exact to                                                <div></div>
+FAIL  confirm bar: names the destination record                                      <div></div>
+FAIL  confirm bar: disabled under busy:true                                          <div></div>
+FAIL  confirm bar: an error prop renders visibly                                     <div></div>
+FAIL  confirm bar: an error prop does not clear the pending draft                    <div></div>
+PASS  confirm bar: hostile pending.to/error — no <img tag reaches the markup         <div></div>
+FAIL  confirm bar: hostile pending.to/error — escaped text present                   <div></div>

@@ -1,0 +1,42 @@
+# behaviour: 5
+# command: node --import tsx packages/commands/src/delegate.test.ts . 5
+# exit: 1
+# at: 2026-09-24T14:45:26.916Z
+# sella: builder-a
+# tree: dirty:57db7107eba3b166a5319fff9ecbb97215d5b97d
+
+PASS  no flags: refused (nonzero exit)                                               2
+PASS  no flags: manifest bytes unchanged                                             
+PASS  no flags: timeline length unchanged                                            0
+PASS  --sella without --model: refused (nonzero exit)                                2
+PASS  --sella without --model: manifest bytes unchanged                              
+PASS  --sella without --model: timeline length unchanged                             0
+PASS  both shapes: refused (nonzero exit)                                            2
+PASS  both shapes: manifest bytes unchanged                                          
+PASS  both shapes: timeline length unchanged                                         0
+PASS  unknown sella: refused (nonzero exit)                                          2
+PASS  unknown sella: manifest bytes unchanged                                        
+PASS  unknown sella: timeline length unchanged                                       0
+PASS  unknown munus: refused (nonzero exit)                                          2
+PASS  unknown munus: manifest bytes unchanged                                        
+PASS  unknown munus: timeline length unchanged                                       0
+PASS  unknown tier: refused (nonzero exit)                                           2
+PASS  unknown tier: manifest bytes unchanged                                         
+PASS  unknown tier: timeline length unchanged                                        0
+PASS  manifest with parse errors: refused (nonzero exit)                             2
+PASS  manifest with parse errors: manifest bytes unchanged                           
+PASS  manifest with parse errors: timeline length unchanged                          0
+PASS  manifest with a DUPLICATE_KEY: refused (nonzero exit)                          2
+PASS  manifest with a DUPLICATE_KEY: manifest bytes unchanged                        
+PASS  manifest with a DUPLICATE_KEY: timeline length unchanged                       0
+PASS  a multi-document manifest: refused (nonzero exit)                              2
+PASS  a multi-document manifest: manifest bytes unchanged                            
+PASS  a multi-document manifest: timeline length unchanged                           0
+PASS  manifest containing a merge key: refused (nonzero exit)                        2
+PASS  manifest containing a merge key: manifest bytes unchanged                      
+PASS  manifest containing a merge key: timeline length unchanged                     0
+PASS  manifest with an anchor on the target and an alias elsewhere: refused (nonzero exit) 2
+PASS  manifest with an anchor on the target and an alias elsewhere: manifest bytes unchanged 
+PASS  manifest with an anchor on the target and an alias elsewhere: timeline length unchanged 0
+FAIL  an ordinary manifest succeeds                                                  2
+FAIL  a manifest with an empty munera: succeeds                                      2

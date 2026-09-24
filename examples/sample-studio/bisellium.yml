@@ -3,28 +3,28 @@ studio: Sample Studio
 timezone: Europe/London
 patron: patron
 collegia:
-  - { id: production,  name: Production,  magister: producer,  fallback: eng-lead, lex: leges/production.md }
-  - { id: design,      name: Design,      magister: architect, lex: leges/design.md }
-  - { id: engineering, name: Engineering, magister: eng-lead,  lex: leges/engineering.md }
-  - { id: art,         name: Art,         magister: art-lead,  lex: leges/art.md }
-  - { id: qa,          name: QA,          magister: qa-lead,   lex: leges/qa.md }
+  - { id: production, name: Production, magister: producer, fallback: eng-lead, lex: leges/production.md }
+  - { id: design, name: Design, magister: architect, lex: leges/design.md }
+  - { id: engineering, name: Engineering, magister: eng-lead, lex: leges/engineering.md }
+  - { id: art, name: Art, magister: art-lead, lex: leges/art.md }
+  - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md }
 sellae:
-  - { id: producer,  collegium: production,  kind: orchestrator, model: claude-opus-5 }
-  - { id: architect, collegium: design,      kind: agent,        model: claude-opus-5 }
-  - { id: eng-lead,  collegium: engineering, kind: agent,        model: claude-opus-5 }
-  - { id: builder-1, collegium: engineering, kind: agent,        model: claude-sonnet-5 }
-  - { id: builder-2, collegium: engineering, kind: agent,        model: claude-sonnet-5 }
-  - { id: art-lead,  collegium: art,         kind: agent,        model: gpt-6-astra }
-  - { id: qa-lead,   collegium: qa,          kind: agent,        model: claude-sonnet-5 }
+  - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5 }
+  - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
+  - { id: builder-1, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-2, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: art-lead, collegium: art, kind: agent, model: gpt-6-astra }
+  - { id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5 }
 probationes:
-  - { id: tests,  name: Tests,       kind: automated, command: "true" }
-  - { id: lint,   name: Lint,        kind: automated, command: "true" }
-  - { id: types,  name: Typecheck,   kind: automated, command: "true" }
-  - { id: qa,     name: QA verdict,  kind: agent }
+  - { id: tests, name: Tests, kind: automated, command: "true" }
+  - { id: lint, name: Lint, kind: automated, command: "true" }
+  - { id: types, name: Typecheck, kind: automated, command: "true" }
+  - { id: qa, name: QA verdict, kind: agent }
   - { id: review, name: Lead review, kind: agent }
   - { id: patron, name: Patron call, kind: human }
 wip_limit: 3
-source_excludes: [studio/, examples/fixtures/]
+source_excludes: [ studio/, examples/fixtures/ ]
 # D-015: how an opus branch reaches the trunk is a setting, not a fixed
 # flow — this fixture illustrates the full shape (see the real studio's own
 # bisellium.yml for the Patron's reference flow). An officina with no
@@ -41,3 +41,20 @@ standing_rules:
   - "Test-first with a recorded red."
   - "Mechanical work is a script you write, run and keep."
   - "Evidence is produced, never backfilled."
+tiers:
+  - { id: fast, model: gpt-5.6-luna }
+  - { id: mid, model: gpt-5.6-terra }
+  - { id: high, model: gpt-5.6-sol }
+  - { id: escalation, model: gpt-6-astra }
+  - { id: build, model: claude-sonnet-5 }
+  - { id: review, model: claude-opus-5 }
+munera:
+  - { id: aggregation, tier: fast }
+  - { id: audit, tier: mid }
+  - { id: prereview, tier: mid }
+  - { id: research, tier: high }
+  - { id: redteam, tier: high }
+  - { id: escalation, tier: escalation }
+  - { id: build, tier: build }
+  - { id: spec, tier: review }
+  - { id: review, tier: review }

@@ -15,6 +15,7 @@ import { startServer, type StartServerOptions } from "@bisellium/server";
 import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/commands/writes.js";
 import { runTalk } from "@bisellium/commands/talk.js";
 import { runPause, runResume } from "@bisellium/commands/pause.js";
+import { runDelegate } from "@bisellium/commands/delegate.js";
 import { checkStudio } from "./check.js";
 
 const REAL_RUNNERS: StartServerOptions["runners"] = {
@@ -25,6 +26,7 @@ const REAL_RUNNERS: StartServerOptions["runners"] = {
   talk: (args) => runTalk(args),
   pause: (args) => runPause(args),
   resume: (args) => runResume(args),
+  delegate: (args) => runDelegate(args),
 };
 
 export interface RunServeOptions {
