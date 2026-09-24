@@ -16,7 +16,7 @@
  */
 import { chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { claudeCodeProfile } from "@bisellium/shim";
 import { runTalk } from "./talk.js";
 import { runTick } from "./tick.js";
@@ -115,26 +115,26 @@ const FUTURE_VERB = "zz-future-verb";
 
 // ---------------------------------------------------------------------------
 // Stub `claude`: exits 0 on --version; on every other call, logs its own
-// argv as one JSON line to the file named by TALK_STUB_LOG, and prints a
-// normal JSON envelope. It never executes anything it's handed.
-// filterEnv (@bisellium/shim) drops any env var name matching
-// TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL — "TALK_STUB_LOG" matches none of
-// those, so it survives talk.ts's env filtering into the child process.
+// argv as one JSON line to LOG_PATH, and prints a normal JSON envelope. It
+// never executes anything it's handed. LOG_PATH is a literal baked into the
+// stub's own source text (W-049 test hardening, A2 also below) — an
+// env-carried log path would itself be scrubbed by W-049's harness env
+// allowlist, so this stub (like harness-env.test.ts's) never reads one.
+// The stub replies with a fixed `session_id: "sess-stub"` (A2), so every
+// resume argv this test drives can be checked against that literal rather
+// than merely shape-checked.
 // ---------------------------------------------------------------------------
-const LOG_ENV = "TALK_STUB_LOG";
+const binDir = mkdtempSync(join(tmpdir(), "bisellium-talk-boundary-bin-"));
+const LOG_PATH = join(binDir, "log.jsonl");
 const CLAUDE_STUB = `#!/usr/bin/env node
 import { appendFileSync } from "node:fs";
 const args = process.argv.slice(2);
 if (args[0] === "--version") process.exit(0);
-const logPath = process.env.${LOG_ENV};
-if (logPath) appendFileSync(logPath, JSON.stringify(args) + "\\n");
-process.stdout.write(
-  JSON.stringify({ session_id: "sess-" + Math.random().toString(36).slice(2, 10), result: "ack", is_error: false, model: "stub" }) + "\\n",
-);
+appendFileSync(${JSON.stringify(LOG_PATH)}, JSON.stringify(args) + "\\n");
+process.stdout.write(JSON.stringify({ session_id: "sess-stub", result: "ack", is_error: false, model: "stub" }) + "\\n");
 process.exit(0);
 `;
 
-const binDir = mkdtempSync(join(tmpdir(), "bisellium-talk-boundary-bin-"));
 function writeStub(): void {
   const p = join(binDir, "claude");
   writeFileSync(p, CLAUDE_STUB);
@@ -142,8 +142,8 @@ function writeStub(): void {
 }
 writeStub();
 
-function envFor(logPath: string): NodeJS.ProcessEnv {
-  return { ...process.env, PATH: `${binDir}:${process.env["PATH"] ?? ""}`, [LOG_ENV]: logPath };
+function envFor(): NodeJS.ProcessEnv {
+  return { ...process.env, PATH: `${binDir}:${process.env["PATH"] ?? ""}` };
 }
 
 function readLog(logPath: string): string[][] {
@@ -182,13 +182,16 @@ const POLICY_TAIL = [
 ];
 
 /** The exact expected argv. The resume session id in behaviour 1 IS
- *  predictable (the test passes "sess-fixture" itself) and is checked
- *  against that literal below. The system-prompt temp file (start, always)
- *  and the resume session id in behaviour 4 (talk/tick generate their own)
- *  genuinely can't be predicted in advance, so those slots are read from the
- *  actual argv — but only after each is shape-checked (round-3 review F4):
- *  a copied token must not start with "-", and the start file must end in
- *  "/system-prompt.md". */
+ *  predictable (the test passes "sess-fixture" itself), and since W-049's
+ *  A2 the stub always replies with a fixed "sess-stub", so behaviour 4's
+ *  resume ids are predictable too — every resume slot is checked against
+ *  its literal below. Only the system-prompt temp file (start, always) is
+ *  genuinely unpredictable (mkdtempSync names it), so that slot alone is
+ *  read from the actual argv — but only after being shape- and
+ *  path-checked (round-3 review F4, W-049's A1): a copied token must not
+ *  start with "-", the file must end in "/system-prompt.md", its basename
+ *  must be exactly that, its directory must match
+ *  `bisellium-sysprompt-XXXXXX`, and its parent must be `os.tmpdir()`. */
 function expectedStartArgv(sysPromptFile: string): string[] {
   return ["-p", "--output-format", "json", "--append-system-prompt-file", sysPromptFile, ...POLICY_TAIL];
 }
@@ -209,6 +212,16 @@ function checkPolicy(name: string, argv: string[], form: "start" | "resume", kno
       file.length > 0 && !file.startsWith("-") && file.endsWith("/system-prompt.md"),
       file,
     );
+    // W-049's A1: beyond the endsWith check above, pin the whole shape —
+    // kills a fixed "/tmp/system-prompt.md" (M24) and a relative
+    // "x/system-prompt.md" (M25).
+    check(`${name}: start file basename is exactly system-prompt.md`, basename(file) === "system-prompt.md", file);
+    check(
+      `${name}: start file's directory matches bisellium-sysprompt-XXXXXX`,
+      /^bisellium-sysprompt-[A-Za-z0-9]{6}$/.test(basename(dirname(file))),
+      basename(dirname(file)),
+    );
+    check(`${name}: start file's parent directory is os.tmpdir()`, dirname(dirname(file)) === tmpdir(), dirname(dirname(file)));
     const expected = expectedStartArgv(file);
     check(`${name}: argv is exactly the start policy`, JSON.stringify(argv) === JSON.stringify(expected), JSON.stringify(argv));
     return;
@@ -226,15 +239,15 @@ function checkPolicy(name: string, argv: string[], form: "start" | "resume", kno
 try {
   // ---- 1: the argv is the policy, on both start and resume ---------------
   if (runs(1)) {
-    const logPath = join(binDir, "b1.jsonl");
-    const env = envFor(logPath);
+    const before = readLog(LOG_PATH).length;
+    const env = envFor();
     await claudeCodeProfile.start({ cwd: repo, sella: "eng-lead", systemPrompt: "boot", message: "hi", env });
     await claudeCodeProfile.resume({ cwd: repo, sella: "eng-lead", sessionId: "sess-fixture", message: "hi again", env });
-    const [startArgv, resumeArgv] = readLog(logPath);
+    const [startArgv, resumeArgv] = readLog(LOG_PATH).slice(before);
     check(
       "behaviour 1: two calls logged (start, resume)",
       startArgv !== undefined && resumeArgv !== undefined,
-      JSON.stringify(readLog(logPath)),
+      JSON.stringify(readLog(LOG_PATH).slice(before)),
     );
     if (startArgv) checkPolicy("behaviour 1 start", startArgv, "start");
     if (resumeArgv) checkPolicy("behaviour 1 resume", resumeArgv, "resume", "sess-fixture");
@@ -248,11 +261,11 @@ try {
       VERBS.join(","),
     );
     for (const form of ["start", "resume"] as const) {
-      const logPath = join(binDir, `b2-${form}.jsonl`);
-      const env = envFor(logPath);
+      const before = readLog(LOG_PATH).length;
+      const env = envFor();
       if (form === "start") await claudeCodeProfile.start({ cwd: repo, sella: "eng-lead", systemPrompt: "boot", message: "hi", env });
       else await claudeCodeProfile.resume({ cwd: repo, sella: "eng-lead", sessionId: "sess-fixture", message: "hi", env });
-      const [argv] = readLog(logPath);
+      const [argv] = readLog(LOG_PATH).slice(before);
       if (!argv) {
         check(`behaviour 2 ${form}: argv logged`, false);
         continue;
@@ -276,11 +289,11 @@ try {
   // ---- 3: a verb the CLI does not have yet is denied ----------------------
   if (runs(3)) {
     for (const form of ["start", "resume"] as const) {
-      const logPath = join(binDir, `b3-${form}.jsonl`);
-      const env = envFor(logPath);
+      const before = readLog(LOG_PATH).length;
+      const env = envFor();
       if (form === "start") await claudeCodeProfile.start({ cwd: repo, sella: "eng-lead", systemPrompt: "boot", message: "hi", env });
       else await claudeCodeProfile.resume({ cwd: repo, sella: "eng-lead", sessionId: "sess-fixture", message: "hi", env });
-      const [argv] = readLog(logPath);
+      const [argv] = readLog(LOG_PATH).slice(before);
       if (!argv) {
         check(`behaviour 3 ${form}: argv logged`, false);
         continue;
@@ -294,41 +307,43 @@ try {
   // ---- 4: both talk entry points carry the policy; tick still writes -----
   if (runs(4)) {
     const dir = freshStudio("b4");
-    const logPath = join(binDir, "b4.jsonl");
+    const before = readLog(LOG_PATH).length;
     const origPath = process.env["PATH"];
-    const origLog = process.env[LOG_ENV];
     process.env["PATH"] = `${binDir}:${origPath ?? ""}`;
-    process.env[LOG_ENV] = logPath;
     try {
       const first = await runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello"]);
       check("behaviour 4: first runTalk call exit 0", first.exitCode === 0, String(first.exitCode));
       const second = await runTalk(["--sella", "eng-lead", "--model-only", "--studio", dir, "hello again"]);
       check("behaviour 4: second runTalk call exit 0", second.exitCode === 0, String(second.exitCode));
 
-      const talkLog = readLog(logPath);
+      const talkLog = readLog(LOG_PATH).slice(before);
       check("behaviour 4: two talk calls logged", talkLog.length === 2, String(talkLog.length));
       if (talkLog.length === 2) {
         check("behaviour 4: first call has no --resume (start)", !talkLog[0]!.includes("--resume"));
         check("behaviour 4: second call carries --resume", talkLog[1]!.includes("--resume"));
         checkPolicy("behaviour 4 talk start", talkLog[0]!, "start");
-        checkPolicy("behaviour 4 talk resume", talkLog[1]!, "resume");
+        // W-049's A2: the stub's session_id is now the fixed "sess-stub",
+        // so this resume argv's id is checked literally, not just shaped.
+        checkPolicy("behaviour 4 talk resume", talkLog[1]!, "resume", "sess-stub");
       }
 
-      const before = readdirSync(join(dir, "acta"));
+      const beforeActa = readdirSync(join(dir, "acta"));
+      const beforeTick = readLog(LOG_PATH).length;
       const tickResult = await runTick(["--studio", dir], { now: NOW });
       check("behaviour 4: tick exit 0", tickResult.exitCode === 0, String(tickResult.exitCode));
-      const after = readdirSync(join(dir, "acta"));
-      const added = after.filter((f) => !before.includes(f));
+      const afterActa = readdirSync(join(dir, "acta"));
+      const added = afterActa.filter((f) => !beforeActa.includes(f));
       check("behaviour 4: tick writes one daily acta per due magister", added.length === 5, added.join(", "));
 
-      const tickLog = readLog(logPath).slice(2);
+      const tickLog = readLog(LOG_PATH).slice(beforeTick);
       check("behaviour 4: tick logged one call per due magister", tickLog.length === 5, String(tickLog.length));
-      for (const argv of tickLog) checkPolicy("behaviour 4 tick call", argv, argv.includes("--resume") ? "resume" : "start");
+      for (const argv of tickLog) {
+        const form = argv.includes("--resume") ? "resume" : "start";
+        checkPolicy("behaviour 4 tick call", argv, form, form === "resume" ? "sess-stub" : undefined);
+      }
     } finally {
       if (origPath === undefined) delete process.env["PATH"];
       else process.env["PATH"] = origPath;
-      if (origLog === undefined) delete process.env[LOG_ENV];
-      else process.env[LOG_ENV] = origLog;
     }
   }
 } finally {
