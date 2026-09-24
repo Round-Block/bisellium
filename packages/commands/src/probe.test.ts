@@ -349,11 +349,9 @@ if (runs(4)) {
   // first): zzz-completes, then bbb-limit, then ddd-never — each primed
   // with its own single-candidate battery so its `at` is set independently
   // of the others, before the real run-1 battery ever executes.
-  let primeCalls = 0;
   const primingStub = makeStub("claude-code", { turnFor: () => okTurn("primed") });
   for (const [i, id] of ["zzz-completes", "bbb-limit", "ddd-never"].entries()) {
     await probeBattery({ studio: dir, now: later(NOW, i * 1000), only: [{ id, harness: "claude-code" }], harnesses: { "claude-code": primingStub.profile }, listModels: async () => [] , versions: async () => ({})});
-    primeCalls++;
   }
   // Each priming call also probes the control (aaa-ctrl), so it's two turns
   // per call — the property that matters is the three primed `at` values

@@ -55,6 +55,7 @@ timeline/<sella>.jsonl     talk chatter, written by `bisellium talk` (gitignored
 timeline/patron.jsonl      one line per Patron write (answer/greenlight/budget; gitignored, local like receipts/)
 events.jsonl               live workflow telemetry (`bisellium emit`, snapshot diffing; gitignored, local like receipts/)
 health.json                `bisellium tick`'s generated check + due-cadence snapshot (gitignored, local like receipts/)
+models.json                `bisellium probe`'s generated (model, harness) availability record (gitignored, local like receipts/)
 PAUSED                     the manual-pause marker (`bisellium pause`/`bisellium resume`; gitignored, local like receipts/)
 ```
 
@@ -1044,6 +1045,41 @@ from the default login location,
 deliberately not passed (off W-049's ten-name env allowlist by design), so
 a custom config home or an API-key-only login does not work through a
 bisellium-spawned codex.
+
+## Running probe
+
+```bash
+npm run bisellium -- probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+```
+
+W-069's battery: one minimal real turn per due `(model, harness)` pair,
+recorded in `<studio>/models.json`. `--model`/`--harness` are a pair —
+either both or neither; given one without the other the command refuses
+before any spend. `--dry-run` reports the candidate pairs it would probe
+and writes nothing.
+
+**"Available" means the model can complete a turn — never "it appears in a
+vendor listing."** The signed limit, narrowed from `talk`'s own policy:
+
+> `available` means: this model, on this harness, completed one minimal
+> turn under `talk`'s permission and tool policy, at the recorded time. It
+> does **not** prove the model can carry `talk`'s ~42k-token boot bundle — a
+> probe sends `systemPrompt: ""`. A model whose context window or prompt
+> handling fails only at that size will be recorded `available` and will
+> still fail a real `talk`.
+
+A harness cannot condemn a model without a passing control first (the
+lowest-id seated candidate on that harness); a structured 401/403 or a
+usage limit stops that harness rather than writing a model-level verdict.
+Every write is mark-before-spend (every due pair is durably `unverified`
+before any turn) and atomic (temp file + rename), so an interruption can
+only ever leave a pair `unverified`, never falsely `available`. `probes[]`
+carries one entry per probed harness; `ModelEntry.state` is the optimistic
+aggregate W-065's `GET /api/models` already reads — a model available on
+*any* harness renders `available`, even if the seat that would actually
+run it is on a different, failing harness. `bisellium probe` prints a
+warning when one id's harnesses disagree; nothing routes on `models.json`
+until the opus that wires dispatch says so.
 
 ## Harness hooks (Claude Code)
 
