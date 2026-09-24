@@ -58,10 +58,10 @@ lex, a decision, or a check rule and delete it here.
 - Backlog (W-041; generated from the officina's own front matter — opera,
   petitiones, decisions, never from prose; source
   `docs/design/dossier/backlog-body.html`, built into
-  `bisellium-backlog.html` by the same `build.sh`): not yet published as an
-  artifact — publish at the next checkpoint. The page links, and never
-  writes, the current ranking: `studio/acta/2026-09-24-ranking.md` is the
-  source of record for order.
+  `bisellium-backlog.html` by the same `build.sh`):
+  https://claude.ai/artifact/BaVL3xfRg2gbERoLukDLqV — republish at every
+  checkpoint. The page links, and never writes, the current ranking:
+  `studio/acta/2026-09-24-ranking.md` is the source of record for order.
 
 ## Environment facts
 
@@ -95,10 +95,27 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-24, cascade 25)
+## Where things stand (2026-09-24, cascade 29)
 
-Cascades 1–24 are in the dossier progress log. PRs through #32 are merged.
+Cascades 1–28 are in the dossier progress log. PRs through #48 are merged.
 Read the review logs in `studio/ci/` before touching any of this work.
+
+**Cascade 29 (2026-09-24): two round-1 passes.** **W-039 MERGED** (PR #47)
+— `red` refuses a fallback sella (exit 2 before any write), nine-row
+matrix, `opus.red_sella` advisory (rule 127). Terra's 2 FALSE claims were
+both verification-method artifacts, overturned by the censor (overlay
+method for red repro; call-site classification for `--sella` coverage) —
+the pre-review layer filters, the censor decides. **W-050 MERGED** (PR
+#48) — **D-020's codex-build trial PASSED in 1 round of a ≤2 benchmark**:
+gpt-5.6-sol (seat `builder-sol`) built the docs-only opus end-to-end with
+honest staged reds and a correct stop at a D-021 refusal; censor found
+zero build defects (only cosmetic commit trailers, traced to the
+orchestrator's dispatch text — fix the dispatch template next codex
+build). Review logs: `studio/ci/W-039-review-1.log`,
+`studio/ci/W-050-review-1.log` (the latter's O1: a builder-reported
+provenance transcript can't discriminate renderer output from a matching
+hand edit — brief-design gap for the retro, not a build defect). Next per
+the ranking acta: **W-047**, then W-046, W-038, W-052.
 
 **Cascade 25 (2026-09-23/24):** D-021 ruled (one writer per opus record —
 the Opus architect and gpt-6-astra converged independently; Astra's take in
@@ -128,10 +145,10 @@ unchanged as the benchmark) is proposed, not yet decreed.
 (W-041) and the source-of-record
 [ranking acta](../studio/acta/2026-09-24-ranking.md). W-046 carries the codex transport lessons: stdin closed
 with </dev/null, output non-empty check, no nested sandbox, no -C after
-exec, full capture never tailed; W-048 (codex-build trial) is proposed, not
-decreed. Mode: slow-serial — one Claude stream, tokens tallied per dispatch
-and reported; codex lanes free in parallel. Cascade-25 checkpoint + retro:
-done 2026-09-24.
+exec, full capture never tailed. The codex-build trial was decreed into
+D-020 and executed as W-050 — PASSED (see cascade 29). Mode: slow-serial —
+one Claude stream, tokens tallied per dispatch and reported; codex lanes
+free in parallel.
 
 ### The flow, as actually operated
 
