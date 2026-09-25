@@ -13,9 +13,9 @@
  * `bisellium red`'s job alone.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { listMd, readFront } from "@bisellium/adapter-native";
+import { readFront } from "@bisellium/adapter-native";
 import type { Finding, RuleOpts } from "../check.js";
 
 type Dict = Record<string, unknown>;
@@ -36,7 +36,10 @@ function safeFront(path: string): Dict | undefined {
 
 function safeList(dir: string): string[] {
   try {
-    return listMd(dir);
+    return readdirSync(dir)
+      .filter((name) => name.endsWith(".md"))
+      .sort()
+      .map((name) => join(dir, name));
   } catch {
     return [];
   }
@@ -273,7 +276,54 @@ function checkRedEvidence(root: string): Finding[] {
   return findings;
 }
 
+/** Remove the three contexts which carry examples rather than live
+ * citations. Fence tracking deliberately mirrors countBehaviours: only a
+ * backtick fence marker at Markdown's top three indentation columns toggles
+ * the fenced region. Inline code may use any matching backtick-run length;
+ * an unmatched delimiter is prose, not a span. */
+function citationProse(briefText: string): string {
+  const prose: string[] = [];
+  let inFence = false;
+  for (const line of briefText.split(/\r?\n/)) {
+    if (/^\s{0,3}```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (!inFence) prose.push(line);
+  }
+  return prose
+    .join("\n")
+    .replace(/(`+)[\s\S]*?\1/g, "")
+    .replace(/"(?:\\.|[^"\\])*"/g, "");
+}
+
+function checkBehaviourCitations(root: string): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of safeList(join(root, "briefs"))) {
+    let briefText: string;
+    try {
+      briefText = readFileSync(p, "utf8");
+    } catch {
+      continue;
+    }
+
+    const declared = countBehaviours(briefText);
+    if (declared === 0) continue;
+    for (const match of citationProse(briefText).matchAll(/\bBehaviour (\d+)\b/g)) {
+      const cited = Number(match[1]);
+      if (cited <= declared) continue;
+      findings.push({
+        rule: "brief.behaviour_citation",
+        level: "block",
+        where: relative(root, p).split(sep).join("/"),
+        message: `brief cites Behaviour ${cited} but declares ${declared} behaviours`,
+      });
+    }
+  }
+  return findings;
+}
+
 export function checkEvidence(root: string, opts: RuleOpts): Finding[] {
   if (!existsSync(join(root, "bisellium.yml"))) return [];
-  return [...checkUntracked(root, opts), ...checkRedEvidence(root)];
+  return [...checkUntracked(root, opts), ...checkRedEvidence(root), ...checkBehaviourCitations(root)];
 }
