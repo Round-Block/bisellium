@@ -95,10 +95,32 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-25, cascade 33)
+## Where things stand (2026-09-25, cascade 34 in flight)
 
-Cascades 1–32 are in the dossier progress log. PRs through #71 are merged.
-Read the review logs in `studio/ci/` before touching any of this work.
+Cascades 1–32 are in the dossier progress log. PRs through #71 are merged,
+plus #77 (spec). Read the review logs in `studio/ci/` before touching any
+of this work.
+
+**Cascade 34 (2026-09-25, in flight): W-062 specced through four Sol
+rounds; the console diagnosed.** **PR #77 MERGED** (spec-only): the
+W-062 brief at revision 4 — Sol's red-team went AMEND-FIRST → 7 LANDS
+closed → 2 narrow finds closed → finding 14 REFUTED by measurement
+(YAML 1.2: `<<` is an ordinary key; the directive route can't reach
+`readFront`). The design change that mattered: re-pointing `spec:` on
+an active opus could erase `opus.red_evidence` blocks behind a stale
+passed gate — closed as an equality condition in `state.building.spec`
+(catches every writer AND hand edits). Also on #77: the 2026-09-25
+ranking acta (29 opera; W-060 recovered — `classifyAddressedTarget`
+falls through to `rule`; top five W-072, W-059, W-062, W-060, W-057),
+W-072 greenlit (standing continue), W-076/W-077 filed. **The live
+console's four "anomalies" diagnosed**: 34 pending = real due debt
+(29 traditiones + 4 dailies + 1 aerarium); 5 blocking/73 advisory =
+STALE health.json from the 09-23 tick (tick re-run; now 0/126 — the
+as-of stamp is W-077); empty System status = no W39 aerarium (Patron's
+desk); inbox no-context = P-012 has no subject key, raw body-line
+fallback (W-076). **In flight**: builder-a on `opus/W-064` (Board,
+worktree `.worktrees/W-064`); `opus/W-062` branch created, builder
+queued behind W-064 (slow-serial).
 
 **Cascade 33 (2026-09-25): the probe arc completes.** **W-069 MERGED**
 (PR #68, 2 rounds — the battery ran live: five codex models proven
