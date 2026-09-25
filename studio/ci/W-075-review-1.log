@@ -1,0 +1,358 @@
+# W-075 review — round 1
+# sella: qa-lead (censor) · model: claude-fable-5
+# branch: opus/W-075 · worktree: /tmp/claude-1000/w075-build · HEAD: 8ec957e
+# spec of record: studio/briefs/W-075.md revision 1
+# VERDICT: PASS
+
+## 0. State
+
+$ git status --porcelain            (empty — clean, verified again after every
+                                     mutation and throwaway file below)
+$ readlink -f node_modules/.bin/bisellium
+/tmp/claude-1000/w075-build/packages/cli/bin/bisellium.mjs      # in-tree shim
+
+Source diff, whole: apps/web/src/components/w025.css (+72) and
+apps/web/tests-serve/layout.spec.ts (+56, purely additive — a new
+`test.describe` appended after the existing block closes at line 93). The
+boundary the brief declares holds exactly: App.tsx, TokenPrompt.tsx, api.ts,
+playwright.serve.config.ts, tests-serve/harness.ts, apps/web/package.json and
+.github/workflows/ci.yml are all untouched.
+
+## 1. Certificates recomputed (verify NOT run)
+
+sourceTreeHash(repo, excludes=[studio, .bisellium, examples/]):
+  HEAD / 8730ed5   -> c032fb5b1f7c2115039343a2e0691b6d70f146f6
+  master / 25af1d2 / 00be446 -> 1b165057208896a69b4d59e05e947187cdf5fb69
+studio/opera/W-075.md's tests/lint/types all certify tree:c032fb5b… — matches.
+
+Load-bearing for §4: **master's source tree is 1b165057…, which is exactly the
+tree named in `ci/reds/W-075/01.log`'s header (`dirty:1b165057…`).** The red's
+recorded base is the trunk, not a branch commit.
+
+## 2. The reproduction the brief prescribes — RUN, not taken on trust
+
+The brief instructs the censor to check out master, add the spec block, and
+watch it fail, "rather than take this paragraph's word for it". Done, and done
+without touching their stash: master's stylesheet was re-derived from git.
+
+$ git show master:apps/web/src/components/w025.css > apps/web/src/components/w025.css
+$ grep -c token-prompt apps/web/src/components/w025.css        -> 0
+$ rm -rf apps/web/dist && npm run -s build --workspace @bisellium/web
+$ npx playwright test --config=playwright.serve.config.ts -g "W-075 behaviour 1"
+
+  1) tests-serve/layout.spec.ts:104:3 › shell geometry with the token prompt
+     open (W-075 behaviour 1) › the prompt does not displace the sidebar or
+     main columns
+
+    Error: expect(received).toBeCloseTo(expected, precision)
+    Expected: 0
+    Received: 220
+      > 119 |       expect(sidebarBox.x).toBeCloseTo(0, 0);
+
+Byte-for-byte the same assertion, the same line, the same numbers as
+`01.log`. **The red is independently reproducible from the trunk.** CSS
+restored with `git checkout --`, dist rebuilt clean, porcelain verified empty.
+
+### What the defect actually was — measured, not inferred
+
+A throwaway spec (deleted immediately; porcelain verified clean after) dumped
+the three boxes at 1280×800 against the PRE-FIX dist:
+
+  .token-prompt   x=0    y=0    w=220   h=256
+  .sidebar        x=220  y=0    w=1060  h=256
+  .shell__main    x=0    y=256  w=220   h=544
+
+So the prompt consumed the sidebar's 220px column; the rail was displaced into
+the 1fr column at 1060 wide; and `.shell__main` wrapped into the implicit
+second row's FIRST column — the entire routed screen rendered in a 220px
+strip. Terra's `02-inbox-desktop.png` shows precisely this.
+
+**A note on the brief's prose.** It describes the consequence as the rail
+"displaced out of its own column into the second one, with the main content
+pushed past it". Measured, the main content was not pushed past — it was
+squeezed to 220px wide in row 2. The brief understates its own defect. Nothing
+turns on it (the fix and the assertion are right either way), recorded for the
+record's accuracy.
+
+## 3. The coverage-gap explanation — CONFIRMED IN SOURCE, and by measurement
+
+The brief claims W-065 behaviour 15 measures the shell at three widths yet
+never saw this, because `openSeats` dismisses the prompt first. Read at
+apps/web/tests-serve/layout.spec.ts, inside the W-065 b15 describe block:
+
+  async function openSeats(page) {
+    await page.goto(`${served.baseURL}/#/seats`);
+    await page.locator("#token-prompt-input").fill(served.token);
+    await page.locator(".token-prompt__submit").click();
+    await expect(page.locator(".token-prompt")).toBeHidden();
+  }
+
+All three of its cases (1280, 800, 500) call it before measuring. Confirmed.
+
+I tested the obvious rival explanation — that b15's assertions were too weak
+anyway, since the 1280 case asserts only `box?.width`, never `x`. **Refuted by
+measurement:** pre-fix the sidebar's width is 1060, not 220, so
+`expect(box?.width).toBeCloseTo(220, 0)` WOULD have failed. The dismissal in
+`openSeats` is therefore the sole reason the defect survived, exactly as the
+brief says. The explanation is complete and correct.
+
+## 4. The red's stash mechanism — SOUND. Ruled under D-024/P-012's frame.
+
+Superficially this has W-071's time order: the fix existed, then the red was
+recorded. It is nevertheless a different class, and the difference is
+principled rather than special pleading.
+
+**D-024's forbidden act is defined by the recorded state never having existed
+as a real product.** W-071's reds were taken against a hand-stubbed tree — an
+implementation reverted to a fabricated no-op. Nobody ever shipped that tree,
+so the artifact could not be re-derived and was verifiable only by the
+builder's candour. That is what made it backfill.
+
+**Here the recorded state IS the product.** Three independent checks:
+
+  (a) the header's base is the trunk. `dirty:1b165057…`, and master's source
+      tree computed in §1 is 1b165057… exactly. Not a branch commit — the
+      shipped trunk.
+  (b) the defect is the trunk's real behaviour. §2 reproduces it from
+      `git show master:…`, never from their stash.
+  (c) the failure is identical — same assertion, same line 119, Expected 0 /
+      Received 220.
+
+This is the **W-046-round-3 shape, which is already the accepted precedent**
+(my own W-071 round-1 ruling, precedent (b): "accepted because the recorded
+tree WAS the true pre-fix state"). It is not a new exception being carved; it
+is the existing one applying on its own terms. D-024 waived an ORDER for
+W-071's five reds specifically and its kill_when guards against a second
+waiver of THAT class — nothing here asks for one, because nothing here is that
+class.
+
+**The honest limit, stated rather than glossed.** The artifact is verifiable by
+EXECUTION, not by INSPECTION. `dirty:1b165057…` names the base but not the
+delta; I had to take the delta ("master plus the spec file") from the brief's
+prose and then confirm it by reproducing. A censor who did not run the
+reproduction would still be relying on candour. The brief says this itself and
+names P-012 as the fix, which is correct and is the right way to hold it.
+
+By my W-067 test — verifiability by design, not by luck — this passes on the
+strength of (b): the proposition the red certifies can be re-derived by anyone
+with the trunk, without asking the builder anything. A prescription cannot be
+executed; this instruction can, and I executed it.
+
+The `-g` claim is also true from the artifact: `01.log`'s `# command:` line is
+`npx playwright test --config=playwright.serve.config.ts -g W-075 behaviour 1`
+— the title selector, never argv, so it covers this behaviour alone. Body is
+assertion-level (a `toBeCloseTo` failure, not a stack, not a module-load
+error), exit 1, sella `builder-d`.
+
+## 5. The spec-pointer hand edit — ACCEPTED, and it is the more honest option
+
+Verified rather than assumed:
+
+  - `doc.setIn(["spec"], specRel)` at packages/commands/src/lifecycle.ts:148
+    is the ONLY writer of the `spec:` field in the codebase, and it lives
+    inside `runReady`.
+  - `runReady` refuses unless state is `greenlit` or `halted`
+    (lifecycle.ts:129-132). W-075 is `building`. So **no CLI verb can write
+    this field.** The edit is genuinely forced.
+  - Running `ready` would ALSO have rewritten
+    `probationes.spec.{sella,status,evidence,at}` with a fresh timestamp
+    (lifecycle.ts:149-154) — destroying the honest 01:52:58 signature. The
+    one-field hand edit is not merely the only route, it is the one that
+    preserves more truth.
+  - The diff is exactly one field. Confirmed by reading 3f09065.
+  - Disclosed in the commit message with the reason, the tracking opus
+    (W-062, the `amend` verb) and the live-instance count ("second this week,
+    after W-046's title").
+
+**And it is load-bearing, not cosmetic.** Measured on a temp copy of the
+officina with the pointer reverted to its pre-3f09065 value:
+
+  $ npm run -s check -- <copy with spec: opera/W-075.md> --repo .
+    BLOCKING (1)
+      opus.red_evidence   opera/W-075.md   brief lists no numbered behaviours — nothing to prove
+    FAIL — 1 blocking
+
+  $ npm run -s check -- studio --repo .
+    PASS — 0 blocking, 116 advisory
+
+The brief's factual claim about why it exists is exact. (I had misread the
+rule as advisory-only; the measurement corrected me, which is why it was
+measured.)
+
+## 6. Acceptance — every command in the brief, re-run here
+
+$ npm test                                            -> exit 0
+    (PATH sentinel: 5 `claude --version`, 0 codex — the pre-existing
+     claudeCodeProfile.available() spawns, nothing new)
+$ npm run -s typecheck                                -> exit 0
+$ npm run -s lint                                     -> 0 errors, 2 warnings
+    both in packages/cli/src/tick.test.ts, a file this opus does not touch —
+    pre-existing, not W-075's
+$ npm run -s format:check                             -> clean
+$ npm run -s check -- examples/sample-studio --repo . -> PASS, 0 blocking, 26 advisory
+$ npm run -s check -- studio --repo .                 -> PASS, 0 blocking, 116 advisory
+$ rm -rf apps/web/dist && npm run -s build --workspace @bisellium/web
+$ npm run -s test:serve --workspace @bisellium/web    -> 17 passed
+
+**17/17 from a clean rebuilt dist**, up from 16. The sixteen W-065/W-067 specs
+are all green, and that is the load-bearing part: every one of them dismisses
+the prompt and then measures shell geometry, several at 1280/800/500. Their
+being unchanged IS the proof that the `:has()` row leaves the prompt-closed
+layout alone — the one thing this fix must not do. No separate byte-for-byte
+comparison was needed; the existing suite is that comparison.
+
+Dist freshness is proved by the behaviour, as the brief argues: §2 showed that
+the pre-fix bundle fails at `sidebarBox.x`, so a stale bundle could not pass.
+
+## 7. The three breakpoints, live — verified, with numbers
+
+The brief pushes this into the censor's review because behaviour 1 asserts
+1280×800 only. Run through W-067's own reviewed `startServed` harness (a real
+`bisellium serve` against a fresh temp copy of examples/sample-studio, driving
+the built dist) at all three widths, prompt open and then prompt closed, with
+screenshots. Throwaway spec, deleted immediately; porcelain verified clean.
+
+**Stated substitution:** the brief prescribes a temp copy of `studio/`; I used
+the harness's fresh temp copy of `examples/sample-studio` instead. The
+geometry under test is the shell's, which is CSS and not data, and the harness
+guarantees by construction that nothing points at `studio/` — the same concern
+the brief's "never `studio/` in place" exists to protect. Recorded so the
+substitution is judged rather than hidden.
+
+  width  prompt (open)            sidebar                  main
+  1280   x=0 y=0 1280x45          x=0   y=45  220x855      x=220 y=45 1060x855
+   800   x=0 y=0  800x45          x=0   y=45   72x855      x=72  y=45  728x855
+   500   x=0 y=0  500x75          x=0   y=75  500x48       x=0   y=123 500x777
+
+  width  sidebar (prompt closed)  main
+  1280   x=0 y=0 220x900          x=220 y=0 1060x900
+   800   x=0 y=0  72x900          x=72  y=0  728x900
+   500   x=0 y=0 500x48           x=0   y=48 500x852
+
+Every one of the brief's live criteria holds:
+  - the prompt is a full-width row at y=0 at all three widths;
+  - nothing sits under it — both the rail and main start at or below its
+    bottom edge, asserted on both;
+  - the rail is in its own place: a left rail at 1280 (220) and 800 (72), a
+    top row at 500 (500x48);
+  - pasting the token collapses the row with the rest unmoved — the closed
+    geometry is the single-row grid, rail back at y=0.
+3 passed. Screenshots eyeballed at all three widths: at 1280 the prompt is a
+clean amber-ruled band above the rail and the Inbox; at 800 the same above the
+72px icon rail — confirming the brief's claim that the `max-width: 899px`
+block needs no `:has()` rule of its own, since it changes only
+`grid-template-columns` (read at w025.css:107-113) and inherits the base row;
+at 500 the prompt wraps to two lines (75px) above the 48px nav row, still
+clear of everything.
+
+## 8. Findings — none blocking
+
+A1 (advise) **The 599px `:has()` rule is asserted by no test.** The brief's
+   1280-only scoping is honestly stated and I accept it for this opus — a spec
+   claiming three viewports without running three would be the worse fault, and
+   the brief explicitly refuses to overclaim. But the scoping is not uniform in
+   risk. 1280 and 800 share ONE code path (the base
+   `.shell:has(.token-prompt) { grid-template-rows: auto 1fr }`), which
+   behaviour 1 pins. The `max-width: 599px` block carries its OWN rule —
+   `grid-template-rows: auto 48px 1fr` — and that line is exercised by nothing
+   in CI. It is verified today only by this attended pass, which does not run
+   again. Exactly one unasserted rule, and it is the one most likely to rot.
+   Target: add 500 (and 800) to behaviour 1's describe block — the harness,
+   the assertions and the loop already exist, so it is a few lines. The brief
+   itself calls widening "a reasonable follow-on"; this names which viewport
+   actually needs it and why.
+
+A2 (note) **The brief's token enumeration is incomplete.** It states the
+   `.token-prompt__*` rules use "tokens only — `--wash`, `--rule`, `--amber`,
+   `--ink`, `--ink-2`, `--font-body`, `--font-mono`, `--sp-*`", but
+   `.token-prompt__input:focus` also uses `var(--verdigris)`. That IS a defined
+   token (`#0B6E5F`, pinned by apps/web/test/tokens.test.ts:33) and it matches
+   the file's existing focus idiom (three other `outline: 2px solid
+   var(--verdigris)` uses), so the accessibility path is correct and no hex
+   literal was smuggled in. The enumeration is simply missing a name.
+
+A3 (note) **The opus record's two spec pointers diverge.**
+   `spec: briefs/W-075.md` (current spec of record) while
+   `probationes.spec.evidence: opera/W-075.md` (what the architect actually
+   signed at 01:52:58). Both are individually truthful and §5 explains why the
+   second was deliberately left alone. But a reader of the record ALONE sees a
+   spec gate certifying a document that lists no behaviours. The brief's
+   opening paragraph reconciles it; nothing in the record points at that
+   paragraph. Closed by W-062's `amend` verb landing, or by a line in the
+   traditio.
+
+A4 (note) **The brief's binding input is not reachable from the officina.** It
+   cites "the ui-lead's (Terra's) measurement of the defect"; those screenshots
+   live in a session scratchpad outside the repo, so the record cannot reach
+   them. §2 of this log records the same measurement numerically, which is
+   durable and tracked, so the evidence is preserved — but by this log, not by
+   the brief's own citation.
+
+A5 (note) **Second disclosed hand edit of opera front matter this week**
+   (W-046's title, now W-075's spec pointer), both forced by the absent `amend`
+   verb and both correctly disclosed. Two is a tracked exception; a third makes
+   it a habit. W-062's priority should move on the next instance.
+
+## 9. Verdict: PASS
+
+The defect is real, the fix is right, and every claim the brief makes that I
+could test, I tested rather than accepted:
+
+  - the reproduction it instructs a censor to run **reproduces**, re-derived
+    from master via git rather than from the builder's stash: same assertion,
+    same line, Expected 0 / Received 220;
+  - the coverage-gap explanation is **confirmed in source**, and the rival
+    explanation I tried is **refuted by measurement**;
+  - the stash mechanism is **sound** under D-024's own frame — the recorded
+    base is the trunk (header `dirty:1b165057…` == master's source tree), the
+    recorded state is the shipped product rather than a fabrication, and the
+    proposition is reproducible by execution. This is W-046 round 3's already
+    accepted shape, not a new exception, and asks for no waiver;
+  - the spec-pointer hand edit is **forced** (no verb writes that field on a
+    `building` opus), **minimal** (one field), **disclosed** with its reason
+    and tracking opus, **load-bearing** (measured: FAIL 1 blocking without it,
+    PASS 0 blocking with it), and preserves more truth than re-running `ready`
+    would have;
+  - all three breakpoints are **verified live with numbers and screenshots**;
+  - `test:serve` is **17/17 from a clean rebuilt dist**, and the sixteen
+    untouched specs are themselves the proof that the prompt-closed layout did
+    not move.
+
+The fix is CSS-only, `:has()`-scoped so the common case is byte-identical, and
+its authority is TokenPrompt's own documented placement rather than a new
+layout decision — correctly, since a ui-lead or Patron ruling would otherwise
+be required and none was sought.
+
+Five advisories (§8), none warranting a round. A1 is the only one with teeth
+and it names a concrete, small follow-on.
+
+## 10. Class findings for the retrospectio
+
+C5  **red×reproducible-pre-fix-state** — NEW, and worth naming precisely so it
+    is not confused with C1. A red recorded out of order but against the
+    SHIPPED TRUNK, whose failure any third party can re-derive from the trunk
+    alone. Distinct from C1 (`red×backfilled-provenance`, W-071, D-024) by one
+    property: the recorded state existed as a real product. Sound as it
+    stands; no waiver, no decision needed. Both classes are nevertheless
+    closed by the SAME mechanism — P-012's working-tree identity would make
+    this red self-describing instead of merely re-derivable, which is the
+    difference between verifiable by inspection and verifiable by execution.
+    Another live argument for P-012, from the accepted side of the line.
+
+C6  **spec×written-after-the-build** — the brief is openly retrofitted to a
+    CSS-only fix dispatched with its opus record as the spec, and says so in
+    its first paragraph. Proportionality was the right call for a one-line
+    defect; the cost was a blocking `opus.red_evidence` on the officina, paid
+    later. Target: `ready`'s `--spec` default already assumes
+    `briefs/<id>.md`; the cheap fix is for the record-as-spec shortcut to be
+    refused up front rather than discovered by `check` after the build. Not
+    this opus's to carry.
+
+C7  **hand-edit×absent-verb** — second live instance this week (A5). Tracked,
+    disclosed, forced. Target: W-062 (`amend`). Escalate on a third.
+
+Carried, unchanged, still not this opus's: C4
+(`gate×network-dependent-probatio`) — `npm test` still makes cold TLS
+connections to registry.npmjs.org from ci.test.ts's genuine `npm ci` fixture.
+
+-- end of review round 1 --
