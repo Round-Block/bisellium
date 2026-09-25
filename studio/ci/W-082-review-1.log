@@ -1,0 +1,348 @@
+# opus: W-082
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: FAIL (2 blocking, 9 advisory) — acceptance 3 unmet, # opus: header injection; reds re-derived clean, 5/6 mutations killed
+# at: 2026-09-25T20:06:10.662Z
+# tree: tree:8ea80fcfd504c4b8e9aedb1375b617f5b118fe7a
+
+censor round 1 — W-082, the bisellium verdict verb (D-028 codex build, builder-sol)
+reviewed at tree:8ea80fcfd504c4b8e9aedb1375b617f5b118fe7a (branch opus/W-082, head 0e1df96, worktree clean)
+
+VERDICT: FAIL — 2 blocking, 9 advisory.
+
+================================================================
+1. PROVENANCE RE-DERIVATION (D-028 disclosure checked, not taken)
+================================================================
+Claim: six reds re-recorded by orchestrator-executed CLI at tree:864730b3,
+which is 5f38556's source tree.
+
+Recomputed sourceTreeHash(repo, ["studio",".bisellium","examples/"], <ref>)
+— exclusions exactly as runRed's hashRepo builds them (lifecycle.ts:580-586),
+source_excludes = [examples/] from studio/bisellium.yml:31:
+
+  5f38556  864730b36e54b96b7f3355a7e2940473ed5e24ac   <- the six red logs' # tree:
+  4aaf764  4da395bd97d474eb2317a807c50d7cfb3c815d67
+  55ae908  8ea80fcfd504c4b8e9aedb1375b617f5b118fe7a
+  0e1df96  8ea80fcfd504c4b8e9aedb1375b617f5b118fe7a   <- probationes' certifies:
+  bb59d29  ea6afd1862da47de06cb3cfcbf416fa32276d1b8
+
+CONFIRMED: tree:864730b3 == 5f38556's source tree. The certificates on the
+record name the head tree, not an intermediate.
+
+Reds re-derived: detached worktree at 5f38556 with an ISOLATED node_modules
+(@bisellium/* symlinked to THAT worktree's packages, not the implemented one
+— the first attempt symlinked the whole node_modules and every red turned
+green, because @bisellium/commands resolved to the implemented source; that
+is a trap worth naming for future re-derivations).
+
+At 5f38556, packages/commands/src/verdict.ts is the brief's skeleton
+("Pre-implementation skeleton: exported, but deliberately writes nothing",
+returns { exitCode: 0 }). Running the six commands from the recorded headers:
+
+  behaviour 1  3 FAIL   matches studio/ci/reds/W-082/01.log  row for row
+  behaviour 2  1 FAIL   matches 02.log
+  behaviour 3  7 FAIL   matches 03.log
+  behaviour 4  1 FAIL   matches 04.log
+  behaviour 5 17 FAIL + 1 incidental PASS   matches 05.log exactly, including
+              the one PASS ("historical W-024-review-r1.log ... not producible")
+  behaviour 6  1 FAIL with the identical retro.ts:355 dead-link message
+
+CONFIRMED: all six reds reproduce, row for row, at the recorded tree. No red
+was a stub returning 2 (behaviour 5 fails on 0 !== 2, as the brief required).
+The D-028 provenance holds.
+
+================================================================
+2. MUTATIONS — 6 run, 5 killed
+================================================================
+Script: scripts run against packages/commands/src/verdict.ts and
+packages/cli/src/containment.test.ts, source restored after each; tree
+verified clean (git status --porcelain empty) after the run.
+
+m1  overwrite refusal removed (existsSync guard deleted AND flag:"wx" -> {})
+    KILLED -> behaviour 5, row "existing target exits 2 and writes nothing".
+    ANSWER to the round's question: behaviour 5 is the behaviour that dies,
+    and only that row of it. Behaviour 5's sibling row "round 3 gets its own
+    file and never erases round 2" survives m1, correctly — round 3 is a
+    different path, so clobbering round 2 is not what that row tests.
+
+m2  CR/LF single-line guard loop deleted (verdict.ts:116-125)
+    KILLED -> behaviour 3, all three rows (--outcome/--sella/--model).
+
+m3  evidence-only broken: runVerdict also appends to the opus record
+    KILLED -> behaviour 4, exactly as the brief predicted ("An implementation
+    that also signed a gate would pass every other behaviour here").
+
+m4  lexical target guard deleted (verdict.ts:162, the dirname check)
+    SURVIVED the whole verdict suite AND the containment census. See A-4.
+
+m5  safeItemPath dropped from runVerdict (plain join + existsSync)
+    KILLED -> 55ae908's row 11 ("stderr names unknown opus ../W-777" gets
+    `invalid opus id "../W-777"` instead). The pin is live.
+
+m6  the pinned census row deleted from containment.test.ts
+    KILLED -> containment.test.ts, 3 FAIL rows. The pin is live.
+
+Suites run by me, in this worktree, at the head tree:
+  npm run -s test:suite   exit 0
+  npm run -s typecheck    exit 0
+  npm run -s lint         exit 0
+  npm run -s format:check exit 0
+  bisellium check studio --repo .   PASS — 0 blocking, 148 advisory
+  npm test   exit 1, then 0, then 0 — see A-9, not this opus's file
+
+================================================================
+3. LIVE TRIAL — the spec-phase evidence loop, end to end
+================================================================
+Temp officina via `bisellium init`, one opus via `bisellium new`:
+
+  verdict W-001 --round 1 --sella qa-lead --outcome "AMEND-FIRST (12 lands /
+    2 held)" --phase spec --model gpt-5.6-sol --from <$TMPDIR transcript>
+    -> ci/W-001-spec-1.log, exit 0. Header carries opus/phase/round/sella/
+       model/outcome/at, and `# tree: unknown` — correct: the temp officina
+       is in no git repo, and "unknown" is the spelling the brief pinned.
+  verdict W-001 --round 1 --sella qa-lead --outcome FAIL  (stdin, no --phase)
+    -> ci/W-001-review-1.log, exit 0. Default phase spells itself "review".
+
+  retro --cascade 1 --from <finding citing "ci/W-001-spec-1.log">
+    -> acta/2026-09-25-retro-1.md written, lessons/L-001.md filed with
+       evidence: ["ci/W-001-spec-1.log"]. The lesson is FILED.
+  NEGATIVE control, same officina: the same finding citing the raw $TMPDIR
+    transcript path instead
+    -> retro: finding class "dead-link-control" evidence
+       "/tmp/.../transcript.txt" not found under the officina (dead link)
+
+CONFIRMED: behaviour 6's whole point is real outside the test harness. The
+dead link closes, and it closes because the path moved into the officina —
+not because retro's refusal was loosened (retro.ts is untouched, correctly).
+
+D-021, checked live from this worktree:
+  verdict W-072 ... --studio studio
+    -> exit 2, "opera/W-072.md cannot be written from opus/W-082 (D-021) ..."
+  The brief's land 11 reasoning is correct: the revision-1 acceptance would
+  have demanded the verb break its own guard.
+
+================================================================
+BLOCKING
+================================================================
+
+F-1  ACCEPTANCE 3 IS NOT MET — no W-082 spec-phase log exists.
+     The brief, land 11, in its own words: "record **this opus's own**
+     spec-phase rounds through `verdict --phase spec` ... and keep the logs.
+     The opus is not done while the evidence it exists to capture still
+     lives in a temp directory."
+       ls studio/ci | grep W-082-spec   -> nothing
+       git log --all --diff-filter=A -- 'studio/ci/*spec*'   -> nothing
+     No such path has ever existed on any ref of this repository. Two
+     spec-phase rounds are named in the brief's own amendment log (revision 2
+     Sol red-team AMEND-FIRST 12/2; revision 3 Sol closure pass) and neither
+     is in the officina. The opus exists to close exactly this gap and has
+     not closed it for itself.
+     ONLY INSTANCE of its kind here — acceptances 1, 2 and 4 are met (suites
+     and check verified above; docs/ADOPTION.md carries the verdict section
+     and the "three writers" sentence at the head of the diff).
+     Searched: studio/ci listing, git log --all over studio/ci/*spec*, the
+     opus record's probationes and traditio, and the four commits' file lists.
+     FIX, from this worktree (which owns W-082's record):
+       bisellium verdict W-082 --round <n> --sella architect \
+         --outcome "<Sol's outcome>" --phase spec --model gpt-5.6-sol \
+         --from <the held transcript> --studio studio
+     once per recorded Sol round, then commit the logs. A third candidate is
+     now on the floor: sec-lead's own pass for this opus lives in
+     scratchpad/sec-w082-pass.log — a fourth transcript of the very class.
+
+F-2  `# opus:` HEADER INJECTION — the opus positional escapes the verb's own
+     single-line invariant. (Upholds sec-lead's Medium 2 as BLOCKS-MERGE.)
+     Brief land 5 / behaviour 3: "Header values are single-line. Any `\r` or
+     `\n` in `--outcome`, `--sella` or `--model` is refused ... a header a
+     caller can inject newlines into is a header a caller can forge a second
+     record in."
+     verdict.ts:116-125 guards three flags. verdict.ts:172 interpolates a
+     fourth caller-supplied value, `opusId`, which never reaches that loop;
+     safeItemPath (writes.ts:104) rejects separators and dot segments and
+     says nothing about CR/LF.
+     REPRODUCED, not read. With opera/"W-300\n# opus: FORGED".md present:
+       verdict "W-300<LF># opus: FORGED" --round 1 --sella qa-lead \
+         --outcome PASS --from <file> --studio <temp>
+       -> exit 0, writes ci/"W-300\n# opus: FORGED-review-1.log" containing
+          # opus: W-300
+          # opus: FORGED        <- a second record, forged from the argument
+          # phase: build
+          ...
+     CLASS ENUMERATED — this is the ONLY remaining instance. All eight header
+     lines, each checked against its source:
+       # opus     opusId          UNGUARDED  <- F-2
+       # phase    enum spec|build safe
+       # round    /^[1-9]\d*$/    safe
+       # sella    guarded :116    safe
+       # model    guarded :116    safe
+       # outcome  guarded :116    safe
+       # at       toISOString()   safe
+       # tree     "unknown" | (tree|dirty):<sha1 hex>   safe
+     WHY BLOCKING and not advisory, when sec-lead's other Medium is not: this
+     is W-082's own declared invariant, in its own land, with its own
+     behaviour written to prove it. The property the brief claims is not
+     "hard to forge", it is "cannot forge", and the behaviour that was written
+     to pin it does not cover the field. That is a code gap and a test gap in
+     the same line. Exploit precondition is a matching opera/<id>.md, so
+     practical exploitability is low — severity Medium, blocking on the
+     invariant, not on the reachability.
+     FIX, two lines: add ["<opus>", opusId] to the existing guard loop (or a
+     dedicated check ahead of the opera lookup, so the caller learns about the
+     header before learning about the record), plus one behaviour-3 row.
+
+================================================================
+ADVISORY — no fix required to pass, all named for the retro
+================================================================
+
+A-1  sec-lead Medium 1 (symlinked target parent escapes studio/ci):
+     CONFIRMED AS DESCRIBED, DOWNGRADED from BLOCKS-MERGE to FILE-AS-OPUS.
+     It is not this opus's invariant; it is a pre-existing, repo-wide class
+     and verdict is its newest instance, not its author.
+     Reproduced in verdict: studio/ci symlinked to a dir outside the officina
+       -> exit 0, ci/W-301-review-1.log created in the escape dir.
+     Reproduced in `red` (NOT part of this opus): same symlink
+       -> exit 0, reds/W-400/01.log created in the escape dir.
+     Reproduced in `handoff` (NOT part of this opus): opera/ symlinked out
+       -> exit 0, the opus record OUTSIDE the officina was rewritten.
+     Static third ci writer: verify.ts:219 is a bare join(studioDir, "ci")
+     with no guard at all.
+     Instance count: 19 — the 16 safeItemPath call sites pinned in
+     containment.test.ts's PINNED_A, plus the three ci/ writers (verify.ts:219,
+     lifecycle.ts:483-488 safeRedsDir, verdict.ts:161-162). verdict.ts:161-162
+     is a VERBATIM structural twin of safeRedsDir: lexical id check, then a
+     resolved-dirname relation, never startsWith, no realpath. The brief told
+     the builder to match runRed's shape and it did.
+     W-062's "realpath is the path" (lifecycle.ts:1007-1036) is a real
+     precedent but a different shape: it anchors a CALLER-SUPPLIED relative
+     pointer (--spec) on realpathSync(root). Nothing in the repo realpaths a
+     FIXED subdirectory name, which is what ci/ and opera/ are.
+     Threat model: the precondition is write access inside the officina.
+     Whoever can plant studio/ci -> /elsewhere can already write the file.
+     No privilege boundary is crossed.
+     Fixing it in verdict alone would leave 18 siblings and buy three review
+     rounds for one bug (W-026 rounds 5-7). File it as one opus: a shared
+     realpath-anchored officina-subdirectory helper, all 19 sites, one census
+     row per site, with the helper itself pinned in containment.test.ts.
+
+A-2  sec-lead Low (raceable --from regular-file check, verdict.ts:138-142):
+     NOTED, not blocking. statSync-then-readFileSync is a TOCTOU only if the
+     operator is their own adversary, and the operator can simply pass a
+     different file. The brief's Out of scope already names atomicity as a
+     real, deliberate omission. If this line is ever touched: open once,
+     fstat the descriptor, read through it.
+
+A-3  sec-lead Info (failed reads echo path + OS error, verdict.ts:144):
+     NOTED, with one addition sec-lead did not make. He concluded it stays on
+     stderr. It does not always: runRed merges the wrapped command's stdout
+     AND stderr, in OS delivery order, verbatim into ci/reds/<opus>/NN.log
+     (lifecycle.ts:498-505, 616-624). So `bisellium red ... -- bisellium
+     verdict --from <newline-bearing path>` lands forged lines inside the
+     officina. Contrived, but it is the step from "stderr only" to "in the
+     record", and it is the same class as F-2.
+
+A-4  The lexical target guard at verdict.ts:162 is untested AND unreachable.
+     m4 deletes it and the whole verdict suite plus the containment census
+     stay green. It is unreachable because safeItemPath already refused every
+     separator and dot segment forty lines above (verified: ../W-302, a/b, ..
+     and . all exit 2 before it). Dead defense-in-depth. 55ae908's commit
+     message says it pins "runVerdict's containment row" and this line is not
+     what it pinned. Either drop the guard or give it a row.
+
+A-5  55ae908's row-11 comment overclaims its own assertion. It says "the
+     safeItemPath refusal—not mere absence—must win", but verdict.ts:70-72
+     emits ONE message, `unknown opus: ${opusId}`, for both causes, so the
+     stderr text cannot distinguish them. The row does still bite (m5 kills
+     it, because without safeItemPath the fixture's planted <root>/W-777.md
+     exists and execution reaches the :162 guard's different wording) — so
+     the pin is live and the comment's reasoning is simply wrong about why.
+     Recurrence of L-033 (tests×assertion-satisfied-by-the-wrong-cause), this
+     time in the comment rather than the assertion.
+
+A-6  Two conditional-skip sites in verdict.test.ts, both self-weakening.
+     Enumerated: these are the only two in the file.
+     (a) :237-244 — behaviour 3's git-backed exact-tree assertions, the part
+         revision 3 was written to pin ("assert it against that repo's hash
+         specifically"), sit in a try/catch whose catch RECORDS A PASS when
+         err.code === "EPERM". A skip counted as PASS is a green that proves
+         nothing. It is not hiding a failure today: red 03 exercised the real
+         assertions and so did my run (tree:c1078c36... / dirty:c1078c36...).
+         The shape is the defect, not today's result.
+     (b) :277-282, :294 — the FIFO refusal row is dropped from the table
+         entirely when mkfifo fails. Revision 3 land 11 made that refusal a
+         named requirement; it should not be able to vanish silently.
+     Both want a hard fail, or a SKIP that is counted as neither PASS nor
+     FAIL. The D-021 catch at :360-362 is the correct shape — it fails.
+
+A-7  packages/cli/src/containment.test.ts is modified but is NOT in the
+     brief's "Files owned". Undeclared file (qa lex §2). Advisory only: the
+     change is one pinned row and W-047's tripwire FORCES it — any new
+     safeItemPath call site moves that file, so the brief should have listed
+     it. Named so the record is honest.
+
+A-8  Commit 4aaf764 shipped with the suite RED. Reproduced at that ref with
+     isolated resolution: containment.test.ts exits 1 with three FAIL rows,
+     "pinned=15 scan=16 ... added: [packages/commands/src/verdict.ts:
+     runVerdict:opera#1]". test:suite runs containment.test.ts before
+     verdict.test.ts, so that commit fails `npm test` at its own tree.
+     W-062's precedent puts the census row in the SAME commit as the
+     implementation for exactly this reason. The branch head is green and the
+     certificates name the head tree, so this is history hygiene, not a gate
+     failure. See the pin ruling below.
+
+A-9  `npm test` flake, NOT this opus's file. Three runs: exit 1, 0, 0. The one
+     failure is a single row in scripts/no-vendor.test.mjs (W-072's vendor
+     sentinel): "[9] row 3: the lock was never free before A had already
+     produced its (correct) result   attempts=151". A polling race with no
+     seam. Recurrence of L-035 (tests×wall-clock-sleep-for-a-missing-seam).
+     File against W-072, not W-082; W-082 does not touch that file.
+
+================================================================
+RULING ON THE PIN COMMIT (55ae908) — the question put to this round
+================================================================
+Terra flags 55ae908 as strictly later than the red harness (5f38556) and than
+the implementation (4aaf764), and asks whether a tripwire-response commit
+needs its own red or is census maintenance. W-062's precedent added such a row
+in the SAME commit as its implementation.
+
+RULING — the commit has two halves and they rule differently.
+
+(a) The PINNED_A row in containment.test.ts is CENSUS MAINTENANCE. No new red
+    is required. A tripwire-response needs no red of its own when the tripwire
+    is a pre-existing assertion whose pinned list is DATA: the red belongs to
+    the opus that built the census (W-047 behaviour 4), and the tripwire's
+    firing is reproducible on demand rather than something a log has to
+    remember. Two conditions, both checked here rather than assumed:
+      (i)  the tripwire actually fired — REPRODUCED at 4aaf764: exit 1, three
+           FAIL rows, "added: [packages/commands/src/verdict.ts:runVerdict:
+           opera#1]". It was not a speculative row.
+      (ii) the row is live, not decorative — m6 deletes it and the census
+           dies. It bites.
+    Both hold, so the row stands as maintenance. This is the general rule I
+    am adopting for the class, not a one-off indulgence.
+
+(b) The +23-line "row 11" block in verdict.test.ts is NOT census maintenance.
+    It is a new assertion, written after the implementation, with no recorded
+    red, for a refusal the brief's behaviour-5 table does not list (rev 3
+    removed the opus-id containment row; the surviving containment prose is
+    about --from). It does bite (m5), so it is not decorative, and regression
+    suite changes are the Censor's own ground (qa lex §2) — so I do not fail
+    the opus for it. But it should have been either a behaviour-5 row in
+    5f38556 with its own red, or, per W-062, in the same commit as the
+    implementation. Splitting it did cost something real: A-8, one commit in
+    this branch's history that fails its own suite.
+
+Net: the pin stands. The sequencing is a NOTED process finding (A-8), not a
+gate failure, and the general rule in (a) is what I will apply next time.
+
+================================================================
+WHAT ROUND 2 NEEDS
+================================================================
+1. F-2: bring opusId under the single-line guard; one behaviour-3 row with
+   its own red.
+2. F-1: two `verdict --phase spec` logs for W-082's own Sol rounds, committed.
+   This review's own log does NOT close acceptance 3 — it is --phase build.
+3. Optional, cheap, and worth taking while the file is open: A-6's two skip
+   sites, and A-4's dead guard.
+Nothing in A-1 through A-3 blocks. A-1 wants its own opus and should get one.
