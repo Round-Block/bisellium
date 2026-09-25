@@ -10,7 +10,7 @@
  * behaviour runs, exactly as before this existed.
  */
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
@@ -2438,6 +2438,7 @@ try {
       "--spec absolute inside the officina (land 10)",
       opusPathFor("W-500"),
       ["W-500", "--spec", join(dir, "briefs", "W-500.md"), "--reason", "r", "--studio", dir],
+      ["must be officina-relative, not absolute"],
     );
 
     mkdirSync(join(dir, "links"), { recursive: true });
@@ -2492,6 +2493,22 @@ try {
       ].join("\n"),
     );
     await assertRefusal("amendments: is an alias to a sequence (finding 11)", opusPathFor("W-602"), ["W-602", "--title", "New title", "--reason", "r", "--studio", dir]);
+
+    // W-079: pins lifecycle.ts's narrowed catch. A non-AmendShapeError must
+    // propagate; a blanket catch would turn this into exit 2.
+    {
+      const p = opusPathFor("W-001");
+      chmodSync(p, 0o444);
+      let threw = false;
+      try {
+        await withStderr(() => runAmend(["W-001", "--title", "readonly probe", "--reason", "r", "--sella", "architect", "--studio", dir]));
+      } catch {
+        threw = true;
+      } finally {
+        chmodSync(p, 0o644);
+      }
+      check("amend b6: a non-AmendShapeError propagates (not swallowed as exit 2)", threw);
+    }
 
     // The positive row: a whitespace-only $BISELLIUM_SELLA is treated as
     // unset (land 8) — the amendment succeeds, recorded as guest.

@@ -1,0 +1,207 @@
+# W-079 — censor review, round 1
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-25T10:15:00Z
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-079 · branch: opus/W-079 · HEAD: 2016be8
+# builder: builder-sol (gpt-5.6-sol) — the D-025 codex-build trial
+# VERDICT: PASS (3 advisory findings, none attributable to builder-tier capability)
+# build commits: ccb19f8 (harness) · 63ae1fa (fix) · f2f0aa6 (verify) · 2016be8 (reds re-recorded)
+
+== 0. preconditions ==
+`git pull` on opus/W-079: already current, no upstream tracking set.
+`git status --short` empty at review start, after both pre-fix file swaps, and after both
+mutation passes. `packages/commands/src/lifecycle.ts` restored byte-for-byte every time
+(the script's own `finally` guard re-reads and throws if it did not).
+
+== 1. every acceptance criterion, re-run by me, not read off a log ==
+
+  criterion                                                  measured                     verdict
+  npm test                                                   exit 0 · 0 FAIL rows         PASS
+  npm run -s typecheck                                       exit 0 · silent              PASS
+  npm run -s lint                                            exit 0 · 2 warnings          PASS (see note)
+  npm run -s format:check                                    "All matched files use
+                                                             Prettier code style!"        PASS
+  BISELLIUM_ONLY_BEHAVIOUR=51 lifecycle.test.ts @ HEAD       69 PASS / 0 FAIL             PASS (brief: 69)
+  BISELLIUM_ONLY_BEHAVIOUR=51 lifecycle.test.ts @ ccb19f8    67 PASS / 0 FAIL             PASS (brief: 67)
+  node scripts/w079-mutation-check.mjs 1 @ HEAD              exit 0 · "mutation KILLED"   PASS
+  node scripts/w079-mutation-check.mjs 2 @ HEAD              exit 0 · "mutation KILLED"   PASS
+  git diff origin/master...HEAD -- packages/commands/        0 lines                      PASS
+  bisellium check studio --repo .                            PASS — 0 blocking            PASS
+
+The 67 -> 69 delta is measured, not inferred. I took `git show ccb19f8:packages/cli/src/
+lifecycle.test.ts` over the working file, ran block 51 (67 PASS / 0 FAIL), then restored from
+`git show HEAD:...` and re-ran (69 PASS / 0 FAIL). Exactly the brief's arithmetic: one token
+check that was previously skipped, one new row.
+
+lint's 2 warnings are pre-existing and OUTSIDE this opus's diff — `close.test.ts:5`
+(`execSync` unused) and `tick.test.ts:298` (`opts` unused). Both verified present at
+origin/master by `git show`. Not this opus's.
+
+== 2. the mutations bite, and each bites exactly the row it is supposed to ==
+Not "the suite went red" — WHICH row went red, on HEAD:
+
+  behaviour 1, guard deleted (lifecycle.ts:1013-1016):
+    FAIL  amend b6: --spec absolute inside the officina (land 10) stderr names
+          ["must be officina-relative, not absolute"]
+          W-500: no spec at /tmp/.../briefs/W-500.md — not ready
+    1 FAIL, and it is the fall-through refusal the brief predicted verbatim. Exit stayed 2;
+    only the message token distinguishes them, which is the whole point of A1.
+
+  behaviour 2, catch widened to blanket (lifecycle.ts:1097-1103):
+    FAIL  amend b6: a non-AmendShapeError propagates (not swallowed as exit 2)
+    1 FAIL, the new row, and no collateral. A blanket catch converts the EACCES throw into
+    exit 2 and the row's `threw` stays false.
+
+Each mutation kills exactly one row. No over-broad assertion masking a second guard.
+
+== 3. the two new test rows assert the brief's exact tokens ==
+`lifecycle.test.ts:2441`  ["must be officina-relative, not absolute"]
+  — character-for-character the brief's line 52, and a substring of lifecycle.ts:1014's
+    template literal. `assertRefusal`'s `if (tokens.length)` stderr check (`:2403`) now fires
+    for this row where before it was defaulted away.
+`lifecycle.test.ts:2498-2510`  check("amend b6: a non-AmendShapeError propagates (not
+  swallowed as exit 2)", threw)
+  — the brief's line 99 verbatim. Asserts `throws`, not `exit 2`, which is correct: the guard
+    under test is the narrowing, so the observable is propagation.
+  — `chmodSync(p, 0o644)` is in a `finally`. Verified it matters: block 51's later rows reuse
+    the same fixture dir, and the 69/69 run proves no read-only mode leaked forward.
+  — `chmodSync(p, 0o444)` as failure induction is the established house idiom, not a novelty:
+    `packages/commands/src/delegate.test.ts:370` does the identical thing to a manifest.
+    Surveyed all `chmodSync` uses in packages/apps/adapters/scripts — 11 call sites, this is
+    the second 0o444-to-induce-EACCES. CI is `ubuntu-latest`, non-root, so the mode holds.
+
+== 4. PROVENANCE — the point of the D-025 trial. Ruling in three parts. ==
+
+--- 4a. the reds are SOUND: the reproducible-pre-fix-state class ---
+The header `# tree: tree:4f3a0d4ffd965a051a0fc79170bb2a05b13bfcb8` is not decoration and not
+a git object — I chased it. `runRed` (lifecycle.ts:580-607) stamps
+`sourceTreeHash(repo, [<officina>, .bisellium, ...manifest.source_excludes], "HEAD")`, prefixed
+`dirty:` or `tree:` by `isDirtyOutside`. Recomputed independently:
+
+    sourceTreeHash(worktree, ["studio",".bisellium","examples/"], ccb19f8) = 4f3a0d4ffd96...
+    sourceTreeHash(worktree, [...],                     63ae1fa/f2f0aa6/HEAD) = 02b00a975618...
+    (`git rev-parse ccb19f8^{tree}` = 4fc91a4f... — a DIFFERENT hash. The red does not name a
+     git tree; it names the source tree with the officina's own bookkeeping excluded, which is
+     the house contract: "a certificate names the source tree, not the officina's bookkeeping.")
+
+So `4f3a0d4f` IS ccb19f8 — harness present, fix absent — and the `tree:` (not `dirty:`) prefix
+is a live claim that nothing outside the officina was modified at record time. That claim is
+checkable and it checks out.
+
+Then I did not take the transcripts on trust. I reconstructed the state and re-ran the two
+recorded commands:
+
+    git show ccb19f8:packages/cli/src/lifecycle.test.ts > packages/cli/src/lifecycle.test.ts
+    node scripts/w079-mutation-check.mjs 1   -> exit 1  "behaviour 1 mutation SURVIVED"  67 PASS / 0 FAIL
+    node scripts/w079-mutation-check.mjs 2   -> exit 1  "behaviour 2 mutation SURVIVED"  67 PASS / 0 FAIL
+
+    diff (committed 01.log body) (my transcript)  -> IDENTICAL
+    diff (committed 02.log body) (my transcript)  -> IDENTICAL
+
+Byte-identical, modulo blank lines, for both behaviours. This is the strongest red evidence
+available: not "the builder reports it failed" but "the state is named, and any third party
+who reaches that state reproduces the bytes." It is not backfilled either — the state it names
+sits before the fix commit in this branch's recorded history, and the content is DERIVABLE from
+the tree rather than asserted about it. Evidence produced, not backfilled: upheld.
+
+The two bodies share 76 of 77 lines, differing only on the `mutation SURVIVED (<label>)` line.
+`opus.red_content` blocks only on byte-identical-after-header-strip, so no block — and
+substantively the identity IS the defect: the unstrengthened suite passes everything in both
+cases, and the one differing line is the whole payload. Distinct evidence for distinct guards.
+
+--- 4b. the proxy-execution boundary IS a finding, and it is SANDBOX CONFIGURATION ---
+Two commits (ccb19f8, 63ae1fa) carry builder-sol's verbatim messages and co-author trailer but
+`edckt` as author/committer; the reds carry `sella: builder-sol` on a run the orchestrator's
+runtime spawned. Both disclosed in-flow, the re-record disclosed in 2016be8's message. This is
+a real gap in evidentiary independence and I am recording it as such.
+
+It is NOT attributable to builder-tier capability, and therefore NOT a D-025 kill-clause
+trigger. The discriminator: every artifact that required MODEL capability is builder-sol's, and
+every one of them is correct on the first pass — the mutation harness (exact-string anchors with
+a `matches !== 1` assertion, restore in `finally`, a post-restore byte comparison that throws,
+inverted exit semantics for test-strengthening evidence), the two mutation strings (they match
+lifecycle.ts:1013-1016 and :1097-1103 exactly; anchor count 1 each, verified by the script
+firing clean twice), the token argument, the propagation row, house style, prettier-clean,
+typecheck-clean, and zero bytes into `packages/commands/`. 69/69 and both mutations dead, first
+round, no fix rounds.
+
+What builder-sol could not do was `spawnSync` a subprocess (EPERM), write `.git`, and read git
+state. Those are three OS-level permission denials, not three reasoning failures. D-025's kill
+clause asks whether the tier can BUILD; a sandbox that denies `fork()` measures the harness's
+configuration. Fixable environment fact, with a named fix: give the codex sandbox
+workspace-write on the worktree plus subprocess spawn, and both proxies vanish without touching
+the model. File as a D-025 environment row, not a kill.
+
+--- 4c. the rule the boundary is survivable UNDER ---
+Proxy execution costs exactly one thing: the `sella: builder-sol` header on a log another
+runtime produced is a claim about authorship that the log cannot itself support. That is
+survivable here only because the evidence is REPRODUCIBLE — I re-derived it in §4a without
+trusting the header at all. Had the red been a bare assertion, or had it kept its original
+`tree: unknown`, the proxy boundary would have left nothing to check and the correct verdict
+would have been FAIL. The generalisable rule, offered for the D-025 retro:
+
+  proxy-executed evidence is admissible IF AND ONLY IF it names a state a third party can
+  reach independently. Otherwise it is hearsay.
+
+The original metadata-only logs (`tree: unknown`, 144 bytes, no command output) failed that
+test; the re-record at a clean, named tree passes it. Terra's census caught the first shape and
+the re-record is the right remedy, done in the right direction — re-recorded AT the pre-fix
+state, not reconstructed FROM the post-fix one.
+
+== 5. FINDINGS ==
+
+F1 (advisory · CLASS, 2 instances · not the builder's, not fixable by a fix round)
+  W-079's spec gate is signed by the sella that then built it:
+    probationes: { spec: { sella: builder-sol, status: passed, ... } }
+  The brief's own first line says "Spec of record, signed by the architect, 2026-09-25", and
+  qa.md §9 (P-008, option b) says specs are signed by the architect. The architect's signature
+  is therefore not on the record, and a builder stamped its own gate.
+  I searched every `studio/opera/*.md` front matter for `spec: { sella: <id>` and
+  cross-referenced each against its `review:` signer. 12 non-architect spec signers, in three
+  sub-classes:
+    guest x8   W-022..W-029   pre-P-008 (adopted 2026-09-20), historical
+    qa-lead x2 W-030, W-031   ALREADY CAUGHT by check's `process.cascade`
+    builder x2 W-062 (builder-b), W-079 (builder-sol)   NOT CAUGHT BY ANYTHING
+  The builder sub-class is the live one and W-079 is its second instance. The gap is concrete:
+  `process.cascade` fires only when the SAME sella appears on spec and review, so
+  spec=builder-b/review=qa-lead and spec=builder-sol/review=qa-lead both slip through. Per the
+  house rule that process enforcement is a check rule and never a memory, the remedy is a rule
+  that refuses a spec gate signed by a `builder-*` sella (or, strictly per P-008, by any sella
+  other than the architect). Not a fix round on this opus: the builder has no lever on
+  front matter, and `opera/` bookkeeping is never edited by hand.
+
+F2 (advisory · brief wording, not the build)
+  Acceptance criterion 4 — "`git diff --stat` names only `packages/cli/src/lifecycle.test.ts`
+  and the new script" — is literally unmet: the diff is 8 files. The other 6 are
+  `studio/opera/W-079.md`, three `studio/ci/W-079-*-02b00a97.log`, and the two reds — all
+  CLI-written officina bookkeeping that every opus necessarily produces and that the house
+  rules forbid editing by hand. The criterion means "no SOURCE file other than these two",
+  which IS satisfied (`packages/commands/` zero diff, verified). Brief wording to tighten;
+  no defect in the opus.
+
+F3 (NOT a finding — recording it so it is not rediscovered)
+  `git diff --check` reports "new blank line at EOF" on all five new CI/red logs. I counted the
+  whole corpus: 361 of 722 `studio/ci/**/*.log` on origin/master already end in a blank line.
+  It is an artifact of the log writers (`runRed`'s `${header}\n\n${output}` and the pipeline's
+  tail join), half the corpus wide, and hand-trimming a `ci/*.log` is explicitly forbidden.
+  If anyone wants it gone it is a one-line change in the writers and its own opus.
+
+F4 (NOT a finding)
+  The `traditio:` block builder-sol added to W-079.md mid-build via `bisellium handoff` is the
+  CLI's own verb writing its own field — exactly how a builder is supposed to hand off, and the
+  opposite of hand-edited front matter. `bisellium check` is quiet on it.
+  The one advisory check does raise on this record — `probatio.certifies: gate "spec" evidence
+  has no identity (certifies)` — which is the spec gate's shape, shared with every other opus's
+  spec gate; not W-079's doing.
+
+== 6. verdict ==
+PASS. Every claim in the brief was re-measured here rather than read off a log: 67 pre-fix and
+69 post-fix at the two named trees, both mutations dead on HEAD and both alive at ccb19f8 with
+transcripts identical to the committed reds, zero diff into `packages/commands/`, all four
+suites green, check 0 blocking. The three advisories are orchestration bookkeeping (F1), brief
+wording (F2) and a corpus-wide log artifact (F3) — none of them the builder's work and none
+fixable by a round dispatched at builder-sol.
+
+On D-025: the trial SUCCEEDS on capability and FAILS on isolation for an environmental reason.
+builder-sol produced a first-pass-correct test-only opus with a non-trivial mutation harness and
+no fix rounds. The proxy commits and proxy-executed reds are a sandbox-permission defect with a
+named one-line remedy, not a tier defect, so the kill clause is not triggered. Carry F1 and the
+§4c admissibility rule into the retro.
