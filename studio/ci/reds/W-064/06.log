@@ -1,0 +1,27 @@
+# behaviour: 6
+# command: node --import ./test/support/register-css-stub.mjs --import tsx test/boardview.test.ts 6
+# exit: 1
+# at: 2026-09-25T03:29:16.568Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+PASS  BoardDrawer: no selection -> no drawer element                                 
+FAIL  BoardDrawer: header, banner, gates, events, record — all present               [-1,-1,-1,-1,-1]
+FAIL  BoardDrawer: sections appear in document order                                 [-1,-1,-1,-1,-1]
+FAIL  BoardDrawer: banner shown when waitingOn is set                                
+PASS  BoardDrawer: banner absent when waitingOn is unset                             
+FAIL  BoardDrawer: with a petitio — shows its subject                                
+FAIL  BoardDrawer: with a petitio — shows its from                                   
+FAIL  BoardDrawer: no petitio — names the gate                                       
+FAIL  BoardDrawer: no petitio — states no question was asked                         
+FAIL  BoardDrawer: gate row shows the literal status word (stale)                    
+FAIL  BoardDrawer: gate row shows the evidence path                                  
+FAIL  BoardDrawer: a human gate is labelled                                          
+PASS  BoardDrawer: a gate with no evidence renders no empty link                     
+FAIL  BoardDrawer: events render in the order given (newest-first upstream)          
+FAIL  BoardDrawer: shows the declared total                                          
+FAIL  BoardDrawer: shows the event-derived split, labelled                           
+FAIL  BoardDrawer: with no usage events — split absent, declared total still shows   
+PASS  BoardDrawer: no undefined/NaN leaks into the markup                            
+PASS  BoardDrawer: hostile strings everywhere — no <img tag reaches the markup       
+FAIL  BoardDrawer: hostile strings everywhere — escaped text is present              

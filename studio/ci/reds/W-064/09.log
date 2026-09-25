@@ -1,0 +1,106 @@
+# behaviour: 9
+# command: npx playwright test -c playwright.serve.config.ts -g behaviour 9
+# exit: 1
+# at: 2026-09-25T07:29:12.096Z
+# sella: builder-a
+# tree: tree:be5cf928d28ded52151662fa7b1caeccca31f04b
+
+
+Running 4 tests using 4 workers
+
+  ✘  4 [chromium] › tests-serve/board.spec.ts:565:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column (5.9s)
+  ✘  2 [chromium] › tests-serve/board.spec.ts:453:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator (30.0s)
+  ✘  1 [chromium] › tests-serve/board.spec.ts:524:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling (30.0s)
+  ✘  3 [chromium] › tests-serve/board.spec.ts:503:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible (30.0s)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:453:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.boundingBox: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card').first()
+
+
+      470 |
+      471 |     const card = page.locator(".board__card").first();
+    > 472 |     const cardBox = await card.boundingBox();
+          |                                ^
+      473 |     expect(cardBox?.height).toBeCloseTo(64, 0);
+      474 |     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
+      475 |     expect(cardShadow === "none" || cardShadow === "").toBe(true);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:472:32
+
+    Error Context: test-results/board-W-064-behaviour-9-co-b36c9-d-no-shadow-focus-indicator-chromium/error-context.md
+
+  2) [chromium] › tests-serve/board.spec.ts:503:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card[data-card-id="W-002"]')
+
+
+      513 |     expect(position).not.toBe("sticky");
+      514 |
+    > 515 |     await page.locator('.board__card[data-card-id="W-002"]').click();
+          |                                                              ^
+      516 |     await expect(page.locator(".board-drawer")).toBeVisible();
+      517 |     const drawerBox = await page.locator(".board-drawer").boundingBox();
+      518 |     expect(drawerBox?.x).toBeGreaterThanOrEqual(72 - 1);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:515:62
+
+    Error Context: test-results/board-W-064-behaviour-9-co-bf512-wer-leaves-the-rail-visible-chromium/error-context.md
+
+  3) [chromium] › tests-serve/board.spec.ts:524:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card').first()
+
+
+      551 |     await expect(needsYouColumn).toBeInViewport();
+      552 |
+    > 553 |     await page.locator('.board__card').first().click();
+          |                                                ^
+      554 |     const drawerBox = await page.locator(".board-drawer").boundingBox();
+      555 |     expect(Math.abs((drawerBox?.width ?? 0) - viewportWidth)).toBeLessThanOrEqual(1);
+      556 |     const closeBox = await page.locator(".board-drawer__close").boundingBox();
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:553:48
+
+    Error Context: test-results/board-W-064-behaviour-9-co-4aeec-reachable-without-scrolling-chromium/error-context.md
+
+  4) [chromium] › tests-serve/board.spec.ts:565:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column 
+
+    Error: expect(locator).toBeInViewport() failed
+
+    Locator: locator('.board__column[data-column-id="in_progress"]')
+    Expected: in viewport
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeInViewport" locator('.board__column[data-column-id="in_progress"]') with timeout 5000ms
+      - waiting for locator('.board__column[data-column-id="in_progress"]')
+
+
+      578 |     const needsYouColumn = page.locator('.board__column[data-column-id="needs_you"]');
+      579 |     const inProgressColumn = page.locator('.board__column[data-column-id="in_progress"]');
+    > 580 |     await expect(inProgressColumn).toBeInViewport();
+          |                                    ^
+      581 |     await expect(needsYouColumn).not.toBeInViewport();
+      582 |
+      583 |     await page.goto(`${served.baseURL}/#/inbox`);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:580:36
+
+    Error Context: test-results/board-W-064-behaviour-9-co-28638-r-an-empty-attention-column-chromium/error-context.md
+
+  4 failed
+    [chromium] › tests-serve/board.spec.ts:453:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator 
+    [chromium] › tests-serve/board.spec.ts:503:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible 
+    [chromium] › tests-serve/board.spec.ts:524:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling 
+    [chromium] › tests-serve/board.spec.ts:565:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column 

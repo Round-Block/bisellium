@@ -1,0 +1,364 @@
+W-064 — review round 2 — VERDICT: PASS
+censor (qa-lead) · claude-opus-5 · 2026-09-25
+branch opus/W-064 @ 1502c97 · source tree 2e510707 · spec of record: studio/briefs/W-064.md rev 3
+round 1: FAIL, 8 blocking + the red gate held (studio/ci/W-064-review-1.log)
+
+=============================================================================
+0. WHAT I RAN (all in /home/edckt/projects/bisellium/.worktrees/W-064)
+=============================================================================
+npm test                                            -> exit 0
+npm run -s typecheck                                -> exit 0
+npm run -s lint                                     -> exit 0 (the same 2 pre-existing
+                                                       warnings as round 1, both in files
+                                                       this opus does not touch:
+                                                       packages/cli/src/close.test.ts:5,
+                                                       packages/cli/src/tick.test.ts:298)
+npm run -s format:check                             -> exit 0
+npm run -s check -- studio --repo .                 -> PASS, 0 blocking, 120 advisory
+npm run -s check -- examples/sample-studio --repo . -> PASS, 0 blocking, 25 advisory
+rm -rf apps/web/dist && npm run -s build --workspace @bisellium/web -> ok
+npm run -s test:serve --workspace @bisellium/web    -> 30 passed (14.5s)
+11 mutations, one per round-1 finding (section 2), each applied / rebuilt / run / reverted
+the red-gate re-execution: detached at 015a44f, all three named commands (section 1)
+a scripted acceptance smoke against a temp copy of the REAL studio/, 77 opera (section 3)
+
+Working tree clean at the end of every step (git status --porcelain empty); no
+bookkeeping was written by this review except this log and the review verdict itself.
+
+Advisory movement, studio: 119 (round 1) -> 120. Accounted for in full: the round-1
+review gate now exists on studio/opera/W-064.md with
+`evidence: ci/W-064-review-1.log` and no `certifies:`, so probatio.certifies advises on
+it — the review verb's own bookkeeping, not this opus's source. Rule-id census
+unchanged otherwise (probatio.certifies 70, process.review_tier 19, traditio.stage 18,
+lex.unchecked 4, acta.daily 3, process.cascade 2, backlog.depth 1, aerarium.missing 1,
+lesson.recurrent 1, lex.marker_unknown 1). examples/sample-studio unchanged at 25.
+
+=============================================================================
+1. THE RED GATE — P-013's REMEDY, RE-EXECUTED
+=============================================================================
+
+CITED, as D-024 and P-013 both require. The Patron's recorded answer on P-013
+(studio/petitiones/P-013.md, state resolved, stated 2026-09-25T07:22:38.951Z — read
+from master, the petitio is not on this branch):
+
+  "Waiver refused (option 2). D-024 is not extended; its kill arm stands. Remedy:
+   the builder re-records behaviours 7-9's reds as reproducible-by-re-execution
+   evidence — a committed skeleton tree on the opus branch whose checkout plus the
+   named command reproduces each assertion failure, recorded through bisellium red
+   from that clean tree so the log carries a real tree hash, not dirty:. The
+   condemned 07-09 logs stay in history uncondoned; round 2 cites this answer at the
+   red gate. P-012 remains open on its own merits."
+
+No waiver was granted and none is claimed. D-024's second kill arm stands fired; the
+gate passes on the remedy's own terms, not on an extension of D-024.
+
+Each clause of the answer, checked by execution rather than by reading:
+
+(a) "a committed skeleton tree on the opus branch"
+    015a44f `chore(W-064): committed skeleton for behaviours 7-9 red re-record per
+    P-013's remedy`, on opus/W-064, an ancestor of HEAD. It touches exactly one file
+    (apps/web/src/screens/Board.tsx, -266/+20) and nothing else — `git show --stat`.
+    It is a real skeleton, not a wedge: the container keeps only the api.js import
+    clause (behaviour 5's source-text contract) with every fetcher `void`-ed, no
+    EventSource, no keyboard effect, no scroll effect. On that checkout
+    `npm run -s typecheck` -> exit 0 and `npm run -s lint` -> exit 0, so it is a
+    tree a builder could genuinely have committed mid-flight.
+
+(b) "whose checkout plus the named command reproduces each assertion failure"
+    I DID THIS MYSELF. git checkout --detach 015a44f; git status --porcelain empty;
+    rm -rf apps/web/dist && vite build; then, in apps/web, verbatim from each log's
+    own `# command:` header:
+      npx playwright test -c playwright.serve.config.ts -g "behaviour 7" -> exit 1
+      npx playwright test -c playwright.serve.config.ts -g "behaviour 8" -> exit 1
+      npx playwright test -c playwright.serve.config.ts -g "behaviour 9" -> exit 1
+    Case-for-case identical to the recorded logs, same spec line numbers, same
+    assertion errors:
+      b7  5 failed / 1 passed  board.spec.ts:208, 223, 284, 300, 320
+          (toHaveText "1" vs "0" on the needs_you count; toBeVisible element(s) not
+           found for W-007 in planned; toHaveText "reconnected title" not found;
+           locator.click timeout waiting for .board__card[data-card-id="W-002"];
+           toBeVisible not found for W-002 in verifying)
+      b8  3 failed            board.spec.ts:350, 403, 425
+          (locator.focus / locator.click timeouts — no cards exist to focus)
+      b9  4 failed            board.spec.ts:453, 503, 524, 565
+          (locator.boundingBox / locator.click timeouts; and at :565
+           toBeInViewport failed, element(s) not found)
+    Recorded rosters, for comparison, from studio/ci/reds/W-064/0{7,8,9}.log:
+      b7 5 failed / 1 passed at 208/223/284/300/320; b8 3 failed at 350/403/425;
+      b9 4 failed at 453/503/524/565. Identical.
+    Reproducible-by-re-execution is therefore not a claim in this round; it is a
+    measurement I took.
+
+(c) "recorded through bisellium red from that clean tree so the log carries a real
+    tree hash, not dirty:"
+    All three headers read `# tree: tree:be5cf928d28ded52151662fa7b1caeccca31f04b`
+    — `tree:`, not `dirty:`. That hash is not the commit's tree object (which is
+    ccdc0e86); `bisellium red` records sourceTreeHash(repo, [studio, .bisellium,
+    ...source_excludes], "HEAD") with a `dirty:`/`tree:` prefix from
+    isDirtyOutside() (packages/commands/src/lifecycle.ts:575-586,
+    packages/shim/src/sourceTree.ts:44-75). I recomputed that function
+    independently against git ls-tree, excluding studio/, .bisellium and the
+    manifest's `source_excludes: [examples/]`:
+      015a44f -> be5cf928d28ded52151662fa7b1caeccca31f04b   <- matches 07/08/09.log
+      e14e698 -> be5cf928…  (the reds commit touches only the officina, as required)
+      7ea3413 -> 2e510707ba5806c92fcc6391f00b1cc05648df41   (pre-skeleton)
+      17691be -> 2e510707…  (restore)
+      1502c97 -> 2e510707…  (HEAD)
+      608b05b -> 7d258952d27faa29f5e9f6e3bb2fd833f1c4a1c0   (round-1 tree)
+    Recipe, so this is re-derivable: git ls-tree -r <ref>, drop every path under
+    studio/, .bisellium or examples/, sha1 of the surviving lines each followed by
+    "\n". And `tree:` rather than `dirty:` is corroborated directly: on the detached
+    015a44f checkout `git status --porcelain` was empty, so isDirtyOutside() would
+    return false there today, exactly as it did at record time.
+
+(d) "The condemned 07-09 logs stay in history uncondoned"
+    They do, and nothing was rewritten. `git show 608b05b:studio/ci/reds/W-064/0{7,8,9}.log`
+    still carries `# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6` at
+    03:46:51 / 03:47:29 / 03:48:07, with the pre-fix spec line numbers (320/359/380)
+    and only three behaviour-9 cases. 608b05b, b8d7155 and f7f1e9d are all still
+    ancestors of HEAD (git merge-base --is-ancestor). No force-push:
+    `git ls-remote origin refs/heads/opus/W-064` == local HEAD == 1502c97.
+
+(e) the sequence reads skeleton -> reds -> restore, and the restore is exact
+    7ea3413 (pre-skeleton) -> 015a44f (skeleton, Board.tsx only)
+    -> e14e698 (the three red logs only) -> 17691be (restore, Board.tsx only)
+    -> 1502c97 (tests receipt refreshed).
+    Board.tsx blob at 7ea3413, adb00bc, 17691be and 1502c97 is the same object,
+    ffca4f116f2a03ddc088aa9d55c13cd40232f794; only 015a44f differs
+    (22a1ad3378947fec1dd52eb15aca57f3e4e36350). `git diff 7ea3413 17691be --
+    apps/web/src/screens/Board.tsx` is empty. The round trip changed nothing: the
+    source tree hash returns to 2e510707, which is why the tests/lint/types
+    certificates minted before it still name the tree that is shipping.
+
+RULING ON THE RED GATE: SATISFIED, on P-013's terms and on no others. What the
+remedy delivers is a reproducibility guarantee — any reader can check out 015a44f and
+watch these exact assertions fail — and that is the whole of what the Patron ordered
+in place of the waiver. What it does not and cannot restore is chronology: the
+assertions for behaviours 7-9 were authored and green before the skeleton existed, and
+09.log's fourth failure (:565) is the empty-needs-you case that the round-1 fix itself
+added, so that particular red postdates the fix it guards. I say so plainly rather
+than let the artifact imply otherwise. The Patron chose reproducibility over
+chronology with the sequence already in the open; the artifacts now match the choice.
+
+One residue, reproduced and unchanged from round 1: behaviour 7's negative case passes
+against the skeleton (1 passed, board.spec.ts:244). An all-negative assertion is
+satisfied by the absence of a Board, which is inherent and not something the B5 window
+fix can change; behaviour 7 as a unit still exits 1 on five presence failures, and the
+negative case's own bite is proven by mutation instead (B5 below). This is P-012's
+territory, still open.
+
+=============================================================================
+2. THE EIGHT FIXES, RE-VERIFIED BY MUTATION (my own runs, not the builder's)
+=============================================================================
+
+Method: apply the named mutation to the shipped tree, rebuild apps/web/dist when a web
+source or stylesheet changed, run the behaviour's own command, revert with
+`git checkout --`, rebuild. Every anchor was required to appear exactly once (the
+harness aborts on a missing or ambiguous anchor — it did abort once, on `const sel =
+selectedRef.current;` appearing twice, and B1a was re-run with a comment-anchored
+unique replacement). A fix counts as verified only when the mutated tree FAILS.
+
+  B1a  closeDrawer reads render-scope `selected` again — the exact round-1 bug
+       (apps/web/src/screens/Board.tsx:213 `selectedRef.current` -> `selected`)
+       -g "Esc closes and restores focus" -> exit 1, 1 failed
+       "Received: null" at board.spec.ts:388 (expect.poll on activeElement's
+       data-card-id). The bug is now caught, by name.
+  B1b  the whole focus-restoration block deleted (round-1 M12, which stayed GREEN)
+       -> exit 1, 1 failed.  The escape is closed.
+       Why it now bites: board.spec.ts:376-377 focuses .board-drawer__close and
+       asserts toBeFocused BEFORE Esc, so activeElement genuinely leaves the card;
+       :387-391 then polls for restoration (the rAF hop) and separately asserts
+       activeElement !== document.body.
+  B2   the initial-scroll guard reverted to `model.columns.length === 0`
+       -g "empty needs_you" -> exit 1, toBeInViewport failed.
+       The new case (board.spec.ts:565) flips W-004's human `patron` gate to passed
+       in its own temp studio so needs_you is genuinely empty — the half of
+       behaviour 9 that did not exist in round 1.
+  B3   gate status carried ONLY in a title attribute (the brief's own mutation:
+       BoardDrawer.tsx:52 -> `<span className="board-drawer__gate-status"
+       title={g.status} />`)
+       boardview.test.ts 6 -> exit 1
+       FAIL "BoardDrawer: gate row shows the literal status word (stale) as text,
+       not only an attribute". The `|| html.includes("stale")` escape hatch is gone.
+  B4   the drawer's box-shadow removed (w025.css:1141-1143 -> `box-shadow: none`)
+       -g "1280px" -> exit 1, 1 failed. board.spec.ts:491-496 now opens the drawer
+       at 1280 and asserts its computed box-shadow is not none/"".
+  B5   a client `setInterval(() => void fetchBoardOnly(), 5000)` added to Board.tsx
+       — the brief's own mutation, at the server's default poll interval
+       -g "negative: with /api/live blocked" -> exit 1, toHaveCount failed.
+       In round 1 this survived a 2s window; the window is now 11_000ms
+       (board.spec.ts:275), matching the live case.
+  B6   an omitted limit clamped to 500 (store.ts:414 `?? Number.MAX_SAFE_INTEGER`
+       -> `?? 500`)
+       apps/server/test/board.test.ts 10 -> exit 1
+       FAIL "omitted limit -> every event (measured against the log's own line
+       count)   500 vs 561". The fixture is seeded past the clamp
+       (seedManyEvents(dir, 520) before the Store is constructed), so "unlimited"
+       and "capped at 500" are now different numbers — which is the whole of B6.
+  B7   the needs-you banner link reverted to a plain span
+       boardview.test.ts 6 -> exit 1
+       FAIL "BoardDrawer: the petitio subject/from is a link (an <a> element) to
+       the Inbox thread".
+  B8   reconcileTargets drops its fourth path (board.ts:196 -> `return base;`)
+       apps/web/src/lib/board.test.ts 3 -> exit 1 (the list is pinned), AND
+       -g "reconnect repairs an OPEN DRAWER" -> exit 1 (toContainText failed).
+       THIS IS THE DECISIVE ONE. In round 1 the same mutation (M10c) broke
+       behaviour 3 alone, because Board.tsx hand-rolled the list; it now breaks
+       behaviour 7's open-drawer case too, which is only possible if the container
+       genuinely consumes reconcileTargets' output. fullReconcile maps over
+       reconcileTargets(selectedId) (Board.tsx:88-98). The seam the brief
+       specified exists.
+
+Round-1 advisories the builder took anyway, also re-verified:
+  A3   a SECOND runtime `from "../api.js"` import line added to Board.tsx
+       boardview.test.ts 5 -> exit 1
+       FAIL "Board.tsx: exactly one runtime import line from ../api.js".
+       .find() -> .filter() with its own assertion.
+  A4   a POST issued from a mount effect
+       -g "renders every column" -> exit 1. The write counter still bites with
+       page.route() awaited, and the ordering requirement is now stated rather
+       than inherited from Playwright's channel ordering. Swept at every call
+       site: all 13 `installWriteCounter` uses are `await`ed (grep; no bare call
+       remains).
+  A1   board.spec.ts:545-547's comment now credits W-004's human `patron` gate and
+       says explicitly that W-003's own pending gate is `qa`, kind agent. Correct
+       against examples/sample-studio.
+  A2   nothing new was needed in the pinned-call registry: the new
+       `join(served.studioDir, "opera", "W-004.md")` at board.spec.ts:569 carries
+       no untrusted segment (a temp-dir base and two literals), so the scanner does
+       not pin it — and containment.test.ts passes untouched.
+
+=============================================================================
+3. ACCEPTANCE SMOKE, SCRIPTED, AGAINST A COPY OF THE REAL studio/ (77 opera)
+=============================================================================
+
+Round 1 found B2 on real data, not on the fixture, so the fix is re-checked there.
+A temp copy of studio/, a real `bisellium serve --port 0 --poll-ms 2000`, the BUILT
+dist, chromium driven directly. All nine checks OK:
+  phone 390x844: needs_you is empty on the real officina (A5 stands)     count=0
+  phone: the initial visible column is in_progress, not the empty
+    needs_you (B2)                                                       ["in_progress"]
+  phone: no writes                                                       writes=0
+  desktop 1280: every column head count equals its own rendered card count
+    rendered {needs_you:0, planned:2, in_progress:1, verifying:0,
+              awaiting_review:0, done:46, halted:3}
+    heads    {"0","2","1","0","0","46","3"}
+  desktop: /api/opera is non-trivial real data                           opera=77
+  desktop: focus really moved INTO the drawer before Esc                 board-drawer__close
+  desktop: Esc restored focus to the card it opened from (B1)            card=W-062 after=W-062
+  desktop: after Esc, focus is NOT document.body                         isBody=false
+  desktop: no writes across the whole interaction                        writes=0
+
+Compare round 1's measurements on the same surface, verbatim:
+  "SMOKE phone visible columns: [\"needs_you\"]"   -> now ["in_progress"]
+  "PROBE-A afterEsc= {\"card\":null,\"isBody\":true,\"tag\":\"BODY\"}"
+                                                   -> now card=W-062, isBody=false
+Both live bugs are dead on the officina where they were found.
+
+=============================================================================
+4. WHAT THE FIX ROUND INTRODUCED — everything I looked at
+=============================================================================
+
+Diff reviewed line by line: `git diff 608b05b HEAD` is 6 source files
+(apps/server/test/board.test.ts, apps/web/src/components/w025.css,
+apps/web/src/screens/Board.tsx, apps/web/src/screens/BoardDrawer.tsx,
+apps/web/test/boardview.test.ts, apps/web/tests-serve/board.spec.ts) plus the officina's
+own logs and W-064.md's review gate. Every source hunk maps to a round-1 finding. No
+file outside *Files owned* and the round-1 disclosure list was touched
+(w025.css was disclosed in round 1; route.ts, Inbox.tsx, harness.ts and
+playwright.serve.config.ts are all unmodified).
+
+Nothing blocking. Four residues, each stated with whether it is one instance or a class:
+
+R1 — `everLoaded` is the right signal and the comment explaining why is accurate:
+     boardModel always emits needs_you, so `columns.length === 0` never held, and
+     officina/opera land from independently-resolving fetches, so
+     `lifecycle.id !== ""` would have been the same bug one level up. I checked the
+     initial load path: there is no separate loadAll — the first fetch is
+     fullReconcile from the SSE's onOpen (reconcileReason "connect",
+     Board.tsx:116-121), so everLoaded flips there and nowhere earlier. Correct,
+     and transport-dependent by design (behaviour 7's negative case).
+     `overflow-anchor: none` on .board__columns is scoped to this screen's own
+     class and carries its measurement in the comment. No finding.
+
+R2 — ADVISORY, one instance: fullReconcile's dispatch is a chain of three string
+     equalities with `return fetchDrawerEvents(selectedId!)` as the else branch
+     (Board.tsx:89-95). A fifth target added to reconcileTargets would silently be
+     fetched as drawer events, and the `!` would be reached with selectedId
+     undefined. It cannot happen today — behaviour 3 pins the list to exactly
+     three-or-four — so this is a latent shape, not a bug. I checked: Board.tsx is
+     the only consumer of reconcileTargets outside its own test (grep across
+     apps/ and packages/), so one instance, not a class. Cheapest close would be
+     a default that throws.
+
+R3 — ADVISORY, one instance: the negative case now takes 13.5s of a 30s Playwright
+     timeout (measured, `npm run -s test:serve`). 16s of headroom is fine today,
+     but the 11s wait is the brief's floor, not a ceiling, and anything added to
+     that case will run into the config's timeout rather than into a clear
+     assertion. I checked every other case in board.spec.ts: the next slowest are
+     the two reconnect cases at 4.6s and 4.7s, everything else is 1.1-1.7s. One
+     instance.
+
+R4 — ADVISORY, one instance, and I verified the builder's stated reason rather
+     than taking it: B7's link targets `#/inbox`, the screen, not the petitio's own
+     thread. There is no per-petitio deep link to target — apps/web/src/lib/route.ts
+     maps four bare paths with no parameters, and Inbox.tsx selects a petitio only
+     through local `focusIndex` state with no route or query input. Both files are
+     outside *Files owned*, so building one here would have been the larger
+     trespass. This satisfies *Patron rulings* ("links to the Inbox's existing
+     answer flow") and stops a little short of behaviour 6's "links to its thread";
+     the remainder belongs with W-073, where Reply itself lands. Accepted.
+
+R5 — NOT a finding, recorded so the number is accounted: studio's advisory count
+     119 -> 120 is the round-1 review gate's own uncertified evidence on
+     studio/opera/W-064.md. No rule source changed (packages/cli/src/check.ts and
+     rules/ have no diff in this round).
+
+Carried forward from round 1, unchanged and not chargeable to the builder:
+
+D6 — the *Acceptance* section asks the censor to drive a real browser by hand. I ran
+     the scripted equivalent again (section 3) and it is honest evidence of
+     behaviour, but three items still have no human eye on them: whether the
+     composition LOOKS right at 390px; whether the liveness label reads sensibly to
+     an operator (it prints a raw ISO string — deliberate, and lib/board.ts's own
+     comment says why: "the literal ISO string is rendered rather than reformatted
+     so the claim holds by construction", so this is a Patron judgment, not a
+     defect); and whether the drawer's empty "From the officina record" section
+     (a heading with no rows) is acceptable.
+     Is this a class? I searched every review log in studio/ci (grep -ril for
+     "attended", 12 files) and classified each: W-046, W-049, W-069 and W-071's
+     "attended" passes were Patron-authorised batteries the censor DID run —
+     a different thing; W-044's was blocked by an expired credential, not by the
+     absence of eyes; W-075's was a one-off pass not repeated in CI. W-064's is the
+     only genuine human-eye instance in the recorded corpus. ONE INSTANCE, not a
+     class — so no petitio is owed on recurrence grounds, and it is flagged for the
+     Patron's own eyes as it was in round 1.
+
+A5 — the needs-you column can never fill on the Patron's own officina (no probatio
+     of kind: human is declared anywhere in studio/bisellium.yml). Re-measured this
+     round on real data: needs_you count = 0. Tracked: W-078 (design, backlog)
+     names exactly this. Not W-064's to fix; the implementation is conformant.
+
+=============================================================================
+5. VERDICT
+=============================================================================
+
+PASS, round 2. All eight blocking findings of round 1 are fixed, and each is fixed at
+the root rather than at the symptom: every one now has an assertion that fails when
+the defect is put back, proven by my own mutation, not by the builder's report. The two
+live bugs are dead on the real officina where they were found, measured against round
+1's own verbatim numbers. B8's seam is genuinely wired — the mutation that broke one
+behaviour in round 1 now breaks two.
+
+The red gate passes on P-013's recorded answer and on nothing else: the waiver stands
+refused, D-024 is not extended, and the remedy the Patron named is satisfied by
+re-execution I performed myself — checkout 015a44f, run the three named commands, watch
+the same twelve assertions fail at the same spec lines, with the logs' tree hash
+independently recomputed to be5cf928 and the condemned dirty:c032fb5b logs left intact
+at 608b05b in an unrewritten history. P-012 stays open; behaviour 7's negative case
+still passes against a skeleton, which is why it does.
+
+No blocking findings. Four advisories (R2, R3, R4, and D6's three unattended items for
+the Patron), none of which is a class.
+
+-- qa-lead (censor), via Claude Opus 5

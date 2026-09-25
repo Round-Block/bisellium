@@ -1,0 +1,149 @@
+# behaviour: 7
+# command: npx playwright test -c playwright.serve.config.ts -g behaviour 7
+# exit: 1
+# at: 2026-09-25T07:27:53.584Z
+# sella: builder-a
+# tree: tree:be5cf928d28ded52151662fa7b1caeccca31f04b
+
+
+Running 6 tests using 6 workers
+
+W-007: greenlit
+W-007: greenlit
+  ✘  3 [chromium] › tests-serve/board.spec.ts:208:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › renders every column, each count equal to the spec's own computation from GET /api/opera (5.8s)
+  ✘  1 [chromium] › tests-serve/board.spec.ts:223:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals (11.9s)
+  ✘  6 [chromium] › tests-serve/board.spec.ts:320:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › coalescing: a poll delivering several frames issues exactly one /api/opera request (11.8s)
+  ✓  5 [chromium] › tests-serve/board.spec.ts:244:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › negative: with /api/live blocked after the initial connection, the card never appears and no further /api/opera requests are issued (12.7s)
+  ✘  2 [chromium] › tests-serve/board.spec.ts:284:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload (16.2s)
+  ✘  4 [chromium] › tests-serve/board.spec.ts:300:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening (30.0s)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:208:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › renders every column, each count equal to the spec's own computation from GET /api/opera 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('.board__column[data-column-id="needs_you"] .board__column-count')
+    Expected: "1"
+    Received: "0"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" locator('.board__column[data-column-id="needs_you"] .board__column-count') with timeout 5000ms
+      - waiting for locator('.board__column[data-column-id="needs_you"] .board__column-count')
+        14 × locator resolved to <span class="board__column-count">0</span>
+           - unexpected value "0"
+
+
+      214 |     for (const col of expected.columns) {
+      215 |       const head = page.locator(`.board__column[data-column-id="${col.id}"] .board__column-count`);
+    > 216 |       await expect(head).toHaveText(String(col.cards.length));
+          |                          ^
+      217 |     }
+      218 |
+      219 |     await page.goto(`${served.baseURL}/#/inbox`);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:216:26
+
+    Error Context: test-results/board-W-064-behaviour-7-tr-f5c1d-putation-from-GET-api-opera-chromium/error-context.md
+
+  2) [chromium] › tests-serve/board.spec.ts:223:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')
+    Expected: visible
+    Timeout: 11000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]') with timeout 11000ms
+      - waiting for locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')
+
+
+      235 |     await forcePoll(served);
+      236 |
+    > 237 |     await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')).toBeVisible({ timeout: 11_000 });
+          |                                                                                                               ^
+      238 |     await expect(page.locator('.board__column[data-column-id="planned"] .board__backlog-footer')).toBeHidden();
+      239 |
+      240 |     await page.goto(`${served.baseURL}/#/inbox`);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:237:111
+
+    Error Context: test-results/board-W-064-behaviour-7-tr-56be1-d-within-two-poll-intervals-chromium/error-context.md
+
+  3) [chromium] › tests-serve/board.spec.ts:284:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: locator('.board__card[data-card-id="W-002"] .board__card-title')
+    Expected: "reconnected title"
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveText" locator('.board__card[data-card-id="W-002"] .board__card-title') with timeout 15000ms
+      - waiting for locator('.board__card[data-card-id="W-002"] .board__card-title')
+
+
+      292 |     await r.restart();
+      293 |
+    > 294 |     await expect(page.locator('.board__card[data-card-id="W-002"] .board__card-title')).toHaveText("reconnected title", { timeout: 15_000 });
+          |                                                                                         ^
+      295 |
+      296 |     await page.goto(`${r.baseURL}/#/inbox`);
+      297 |     expect(counter.count()).toBe(0);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:294:89
+
+    Error Context: test-results/board-W-064-behaviour-7-tr-a11d4--reconnect-without-a-reload-chromium/error-context.md
+
+  4) [chromium] › tests-serve/board.spec.ts:300:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card[data-card-id="W-002"]')
+
+
+      304 |     await openBoard(page, r);
+      305 |
+    > 306 |     await page.locator('.board__card[data-card-id="W-002"]').click();
+          |                                                              ^
+      307 |     await expect(page.locator(".board-drawer")).toBeVisible();
+      308 |
+      309 |     r.kill();
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:306:62
+
+    Error Context: test-results/board-W-064-behaviour-7-tr-3e7d7-s-without-closing-reopening-chromium/error-context.md
+
+  5) [chromium] › tests-serve/board.spec.ts:320:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › coalescing: a poll delivering several frames issues exactly one /api/opera request 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.board__column[data-column-id="verifying"] .board__card[data-card-id="W-002"]')
+    Expected: visible
+    Timeout: 11000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.board__column[data-column-id="verifying"] .board__card[data-card-id="W-002"]') with timeout 11000ms
+      - waiting for locator('.board__column[data-column-id="verifying"] .board__card[data-card-id="W-002"]')
+
+
+      333 |     await forcePoll(served);
+      334 |
+    > 335 |     await expect(page.locator('.board__column[data-column-id="verifying"] .board__card[data-card-id="W-002"]')).toBeVisible({ timeout: 11_000 });
+          |                                                                                                                 ^
+      336 |     await page.waitForTimeout(300); // let the trailing timer settle fully
+      337 |     expect(opusRequests).toBe(1);
+      338 |
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:335:113
+
+    Error Context: test-results/board-W-064-behaviour-7-tr-42b7d-actly-one-api-opera-request-chromium/error-context.md
+
+  5 failed
+    [chromium] › tests-serve/board.spec.ts:208:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › renders every column, each count equal to the spec's own computation from GET /api/opera 
+    [chromium] › tests-serve/board.spec.ts:223:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals 
+    [chromium] › tests-serve/board.spec.ts:284:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload 
+    [chromium] › tests-serve/board.spec.ts:300:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening 
+    [chromium] › tests-serve/board.spec.ts:320:3 › W-064 behaviour 7: transport dependence, reconnect reconciliation, coalescing, no writes › coalescing: a poll delivering several frames issues exactly one /api/opera request 
+  1 passed (30.8s)

@@ -33,7 +33,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
-import { Store as CoreStore } from "@bisellium/core";
+import { EVENTS_LOG_REL, readLog, Store as CoreStore } from "@bisellium/core";
 import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, snapshotDir, type Manifest } from "@bisellium/adapter-native";
 
 /** This server's own ingestion source id, stamped as `workflow.source` on
@@ -230,8 +230,13 @@ export class Store extends CoreStore {
       tiers?: Manifest["tiers"];
       munera?: Manifest["munera"];
       models?: ModelRecordEntry[];
+      lifecycle: { id: string; states: { id: string; name: string; phase: string }[] };
     } => {
       const m = this.manifest();
+      // From this.adapter.describeLifecycles()[0] — id and states only.
+      // Transitions are not the Board's business and `gates` would
+      // duplicate this route's existing `probationes` (W-064 Interfaces).
+      const lc = this.adapter.describeLifecycles()[0];
       return {
         studio: m.studio,
         patron: m.patron ?? "patron",
@@ -248,6 +253,7 @@ export class Store extends CoreStore {
         tiers: m.tiers,
         munera: m.munera,
         models: this.modelsRecord(),
+        lifecycle: { id: lc?.id ?? "", states: (lc?.states ?? []).map((s) => ({ id: s.id, name: s.name, phase: s.phase })) },
       };
     },
 
@@ -392,7 +398,19 @@ export class Store extends CoreStore {
      *  monotonic counter — W-016 behaviour 4, never a re-derived
      *  `log.length`), optionally only those after `since` and capped at
      *  `limit`. */
-    events: (opts: { since?: number; limit?: number } = {}): (GantryEvent & { seq: number })[] => {
+    /** `item` reads a FRESH `events.jsonl` (never the Index — the survey:
+     *  the Index misses every event appended by another writer for the life
+     *  of the process). Ascending, same ordering as the unfiltered path;
+     *  `limit` here means the LAST N (a drawer wants an item's recent
+     *  history), then returned ascending — `Index.timeline`'s own
+     *  `out.slice(Math.max(0, out.length - limit))` is the in-house
+     *  precedent. These rows carry no `seq`: they never touched the Index. */
+    events: (opts: { since?: number; limit?: number; item?: string } = {}): (GantryEvent & { seq?: number })[] => {
+      if (opts.item !== undefined) {
+        const { events } = readLog(join(this.studioDir, EVENTS_LOG_REL));
+        const filtered = events.filter((e) => e.attrs["workflow.item.id"] === opts.item);
+        return opts.limit !== undefined ? filtered.slice(Math.max(0, filtered.length - opts.limit)) : filtered;
+      }
       return this.query.events(opts.since, opts.limit ?? Number.MAX_SAFE_INTEGER);
     },
 

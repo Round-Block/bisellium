@@ -820,7 +820,11 @@ async function main(): Promise<void> {
         { id: "gpt-fresh", harness: "codex" },
       ];
     };
-    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels }));
+    // W-064 (censor's W-065 r2 seam note, folded in): a short, injected TTL
+    // instead of a real 5.2s sleep against the default 5s constant — same
+    // assertion ("a call AFTER the TTL refreshes the listing"), no wall-clock
+    // wait.
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, listModels, listingTtlMs: 50 }));
     const base = `http://127.0.0.1:${s.port}`;
     try {
       const r = await getJson(base, "/api/models");
@@ -834,8 +838,9 @@ async function main(): Promise<void> {
       // Finding B (amended brief): the TTL assertion pinned only the lower
       // bound ("at most once inside the window") and never that a call PAST
       // the window actually refreshes — a listing cached forever satisfied
-      // it just as well. Wait past the real TTL and confirm a second call.
-      await new Promise((r) => setTimeout(r, 5_200));
+      // it just as well. Wait past the (injected, short) TTL and confirm a
+      // second call.
+      await new Promise((r) => setTimeout(r, 80));
       await getJson(base, "/api/models");
       check("models: a call AFTER the TTL refreshes the listing", calls === 2, String(calls));
     } finally {

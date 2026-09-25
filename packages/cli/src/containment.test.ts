@@ -259,6 +259,16 @@ const PINNED_B: PinnedB[] = [
     disposition: "bypass",
     why: "W-067 acceptance smoke, test-only: target.id is read back from the served instance's own /api/inbox response and joined against a mkdtemp scratch studio this same test creates and deletes — a traversal here reaches nothing but the test's own throwaway temp dir, never studio/ or examples/sample-studio itself",
   },
+  {
+    key: "apps/web/tests-serve/board.spec.ts:setOpusState#1",
+    disposition: "bypass",
+    why: "W-064 mounted fixtures, test-only: id is always a literal opus id this same test file writes ('W-002'/'W-005'/'W-007'), joined against a mkdtemp scratch studio startRestartable/startServed creates and deletes — same shape as answer.spec.ts's own bypass above, never studio/ or examples/sample-studio itself",
+  },
+  {
+    key: "apps/web/tests-serve/board.spec.ts:setOpusTitle#1",
+    disposition: "bypass",
+    why: "same function family as setOpusState#1 above — a literal id, a throwaway temp studio",
+  },
   { key: "packages/cli/src/branch.ts:readOpusRecord#1", disposition: "bypass", why: "positional <opus-id>, into a git pathspec" },
   { key: "packages/cli/src/branch.ts:readOpusRecord#2", disposition: "bypass", why: "same value, same pathspec, error path" },
   { key: "packages/cli/src/branch.ts:readOpusRecord#3", disposition: "bypass", why: "same value, filesystem read fallback" },
