@@ -1,0 +1,77 @@
+# W-084 — censor review, round 4 (scoped to round 3's single finding)
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-25T21:00:01Z
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-084 · branch: opus/W-084 · HEAD: 2ba298a
+# VERDICT: PASS
+# round-4 commits: 910245d (pre-hardening state) · 1759b1a (red 04) · 026c828 (rule restored)
+#                  · 2ba298a (verify on tree:b1aceee7)
+
+Round 3 failed on one thing: the security rows shipped with no recorded red, and the report
+claimed one that the tree did not contain. That is now closed, and closed the way evidence has
+to be — produced at a real committed state, not backfilled.
+
+== 1. the red exists, at a state that is really the pre-hardening state ==
+
+  claim                                          re-derived                                verdict
+  910245d reverts the rule to 2302741's          `git diff 2302741 910245d --                MATCH
+                                                 packages/cli/src/rules/evidence.ts` empty
+  the hardened rows are present at that state    `git diff a414935 910245d --                MATCH
+                                                 …/evidence.test.ts` empty
+  910245d changes nothing else                   1 file, 2 insertions, 49 deletions          MATCH
+  04.log stamps tree:2914a0d6…                   sha1 over `git ls-tree -r 910245d` minus    MATCH
+                                                 [studio, .bisellium, examples]
+                                                 = 2914a0d674c8b282f79756465e1ceffc53a522fb
+  the hardened rule is restored afterwards       `git diff a414935 HEAD --                   MATCH
+                                                 …/evidence.ts …/evidence.test.ts scripts/`
+                                                 empty — nothing drifted in the round trip
+  gates certify tree:b1aceee7…                   same hash re-derived at HEAD                MATCH
+  reds 01-03 untouched                           `git log` on those three paths: one         MATCH
+                                                 commit, 8778886
+
+== 2. the log reproduces ==
+
+Detached checkout of 910245d, then the log's own `# command:` verbatim:
+
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 8      exit 1
+    PASS  brief.behaviour_citation is registered
+    FAIL  unreadable, symlink, and FIFO briefs are skipped; later brief is reached
+          [briefs/01-symlink.md Behaviour 97 · briefs/02-fifo.md Behaviour 98 ·
+           briefs/zz-later.md Behaviour 99]
+    FAIL  10k backticks and the quadratic shape complete in bounded time  586.7ms […]
+
+Line-by-line against 04.log's body: lines 1 and 2 byte-identical; line 3 differs only in the
+wall-clock figure (586.7ms here, 599.0ms recorded) and is identical once that figure is
+normalised. A timing row cannot be byte-stable and should not be — both readings are ~3x the
+200ms bound, and the pre-hardening rule fails the assertion for the right reason. Same exit
+code, same failing rows, same findings.
+
+Both security rows are therefore evidenced red-before-green: the symlink and the FIFO are
+present as findings that the fixed rule must not produce, and the ReDoS row fails on time.
+
+Red 04 is off-contract by design — the brief declares 3 behaviours, so `opus.red_evidence`
+never reads a 04.log (the W-039 scoping note at rules/evidence.ts:258). Confirmed empirically:
+`check` reports no new finding of any kind from its presence.
+
+== 3. everything else still holds ==
+
+  npm test -s              exit 0 · 3261 PASS · 0 FAIL · 0 SKIP (the FIFO row really ran)
+  npm run -s typecheck     exit 0        npm run -s lint          exit 0 (2 pre-existing)
+  npm run -s format:check  exit 0        check studio --repo .    0 blocking · 149 advisory
+  brief.behaviour_citation on the real corpus: 0 findings
+
+W-084's three advisories: two house-norm `probatio.certifies` (spec and review gates never
+carry one) and the `opus.red_content` false positive on behaviour 3 that I ruled on in round 1
+— the detector defect it comes from stays filed outside this opus. The `traditio.stage`
+advisory round 3 surfaced is gone: the failing verdict returned the opus to `building`, which
+is where its handoff already said it was.
+
+Round 3's three non-blocking notes stand as notes and are not conditions: the read-failure
+catch is unpinned defence-in-depth (M5b), `stripBacktickSpans` is duplicated into the census
+script, and `stripLegacyBacktickSpans` is thirty lines serving one informational line.
+
+== 4. verdict ==
+
+PASS. The prescription was followed exactly and I re-derived every step of it rather than
+reading the report: the state commit really is the pre-hardening rule with the hardened rows on
+it, the stamp really is that state's tree, the log really reproduces there, and the hardened
+rule came back byte-identical. W-084 is done: a block rule that is measured, bounded, mutation-
+proven, and now red-before-green on every row it owns.
