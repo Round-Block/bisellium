@@ -1,0 +1,214 @@
+# W-089 review round 1 — censor (qa-lead), claude-opus-5
+# produced by scripts/../ this file's own generator: $TMPDIR/w089-evidence.sh
+# tree: f78e3199d5af40e81866b46b255bf56cd67f622c  branch: opus/W-089
+# at: 2026-09-25T21:02:28Z
+
+## 1. Gates re-run by the censor (not taken from the builder's logs)
+$ npm run -s typecheck
+TYPES exit=0
+$ npm run -s lint
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/home/edckt/projects/bisellium/.worktrees/W-089/packages/shim/test/instance-surfaces.test.ts
+  10:46  warning  'readdirSync' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  13:16  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @typescript-eslint/no-unused-vars
+
+✖ 4 problems (0 errors, 4 warnings)
+
+LINT exit=0
+$ npm run -s test:suite
+PASS lines: 3402
+FAIL lines: 0
+TESTS exit=0
+$ npm run -s check -- studio --repo .
+PASS — 0 blocking, 146 advisory
+$ npm run -s check -- examples/sample-studio --repo .
+PASS — 0 blocking, 27 advisory
+
+## 2. Mutation battery ($TMPDIR/w089-mutate.sh — apply, run, restore)
+### MUTATION M1 run.ts: retired dispatch allowed (refusal removed)
+-- packages/commands/src/run.test.ts
+FAIL  run: an exact retired sella exits 2                          0
+FAIL  run: an instance of a retired sella also exits 2             0
+   exit=1
+-- packages/cli/src/writes.test.ts
+   exit=0
+-- packages/cli/src/lifecycle.test.ts
+PASS  amend b6: a non-AmendShapeError propagates (not swallowed as exit 2) 
+   exit=0
+-- packages/shim/test/talk.test.ts
+   exit=0
+-- packages/commands/src/delegate.test.ts
+   exit=0
+### restored: 1 dirty files
+### MUTATION M2 seatInstance: bare template passes through
+-- adapters/native/src/seatInstance.test.ts
+FAIL  [W-089 b4] mints <seat>.<opus> exactly                                            
+FAIL  [W-089 b4] refuses a doubled dot                                                  
+FAIL  [W-089 b4] refuses an id that would fail ID_RE (a raw '@')                        
+FAIL  [W-089 b4] round-trip: seatInstance("builder", "W-089") resolves back to the same seat {"minted":"builder","round":{"seat":{"id":"builder","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder", "W-1") resolves back to the same seat {"minted":"builder","round":{"seat":{"id":"builder","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder", "w-legacy_1.2") resolves back to the same seat {"minted":"builder","round":{"seat":{"id":"builder","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-codex", "W-089") resolves back to the same seat {"minted":"builder-codex","round":{"seat":{"id":"builder-codex","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-codex", "W-1") resolves back to the same seat {"minted":"builder-codex","round":{"seat":{"id":"builder-codex","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-codex", "w-legacy_1.2") resolves back to the same seat {"minted":"builder-codex","round":{"seat":{"id":"builder-codex","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-a", "W-089") resolves back to the same seat {"minted":"builder-a","round":{"seat":{"id":"builder-a","collegium":"engineering","retired":true}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-a", "W-1") resolves back to the same seat {"minted":"builder-a","round":{"seat":{"id":"builder-a","collegium":"engineering","retired":true}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-a", "w-legacy_1.2") resolves back to the same seat {"minted":"builder-a","round":{"seat":{"id":"builder-a","collegium":"engineering","retired":true}}}
+   exit=1
+-- packages/commands/src/run.test.ts
+FAIL  run: the child sees BISELLIUM_SELLA=builder.W-100            builder
+FAIL  run: the receipt lives under receipts/builder.W-100/, not receipts/builder/ ["builder"]
+   exit=1
+-- packages/cli/src/writes.test.ts
+grep: (standard input): binary file matches
+   exit=1
+-- packages/shim/test/talk.test.ts
+FAIL  w089 b3: an instance id resolves the template's harness — exits 0 2
+FAIL  w089 b3: an instance id resolves the template's harness — the harness actually ran {"start":0,"resume":0}
+FAIL  w089 b5: a well-formed instance still starts the harness — exits 0 2
+FAIL  w089 b5: the harness actually ran for the instance         {"start":0,"resume":0}
+   exit=1
+-- packages/shim/test/hooks.test.ts
+FAIL  w089 b5: hook-event start on a minted instance writes its receipt 
+   exit=1
+-- packages/shim/test/instance-surfaces.test.ts
+FAIL  b9 negative: a doubled-dot instance is refused, not dispatched   0
+FAIL  b9 negative: no worktree directory was ever created for it       /tmp/claude-1000/w089-b9-neg-repo-4mf6k1/.bisellium/worktrees
+   exit=1
+### restored: 1 dirty files
+### MUTATION M3 hooks.ts process.cascade: back to the string-prefix guess
+-- packages/shim/test/hooks.test.ts
+FAIL  cascade guard: "builder-a" still warns                     []
+FAIL  cascade guard: "builder-a.W-100" still warns               []
+FAIL  cascade guard: "builderish" still warns                    []
+   exit=1
+### restored: 1 dirty files
+### MUTATION M4 check.ts: traditio.sella back to a flat sellaIds membership test
+-- packages/cli/src/check.test.ts
+FAIL  [W-089 b7] an instance id in traditio.sella produces no traditio.sella finding [{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder.W-989\" not declared"}]
+   exit=1
+### restored: 1 dirty files
+
+## 3. The brief's migration table, re-measured ($TMPDIR/w089-migration.sh)
+== asbuilt ==
+  builder rows: 7
+  147 findings, 1 blocking
+    1 × link.dead
+== notombstones ==
+  builder rows: 2
+  197 findings, 51 blocking
+    1 × link.dead
+    15 × opus.sella
+    35 × traditio.sella
+  brief rev 2 predicted: 34 x traditio.sella + 15 x opus.sella = 49 blocking, plus
+  the link.dead copy artifact; as-built 0 + artifact. Confirmed; traditio.sella is
+  35 not 34 because opera were added after the brief's measurement.
+
+## 4. Historical records: genuinely untouched
+$ git diff master...HEAD --name-only -- studio (excluding new ci/ evidence)
+studio/bisellium.yml
+studio/opera/W-089.md
+$ git diff master...HEAD --name-only -- studio/opera studio/acta studio/petitiones studio/decisions studio/leges
+studio/opera/W-089.md
+  -> only W-089's own record (its probationes, written by verify). PASS.
+$ git diff master...HEAD --name-only -- examples/sample-studio/opera
+examples/sample-studio/opera/W-002.md
+examples/sample-studio/opera/W-004.md
+  -> FINDING: two fixture records rewritten. Redundancy proof below.
+
+## 5. FINDING B5: the fixture history rewrite is redundant
+$ (builder-1 restored in both fixture opera) npm run -s check -- examples/sample-studio --repo .
+PASS — 0 blocking, 27 advisory
+$ the only suite assertion that depends on the rewrite:
+FAIL  opus/W-004: has traditio                             {"sella":"builder-1","stage":"review","next":"await patron call","blocked_on":"patron","at":"2026-09-17T09:58:00Z"}
+context.test.ts FAIL lines: 0
+  -> the tombstone already keeps the records clean (0 blocking); one server-test
+     assertion, which this opus itself rewrote, is the whole dependency.
+
+## 6. FINDING B1: behaviour 5 unmet at the seven lifecycle verbs
+$ bisellium handoff --opus W-002 --sella builder   (implemented: mints)
+W-002: traditio -> sella=builder.W-002 stage=building next="probe" blocked_on=none
+$ bisellium review W-004 --pass --sella builder    (writes a BARE template)
+W-004: review passed (ci/W-004-tests-6b416199.log)
+14:  review: { status: passed, evidence: ci/W-004-tests-6b416199.log, certifies: tree:c50a0cef6c7b79d527a88dc8298f446cd5014002, sella: builder, at: 2026-09-26T00:01:00.000Z }
+$ bisellium red W-002 --behaviour 9 --sella builder (writes a BARE template)
+W-002: red recorded for behaviour 9 -> ci/reds/W-002/09.log
+# sella: builder
+$ bisellium hook-event tool --sella builder
+      2 "workflow.actor.role":"builder"
+  -> ready/done/review/halt/waive (resolveSella) and red/amend (namedSella) all
+     validate and never mint; lifecycle.ts has no counterpart to writes.ts's
+     mintDispatchSella. hook-event tool is a fourth site, carved out by comment.
+
+## 7. FINDING B2: the 'guest' default is now refused on an officina without a guest row
+$ bisellium init's scaffolded sellae:
+sellae:
+  - { id: producer, collegium: production, kind: agent }
+probationes:
+$ (branch) bisellium review W-001 --pass --evidence ci/probe.log   [no --sella, no env]
+review: unknown sella "guest" — not declared in bisellium.yml
+exit=2
+$ (master, same officina, same command)
+W-001: review passed (ci/probe.log)
+exit=0
+  -> 'guest' is not declared by bisellium init; ADOPTION.md never mentions it.
+     grep -c guest packages/cli/src/init.ts docs/ADOPTION.md:
+packages/cli/src/init.ts:0
+docs/ADOPTION.md:0
+
+## 8. FINDING B3: behaviour 3's hooks consumer is unimplemented
+$ git diff --stat master...HEAD -- packages/shim/src
+  (empty)
+$ bisellium hooks check --harness claude-code  (a LIVE receipt sits in receipts/builder.W-089/)
+eng-lead: harness=claude-code last=none dead
+builder: harness=claude-code last=none dead
+builder-a: harness=claude-code last=none dead
+  -> 'builder: last=none dead' despite a live instance receipt; receipts/ghost.dir
+     is silently ignored, never reported unknown. Behaviour 3's own red (03.log)
+     omits packages/shim/test/hooks.test.ts from its command list:
+# command: sh -c node --import tsx adapters/native/src/resolveSeat.test.ts && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/seatedCandidates.test.ts && node --import tsx apps/server/test/server.test.ts .
+
+## 9. FINDING B7: examples/sample-studio's serve specs still target a retired seat
+$ apps/web/tests-serve/seats.spec.ts:143 does exactly this:
+40:    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+65:    expect(body.sella).toBe("builder-1");
+74:    expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder-1")?.model).toBe("claude-opus-5");
+95:    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+120:    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+137:    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+143:    const cliResult = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", served.studioDir]);
+163:    expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder-1")?.model).toBe("gpt-5.6-sol");
+175:    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+202:    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+$ bisellium delegate --sella builder-1 --model gpt-5.6-sol
+sella "builder-1" is retired — dispatch "builder" instead
+  -> exit 2. tests-serve/ is not in package.json's test:suite, so neither the
+     builder's gates nor Terra's census executed it.
+
+## 10. Behaviour 9's test cannot fail for the surfaces it claims
+  Under mutation M2 (seatInstance returns the bare seat id) the file's parts 1-3
+  survive; only part 4 dies (see section 2). Part 3 asserts a string the test
+  itself builds:
+
+// ---- 3. GIT_AUTHOR_EMAIL is exactly one "@" ---------------------------------
+{
+  const slug = "studio";
+  const email = `${INSTANCE}@${slug}.bisellium`;
+  check("b9: GIT_AUTHOR_EMAIL has exactly one '@'", email.split("@").length === 2, email);
+  check("b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium", email === "builder.W-089@studio.bisellium", email);
+}
+
+## 11. Non-goal check: ID_RE untouched
+$ git diff master...HEAD -- packages/cli/src/check.ts | grep ID_RE
+matching diff lines: 0
+$ grep -n 'const ID_RE' packages/cli/src/check.ts
+37:export const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+## 12. Seam S1 honoured: no surviving private roster grammar in source
+adapters/native/src/index.ts:314:  const candidates = (manifest.sellae ?? []).filter((r) => r.retired !== true && r.collegium === retired.collegium && r.harness === retired.harness);
+packages/shim/test/hooks.test.ts:530:  // `hooks.ts:378`'s `!sella.startsWith("builder")` becomes a `resolveSeat`
+  -> the only survivor is liveReplacementFor's own filter inside the seam itself.
+
+## end. git status at close:
+?? studio/ci/W-089-review-1.log
