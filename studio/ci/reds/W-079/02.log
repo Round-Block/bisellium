@@ -1,7 +1,84 @@
 # behaviour: 2
 # command: node scripts/w079-mutation-check.mjs 2
 # exit: 1
-# at: 2026-09-25T09:40:19.946Z
+# at: 2026-09-25T10:07:09.271Z
 # sella: builder-sol
-# tree: unknown
+# tree: tree:4f3a0d4ffd965a051a0fc79170bb2a05b13bfcb8
 
+PASS  amend b6: no opus id exits 2                                     2
+PASS  amend b6: no opus id events unchanged                            
+PASS  amend b6: no opus id stderr names ["usage:"]                     usage: bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  amend b6: unknown opus id exits 2                                2
+PASS  amend b6: unknown opus id events unchanged                       
+PASS  amend b6: unknown opus id stderr names ["unknown opus"]          unknown opus: W-9999
+
+PASS  amend b6: neither --title nor --spec exits 2                     2
+PASS  amend b6: neither --title nor --spec record unchanged            
+PASS  amend b6: neither --title nor --spec events unchanged            
+PASS  amend b6: neither --title nor --spec stderr names ["usage:"]     usage: bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  amend b6: --reason absent exits 2                                2
+PASS  amend b6: --reason absent record unchanged                       
+PASS  amend b6: --reason absent events unchanged                       
+PASS  amend b6: --reason absent stderr names ["usage:"]                amend: --reason is required and must be non-empty
+usage: bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+
+PASS  amend b6: --reason whitespace exits 2                            2
+PASS  amend b6: --reason whitespace record unchanged                   
+PASS  amend b6: --reason whitespace events unchanged                   
+PASS  amend b6: --title "" exits 2                                     2
+PASS  amend b6: --title "" record unchanged                            
+PASS  amend b6: --title "" events unchanged                            
+PASS  amend b6: --title "  " exits 2                                   2
+PASS  amend b6: --title "  " record unchanged                          
+PASS  amend b6: --title "  " events unchanged                          
+PASS  amend b6: --spec missing target exits 2                          2
+PASS  amend b6: --spec missing target record unchanged                 
+PASS  amend b6: --spec missing target events unchanged                 
+PASS  amend b6: --spec missing target stderr names ["not ready"]       W-001: no spec at nope/missing.md — not ready
+
+PASS  amend b6: --spec traversal (D-008) exits 2                       2
+PASS  amend b6: --spec traversal (D-008) record unchanged              
+PASS  amend b6: --spec traversal (D-008) events unchanged              
+PASS  amend b6: --spec traversal (D-008) stderr names ["D-008"]        W-001: --spec "../../etc/passwd" resolves outside the officina (D-008) — refused
+
+PASS  amend b6: --title equal to current exits 2                       2
+PASS  amend b6: --title equal to current record unchanged              
+PASS  amend b6: --title equal to current events unchanged              
+PASS  amend b6: --spec on a record with no spec: key (land 7) exits 2  2
+PASS  amend b6: --spec on a record with no spec: key (land 7) record unchanged 
+PASS  amend b6: --spec on a record with no spec: key (land 7) events unchanged 
+PASS  amend b6: --spec on a record with no spec: key (land 7) stderr names ["no spec:"] amend: W-001 has no spec: to amend — the first pointer is written by "new --spec"/"new --brief" or by "ready"
+
+PASS  amend b6: --spec equal to current (path alias, land 3) exits 2   2
+PASS  amend b6: --spec equal to current (path alias, land 3) record unchanged 
+PASS  amend b6: --spec equal to current (path alias, land 3) events unchanged 
+PASS  amend b6: --spec absolute inside the officina (land 10) exits 2  2
+PASS  amend b6: --spec absolute inside the officina (land 10) record unchanged 
+PASS  amend b6: --spec absolute inside the officina (land 10) events unchanged 
+PASS  amend b6: --spec through a symlink that escapes the officina (land 10) exits 2 2
+PASS  amend b6: --spec through a symlink that escapes the officina (land 10) record unchanged 
+PASS  amend b6: --spec through a symlink that escapes the officina (land 10) events unchanged 
+PASS  amend b6: --spec through a symlink that stays inside the officina (finding 12) exits 2 2
+PASS  amend b6: --spec through a symlink that stays inside the officina (finding 12) record unchanged 
+PASS  amend b6: --spec through a symlink that stays inside the officina (finding 12) events unchanged 
+PASS  amend b6: --sella "" exits 2                                     2
+PASS  amend b6: --sella "" record unchanged                            
+PASS  amend b6: --sella "" events unchanged                            
+PASS  amend b6: --sella "  " exits 2                                   2
+PASS  amend b6: --sella "  " record unchanged                          
+PASS  amend b6: --sella "  " events unchanged                          
+PASS  amend b6: amendments: is a scalar (land 9) exits 2               2
+PASS  amend b6: amendments: is a scalar (land 9) record unchanged      
+PASS  amend b6: amendments: is a scalar (land 9) events unchanged      
+PASS  amend b6: amendments: is a mapping (land 9) exits 2              2
+PASS  amend b6: amendments: is a mapping (land 9) record unchanged     
+PASS  amend b6: amendments: is a mapping (land 9) events unchanged     
+PASS  amend b6: amendments: is an alias to a sequence (finding 11) exits 2 2
+PASS  amend b6: amendments: is an alias to a sequence (finding 11) record unchanged 
+PASS  amend b6: amendments: is an alias to a sequence (finding 11) events unchanged 
+W-700: amended title
+PASS  amend b6: whitespace $BISELLIUM_SELLA is treated as unset — the amendment succeeds 0
+PASS  amend b6: it is recorded as guest                                [{"at":"2026-09-19T13:00:00.000Z","sella":"guest","field":"title","reason":"r","superseded":"whitespace env sella"}]
+w079-mutation-check: behaviour 2 mutation SURVIVED (AmendShapeError-only catch widened to a blanket refusal)
