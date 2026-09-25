@@ -459,7 +459,7 @@ async function main(): Promise<void> {
     {
       const { status, body } = await getJson(base, "/api/opus/W-004");
       check("opus/W-004: 200", status === 200, String(status));
-      check("opus/W-004: has traditio", !!body?.traditio && body.traditio.sella === "builder-1", JSON.stringify(body?.traditio));
+      check("opus/W-004: has traditio", !!body?.traditio && body.traditio.sella === "builder", JSON.stringify(body?.traditio));
     }
 
     // ---- GET /api/opus/<unknown>: 404 {error} --------------------------------
@@ -847,9 +847,9 @@ async function main(): Promise<void> {
     const originalLog = console.log;
     const originalError = console.error;
     try {
-      const pA = postJson(talkBase, "/api/talk", { sella: "builder-1", message: "one", harness: "fake" });
+      const pA = postJson(talkBase, "/api/talk", { sella: "builder.W-500", message: "one", harness: "fake" });
       await new Promise((r) => setTimeout(r, 25));
-      const pB = postJson(talkBase, "/api/talk", { sella: "builder-2", message: "two", harness: "fake" });
+      const pB = postJson(talkBase, "/api/talk", { sella: "eng-lead", message: "two", harness: "fake" });
       const [a, b] = await Promise.all([pA, pB]);
       const aOut = String((a.body as { output?: string })?.output ?? "");
       const bOut = String((b.body as { output?: string })?.output ?? "");

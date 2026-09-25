@@ -21,7 +21,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
-import { readManifest, resolveSeat, retiredDispatchMessage, type Manifest } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
@@ -322,6 +322,32 @@ function gitFailureRefusal(opusId: string, branch: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// W-089 behaviour 5: handoff and emit --usage both already carry --opus, so
+// (unlike talk/tick, which have no opus argument of their own) they mint the
+// instance themselves rather than requiring the caller to. Seam S2
+// (seatInstance) only ever joins a LIVE builder-class template to an opus
+// id — a non-builder-class sella (eng-lead, patron, a retired tombstone
+// already refused above) passes through byte-identical to what the caller
+// supplied. A supplied instance is re-minted from its own seat+suffix and
+// must agree with --opus before anything is written, same discipline as
+// run.ts's own boundary.
+// ---------------------------------------------------------------------------
+function mintDispatchSella(
+  resolved: { seat: { id: string; retired?: boolean }; instance?: string },
+  sella: string,
+  opusId: string,
+  verb: string,
+): { sella: string } | { error: string } {
+  if (!isBuilderClassSeat(resolved)) return { sella };
+  if (resolved.instance !== undefined && resolved.instance !== opusId) {
+    return { error: `${verb}: --sella "${sella}" disagrees with --opus "${opusId}"` };
+  }
+  const minted = seatInstance(resolved.seat.id, opusId);
+  if (!minted) return { error: `${verb}: could not mint an instance from seat "${resolved.seat.id}" and opus "${opusId}"` };
+  return { sella: minted };
+}
+
+// ---------------------------------------------------------------------------
 // 1. handoff
 // ---------------------------------------------------------------------------
 
@@ -368,6 +394,12 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     console.error(retiredDispatchMessage(manifest, resolvedHandoffSella.seat));
     return { exitCode: 2 };
   }
+  const minted = mintDispatchSella(resolvedHandoffSella, sella, opusId, "handoff");
+  if ("error" in minted) {
+    console.error(minted.error);
+    return { exitCode: 2 };
+  }
+  const sellaForWrite = minted.sella;
 
   const opusPath = safeItemPath(join(root, "opera"), opusId);
   if (typeof opusPath !== "string") {
@@ -401,7 +433,7 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
 
   try {
     editOpusFrontMatter(opusPath, (doc) => {
-      doc.setIn(["traditio", "sella"], sella);
+      doc.setIn(["traditio", "sella"], sellaForWrite);
       doc.setIn(["traditio", "stage"], stage);
       doc.setIn(["traditio", "next"], next);
       doc.setIn(["traditio", "blocked_on"], blockedOn);
@@ -413,7 +445,7 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
     return { exitCode: 2 };
   }
 
-  console.log(`${opusId}: traditio -> sella=${sella} stage=${stage} next=${JSON.stringify(next)} blocked_on=${blockedOn}`);
+  console.log(`${opusId}: traditio -> sella=${sellaForWrite} stage=${stage} next=${JSON.stringify(next)} blocked_on=${blockedOn}`);
   return { exitCode: 0 };
 }
 
@@ -516,6 +548,11 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
       console.error(retiredDispatchMessage(manifest, resolvedUsageSella.seat));
       return { exitCode: 2 };
     }
+    const mintedUsage = mintDispatchSella(resolvedUsageSella, sella, opusId, "emit --usage");
+    if ("error" in mintedUsage) {
+      console.error(mintedUsage.error);
+      return { exitCode: 2 };
+    }
     const opusPath = safeItemPath(join(root, "opera"), opusId);
     if (typeof opusPath !== "string" || !existsSync(opusPath)) {
       console.error(`unknown opus: ${opusId}`);
@@ -525,7 +562,7 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
       "gen_ai.usage.total_tokens": tokens,
       "gen_ai.request.model": model,
       [WF.ITEM_ID]: opusId,
-      [WF.ACTOR_ROLE]: sella,
+      [WF.ACTOR_ROLE]: mintedUsage.sella,
     };
     const collegium = opusCollegium(opusPath);
     if (collegium !== undefined) attrs[WF.DEPARTMENT] = collegium;

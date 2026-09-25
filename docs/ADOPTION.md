@@ -198,6 +198,8 @@ collegia:
   - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md, autonomy: L1 }
 sellae:
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5, harness: claude-code }
+  - { id: builder,  collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }  # tombstone — see "Seats and instances"
 tiers:                             # optional (D-023 §2); rung id -> current holder model
   - { id: fast,       model: gpt-5.6-luna }
   - { id: mid,        model: gpt-5.6-terra }
@@ -237,6 +239,23 @@ digest is named after one), so `check` blocks anything that isn't safe to
 join into a path (`manifest.id.format`). Every magister and fallback must be
 a declared sella. A lex, if declared, must exist and should contain "Decides
 alone", "Digests" and "Asks" sections.
+
+## Seats and instances
+
+A **seat** is a template: one row per build tier, declared in `sellae`
+(`builder`, `builder-codex`). It names a collegium, a kind and a model/
+harness — never a concurrency slot. An **instance** is `<seat>.<opus-id>`,
+minted at dispatch — every dispatch boundary calls the one minter
+(`seatInstance`), never string concatenation — and it carries no state of
+its own beyond the seat it names and the opus it's working. The opus id is
+the identity: D-021's one-writer discipline is
+already keyed on the opus branch (`opus/<id>`), so the instance name and the
+ownership rule agree by construction. A **retired** seat (`retired: true`)
+stays declared forever so every record naming it — `traditio.sella`,
+`opus.sella`, a `ci/*.log`, a receipt directory — stays readable; it is
+refused as a live dispatch target (`run`, `handoff`, `emit --usage`,
+`talk`, `delegate`, `context`) with a pointer at its live replacement, if
+one exists.
 
 `tiers`/`munera` (D-023 §2, W-065) are both optional and independent of each
 other's presence: a manifest declaring neither parses, checks and serves

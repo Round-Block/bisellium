@@ -582,6 +582,41 @@ try {
     const retiredInstance = runEmit(["--usage", "10", "--opus", "W-002", "--sella", "builder-1.W-200", "--model", "m", "--studio", dir], { now: NOW });
     check("w089 b6: emit --usage refuses an instance of a retired sella", retiredInstance.exitCode === 2, String(retiredInstance.exitCode));
   }
+
+  // ---- W-089 behaviour 5: handoff/emit --usage mint a builder-class
+  // instance from their own --opus when given a bare template, and refuse a
+  // supplied instance that disagrees with --opus, before any write. --------
+  {
+    const dir = freshStudio("w089-b5-handoff-mint");
+    const bare = runHandoff(["--opus", "W-002", "--sella", "builder", "--next", "x", "--studio", dir], { now: NOW });
+    check("w089 b5: handoff mints a bare builder template — exits 0", bare.exitCode === 0, String(bare.exitCode));
+    const front = readFront<{ traditio?: { sella?: string } }>(join(dir, "opera", "W-002.md")).data;
+    check("w089 b5: handoff records the minted instance, not the bare template", front.traditio?.sella === "builder.W-002", JSON.stringify(front.traditio));
+
+    const dir2 = freshStudio("w089-b5-handoff-mismatch");
+    const before2 = readFileSync(join(dir2, "opera", "W-002.md"), "utf8");
+    const mismatch = runHandoff(["--opus", "W-002", "--sella", "builder.W-200", "--next", "x", "--studio", dir2], { now: NOW });
+    check("w089 b5: handoff refuses an instance that disagrees with --opus", mismatch.exitCode === 2, String(mismatch.exitCode));
+    check("w089 b5: a refused mismatch handoff writes nothing", readFileSync(join(dir2, "opera", "W-002.md"), "utf8") === before2);
+
+    const dir3 = freshStudio("w089-b5-handoff-match");
+    const match = runHandoff(["--opus", "W-002", "--sella", "builder.W-002", "--next", "x", "--studio", dir3], { now: NOW });
+    check("w089 b5: handoff accepts an instance matching --opus — exits 0", match.exitCode === 0, String(match.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b5-emit-mint");
+    const bare = runEmit(["--usage", "10", "--opus", "W-002", "--sella", "builder", "--model", "m", "--studio", dir], { now: NOW });
+    check("w089 b5: emit --usage mints a bare builder template — exits 0", bare.exitCode === 0, String(bare.exitCode));
+    const events = readEventLines(dir);
+    const last = events[events.length - 1] as { attrs?: Record<string, unknown> } | undefined;
+    check("w089 b5: emit --usage records the minted instance as the actor", last?.attrs?.[WF.ACTOR_ROLE] === "builder.W-002", JSON.stringify(last));
+
+    const dir2 = freshStudio("w089-b5-emit-mismatch");
+    const eventsBefore2 = readEventLines(dir2).length;
+    const mismatch = runEmit(["--usage", "10", "--opus", "W-002", "--sella", "builder.W-200", "--model", "m", "--studio", dir2], { now: NOW });
+    check("w089 b5: emit --usage refuses an instance that disagrees with --opus", mismatch.exitCode === 2, String(mismatch.exitCode));
+    check("w089 b5: a refused mismatch emit --usage appends no event", readEventLines(dir2).length === eventsBefore2);
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

@@ -73,10 +73,18 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   const patron = manifest.patron ?? "patron";
   const isPatron = sella === patron;
   // W-089 behaviour 3: a template or one of its instance ids resolves the
-  // same row (S1) — `context` is a read, so a retired row also resolves
-  // (history keeps booting); only a truly unresolvable id is "unknown".
-  const sellaRow = resolveSeat(manifest, sella)?.seat;
-  if (!isPatron && !sellaRow) return unknownSella;
+  // same row (S1).
+  const resolved = resolveSeat(manifest, sella);
+  if (!isPatron && !resolved) return unknownSella;
+  // W-089 behaviour 6: `context` is the command every agent boots through
+  // (see the CLI usage pointer section below) — booting AS a retired letter
+  // is a live-dispatch attempt, not a historical read, so it gets the same
+  // refusal posture as an unresolved id (brief: "context, talk, and
+  // delegate also refuse a retired live target"). A historical reader that
+  // truly needs a tombstone's collegium can still call `resolveSeat`
+  // directly; this CLI-facing boot path cannot.
+  if (!isPatron && resolved!.seat.retired) return unknownSella;
+  const sellaRow = resolved?.seat;
 
   try {
     return buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);

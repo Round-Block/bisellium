@@ -22,7 +22,7 @@
  */
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import {
@@ -216,6 +216,27 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
   if (!payload.ok) {
     console.error(`hook-event ${sub}: ${payload.error}`);
     return { exitCode: 0 };
+  }
+
+  // W-089 behaviour 5: start/stop (a receipt) and compact (a timeline entry)
+  // must never write under a bare builder-class template — no --opus here
+  // to mint from, so the instance must already have arrived through
+  // $BISELLIUM_SELLA. Re-minted from its own seat+suffix (never trusted
+  // verbatim), same discipline as every other dispatch boundary. `tool`
+  // writes an event, not a receipt/timeline, and already has its own
+  // resolved-row check (behaviour 8, below); `context` is a read. A
+  // refusal here still never blocks the harness — it prints and skips the
+  // write, exiting 0 same as every other guard in this function.
+  if (sub === "start" || sub === "stop" || sub === "compact") {
+    const manifest = readManifestSafe(studio);
+    const resolved = manifest ? resolveSeat(manifest, sella) : undefined;
+    if (resolved && isBuilderClassSeat(resolved)) {
+      const ok = resolved.instance !== undefined && seatInstance(resolved.seat.id, resolved.instance) === sella;
+      if (!ok) {
+        console.error(`hook-event ${sub}: "${sella}" is a bare builder-class template — refusing to write without a minted instance`);
+        return { exitCode: 0 };
+      }
+    }
   }
 
   try {

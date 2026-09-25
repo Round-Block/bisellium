@@ -112,11 +112,11 @@ try {
     check("context: unknown sella exits 1", r.status === 1, `status=${r.status} stderr=${JSON.stringify(r.stderr)}`);
   }
   {
-    const r = run(["context", "--sella", "builder-1", "--max-tokens", "300", "examples/sample-studio", "--now", NOW]);
+    const r = run(["context", "--sella", "builder", "--max-tokens", "300", "examples/sample-studio", "--now", NOW]);
     const truncIdx = r.stdout.indexOf("truncated:");
     const tokensIdx = r.stdout.indexOf("tokens:");
     check(
-      "context: builder-1 max-tokens=300 exits 0, 'truncated:' before 'tokens:'",
+      "context: builder max-tokens=300 exits 0, 'truncated:' before 'tokens:'",
       r.status === 0 && truncIdx !== -1 && tokensIdx !== -1 && truncIdx < tokensIdx,
       `status=${r.status} truncIdx=${truncIdx} tokensIdx=${tokensIdx}`,
     );

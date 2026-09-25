@@ -19,7 +19,7 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
@@ -325,15 +325,38 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   }
 
   // W-089 behaviour 3: a template or one of its instance ids resolves the
-  // same row's harness/model (S1). A retired row also resolves — behaviour
-  // 6 restricts the CLI-side dispatch gates (run/handoff/emit --usage), not
-  // this read-mostly resolution — resolveSella/namedSella (lifecycle.ts) is
-  // the load-bearing attribution gate a scheduled talk (tick) already
-  // passed through before reaching here.
-  const sellaRow = resolveSeat(manifest, sella)?.seat;
-  if (!sellaRow) {
+  // same row's harness/model (S1).
+  const resolvedTalkSella = resolveSeat(manifest, sella);
+  if (!resolvedTalkSella) {
     return { ok: false, exitCode: 2, message: `unknown sella "${sella}" — not declared in ${manifestPath}` };
   }
+  // W-089 behaviour 6: talk is a live-dispatch gate, same as run/handoff/
+  // emit --usage — a retired tombstone (exact or one of its instances) is
+  // refused here rather than starting a harness under a dead letter.
+  if (resolvedTalkSella.seat.retired) {
+    return { ok: false, exitCode: 2, message: retiredDispatchMessage(manifest, resolvedTalkSella.seat) };
+  }
+  // W-089 behaviour 5: talk has no --opus of its own, so (unlike handoff/
+  // emit --usage) it can never mint an instance itself — it requires one
+  // already minted, and re-mints it from its own seat+suffix (never
+  // trusting the string verbatim) before a harness ever starts. A bare
+  // builder-class template is refused outright. tick reaches this same
+  // gate through talkOnce (its only dispatch seam), so a scheduled
+  // builder-class launch is covered without a second copy of this check;
+  // its magisters are never builder-class seats today.
+  if (isBuilderClassSeat(resolvedTalkSella)) {
+    if (resolvedTalkSella.instance === undefined) {
+      return {
+        ok: false,
+        exitCode: 2,
+        message: `talk: "${sella}" is a builder-class template — pass an already-minted instance (e.g. "${resolvedTalkSella.seat.id}.<opus-id>")`,
+      };
+    }
+    if (seatInstance(resolvedTalkSella.seat.id, resolvedTalkSella.instance) !== sella) {
+      return { ok: false, exitCode: 2, message: `talk: "${sella}" does not round-trip through the minter — refused` };
+    }
+  }
+  const sellaRow = resolvedTalkSella.seat;
 
   // 1. Deterministic path first — a question `bisellium query` already
   // knows how to answer never touches a model, unless --model-only forces it.

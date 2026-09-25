@@ -157,6 +157,19 @@ try {
     const direct = buildRegistry(dir, new Date(iso));
     check("buildRegistry matches what runDocs wrote", JSON.stringify(direct) === JSON.stringify(parsed));
   }
+
+  // ---- W-089 behaviour 10: the builder agent's boot line names no --sella
+  // — the CLI's own `--sella ?? $BISELLIUM_SELLA ?? "guest"` chain supplies
+  // the dispatched instance (or "guest"); a literal or shell-expanded flag
+  // both strand an unset-env boot with an empty bundle (census F). --------
+  {
+    const bootFile = resolve(repo, ".claude/agents/builder.md");
+    const bootText = readFileSync(bootFile, "utf8");
+    const bootLine = bootText.split("\n").find((l) => l.startsWith("run: bisellium context"));
+    check("builder.md: has a 'run: bisellium context' boot line", bootLine !== undefined, bootText);
+    check('builder.md: the boot line is exactly "run: bisellium context studio"', bootLine === "run: bisellium context studio", JSON.stringify(bootLine));
+    check("builder.md: the boot line names no --sella flag", !(bootLine ?? "").includes("--sella"), JSON.stringify(bootLine));
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }
