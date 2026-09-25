@@ -340,7 +340,11 @@ export function mintDispatchSella(
 ): { sella: string } | { error: string } {
   if (!isBuilderClassSeat(resolved)) return { sella };
   if (resolved.instance !== undefined && resolved.instance !== opusId) {
-    return { error: `${verb}: --sella "${sella}" disagrees with --opus "${opusId}"` };
+    // "the opus", never "--opus": lifecycle.ts's seven verbs (behaviour 5's
+    // resolveSella/namedSella callers) take the opus as a bare positional,
+    // not a --opus flag — only run/handoff/emit --usage have one. This
+    // message is shared by both shapes, so it names neither flag.
+    return { error: `${verb}: --sella "${sella}" disagrees with the opus "${opusId}"` };
   }
   const minted = seatInstance(resolved.seat.id, opusId);
   if (!minted) return { error: `${verb}: could not mint an instance from seat "${resolved.seat.id}" and opus "${opusId}"` };

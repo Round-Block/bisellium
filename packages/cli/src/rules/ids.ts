@@ -42,6 +42,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "halted.exit",
   "halted.stale",
   "hook.dead",
+  "hook.unknown",
   "instructions.present",
   "instructions.stale",
   "integration.pr.reviewer",

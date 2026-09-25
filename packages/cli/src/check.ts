@@ -257,8 +257,12 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   // W-089 behaviour 7: `resolveSeat`'s own minimal row shape, built off the
   // same raw `sellae` this rule module already parsed — `traditio.sella`/
   // `opus.sella` route their membership test through it (S1) rather than
-  // re-implementing "split on the first dot" here.
-  const seatRoster = { sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true, collegium: str(s["collegium"]) ?? "" })) };
+  // re-implementing "split on the first dot" here. `harness` rides along
+  // too (round-2 finding B3): the receipts/ enumeration below resolves an
+  // instance directory's harness off this same roster.
+  const seatRoster = {
+    sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true, collegium: str(s["collegium"]) ?? "", harness: str(s["harness"]) })),
+  };
   const probatioKind = new Map(probationes.map((g) => [str(g["id"]) ?? "", str(g["kind"]) ?? ""] as const));
   const magisterOf = new Map(collegia.map((d) => [str(d["id"]) ?? "", str(d["magister"]) ?? ""] as const));
   const stateIds = new Set(STATES.map((s) => s.id));
@@ -744,8 +748,20 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     ? hookReceiptStatuses(
         root,
         sellae.map((row) => ({ id: str(row["id"]) ?? "", harness: str(row["harness"]) })).filter((row) => row.id),
+        // Round-2 finding B3: the same resolved-mapping seam `hooks check`
+        // uses (S1's escape clause — the grammar stays here, the shim only
+        // sees the result) so the two surfaces can never disagree on what a
+        // receipts/ directory name means.
+        (dirName) => {
+          const resolved = resolveSeat(seatRoster, dirName);
+          return resolved ? { harness: resolved.seat.harness } : undefined;
+        },
       )
     : []) {
+    if (s.unknown) {
+      add("hook.unknown", "advise", `receipts/${s.sella}`, `receipts/${s.sella} does not resolve to any declared seat (template, retired tombstone, or instance) — no hook wiring can be inferred for it`);
+      continue;
+    }
     if (s.dead)
       add(
         "hook.dead",

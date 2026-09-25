@@ -607,6 +607,65 @@ probationes: []
     });
     check("w089 b5: hook-event start on a non-builder-class (retired) sella still writes", instanceStart.exitCode === 0 && existsSync(receiptPath(dir, "builder-1", "sess-retired")), String(retiredStart.exitCode));
   }
+
+  // ---- Censor W-089 round-2, finding B3: hookReceiptStatuses enumerates
+  // the actual receipts/ directory, not just declared row ids
+  // (receiptStatus.ts:74 used to map declared rows straight to
+  // receipts/<row.id>/, so an instance directory — receipts/builder.W-089/
+  // — was invisible, and an unknown directory — receipts/ghost.dir/ — was
+  // silently ignored). Two requirements: an instance directory attributes
+  // to its template row's harness with real (not fabricated) liveness; an
+  // unknown directory is reported as unknown, never dropped and never given
+  // a fabricated dead/alive verdict. Both `hooks check` (hooks.ts) and
+  // `check`'s `hook.dead` rule (check.ts) share the one function — both are
+  // exercised here so they can't silently disagree. -------------------------
+  {
+    const dir = freshStudio("w089-b3-receipt-enum");
+
+    // An instance directory: a real hook-written receipt under the live
+    // "builder" template's own instance form.
+    const instanceStart = await runHookEvent(["start", "--sella", "builder.W-089", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-b3-instance", cwd: dir })),
+    });
+    check("w089 b3 setup: hook-event start on the instance succeeded", instanceStart.exitCode === 0, String(instanceStart.exitCode));
+
+    // An unknown directory: nothing declared resolves "ghost.dir" — not a
+    // seat, not an instance of one, just a stray directory under receipts/.
+    mkdirSync(join(dir, "receipts", "ghost.dir"), { recursive: true });
+    writeFileSync(
+      join(dir, "receipts", "ghost.dir", "sess-ghost.json"),
+      JSON.stringify({ sella: "ghost.dir", sessionId: "sess-ghost", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+
+    const { logs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", dir]));
+    check(
+      "w089 b3: hooks check attributes the instance directory to builder's harness, alive",
+      logs.some((l) => l.includes("builder.W-089") && l.includes("harness=claude-code") && l.includes("alive")),
+      JSON.stringify(logs),
+    );
+    check(
+      "w089 b3: hooks check reports the unknown directory as unknown, not dead/alive",
+      logs.some((l) => l.includes("ghost.dir") && l.includes("unknown")) &&
+        !logs.some((l) => l.includes("ghost.dir") && (l.includes(" dead") || l.includes(" alive"))),
+      JSON.stringify(logs),
+    );
+
+    const r = checkStudio(dir, NOW);
+    const dead = r.findings.filter((f) => f.rule === "hook.dead");
+    check(
+      "w089 b3: checkStudio does not flag the live instance directory hook.dead",
+      !dead.some((f) => f.where.includes("builder.W-089")),
+      JSON.stringify(dead),
+    );
+    const unknownFindings = r.findings.filter((f) => f.rule === "hook.unknown");
+    check(
+      "w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead",
+      unknownFindings.some((f) => f.where.includes("ghost.dir")) && !dead.some((f) => f.where.includes("ghost.dir")),
+      JSON.stringify({ unknownFindings, dead }),
+    );
+    check("w089 b3: hook.unknown is advisory, never block", unknownFindings.every((f) => f.level === "advise"), JSON.stringify(unknownFindings));
+  }
 } finally {
   for (const d of dirs) {
     try {

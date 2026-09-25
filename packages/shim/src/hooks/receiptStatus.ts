@@ -28,14 +28,21 @@ export interface ReceiptSummary {
 
 export interface HookReceiptStatus {
   sella: string;
-  /** The sella's effective harness: its manifest value, or "claude-code" when absent. */
+  /** The sella's effective harness: its manifest value, or "claude-code" when absent. Empty when `unknown`. */
   harness: string;
   /** Up to HOOK_DEAD_RECENT_RECEIPTS receipts, most recent (`startedAt`) first. */
   recent: ReceiptSummary[];
   lastReceipt?: ReceiptSummary;
   /** true only when `harness` is "claude-code" and none of `recent` carry a
-   *  harness:"claude-code" receipt (i.e. no hook ever ran `hook-event start`). */
+   *  harness:"claude-code" receipt (i.e. no hook ever ran `hook-event start`).
+   *  Always false when `unknown` — never a fabricated verdict. */
   dead: boolean;
+  /** W-089 behaviour 3 (censor round-2 finding B3): true when this
+   *  `receipts/` subdirectory name resolves to no declared seat at all — an
+   *  exact row id, or (via the caller's own resolver) a live/retired row's
+   *  instance form. Reported honestly rather than silently dropped or given
+   *  a fabricated dead/alive verdict. */
+  unknown: boolean;
 }
 
 function readSellaReceipts(studio: string, sella: string): ReceiptSummary[] {
@@ -70,12 +77,72 @@ function readSellaReceipts(studio: string, sella: string): ReceiptSummary[] {
   return out;
 }
 
-export function hookReceiptStatuses(studio: string, sellae: { id: string; harness?: string }[]): HookReceiptStatus[] {
-  return sellae.map((s) => {
-    const harness = s.harness ?? HOOK_HARNESS_ID;
-    const all = readSellaReceipts(studio, s.id);
+/** Every subdirectory name directly under `<studio>/receipts/` — pure
+ *  filesystem listing, no id grammar. A missing `receipts/` dir (a
+ *  never-run studio) is empty, not an error. */
+function listReceiptDirNames(studio: string): string[] {
+  const root = join(resolve(studio), "receipts");
+  let names: string[] = [];
+  try {
+    if (!existsSync(root)) return [];
+    names = readdirSync(root);
+  } catch {
+    return [];
+  }
+  return names.filter((name) => {
+    try {
+      return statSync(join(root, name)).isDirectory();
+    } catch {
+      return false;
+    }
+  });
+}
+
+/**
+ * W-089 behaviour 3 (censor round-2 finding B3): `receipts/` is now
+ * enumerated, not just mapped from declared row ids — an instance directory
+ * (`receipts/builder.W-089/`) used to be invisible here entirely (nothing in
+ * `sellae` names it), and an unknown directory (`receipts/ghost.dir/`) was
+ * silently ignored rather than reported.
+ *
+ * Seam S1's escape clause: this package sits below `@bisellium/cli`/
+ * `@bisellium/adapter-native` in the dependency graph, so it never
+ * re-implements the `<seat>.<instance>` grammar itself. A `receipts/`
+ * subdirectory name that isn't an exact declared row id is handed to
+ * `resolveDir` — built by the caller from its own `resolveSeat` against its
+ * own manifest (both `bisellium hooks check` and `check`'s `hook.dead` rule
+ * pass one in, so they can never disagree on what a directory name means).
+ * `undefined` means "resolves to nothing declared": reported with
+ * `unknown: true`, `harness: ""`, `dead: false` — never a fabricated verdict.
+ */
+export function hookReceiptStatuses(
+  studio: string,
+  sellae: { id: string; harness?: string }[],
+  resolveDir: (dirName: string) => { harness?: string } | undefined = () => undefined,
+): HookReceiptStatus[] {
+  const seen = new Set<string>();
+  const results: HookReceiptStatus[] = [];
+
+  const emit = (dirName: string, harness: string) => {
+    if (seen.has(dirName)) return;
+    seen.add(dirName);
+    const all = readSellaReceipts(studio, dirName);
     const recent = all.slice(0, HOOK_DEAD_RECENT_RECEIPTS);
     const dead = harness === HOOK_HARNESS_ID && !recent.some((r) => r.harness === HOOK_HARNESS_ID);
-    return { sella: s.id, harness, recent, lastReceipt: all[0], dead };
-  });
+    results.push({ sella: dirName, harness, recent, lastReceipt: all[0], dead, unknown: false });
+  };
+
+  for (const s of sellae) emit(s.id, s.harness ?? HOOK_HARNESS_ID);
+
+  for (const dirName of listReceiptDirNames(studio)) {
+    if (seen.has(dirName)) continue;
+    const resolved = resolveDir(dirName);
+    if (resolved) {
+      emit(dirName, resolved.harness ?? HOOK_HARNESS_ID);
+    } else {
+      seen.add(dirName);
+      results.push({ sella: dirName, harness: "", recent: [], lastReceipt: undefined, dead: false, unknown: true });
+    }
+  }
+  return results;
 }
