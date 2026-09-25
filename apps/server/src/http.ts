@@ -30,7 +30,7 @@
  * directory sharing WEB_DIST's name as a prefix could pass).
  */
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -113,19 +113,69 @@ function sendText(res: ServerResponse, status: number, text: string, contentType
   res.end(text);
 }
 
-function notFound(res: ServerResponse, what: string): void {
-  sendJson(res, 404, { error: `unknown ${what}` });
+/** Every `error` value any response may carry. A caught value cannot be a
+ *  member, so `sendError` cannot be handed one — enforced by tsc. */
+type ErrorCode =
+  | "internal error"
+  | "invalid JSON body"
+  | "request body must be a JSON object"
+  | "request body too large"
+  | "forbidden"
+  | "not found"
+  | "too many /api/live clients"
+  | "missing or invalid X-Bisellium-Token"
+  | "cross-origin writes are refused"
+  | "Content-Type must be application/json"
+  | "item cannot be combined with since"
+  | "petitio and reply are required strings"
+  | "opus is required"
+  | "period, collegium and tokens are required"
+  | "opus, sella and next are required"
+  | "sella and message are required"
+  | "either {sella, model} or {munus, tier} are required"
+  | "unknown opus"
+  | "unknown sella";
+
+// @ts-expect-error — an arbitrary string must not be assignable to ErrorCode.
+// This is the closedness assertion (W-057 behaviour 3): widening the union
+// with `| string` makes this line stop erroring, which fails `typecheck` —
+// the member count is deliberately not asserted, since a count would only
+// teach the next widening to get past it.
+const _errorCodeIsClosed: ErrorCode = "arbitrary" as string;
+
+/** The single choke point every error response body goes through — every
+ *  other `sendJson`/`sendText` call in this file answering an error is
+ *  forbidden from carrying an `error` key (W-057 behaviour 3's source pin,
+ *  apps/server/test/server.test.ts). `ref` correlates a 500 with its stderr
+ *  log line (serverError, below); no other status ever carries one. */
+function sendError(res: ServerResponse, status: number, code: ErrorCode, ref?: string): void {
+  sendJson(res, status, ref === undefined ? { error: code } : { error: code, ref });
 }
 
-/** Never leaks a stack — the message only (spec: "500 never leaks a stack"). */
+/** The 500 body is a constant plus a correlation id — never derived from the
+ *  caught value's message or stack. CodeQL's taint model treats an
+ *  exception's *message* as stack-derived, so serialising it into a
+ *  response, even with `.stack` already dropped, is the flagged flow (GHAS
+ *  alert 3, js/stack-trace-exposure). The real message and stack go to
+ *  `process.stderr` instead, tagged with the same `ref`, so an operator with
+ *  a `ref` from a console screenshot can still find the throw — logged
+ *  unconditionally, even when the response itself is undeliverable (a
+ *  destroyed client socket), since the log is what the property is really
+ *  about. */
 function serverError(res: ServerResponse, e: unknown): void {
+  const ref = randomUUID();
+  const message = e instanceof Error ? e.message : String(e);
+  const stack = e instanceof Error && e.stack ? e.stack : "(no stack)";
+  process.stderr.write(`bisellium serve: 500 ${ref} ${message}\n${stack}\n`);
   if (res.headersSent) return;
-  sendJson(res, 500, { error: e instanceof Error ? e.message : String(e) });
+  sendError(res, 500, "internal error", ref);
 }
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
 class PayloadTooLargeError extends Error {}
+class MalformedJsonError extends Error {}
+class NotAnObjectError extends Error {}
 
 function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolvePromise, reject) => {
@@ -155,14 +205,24 @@ function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
       try {
         const v: unknown = JSON.parse(raw);
         if (typeof v !== "object" || v === null || Array.isArray(v)) {
-          reject(new Error("request body must be a JSON object"));
+          reject(new NotAnObjectError("request body must be a JSON object"));
           return;
         }
         resolvePromise(v as Record<string, unknown>);
-      } catch (e) {
-        reject(new Error(`invalid JSON body: ${(e as Error).message}`));
+      } catch {
+        // The V8 parse message (position, token) is dropped: it's the only
+        // remaining path by which an arbitrary exception's text could reach
+        // a response body (W-057). It describes the client's own malformed
+        // input, but dropping it makes "no caught value's text reaches a
+        // response" total over the file rather than true of the 500 alone.
+        reject(new MalformedJsonError("invalid JSON body"));
       }
     });
+    // The raw request-stream error, unwrapped (e.g. `aborted`, `ECONNRESET`
+    // under a future tailnet deployment) — deliberately NOT given its own
+    // typed class: it is not a client mistake like the three above, so
+    // readJsonBodyOr400 rethrows it rather than answering 400 with its
+    // message (W-057 behaviour 6).
     req.on("error", reject);
   });
 }
@@ -172,17 +232,31 @@ function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
  *  route()'s catch, which hands everything to serverError() and answers 500
  *  (spec: 500 is reserved for server errors). Returns `undefined` after
  *  already sending a response — the caller's job is just to `return` when it
- *  sees that. */
+ *  sees that.
+ *
+ *  Dispatch is by `instanceof` over readJsonBody's three typed rejections
+ *  only; anything else — in particular `:166`'s raw, untyped request-stream
+ *  error — is rethrown to route()'s catch, which answers the generic 500
+ *  (with a correlation ref) instead of narrating the stream error's message
+ *  into a 400 body. That 400→500 shift on this one path is ruled honest:
+ *  the shipped client special-cases only 401 (apps/web's api.ts). */
 async function readJsonBodyOr400(req: IncomingMessage, res: ServerResponse): Promise<Record<string, unknown> | undefined> {
   try {
     return await readJsonBody(req);
   } catch (e) {
     if (e instanceof PayloadTooLargeError) {
-      sendJson(res, 413, { error: e.message });
+      sendError(res, 413, "request body too large");
       return undefined;
     }
-    sendJson(res, 400, { error: e instanceof Error ? e.message : String(e) });
-    return undefined;
+    if (e instanceof NotAnObjectError) {
+      sendError(res, 400, "request body must be a JSON object");
+      return undefined;
+    }
+    if (e instanceof MalformedJsonError) {
+      sendError(res, 400, "invalid JSON body");
+      return undefined;
+    }
+    throw e;
   }
 }
 
@@ -438,7 +512,7 @@ function serveStatic(pathname: string, res: ServerResponse): boolean {
   if (pathname.startsWith("/assets/")) {
     const filePath = resolve(WEB_DIST, "." + pathname);
     if (!isPathContained(WEB_DIST, filePath)) {
-      sendJson(res, 403, { error: "forbidden" });
+      sendError(res, 403, "forbidden");
       return true;
     }
     let isFile = false;
@@ -448,7 +522,7 @@ function serveStatic(pathname: string, res: ServerResponse): boolean {
       isFile = false;
     }
     if (!isFile) {
-      sendJson(res, 404, { error: "not found" });
+      sendError(res, 404, "not found");
       return true;
     }
     sendFile(res, filePath);
@@ -496,7 +570,7 @@ function createSseHub(store: Store): SseHub {
 
 function handleLive(hub: SseHub, req: IncomingMessage, res: ServerResponse): void {
   if (hub.clients.size >= MAX_SSE_CLIENTS) {
-    sendJson(res, 503, { error: "too many /api/live clients" });
+    sendError(res, 503, "too many /api/live clients");
     return;
   }
 
@@ -577,8 +651,8 @@ async function route(
   if (method === "POST" && WRITE_PATHS.has(pathname)) {
     const authStatus = checkWriteAuth(req, token, acceptedOrigins);
     if (authStatus !== undefined) {
-      const message = authStatus === 401 ? "missing or invalid X-Bisellium-Token" : authStatus === 403 ? "cross-origin writes are refused" : "Content-Type must be application/json";
-      sendJson(res, authStatus, { error: message });
+      const code: ErrorCode = authStatus === 401 ? "missing or invalid X-Bisellium-Token" : authStatus === 403 ? "cross-origin writes are refused" : "Content-Type must be application/json";
+      sendError(res, authStatus, code);
       return;
     }
   }
@@ -606,7 +680,7 @@ async function route(
     const m = /^\/api\/opus\/([^/]+)$/.exec(pathname);
     if (method === "GET" && m) {
       const opus = store.api.opus(decodeURIComponent(m[1]!));
-      if (!opus) return notFound(res, "opus");
+      if (!opus) return sendError(res, 404, "unknown opus");
       return sendJson(res, 200, opus);
     }
   }
@@ -634,7 +708,7 @@ async function route(
     const m = /^\/api\/timeline\/([^/]+)$/.exec(pathname);
     if (method === "GET" && m) {
       const sella = decodeURIComponent(m[1]!);
-      if (!store.sellaExists(sella)) return notFound(res, "sella");
+      if (!store.sellaExists(sella)) return sendError(res, 404, "unknown sella");
       const limit = clampedLimit(url.searchParams.get("limit"));
       return sendJson(res, 200, store.api.timeline(sella, limit));
     }
@@ -649,7 +723,7 @@ async function route(
     // there is nothing to resume from — refusing is the honest answer
     // (W-064 Interfaces).
     if (item !== undefined && since !== undefined) {
-      sendJson(res, 400, { error: "item cannot be combined with since" });
+      sendError(res, 400, "item cannot be combined with since");
       return;
     }
     return sendJson(res, 200, store.api.events({ since, limit, item }));
@@ -668,7 +742,7 @@ async function route(
   // ---- test-only manual poll hook (spec: "allowed only when NODE_ENV=test") --
   if (method === "POST" && pathname === "/api/_poll") {
     if (process.env["NODE_ENV"] !== "test") {
-      sendJson(res, 404, { error: "not found" });
+      sendError(res, 404, "not found");
       return;
     }
     const events = await allowPoll();
@@ -683,7 +757,7 @@ async function route(
     const petitio = body["petitio"];
     const reply = body["reply"];
     if (typeof petitio !== "string" || typeof reply !== "string") {
-      sendJson(res, 400, { error: "petitio and reply are required strings" });
+      sendError(res, 400, "petitio and reply are required strings");
       return;
     }
     const args = ["--petitio", petitio, reply, "--studio", store.studioDir];
@@ -698,7 +772,7 @@ async function route(
     if (body === undefined) return;
     const opus = body["opus"];
     if (typeof opus !== "string") {
-      sendJson(res, 400, { error: "opus is required" });
+      sendError(res, 400, "opus is required");
       return;
     }
     const args = [opus, "--studio", store.studioDir];
@@ -714,7 +788,7 @@ async function route(
     const collegium = body["collegium"];
     const tokens = body["tokens"];
     if (typeof period !== "string" || typeof collegium !== "string" || (typeof tokens !== "number" && typeof tokens !== "string")) {
-      sendJson(res, 400, { error: "period, collegium and tokens are required" });
+      sendError(res, 400, "period, collegium and tokens are required");
       return;
     }
     const args = [period, "--collegium", collegium, "--tokens", String(tokens), "--studio", store.studioDir];
@@ -730,7 +804,7 @@ async function route(
     const sella = body["sella"];
     const next = body["next"];
     if (typeof opus !== "string" || typeof sella !== "string" || typeof next !== "string") {
-      sendJson(res, 400, { error: "opus, sella and next are required" });
+      sendError(res, 400, "opus, sella and next are required");
       return;
     }
     const args = ["--opus", opus, "--sella", sella, "--next", next, "--studio", store.studioDir];
@@ -746,7 +820,7 @@ async function route(
     const sella = body["sella"];
     const message = body["message"];
     if (typeof sella !== "string" || typeof message !== "string") {
-      sendJson(res, 400, { error: "sella and message are required" });
+      sendError(res, 400, "sella and message are required");
       return;
     }
     const args = ["--sella", sella, "--studio", store.studioDir];
@@ -783,7 +857,7 @@ async function route(
     } else if (typeof body["munus"] === "string" && typeof body["tier"] === "string") {
       args.push("--munus", body["munus"], "--tier", body["tier"]);
     } else {
-      sendJson(res, 400, { error: "either {sella, model} or {munus, tier} are required" });
+      sendError(res, 400, "either {sella, model} or {munus, tier} are required");
       return;
     }
     if (typeof body["from"] === "string") args.push("--from", body["from"]);
@@ -798,7 +872,7 @@ async function route(
   // ---- static -----------------------------------------------------------
   if (method === "GET" && serveStatic(pathname, res)) return;
 
-  sendJson(res, 404, { error: "not found" });
+  sendError(res, 404, "not found");
 }
 
 // ---------------------------------------------------------------------------
