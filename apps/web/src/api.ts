@@ -12,7 +12,7 @@ export type { ActaEntry, AerariumEntry };
 
 export interface InboxResponse {
   opera: { id: string; title: string; collegium: string; sella: string; traditio: unknown }[];
-  petitiones: { id: string; opus: string; from: string; subject: string; body?: string }[];
+  petitiones: { id: string; opus: string; from: string; subject: string; body: string }[];
 }
 
 // ── W-067 write contract ─────────────────────────────────────────────

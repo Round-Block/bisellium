@@ -10,17 +10,29 @@ import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:f
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
+import { deriveSubject, snapshotDir } from "@bisellium/adapter-native";
 import { checkStudio } from "./check.js";
 import { RULE_IDS } from "./rules/ids.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
+const realStudio = resolve(repo, "studio");
 const NOW = new Date("2026-09-18T14:00:00Z");
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(58)} ${detail}`);
   if (!ok) failed++;
+};
+
+// W-076 behaviours 1/2/4/5 — same "repo positional, behaviour positional"
+// convention as apps/web/src/lib/*.test.ts and packages/commands/src/
+// delegate.test.ts, so `bisellium red` can isolate one behaviour's output
+// in a file this large without disturbing the checks above.
+const onlyBehaviour = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
+const checkB = (behaviour: number, name: string, ok: boolean, detail = "") => {
+  if (onlyBehaviour !== undefined && onlyBehaviour !== behaviour) return;
+  check(`[W-076 b${behaviour}] ${name}`, ok, detail);
 };
 
 const dirs: string[] = [];
@@ -377,6 +389,229 @@ try {
     // acceptance script's repeated `bisellium check` runs).
     const r = checkStudio(sampleStudio, NOW);
     check("w071 b5: sample-studio's own manifest carries no model_probe_stale_days finding", !r.findings.some((f) => f.message.includes("model_probe_stale_days")));
+  }
+
+  // =====================================================================
+  // W-076 — the inbox carries a subject and a body (studio/briefs/W-076.md)
+  // =====================================================================
+
+  // ---- behaviour 1: the derivation, pinned output by output against all
+  // twelve real petitiones on disk (studio/petitiones/*.md) — read, never
+  // written. The reference run (studio/briefs/W-076.md's "reference run"
+  // table) is reproduced here as the pinned expectation for each id. ----
+  {
+    // [id, expected subject] — computed by running the derivation exactly
+    // as specified (first paragraph, unwrap, strip markdown, cap at 120
+    // total incl. ellipsis) over each file's real body. P-010's unwrapped
+    // first paragraph is 197 characters, well over the cap, and the word
+    // "gap" ends exactly at the 119-character text boundary (its trailing
+    // space sits AT index 119) — censor round 1, F1: the cap's last-space
+    // search must cover the full 120-char window, not LIMIT-1, or that
+    // trailing word is discarded whole. Fixed in deriveSubject; P-010's pin
+    // below is the corrected 119-chars-plus-ellipsis value the brief names.
+    const PINNED: [string, string][] = [
+      ["P-001", "Retrospectio 4b (acta/2026-09-18-retro-4b.md) found six failure classes recurring across two or more cascades. Four of…"],
+      ["P-002", "Choose a licence"],
+      ["P-003", "Recurring finding class \"review×evidence-backfilled-or-absent\" (cascade 5 retro). Proposing a blocking rule or lex…"],
+      ["P-004", "W-021's insurance clause (P-001 items 2-4, adopted verbatim): build path.id.unvalidated and path.escapes.officina, run…"],
+      ["P-005", "Recurring finding class \"review×evidence-backfilled-or-absent\" (cascade 6 retro). Proposing a blocking rule or lex…"],
+      ["P-007", "Recurring finding class \"review×path-traversal-from-ids\" (cascade 6 retro). Proposing a blocking rule or lex amendment…"],
+      ["P-008", "process.cascade advises whenever one sella signs both the spec and review gates of an opus. The QA lex (§1) has the…"],
+      ["P-009", "Proposed amendment to the QA lex (studio/leges/qa.md), granting the Censor the improvement-tracking obligation decreed…"],
+      ["P-010", "Proposed amendment to the production lex (studio/leges/production.md). No opus: — this proposes law, not work. (The gap…"],
+      ["P-011", "docs/research/agent-studio-landscape-2026-09-21.md (\"Proposed Bisellium direction\") proposes: for the first playable…"],
+      ["P-012", "A check rule for red provenance: bisellium red records a working-tree identity, and a rule verifies it — superseding…"],
+      ["P-013", "W-064's red gate: D-024's kill arm has fired, and only you can rule."],
+    ];
+    checkB(1, "pins exactly twelve real petitiones", PINNED.length === 12, String(PINNED.length));
+    for (const [id, expected] of PINNED) {
+      const raw = readFileSync(join(realStudio, "petitiones", `${id}.md`), "utf8");
+      const m = /^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+      const body = (m?.[1] ?? "").trim();
+      const actual = deriveSubject(body);
+      checkB(1, `${id}: pinned subject exact`, actual === expected, JSON.stringify(actual));
+      checkB(1, `${id}: non-empty`, actual.length > 0, actual);
+      checkB(1, `${id}: no leaked markdown (#, **, backtick, [text](url))`, !/^#|\*\*|`|\]\(/.test(actual), actual);
+      checkB(1, `${id}: length <=120 including any ellipsis`, actual.length <= 120, String(actual.length));
+      checkB(1, `${id}: ellipsis (if any) isn't preceded by a trailing space`, !actual.endsWith(" …"), actual);
+    }
+
+    // Synthetic row the twelve do not cover: a first paragraph that is a
+    // single token longer than the cap (a long URL) — the no-space
+    // fallback, cutting mid-token at the boundary by design.
+    const longToken = "https://example.com/" + "a".repeat(150);
+    const expectedSynthetic =
+      "https://example.com/" + "a".repeat(150).slice(0, 119 - "https://example.com/".length) + "…";
+    const actualSynthetic = deriveSubject(longToken);
+    checkB(1, "synthetic: single token longer than the cap — pinned exact", actualSynthetic === expectedSynthetic, JSON.stringify(actualSynthetic));
+    checkB(1, "synthetic: capped at 120 total", actualSynthetic.length === 120, String(actualSynthetic.length));
+    checkB(1, "synthetic: ends in the ellipsis", actualSynthetic.endsWith("…"), actualSynthetic);
+    checkB(1, "synthetic: the no-space fallback actually applies (no space in the capped window)", !actualSynthetic.slice(0, -1).includes(" "), actualSynthetic);
+  }
+
+  // ---- behaviour 2: `subject:` in front matter wins, verbatim — including
+  // when it differs from what the body would derive, and when the body is
+  // empty. Built officina (a temp copy of examples/sample-studio, plus two
+  // synthetic petitio files), not the real studio (which has no subject:
+  // key on any of the twelve — that absence is behaviour 5's territory). --
+  {
+    const dir = freshStudio("w076-b2-front-matter-subject");
+    writeFileSync(
+      join(dir, "petitiones", "W076-B2-A.md"),
+      [
+        "---",
+        'id: "W076-B2-A"',
+        "from: eng-lead",
+        "to: patron",
+        "state: needs_you",
+        "opened: 2026-09-19T10:00:00Z",
+        'subject: "Custom subject text, not derived"',
+        "---",
+        "",
+        "This body would derive a completely different subject if the fallback ran at all — proving front matter wins outright.",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(
+      join(dir, "petitiones", "W076-B2-B.md"),
+      [
+        "---",
+        'id: "W076-B2-B"',
+        "from: eng-lead",
+        "to: patron",
+        "state: needs_you",
+        "opened: 2026-09-19T10:00:00Z",
+        'subject: "Wins even with an empty body"',
+        "---",
+        "",
+      ].join("\n"),
+    );
+    const snap = snapshotDir(dir, "w076-b2");
+    const a = (snap.petitiones ?? []).find((p) => p.id === "W076-B2-A");
+    const b = (snap.petitiones ?? []).find((p) => p.id === "W076-B2-B");
+    checkB(2, "front matter subject wins even though it differs from the derivation", a?.subject === "Custom subject text, not derived", JSON.stringify(a));
+    checkB(2, "front matter subject wins even when the body is empty", b?.subject === "Wins even with an empty body", JSON.stringify(b));
+    // W-076 censor round 1 (F3): the previous version of this assertion
+    // checked B (an EMPTY-body fixture) for `body === ""`, which a mutant
+    // that always returns `body: ""` also satisfies — vacuous. A's body is
+    // real, non-empty content; asserting it verbatim is the assertion that
+    // actually bites a "never carry the body" mutation.
+    checkB(
+      2,
+      "body is carried verbatim alongside the front-matter subject (non-empty case)",
+      a?.body === "This body would derive a completely different subject if the fallback ran at all — proving front matter wins outright.",
+      JSON.stringify(a?.body),
+    );
+    checkB(2, "an empty body is still carried as body: \"\" (not e.g. omitted)", b?.body === "", JSON.stringify(b?.body));
+  }
+
+  // ---- behaviour 4: empty bodies fall back to the petitio id (never an
+  // empty label), and subject:'s two check-rule failure levels — present-
+  // and-invalid blocks (not rescued by the derivation), absent advises,
+  // valid non-blank neither. petitio.opened's exact two-level shape. ----
+  {
+    const dir = freshStudio("w076-b4-subject-levels");
+    const write = (id: string, subjectLine: string | undefined, body = "") =>
+      writeFileSync(
+        join(dir, "petitiones", `${id}.md`),
+        [
+          "---",
+          `id: "${id}"`,
+          "from: eng-lead",
+          "to: patron",
+          "state: needs_you",
+          "opened: 2026-09-19T10:00:00Z",
+          ...(subjectLine !== undefined ? [subjectLine] : []),
+          "---",
+          "",
+          body,
+          "",
+        ].join("\n"),
+      );
+    write("W076-B4-EMPTYBODY", undefined, "   \n   ");
+    write("W076-B4-ABSENT", undefined);
+    write("W076-B4-BLANK", 'subject: ""');
+    write("W076-B4-WHITESPACE", 'subject: "   "');
+    write("W076-B4-NUM", "subject: 42");
+    write("W076-B4-LIST", "subject: [a]");
+    write("W076-B4-VALID", 'subject: "A perfectly fine subject"', "Real, non-empty body content for the carry-verbatim check.");
+
+    const snap = snapshotDir(dir, "w076-b4");
+    const emptyBody = (snap.petitiones ?? []).find((p) => p.id === "W076-B4-EMPTYBODY");
+    checkB(4, "an empty/whitespace-only body yields body: \"\"", emptyBody?.body === "", JSON.stringify(emptyBody?.body));
+    checkB(4, "...and a non-empty derived subject, falling back to the petitio id", emptyBody?.subject === "W076-B4-EMPTYBODY", JSON.stringify(emptyBody?.subject));
+    // W-076 censor round 1 (F3): the assertion above only ever checks a
+    // body that's supposed to end up "" — a mutant that always returns
+    // `body: ""` satisfies it too. This sibling checks a real, non-empty
+    // body carries through verbatim, so "always empty" fails here instead.
+    const validRow = (snap.petitiones ?? []).find((p) => p.id === "W076-B4-VALID");
+    checkB(4, "a non-empty body is carried verbatim (not collapsed to \"\")", validRow?.body === "Real, non-empty body content for the carry-verbatim check.", JSON.stringify(validRow?.body));
+
+    const r = checkStudio(dir, NOW);
+    const subjectFindings = (id: string) => r.findings.filter((f) => f.rule === "petitio.subject" && f.where.includes(id));
+    checkB(4, "subject: \"\" is a blocking finding", subjectFindings("W076-B4-BLANK").some((f) => f.level === "block"), JSON.stringify(subjectFindings("W076-B4-BLANK")));
+    checkB(4, "subject: \"   \" is a blocking finding", subjectFindings("W076-B4-WHITESPACE").some((f) => f.level === "block"), JSON.stringify(subjectFindings("W076-B4-WHITESPACE")));
+    checkB(4, "subject: 42 is a blocking finding", subjectFindings("W076-B4-NUM").some((f) => f.level === "block"), JSON.stringify(subjectFindings("W076-B4-NUM")));
+    checkB(4, "subject: [a] is a blocking finding", subjectFindings("W076-B4-LIST").some((f) => f.level === "block"), JSON.stringify(subjectFindings("W076-B4-LIST")));
+    checkB(4, "no subject: key is advisory, not blocking", subjectFindings("W076-B4-ABSENT").length === 1 && subjectFindings("W076-B4-ABSENT")[0]?.level === "advise", JSON.stringify(subjectFindings("W076-B4-ABSENT")));
+    checkB(4, "a valid non-blank subject produces neither", subjectFindings("W076-B4-VALID").length === 0, JSON.stringify(subjectFindings("W076-B4-VALID")));
+
+    // Malformed values are never rescued by the derivation as far as the
+    // *check* is concerned (it still blocks, asserted above); the adapter
+    // still has to put a real string in the required schema field, so it
+    // is never the raw non-string value itself.
+    const numRow = (snap.petitiones ?? []).find((p) => p.id === "W076-B4-NUM");
+    checkB(4, "the schema field is always a real string, never the raw malformed value", typeof numRow?.subject === "string" && numRow.subject.length > 0, JSON.stringify(numRow?.subject));
+  }
+
+  // ---- behaviour 5: nothing else in the snapshot moves, and the `check`
+  // delta on the real officina is exact. ----
+  {
+    // opera/acta/needsYou().opera rows are untouched by this opus: a
+    // self-relative check (not a pinned hash against the live studio, which
+    // this opus's own `ready`/`red`/`done` bookkeeping writes keep moving,
+    // unrelated to petitiones) — add a petitio with a subject and a body to
+    // a temp officina and confirm opera/acta don't shift at all.
+    const dir = freshStudio("w076-b5-nothing-else-moves");
+    const before = snapshotDir(dir, "w076-b5", NOW);
+    writeFileSync(
+      join(dir, "petitiones", "W076-B5-NEW.md"),
+      [
+        "---",
+        'id: "W076-B5-NEW"',
+        "from: eng-lead",
+        "to: patron",
+        "state: needs_you",
+        "opened: 2026-09-19T10:00:00Z",
+        'subject: "A brand-new petitio"',
+        "---",
+        "",
+        "A whole new petitio, added purely to prove opera and acta don't move.",
+        "",
+      ].join("\n"),
+    );
+    const after = snapshotDir(dir, "w076-b5", NOW);
+    checkB(5, "opera is unaffected by a petitiones-only change", JSON.stringify(before.opera) === JSON.stringify(after.opera), "opera mismatch");
+    checkB(5, "acta is unaffected by a petitiones-only change", JSON.stringify(before.acta) === JSON.stringify(after.acta), "acta mismatch");
+
+    // The check delta on the real officina, exact: today, zero findings of
+    // any rule are scoped to petitiones/ (verified directly below); after
+    // this opus, exactly twelve — one per real petitio, all `petitio.subject`
+    // advisories (no other rule's petitio-scoped finding set is touched,
+    // and none of the twelve has a malformed key, so none blocks). No
+    // `--repo` here: `probatio.certifies` and friends key off the live git
+    // tree, which this very opus's own commits move — irrelevant to this
+    // rule and excluded by staying hermetic, the same way most of this file
+    // already does.
+    const REAL_IDS = ["P-001", "P-002", "P-003", "P-004", "P-005", "P-007", "P-008", "P-009", "P-010", "P-011", "P-012", "P-013"];
+    const r = checkStudio(realStudio, new Date("2026-09-25T12:00:00Z"));
+    const petitioScoped = r.findings.filter((f) => f.where.startsWith("petitiones/"));
+    checkB(5, "petitiones-scoped findings are exactly twelve (one per real petitio)", petitioScoped.length === 12, JSON.stringify(petitioScoped));
+    checkB(5, "...and every one is petitio.subject (no other petitio rule's set altered)", petitioScoped.every((f) => f.rule === "petitio.subject"), JSON.stringify(petitioScoped));
+    checkB(5, "...and every one is advisory (zero new blocking findings)", petitioScoped.every((f) => f.level === "advise"), JSON.stringify(petitioScoped));
+    for (const id of REAL_IDS) {
+      checkB(5, `petitio.subject advises on ${id} (no subject: key today)`, petitioScoped.some((f) => f.where === `petitiones/${id}.md`), JSON.stringify(petitioScoped.map((f) => f.where)));
+    }
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

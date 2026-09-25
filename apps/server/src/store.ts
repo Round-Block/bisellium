@@ -307,7 +307,7 @@ export class Store extends CoreStore {
         .map((w) => ({ id: w.id, title: w.meta["title"], collegium: w.meta["collegium"], sella: w.meta["sella"], traditio: w.meta["traditio"] }));
       const petitiones = (snap.petitiones ?? [])
         .filter((p) => p.state === "needs_you")
-        .map((p) => ({ id: p.id, opus: p.opusId, from: p.openedBy, subject: p.subject }));
+        .map((p) => ({ id: p.id, opus: p.opusId, from: p.openedBy, subject: p.subject, body: p.body }));
       return { opera, petitiones };
     },
 

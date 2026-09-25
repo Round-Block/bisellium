@@ -607,6 +607,17 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     }
     const s = str(d["state"]) ?? "";
     if (!(PETITIO_STATES as readonly string[]).includes(s)) add("petitio.state", "block", where, `state "${s}" invalid`);
+    // W-076: `subject:` is required for new petitiones (enforced by the CLI
+    // writer once W-038 lands, not here — nothing writes a petitio today).
+    // Present-and-invalid (blank, whitespace-only, or a non-string — YAML
+    // hands you a number, a date, a list) blocks and is never rescued by
+    // the legacy derivation; absent is advisory, so the twelve pre-existing
+    // petitiones are visible without being blocking debt. petitio.opened's
+    // exact two-level shape (:625/:628 above) — no new pattern.
+    if (d["subject"] !== undefined) {
+      const subj = d["subject"];
+      if (typeof subj !== "string" || subj.trim().length === 0) add("petitio.subject", "block", where, "subject must be a non-blank string");
+    } else add("petitio.subject", "advise", where, "no subject (falls back to the derived legacy subject)");
     const from = str(d["from"]);
     const to = str(d["to"]);
     for (const [k, v] of [["from", from], ["to", to]] as const)

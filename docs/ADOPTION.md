@@ -461,9 +461,22 @@ from: eng-lead         # a sella, or the patron
 to: patron
 state: needs_you      # needs_you (to must be the patron) | awaiting_reply (from must be the patron) | resolved
 opened: 2026-09-17T09:58:00Z
+subject: "Split stacks: accept the scope drift, or cut to a new item?"  # required for new petitiones; advisory until W-038's writer stamps it — see below
 ---
-The question, in one paragraph. Only petitiones that change material direction.
+The question, however many paragraphs it takes. Every paragraph travels to
+the Patron's inbox verbatim — no truncation. A subject is a row label, not a
+summary; anything it drops, the detail pane still has.
 ```
+
+`subject:` is required for new petitiones (the CLI writer stamps it once
+W-038 lands) and is checked, when present, as a non-blank string
+(`petitio.subject`, blocking on a present-but-invalid value — blank,
+whitespace-only, or a non-string — advisory when the key is absent
+entirely). Absent, the inbox falls back to a legacy derivation from the
+body's first paragraph (unwrapped, markdown stripped, capped at 120
+characters including any ellipsis) — a wrap-artifact-free label good enough
+for the petitiones written before this key existed, but not a substitute for
+writing one: a derived subject can still say less than the body means.
 
 ## acta/<date>-<slug>.md
 

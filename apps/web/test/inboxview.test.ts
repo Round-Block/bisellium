@@ -48,13 +48,22 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
   check(4, "subject text is present", html.includes("ask for a decision"), html);
   check(4, "sella id text is present", html.includes("builder-a"), html);
   check(4, "detail pane shows body content", html.includes("Full proposal content here."), html);
+
+  // W-076 behaviour 4: the placeholder branch still renders on body: ""
+  // (land 4 makes `body` required — the server now always sends it, but
+  // an empty string, not undefined, must still fall through to the
+  // placeholder). Already correct — InboxView.tsx is not owned by W-076 —
+  // so this is a regression-safety assertion, not a red: it holds today.
+  const emptyBodyPetitiones = [{ id: "P-2", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
+  const emptyBodyHtml = renderToStaticMarkup(InboxView(baseProps({ petitiones: emptyBodyPetitiones, focusIndex: 0 })));
+  check(4, "the placeholder still renders for body: \"\" (W-076)", emptyBodyHtml.includes("No content provided."), emptyBodyHtml);
 }
 
 // behaviour 10: rows have onClick for focus change
 {
   const petitiones = [
-    { id: "P-1", opus: "W-024", from: "builder-a", subject: "first" },
-    { id: "P-2", opus: "W-025", from: "censor", subject: "second" },
+    { id: "P-1", opus: "W-024", from: "builder-a", subject: "first", body: "" },
+    { id: "P-2", opus: "W-025", from: "censor", subject: "second", body: "" },
   ];
   const html = renderToStaticMarkup(InboxView(baseProps({ petitiones, onFocusChange: () => undefined })));
   check(10, "rows are clickable (have onClick via role=button or cursor style)", html.includes('class="inbox__row') && html.split('inbox__row').length > 2, html);
@@ -62,7 +71,7 @@ function baseProps(overrides: Partial<InboxViewProps> = {}): InboxViewProps {
 
 // behaviour 8: detail pane shows verb buttons; disabled until a non-empty reason.
 {
-  const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask" }];
+  const petitiones = [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask", body: "" }];
   const noReason = renderToStaticMarkup(InboxView(baseProps({ petitiones, reason: "" })));
   check(8, "detail pane shows all four verb buttons", (noReason.match(/<button/g) ?? []).length === 4, noReason);
   check(8, "with no reason: all four verb buttons disabled", (noReason.match(/<button[^>]*disabled/g) ?? []).length === 4, noReason);

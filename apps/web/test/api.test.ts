@@ -60,7 +60,7 @@ async function safeWrite<T extends { kind: string }>(fn: () => Promise<T>): Prom
 
 async function main(): Promise<void> {
   // behaviour 2: fetchInbox GETs /api/inbox and returns the parsed body.
-  mockFetch({ status: 200, body: { opera: [], petitiones: [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask" }] } });
+  mockFetch({ status: 200, body: { opera: [], petitiones: [{ id: "P-1", opus: "W-024", from: "builder-a", subject: "ask", body: "" }] } });
   const inbox = await fetchInbox();
   check(2, "fetchInbox sends GET to /api/inbox", calls[0]?.url === "/api/inbox", calls[0]?.url);
   check(2, "fetchInbox returns the parsed JSON response", inbox.petitiones[0]?.id === "P-1", JSON.stringify(inbox));

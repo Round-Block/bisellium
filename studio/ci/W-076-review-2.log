@@ -1,0 +1,189 @@
+# W-076 review — round 2 — qa-lead (censor) — claude-opus-5
+# spec: studio/briefs/W-076.md rev 3 (5 behaviours)
+# branch: opus/W-076 @ 106e826 (fix ca8748f + round-2 verify)
+# round 1: ci/W-076-review-1.log — FAIL, one blocking finding (F1)
+# at: 2026-09-25 (produced during review; nothing backfilled)
+# VERDICT: PASS — F1, F3 and F5 fixed; F2 and F4 stand accepted from round 1.
+
+================================================================
+GATES RE-RUN BY THE CENSOR ON A CLEAN TREE
+================================================================
+$ git status --short            -> empty, before and after every step
+$ npm test                      -> exit 0 (run twice, both exit 0)
+$ npm run -s typecheck          -> exit 0
+$ npm run -s lint               -> exit 0 (2 pre-existing warnings, 0 errors)
+$ npm run -s format:check       -> "All matched files use Prettier code style!"
+$ bisellium verify W-076 --studio studio --repo .
+    tests: passed  ci/W-076-tests-38b07ee1.log
+    lint:  passed  ci/W-076-lint-38b07ee1.log
+    types: passed  ci/W-076-types-38b07ee1.log
+
+================================================================
+F1  FIXED — the cap off-by-one, verified against the censor's own derivation
+================================================================
+The fix in adapters/native/src/index.ts is exactly the one round 1 named:
+    const window = s.slice(0, LIMIT);
+    const lastSpace = window.lastIndexOf(" ");
+    const cut = lastSpace > 0 ? window.slice(0, lastSpace) : s.slice(0, LIMIT - 1);
+Full 120-char boundary window for the space search; LIMIT-1 retained as the
+no-space fallback so the synthetic single-token row still lands at 120.
+
+INDEPENDENT RE-DERIVATION. The censor re-implemented brief §Design.1 steps
+1-4 from the spec prose (NOT by importing deriveSubject), with the corrected
+boundary reading, and ran it over studio/petitiones/*.md. The discriminating
+measurement from round 1 is reproduced in the s[119] column:
+
+  P-001 MATCH len=119  s[119]="t"   identical-to-round-1
+  P-002 MATCH len= 16  s[119]=null  identical-to-round-1
+  P-003 MATCH len=115  s[119]="d"   identical-to-round-1
+  P-004 MATCH len=119  s[119]="t"   identical-to-round-1
+  P-005 MATCH len=115  s[119]="d"   identical-to-round-1
+  P-007 MATCH len=119  s[119]="—"   identical-to-round-1
+  P-008 MATCH len=116  s[119]="s"   identical-to-round-1
+  P-009 MATCH len=119  s[119]="i"   identical-to-round-1
+  P-010 MATCH len=120  s[119]=" "   CHANGED-since-round-1   <-- the fix
+  P-011 MATCH len=117  s[119]="l"   identical-to-round-1
+  P-012 MATCH len=117  s[119]="e"   identical-to-round-1
+  P-013 MATCH len= 68  s[119]=null  identical-to-round-1
+  synthetic: len=120, no space in the capped window, ends in the ellipsis,
+             matches the test's own formula
+  pins changed since round 1: ["P-010"]
+  ALL TWELVE PINS REPRODUCED INDEPENDENTLY (round-2 rule)
+
+P-010 is still the only input whose s[119] is a space, so it remains the
+single instance of the class, exactly as round 1 measured. The other eleven
+pins and the synthetic row are byte-identical to round 1 — the blast radius
+round 1 predicted (exactly one pin moves, 116 -> 120) is what landed.
+
+P-010's pin is now the brief's value:
+  "Proposed amendment to the production lex (studio/leges/production.md). No
+   opus: — this proposes law, not work. (The gap…"     (120 chars = 119 + …)
+
+The false comment at check.test.ts:405-412 is gone and replaced by a correct
+one: 197-character paragraph, "gap" ending at the 119-character boundary,
+trailing space at index 119. The replacement states the measurement that
+actually holds.
+
+================================================================
+F1's RED — re-recorded correctly, and the original preserved
+================================================================
+studio/ci/reds/W-076/01.log (re-recorded):
+  # at: 2026-09-25T10:04:40.187Z   (after round 1's verdict at 09:59:10)
+  # tree: dirty:541413871604c21a63fdae4077adf4a3fe09d54a  (the ROUND-1 tree)
+  exactly 1 FAIL:
+    FAIL [W-076 b1] P-010: pinned subject exact
+         "...not work. (The…"
+The pin was corrected FIRST and run against the still-buggy algorithm — the
+tree hash is round 1's certified tree, so the derivation had not yet been
+touched — and the observed value is the old 116-char output. That is the
+correct red for a fix round, produced, not backfilled, and it reproduces the
+censor's own M2 exactly.
+
+The original 25-failure 01.log survives in history at 223d9fb
+(# at: 09:01:03.288Z, tree dirty:554e3d5e..., 25 FAILs).
+OBSERVATION, not a finding: `bisellium red` keys its log to the behaviour
+number, so re-recording behaviour 1 necessarily overwrote the file — the
+builder had no other shape available. Acceptance 2's twelve BEFORE values
+survive at HEAD regardless, quoted verbatim in ci/W-076-review-1.log, and in
+history at 223d9fb.
+
+================================================================
+MUTATION TESTING — every mutation round 1 ran now dies
+================================================================
+M2   adapters/native: window back to s.slice(0, LIMIT - 1) (the round-1 bug)
+     -> FAIL [W-076 b1] P-010: pinned subject exact   "...(The…"
+     EXACTLY ONE failure — confirming again that P-010 is the sole instance.
+     CAUGHT (round 1: this bug was the defect, unpinned). Reverted.
+
+M2b  adapters/native: no-space fallback widened to s.slice(0, LIMIT)
+     -> FAIL [W-076 b1] synthetic: single token longer than the cap — pinned exact
+     -> FAIL [W-076 b1] synthetic: capped at 120 total   121
+     CAUGHT. Both halves of the cap are now independently pinned, so the fix
+     cannot be regressed in either direction without a test dying. Reverted.
+
+M3   adapters/native: `body: "" as string` (never carry the body)
+     round 1: packages/cli/src/check.test.ts -> ZERO failures (the F3 defect)
+     round 2: -> FAIL [W-076 b2] body is carried verbatim alongside the
+                   front-matter subject (non-empty case)            ""
+              -> FAIL [W-076 b4] a non-empty body is carried verbatim
+                   (not collapsed to "")                            ""
+              -> FAIL inbox body: at least 2KB                       0
+              -> FAIL inbox body: byte-identical to the front matter body
+     CAUGHT in three places instead of one. Reverted.
+Working tree verified clean after every mutation.
+
+================================================================
+F3  FIXED — the vacuous body assertions
+================================================================
+Both siblings assert a REAL, non-empty body verbatim rather than "":
+  check.test.ts b2 — W076-B2-A's body asserted verbatim (the fixture that
+    has real content), with the old empty-body check kept as a separate,
+    honestly-named assertion ("an empty body is still carried as body: \"\"").
+  check.test.ts b4 — W076-B4-VALID gains a real body and a verbatim check.
+Proved by M3 above: the mutation that round 1 showed slipped past the whole
+of check.test.ts now fails in both places. F3 is closed, not papered over.
+No red required or expected: these assertions pin behaviour that already
+worked; their purpose is to bite a mutation, which is demonstrated directly.
+
+================================================================
+F5  FIXED — docs/ADOPTION.md
+================================================================
+  -  # optional; see below
+  +  # required for new petitiones; advisory until W-038's writer stamps it — see below
+The example and the prose below it now agree.
+
+================================================================
+F2 and F4 — untouched, still accepted (round 1's rulings stand)
+================================================================
+F2  behaviour 3's reds carry no tag because apps/server/test/server.test.ts's
+    pre-existing harness has no behaviour-tag parameter. Attribution was
+    established five ways in round 1 and re-confirmed here by M3, whose two
+    server failures are the same two names. Genuine evidence, single
+    instance. No change required.
+F4  acceptance 3 is unasserted in the suite because behaviour 3's "2+ KB"
+    clause is unsatisfiable with P-012 (1730 bytes); the censor verifies it
+    directly instead — see below. No change required.
+
+================================================================
+ACCEPTANCE RE-CONFIRMED ON THE FIX ROUND
+================================================================
+Acceptance 5 / behaviour 5 — the exact check delta, measured globally again
+(master's checkStudio vs the branch's, same studio, same --repo, only the
+rule code differing):
+    master 126  ->  branch 138
+    ADDED 12, all {"petitio.subject": 12}, all level "advise"
+    added blocks 0 · REMOVED 0 · no other rule's finding set altered
+(Both baselines rose by 1 since round 1 — an `advise probatio.certifies
+opera/W-076.md gate "review" evidence has no identity (certifies)`, created
+by the censor's own round-1 review record. It is present on BOTH sides, so
+the delta is unchanged. Tooling shape: `bisellium review` writes evidence
+with no `certifies` tree identity, exactly as the `spec` gate does. Not this
+opus's business; noted for whoever picks up P-012.)
+
+Acceptance 3 — re-probed, since the derivation changed. Temp copy of the
+real officina, server on port 0, GET /api/inbox:
+    status 200 · needs_you ids ["P-012"]
+    subject len 117 (unchanged — P-012's s[119] is "e", not a space)
+    wire body 1730 · file body 1730 · byte-identical true · 29 lines
+Body required end to end still holds, untruncated, newlines intact.
+
+================================================================
+DIFF SCOPE SINCE ROUND 1
+================================================================
+git diff da0fba3..HEAD --stat: 8 files.
+Code/docs: adapters/native/src/index.ts, packages/cli/src/check.test.ts,
+docs/ADOPTION.md — all three named in the brief's "Files owned" and all
+three named in round 1's "what round 2 needs". Nothing outside it.
+Bookkeeping: three studio/ci/W-076-*-38b07ee1.log, the re-recorded
+studio/ci/reds/W-076/01.log, studio/opera/W-076.md.
+No write outside the declared set (QA lex §2, probatio.declared).
+
+================================================================
+VERDICT
+================================================================
+PASS. The one blocking finding is fixed exactly as ruled, verified against
+an independent re-derivation rather than against the builder's own code, and
+locked in by two mutations that now die in both directions. F3 is fixed and
+demonstrated against the very mutation that exposed it. F5 is fixed. F2 and
+F4 were accepted in round 1 and are unchanged. Suites, gates and verify all
+green on a clean tree.

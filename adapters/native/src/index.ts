@@ -147,6 +147,54 @@ export function isoWeek(date: Date): string {
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
+/** Strips a paired delimiter (`*` or `_`) acting as markdown emphasis —
+ *  paired, and adjacent to a non-word character on the outside — leaving it
+ *  alone everywhere else, so `snake_case_name` and `a*b` survive intact
+ *  (W-076 land 7). */
+function stripEmphasis(text: string, delim: "*" | "_"): string {
+  const d = delim === "*" ? "\\*" : "_";
+  const re = new RegExp(`(?<![\\w${d}])${d}([^\\s${d}](?:[^${d}]*[^\\s${d}])?)${d}(?![\\w])`, "g");
+  return text.replace(re, "$1");
+}
+
+/**
+ * W-076: a petitio's inbox subject when the `subject:` front-matter key is
+ * absent (or present-and-invalid — `check.ts`'s `petitio.subject` rule
+ * blocks that case; this function is never asked to rescue it). A legacy
+ * fallback, not a correct subject: first paragraph (not first *line* — the
+ * whole fix for wrap-artifact mid-sentence cuts), unwrapped, markdown
+ * stripped, capped at 120 characters total including the ellipsis. Cuts at
+ * the last space at or before the boundary; when no space exists there (a
+ * single token longer than the cap, e.g. a long URL), cuts mid-word at the
+ * boundary — the one deliberate mid-word exception.
+ */
+export function deriveSubject(body: string): string {
+  const firstParagraph = (body.split(/\r?\n\s*\r?\n/)[0] ?? "").trim();
+  let s = firstParagraph.replace(/\s+/g, " ").trim();
+  s = s.replace(/^#+\s*/, ""); // leading heading marker(s)
+  s = s.replace(/`([^`]*)`/g, "$1"); // inline code
+  s = s.replace(/\*\*([^*]+)\*\*/g, "$1"); // bold
+  s = s.replace(/__([^_]+)__/g, "$1"); // bold (underscore form)
+  s = s.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1"); // [text](url)
+  s = stripEmphasis(s, "*");
+  s = stripEmphasis(s, "_");
+  s = s.replace(/\s+/g, " ").trim();
+
+  const LIMIT = 120;
+  if (s.length > LIMIT) {
+    // W-076 censor round 1 (F1): the last-space search window is the full
+    // 120-char boundary, not LIMIT-1 — a word ending exactly at index 119
+    // (P-010's "gap") has its trailing space AT that index, one past a
+    // LIMIT-1 window, and was being discarded whole. The no-space fallback
+    // still cuts at LIMIT-1 (budget), leaving room for the ellipsis.
+    const window = s.slice(0, LIMIT);
+    const lastSpace = window.lastIndexOf(" ");
+    const cut = lastSpace > 0 ? window.slice(0, lastSpace) : s.slice(0, LIMIT - 1);
+    s = `${cut}…`;
+  }
+  return s;
+}
+
 function posture(allowance: number | undefined, burn: number | undefined): ProviderStatus {
   if (allowance === undefined || burn === undefined) return "unknown";
   const r = burn / allowance;
@@ -241,16 +289,28 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
     };
   });
 
-  interface PetitioFront { id: string; opus: string; from: string; to: string; state: PetitioState; opened?: string }
+  interface PetitioFront { id: string; opus: string; from: string; to: string; state: PetitioState; opened?: string; subject?: unknown }
   const petitiones: Petitio[] = listMd(join(root, "petitiones")).map((p) => {
     const { data, body } = readFront<PetitioFront>(p);
+    // `subject:`, when present and a non-blank string, is authoritative
+    // (W-076 design §1) — verbatim, even when the body would derive
+    // something else, even when the body is empty. A present-but-invalid
+    // value (blank, whitespace-only, non-string) is check.ts's
+    // `petitio.subject` rule's problem to block, not this reader's to
+    // rescue — it still falls through to the derivation here only because
+    // the schema field is required and something has to occupy it.
+    // Absent, or the derivation's own output is empty (an empty/whitespace
+    // body), falls back to the petitio id rather than a blank label.
+    const front = typeof data.subject === "string" && data.subject.trim().length > 0 ? data.subject : undefined;
+    const derived = deriveSubject(body);
     return {
       id: data.id,
       opusId: data.opus,
       openedBy: data.from === "patron" ? "you" : data.from,
       counterparty: data.from === "patron" ? data.to : data.from,
       state: data.state,
-      subject: body.split("\n")[0],
+      subject: front ?? (derived || data.id),
+      body,
     };
   });
 
