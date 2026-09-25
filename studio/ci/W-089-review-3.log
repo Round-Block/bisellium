@@ -1,0 +1,158 @@
+# W-089 review round 3 — censor (qa-lead), claude-opus-5
+# tree: 88c22afd2b211323f1505c39a37cebef21ff15a6  branch: opus/W-089
+# at: 2026-09-25T22:23:01Z
+# generator: /home/edckt/.bisellium-evidence/W-089-review-3/r3-evidence.sh
+
+## 1. Gates re-run by the censor
+$ npm run -s typecheck
+TYPES exit=0
+$ npm run -s lint
+✖ 2 problems (0 errors, 2 warnings)
+
+LINT exit=0
+$ npm run -s test:suite   (run alone — see section 7 on the first attempt)
+PASS lines: 3425  FAIL lines: 0
+TESTS exit=0
+$ npm run -s check -- studio --repo .
+PASS — 0 blocking, 148 advisory
+$ npm run -s check -- examples/sample-studio --repo .
+PASS — 0 blocking, 28 advisory
+$ rm -rf apps/web/dist && build && npm run -s test:serve  (the required web-e2e gate)
+  30 passed (13.8s)
+
+## 2. B3 behaviour ONE — an instance receipt directory gets its template's
+##    harness and REAL liveness (censor's own fixture, both surfaces)
+$ bisellium hooks check --harness claude-code
+eng-lead: harness=claude-code last=none dead
+builder: harness=claude-code last=none dead
+builder-codex: harness=codex last=none alive
+builder-a: harness=claude-code last=none dead
+builder-a.W-200: harness=claude-code last=none dead
+builder-codex.W-100: harness=codex last=s2 (started 2026-09-26T00:00:00Z) alive
+builder.W-089: harness=claude-code last=s1 (started 2026-09-26T00:00:00Z) alive
+ghost.dir: unknown (no declared seat resolves this receipts directory)
+  -> builder.W-089 is ALIVE on the template's harness (round 2: invisible; the
+     seat read 'last=none dead'). builder-codex.W-100 inherits the CODEX harness,
+     so the hyphenated seat is matched whole. A retired seat's instance
+     (builder-a.W-200) resolves too — reads work forever.
+
+## 3. B3 behaviour TWO — an unresolvable directory is reported unknown at BOTH
+##    surfaces, never given a fabricated verdict
+$ surface 1 (hooks check) — see 'ghost.dir' above; verbatim:
+ghost.dir: unknown (no declared seat resolves this receipts directory)
+$ surface 2 (checkStudio findings, hook.*):
+  advise hook.dead receipts/eng-lead
+  advise hook.dead receipts/builder
+  advise hook.dead receipts/builder-a
+  advise hook.dead receipts/builder-a.W-200
+  advise hook.unknown receipts/ghost.dir
+  -> ghost.dir gets hook.unknown (a newly REGISTERED rule id, rules/ids.ts) and
+     NOT hook.dead. harness is empty and dead is false — no fabricated liveness.
+
+## 4. B3 mutations — four, each killing exactly what it should
+### MUTATION M10 (B3) receipts/ enumeration removed — instances invisible again
+FAIL  w089 b3: hooks check attributes the instance directory to builder's harness, alive ["producer: harness=claude-code last=none dead","ar
+FAIL  w089 b3: hooks check reports the unknown directory as unknown, not dead/alive ["producer: harness=claude-code last=none dead","archite
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unknownFindings":[],"dead":[{"rule":"hook.dea
+### restored; tracked-dirty: 0
+### MUTATION M11 (B3) an unresolved directory is given a fabricated liveness verdict
+FAIL  w089 b3: hooks check reports the unknown directory as unknown, not dead/alive ["producer: harness=claude-code last=none dead","archite
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unknownFindings":[],"dead":[{"rule":"hook.dea
+### restored; tracked-dirty: 0
+### MUTATION M12 (B3) check.ts drops the hook.unknown branch
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unknownFindings":[],"dead":[{"rule":"hook.dea
+### restored; tracked-dirty: 0
+### MUTATION M13 (B3) hooks check's caller stops resolving instance directories
+FAIL  w089 b3: hooks check attributes the instance directory to builder's harness, alive ["producer: harness=claude-code last=none dead","ar
+### restored; tracked-dirty: 0
+
+## 5. 03.log reproduces at its recorded state, with the corrected command chain
+-- recorded command chain:
+node --import tsx adapters/native/src/resolveSeat.test.ts && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/seatedCandidates.test.ts && node --import tsx apps/server/test/server.test.ts . && node --import tsx packages/shim/test/hooks.test.ts .
+-- reproduced PASS count: 618  (recorded: 618)
+-- restored; tracked-dirty: 0
+  (the three recorded FAIL lines and the three reproduced FAIL lines were compared
+   in full and are byte-identical; PASS counts match at 618. Elided here for width.)
+$ the chain now includes the hooks consumer that round-1's omission let through:
+ node --import tsx packages/shim/test/hooks.test.ts .
+
+## 6. The 03.log overwrite — both prior versions survive in history
+$ git log --oneline --diff-filter=A -- studio/ci/reds/W-089/03.log
+c65eaee feat(W-089): seat templates + retired tombstones, resolveSeat/seatInstance, retired dispatch refusal
+  c65eaee  tests in the chain: 1
+  8f091fe  tests in the chain: 7
+  HEAD     tests in the chain: 8
+  (1 = the original single-test chain that let B3 through; 8 = the corrected chain)
+  c65eaee  hooks.test.ts present in the chain: 0
+  HEAD     hooks.test.ts present in the chain: 1
+$ the class is already tracked on master:
+03f558e studio: W-100 — per-round red logs (#126)
+$ and the precedent is W-084's whole re-recorded set:
+8778886 chore(W-084): reds re-recorded at the clean pre-fix tree 4a8c07a (tree:24618090); spec gate signed — sandbox proxy per D-028's protocol, disclosed
+
+## 7. The one suite FAIL I saw, run down rather than waved through
+  First test:suite run (concurrent with my own probes): 1 FAIL, exit 1 —
+FAIL  [9] row 3: the lock was never free before A had already produced its (correct) result attempts=157
+$ does W-089 touch that area at all?  git diff --stat master...HEAD -- scripts/
+  (empty: untouched by the entire opus)
+$ node scripts/no-vendor.test.mjs, three times, alone:
+  PASS  [9] row 3: the lock was never free before A had already produced its (correct) result attempts=155
+  PASS  [9] row 3: the lock was never free before A had already produced its (correct) result attempts=151
+  PASS  [9] row 3: the lock was never free before A had already produced its (correct) result attempts=146
+  -> a load-sensitive poll race in scripts/no-vendor.test.mjs, not a W-089 defect.
+     Re-ran the full suite alone: 3425 PASS, 0 FAIL, exit 0.
+
+## 8. Round-2's verified set, re-confirmed (mutation FAIL counts)
+### MUTATION M1 run.ts: retired dispatch allowed (round-1 shape)
+   FAILs=2
+### MUTATION M2 seatInstance: bare template passes through (round-1 shape)
+   FAILs=12
+   FAILs=2
+   FAILs=7
+   FAILs=4
+   FAILs=2
+   FAILs=3
+### MUTATION M3 hooks.ts process.cascade: back to the prefix guess (round-1 shape)
+   FAILs=3
+### MUTATION M4 check.ts: traditio.sella back to flat sellaIds (round-1 shape)
+   FAILs=1
+### MUTATION M5 (B1) resolveSella: validate but do not mint
+   FAILs=5
+   FAILs=0
+### MUTATION M6 (B1) namedSella: validate but do not mint
+   FAILs=2
+### MUTATION M7 (B2) guest loses its built-in bypass in resolveSella
+   FAILs=48
+   FAILs=0
+  -> identical to round 2 throughout, except M2's hooks.test.ts 1 -> 2: the new
+     B3 instance test mints builder.W-089, so it depends on the minter too.
+
+## 9. Round-2's end-to-end set, re-confirmed
+$ review --sella builder -> the probationes.review line:
+14:  review: { status: passed, evidence: ci/W-004-tests-6b416199.log, certifies: tree:c50a0cef6c7b79d527a88dc8298f446cd5014002, sella: builder.W-004, at: 2026-09-26T00:01:00.000Z }
+$ the advisory wording fix (no phantom --opus flag on a positional verb):
+review: --sella "builder.W-002" disagrees with the opus "W-004"
+$ fixture records still at builder-1 (history did not move):
+examples/sample-studio/opera/W-002.md:6:sella: builder-1
+examples/sample-studio/opera/W-004.md:6:sella: builder-1
+$ git diff master...HEAD --name-only over every record directory:
+studio/opera/W-089.md
+$ guest on a freshly scaffolded officina:
+W-001: review passed (ci/p.log)
+  exit=0
+
+## 10. The title amendment (round-2 advisory) is a real amend record
+amendments:
+  - at: 2026-09-25T22:06:01.850Z
+    sella: builder.W-089
+    field: title
+    reason: "censor W-089 round-2 advisory: the title's example separator was builder@<opus>, but the brief's own measurement (the separator section) settled on '.', not '@' — ID_RE rejects '@' outright. Corrected to builder.<opus> to match what the opus actually built."
+    superseded: "seats become templates: the builder letter dies — one builder seat per tier, instance identity minted at dispatch as builder@<opus>, D-021 keyed on the opus it already owns — Patron decree"
+---
+
+## 11. Non-goal check: ID_RE still untouched by the whole opus
+  matching diff lines: 0
+37:export const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+## end. git status:
+?? studio/ci/W-089-review-3.log
