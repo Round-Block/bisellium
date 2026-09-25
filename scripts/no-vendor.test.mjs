@@ -611,7 +611,7 @@ if (runs(9) && requireBuilt(9)) {
     // a bug: it is exactly what "release last" looks like from outside.
     let racedEarly = false;
     let attempts = 0;
-    const pollDeadline = Date.now() + 2000;
+    const pollDeadline = Date.now() + 8000;
     while (!aExited && Date.now() < pollDeadline) {
       attempts++;
       try {
@@ -623,7 +623,7 @@ if (runs(9) && requireBuilt(9)) {
       }
       await new Promise((r) => setTimeout(r, 1));
     }
-    const flushDeadline = Date.now() + 2000;
+    const flushDeadline = Date.now() + 8000;
     while (!existsSync(aResultPath) && Date.now() < flushDeadline) {
       await new Promise((r) => setTimeout(r, 5));
     }

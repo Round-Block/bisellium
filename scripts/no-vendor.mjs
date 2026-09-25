@@ -401,6 +401,16 @@ export function runOnce(opts) {
 
     const runEnv = { ...env, PATH: `${shadowDir}:${env.PATH ?? ""}` };
     const result = spawnSync("sh", ["-c", suiteCommand], { cwd: repoRoot, env: runEnv, stdio: "inherit" });
+    // `status` is `null` when the suite was killed by a signal (SIGKILL from
+    // an OOM, a timeout elsewhere, ^C) rather than exiting on its own — that
+    // is a fundamentally different event than "the suite's own checks
+    // failed", and reporting it as a bare exit code 1 would erase the one
+    // fact an operator most needs (a signal killed it, not a red test).
+    if (result.status === null) {
+      console.error(
+        `vendor-sentinel: the suite was killed by signal ${result.signal ?? "unknown"}, not a test failure`,
+      );
+    }
     const suiteExit = result.status ?? 1;
 
     const snapshot = readLogLines(logPath);
