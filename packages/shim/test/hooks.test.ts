@@ -443,7 +443,7 @@ try {
     for (const [label, dir] of [["healthy", healthy], ["missing", missing], ["broken", broken]] as const) {
       const t0 = Date.now();
       const { result, logs } = await capture(() =>
-        runHookEvent(["context", "--sella", "builder-1", "--studio", dir], { now: NOW, stdin: stdinOf("{}") }),
+        runHookEvent(["context", "--sella", "eng-lead", "--studio", dir], { now: NOW, stdin: stdinOf("{}") }),
       );
       const elapsed = Date.now() - t0;
       check(`context(${label}): exitCode 0`, result.exitCode === 0, String(result.exitCode));
@@ -451,7 +451,7 @@ try {
       check(`context(${label}): something printed on stdout`, logs.length >= 1, JSON.stringify(logs));
     }
     const { logs: healthyLogs } = await capture(() =>
-      runHookEvent(["context", "--sella", "builder-1", "--studio", healthy], { now: NOW, stdin: stdinOf("{}") }),
+      runHookEvent(["context", "--sella", "eng-lead", "--studio", healthy], { now: NOW, stdin: stdinOf("{}") }),
     );
     check("context(healthy): boot bundle is non-empty", (healthyLogs[0] ?? "").length > 0, JSON.stringify(healthyLogs));
 
@@ -565,6 +565,47 @@ probationes: []
       const { errs } = await capture(() => toolPayload(sella));
       check(`cascade guard: "${sella}" still warns`, errs.some((e) => e.includes("process.cascade")), JSON.stringify(errs));
     }
+  }
+
+  // ---- W-089 behaviour 5: hook-event start/stop/compact refuse a bare
+  // builder-class template — no --opus to mint from, so it must already
+  // arrive as a minted instance (via $BISELLIUM_SELLA) — before any
+  // receipt or timeline write. A non-builder-class sella (including a
+  // retired letter) is unaffected. -------------------------------------------
+  {
+    const dir = freshStudio("w089-b5-hookevent");
+    const bareStart = await runHookEvent(["start", "--sella", "builder", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-bare" })),
+    });
+    check("w089 b5: hook-event start on a bare template exits 0 (never blocks the harness)", bareStart.exitCode === 0, String(bareStart.exitCode));
+    check("w089 b5: hook-event start on a bare template writes no receipt", !existsSync(join(dir, "receipts", "builder")), "");
+
+    const instanceStart = await runHookEvent(["start", "--sella", "builder.W-300", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-instance" })),
+    });
+    check("w089 b5: hook-event start on a minted instance exits 0", instanceStart.exitCode === 0, String(instanceStart.exitCode));
+    check(
+      "w089 b5: hook-event start on a minted instance writes its receipt",
+      existsSync(receiptPath(dir, "builder.W-300", "sess-instance")),
+      "",
+    );
+
+    const bareCompact = await runHookEvent(["compact", "--sella", "builder", "--studio", dir], { now: NOW, stdin: stdinOf("{}") });
+    check("w089 b5: hook-event compact on a bare template exits 0", bareCompact.exitCode === 0, String(bareCompact.exitCode));
+    check(
+      "w089 b5: hook-event compact on a bare template writes no timeline",
+      !existsSync(join(dir, "timeline", "builder.jsonl")),
+      "",
+    );
+
+    // Unaffected: a non-builder-class sella, retired letter included.
+    const retiredStart = await runHookEvent(["start", "--sella", "builder-1", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-retired" })),
+    });
+    check("w089 b5: hook-event start on a non-builder-class (retired) sella still writes", instanceStart.exitCode === 0 && existsSync(receiptPath(dir, "builder-1", "sess-retired")), String(retiredStart.exitCode));
   }
 } finally {
   for (const d of dirs) {

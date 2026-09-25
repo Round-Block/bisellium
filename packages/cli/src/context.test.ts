@@ -21,10 +21,10 @@ const check = (name: string, ok: boolean, detail = "") => {
 // ---- buildContext -----------------------------------------------------------
 
 {
-  const c = buildContext(root, "builder-1", { now: NOW });
-  check("builder-1: engineering lex present", c.text.includes("Engineering lex") && c.text.includes("Mandate"));
-  check("builder-1: W-002 and W-004 handoffs present", c.text.includes("W-002") && c.text.includes("W-004"));
-  check("builder-1: A-1 not included (addressed to patron)", !c.text.includes("A-1"));
+  const c = buildContext(root, "builder", { now: NOW });
+  check("builder: engineering lex present", c.text.includes("Engineering lex") && c.text.includes("Mandate"));
+  check("builder: W-002 and W-004 handoffs present", c.text.includes("W-002") && c.text.includes("W-004"));
+  check("builder: A-1 not included (addressed to patron)", !c.text.includes("A-1"));
 }
 
 {
@@ -33,7 +33,7 @@ const check = (name: string, ok: boolean, detail = "") => {
 }
 
 {
-  const c = buildContext(root, "builder-1", { now: NOW, maxTokens: 300 });
+  const c = buildContext(root, "builder", { now: NOW, maxTokens: 300 });
   const lastLine = c.text.split("\n").pop() ?? "";
   check("maxTokens=300: sections dropped", c.truncated.length > 0);
   check("maxTokens=300: text ends with 'truncated:' line", lastLine.startsWith("truncated:"));
@@ -47,8 +47,8 @@ const check = (name: string, ok: boolean, detail = "") => {
 // ---- standing_rules -----------------------------------------------------------
 
 {
-  const c = buildContext(root, "builder-1", { now: NOW });
-  check("builder-1: standing rules present", c.text.includes("Standing rules") && c.text.includes("Test-first with a recorded red"));
+  const c = buildContext(root, "builder", { now: NOW });
+  check("builder: standing rules present", c.text.includes("Standing rules") && c.text.includes("Test-first with a recorded red"));
 }
 
 {
@@ -73,10 +73,12 @@ function pointerSection(text: string): string {
 }
 
 {
-  // behaviour 1: the pointer is present for every declared sella, not just
-  // one hand-picked example.
+  // behaviour 1: the pointer is present for every declared LIVE sella, not
+  // just one hand-picked example. A retired row (W-089 behaviour 6) gets
+  // the refusal bundle instead — see the dedicated block below — so it's
+  // excluded here rather than asserted to carry a pointer it no longer gets.
   const manifest = readManifest(root);
-  const sellae = [manifest.patron ?? "patron", ...manifest.sellae.map((s) => s.id)];
+  const sellae = [manifest.patron ?? "patron", ...manifest.sellae.filter((s) => !s.retired).map((s) => s.id)];
   for (const sella of sellae) {
     const c = buildContext(root, sella, { now: NOW });
     check(
@@ -96,17 +98,17 @@ function pointerSection(text: string): string {
 {
   // behaviour 2: the pointer names no flag shapes itself — it can only ever
   // point at the banner, never restate (and drift from) a piece of it.
-  const c = buildContext(root, "builder-1", { now: NOW });
+  const c = buildContext(root, "builder", { now: NOW });
   const section = pointerSection(c.text);
-  check("builder-1: pointer names no flag shapes", section.length > 0 && !/--[a-zA-Z]/.test(section), section);
+  check("builder: pointer names no flag shapes", section.length > 0 && !/--[a-zA-Z]/.test(section), section);
 }
 
 {
   // behaviour 3: pointer only, not the full ~700-token banner inlined —
   // none of the per-command usage lines main.ts's USAGE constant renders
   // (e.g. "bisellium check [dir]") leak into context output.
-  const c = buildContext(root, "builder-1", { now: NOW });
-  check("builder-1: full banner not inlined", !c.text.includes("bisellium check [dir]"));
+  const c = buildContext(root, "builder", { now: NOW });
+  check("builder: full banner not inlined", !c.text.includes("bisellium check [dir]"));
 }
 
 {
@@ -128,8 +130,8 @@ function pointerSection(text: string): string {
     const bigLex = "# Engineering Lex (inflated for test)\n\n" + fillerLine.repeat(60);
     writeFileSync(join(tmp, "leges", "engineering.md"), bigLex);
 
-    const full = buildContext(tmp, "builder-1", { now: NOW });
-    const c = buildContext(tmp, "builder-1", { now: NOW, maxTokens: 600 });
+    const full = buildContext(tmp, "builder", { now: NOW });
+    const c = buildContext(tmp, "builder", { now: NOW, maxTokens: 600 });
     check("realistic lex: fixture inflated past 1000 tokens", full.tokens > 1000, `tokens=${full.tokens}`);
     check(
       "maxTokens=600, realistic-size lex: CLI usage pointer survives truncation of the lex itself",
@@ -207,6 +209,15 @@ function pointerSection(text: string): string {
   check("w089 b3: an empty-instance id ('builder.') is unknown", bad.text === "" && bad.truncated[0] === "unknown sella");
   const ghost = buildContext(root, "ghost.W-100", { now: NOW });
   check("w089 b3: an unknown seat prefix is unknown", ghost.text === "" && ghost.truncated[0] === "unknown sella");
+}
+
+// ---- W-089 behaviour 6: context refuses a retired live target -------------
+// examples/sample-studio's "builder-1" is retired (behaviour 1's migration).
+{
+  const retired = buildContext(root, "builder-1", { now: NOW });
+  check("w089 b6: a retired sella is unknown", retired.text === "" && retired.truncated[0] === "unknown sella");
+  const retiredInstance = buildContext(root, "builder-1.W-200", { now: NOW });
+  check("w089 b6: an instance of a retired sella is unknown", retiredInstance.text === "" && retiredInstance.truncated[0] === "unknown sella");
 }
 
 process.exit(failed ? 1 : 0);

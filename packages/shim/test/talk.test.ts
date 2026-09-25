@@ -438,4 +438,46 @@ function readJsonl(path: string): unknown[] {
   }
 }
 
+// ---- W-089 behaviour 6: talk refuses a retired live target -----------------
+// examples/sample-studio's "builder-1" is retired (behaviour 1's migration).
+{
+  const studio = freshStudio();
+  try {
+    const { profile, calls } = countingProfile(fakeProfile);
+    const retired = await runTalk(["--sella", "builder-1", "--studio", studio, "--harness", "fake", "--model-only", "hi"], {
+      harnesses: { fake: profile },
+    });
+    check("w089 b6: talk refuses a retired sella — exits 2", retired.exitCode === 2, String(retired.exitCode));
+    const retiredInstance = await runTalk(["--sella", "builder-1.W-200", "--studio", studio, "--harness", "fake", "--model-only", "hi"], {
+      harnesses: { fake: profile },
+    });
+    check("w089 b6: talk refuses an instance of a retired sella — exits 2", retiredInstance.exitCode === 2, String(retiredInstance.exitCode));
+    check("w089 b6: neither refusal started the harness", calls.start === 0, JSON.stringify(calls));
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
+// ---- W-089 behaviour 5: talk refuses a bare builder-class template, and
+// re-mints/validates a supplied instance before starting a harness. --------
+{
+  const studio = freshStudio();
+  try {
+    const { profile, calls } = countingProfile(fakeProfile);
+    const bare = await runTalk(["--sella", "builder", "--studio", studio, "--harness", "fake", "--model-only", "hi"], {
+      harnesses: { fake: profile },
+    });
+    check("w089 b5: talk refuses a bare builder-class template — exits 2", bare.exitCode === 2, String(bare.exitCode));
+    check("w089 b5: the refused bare template never started a harness", calls.start === 0, JSON.stringify(calls));
+
+    const good = await runTalk(["--sella", "builder.W-300", "--studio", studio, "--harness", "fake", "--model-only", "hi"], {
+      harnesses: { fake: profile },
+    });
+    check("w089 b5: a well-formed instance still starts the harness — exits 0", good.exitCode === 0, String(good.exitCode));
+    check("w089 b5: the harness actually ran for the instance", calls.start === 1, JSON.stringify(calls));
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
 process.exit(failed ? 1 : 0);

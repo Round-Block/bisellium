@@ -21,6 +21,8 @@ everywhere, including inside Latin-named files — see `docs/ADOPTION.md`.
 | Officina | Studio | a directory of the files this glossary describes. |
 | Cascade | Build round | one batch of opera run together by a set of builders. |
 | Retrospectio | Retro | a cascade's closing review, written after it lands. |
+| Seat | Seat | a sella template, one per build tier, declared in `sellae`. |
+| Instance | Instance | `<seat>.<opus-id>`, minted at dispatch; carries no state of its own. |
 
 ## Probatio kinds
 
