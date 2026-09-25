@@ -181,8 +181,14 @@ export interface Petitio {
   openedBy: string; // actor roleId, or "you"
   counterparty: string;
   state: PetitioState;
-  /** First line of the question, for inbox rows. */
-  subject?: string;
+  /** Inbox row label. Authoritative from the `subject:` front-matter key
+   *  when present and valid (a non-blank string); otherwise a legacy
+   *  derivation from `body`'s first paragraph (W-076: adapters/native's
+   *  `deriveSubject`) — always present, never the raw markdown blob. */
+  subject: string;
+  /** The question, verbatim — `readFront`'s body, byte for byte. No
+   *  truncation: a subject is a row label, the detail pane owns the rest. */
+  body: string;
 }
 
 export const ACTUM_KINDS = ["consultation", "decision", "daily"] as const;

@@ -96,6 +96,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "petitio.parse",
   "petitio.party",
   "petitio.state",
+  "petitio.subject",
   "probatio.certifies",
   "probatio.certifies.dirty",
   "probatio.certifies.mismatch",

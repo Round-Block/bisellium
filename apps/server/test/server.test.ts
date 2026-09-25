@@ -922,6 +922,46 @@ async function main(): Promise<void> {
       await s.close();
     }
   }
+
+  // ---- W-076 behaviour 3: the body reaches GET /api/inbox untruncated ----
+  // `needsYou()` exposes only `state: needs_you` (store.ts), and a temp
+  // officina (not the shared `dir` above) is the only honest way to get a
+  // multi-paragraph, 2+KB body onto that surface without depending on the
+  // real studio's live petitiones.
+  {
+    const dir = freshStudio("w076-inbox-body");
+    const bigBody = [
+      "**W-064's red gate: D-024's kill arm has fired, and only you can rule.**",
+      "",
+      "The builder disclosed that behaviours 7-9's reds were recorded by the",
+      "implement then revert-to-skeleton then record then restore sequence.",
+      "Paragraph two exists purely to push this fixture's body well past two",
+      "kilobytes of markdown, with newlines that must survive the trip to the",
+      "wire intact, byte for byte, the same way `readFront` returns them.",
+      "".padEnd(2200, "x"),
+      "",
+      "1. Decree a new D-nnn waiving the behaviours.",
+      "2. Refuse the waiver and name the remedy.",
+      "",
+      "Answering in the same sitting closes the class either way.",
+    ].join("\n");
+    writeFileSync(
+      join(dir, "petitiones", "W076-BODY.md"),
+      ["---", 'id: "W076-BODY"', "from: qa-lead", "to: patron", "state: needs_you", "opened: 2026-09-25T00:00:00.000Z", "---", "", bigBody, ""].join("\n"),
+    );
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    const base = `http://127.0.0.1:${s.port}`;
+    try {
+      const r = await getJson(base, "/api/inbox");
+      const row = (r.body?.petitiones ?? []).find((p: { id: string }) => p.id === "W076-BODY");
+      check("inbox body: W076-BODY is present", row !== undefined, JSON.stringify((r.body?.petitiones ?? []).map((p: { id: string }) => p.id)));
+      check("inbox body: at least 2KB", typeof row?.body === "string" && row.body.length >= 2000, String(row?.body?.length));
+      check("inbox body: byte-identical to the front matter body (newlines intact)", row?.body === bigBody, String(row?.body).slice(0, 200));
+      check("inbox body: subject is present and derived (no subject: key on this fixture)", typeof row?.subject === "string" && row.subject.length > 0, JSON.stringify(row?.subject));
+    } finally {
+      await s.close();
+    }
+  }
 }
 
 main()
