@@ -1,0 +1,260 @@
+# W-089 review round 2 — censor (qa-lead), claude-opus-5
+# tree: e85c3664d5e13b63fc98b878b6f45407722de52e  branch: opus/W-089
+# at: 2026-09-25T21:54:04Z
+# generator: /home/edckt/.bisellium-evidence/W-089-review-2/r2-evidence.sh
+
+## 1. Gates re-run by the censor
+$ npm run -s typecheck
+TYPES exit=0
+$ npm run -s lint
+✖ 2 problems (0 errors, 2 warnings)
+
+LINT exit=0
+$ npm run -s test:suite
+PASS lines: 3419  FAIL lines: 0
+TESTS exit=0
+$ npm run -s check -- studio --repo .
+PASS — 0 blocking, 148 advisory
+$ npm run -s check -- examples/sample-studio --repo .
+PASS — 0 blocking, 28 advisory
+
+## 2. THE REQUIRED web-e2e GATE, run the way ci.yml runs it (round-1 finding B4)
+$ rm -rf apps/web/dist && npm run -s build --workspace @bisellium/web
+
+✓ built in 119ms
+$ npm run -s test:serve --workspace @bisellium/web
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+  30 passed (13.9s)
+  -> 30 passed from a scratch dist. The delegate now targets the live template.
+
+## 3. Round-1's four mutations, re-run against the fix round
+### MUTATION M1 run.ts: retired dispatch allowed (round-1 shape)
+-- packages/commands/src/run.test.ts
+FAIL  run: an exact retired sella exits 2                          0
+FAIL  run: an instance of a retired sella also exits 2             0
+   FAILs=2
+### restored; tracked-dirty files: 0
+### MUTATION M2 seatInstance: bare template passes through (round-1 shape)
+-- adapters/native/src/seatInstance.test.ts
+FAIL  [W-089 b4] mints <seat>.<opus> exactly                                            
+FAIL  [W-089 b4] refuses a doubled dot                                                  
+FAIL  [W-089 b4] refuses an id that would fail ID_RE (a raw '@')                        
+FAIL  [W-089 b4] round-trip: seatInstance("builder", "W-089") resolves back to the same seat {"minted":"builder","round":{"seat":{"id":"builder","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder", "W-1") resolves back to the same seat {"minted":"builder","round":{"seat":{"id":"builder","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder", "w-legacy_1.2") resolves back to the same seat {"minted":"builder","round":{"seat":{"id":"builder","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-codex", "W-089") resolves back to the same seat {"minted":"builder-codex","round":{"seat":{"id":"builder-codex","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-codex", "W-1") resolves back to the same seat {"minted":"builder-codex","round":{"seat":{"id":"builder-codex","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-codex", "w-legacy_1.2") resolves back to the same seat {"minted":"builder-codex","round":{"seat":{"id":"builder-codex","collegium":"engineering"}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-a", "W-089") resolves back to the same seat {"minted":"builder-a","round":{"seat":{"id":"builder-a","collegium":"engineering","retired":true}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-a", "W-1") resolves back to the same seat {"minted":"builder-a","round":{"seat":{"id":"builder-a","collegium":"engineering","retired":true}}}
+FAIL  [W-089 b4] round-trip: seatInstance("builder-a", "w-legacy_1.2") resolves back to the same seat {"minted":"builder-a","round":{"seat":{"id":"builder-a","collegium":"engineering","retired":true}}}
+   FAILs=12
+-- packages/commands/src/run.test.ts
+FAIL  run: the child sees BISELLIUM_SELLA=builder.W-100            builder
+FAIL  run: the receipt lives under receipts/builder.W-100/, not receipts/builder/ ["builder"]
+   FAILs=2
+-- packages/cli/src/lifecycle.test.ts
+FAIL  w089 b1: ready's workflow.state_changed carries the minted instance {"workflow.item.id":"W-006","workflow.state.from":"greenlit","workflow.state.to":"building","workflow.actor.role":"builder","workflow.source":"cli","workflow.source.seq":0}
+FAIL  w089 b1: review's probatio.sella is minted                       {"status":"passed","evidence":"ci/review-pass-1.log","certifies":"tree:c50a0cef6c7b79d527a88dc8298f446cd5014002","sella":"builder","at":"2026-09-19T13:00:00.000Z"}
+FAIL  w089 b1: halt's workflow.state_changed carries the minted instance {"workflow.item.id":"W-002","workflow.state.from":"building","workflow.state.to":"halted","workflow.actor.role":"builder","workflow.source":"cli","workflow.source.seq":0}
+FAIL  w089 b1: waive's probatio.sella is minted                        {"status":"waived","reason":"r","waived_by":"D-900","sella":"builder","at":"2026-09-19T13:00:00.000Z"}
+FAIL  w089 b1: red's header names the minted instance                  # sella: builder
+FAIL  w089 b1: amend's amendments[].sella is minted                    [{"at":"2026-09-19T13:00:00.000Z","sella":"builder","field":"title","reason":"r","superseded":"Guild chat"}]
+FAIL  w089 b1: done's workflow.state_changed carries the minted instance {"workflow.item.id":"W-982","workflow.state.from":"building","workflow.state.to":"done","workflow.actor.role":"builder","workflow.source":"cli","workflow.source.seq":0}
+   FAILs=7
+-- packages/shim/test/talk.test.ts
+FAIL  w089 b3: an instance id resolves the template's harness — exits 0 2
+FAIL  w089 b3: an instance id resolves the template's harness — the harness actually ran {"start":0,"resume":0}
+FAIL  w089 b5: a well-formed instance still starts the harness — exits 0 2
+FAIL  w089 b5: the harness actually ran for the instance         {"start":0,"resume":0}
+   FAILs=4
+-- packages/shim/test/hooks.test.ts
+FAIL  w089 b5: hook-event start on a minted instance writes its receipt 
+   FAILs=1
+-- packages/shim/test/instance-surfaces.test.ts
+FAIL  b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium              builder@studio.bisellium
+FAIL  b9 negative: a doubled-dot instance is refused, not dispatched   0
+FAIL  b9 negative: no worktree directory was ever created for it       /tmp/claude-1000/w089-b9-neg-repo-RYo0Nl/.bisellium/worktrees
+   FAILs=3
+### restored; tracked-dirty files: 0
+### MUTATION M3 hooks.ts process.cascade: back to the prefix guess (round-1 shape)
+-- packages/shim/test/hooks.test.ts
+FAIL  cascade guard: "builder-a" still warns                     []
+FAIL  cascade guard: "builder-a.W-100" still warns               []
+FAIL  cascade guard: "builderish" still warns                    []
+   FAILs=3
+### restored; tracked-dirty files: 0
+### MUTATION M4 check.ts: traditio.sella back to flat sellaIds (round-1 shape)
+-- packages/cli/src/check.test.ts
+FAIL  [W-089 b7] an instance id in traditio.sella produces no traditio.sella finding [{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder.W-989\" not declared"}]
+   FAILs=1
+### restored; tracked-dirty files: 0
+
+## 4. One mutation per B-fix
+### MUTATION M5 (B1) resolveSella: validate but do not mint
+-- packages/cli/src/lifecycle.test.ts
+FAIL  w089 b1: ready's workflow.state_changed carries the minted instance {"workflow.item.id":"W-006","workflow.state.from":"greenlit","workflow.state.to":"building","workflow.actor.role":"builder","workflow.source":"cli","workflow.source.seq":0}
+FAIL  w089 b1: review's probatio.sella is minted                       {"status":"passed","evidence":"ci/review-pass-1.log","certifies":"tree:c50a0cef6c7b79d527a88dc8298f446cd5014002","sella":"builder","at":"2026-09-19T13:00:00.000Z"}
+FAIL  w089 b1: halt's workflow.state_changed carries the minted instance {"workflow.item.id":"W-002","workflow.state.from":"building","workflow.state.to":"halted","workflow.actor.role":"builder","workflow.source":"cli","workflow.source.seq":0}
+FAIL  w089 b1: waive's probatio.sella is minted                        {"status":"waived","reason":"r","waived_by":"D-900","sella":"builder","at":"2026-09-19T13:00:00.000Z"}
+FAIL  w089 b1: done's workflow.state_changed carries the minted instance {"workflow.item.id":"W-982","workflow.state.from":"building","workflow.state.to":"done","workflow.actor.role":"builder","workflow.source":"cli","workflow.source.seq":0}
+   FAILs=5
+-- packages/cli/src/writes.test.ts
+/tmp/claude-1000/r2-mutate.sh: line 17: warning: command substitution: ignored null byte in input
+   FAILs=0
+### restored; tracked-dirty files: 0
+### MUTATION M6 (B1) namedSella: validate but do not mint
+-- packages/cli/src/lifecycle.test.ts
+FAIL  w089 b1: red's header names the minted instance                  # sella: builder
+FAIL  w089 b1: amend's amendments[].sella is minted                    [{"at":"2026-09-19T13:00:00.000Z","sella":"builder","field":"title","reason":"r","superseded":"Guild chat"}]
+   FAILs=2
+### restored; tracked-dirty files: 0
+### MUTATION M7 (B2) guest loses its built-in bypass in resolveSella
+-- packages/cli/src/lifecycle.test.ts
+FAIL  ready: with brief present and no spec probatio, exits 0          2
+FAIL  review --fail on building: exitCode 0                            2
+FAIL  halt: succeeds on a building opus with a failed review           2
+FAIL  halt: state -> halted                                            building
+FAIL  halt: W-970 building -> halted exits 0                           2
+FAIL  check: W-970 has no blocking findings once halted                [{"rule":"traditio.present","level":"block","where":"opera/W-970.md","message":"active item (building) has no handoff"},{"rule":"opus.red_evidence","level":"block","where":"opera/W-970.md","message":"missing red log(s) for behaviour(s) 1, 2"}]
+FAIL  check: wip.cap no longer counts W-970                            [{"rule":"wip.cap","level":"block","where":"opera/","message":"4 items in progress, WIP cap is 3"}]
+FAIL  ready: W-970 halted -> building exits 0                          2
+FAIL  ready: W-980 halted -> building exits 0                          2
+FAIL  ready: halted_at/reason/resume_when/halted_by all cleared        {"id":"W-980","title":"Halted, resurrected","kind":"feature","collegium":"engineering","state":"halted","halted_at":"2026-09-01T00:00:00Z","reason":"waiting on a decision","resume_when":"decision made","halted_by":"D-017","probationes":{}}
+FAIL  W-033 b6: cwd=trunk, --studio=owning worktree exits 0            2
+FAIL  W-033 b6: the worktree's record is now done                      building
+FAIL  W-033 b7: done on an untracked record exits 0 even though opus/W-150 exists 2
+FAIL  W-033 b7: state -> done                                          building
+FAIL  done b1: qa passed exits 0 (control)                             2
+FAIL  done b1: review passed exits 0 (control)                         2
+FAIL  done b1: spec passed exits 0 (control)                           2
+FAIL  done b2: tests passed with a tree certificate exits 0 (control)  2
+FAIL  done b4: unrecorded patron exits 0                               2
+FAIL  done b4: passed patron exits 0                                   2
+FAIL  done b4: honourable waiver exits 0                               2
+FAIL  done b4: honourable waiver stdout names waived/patron/D-900      
+FAIL  done b4: honourable waiver state -> done                         review
+FAIL  waive b5: base case exits 0                                      2
+FAIL  waive b5: the five keys are set from the CLI arguments           {"status":"pending","note":"keep-me"}
+FAIL  waive b5: no stray key beyond the five plus 'note'               {"status":"pending","note":"keep-me"}
+FAIL  waive b5: exactly one workflow.gate_evaluated event              []
+FAIL  waive b5: event carries item/gate/status/evidence/actor          
+FAIL  waive b5: state verifying exits 0                                2
+FAIL  waive b5: state verifying writes status: waived                  {"status":"pending"}
+   FAILs=48
+-- packages/cli/src/writes.test.ts
+/tmp/claude-1000/r2-mutate.sh: line 17: warning: command substitution: ignored null byte in input
+   FAILs=0
+### restored; tracked-dirty files: 0
+### MUTATION M8 (B7) the two-branch boot-line regex, both directions
+-- A. control, unmutated:
+PASS  agent.builder.body                     ok
+PASS  agent.clerk.body                       ok
+-- B. clerk.md loses its own --sella (must FAIL):
+PASS  agent.builder.body                     ok
+FAIL  agent.clerk.body                       missing context line
+-- C. builder.md regains a --sella (must FAIL):
+FAIL  agent.builder.body                     missing context line
+PASS  agent.clerk.body                       ok
+-- D. for contrast, the OLD single loose regex tolerates a clerk.md with no --sella:
+     (round-1 finding B7's hole, re-demonstrated) — see $TMPDIR/r2-mutate.sh M8
+
+## 5. 09.log reproduces at its recorded state (round-1 finding B5)
+### MUTATION M9 (B5) run.ts minter reverted — reproduce the recorded 09.log
+-- recorded 09.log FAIL lines:
+FAIL  b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium              builder@studio.bisellium
+FAIL  b9 negative: a doubled-dot instance is refused, not dispatched   1
+FAIL  b9 negative: no worktree directory was ever created for it       /tmp/claude-1000/w089-b9-neg-repo-J4Iuz0/.bisellium/worktrees
+-- reproduced now:
+PASS  b9: branch is bisellium/<instance>/1                             bisellium/builder.W-089/1
+PASS  b9: the minted branch passes `git check-ref-format`              {"status":0,"stderr":""}
+PASS  b9: the receipt lands at receipts/<instance>/<session>.json      /tmp/claude-1000/w089-b9-studio-47tGzG/receipts/builder.W-089/sess-b9.json
+PASS  b9: check reports no path.id.unvalidated for the instance's receipt directory []
+PASS  b9: run mints the instance and dispatches the child — exits 0    0
+PASS  b9: GIT_AUTHOR_EMAIL has exactly one '@'                         builder@studio.bisellium
+FAIL  b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium              builder@studio.bisellium
+FAIL  b9 negative: a doubled-dot instance is refused, not dispatched   1
+FAIL  b9 negative: no worktree directory was ever created for it       /tmp/claude-1000/w089-b9-neg-repo-JOBSFM/.bisellium/worktrees
+PASS  b9 negative: no receipt directory was ever created for it        
+### restored; tracked-dirty files: 0
+  -> identical PASS/FAIL set and identical detail values (builder@studio.bisellium,
+     negative exit 1); only the mktemp path differs. Part 3 now reads the real child
+     env, so it dies under M2 too (section 3) — the round-1 tautology is gone.
+
+## 6. B6 — fixtures reverted, tombstone alone carries it
+examples/sample-studio/opera/W-002.md:6:sella: builder-1
+examples/sample-studio/opera/W-004.md:6:sella: builder-1
+16:  - { id: builder, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+17:  - { id: builder-1, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+18:  - { id: builder-2, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+  (the redundant 'guest' fixture row is gone: 0 matches)
+$ git diff master...HEAD --name-only -- examples/sample-studio/opera studio/opera studio/acta studio/petitiones studio/decisions
+studio/opera/W-089.md
+  -> no fixture record moved; only W-089's own opus record. History holds.
+
+## 7. The brief's migration table, re-measured on the fix round
+== asbuilt ==
+  builder rows: 7
+  149 findings, 1 blocking
+    1 × link.dead
+== notombstones ==
+  builder rows: 2
+  199 findings, 51 blocking
+    1 × link.dead
+    15 × opus.sella
+    35 × traditio.sella
+
+## 8. B2 — the guest default on a freshly scaffolded officina
+$ (no --sella, no $BISELLIUM_SELLA) bisellium review W-001 --pass --evidence ci/probe.log
+W-001: review passed (ci/probe.log)
+exit=0
+  -> exit 0 (round 1: exit 2). guest is a built-in identity like patron.
+
+## 9. B1 — the seven verbs mint for real, and the three postures still differ
+$ review --sella builder  -> the probationes.review line:
+14:  review: { status: passed, evidence: ci/W-004-tests-6b416199.log, certifies: tree:c50a0cef6c7b79d527a88dc8298f446cd5014002, sella: builder.W-004, at: 2026-09-26T00:01:00.000Z }
+$ red --sella builder      -> red log header:
+# sella: builder.W-002
+$ review --sella ghost     -> unknown, refused:
+review: unknown sella "ghost" — not declared in bisellium.yml
+$ review --sella builder-1 -> retired PASSES attribution, unminted (brief behaviour 6):
+14:  review: { status: passed, evidence: ci/W-004-tests-6b416199.log, certifies: tree:c50a0cef6c7b79d527a88dc8298f446cd5014002, sella: builder-1, at: 2026-09-26T00:05:00.000Z }
+
+## 10. The hook-event 'tool' carve-out: ruling accepted, and it is principled
+  handleStart/handleStop -> receipts/<sella>/...   (path IS the identity)
+438:  const path = join(studio, "timeline", `${sella}.jsonl`);
+383:  const logPath = join(studio, EVENTS_LOG_REL);
+  -> compact writes timeline/<sella>.jsonl (path is the identity, guarded);
+     tool appends the shared .bisellium/events.jsonl with the sella as an
+     ATTRIBUTE, not a path component. briefs/W-089.md:382 scopes the refusal to
+     'a receipt or timeline write'. The citation is accurate; the line reads:
+  a bare builder template before a receipt or timeline write. `context` is a
+
+## 11. STILL OPEN — round-1 finding B3: behaviour 3's hooks consumer
+$ git diff --stat master...HEAD -- packages/shim/src
+  (empty: hookReceiptStatuses is untouched by the whole opus)
+$ bisellium hooks check --harness claude-code   (a LIVE receipt sits in receipts/builder.W-089/)
+eng-lead: harness=claude-code last=none dead
+builder: harness=claude-code last=none dead
+builder-a: harness=claude-code last=none dead
+  -> 'builder: last=none dead', unchanged from round 1. Every real dispatch now
+     mints an instance directory, so the live builder seat reads dead forever.
+     receipts/ghost.dir is still silently ignored, never reported unknown.
+$ behaviour 3's own red (03.log) command list — the hooks consumer is absent:
+# command: sh -c node --import tsx adapters/native/src/resolveSeat.test.ts && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/seatedCandidates.test.ts && node --import tsx apps/server/test/server.test.ts .
+
+## 12. Disclosed artifact checked: the committed certificates are honest
+$ head -3 studio/ci/W-089-tests-572dd908.log
+certifies: tree:572dd908276e8726606662f67fe86f188a191a13
+command: npm test -s
+exit code: 0
+$ the two 'bisellium ci: step failed' lines in the body are TEST OUTPUT, present
+  identically in every earlier certificate, emitted by:
+181:        console.error(`bisellium ci: step failed (exit ${status}): ${step}`);
+  occurrences in W-089-tests-55388a90.log: 2
+  occurrences in W-089-tests-a1cce2df.log: 2
+  occurrences in W-089-tests-572dd908.log: 2
+  -> no committed certificate claims a pass over a real failure.
+
+## end. git status:
+?? studio/ci/W-089-review-2.log
