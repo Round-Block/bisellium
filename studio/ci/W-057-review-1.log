@@ -1,0 +1,310 @@
+# W-057 — censor review, round 1
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-26
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-057 · branch: opus/W-057 · HEAD: c5776cd
+# builder: builder-c (claude-sonnet-5) · build commit e077ccb
+# VERDICT: PASS — 6 findings, none blocking; 3 merge preconditions that are the coordinator's, not the builder's
+# sec-lead (gpt-5.6-sol) ran in parallel; its Medium/BLOCKS-MERGE is RULED OUT OF SCOPE below, with evidence.
+
+== 0. preconditions ==
+`git pull` on opus/W-057: already current, no upstream tracking set.
+`git status --short` empty at review start, after all four of my mutations, and at the end.
+`apps/server/src/http.ts` restored byte-for-byte after every mutation (verified by `git diff --stat`,
+empty each time).
+
+== 1. the tree stamps, resolved — not read off the logs ==
+`dirty:` / `tree:` stamps are NOT git objects; they are @bisellium/shim's sourceTreeHash over the
+repo minus [studio, .bisellium, examples/] (studio/bisellium.yml's source_excludes). I recomputed
+them rather than trusting them:
+
+  9eff23d (master, pre-W-057)  -> 0bc65b48b76430f9484316d86a742f76fc8305f6
+  e077ccb (the fix commit)     -> 8b38f8b84e95f49b5e0eeceea1cc322ee5f2a801
+  HEAD    (c5776cd)            -> 8b38f8b84e95f49b5e0eeceea1cc322ee5f2a801
+
+So: all seven reds stamp `dirty:0bc65b48…` = HEAD at the pre-W-057 commit; the three probationes
+certify `tree:8b38f8b8…` = the fix commit's source tree, which is also the current tree. The
+certificates name the source tree under review, exactly.
+
+IMPORTANT, and it bears on disclosure 1: verify.ts computes the hash at a COMMIT, not over the
+working tree (verify.ts:160, and its own honest comment at :166-169). A `dirty:<hash>` stamp
+therefore CANNOT distinguish a pre-fix working tree from a post-fix one. The stamps alone do not
+establish that reds 1-6 ran against unmodified source. I established that from log CONTENT instead
+— see §3.
+
+== 2. every acceptance criterion, re-run by me ==
+
+  criterion                                              measured                              verdict
+  npm test                                               exit 0 · 3173 PASS · 0 FAIL           PASS
+  npm run -s typecheck                                   exit 0 · silent                       PASS
+  npm run -s lint                                        exit 0                                PASS
+  npm run -s format:check                                exit 0                                PASS
+  bisellium check studio --repo .                        PASS — 0 blocking, 142 advisory        PASS
+  bisellium check examples/sample-studio --repo .        PASS — 0 blocking, 27 advisory         PASS
+  bisellium verify W-057 --studio studio --repo .        exit 0 · tests/lint/types passed       PASS
+  acceptance 4: no 500 BODY carries /home/               51 `/home/` lines, all accounted for   PASS (see below)
+  acceptance 2: GHAS alert 3 fixed_at recorded            NOT RECORDED — external, post-PR      OPEN (coordinator)
+  acceptance 3: no replacement js/stack-trace-exposure    NOT CHECKED — external, post-PR       OPEN (coordinator)
+  acceptance 5: merge gate's alert-3 exclusion removed     orchestrator-side, not in this repo   OPEN (coordinator)
+
+acceptance 4, done properly rather than as a bare grep. 51 lines in the 5397-line suite log contain
+`/home/`. Every one is either (a) an unrelated path-printing test (check --json, W-016 containment,
+the hooks/agents/commands existence rows), or (b) the by-design stderr correlation log —
+`bisellium serve: 500 <uuid> ENOENT: open '/home/secret/studio/bisellium.yml'` plus its stack.
+ZERO are a response body. The two rows that print the actual 500 body show it verbatim:
+  PASS  b1: raw body carries no /home/secret   {"error":"internal error","ref":"f6ef6711-…"}
+The property acceptance 4 is really about holds; the bare grep as the brief phrases it would have
+"failed" on the log the brief itself mandates writing (behaviour 2). Recorded so the next reader
+does not mistake the grep hit for a leak.
+
+== 3. the six pre-fix reds are clean assertion failures against unmodified source ==
+Not "the stamp says so" — WHAT the log says. Each red's own output contains pre-fix source or
+pre-fix behaviour that the post-fix tree cannot produce:
+
+  01  FAIL b1: body.error === 'internal error' exactly   {"error":"ENOENT: open '/home/secret/…'"}
+      — only pre-fix serverError serialises e.message. 4 FAIL rows, all assertion-level.
+  02  FAIL b2: stderr contains the same ref as the body  (detail: "GET /api/health 500 2ms")
+      — no `bisellium serve: 500` line exists at all pre-fix. 4 FAIL rows.
+  03  FAIL b3: no sendJson/sendText … carries an error key
+      — the violation list is the PRE-FIX FILE, verbatim: `{ error: \`unknown ${what}\` }`,
+        `{ error: e instanceof Error ? e.message : String(e) }` ×2, `{ error: e.message }`,
+        and the 13 literals at their pre-fix byte offsets. 17 violations. This is the strongest
+        single proof that src/http.ts was untouched when the red ran. 1 FAIL row.
+  04  FAIL b4: error is exactly 'invalid JSON body'
+      {"error":"invalid JSON body: Expected property name or '}' in JSON at position 1 …"}
+      — the V8 position text the fix drops. 1 FAIL row.
+  05  FAIL b5: both refs are non-empty strings           [null,null]  — no ref field pre-fix. 3 FAIL rows.
+  06  FAIL b6: the log shows the 500 path (ref + 'aborted')  (detail: empty) — no log line pre-fix. 2 FAIL rows.
+
+All six are assertion-level (a `check(...)` row), none is a crash/compile/import error, and no two
+share an output: each log's FAIL rows are unique to its behaviour (engineering lex §2 satisfied).
+Exit code 1 on every one.
+
+== 4. mutations — the builder's, and three of my own ==
+
+  4a. BUILDER'S. node scripts/w057-behaviour7-mutation-check.mjs
+      -> exit 1 · "mutation KILLED" · exactly one FAIL row:
+         FAIL  b7 :581 bad Origin: raw body byte-identical to today's
+               "{\"error\":\"cross-origin writes are refused (mutated)\"}"
+      http.ts restored: `git diff --stat` empty after. Reproduced, not read off 07.log.
+
+  4b. MINE — the brief's own hard case, aliased. In readJsonBodyOr400:
+         const msg = e.message; sendError(res, 413, msg);
+      -> npm run -s typecheck exit 2:
+         apps/server/src/http.ts(249,27): error TS2345: Argument of type 'string' is not
+         assignable to parameter of type 'ErrorCode'.
+      The type bites through an alias, which is the whole point of behaviour 3's second half and
+      the thing a grep could not do. Restored.
+
+  4c. MINE — routed around the type, which the type CANNOT catch. Replaced the catch-all
+         sendError(res, 404, "not found")  with  sendJson(res, 404, { error: "not found" })
+      -> npm run -s typecheck exit 0  (green — the type is silent, as expected)
+      -> BISELLIUM_ONLY_BEHAVIOUR=3 exit 1:
+         FAIL  b3: no sendJson/sendText call outside sendError's own body carries an object with
+               an error key  [{"start":38874,"snippet":"res, 404, { error: \"not found\" }"}]
+      This is the source pin earning its keep, demonstrated on the real file rather than on the
+      synthetic string the test's own positive control uses. Restored.
+
+  4d. MINE — the closedness assertion. Widened the union with `| string`:
+      -> npm run -s typecheck exit 2:
+         apps/server/src/http.ts(140,1): error TS2578: Unused '@ts-expect-error' directive.
+      Behaviour 3's first half bites. Restored.
+
+Four mutations, four kills, three distinct mechanisms (tsc via the parameter type, tsc via the
+@ts-expect-error directive, the runtime source pin). The lex needs one; this is four.
+
+== 5. behaviour 7's nineteen rows assert RAW response text ==
+Verified by reading, not by the label. `JsonResponse` gained a `text` field carrying the raw bytes
+(getJson/postJson/rawPostJson all populate it), and every row asserts `r.text === row.body` against
+a literal like '{"error":"not found"}' — byte equality, not parsed equality. Each row additionally
+asserts `!r.text.includes('"ref"')`, which is the added-field guard the brief asked for (ref on the
+500 and nowhere else). 19 rows present: 15 in the table array + :499 (51-client burst) + :181 (3MB
+body) + :671 (/api/_poll with NODE_ENV toggled) + :441. Counted against the brief's table: complete.
+
+The two pre-existing assertions are untouched. `git show master:…test.ts` lines 411 and 438-439
+are present VERBATIM in HEAD (byte-exact `grep -Fqx`), and the ONLY deletions in the whole test
+diff are three helper `return { status, body }` statements that gained the `text` field. The diff
+is not wider than specified.
+
+Behaviour 7 run three extra times standalone: 3/3 exit 0. No flake observed in the 51-client row.
+
+== 6. sec-lead's Medium / BLOCKS-MERGE — MY RULING: real, but OUT OF SCOPE for W-057 ==
+The claim: exception-derived text still reaches a response body through `withCapturedConsole`
+(http.ts:275) -> `writeResponse` (http.ts:308-310) -> `sendJson` -> `res.end`, because the write
+verbs console.error their own caught values.
+
+It is real, and I reproduced it rather than agreeing on a reading. Executing exactly what
+http.ts:275 and :308 do around runGreenlight against an unreadable opus file:
+
+  BODY: {"ok":false,"exitCode":2,"output":"could not read /tmp/…/opera/W-002.md: EACCES:
+         permission denied, open '/tmp/…/opera/W-002.md'"}
+
+An absolute path and an exception message, in a 200 response body. Source: writes.ts:797.
+sec-lead's file:line chain for handoff/answer/greenlight/budget/talk/delegate checks out.
+
+RULING: not W-057's, and not fixable inside W-057. Five reasons, in order of weight:
+
+  1. It is a DIFFERENT CHANNEL, and a DOCUMENTED ONE. docs/ADOPTION.md:908-915 specifies
+     `POST /api/*` as "always HTTP 200 with { ok, exitCode, output } for a completed command,
+     success or refusal alike", and names `output` as the client's only way to tell success from
+     refusal. Returning CLI output IS the contract. Suppressing it is a contract change with a
+     console-UX consequence (apps/web's postWrite reads it), which is a design decision, not a
+     security patch — exactly the shape of thing the brief's own Out of scope reserves.
+  2. It is a DIFFERENT TRUST BOUNDARY. Every one of those six routes is in WRITE_PATHS: token +
+     origin + Content-Type gated (http.ts:651-657). The flow GHAS flagged is unauthenticated —
+     I confirmed one live: `GET /api/opus/%` needs no token, throws URIError from
+     decodeURIComponent, and reaches route()'s catch. Post-fix it answers
+     {"error":"internal error","ref":"ee80c5ec-…"}. That is the alert's class, and it is closed.
+  3. It is ZERO-DELTA. `git diff master...HEAD -- packages/commands/` is empty. This diff neither
+     created nor widened the channel; the pre-existing risk is identical before and after.
+  4. Fixing it here would BREAK THE BRIEF. packages/commands/ is not in Files owned; the brief
+     says in terms that a wider diff is itself the finding ("if the diff edits either, the change
+     was wider than specified"). A censor who demands an out-of-scope edit to pass is asking the
+     builder to violate the spec it was reviewed against.
+  5. The brief's own census was scoped, explicitly, to "every error response body in http.ts" —
+     bodies carrying an `error` key. `{ok, exitCode, output}` is not an error body and never
+     entered the 17-site census.
+
+BUT the brief overclaims, and that is a SPEC defect worth carrying forward. Design §3 says dropping
+the parse message makes it "the only remaining path by which an arbitrary exception's text reaches a
+response body", and §"The class, not the instance" says "two response sinks" measured across
+http.ts. With `writeResponse` on the table both statements are false as written. The successor opus's
+brief must not inherit them. Filed as finding 1 below, FILE-AS-OPUS, sec-lead credited.
+
+== 7. sec-lead's two Lows — I concur, both FILE-AS-OPUS, neither blocking ==
+  Low (log injection). serverError writes e.message/e.stack to stderr unframed (http.ts:169). I
+  agree with sec-lead's own caveat: no exploitable raw-CRLF path through the shipped runners was
+  established by either of us. Note the brief put structured logging explicitly out of scope, so
+  framing is the successor's business by construction.
+  Low (log-volume amplification). CONFIRMED REACHABLE by live probe, which sec-lead could not run
+  (its sandbox refused mkdtemp, EROFS): `GET /api/opus/%` — unauthenticated, no body, 1 request —
+  yields a UUID plus a 6-frame stack on stderr, every time. Pre-fix that path wrote nothing. The
+  cost is log volume, not randomUUID. Real, small, and the price of behaviour 2's operability
+  requirement; the brief put rate-limiting 500s out of scope.
+  I independently re-walked sec-lead's clears (headers/writeHead, SSE frames, the 401/403/415
+  triple, the 15 literal sites) and concur: `grep sendJson|sendText` for an `error` key in
+  http.ts returns exactly one hit, sendError's own call at :152.
+
+== 8. findings ==
+
+1. [Medium · FILE-AS-OPUS · spec, not code] The brief's "only remaining path" and "two response
+   sinks" claims are false as written: `writeResponse`'s `{output}` is a third, documented
+   exception-text channel on six token-gated write routes. Not W-057's to close (§6). The successor
+   brief must state the census's scope as "bodies carrying an `error` key" rather than "any
+   response body". sec-lead found it; reproduced above. ONE instance of the claim, one channel.
+
+2. [Low · advisory · CLASS, 3 instances, all enumerated] Wall-clock sleeps stand in for a seam —
+   a recurrence of L-035 (tests×wall-clock-sleep-for-a-missing-seam, retro 32). I searched every
+   `+` line of the test diff for `setTimeout`; these three are all of them:
+     a. server.test.ts induceRequestStreamError — `setTimeout(…, 150)` before the destroy
+     b. server.test.ts behaviour 6 — `await new Promise((r) => setTimeout(r, 200))` "let the log land"
+     c. server.test.ts behaviour 7 — `await new Promise((r) => setTimeout(r, 300))` after opening 51 SSE clients
+   (b) and (c) have a seam available in the same file: `waitFor(predicate)` at :209. (c) is the
+   flake-prone one — it gates a 503 assertion on 51 connections being registered in 300ms. It did
+   not flake in 4 runs here. Advisory, not blocking: the file already carries 13 pre-existing
+   sleeps, so this is house convention, and holding an opus for a convention its own file
+   establishes is not a censor's job. Named so the class does not go quiet.
+
+3. [Low · advisory · instance only] The brief required the closedness line's location to be named
+   IN THE COMMIT ("put it wherever typecheck covers, and say where in the commit", Files owned).
+   The commit message says the line exists and that tsc enforces it, but never says where. It is
+   at apps/server/src/http.ts:140 — in src, not in the test file the Files owned list guessed.
+   Recording the location here discharges the intent; the instruction was still not followed.
+
+4. [Low · advisory · spec defect, correctly resolved by the builder] Behaviour 7's table maps
+   `:671` to "/api/opus/:id for an absent id". It is not: master:671 is the `/api/_poll`
+   NODE_ENV guard's 404, and the absent-opus case is `:609`, which the table lists separately.
+   The builder covered the actual `:671` site (toggling NODE_ENV and restoring it in a `finally`)
+   and `:609` independently, so coverage is complete despite the mislabel. Noted so a future
+   reading of the table does not "fix" a correct test.
+
+5. [Informational] `scripts/w057-behaviour7-mutation-check.mjs` is not in the brief's Files owned,
+   though the brief's own behaviour-7 instruction ("give it a mutation red") and the standing
+   "mechanical work is a script you write, run and keep" rule together compel it. `bisellium check`
+   raised nothing (probatio.declared did not fire). Five sibling scripts already live in scripts/.
+   Files owned should have named it; no action needed on this opus.
+
+6. [Informational · refines the builder's own disclosure 4] The disclosure says a clean `.end()`
+   "instead" trips Node's own clientError 400, so the induction "must be a hard .destroy(), never
+   a graceful close". Measured, both modes, same server:
+     MODE=fin      RESPONSE="HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n"
+     MODE=destroy  RESPONSE=""
+   and BOTH wrote `bisellium serve: 500 <ref> aborted` + stack to stderr. So it is not "instead":
+   FIN takes this opus's 500 path too, and Node's 400 is bodyless — zero bytes of body, so it
+   cannot narrate a stream error under either close. The property holds either way and `.destroy()`
+   is not load-bearing. The disclosure's mechanism is right, its exclusivity is not.
+
+== 9. rulings on the four builder disclosures ==
+
+  1. Behaviour 7's red recorded AFTER implementation. UPHELD — the brief instructs it, twice.
+     Reds section: "Behaviour 7 is the exception — it passes today by construction, being a
+     regression guard for what must not change. Give it a mutation red (delete one of the three
+     literal codes and watch it fail) rather than bundling it." Behaviour 7 itself: "The regression
+     guard for a change that rewrites seventeen call sites." A mutation of a literal in the
+     ErrorCode union is only possible once the union exists, so post-implementation is not a
+     shortcut, it is the only order the instruction admits. Two caveats, neither fatal: the brief
+     says "delete one of the three literal codes" (a residue of revision 3's five-row era; three
+     is not a number this revision uses) and the script substitutes a literal rather than deleting
+     one — deleting a union member would fail typecheck, not the byte-identity row, so the
+     substitution is the correct reading of the intent. And red 07's `dirty:` stamp is structurally
+     incapable of distinguishing pre- from post-implementation (§1), which is exactly why the
+     builder disclosed it rather than letting the stamp imply otherwise. That is the behaviour the
+     "evidence is produced, never backfilled" rule wants: the red WAS produced, by a script that is
+     in the tree and that I re-ran.
+
+  2. Behaviour 3's compile-time halves live in typecheck, not npm test. UPHELD — the brief puts
+     them there. Files owned: "the @ts-expect-error closedness line (it belongs in a type-checked
+     file; put it wherever typecheck covers, and say where in the commit)". Acceptance 1:
+     "typecheck is not a formality here — it is the mechanism enforcing the invariant (behaviour 3),
+     so a green typecheck with the ErrorCode union in place is itself an acceptance artefact." A
+     passing test file cannot assert a compile error; only the compiler can, and mutations 4b and
+     4d show it does. The "convention-matched to the sibling mutation scripts" half of the
+     disclosure I neither need nor grant — the brief's own text is sufficient authority, and the
+     siblings (w030/w041/w044/w049/w079) are about red COMMANDS not being `npm test`, which is a
+     different question. Docked to finding 3: the "say where in the commit" clause was not met.
+
+  3. `:441` unreachable end-to-end, isPathContained exercised directly. UPHELD, and I verified it
+     myself rather than accepting the claim. Seven traversal encodings over raw sockets, so no
+     client library could normalise for me:
+       /assets/../../../../etc/passwd            -> 404 {"error":"not found"}
+       /assets/%2e%2e/%2e%2e/%2e%2e/etc/passwd   -> 404 {"error":"not found"}
+       /assets/..%2f..%2f..%2fetc%2fpasswd       -> 404 {"error":"not found"}
+       /assets/....//....//etc/passwd            -> 404 {"error":"not found"}
+       /assets/.%2e/.%2e/etc/passwd              -> 404 {"error":"not found"}
+       /assets/..%5c..%5cetc                     -> 404 {"error":"not found"}
+       /assets/%2E%2E%2F%2E%2E%2Fetc             -> 404 {"error":"not found"}
+     Not one reaches the 403. `new URL(req.url, …)` at http.ts:643 collapses every double-dot form
+     the WHATWG spec recognises (including the %2e spellings) before serveStatic sees `pathname`.
+     The brief's allowance is explicit — "if a path cannot be reached from a test, say so in the
+     evidence rather than dropping it silently, because an unreachable error body is its own
+     finding" — and the row is not dropped: it asserts isPathContained refuses the sibling-prefix
+     escape, and the test comment states the unreachability at the row. Note this was ALREADY
+     established in the tree at W-016 (server.test.ts:805-810 says the same thing in the same
+     words), so the builder restated a known fact rather than discovering a convenient one.
+
+  4. Behaviour 6's empirical finding cannot be misread as the fix. UPHELD on the question asked,
+     with a correction to the finding itself (finding 6). It cannot be misread, for three reasons
+     that do not depend on the reader's care: the note lives in a TEST helper's docstring
+     (induceRequestStreamError), not in http.ts where a fix would live; it says in terms "a
+     different, unrelated mechanism this opus has no business asserting on"; and the assertion it
+     sits above is on the stderr `bisellium serve: 500 <ref> aborted` line, so nothing in the
+     behaviour asserts on a 400 at all. Nobody can read it as W-057 having produced the 400.
+     The correction: the note's "instead" is wrong — a clean FIN takes BOTH paths (measured, §8.6),
+     and Node's 400 carries no body, which is a stronger result than the note claims, not a weaker
+     one. The invariant "the message never becomes a response body" holds under both closes.
+
+== 10. why this is a PASS and not a fail-with-fixes ==
+Everything the spec asks for is present and measured: the choke point exists and is closed by the
+compiler (4b, 4d), nobody routed around it and the pin proves it on the real file (4c), the 19-row
+table asserts raw bytes with an added-field guard, six honest pre-fix reds plus a re-run mutation
+red, the two pre-existing assertions untouched, no response body anywhere in a 5397-line suite log
+carrying a path or exception text, and the alert's own unauthenticated flow verified closed against
+a live server. The six findings are one spec overclaim to carry forward, one convention the file
+itself established, two documentation nits and two informational notes. None of them is a defect in
+the code under review, and none can be fixed inside this opus's declared files.
+
+Three acceptance criteria (2, 3, 5) are external and cannot be satisfied by anyone in this repo
+before the PR's CodeQL run. They are merge preconditions, not review failures, and they are the
+coordinator's: record alert 3's number and fixed_at in the opus's evidence, check the FULL alert
+list for a replacement js/stack-trace-exposure (the brief warns the flow can shift to a sibling —
+both sinks are closed, so it should not, but acceptance 3 says check the list, not the alert), and
+remove the merge gate's now-dead alert-3 exclusion, which otherwise silently swallows the next
+stack-trace alert. Do not merge on this PASS alone until those three are done.

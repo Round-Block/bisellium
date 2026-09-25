@@ -8,7 +8,7 @@ exit code: 0
 GET /api/health 500 4ms
 POST /api/greenlight 400 0ms
 GET /api/officina 200 1ms
-GET /assets/does-not-exist.js 404 0ms
+GET /assets/does-not-exist.js 404 1ms
 GET /api/totally-unknown-route 404 0ms
 GET /api/opus/NOPE 404 0ms
 GET /api/timeline/nobody 404 1ms
@@ -22,14 +22,26 @@ POST /api/budget 400 0ms
 POST /api/handoff 400 0ms
 POST /api/talk 400 0ms
 POST /api/delegate 400 0ms
-POST /api/greenlight 400 1ms
+POST /api/greenlight 400 0ms
 GET /api/live 503 0ms
 GET /api/live 503 0ms
-POST /api/greenlight 413 1ms
+POST /api/greenlight 413 2ms
 POST /api/_poll 404 0ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
 GET /api/live 200 310ms
 GET /api/live 200 310ms
 GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
@@ -39,14 +51,14 @@ GET /api/live 200 309ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
 GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
@@ -58,41 +70,29 @@ GET /api/live 200 308ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
 GET /api/live 200 308ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 306ms
-GET /api/live 200 306ms
-GET /api/live 200 306ms
-GET /api/officina 200 4ms
+GET /api/live 200 308ms
+GET /api/officina 200 5ms
 GET /api/events 200 2ms
-GET /api/events?limit=3 200 1ms
+GET /api/events?limit=3 200 3ms
 GET /api/events?limit=9999 200 1ms
-GET /api/events?since=2 200 1ms
+GET /api/events?since=2 200 2ms
 GET /api/events?since=2026-09-18T17%3A00%3A00.000Z 200 1ms
-GET /api/events 200 1ms
-GET /api/events?item=W-002 200 0ms
-GET /api/events?item=W-002&limit=2 200 0ms
+GET /api/events 200 0ms
 GET /api/events?item=W-002 200 1ms
-GET /api/events?item=NOPE-NOT-REAL 200 1ms
+GET /api/events?item=W-002&limit=2 200 0ms
+GET /api/events?item=W-002 200 0ms
+GET /api/events?item=NOPE-NOT-REAL 200 0ms
 GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 0ms
 GET /api/events?item=W-002&since=1 400 0ms
 GET /api/events?item=W-002 200 0ms
 POST /api/_poll 200 12ms
-GET /api/live 200 118ms
+GET /api/live 200 117ms
 fatal: not a git repository (or any of the parent directories): .git
 --spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
 --spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
@@ -101,8 +101,8 @@ usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--sp
 /********.yml not found — not a studio
 retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
 GET /api/health 200 32ms
-POST /api/greenlight 401 0ms
-POST /api/greenlight 200 10ms
+POST /api/greenlight 401 1ms
+POST /api/greenlight 200 12ms
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
   line 3: slate-heading: ### Backlog
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
@@ -152,7 +152,7 @@ W-002: --decision "D-does-not-exist" not found under decisions/
 W-002: --decision "../../etc/passwd" not found under decisions/
 W-002: --decision "../leges/qa" not found under decisions/
 unknown opus: ../petitiones/A-1
-Preparing worktree (detached HEAD 93c0b3c)
+Preparing worktree (detached HEAD d559036)
 Preparing worktree (checking out 'opus/W-140')
 W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
 W-501: gates not passed: qa
