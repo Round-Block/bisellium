@@ -26,9 +26,9 @@ import {
   type HarnessProbe,
   type ModelsRecord,
 } from "@bisellium/commands/probe.js";
-import { checkStudio, type CheckOptions } from "./check.js";
+import { checkStudio, type CheckOptions, type CheckResult } from "./check.js";
 import { isoWeek } from "./init.js";
-import { readPauseState } from "./pause.js";
+import { readPauseState, type PauseState } from "./pause.js";
 
 // ---------------------------------------------------------------------------
 // The talk seam. Builder A owns packages/cli/src/talk.ts; this module never
@@ -265,6 +265,37 @@ function formatDue(item: DueItem): string {
 }
 
 // ---------------------------------------------------------------------------
+// health.json — written on every path, paused or not (F2, censor round 1):
+// factored so the paused branch and the normal branch build and write the
+// exact same shape from whatever `due` each was able to compute, rather than
+// the two branches drifting into two different object literals.
+// ---------------------------------------------------------------------------
+
+function writeHealthFile(
+  studioRoot: string,
+  now: Date,
+  result: CheckResult,
+  findingsByRule: Record<string, number>,
+  pause: PauseState,
+  due: DueItem[],
+): void {
+  const autonomy: { paused: boolean; since?: string; reason?: string } = { paused: pause.paused };
+  if (pause.paused && pause.at) autonomy.since = pause.at;
+  if (pause.paused && pause.reason) autonomy.reason = pause.reason;
+  const health = {
+    at: now.toISOString(),
+    ok: result.ok,
+    blocks: result.blocks,
+    advisories: result.advisories,
+    findingsByRule,
+    autonomy,
+    lastTick: now.toISOString(),
+    due,
+  };
+  writeFileSync(join(studioRoot, "health.json"), JSON.stringify(health, null, 2) + "\n");
+}
+
+// ---------------------------------------------------------------------------
 // Receipt (sella: "tick", harness: "tick" — never "run": @bisellium/shim's
 // writeReceiptStart hardcodes harness "run", so tick writes its own receipt
 // file directly, in the same shape/location writeReceiptStart would use.)
@@ -425,7 +456,7 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
     return { exitCode: 2 };
   }
 
-  // ---- (a) check + health.json, unconditionally --------------------------
+  // ---- (a) check, unconditionally -----------------------------------------
   const checkOpts: CheckOptions = parsed.repo ? { repo: resolve(parsed.repo) } : {};
   const result = checkStudio(studioRoot, now, checkOpts);
 
@@ -434,45 +465,54 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
 
   const pause = readPauseState(studioRoot);
 
-  // Gathered here (async), consumed by `computeDue` (pure, sync) — Sol
-  // finding 5's fix. A rejected listing degrades to `undefined` (not an
-  // empty listing); a rejected version call degrades to `{}` (unknown on
-  // both keys, so the version trigger never fires on it).
-  let listing: ListedModel[] | undefined;
-  try {
-    listing = await (opts.listModels ?? codexListModels)();
-  } catch {
-    listing = undefined;
-  }
-  let versions: { claude?: string; codex?: string };
-  try {
-    versions = await (opts.versions ?? harnessVersions)();
-  } catch {
-    versions = {};
-  }
-  const due = computeDue(studioRoot, manifest, now, { listing, versions, record: readModelsRecord(studioRoot) });
-
-  const autonomy: { paused: boolean; since?: string; reason?: string } = { paused: pause.paused };
-  if (pause.paused && pause.at) autonomy.since = pause.at;
-  if (pause.paused && pause.reason) autonomy.reason = pause.reason;
-
-  const health = {
-    at: now.toISOString(),
-    ok: result.ok,
-    blocks: result.blocks,
-    advisories: result.advisories,
-    findingsByRule,
-    autonomy,
-    lastTick: now.toISOString(),
-    due,
-  };
-  writeFileSync(join(studioRoot, "health.json"), JSON.stringify(health, null, 2) + "\n");
-
-  // ---- paused: only (a) above; no cadence work, no receipt ---------------
+  // ---- paused: only (a) above; no cadence work, no receipt, NO GATHER ----
+  // (F2, censor round 1) The probe cadence's gather — a vendor listing call
+  // plus two vendor --version calls — used to sit above this check, so a
+  // paused tick spawned `codex debug models`, `claude --version` and
+  // `codex --version` on every run, falsifying this file's own header
+  // ("only (a) runs" above) and the brief's "the paused path returns before
+  // any cadence work". Absent `ProbeInputs` is already the correct paused
+  // semantics (Interfaces: "Absent means not gathered — computeDue then
+  // emits NO probe item"), so health.json is written from the 3-arg
+  // `computeDue` and no subprocess is ever spawned.
   if (pause.paused) {
+    const due = computeDue(studioRoot, manifest, now);
+    writeHealthFile(studioRoot, now, result, findingsByRule, pause, due);
     console.log(`paused since ${pause.at ?? "unknown"}: ${pause.reason ?? ""}`);
     return { exitCode: result.ok ? 0 : 1 };
   }
+
+  // ---- not paused: gather, but only if some collegium could have cadence
+  // work at all — the same no-spend-without-autonomy posture as the paused
+  // gate above, at the one site that can spend a subprocess before
+  // computeDue's own L0 gate ever runs. When every collegium is L0,
+  // `computeDue` returns `[]` regardless of `ProbeInputs`, so skipping the
+  // gather changes nothing it computes and removes three spawns it can
+  // never use. `--dry-run` still needs the real gather (it prints the due
+  // line), so this check is autonomy-only, never dry-run-only.
+  const anyActiveCollegium = manifest.collegia.some((c) => (c.autonomy ?? "L1") !== "L0");
+  let probeInputs: ProbeInputs | undefined;
+  if (anyActiveCollegium) {
+    // Gathered here (async), consumed by `computeDue` (pure, sync) — Sol
+    // finding 5's fix. A rejected listing degrades to `undefined` (not an
+    // empty listing); a rejected version call degrades to `{}` (unknown on
+    // both keys, so the version trigger never fires on it).
+    let listing: ListedModel[] | undefined;
+    try {
+      listing = await (opts.listModels ?? codexListModels)();
+    } catch {
+      listing = undefined;
+    }
+    let versions: { claude?: string; codex?: string };
+    try {
+      versions = await (opts.versions ?? harnessVersions)();
+    } catch {
+      versions = {};
+    }
+    probeInputs = { listing, versions, record: readModelsRecord(studioRoot) };
+  }
+  const due = computeDue(studioRoot, manifest, now, probeInputs);
+  writeHealthFile(studioRoot, now, result, findingsByRule, pause, due);
 
   // ---- (c) dry-run: report only, exit 0 -----------------------------------
   if (dryRun) {

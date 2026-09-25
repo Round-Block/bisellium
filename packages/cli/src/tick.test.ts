@@ -728,40 +728,86 @@ try {
     }
     const noopBattery = async () => ({ turns: 0, skipped: [], record: { schema: 1 as const, at: NOW.toISOString(), harnessVersions: {}, models: [] } });
 
-    // (a) every collegium L0 -> no probe due item and zero battery calls.
+    // Counting stubs (F2, censor round 1): `NO_PROBE`'s stubs prove the
+    // gather can't reach a real vendor binary, but say nothing about
+    // whether it ran at all — a write-only assertion (models.json
+    // untouched, zero battery calls) cannot see three subprocess spawns
+    // that happen and are then simply never acted on. These count calls, so
+    // the paused/L0 cases below assert SPAWNS are zero, not just writes.
+    function countingGather(): {
+      listModels: () => Promise<[]>;
+      versions: () => Promise<Record<string, never>>;
+      counts: { listModels: number; versions: number };
+    } {
+      const counts = { listModels: 0, versions: 0 };
+      return {
+        listModels: async () => {
+          counts.listModels++;
+          return [];
+        },
+        versions: async () => {
+          counts.versions++;
+          return {};
+        },
+        counts,
+      };
+    }
+
+    // (a) every collegium L0 -> no probe due item, zero battery calls, and
+    // — the class write-only assertions can't see — zero gather SPAWNS.
     {
       const dir = b4Dir("w071-b4a");
       setAllCollegiaAutonomy(dir, "L0");
       let called = 0;
-      await capture(() => runTick(["--studio", dir], { now: NOW, ...NO_PROBE, probe: async () => { called++; return noopBattery(); } }));
+      const gather = countingGather();
+      await capture(() =>
+        runTick(["--studio", dir], { now: NOW, listModels: gather.listModels, versions: gather.versions, probe: async () => { called++; return noopBattery(); } }),
+      );
       checkB(4, "(a) L0: zero battery calls", called === 0, String(called));
+      checkB(4, "(a) L0: zero gather spawns (listModels)", gather.counts.listModels === 0, String(gather.counts.listModels));
+      checkB(4, "(a) L0: zero gather spawns (versions)", gather.counts.versions === 0, String(gather.counts.versions));
       const health = JSON.parse(readFileSync(join(dir, "health.json"), "utf8")) as { due: { kind: string }[] };
       checkB(4, "(a) L0: no probe due item", !health.due.some((d) => d.kind === "probe"), JSON.stringify(health.due));
     }
 
-    // (b) paused -> only the health step, zero battery calls, models.json untouched.
+    // (b) paused -> only the health step, zero battery calls, models.json
+    // untouched, and zero gather spawns — the F2 regression: a paused tick
+    // used to spawn `codex debug models`, `claude --version` and
+    // `codex --version` regardless, which no write-only assertion caught.
     {
       const dir = b4Dir("w071-b4b");
       await capture(() => runPause(["--studio", dir, "--reason", "w071 b4"], { now: NOW }));
       const before = readFileSync(join(dir, "models.json"), "utf8");
       let called = 0;
-      await capture(() => runTick(["--studio", dir], { now: NOW, ...NO_PROBE, probe: async () => { called++; return noopBattery(); } }));
+      const gather = countingGather();
+      await capture(() =>
+        runTick(["--studio", dir], { now: NOW, listModels: gather.listModels, versions: gather.versions, probe: async () => { called++; return noopBattery(); } }),
+      );
       const after = readFileSync(join(dir, "models.json"), "utf8");
       checkB(4, "(b) paused: zero battery calls", called === 0, String(called));
+      checkB(4, "(b) paused: zero gather spawns (listModels)", gather.counts.listModels === 0, String(gather.counts.listModels));
+      checkB(4, "(b) paused: zero gather spawns (versions)", gather.counts.versions === 0, String(gather.counts.versions));
       checkB(4, "(b) paused: models.json byte-for-byte unchanged", before === after);
       await capture(() => runResume(["--studio", dir]));
     }
 
-    // (c) --dry-run -> due line printed, zero battery calls, no file written.
+    // (c) --dry-run -> due line printed, zero battery calls, no file
+    // written — but the gather DOES spawn (positive control: dry-run needs
+    // it to print the due line at all; a branch that also skips dry-run's
+    // gather would print "nothing due" instead and fail here).
     {
       const dir = b4Dir("w071-b4c");
       const before = readFileSync(join(dir, "models.json"), "utf8");
       let called = 0;
-      const { logs } = await capture(() => runTick(["--studio", dir, "--dry-run"], { now: NOW, ...NO_PROBE, probe: async () => { called++; return noopBattery(); } }));
+      const gather = countingGather();
+      const { logs } = await capture(() =>
+        runTick(["--studio", dir, "--dry-run"], { now: NOW, listModels: gather.listModels, versions: gather.versions, probe: async () => { called++; return noopBattery(); } }),
+      );
       const after = readFileSync(join(dir, "models.json"), "utf8");
       checkB(4, "(c) dry-run: the due line is printed", logs.some((l) => l.includes("due: probe")), logs.join(" | "));
       checkB(4, "(c) dry-run: zero battery calls", called === 0, String(called));
       checkB(4, "(c) dry-run: models.json untouched", before === after);
+      checkB(4, "(c) dry-run positive control: the gather DOES spawn (it needs to, to print the due line)", gather.counts.listModels === 1 && gather.counts.versions === 1, JSON.stringify(gather.counts));
     }
 
     // (d) an injected battery that throws is reported on stderr; tick still
@@ -789,14 +835,18 @@ try {
 
     // Positive control for (a)/(b): the same studio at L1 and unpaused
     // calls the battery exactly once with the expected pairs — so an
-    // unimplemented branch can't pass three absences.
+    // unimplemented branch can't pass three absences — and the gather DOES
+    // spawn exactly once each, so (a)/(b)'s zero-spawn assertions aren't
+    // vacuously true because the gather never runs at all.
     {
       const dir = b4Dir("w071-b4-positive");
       let calledWith: { only: Candidate[] } | undefined;
+      const gather = countingGather();
       const { result } = await capture(() =>
         runTick(["--studio", dir], {
           now: NOW,
-          ...NO_PROBE,
+          listModels: gather.listModels,
+          versions: gather.versions,
           talk: fakeTalk,
           probe: async (opts) => {
             calledWith = opts;
@@ -806,6 +856,7 @@ try {
       );
       checkB(4, "positive control: L1 + unpaused calls the battery exactly once", calledWith !== undefined);
       checkB(4, "positive control: called with the expected due pairs", !!calledWith?.only.some((c) => c.id === "codex-b4"), JSON.stringify(calledWith?.only));
+      checkB(4, "positive control: the gather spawns exactly once each (listModels/versions)", gather.counts.listModels === 1 && gather.counts.versions === 1, JSON.stringify(gather.counts));
       checkB(4, "positive control: tick's own exit code is unaffected", result.exitCode === 0, String(result.exitCode));
     }
   }
