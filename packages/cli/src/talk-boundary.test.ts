@@ -18,8 +18,9 @@ import { chmodSync, cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { claudeCodeProfile } from "@bisellium/shim";
+import { readManifest } from "@bisellium/adapter-native";
 import { runTalk } from "./talk.js";
-import { runTick } from "./tick.js";
+import { harnessForSella, runTick } from "./tick.js";
 import { USAGE } from "./usage.js";
 
 const repo = resolve(process.argv[2] ?? ".");
@@ -154,10 +155,33 @@ function readLog(logPath: string): string[][] {
     .map((l) => JSON.parse(l) as string[]);
 }
 
+/** Seeds a `models.json` where every seated (model, harness) pair is
+ *  already `available` as of `NOW` — W-071's probe cadence otherwise finds
+ *  every pair never-probed and adds a `due: probe` item (and a real battery
+ *  run) that this file's own assertions (unrelated to the cadence) never
+ *  anticipated. Duplicated from tick.test.ts's own helper of the same name
+ *  — not a published seam, matching this codebase's per-file small-helper
+ *  style. */
+function seedFreshModels(dir: string, now: Date): void {
+  const manifest = readManifest(dir);
+  const seen = new Set<string>();
+  const models: unknown[] = [];
+  for (const row of manifest.sellae) {
+    if (!row.model) continue;
+    const harness = harnessForSella(row);
+    const key = `${row.model}\u0000${harness}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    models.push({ id: row.model, state: "available", harness, probes: [{ harness, state: "available", at: now.toISOString() }] });
+  }
+  writeFileSync(join(dir, "models.json"), JSON.stringify({ schema: 1, at: now.toISOString(), harnessVersions: {}, models }, null, 2) + "\n");
+}
+
 const dirs: string[] = [];
 function freshStudio(tag: string): string {
   const dir = mkdtempSync(join(tmpdir(), `bisellium-talk-boundary-${tag}-`));
   cpSync(sampleStudio, dir, { recursive: true });
+  seedFreshModels(dir, NOW);
   dirs.push(dir);
   return dir;
 }
@@ -343,7 +367,7 @@ try {
 
       const beforeActa = readdirSync(join(dir, "acta"));
       const beforeTick = readLog(LOG_PATH).length;
-      const tickResult = await runTick(["--studio", dir], { now: NOW });
+      const tickResult = await runTick(["--studio", dir], { now: NOW, listModels: async () => [], versions: async () => ({}) });
       check("behaviour 4: tick exit 0", tickResult.exitCode === 0, String(tickResult.exitCode));
       const afterActa = readdirSync(join(dir, "acta"));
       const added = afterActa.filter((f) => !beforeActa.includes(f));

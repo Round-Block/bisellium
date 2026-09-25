@@ -156,6 +156,13 @@ export interface ProbeBatteryOptions {
     writeFileSync: (path: string, data: string) => void;
     renameSync: (from: string, to: string) => void;
   };
+  /** Hard ceiling on turns this run may spend (W-071). Absent means no
+   *  ceiling (the operator-invoked `bisellium probe` path — `runProbe`
+   *  passes none). Enforced after the oldest-evidence-first ordering and
+   *  after mark-before-spend, so a pair beyond the ceiling is already
+   *  `unverified` on disk and comes back in `skipped` — a second producer
+   *  of `skipped`, no new concept. */
+  maxTurns?: number;
 }
 
 export interface ProbeBatteryResult {
@@ -462,6 +469,13 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   const harnessStopped = new Set<string>();
 
   for (const c of orderedDue) {
+    // W-071's cap: enforced after ordering and mark-before-spend, so a pair
+    // beyond the ceiling is already `unverified` on disk (step 2, above)
+    // and comes back in `skipped` below — no new concept, just an earlier
+    // stop. Checked at the top of every iteration so it applies whether the
+    // ceiling lands on a control turn or a regular one.
+    if (opts.maxTurns !== undefined && turns >= opts.maxTurns) break;
+
     if (harnessBroken.has(c.harness) || harnessStopped.has(c.harness)) continue;
 
     const control = controlFor(c.harness);
@@ -488,6 +502,10 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     } else if (isControlPair) {
       continue; // the control already ran this battery; this due entry is redundant
     }
+
+    // The control turn just spent may itself have hit the ceiling; re-check
+    // before spending `c`'s own turn rather than only at the loop's top.
+    if (opts.maxTurns !== undefined && turns >= opts.maxTurns) continue;
 
     const outcome = await turnFor(c);
     if (outcome.stopHarness) harnessStopped.add(c.harness);

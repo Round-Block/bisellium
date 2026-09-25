@@ -1,0 +1,640 @@
+# W-071 review — round 1
+# sella: qa-lead (censor) · model: claude-fable-5
+# branch: opus/W-071 · worktree: /tmp/claude-1000/w071-build · HEAD: 5881337
+# spec of record: studio/briefs/W-071.md revision 2
+# VERDICT: FAIL
+
+## 0. Worktree and shim
+
+$ git status --porcelain
+(empty — clean)
+$ git log --oneline -3
+5881337 chore(W-071): verify certificates
+68da7ba feat(cli,commands): W-071 — the probe cadence: tick schedules the battery
+215987e chore(W-071): spec gate signed on the branch per D-021
+$ readlink -f node_modules/.bin/bisellium
+/tmp/claude-1000/w071-build/packages/cli/bin/bisellium.mjs   # in-tree shim, confirmed
+
+## 1. Certificates recomputed (bisellium verify NOT run, per the review brief)
+
+sourceTreeHash(repo=/tmp/claude-1000/w071-build, excludes=[studio, .bisellium, examples/]):
+  HEAD      -> 10d151b6c2c7d8980ce4bf0f1fec4037f6490de1
+  68da7ba   -> 10d151b6c2c7d8980ce4bf0f1fec4037f6490de1
+  215987e   -> 0994a3b25bc740f34ccf6a48c4e17dcc70a647e9   (the spec-gate commit)
+
+studio/opera/W-071.md's three certificates all name
+tree:10d151b6c2c7d8980ce4bf0f1fec4037f6490de1 — matches the recomputed HEAD
+source tree. Certificates honest.
+
+All five red headers name tree:dirty:0994a3b25bc740f34ccf6a48c4e17dcc70a647e9
+= the source tree of 215987e. W-069 (8965028) is an ancestor of 215987e, so
+tree-hash ancestry PASSES on every red. See §5.
+
+## 2. Gates, re-run here
+
+$ npm run -s typecheck                                          -> exit 0
+$ PATH=<sentinel>:$PATH npm test                                -> exit 0
+$ npm run -s check -- studio --repo .                           -> PASS, 0 blocking, 112 advisory
+$ npm run -s check -- examples/sample-studio --repo .           -> PASS, 0 blocking, 26 advisory
+
+PATH sentinel: stub `claude` and `codex` placed first on PATH, each logging
+its argv and exiting 127, so any real vendor-binary invocation is recorded.
+Full-suite sentinel tally:
+      5 claude --version
+      0 codex (no invocation of any kind)
+
+Ruling on the hermetic seam (Sol target 4, behaviour 1's claim). Both of
+W-071's gather paths necessarily invoke `codex`: `codexListModels()` runs
+`codex debug models`, and `harnessVersions()` runs `codex --version`
+alongside `claude --version`. ZERO codex invocations across the whole suite
+therefore proves neither gather path was ever reached unstubbed. The five
+`claude --version` hits are `claudeCodeProfile.available()`'s pre-existing
+spawnSync (packages/shim/src/harness/claude-code.ts:177), not W-071's.
+Sol finding 5's fix is complete: no test depends on an installed vendor
+binary, and no test spent a vendor turn.
+
+Advisory-count comparison for behaviour 5 (rule histogram, branch vs master):
+  hook.dead            master=8  branch=0    (environmental: no hook receipts in the worktree)
+  probatio.certifies   master=64 branch=65   (W-071's own three certificates)
+  every other rule: identical
+No manifest.defaults advisory anywhere, on either officina. Behaviour 5's
+acceptance condition ("the same advisory count as before the opus") met: the
+opus introduces no new finding of any class.
+
+## 3. Seam contract (the recorded handoff of W-069's two files)
+
+packages/commands/src/probe.ts: +18 lines, nothing else touched —
+  - `maxTurns?: number` on ProbeBatteryOptions (7 lines, doc comment included)
+  - `if (opts.maxTurns !== undefined && turns >= opts.maxTurns) break;` at the
+    top of the `for (const c of orderedDue)` loop — i.e. AFTER W-069's
+    oldest-evidence-first sort and AFTER its mark-before-spend step
+  - a second `continue` guard after the control turn, so a control turn that
+    itself lands on the ceiling does not let `c` spend
+`skipped` is W-069's own `due.filter(c => !turnedKeys.has(...))` (probe.ts:526),
+so both the `break` and the `continue` land in it — the brief's "second
+producer of `skipped`, no new concept" holds literally.
+`runProbe` passes no `maxTurns`: verified in probe.ts:549ff and asserted by
+behaviour 3's stub ("runProbe passes no cap — all 13 codex candidates get a
+turn").
+
+packages/cli/src/tick.ts: computeDue stays pure and synchronous (the fourth
+parameter is data; no await, no fs write, no throw path — `readModelsRecord`
+validates every entry through `parseModelEntry`, so `entry.probes` is always
+an array and the probe branch cannot throw on a malformed record, answering
+Sol target 5).
+The trigger reads `probe.record.models[].probes[].harnessVersion` and never
+`record.harnessVersions` — confirmed by reading tick.ts:214-252 and proved
+live in §4 step 1, where the top-level snapshot EQUALS the live value and the
+pairs are still reported due.
+
+No census delta: usage.test.ts's `seen === 36` untouched and green.
+No manifest key for the cap; MAX_PROBE_TURNS_PER_RUN = 12 as a module constant.
+DEFAULTS gains exactly `model_probe_stale_days: 7` (check.ts:84).
+apps/web and apps/server: not in the diff at all. apps/server/src/store.ts
+computes its own `due` and never reads health.json's array, so the new
+`kind: "probe"` item reaches no renderer.
+
+## 4. The attended cadence acceptance
+
+Environment note, stated first because it changes every expected count in the
+brief's script. `studio/models.json` is gitignored (.gitignore: "models.json
+is `bisellium probe`'s generated evidence record") and exists nowhere in this
+repo, so the brief's step 0 ("the record is fresh, nothing is probe-due")
+had to be MANUFACTURED by running a real battery first. Run against a copy of
+the branch's studio at /tmp/claude-1000/att-studio so the worktree stays
+clean; four fixture dailies seeded so no daily was due and the run stayed on
+the probe cadence. Real vendor turns were spent: 5 codex per battery, real,
+plus claude turns that 401 for free.
+
+$ bisellium probe --studio <att> --dry-run
+bisellium probe --dry-run: 7 candidate pair(s), zero spent
+  claude-opus-5 / claude-code
+  claude-sonnet-5 / claude-code
+  gpt-5.5 / codex          <- came from the LIVE `codex debug models` listing
+  gpt-5.6-luna / codex
+  gpt-5.6-sol / codex
+  gpt-5.6-terra / codex
+  gpt-6-astra / codex
+
+$ node -e 'harnessVersions()'
+versions: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"}
+
+$ bisellium probe --studio <att>            # baseline record, real battery
+bisellium probe: 6 turn(s) spent, 1 skipped
+
+The baseline is NOT zero-due: claude-code's control 401s here, so
+claude-sonnet-5 is condemned with `at: ""`, which the age trigger correctly
+classifies as unparseable-therefore-due. BASELINE = 1 pair, permanently, and
+that is correct behaviour (a 401-condemned pair must stay armed for the run
+that can see auth). Every count below is read against BASELINE = 1.
+
+### The run, verbatim
+
+### STEP 0 — baseline (real battery already produced models.json at 00:04:36Z)
+top-level harnessVersions: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"}
+  claude-opus-5/claude-code state=unverified at="2026-09-25T00:04:36.090Z" harnessVersion="2.1.280 (Claude Code)"
+  claude-sonnet-5/claude-code state=unverified at="" harnessVersion=undefined
+  gpt-5.5/codex state=available at="2026-09-25T00:04:36.090Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-luna/codex state=available at="2026-09-25T00:04:36.090Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-sol/codex state=available at="2026-09-25T00:04:36.090Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-terra/codex state=available at="2026-09-25T00:04:36.090Z" harnessVersion="codex-cli 0.153.4"
+  gpt-6-astra/codex state=available at="2026-09-25T00:04:36.090Z" harnessVersion="codex-cli 0.153.4"
+--- tick --dry-run (now=2026-09-25T01:00:00Z)
+due: aerarium — 2026-W39
+due: probe — 1 pair(s)
+
+### STEP 1 — version trigger, PER-PAIR evidence only
+set 5 codex pair harnessVersion -> codex-cli 0.0.0-WRONG (top-level snapshot untouched: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"})
+--- tick --dry-run: expect the 5 codex pairs to join the baseline 1
+due: aerarium — 2026-W39
+due: probe — 6 pair(s)
+--- tick (REAL, non-dry): one battery, codex half spends
+due: aerarium — 2026-W39
+due: probe — 6 pair(s)
+--- record after the battery
+top-level harnessVersions: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"}
+  claude-opus-5/claude-code state=unverified at="2026-09-25T01:00:00.000Z" harnessVersion="2.1.280 (Claude Code)"
+  claude-sonnet-5/claude-code state=unverified at="" harnessVersion=undefined
+  gpt-5.5/codex state=available at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-luna/codex state=available at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-sol/codex state=available at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-terra/codex state=available at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-6-astra/codex state=available at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+--- tick --dry-run: DISARM PROOF (expect the 5 codex pairs gone)
+due: aerarium — 2026-W39
+due: probe — 1 pair(s)
+
+### STEP 1b — the stranding guard, attended (cap temporarily lowered to 2)
+set 5 codex pair harnessVersion -> codex-cli 0.0.0-WRONG (top-level snapshot untouched: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"})
+101:export const MAX_PROBE_TURNS_PER_RUN = 2;
+--- dry-run before run one (expect 6)
+due: probe — 6 pair(s)
+--- RUN ONE (capped at 2)
+due: aerarium — 2026-W39
+due: probe — 6 pair(s)
+top-level harnessVersions: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"}
+  claude-opus-5/claude-code state=unverified at="2026-09-25T02:00:00.000Z" harnessVersion="2.1.280 (Claude Code)"
+  claude-sonnet-5/claude-code state=unverified at="" harnessVersion=undefined
+  gpt-5.5/codex state=unverified at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.0.0-WRONG"
+  gpt-5.6-luna/codex state=unverified at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.0.0-WRONG"
+  gpt-5.6-sol/codex state=available at="2026-09-25T02:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-terra/codex state=unverified at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.0.0-WRONG"
+  gpt-6-astra/codex state=unverified at="2026-09-25T01:00:00.000Z" harnessVersion="codex-cli 0.0.0-WRONG"
+--- dry-run after run one: STRANDING CHECK — a probe line with the skipped pairs is the PASS; 'no probe line'/only-1 is the BUG
+due: probe — 5 pair(s)
+--- revert the cap edit
+101:export const MAX_PROBE_TURNS_PER_RUN = 12;
+porcelain-clean=0
+--- RUN TWO (cap back to 12): drains the tail the cap skipped
+due: aerarium — 2026-W39
+due: probe — 5 pair(s)
+top-level harnessVersions: {"claude":"2.1.280 (Claude Code)","codex":"codex-cli 0.153.4"}
+  claude-opus-5/claude-code state=unverified at="2026-09-25T03:00:00.000Z" harnessVersion="2.1.280 (Claude Code)"
+  claude-sonnet-5/claude-code state=unverified at="" harnessVersion=undefined
+  gpt-5.5/codex state=available at="2026-09-25T03:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-luna/codex state=available at="2026-09-25T03:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-sol/codex state=available at="2026-09-25T03:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-5.6-terra/codex state=available at="2026-09-25T03:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+  gpt-6-astra/codex state=available at="2026-09-25T03:00:00.000Z" harnessVersion="codex-cli 0.153.4"
+--- dry-run after run two: expect back to the baseline 1 (the 401-condemned claude pair only)
+due: probe — 1 pair(s)
+
+### STEP 2 — the age trigger
+aged gpt-5.5/codex at -> 2026-09-01 (>7d before now)
+--- dry-run: expect baseline 1 + 1 = 2 pair(s)
+due: probe — 2 pair(s)
+--- and with a declared defaults.model_probe_stale_days: 60 the aged pair goes fresh again
+declared defaults.model_probe_stale_days: 60
+due: probe — 1 pair(s)
+--- and check() raises no manifest.defaults advisory for the declared key (behaviour 5, live)
+findings mentioning model_probe_stale_days: 0 []
+restored manifest
+
+### STEP 3 — the autonomy gate: paused spends nothing and leaves models.json untouched
+dfb7b1c48be7894f444d487ccfdc00812b2400efec681a41881232d5e4ec602f  /tmp/claude-1000/att-studio/models.json
+paused /tmp/claude-1000/att-studio since 2026-09-25T00:08:48.955Z: cadence acceptance
+paused since 2026-09-25T00:08:48.955Z: cadence acceptance
+dfb7b1c48be7894f444d487ccfdc00812b2400efec681a41881232d5e4ec602f  /tmp/claude-1000/att-studio/models.json
+resumed /tmp/claude-1000/att-studio
+--- and after resume the aged pair is still due (the gate deferred, never dropped, the work)
+due: probe — 2 pair(s)
+
+### L0 gate: every collegium L0 -> computeDue returns [] (no probe item at all)
+  - { id: production, name: Production, magister: producer, lex: leges/production.md , autonomy: L0 }
+  - { id: design, name: Design, magister: architect, lex: leges/design.md , autonomy: L0 }
+  - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md , autonomy: L0 }
+  - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md , autonomy: L0 }
+  - { id: qa-lead, collegium: qa, kind: agent, model: claude-opus-5 , autonomy: L0 }
+due lines: 0
+dfb7b1c48be7894f444d487ccfdc00812b2400efec681a41881232d5e4ec602f  /tmp/claude-1000/att-studio/models.json
+restored manifest
+
+### FINDING PROBE — does the paused/L0 path still spawn the vendor CLIs?
+PAUSED tick -> vendor-CLI spawns intercepted by the PATH sentinel:
+      1 claude --version
+      1 codex --version
+      1 codex debug models
+DRY-RUN tick -> vendor-CLI spawns (expected: the gather is needed to print the due line):
+      1 claude --version
+      1 codex --version
+      1 codex debug models
+
+### Attended acceptance — rulings, step by step
+
+step 0  baseline                        `due: probe — 1 pair(s)`            as explained above
+step 1  per-pair harnessVersion wrong    1 -> 6 pair(s)                      PASS
+        and this is behaviour 2(f) proved live: the top-level snapshot
+        stayed "codex-cli 0.153.4" = the live value, while the five pairs
+        carried "codex-cli 0.0.0-WRONG". An implementation reading the
+        snapshot reports 1, not 6.
+step 1  real tick, one battery           record rewritten, all five codex
+        pairs re-probed available with harnessVersion back to 0.153.4        PASS
+step 1  DISARM PROOF (the command most
+        likely to be skipped)            6 -> 1 pair(s)                      PASS
+step 1b cap temporarily lowered to 2,
+        five wrong per-pair versions
+        restored                         run one spent 2 turns (claude-code
+        control 401 + the codex control gpt-5.6-sol), 4 codex pairs skipped
+        keeping `at: 01:00:00Z` and harnessVersion "0.0.0-WRONG"
+        THE STRANDING CHECK: next dry-run reported `due: probe — 5 pair(s)`
+        = the 4 skipped + the baseline 1.                                    PASS
+        Under revision 1's top-level comparison this line reads
+        `due: probe — 1 pair(s)` — the brief's "no probe line here is the
+        stranding bug, NOT a pass". It is not what happened.
+        Note the turn arithmetic differs from the brief's "probes 2, skips 3"
+        because the claude-code control turn is inside the ceiling here (the
+        brief's figure assumes a codex-only due set); the discriminating
+        property — capped pairs stay due — is unaffected.
+step 1b cap restored to 12, run two       drained all 4 stranded pairs, next
+        dry-run back to `due: probe — 1 pair(s)`                             PASS
+        mark-before-spend confirmed to preserve `at` AND harnessVersion on a
+        skipped pair (state went available -> unverified, evidence kept),
+        which is exactly the invariant the per-pair fix rests on.
+step 2  age trigger, one pair's `at`
+        set back to 2026-09-01           1 -> 2 pair(s)                      PASS
+        and with `defaults: { model_probe_stale_days: 60 }` declared in the
+        real manifest shape, 2 -> 1 again                                    PASS
+        and `check` raised ZERO findings mentioning model_probe_stale_days
+        — behaviour 5 proved live, not only in the unit test                 PASS
+step 3  pause -> tick -> resume           models.json sha256 byte-identical
+        (dfb7b1c4…) across the paused tick                                   PASS
+        and after resume the aged pair was still due: the gate DEFERRED the
+        work, it did not drop it
+extra   every collegium autonomy: L0      0 due lines of any kind, models.json
+        byte-identical                                                       PASS
+
+The brief's own mutation list: none. `bisellium probe --dry-run`'s
+"zero spent" and the cap's 2-of-6 turn count above are the live substitutes,
+and behaviour 3's capped/uncapped pair in probe.test.ts is the recorded one.
+QA lex §2: one mutation per opus is enough.
+
+## 5. THE CENTERPIECE — red provenance. BLOCKING.
+
+### 5.1 What the artifacts say
+
+Measured timeline:
+  23:03:33.959Z  spec gate signed (studio/opera/W-071.md probationes.spec.at)
+  23:33:47.288Z  reds/W-071/01.log
+  23:33:53.290Z  02.log
+  23:34:02.989Z  03.log
+  23:34:27.547Z  04.log
+  23:34:33.796Z  05.log      -> all five inside 46 SECONDS
+  23:42:09.901Z  traditio stamped
+  23:44:54Z      68da7ba, the single implementation commit
+
+All five headers: `# tree: dirty:0994a3b25bc740f34ccf6a48c4e17dcc70a647e9`.
+Recomputed in §1: that is the source tree of 215987e, the spec-gate commit,
+in which W-069 is merged. Tree-hash ancestry PASSES on all five.
+
+Disclosed method: the builder implemented all five behaviours in one
+continuous working-tree pass, verified them green, then stubbed each
+implementation piece to a no-op, recorded the five reds against that stubbed
+state, and restored byte-for-byte from backups. The 46-second span is
+consistent with ONE stubbed state that all five reds were taken against,
+not five stub/restore cycles.
+
+### 5.2 Does the brief authorize it? No. Verbatim, its red section:
+
+  "**Reds are assertion-level only if the module loads**, so the builder
+   lands skeletons first — `tick.ts`'s `DueProbe`/`ProbeInputs` types and the
+   `maxTurns` field — then records each behaviour's red from its own
+   single-behaviour run."
+
+  "**Tree-hash ancestry.** Reds are recorded on this opus's work branch,
+   against a tree in which **W-069 is already merged** and the skeletons
+   above are landed and empty."
+
+Two clauses: a prescribed ORDER (skeletons, then reds, then implementation)
+and a prescribed STATE (the three named skeletons landed, everything else
+empty). Neither is advisory; they are this opus's own answer to the studio's
+load-bearing standing rule.
+
+### 5.3 The artifacts themselves prove the tree was not the prescribed one
+
+reds/W-071/01.log:
+    PASS  b1 runTick gathers through opts.listModels
+    PASS  b1 runTick gathers through opts.versions
+
+Against "the skeletons above landed and empty" — `DueProbe`/`ProbeInputs`
+types plus the `maxTurns` field, nothing more — `runTick` contains no
+`opts.listModels ?? codexListModels` call at all, so those two assertions
+CANNOT pass. They passed. The tree these reds were taken against was a
+partially-stubbed implementation, not the brief's empty skeleton. This is
+internal to the evidence and needs no disclosure to establish.
+
+### 5.4 Do the bodies demonstrate more than the prescribed order, or less? LESS.
+
+Three measured places:
+
+(i)  01.log — the two assertions above lost their red outright. Skeleton-first
+     records them as FAIL; this method records them as PASS.
+(ii) 03.log — `PASS  b3 w071: positive control — no cap yields 5 start calls
+     and an empty skipped` is green BECAUSE NO CAP EXISTED. The positive
+     control's stated purpose is to prove the assertion cannot pass by the
+     feature being absent; it passed while the feature was absent. (The
+     prescribed skeleton produces the same defect, so this one is a hole in
+     the brief's behaviour-3 design, not in the order — but it points the
+     same way.)
+(iii)03.log — `PASS  b3 w071: the 3 skipped pairs are unverified on disk,
+     never re-spent` is green with its own evidence column reading
+     [["p1","available"],…,["p5","available"]]: the assertion passed while
+     its subject was false, because `skippedIds` was empty and `[].every()`
+     is true.
+
+Plus the vacuous-by-emptiness passes the method shares with skeleton-first:
+02.log's "(e) run two probes exactly the 3 stranding would have lost" (green
+on `[]`), "after a complete battery, a second computeDue yields no probe item"
+(green because no probe item is ever emitted), 04.log's L0 and paused
+zero-battery-call assertions. Those are why the brief demanded positive
+controls, and 04.log's positive controls did correctly fail.
+
+Net: the method produced strictly weaker reds than the order the spec
+prescribed. It is not a lateral substitution.
+
+### 5.5 Is the class distinguishable from backfill by anything IN the artifacts? No.
+
+`# tree: dirty:<hash>` names the COMMITTED HEAD source tree, never the working
+tree's content (verified: 0994a3b2 is exactly 215987e's source tree, computed
+with the working tree in an unknown state). Skeleton-first and
+implement-verify-stub-record-restore therefore emit byte-identical headers,
+byte-identical behaviour numbers, byte-identical exit codes. The ONLY reason
+this review knows which occurred is that the builder said so.
+
+By this censor's own W-067 ruling — verifiability by design, not by luck — a
+gate whose compliance is knowable only through the candour of the party being
+gated is not verified. And the W-065 05.log ruling ("a red manufactured by
+reverting working code is backfilled evidence, forbidden") that no censor can
+ever apply from the artifacts is dead letter; accepting it here repeals it by
+acquiescence.
+
+### 5.6 Against the precedent line
+
+(a) W-047's mutation-record reds — AUTHORIZED because THE SPEC designed them
+    that way for already-correct code. Not on point: this spec designed the
+    opposite, in the two clauses quoted in 5.2. A builder cannot unilaterally
+    substitute an evidence method its own spec forecloses; naming the method
+    is the entire reason a spec names it.
+(b) W-046 r3's stash — ACCEPTED because the recorded tree WAS the true
+    pre-fix state. The distinguishing property is absent here: the recorded
+    tree was a hand-crafted stub of a tree that had already been fully
+    implemented and verified green. §5.3 proves it was not even the stub the
+    spec described.
+(c) W-065's 05.log ruling — FORBIDDEN. This is that mechanism exactly:
+    implement -> verify green -> revert to no-op -> record red -> restore.
+    The standing rule "Evidence is produced, never backfilled" regulates the
+    ACT, not the artifact. A red's whole epistemic content is "at the moment
+    the implementation did not exist, this assertion failed"; recorded after
+    the implementation existed and was hidden, it proves only "removing this
+    code fails the test" — a mutation result, which is a different and
+    weaker claim, and one that needs a spec's authorization (see (a)).
+(d) W-069's skeleton-first — AUTHORIZED, and what this brief prescribes.
+
+The case produces artifacts indistinguishable from (d) with the time order of
+(c). (c) controls, for the four reasons above: the spec forbids it, the
+artifacts prove the tree was wrong, the bodies are weaker not stronger, and
+nothing in the evidence could ever have caught it.
+
+### 5.7 For the standing red-ordering petitio
+
+Load-bearing, and the reason this section matters beyond one opus: THESE FIVE
+REDS PASS TREE-ANCESTRY. Every one names dirty:<spec-gate source tree>, with
+W-069 merged, behaviours 1..5 contiguous, exit 1, non-empty bodies, inside the
+spec-gate-to-implementation window. A rule built on tree ancestry — which is
+what the petitio proposes — cannot catch this class AT ALL, and would have
+certified all five.
+
+What would catch it: `bisellium red` recording an identity of the WORKING TREE
+alongside the commit tree — a content hash (or the diff itself) over the
+opus's declared files at the moment the red ran. Then a red taken against an
+empty skeleton is distinguishable from a red taken against a stubbed
+implementation, and from a red taken against restored-then-reverted code,
+without relying on the builder's account. That is the concrete amendment the
+petitio needs; tree ancestry alone is the wrong hash for this job for the
+same reason `git rev-parse HEAD^{tree}` is the wrong hash for a certificate.
+
+## 6. Other findings
+
+### F2 — the paused and L0 paths now spawn the vendor CLIs. BLOCKING (minor).
+### One site, three calls — enumerated, not a multi-site class.
+
+tick.ts's gather block sits BEFORE the pause gate:
+
+  tick.ts:437-452   listing = await (opts.listModels ?? codexListModels)()
+                    versions = await (opts.versions ?? harnessVersions)()
+                    due = computeDue(..., { listing, versions, record: readModelsRecord(studioRoot) })
+  tick.ts:472       if (pause.paused) { ...; return { exitCode: ... } }
+  tick.ts:478       if (dryRun) { ...; return { exitCode: 0 } }
+  tick.ts:502       the battery call
+
+Measured with the PATH sentinel, a PAUSED tick:
+      1 claude --version
+      1 codex --version
+      1 codex debug models
+On master that path spawns nothing. The battery itself IS correctly inside all
+three gates (verified by reading 455-517 and by §4 step 3 / the L0 run:
+models.json byte-identical, zero due lines), so Sol target 7 finds no path
+into the battery — but it finds a path into the vendor CLI.
+
+Instances, having grepped every await added to the runTick path by this diff:
+  1. `opts.listModels ?? codexListModels` — spawns `codex debug models`, 5s timeout
+  2. `opts.versions ?? harnessVersions`  — spawns `claude --version` and
+     `codex --version`, 10s timeout each, in parallel
+  3. `readModelsRecord(studioRoot)`      — a file read; same shape, harmless
+One contiguous block, three calls, two of which spawn subprocesses. No other
+site. Not a three-place class.
+
+Consequences: no token spend, no write, no turn, exit code unchanged, and
+models.json is provably byte-identical — so behaviour 4(b) as WRITTEN passes,
+and no test in the suite can catch this. What it costs: up to 15s of wall time
+and three process spawns on a studio the operator deliberately stopped, and
+the vendor CLIs make their own network calls on every invocation (this run's
+sandbox log shows `codex` reaching ab.chatgpt.com and a datadog intake on each
+spawn). It also falsifies tick.ts's own file header, which the builder left
+untouched — "While paused (`bisellium pause`, see pause.ts) only (a) runs"
+(tick.ts:15) — and the brief's premise in *Autonomy, pause and dry-run*, "the
+paused path returns before any cadence work".
+
+No spec clause names the gather's placement, so this is a defect against the
+documented invariant rather than against a numbered behaviour. The fix is
+three lines — gather only when `!pause.paused`, passing no ProbeInputs when
+paused, which by the brief's own contract ("Absent means not gathered —
+computeDue then emits NO probe item") is already the correct paused semantics.
+Dry-run must keep the gather; it needs it to print the due line.
+
+### F3 — behaviour 3's "the tail heads the next run" assertion is true by
+### construction. ADVISORY. Two instances, both enumerated.
+
+probe.test.ts:1099-1107 asserts "a second run against the rewritten record
+probes exactly the 3 skipped first" but feeds the second battery
+`only: capped.skipped` — the set constructed FROM the first run's result. The
+assertion cannot fail; nothing else was in the due set to be ordered after.
+The five fixture pairs also start with no prior probes at all, so every
+evidence age is equal and any ordering satisfies it.
+tick.test.ts 2(e) (lines 607-620) has the same fixture property — all five
+pairs share `at: fresh` — so it too cannot discriminate an ordering. It IS
+correct on the property that matters there (line 598 recomputes `due2` from
+the rewritten record rather than reusing run1.skipped, and asserts it equals
+exactly the 3 — that is the real discriminator for carve finding 4, and it is
+sound).
+
+I searched every W-071-added assertion in both test files mentioning cap,
+skipped, ordering or "first": those two are the only places the brief's
+"asserted across the cap rather than assumed" could have landed. Nowhere is
+a mixed-age due set put under a cap.
+
+Downgraded to advisory because no coverage is actually lost: W-069's own
+probe.test.ts (lines 348, 387) tests the oldest-evidence-first sort over
+distinct `at` values, the cap iterates the already-sorted `orderedDue`, and in
+this model a capped run's probed pairs disarm so the next due set can only BE
+the skipped tail — the property holds by composition. The assertion is
+decoration presented as proof. Strengthen it (staggered `at`, cap 2, assert
+the two turned pairs are the two oldest) or delete it.
+
+### F4 — npm test reaches registry.npmjs.org. NOT W-071's. Existing design.
+
+Terra's claim 9 (78 TLS connections to registry.npmjs.org during npm test) is
+real and fully explained by packages/cli/src/ci.test.ts's behaviour 4, which
+runs three genuine cold npm operations against a fresh `--cache` directory:
+  ci.test.ts:209  npm install --package-lock-only   (fixture setup)
+  ci.test.ts:218  npm ci                            (fixture setup)
+  plus runCi(--ref)'s own from-scratch `npm ci` inside the scratch checkout
+      (packages/commands/src/ci.ts:100)
+That is deliberate and documented at ci.test.ts:172 — "the real node_modules
+resolution trap, proven with a genuine `npm ci` (no installDeps override)".
+Introduced by c908a9f, untouched by W-071 (0 files of the diff). Not a W-071
+defect and not grounds for anything here.
+
+Ruling on whether it belongs in `npm test`: it is existing design, and the
+design is defensible — an installDeps override would test the override, not
+the trap. But it makes the studio's own `tests` probatio non-reproducible
+offline and rate-limit-exposed, which is a gate-reliability property nobody
+has signed. Filed as a class for the retro with a named target, not as a
+finding against this opus: point the three operations at the repo's own npm
+cache (or a pre-seeded one) instead of a fresh mkdtemp cache, which keeps the
+from-scratch resolution semantics and drops the cold metadata fetches.
+
+### F5 — package-lock.json's delta. IN SCOPE. Expected churn, and not this
+### opus's to own.
+
+The whole delta is 3 lines: `packages/commands` gains
+`devDependencies: { "@bisellium/server": "*" }` in the lock. That devDependency
+was added to packages/commands/package.json by W-069 (8965028) WITHOUT
+regenerating the lock; W-071's `npm install` in the worktree regenerated it.
+No new external package, no version bump, no integrity change. The identical
+3-line delta is already sitting uncommitted in the main repo's working tree,
+which confirms it is inevitable for anyone who runs an install. Devdep churn,
+W-069's debt paid in passing. Not creep.
+
+### F6 — the two repaired test files. IN SCOPE. Forced and minimal.
+
+talk-boundary.test.ts (+28) and harness-env.test.ts (+23) both call `runTick`
+unstubbed against a copy of sample-studio. Once the cadence exists, that copy
+has no models.json, so EVERY seated pair is age-due, so a probe item fires and
+the real `probeBattery` runs through those files' own PATH-stubbed vendor
+binaries — wrecking their spawn-count assertions and, in an environment
+without the stubs, reaching real vendors. The repair is the minimum that
+closes it: inject `listModels: async () => []` and `versions: async () => ({})`
+at the one runTick call in each, and seed a models.json in which every seated
+pair is already fresh. Nothing else in either file moved; `harnessForSella`
+was already exported. This is the near-miss rule applied at the seam rather
+than at the symptom, and it is the correct call — patching only the assertion
+would have left the real-vendor reach in place. Forced-and-disclosed, not
+creep.
+
+## 7. Verdict: FAIL
+
+Stated plainly first, because a FAIL on correct code is easy to misread: the
+implementation is right. All five behaviours are implemented as specified, the
+seam contract is honoured to the line, the hermetic seam is proved hermetic by
+sentinel, and the attended cadence acceptance passed on every point including
+the round's sharpest defect — the stranding interleaving, which produced
+`due: probe — 5 pair(s)` where the bug produces 1. Nothing in the record
+needs rewriting.
+
+The FAIL rests on two things:
+
+1. §5. All five reds — the entire test-first evidence for this opus — were
+   recorded against a hand-stubbed tree that already held a verified-green
+   implementation. The spec of record forbade exactly this in two explicit
+   clauses; the reds themselves prove the tree was not the one the spec
+   described (§5.3); the bodies are weaker than the prescribed order would
+   have produced, in three measured places (§5.4); and nothing in the
+   artifacts could ever have caught it (§5.5). Under the W-065 05.log ruling
+   this is backfilled evidence. W-047's mutation-record exception does not
+   reach it, because that exception turns on the SPEC having designed the
+   reds that way, and this spec designed the opposite.
+
+2. §6 F2. A measured regression on the pause path: three vendor-CLI
+   subprocesses, including network calls, on a studio the operator stopped.
+   No test in the suite can catch it, and it falsifies tick.ts's own header.
+   Three lines to fix.
+
+Round 2 has real work, so this is not a verdict spent on bookkeeping: F2's
+three-line gather move, F3's assertion, and — the part that needs an authority
+this censor does not hold — a disposition for the five reds. My lex lets me
+rule the verdict alone; it does not let me accept a finding class alone or
+adopt a blocking rule alone. The honest routes are (a) the architect or Patron
+waives the red gate with a decision id under `bisellium waive`, accepting the
+five as mutation-grade rather than order-grade evidence — the W-047 shape,
+done properly and on the record — or (b) the reds are re-recorded, which after
+this session is backfill by construction and so is really route (a) wearing a
+different hat. What must NOT happen is a silent pass: the officina currently
+records a compliant test-first gate for W-071, and the only account of what
+actually happened lives in an orchestrator's transcript. Whichever route is
+taken, the deviation belongs in studio/opera/W-071.md or a build report on the
+branch, not in a chat log.
+
+## 8. Class findings for the retrospectio
+
+C1  red×backfilled-provenance. A red recorded against a tree the builder
+    produced by hiding an already-verified implementation, rather than against
+    the pre-implementation tree. Second appearance in the precedent line
+    (W-065's 05.log, now W-071 x5), and the first where the artifacts are
+    indistinguishable from a compliant run. Target: the working-tree identity
+    on `bisellium red` described in §5.7 — NOT the tree-ancestry rule the
+    standing petitio proposes, which these five reds pass. Needs a petitio;
+    the Censor cannot adopt a blocking rule alone (qa lex §4).
+
+C2  gate×outside-the-gate-side-effect. New async work added to a command's
+    hot path lands above an existing early return, so a gate that used to mean
+    "do nothing" now means "do nothing observable". Recurs in spirit with
+    W-065's struck server-side staleness (two notions of the same rule in two
+    places). Target: an assertion shape rather than a rule — a paused/L0 test
+    that counts SPAWNS, not just writes. Addressable by the Censor alone as
+    test infrastructure (qa lex §2).
+
+C3  assertion×true-by-construction. An assertion fed the previous step's own
+    output, or a fixture in which every row is identical on the axis the
+    assertion is about, so it cannot fail. F3's two instances; and the same
+    family as Sol finding 9 ("the version-trigger behaviour passed
+    vacuously"), which this brief was written to close. Recurrence is the
+    point: positive controls closed the absence-shaped case and did not close
+    the constructed-input case. Target: a review checklist item, adoptable
+    advisory-only by the Censor alone (qa lex §2).
+
+C4  gate×network-dependent-probatio. The `tests` probatio makes ~78 cold TLS
+    connections to registry.npmjs.org by design (F4). Not this opus's, and
+    defensible, but unsigned as a gate property. Target: a named opus to point
+    ci.test.ts's three npm operations at a warm cache.
+
+-- end of review round 1 --

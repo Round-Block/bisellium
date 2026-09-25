@@ -1,0 +1,388 @@
+# W-071 review — round 2
+# sella: qa-lead (censor) · model: claude-fable-5
+# branch: opus/W-071 · worktree: /tmp/claude-1000/w071-build · HEAD: 4dbbf64
+# spec of record: studio/briefs/W-071.md revision 2
+# round-1 evidence: ci/W-071-review-1.log
+# VERDICT: PASS
+
+## 0. State
+
+$ git status --porcelain
+(empty — clean)
+$ git log --oneline -5
+4dbbf64 fix(studio): P-012 state is needs_you — open is not a wire value
+68677ce studio: D-024 — the Patron waives W-071's red-gate order, deviation recorded; P-012 filed
+006409d chore(W-071): verify certificates, round 2
+5b4828f fix(cli,commands): W-071 round 2 — pause-gate gather moved, constructed assertion replaced
+aaa0125 chore(W-071): censor round 1 — FAIL on red provenance and the paused-path gather
+
+Round-2 diff (aaa0125..HEAD), whole:
+  packages/cli/src/tick.ts             116 +-
+  packages/cli/src/tick.test.ts         67 +-
+  packages/commands/src/probe.test.ts   96 +-
+  studio/{ci,decisions,opera,petitiones}    bookkeeping
+`packages/commands/src/probe.ts` was NOT touched this round — the 18-line
+seam edit ruled clean in round 1 §3 is unchanged. `studio/ci/reds/` is
+byte-identical to round 1 (`git diff aaa0125..HEAD -- studio/ci/reds/` is
+empty): no red was re-recorded, which is the only correct handling once the
+waiver route was taken. No package-lock churn this round.
+
+## 1. Certificates recomputed (verify NOT run)
+
+sourceTreeHash(repo, excludes=[studio, .bisellium, examples/]):
+  HEAD     -> ce4dd82642347eaae9448296df7e1b2a8432456b
+  4dbbf64  -> ce4dd826…   68677ce -> ce4dd826…   006409d -> ce4dd826…
+  5b4828f  -> ce4dd826…      (the last commit that touched source)
+  aaa0125  -> 10d151b6…      (round 1's tree — correctly different)
+studio/opera/W-071.md's tests/lint/types all certify tree:ce4dd826… — matches.
+The three commits after 5b4828f touch only studio/, so the source tree is
+stable across them and the certificates stay honest without re-running.
+
+## 2. Gates, re-run here
+
+$ npm run -s typecheck                                   -> exit 0
+$ PATH=<sentinel>:$PATH npm test                         -> exit 0
+$ npm run -s check -- studio --repo .                    -> PASS, 0 blocking, 113 advisory
+$ npm run -s check -- examples/sample-studio --repo .    -> PASS, 0 blocking, 25 advisory
+
+Sentinel tally over the full suite: 5 `claude --version`, ZERO codex of any
+kind — byte-identical to round 1's baseline and to the builder's own tally.
+The inference is unchanged and still sound: both gather paths necessarily
+invoke `codex` (`codex debug models`, `codex --version`), so zero codex hits
+proves neither ran unstubbed; the five claude hits are
+claudeCodeProfile.available()'s pre-existing spawnSync
+(packages/shim/src/harness/claude-code.ts:177).
+
+Rule histogram, round-1 branch (aaa0125) vs round-2 HEAD, `check studio`:
+  probatio.certifies   65 -> 66   (round-2's own certificates)
+  process.checkpoint    1 ->  0   (cleared; the last commit touches only petitiones)
+  process.review_tier  17 -> 18   (my OWN round-1 review, recorded on
+                                   claude-fable-5 per my mandated --model —
+                                   the same advisory 21 other opera carry)
+  8 other rules unchanged
+Novel rule classes present on the branch and absent on master: NONE.
+sample-studio 26 -> 25 within probatio.certifies.stale / traditio.stale, both
+time- and commit-dependent; same rule set, nothing new.
+
+Note for the record: the builder's commit message claims 114 advisories where
+I measure 113. The difference is `process.checkpoint`, which is a property of
+the most recent commit and cleared after their measurement. Benign, and the
+direction is downward.
+
+## 3. F2 — CLOSED. Structure, then my own measurement.
+
+### Structure (packages/cli/src/tick.ts, read at HEAD)
+
+  :456  check, unconditionally
+  :466  pause = readPauseState(...)
+  :478  if (pause.paused) { due = computeDue(root, manifest, now);   <- 3-ARG
+                            writeHealthFile(...); return }           <- NO GATHER
+  :493  anyActiveCollegium = manifest.collegia.some(c => (c.autonomy ?? "L1") !== "L0")
+  :495  if (anyActiveCollegium) { listing = await (opts.listModels ?? codexListModels)()
+                                  versions = await (opts.versions ?? harnessVersions)()
+                                  probeInputs = { listing, versions, record: readModelsRecord(root) } }
+  :514  due = computeDue(root, manifest, now, probeInputs)
+  :515  writeHealthFile(...)
+  :518  if (dryRun) { print; return }          <- gather already done, as it must be
+  :~540 the battery call
+
+Correct on every count. The paused branch reaches `computeDue` with three
+arguments, which by the brief's own contract ("Absent means not gathered —
+computeDue then emits NO probe item") is the right paused semantics rather
+than a special case. `writeHealthFile` is factored so both branches emit one
+shape from whatever `due` each could compute — the drift the two-literal
+version invited is gone.
+
+The builder ALSO extended the gate to all-L0 studios. That is class C2's
+second instance from my round-1 log, found and closed without being asked,
+and it is the right call for the same reason: an all-L0 studio makes
+`computeDue` return `[]` regardless of ProbeInputs, so the three spawns could
+never have been used.
+
+### My own measurement — real CLI, PATH sentinel, not the test's stubs
+
+  (1) PAUSED tick             vendor-CLI spawns: 0        (round 1: 3)
+                              models.json sha256 dfb7b1c4… unchanged either side
+  (2) ALL-L0 tick             vendor-CLI spawns: 0
+  (3) positive control,
+      active + unpaused       vendor-CLI spawns: 7
+                                3 claude --version · 2 codex --version · 2 codex debug models
+  (4) positive control,
+      --dry-run               vendor-CLI spawns: 3
+                                1 claude --version · 1 codex --version · 1 codex debug models
+
+(3) and (4) are why (1) and (2) mean something: the gather demonstrably does
+spawn on the paths where it must, so the zeros are the gate working, not the
+gather being dead. This is the same discipline the builder applied inside
+behaviour 4, verified independently from outside it.
+
+### The test class added
+
+tick.test.ts's `countingGather()` counts listModels/versions calls, so
+behaviour 4 now asserts zero GATHER SPAWNS for L0 and paused — not merely
+zero battery calls and an unchanged models.json, which is precisely the
+write-only blindness that let F2 through round 1. Standalone run, verbatim:
+
+  PASS  b4 (a) L0: zero gather spawns (listModels)                     0
+  PASS  b4 (a) L0: zero gather spawns (versions)                       0
+  PASS  b4 (b) paused: zero gather spawns (listModels)                 0
+  PASS  b4 (b) paused: zero gather spawns (versions)                   0
+  PASS  b4 (c) dry-run positive control: the gather DOES spawn         {"listModels":1,"versions":1}
+  PASS  b4 positive control: the gather spawns exactly once each       {"listModels":1,"versions":1}
+
+Two positive controls against four zero-assertions. My round-1 class C3
+(assertion×true-by-construction) applied by the builder to its own fix,
+unprompted. Noted and credited.
+
+## 4. F3 — CLOSED, and the mutation proves it is not cosmetic.
+
+The fixture was rewritten on W-069's own priming recipe. The two defects I
+named are both gone:
+
+  - the second battery is fed `only: pairs` — the SAME full candidate set —
+    never `capped.skipped`. Nothing is fed forward from a prior result, so
+    "probes exactly those" can no longer be true by construction.
+  - the five test pairs carry DISTINCT primed `at` values (each primed by its
+    own single-candidate battery at `later(NOW, i*1000)`), so the sort has
+    something real to order. A dedicated seated control (`aaa-ctrl`)
+    decouples the control's own turn from the property under test.
+  - every assertion reads the actual `calls.start` SEQUENCE or the record's
+    own state.
+
+Standalone run, verbatim:
+
+  PASS  b3 w071: capped run makes exactly 2 start calls         ["aaa-ctrl","codex-p1"]
+  PASS  b3 w071: control runs first, then the single OLDEST test pair
+  PASS  b3 w071: the 4 fresher test pairs come back in skipped  ["codex-p2","codex-p3","codex-p4","codex-p5"]
+  PASS  b3 w071: run two's control runs first                   ["aaa-ctrl","codex-p2","codex-p3","codex-p4","codex-p5","codex-p1"]
+  PASS  b3 w071: run two heads with the previously-stranded pair (codex-p2), not codex-p1
+  PASS  b3 w071: run two positive control — the pair already turned in run one (codex-p1) is probed LAST
+  PASS  b3 w071: positive control — no cap yields 6 start calls and an empty skipped   6
+
+Traced independently to confirm the fixture discriminates rather than merely
+passes. After priming, ages are p1=+0 (oldest) … p5=+4000, aaa-ctrl=+4000.
+Run one (cap 2) must spend the control then p1 only. Run one leaves p1 at
++10000 — the FRESHEST — so run two's age order is p2,p3,p4,p5,p1 while both
+alphabetical and insertion order are p1,p2,p3,p4,p5. `order2[1] === "codex-p2"`
+and `order2[last] === "codex-p1"` therefore fail under either wrong order.
+The discrimination is carried by run two, exactly as the fixture's own comment
+claims; run one alone could not tell age order from alphabetical, and does not
+pretend to.
+
+## 5. Mutations — three, targeted at what round 2 changed
+
+Round 1's live cap mutation is not re-run: `probe.ts` is untouched this round.
+The mutations worth spending are the ones that test whether round 2's new
+assertions bite. All three reverted; worktree clean after.
+
+M1  reverse W-069's oldest-evidence-first comparator
+    (probe.ts:346  `return ta - tb` -> `return tb - ta`)
+    CAUGHT, 4 assertions, with the reversal visible in the evidence columns:
+      FAIL  b3 w071: control runs first, then the single OLDEST test pair   ["aaa-ctrl","codex-p5"]
+      FAIL  b3 w071: the 4 fresher test pairs come back in skipped         ["codex-p1","codex-p2","codex-p3","codex-p4"]
+      FAIL  b3 w071: the turned pair (codex-p1) actually spent a turn      state "unverified", note "probe due"
+      FAIL  b3 w071: run two heads with codex-p2, not codex-p1             ["aaa-ctrl","codex-p5","codex-p4","codex-p3","codex-p2","codex-p1"]
+    THIS IS THE DECISIVE ONE. Round 1's fixture could not see this mutation
+    at all — uniform ages and a set fed forward. F3's rewrite is real.
+
+M2  neuter the L0 gate (tick.ts:493  -> `const anyActiveCollegium = true;`)
+    CAUGHT, and caught by EXACTLY the two new assertions, nothing else:
+      FAIL  b4 (a) L0: zero gather spawns (listModels)   1
+      FAIL  b4 (a) L0: zero gather spawns (versions)     1
+
+M3  restore the paused-path gather (paused branch's 3-arg computeDue
+    replaced with the 4-arg gathering form)
+    CAUGHT, again by exactly the two new assertions:
+      FAIL  b4 (b) paused: zero gather spawns (listModels)   1
+      FAIL  b4 (b) paused: zero gather spawns (versions)     1
+
+M2 and M3 together are the proof of my round-1 claim that "no test in the
+suite can catch this": before round 2 these mutations were invisible; now each
+is caught by the two assertions written for it and by nothing else. The suite
+bites at the exact site of the fix. QA lex §2 asks for one mutation; these
+three were spent because each tests one of my own round-1 findings rather than
+the opus in general.
+
+## 6. Attended cadence — re-run, because F2 moved the code that feeds it
+
+The gather's position and the new `anyActiveCollegium` gate sit upstream of
+every trigger, so the whole cadence had to be re-proved end to end rather than
+inherited from round 1. Run against the same studio copy and record round 1
+built, so no second baseline battery was spent.
+
+  baseline dry-run                             due: probe — 2 pair(s)
+    (the 401-condemned claude-sonnet-5, plus the pair round 1 aged)
+  5 codex pairs' PER-PAIR harnessVersion set
+  wrong, top-level snapshot left EQUAL to live  due: probe — 6 pair(s)
+    -> behaviour 2(f) re-proved live: an implementation reading the top-level
+       snapshot reports 2 here, not 6
+  real tick, one battery                        record rewritten
+  DISARM PROOF                                  due: probe — 1 pair(s)
+  age trigger, one pair's `at` set back         due: probe — 2 pair(s)
+
+Every trigger, the disarm, and the gather all still compose after the
+refactor. Round 1's stranding interleaving (step 1b, cap lowered to 2 → the
+skipped tail still reported due) is not re-run: it exercises `probeBattery`'s
+cap and W-069's mark-before-spend, neither of which round 2 touched, and M1
+above re-tests the ordering half of it at the unit level more sharply than the
+attended run did.
+
+## 7. The red gate — cited to D-024, not passed silently
+
+D-024 requires that this verdict cite it rather than pass the red gate in
+silence. It is cited here, and the citation is the ruling, not a reference.
+
+**What I am passing the red gate on.** Not on the reds' order, which I ruled
+defective in round 1 §5 and do not withdraw: all five were recorded against a
+hand-stubbed tree that already held a verified-green implementation; the brief
+prescribed skeleton-first in two explicit clauses; 01.log's green
+"runTick gathers through opts.listModels / opts.versions" proves from inside
+the artifacts that the tree was not the skeleton the spec described; the
+bodies are weaker than the prescribed order would have produced in three
+measured places; and nothing in the artifacts could have caught it. That
+finding stands on the record unchanged, in ci/W-071-review-1.log, which the
+opus links as its round-1 review evidence.
+
+I am passing it on **`studio/decisions/D-024.md`**, the Patron's decree of
+2026-09-25, which waives the red gate's ORDER for W-071 behaviours 1–5 only.
+
+**Does D-024 satisfy the gate on its own terms? Yes, on all five of them.**
+
+1. *Authority.* `by: patron`, `provenance: stated`. The Censor cannot accept a
+   finding class or adopt a blocking-rule change alone (qa lex §4); the Patron
+   is the only authority that can waive a standing rule. Correct authority,
+   and the route I named in round 1 §7.
+2. *Scope.* "The red gate's ORDER, for W-071 behaviours 1–5 only." Exactly
+   coextensive with the finding — it waives the act's ordering, and touches
+   neither the reds' bodies, nor their coverage, nor any other opus. It grants
+   nothing I did not ask about.
+3. *The act recorded plainly.* D-024 restates the mechanism in full
+   (implemented, verified green, stubbed each piece to a no-op, recorded,
+   restored) and my ruling in substance on all three of its limbs — the W-065
+   05.log act, 01.log's gather assertions betraying the non-prescribed tree,
+   and verifiability by candour rather than by design. Nothing is smoothed
+   over; nothing is rewritten into compliance. It says "the defect is the
+   unauthorized ACT, not the evidence's shape", which is precisely the
+   distinction round 1 §5.6 drew between this case and W-047's.
+4. *Kill condition.* `kill_when` names P-012's working-tree-identity
+   mechanism — my own §5.7 proposal — and adds a second trigger I did not ask
+   for and welcome: "or a second waiver of this class is requested before that
+   mechanism lands, which is the pattern this decision exists to prevent".
+   That makes the waiver self-limiting rather than a precedent. A waiver that
+   can be granted twice is a rule change; this one cannot.
+5. *Candour.* Credited "not as mitigation of the act, but as the difference
+   between a waiver and a lesson in deception". That is the correct weight.
+   The disclosure is why the ruling was possible; it is not why the act was
+   permissible.
+
+**A correction to my own round-1 log.** Round 1 §7 named `bisellium waive
+<opus> --gate <id> --reason <text> --decision <id>` as a route. That was
+wrong, and I record it rather than let it stand. `runWaive` writes
+`status: waived` on a `kind: human` probatio only
+(packages/commands/src/lifecycle.ts:760ff, and it refuses automated and agent
+gates explicitly). This studio's probationes are tests/lint/types (automated)
+and spec/review (agent) — there is no human gate, and the red gate is not a
+probatio at all: reds are `ci/reds/<id>/NN.log`, checked by
+`opus.red_evidence` / `opus.red_content` / `opus.red_sella` in
+packages/cli/src/rules/evidence.ts, none of which inspects order or
+working-tree state. So `waive` could never have targeted this gate. A decision
+was not merely an acceptable instrument here — it was the ONLY available one,
+which is itself part of why P-012's mechanism is needed.
+
+**P-012, read as the petitio it is.** It states mechanism 1 (tree ancestry) as
+considered and refuted, with W-071's five reds as the counterexample and my
+reasoning verbatim: `dirty:<spec-gate-HEAD>` is byte-identical whether the
+working tree held prescribed skeletons or stubbed-out finished code, because
+the header names the committed HEAD and never the working tree's content. It
+asks for mechanism 2 as an opus. `state: needs_you`, a legal value
+(PETITIO_STATES, packages/schema/src/index.ts:174 — the fix at 4dbbf64 was
+correct; `open` is not a wire value). The obligation is now the Patron's, and
+D-024's kill_when is bound to it. Class C1 is therefore ADDRESSED for the
+retro's Addressed ledger: target D-024 (formally accepted, with kill_when) and
+P-012 (the mechanism that retires it).
+
+## 8. Findings — round 2. None blocking.
+
+A1 (advise) Duplicated autonomy predicate. tick.ts:493's
+   `(c.autonomy ?? "L1") !== "L0"` is a second copy of computeDue's own filter
+   (tick.ts:~150), ~340 lines apart in the same file. Two copies of one
+   predicate is the drift the brief's own carve reasoning warns about, at
+   smaller scale. A one-line shared helper closes it. Not worth a round.
+
+A2 (note) The active path pays the catalog calls TWICE per tick. Measured: 7
+   spawns on an active, unpaused, non-dry tick — 2 `codex debug models` and 2
+   `codex --version`, because `tick` gathers for `computeDue` and then
+   `probeBattery` gathers again for itself (tick's
+   `runBattery({studio, now, only, maxTurns})` forwards no `listModels` /
+   `versions`). Defensible: the battery stamps `harnessVersion` from a read
+   taken at spend time (`liveVersionFor`, probe.ts:421), which is arguably the
+   read that should be fresh. But it is two 5s-timeout listing calls per tick
+   where one would do, and nobody has signed that. Design property, recorded
+   so the next person to touch the seam sees it.
+
+A3 (advise) W-071's record does not reach D-024. `traditio.next` still reads
+   "red disposition awaits the Patron" — stale, it arrived — and names no
+   decision, and no rule links an opus to the decision that waived one of its
+   gates. A reader of studio/opera/W-071.md cannot find D-024 without grepping
+   decisions/. Bookkeeping for the closing sella (and not mine to write).
+
+A4 (note) A paused tick's health.json `due` no longer carries the probe item,
+   since the paused branch computes it 3-arg. Semantically the better answer —
+   while paused nothing is due to be acted on — and no reader is affected
+   (apps/server/src/store.ts computes its own `due` and never reads this
+   array). Recorded because it is a silent change to a generated record's
+   contents that no assertion names.
+
+Carried from round 1, unchanged and still not W-071's:
+F4 `npm test` makes ~78 cold TLS connections to registry.npmjs.org from
+   ci.test.ts's genuine `npm ci` fixture (c908a9f, untouched by this opus).
+   Existing design, defensible, still an unsigned gate property.
+
+## 9. Verdict: PASS
+
+Round 1's two blocking findings are both closed, and closed at the root rather
+than at the symptom:
+  - F2 by moving the gather below the pause gate AND extending the same gate
+    to all-L0 studios — my class C2's second instance, closed unasked —
+    verified by my own sentinel measurement (0 spawns paused, 0 spawns L0,
+    3 and 7 on the positive controls) and locked in by two mutations that each
+    fail exactly the two assertions written for them.
+  - F3 by rewriting behaviour 3's fixture on distinct primed ages with a
+    dedicated control and no set fed forward, verified by the comparator
+    mutation M1 — which round 1's fixture could not see and this one catches
+    in four places.
+The red gate passes on D-024, cited in §7 at length and on its own terms, with
+the round-1 finding left standing on the record rather than withdrawn.
+Gates green, certificates honest at tree:ce4dd826…, no novel finding class on
+either officina, no red re-recorded, no scope creep, `probe.ts`'s seam edit
+untouched.
+
+Four advisories remain (§8), none of which warrants a round: A1 is a one-line
+tidy, A2 and A4 are recorded design properties, A3 is bookkeeping for the
+sella that closes the opus.
+
+## 10. Class findings for the retrospectio
+
+C1  red×backfilled-provenance — ADDRESSED. Formally accepted by D-024
+    (kill_when: P-012's mechanism landing, or a second waiver request,
+    whichever comes first); mechanism filed as P-012, state needs_you. The
+    Addressed ledger should carry both ids. Tree ancestry is recorded as
+    refuted, W-071 the counterexample: five reds that pass it while violating
+    the property it was proposed to enforce.
+C2  gate×outside-the-gate-side-effect — CLOSED IN CODE this cascade, both
+    instances (paused and all-L0), with spawn-counting assertions and two
+    positive controls. The durable lesson is the assertion shape, not the
+    bug: a gate that means "do nothing" needs a test that counts SPAWNS, not
+    one that reads writes. Addressable by the Censor alone as test
+    infrastructure (qa lex §2) and hereby adopted as review practice.
+C3  assertion×true-by-construction — RECURRENT (Sol finding 9, round 1's F3,
+    and round 1's own 03.log passes). Closed for this opus, and notably
+    applied by the builder to its own fix this round. Kept open as a class:
+    positive controls closed the absence-shaped case and did not close the
+    constructed-input case, so the review checklist item is "what would make
+    this assertion fail?", asked of every assertion whose input derives from a
+    prior step's output.
+C4  gate×network-dependent-probatio — still open, still not this opus's.
+    Target: an opus pointing ci.test.ts's three npm operations at a warm cache.
+
+-- end of review round 2 --

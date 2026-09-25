@@ -1059,6 +1059,91 @@ if (runs(13)) {
   check(13, "events.jsonl grew by zero lines", after === before, `${before} -> ${after}`);
 }
 
+// ===========================================================================
+// W-071 behaviour 3 (the battery half — probe.test.ts's share of the
+// "recorded handoff", studio/briefs/W-071.md): one optional field on
+// `ProbeBatteryOptions`, `maxTurns`, enforced after the oldest-evidence-first
+// ordering and after mark-before-spend. tick.test.ts covers the other half —
+// that `tick` always passes `MAX_PROBE_TURNS_PER_RUN` and `runProbe` passes
+// none. Numbered 3 to match W-071's own brief; unrelated to this file's own
+// behaviour 3 above (W-069's control rule) — both run under `--behaviour 3`
+// with no conflict, since neither's assertions depend on the other.
+// ===========================================================================
+if (runs(3)) {
+  // F3 (censor round 1, ADVISORY, folded in here): the previous fixture fed
+  // the second battery `only: capped.skipped` — the set CONSTRUCTED from the
+  // first run's own result, which cannot fail to "probe exactly" itself —
+  // and gave all five pairs the same (virgin) evidence age, so no ordering
+  // was ever exercised. Rewritten on W-069's own oldest-evidence-first
+  // recipe (behaviour 4, above): a DEDICATED control (`aaa-ctrl`, seated,
+  // alphabetically first so it always resolves as the control regardless of
+  // the five test pairs' own order) decouples the control's own turn from
+  // the property under test, five distinct primed `at` values give the sort
+  // something real to order, and every assertion below reads the actual
+  // `calls.start` sequence or the record's own state — never a set fed
+  // forward from a prior result.
+  const dir = freshDir("w071-b3");
+  writeManifest(dir, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: aaa-ctrl, harness: codex } ]\nprobationes: []");
+  const pairs: Candidate[] = [
+    { id: "aaa-ctrl", harness: "codex" },
+    { id: "codex-p1", harness: "codex" },
+    { id: "codex-p2", harness: "codex" },
+    { id: "codex-p3", harness: "codex" },
+    { id: "codex-p4", harness: "codex" },
+    { id: "codex-p5", harness: "codex" },
+  ];
+
+  // Distinct evidence ages, oldest to freshest: p1 .. p5 — each primed by
+  // its own single-candidate battery (which also touches the control,
+  // aaa-ctrl, every time; the property under test is the five primed `at`
+  // values' relative order, not aaa-ctrl's).
+  const primingStub = makeStub("codex", { turnFor: () => okTurn("primed") });
+  for (const [i, id] of ["codex-p1", "codex-p2", "codex-p3", "codex-p4", "codex-p5"].entries()) {
+    await probeBattery({ studio: dir, now: later(NOW, i * 1000), only: [{ id, harness: "codex" }], harnesses: { codex: primingStub.profile }, listModels: async () => [], versions: async () => ({}) });
+  }
+
+  // Run one, capped at 2: the control (aaa-ctrl) plus exactly the single
+  // OLDEST test pair (codex-p1) — never an arbitrary or alphabetically-
+  // first one, since alphabetical and age order coincide here on purpose
+  // and only reading `calls.start`'s actual sequence can tell them apart.
+  const run1 = makeStub("codex", { turnFor: () => okTurn("OK") });
+  const capped = await probeBattery({ studio: dir, now: later(NOW, 10_000), only: pairs, maxTurns: 2, harnesses: { codex: run1.profile }, listModels: async () => [], versions: async () => ({}) });
+  const order1 = run1.calls.start.map((c) => c.model);
+  check(3, "w071: capped run makes exactly 2 start calls", order1.length === 2, JSON.stringify(order1));
+  check(3, "w071: capped run reports turns === 2", capped.turns === 2, String(capped.turns));
+  check(3, "w071: control runs first, then the single OLDEST test pair", order1[0] === "aaa-ctrl" && order1[1] === "codex-p1", JSON.stringify(order1));
+  const skippedIds = capped.skipped.map((c) => c.id).sort();
+  check(3, "w071: the 4 fresher test pairs come back in skipped", JSON.stringify(skippedIds) === JSON.stringify(["codex-p2", "codex-p3", "codex-p4", "codex-p5"]), JSON.stringify(skippedIds));
+  check(
+    3,
+    "w071: the skipped pairs are unverified on disk, never re-spent",
+    capped.record.models.filter((m) => skippedIds.includes(m.id)).every((m) => m.state === "unverified"),
+    JSON.stringify(capped.record.models.map((m) => [m.id, m.state])),
+  );
+  check(3, "w071: the turned pair (codex-p1) actually spent a turn (real verdict)", capped.record.models.find((m) => m.id === "codex-p1")?.state === "available", JSON.stringify(capped.record.models.find((m) => m.id === "codex-p1")));
+
+  // The tail heads the next run — fed the SAME full candidate set again,
+  // never `capped.skipped` (that construction cannot fail; censor F3). Run
+  // two's own processing order must independently rediscover, from the
+  // record's state alone, that codex-p2 is now the oldest and codex-p1 (just
+  // turned in run one) is the freshest.
+  const run2 = makeStub("codex", { turnFor: () => okTurn("run2 ok") });
+  const second = await probeBattery({ studio: dir, now: later(NOW, 20_000), only: pairs, harnesses: { codex: run2.profile }, listModels: async () => [], versions: async () => ({}) });
+  const order2 = run2.calls.start.map((c) => c.model);
+  check(3, "w071: run two's control runs first", order2[0] === "aaa-ctrl", JSON.stringify(order2));
+  check(3, "w071: run two heads with the previously-stranded pair (codex-p2), not codex-p1", order2[1] === "codex-p2", JSON.stringify(order2));
+  check(3, "w071: run two positive control — the pair already turned in run one (codex-p1) is probed LAST", order2[order2.length - 1] === "codex-p1", JSON.stringify(order2));
+  check(3, "w071: run two leaves nothing skipped (no cap)", second.skipped.length === 0, JSON.stringify(second.skipped));
+
+  // Positive control: the same 6 pairs (control + 5 virgin test pairs), no
+  // cap at all -> 6 start calls, empty skipped.
+  const dir2 = freshDir("w071-b3-nocap");
+  writeManifest(dir2, "sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: aaa-ctrl, harness: codex } ]\nprobationes: []");
+  const { profile: profile3, calls: calls3 } = makeStub("codex", { turnFor: () => okTurn("OK") });
+  const uncapped = await probeBattery({ studio: dir2, now: NOW, only: pairs, harnesses: { codex: profile3 }, listModels: async () => [], versions: async () => ({}) });
+  check(3, "w071: positive control — no cap yields 6 start calls and an empty skipped", calls3.start.length === 6 && uncapped.skipped.length === 0, String(calls3.start.length));
+}
+
 if (only === undefined) {
   console.log(`\n${failed === 0 ? "ALL PASS" : `${failed} FAILURE(S)`}`);
 }
