@@ -1,0 +1,125 @@
+# W-072 — censor review, round 2
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-25T15:55:02Z
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-072 · branch: opus/W-072 · HEAD: 80e1c80
+# VERDICT: PASS (round 2) — 0 blocking, 1 new advisory; round 1's B1 and B2 both closed
+# Round 1: studio/ci/W-072-review-1.log (FAIL, 2 blocking, 6 advisory)
+
+== 0. scope of the fix round ==
+git diff --name-only d50b1c7..HEAD:
+  scripts/no-vendor.mjs              (+9/-3 — the main guard, one line + its comment)
+  scripts/no-vendor.test.mjs         (+121 — five new assertions)
+  studio/ci/W-072-{lint,tests,types}-9e5a4074.log, studio/opera/W-072.md   (bookkeeping)
+Both owned files, nothing else. packages/commands/src/verify.ts is NOT in the diff — the builder's claim that it
+was mutated transiently in scratch only is borne out. git status --porcelain clean at review start and end.
+
+== 1. round-1 evidence untouched ==
+git diff --stat d50b1c7..HEAD -- studio/ci/reds/ : EMPTY.
+All eleven reds byte-identical to Terra's round-1 census (sha256 prefixes, 01..11):
+  f83d5bbf 2382c76e dab146e3 ae067744 7cb2980a 88a1befe 4fa46606 4934c099 07e4d2bd ee39f05d c9539a3e
+Pin 10(c)'s eleven-site census re-run: identical set, identical classification, only no-vendor.test.mjs's own
+three fixture line numbers moved (529/817/818 was 476/764/765). Nothing I passed in round 1 was disturbed.
+
+== 2. tree stamps, recomputed ==
+sourceTreeHash(repo, ["studio",".bisellium","examples/"], ref):
+  d50b1c7 (my round-1 verdict) -> d7ad132f...  (unchanged from round 1 — the verdict log changed no source)
+  3a9191f (the fix)            -> 9e5a4074eeefdbe52f077321a57ba4e70700ee84
+  HEAD                         -> 9e5a4074eeefdbe52f077321a57ba4e70700ee84
+  isDirtyOutside(HEAD) -> false
+The three round-2 probationes certify tree:9e5a4074 = HEAD's source tree. Honest.
+
+== 3. gates, re-run by the censor ==
+npm test             -> exit 0 x3 consecutive (5228 lines each; 0 FAIL, 0 "killed by signal", 0 violations)
+npm run -s typecheck -> exit 0, no output
+npm run -s lint      -> 0 errors, 2 warnings, both still the pre-existing ones
+npm run -s format:check -> All matched files use Prettier code style!
+bisellium ci         -> PASS — 0 blocking, 27 advisory (acceptance 6 re-closed on the round-2 tree)
+
+== 4. B1 — CLOSED. Each of the three instances re-mutated by me, with my own round-1 mutants ==
+The five new assertions all ran and passed on a clean tree (from qa-r2a.log):
+  PASS [3] test/bin/claude is present and executable but never fires (writes nothing): exits non-zero        1
+  PASS [3] ... : the inner command never ran
+  PASS [3] a checkout path with a space still runs main(): the suite executes and the runner exits 0         {"status":0,"markerExists":true}
+  PASS [4] selfTest() reports false for a shim that never writes a line                                      false
+  PASS [11] verify's own excludeDirs covers .bisellium: ...never trips the dirty-tree refusal                {"exitCode":0,"stderr":""}
+The last detail string matters: exitCode 0 / empty stderr proves the tsx child genuinely ran, not the
+"<child did not run>" fallback.
+
+B1(i) M3  — runOnce's `if (!selfTest(...))` gate deleted     -> KILLED, 2 FAIL, behaviour 3's new row
+B1(ii) M12 — selfTest's `readLogLines(...).length > 0` -> true -> KILLED, 3 FAIL: behaviour 3's row AND,
+              independently, behaviour 4's unit line (FAIL [4] ... true). Two independent killers, as claimed.
+B1(iii) M15 — ".bisellium" removed from verify.ts:155           -> KILLED, behaviour 11's new end-to-end row,
+              which reports {"exitCode":2,...} — the real verify refusing the tree as dirty.
+All three round-1 survivors are dead. The class is closed at every instance I enumerated.
+
+== 5. B2 — CLOSED, and verified out of suite as well as in it ==
+The fix: scripts/no-vendor.mjs:451
+  if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1])) main();
+Both sides are now decoded absolute paths. Correct.
+
+In-suite: reverting the guard to round 1's string compare KILLS the new row with exactly my round-1 measurement —
+  FAIL [3] a checkout path with a space still runs main() ... {"status":0,"markerExists":false}
+Out of suite, my own round-1 fixture rebuilt against the FIXED runner:
+  "<scratch>/space test/"  -> node scripts/no-vendor.mjs -> EXIT 1 (the suite ran and failed)   [round 1: EXIT 0, nothing ran]
+  "<scratch>/hash#dir/"    -> same fixture              -> EXIT 1
+The '#' case is broader than the suite's row covers, and also passes. Fail-open closed.
+
+== 6. mutation battery, round 2 — 16 mutants, 15 killed ==
+script mutate-r2.py (kept, scratchpad); every mutant restored with git checkout; tree clean afterwards.
+Round 1's twelve killers all still kill (no regression): clear-before-lock, release-before-adjudicate, masked
+suite exit, shadow-dir-last PATH, pin (c) neutered, pins not called in preflight, exec-bit check removed,
+adjudication ignoring the snapshot, shim exit 0, shim caller omitted.
+Round 1's three survivors now all die (§4). B2's revert dies (§5).
+One NEW probe of my own on the fix itself:
+  M16 selfTest's TRAILING clearLog deleted -> KILLED, 8 FAIL (incl. [4] "the suite observes an empty log at
+      start" -> NONEMPTY). I suspected behaviour 4's insertion had made that assertion vacuous; measured, it has
+      not — the property is pinned through runOnce. No finding.
+SURVIVED (1): see A7.
+
+=================================== FINDINGS ===================================
+
+A7 (advisory, NEW) — behaviour 11's new verify row has no test-validity guard: it is vacuously true when its own
+  fixture breaks. Measured: repointing the child at "verify-NOPE.ts" (M17) leaves the whole file GREEN, because the
+  block's `catch` assigns `out = { exitCode: -1, stderr: String(err) }` and the predicate
+  `!out.stderr.includes("working tree is dirty")` accepts that. A rename or move of verify.ts, or any tsx failure,
+  silently turns the row into a no-op and M15 becomes re-survivable with nothing going red.
+  ONE INSTANCE. Searched: every negation- or absence-shaped `check()` predicate in scripts/no-vendor.test.mjs
+  (13 of them: :131, :223, :286, :292, :350, :607, :693, :720, :727, :740, :774, :801, :943). This is the only one
+  whose enclosing block swallows its own fixture's failure into a value the predicate accepts. The others are each
+  either self-validating (a throw propagates) or paired in-block with a positive assertion that fails on a broken
+  fixture — behaviour 7's sibling tsx child has the identical catch shape but consults the parsed value
+  (`harnessEnvOut.PATH === "x"`), so a broken child fails it; and behaviour 9 row 5 carries an explicit
+  "the throw path actually threw (test validity)" check for exactly this reason.
+  NOT blocking: the mechanism IS pinned now and the assertion demonstrably kills M15 today; what is missing is the
+  guard that keeps the pin honest, one layer out. Remedy is one clause the row's own detail string already prints:
+  `out.exitCode === 0 && !out.stderr.includes("working tree is dirty")`. The house has a precedent for it two
+  behaviours up, which is why it belongs on the record rather than in silence.
+
+Carried from round 1, unchanged and still advisory (none was a condition of passing):
+  A1 pin 10(c) condition (b) is a source-text match on the identifier SHADOW_DIR_REL, not on the directory's value
+     (no-vendor.mjs:315); 1 live consumer (harness-env.test.ts:120) + 1 fixture. Rule candidate.
+  A2 all eleven reds carry one identical assertion; spec-prescribed, but "behaviour 6 reds on its own logic" is
+     not honoured. For retro.
+  A3 the spec probatio is signed `sella: builder-d`, against the QA lex's architect-signs rule; officina-wide
+     class of five. Nothing enforces seat authority on a spec gate. Rule candidate.
+  A4 acceptance 5 kept no by-hand log; satisfied better by round 1 §3's real catch.
+  A5 preflight step 3's clearLog is redundant with selfTest's own (now measured harmless — §6, M16).
+  A6 behaviour 1's "spawns nothing" is a source scan, not an observation. Deliberate substitution.
+
+=================================== RULINGS ====================================
+
+R7 — B1 is closed at all three instances, each re-killed by me with the same mutant that survived round 1, and
+     M12 by two independent assertions as the builder claimed. Round 1's finding was a class of three and the fix
+     was dispatched against all three at once; no serial rediscovery.
+R8 — B2 is closed. Verified twice over: in-suite by reverting the guard, and out of suite on a rebuilt fixture at
+     both a space path and a '#' path. The fix is the one-line form I named.
+R9 — the fix round touched only the two owned files. verify.ts is unmodified on the tree; the transient mutation
+     the builder used for its survive->die transcript is absent from the diff, which is the right way to have done it.
+R10 — round 1's twelve killing mutants all still kill. Nothing was traded away to close B1 and B2. My one suspicion
+     that the behaviour 4 insertion had made a neighbouring assertion vacuous was measured and refuted (M16).
+R11 — the reds, the pin census, the tree stamps and every gate I passed in round 1 are untouched or re-confirmed.
+
+VERDICT: PASS (round 2). Both blocking findings closed at every enumerated instance and independently re-measured.
+One new advisory (A7), a test-validity clause on a newly added row, with a named one-clause remedy and a house
+precedent two behaviours above it — worth the record, not worth a third round. Six carried advisories, two of them
+rule candidates for the retro (A1, A3). The opus ships having already paid for itself: it caught a real
+five-spawn vendor-contact defect that the existing suite reported green.
