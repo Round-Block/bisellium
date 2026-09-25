@@ -1,0 +1,26 @@
+# behaviour: 5
+# command: node --import tsx packages/commands/src/run.test.ts
+# exit: 1
+# at: 2026-09-25T18:29:39.627Z
+# sella: builder-a
+# tree: dirty:88d53e0b31e848632b3cded2de0af47326c88589
+
+bisellium run: --opus and --base are mutually exclusive
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+PASS  --opus and --base together exits 2                           2
+worktree kept at /tmp/claude-1000/run-opus-repo-P5xjq7/.bisellium/worktrees/builder-1-1 (--keep)
+PASS  run --opus: exits 0                                          0
+PASS  worktree forked from the opus branch, not HEAD               /tmp/claude-1000/run-opus-repo-P5xjq7/.bisellium/worktrees/builder-1-1
+PASS  HEAD (master) never got the opus commit                      /tmp/claude-1000/run-opus-repo-P5xjq7
+sella "builder-a" is retired — dispatch "builder" instead
+PASS  run: an exact retired sella exits 2                          2
+sella "builder-a" is retired — dispatch "builder" instead
+PASS  run: an instance of a retired sella also exits 2             2
+PASS  run: the live template itself is unaffected                  0
+PASS  run: mints the instance — exits 0                            0
+FAIL  run: the child sees BISELLIUM_SELLA=builder.W-100            builder
+FAIL  run: the receipt lives under receipts/builder.W-100/, not receipts/builder/ ["builder"]
+FAIL  run: a bare builder template with no --opus cannot be minted — refused 0
+PASS  run: a supplied instance whose suffix matches --opus succeeds 0
+FAIL  run: a supplied instance disagreeing with --opus exits 2 before dispatch 0
