@@ -1,0 +1,193 @@
+# W-072 — censor review, round 1
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-25T15:17:54Z
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-072 · branch: opus/W-072 · HEAD: 77189b1
+# VERDICT: FAIL (round 1) — 2 blocking, 6 advisory
+# Pre-review: Terra's mechanical census (read, not trusted; every claim below re-measured).
+
+== 0. preconditions ==
+git status --porcelain: clean at review start and at review end (every mutation restored via git checkout)
+spec of record read in full: studio/briefs/W-072.md rev 5 (1073 lines), 11 behaviours
+implementation read in full: scripts/no-vendor.mjs (447), scripts/no-vendor.test.mjs (839), test/bin/{claude,codex}
+test/bin/claude and test/bin/codex: git mode 100755 both, same blob 32dc3214 (byte-identical, exec bit committed)
+
+== 1. gates, re-run by the censor ==
+npm test            -> exit 0, 6 consecutive runs (see §5): 0 FAIL, 0 signal kills, 0 violations
+npm run -s typecheck -> exit 0, no output
+npm run -s lint      -> 0 errors, 2 warnings, both pre-existing (tick.test.ts:298 'opts' unused is on origin/master too)
+npm run -s format:check -> All matched files use Prettier code style!
+bisellium ci         -> PASS — 0 blocking, 27 advisory (acceptance 6, which carried no prior evidence)
+
+== 2. tree stamps, recomputed independently ==
+sourceTreeHash(repo, ["studio",".bisellium","examples/"], ref) — verify.ts:153's exact exclusion set:
+  5913c68 (master, pre-W-072 source) -> deff847c9d17ca8d3678ce26db133c7169f117f1
+  fd05720 (the implementation)       -> a4369b7dfa49ee5e969262e7e231632f1c879084
+  442d607 (= HEAD)                   -> d7ad132f463599b6936c169dbe3385aeb87ddaa4
+  isDirtyOutside(HEAD) -> false
+All 11 reds carry "tree: dirty:deff847c..." = master's source tree with the (uncommitted) test file present.
+Reds at 12:15:55-12:15:58Z; fd05720 at 12:47:46Z. Reds precede the implementation by 32 minutes. ORDERING HONEST.
+The two probationes sets name a4369b7d (fd05720) and d7ad132f (HEAD). Certificates name the source tree. CLEAN.
+
+== 3. the sentinel's real catch — reproduced pre-fix ==
+Reverted packages/cli/src/tick.test.ts's one-line `talk: fakeTalk` injection (9 lines incl. comment), ran real npm test:
+  RUNNER EXIT=1
+  vendor-sentinel: 5 vendor-spend violation(s) detected:
+    {"bin":"claude","argv":["--version"],"cwd":".../.worktrees/W-072","caller":"node --import tsx packages/cli/src/tick.test.ts ."}   x5
+  suite's own assertions in that state: 0 FAIL — the shim's exit 17 was SWALLOWED, exactly as
+  createListingCache/harnessVersions swallow. Only the file caught it.
+=> behaviour 8's design premise (a file, not an exit code) is now proven on a LIVE site, not a fixture.
+=> the fix is the injection acceptance 2 anticipated ("an injection one-liner of the opts.listModels ?? codexListModels shape").
+=> exposure is WORSE than the builder's comment states: commands/src/talk.ts:350 gates on available(),
+   then :380 calls profile.start(). On a machine with an authenticated claude those five --version probes
+   become five METERED turns per npm test, not five $0 probes. Credit to the builder for finding it; the
+   comment understates it.
+Tree restored; git status clean.
+
+== 4. mutation battery — 15 mutants, 12 killed, 3 survived ==
+script: mutate.py / mutate2.py / mutate3.py (kept, scratchpad), each mutant restored with git checkout.
+KILLED:
+  clearLog moved before acquireLock (rev 2's ordering)  -> [9] row 2 "A's line survives B's refused attempt"
+  releaseLock before the snapshot (rev 2's 2nd window)  -> [9] row 3 "lock never free before A's result", attempts=161
+  static pins not called in preflight                   -> [3] "a static scan fails" x2
+  shim executability check removed                      -> [3] claude-missing + codex-non-exec x4
+  adjudication ignores the snapshot                     -> [6] two-line log + [8] swallowed failure
+  suite exit code masked (-> 0)                          -> [6] "suite exits 1 -> runner exits 1, unmasked"
+  shadow dir moved to the END of PATH                    -> [5] PATH[0] + inherited-follows x2
+  pin (c) accepts everything                             -> [10] pin (c) positive control
+  shim exits 0 instead of 17                             -> [1] + [2] non-zero exit
+  shim omits the caller field                            -> [2] caller-names-this-file + caller-unknown
+SURVIVED (see B1):
+  M3  runOnce's `if (!selfTest(...)) return {exitCode:1}` deleted            -> 0 FAIL
+  M12 selfTest's own observation `readLogLines(...).length > 0` -> `true`    -> 0 FAIL
+  M15 ".bisellium" removed from verify.ts:155's excludeDirs                   -> 0 FAIL
+
+== 5. the flake, and commit 442d607 ==
+6 consecutive npm test runs in this worktree: all exit 0, 5224 lines each, 0 FAIL, 0 "killed by signal", 0 violations.
+plus bisellium ci PASS. The reported ~1-in-7 did NOT reproduce.
+0/6 does not refute a 1-in-7 rate (95% upper bound on p from 0/6 is ~0.39). Recorded as UNREFUTED, not disproven.
+442d607's signal surfacing: `result.status ?? 1` is UNCHANGED; the commit only prints the signal name first.
+It adds information and alters no verdict. NOT a masking change.
+442d607's 2s->8s widening of behaviour 9 row 3: HONEST HEADROOM, and strictly STRENGTHENING. racedEarly is only
+evaluated while A is alive, so a SHORTER deadline makes the assertion vacuous sooner; a longer one covers more of
+A's lifetime. Proven live: mutation M2 (release-before-adjudicate) is killed under the 8s budget with attempts=161.
+The flushDeadline widening removes a timing assumption on a file that must appear; a real absence still fails the row.
+
+== 6. pin 10(c) — all eleven sites enumerated and classified ==
+census script over every *.test.ts / *.test.mjs under packages, apps, adapters, scripts, test:
+  (b) shadow-token      harness-env.test.ts:120
+  (c) machine-checked   provider-portability.test.ts:698,701,728,731 ("/nonexistent-w046-bin")
+  (a) inherited-token   talk-boundary.test.ts:147; harness.test.ts:105,108; hooks.test.ts:259
+  (c) machine-checked   shim.test.ts:145,159 ("/usr/bin")
+  + 3 of the opus's own fixtures in no-vendor.test.mjs
+Exactly the brief's eleven-site table, classified exactly as the brief classifies them. Pin (c) SEES ALL ELEVEN.
+No live site abuses condition (a)'s loose `raw.includes("process.env")` token: all four genuinely inherit PATH.
+
+== 7. TS7016, verified by measurement (not accepted on assertion) ==
+tsc against the real tsconfig.base.json (strict, NodeNext) on a scratch .ts importing scripts/no-vendor.mjs:
+  error TS7016: Could not find a declaration file for module '.../scripts/no-vendor.mjs'.
+    '.../scripts/no-vendor.mjs' implicitly has an 'any' type.
+The builder's disclosed justification for the local literal is TRUE. Its real cost is A1, not the literal.
+
+== 8. the main guard — measured fail-open (B2) ==
+Fixture: scripts/no-vendor.mjs + test/bin/{claude,codex} + a package.json whose test:suite exits 1.
+  from "<scratch>/space test/"  -> node scripts/no-vendor.mjs -> EXIT 0, nothing ran (no preflight, no self-test,
+                                    no suite, no adjudication)
+  from "<scratch>/nospace/"     -> same fixture              -> EXIT 1, suite ran
+Cause: scripts/no-vendor.mjs:446 `if (import.meta.url === \`file://\${process.argv[1]}\`) main();` — argv[1] is a raw
+path, import.meta.url percent-encodes. Any checkout path with a space, '#', '?' or non-ASCII makes npm test exit 0
+with the guard entirely absent and no output.
+
+=================================== FINDINGS ===================================
+
+B1 (BLOCKING) — the activation self-test, land 8's own proof, is the one mechanism in this opus that no
+  assertion holds. A CLASS OF THREE, all measured above:
+    (i)   scripts/no-vendor.mjs:390 — the `if (!selfTest(shadowDir, logPath))` fail-closed gate can be deleted
+          outright and scripts/no-vendor.test.mjs stays green (M3).
+    (ii)  scripts/no-vendor.mjs:191 — selfTest's own observation can be replaced by `const fired = true` and the
+          suite stays green (M12). Behaviour 4 asserts only that selfTest returns true when the shim DOES fire.
+    (iii) behaviour 11's second clause — "`.bisellium` is in the exclusion set `verify` computes" — has no
+          assertion: removing ".bisellium" from verify.ts:155 leaves no-vendor.test.mjs green (M15), and no test
+          in the repo asserts it (grep '\.bisellium' over every *.test.ts/*.test.mjs: branch.test.ts and
+          check.test.ts PASS the string into their own helpers, they do not assert verify computes it).
+  Searched: every exported function in scripts/no-vendor.mjs mutated individually, plus both shims (13 mutants),
+  plus the cross-file clause (1). No fourth instance: bisdir preflight, lock acquire/refuse/release, shim
+  existence + exec bit, all three static pins, adjudication, PATH order, exit-code passthrough, shim exit code
+  and shim caller attribution each have a killing assertion.
+  Why blocking and not advisory: the brief's own behaviour 4 states "a shim that silently fails to fire makes the
+  runner exit before spending anything", and that sentence is the entire difference between this opus and rev 1's
+  deleted fail-open. It is a claim with no assertion behind it — the class W-046's lesson names. The remedy is one
+  row in behaviour 3's existing five-row table (a shim present and executable that writes nothing: assert non-zero
+  + marker absent) plus one line in behaviour 4, and one assertion for (iii).
+
+B2 (BLOCKING) — the runner's main guard fails OPEN on a percent-encoding checkout path: npm test exits 0 having
+  run nothing and installed no guard (§8, measured both directions). This is the exact degraded mode land 8
+  deleted, and worse than rev 1's, because rev 1's at least announced itself. The brief's own standard applies
+  ("'unreachable today' is load-bearing luck", land 4) — the remedy is one line:
+  `fileURLToPath(import.meta.url) === resolve(process.argv[1])`.
+  ONE INSTANCE IN THIS OPUS. The idiom is house-wide — changelog.mjs:54, usage-from-workflow.mjs:187,
+  backlog-page.mjs:276, sweep-traditio-stage.mjs:95 — but in those four a silent no-op is cosmetic; here it is
+  the test gate. Searched: grep 'import.meta.url ===|argv\[1\]' over scripts/*.mjs and packages/cli/src/main.ts.
+  The other four are a successor's, not this opus's.
+
+A1 (advisory) — pin 10(c)'s condition (b) is a source-TEXT match on the identifier `SHADOW_DIR_REL`
+  (no-vendor.mjs:315), not on the shadow directory's value. Two consequences, one live: harness-env.test.ts:120's
+  synthetic PATH satisfies the pin because the eight-character token appears in its source, and its local literal
+  (line 38, TS7016-justified and verified) is not tied to no-vendor.mjs's export — move the shim dir and the pin
+  stays green while the fixture's shadow silently disappears, restoring the very "safe by aim, not by
+  construction" hazard finding 11 removed. The opus's own test demonstrates the bypass as a NEGATIVE control:
+  no-vendor.test.mjs:767 `PATH: \`\${x}:SHADOW_DIR_REL\`` is accepted, and that is the bare word, not a directory.
+  Sites: 1 live consumer + 1 fixture (grep 'SHADOW_DIR_REL', whole tree). Rule candidate, not this round's block.
+
+A2 (advisory) — all eleven reds carry one and the same assertion ("mod=false claude=false codex=false"). Distinct
+  bytes only because the `[n]` differs. They prove "nothing is built yet", not eleven behaviours. The brief
+  PRESCRIBES this shape, so it is not the builder's defect — but the brief's own line "Behaviour 6 reds on its own
+  logic as described" is not honoured: 06.log is the same requireBuilt failure as the other ten. For retro.
+
+A3 (advisory) — the spec probatio is signed `sella: builder-d`, the implementer, against the QA lex's "specs are
+  signed by the architect" (P-008 option b). Class across the officina: builder-a, builder-b, builder-c, builder-d,
+  builder-sol (1 each), vs 20 architect, 8 guest, 2 qa-lead. Pre-existing, W-072 is the fifth instance, and the
+  substance IS architect-signed (the brief, five revisions, Sol-reviewed). Bookkeeping only. Rule candidate:
+  nothing enforces which seat may sign a spec gate.
+
+A4 (advisory) — acceptance 5 ("run it by hand with the fake vendor name, keep the output") produced no kept log.
+  Satisfied, and better, by §3: the real npm test failed closed on a real vendor-contact defect on this tree.
+
+A5 (advisory) — the preflight's step-3 `clearLog` is redundant: deleting it leaves the suite green because
+  selfTest clears the log twice itself (no-vendor.mjs:189,192). Behaviour 6's stale-log row therefore pins the
+  PROPERTY but not the step the brief names. Harmless; noted so a future reader does not read the row as
+  covering step 3.
+
+A6 (advisory) — behaviour 1's "the shim spawns nothing itself (assert no child process)" is delivered as a source
+  scan (`!/child_process/.test(src)`) rather than an observation. Arguably stronger than the brief asked; recorded
+  as a deliberate substitution, not a gap.
+
+=================================== RULINGS ====================================
+
+R1 (disclosed deviation — the literal vs the import): ACCEPTED. TS7016 verified by measurement (§7), not taken
+   on the builder's word. The deviation is disclosed at the line with its reason. Its residual cost is A1.
+
+R2 (disclosed deviation — tick.test.ts, one line outside the owned files): ACCEPTED, and CREDITED. It is the
+   exception acceptance 2 anticipated in terms, the smallest possible fix, disclosed at the line, and §3 proves
+   both that the sentinel caught it and that nothing else could have.
+
+R3 (the 1-in-7 flake, left unfixed): ACCEPTED as out of scope. It is upstream of scripts/no-vendor.test.mjs by
+   the builder's diagnosis and by everything I measured; it did not reproduce in 6 runs + bisellium ci; and the
+   builder did not mask it — `result.status ?? 1` is unchanged and the signal is now named. Disclosure was honest.
+   It remains UNREFUTED (0/6 is compatible with p up to ~0.39); it is a successor's target, not this opus's.
+
+R4 (the 2s->8s widening): HONEST HEADROOM, and strictly strengthening — not flake-masking. Reasoning and the
+   live proof are in §5. A shorter deadline is the weaker assertion here, not the stronger one.
+
+R5 (the retitle amendment's provenance): D-021-CLEAN. D-021 assigns ownership by REF, not by sella — "while
+   opus/<id> exists, only a checkout on opus/<id> writes the record" — and the amendment landed in e52f64a on
+   opus/W-072. `--sella architect` is an unverified declaration, but it is corroborated by an independent artifact
+   on the same tree: the brief's Sequence prescribes that exact invocation with that exact --reason, and the brief
+   is the architect's signed document (rev 4, finding 15). One amendments entry, one field, superseded title intact.
+
+R6 (acceptance 4's promise, held against the mechanism as the brief demands): the mechanism DELIVERS it. §3 shows
+   the motivating shape — a bare vendor name resolved against the inherited PATH — caught, fail-closed, and
+   attributed to the offending test file by name. The narrowing is a boundary, not an evasion. B1 and B2 do not
+   touch the promise's scope; they are holes in what KEEPS it true.
+
+VERDICT: FAIL (round 1). Two blocking, both one-line-to-one-row remedies, both on the same theme the brief spent
+five revisions on: the fail-closed guarantee's own guards. Everything else measured clean, and the opus has
+already earned its keep — it found a real five-spawn vendor-contact defect that the existing suite reported green.

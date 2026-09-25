@@ -26,8 +26,16 @@ import { claudeCodeProfile, codexProfile } from "@bisellium/shim";
 import { readManifest } from "@bisellium/adapter-native";
 import { runTalk } from "./talk.js";
 import { harnessForSella, runTick } from "./tick.js";
-
 const repo = resolve(process.argv[2] ?? ".");
+// W-072: this file's own synthetic PATH (below) is one of the eleven sites
+// pin 10(c) enumerates — a fully synthetic PATH excluding the shadow dir.
+// Appending it satisfies the pin's condition (b) without weakening what
+// this file actually asserts (PATH copied verbatim, whatever its value).
+// A literal, not an import of scripts/no-vendor.mjs's own SHADOW_DIR_REL:
+// that file is plain JS with no declaration, and this project's tsc strict
+// settings reject an untyped import (TS7016) — the value is stable (it's
+// the shim's own checked-in location) and the pin's own tests pin it.
+const SHADOW_DIR_REL = "test/bin";
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-23T09:00:00Z");
 
@@ -109,7 +117,7 @@ const sentinel = (name: string): string => `SYNTH-${name}-VALUE`;
 function buildSynth(binDir: string, homeDir: string, tmpDir: string): NodeJS.ProcessEnv {
   const proxyValue = "http://proxy.w049.invalid:3128";
   const synth: NodeJS.ProcessEnv = {
-    PATH: `${binDir}:${dirname(process.execPath)}:/usr/bin:/bin`,
+    PATH: `${binDir}:${dirname(process.execPath)}:/usr/bin:/bin:${join(repo, SHADOW_DIR_REL)}`,
     HOME: homeDir,
     SHELL: "/bin/sh",
     TMPDIR: tmpDir,
