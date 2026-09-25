@@ -1,0 +1,12 @@
+# W-084 citation census
+briefs: 57
+declaring behaviours: 47
+raw Behaviour-N matches: 85
+live matches: 75
+excluded fenced: 0
+excluded inline: 9
+excluded quoted: 1
+out of range: 0
+offenders: none
+inline prose deletion before: 20.833% (208622/1001402 chars)
+inline prose deletion after: 17.900% (179247/1001402 chars)

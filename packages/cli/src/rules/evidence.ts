@@ -13,9 +13,9 @@
  * `bisellium red`'s job alone.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { readFront } from "@bisellium/adapter-native";
+import { listMd, readFront } from "@bisellium/adapter-native";
 import type { Finding, RuleOpts } from "../check.js";
 
 type Dict = Record<string, unknown>;
@@ -36,10 +36,7 @@ function safeFront(path: string): Dict | undefined {
 
 function safeList(dir: string): string[] {
   try {
-    return readdirSync(dir)
-      .filter((name) => name.endsWith(".md"))
-      .sort()
-      .map((name) => join(dir, name));
+    return listMd(dir);
   } catch {
     return [];
   }
@@ -292,8 +289,8 @@ function citationProse(briefText: string): string {
     if (!inFence) prose.push(line);
   }
   return prose
+    .map((line) => line.replace(/(`+)[^`\n]*?\1/g, ""))
     .join("\n")
-    .replace(/(`+)[\s\S]*?\1/g, "")
     .replace(/"(?:\\.|[^"\\])*"/g, "");
 }
 

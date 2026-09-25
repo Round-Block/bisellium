@@ -71,10 +71,9 @@ const citationFindings = (root: string) =>
   check(6, "empty body not flagged", isModuleLoadFailure("") === false, String(isModuleLoadFailure("")));
 }
 
-// W-084 uses the same 1-3 selector values as the legacy checks above: a red
-// command gets its one W-084 behaviour plus a harmless legacy control, while
-// the unfiltered suite still runs everything.
-const w084Only = only !== undefined && only >= 1 && only <= 3 ? only : undefined;
+// W-084 occupies selector rows 7-9 so a focused command does not also run a
+// legacy W-022 row. The unfiltered suite still runs everything.
+const w084Only = only !== undefined && only >= 7 && only <= 9 ? only : undefined;
 function checkW084(behaviour: number, name: string, ok: boolean, detail = "") {
   if (w084Only !== undefined && w084Only !== behaviour) return;
   if (only !== undefined && w084Only === undefined) return;
@@ -92,7 +91,7 @@ try {
     writeFileSync(join(dir, "briefs", "none.md"), "# No numbered behaviours\n\nBehaviour 1 is prose.\n");
     const findings = citationFindings(dir);
     checkW084(
-      1,
+      7,
       "out-of-range citation blocks once and names both numbers",
       findings.length === 1 &&
         findings[0]!.level === "block" &&
@@ -128,7 +127,8 @@ try {
         ].join("\n"),
       ),
     );
-    mkdirSync(join(dir, "briefs", "unreadable.md"));
+    mkdirSync(join(dir, "briefs", "00-unreadable.md"));
+    writeFileSync(join(dir, "briefs", "later.md"), brief("Behaviour 99 is stale."));
     let findings: ReturnType<typeof citationFindings> = [];
     let threw = false;
     try {
@@ -136,8 +136,16 @@ try {
     } catch {
       threw = true;
     }
-    checkW084(2, "brief.behaviour_citation is registered", RULE_IDS.has("brief.behaviour_citation"));
-    checkW084(2, "seven exclusions are silent and unreadable brief is skipped", !threw && findings.length === 0, JSON.stringify(findings));
+    checkW084(8, "brief.behaviour_citation is registered", RULE_IDS.has("brief.behaviour_citation"));
+    checkW084(
+      8,
+      "seven exclusions are silent and crawl continues after unreadable brief",
+      !threw &&
+        findings.length === 1 &&
+        findings[0]!.where === "briefs/later.md" &&
+        findings[0]!.message.includes("Behaviour 99"),
+      JSON.stringify(findings),
+    );
   }
 
   // W-084 behaviour 3: the positive control is deliberately unreferenced by
@@ -150,7 +158,7 @@ try {
       (f) => f.rule === "brief.behaviour_citation",
     );
     checkW084(
-      3,
+      9,
       "unreferenced brief is reached by checkStudio",
       found.length === 1 && found[0]!.where === "briefs/orphan.md" && found[0]!.message.includes("Behaviour 99"),
       JSON.stringify(found),
@@ -159,7 +167,7 @@ try {
     const real = checkStudio(resolve(process.argv[2] ?? ".", "studio"), new Date("2026-09-25T12:00:00Z")).findings.filter(
       (f) => f.rule === "brief.behaviour_citation",
     );
-    checkW084(3, "real brief corpus has no out-of-range citation", real.length === 0, JSON.stringify(real));
+    checkW084(9, "real brief corpus has no out-of-range citation", real.length === 0, JSON.stringify(real));
   }
 } finally {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
