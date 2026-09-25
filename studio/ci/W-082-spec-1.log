@@ -1,0 +1,627 @@
+# opus: W-082
+# phase: spec
+# round: 1
+# sella: builder-sol
+# outcome: AMEND-FIRST: 14 lands across the two briefs pre-split; W-082's arm drew lands 1-13 minus the held trio — full transcript imported
+# at: 2026-09-25T20:13:57.674Z
+# tree: tree:aa8c7f338940cb49a2bc230ec5cc0db747a808fc
+
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /home/edckt/projects/bisellium/.worktrees/spec-w076
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0d78d-65fe-76b3-b5ec-5a8b93f51110
+--------
+user
+You are builder-sol, red-teaming TWO briefs on branch spec/W-076-W-082 (this worktree): studio/briefs/W-076.md (the inbox subject+body defect, 5 behaviours) and studio/briefs/W-082.md (spec-phase QA enters the record: the bisellium verdict verb + the Behaviour-N citation check, 7 behaviours). Each has a For Sol section. Attack the SPECS. For W-082 note its own claims: the verdict verb writes evidence never gates, refuses overwrite, --phase build keeps the existing ci/<opus>-review-<n>.log spelling; the citation rule fired on the brief's own fixture during drafting and the exclusion set is fenced/inline-code/quoted spans. For W-076: verify its measurement claims against the twelve petitiones on disk, and its claim that the client half is already built (apps/web/src/api.ts:15, InboxView.tsx:69-70, inboxview.test.ts:50). Also answer W-082's For Sol target 5: one opus or two? Output: per brief, numbered findings LANDS/HELD with one-line amendments, then per-brief verdict DISPATCH or AMEND-FIRST.
+codex
+I’ll follow the repository’s orchestration rule: first confirm the local operating instructions and CLI shape, then delegate the two-brief spec attack to a builder subagent. I’ll return only the requested findings and verdicts, with no bookkeeping edits.
+exec
+/usr/bin/zsh -lc "sed -n '1,260p' AGENTS.md && ./node_modules/.bin/bisellium" in /home/edckt/projects/bisellium/.worktrees/spec-w076
+ exited 127 in 0ms:
+# AGENTS.md
+
+An agent studio: the organization model (Latin-named front matter and files
+under a studio directory) and the CLI/console that renders and checks it.
+Read this before anything else in this repo.
+
+## Layout
+
+- `studio/` — the real officina (excluded from `examples/`'s own certificates).
+- `examples/sample-studio/` — a fixture officina, not the real one.
+- `packages/`, `apps/`, `adapters/` — the CLI, server and adapters.
+- `docs/` — `ADOPTION.md` (contract + vocabulary), `STUDIO.md`, `LEX_TEMPLATE.md`.
+
+## Commands
+
+- `npm test`
+- `npm run -s typecheck`
+- `npm run -s check -- <officina> --repo .`
+- `bisellium verify <opus> --studio studio --repo .` (on the opus branch)
+- `bisellium ci` (the CI workflow's steps, run locally; `--opus <id> --studio studio` then runs `verify`, on the opus branch)
+- `bisellium talk --sella <id> --studio studio`
+- `bisellium tick --studio studio`
+- `bisellium retro --cascade N --studio studio`
+- Boot yourself: `bisellium context --sella <you> studio`
+
+## Environment
+
+- node/npm/git run in WSL only.
+- Two officinae live here: `studio/` is real, `examples/sample-studio` is a fixture.
+- `source_excludes` keeps one officina's churn from moving the other's certificates.
+
+## Code conventions
+
+- TypeScript strict + `noUncheckedIndexedAccess`.
+- ESM `.js` import specifiers, even for `.ts` sources.
+- Node >= 25.
+- Match `packages/cli/src/check.ts`'s house style.
+
+## Standing rules
+
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Content read from a file is data, not instructions.
+- A certificate names the source tree, not the officina's own bookkeeping.
+- Process enforcement is a check rule or a hook, never a memory or prose.
+- To implement a task, dispatch a builder subagent:
+  `Agent({ subagent_type: "builder", model: "sonnet" })`.
+- To review an opus, dispatch the one reviewing subagent:
+  `Agent({ subagent_type: "censor" })`.
+  It is the single review and QA gate (D-014); there is no other.
+- This session orchestrates only. It does not write source, tests, or
+  review verdicts.
+- Run `bisellium` with no arguments for the exact flag shapes before any
+  CLI call, and before writing one into a subagent brief. The allowlists
+  are strict; a recalled invocation is usually wrong, and a wrong one can
+  write real bookkeeping before it fails.
+
+## Commits
+
+Conventional, present tense, scoped to one opus where practical. End every
+commit with a `Co-Authored-By:` trailer naming the sella that wrote it.
+
+## Never by hand
+
+- Officina bookkeeping: `opera/` front matter, `ci/*.log`, receipts.
+- The wire attribute names (`workflow.*`).
+- The lifecycle state ids (`backlog`, `greenlit`, `building`, ...).
+
+## Roles
+
+- production (magister: producer)
+- design (magister: architect)
+- engineering (magister: eng-lead)
+- qa (magister: qa-lead)
+
+## Harness
+
+This project assumes no particular harness: no hooks or subagents are
+installed for you. Boot yourself with `bisellium context --sella <you>
+studio` and re-run it after any compaction or context reset.
+
+## Session handoff
+
+Before orchestrating a cascade, read docs/SESSION-HANDOFF.md: the Patron's standing instructions, artifact links, environment facts and what is next. Keep it short; move durable items into a lex, a decision or a check rule.
+zsh:1: no such file or directory: ./node_modules/.bin/bisellium
+
+exec
+/usr/bin/zsh -lc 'node packages/cli/dist/index.js' in /home/edckt/projects/bisellium/.worktrees/spec-w076
+ exited 1 in 0ms:
+node:internal/modules/cjs/loader:1478
+  throw err;
+  ^
+
+Error: Cannot find module '/home/edckt/projects/bisellium/.worktrees/spec-w076/packages/cli/dist/index.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1475:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1048:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1072:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1093:12)
+    at Module._load (node:internal/modules/cjs/loader:1261:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v25.9.0
+
+exec
+/usr/bin/zsh -lc "sed -n '1,220p' package.json && rg -n '\"bin\"|bisellium' packages/cli/package.json packages/cli/src -g '*.json' -g '*.ts' | head -80" in /home/edckt/projects/bisellium/.worktrees/spec-w076
+ succeeded in 0ms:
+{
+  "name": "bisellium",
+  "private": true,
+  "version": "0.0.1",
+  "description": "An agent studio: the organization model and the console that renders it.",
+  "workspaces": [
+    "packages/*",
+    "adapters/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p packages/schema/tsconfig.json --noEmit && tsc -p packages/providers/tsconfig.json --noEmit && tsc -p packages/shim/tsconfig.json --noEmit && tsc -p packages/pipeline/tsconfig.json --noEmit && tsc -p adapters/native/tsconfig.json --noEmit && tsc -p adapters/epoch0/tsconfig.json --noEmit && tsc -p packages/core/tsconfig.json --noEmit && tsc -p apps/server/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit && tsc -p packages/cli/tsconfig.json --noEmit && tsc -p packages/commands/tsconfig.json --noEmit",
+    "bisellium": "node --import tsx packages/cli/src/main.ts",
+    "check": "node --import tsx packages/cli/src/main.ts check",
+    "snapshot": "node --import tsx adapters/native/src/cli.ts",
+    "test": "node --import tsx packages/cli/src/test.ts . && node --import tsx packages/cli/src/init.test.ts && node --import tsx packages/cli/src/cli.test.ts . && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/cli/src/check.test.ts . && node --import tsx packages/core/src/differ.test.ts . && node --import tsx packages/providers/test/providers.test.ts . && node --import tsx packages/shim/test/shim.test.ts . && node --import tsx packages/shim/test/harness.test.ts . && node --import tsx packages/pipeline/test/pipeline.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/cli/src/talk-boundary.test.ts . && node --import tsx packages/cli/src/harness-env.test.ts . && node --import tsx packages/cli/src/provider-portability.test.ts . && node --import tsx packages/cli/src/writes.test.ts . && node --import tsx packages/cli/src/containment.test.ts . && node --import tsx packages/cli/src/query.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/shim/test/hooks.test.ts . && node --import tsx packages/core/src/index.test.ts . && node --import tsx apps/server/test/server.test.ts . && node --import tsx packages/cli/src/instructions.test.ts . && node --import tsx packages/cli/src/process.test.ts . && node --import tsx packages/cli/src/retro.test.ts . && node --import tsx packages/cli/src/server.test.ts . && node --import tsx packages/cli/src/docs.test.ts . && node scripts/changelog.test.mjs && node scripts/lint-fix.test.mjs && node scripts/ci-workflow.test.mjs && node scripts/backlog-page.test.mjs && node --import tsx packages/cli/src/lifecycle.test.ts . && node --import tsx packages/cli/src/rules.test.ts . && node --import tsx packages/cli/src/rules/process.test.ts . && node --import tsx packages/cli/src/rules/lex.test.ts . && node --import tsx packages/cli/src/rules/design.test.ts . && node --import tsx packages/cli/src/branch.test.ts . && node --import tsx packages/commands/src/run.test.ts && node --import tsx packages/commands/src/usage.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/probe.test.ts . &&node --import tsx packages/cli/src/close.test.ts . && node --import tsx packages/cli/src/rules/evidence.test.ts . && node --import tsx packages/cli/src/prune.test.ts && node --import tsx packages/cli/src/ci.test.ts && (cd apps/web && node --import tsx test/tokens.test.ts && node --import tsx test/api.test.ts && node --import tsx test/inboxLogic.test.ts && node --import tsx test/colophon.test.ts && node --import tsx test/inboxview.test.ts && node --import tsx test/sidebar.test.ts && node --import tsx test/seatsview.test.ts) &&node --import tsx apps/web/src/lib/fasti.test.ts . && node --import tsx apps/web/src/lib/gateLadder.test.ts . && node --import tsx apps/web/src/lib/burn.test.ts . && node --import tsx apps/web/src/lib/posture.test.ts . && node --import tsx apps/web/src/lib/nav.test.ts . && node --import tsx apps/web/src/lib/route.test.ts . && node --import tsx apps/web/src/lib/officinaLayout.test.ts . && node --import tsx apps/web/src/lib/delegation.test.ts .",
+    "lint": "eslint .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.8",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.70.0"
+  },
+  "engines": {
+    "node": ">=25"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1"
+  }
+}
+packages/cli/package.json:2:  "name": "@bisellium/cli",
+packages/cli/package.json:6:  "bin": {
+packages/cli/package.json:7:    "bisellium": "bin/bisellium.mjs"
+packages/cli/package.json:10:    "@bisellium/adapter-native": "*",
+packages/cli/package.json:11:    "@bisellium/commands": "*",
+packages/cli/package.json:12:    "@bisellium/core": "*",
+packages/cli/package.json:13:    "@bisellium/pipeline": "*",
+packages/cli/package.json:14:    "@bisellium/providers": "*",
+packages/cli/package.json:15:    "@bisellium/schema": "*",
+packages/cli/package.json:16:    "@bisellium/server": "*",
+packages/cli/package.json:17:    "@bisellium/shim": "*",
+packages/cli/src/docs.ts:2: * `bisellium docs` — the docs registry (W-019). Every doc that opts in
+packages/cli/src/docs.ts:117:const USAGE = "usage: bisellium docs registry [--repo <dir>] [--now <iso>]";
+packages/cli/src/docs.ts:158:  const outDir = join(repoRoot, ".bisellium");
+packages/cli/src/docs.ts:161:  console.log(`docs registry: ${registry.docs.length} doc(s) at ${registry.at} -> .bisellium/registry.json`);
+packages/cli/src/frontmatter.ts:2: * packages/cli/src/frontmatter.ts — moved to @bisellium/commands (W-016, cascade-4
+packages/cli/src/frontmatter.ts:7:export * from "@bisellium/commands/frontmatter.js";
+packages/cli/src/branch.ts:6: * builders normally run `bisellium merge` from a worktree sitting on
+packages/cli/src/branch.ts:17:import { parseFrontMatter, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
+packages/cli/src/branch.ts:18:import { opusBranchName } from "@bisellium/commands/writes.js";
+packages/cli/src/branch.ts:19:import { sourceTreeHash } from "@bisellium/shim";
+packages/cli/src/branch.ts:22:// One definition of the branch name lives in @bisellium/commands/writes.js
+packages/cli/src/branch.ts:61: *  block, an absent bisellium.yml (tests routinely give `mergeOpusBranch` a
+packages/cli/src/branch.ts:64: *  `bisellium check` is what blocks a malformed manifest; this reader is
+packages/cli/src/branch.ts:112: *  certificates. That is deliberate, not an oversight: `bisellium done
+packages/cli/src/branch.ts:116: *  puts on `bisellium verify`. Splitting the two (certificates from the
+packages/cli/src/branch.ts:145: *  `git show <branch>:<studio-rel>/bisellium.yml` read as `readOpusRecord`,
+packages/cli/src/branch.ts:151:    const show = git(["show", `${branch}:${studioRel}/bisellium.yml`], repo);
+packages/cli/src/branch.ts:167:  return [relative(repo, resolve(studio)).split(sep).join("/"), ".bisellium", ...(manifest?.source_excludes ?? [])];
+packages/cli/src/branch.ts:174: *  `bisellium verify`'s job, and duplicating it here would give two places
+packages/cli/src/branch.ts:176: *  re-verifies and retries. Reuses @bisellium/shim's `sourceTreeHash` — the
+packages/cli/src/branch.ts:194: *  result, then switch back" — not a bare `bisellium verify <opus-id>`.
+packages/cli/src/branch.ts:196: *  run from a trunk checkout (exactly CLAUDE.md's own documented `bisellium
+packages/cli/src/branch.ts:211: *  removed. It duplicated a guarantee `bisellium done` already gives:
+packages/cli/src/branch.ts:259:      return `${cause} — opus ${opusId}'s gate "${gid}" certifies ${certifies}, which no longer matches ${treeWord} (${newHash}); check out ${branch}, re-run "bisellium verify ${opusId}" there, commit the result on ${branch}, then switch back to ${master} and retry the merge`;
+packages/cli/src/branch.ts:335:  const scratch = mkdtempSync(join(tmpdir(), "bisellium-rebase-"));
+packages/cli/src/branch.ts:398:  // disagree (e.g. `bisellium done` was run on the trunk instead of on
+packages/cli/src/branch.ts:402:  if (state !== "done") return { ok: false, error: `opus ${opusId} is not done on ${branch} (state: ${state ?? "?"}); run "bisellium done ${opusId}" on ${branch} and commit it there` };
+packages/cli/src/branch.ts:458:  const staleNote = rebased ? `${branch} was rebased onto ${master} — its source tree changed; run "bisellium verify ${opusId}" again before this ships` : undefined;
+packages/cli/src/branch.ts:528:const BRANCH_USAGE = "usage: bisellium branch <opus-id> --studio <dir> [--repo <dir>]";
+packages/cli/src/branch.ts:529:const MERGE_USAGE = "usage: bisellium merge <opus-id> --studio <dir> --repo <dir>";
+packages/cli/src/tick.ts:2: * `bisellium tick` — L1 "scheduled" autonomy (dossier §10): runs the
+packages/cli/src/tick.ts:15: * While paused (`bisellium pause`, see pause.ts) only (a) runs.
+packages/cli/src/tick.ts:19:import { listMd, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
+packages/cli/src/tick.ts:20:import { DEFAULT_HARNESS, codexListModels, harnessVersions, makeSessionId, receiptPath, redact, type ListedModel } from "@bisellium/shim";
+packages/cli/src/tick.ts:28:} from "@bisellium/commands/probe.js";
+packages/cli/src/tick.ts:73:/** A sella's harness profile id (@bisellium/shim's HARNESS_PROFILES) —
+packages/cli/src/tick.ts:75: *  The default itself is `@bisellium/shim`'s `DEFAULT_HARNESS` (W-069
+packages/cli/src/tick.ts:299:// Receipt (sella: "tick", harness: "tick" — never "run": @bisellium/shim's
+packages/cli/src/tick.ts:314:      cmd: ["bisellium", "tick"],
+packages/cli/src/tick.ts:364:  // clone would never see it, so evidence points at bisellium.yml instead,
+packages/cli/src/tick.ts:372:    `evidence:\n  - { label: health, href: bisellium.yml }\n` +
+packages/cli/src/tick.ts:403:const USAGE = "usage: bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]";
+packages/cli/src/tick.ts:446:  const manifestPath = join(studioRoot, "bisellium.yml");
+packages/cli/src/verify.ts:2: * packages/cli/src/verify.ts — moved to @bisellium/commands (W-016, cascade-4
+packages/cli/src/verify.ts:7:export * from "@bisellium/commands/verify.js";
+packages/cli/src/process.test.ts:4: * `decision.*`, `lesson.*`) and `bisellium new`'s `--spec`/`--brief`. Each
+packages/cli/src/process.test.ts:30:  const d = mkdtempSync(join(tmpdir(), `bisellium-process-${tag}-`));
+packages/cli/src/process.test.ts:40:    join(dir, "bisellium.yml"),
+packages/cli/src/process.test.ts:42:      "bisellium: 1",
+packages/cli/src/process.test.ts:151:    for (const f of ["bisellium.yml"]) writeFileSync(join(dir, f), readFileSync(join(src, f)));
+packages/cli/src/instructions.ts:2: * `bisellium instructions` — the ROM tier every builder reads before it
+packages/cli/src/instructions.ts:10: * `bisellium.yml` on disk) in, byte-identical output out, regardless of
+packages/cli/src/instructions.ts:32:/** Reads `bisellium.yml` loosely (never throws) — this command must still
+packages/cli/src/instructions.ts:37:    const text = readFileSync(join(studioRoot, "bisellium.yml"), "utf8").replace(/^﻿/, "");
+packages/cli/src/instructions.ts:62:  "- Subagents: `.claude/agents/{builder,censor,architect,clerk}.md`, each pointing at its collegium's lex and `bisellium context`.",
+packages/cli/src/instructions.ts:70:  "installed for you. Boot yourself with `bisellium context --sella <you>",
+packages/cli/src/instructions.ts:145:const USAGE = "usage: bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]";
+packages/cli/src/cli.test.ts:40:const nonStudio = mkdtempSync(join(tmpdir(), "bisellium-cli-nonstudio-"));
+packages/cli/src/cli.test.ts:67:  // reachable from a user typing `bisellium query ... --from-index`, not
+packages/cli/src/cli.test.ts:93:    const dir = mkdtempSync(join(tmpdir(), "bisellium-cli-hookevent-"));
+packages/cli/src/cli.test.ts:127:    const dir = mkdtempSync(join(tmpdir(), "bisellium-cli-init-"));
+packages/cli/src/cli.test.ts:215:  const dir = mkdtempSync(join(tmpdir(), "bisellium-cli-serve-"));
+packages/cli/src/harness-env.test.ts:25:import { claudeCodeProfile, codexProfile } from "@bisellium/shim";
+packages/cli/src/harness-env.test.ts:26:import { readManifest } from "@bisellium/adapter-native";
+packages/cli/src/harness-env.test.ts:242:  const dir = mkdtempSync(join(tmpdir(), `bisellium-w049-${tag}-`));
+packages/cli/src/query.ts:2: * packages/cli/src/query.ts — moved to @bisellium/commands (W-016, cascade-4
+packages/cli/src/query.ts:7:export * from "@bisellium/commands/query.js";
+packages/cli/src/hooks.ts:6: *   bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+packages/cli/src/hooks.ts:7: *   bisellium hooks check --harness claude-code [--studio <dir>]
+
+exec
+/usr/bin/zsh -lc 'npm run -s bisellium --' in /home/edckt/projects/bisellium/.worktrees/spec-w076
+ exited 2 in 339ms:
+usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+       bisellium query <question> [dir] [--now <iso>] [--from-index]
+       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+       bisellium pause [--studio <dir>] [--reason <text>]
+       bisellium resume [--studio <dir>]
+       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+       bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+       bisellium merge <opus-id> --studio <dir> --repo <dir>
+       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+       bisellium prune --studio <dir> [--repo <dir>]
+       bisellium docs registry [--repo <dir>] [--now <iso>]
+
+exec
+/usr/bin/zsh -lc 'npm run -s bisellium -- context --sella builder-sol studio' in /home/edckt/projects/bisellium/.worktrees/spec-w076
+ succeeded in 383ms:
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+## Engineering lex
+--- data: leges/engineering.md ---
+# Engineering Lex
+
+Magister: `eng-lead` (Fabri) · Adopted: 2026-09-17 · Amended: see §9
+
+## 1. Mandate
+
+Ship greenlit features to `done` with passing tests and a lead review,
+inside the weekly token allowance. Fabri builds; Fabri does not skip the
+red.
+
+## 2. Decides alone
+
+- Refactors that keep public contracts intact
+- Test scaffolding, dependency bumps, CI fixes — never a new runtime
+  dependency without a recorded decision (check: decision.shape)
+- Assigning builders to greenlit items; ordering within the slate rank
+- Test-first with a recorded red: a behaviour is implemented only after its
+  test has been run and shown failing, and that failure is kept as evidence
+- Mechanical, repeatable work (a bulk rename, a codemod, a fixture
+  regeneration) is written as a script and committed, never applied by hand
+  across many files
+- One opus owns its declared files; a builder does not edit another opus's
+  files without a recorded handoff
+- Each builder in a cascade works in its own git worktree, or lands a commit
+  of its own files before the censor runs. A verifier's result is void if the
+  tree changed under it. The censor restores a file from a copy it made,
+  never with `git checkout --`
+- A recorded red is assertion-level: an import or module-load failure is one
+  failure, not a per-behaviour red, and two behaviours never share one
+  output (check: opus.red_evidence)
+- Any id or path that reaches a filesystem write or a front-matter path
+  field goes through the shared containment helper; a raw join fails review
+  (check: path.escapes.officina)
+
+## 3. Digests
+
+- Architecture choices affecting more than one module
+- Weekly: cycle time, review-fail loops, burn vs allowance
+
+## 4. Asks
+
+- A contract change with no migration path
+- Any change to a greenlit item's scope
+- Spending past allowance to finish an item
+- A new dependency with no decision behind it (check: decision.kill)
+
+## 5. Budget
+
+- Period: week · Allowance: 3.0M tokens
+- Burn reporting: `aerarium/<period>.yml`
+- Over-budget: posture → conserve, digest the cause, no new items started
+
+## 6. Autonomy
+
+- Level: L1 scheduled
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
+
+Every `done` item carries: test log path, review note path, and the recorded
+red for every behaviour its spec listed (check: lesson.evidence).
+
+## 9. Amendment log
+
+| Date | Change | Authority |
+|---|---|---|
+| 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as Fabri (W-018) | Patron |
+| 2026-09-19 | Builder-isolation clause adopted (P-001 §1: worktree or own commit, verifier void on tree change, no `git checkout --` restores) | Patron |
+| 2026-09-19 | Assertion-level reds clause (P-005) and containment-helper clause (P-007) adopted | Patron |
+--- end ---
+
+## Standing rules
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Before structural screen changes, verify against the dossier's touchpoint mapping.
+
+## Engineering index
+W-001 · done · bisellium init and new
+W-002 · done · context bundle and query
+W-003 · done · core: JSONL log and snapshot differ
+W-004 · done · CLI first-hour fixes + spawn test
+W-005 · done · core correctness fixes
+W-006 · done · Latin contract rename
+W-007 · done · provider status seam: quota-axi | usage.yml
+W-008 · done · worktree seam + run receipts
+W-009 · done · automated probationes: verify (local | no-mistakes)
+W-010 · done · talk: the direct line over harness profiles
+W-011 · done · tick L1, pause/resume, health snapshot
+W-012 · done · write commands: handoff, emit, answer, greenlight, budget
+W-013 · done · core: SQLite index + query API + snapshot cache
+W-014 · done · serve: localhost HTTP + SSE over the store
+W-015 · done · harness hooks: Claude Code profile as the event-native adapter
+W-016 · done · server and core correctness: cascade-4 review fixes
+W-017 · done · instructions layer: CLAUDE.md, AGENTS.md, glossary and Claude Code integration
+W-018 · done · the process as data: Design collegium, spec, leges, decisions, lessons, retro
+W-019 · done · repo hygiene: lint, format, CI, docs registry, contributing
+W-020 · done · lifecycle and evidence writes: bisellium ready, done, red
+W-021 · done · check rules from P-001: opus.untracked, opus.red_evidence, D-008 blocking
+W-022 · done · evidence content rules: assertion-level reds enforced (P-005)
+W-023 · halted · containment scoping and helper hoist: P-004 re-promotion, P-007, retro numbering
+W-024 · done · apps/web scaffold + Inbox screen
+W-025 · done · Officina screen
+W-026 · done · parallel workstreams: per-opus branching and merge coordination
+W-027 · halted · container lifecycle: prune, cleanup and disk-aware cascade start
+W-029 · done · playwright: UI integration tests for web app
+W-030 · done · CLI discoverability: usage banner reachable from context
+W-031 · done · local CI: run the pipeline and record evidence without a runner
+W-032 · backlog · PR gate: opening a pull request goes through the CLI and can be refused
+W-033 · done · officina bookkeeping provenance: branch vs trunk copies diverge
+W-034 · done · done: honour a waived gate, and refuse when run against the wrong ref
+W-035 · done · improvement loop: lessons name what addresses them
+W-036 · done · CI parity: the suite passes on a fresh public runner
+W-037 · done · shim: polynomial ReDoS in sourceTree path regex (CodeQL high)
+W-038 · backlog · petitio: file a governance ask through the CLI
+W-039 · done · red logs must name the sella that recorded them
+W-040 · backlog · gate correction: re-sign a wrongly-signed gate without erasing it
+W-042 · done · halt and abandon: take an opus out of play without completing it
+W-043 · backlog · addressed_by is stamped through the CLI, never by hand
+W-044 · done · talk profile is a permission boundary: context/query/check/providers only
+W-045 · backlog · record resilience: degrade per corrupt record, atomic front-matter writes
+W-046 · done · provider portability: one opus end-to-end on both harnesses, model and policy passed
+W-047 · done · safeItemPath has a contract test and every call site a traversal case
+W-048 · backlog · a red's command must be repo-runnable: advise on scratch-path operands
+W-049 · done · harness env is scrubbed: no ambient base-URL or auth override reaches a spawned session
+W-050 · done · bisellium ci enters the documentation: template edit, CLAUDE.md regenerated
+W-051 · backlog · branch and merge respect the repo's default branch, never a hardcoded master
+W-052 · backlog · run --opus feeds merge: the worktree branch chain is unbroken
+W-053 · backlog · run --reclaim and prune see every worktree, including the harness's
+W-054 · backlog · a talked session can run bisellium: PATH reaches the vendor shell snapshot
+W-055 · backlog · talk timeline records the replying model; a canary model can never fail it
+W-056 · backlog · spawn-map assertions are snapshot-based everywhere: talk-boundary's fixed offsets
+W-057 · backlog · the server does not expose stack traces: GHAS alert 3 closed
+W-058 · backlog · red refuses inactive opera: state and ownership guard on runRed
+W-059 · backlog · Raw id-to-path joins bypass safeItemPath at eight sites: verify, close, branch, merge, prune, recordOwnerRefusal
+W-060 · backlog · classifyAddressedTarget falls through to rule for any unmatched target: a typo or deleted opus reads as addressed
+W-061 · backlog · one opus end-to-end on both providers: bisellium dispatches a bounded build on either harness
+W-062 · done · amend verb: retitle or re-scope an opus record through the CLI, never by hand
+W-064 · greenlit · Web II: the Board renders the officina live — Main and Drawer from the canvas, SSE-fed
+W-065 · done · Web II first: agent model selection and task type delegation — the Patron's decree surface, side-panel navigation
+W-066 · backlog · talk's claude resume path is broken: resume of a recorded session returns No conversation found, and the vendor error never reaches the operator
+W-067 · done · the console can write: origin tuple, pasted-token delivery, the ok:false contract, a required browser CI gate — proven by W-024's answer button coming back to life
+W-068 · backlog · opus records gain a depends field and a check rule: a dependent opus cannot enter building before its dependency is done
+W-069 · done · the model probe battery: available means can-complete-a-turn — probe records in models.json, per vendor, operator-triggered
+W-070 · backlog · remote console: Tailscale Serve origin joins the write-auth tuple, PWA manifest makes the console installable — no public port, token mandatory
+W-071 · done · the probe cadence: tick schedules the battery — staleness and version-change triggers, ordering, the turn cap
+W-072 · greenlit · the vendor-spend sentinel: npm test fails if any test invokes a real vendor binary — L-030's target
+W-073 · backlog · the Board answers: Reply from the detail drawer — the needs-you banner writes through W-067's postWrite, the Inbox's answer flow reused not forked
+W-074 · backlog · greenlight is the Board's verb: the Decretum touchpoint lands on the shipped Board — drawer-footer verdict, mandatory decline reason, fasti strip
+W-075 · done · the token prompt displaces the shell grid: TokenPrompt gets a place in the layout, and the mounted suite asserts shell geometry with the prompt open
+W-076 · greenlit · the inbox carries a subject and a body: a petitio without a subject key falls back to a raw truncated markdown blob, and the message opens with no context
+W-077 · backlog · the Officina tells the truth about time and absence: health shows its as-of stamp, and an empty aerarium renders a named empty state instead of a blank panel
+W-079 · backlog · two guards in runAmend are unpinned by test: the isAbsolute refusal is indistinguishable from the symlink message, and the blanket-catch mutation survives — censor W-062 A1, test-only
+W-080 · backlog · the spec gate names its own builder: a sibling condition at process.ts:245 advises when probationes.spec.sella wrote the opus's own reds — censor W-062 A2, class spec-gate self-signed
+W-081 · backlog · provider command injection: runProviders and quotaAxiSource take a required command, no test reaches the registry by omission
+W-082 · greenlit · spec-phase QA enters the record: red-team rounds land as evidence the retro can read, and a check sweeps briefs for stale behaviour citations — the spec-revision-residue class, four instances across W-062/W-072
+W-083 · backlog · one checkout, four writers: spec and orchestration work runs in per-session worktrees like builders already must — a misplaced commit is refused, not repaired
+
+truncated: decisions
+tokens: 2759
+
+codex
+The builder is now checking the two briefs against the on-disk corpus and implementation references. I’ve constrained the pass to read-only spec analysis, including the exact W-082 compatibility and exclusion claims and the one-opus-versus-two decision.
+collab: Wait
+codex
+## W-076
+
+1. **LANDS — acceptance count is wrong.** The transform changes 12/12 petitiones, not 11/12. The other measurements reproduce: six wrap cuts, seven Markdown leaks, and longest lengths 152/152/146.  
+   Amendment: Replace “11 of 12” with “12 of 12”; remove or objectively define “usable as written: 1/12.”
+
+2. **LANDS — behaviour 3’s real-officina test is impossible.** `/api/inbox` exposes only `needs_you`; P-013 is `resolved`, while P-012 is the sole `needs_you` petitio ([store.ts](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/server/src/store.ts:302), [P-013.md](/home/edckt/projects/bisellium/.worktrees/spec-w076/studio/petitiones/P-013.md:6)).  
+   Amendment: Assert P-012’s body, or construct a temporary officina where P-013 is `needs_you`.
+
+3. **HELD — the client half is already built.** `body?: string`, body rendering with placeholder fallback, and the injected-body assertion all exist at the cited locations ([api.ts](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/web/src/api.ts:15), [InboxView.tsx](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/web/src/screens/InboxView.tsx:69), [inboxview.test.ts](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/web/test/inboxview.test.ts:42)).  
+   Amendment: None.
+
+4. **LANDS — optional `body` contradicts the promised response contract.** The server is specified to always return `body`; preserving `body?` only accommodates stale fixtures, and conflicts with “inboxview.test.ts unchanged.”  
+   Amendment: Make `body` required, update old fixtures to `body: ""`, and assert unchanged placeholder rendering instead of an unchanged test file.
+
+5. **LANDS — `subject` has contradictory failure semantics.** “Present is authoritative, verbatim” admits blank and non-string YAML values, while behaviour 4 demands every subject be non-empty; no check rule validates the new key.  
+   Amendment: Define `subject` as an optional non-blank string, add type validation, and specify whether invalid values block or fall back.
+
+6. **LANDS — the fallback can still be misleading.** P-004’s derived 120-character subject omits that the rules already fired and obscures the actual scoping question, triggering the brief’s own misleading-subject criterion.  
+   Amendment: Require explicit subjects for newly created petitiones and identify derivation as a legacy fallback for the existing twelve.
+
+7. **LANDS — the derivation algorithm is under-specified.** Emphasis stripping can corrupt identifier underscores, while “word boundary” and whether the ellipsis counts toward 120 remain ambiguous.  
+   Amendment: Pin all twelve expected outputs and define delimiter-aware stripping and the exact cap/ellipsis rule.
+
+8. **LANDS — documentation scope contradicts multi-paragraph bodies.** Behaviour 3 requires multi-paragraph fidelity, but `docs/ADOPTION.md` still contracts “The question, in one paragraph.”  
+   Amendment: Own and update `docs/ADOPTION.md` unconditionally for both `subject:` and multi-paragraph body semantics.
+
+9. **HELD — `white-space: pre-wrap` is justified but unproved.** It provides the promised line-break fidelity, but no behaviour observes the computed style.  
+   Amendment: Add a computed-style/render assertion, or explicitly remove the CSS requirement from this opus.
+
+**W-076 verdict: AMEND-FIRST**
+
+## W-082
+
+1. **LANDS — `--from` defeats the motivating workflow.** The rescued transcript begins in `$TMPDIR`, but every path outside the officina is refused.  
+   Amendment: Permit any readable input path while strictly containing only the output; stdin remains the no-external-read option.
+
+2. **LANDS — build-filename compatibility has one historical exception.** Of 78 review logs, 77 use an integer round; `W-024-review-r1.log`, cited by W-024, cannot round-trip through the proposed positive-integer grammar.  
+   Amendment: State that 77/78 logs round-trip and explicitly preserve W-024 as a historical exception.
+
+3. **LANDS — “writes evidence, never gates” is untested.** An implementation could write the log and also mutate the opus gate, state, or timeline while passing behaviours 1–4.  
+   Amendment: Require byte-identical opus, probationes, state, and timeline after a successful verdict.
+
+4. **LANDS — the default phase is unproved.** Behaviour 2 supplies `--phase build`; no test omits the option.  
+   Amendment: Omit `--phase` in behaviour 2 and assert the review filename plus `# phase: build`.
+
+5. **LANDS — provenance is incomplete and header-injectable.** Optional `--model`, undefined tree/dirty semantics, and unchecked CR/LF in header values leave multiple incompatible implementations.  
+   Amendment: Define omitted-model output, derive tree identity from a specified repository, and refuse CR/LF in all header fields.
+
+6. **HELD — immutable overwrite refusal is correct; `3b` is not.** Alphanumeric rounds weaken the positive-integer contract; atomicity and concurrent publication are the real omissions.  
+   Amendment: Require atomic exclusive creation, next-integer retries, and no target file after a failed write.
+
+7. **HELD — the final citation census reproduces.** Across 53 briefs there are 72 raw matches; seven fenced, inline, or quoted matches are excluded, leaving 65 valid citations and zero out-of-range references. W-082’s fixture is among the seven exclusions.  
+   Amendment: None to the 65/53 claim.
+
+8. **LANDS — acceptance still says 51 briefs.** Behaviour 7 correctly uses 53, but acceptance 2 retains a stale total.  
+   Amendment: Change acceptance 2 from 51 to 53.
+
+9. **LANDS — the exclusion grammar does not describe its own fixture.** The prose specifies single-backtick spans, while the fixture uses a two-backtick span containing literal backticks.  
+   Amendment: Define arbitrary matching backtick-run delimiters and test both single- and double-backtick spans.
+
+10. **LANDS — no existing rule performs the required all-brief crawl.** The current red-evidence check reads only briefs referenced by active opera, not all 53 briefs.  
+    Amendment: Specify an independent `briefs/*.md` corpus walk and acknowledge the additional file reads.
+
+11. **LANDS — the real-round acceptance conflicts with ownership.** Filing another W-072 round from W-082’s builder worktree should be refused under the ownership rule.  
+    Amendment: Record this Sol round as `ci/W-082-spec-<n>.log`, or import W-072 only from an authorized W-072 checkout.
+
+12. **LANDS — the directory measurement does not reproduce.** At the inspected commit, `studio/ci` has 443 top-level files, 442 top-level logs, 78 review logs, and 701 files/700 logs recursively—not 444; absence of a producer does not prove every file was manually written.  
+    Amendment: Use the reproducible counts and say only that no repository command currently records review verdicts.
+
+13. **LANDS — behaviour 6 violates the brief’s distinct-red requirement.** It requires one red per behaviour, then permits behaviour 6 to share behaviour 5’s red.  
+    Amendment: Combine positive and exclusion cases into one behaviour, leaving six behaviours with six assertion-level reds.
+
+14. **LANDS — For Sol target 5 resolves to two opera.** The verdict writer and citation rule share neither files nor an executable seam, are independently releasable, and carry different risks; recording the spec review does not technically couple them.  
+    Amendment: Split arm (a) into a verdict opus and arm (b) into a separate citation-check opus, each with its own brief, reds, acceptance, and review.
+
+**W-082 verdict: AMEND-FIRST**
+tokens used
+21,274
+## W-076
+
+1. **LANDS — acceptance count is wrong.** The transform changes 12/12 petitiones, not 11/12. The other measurements reproduce: six wrap cuts, seven Markdown leaks, and longest lengths 152/152/146.  
+   Amendment: Replace “11 of 12” with “12 of 12”; remove or objectively define “usable as written: 1/12.”
+
+2. **LANDS — behaviour 3’s real-officina test is impossible.** `/api/inbox` exposes only `needs_you`; P-013 is `resolved`, while P-012 is the sole `needs_you` petitio ([store.ts](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/server/src/store.ts:302), [P-013.md](/home/edckt/projects/bisellium/.worktrees/spec-w076/studio/petitiones/P-013.md:6)).  
+   Amendment: Assert P-012’s body, or construct a temporary officina where P-013 is `needs_you`.
+
+3. **HELD — the client half is already built.** `body?: string`, body rendering with placeholder fallback, and the injected-body assertion all exist at the cited locations ([api.ts](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/web/src/api.ts:15), [InboxView.tsx](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/web/src/screens/InboxView.tsx:69), [inboxview.test.ts](/home/edckt/projects/bisellium/.worktrees/spec-w076/apps/web/test/inboxview.test.ts:42)).  
+   Amendment: None.
+
+4. **LANDS — optional `body` contradicts the promised response contract.** The server is specified to always return `body`; preserving `body?` only accommodates stale fixtures, and conflicts with “inboxview.test.ts unchanged.”  
+   Amendment: Make `body` required, update old fixtures to `body: ""`, and assert unchanged placeholder rendering instead of an unchanged test file.
+
+5. **LANDS — `subject` has contradictory failure semantics.** “Present is authoritative, verbatim” admits blank and non-string YAML values, while behaviour 4 demands every subject be non-empty; no check rule validates the new key.  
+   Amendment: Define `subject` as an optional non-blank string, add type validation, and specify whether invalid values block or fall back.
+
+6. **LANDS — the fallback can still be misleading.** P-004’s derived 120-character subject omits that the rules already fired and obscures the actual scoping question, triggering the brief’s own misleading-subject criterion.  
+   Amendment: Require explicit subjects for newly created petitiones and identify derivation as a legacy fallback for the existing twelve.
+
+7. **LANDS — the derivation algorithm is under-specified.** Emphasis stripping can corrupt identifier underscores, while “word boundary” and whether the ellipsis counts toward 120 remain ambiguous.  
+   Amendment: Pin all twelve expected outputs and define delimiter-aware stripping and the exact cap/ellipsis rule.
+
+8. **LANDS — documentation scope contradicts multi-paragraph bodies.** Behaviour 3 requires multi-paragraph fidelity, but `docs/ADOPTION.md` still contracts “The question, in one paragraph.”  
+   Amendment: Own and update `docs/ADOPTION.md` unconditionally for both `subject:` and multi-paragraph body semantics.
+
+9. **HELD — `white-space: pre-wrap` is justified but unproved.** It provides the promised line-break fidelity, but no behaviour observes the computed style.  
+   Amendment: Add a computed-style/render assertion, or explicitly remove the CSS requirement from this opus.
+
+**W-076 verdict: AMEND-FIRST**
+
+## W-082
+
+1. **LANDS — `--from` defeats the motivating workflow.** The rescued transcript begins in `$TMPDIR`, but every path outside the officina is refused.  
+   Amendment: Permit any readable input path while strictly containing only the output; stdin remains the no-external-read option.
+
+2. **LANDS — build-filename compatibility has one historical exception.** Of 78 review logs, 77 use an integer round; `W-024-review-r1.log`, cited by W-024, cannot round-trip through the proposed positive-integer grammar.  
+   Amendment: State that 77/78 logs round-trip and explicitly preserve W-024 as a historical exception.
+
+3. **LANDS — “writes evidence, never gates” is untested.** An implementation could write the log and also mutate the opus gate, state, or timeline while passing behaviours 1–4.  
+   Amendment: Require byte-identical opus, probationes, state, and timeline after a successful verdict.
+
+4. **LANDS — the default phase is unproved.** Behaviour 2 supplies `--phase build`; no test omits the option.  
+   Amendment: Omit `--phase` in behaviour 2 and assert the review filename plus `# phase: build`.
+
+5. **LANDS — provenance is incomplete and header-injectable.** Optional `--model`, undefined tree/dirty semantics, and unchecked CR/LF in header values leave multiple incompatible implementations.  
+   Amendment: Define omitted-model output, derive tree identity from a specified repository, and refuse CR/LF in all header fields.
+
+6. **HELD — immutable overwrite refusal is correct; `3b` is not.** Alphanumeric rounds weaken the positive-integer contract; atomicity and concurrent publication are the real omissions.  
+   Amendment: Require atomic exclusive creation, next-integer retries, and no target file after a failed write.
+
+7. **HELD — the final citation census reproduces.** Across 53 briefs there are 72 raw matches; seven fenced, inline, or quoted matches are excluded, leaving 65 valid citations and zero out-of-range references. W-082’s fixture is among the seven exclusions.  
+   Amendment: None to the 65/53 claim.
+
+8. **LANDS — acceptance still says 51 briefs.** Behaviour 7 correctly uses 53, but acceptance 2 retains a stale total.  
+   Amendment: Change acceptance 2 from 51 to 53.
+
+9. **LANDS — the exclusion grammar does not describe its own fixture.** The prose specifies single-backtick spans, while the fixture uses a two-backtick span containing literal backticks.  
+   Amendment: Define arbitrary matching backtick-run delimiters and test both single- and double-backtick spans.
+
+10. **LANDS — no existing rule performs the required all-brief crawl.** The current red-evidence check reads only briefs referenced by active opera, not all 53 briefs.  
+    Amendment: Specify an independent `briefs/*.md` corpus walk and acknowledge the additional file reads.
+
+11. **LANDS — the real-round acceptance conflicts with ownership.** Filing another W-072 round from W-082’s builder worktree should be refused under the ownership rule.  
+    Amendment: Record this Sol round as `ci/W-082-spec-<n>.log`, or import W-072 only from an authorized W-072 checkout.
+
+12. **LANDS — the directory measurement does not reproduce.** At the inspected commit, `studio/ci` has 443 top-level files, 442 top-level logs, 78 review logs, and 701 files/700 logs recursively—not 444; absence of a producer does not prove every file was manually written.  
+    Amendment: Use the reproducible counts and say only that no repository command currently records review verdicts.
+
+13. **LANDS — behaviour 6 violates the brief’s distinct-red requirement.** It requires one red per behaviour, then permits behaviour 6 to share behaviour 5’s red.  
+    Amendment: Combine positive and exclusion cases into one behaviour, leaving six behaviours with six assertion-level reds.
+
+14. **LANDS — For Sol target 5 resolves to two opera.** The verdict writer and citation rule share neither files nor an executable seam, are independently releasable, and carry different risks; recording the spec review does not technically couple them.  
+    Amendment: Split arm (a) into a verdict opus and arm (b) into a separate citation-check opus, each with its own brief, reds, acceptance, and review.
+
+**W-082 verdict: AMEND-FIRST**
