@@ -5,83 +5,83 @@ exit code: 0
 POST /api/greenlight 403 1ms
 POST /api/greenlight 415 0ms
 GET /api/events?item=x&since=1 400 0ms
-POST /api/answer 400 0ms
+POST /api/answer 400 1ms
 POST /api/greenlight 400 0ms
 POST /api/budget 400 0ms
 POST /api/handoff 400 0ms
 POST /api/talk 400 0ms
-POST /api/delegate 400 1ms
+POST /api/delegate 400 0ms
 POST /api/greenlight 400 0ms
 GET /api/live 503 0ms
 GET /api/live 503 0ms
 POST /api/greenlight 413 1ms
 POST /api/_poll 404 0ms
-GET /api/live 200 310ms
-GET /api/live 200 310ms
-GET /api/live 200 310ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 309ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 308ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
-GET /api/live 200 307ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 312ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 313ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
 GET /api/officina 200 4ms
 GET /api/events 200 1ms
-GET /api/events?limit=3 200 0ms
+GET /api/events?limit=3 200 1ms
 GET /api/events?limit=9999 200 1ms
 GET /api/events?since=2 200 1ms
-GET /api/events?since=2026-09-18T17%3A00%3A00.000Z 200 2ms
+GET /api/events?since=2026-09-18T17%3A00%3A00.000Z 200 1ms
 GET /api/events 200 0ms
-GET /api/events?item=W-002 200 0ms
+GET /api/events?item=W-002 200 1ms
 GET /api/events?item=W-002&limit=2 200 1ms
-GET /api/events?item=W-002 200 0ms
+GET /api/events?item=W-002 200 1ms
 GET /api/events?item=NOPE-NOT-REAL 200 0ms
-GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 1ms
-GET /api/events?item=W-002&since=1 400 0ms
+GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 0ms
+GET /api/events?item=W-002&since=1 400 1ms
 GET /api/events?item=W-002 200 0ms
-POST /api/_poll 200 12ms
-GET /api/live 200 118ms
+POST /api/_poll 200 14ms
+GET /api/live 200 119ms
 fatal: not a git repository (or any of the parent directories): .git
 --spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
 --spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
@@ -89,9 +89,9 @@ fatal: not a git repository (or any of the parent directories): .git
 usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
 /********.yml not found — not a studio
 retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
-GET /api/health 200 31ms
+GET /api/health 200 41ms
 POST /api/greenlight 401 0ms
-POST /api/greenlight 200 8ms
+POST /api/greenlight 200 9ms
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
   line 3: slate-heading: ### Backlog
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
@@ -141,7 +141,7 @@ W-002: --decision "D-does-not-exist" not found under decisions/
 W-002: --decision "../../etc/passwd" not found under decisions/
 W-002: --decision "../leges/qa" not found under decisions/
 unknown opus: ../petitiones/A-1
-Preparing worktree (detached HEAD 2049567)
+Preparing worktree (detached HEAD ea6e1e9)
 Preparing worktree (checking out 'opus/W-140')
 W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
 W-501: gates not passed: qa
