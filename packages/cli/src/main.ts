@@ -24,7 +24,7 @@ import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
 import { runDelegate } from "./delegate.js";
 import { runProbe } from "./probe.js";
-import { runReady, runDone, runReview, runRed, runHalt, runWaive } from "./lifecycle.js";
+import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
 import { runDocs } from "./docs.js";
@@ -103,6 +103,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "ready") return runReady(rest).exitCode;
   if (cmd === "halt") return runHalt(rest).exitCode;
   if (cmd === "waive") return runWaive(rest).exitCode;
+  if (cmd === "amend") return runAmend(rest).exitCode;
   if (cmd === "done") return runDone(rest).exitCode;
   if (cmd === "review") return runReview(rest).exitCode;
   if (cmd === "red") return (await runRed(rest)).exitCode;

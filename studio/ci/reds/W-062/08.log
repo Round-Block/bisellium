@@ -1,0 +1,13 @@
+# behaviour: 8
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:56.627Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+FAIL  amend b8: trunk refuses with D-021                               
+PASS  amend b8: record unchanged                                       
+FAIL  amend b8: an unknown opus id on trunk still reports unknown opus, not ownership 
+Preparing worktree (checking out 'opus/W-001')
+PASS  amend b8: the worktree with opus/W-001 checked out succeeds      0
+PASS  amend b8: the trunk copy of the record stays byte-identical      

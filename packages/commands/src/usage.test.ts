@@ -78,11 +78,13 @@ const files = [join(repo, "packages", "cli", "src"), join(repo, "packages", "com
 // no-op, so a constant made unparseable (a template literal, a `: string`
 // annotation) silently dropped out of coverage instead of failing anything
 // — up to 21 of 30 lines, verified by mutation (see the opus's evidence
-// log). 32 is exact for this tree today (W-042's new `HALT_USAGE` constant
-// is the one that moved it from 31, which W-031's `ci.ts` USAGE constant had
-// moved from 30); it is meant to move only when a deliberate edit to a
-// *_USAGE constant's line count — or a whole new constant — moves it, in
-// the same commit — the assertion is the thing forcing that edit to be
+// log). W-042's new `HALT_USAGE` constant moved it from 31 (which W-031's
+// `ci.ts` USAGE constant had moved from 30); more single-line constants
+// landed after that without this comment's history being kept current, and
+// W-062's new `AMEND_USAGE` constant (`lifecycle.ts`) moves it once more,
+// 36 -> 37 in this commit; it is meant to move only when a deliberate edit
+// to a *_USAGE constant's line count — or a whole new constant — moves it,
+// in the same commit — the assertion is the thing forcing that edit to be
 // conscious.
 let seen = 0;
 for (const file of files) {
@@ -94,7 +96,7 @@ for (const file of files) {
     }
   }
 }
-check("scanned every known usage constant", seen === 36, `${seen}`);
+check("scanned every known usage constant", seen === 37, `${seen}`);
 
 // W-065 behaviour 17: the contract is documented — this opus's half of it.
 // Asserts nothing about the origin tuple, the token-paste flow or the proxy

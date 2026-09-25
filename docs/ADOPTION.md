@@ -363,7 +363,57 @@ key, or whose `spec` gate isn't `passed`. `spec:` is an officina-relative
 path to `briefs/<opus-id>.md` (`bisellium new --spec <path>`, or `--brief`
 to also scaffold it); `done` and `halted` are never gated retroactively, and
 `since` plays no part here — a spec is either on the opus or it isn't, there
-is no "before the gate existed" case for a currently-active item.
+is no "before the gate existed" case for a currently-active item. The same
+rule (W-062) also blocks an ACTIVE opus whose `spec:` and its passed gate's
+`evidence` resolve to different documents — `resolve()`-compared, never a
+filesystem check, since this is a blocking rule that runs on every `check`
+and a false positive here would stop every cascade. This closes the
+laundering path a bare `spec:` re-point would otherwise open: without it,
+re-pointing a `building` opus at a shorter brief could erase an
+`opus.red_evidence` finding while the old passed gate — certifying a
+document the opus is no longer built against — survived untouched.
+
+## bisellium amend
+
+```bash
+npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+```
+
+`amend` is the one CLI path for an opus's two descriptive fields, `title` and
+`spec:` — fields no other verb owns once set (`new --spec`/`--brief` and
+`ready` write `spec:`'s *first* value only; nothing ever writes `title`
+again). It carries no state gate — it works in any state, `done` and
+`halted` included, since retitling or re-pointing a record is never a
+lifecycle transition. `--reason` is mandatory and non-empty. Each changed
+field appends one entry to the record's own `amendments:` list — append-only,
+the same `{at, sella, field, reason, superseded}` shape W-040's gate
+corrections use — `title` first, then `spec`, when both are given in one
+call, regardless of flag order. A value identical to the current one is
+refused as a no-op: `title` compared as an exact scalar (leading/trailing
+whitespace is a real change), `spec` by canonical resolved target (a path
+alias like `./briefs/x.md` names the same document, not a change). `--spec`
+must be officina-relative, must resolve inside the officina (D-008), must
+name a path that exists, and must reach its target without crossing a
+symlink at any component (`realpath` must equal the resolved path); it also
+cannot be set for the first time this way — a record with no `spec:` key
+at all is a job for `new --spec`/`--brief` or `ready`, never `amend`.
+`--state`, `--probationes`, `--traditio` and `--id` are refused by name,
+before argv is even parsed, each naming the verb that actually owns the
+field (`greenlight`/`ready`/`done`/`halt`/`review --fail`, `verify`/`review`/
+`waive`, `handoff`, and "that's a rename" respectively) — the refusal is the
+feature (D-016), not an incidental error.
+
+Re-pointing an ACTIVE opus's `spec:` away from its passed gate's evidence
+trips `state.building.spec` (above) until the gate is re-signed: `halt` then
+`ready --spec <new>` today, or W-040's `ready --correct` once it lands.
+After amending a pointer away from its default, always pass `--spec`
+explicitly to a later `ready` — its own default (`briefs/<id>.md`) would
+otherwise silently revert the amendment. `amend` emits one
+`workflow.item_amended` event per amended field and never a
+`workflow.state_changed` (nothing changed state); it does not append to the
+Patron timeline — an architect retitling an opus is not a Patron act, and
+the record's own `amendments:` list, which travels with the opus and
+survives `git clone`, is the permanent home.
 
 ## opera/<id>.md
 
@@ -394,7 +444,10 @@ and `halted_at` so their age can be tracked. A `pending` gate of kind `human`
 is what "needs you" means. Passed and failed gates need `evidence` that exists
 (a dead link is blocking) and should carry `certifies` — the tree hash they
 certify, quoted; a newer substantive change makes them `stale`, never silently
-green.
+green. `amendments` (optional; written only by `bisellium amend`) is an
+append-only list of `{at, sella, field, reason, superseded}` entries, one per
+changed descriptive field (`title` or `spec`) — nothing else touches it, and
+nothing removes an entry once appended.
 
 ## petitiones/<id>.md
 
@@ -554,12 +607,14 @@ list`) is left alone and reported as kept.
 `status`/`evidence`/`certifies` back into that opus's front matter — it
 touches only those three keys on each gate it runs, merged into the existing
 probatio node so sibling keys (`waived_by`, a `note`, comments, …) and every
-other gate survive untouched. `handoff`, `greenlight` and `waive` (below) are
-the other tool-written changes to an opus, and go through the exact same
-merge-not-replace seam (`editOpusFrontMatter`, packages/cli/src/frontmatter.ts):
-each touches only the keys its own contract names — `traditio`'s five keys
-for `handoff`, `state`/`declined` for `greenlight`, and `status`/`reason`/
-`waived_by`/`sella`/`at` on one human gate for `waive` — never anything else.
+other gate survive untouched. `handoff`, `greenlight`, `waive` and `amend`
+(above) are the other tool-written changes to an opus, and go through the
+exact same merge-not-replace seam (`editOpusFrontMatter`,
+packages/cli/src/frontmatter.ts): each touches only the keys its own
+contract names — `traditio`'s five keys for `handoff`, `state`/`declined` for
+`greenlight`, `status`/`reason`/`waived_by`/`sella`/`at` on one human gate
+for `waive`, and `title`/`spec` plus an appended `amendments` entry for
+`amend` — never anything else.
 A gate already `status: waived` is skipped entirely (not run, not
 overwritten) and printed as `<id>: waived (untouched)`. Before running,
 `verify` requires a clean SOURCE tree in `--repo` — `git status --porcelain`

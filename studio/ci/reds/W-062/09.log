@@ -1,0 +1,18 @@
+# behaviour: 9
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:39:03.054Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  amend b9: title amendment on a building opus exits 0             0
+FAIL  amend b9: the title actually moved (a no-write stub would leave this false) building green case
+PASS  amend b9: checkStudio's findings for W-800 are exactly as they were {"before":["probatio.certifies"],"after":["probatio.certifies"]}
+PASS  amend b9: no opus.keys after the title amendment                 ["probatio.certifies"]
+PASS  amend b9: no path.id.unvalidated after the title amendment       ["probatio.certifies"]
+PASS  amend b9: no path.escapes.officina after the title amendment     ["probatio.certifies"]
+PASS  amend b9: no state.building.spec after the title amendment       ["probatio.certifies"]
+PASS  amend b9: spec amendment on a done opus exits 0                  0
+FAIL  amend b9: the spec pointer actually moved (a no-write stub would leave this false) opera/W-801.md
+PASS  amend b9: checkStudio's findings for W-801 are exactly as they were {"before":["probatio.certifies","state.done.probationes"],"after":["probatio.certifies","state.done.probationes"]}
+PASS  amend b9: no state.building.spec after the spec amendment (done is not ACTIVE) ["probatio.certifies","state.done.probationes"]

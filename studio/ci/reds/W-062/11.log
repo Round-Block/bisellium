@@ -1,0 +1,13 @@
+# behaviour: 11
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:39:15.386Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+FAIL  amend b11: a mismatched pointer/gate blocks state.building.spec  [{"rule":"probatio.certifies","level":"advise","where":"opera/W-810.md","message":"gate \"spec\" evidence has no identity (certifies)"}]
+FAIL  amend b11: the block message names both documents                [{"rule":"probatio.certifies","level":"advise","where":"opera/W-810.md","message":"gate \"spec\" evidence has no identity (certifies)"}]
+PASS  amend b11: two spellings of one document do not block (resolved comparison, land 3) [{"rule":"probatio.certifies","level":"advise","where":"opera/W-811.md","message":"gate \"spec\" evidence has no identity (certifies)"}]
+PASS  amend b11: a done opus is exempt from the equality condition (W-075's own shape) [{"rule":"probatio.certifies","level":"advise","where":"opera/W-812.md","message":"gate \"spec\" evidence has no identity (certifies)"},{"rule":"state.done.probationes","level":"block","where":"opera/W-812.md","message":"state \"done\" but gates not passed: tests, lint, types, qa, review"}]
+PASS  amend b11: an absent gate still blocks exactly once — the new condition adds no second finding 1
+FAIL  amend b11: a real path vs a symlink naming the same file DOES block (the accepted residual, finding 12) [{"rule":"probatio.certifies","level":"advise","where":"opera/W-814.md","message":"gate \"spec\" evidence has no identity (certifies)"}]

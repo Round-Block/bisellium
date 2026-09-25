@@ -5,7 +5,12 @@
  * officina here is a synthetic temp directory built by hand so a test
  * controls every manifest/opus field precisely — no shared fixture drifts
  * out from under these assertions. `retro.test.ts` covers the retro
- * command (behaviours 10-13); this file covers 1-9.
+ * command (behaviours 10-13); this file covers 1-9. W-062's pointer/gate
+ * equality condition — the second half of `state.building.spec`, added
+ * beside behaviour 1's original clause above — is NOT tested here: its
+ * coverage lives in `lifecycle.test.ts` (behaviour 11), beside the amend
+ * behaviours that motivated it, so a reader looking for it here does not
+ * conclude the new half is untested.
  */
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

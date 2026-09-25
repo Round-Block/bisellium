@@ -1,0 +1,48 @@
+# behaviour: 10
+# command: node --import tsx packages/commands/src/usage.test.ts .
+# exit: 1
+# at: 2026-09-25T05:39:09.321Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  packages/cli/src/branch.ts:BRANCH_USAGE line in USAGE                  "usage: bisellium branch <opus-id> --studio <dir> [--repo <dir>]"
+PASS  packages/cli/src/branch.ts:MERGE_USAGE line in USAGE                   "usage: bisellium merge <opus-id> --studio <dir> --repo <dir>"
+PASS  packages/cli/src/close.ts:CLOSE_USAGE line in USAGE                    "usage: bisellium close <opus-id> --studio <dir> [--repo <dir>]"
+PASS  packages/cli/src/docs.ts:USAGE line in USAGE                           "usage: bisellium docs registry [--repo <dir>] [--now <iso>]"
+PASS  packages/cli/src/hooks.ts:HOOKS_USAGE line in USAGE                    "usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]"
+PASS  packages/cli/src/hooks.ts:HOOKS_USAGE line in USAGE                    "       bisellium hooks check --harness claude-code [--studio <dir>]"
+PASS  packages/cli/src/hooks.ts:HOOK_EVENT_USAGE line in USAGE               "usage: bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]"
+PASS  packages/cli/src/instructions.ts:USAGE line in USAGE                   "usage: bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]"
+PASS  packages/cli/src/new.ts:NEW_USAGE line in USAGE                        "usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]"
+PASS  packages/cli/src/providers.ts:USAGE line in USAGE                      "usage: bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]"
+PASS  packages/cli/src/prune.ts:PRUNE_USAGE line in USAGE                    "usage: bisellium prune --studio <dir> [--repo <dir>]"
+PASS  packages/cli/src/retro.ts:RETRO_USAGE line in USAGE                    "usage: bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]"
+PASS  packages/cli/src/serve.ts:USAGE line in USAGE                          "usage: bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]"
+PASS  packages/cli/src/tick.ts:USAGE line in USAGE                           "usage: bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]"
+PASS  packages/commands/src/ci.ts:USAGE line in USAGE                        "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]"
+PASS  packages/commands/src/delegate.ts:DELEGATE_USAGE line in USAGE         "usage: bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/delegate.ts:DELEGATE_USAGE line in USAGE         "       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:READY_USAGE line in USAGE           "usage: bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:DONE_USAGE line in USAGE            "usage: bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:REVIEW_USAGE line in USAGE          "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:RED_USAGE line in USAGE             "usage: bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>"
+PASS  packages/commands/src/lifecycle.ts:HALT_USAGE line in USAGE            "usage: bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/lifecycle.ts:WAIVE_USAGE line in USAGE           "usage: bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]"
+FAIL  packages/commands/src/lifecycle.ts:AMEND_USAGE line in USAGE           "usage: bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/pause.ts:USAGE_PAUSE line in USAGE               "usage: bisellium pause [--studio <dir>] [--reason <text>]"
+PASS  packages/commands/src/pause.ts:USAGE_RESUME line in USAGE              "usage: bisellium resume [--studio <dir>]"
+PASS  packages/commands/src/probe.ts:PROBE_USAGE line in USAGE               "usage: bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]"
+PASS  packages/commands/src/run.ts:USAGE line in USAGE                       "usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>"
+PASS  packages/commands/src/run.ts:USAGE line in USAGE                       "       bisellium run --reclaim [--studio <dir>] [--repo <dir>]"
+PASS  packages/commands/src/talk.ts:USAGE line in USAGE                      "usage: bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>"
+PASS  packages/commands/src/verify.ts:USAGE line in USAGE                    "usage: bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]"
+PASS  packages/commands/src/writes.ts:HANDOFF_USAGE line in USAGE            "usage: bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/writes.ts:EMIT_USAGE line in USAGE               "usage: bisellium emit <json> [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/writes.ts:EMIT_USAGE line in USAGE               "       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/writes.ts:ANSWER_USAGE line in USAGE             "usage: bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/writes.ts:GREENLIGHT_USAGE line in USAGE         "usage: bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]"
+PASS  packages/commands/src/writes.ts:BUDGET_USAGE line in USAGE             "usage: bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]"
+FAIL  scanned every known usage constant                                     37
+PASS  ADOPTION.md §bisellium.yml contains tiers:                             
+PASS  ADOPTION.md §bisellium.yml contains munera:                            
+PASS  ADOPTION.md §Running serve's write-route list contains POST /api/delegate 

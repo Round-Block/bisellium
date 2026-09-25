@@ -1,0 +1,11 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:20.342Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  amend b2: exits 0                                                0
+FAIL  amend b2: spec: moves to the new pointer                         opera/W-900.md
+PASS  amend b2: probationes.spec is deep-equal to before (the gate is untouched) {"status":"passed","evidence":"opera/W-900.md","sella":"architect","at":"2026-09-20T00:00:00Z"}
+FAIL  amend b2: the record is now blocked by state.building.spec (the pointer disagrees with its gate) [{"rule":"probatio.certifies","level":"advise","where":"opera/W-900.md","message":"gate \"spec\" evidence has no identity (certifies)"}]

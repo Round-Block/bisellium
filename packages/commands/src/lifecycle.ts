@@ -1,11 +1,12 @@
 /**
- * packages/commands/src/lifecycle.ts — W-020: the four lifecycle/evidence
- * write commands (`ready`, `done`, `review`, `red`). Replaces the two
- * stopgap scripts (`scripts/opus-ready.ts`, `scripts/opus-close.ts`, both
- * deleted by this opus) and adds the third piece P-001/P-003 decreed: a
- * per-behaviour red store at `<studio>/ci/reds/<opus>/`, written only
- * through `red`. Kept out of main.ts's generic flag table on purpose, same
- * as `verify`/`talk` — each of these parses its own argv.
+ * packages/commands/src/lifecycle.ts — W-020: the seven lifecycle/evidence
+ * write commands (`ready`, `done`, `review`, `red`, `halt`, `waive`,
+ * `amend`). Replaces the two stopgap scripts (`scripts/opus-ready.ts`,
+ * `scripts/opus-close.ts`, both deleted by this opus) and adds the third
+ * piece P-001/P-003 decreed: a per-behaviour red store at
+ * `<studio>/ci/reds/<opus>/`, written only through `red`. Kept out of
+ * main.ts's generic flag table on purpose, same as `verify`/`talk` — each of
+ * these parses its own argv.
  *
  * Every front-matter write goes through `editOpusFrontMatter` (merge into
  * the yaml Document, body byte-for-byte) — the same discipline writes.ts's
@@ -15,8 +16,9 @@
  */
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isSeq } from "yaml";
 import { readFront, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
@@ -49,9 +51,9 @@ function resolveSella(flagValue: string | undefined): string {
  *  non-empty after trim, or `undefined` when neither names anyone. Empty
  *  and whitespace-only count as unset in both places; a repeated `--sella`
  *  is `parseFlags`' own last-value-wins (`writes.ts`), not scanned here.
- *  Reads `process.env` once. Not exported: `runRed` is the only caller, and
- *  keeping it unexported turns an import-shape mistake in a test into a
- *  module-load failure rather than a silently-passing red. */
+ *  Reads `process.env` once. Not exported: `runRed` and `runAmend` are its
+ *  only callers, and keeping it unexported turns an import-shape mistake in
+ *  a test into a module-load failure rather than a silently-passing red. */
 function namedSella(flagValue: string | undefined): string | undefined {
   const envValue = process.env["BISELLIUM_SELLA"];
   if (flagValue !== undefined && flagValue.trim() !== "") return flagValue;
@@ -62,6 +64,8 @@ function namedSella(flagValue: string | undefined): string | undefined {
 interface OpusFront {
   state?: unknown;
   probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown; reason?: unknown; waived_by?: unknown }>;
+  title?: unknown;
+  spec?: unknown;
 }
 
 /** True when `relPath` resolved against `root` stays inside it — D-008's
@@ -867,5 +871,251 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
   });
 
   console.log(`${opusId}: ${gateId} waived by ${decisionId}`);
+  return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// 7. amend — retitle or re-point an opus record's `spec:`, the one CLI path
+//    for a descriptive field (W-062). Works in ANY state, done and halted
+//    included: nothing here is a lifecycle transition, so there is no state
+//    gate to weaken or duplicate. `state`/`probationes`/`traditio`/`id` are
+//    evidence or identity, never amendable — refused by name below.
+// ---------------------------------------------------------------------------
+
+const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+/** Never-amendable fields, refused by name before argv is even parsed (an
+ *  exact-arg scan, so `--title "--state"` is also refused — harmless, since
+ *  refusing a title that is literally a flag name costs nothing). Each names
+ *  the verb that actually owns the field, so the refusal sends the caller
+ *  somewhere real (D-016) rather than just closing a door. */
+const NOT_AMENDABLE: [string, string][] = [
+  ["--state", "state is lifecycle, not description — use greenlight/ready/done/halt, or review --fail to reopen"],
+  ["--probationes", "a gate is evidence — it is produced by verify/review/waive, never amended"],
+  ["--traditio", "a handoff records what happened at a moment — use handoff"],
+  ["--id", "an id must equal its filename — that is a rename, not an amendment"],
+];
+
+/** Thrown only from inside the `editOpusFrontMatter` callback below, when a
+ *  pre-existing `amendments:` key is not a YAML sequence (a scalar, a
+ *  mapping, or an alias to something else — land 9, finding 11: the
+ *  predicate runs on the Document node, not the parsed data, because an
+ *  alias-backed sequence resolves through `parse()` to a real array while
+ *  the Document keeps an unresolved `Alias` that `doc.addIn` rejects).
+ *  Caught by name in `runAmend` alone and translated to exit 2; anything
+ *  else the callback throws is a real bug and re-thrown untouched —
+ *  `editOpusFrontMatter` only writes after the callback returns, so a throw
+ *  from inside it leaves the file untouched either way. */
+class AmendShapeError extends Error {}
+
+export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
+  // Never-amendable fields, refused by name before argv is even parsed
+  // (D-016 — the refusal is the point) and therefore before the D-021
+  // ownership guard below: an exact-arg scan, so `--title "--state"` is also
+  // refused (harmless). A never-amendable flag is wrong on every ref, so
+  // sending a trunk caller to switch checkouts first would send them to do
+  // work that changes nothing.
+  for (const [flag, why] of NOT_AMENDABLE) {
+    if (args.includes(flag)) {
+      console.error(`amend: ${flag} is not amendable — ${why}`);
+      return { exitCode: 2 };
+    }
+  }
+
+  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--reason", "--sella", "--studio", "--now"] });
+  if ("error" in parsed) {
+    console.error(`${parsed.error}\n${AMEND_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const { values, positionals } = parsed;
+  const opusId = positionals[0];
+  if (!opusId) {
+    console.error(AMEND_USAGE);
+    return { exitCode: 2 };
+  }
+
+  const titleFlag = values.get("--title");
+  const specFlag = values.get("--spec");
+  if (titleFlag === undefined && specFlag === undefined) {
+    console.error(AMEND_USAGE);
+    return { exitCode: 2 };
+  }
+
+  // W-040's rule, verbatim: the reason is the feature. Stored as given
+  // (never trimmed) — only its emptiness is judged, the same asymmetry
+  // --title gets below.
+  const reason = values.get("--reason");
+  if (reason === undefined || reason.trim() === "") {
+    console.error(`amend: --reason is required and must be non-empty\n${AMEND_USAGE}`);
+    return { exitCode: 2 };
+  }
+
+  // check.ts:432 requires a non-empty title — refused here at the source
+  // rather than leaving it to a later opus.keys finding.
+  if (titleFlag !== undefined && titleFlag.trim() === "") {
+    console.error(`amend: --title must be non-empty`);
+    return { exitCode: 2 };
+  }
+
+  // Land 8: an explicit --sella that is empty or whitespace is an assertion
+  // of anonymity, not an omission, and is refused outright — never silently
+  // written as a blank id that path.id.unvalidated would then block.
+  const sellaFlag = values.get("--sella");
+  if (sellaFlag !== undefined && sellaFlag.trim() === "") {
+    console.error(`amend: --sella must not be blank — omit it to fall back to $BISELLIUM_SELLA or "guest"`);
+    return { exitCode: 2 };
+  }
+
+  const now = resolveNow(values.get("--now"), opts.now);
+  if (!now) {
+    console.error("--now must be an ISO date");
+    return { exitCode: 2 };
+  }
+
+  const opened = openStudio(values.get("--studio"));
+  if ("error" in opened) {
+    console.error(opened.error);
+    return { exitCode: 2 };
+  }
+  const { root, manifest } = opened;
+
+  const opusPath = safeItemPath(join(root, "opera"), opusId);
+  if (typeof opusPath !== "string" || !existsSync(opusPath)) {
+    console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+
+  // D-021, right after the record-existence check — the five siblings' own
+  // ordering (the never-amendable scan above already ran, deliberately
+  // ahead of this: see its own comment).
+  const refusal = recordOwnerRefusal(root, opusId);
+  if (refusal !== undefined) {
+    console.error(refusal);
+    return { exitCode: 2 };
+  }
+
+  const current = readFront<OpusFront>(opusPath).data;
+  const currentTitle = typeof current.title === "string" ? current.title : undefined;
+  const currentSpec = typeof current.spec === "string" ? current.spec : undefined;
+
+  let specRel: string | undefined;
+  if (specFlag !== undefined) {
+    // --spec is an officina-relative path, and only that (land 10): reject
+    // absolute first (even one that happens to sit inside the officina —
+    // isContained alone would pass it, since resolve(root, "/abs") returns
+    // the absolute path unchanged), then containment (D-008), then
+    // existence, then "realpath is the path" (rev 3, finding 12): anchored
+    // on the officina's own realpath so a symlinked $TMPDIR/home doesn't
+    // reject everything. This subsumes rev 2's escape check (a symlink
+    // pointing outside the officina is refused for being a symlink, before
+    // its target's containment is even a question) and additionally catches
+    // a symlink anywhere earlier in the path, not just the final component.
+    if (isAbsolute(specFlag)) {
+      console.error(`${opusId}: --spec "${specFlag}" must be officina-relative, not absolute`);
+      return { exitCode: 2 };
+    }
+    if (!isContained(root, specFlag)) {
+      console.error(`${opusId}: --spec "${specFlag}" resolves outside the officina (D-008) — refused`);
+      return { exitCode: 2 };
+    }
+    const abs = join(root, specFlag);
+    if (!existsSync(abs)) {
+      console.error(`${opusId}: no spec at ${specFlag} — not ready`);
+      return { exitCode: 2 };
+    }
+    const rootReal = realpathSync(root);
+    let real: string;
+    try {
+      real = realpathSync(abs);
+    } catch (e) {
+      console.error(`${opusId}: --spec "${specFlag}" could not be resolved: ${(e as Error).message}`);
+      return { exitCode: 2 };
+    }
+    if (real !== join(rootReal, specFlag)) {
+      console.error(`${opusId}: --spec "${specFlag}" reaches its target through a symlink — refused`);
+      return { exitCode: 2 };
+    }
+    // Land 7: creating spec: from absent is not an amendment — "new
+    // --spec"/"new --brief" and "ready" own the first value.
+    if (currentSpec === undefined) {
+      console.error(`amend: ${opusId} has no spec: to amend — the first pointer is written by "new --spec"/"new --brief" or by "ready"`);
+      return { exitCode: 2 };
+    }
+    // Land 3: spec is compared by canonical resolved target, not string
+    // equality — "briefs/W-1.md" and "./briefs/W-1.md" name one document,
+    // and recording an amendment between them would fabricate a change that
+    // never happened.
+    if (resolve(root, specFlag) === resolve(root, currentSpec)) {
+      console.error(`${opusId}: --spec "${specFlag}" names the same document as the current spec: — nothing to amend`);
+      return { exitCode: 2 };
+    }
+    specRel = specFlag;
+  }
+
+  // Land 3: title is compared as an exact scalar — leading/trailing
+  // whitespace is a real change to a displayed field.
+  if (titleFlag !== undefined && currentTitle === titleFlag) {
+    console.error(`${opusId}: --title is identical to the current title — nothing to amend`);
+    return { exitCode: 2 };
+  }
+
+  // Land 8: `namedSella` treats a blank $BISELLIUM_SELLA as unset (an
+  // explicit blank --sella was already refused above), falling back to
+  // "guest" here — the fallback chain the spec calls for, with no third
+  // helper.
+  const sella = namedSella(sellaFlag) ?? "guest";
+
+  // Both flags in one call append one entry per changed field, title first,
+  // then spec, regardless of flag order — the record is deterministic
+  // regardless of argv order.
+  const fields: { field: "title" | "spec"; value: string; superseded: string }[] = [];
+  if (titleFlag !== undefined) fields.push({ field: "title", value: titleFlag, superseded: currentTitle ?? "" });
+  if (specRel !== undefined) fields.push({ field: "spec", value: specRel, superseded: currentSpec ?? "" });
+
+  try {
+    editOpusFrontMatter(opusPath, (doc) => {
+      // Land 9 (finding 11 in rev 3): the preflight inspects the Document
+      // node, not the parsed data — `isSeq` is false for an Alias, a
+      // Scalar and a YAMLMap alike, which is what a bare `Array.isArray`
+      // check on the resolved view would miss for an alias-backed sequence.
+      const node = doc.getIn(["amendments"], true);
+      if (node !== undefined && !isSeq(node)) {
+        const kind = node === null ? "null" : (node as { constructor?: { name?: string } }).constructor?.name ?? typeof node;
+        throw new AmendShapeError(`amend: ${opusId} amendments: is a ${kind}, not a sequence — refused`);
+      }
+      // `doc.addIn` needs the sequence to already be there; created through
+      // the Document API (never string-splicing the front matter) only on
+      // the first amendment.
+      if (node === undefined) doc.setIn(["amendments"], doc.createNode([]));
+
+      for (const f of fields) {
+        doc.setIn([f.field], f.value);
+        doc.addIn(["amendments"], { at: now.toISOString(), sella, field: f.field, reason, superseded: f.superseded });
+      }
+      return undefined;
+    });
+  } catch (e) {
+    if (e instanceof AmendShapeError) {
+      console.error(e.message);
+      return { exitCode: 2 };
+    }
+    throw e;
+  }
+
+  // One workflow.item_amended per amended field (bare "field"/"reason"
+  // attrs, the precedent is greenlight's bare "reason" — writes.ts:808). No
+  // workflow.state_changed: nothing changed state. Not appended to the
+  // Patron timeline — an architect retitling an opus is not a Patron act,
+  // and the record's own amendments list is the permanent, shared home.
+  for (const f of fields) {
+    emitEvent(root, manifest, "workflow.item_amended", now, {
+      [WF.ITEM_ID]: opusId,
+      [WF.ACTOR_ROLE]: sella,
+      field: f.field,
+      reason,
+    });
+  }
+
+  console.log(`${opusId}: amended ${fields.map((f) => f.field).join(", ")}`);
   return { exitCode: 0 };
 }
