@@ -18,7 +18,6 @@ sellae:
   - { id: builder-2, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
   - { id: art-lead, collegium: art, kind: agent, model: gpt-6-astra }
   - { id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5 }
-  - { id: guest, collegium: production, kind: human }
 probationes:
   - { id: tests, name: Tests, kind: automated, command: "true" }
   - { id: lint, name: Lint, kind: automated, command: "true" }

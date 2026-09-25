@@ -262,8 +262,12 @@ withTempCopy(join(repo, "studio"), (dir) => {
     // unset-env boot with an empty bundle) so the CLI's own
     // `--sella ?? $BISELLIUM_SELLA ?? "guest"` chain supplies the dispatched
     // instance. A fixed-seat agent (architect/censor/clerk) still names its
-    // own sella explicitly — both forms are a valid boot line here.
-    const hasContextLine = /bisellium context(?: --sella [\w-]+)? studio/.test(text);
+    // own sella explicitly. Two distinct branches, not one regex that
+    // accepts either form for every agent (censor W-089 round-1 finding B7)
+    // — that older, single-regex shape would pass silently if a fixed-seat
+    // agent's own `--sella` were ever dropped by mistake.
+    const hasContextLine =
+      name === "builder" ? /bisellium context studio/.test(text) && !text.includes("bisellium context --sella") : /bisellium context --sella [\w-]+ studio/.test(text);
     report(`agent.${name}.body`, hasLex && hasContextLine, hasLex ? (hasContextLine ? "ok" : "missing context line") : "missing lex reference");
   }
 }

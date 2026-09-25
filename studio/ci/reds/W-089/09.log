@@ -1,27 +1,19 @@
 # behaviour: 9
 # command: node --import tsx packages/shim/test/instance-surfaces.test.ts .
 # exit: 1
-# at: 2026-09-25T20:06:07.815Z
-# sella: builder
-# tree: dirty:59c23c8d311055040f991d8ad24e9bec807364e5
+# at: 2026-09-25T21:26:39.435Z
+# sella: builder.W-089
+# tree: dirty:a1cce2dfb236f2079b37e2e0faaf80dc2b5aa983
 
-node:internal/modules/esm/resolve:271
-    throw new ERR_MODULE_NOT_FOUND(
-          ^
-
-Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/edckt/projects/bisellium/.worktrees/W-089/packages/shim/test/instance-surfaces.test.ts' imported from /home/edckt/projects/bisellium/.worktrees/W-089/
-    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
-    at moduleResolve (node:internal/modules/esm/resolve:861:10)
-    at defaultResolve (node:internal/modules/esm/resolve:988:11)
-    at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
-    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
-    at nextStep (node:internal/modules/customization_hooks:189:26)
-    at resolveBaseSync (file:///home/edckt/projects/bisellium/.worktrees/W-089/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:10932)
-    at resolveDirectorySync (file:///home/edckt/projects/bisellium/.worktrees/W-089/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:12238)
-    at resolveTsPathsSync (file:///home/edckt/projects/bisellium/.worktrees/W-089/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:13445)
-    at resolve (file:///home/edckt/projects/bisellium/.worktrees/W-089/node_modules/tsx/dist/register-SoqaU4rg.mjs:2:15991) {
-  code: 'ERR_MODULE_NOT_FOUND',
-  url: 'file:///home/edckt/projects/bisellium/.worktrees/W-089/packages/shim/test/instance-surfaces.test.ts'
-}
-
-Node.js v25.9.0
+PASS  b9: branch is bisellium/<instance>/1                             bisellium/builder.W-089/1
+PASS  b9: the minted branch passes `git check-ref-format`              {"status":0,"stderr":""}
+PASS  b9: the receipt lands at receipts/<instance>/<session>.json      /tmp/claude-1000/w089-b9-studio-4oJunr/receipts/builder.W-089/sess-b9.json
+PASS  b9: check reports no path.id.unvalidated for the instance's receipt directory []
+PASS  b9: run mints the instance and dispatches the child — exits 0    0
+PASS  b9: GIT_AUTHOR_EMAIL has exactly one '@'                         builder@studio.bisellium
+FAIL  b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium              builder@studio.bisellium
+worktree acquire failed (git): git worktree add -B bisellium/builder..W-089/1 /tmp/claude-1000/w089-b9-neg-repo-J4Iuz0/.bisellium/worktrees/builder..W-089-1 HEAD failed: Preparing worktree (new branch 'bisellium/builder..W-089/1')
+fatal: 'bisellium/builder..W-089/1' is not a valid branch name
+FAIL  b9 negative: a doubled-dot instance is refused, not dispatched   1
+FAIL  b9 negative: no worktree directory was ever created for it       /tmp/claude-1000/w089-b9-neg-repo-J4Iuz0/.bisellium/worktrees
+PASS  b9 negative: no receipt directory was ever created for it        

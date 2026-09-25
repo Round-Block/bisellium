@@ -222,11 +222,20 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
   // must never write under a bare builder-class template — no --opus here
   // to mint from, so the instance must already have arrived through
   // $BISELLIUM_SELLA. Re-minted from its own seat+suffix (never trusted
-  // verbatim), same discipline as every other dispatch boundary. `tool`
-  // writes an event, not a receipt/timeline, and already has its own
-  // resolved-row check (behaviour 8, below); `context` is a read. A
-  // refusal here still never blocks the harness — it prints and skips the
-  // write, exiting 0 same as every other guard in this function.
+  // verbatim), same discipline as every other dispatch boundary. `context`
+  // is a read, so it is exempt outright (the brief names both by name:
+  // "`context` is a read, and `delegate` edits a template" — briefs/W-089.md
+  // behaviour 5, hook-event bullet).
+  //
+  // `tool` is carved out of this same refusal DELIBERATELY, by ruling, not
+  // by omission: the bullet's own text scopes the refusal to "a receipt or
+  // timeline write" (briefs/W-089.md:382); `tool` appends to the shared
+  // events.jsonl log (`workflow.tool_used`, handled below), which is
+  // neither. Its warning-suppression membership check (behaviour 8) is a
+  // different concern — whether to print `process.cascade`'s advisory, not
+  // whether the actor identity is trustworthy enough to write. A refusal
+  // here still never blocks the harness — it prints and skips the write,
+  // exiting 0 same as every other guard in this function.
   if (sub === "start" || sub === "stop" || sub === "compact") {
     const manifest = readManifestSafe(studio);
     const resolved = manifest ? resolveSeat(manifest, sella) : undefined;

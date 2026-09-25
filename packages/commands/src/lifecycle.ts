@@ -25,6 +25,7 @@ import { WF } from "@bisellium/schema";
 import { editOpusFrontMatter } from "./frontmatter.js";
 import {
   emitEvent,
+  mintDispatchSella,
   openStudio,
   parseFlags,
   readState,
@@ -37,6 +38,15 @@ import {
 
 const GIT_TIMEOUT_MS = 30_000;
 
+/** The CLI-wide un-credentialed default (`main.ts:188`'s own
+ *  `--sella ?? $BISELLIUM_SELLA ?? "guest"` chain, `CLAUDE.md`,
+ *  `.claude/settings.json`'s hook commands): a built-in identity like
+ *  `patron`, never a roster row `bisellium init` is obliged to scaffold
+ *  (censor W-089 round-1 finding B2 — a freshly-scaffolded officina declares
+ *  only `producer`, and `guest` was refused there once this opus added the
+ *  roster check below). Never builder-class, so there is nothing to mint. */
+const GUEST_SELLA = "guest";
+
 /** Same fallback chain `context`/`hook-event` already use: an explicit
  *  `--sella`, else $BISELLIUM_SELLA, else the "guest" sella every studio
  *  declares. W-089 behaviour 6: roster-aware — the selected name is then
@@ -44,11 +54,18 @@ const GIT_TIMEOUT_MS = 30_000;
  *  tombstone all pass; this is an ATTRIBUTION gate, not a live-dispatch one,
  *  so a retired id is accepted here and refused only at the load-bearing
  *  sites in run.ts/writes.ts). An id that resolves to nothing is a usage
- *  error, not a silent write. */
-function resolveSella(flagValue: string | undefined, manifest: Manifest): string | { error: string } {
-  const sella = flagValue ?? process.env["BISELLIUM_SELLA"] ?? "guest";
-  if (!resolveSeat(manifest, sella)) return { error: `unknown sella "${sella}" — not declared in bisellium.yml` };
-  return sella;
+ *  error, not a silent write. W-089 behaviour 5 (censor round-1 finding B1):
+ *  a resolved LIVE builder-class template is then minted against `opusId`
+ *  through `mintDispatchSella` — the same helper writes.ts's handoff/
+ *  emit --usage already call (S2) — so `ready`/`done`/`review`/`halt`/
+ *  `waive` never write or attribute a bare `builder`/`builder-codex`. */
+function resolveSella(flagValue: string | undefined, manifest: Manifest, opusId: string, verb: string): string | { error: string } {
+  const sella = flagValue ?? process.env["BISELLIUM_SELLA"] ?? GUEST_SELLA;
+  if (sella === GUEST_SELLA) return sella;
+  const resolved = resolveSeat(manifest, sella);
+  if (!resolved) return { error: `${verb}: unknown sella "${sella}" — not declared in bisellium.yml` };
+  const minted = mintDispatchSella(resolved, sella, opusId, verb);
+  return "error" in minted ? minted : minted.sella;
 }
 
 /** `red`'s own resolver (W-039): a red log is permanent evidence — once its
@@ -59,20 +76,25 @@ function resolveSella(flagValue: string | undefined, manifest: Manifest): string
  *  this before the roster check below runs). Otherwise (W-089 behaviour 6)
  *  the selected name is resolved against the manifest the same way
  *  `resolveSella` does — a retired tombstone passes (attribution, not
- *  dispatch), an id that resolves to nothing is `{ error }`. Empty and
- *  whitespace-only count as unset in both places; a repeated `--sella` is
- *  `parseFlags`' own last-value-wins (`writes.ts`), not scanned here. Reads
- *  `process.env` once. Not exported: `runRed` and `runAmend` are its only
- *  callers, and keeping it unexported turns an import-shape mistake in a
- *  test into a module-load failure rather than a silently-passing red. */
-function namedSella(flagValue: string | undefined, manifest: Manifest): string | { error: string } | undefined {
+ *  dispatch) and a LIVE builder-class template mints against `opusId`
+ *  (behaviour 5, same `mintDispatchSella` call `resolveSella` makes); an id
+ *  that resolves to nothing is `{ error }`. Empty and whitespace-only count
+ *  as unset in both places; a repeated `--sella` is `parseFlags`' own
+ *  last-value-wins (`writes.ts`), not scanned here. Reads `process.env`
+ *  once. Not exported: `runRed` and `runAmend` are its only callers, and
+ *  keeping it unexported turns an import-shape mistake in a test into a
+ *  module-load failure rather than a silently-passing red. */
+function namedSella(flagValue: string | undefined, manifest: Manifest, opusId: string, verb: string): string | { error: string } | undefined {
   const envValue = process.env["BISELLIUM_SELLA"];
   let name: string | undefined;
   if (flagValue !== undefined && flagValue.trim() !== "") name = flagValue;
   else if (envValue !== undefined && envValue.trim() !== "") name = envValue;
   if (name === undefined) return undefined;
-  if (!resolveSeat(manifest, name)) return { error: `unknown sella "${name}" — not declared in bisellium.yml` };
-  return name;
+  if (name === GUEST_SELLA) return name;
+  const resolved = resolveSeat(manifest, name);
+  if (!resolved) return { error: `${verb}: unknown sella "${name}" — not declared in bisellium.yml` };
+  const minted = mintDispatchSella(resolved, name, opusId, verb);
+  return "error" in minted ? minted : minted.sella;
 }
 
 interface OpusFront {
@@ -159,9 +181,9 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const sellaResult = resolveSella(values.get("--sella"), manifest);
+  const sellaResult = resolveSella(values.get("--sella"), manifest, opusId, "ready");
   if (typeof sellaResult !== "string") {
-    console.error(`ready: ${sellaResult.error}`);
+    console.error(sellaResult.error);
     return { exitCode: 2 };
   }
   const sella = sellaResult;
@@ -306,9 +328,9 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 1 };
   }
 
-  const doneSellaResult = resolveSella(values.get("--sella"), manifest);
+  const doneSellaResult = resolveSella(values.get("--sella"), manifest, opusId, "done");
   if (typeof doneSellaResult !== "string") {
-    console.error(`done: ${doneSellaResult.error}`);
+    console.error(doneSellaResult.error);
     return { exitCode: 2 };
   }
   const sella = doneSellaResult;
@@ -416,9 +438,9 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   }
 
   const reviewProbatioId = (manifest as unknown as { review_probatio?: string }).review_probatio ?? "review";
-  const reviewSellaResult = resolveSella(values.get("--sella"), manifest);
+  const reviewSellaResult = resolveSella(values.get("--sella"), manifest, opusId, "review");
   if (typeof reviewSellaResult !== "string") {
-    console.error(`review: ${reviewSellaResult.error}`);
+    console.error(reviewSellaResult.error);
     return { exitCode: 2 };
   }
   const sella = reviewSellaResult;
@@ -591,13 +613,13 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   // runCapture and mkdirSync — no command runs and nothing is written for
   // an unattributed red. --sella guest is accepted deliberately: the
   // refusal targets anonymity, not the name guest.
-  const namedResult = namedSella(values.get("--sella"), manifest);
+  const namedResult = namedSella(values.get("--sella"), manifest, opusId, "red");
   if (namedResult === undefined) {
     console.error("red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)");
     return { exitCode: 2 };
   }
   if (typeof namedResult !== "string") {
-    console.error(`red: ${namedResult.error}`);
+    console.error(namedResult.error);
     return { exitCode: 2 };
   }
   const sella = namedResult;
@@ -745,9 +767,9 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const haltSellaResult = resolveSella(values.get("--sella"), manifest);
+  const haltSellaResult = resolveSella(values.get("--sella"), manifest, opusId, "halt");
   if (typeof haltSellaResult !== "string") {
-    console.error(`halt: ${haltSellaResult.error}`);
+    console.error(haltSellaResult.error);
     return { exitCode: 2 };
   }
   const sella = haltSellaResult;
@@ -890,9 +912,9 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const waiveSellaResult = resolveSella(values.get("--sella"), manifest);
+  const waiveSellaResult = resolveSella(values.get("--sella"), manifest, opusId, "waive");
   if (typeof waiveSellaResult !== "string") {
-    console.error(`waive: ${waiveSellaResult.error}`);
+    console.error(waiveSellaResult.error);
     return { exitCode: 2 };
   }
   const sella = waiveSellaResult;
@@ -1108,9 +1130,9 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   // "guest" here — the fallback chain the spec calls for, with no third
   // helper. W-089 behaviour 6: an explicitly-named but undeclared id is
   // still refused before any write.
-  const amendNamedResult = namedSella(sellaFlag, manifest);
+  const amendNamedResult = namedSella(sellaFlag, manifest, opusId, "amend");
   if (typeof amendNamedResult !== "string" && amendNamedResult !== undefined) {
-    console.error(`amend: ${amendNamedResult.error}`);
+    console.error(amendNamedResult.error);
     return { exitCode: 2 };
   }
   const sella = amendNamedResult ?? "guest";

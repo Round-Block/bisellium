@@ -459,7 +459,7 @@ async function main(): Promise<void> {
     {
       const { status, body } = await getJson(base, "/api/opus/W-004");
       check("opus/W-004: 200", status === 200, String(status));
-      check("opus/W-004: has traditio", !!body?.traditio && body.traditio.sella === "builder", JSON.stringify(body?.traditio));
+      check("opus/W-004: has traditio", !!body?.traditio && body.traditio.sella === "builder-1", JSON.stringify(body?.traditio));
     }
 
     // ---- GET /api/opus/<unknown>: 404 {error} --------------------------------
