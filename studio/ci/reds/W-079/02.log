@@ -1,0 +1,7 @@
+# behaviour: 2
+# command: node scripts/w079-mutation-check.mjs 2
+# exit: 1
+# at: 2026-09-25T09:40:19.946Z
+# sella: builder-sol
+# tree: unknown
+

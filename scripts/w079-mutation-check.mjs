@@ -21,7 +21,7 @@ const TARGET = "packages/commands/src/lifecycle.ts";
 const targetPath = join(repoRoot, TARGET);
 
 const MUTATIONS = {
-  "1": {
+  1: {
     label: "absolute --spec refusal deleted",
     from: `    if (isAbsolute(specFlag)) {
       console.error(\`${"${opusId}"}: --spec "${"${specFlag}"}" must be officina-relative, not absolute\`);
@@ -30,7 +30,7 @@ const MUTATIONS = {
 `,
     to: "",
   },
-  "2": {
+  2: {
     label: "AmendShapeError-only catch widened to a blanket refusal",
     from: `  } catch (e) {
     if (e instanceof AmendShapeError) {
