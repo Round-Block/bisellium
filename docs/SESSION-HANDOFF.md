@@ -95,10 +95,37 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-25, cascade 32)
+## Where things stand (2026-09-25, cascade 33)
 
-Cascades 1–31 are in the dossier progress log. PRs through #65 are merged.
+Cascades 1–32 are in the dossier progress log. PRs through #71 are merged.
 Read the review logs in `studio/ci/` before touching any of this work.
+
+**Cascade 33 (2026-09-25): the probe arc completes.** **W-069 MERGED**
+(PR #68, 2 rounds — the battery ran live: five codex models proven
+available, the control rule proved on a real 401; the stranding class
+closed BY CONSTRUCTION, preservation proven on the live record). **W-071
+MERGED** (PR #71, 2 rounds — the cadence; pause/L0 gates measured at
+zero vendor spawns; the attended acceptance passed fully). **D-024
+decreed** (the Patron's waiver of W-071's red-gate ORDER — the builder's
+implement-stub-record-restore sequence ruled backfill-in-mechanism;
+the act recorded plainly, candour credited, kill_when = P-012).
+**P-012 filed, `needs_you`**: bisellium red records a working-tree
+identity; the tree-ancestry proposal REFUTED by this case (the
+backfilled reds passed it). **retro-32 MERGED** (PR #69: six lesson
+classes, the first complete D-013 usage section since the rule existed;
+W-072 filed — the vendor-spend sentinel, prototype = the censor's
+PATH-shadow runs). Orchestrator's own recorded class: two
+cleanup-outside-the-merge-gate slips (closed PRs 68/70); the fix is the
+zero-pending gated merge script — use it for every merge. **Claude auth
+rhythm**: access tokens age out between the Patron's interactive
+sessions; headless -p does NOT refresh; `auth status` stays truthfully
+positive; the control rule absorbs it ($0). Awaiting the Patron:
+**P-012's grant**, the W39 aerarium (`aerarium.missing` is live), and
+the old tree-ancestry petitio's formal closure (fold into P-012's
+answer). Queue: **W-064** (Board) → W-070 (remote/tailnet) on UI;
+W-072, W-059, W-066, W-068, W-038, W-052 non-UI. Retro-33 owes: C3
+true-by-construction (recurrent), C4 network-dependent probatio, the
+watcher-reaping class, the orchestrator's gate class.
 
 **Cascade 32 (2026-09-24/25): the console became an actor.** **W-067
 MERGED** (PR #64, round-1 pass — the write path: origin tuple, pasted
