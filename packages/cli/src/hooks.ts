@@ -35,6 +35,7 @@ import {
   writeReceiptStart,
 } from "@bisellium/shim";
 import { buildContext } from "./context.js";
+import { diagnosticLabel } from "./reporting.js";
 
 export interface HooksResult {
   exitCode: number;
@@ -158,12 +159,13 @@ function runHooksCheck(args: string[]): HooksResult {
     },
   );
   for (const s of statuses) {
+    const label = diagnosticLabel(s.sella);
     if (s.unknown) {
-      console.log(`${s.sella}: unknown (no declared seat resolves this receipts directory)`);
+      console.log(`${label}: unknown (no declared seat resolves this receipts directory)`);
       continue;
     }
     const last = s.lastReceipt ? `${s.lastReceipt.sessionId} (started ${s.lastReceipt.startedAt})` : "none";
-    console.log(`${s.sella}: harness=${s.harness} last=${last} ${s.dead ? "dead" : "alive"}`);
+    console.log(`${label}: harness=${s.harness} last=${last} ${s.dead ? "dead" : "alive"}`);
   }
   return { exitCode: 0 };
 }

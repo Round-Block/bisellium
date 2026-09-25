@@ -11,7 +11,7 @@
  * through Claude Code yet) — advisory only, never a block: this can't tell
  * "never configured" apart from "no session yet today".
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 export const HOOK_HARNESS_ID = "claude-code";
@@ -46,19 +46,29 @@ export interface HookReceiptStatus {
 }
 
 function readSellaReceipts(studio: string, sella: string): ReceiptSummary[] {
-  const dir = join(resolve(studio), "receipts", sella);
+  const root = join(resolve(studio), "receipts");
+  const dir = join(root, sella);
   let files: string[] = [];
   try {
-    files = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".json")) : [];
+    // W-084's special-file rule applies to every component we enumerate:
+    // lstat, never stat, so a linked root or sella directory is not opened.
+    if (!lstatSync(root).isDirectory() || !lstatSync(dir).isDirectory()) return [];
+    files = readdirSync(dir).filter((f) => f.endsWith(".json"));
   } catch {
     files = [];
   }
   const out: ReceiptSummary[] = [];
   for (const f of files) {
     const p = join(dir, f);
+    let fd: number | undefined;
     try {
-      if (!statSync(p).isFile()) continue;
-      const raw = JSON.parse(readFileSync(p, "utf8")) as Record<string, unknown>;
+      if (!lstatSync(p).isFile()) continue;
+      // O_NOFOLLOW closes the lstat/read replacement window for receipt
+      // files: if an attacker swaps the entry for a link, open fails rather
+      // than following it. fstat then verifies the opened object itself.
+      fd = openSync(p, constants.O_RDONLY | constants.O_NOFOLLOW);
+      if (!fstatSync(fd).isFile()) continue;
+      const raw = JSON.parse(readFileSync(fd, "utf8")) as Record<string, unknown>;
       const sessionId = typeof raw["sessionId"] === "string" ? raw["sessionId"] : undefined;
       const startedAt = typeof raw["startedAt"] === "string" ? raw["startedAt"] : undefined;
       if (!sessionId || !startedAt) continue; // shape check.ts's own receipt.shape rule already covers
@@ -71,6 +81,15 @@ function readSellaReceipts(studio: string, sella: string): ReceiptSummary[] {
     } catch {
       // Unreadable/corrupt receipt — check.ts's receipt.shape rule reports
       // it; this liveness check just skips it rather than throwing.
+    } finally {
+      if (fd !== undefined) {
+        try {
+          closeSync(fd);
+        } catch {
+          // The receipt is already skipped or consumed; a close failure must
+          // not turn the advisory liveness scan into a thrown CLI error.
+        }
+      }
     }
   }
   out.sort((a, b) => (a.startedAt < b.startedAt ? 1 : a.startedAt > b.startedAt ? -1 : 0));
@@ -84,14 +103,14 @@ function listReceiptDirNames(studio: string): string[] {
   const root = join(resolve(studio), "receipts");
   let names: string[] = [];
   try {
-    if (!existsSync(root)) return [];
+    if (!lstatSync(root).isDirectory()) return [];
     names = readdirSync(root);
   } catch {
     return [];
   }
   return names.filter((name) => {
     try {
-      return statSync(join(root, name)).isDirectory();
+      return lstatSync(join(root, name)).isDirectory();
     } catch {
       return false;
     }
