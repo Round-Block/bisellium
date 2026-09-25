@@ -1,0 +1,47 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/check.test.ts . 7
+# exit: 1
+# at: 2026-09-25T18:08:37.502Z
+# sella: builder-a
+# tree: dirty:b1caf22079bca5e9a37d2dc13fa05def71ae07cc
+
+PASS  setup: W-001 actually patched                              
+PASS  done opus: no probatio.certifies.mismatch                  
+PASS  done opus: no probatio.certifies.stale                     
+PASS  done opus: no probatio.certifies.dirty                     
+PASS  done opus: no probatio.evidence.tree                       
+PASS  active opus: probatio.certifies.mismatch fires             probatio.certifies.stale, probatio.certifies.dirty, probatio.certifies.mismatch
+PASS  active opus: probatio.certifies.dirty fires                probatio.certifies.stale, probatio.certifies.dirty, probatio.certifies.mismatch
+PASS  halted opus: no probatio.certifies.stale                   traditio.stage
+PASS  source_excludes: non-list value blocks manifest.shape      manifest.shape, probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  setup: docs/ is nonempty enough to move the hash           ab2603dc5c1d7268742f4a6965eae75ef96d27e9 vs e7049f8f749a36a7fb301762a09402a25e790535
+PASS  no source_excludes: certificate matches the baseline hash, not stale probatio.evidence.tree
+PASS  source_excludes: [docs/] changes the comparison hash, certificate now stale probatio.certifies.stale, probatio.evidence.tree
+PASS  integration: non-mapping value blocks manifest.shape       manifest.shape, probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration.strategy: invalid value blocks manifest.shape  manifest.shape, probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration.push: non-boolean value blocks manifest.shape  manifest.shape, probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration.pr.reviewer: unknown sella blocks integration.pr.reviewer integration.pr.reviewer, probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  integration: a well-formed block adds no manifest.shape or integration.* blocking findings 
+PASS  munus.tier: a munus naming an undeclared tier blocks, naming both ids munus "ghost" references undeclared tier "nonexistent"
+PASS  munus.tier: a duplicate tiers[].id blocks (manifest.unique) bisellium.yml#tiers
+PASS  munus.tier: a duplicate munera[].id blocks (manifest.unique) bisellium.yml#munera
+PASS  munus.tier: a tier row missing its required model string blocks tier "bare" has no model | munus "aggregation" references undeclared tier "fast" | munus "audit" references undeclared tier "mid" | munus "prereview" references undeclared tier "mid" | munus "research" references undeclared tier "high" | munus "redteam" references undeclared tier "high" | munus "escalation" references undeclared tier "escalation" | munus "build" references undeclared tier "build" | munus "spec" references undeclared tier "review" | munus "review" references undeclared tier "review"
+PASS  munus.tier: a munus row missing its required tier string blocks munus "bare-munus" has no tier
+PASS  munus.tier: an id failing manifest.id.format blocks        bisellium.yml#munera
+PASS  munus.tier: a manifest with neither key produces no finding probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  munus.tier is in the rule-id registry                      
+PASS  w071 b5: declaring model_probe_stale_days earns no manifest.defaults advisory 
+PASS  w071 b5: positive control — an actually unknown default key still advises unknown default "totally_unknown_key"
+PASS  w071 b5: positive control — a non-numeric model_probe_stale_days still blocks "model_probe_stale_days" must be a number
+PASS  w071 b5: sample-studio's own manifest carries no model_probe_stale_days finding 
+FAIL  [W-089 b7] an instance id in sella: produces no opus.sella finding [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"builder.W-989\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder.W-989\" not declared"}]
+FAIL  [W-089 b7] an instance id in traditio.sella produces no traditio.sella finding [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"builder.W-989\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder.W-989\" not declared"}]
+PASS  [W-089 b7] misspelled seat ("bulider.W-989") still blocks opus.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"bulider.W-989\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"bulider.W-989\" not declared"}]
+PASS  [W-089 b7] misspelled seat ("bulider.W-989") still blocks traditio.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"bulider.W-989\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"bulider.W-989\" not declared"}]
+PASS  [W-089 b7] unknown seat ("ghost.W-989") still blocks opus.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"ghost.W-989\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"ghost.W-989\" not declared"}]
+PASS  [W-089 b7] unknown seat ("ghost.W-989") still blocks traditio.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"ghost.W-989\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"ghost.W-989\" not declared"}]
+PASS  [W-089 b7] empty instance ("builder.") still blocks opus.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"builder.\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder.\" not declared"}]
+PASS  [W-089 b7] empty instance ("builder.") still blocks traditio.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"builder.\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder.\" not declared"}]
+PASS  [W-089 b7] bare unknown ("builder-e") still blocks opus.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"builder-e\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder-e\" not declared"}]
+PASS  [W-089 b7] bare unknown ("builder-e") still blocks traditio.sella [{"rule":"opus.sella","level":"block","where":"opera/W-989.md","message":"sella \"builder-e\" is not a declared sella"},{"rule":"traditio.sella","level":"block","where":"opera/W-989.md","message":"handoff sella \"builder-e\" not declared"}]
+PASS  [W-089 b7] studio: check stays at zero blocking findings (historical builder-* records untouched) []

@@ -681,6 +681,68 @@ try {
     const goodResult = checkStudio(goodDir, NOW, { repo });
     checkB89(2, "a boolean retired: true produces no manifest.shape finding on that key", !goodResult.findings.some((f) => f.rule === "manifest.shape" && f.where.includes(".retired")), JSON.stringify(goodResult.findings.filter((f) => f.rule === "manifest.shape")));
   }
+
+  // ---- W-089 behaviour 7: traditio.sella/opus.sella accept an instance id
+  // whose seat is declared; they keep blocking one that resolves to nothing.
+  {
+    const dir = freshStudio("w089-b7");
+    const opusPath = join(dir, "opera", "W-989.md");
+    writeFileSync(
+      opusPath,
+      [
+        "---",
+        'id: "W-989"',
+        'title: "W-089 behaviour 7 fixture"',
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "sella: builder.W-989",
+        "traditio: { sella: builder.W-989, stage: building, next: ship, blocked_on: none, at: 2026-09-26T00:00:00Z }",
+        "probationes: {}",
+        "---",
+        "An instance id in sella/traditio.sella.",
+        "",
+      ].join("\n"),
+    );
+    const r = checkStudio(dir, NOW, { repo });
+    const scoped = r.findings.filter((f) => f.where === "opera/W-989.md");
+    checkB89(7, "an instance id in sella: produces no opus.sella finding", !scoped.some((f) => f.rule === "opus.sella"), JSON.stringify(scoped));
+    checkB89(7, "an instance id in traditio.sella produces no traditio.sella finding", !scoped.some((f) => f.rule === "traditio.sella"), JSON.stringify(scoped));
+
+    for (const [tag, badId] of [
+      ["misspelled seat", "bulider.W-989"],
+      ["unknown seat", "ghost.W-989"],
+      ["empty instance", "builder."],
+      ["bare unknown", "builder-e"],
+    ] as const) {
+      const badDir = freshStudio(`w089-b7-${tag.replace(/\s+/g, "-")}`);
+      writeFileSync(
+        join(badDir, "opera", "W-989.md"),
+        [
+          "---",
+          'id: "W-989"',
+          'title: "W-089 behaviour 7 negative fixture"',
+          "kind: feature",
+          "collegium: engineering",
+          "state: building",
+          `sella: ${badId}`,
+          `traditio: { sella: ${badId}, stage: building, next: ship, blocked_on: none, at: 2026-09-26T00:00:00Z }`,
+          "probationes: {}",
+          "---",
+          "A bad id in sella/traditio.sella.",
+          "",
+        ].join("\n"),
+      );
+      const badResult = checkStudio(badDir, NOW, { repo });
+      const badScoped = badResult.findings.filter((f) => f.where === "opera/W-989.md");
+      checkB89(7, `${tag} ("${badId}") still blocks opus.sella`, badScoped.some((f) => f.rule === "opus.sella"), JSON.stringify(badScoped));
+      checkB89(7, `${tag} ("${badId}") still blocks traditio.sella`, badScoped.some((f) => f.rule === "traditio.sella"), JSON.stringify(badScoped));
+    }
+
+    // The 34/15 historical records (real studio) stay clean throughout.
+    const realResult = checkStudio(realStudio, new Date("2026-09-26T12:00:00Z"), { repo });
+    checkB89(7, "studio: check stays at zero blocking findings (historical builder-* records untouched)", realResult.blocks === 0, JSON.stringify(realResult.findings.filter((f) => f.level === "block")));
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }

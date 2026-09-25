@@ -526,6 +526,46 @@ try {
       JSON.stringify(sessionStartCmds),
     );
   }
+  // ---- W-089 behaviour 8: process.cascade stops guessing from a prefix —
+  // `hooks.ts:378`'s `!sella.startsWith("builder")` becomes a `resolveSeat`
+  // lookup. Suppressed only for the two live builder-class templates
+  // (behaviour 4); retired, unknown, prefix-only-lookalike and non-builder
+  // seats all still warn. A dedicated manifest (not sample-studio) so a
+  // `builder-codex` row can be declared. --------------------------------
+  {
+    const dir = mkdtempSync(join(tmpdir(), "hooks-cascade-"));
+    writeFileSync(
+      join(dir, "bisellium.yml"),
+      `bisellium: 1
+studio: Cascade Guard Test Studio
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: builder }
+sellae:
+  - { id: builder, collegium: engineering, kind: agent }
+  - { id: builder-codex, collegium: engineering, kind: agent, harness: codex }
+  - { id: builder-a, collegium: engineering, kind: agent, retired: true }
+  - { id: eng-lead, collegium: engineering, kind: agent }
+probationes: []
+`,
+    );
+    const toolPayload = (sella: string) => {
+      const p = JSON.stringify({ session_id: `sess-${sella}`, tool_name: "Write", tool_input: { file_path: "/repo/src/index.ts" } });
+      return runHookEvent(["tool", "--sella", sella, "--studio", dir], { now: NOW, stdin: stdinOf(p) });
+    };
+
+    const noWarnCases = ["builder.W-100", "builder-codex.W-100"];
+    for (const sella of noWarnCases) {
+      const { errs } = await capture(() => toolPayload(sella));
+      check(`cascade guard: "${sella}" (live builder-class) writes silently`, errs.length === 0, JSON.stringify(errs));
+    }
+
+    const warnCases = ["builder-a", "builder-a.W-100", "builderish", "eng-lead", "ghost"];
+    for (const sella of warnCases) {
+      const { errs } = await capture(() => toolPayload(sella));
+      check(`cascade guard: "${sella}" still warns`, errs.some((e) => e.includes("process.cascade")), JSON.stringify(errs));
+    }
+  }
 } finally {
   for (const d of dirs) {
     try {

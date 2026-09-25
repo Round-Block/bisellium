@@ -18,7 +18,7 @@ import {
   PROVIDER_STATUSES,
   PETITIO_STATES,
 } from "@bisellium/schema";
-import { listMd, readFront, STATES } from "@bisellium/adapter-native";
+import { listMd, readFront, resolveSeat, STATES } from "@bisellium/adapter-native";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
@@ -254,6 +254,11 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellaIds = uniq("sellae", sellae);
   const probatioIds = uniq("probationes", probationes);
   const sellaCollegium = new Map(sellae.map((s) => [str(s["id"]) ?? "", str(s["collegium"]) ?? ""] as const));
+  // W-089 behaviour 7: `resolveSeat`'s own minimal row shape, built off the
+  // same raw `sellae` this rule module already parsed — `traditio.sella`/
+  // `opus.sella` route their membership test through it (S1) rather than
+  // re-implementing "split on the first dot" here.
+  const seatRoster = { sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true, collegium: str(s["collegium"]) ?? "" })) };
   const probatioKind = new Map(probationes.map((g) => [str(g["id"]) ?? "", str(g["kind"]) ?? ""] as const));
   const magisterOf = new Map(collegia.map((d) => [str(d["id"]) ?? "", str(d["magister"]) ?? ""] as const));
   const stateIds = new Set(STATES.map((s) => s.id));
@@ -419,7 +424,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     for (const k of TRADITIO_KEYS) if (str(h[k]) === undefined && !(k === "at" && h[k] instanceof Date))
       add("traditio.keys", "block", where, `handoff missing or non-string "${k}"`);
     const sella = str(h["sella"]);
-    if (sella && !sellaIds.has(sella)) add("traditio.sella", "block", where, `handoff sella "${sella}" not declared`);
+    if (sella && !resolveSeat(seatRoster, sella)) add("traditio.sella", "block", where, `handoff sella "${sella}" not declared`);
     const stage = str(h["stage"]);
     if (stage && stage !== state) add("traditio.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
     if (h["at"] !== undefined) {
@@ -458,9 +463,10 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (collegium && !collegiumIds.has(collegium)) add("opus.collegium", "block", where, `collegium "${collegium}" not declared`);
     const sellaId = str(d["sella"]);
     if (d["sella"] !== undefined) {
-      if (!sellaId || !sellaIds.has(sellaId)) add("opus.sella", "block", where, `sella "${sellaId ?? ""}" is not a declared sella`);
-      else if (collegium && sellaCollegium.get(sellaId) !== collegium)
-        add("opus.sella.collegium", "advise", where, `sella "${sellaId}" belongs to ${sellaCollegium.get(sellaId)}, item is ${collegium}`);
+      const resolvedOpusSella = sellaId ? resolveSeat(seatRoster, sellaId) : undefined;
+      if (!sellaId || !resolvedOpusSella) add("opus.sella", "block", where, `sella "${sellaId ?? ""}" is not a declared sella`);
+      else if (collegium && resolvedOpusSella.seat.collegium !== collegium)
+        add("opus.sella.collegium", "advise", where, `sella "${sellaId}" belongs to ${resolvedOpusSella.seat.collegium}, item is ${collegium}`);
     }
     if (d["tokens"] !== undefined && num(d["tokens"]) === undefined) add("opus.tokens", "advise", where, "tokens is not a number");
 
