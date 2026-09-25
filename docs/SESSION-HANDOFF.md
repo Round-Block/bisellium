@@ -95,7 +95,23 @@ lex, a decision, or a check rule and delete it here.
 - Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
   the other in `source_excludes`.
 
-## Where things stand (2026-09-25, cascade 34 in flight)
+## Where things stand (2026-09-25, cascade 34 closing)
+
+**Cascade 34's ships**: W-062 (amend, round-1 pass), W-064 (the Board,
+round-2), W-079 (round-1 — **the codex-build trial PASSED**: D-025's kill
+clause not triggered, the failures were sandbox config not capability;
+the censor's admissibility rule for proxy evidence — "admissible iff it
+names a state a third party can reach independently" — goes to retro-34).
+Specs landed Sol-closed: W-072 r5, W-076/W-082/W-084, W-057 r4. P-013
+answered (waiver refused, remedy executed). L-036/037/038 filed with
+addressed_by. Branch protection: merge queue + conversation resolution
+live; merges are async now. Env facts: codex sandbox cannot spawn the
+suite, write .git, or read git state (proxy protocol used, disclosed);
+`git -c submodule.recurse=false` for EVERY checkout (three half-apply
+incidents); codex exec needs stdin closed (`< /dev/null`) or it hangs.
+In flight: W-076 round-2 fix (builder-c). Next: W-072 build, W-082/W-084
+builds, W-057 build, W-087 (Board polish decrees), W-070 after W-057.
+Patron's desk: P-012, the W39 aerarium, the Board's three visual checks.
 
 Cascades 1–32 are in the dossier progress log. PRs through #71 are merged,
 plus #77 (spec). Read the review logs in `studio/ci/` before touching any
