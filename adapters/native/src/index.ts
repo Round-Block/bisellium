@@ -182,10 +182,14 @@ export function deriveSubject(body: string): string {
 
   const LIMIT = 120;
   if (s.length > LIMIT) {
-    const budget = LIMIT - 1; // room for the ellipsis
-    let cut = s.slice(0, budget);
-    const lastSpace = cut.lastIndexOf(" ");
-    if (lastSpace > 0) cut = cut.slice(0, lastSpace);
+    // W-076 censor round 1 (F1): the last-space search window is the full
+    // 120-char boundary, not LIMIT-1 — a word ending exactly at index 119
+    // (P-010's "gap") has its trailing space AT that index, one past a
+    // LIMIT-1 window, and was being discarded whole. The no-space fallback
+    // still cuts at LIMIT-1 (budget), leaving room for the ellipsis.
+    const window = s.slice(0, LIMIT);
+    const lastSpace = window.lastIndexOf(" ");
+    const cut = lastSpace > 0 ? window.slice(0, lastSpace) : s.slice(0, LIMIT - 1);
     s = `${cut}…`;
   }
   return s;

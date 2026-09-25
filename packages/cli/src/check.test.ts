@@ -402,14 +402,13 @@ try {
   {
     // [id, expected subject] — computed by running the derivation exactly
     // as specified (first paragraph, unwrap, strip markdown, cap at 120
-    // total incl. ellipsis) over each file's real body, at spec-writing
-    // time. P-010's length (116, uncapped) differs from the brief's own
-    // "reference run" table entry (120) — that entry is explicitly flagged
-    // there as "the pre-land-7 implementation" or a byproduct of a general
-    // reference run predating the paragraph-boundary fix; P-010's first
-    // paragraph ends at "...not re-litigated here.)" well under the cap,
-    // so no truncation applies once the derivation stops at the first
-    // blank line as land 1 specifies. Reproduced independently here.
+    // total incl. ellipsis) over each file's real body. P-010's unwrapped
+    // first paragraph is 197 characters, well over the cap, and the word
+    // "gap" ends exactly at the 119-character text boundary (its trailing
+    // space sits AT index 119) — censor round 1, F1: the cap's last-space
+    // search must cover the full 120-char window, not LIMIT-1, or that
+    // trailing word is discarded whole. Fixed in deriveSubject; P-010's pin
+    // below is the corrected 119-chars-plus-ellipsis value the brief names.
     const PINNED: [string, string][] = [
       ["P-001", "Retrospectio 4b (acta/2026-09-18-retro-4b.md) found six failure classes recurring across two or more cascades. Four of…"],
       ["P-002", "Choose a licence"],
@@ -419,7 +418,7 @@ try {
       ["P-007", "Recurring finding class \"review×path-traversal-from-ids\" (cascade 6 retro). Proposing a blocking rule or lex amendment…"],
       ["P-008", "process.cascade advises whenever one sella signs both the spec and review gates of an opus. The QA lex (§1) has the…"],
       ["P-009", "Proposed amendment to the QA lex (studio/leges/qa.md), granting the Censor the improvement-tracking obligation decreed…"],
-      ["P-010", "Proposed amendment to the production lex (studio/leges/production.md). No opus: — this proposes law, not work. (The…"],
+      ["P-010", "Proposed amendment to the production lex (studio/leges/production.md). No opus: — this proposes law, not work. (The gap…"],
       ["P-011", "docs/research/agent-studio-landscape-2026-09-21.md (\"Proposed Bisellium direction\") proposes: for the first playable…"],
       ["P-012", "A check rule for red provenance: bisellium red records a working-tree identity, and a rule verifies it — superseding…"],
       ["P-013", "W-064's red gate: D-024's kill arm has fired, and only you can rule."],
@@ -492,7 +491,18 @@ try {
     const b = (snap.petitiones ?? []).find((p) => p.id === "W076-B2-B");
     checkB(2, "front matter subject wins even though it differs from the derivation", a?.subject === "Custom subject text, not derived", JSON.stringify(a));
     checkB(2, "front matter subject wins even when the body is empty", b?.subject === "Wins even with an empty body", JSON.stringify(b));
-    checkB(2, "body is still carried verbatim alongside the front-matter subject", b?.body === "", JSON.stringify(b?.body));
+    // W-076 censor round 1 (F3): the previous version of this assertion
+    // checked B (an EMPTY-body fixture) for `body === ""`, which a mutant
+    // that always returns `body: ""` also satisfies — vacuous. A's body is
+    // real, non-empty content; asserting it verbatim is the assertion that
+    // actually bites a "never carry the body" mutation.
+    checkB(
+      2,
+      "body is carried verbatim alongside the front-matter subject (non-empty case)",
+      a?.body === "This body would derive a completely different subject if the fallback ran at all — proving front matter wins outright.",
+      JSON.stringify(a?.body),
+    );
+    checkB(2, "an empty body is still carried as body: \"\" (not e.g. omitted)", b?.body === "", JSON.stringify(b?.body));
   }
 
   // ---- behaviour 4: empty bodies fall back to the petitio id (never an
@@ -524,12 +534,18 @@ try {
     write("W076-B4-WHITESPACE", 'subject: "   "');
     write("W076-B4-NUM", "subject: 42");
     write("W076-B4-LIST", "subject: [a]");
-    write("W076-B4-VALID", 'subject: "A perfectly fine subject"');
+    write("W076-B4-VALID", 'subject: "A perfectly fine subject"', "Real, non-empty body content for the carry-verbatim check.");
 
     const snap = snapshotDir(dir, "w076-b4");
     const emptyBody = (snap.petitiones ?? []).find((p) => p.id === "W076-B4-EMPTYBODY");
     checkB(4, "an empty/whitespace-only body yields body: \"\"", emptyBody?.body === "", JSON.stringify(emptyBody?.body));
     checkB(4, "...and a non-empty derived subject, falling back to the petitio id", emptyBody?.subject === "W076-B4-EMPTYBODY", JSON.stringify(emptyBody?.subject));
+    // W-076 censor round 1 (F3): the assertion above only ever checks a
+    // body that's supposed to end up "" — a mutant that always returns
+    // `body: ""` satisfies it too. This sibling checks a real, non-empty
+    // body carries through verbatim, so "always empty" fails here instead.
+    const validRow = (snap.petitiones ?? []).find((p) => p.id === "W076-B4-VALID");
+    checkB(4, "a non-empty body is carried verbatim (not collapsed to \"\")", validRow?.body === "Real, non-empty body content for the carry-verbatim check.", JSON.stringify(validRow?.body));
 
     const r = checkStudio(dir, NOW);
     const subjectFindings = (id: string) => r.findings.filter((f) => f.rule === "petitio.subject" && f.where.includes(id));

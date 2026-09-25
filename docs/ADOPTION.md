@@ -461,7 +461,7 @@ from: eng-lead         # a sella, or the patron
 to: patron
 state: needs_you      # needs_you (to must be the patron) | awaiting_reply (from must be the patron) | resolved
 opened: 2026-09-17T09:58:00Z
-subject: "Split stacks: accept the scope drift, or cut to a new item?"  # optional; see below
+subject: "Split stacks: accept the scope drift, or cut to a new item?"  # required for new petitiones; advisory until W-038's writer stamps it — see below
 ---
 The question, however many paragraphs it takes. Every paragraph travels to
 the Patron's inbox verbatim — no truncation. A subject is a row label, not a
