@@ -1,0 +1,12 @@
+# fixture: W-089 behaviour 3/6 — a seat template plus a retired tombstone,
+# for delegate's instance-resolution and retired-refusal cases.
+bisellium: 1
+studio: Delegate Seat Template Fixture
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: eng-lead }
+sellae:
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
+  - { id: builder, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+probationes: []

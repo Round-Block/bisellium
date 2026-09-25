@@ -1,17 +1,51 @@
 # behaviour: 3
-# command: node --import tsx adapters/native/src/resolveSeat.test.ts
+# command: sh -c node --import tsx adapters/native/src/resolveSeat.test.ts && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/seatedCandidates.test.ts && node --import tsx apps/server/test/server.test.ts .
 # exit: 1
-# at: 2026-09-25T17:48:26.583Z
+# at: 2026-09-25T18:18:56.728Z
 # sella: builder-a
-# tree: dirty:ea6afd1862da47de06cb3cfcbf416fa32276d1b8
+# tree: dirty:3fd6b9188fea5c4a1a10195ce5c3f7bd6300aeef
 
-/home/edckt/projects/bisellium/.worktrees/W-089/adapters/native/src/resolveSeat.test.ts:16
-import { resolveSeat, type SeatLike } from "./index.js";
-         ^
-SyntaxError: The requested module './index.js' does not provide an export named 'resolveSeat'
-    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
-    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
-    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
-    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
-
-Node.js v25.9.0
+PASS  [W-089 b3] an exact declared template resolves with no instance                   {"seat":{"id":"builder","collegium":"engineering"}}
+PASS  [W-089 b3] <seat>.<instance> resolves the seat row and carries the instance       {"seat":{"id":"builder","collegium":"engineering"},"instance":"W-089"}
+PASS  [W-089 b3] a hyphenated seat id is matched whole, never split on '-'              {"seat":{"id":"builder-codex","collegium":"engineering"},"instance":"W-100"}
+PASS  [W-089 b3] a retired row still resolves by exact id (reads must work forever)     {"seat":{"id":"builder-a","collegium":"engineering","retired":true}}
+PASS  [W-089 b3] a retired seat's own instance form also resolves (caller decides policy) {"seat":{"id":"builder-a","collegium":"engineering","retired":true},"instance":"W-200"}
+PASS  [W-089 b3] an unknown bare id refuses                                             
+PASS  [W-089 b3] an unknown seat prefix before the dot refuses                          
+PASS  [W-089 b3] a misspelled seat prefix refuses                                       
+PASS  [W-089 b3] an empty instance ('builder.') refuses                                 
+PASS  [W-089 b3] an empty id refuses                                                    
+PASS  [W-089 b3] a leading-dot id (empty seat prefix) refuses                           
+PASS  builder-1: engineering lex present         
+PASS  builder-1: W-002 and W-004 handoffs present 
+PASS  builder-1: A-1 not included (addressed to patron) 
+PASS  patron: A-1 included (needs_you, to: patron) 
+PASS  maxTokens=300: sections dropped            
+PASS  maxTokens=300: text ends with 'truncated:' line 
+PASS  unknown sella: empty text, truncated ['unknown sella'] 
+PASS  builder-1: standing rules present          
+PASS  patron: standing rules present             
+PASS  patron: CLI usage pointer present, warning intact 
+PASS  producer: CLI usage pointer present, warning intact 
+PASS  architect: CLI usage pointer present, warning intact 
+PASS  eng-lead: CLI usage pointer present, warning intact 
+PASS  builder: CLI usage pointer present, warning intact 
+PASS  builder-1: CLI usage pointer present, warning intact 
+PASS  builder-2: CLI usage pointer present, warning intact 
+PASS  art-lead: CLI usage pointer present, warning intact 
+PASS  qa-lead: CLI usage pointer present, warning intact 
+PASS  guest: CLI usage pointer present, warning intact 
+PASS  builder-1: pointer names no flag shapes    ## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+PASS  builder-1: full banner not inlined         
+PASS  realistic lex: fixture inflated past 1000 tokens tokens=1386
+PASS  maxTokens=600, realistic-size lex: CLI usage pointer survives truncation of the lex itself truncated=["providers","collegium index","opera","standing rules","lex"] tokens=84
+PASS  needs_you: mentions W-004 and A-1          
+PASS  status W-003: mentions verifying and failed 
+PASS  burn: mentions engineering and conserve    
+PASS  hello: kind unknown                        
+PASS  burn: engineering listed once for 2026-W38 with a derived (non-unknown) posture ["2026-W38 · engineering · 1880000/3000000 tokens · 62.7% · conserve"]
+PASS  burn: engineering listed for 2026-W39 as unknown (not the current period) ["2026-W39 · engineering · 0/3000000 tokens · ?% · unknown"]
+FAIL  w089 b3: an instance id injects the same collegium lex as its template 
+PASS  w089 b3: an empty-instance id ('builder.') is unknown 
+PASS  w089 b3: an unknown seat prefix is unknown 

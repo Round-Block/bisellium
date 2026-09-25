@@ -869,6 +869,35 @@ try {
       checkB(4, "positive control: tick's own exit code is unaffected", result.exitCode === 0, String(result.exitCode));
     }
   }
+
+  // ---- W-089 behaviour 3: a due-item sella resolves through resolveSeat
+  // before harnessForSella — an unresolvable one is refused (no daily
+  // written, no crash), other due magisters proceed normally. -------------
+  {
+    const dir = track(freshStudio("w089-b3-unknown-magister"));
+    const manifestPath = join(dir, "bisellium.yml");
+    const raw = readFileSync(manifestPath, "utf8");
+    // Appends a collegium whose magister names nobody declared, right after
+    // the last declared collegium row (never at end-of-file — that would
+    // land outside the `collegia:` list entirely, under `munera:`). check.ts's
+    // own collegium.magister rule would block this manifest; runTick itself
+    // performs no such validation today, so this is the direct route to the
+    // "unresolvable due-item sella" case behaviour 3 covers.
+    const marker = "  - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md }";
+    check("w089 b3 setup: the qa collegium marker line was found", raw.includes(marker), "fixture text drifted");
+    writeFileSync(manifestPath, raw.replace(marker, `${marker}\n  - { id: orphan, name: Orphan, magister: totally-unknown-magister }`));
+
+    const before = readdirSync(join(dir, "acta"));
+    const { errs } = await capture(() => runTick(["--studio", dir], { now: NOW, talk: fakeTalk, ...NO_PROBE }));
+    const after = readdirSync(join(dir, "acta"));
+    check(
+      "w089 b3: no daily is written for the unresolvable magister",
+      !after.some((f) => f.includes("totally-unknown-magister")),
+      JSON.stringify(after),
+    );
+    check("w089 b3: the other due magisters still get their daily", after.length > before.length, `${before.length} -> ${after.length}`);
+    check("w089 b3: an error is reported for the unresolvable item", errs.some((l) => l.includes("totally-unknown-magister")), JSON.stringify(errs));
+  }
 } finally {
   for (const dir of dirs) {
     try {

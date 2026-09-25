@@ -1050,7 +1050,7 @@ if (runs(13)) {
   check(13, "positive control: probeBattery actually did something (turns > 0, a parseable available row)", battery.turns > 0 && battery.record.models.some((m) => m.state === "available"), JSON.stringify({ turns: battery.turns }));
 
   const manifestBefore = readFileSync(join(dir, "bisellium.yml"), "utf8");
-  const delegateResult = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+  const delegateResult = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
   const manifestAfter = readFileSync(join(dir, "bisellium.yml"), "utf8");
   const timelinePath = join(dir, "timeline", "patron.jsonl");
   check(13, "positive control: runDelegate actually did something (exit 0, manifest changed, timeline appended)", delegateResult.exitCode === 0 && manifestBefore !== manifestAfter && existsSync(timelinePath), JSON.stringify({ exit: delegateResult.exitCode }));

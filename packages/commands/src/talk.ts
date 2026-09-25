@@ -19,7 +19,7 @@
  */
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { readManifest, type Manifest } from "@bisellium/adapter-native";
+import { readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
@@ -324,7 +324,13 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
     return { ok: false, exitCode: 2, message: `${manifestPath} unparseable — not a studio: ${(e as Error).message}` };
   }
 
-  const sellaRow = (manifest.sellae ?? []).find((s) => s.id === sella);
+  // W-089 behaviour 3: a template or one of its instance ids resolves the
+  // same row's harness/model (S1). A retired row also resolves — behaviour
+  // 6 restricts the CLI-side dispatch gates (run/handoff/emit --usage), not
+  // this read-mostly resolution — resolveSella/namedSella (lifecycle.ts) is
+  // the load-bearing attribution gate a scheduled talk (tick) already
+  // passed through before reaching here.
+  const sellaRow = resolveSeat(manifest, sella)?.seat;
   if (!sellaRow) {
     return { ok: false, exitCode: 2, message: `unknown sella "${sella}" — not declared in ${manifestPath}` };
   }

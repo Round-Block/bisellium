@@ -175,13 +175,13 @@ for (const fixtureName of ["manifest-flow.yml", "manifest-block.yml", "manifest-
   const dir = freshManifestOnly("4-live", readFileSync(realManifest));
   const manifestPath = join(dir, "bisellium.yml");
   const before = readFileSync(manifestPath, "utf8");
-  const r = runDelegate(["--sella", "builder-a", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+  const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
   check(4, "live studio/bisellium.yml: --sella exit 0", r.exitCode === 0, String(r.exitCode));
   const after = readFileSync(manifestPath, "utf8");
 
   const beforeParsed = parseYaml(before) as Record<string, unknown>;
   const afterParsed = parseYaml(after) as Record<string, unknown>;
-  (beforeParsed["sellae"] as { id: string; model?: string }[]).find((s) => s.id === "builder-a")!.model = "gpt-5.6-sol";
+  (beforeParsed["sellae"] as { id: string; model?: string }[]).find((s) => s.id === "builder")!.model = "gpt-5.6-sol";
   check(4, "live studio/bisellium.yml: parse(after) deep-equals parse(before) with only the target changed", JSON.stringify(afterParsed) === JSON.stringify(beforeParsed));
 
   const beforeLines = before.split("\n");
@@ -267,15 +267,15 @@ const UNPARSEABLE = "unparseable — not a studio";
 // both succeed.
 {
   const dir = freshStudio("5-positive-ordinary");
-  const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+  const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
   check(5, "an ordinary manifest succeeds", r.exitCode === 0, String(r.exitCode));
 }
 {
   const dir = freshManifestOnly(
     "5-positive-empty-munera",
-    "studio: Fixture\nsellae:\n  - { id: builder-1, collegium: engineering, model: x }\nmunera:\n",
+    "studio: Fixture\nsellae:\n  - { id: builder, collegium: engineering, model: x }\nmunera:\n",
   );
-  const r = runDelegate(["--sella", "builder-1", "--model", "y", "--studio", dir], { now: NOW });
+  const r = runDelegate(["--sella", "builder", "--model", "y", "--studio", dir], { now: NOW });
   check(5, "a manifest with an empty munera: succeeds", r.exitCode === 0, String(r.exitCode));
 }
 
@@ -284,7 +284,7 @@ const UNPARSEABLE = "unparseable — not a studio";
 // ---------------------------------------------------------------------------
 {
   const dir = freshStudio("6-from-match");
-  const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--from", "claude-sonnet-5", "--studio", dir], { now: NOW });
+  const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--from", "claude-sonnet-5", "--studio", dir], { now: NOW });
   check(6, "--from matching succeeds", r.exitCode === 0, String(r.exitCode));
 }
 {
@@ -292,7 +292,7 @@ const UNPARSEABLE = "unparseable — not a studio";
   const manifestPath = join(dir, "bisellium.yml");
   const before = readFileSync(manifestPath);
   const timelineBefore = timelineLines(dir).length;
-  const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--from", "not-the-current-value", "--studio", dir], { now: NOW });
+  const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--from", "not-the-current-value", "--studio", dir], { now: NOW });
   check(6, "--from not matching exits non-zero", r.exitCode !== 0, String(r.exitCode));
   const after = readFileSync(manifestPath);
   check(6, "--from not matching: manifest bytes unchanged", Buffer.compare(before, after) === 0);
@@ -300,7 +300,7 @@ const UNPARSEABLE = "unparseable — not a studio";
 }
 {
   const dir = freshStudio("6-from-omitted");
-  const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+  const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
   check(6, "--from omitted succeeds (it is optional)", r.exitCode === 0, String(r.exitCode));
 }
 
@@ -321,7 +321,7 @@ function spawnMain(args: string[], env: Record<string, string | undefined>): { s
 
 {
   const dir = freshStudio("7-attribution-patron");
-  const r = spawnMain(["delegate", "--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir, "--now", NOW.toISOString()], { BISELLIUM_ROLE: "patron" });
+  const r = spawnMain(["delegate", "--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir, "--now", NOW.toISOString()], { BISELLIUM_ROLE: "patron" });
   check(7, "attribution: exits 0 under BISELLIUM_ROLE=patron", r.status === 0, `status=${r.status} stderr=${r.stderr}`);
   const lines = timelineLines(dir);
   check(7, "attribution: exactly one timeline line", lines.length === 1, String(lines.length));
@@ -331,7 +331,7 @@ function spawnMain(args: string[], env: Record<string, string | undefined>): { s
 
 {
   const dir = freshStudio("7-attribution-producer");
-  const r = spawnMain(["delegate", "--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir, "--now", NOW.toISOString()], { BISELLIUM_ROLE: "producer" });
+  const r = spawnMain(["delegate", "--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir, "--now", NOW.toISOString()], { BISELLIUM_ROLE: "producer" });
   check(7, "attribution: exits 0 under BISELLIUM_ROLE=producer (main.ts does not force patron)", r.status === 0, `status=${r.status} stderr=${r.stderr}`);
   const lines = timelineLines(dir);
   check(7, 'attribution: acting role "producer" is recorded faithfully, not laundered to patron', lines[0]?.["role"] === "producer", JSON.stringify(lines[0]));
@@ -346,7 +346,7 @@ function spawnMain(args: string[], env: Record<string, string | undefined>): { s
   mkdirSync(timelineDir, { recursive: true });
   chmodSync(timelineDir, 0o000);
   try {
-    const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+    const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
     check(7, "rollback: timeline/ unwritable -> exit 2", r.exitCode === 2, String(r.exitCode));
     const after = readFileSync(manifestPath);
     check(7, "rollback: manifest byte-identical after a failed write", Buffer.compare(before, after) === 0);
@@ -374,13 +374,38 @@ function spawnMain(args: string[], env: Record<string, string | undefined>): { s
     stderr += parts.map(String).join(" ") + "\n";
   };
   try {
-    const r = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+    const r = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
     check(7, "rollback failure: a DIFFERENT exit code (4)", r.exitCode === 4, String(r.exitCode));
     check(7, "rollback failure: message names the manifest as possibly inconsistent", stderr.includes("may be left changed or partially written"), stderr);
   } finally {
     console.error = origError;
     chmodSync(manifestPath, 0o644);
   }
+}
+
+// ---------------------------------------------------------------------------
+// W-089 behaviours 3/6: delegate resolves a template-instance sella id to
+// the template row, and refuses a retired live target.
+// ---------------------------------------------------------------------------
+{
+  const dir = freshFixture("w089-instance", "manifest-seat-template.yml");
+  const manifestPath = join(dir, "bisellium.yml");
+  const before = readFileSync(manifestPath, "utf8");
+  const r = runDelegate(["--sella", "builder.W-100", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+  check(8, "w089 b3: an instance id targets the resolved template row — exits 0", r.exitCode === 0, String(r.exitCode));
+  const after = readFileSync(manifestPath, "utf8");
+  const afterParsed = parseYaml(after) as { sellae: { id: string; model?: string }[] };
+  check(8, "w089 b3: the TEMPLATE row's model changed, not a new row", afterParsed.sellae.find((s) => s.id === "builder")?.model === "gpt-5.6-sol", JSON.stringify(afterParsed.sellae));
+  check(8, "w089 b3: no new row named after the instance was created", !afterParsed.sellae.some((s) => s.id === "builder.W-100"), JSON.stringify(afterParsed.sellae));
+  check(8, "w089 b3: manifest bytes otherwise match the fixture with only the target field changed", after === before.replace("model: claude-sonnet-5", "model: gpt-5.6-sol"), after);
+}
+{
+  const dir = freshFixture("w089-retired", "manifest-seat-template.yml");
+  const manifestPath = join(dir, "bisellium.yml");
+  const before = readFileSync(manifestPath, "utf8");
+  const r = runDelegate(["--sella", "builder-a", "--model", "gpt-5.6-sol", "--studio", dir], { now: NOW });
+  check(8, "w089 b6: delegate refuses a retired live target", r.exitCode === 2, String(r.exitCode));
+  check(8, "w089 b6: manifest untouched on refusal", readFileSync(manifestPath, "utf8") === before);
 }
 
 process.exit(failed ? 1 : 0);

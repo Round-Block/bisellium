@@ -34,7 +34,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
 import { EVENTS_LOG_REL, readLog, Store as CoreStore } from "@bisellium/core";
-import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, snapshotDir, type Manifest } from "@bisellium/adapter-native";
+import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
 
 /** This server's own ingestion source id, stamped as `workflow.source` on
  *  every event it appends — distinct from "cli" (packages/commands/writes.ts's
@@ -198,7 +198,7 @@ export class Store extends CoreStore {
    *  receipts routes accept before answering 404 for anything else. */
   private knownParty(id: string): boolean {
     const m = this.manifest();
-    return id === (m.patron ?? "patron") || m.sellae.some((s) => s.id === id);
+    return id === (m.patron ?? "patron") || resolveSeat(m, id) !== undefined;
   }
 
   sellaExists(id: string): boolean {
