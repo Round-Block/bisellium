@@ -525,7 +525,7 @@ try {
     const dir = freshStudio("red-record");
     const redsDir = join(dir, "ci", "reds", "W-900");
 
-    const r = await runRed(["W-900", "--behaviour", "3", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('out-line'); console.error('err-line'); process.exit(7)"], {});
+    const r = await runRed(["W-900", "--behaviour", "3", "--sella", "eng-lead", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('out-line'); console.error('err-line'); process.exit(7)"], {});
     check("red: recording a real failure exits 0", r.exitCode === 0, String(r.exitCode));
 
     const logPath = join(redsDir, "03.log");
@@ -536,7 +536,7 @@ try {
     check("red: header line 2 is # command:", lines[1]?.startsWith("# command: node -e") ?? false, lines[1]);
     check("red: header line 3 is # exit: 7", lines[2] === "# exit: 7", lines[2]);
     check("red: header line 4 is # at: <now>", lines[3] === `# at: ${NOW.toISOString()}`, lines[3]);
-    check("red: header line 5 is # sella: builder-a", lines[4] === "# sella: builder-a", lines[4]);
+    check("red: header line 5 is # sella: eng-lead", lines[4] === "# sella: eng-lead", lines[4]);
     check("red: header line 6 is # tree: unknown (non-git --repo)", lines[5] === "# tree: unknown", lines[5]);
     check("red: blank line then combined output", lines[6] === "" && log.includes("out-line") && log.includes("err-line"), JSON.stringify(lines.slice(6)));
   }
@@ -544,7 +544,7 @@ try {
   if (runs(10)) {
     const dir = freshStudio("red-exit0");
     const redsDir = join(dir, "ci", "reds", "W-901");
-    const r = await runRed(["W-901", "--behaviour", "5", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(0)"], {});
+    const r = await runRed(["W-901", "--behaviour", "5", "--sella", "eng-lead", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(0)"], {});
     check("red: a passing command refuses with exit 1", r.exitCode === 1, String(r.exitCode));
     check("red: no directory created for a passing command", !existsSync(redsDir));
   }
@@ -552,9 +552,9 @@ try {
   if (runs(10)) {
     const dir = freshStudio("red-overwrite");
     const redsDir = join(dir, "ci", "reds", "W-902");
-    await runRed(["W-902", "--behaviour", "1", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first'); process.exit(1)"], {});
-    await runRed(["W-902", "--behaviour", "2", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('second'); process.exit(1)"], {});
-    await runRed(["W-902", "--behaviour", "1", "--sella", "builder-a", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first-rerun'); process.exit(1)"], {});
+    await runRed(["W-902", "--behaviour", "1", "--sella", "eng-lead", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first'); process.exit(1)"], {});
+    await runRed(["W-902", "--behaviour", "2", "--sella", "eng-lead", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('second'); process.exit(1)"], {});
+    await runRed(["W-902", "--behaviour", "1", "--sella", "eng-lead", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "console.log('first-rerun'); process.exit(1)"], {});
 
     const log1 = readFileSync(join(redsDir, "01.log"), "utf8");
     const log2 = readFileSync(join(redsDir, "02.log"), "utf8");
@@ -708,7 +708,7 @@ try {
           "--behaviour",
           "1",
           "--sella",
-          "builder-a",
+          "eng-lead",
           "--studio",
           studioDir,
           "--now",
@@ -735,7 +735,7 @@ try {
       const prevCwd = process.cwd();
       process.chdir(inner);
       try {
-        const r = await runRed(["W-962", "--behaviour", "1", "--sella", "builder-a", "--studio", studioDir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
+        const r = await runRed(["W-962", "--behaviour", "1", "--sella", "eng-lead", "--studio", studioDir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
         check("red: default (no --cwd/--repo) exits 0", r.exitCode === 0, String(r.exitCode));
         const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-962", "01.log"), "utf8").split("\n")[5];
         check("red: default names the actual cwd's repo, not the officina's parent", treeLine === `# tree: ${innerHash}` && treeLine !== `# tree: ${outerHash}`, treeLine);
@@ -747,7 +747,7 @@ try {
     // ---- --cwd naming a directory outside any git repo -> "none" ---------
     {
       const plain = mkdtempSync(join(tmpdir(), "bisellium-w020-b16-none-"));
-      const r = await runRed(["W-963", "--behaviour", "1", "--sella", "builder-a", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", plain, "--", "node", "-e", "process.exit(1)"], {});
+      const r = await runRed(["W-963", "--behaviour", "1", "--sella", "eng-lead", "--studio", studioDir, "--now", NOW.toISOString(), "--cwd", plain, "--", "node", "-e", "process.exit(1)"], {});
       check("red --cwd (no enclosing git repo): exits 0", r.exitCode === 0, String(r.exitCode));
       const treeLine = readFileSync(join(studioDir, "ci", "reds", "W-963", "01.log"), "utf8").split("\n")[5];
       check('red --cwd (no enclosing git repo): "# tree: none"', treeLine === "# tree: none", treeLine);
@@ -808,7 +808,7 @@ try {
     const before = readFileSync(opusPath, "utf8");
     const beforeSplit = splitFront(before)!;
 
-    const r = runHalt(["W-002", "--reason", "blocked on vendor", "--resume-when", "vendor responds", "--decision", "D-900", "--sella", "builder-a", "--studio", dir], { now: NOW });
+    const r = runHalt(["W-002", "--reason", "blocked on vendor", "--resume-when", "vendor responds", "--decision", "D-900", "--sella", "eng-lead", "--studio", dir], { now: NOW });
     check("halt: building -> halted exits 0", r.exitCode === 0, String(r.exitCode));
 
     const after = readFront<Record<string, unknown>>(opusPath).data;
@@ -826,7 +826,7 @@ try {
     const attrs = events[0]?.["attrs"] as Record<string, unknown> | undefined;
     check(
       "halt: event carries item/from/to/actor",
-      attrs?.[WF.ITEM_ID] === "W-002" && attrs?.[WF.STATE_FROM] === "building" && attrs?.[WF.STATE_TO] === "halted" && attrs?.[WF.ACTOR_ROLE] === "builder-a",
+      attrs?.[WF.ITEM_ID] === "W-002" && attrs?.[WF.STATE_FROM] === "building" && attrs?.[WF.STATE_TO] === "halted" && attrs?.[WF.ACTOR_ROLE] === "eng-lead",
       JSON.stringify(attrs),
     );
   }
@@ -902,7 +902,7 @@ try {
     // stub trivially passes.
     writeOpus(dir, "W-960", ["---", "id: W-960", "title: Valid halt target", "kind: feature", "collegium: engineering", "state: building", "probationes: {}", "---", "Body.", ""].join("\n"));
     const validPath = join(dir, "opera", "W-960.md");
-    const rValid = runHalt(["W-960", "--reason", "r2", "--resume-when", "rw2", "--decision", "D-901", "--sella", "builder-a", "--studio", dir], { now: NOW });
+    const rValid = runHalt(["W-960", "--reason", "r2", "--resume-when", "rw2", "--decision", "D-901", "--sella", "eng-lead", "--studio", dir], { now: NOW });
     check("halt: a fully valid case (source state + real decision) exits 0", rValid.exitCode === 0, String(rValid.exitCode));
     const afterValid = readFront<Record<string, unknown>>(validPath).data;
     check("halt: the valid case actually wrote state=halted", afterValid["state"] === "halted", String(afterValid["state"]));
@@ -1164,7 +1164,7 @@ try {
         label: "handoff",
         id: "W-112",
         emitsEvent: false,
-        run: () => runHandoff(["--opus", "W-112", "--sella", "builder-1", "--next", "n", "--studio", studioDir], { now: NOW }),
+        run: () => runHandoff(["--opus", "W-112", "--sella", "eng-lead", "--next", "n", "--studio", studioDir], { now: NOW }),
       },
       { label: "greenlight", id: "W-113", run: () => runGreenlight(["W-113", "--studio", studioDir], { now: NOW }) },
     ];
@@ -1233,7 +1233,7 @@ try {
     const before = readFileSync(opusPathX, "utf8");
 
     const { result: r, stderr } = await withStderr(() =>
-      runHandoff(["--opus", "W-131", "--sella", "builder-1", "--next", "n", "--studio", studioDir], { now: NOW }),
+      runHandoff(["--opus", "W-131", "--sella", "eng-lead", "--next", "n", "--studio", studioDir], { now: NOW }),
     );
     check("W-033 b5: handoff on W-131 refused from an opus/W-130 checkout", r.exitCode === 2, String(r.exitCode));
     check("W-033 b5: message names opus/W-130, this checkout's own branch", stderr.includes("opus/W-130"), stderr);
@@ -2014,7 +2014,7 @@ try {
       { tag: "env-whitespace", env: "  ", args: [] },
       { tag: "flag-empty-no-env", env: undefined, args: ["--sella", ""] },
       { tag: "flag-whitespace-no-env", env: undefined, args: ["--sella", "  "] },
-      { tag: "flag-repeated-last-empty", env: undefined, args: ["--sella", "builder-a", "--sella", ""] },
+      { tag: "flag-repeated-last-empty", env: undefined, args: ["--sella", "eng-lead", "--sella", ""] },
     ];
     for (const row of rows) {
       const dir = freshStudio(`red-sella-refuse-${row.tag}`);
@@ -2040,10 +2040,10 @@ try {
   // =========================================================================
   if (runs(44)) {
     const rows: { tag: string; env: string | undefined; args: string[]; want: string }[] = [
-      { tag: "env-alone", env: "builder-b", args: [], want: "builder-b" },
-      { tag: "flag-empty-env-set", env: "builder-b", args: ["--sella", ""], want: "builder-b" },
-      { tag: "flag-repeated-last-wins", env: undefined, args: ["--sella", "", "--sella", "builder-a"], want: "builder-a" },
-      { tag: "flag-over-env", env: "builder-b", args: ["--sella", "builder-a"], want: "builder-a" },
+      { tag: "env-alone", env: "qa-lead", args: [], want: "qa-lead" },
+      { tag: "flag-empty-env-set", env: "qa-lead", args: ["--sella", ""], want: "qa-lead" },
+      { tag: "flag-repeated-last-wins", env: undefined, args: ["--sella", "", "--sella", "eng-lead"], want: "eng-lead" },
+      { tag: "flag-over-env", env: "qa-lead", args: ["--sella", "eng-lead"], want: "eng-lead" },
     ];
     for (const row of rows) {
       const dir = freshStudio(`red-sella-record-${row.tag}`);
@@ -2084,7 +2084,7 @@ try {
       const insideBefore = readFileSync(insidePath, "utf8");
       const eventsBefore = readEventLines(dir).length;
 
-      const { result: r, stderr } = await withStderr(() => runReady(["../W-777", "--sella", "builder-a", "--studio", dir], { now: NOW }));
+      const { result: r, stderr } = await withStderr(() => runReady(["../W-777", "--sella", "eng-lead", "--studio", dir], { now: NOW }));
 
       check("row6 ready: exits 2", r.exitCode === 2, String(r.exitCode));
       check("row6 ready: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
@@ -2106,7 +2106,7 @@ try {
       const insideBefore = readFileSync(insidePath, "utf8");
       const eventsBefore = readEventLines(dir).length;
 
-      const { result: r, stderr } = await withStderr(() => runDone(["../W-777", "--sella", "builder-a", "--studio", dir], { now: NOW }));
+      const { result: r, stderr } = await withStderr(() => runDone(["../W-777", "--sella", "eng-lead", "--studio", dir], { now: NOW }));
 
       check("row7 done: exits 2", r.exitCode === 2, String(r.exitCode));
       check("row7 done: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
@@ -2131,7 +2131,7 @@ try {
       const eventsBefore = readEventLines(dir).length;
 
       const { result: r, stderr } = await withStderr(() =>
-        runReview(["../W-777", "--pass", "--evidence", "ci/review-w047-b3.log", "--sella", "builder-a", "--studio", dir], { now: NOW }),
+        runReview(["../W-777", "--pass", "--evidence", "ci/review-w047-b3.log", "--sella", "eng-lead", "--studio", dir], { now: NOW }),
       );
 
       check("row8 review: exits 2", r.exitCode === 2, String(r.exitCode));
@@ -2865,6 +2865,75 @@ try {
       afterBlocks.length >= beforeBlocks.length,
       `${beforeBlocks.length} -> ${afterBlocks.length}`,
     );
+  }
+
+  // ===========================================================================
+  // W-089 behaviour 6 — resolveSella (ready/done/review/halt/waive) and
+  // namedSella (red/amend) become roster-aware: an unresolved id exits 2 and
+  // writes nothing; a retired id (sample-studio's "builder-1") still passes —
+  // history's grandfathering record, not a live dispatch permission.
+  // ===========================================================================
+  {
+    const dir = freshStudio("w089-b6-ready-unknown");
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "W-006.md"), "# W-006\n\nSpec fixture.\n");
+    const before = readFileSync(join(dir, "opera", "W-006.md"), "utf8");
+    const unknown = runReady(["W-006", "--sella", "totally-unknown", "--studio", dir], { now: NOW });
+    check("w089 b6: ready refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
+    check("w089 b6: ready refuses an unknown sella — record untouched", readFileSync(join(dir, "opera", "W-006.md"), "utf8") === before);
+
+    const dir2 = freshStudio("w089-b6-ready-retired");
+    mkdirSync(join(dir2, "briefs"), { recursive: true });
+    writeFileSync(join(dir2, "briefs", "W-006.md"), "# W-006\n\nSpec fixture.\n");
+    const retired = runReady(["W-006", "--sella", "builder-1", "--studio", dir2], { now: NOW });
+    check("w089 b6: ready still accepts a retired sella (attribution, not dispatch)", retired.exitCode === 0, String(retired.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b6-waive-unknown");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-900.md"), '---\nby: patron\n---\nDecision fixture.\n');
+    const unknown = runWaive(["W-004", "--gate", "patron", "--reason", "r", "--decision", "D-900", "--sella", "totally-unknown", "--studio", dir], { now: NOW });
+    check("w089 b6: waive refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
+
+    const dir2 = freshStudio("w089-b6-waive-retired");
+    mkdirSync(join(dir2, "decisions"), { recursive: true });
+    writeFileSync(join(dir2, "decisions", "D-900.md"), '---\nby: patron\n---\nDecision fixture.\n');
+    const retired = runWaive(["W-004", "--gate", "patron", "--reason", "r", "--decision", "D-900", "--sella", "builder-1", "--studio", dir2], { now: NOW });
+    check("w089 b6: waive still accepts a retired sella (attribution, not dispatch)", retired.exitCode === 0, String(retired.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b6-halt");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-900.md"), "# D-900\n\nDecision fixture.\n");
+    const before = readFileSync(join(dir, "opera", "W-002.md"), "utf8");
+    const unknown = runHalt(["W-002", "--reason", "r", "--resume-when", "rw", "--decision", "D-900", "--sella", "totally-unknown", "--studio", dir], { now: NOW });
+    check("w089 b6: halt refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
+    check("w089 b6: halt refuses an unknown sella — record untouched", readFileSync(join(dir, "opera", "W-002.md"), "utf8") === before);
+    const retired = runHalt(["W-005", "--reason", "r", "--resume-when", "rw", "--decision", "D-900", "--sella", "builder-1", "--studio", dir], { now: NOW });
+    check("w089 b6: halt still accepts a retired sella (attribution, not dispatch)", retired.exitCode === 0, String(retired.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b6-review");
+    writeFileSync(join(dir, "ci", "review-pass-1.log"), "review notes\n");
+    const unknown = runReview(["W-004", "--pass", "--evidence", "ci/review-pass-1.log", "--sella", "totally-unknown", "--studio", dir], { now: NOW });
+    check("w089 b6: review refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
+    const retired = runReview(["W-004", "--pass", "--evidence", "ci/review-pass-1.log", "--sella", "builder-1", "--studio", dir], { now: NOW });
+    check("w089 b6: review still accepts a retired sella (attribution, not dispatch)", retired.exitCode === 0, String(retired.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b6-red");
+    const id = "W-980";
+    mkdirSync(join(dir, "ci", "reds", id), { recursive: true });
+    const unknown = await runRed([id, "--behaviour", "1", "--sella", "totally-unknown", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
+    check("w089 b6: red refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
+    check("w089 b6: red refuses an unknown sella — nothing written", !existsSync(join(dir, "ci", "reds", id, "01.log")));
+    const retired = await runRed([id, "--behaviour", "1", "--sella", "builder-1", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"], {});
+    check("w089 b6: red still accepts a retired sella (attribution, not dispatch)", retired.exitCode === 0, String(retired.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b6-amend");
+    const unknown = runAmend(["W-006", "--title", "New title", "--reason", "r", "--sella", "totally-unknown", "--studio", dir], { now: NOW });
+    check("w089 b6: amend refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

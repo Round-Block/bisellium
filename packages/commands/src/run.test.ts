@@ -94,4 +94,41 @@ probationes: []
   }
 }
 
+// ---------------------------------------------------------------------------
+// W-089 behaviour 6 — the group-A membership site at run.ts:160 refuses a
+// retired sella (exact name or one of its instance ids), no worktree
+// acquired, no receipt written.
+// ---------------------------------------------------------------------------
+function writeStudioRetired(root: string): void {
+  writeFileSync(
+    join(root, "bisellium.yml"),
+    `bisellium: 1
+studio: Run Retired Test Studio
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: builder }
+sellae:
+  - { id: builder, collegium: engineering, kind: agent }
+  - { id: builder-a, collegium: engineering, kind: agent, retired: true }
+probationes: []
+`,
+  );
+}
+
+{
+  const studio = mkdtempSync(join(tmpdir(), "run-retired-studio-"));
+  writeStudioRetired(studio);
+
+  const exact = await runCommand(["--sella", "builder-a", "--studio", studio, "--no-worktree", "--", "true"]);
+  check("run: an exact retired sella exits 2", exact.exitCode === 2, String(exact.exitCode));
+
+  const instance = await runCommand(["--sella", "builder-a.W-200", "--studio", studio, "--no-worktree", "--", "true"]);
+  check("run: an instance of a retired sella also exits 2", instance.exitCode === 2, String(instance.exitCode));
+
+  const live = await runCommand(["--sella", "builder", "--studio", studio, "--no-worktree", "--", "true"]);
+  check("run: the live template itself is unaffected", live.exitCode === 0, String(live.exitCode));
+
+  rmSync(studio, { recursive: true, force: true });
+}
+
 process.exit(failed ? 1 : 0);

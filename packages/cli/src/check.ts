@@ -229,6 +229,15 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellae = listOf("sellae");
   const probationes = listOf("probationes");
 
+  // W-089 behaviour 2: `retired` is a declared, typed sella key — a
+  // historical seat kept declared so every record naming it stays readable
+  // (S3). Same precedent as integration.push above: shape-checked here,
+  // never silently cast.
+  sellae.forEach((s, i) => {
+    if (s["retired"] !== undefined && typeof s["retired"] !== "boolean")
+      add("manifest.shape", "block", `bisellium.yml#sellae[${i}].retired`, "retired must be a boolean");
+  });
+
   const uniq = (key: string, rows: Dict[]) => {
     const seen = new Set<string>();
     for (const r of rows) {

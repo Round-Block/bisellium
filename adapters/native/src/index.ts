@@ -56,8 +56,12 @@ export interface Manifest {
    *  this reader's — it's passed through as-is. */
   collegia: { id: string; name: string; magister: string; fallback?: string; lex?: string; autonomy?: string }[];
   /** `harness`: the @bisellium/shim harness profile id `bisellium talk`
-   *  drives this sella through — defaults to "claude-code" when absent. */
-  sellae: { id: string; collegium: string; kind?: ActorKind; model?: string; harness?: string }[];
+   *  drives this sella through — defaults to "claude-code" when absent.
+   *  `retired` (W-089): the row is a historical seat — kept declared so
+   *  every record that ever named it stays readable and its typo-catching
+   *  membership rules stay blocking forever, but `resolveSeat`'s callers
+   *  must refuse it as a live dispatch target (S3). Absent means live. */
+  sellae: { id: string; collegium: string; kind?: ActorKind; model?: string; harness?: string; retired?: boolean }[];
   probationes: { id: string; name: string; kind: ProbatioKind; command?: string }[];
   wip_limit?: number;
   /** Overrides for the Defaults table in the dossier. */
@@ -208,6 +212,122 @@ export function readManifest(root: string): Manifest {
   return parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8")) as Manifest;
 }
 
+// ---------------------------------------------------------------------------
+// W-089 — Seam S1/S2: seats are templates, instance identity is minted at
+// dispatch. Both live here (not in @bisellium/cli or @bisellium/commands)
+// because this is the lowest package every class-B consumer named in the
+// brief's census — context/talk/tick/delegate/probe/hooks (all of which
+// already import @bisellium/adapter-native) and `check` itself — can import
+// without a cycle.
+// ---------------------------------------------------------------------------
+
+/** The minimal shape `resolveSeat` needs off a `sellae` row — a subset of
+ *  `Manifest["sellae"][number]`, so `check.ts` (which parses `bisellium.yml`
+ *  itself, ahead of full shape validation) can build one of these off its
+ *  own raw rows without importing the rest of the manifest contract. */
+export interface SeatLike {
+  id: string;
+  retired?: boolean;
+}
+
+export interface ResolvedSeat<T extends SeatLike> {
+  seat: T;
+  /** Present only when `id` was `<seat>.<instance>` — an exact declared id
+   *  (template or a historical tombstone) resolves with none. */
+  instance?: string;
+}
+
+/**
+ * Seam S1 (W-089): the single authority on what a sella id means against a
+ * manifest's `sellae` roster. Every membership test and row lookup goes
+ * through this — no caller re-implements `id.split(".")` or `sellae.find`.
+ *
+ * An exact declared id (a live template or a `retired: true` tombstone)
+ * resolves with `instance` absent; exact match is tried first. Otherwise the
+ * substring before the FIRST "." is taken as the seat id and the (non-empty)
+ * remainder as `instance` — the seat itself is matched whole, never split on
+ * "-", so a hyphenated seat id (`builder-codex`) still parses
+ * `builder-codex.W-100` correctly. `ghost`, `ghost.W-089`, `builder.` (empty
+ * instance) and any other prefix that names nothing declared all return
+ * `undefined`.
+ *
+ * A retired row still resolves — reads must work forever. Resolution is NOT
+ * permission to dispatch: the caller reads `resolved.seat.retired` and
+ * applies its own live/historical policy (behaviour 6).
+ */
+export function resolveSeat<T extends SeatLike>(manifest: { sellae?: readonly T[] }, id: string): ResolvedSeat<T> | undefined {
+  if (!id) return undefined;
+  const rows = manifest.sellae ?? [];
+  const exact = rows.find((r) => r.id === id);
+  if (exact) return { seat: exact };
+
+  const dot = id.indexOf(".");
+  if (dot <= 0) return undefined; // no "." at all, or an empty seat prefix
+  const instance = id.slice(dot + 1);
+  if (instance.length === 0) return undefined; // "builder." — empty instance
+  const seat = rows.find((r) => r.id === id.slice(0, dot));
+  if (!seat) return undefined;
+  return { seat, instance };
+}
+
+// Mirrors packages/cli/src/check.ts's ID_RE exactly (S2's own containment
+// invariant) — NOT an import: @bisellium/adapter-native sits below
+// @bisellium/cli in the dependency graph (cli already depends on this
+// package), so importing check.ts's copy back would be a real cycle. Kept
+// in lockstep by hand; check.ts:37 itself is unchanged by this opus.
+const SEAT_INSTANCE_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
+/**
+ * Seam S2 (W-089): the single authority that joins a resolved live builder
+ * template to an opus id — `seatInstance("builder", "W-089") ===
+ * "builder.W-089"`. No caller may spell `` `${seat}.${opus}` `` itself.
+ *
+ * Refuses (returns `undefined`) rather than ever handing back a bad id: when
+ * either operand is empty, or the joined string contains a doubled dot, or
+ * it fails the same character-class invariant every id in this system is
+ * held to (ID_RE).
+ */
+export function seatInstance(seatId: string, opusId: string): string | undefined {
+  if (!seatId || !opusId) return undefined;
+  const candidate = `${seatId}.${opusId}`;
+  if (candidate.includes("..")) return undefined;
+  if (!SEAT_INSTANCE_ID_RE.test(candidate)) return undefined;
+  return candidate;
+}
+
+/**
+ * W-089 behaviour 6: the live template a retired row's own name suggests,
+ * for the refusal message at the three group-A membership sites. Never
+ * stored on the row — derived from what's actually declared, so it can
+ * never drift out of sync with the manifest the way a hand-written
+ * "replaced_by" field could.
+ *
+ * Candidates are every LIVE row sharing the retired row's collegium and
+ * harness (`undefined === undefined` for "no harness declared" on both
+ * sides). Among those, the retired id with its last `-<segment>` stripped
+ * (`builder-a` → `builder`, `builder-sol` → `builder`) is preferred when it
+ * names one of them exactly — this is what makes a codex-harness retiree
+ * land on `builder-codex` rather than the first alphabetical engineering
+ * seat. Falls back to the first candidate, or `undefined` when none exist.
+ */
+export function liveReplacementFor<T extends SeatLike & { collegium?: string; harness?: string }>(manifest: { sellae?: readonly T[] }, retired: T): T | undefined {
+  const candidates = (manifest.sellae ?? []).filter((r) => r.retired !== true && r.collegium === retired.collegium && r.harness === retired.harness);
+  if (candidates.length === 0) return undefined;
+  const stem = retired.id.replace(/-[^-]+$/, "");
+  return candidates.find((r) => r.id === stem) ?? candidates[0];
+}
+
+/** The exact refusal text for a live-dispatch site (run.ts:160, writes.ts's
+ *  handoff/emit --usage) naming a retired sella — pinned by W-089 behaviour
+ *  6's own tests. Always names the resolved SEAT's own id, never the
+ *  original (possibly instance-shaped) string the caller supplied. */
+export function retiredDispatchMessage<T extends SeatLike & { collegium?: string; harness?: string }>(manifest: { sellae?: readonly T[] }, seat: T): string {
+  const replacement = liveReplacementFor(manifest, seat);
+  return replacement
+    ? `sella "${seat.id}" is retired — dispatch "${replacement.id}" instead`
+    : `sella "${seat.id}" is retired — no live replacement is declared for it`;
+}
+
 export function describeLifecycle(manifest: Manifest): Lifecycle {
   const gates: Probatio[] = manifest.probationes.map((g) => ({ id: g.id, name: g.name, kind: g.kind, command: g.command }));
   const patron = manifest.patron ?? "patron";
@@ -242,7 +362,9 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
     projectId,
     kind: s.kind ?? "agent",
     collegiumId: s.collegium,
-    meta: { model: s.model },
+    // retired (W-089): only ever `true` on a row, never written `false` —
+    // consumers that don't care about it can ignore the key entirely.
+    meta: { model: s.model, ...(s.retired ? { retired: true } : {}) },
   }));
 
   interface OpusFront {
