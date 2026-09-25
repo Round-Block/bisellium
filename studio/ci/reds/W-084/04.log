@@ -1,0 +1,10 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/rules/evidence.test.ts . 8
+# exit: 1
+# at: 2026-09-25T20:55:48.008Z
+# sella: builder-sol
+# tree: tree:2914a0d674c8b282f79756465e1ceffc53a522fb
+
+PASS  brief.behaviour_citation is registered                       
+FAIL  unreadable, symlink, and FIFO briefs are skipped; later brief is reached [{"rule":"brief.behaviour_citation","level":"block","where":"briefs/01-symlink.md","message":"brief cites Behaviour 97 but declares 3 behaviours"},{"rule":"brief.behaviour_citation","level":"block","where":"briefs/02-fifo.md","message":"brief cites Behaviour 98 but declares 3 behaviours"},{"rule":"brief.behaviour_citation","level":"block","where":"briefs/zz-later.md","message":"brief cites Behaviour 99 but declares 3 behaviours"}]
+FAIL  10k backticks and the quadratic shape complete in bounded time 599.0ms [{"rule":"brief.behaviour_citation","level":"block","where":"briefs/plain.md","message":"brief cites Behaviour 99 but declares 3 behaviours"},{"rule":"brief.behaviour_citation","level":"block","where":"briefs/quadratic.md","message":"brief cites Behaviour 98 but declares 3 behaviours"}]
