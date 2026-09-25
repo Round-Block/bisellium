@@ -239,6 +239,16 @@ if (runs(3) && requireBuilt(3)) {
       `import { spawnSync } from "node:child_process";\nspawnSync("/usr/local/bin/claude", []);\n`,
     );
   });
+  // Round-1 B1(i)/(ii): the activation self-test itself had no assertion —
+  // neither the `if (!selfTest(...))` gate (runOnce) nor selfTest's own
+  // `readLogLines(...).length > 0` observation was pinned. A shim that is
+  // present and executable but writes nothing to the log must still stop
+  // the run before the suite spends anything: deleting the gate (M3) or
+  // hardcoding `fired = true` (M12) both let the marker get written.
+  row("test/bin/claude is present and executable but never fires (writes nothing)", (dir, shadowDir) => {
+    writeFileSync(join(shadowDir, "claude"), "#!/usr/bin/env node\nprocess.exit(1);\n");
+    chmodSync(join(shadowDir, "claude"), 0o755);
+  });
 
   // ".bisellium unwritable": this precondition is `main()`'s alone —
   // `runOnce()` never creates `.bisellium/` from nothing, so this row
@@ -282,6 +292,41 @@ if (runs(3) && requireBuilt(3)) {
     check(3, ".bisellium unwritable: the inner command never ran", !existsSync(markerPath), markerPath);
     chmodSync(bisDir, 0o755); // restore so cleanup can remove it
   }
+
+  // Round-1 B2 regression: `import.meta.url === \`file://${process.argv[1]}\``
+  // compares a percent-encoded URL against a raw path — false (main() never
+  // runs, exit 0, NOTHING happened) on any checkout with a space in it. This
+  // is the opposite assertion shape from every row above: the suite here is
+  // SUPPOSED to run, and a space in the path must not stop it.
+  {
+    const outer = freshDir("b3-space");
+    const dir = join(outer, "space test");
+    mkdirSync(dir, { recursive: true });
+    const shadowDir = join(dir, "test", "bin");
+    installShim(shadowDir, "claude");
+    installShim(shadowDir, "codex", CODEX_SHIM_SRC);
+    mkdirSync(join(dir, "packages"), { recursive: true });
+    mkdirSync(join(dir, "scripts"), { recursive: true });
+    const runnerCopy = join(dir, "scripts", "no-vendor.mjs");
+    cpSync(join(REPO_ROOT, "scripts", "no-vendor.mjs"), runnerCopy);
+    const markerPath = join(dir, "marker.txt");
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({
+        name: "fixture",
+        scripts: {
+          "test:suite": `node -e ${JSON.stringify(`require('fs').writeFileSync(${JSON.stringify(markerPath)}, 'ran')`)}`,
+        },
+      }),
+    );
+    const r = spawnSync(process.execPath, [runnerCopy], { cwd: dir, encoding: "utf8" });
+    check(
+      3,
+      "a checkout path with a space still runs main(): the suite executes and the runner exits 0",
+      r.status === 0 && existsSync(markerPath),
+      JSON.stringify({ status: r.status, markerExists: existsSync(markerPath) }),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -296,6 +341,14 @@ if (runs(4) && requireBuilt(4)) {
 
   const fired = mod.selfTest(shadowDir, logPath);
   check(4, "selfTest() observes its own violation line and reports true", fired === true, String(fired));
+  // Round-1 M12: the other half of "observes, not assumes" — a shim that IS
+  // executable but writes nothing must report false, directly, at the unit
+  // level (not only through runOnce's gate, see behaviour 3's new row).
+  writeFileSync(join(shadowDir, "claude"), "#!/usr/bin/env node\nprocess.exit(1);\n");
+  chmodSync(join(shadowDir, "claude"), 0o755);
+  const notFired = mod.selfTest(shadowDir, logPath);
+  check(4, "selfTest() reports false for a shim that never writes a line", notFired === false, String(notFired));
+  installShim(shadowDir, "claude"); // restore the real, firing shim for the rest of this behaviour
   check(
     4,
     "the log is empty immediately after the self-test",
@@ -823,6 +876,74 @@ if (runs(11) && requireBuilt(11)) {
     before === after,
     JSON.stringify({ before, after }),
   );
+
+  // Round-1 B1(iii): the brief's own second clause — "`.bisellium` is in
+  // the exclusion set `verify` computes" — had no assertion anywhere in the
+  // repo. Exercise the real, unmodified packages/commands/src/verify.ts
+  // (imported the same way behaviour 7 reaches TypeScript, via a short-lived
+  // `node --import tsx` child) end to end: a recorded violation under
+  // `.bisellium/` must never make `verify` refuse the tree as dirty.
+  // Removing ".bisellium" from verify.ts's excludeDirs (M15) makes it dirty
+  // and this check fails.
+  {
+    const vdir = freshDir("b11-verify");
+    execFileSync("git", ["init", "-q", "-b", "master"], { cwd: vdir });
+    execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: vdir });
+    execFileSync("git", ["config", "user.name", "test"], { cwd: vdir });
+    const vstudio = join(vdir, "studio");
+    mkdirSync(join(vstudio, "opera"), { recursive: true });
+    writeFileSync(
+      join(vstudio, "bisellium.yml"),
+      "bisellium: 1\nstudio: Test\ncollegia: []\nsellae: []\nprobationes: []\n",
+    );
+    writeFileSync(
+      join(vstudio, "opera", "W-999.md"),
+      [
+        "---",
+        "id: W-999",
+        "title: verify exclusion fixture",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "probationes: {}",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    execFileSync("git", ["add", "-A"], { cwd: vdir });
+    execFileSync("git", ["commit", "-q", "-m", "init"], { cwd: vdir });
+    execFileSync("git", ["branch", "opus/W-999"], { cwd: vdir });
+    execFileSync("git", ["checkout", "-q", "opus/W-999"], { cwd: vdir });
+    mkdirSync(join(vdir, ".bisellium"), { recursive: true });
+    writeFileSync(join(vdir, ".bisellium", "vendor-violations.log"), "a-recorded-violation\n");
+
+    const verifyTsUrl = `file://${join(REPO_ROOT, "packages", "commands", "src", "verify.ts")}`;
+    const script = [
+      `import { runVerify } from ${JSON.stringify(verifyTsUrl)};`,
+      `let stderr = ''; const orig = console.error;`,
+      `console.error = (...a) => { stderr += a.join(' ') + '\\n'; };`,
+      `const r = await runVerify([${JSON.stringify("W-999")}, '--studio', ${JSON.stringify(vstudio)}, '--repo', ${JSON.stringify(vdir)}]);`,
+      `console.error = orig;`,
+      `process.stdout.write(JSON.stringify({ exitCode: r.exitCode, stderr }));`,
+    ].join("\n");
+    let out = { exitCode: -1, stderr: "<child did not run>" };
+    try {
+      const raw = execFileSync(process.execPath, ["--import", "tsx", "--input-type=module", "-e", script], {
+        encoding: "utf8",
+        cwd: REPO_ROOT,
+      });
+      out = JSON.parse(raw);
+    } catch (err) {
+      out = { exitCode: -1, stderr: String(err) };
+    }
+    check(
+      11,
+      "verify's own excludeDirs covers .bisellium: a recorded violation under it never trips the dirty-tree refusal",
+      !out.stderr.includes("working tree is dirty"),
+      JSON.stringify(out),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------

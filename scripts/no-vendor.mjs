@@ -36,7 +36,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -443,4 +443,9 @@ async function main() {
   process.exit(exitCode);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main();
+// round-1 B2: `import.meta.url === \`file://${process.argv[1]}\`` compares a
+// percent-encoded URL against a raw path — false (fail OPEN) on any
+// checkout with a space, '#', '?' or non-ASCII byte in it, which silently
+// skips main() and exits 0 having run nothing. Decoding the URL and
+// resolving the path puts both sides in the same, comparable form.
+if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === resolve(process.argv[1])) main();
