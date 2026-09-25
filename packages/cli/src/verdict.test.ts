@@ -301,6 +301,29 @@ try {
       const result = runVerdict(row.args, { now: NOW, ...(row.stdin ? { stdin: row.stdin } : {}) });
       check(5, `b5: ${row.label} exits 2 and writes nothing`, result.exitCode === 2 && sameFiles(before, files(dir)), String(result.exitCode));
     }
+
+    // row 11 (W-082): verdict <opus> ../W-777. Both a file outside opera/
+    // and an in-directory collision exist, so the safeItemPath refusal—not
+    // mere absence—must win without changing either sentinel or writing
+    // verdict evidence.
+    {
+      const sentinel = readFileSync(join(dir, "opera", "W-240.md"));
+      const outsidePath = join(dir, "W-777.md");
+      const insidePath = join(dir, "opera", "W-777.md");
+      writeFileSync(outsidePath, sentinel);
+      writeFileSync(insidePath, sentinel);
+      const outsideBefore = readFileSync(outsidePath);
+      const insideBefore = readFileSync(insidePath);
+
+      const { result, stderr } = captureErrors(() => runVerdict(base("../W-777"), { now: NOW }));
+
+      check(5, "row11 verdict: exits 2", result.exitCode === 2, String(result.exitCode));
+      check(5, "row11 verdict: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+      check(5, "row11 verdict: outside sentinel byte-identical", readFileSync(outsidePath).equals(outsideBefore));
+      check(5, "row11 verdict: in-directory collision record byte-identical", readFileSync(insidePath).equals(insideBefore));
+      check(5, "row11 verdict: no evidence written", !existsSync(join(dir, "W-777-review-2.log")));
+    }
+
     const outside = join(tmpdir(), `bisellium-verdict-positive-${process.pid}.log`);
     roots.push(outside);
     writeFileSync(outside, "external evidence\n");

@@ -228,6 +228,7 @@ const PINNED_A: string[] = [
   "packages/commands/src/lifecycle.ts:patronDecisionProblem:decisions#1",
   "packages/commands/src/lifecycle.ts:runWaive:opera#1",
   "packages/commands/src/lifecycle.ts:runAmend:opera#1",
+  "packages/commands/src/verdict.ts:runVerdict:opera#1",
   "packages/commands/src/writes.ts:runHandoff:opera#1",
   "packages/commands/src/writes.ts:runEmit:opera#1",
   "packages/commands/src/writes.ts:runAnswer:petitiones#1",
