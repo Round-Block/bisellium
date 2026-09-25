@@ -19,6 +19,7 @@ sellae:
   - { id: builder-d, collegium: engineering, kind: agent, model: claude-sonnet-5 }
   - { id: builder-sol, collegium: engineering, kind: agent, model: gpt-5.6-sol, harness: codex }
   - { id: qa-lead, collegium: qa, kind: agent, model: claude-opus-5 }
+  - { id: sec-lead, collegium: qa, kind: agent, model: gpt-5.6-sol, harness: codex }
   - { id: guest, collegium: production, kind: human }
 probationes:
   - { id: tests, name: Tests, kind: automated, command: "npm test -s" }
