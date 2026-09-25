@@ -685,6 +685,15 @@ try {
         runTick(["--studio", dir], {
           now: NOW,
           ...NO_PROBE,
+          // W-072 found this: this studio's own dailies are also due for
+          // "now", and this block is the only runTick call in the file that
+          // omits `talk`, so without it tick falls back to the real
+          // ./talk.js -> claudeCodeProfile.available() -> a real `claude
+          // --version` spawn, for every due magister — an accidental vendor
+          // turn this test's own point (the probe cap) has nothing to do
+          // with. Every other non-real-seam runTick call already injects
+          // `talk: fakeTalk`; this one just forgot to.
+          talk: fakeTalk,
           probe: async (opts) => {
             called++;
             receivedMaxTurns = opts.maxTurns;
