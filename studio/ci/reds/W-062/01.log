@@ -1,0 +1,19 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:11.283Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  amend b1: retitling a done opus exits 0                          0
+FAIL  amend b1: title is the new value                                 Save-slot migration
+FAIL  amend b1: amendments has one entry                               
+FAIL  amend b1: entry.at === NOW.toISOString()                         
+FAIL  amend b1: entry.sella is the --sella value                       
+FAIL  amend b1: entry.field is title                                   
+FAIL  amend b1: entry.reason is the given reason                       
+FAIL  amend b1: entry.superseded is the old title                      
+PASS  amend b1: state is unchanged                                     
+PASS  amend b1: probationes is unchanged                               
+PASS  amend b1: traditio is unchanged                                  
+PASS  amend b1: body is byte-for-byte unchanged                        

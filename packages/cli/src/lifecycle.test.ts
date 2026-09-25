@@ -10,7 +10,7 @@
  * behaviour runs, exactly as before this existed.
  */
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseDocument } from "yaml";
@@ -23,7 +23,7 @@ import { checkStudio } from "./check.js";
 import { executeClose } from "./close.js";
 import { runCi } from "./ci.js";
 import { splitFront } from "./frontmatter.js";
-import { runReady, runDone, runReview, runRed, runHalt, runWaive } from "./lifecycle.js";
+import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
 import { runVerify } from "./verify.js";
 import { runGreenlight, runHandoff, type WriteResult } from "./writes.js";
 
@@ -252,6 +252,18 @@ async function withStderr<T>(fn: () => T | Promise<T>): Promise<{ result: T; std
   } finally {
     console.error = orig;
   }
+}
+
+/** W-062: the shape `readFront` sees on an amended opus. `amendments` is
+ *  absent until the first amendment; every entry after that carries the
+ *  W-040-shaped keys (`at`, `sella`, `field`, `reason`, `superseded`). */
+interface AmendedOpus {
+  title?: string;
+  spec?: string;
+  state?: unknown;
+  probationes?: Record<string, unknown>;
+  traditio?: unknown;
+  amendments?: { at: string; sella: string; field: string; reason: string; superseded: string }[];
 }
 
 /** Same as `withStderr`, for stdout — W-034's trace assertions (`done`'s
@@ -2153,6 +2165,689 @@ try {
       check("row9 waive: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
       check("row9 waive: no event appended", readEventLines(dir).length === eventsBefore);
     }
+
+    // row 10 (W-062): amend <opus> --title x --reason r. `runAmend`'s own
+    // safeItemPath call site (packages/commands/src/lifecycle.ts:runAmend:
+    // opera#1, containment.test.ts's inventory A) is new with this opus — a
+    // mutant that reaches the opus lookup would refuse before D-021 or
+    // anything else has a chance to write, same shape as rows 6-9.
+    {
+      const dir = freshStudio("b3-amend");
+      seedOpusSentinels(dir, "W-002");
+      const outsidePath = join(dir, "W-777.md");
+      const insidePath = join(dir, "opera", "W-777.md");
+      const outsideBefore = readFileSync(outsidePath, "utf8");
+      const insideBefore = readFileSync(insidePath, "utf8");
+      const eventsBefore = readEventLines(dir).length;
+
+      const { result: r, stderr } = await withStderr(() => runAmend(["../W-777", "--title", "x", "--reason", "r", "--studio", dir], { now: NOW }));
+
+      check("row10 amend: exits 2", r.exitCode === 2, String(r.exitCode));
+      check("row10 amend: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
+      check("row10 amend: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
+      check("row10 amend: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
+      check("row10 amend: no event appended", readEventLines(dir).length === eventsBefore);
+    }
+  }
+
+  // =========================================================================
+  // W-062 — amend: behaviours 1-9, 11-12 (blocks 46-56). Behaviour 10 (the
+  // banner census) is asserted entirely by usage.test.ts's own guard, which
+  // already scans every *_USAGE constant in this tree — no block here
+  // duplicates it; its red is recorded against that file directly.
+  // =========================================================================
+
+  // ---- behaviour 1 (block 46): a done opus is retitled ---------------------
+  if (runs(46)) {
+    const dir = freshStudio("amend-retitle-done");
+    const opusPath = join(dir, "opera", "W-001.md");
+    const beforeRaw = readFileSync(opusPath, "utf8");
+    const beforeSplit = splitFront(beforeRaw)!;
+    const before = readFront<AmendedOpus>(opusPath).data;
+
+    const r = runAmend(
+      [
+        "W-001",
+        "--title",
+        "Save-slot migration: cross-platform cloud sync",
+        "--reason",
+        "the Patron widened scope to cover cloud sync mid-flight (W-046's own class)",
+        "--sella",
+        "architect",
+        "--studio",
+        dir,
+      ],
+      { now: NOW },
+    );
+    check("amend b1: retitling a done opus exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const afterRaw = readFileSync(opusPath, "utf8");
+    const afterSplit = splitFront(afterRaw)!;
+    const after = readFront<AmendedOpus>(opusPath).data;
+
+    check("amend b1: title is the new value", after.title === "Save-slot migration: cross-platform cloud sync", after.title);
+    check("amend b1: amendments has one entry", Array.isArray(after.amendments) && after.amendments.length === 1, JSON.stringify(after.amendments));
+    const entry = after.amendments?.[0];
+    check("amend b1: entry.at === NOW.toISOString()", entry?.at === NOW.toISOString(), entry?.at);
+    check("amend b1: entry.sella is the --sella value", entry?.sella === "architect", entry?.sella);
+    check("amend b1: entry.field is title", entry?.field === "title", entry?.field);
+    check(
+      "amend b1: entry.reason is the given reason",
+      entry?.reason === "the Patron widened scope to cover cloud sync mid-flight (W-046's own class)",
+      entry?.reason,
+    );
+    check("amend b1: entry.superseded is the old title", entry?.superseded === before.title, entry?.superseded);
+    check("amend b1: state is unchanged", JSON.stringify(after.state) === JSON.stringify(before.state));
+    check("amend b1: probationes is unchanged", JSON.stringify(after.probationes) === JSON.stringify(before.probationes));
+    check("amend b1: traditio is unchanged", JSON.stringify(after.traditio) === JSON.stringify(before.traditio));
+    check("amend b1: body is byte-for-byte unchanged", afterSplit.body === beforeSplit.body);
+  }
+
+  // ---- behaviour 2 (block 47): --spec re-points the pointer and leaves the
+  //      gate alone — and the record is then blocked by the pointer/gate
+  //      equality condition (land 1) -----------------------------------------
+  if (runs(47)) {
+    const dir = freshStudio("amend-spec-repoint");
+    addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "W-900.md"), "Brief for W-900.\n");
+    const id = "W-900";
+    writeOpus(
+      dir,
+      id,
+      [
+        "---",
+        `id: ${id}`,
+        "title: spec repoint target",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        `spec: opera/${id}.md`,
+        "probationes:",
+        `  spec: { status: passed, evidence: opera/${id}.md, sella: architect, at: 2026-09-20T00:00:00Z }`,
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const opusPath = join(dir, "opera", `${id}.md`);
+    const beforeSpecGate = readFront<AmendedOpus>(opusPath).data.probationes?.["spec"];
+
+    const r = runAmend([id, "--spec", "briefs/W-900.md", "--reason", "the record's own spec is not the spec (W-075's class)", "--sella", "architect", "--studio", dir], {
+      now: NOW,
+    });
+    check("amend b2: exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const after = readFront<AmendedOpus>(opusPath).data;
+    check("amend b2: spec: moves to the new pointer", after.spec === "briefs/W-900.md", after.spec);
+    check(
+      "amend b2: probationes.spec is deep-equal to before (the gate is untouched)",
+      JSON.stringify(after.probationes?.["spec"]) === JSON.stringify(beforeSpecGate),
+      JSON.stringify(after.probationes?.["spec"]),
+    );
+
+    const findings = checkStudio(dir, NOW).findings.filter((f) => f.where.includes(id));
+    check(
+      "amend b2: the record is now blocked by state.building.spec (the pointer disagrees with its gate)",
+      findings.some((f) => f.rule === "state.building.spec" && f.level === "block"),
+      JSON.stringify(findings),
+    );
+  }
+
+  // ---- behaviour 3 (block 48): both flags in one call append title, then
+  //      spec, regardless of flag order -------------------------------------
+  if (runs(48)) {
+    const dir = freshStudio("amend-both-flags");
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "a.md"), "A.\n");
+    writeFileSync(join(dir, "briefs", "b.md"), "B.\n");
+
+    for (const [id, args] of [
+      ["W-910", ["--title", "New title A", "--spec", "briefs/a.md"]],
+      ["W-911", ["--spec", "briefs/b.md", "--title", "New title B"]],
+    ] as [string, string[]][]) {
+      writeOpus(
+        dir,
+        id,
+        ["---", `id: ${id}`, "title: original title", "kind: feature", "collegium: engineering", "state: done", `spec: opera/${id}.md`, "probationes: {}", "---", "Body.", ""].join(
+          "\n",
+        ),
+      );
+      const r = runAmend([id, ...args, "--reason", "both fields moved together", "--sella", "architect", "--studio", dir], { now: NOW });
+      check(`amend b3 (${id}): exits 0`, r.exitCode === 0, String(r.exitCode));
+      const after = readFront<AmendedOpus>(join(dir, "opera", `${id}.md`)).data;
+      check(`amend b3 (${id}): amendments has two entries`, Array.isArray(after.amendments) && after.amendments.length === 2, JSON.stringify(after.amendments));
+      check(`amend b3 (${id}): entry 0 is field=title`, after.amendments?.[0]?.field === "title", after.amendments?.[0]?.field);
+      check(`amend b3 (${id}): entry 1 is field=spec`, after.amendments?.[1]?.field === "spec", after.amendments?.[1]?.field);
+      check(`amend b3 (${id}): entry 0's own superseded is the old title`, after.amendments?.[0]?.superseded === "original title", after.amendments?.[0]?.superseded);
+      check(`amend b3 (${id}): entry 1's own superseded is the old spec`, after.amendments?.[1]?.superseded === `opera/${id}.md`, after.amendments?.[1]?.superseded);
+    }
+  }
+
+  // ---- behaviour 4 (block 49): a second amendment appends ------------------
+  if (runs(49)) {
+    const dir = freshStudio("amend-second-appends");
+    const id = "W-920";
+    writeOpus(dir, id, ["---", `id: ${id}`, "title: first title", "kind: feature", "collegium: engineering", "state: done", "probationes: {}", "---", "Body.", ""].join("\n"));
+    const opusPath = join(dir, "opera", `${id}.md`);
+
+    const r1 = runAmend([id, "--title", "second title", "--reason", "first amendment", "--sella", "architect", "--studio", dir], { now: NOW });
+    check("amend b4: first amendment exits 0", r1.exitCode === 0, String(r1.exitCode));
+    const firstEntry = readFront<AmendedOpus>(opusPath).data.amendments?.[0];
+
+    const r2 = runAmend([id, "--title", "third title", "--reason", "second amendment", "--sella", "eng-lead", "--studio", dir], { now: new Date("2026-09-19T14:00:00Z") });
+    check("amend b4: second amendment exits 0", r2.exitCode === 0, String(r2.exitCode));
+    const afterSecond = readFront<AmendedOpus>(opusPath).data;
+
+    check("amend b4: amendments has two entries", Array.isArray(afterSecond.amendments) && afterSecond.amendments.length === 2, JSON.stringify(afterSecond.amendments));
+    check(
+      "amend b4: the first entry is byte-identical (JSON) to what it was",
+      JSON.stringify(afterSecond.amendments?.[0]) === JSON.stringify(firstEntry),
+      JSON.stringify({ before: firstEntry, after: afterSecond.amendments?.[0] }),
+    );
+    check(
+      "amend b4: the second entry's superseded reads the title left by the first amendment",
+      afterSecond.amendments?.[1]?.superseded === "second title",
+      afterSecond.amendments?.[1]?.superseded,
+    );
+    check("amend b4: title is now the third value", afterSecond.title === "third title", afterSecond.title);
+  }
+
+  // ---- behaviour 5 (block 50): one workflow.item_amended per amended field,
+  //      and no workflow.state_changed from any amend call in this file -----
+  if (runs(50)) {
+    const dir = freshStudio("amend-events");
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    const id = "W-930";
+    writeFileSync(join(dir, "briefs", `${id}.md`), "Brief.\n");
+    writeOpus(
+      dir,
+      id,
+      ["---", `id: ${id}`, "title: original", "kind: feature", "collegium: engineering", "state: done", `spec: opera/${id}.md`, "probationes: {}", "---", "Body.", ""].join("\n"),
+    );
+
+    const r = runAmend([id, "--title", "amended", "--spec", `briefs/${id}.md`, "--reason", "event coverage", "--sella", "architect", "--studio", dir], { now: NOW });
+    check("amend b5: exits 0", r.exitCode === 0, String(r.exitCode));
+
+    const events = readEventLines(dir);
+    const amendedEvents = events.filter((e) => e["name"] === "workflow.item_amended");
+    check("amend b5: exactly two workflow.item_amended events", amendedEvents.length === 2, String(amendedEvents.length));
+    const attrsOf = (e: Record<string, unknown> | undefined) => (e?.["attrs"] ?? {}) as Record<string, unknown>;
+    check("amend b5: first event names field=title", attrsOf(amendedEvents[0])["field"] === "title", JSON.stringify(amendedEvents[0]));
+    check("amend b5: second event names field=spec", attrsOf(amendedEvents[1])["field"] === "spec", JSON.stringify(amendedEvents[1]));
+    for (const e of amendedEvents) {
+      const attrs = attrsOf(e);
+      check(`amend b5: ${String(attrs["field"])} event carries ITEM_ID`, attrs[WF.ITEM_ID] === id, JSON.stringify(attrs));
+      check(`amend b5: ${String(attrs["field"])} event carries ACTOR_ROLE`, attrs[WF.ACTOR_ROLE] === "architect", JSON.stringify(attrs));
+    }
+    check(
+      "amend b5: no workflow.state_changed event was appended by amend",
+      !events.some((e) => e["name"] === "workflow.state_changed"),
+      JSON.stringify(events.map((e) => e["name"])),
+    );
+  }
+
+  // ---- behaviour 6 (block 51): every refusal exits 2 and writes nothing ----
+  if (runs(51)) {
+    const dir = freshStudio("amend-refuse");
+    const opusPathFor = (id: string) => join(dir, "opera", `${id}.md`);
+
+    async function assertRefusal(label: string, opusPath: string | undefined, args: string[], tokens: string[] = []): Promise<void> {
+      const before = opusPath !== undefined && existsSync(opusPath) ? readFileSync(opusPath, "utf8") : undefined;
+      const eventsBefore = readEventLines(dir).length;
+      const { result: r, stderr } = await withStderr(() => runAmend(args, { now: NOW }));
+      check(`amend b6: ${label} exits 2`, r.exitCode === 2, String(r.exitCode));
+      if (before !== undefined) check(`amend b6: ${label} record unchanged`, readFileSync(opusPath!, "utf8") === before);
+      check(`amend b6: ${label} events unchanged`, readEventLines(dir).length === eventsBefore);
+      if (tokens.length) check(`amend b6: ${label} stderr names ${JSON.stringify(tokens)}`, tokens.every((t) => stderr.includes(t)), stderr);
+    }
+
+    // sample-studio's own W-001: done, no spec: key — reused for the
+    // argument-shape rows and, unmodified, for land 7's "no spec: to amend"
+    // row (it is already in W-062's own key-less shape).
+    await assertRefusal("no opus id", undefined, ["--title", "x", "--reason", "r", "--studio", dir], ["usage:"]);
+    await assertRefusal("unknown opus id", undefined, ["W-9999", "--title", "x", "--reason", "r", "--studio", dir], ["unknown opus"]);
+    await assertRefusal("neither --title nor --spec", opusPathFor("W-001"), ["W-001", "--reason", "r", "--studio", dir], ["usage:"]);
+    await assertRefusal("--reason absent", opusPathFor("W-001"), ["W-001", "--title", "New title", "--studio", dir], ["usage:"]);
+    await assertRefusal("--reason whitespace", opusPathFor("W-001"), ["W-001", "--title", "New title", "--reason", "   ", "--studio", dir]);
+    await assertRefusal('--title ""', opusPathFor("W-001"), ["W-001", "--title", "", "--reason", "r", "--studio", dir]);
+    await assertRefusal('--title "  "', opusPathFor("W-001"), ["W-001", "--title", "  ", "--reason", "r", "--studio", dir]);
+    await assertRefusal("--spec missing target", opusPathFor("W-001"), ["W-001", "--spec", "nope/missing.md", "--reason", "r", "--studio", dir], ["not ready"]);
+    await assertRefusal("--spec traversal (D-008)", opusPathFor("W-001"), ["W-001", "--spec", "../../etc/passwd", "--reason", "r", "--studio", dir], ["D-008"]);
+    await assertRefusal("--title equal to current", opusPathFor("W-001"), ["W-001", "--title", "Save-slot migration", "--reason", "r", "--studio", dir]);
+    await assertRefusal(
+      "--spec on a record with no spec: key (land 7)",
+      opusPathFor("W-001"),
+      ["W-001", "--spec", "opera/W-002.md", "--reason", "r", "--studio", dir],
+      ["no spec:"],
+    );
+
+    // A building opus WITH a spec: key, for the no-op/absolute/symlink rows.
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "W-500.md"), "Brief.\n");
+    writeOpus(
+      dir,
+      "W-500",
+      ["---", "id: W-500", "title: refusal fixture", "kind: feature", "collegium: engineering", "state: building", "spec: briefs/W-500.md", "probationes: {}", "---", "Body.", ""].join(
+        "\n",
+      ),
+    );
+    await assertRefusal("--spec equal to current (path alias, land 3)", opusPathFor("W-500"), ["W-500", "--spec", "./briefs/W-500.md", "--reason", "r", "--studio", dir]);
+    await assertRefusal(
+      "--spec absolute inside the officina (land 10)",
+      opusPathFor("W-500"),
+      ["W-500", "--spec", join(dir, "briefs", "W-500.md"), "--reason", "r", "--studio", dir],
+    );
+
+    mkdirSync(join(dir, "links"), { recursive: true });
+    const outsideDir = mkdtempSync(join(tmpdir(), "bisellium-amend-outside-"));
+    dirs.push(outsideDir);
+    writeFileSync(join(outsideDir, "secret.md"), "Outside.\n");
+    symlinkSync(join(outsideDir, "secret.md"), join(dir, "links", "escape.md"));
+    symlinkSync(join(dir, "briefs", "W-500.md"), join(dir, "links", "inside.md"));
+    await assertRefusal("--spec through a symlink that escapes the officina (land 10)", opusPathFor("W-500"), ["W-500", "--spec", "links/escape.md", "--reason", "r", "--studio", dir]);
+    await assertRefusal(
+      "--spec through a symlink that stays inside the officina (finding 12)",
+      opusPathFor("W-500"),
+      ["W-500", "--spec", "links/inside.md", "--reason", "r", "--studio", dir],
+    );
+
+    await assertRefusal('--sella ""', opusPathFor("W-001"), ["W-001", "--title", "New", "--reason", "r", "--sella", "", "--studio", dir]);
+    await assertRefusal('--sella "  "', opusPathFor("W-001"), ["W-001", "--title", "New", "--reason", "r", "--sella", "  ", "--studio", dir]);
+
+    writeOpus(
+      dir,
+      "W-600",
+      ["---", "id: W-600", "title: scalar amendments", "kind: feature", "collegium: engineering", "state: done", "probationes: {}", "amendments: oops", "---", "Body.", ""].join("\n"),
+    );
+    await assertRefusal("amendments: is a scalar (land 9)", opusPathFor("W-600"), ["W-600", "--title", "New title", "--reason", "r", "--studio", dir]);
+
+    writeOpus(
+      dir,
+      "W-601",
+      ["---", "id: W-601", "title: mapping amendments", "kind: feature", "collegium: engineering", "state: done", "probationes: {}", "amendments: { a: 1 }", "---", "Body.", ""].join(
+        "\n",
+      ),
+    );
+    await assertRefusal("amendments: is a mapping (land 9)", opusPathFor("W-601"), ["W-601", "--title", "New title", "--reason", "r", "--studio", dir]);
+
+    writeOpus(
+      dir,
+      "W-602",
+      [
+        "---",
+        "id: W-602",
+        "title: alias amendments",
+        "kind: feature",
+        "collegium: engineering",
+        "state: done",
+        "probationes: {}",
+        "history: &h",
+        "  - field: title",
+        "amendments: *h",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    await assertRefusal("amendments: is an alias to a sequence (finding 11)", opusPathFor("W-602"), ["W-602", "--title", "New title", "--reason", "r", "--studio", dir]);
+
+    // The positive row: a whitespace-only $BISELLIUM_SELLA is treated as
+    // unset (land 8) — the amendment succeeds, recorded as guest.
+    {
+      const id = "W-700";
+      writeOpus(dir, id, ["---", `id: ${id}`, "title: whitespace env sella", "kind: feature", "collegium: engineering", "state: done", "probationes: {}", "---", "Body.", ""].join("\n"));
+      process.env["BISELLIUM_SELLA"] = "   ";
+      const r = runAmend([id, "--title", "amended via whitespace env", "--reason", "r", "--studio", dir], { now: NOW });
+      delete process.env["BISELLIUM_SELLA"];
+      check("amend b6: whitespace $BISELLIUM_SELLA is treated as unset — the amendment succeeds", r.exitCode === 0, String(r.exitCode));
+      const after = readFront<AmendedOpus>(opusPathFor(id)).data;
+      check("amend b6: it is recorded as guest", after.amendments?.[0]?.sella === "guest", JSON.stringify(after.amendments));
+    }
+  }
+
+  // ---- behaviour 7 (block 52): the never-amendable fields are refused by
+  //      name, before the D-021 guard ----------------------------------------
+  if (runs(52)) {
+    for (const [flag, value, verbToken] of [
+      ["--state", "building", "greenlight"],
+      ["--probationes", "x", "verify"],
+      ["--traditio", "x", "handoff"],
+      ["--id", "W-999", "rename"],
+    ] as [string, string, string][]) {
+      const dir = freshStudio(`amend-not-amendable-${flag.replace(/[^a-z]/g, "")}`);
+      const before = readFileSync(join(dir, "opera", "W-001.md"), "utf8");
+      const { result: r, stderr } = await withStderr(() => runAmend(["W-001", flag, value, "--reason", "r", "--studio", dir], { now: NOW }));
+      check(`amend b7: ${flag} exits 2`, r.exitCode === 2, String(r.exitCode));
+      check(`amend b7: ${flag} record unchanged`, readFileSync(join(dir, "opera", "W-001.md"), "utf8") === before);
+      check(`amend b7: ${flag} message names the flag and "not amendable"`, stderr.includes(flag) && stderr.includes("not amendable"), stderr);
+      check(`amend b7: ${flag} message names its owning verb (${verbToken})`, stderr.includes(verbToken), stderr);
+    }
+
+    // Fires before the D-021 ownership guard: a trunk checkout with the
+    // opus's own branch live gets the not-amendable message, never the
+    // ownership one.
+    {
+      const gitRepo = tmpGitStudioRepo("amend-not-amendable-d021");
+      const studioDir = join(gitRepo, "studio");
+      gitCommitAll(gitRepo, "init");
+      gitBranch(gitRepo, "opus/W-001"); // repo itself stays on master
+      const { result: r, stderr } = await withStderr(() => runAmend(["W-001", "--state", "done", "--reason", "r", "--studio", studioDir], { now: NOW }));
+      check(
+        "amend b7: the not-amendable refusal fires before D-021 (no ownership message)",
+        r.exitCode === 2 && stderr.includes("not amendable") && !stderr.includes("D-021"),
+        stderr,
+      );
+    }
+  }
+
+  // ---- behaviour 8 (block 53): D-021 ownership, right after the
+  //      record-existence check ----------------------------------------------
+  if (runs(53)) {
+    const gitRepo = tmpGitStudioRepo("amend-d021");
+    const studioDir = join(gitRepo, "studio");
+    gitCommitAll(gitRepo, "init");
+    gitBranch(gitRepo, "opus/W-001");
+
+    const path = join(studioDir, "opera", "W-001.md");
+    const before = readFileSync(path, "utf8");
+    const { result: r1, stderr: s1 } = await withStderr(() => runAmend(["W-001", "--title", "New", "--reason", "r", "--studio", studioDir], { now: NOW }));
+    check("amend b8: trunk refuses with D-021", r1.exitCode === 2 && s1.includes("D-021") && s1.includes("opus/W-001"), s1);
+    check("amend b8: record unchanged", readFileSync(path, "utf8") === before);
+
+    const { result: r2, stderr: s2 } = await withStderr(() => runAmend(["W-9999", "--title", "New", "--reason", "r", "--studio", studioDir], { now: NOW }));
+    check("amend b8: an unknown opus id on trunk still reports unknown opus, not ownership", r2.exitCode === 2 && s2.includes("unknown opus"), s2);
+
+    const wtPath = gitWorktreeAdd(gitRepo, [], "opus/W-001");
+    const wtStudioDir = join(wtPath, "studio");
+    const r3 = runAmend(["W-001", "--title", "New title from the worktree", "--reason", "r", "--studio", wtStudioDir], { now: NOW });
+    check("amend b8: the worktree with opus/W-001 checked out succeeds", r3.exitCode === 0, String(r3.exitCode));
+    check("amend b8: the trunk copy of the record stays byte-identical", readFileSync(path, "utf8") === before);
+  }
+
+  // ---- behaviour 9 (block 54): a green amendment adds no checkStudio
+  //      finding -------------------------------------------------------------
+  if (runs(54)) {
+    const dir = freshStudio("amend-green-check");
+    addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+
+    // Case 1: a --title amendment on a building opus.
+    writeFileSync(join(dir, "briefs", "W-800.md"), "Brief.\n");
+    writeOpus(
+      dir,
+      "W-800",
+      [
+        "---",
+        "id: W-800",
+        "title: building green case",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/W-800.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: briefs/W-800.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const beforeRules1 = checkStudio(dir, NOW)
+      .findings.filter((f) => f.where.includes("W-800"))
+      .map((f) => f.rule)
+      .sort();
+    const r1 = runAmend(["W-800", "--title", "building green case v2", "--reason", "scope refinement", "--sella", "architect", "--studio", dir], { now: NOW });
+    check("amend b9: title amendment on a building opus exits 0", r1.exitCode === 0, String(r1.exitCode));
+    check(
+      "amend b9: the title actually moved (a no-write stub would leave this false)",
+      readFront<AmendedOpus>(join(dir, "opera", "W-800.md")).data.title === "building green case v2",
+      readFront<AmendedOpus>(join(dir, "opera", "W-800.md")).data.title,
+    );
+    const afterRules1 = checkStudio(dir, NOW)
+      .findings.filter((f) => f.where.includes("W-800"))
+      .map((f) => f.rule)
+      .sort();
+    check(
+      "amend b9: checkStudio's findings for W-800 are exactly as they were",
+      JSON.stringify(beforeRules1) === JSON.stringify(afterRules1),
+      JSON.stringify({ before: beforeRules1, after: afterRules1 }),
+    );
+    for (const bad of ["opus.keys", "path.id.unvalidated", "path.escapes.officina", "state.building.spec"])
+      check(`amend b9: no ${bad} after the title amendment`, !afterRules1.includes(bad), JSON.stringify(afterRules1));
+
+    // Case 2: a --spec amendment on a done opus.
+    writeFileSync(join(dir, "briefs", "W-801.md"), "Brief, moved.\n");
+    writeOpus(
+      dir,
+      "W-801",
+      [
+        "---",
+        "id: W-801",
+        "title: done green case",
+        "kind: feature",
+        "collegium: engineering",
+        "state: done",
+        "spec: opera/W-801.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: opera/W-801.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const beforeRules2 = checkStudio(dir, NOW)
+      .findings.filter((f) => f.where.includes("W-801"))
+      .map((f) => f.rule)
+      .sort();
+    const r2 = runAmend(["W-801", "--spec", "briefs/W-801.md", "--reason", "spec moved", "--sella", "architect", "--studio", dir], { now: NOW });
+    check("amend b9: spec amendment on a done opus exits 0", r2.exitCode === 0, String(r2.exitCode));
+    check(
+      "amend b9: the spec pointer actually moved (a no-write stub would leave this false)",
+      readFront<AmendedOpus>(join(dir, "opera", "W-801.md")).data.spec === "briefs/W-801.md",
+      readFront<AmendedOpus>(join(dir, "opera", "W-801.md")).data.spec,
+    );
+    const afterRules2 = checkStudio(dir, NOW)
+      .findings.filter((f) => f.where.includes("W-801"))
+      .map((f) => f.rule)
+      .sort();
+    check(
+      "amend b9: checkStudio's findings for W-801 are exactly as they were",
+      JSON.stringify(beforeRules2) === JSON.stringify(afterRules2),
+      JSON.stringify({ before: beforeRules2, after: afterRules2 }),
+    );
+    check("amend b9: no state.building.spec after the spec amendment (done is not ACTIVE)", !afterRules2.includes("state.building.spec"), JSON.stringify(afterRules2));
+  }
+
+  // ---- behaviour 11 (block 55): state.building.spec blocks a pointer that
+  //      disagrees with its gate, and only while the opus is active ---------
+  if (runs(55)) {
+    const dir = freshStudio("amend-spec-equality");
+    addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "x.md"), "X.\n");
+    writeFileSync(join(dir, "briefs", "y.md"), "Y.\n");
+
+    writeOpus(
+      dir,
+      "W-810",
+      [
+        "---",
+        "id: W-810",
+        "title: mismatch",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/x.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: briefs/y.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const f1 = checkStudio(dir, NOW).findings.filter((f) => f.where.includes("W-810"));
+    check("amend b11: a mismatched pointer/gate blocks state.building.spec", f1.some((f) => f.rule === "state.building.spec" && f.level === "block"), JSON.stringify(f1));
+    check(
+      "amend b11: the block message names both documents",
+      f1.some((f) => f.rule === "state.building.spec" && f.message.includes("briefs/x.md") && f.message.includes("briefs/y.md")),
+      JSON.stringify(f1),
+    );
+
+    writeOpus(
+      dir,
+      "W-811",
+      [
+        "---",
+        "id: W-811",
+        "title: alias spelling",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/x.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: ./briefs/x.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const f2 = checkStudio(dir, NOW).findings.filter((f) => f.where.includes("W-811"));
+    check("amend b11: two spellings of one document do not block (resolved comparison, land 3)", !f2.some((f) => f.rule === "state.building.spec"), JSON.stringify(f2));
+
+    writeOpus(
+      dir,
+      "W-812",
+      [
+        "---",
+        "id: W-812",
+        "title: done mismatch",
+        "kind: feature",
+        "collegium: engineering",
+        "state: done",
+        "spec: briefs/x.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: opera/W-812.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const f3 = checkStudio(dir, NOW).findings.filter((f) => f.where.includes("W-812"));
+    check("amend b11: a done opus is exempt from the equality condition (W-075's own shape)", !f3.some((f) => f.rule === "state.building.spec"), JSON.stringify(f3));
+
+    writeOpus(
+      dir,
+      "W-813",
+      [
+        "---",
+        "id: W-813",
+        "title: no spec gate at all",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/x.md",
+        "probationes: {}",
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const f4 = checkStudio(dir, NOW).findings.filter((f) => f.where.includes("W-813") && f.rule === "state.building.spec");
+    check("amend b11: an absent gate still blocks exactly once — the new condition adds no second finding", f4.length === 1, String(f4.length));
+
+    symlinkSync(join(dir, "briefs", "x.md"), join(dir, "briefs", "x-link.md"));
+    writeOpus(
+      dir,
+      "W-814",
+      [
+        "---",
+        "id: W-814",
+        "title: symlink residual",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/x.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: briefs/x-link.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const f5 = checkStudio(dir, NOW).findings.filter((f) => f.where.includes("W-814"));
+    check(
+      "amend b11: a real path vs a symlink naming the same file DOES block (the accepted residual, finding 12)",
+      f5.some((f) => f.rule === "state.building.spec"),
+      JSON.stringify(f5),
+    );
+  }
+
+  // ---- behaviour 12 (block 56): a --spec amendment cannot shrink the
+  //      blocking set (the erasure attack, land 1/6) -------------------------
+  if (runs(56)) {
+    const dir = freshStudio("amend-anti-shrink");
+    addProbatio(dir, { id: "spec", name: "Spec", kind: "agent" });
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    const numbered = (n: number) => Array.from({ length: n }, (_, i) => `${i + 1}. Behaviour ${i + 1}.`).join("\n\n");
+    writeFileSync(join(dir, "briefs", "ten.md"), `# Ten\n\n## Behaviours to test\n\n${numbered(10)}\n`);
+    writeFileSync(join(dir, "briefs", "five.md"), `# Five\n\n## Behaviours to test\n\n${numbered(5)}\n`);
+
+    const id = "W-820";
+    writeOpus(
+      dir,
+      id,
+      [
+        "---",
+        `id: ${id}`,
+        "title: erasure attack target",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "spec: briefs/ten.md",
+        "probationes:",
+        "  spec: { status: passed, evidence: briefs/ten.md, sella: architect, at: 2026-09-20T00:00:00Z }",
+        "traditio: { sella: architect, stage: building, next: x, blocked_on: none, at: 2026-09-20T00:00:00Z }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+
+    const redsDir = join(dir, "ci", "reds", id);
+    mkdirSync(redsDir, { recursive: true });
+    for (let n = 1; n <= 5; n++) {
+      writeFileSync(
+        join(redsDir, `${String(n).padStart(2, "0")}.log`),
+        `# behaviour: ${n}\n# command: node -e "process.exit(1)"\n# exit: 1\n# at: 2026-09-20T00:00:00Z\n# sella: architect\n# tree: unknown\n\nfailed\n`,
+      );
+    }
+
+    const before = checkStudio(dir, NOW).findings.filter((f) => f.where.includes(id));
+    const beforeBlocks = before.filter((f) => f.level === "block");
+    check("amend b12: opus.red_evidence blocks before the amendment (missing behaviours 6-10)", beforeBlocks.some((f) => f.rule === "opus.red_evidence"), JSON.stringify(beforeBlocks));
+
+    const r = runAmend([id, "--spec", "briefs/five.md", "--reason", "scope narrowed to the five landed behaviours", "--sella", "architect", "--studio", dir], { now: NOW });
+    check("amend b12: the amendment itself succeeds", r.exitCode === 0, String(r.exitCode));
+
+    const after = checkStudio(dir, NOW).findings.filter((f) => f.where.includes(id));
+    const afterBlocks = after.filter((f) => f.level === "block");
+    check(
+      "amend b12: opus.red_evidence no longer blocks (five reds now satisfy the five-behaviour brief)",
+      !afterBlocks.some((f) => f.rule === "opus.red_evidence"),
+      JSON.stringify(afterBlocks),
+    );
+    check("amend b12: state.building.spec now blocks on the pointer/gate mismatch", afterBlocks.some((f) => f.rule === "state.building.spec"), JSON.stringify(afterBlocks));
+    check(
+      "amend b12: the count of blocking findings for this opus did not shrink",
+      afterBlocks.length >= beforeBlocks.length,
+      `${beforeBlocks.length} -> ${afterBlocks.length}`,
+    );
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

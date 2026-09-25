@@ -1,0 +1,12 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:38.227Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  amend b5: exits 0                                                0
+FAIL  amend b5: exactly two workflow.item_amended events               0
+FAIL  amend b5: first event names field=title                          
+FAIL  amend b5: second event names field=spec                          
+PASS  amend b5: no workflow.state_changed event was appended by amend  []

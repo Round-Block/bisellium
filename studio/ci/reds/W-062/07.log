@@ -1,0 +1,24 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:50.782Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+FAIL  amend b7: --state exits 2                                        0
+PASS  amend b7: --state record unchanged                               
+FAIL  amend b7: --state message names the flag and "not amendable"     
+FAIL  amend b7: --state message names its owning verb (greenlight)     
+FAIL  amend b7: --probationes exits 2                                  0
+PASS  amend b7: --probationes record unchanged                         
+FAIL  amend b7: --probationes message names the flag and "not amendable" 
+FAIL  amend b7: --probationes message names its owning verb (verify)   
+FAIL  amend b7: --traditio exits 2                                     0
+PASS  amend b7: --traditio record unchanged                            
+FAIL  amend b7: --traditio message names the flag and "not amendable"  
+FAIL  amend b7: --traditio message names its owning verb (handoff)     
+FAIL  amend b7: --id exits 2                                           0
+PASS  amend b7: --id record unchanged                                  
+FAIL  amend b7: --id message names the flag and "not amendable"        
+FAIL  amend b7: --id message names its owning verb (rename)            
+FAIL  amend b7: the not-amendable refusal fires before D-021 (no ownership message) 

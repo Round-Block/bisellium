@@ -1,0 +1,19 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:26.412Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  amend b3 (W-910): exits 0                                        0
+FAIL  amend b3 (W-910): amendments has two entries                     
+FAIL  amend b3 (W-910): entry 0 is field=title                         
+FAIL  amend b3 (W-910): entry 1 is field=spec                          
+FAIL  amend b3 (W-910): entry 0's own superseded is the old title      
+FAIL  amend b3 (W-910): entry 1's own superseded is the old spec       
+PASS  amend b3 (W-911): exits 0                                        0
+FAIL  amend b3 (W-911): amendments has two entries                     
+FAIL  amend b3 (W-911): entry 0 is field=title                         
+FAIL  amend b3 (W-911): entry 1 is field=spec                          
+FAIL  amend b3 (W-911): entry 0's own superseded is the old title      
+FAIL  amend b3 (W-911): entry 1's own superseded is the old spec       

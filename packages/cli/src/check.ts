@@ -8,7 +8,7 @@
  * "advise" is reported.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, isAbsolute, join, relative, sep } from "node:path";
+import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import {
   ACTUM_KINDS,
@@ -545,6 +545,23 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       const specPath = str(d["spec"]);
       if (!specPath || status.get("spec") !== "passed")
         add("state.building.spec", "block", where, `active opus needs a spec: key and a passed "spec" gate`);
+
+      // W-062 land 1/12: an active opus's spec: pointer and its passed
+      // gate's evidence must name the same document — otherwise `amend
+      // --spec` (or any hand edit, land 1's actual target) can re-point a
+      // building opus at a shorter brief and erase an opus.red_evidence
+      // finding while the old passed gate — certifying a document the opus
+      // is no longer built against — survives untouched. Same rule id as
+      // above (one clause of "an active opus's spec is real and
+      // certified"), a second message. Purely lexical (`resolve()` only,
+      // never realpathSync/existsSync) — this is a blocking rule that runs
+      // on every check, and a filesystem call inside it is the
+      // false-positive risk that stops every cascade (a symlinked pointer
+      // is instead refused outright by amend itself, see lifecycle.ts).
+      const specGate = isDict(g) ? g["spec"] : undefined;
+      const specEvidence = isDict(specGate) ? str(specGate["evidence"]) : undefined;
+      if (specPath && specEvidence && resolve(root, specPath) !== resolve(root, specEvidence))
+        add("state.building.spec", "block", where, `spec "${specPath}" disagrees with its passed gate's evidence "${specEvidence}"`);
     }
 
     // probatio.certifies.mismatch: ACTIVE opera only, same reasoning as the

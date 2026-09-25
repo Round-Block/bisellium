@@ -1,0 +1,13 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:32.075Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+PASS  amend b4: first amendment exits 0                                0
+PASS  amend b4: second amendment exits 0                               0
+FAIL  amend b4: amendments has two entries                             
+PASS  amend b4: the first entry is byte-identical (JSON) to what it was {}
+FAIL  amend b4: the second entry's superseded reads the title left by the first amendment 
+FAIL  amend b4: title is now the third value                           first title

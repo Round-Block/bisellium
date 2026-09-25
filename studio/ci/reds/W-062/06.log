@@ -1,0 +1,74 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T05:38:45.108Z
+# sella: builder-b
+# tree: dirty:58301f8cc648a5292c15277c359d31eef27621d3
+
+FAIL  amend b6: no opus id exits 2                                     0
+PASS  amend b6: no opus id events unchanged                            
+FAIL  amend b6: no opus id stderr names ["usage:"]                     
+FAIL  amend b6: unknown opus id exits 2                                0
+PASS  amend b6: unknown opus id events unchanged                       
+FAIL  amend b6: unknown opus id stderr names ["unknown opus"]          
+FAIL  amend b6: neither --title nor --spec exits 2                     0
+PASS  amend b6: neither --title nor --spec record unchanged            
+PASS  amend b6: neither --title nor --spec events unchanged            
+FAIL  amend b6: neither --title nor --spec stderr names ["usage:"]     
+FAIL  amend b6: --reason absent exits 2                                0
+PASS  amend b6: --reason absent record unchanged                       
+PASS  amend b6: --reason absent events unchanged                       
+FAIL  amend b6: --reason absent stderr names ["usage:"]                
+FAIL  amend b6: --reason whitespace exits 2                            0
+PASS  amend b6: --reason whitespace record unchanged                   
+PASS  amend b6: --reason whitespace events unchanged                   
+FAIL  amend b6: --title "" exits 2                                     0
+PASS  amend b6: --title "" record unchanged                            
+PASS  amend b6: --title "" events unchanged                            
+FAIL  amend b6: --title "  " exits 2                                   0
+PASS  amend b6: --title "  " record unchanged                          
+PASS  amend b6: --title "  " events unchanged                          
+FAIL  amend b6: --spec missing target exits 2                          0
+PASS  amend b6: --spec missing target record unchanged                 
+PASS  amend b6: --spec missing target events unchanged                 
+FAIL  amend b6: --spec missing target stderr names ["not ready"]       
+FAIL  amend b6: --spec traversal (D-008) exits 2                       0
+PASS  amend b6: --spec traversal (D-008) record unchanged              
+PASS  amend b6: --spec traversal (D-008) events unchanged              
+FAIL  amend b6: --spec traversal (D-008) stderr names ["D-008"]        
+FAIL  amend b6: --title equal to current exits 2                       0
+PASS  amend b6: --title equal to current record unchanged              
+PASS  amend b6: --title equal to current events unchanged              
+FAIL  amend b6: --spec on a record with no spec: key (land 7) exits 2  0
+PASS  amend b6: --spec on a record with no spec: key (land 7) record unchanged 
+PASS  amend b6: --spec on a record with no spec: key (land 7) events unchanged 
+FAIL  amend b6: --spec on a record with no spec: key (land 7) stderr names ["no spec:"] 
+FAIL  amend b6: --spec equal to current (path alias, land 3) exits 2   0
+PASS  amend b6: --spec equal to current (path alias, land 3) record unchanged 
+PASS  amend b6: --spec equal to current (path alias, land 3) events unchanged 
+FAIL  amend b6: --spec absolute inside the officina (land 10) exits 2  0
+PASS  amend b6: --spec absolute inside the officina (land 10) record unchanged 
+PASS  amend b6: --spec absolute inside the officina (land 10) events unchanged 
+FAIL  amend b6: --spec through a symlink that escapes the officina (land 10) exits 2 0
+PASS  amend b6: --spec through a symlink that escapes the officina (land 10) record unchanged 
+PASS  amend b6: --spec through a symlink that escapes the officina (land 10) events unchanged 
+FAIL  amend b6: --spec through a symlink that stays inside the officina (finding 12) exits 2 0
+PASS  amend b6: --spec through a symlink that stays inside the officina (finding 12) record unchanged 
+PASS  amend b6: --spec through a symlink that stays inside the officina (finding 12) events unchanged 
+FAIL  amend b6: --sella "" exits 2                                     0
+PASS  amend b6: --sella "" record unchanged                            
+PASS  amend b6: --sella "" events unchanged                            
+FAIL  amend b6: --sella "  " exits 2                                   0
+PASS  amend b6: --sella "  " record unchanged                          
+PASS  amend b6: --sella "  " events unchanged                          
+FAIL  amend b6: amendments: is a scalar (land 9) exits 2               0
+PASS  amend b6: amendments: is a scalar (land 9) record unchanged      
+PASS  amend b6: amendments: is a scalar (land 9) events unchanged      
+FAIL  amend b6: amendments: is a mapping (land 9) exits 2              0
+PASS  amend b6: amendments: is a mapping (land 9) record unchanged     
+PASS  amend b6: amendments: is a mapping (land 9) events unchanged     
+FAIL  amend b6: amendments: is an alias to a sequence (finding 11) exits 2 0
+PASS  amend b6: amendments: is an alias to a sequence (finding 11) record unchanged 
+PASS  amend b6: amendments: is an alias to a sequence (finding 11) events unchanged 
+PASS  amend b6: whitespace $BISELLIUM_SELLA is treated as unset — the amendment succeeds 0
+FAIL  amend b6: it is recorded as guest                                

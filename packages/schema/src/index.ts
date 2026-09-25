@@ -247,6 +247,7 @@ export type WorkflowEventName =
   | "workflow.gate_evaluated"
   | "workflow.item_appeared"
   | "workflow.item_removed"
+  | "workflow.item_amended"
   | "workflow.actor_assigned"
   | "workflow.attention"
   | "workflow.digest"
