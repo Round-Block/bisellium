@@ -1,0 +1,409 @@
+W-064 — review round 1 — VERDICT: FAIL
+censor (qa-lead) · claude-opus-5 · 2026-09-25
+branch opus/W-064 @ b8d7155 · tree 7d258952 · spec of record: studio/briefs/W-064.md rev 3
+
+=============================================================================
+0. WHAT I RAN (all in /home/edckt/projects/bisellium/.worktrees/W-064)
+=============================================================================
+npm test                                         -> exit 0 (Terra's exit 1 was its own
+                                                    read-only sandbox denying /tmp in
+                                                    packages/cli/src/init.test.ts; re-run here)
+npm run -s typecheck                             -> exit 0
+npm run -s lint                                  -> exit 0 (2 pre-existing warnings, both in
+                                                    files this opus does not touch:
+                                                    packages/cli/src/close.test.ts:5,
+                                                    packages/cli/src/tick.test.ts:298)
+npm run -s format:check                          -> exit 0
+npm run -s check -- studio --repo .              -> PASS, 0 blocking, 119 advisory
+npm run -s check -- examples/sample-studio --repo . -> PASS, 0 blocking, 25 advisory
+rm -rf apps/web/dist && npm run -s build --workspace @bisellium/web -> ok
+npm run -s test:serve --workspace @bisellium/web -> 29 passed (includes all of
+                                                    board.spec.ts behaviours 7-9)
+bisellium verify W-064 --studio studio --repo .  -> tests/lint/types passed, clean tree
+16 mutations (M1-M16, section 3) + 3 censor probe runs (section 2)
+
+Advisory movement, studio: 122 (brief's baseline) -> 119. Accounted for: W-064's own
+record gained three certificates (studio/opera/W-064.md: tests/lint/types now carry
+certifies:, so probatio.certifies stops advising on them). No new rule id appears; no
+rule source changed (packages/cli/src/check.ts and rules/ have no master...HEAD diff).
+
+examples/sample-studio's 25 (Terra measured 16): the 9-advisory difference is
+probatio.certifies.stale, which Terra's read-only sandbox could not raise because the
+rule needs a resolvable current tree hash (check.ts:136,145). The 9 are PRE-EXISTING,
+not this opus's: master's own fixture records already certify tree:6b416199
+(git show master:examples/sample-studio/opera/W-002.md:9), and sample-studio's manifest
+declares source_excludes: [studio/, examples/fixtures/], so any apps/ or packages/
+change stales them. Not a regression.
+
+npm test speed (acceptance requires before/after): apps/server/test/server.test.ts
+  BEFORE (5.2s sleep restored, listingTtlMs removed): 10.27 s
+  AFTER  (as shipped, listingTtlMs: 50 + an 80ms wait): 5.14 s      -5.13 s
+Measured with /usr/bin/time on the same machine, back to back. The knob removed the
+real sleep; the assertion it protects ("a call AFTER the TTL refreshes the listing",
+apps/server/test/server.test.ts:844) still fails if the TTL is ignored. Folded-in
+advisory: ACCEPTED.
+
+=============================================================================
+1. BLOCKING FINDINGS
+=============================================================================
+
+B1 — LIVE BUG: Esc does not return focus to the card. Focus lands on
+     document.body, the one outcome the brief forbids by name.
+     apps/web/src/screens/Board.tsx:179-189 (closeDrawer), :193-236 (the keydown
+     effect, dependency list [] at :236), :180 (const sel = selected).
+     The keydown listener is registered in a mount-once effect, so it closes over the
+     FIRST render's closeDrawer, whose `const sel = selected` is the initial
+     `undefined`. The restoration branch `if (sel) { requestAnimationFrame(... focus())}`
+     therefore never runs on the Esc path. The comment at :235 ("Reads current state
+     entirely through refs") is not true of closeDrawer.
+     MEASURED, two probe specs run side by side against a served fixture (both since
+     deleted; output verbatim):
+       PROBE-A card= W-002 afterEsc=   {"card":null,"isBody":true,"tag":"BODY","cls":""}
+       PROBE-B card= W-002 afterClose= {"card":"W-002","isBody":false,"tag":"DIV",
+                                        "cls":"board__card"}
+     Same closeDrawer body; A goes through the mount-once keydown closure, B through
+     the drawer button's fresh per-render closure. B restores, A does not.
+     Spec: *Keyboard* ("Esc closes it and RETURNS FOCUS TO THAT CARD"; "Never
+     document.body"), behaviour 8.
+     WHY IT SHIPPED: behaviour 8 opens the drawer with Enter and never moves focus into
+     it, so document.activeElement is still the card after Esc no matter what the code
+     does (board.spec.ts:362-370). Proof: mutation M12 deleted the whole restoration
+     block and behaviour 8 stayed GREEN (1 passed).
+     Single instance, not a class: the only two mount-once effects in Board.tsx are the
+     SSE one (:95-118) and the keydown one (:193-236). I read every call each makes —
+     fullReconcile/scheduleBoardRefetch/fetchDrawerEvents/focusCard/openDrawer read
+     only refs, module imports and stable setState setters. closeDrawer is the sole
+     consumer of render-scope state reached from a mount-once closure.
+
+B2 — LIVE BUG: on a phone, the Board opens on an EMPTY needs-you column — the exact
+     outcome *Composition* legislates against ("An empty attention column is never the
+     first thing the Patron sees").
+     apps/web/src/screens/Board.tsx:146-156, guard at :148
+     (`model.columns.length === 0`).
+     boardModel ALWAYS returns the needs_you column (board.ts:117), so with no data yet
+     the model has length 1, the guard does not hold, didInitialScroll is consumed on
+     the pre-data render, and the querySelector for the target column finds nothing
+     because no phase column exists in the DOM yet. When the real model lands, the
+     effect is already spent.
+     MEASURED on a temp copy of the REAL studio/ (77 opera), 390x844:
+       SMOKE phone visible columns: ["needs_you"]      <- needs_you count is 0
+     ROOT CAUSE CONFIRMED by one-character mutation (guard `=== 0` -> `<= 1`), rebuilt,
+     same smoke re-run:
+       SMOKE phone visible columns: ["in_progress"]    <- as specified
+     (mutation reverted; the fix itself is the builder's to choose.)
+     WHY IT SHIPPED: behaviour 9's phone case only ever exercises the NON-empty
+     needs-you branch (board.spec.ts:519-522), and in that branch the specified target
+     is the first column, i.e. scrollLeft 0 — the default. The assertion passes whether
+     or not the effect runs at all. The brief's own prescribed mutation ("open on an
+     empty needs-you column") has no test to fail: the empty-needs-you half of
+     behaviour 9 ("with an empty one it is in_progress") is not implemented in the spec
+     file.
+
+B3 — ESCAPED PRESCRIBED MUTATION: "Carry the gate status only in a title attribute —
+     behaviour 6" SURVIVES. Ruling 17's no-hover-only requirement has no guard.
+     apps/web/test/boardview.test.ts:295 —
+       />stale</.test(html) || html.includes(">stale<") || html.includes("stale")
+     The third disjunct is satisfied by title="stale", so the assertion cannot
+     distinguish text from a tooltip.
+     M6: replaced BoardDrawer.tsx:52's <span>{g.status}</span> with
+     <span title={g.status} /> -> behaviour 6 exit 0, all assertions PASS (the log shows
+     the mutated markup carrying title="failed" and nothing else).
+     The implementation itself is correct (BoardDrawer.tsx:52 renders the word); the
+     defect is that the brief's phone-facing contract is unprotected.
+     Spec: behaviour 6 ("its status as a literal word in the text ... with no reliance
+     on a title attribute"), *Composition* ("No information is hover-only").
+
+B4 — ESCAPED PRESCRIBED MUTATION: "remove [the box-shadow] from the drawer —
+     behaviour 9" SURVIVES. DIRECTION §3's "Shadow exists once, on the drawer" has no
+     guard.
+     apps/web/tests-serve/board.spec.ts:432-472 asserts the CARD's computed box-shadow
+     is none (:453-454) but never opens the drawer at 1280px and never asserts the
+     drawer's shadow is NOT none — although the test's own title claims "drawer
+     shadow".
+     M13: replaced w025.css:1133-1136's drawer box-shadow with `box-shadow: none`,
+     rebuilt dist, re-ran behaviour 9's 1280px case -> 1 passed.
+     Spec: behaviour 9 ("the open drawer's computed box-shadow is NOT none while a
+     card's IS none").
+
+B5 — ESCAPED PRESCRIBED MUTATION: "Add a setInterval refetch to Board.tsx — behaviour
+     7's negative, including its zero-further-requests half" SURVIVES, because the
+     negative case's observation window is 2s, not the >=2 configured poll intervals
+     the brief binds.
+     apps/web/tests-serve/board.spec.ts:266 (`await page.waitForTimeout(2_000)`)
+     against :233 (the live case's 11_000ms window). The brief requires the same
+     window on both sides ("The card NEVER appears within the same window").
+     M14: added `setInterval(() => void fetchBoardOnly(), 5000)` to Board.tsx (the
+     server's own default poll interval), rebuilt, re-ran the negative case -> 1 passed.
+     A client poll at the poll interval is invisible to a 2s window, and the
+     zero-further-/api/opera half is invisible with it.
+     Spec: *Ui-lead pass: disposition* item 3, accepted in full ("the window is bounded
+     at >=2 configured polls"); behaviour 7.
+     Related, same test: red 07.log line 4 records the negative case PASSING against
+     the prescribed skeleton. A case satisfied by "no Board at all" needs its full
+     window, or it is a tautology at both ends.
+
+B6 — ESCAPED PRESCRIBED MUTATION: "Clamp an omitted limit to 500 — behaviour 10's
+     unlimited assertion" SURVIVES. Both limit assertions are vacuous on this fixture.
+     apps/server/test/board.test.ts:182 (omitted limit == the log's line count) and
+     :191-192 (limit=9999 clamps to 500, asserted as Math.min(500, lineCount)).
+     MEASURED: a cold-ingest temp copy of examples/sample-studio holds 41 events
+     ("events.jsonl lines: 41 | /api/events unlimited: 41 | clamp assertion expects:
+     41"). With 41 rows, "unlimited" and "capped at 500" are the same number, and so
+     are "clamped to 500" and "not clamped at all".
+     M9: changed store.ts:412 `opts.limit ?? Number.MAX_SAFE_INTEGER` to
+     `opts.limit ?? 500` -> behaviour 10 exit 0.
+     The brief asserted the opposite in terms ("asserted against the log's own line
+     count, so 'unlimited' is a MEASUREMENT, not a restatement"). The fix is one
+     appendFileSync loop: push the temp studio's log past 500 rows first — the file
+     already appends synthetic events at :245-249.
+
+B7 — SPEC NOT IMPLEMENTED: the needs-you banner does not link to the petitio's Inbox
+     thread, and nothing asserts that it should.
+     apps/web/src/screens/BoardDrawer.tsx:31-42 renders subject and from as plain
+     spans; there is no <a> anywhere in the banner. apps/web/test/boardview.test.ts:275-
+     282 asserts subject and from and stops.
+     Spec, three places: *Drawer data sources* ("shows its subject and from and LINKS
+     TO THAT THREAD"), *Patron rulings* ("The needs-you banner links to the Inbox's
+     existing answer flow"), behaviour 6 ("links to its thread").
+     This is load-bearing on the decree: the link is the compensating surface for the
+     Reply control the Patron deferred ("Read-only now, Reply as follow-on"). Without
+     it the drawer is a dead end for exactly the item that needs the Patron.
+
+B8 — SPEC DEVIATION: reconcileTargets() is never called by the container, so the
+     guarantee the brief attaches to it does not exist.
+     apps/web/src/lib/board.ts:194-197 (exported, tested) vs
+     apps/web/src/screens/Board.tsx:79-84 (fullReconcile hand-rolls the same set).
+     grep: reconcileTargets appears in board.ts, board.test.ts and the brief — in no
+     screen. The brief states "Reconciliation fetches exactly reconcileTargets(selected)"
+     (*Board.tsx*) and "a builder cannot drop the fourth fetch without a red"
+     (*Liveness*). Both are false as built:
+       M10a: removed the drawer-events task from fullReconcile (Board.tsx:81)
+             -> behaviour 3 exit 0 (GREEN).
+       M10b: same mutation, behaviour 7's open-drawer reconnect case -> 1 failed.
+       M10c: removed the fourth path from reconcileTargets itself
+             -> behaviour 3 exit 1 (it guards only itself).
+     The BEHAVIOUR is genuinely covered — by behaviour 7, not by behaviour 3. What is
+     missing is the seam the brief specified. Either call reconcileTargets from
+     fullReconcile, or delete the export and drop the claim; an unused export that a
+     brief cites as a guard is worse than neither.
+
+=============================================================================
+2. WHAT I VERIFIED POSITIVELY
+=============================================================================
+
+Reds (all eleven). Own re-read of studio/ci/reds/W-064/01..11.log: each carries a
+non-zero exit, a named sella (builder-a), an assertion-level body (FAIL lines /
+Playwright assertion errors, no ERR_MODULE_NOT_FOUND, no bare stack), and eleven
+distinct bodies. 05.log shows the prescribed skeleton state plainly
+(`<div class="board"></div>`) and contains PRESENCE-assertion failures, which is the
+check the brief demanded before recording (a zero-valued skeleton must not pass an
+all-negative behaviour). Selectors are correct in every header: argv[3] for
+src/lib/*.test.ts, argv[2] under --cwd apps/web for test/*.test.ts, -g for the
+Playwright specs, argv[3] for the server file. Terra's "all eleven entered git in
+f7f1e9d, the same commit as the implementation" is NOT a violation: rev 3 struck the
+tree-ancestry claim by name (*What the artifacts can show, and what they cannot*) and
+replaced it with exit/body/sella/tree only. Timestamps ascend 03:21 -> 03:52 and the
+tree header is the same dirty:c032fb5b for all eleven, as expected for one base commit.
+
+Read-only, the ASSERTED property — both halves bite:
+  structural half (behaviour 5, boardview.test.ts:198-222)
+    M7  added a `g` shortcut doing fetch("/api/greenlight", { method: "POST" }) to
+        Board.tsx — the ui-lead's own escape example -> behaviour 5 exit 1
+        (FAIL ... none mentions "method:").
+    M8  removed `disabled` from the project select -> behaviour 5 exit 1.
+  lifetime counter (behaviours 7-9, board.spec.ts:144-151)
+    M15 POST from openDrawer (an interaction) -> behaviour 7 case failed on the counter.
+    M16 POST from a mount effect -> behaviour 7 case failed on the counter, which also
+        confirms the counter really is live before page.goto.
+  So TARGET-9's pair is real, not a renamed counter. The Patron's read-only decree is
+  measured, not promised.
+
+The other Patron decree (the project selector preserved as explicitly unavailable):
+shipped as decreed. BoardView.tsx:121-126 renders a disabled <select> with exactly one
+<option> equal to officina.studio and the reason as visible TEXT
+(board__project-select-reason), not a title. Asserted at boardview.test.ts:151-160 and
+mutation-checked (M8).
+
+Suite bites elsewhere (every mutation below failed its behaviour, as the brief requires):
+  M1  hardcode the phase list instead of reading lifecycle -> b1 (both fixture arms)
+  M2  add a summed `total` to the model                    -> b1 (exact key set)
+  M3  render gates in the opus's key order                 -> b2
+  M4  liveLabel says "updated" from connected alone        -> b3
+  M5  boardNeedsRefetch constant true                      -> b4
+  M9/M11 see B6 / passed: deleting ADOPTION.md's item= line -> b11 exit 1
+  M10b drop the drawer's events from reconciliation         -> b7 open-drawer case
+  M12-M14 see B1/B4/B5 (escapes)
+
+Server read surface (behaviour 10) read line by line against *Interfaces*:
+store.ts:405-412 serves ?item= from a fresh readLog (never the Index), ascending, with
+`limit` as the LAST N; http.ts:646-654 refuses item+since with 400; an unknown or
+path-separator item falls out as 200 [] because the filter is a string compare on
+attrs and never touches the filesystem. lifecycle comes from
+this.adapter.describeLifecycles()[0] (store.ts:236, :256) — no hand-copied state ids
+anywhere in apps/server or apps/web (grep). All additive: every pre-existing
+/api/officina key is asserted against a direct manifest read (board.test.ts:160-168).
+
+Acceptance smoke, SCRIPTED (not attended by a human eye — see D6 below), on a temp copy
+of the real studio/ served with --poll-ms 2000, 77 opera:
+  column counts match the model computed from /api/opera for every phase   OK
+  backlog footer "25 backlogged"                                           OK
+  liveness label "live · updated 2026-09-25T04:42:24.878Z" — connection and
+    last-refresh reported separately (ruling 10)                           OK
+  drawer opened on W-062: one row per DECLARED probatio in manifest order,
+    each with its literal status word ("Testspending", "Lintpending",
+    "Typecheckpending", "Specpending", "Lead reviewpending" — declared with
+    no result renders pending, per *Interfaces*)                           OK
+  j/k on a one-card column does not move (stops at the ends)               OK
+  Enter opens, Esc closes                                                  OK
+  phone: 7 strip items, one column within the viewport                     OK
+  phone: initial column                                                    FAIL -> B2
+
+=============================================================================
+3. RULINGS ON THE BUILDER'S FIVE DISCLOSURES
+=============================================================================
+
+D1 — "for behaviours 7-9 I briefly wrote Board.tsx's real container logic ahead of
+     schedule — caught it, reverted to a skeleton, re-recorded properly, then restored".
+     RULING: THE SAME CLASS AS W-071. Not distinguishable, and it is not mine to waive
+     a second time.
+     Mechanism, compared side by side: D-024 records W-071 as "the builder implemented
+     all five behaviours, verified green, stubbed each piece to a no-op, recorded the
+     five reds against the stubbed states, and restored". W-064's sequence is
+     implement -> revert to skeleton -> record the red against the skeleton -> restore.
+     The same act, the same artifact signature (studio/ci/reds/W-064/07..09.log carry
+     dirty:c032fb5b, byte-identical to the eight reds recorded without any such
+     detour — P-012 names exactly this: "the header names the committed HEAD, never
+     the working tree's content"), and the same verifiability: by candour, not by
+     design. Degree differs ("briefly", one module group, self-caught); the class does
+     not. The brief left no room to read it otherwise — *Recording the reds* calls it
+     "forbidden here whether or not it is detectable", and rev 3 wrote that sentence
+     BECAUSE of D-024.
+     Credit, on the same terms D-024 set: the builder disclosed it unprompted and in
+     full, and that is why a ruling is possible at all. The reds' own shape is sound
+     (section 2), so this finding is not what fails the round — B1-B8 are.
+     WHAT FOLLOWS, and this is the part that is not discretionary: D-024's kill_when
+     has two arms, and the SECOND one has now fired — "or a second waiver of this
+     class is requested before that mechanism lands, which is the pattern this decision
+     exists to prevent". P-012 (working-tree identity in `bisellium red`) has not
+     landed; this is the second instance. So D-024 does not stretch over W-064, and I
+     do not extend it: a waiver needs a decision id and the Patron's hand
+     (`bisellium waive --decision <id>`), and my own lex forbids adopting a blocking
+     rule alone (§4). Recorded here as a second live instance of the class, which is
+     the fact P-012 was waiting for. Round 2 must cite D-024 or a new Patron decision
+     for the red gate rather than passing it silently — D-024's own requirement, now
+     inherited by this opus.
+
+D2 — two test-assertion bugs (a boardview.test.ts count regex, a usage.test.ts
+     sentence regex) fixed after their reds were recorded, before implementation.
+     RULING: ACCEPTED, with the gap named. Checked against the artifacts: 05.log's
+     assertion NAMES are the shipped ones ("BoardView: In progress count is \"1\"" is
+     present and FAILing, with the old regex's detail column `>`), and 11.log carries
+     all five shipped behaviour-11 assertion names as FAILs. So the shipped assertions
+     were observed red in substance. What has no red is the corrected REGEX itself.
+     That is the honest cost of fixing a test after step 3 of *The exact sequence*;
+     it is small here because both fixes made the assertion stricter (the count regex
+     now anchors on the column-head wrapper so it cannot match the phone strip —
+     boardview.test.ts:71-76), and neither is among the escapes in section 1.
+
+D3 — a Node loader hook stubbing .css imports (apps/web/test/support/).
+     RULING: ACCEPTED. Test scaffolding, mine to allow (lex §2), and it is the smallest
+     thing that works: GateLadder.tsx is another opus's file and imports w025.css
+     unconditionally, so behaviour 5(a)'s byte-identity proof cannot execute the real
+     component under plain node without it. It cannot affect the proof —
+     renderToStaticMarkup output does not depend on a stylesheet, and the hook only
+     ever runs under `node --import` (css-stub-hook.mjs:1-17). Both files carry their
+     own why. Not named in Files owned; forced by a file this opus is forbidden to
+     change, which is the right trade.
+
+D4 — behaviour 7's reconnect cases use kill-and-restart-on-the-same-port instead of
+     browserContext.setOffline.
+     RULING: ACCEPTED, and it is the stronger harness. Verified it genuinely severs the
+     stream rather than passing anyway: M10b (drop the drawer's events from
+     reconciliation) makes the open-drawer reconnect case FAIL after 15.7s, which only
+     happens if the client really disconnected, really reconnected, and really
+     reconciled. The claim that setOffline is a no-op on an established loopback SSE
+     stream is consistent with what I observed and is recorded in the spec's own header
+     (board.spec.ts:43-56) with its measurement. It touches nothing W-067 owns —
+     harness.ts and playwright.serve.config.ts are unmodified (git diff confirms).
+
+D5 — a pre-existing gitignored .bisellium cache under examples/sample-studio cleaned,
+     freshStudio() hardened.
+     RULING: ACCEPTED, and it is the right fix in the right place:
+     apps/server/test/board.test.ts:55-68 strips .bisellium from every temp copy, with
+     the measurement that motivated it recorded inline ("a leftover snapshot doubled
+     the ingested event count"). This is a real hazard for any test that copies the
+     fixture, and the hardening belongs in the copy helper rather than in a cleanup
+     step someone forgets.
+
+D6 — NOT disclosed, recorded by me: the attended smoke in *Acceptance* asks the censor
+     to drive a real browser by hand (open a card, traverse, watch a card move, kill
+     the server). I ran the scripted equivalent (section 2) against a temp copy of
+     studio/ and it is honest evidence of behaviour, but it is not a human looking at
+     the screen, and I am not able to be one. Three items in that list therefore remain
+     unattested by this round: whether the composition LOOKS right at 390px, whether
+     the liveness label reads sensibly to an operator (it currently prints a raw ISO
+     timestamp — "live · updated 2026-09-25T04:42:24.878Z"), and whether the drawer's
+     empty "From the officina record" section (heading with no rows — measured on
+     W-062, whose traditio carries no string fields and whose tokens are absent) is
+     acceptable. Flagged for the Patron's own eyes, not charged against the builder.
+
+=============================================================================
+4. ADVISORY (not blocking; no round-2 obligation unless the fix is free)
+=============================================================================
+
+A1 — apps/web/tests-serve/board.spec.ts:516-518's comment credits the pending human
+     gate to "W-003's human 'patron' gate". Measured: W-003's pending gate is `qa`
+     (kind: agent); the human `patron` gate is pending on W-004
+     (examples/sample-studio/opera/W-004.md). The assertion is right, the comment
+     names the wrong opus — and a future builder narrowing the fixture on that comment
+     would break behaviour 9 silently.
+
+A2 — packages/cli/src/containment.test.ts:261-271 (+10 lines) is outside Files owned
+     and was not disclosed. It is mechanically forced (the pinned-call registry
+     requires a disposition for board.spec.ts's two new path joins) and both entries
+     carry a real why. Accepted as bookkeeping the suite demands, but it belonged in
+     the disclosure list — the same paragraph that carried Seats.tsx and w025.css.
+
+A3 — apps/web/test/boardview.test.ts:204 finds the api.js import line with
+     Array.find(), so a SECOND runtime import line from ../api.js would never be
+     examined. The brief's wording is "No other runtime import from that module"
+     (*Board.tsx*). One extra .filter().length === 1 closes it.
+
+A4 — apps/web/tests-serve/board.spec.ts:146 does not await page.route(). It is
+     effective in practice (M16 proves a write on mount is caught, so the route is
+     live before navigation), but TARGET-9's requirement is an ordering one and it is
+     currently relying on Playwright's channel ordering rather than saying so.
+
+A5 — FOR THE ARCHITECT, NOT THE BUILDER: on the Patron's own officina the needs-you
+     column can never fill. studio/bisellium.yml:23-28 declares tests/lint/types
+     (automated) and spec/review (agent) — no probatio of kind: human anywhere — and
+     humanGateIds filters on kind === "human" (board.ts:66-68). Measured on the real
+     studio: "SMOKE needs_you rendered count: 0", drawer banner "absent" on every card.
+     So DIRECTION §6's pinned attention column, the needs-you banner, the petitio join
+     and W-073's whole reason to exist are all dead on the only officina that matters,
+     while being exactly what the brief specifies. The implementation is conformant;
+     the contract is pointed at a gate kind this studio does not use. This wants a
+     Patron/architect answer (declare a human probatio, or widen needs-you to a pending
+     AGENT gate awaiting the Patron), not a builder fix, and it is the single largest
+     product gap in the opus.
+
+=============================================================================
+5. VERDICT
+=============================================================================
+
+FAIL, round 1. Eight blocking findings: two live bugs measured on real data (B1, B2),
+four prescribed mutations that survive (B3, B4, B5, B6), one specified surface that is
+absent (B7), one specified seam that is not wired (B8). The reds are genuine, the
+read-only decree is genuinely measured on both halves, the server read surface is
+sound, and the folded-in TTL knob delivered its 5.13s.
+
+Two of the eight are one shape, and a round-2 fix should treat them as such: an
+assertion that its own implementation satisfies by accident (B1's Esc focus, which
+never leaves the card; B2's phone column, which is the default scroll position). Both
+were found by moving the state the test never moves.
+
+The red-provenance disclosure (D1) is not among the blocking eight, but it has fired
+D-024's second kill arm and is not waivable by the censor. That is the Patron's call
+and P-012's cue.
+
+-- qa-lead (censor), via Claude Opus 5
