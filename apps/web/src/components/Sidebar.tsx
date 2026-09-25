@@ -10,13 +10,10 @@ export interface SidebarProps {
   needsYouCount: number;
 }
 
-// D-023 §1's order. Board is present and disabled until W-064 lands (Files
-// owned) — it still renders and can carry the active class (so a direct
-// #/board hash doesn't leave zero entries active), but it is not a live
-// destination.
+// D-023 §1's order. W-064 lands the Board as a live destination.
 const ENTRIES: { route: string; href: string; label: string; disabled?: boolean }[] = [
   { route: "inbox", href: "#/inbox", label: "Inbox" },
-  { route: "board", href: "#/board", label: "Board", disabled: true },
+  { route: "board", href: "#/board", label: "Board" },
   { route: "seats", href: "#/seats", label: "Seats" },
   { route: "officina", href: "#/officina", label: "Officina" },
 ];

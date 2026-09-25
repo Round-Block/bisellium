@@ -1,0 +1,12 @@
+# behaviour: 11
+# command: node --import tsx packages/commands/src/usage.test.ts . 11
+# exit: 1
+# at: 2026-09-25T03:52:11.551Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+FAIL  ADOPTION.md §Running serve's /api/officina line names lifecycle        GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?
+FAIL  ADOPTION.md §Running serve's /api/events line names item=              GET  /api/events?since=&limit=     raw log events, with a stable `seq` a client can resume from
+FAIL  ADOPTION.md §Running serve states an omitted limit is unlimited        (sentence not found)
+FAIL  ADOPTION.md §Running serve states a supplied limit returns the earliest (sentence not found)
+FAIL  ADOPTION.md §Running serve states since is a numeric seq only          (sentence not found)

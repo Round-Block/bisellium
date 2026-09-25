@@ -4,6 +4,7 @@ import { Sidebar } from "./components/Sidebar.js";
 import { Officina } from "./screens/Officina.js";
 import { Inbox } from "./screens/Inbox.js";
 import { Seats } from "./screens/Seats.js";
+import { Board } from "./screens/Board.js";
 import { TokenPrompt } from "./components/TokenPrompt.js";
 import { fetchInbox, hasToken, setUnauthorizedListener } from "./api.js";
 
@@ -47,7 +48,7 @@ export function App() {
       {tokenPromptOpen && <TokenPrompt onSubmit={() => setTokenPromptOpen(false)} />}
       <Sidebar route={route} needsYouCount={needsYouCount} />
       <main className="shell__main">
-        {route === "officina" ? <Officina /> : route === "seats" ? <Seats /> : <Inbox />}
+        {route === "officina" ? <Officina /> : route === "seats" ? <Seats /> : route === "board" ? <Board /> : <Inbox />}
       </main>
     </div>
   );

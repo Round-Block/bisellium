@@ -1,0 +1,79 @@
+# behaviour: 8
+# command: npx playwright test -c playwright.serve.config.ts -g behaviour 8
+# exit: 1
+# at: 2026-09-25T07:28:39.945Z
+# sella: builder-a
+# tree: tree:be5cf928d28ded52151662fa7b1caeccca31f04b
+
+
+Running 3 tests using 3 workers
+
+  ✘  2 [chromium] › tests-serve/board.spec.ts:425:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body (30.0s)
+  ✘  3 [chromium] › tests-serve/board.spec.ts:403:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column (30.0s)
+  ✘  1 [chromium] › tests-serve/board.spec.ts:350:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays visible behind the drawer (30.0s)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:350:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays visible behind the drawer 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.focus: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__column[data-column-id="in_progress"]').locator('[role="option"][tabindex="0"]').first()
+
+
+      354 |
+      355 |     const inProgress = page.locator('.board__column[data-column-id="in_progress"]');
+    > 356 |     await inProgress.locator('[role="option"][tabindex="0"]').first().focus();
+          |                                                                       ^
+      357 |     const ids = await inProgress.locator('[data-card-id]').evaluateAll((els) => els.map((e) => e.getAttribute("data-card-id")));
+      358 |     expect(ids.length).toBeGreaterThanOrEqual(1);
+      359 |
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:356:71
+
+    Error Context: test-results/board-W-064-behaviour-8-ke-5ea25-s-visible-behind-the-drawer-chromium/error-context.md
+
+  2) [chromium] › tests-serve/board.spec.ts:403:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.focus: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__column[data-column-id="in_progress"]').locator('[role="option"][tabindex="0"]').first()
+
+
+      407 |
+      408 |     const inProgress = page.locator('.board__column[data-column-id="in_progress"]');
+    > 409 |     await inProgress.locator('[role="option"][tabindex="0"]').first().focus();
+          |                                                                       ^
+      410 |     const startColumn = await page.evaluate(() => document.activeElement?.getAttribute("data-column-id"));
+      411 |
+      412 |     await page.keyboard.press("ArrowRight");
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:409:71
+
+    Error Context: test-results/board-W-064-behaviour-8-ke-bcee6-t-previous-non-empty-column-chromium/error-context.md
+
+  3) [chromium] › tests-serve/board.spec.ts:425:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card[data-card-id="W-002"]')
+
+
+      428 |     await openBoard(page, served);
+      429 |
+    > 430 |     await page.locator('.board__card[data-card-id="W-002"]').click();
+          |                                                              ^
+      431 |     await expect(page.locator(".board-drawer")).toBeVisible();
+      432 |
+      433 |     setOpusState(served.studioDir, "W-002", "building", "review");
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:430:62
+
+    Error Context: test-results/board-W-064-behaviour-8-ke-4e5fd--head-—-never-document-body-chromium/error-context.md
+
+  3 failed
+    [chromium] › tests-serve/board.spec.ts:350:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays visible behind the drawer 
+    [chromium] › tests-serve/board.spec.ts:403:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column 
+    [chromium] › tests-serve/board.spec.ts:425:3 › W-064 behaviour 8: keyboard traversal, the drawer, and focus restoration › removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body 

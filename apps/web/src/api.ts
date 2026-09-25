@@ -102,12 +102,25 @@ export interface ModelRecordEntry {
   vendorDiagnostic?: string;
 }
 
+/** W-064: `lifecycle.states` — id/name/phase only (Interfaces: "gates would
+ *  duplicate the route's existing `probationes`; transitions are not the
+ *  Board's business"). Required, not optional: every adapter implements
+ *  `describeLifecycles()`, so an optional field would invite a fallback path
+ *  that can never run. */
+export interface LifecycleResponse {
+  id: string;
+  states: { id: string; name: string; phase: string }[];
+}
+
 export interface OfficinaResponse {
   studio: string;
   patron: string;
   collegia: { id: string; name: string; magister: string; fallback?: string; autonomy: string }[];
   sellae: { id: string; collegium: string; kind?: string; model?: string; harness?: string }[];
-  probationes: { id: string; kind: string }[];
+  /** `name` is optional (not required by the wire, but the wire always
+   *  carries it — declared optional so no fixture constructing a non-empty
+   *  `probationes` breaks; W-064's "Not append-only"). */
+  probationes: { id: string; kind: string; name?: string }[];
   wip_limit?: number;
   /** Absent when the manifest declares neither key (no migration). */
   tiers?: TierEntry[];
@@ -117,6 +130,9 @@ export interface OfficinaResponse {
    *  throws on bookkeeping it did not write. Unmerged with any live vendor
    *  listing; `fetchModels`/`GET /api/models` is the merged view. */
   models?: ModelRecordEntry[];
+  /** W-064: the served adapter's own state→phase mapping, so the Board never
+   *  hand-copies lifecycle state ids (CLAUDE.md: "never by hand"). */
+  lifecycle: LifecycleResponse;
 }
 
 export interface HealthResponse {
@@ -138,8 +154,21 @@ export interface OpusEntry {
   sella: string;
   state: string;
   tokens: number;
-  probationes: Record<string, { status: string; evidence?: string }>;
+  /** W-064: a contract CORRECTION, not a widening (`evidence?: string` was
+   *  wrong about the wire — see W-064's "Not append-only"). Blast radius
+   *  measured: `OpusEntry` had exactly one reference outside this
+   *  declaration (`fetchOpera`'s return type), and no fixture or component
+   *  constructed one. */
+  probationes: Record<string, { status: string; evidence?: { href: string; certifies?: string }; at?: string }>;
   traditio: unknown;
+}
+
+// ── W-064 types ──────────────────────────────────────────────────────
+
+export interface EventRow {
+  name: string;
+  ts: string;
+  attrs: Record<string, string | number | boolean>;
 }
 
 // ── shared helper ────────────────────────────────────────────────────
@@ -246,4 +275,46 @@ export function submitDelegate(target: { sella: string; model: string; from?: st
  *  alone (or `[]`) on any failure; never throws, never empties the dropdown. */
 export function fetchModels(): Promise<ModelRecordEntry[]> {
   return getJSON("/api/models");
+}
+
+// ── W-064 fetchers ───────────────────────────────────────────────────
+
+/** GET /api/events, unfiltered or scoped to one item (`?item=`). The
+ *  unfiltered path is untouched (`since` numeric-seq only, ascending,
+ *  earliest-N on a supplied limit); the filtered path returns the LAST N
+ *  (still ascending) and refuses `item` combined with `since` — see
+ *  docs/ADOPTION.md "Running serve" and W-064's Interfaces section. */
+export function fetchEvents(opts?: { item?: string; since?: number; limit?: number }): Promise<EventRow[]> {
+  const params = new URLSearchParams();
+  if (opts?.item !== undefined) params.set("item", opts.item);
+  if (opts?.since !== undefined) params.set("since", String(opts.since));
+  if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  return getJSON(`/api/events${qs ? `?${qs}` : ""}`);
+}
+
+/** One `EventSource` on `/api/live`. `onOpen` fires on the initial connect
+ *  AND on every browser-initiated reconnect — that is what drives
+ *  reconciliation (W-064 *Liveness*). The browser's own reconnection is
+ *  neither suppressed nor re-implemented. Guarded for a non-DOM environment
+ *  exactly as `getToken` is: `apps/web/test/*.test.ts`/`src/lib/*.test.ts`
+ *  run under plain node, where `EventSource` doesn't exist. */
+export function subscribeLive(handlers: {
+  onEvent: (e: EventRow) => void;
+  onOpen?: () => void;
+  onError?: () => void;
+}): () => void {
+  if (typeof EventSource === "undefined") return () => undefined;
+  const source = new EventSource("/api/live");
+  if (handlers.onOpen) source.addEventListener("open", handlers.onOpen);
+  if (handlers.onError) source.addEventListener("error", handlers.onError);
+  source.addEventListener("message", (ev: MessageEvent<string>) => {
+    try {
+      handlers.onEvent(JSON.parse(ev.data) as EventRow);
+    } catch {
+      // a malformed frame (shouldn't happen — the server only ever writes
+      // JSON.stringify(GantryEvent)) is dropped rather than thrown.
+    }
+  });
+  return () => source.close();
 }

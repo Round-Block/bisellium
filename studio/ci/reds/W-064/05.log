@@ -1,0 +1,79 @@
+# behaviour: 5
+# command: node --import ./test/support/register-css-stub.mjs --import tsx test/boardview.test.ts 5
+# exit: 1
+# at: 2026-09-25T03:29:10.992Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+FAIL  BoardView: every column head present, in order                                 [-1,-1,-1]
+FAIL  BoardView: Needs you count is "0"                                              
+FAIL  BoardView: Planned count is "2"                                                
+FAIL  BoardView: In progress count is "1"                                            >
+FAIL  BoardView: card title present                                                  
+FAIL  BoardView: card sella present                                                  
+FAIL  BoardView: card native state present                                           <div class="board"></div>
+FAIL  BoardView: sella and state share one meta line                                 <div class="board"></div>
+FAIL  BoardView: no fourth text row on a card (title + one meta line only)           0
+FAIL  BoardView: needs-you-only card carries the amber class                         
+FAIL  BoardView: blocked-only card carries the bad class                             
+FAIL  BoardView: both needsYou and blocked -> only bad                               
+PASS  BoardView: neither -> no state class                                           
+FAIL  BoardView: Planned's backlog footer shows the count                            <div class="board"></div>
+PASS  BoardView: Planned's backlog footer absent at zero                             <div class="board"></div>
+FAIL  BoardView: an empty officina still renders every column                        <div class="board"></div>
+FAIL  BoardView: an empty officina still renders the colophon                        <div class="board"></div>
+PASS  BoardView: no border-radius: 999px anywhere                                    <div class="board"></div>
+PASS  BoardView: no box-shadow anywhere (flat layer)                                 <div class="board"></div>
+PASS  BoardView: no per-project dot class                                            <div class="board"></div>
+PASS  BoardView: no emoji                                                            <div class="board"></div>
+FAIL  BoardView: the project select is present                                       <div class="board"></div>
+FAIL  BoardView: the project select is disabled                                      <div class="board"></div>
+FAIL  BoardView: exactly one option, equal to officina.studio                        []
+FAIL  BoardView: the unavailability reason is visible text                           <div class="board"></div>
+PASS  BoardView: the reason is never carried only in a title attribute               <div class="board"></div>
+FAIL  BoardView: every card carries role=option                                      0
+FAIL  BoardView: exactly one tabIndex=0 per column (2 columns -> 2)                  0
+PASS  BoardView: hostile title/sella — no <img tag reaches the markup                <div class="board"></div>
+FAIL  BoardView: hostile title/sella — escaped text is present                       <div class="board"></div>
+FAIL  BoardView: a card's ladder markup equals GateLadder's own output for the same gates <div class="gate-ladder" style="width:15px"><div class="gate-ladder__mark gate-ladder__mark--filled" style="left:0" title="spec"></div><div class="gate-ladder__mark gate-ladder__mark--hollow" style="left:9px" title="review"></div></div>
+---
+<div class="board"></div>
+PASS  BoardView: source imports GateLadder from ../components/GateLadder.js          /**
+ * apps/web/src/screens/BoardView.tsx — W-064: the Board's presentational
+ * half. Props in, markup out — `Board.tsx` holds fetch, SSE, selection and
+ * keyboard state.
+ *
+ * SKELETON STATE (studio/briefs/W-064.md "Recording the reds"): renders
+ * nothing but the outer shell. Implemented after behaviours 5-6's reds are
+ * recorded against this file and BoardDrawer.tsx.
+ */
+import type { JSX } from "react";
+import type { BoardModel } from "../lib/board.js";
+import { GateLadder } from "../components/GateLadder.js";
+import { Colophon } from "../components/Colophon.js";
+
+export interface BoardViewProps {
+  studio: string;
+  model: BoardModel;
+  selectedId?: string;
+  focusedByColumn: Record<string, string | undefined>;
+  onSelectCard: (id: string) => void;
+  generatedAt?: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function BoardView(_props: BoardViewProps): JSX.Element {
+  // Referenced so the import (proof of GateLadder reuse, note 10) and the
+  // no-op skeleton both typecheck before behaviour 5's implementation lands.
+  void GateLadder;
+  void Colophon;
+  return <div className="board" />;
+}
+
+PASS  Board.tsx: imports exactly the five read-only fetchers from ../api.js          ["fetchEvents","fetchInbox","fetchOfficina","fetchOpera","subscribeLive"]
+PASS  Board.tsx/BoardView.tsx/BoardDrawer.tsx/board.ts: none mentions "postWrite"    
+PASS  Board.tsx/BoardView.tsx/BoardDrawer.tsx/board.ts: none mentions "submitAnswer" 
+PASS  Board.tsx/BoardView.tsx/BoardDrawer.tsx/board.ts: none mentions "submitDelegate" 
+PASS  Board.tsx/BoardView.tsx/BoardDrawer.tsx/board.ts: none mentions "getToken"     
+PASS  Board.tsx/BoardView.tsx/BoardDrawer.tsx/board.ts: none mentions "setToken"     
+PASS  Board.tsx/BoardView.tsx/BoardDrawer.tsx/board.ts: none mentions "method:"      

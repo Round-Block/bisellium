@@ -1,0 +1,37 @@
+# behaviour: 1
+# command: node --import tsx apps/web/src/lib/board.test.ts . 1
+# exit: 1
+# at: 2026-09-25T03:21:09.786Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+FAIL  boardModel: needs_you first                                                    []
+FAIL  boardModel: one column per declared phase in lifecycle order, backlog excluded []
+PASS  boardModel: EXCLUDED_PHASES names backlog                                      
+FAIL  boardModel: an extra declared phase yields an extra column                     []
+PASS  boardModel: omitting a phase yields no column for it                           []
+FAIL  boardModel: returns every column when all are empty                            0
+PASS  boardModel: every column starts with zero cards                                
+FAIL  boardModel: an opus lands in its state's phase column                          
+FAIL  boardModel: a different opus lands in a different phase column                 
+PASS  boardModel: a backlog opus lands in no column                                  
+FAIL  boardModel: Planned's backlogCount counts the backlog opera                    
+PASS  boardModel: unplaced does not include backlog opera                            
+PASS  boardModel: an unmapped state does not throw                                   
+FAIL  boardModel: an unmapped state is named in unplaced                             []
+PASS  boardModel: an unmapped-state opus lands in no column                          
+FAIL  boardModel: a needs-you opus appears in needs_you                              
+FAIL  boardModel: a needs-you opus ALSO appears in its phase column                  
+FAIL  boardModel: needsYou is true on the needs_you copy                             
+FAIL  boardModel: needsYou is true on the phase-column copy too                      
+FAIL  boardModel: needs_you carries membership:true                                  
+PASS  boardModel: pinned is true only on needs_you                                   
+PASS  boardModel: Object.keys(model) is exactly [columns, unplaced]                  ["columns","unplaced"]
+FAIL  boardModel: Planned's own keys are exactly its declared set                    
+FAIL  boardModel: a plain phase column (no cap, no backlogCount) has exactly its base keys 
+FAIL  boardModel: cap present on in_progress only, equal to wip_limit                {}
+FAIL  boardModel: atCap true at the cap                                              
+FAIL  boardModel: atCap true one past the cap                                        
+FAIL  boardModel: atCap false below the cap                                          
+PASS  boardModel: wip_limit absent does not throw                                    
+PASS  boardModel: wip_limit absent — cap absent                                      

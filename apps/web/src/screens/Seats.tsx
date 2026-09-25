@@ -9,7 +9,10 @@ import { fetchModels, fetchOfficina, submitDelegate, type ModelRecordEntry, type
 import { availableModels, munusRows, seatRows, tierRows } from "../lib/delegation.js";
 import { SeatsView } from "./SeatsView.js";
 
-const EMPTY: OfficinaResponse = { studio: "", patron: "", collegia: [], sellae: [], probationes: [] };
+// W-064's recorded handoff (Files owned): `lifecycle` is required on
+// OfficinaResponse, so this fixture gains a literal — one line, not a
+// restructure of this screen.
+const EMPTY: OfficinaResponse = { studio: "", patron: "", collegia: [], sellae: [], probationes: [], lifecycle: { id: "", states: [] } };
 
 type Pending = { kind: "seat" | "munus"; id: string; from: string; to: string };
 
