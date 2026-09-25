@@ -1,0 +1,19 @@
+# behaviour: 2
+# command: node --import tsx apps/web/src/lib/board.test.ts . 2
+# exit: 1
+# at: 2026-09-25T03:21:16.066Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+FAIL  humanGateIds: picks exactly the kind:human probationes                         
+FAIL  gateRow: manifest order, not the opus's own key order                          []
+PASS  gateRow: a result for an undeclared gate is ignored                            
+FAIL  gateRow: a passed human gate maps to human_passed (ok-filled)                  []
+FAIL  gateRow: a passed automated gate maps to passed (filled)                       
+FAIL  gateRow: a declared gate with no result is pending                             []
+FAIL  gateRow: stale maps to the pending mark                                        []
+FAIL  cardRow: carries id/title/sella/native-state                                   {"id":"","title":"","state":"","gates":[],"needsYou":false,"blocked":false}
+FAIL  cardRow: blocked:true when any gate failed                                     
+FAIL  cardRow: needsYou:true when a human gate is pending                            
+FAIL  cardRow: needsYou true, blocked false — independent                            
+FAIL  cardRow: blocked true, needsYou false — independent                            

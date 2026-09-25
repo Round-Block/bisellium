@@ -1,9 +1,9 @@
 /**
  * apps/web/src/components/w025.css — styles for W-025 components
  * (FastiStrip, GateLadder, BurnBar, Officina) plus W-026
- * refinements (panel differentiation, data rows, Inbox structure).
- * Every gap and radius is from DIRECTION.md §3. Nav.tsx (the pre-Sidebar
- * top bar) is dead since W-025; deleted in W-065.
+ * refinements (panel differentiation, data rows, Inbox structure), W-064's
+ * Board/drawer/phone classes. Every gap and radius is from DIRECTION.md §3.
+ * Nav.tsx (the pre-Sidebar top bar) is dead since W-025; deleted in W-065.
  */
 
 /* ── Shell ────────────────────────────────────────────────────────── */
@@ -947,4 +947,354 @@
 .seats__cancel-btn:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* ── Board (W-064) ────────────────────────────────────────────────── */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.board__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-6) 0;
+  flex-shrink: 0;
+}
+
+.board__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 32px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.board__project-select-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.board__project-select {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 4px 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-2);
+  background: #ffffff;
+}
+
+.board__project-select-reason {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.board__strip {
+  display: none;
+}
+
+.board__columns {
+  flex-grow: 1;
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-6);
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 0;
+}
+
+.board__column {
+  flex: 0 0 288px;
+  width: 288px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+}
+
+.board__column--pinned {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #ffffff;
+}
+
+.board__column-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.board__column-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.board__wip-rule {
+  height: 3px;
+  background: var(--rule);
+}
+
+.board__wip-fill {
+  height: 100%;
+  background: var(--ink);
+}
+
+.board__wip-fill--amber {
+  background: var(--amber);
+}
+
+.board__column-cards {
+  flex-grow: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+}
+
+.board__card {
+  height: 64px;
+  box-sizing: border-box;
+  padding: 4px var(--sp-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  cursor: pointer;
+  box-shadow: none;
+  border-left: 2px solid transparent;
+  background: #ffffff;
+}
+
+.board__card--amber {
+  border-left-color: var(--amber);
+}
+
+.board__card--bad {
+  border-left-color: var(--bad);
+}
+
+.board__card-title {
+  font-size: 13px;
+  line-height: 18px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.board__card-meta {
+  display: flex;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.board__card:focus {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.board__backlog-footer {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 2px 4px;
+}
+
+.board__liveness {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  padding: 0 var(--sp-6);
+}
+
+/* ── Board drawer (W-064) ─────────────────────────────────────────── */
+
+.board-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 540px;
+  background: #ffffff;
+  border-left: 1px solid var(--rule);
+  box-shadow:
+    0 0 0 1px var(--rule),
+    0 16px 48px rgba(22, 33, 30, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.board-drawer__header {
+  padding: var(--sp-6) 56px var(--sp-4) var(--sp-6);
+  border-bottom: 1px solid var(--rule);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.board-drawer__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--ink-2);
+}
+
+.board-drawer__id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  display: block;
+}
+
+.board-drawer__title {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 500;
+  margin: 4px 0;
+}
+
+.board-drawer__meta {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.board-drawer__banner {
+  margin: var(--sp-4) var(--sp-6) 0;
+  background: #fbf3e4;
+  border: 1px solid #ead9b8;
+  border-radius: 2px;
+  padding: var(--sp-3) var(--sp-4);
+  color: #96621a;
+  font-size: 13px;
+}
+
+.board-drawer__gates,
+.board-drawer__events,
+.board-drawer__record {
+  padding: var(--sp-4) var(--sp-6) 4px;
+}
+
+.board-drawer__section-head {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  margin: 0 0 var(--sp-2);
+}
+
+.board-drawer__gate-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+}
+
+.board-drawer__gate-name {
+  flex-grow: 1;
+}
+
+.board-drawer__gate-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.board-drawer__event {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.board-drawer__event-at {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  width: 64px;
+  flex-shrink: 0;
+}
+
+.board-drawer__record-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 0;
+}
+
+/* Tablet: 600-899px — the needs-you column unpins; the drawer leaves the
+   rail's 72px visible. */
+@media (max-width: 899px) {
+  .board__column--pinned {
+    position: static;
+    left: auto;
+  }
+
+  .board-drawer {
+    width: min(540px, calc(100vw - 72px));
+  }
+}
+
+/* Phone: <=599px — one full-width column at a time (scroll-snap), the
+   column-name strip, no pinning, a full-width drawer. */
+@media (max-width: 599px) {
+  .board__strip {
+    display: flex;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4);
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+
+  .board__strip-item {
+    flex-shrink: 0;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: #ffffff;
+    font-size: 12px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  .board__columns {
+    scroll-snap-type: x mandatory;
+    padding: var(--sp-2) 0;
+  }
+
+  .board__column {
+    flex: 0 0 100vw;
+    width: 100vw;
+    scroll-snap-align: start;
+    padding: 0 var(--sp-4);
+    box-sizing: border-box;
+  }
+
+  .board-drawer {
+    width: 100vw;
+  }
 }

@@ -797,7 +797,7 @@ only, ingests one snapshot at start, and (unless `--once`) polls again every
 directly (see the file header comment on `apps/server/src/store.ts`). Reads:
 
 ```
-GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?
+GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?, lifecycle
 GET  /api/models                   D-023's model rows: the models.json record, merged with a live vendor listing (W-065)
 GET  /api/opera?state=&collegium=  every opus, filterable
 GET  /api/opus/:id                 one opus's front matter + body + probationes + traditio
@@ -807,10 +807,27 @@ GET  /api/aerarium?period=         allowance + derived burn + posture per colleg
 GET  /api/providers?live=          provider status (usage.yml, or live quota-axi with live=1)
 GET  /api/health                   health.json if `tick` wrote one, else a fresh check summary
 GET  /api/timeline/:sella?limit=   that sella's (or the Patron's) timeline
-GET  /api/events?since=&limit=     raw log events, with a stable `seq` a client can resume from
+GET  /api/events?since=&limit=&item=  raw log events, with a stable `seq` a client can resume from; `item=` scopes to one opus
 GET  /api/receipts?sella=          receipts, all sellae or one
 GET  /api/live                     SSE: `data: <event>` for every newly-ingested event
 ```
+
+**`GET /api/officina`'s `lifecycle`** (W-064) is `{ id, states }` from the
+served adapter's own `describeLifecycles()[0]` — the state→phase map the
+Board renders columns from, so no caller hand-copies lifecycle state ids
+(CLAUDE.md: "never by hand"). Additive: every pre-existing key is unchanged.
+
+**`GET /api/events`'s real limit/since semantics** (W-064 — never written
+down before, and got it wrong twice): an **omitted** `limit` is **unlimited**;
+a **supplied** `limit` is clamped into `[1,500]` and returns the **earliest**
+matching rows in ascending order; `since` is an **exclusive numeric seq
+only** — an ISO-timestamp `since` is silently treated as absent (`num()`
+discards any non-finite value), not refused and not resumed from. **`item=`**
+scopes the response to one opus, read fresh from `events.jsonl` (never the
+Index, which misses anything appended by another writer while the server
+runs); its `limit` means the **last** N, returned ascending; it carries no
+`seq`; and `item` combined with `since` answers `400` (nothing to resume
+from on a path with no seq).
 
 Writes reuse `packages/cli/src/writes.ts`/`talk.ts`/`pause.ts` verbatim (same
 validation, same exit codes, `stdout`/`stderr` captured into the JSON

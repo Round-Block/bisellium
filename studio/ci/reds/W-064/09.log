@@ -1,0 +1,84 @@
+# behaviour: 9
+# command: npx playwright test -c playwright.serve.config.ts -g behaviour 9
+# exit: 1
+# at: 2026-09-25T03:48:07.772Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+
+Running 3 tests using 3 workers
+
+  ✘  1 [chromium] › tests-serve/board.spec.ts:359:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible (30.0s)
+  ✘  2 [chromium] › tests-serve/board.spec.ts:380:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling (30.0s)
+  ✘  3 [chromium] › tests-serve/board.spec.ts:320:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator (30.0s)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:320:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.boundingBox: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card').first()
+
+
+      337 |
+      338 |     const card = page.locator(".board__card").first();
+    > 339 |     const cardBox = await card.boundingBox();
+          |                                ^
+      340 |     expect(cardBox?.height).toBeCloseTo(64, 0);
+      341 |     const cardShadow = await card.evaluate((el) => getComputedStyle(el).boxShadow);
+      342 |     expect(cardShadow === "none" || cardShadow === "").toBe(true);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:339:32
+
+    Error Context: test-results/board-W-064-behaviour-9-co-b36c9-d-no-shadow-focus-indicator-chromium/error-context.md
+
+  2) [chromium] › tests-serve/board.spec.ts:359:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card[data-card-id="W-002"]')
+
+
+      369 |     expect(position).not.toBe("sticky");
+      370 |
+    > 371 |     await page.locator('.board__card[data-card-id="W-002"]').click();
+          |                                                              ^
+      372 |     await expect(page.locator(".board-drawer")).toBeVisible();
+      373 |     const drawerBox = await page.locator(".board-drawer").boundingBox();
+      374 |     expect(drawerBox?.x).toBeGreaterThanOrEqual(72 - 1);
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:371:62
+
+    Error Context: test-results/board-W-064-behaviour-9-co-bf512-wer-leaves-the-rail-visible-chromium/error-context.md
+
+  3) [chromium] › tests-serve/board.spec.ts:380:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for locator('.board__card').first()
+
+
+      407 |     await expect(needsYouColumn).toBeInViewport();
+      408 |
+    > 409 |     await page.locator('.board__card').first().click();
+          |                                                ^
+      410 |     const drawerBox = await page.locator(".board-drawer").boundingBox();
+      411 |     expect(drawerBox?.width).toBeCloseTo(viewportWidth, 0);
+      412 |     const closeBox = await page.locator(".board-drawer__close").boundingBox();
+        at /home/edckt/projects/bisellium/.worktrees/W-064/apps/web/tests-serve/board.spec.ts:409:48
+
+    Error Context: test-results/board-W-064-behaviour-9-co-4aeec-reachable-without-scrolling-chromium/error-context.md
+
+  3 failed
+    [chromium] › tests-serve/board.spec.ts:320:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator 
+    [chromium] › tests-serve/board.spec.ts:359:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible 
+    [chromium] › tests-serve/board.spec.ts:380:3 › W-064 behaviour 9: computed composition at desktop, tablet and phone › 390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling 
+npm notice
+npm notice New minor version of npm available! 11.13.0 -> 11.20.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.20.0
+npm notice To update run: npm install -g npm@11.20.0
+npm notice

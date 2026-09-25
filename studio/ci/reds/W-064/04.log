@@ -1,0 +1,21 @@
+# behaviour: 4
+# command: node --import tsx apps/web/src/lib/board.test.ts . 4
+# exit: 1
+# at: 2026-09-25T03:21:16.818Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+FAIL  boardNeedsRefetch: true for workflow.item_appeared                             
+FAIL  boardNeedsRefetch: true for workflow.state_changed                             
+FAIL  boardNeedsRefetch: true for workflow.gate_evaluated                            
+FAIL  boardNeedsRefetch: true for workflow.actor_assigned                            
+FAIL  boardNeedsRefetch: true for workflow.item_removed                              
+FAIL  boardNeedsRefetch: true for workflow.attention                                 
+PASS  boardNeedsRefetch: false for workflow.digest                                   
+PASS  boardNeedsRefetch: false for provider.status                                   
+PASS  boardNeedsRefetch: false for gen_ai.usage                                      
+PASS  boardNeedsRefetch: false for some.unknown.name                                 
+FAIL  drawerNeedsRefetch: true for a relevant frame naming the selection             
+PASS  drawerNeedsRefetch: false for a relevant frame naming another item             
+PASS  drawerNeedsRefetch: false for an irrelevant frame naming the selection         
+PASS  drawerNeedsRefetch: false with no selection                                    

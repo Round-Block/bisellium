@@ -77,6 +77,11 @@ export interface StartServerOptions {
    *  against a timeout here, since a hung stub or a hung real process must
    *  never block the route. */
   listModels?: () => Promise<{ id: string; harness: string }[]>;
+  /** W-064 (censor's W-065 r2 seam note, folded in): the GET /api/models
+   *  listing cache's TTL. Defaults to `MODELS_LISTING_TTL_MS`; tests pin a
+   *  short one so "a call AFTER the TTL refreshes the listing" doesn't need
+   *  a real 5.2s sleep. */
+  listingTtlMs?: number;
 }
 
 export interface StartServerResult {
@@ -265,11 +270,11 @@ interface ListingResult {
  *  `listModels` does — a hung stub or a hung real process degrades to the
  *  last-known-GOOD listing (or, with none yet, `{ ok: false, listing: [] }`)
  *  exactly like an outright failure, and never blocks the route. */
-function createListingCache(listModels: () => Promise<{ id: string; harness: string }[]>): () => Promise<ListingResult> {
+function createListingCache(listModels: () => Promise<{ id: string; harness: string }[]>, ttlMs: number = MODELS_LISTING_TTL_MS): () => Promise<ListingResult> {
   let cache: { at: number; result: ListingResult } | undefined;
   return async () => {
     const now = Date.now();
-    if (cache && now - cache.at < MODELS_LISTING_TTL_MS) return cache.result;
+    if (cache && now - cache.at < ttlMs) return cache.result;
     try {
       const listing = await Promise.race([
         listModels(),
@@ -638,7 +643,16 @@ async function route(
   if (method === "GET" && pathname === "/api/events") {
     const since = num(url.searchParams.get("since"));
     const limit = clampedLimit(url.searchParams.get("limit"));
-    return sendJson(res, 200, store.api.events({ since, limit }));
+    const item = url.searchParams.get("item") ?? undefined;
+    // `since` resumes the whole stream by the Index's seq; the `item` path
+    // reads the log fresh (never the Index) and its rows carry no seq, so
+    // there is nothing to resume from — refusing is the honest answer
+    // (W-064 Interfaces).
+    if (item !== undefined && since !== undefined) {
+      sendJson(res, 400, { error: "item cannot be combined with since" });
+      return;
+    }
+    return sendJson(res, 200, store.api.events({ since, limit, item }));
   }
 
   if (method === "GET" && pathname === "/api/receipts") {
@@ -827,7 +841,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   const withWriteLock = createWriteLock();
   // GET /api/models' live listing: TTL-cached + timed out per-server-instance
   // (see createListingCache's docs).
-  const getListing = createListingCache(opts.listModels ?? codexListModels);
+  const getListing = createListingCache(opts.listModels ?? codexListModels, opts.listingTtlMs ?? MODELS_LISTING_TTL_MS);
   // One store "event" listener for every connected /api/live client to fan
   // out from (W-016 behaviour 8) — never one listener per client.
   const sseHub = createSseHub(store);

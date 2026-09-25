@@ -1,0 +1,21 @@
+# behaviour: 3
+# command: node --import tsx apps/web/src/lib/board.test.ts . 3
+# exit: 1
+# at: 2026-09-25T03:21:16.451Z
+# sella: builder-a
+# tree: dirty:c032fb5b1f7c2115039343a2e0691b6d70f146f6
+
+FAIL  liveLabel: connected, no refresh — says connected                              
+PASS  liveLabel: connected, no refresh — never says updated                          
+FAIL  liveLabel: renders lastRefreshAt                                               
+PASS  liveLabel: never renders `now` instead                                         
+FAIL  liveLabel: disconnected — says so                                              
+PASS  liveLabel: disconnected — never contains 'live'                                
+PASS  liveLabel: an unparseable lastRefreshAt degrades, never 'Invalid Date'         
+FAIL  reconcileReason: "initial" on the first connect                                
+FAIL  reconcileReason: "reconnect" on a connect after a disconnect                   
+PASS  reconcileReason: undefined on a repeated connected:true (no periodic reconciliation) 
+PASS  reconcileReason: undefined on going disconnected                               
+FAIL  reconcileTargets: exactly the three base paths with no selection               []
+FAIL  reconcileTargets: with a selection, those three PLUS the item's events         []
+FAIL  reconcileTargets: with a selection, exactly four targets (dropping the fourth is a red) []
