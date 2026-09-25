@@ -118,9 +118,22 @@ console's four "anomalies" diagnosed**: 34 pending = real due debt
 STALE health.json from the 09-23 tick (tick re-run; now 0/126 — the
 as-of stamp is W-077); empty System status = no W39 aerarium (Patron's
 desk); inbox no-context = P-012 has no subject key, raw body-line
-fallback (W-076). **In flight**: builder-a on `opus/W-064` (Board,
-worktree `.worktrees/W-064`); `opus/W-062` branch created, builder
-queued behind W-064 (slow-serial).
+fallback (W-076). **W-062 MERGED** (PR #80,
+round-1 PASS, zero blocking — the amend verb; the censor ran twelve
+mutations, ten bite; advisories filed as W-079 (two unpinned guards,
+test-only) and W-080 (`spec-gate×self-signed`, rule candidate at
+`process.ts:245`); the `--spec`-accepts-a-directory hole is
+pre-existing in `ready` and goes to W-040's successor). **W-064**:
+round-1 FAIL (8 blocking), all fixed with mutation-kill proofs,
+Terra-censused clean; **round 2 held at the red gate for P-013** —
+D-024's kill arm fired on the builder's skeleton re-record, the
+Patron must rule (new waiver decision, or refuse + remedy). Worktree
+`.worktrees/W-064` alive, branch at 7ea3413. Also filed: P-013,
+W-078 (human-kind probatio missing from studio's manifest — censor
+A5, architect's call). CLI gap recorded: `new --kind petitio` writes
+a mis-shaped opus. Patron's desk: P-013, P-012, the W39 aerarium,
+and the Board's three visual checks (390px composition, raw-ISO
+liveness label, empty drawer record section).
 
 **Cascade 33 (2026-09-25): the probe arc completes.** **W-069 MERGED**
 (PR #68, 2 rounds — the battery ran live: five codex models proven
