@@ -74,6 +74,30 @@ parent process's secrets out of its own environment.
 
 Planned, not yet built: `memoria/sellae/`, `archive/`, and the docs registry.
 
+`ci/` evidence has three command-owned writers. `verify` records automated
+gate runs, `red` records a failing command per behaviour, and `verdict`
+records a review transcript without evaluating or changing any gate.
+
+## bisellium verdict
+
+```bash
+npm run bisellium -- verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+```
+
+`verdict` copies a transcript from `--from` (or stdin when omitted) into
+`ci/<opus>-spec-<n>.log` for `--phase spec`, or
+`ci/<opus>-review-<n>.log` for `--phase build` (the default). A `--from`
+path is a read source and may be outside the officina; it must name a regular
+file. The header records the opus, phase, positive-integer round, non-blank
+sella and free-text outcome, optional model, timestamp, and the capture-time
+state of the repository containing `--studio`. Header values cannot contain
+CR or LF. An existing target is never overwritten.
+
+The command writes evidence only: it does not update `probationes`, state,
+events, or timelines. A build orchestrator can follow it with
+`review --evidence <path>`; spec verdicts are citable evidence for `retro`, not a second
+spec gate.
+
 ## decisions/D-nnn.md and lessons/L-nnn.md
 
 ```yaml

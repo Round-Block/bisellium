@@ -25,6 +25,7 @@ import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writ
 import { runDelegate } from "./delegate.js";
 import { runProbe } from "./probe.js";
 import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
+import { runVerdict } from "./verdict.js";
 import { runServe } from "./serve.js";
 import { runHooks, runHookEvent } from "./hooks.js";
 import { runDocs } from "./docs.js";
@@ -35,7 +36,8 @@ import { runPrune } from "./prune.js";
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
 // `run`, `verify`, `talk`, `tick`, `pause`, `resume`, `handoff`, `emit`,
-// `answer`, `greenlight`, `budget`, `new`, `instructions` and `retro` are
+// `answer`, `greenlight`, `budget`, `new`, `instructions`, `retro` and
+// `verdict` are
 // NOT listed here: each parses its own argv (several have a trailing
 // free-text argument — talk's message, answer's reply — the generic parser
 // below would mangle, and a couple use a "--" separator it would choke on)
@@ -106,6 +108,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "amend") return runAmend(rest).exitCode;
   if (cmd === "done") return runDone(rest).exitCode;
   if (cmd === "review") return runReview(rest).exitCode;
+  if (cmd === "verdict") return runVerdict(rest).exitCode;
   if (cmd === "red") return (await runRed(rest)).exitCode;
   if (cmd === "hooks") return runHooks(rest).exitCode;
   if (cmd === "hook-event") return (await runHookEvent(rest)).exitCode;
