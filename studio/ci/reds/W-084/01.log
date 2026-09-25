@@ -1,0 +1,9 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/rules/evidence.test.ts . 1
+# exit: 1
+# at: 2026-09-25T18:22:37.446Z
+# sella: builder-sol
+# tree: tree:24618090e2ebd6ad447e40fa49941db3b344dadc
+
+PASS  same body after header = duplicate                           true
+FAIL  out-of-range citation blocks once and names both numbers     []

@@ -1,0 +1,10 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/rules/evidence.test.ts . 3
+# exit: 1
+# at: 2026-09-25T18:22:38.853Z
+# sella: builder-sol
+# tree: tree:24618090e2ebd6ad447e40fa49941db3b344dadc
+
+PASS  ERR_MODULE_NOT_FOUND detected                                true
+FAIL  unreferenced brief is reached by checkStudio                 []
+PASS  real brief corpus has no out-of-range citation               []
