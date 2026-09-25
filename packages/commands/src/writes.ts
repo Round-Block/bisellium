@@ -332,7 +332,7 @@ function gitFailureRefusal(opusId: string, branch: string): string {
 // must agree with --opus before anything is written, same discipline as
 // run.ts's own boundary.
 // ---------------------------------------------------------------------------
-function mintDispatchSella(
+export function mintDispatchSella(
   resolved: { seat: { id: string; retired?: boolean }; instance?: string },
   sella: string,
   opusId: string,

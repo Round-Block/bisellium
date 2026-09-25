@@ -83,7 +83,7 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   // delegate also refuse a retired live target"). A historical reader that
   // truly needs a tombstone's collegium can still call `resolveSeat`
   // directly; this CLI-facing boot path cannot.
-  if (!isPatron && resolved!.seat.retired) return unknownSella;
+  if (!isPatron && resolved?.seat.retired) return unknownSella;
   const sellaRow = resolved?.seat;
 
   try {

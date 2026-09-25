@@ -7,10 +7,10 @@
  * mint a doubled dot is refused before it ever reaches a join, proven
  * end to end through `bisellium run`'s own boundary (behaviour 5).
  */
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { gitWorktreeProvider, receiptPath, writeReceiptStart } from "../src/index.js";
 import { runCommand } from "../../cli/src/run.js";
 import { checkStudio } from "../../cli/src/check.js";
@@ -90,12 +90,54 @@ probationes: []
   }
 }
 
-// ---- 3. GIT_AUTHOR_EMAIL is exactly one "@" ---------------------------------
+// ---- 3. GIT_AUTHOR_EMAIL is exactly one "@" — read from `bisellium run`'s
+// OWN child env (censor W-089 round-1 finding B5): the mutation battery
+// showed the previous version of this block asserted a string the test
+// itself built, so it survived a mutation that broke the real minting path.
+// This spawns a real child through `runCommand` and inspects what actually
+// landed in its environment. -------------------------------------------------
 {
-  const slug = "studio";
-  const email = `${INSTANCE}@${slug}.bisellium`;
-  check("b9: GIT_AUTHOR_EMAIL has exactly one '@'", email.split("@").length === 2, email);
-  check("b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium", email === "builder.W-089@studio.bisellium", email);
+  const studio = mktemp("w089-b9-email-studio-");
+  const outFile = join(studio, "email.txt");
+  try {
+    writeFileSync(
+      join(studio, "bisellium.yml"),
+      `bisellium: 1
+studio: studio
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: eng-lead }
+sellae:
+  - { id: eng-lead, collegium: engineering, kind: agent }
+  - { id: builder, collegium: engineering, kind: agent }
+probationes: []
+`,
+    );
+
+    const result = await runCommand(
+      [
+        "--sella",
+        "builder",
+        "--opus",
+        "W-089",
+        "--studio",
+        studio,
+        "--no-worktree",
+        "--",
+        process.execPath,
+        "-e",
+        "require('fs').writeFileSync(process.argv[1], process.env.GIT_AUTHOR_EMAIL)",
+        outFile,
+      ],
+      { now: NOW },
+    );
+    check("b9: run mints the instance and dispatches the child — exits 0", result.exitCode === 0, String(result.exitCode));
+    const email = readFileSync(outFile, "utf8");
+    check("b9: GIT_AUTHOR_EMAIL has exactly one '@'", email.split("@").length === 2, email);
+    check("b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium", email === `${INSTANCE}@studio.bisellium`, email);
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
 }
 
 // ---- 4. negative: an id containing ".." never reaches a join --------------

@@ -2935,6 +2935,130 @@ try {
     const unknown = runAmend(["W-006", "--title", "New title", "--reason", "r", "--sella", "totally-unknown", "--studio", dir], { now: NOW });
     check("w089 b6: amend refuses an unknown sella", unknown.exitCode === 2, String(unknown.exitCode));
   }
+
+  // ===========================================================================
+  // Censor W-089 round-1, finding B1 — resolveSella (ready/done/review/halt/
+  // waive) and namedSella (red/amend) now MINT: a bare live builder-class
+  // template resolves to <template>.<opus> before any write, the same
+  // discipline writes.ts's handoff/emit --usage already have via
+  // mintDispatchSella (S2). Non-builder-class sellas (architect, guest, a
+  // retired tombstone) pass through unminted — already covered above by the
+  // "still accepts a retired sella" checks; this block is the mint itself.
+  // ===========================================================================
+  {
+    const dir = freshStudio("w089-b1-ready-mint");
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "W-006.md"), "# W-006\n\nSpec fixture.\n");
+    const r = runReady(["W-006", "--sella", "builder", "--studio", dir], { now: NOW });
+    check("w089 b1: ready mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const attrs = readEventLines(dir).at(-1)?.["attrs"] as Record<string, unknown> | undefined;
+    check("w089 b1: ready's workflow.state_changed carries the minted instance", attrs?.[WF.ACTOR_ROLE] === "builder.W-006", JSON.stringify(attrs));
+
+    const mismatch = runReady(["W-006", "--sella", "builder.W-999", "--studio", dir], { now: NOW });
+    check("w089 b1: ready refuses a supplied instance that disagrees with the opus", mismatch.exitCode === 2, String(mismatch.exitCode));
+  }
+  {
+    const dir = freshStudio("w089-b1-review-mint");
+    writeFileSync(join(dir, "ci", "review-pass-1.log"), "review notes\n");
+    const r = runReview(["W-004", "--pass", "--evidence", "ci/review-pass-1.log", "--sella", "builder", "--studio", dir], { now: NOW });
+    check("w089 b1: review mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const front = readFront<{ probationes?: Record<string, { sella?: unknown }> }>(join(dir, "opera", "W-004.md")).data;
+    check("w089 b1: review's probatio.sella is minted", front.probationes?.["review"]?.sella === "builder.W-004", JSON.stringify(front.probationes?.["review"]));
+  }
+  {
+    const dir = freshStudio("w089-b1-halt-mint");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-900.md"), "# D-900\n\nDecision fixture.\n");
+    const r = runHalt(["W-002", "--reason", "r", "--resume-when", "rw", "--decision", "D-900", "--sella", "builder", "--studio", dir], { now: NOW });
+    check("w089 b1: halt mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const attrs = readEventLines(dir).at(-1)?.["attrs"] as Record<string, unknown> | undefined;
+    check("w089 b1: halt's workflow.state_changed carries the minted instance", attrs?.[WF.ACTOR_ROLE] === "builder.W-002", JSON.stringify(attrs));
+  }
+  {
+    const dir = freshStudio("w089-b1-waive-mint");
+    mkdirSync(join(dir, "decisions"), { recursive: true });
+    writeFileSync(join(dir, "decisions", "D-900.md"), "---\nby: patron\n---\nDecision fixture.\n");
+    const r = runWaive(["W-004", "--gate", "patron", "--reason", "r", "--decision", "D-900", "--sella", "builder", "--studio", dir], { now: NOW });
+    check("w089 b1: waive mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const front = readFront<{ probationes?: Record<string, { sella?: unknown }> }>(join(dir, "opera", "W-004.md")).data;
+    check("w089 b1: waive's probatio.sella is minted", front.probationes?.["patron"]?.sella === "builder.W-004", JSON.stringify(front.probationes?.["patron"]));
+  }
+  {
+    const dir = freshStudio("w089-b1-red-mint");
+    const id = "W-981";
+    mkdirSync(join(dir, "ci", "reds", id), { recursive: true });
+    const r = await runRed(
+      [id, "--behaviour", "1", "--sella", "builder", "--studio", dir, "--repo", dir, "--now", NOW.toISOString(), "--", "node", "-e", "process.exit(1)"],
+      {},
+    );
+    check("w089 b1: red mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const header = readFileSync(join(dir, "ci", "reds", id, "01.log"), "utf8").split("\n");
+    check("w089 b1: red's header names the minted instance", header[4] === `# sella: builder.${id}`, header[4]);
+  }
+  {
+    const dir = freshStudio("w089-b1-amend-mint");
+    const r = runAmend(["W-006", "--title", "New title", "--reason", "r", "--sella", "builder", "--studio", dir], { now: NOW });
+    check("w089 b1: amend mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const front = readFront<{ amendments?: { sella?: unknown }[] }>(join(dir, "opera", "W-006.md")).data;
+    check("w089 b1: amend's amendments[].sella is minted", front.amendments?.[0]?.sella === "builder.W-006", JSON.stringify(front.amendments));
+  }
+  {
+    // `done` needs every declared gate passed — a minimal custom record so
+    // the mint assertion is isolated from unrelated gate bookkeeping.
+    const dir = freshStudio("w089-b1-done-mint");
+    const id = "W-982";
+    writeFileSync(
+      join(dir, "opera", `${id}.md`),
+      [
+        "---",
+        `id: ${id}`,
+        "title: mint fixture",
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "probationes:",
+        "  tests: { status: passed, evidence: ci/x.log, certifies: tree:aaaa }",
+        "  lint: { status: passed, evidence: ci/x.log, certifies: tree:aaaa }",
+        "  types: { status: passed, evidence: ci/x.log, certifies: tree:aaaa }",
+        "  qa: { status: passed }",
+        "  review: { status: passed }",
+        "---",
+        "Body.",
+        "",
+      ].join("\n"),
+    );
+    const r = runDone([id, "--sella", "builder", "--studio", dir], { now: NOW });
+    check("w089 b1: done mints a bare builder template — exits 0", r.exitCode === 0, String(r.exitCode));
+    const attrs = readEventLines(dir).at(-1)?.["attrs"] as Record<string, unknown> | undefined;
+    check("w089 b1: done's workflow.state_changed carries the minted instance", attrs?.[WF.ACTOR_ROLE] === `builder.${id}`, JSON.stringify(attrs));
+  }
+
+  // ===========================================================================
+  // Censor W-089 round-1, finding B2 — "guest" is the built-in un-credentialed
+  // default (the CLI's own `--sella ?? $BISELLIUM_SELLA ?? "guest"` chain,
+  // CLAUDE.md, `.claude/settings.json`'s hook commands): it needs no declared
+  // `sellae` row, the same way `patron` needs none. A manifest scaffolded by
+  // `bisellium init` (which declares only `producer`) must not refuse it.
+  // ===========================================================================
+  {
+    const dir = freshStudio("w089-b2-guest-undeclared");
+    const raw = readFileSync(join(dir, "bisellium.yml"), "utf8");
+    // The fixture itself declares no guest row (the redundant patch this
+    // opus first added was reverted — censor W-089 round-1 finding B2): this
+    // is already the "init-scaffolded officina" shape, no edit needed.
+    check("w089 b2 setup: the fixture manifest has no declared guest row", !/id:\s*guest\b/.test(raw), "fixture text drifted");
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "W-006.md"), "# W-006\n\nSpec fixture.\n");
+
+    const savedSella = process.env["BISELLIUM_SELLA"];
+    delete process.env["BISELLIUM_SELLA"];
+    try {
+      const r = runReady(["W-006", "--studio", dir], { now: NOW }); // no --sella at all -> falls back to "guest"
+      check("w089 b2: ready resolves the default guest sella on a manifest with no declared guest row", r.exitCode === 0, String(r.exitCode));
+    } finally {
+      if (savedSella !== undefined) process.env["BISELLIUM_SELLA"] = savedSella;
+    }
+  }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }
