@@ -416,4 +416,26 @@ function readJsonl(path: string): unknown[] {
   }
 }
 
+// ---- W-089 behaviour 3: talk resolves a template-instance sella id --------
+{
+  const studio = freshStudio();
+  try {
+    const { profile, calls } = countingProfile(fakeProfile);
+    const { result } = await captureLogs(() =>
+      runTalk(["--sella", "builder.W-100", "--studio", studio, "--harness", "fake", "--model-only", "a fresh question"], {
+        harnesses: { fake: profile },
+      }),
+    );
+    check("w089 b3: an instance id resolves the template's harness — exits 0", result.exitCode === 0, String(result.exitCode));
+    check("w089 b3: an instance id resolves the template's harness — the harness actually ran", calls.start === 1, JSON.stringify(calls));
+
+    const badResult = await runTalk(["--sella", "builder.", "--studio", studio, "--harness", "fake", "--model-only", "x"], {
+      harnesses: { fake: fakeProfile },
+    });
+    check("w089 b3: an empty-instance id ('builder.') refuses as unknown", badResult.exitCode === 2, String(badResult.exitCode));
+  } finally {
+    rmSync(studio, { recursive: true, force: true });
+  }
+}
+
 process.exit(failed ? 1 : 0);

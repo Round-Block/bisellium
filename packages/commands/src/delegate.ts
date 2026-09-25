@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { isAlias, parseDocument, visit } from "yaml";
+import { resolveSeat, retiredDispatchMessage } from "@bisellium/adapter-native";
 import { appendPatronTimeline, openStudio, parseFlags, resolveNow, type WriteOptions, type WriteResult } from "./writes.js";
 
 const DELEGATE_USAGE =
@@ -152,13 +153,22 @@ export function runDelegate(args: string[], opts: WriteOptions = {}): WriteResul
   let target: Target | MunusTarget;
   let currentValue: string | undefined;
   if (sellaShape) {
-    const row = (manifest.sellae ?? []).find((s) => s.id === sella);
-    if (!row) {
+    // W-089 behaviours 3/6: an instance id (`builder.W-089`) resolves to its
+    // TEMPLATE row — `delegate` edits a template, it never mints or writes a
+    // row named after an instance — and a retired live target is refused,
+    // same posture as the three group-A dispatch sites.
+    const resolved = resolveSeat(manifest, sella!);
+    if (!resolved) {
       console.error(`unknown sella "${sella}" — not declared in bisellium.yml`);
       return { exitCode: 2 };
     }
+    if (resolved.seat.retired) {
+      console.error(retiredDispatchMessage(manifest, resolved.seat));
+      return { exitCode: 2 };
+    }
+    const row = resolved.seat;
     currentValue = row.model;
-    target = { kind: "sella", id: sella!, field: "model", value: model! };
+    target = { kind: "sella", id: row.id, field: "model", value: model! };
   } else {
     const row = (manifest.munera ?? []).find((m) => m.id === munus);
     if (!row) {

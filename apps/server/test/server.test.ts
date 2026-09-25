@@ -476,6 +476,17 @@ async function main(): Promise<void> {
       check("timeline/nobody: {error}", typeof body?.error === "string", JSON.stringify(body));
     }
 
+    // ---- W-089 behaviour 3: knownParty/sellaExists resolve a template-
+    // instance id through resolveSeat, same as an exact declared id -----------
+    {
+      const { status } = await getJson(base, "/api/timeline/builder.W-100");
+      check("w089 b3: timeline/builder.W-100 (instance): 200, not 404", status === 200, String(status));
+    }
+    {
+      const { status } = await getJson(base, "/api/timeline/ghost.W-100");
+      check("w089 b3: timeline/ghost.W-100 (unresolvable): 404", status === 404, String(status));
+    }
+
     // ---- W-016 behaviour 7: ?limit= clamps into [1,500], never throws -------
     {
       for (const raw of ["-5", "0", "99999", "abc"]) {
@@ -882,7 +893,7 @@ async function main(): Promise<void> {
     const prevRole = process.env["BISELLIUM_ROLE"];
     process.env["BISELLIUM_ROLE"] = "builder-a";
     try {
-      const r = await postJson(base, "/api/delegate", { sella: "builder-1", model: "gpt-5.6-sol" });
+      const r = await postJson(base, "/api/delegate", { sella: "builder", model: "gpt-5.6-sol" });
       check("delegate (patron over seeded role): HTTP 200, ok:true", r.status === 200 && r.body?.ok === true, JSON.stringify(r.body));
       const lines = timelineLines(dir);
       check("delegate (patron over seeded role): recorded role is patron", lines[lines.length - 1]?.["role"] === "patron", JSON.stringify(lines[lines.length - 1]));
@@ -905,7 +916,7 @@ async function main(): Promise<void> {
     try {
       // Two overlapping POSTs (both issued before either resolves) — removing
       // withWriteLock interleaves the console capture and fails this.
-      const pA = postJson(base, "/api/delegate", { sella: "builder-1", model: "gpt-5.6-sol" });
+      const pA = postJson(base, "/api/delegate", { sella: "builder", model: "gpt-5.6-sol" });
       const pB = postJson(base, "/api/delegate", { munus: "audit", tier: "high" });
       const [a, b] = await Promise.all([pA, pB]);
       check("delegate lock: overlapping call A succeeds", a.status === 200 && a.body?.ok === true, JSON.stringify(a.body));

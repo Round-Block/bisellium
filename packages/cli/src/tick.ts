@@ -16,7 +16,7 @@
  */
 import { basename, dirname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { listMd, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
+import { listMd, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { DEFAULT_HARNESS, codexListModels, harnessVersions, makeSessionId, receiptPath, redact, type ListedModel } from "@bisellium/shim";
 import {
   gatherCandidates,
@@ -527,8 +527,16 @@ export async function runTick(args: string[], opts: RunTickOptions = {}): Promis
     const talk = opts.talk ?? (await loadRealTalkOnce());
     const today = localDateStr(now, manifest.timezone);
     for (const item of dailyItems) {
-      const sellaRow = manifest.sellae.find((s) => s.id === item.sella);
-      const harness = harnessForSella(sellaRow);
+      // W-089 behaviour 3: resolves through resolveSeat (S1) before
+      // harnessForSella reads it — an unresolvable magister id is refused
+      // with the existing per-item error posture (no daily/harness turn),
+      // rather than silently defaulting to claude-code.
+      const resolved = resolveSeat(manifest, item.sella);
+      if (!resolved) {
+        console.error(`tick: daily for "${item.sella}" failed: unknown sella — not declared in bisellium.yml`);
+        continue;
+      }
+      const harness = harnessForSella(resolved.seat);
       const w = await writeDailyActum(studioRoot, item.sella, now, today, talk, harness);
       if (w.ok) console.log(`wrote ${w.path}`);
       else console.error(`tick: daily for "${item.sella}" failed: ${w.error}`);

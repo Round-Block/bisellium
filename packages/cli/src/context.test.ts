@@ -199,4 +199,14 @@ function pointerSection(text: string): string {
   }
 }
 
+// ---- W-089 behaviour 3: buildContext resolves a template-instance sella id
+{
+  const c = buildContext(root, "builder.W-100", { now: NOW });
+  check("w089 b3: an instance id injects the same collegium lex as its template", c.text.includes("Engineering lex") && c.text.includes("Mandate"));
+  const bad = buildContext(root, "builder.", { now: NOW });
+  check("w089 b3: an empty-instance id ('builder.') is unknown", bad.text === "" && bad.truncated[0] === "unknown sella");
+  const ghost = buildContext(root, "ghost.W-100", { now: NOW });
+  check("w089 b3: an unknown seat prefix is unknown", ghost.text === "" && ghost.truncated[0] === "unknown sella");
+}
+
 process.exit(failed ? 1 : 0);

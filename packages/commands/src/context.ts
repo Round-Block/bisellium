@@ -8,7 +8,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { listMd, readFront, readManifest, snapshotDir } from "@bisellium/adapter-native";
+import { listMd, readFront, readManifest, resolveSeat, snapshotDir } from "@bisellium/adapter-native";
 
 export interface ContextBundle {
   text: string;
@@ -72,7 +72,10 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   }
   const patron = manifest.patron ?? "patron";
   const isPatron = sella === patron;
-  const sellaRow = manifest.sellae.find((s) => s.id === sella);
+  // W-089 behaviour 3: a template or one of its instance ids resolves the
+  // same row (S1) — `context` is a read, so a retired row also resolves
+  // (history keeps booting); only a truly unresolvable id is "unknown".
+  const sellaRow = resolveSeat(manifest, sella)?.seat;
   if (!isPatron && !sellaRow) return unknownSella;
 
   try {
