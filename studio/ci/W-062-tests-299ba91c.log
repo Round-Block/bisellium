@@ -3,7 +3,7 @@ command: npm test -s
 exit code: 0
 
 POST /api/greenlight 403 0ms
-POST /api/greenlight 403 0ms
+POST /api/greenlight 403 1ms
 POST /api/greenlight 403 0ms
 POST /api/greenlight 403 0ms
 POST /api/greenlight 401 0ms
@@ -13,84 +13,84 @@ POST /api/greenlight 200 4ms
 POST /api/greenlight 403 0ms
 POST /api/greenlight 413 2ms
 POST /api/greenlight 200 7ms
-GET /api/opus/W-007 200 0ms
-POST /api/_poll 200 13ms
-GET /api/events 200 1ms
-POST /api/_poll 200 13ms
+GET /api/opus/W-007 200 1ms
+POST /api/_poll 200 11ms
+GET /api/events 200 0ms
+POST /api/_poll 200 14ms
+GET /api/events 200 0ms
+GET /api/events 200 0ms
+POST /api/_poll 404 0ms
 GET /api/events 200 0ms
 GET /api/events 200 1ms
-POST /api/_poll 404 0ms
-GET /api/events 200 1ms
-GET /api/events 200 1ms
-GET /api/live 200 99ms
-POST /api/_poll 200 15ms
+GET /api/live 200 100ms
+POST /api/_poll 200 13ms
 GET /api/officina 200 2ms
 GET /api/live 503 0ms
 GET /api/live 503 0ms
-GET /api/live 200 272ms
-GET /api/live 200 273ms
-GET /api/live 200 273ms
-GET /api/live 200 273ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 272ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 271ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 270ms
-GET /api/live 200 269ms
-GET /api/live 200 269ms
-GET /api/live 200 269ms
-GET /api/live 200 270ms
-GET /api/live 200 269ms
-GET /api/live 200 269ms
-GET /api/live 200 269ms
-GET /api/live 200 253ms
-GET /api/live 200 253ms
-GET /api/live 200 253ms
-GET /api/live 200 253ms
-GET /api/live 200 253ms
-GET /api/live 200 253ms
-GET /api/live 200 253ms
-GET /api/live 200 252ms
-GET /api/live 200 252ms
-GET /api/live 200 252ms
-POST /api/talk 200 96ms
-POST /api/talk 200 142ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 283ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 282ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 282ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 258ms
+GET /api/live 200 258ms
+GET /api/live 200 258ms
+GET /api/live 200 258ms
+GET /api/live 200 258ms
+GET /api/live 200 257ms
+GET /api/live 200 257ms
+GET /api/live 200 257ms
+GET /api/live 200 257ms
+GET /api/live 200 257ms
+POST /api/talk 200 92ms
+POST /api/talk 200 134ms
 POST /api/greenlight 200 0ms
-POST /api/delegate 200 6ms
 POST /api/delegate 200 5ms
+POST /api/delegate 200 2ms
 POST /api/delegate 200 4ms
 POST /api/delegate 200 3ms
-GET /api/officina 200 2ms
+GET /api/officina 200 1ms
 GET /api/officina 200 1ms
 GET /api/models 200 6ms
+GET /api/models 200 2ms
 GET /api/models 200 1ms
 GET /api/models 200 1ms
-GET /api/models 200 1ms
-GET /api/models 200 1ms
+GET /api/models 200 2ms
 GET /api/models 200 3002ms
 GET /api/models 200 1ms
 fatal: not a git repository (or any of the parent directories): .git
@@ -100,9 +100,9 @@ fatal: not a git repository (or any of the parent directories): .git
 usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
 /********.yml not found — not a studio
 retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
-GET /api/health 200 36ms
+GET /api/health 200 32ms
 POST /api/greenlight 401 0ms
-POST /api/greenlight 200 9ms
+POST /api/greenlight 200 10ms
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
   line 3: slate-heading: ### Backlog
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
@@ -152,7 +152,7 @@ W-002: --decision "D-does-not-exist" not found under decisions/
 W-002: --decision "../../etc/passwd" not found under decisions/
 W-002: --decision "../leges/qa" not found under decisions/
 unknown opus: ../petitiones/A-1
-Preparing worktree (detached HEAD 2512c34)
+Preparing worktree (detached HEAD 32942a7)
 Preparing worktree (checking out 'opus/W-140')
 W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
 W-501: gates not passed: qa
