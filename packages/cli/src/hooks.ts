@@ -22,7 +22,7 @@
  */
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { readFront, readManifest, listMd, type Manifest } from "@bisellium/adapter-native";
+import { readFront, readManifest, listMd, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import {
@@ -45,6 +45,10 @@ export interface HooksResult {
 // ---------------------------------------------------------------------------
 
 const SUPPORTED_HARNESS = "claude-code";
+/** W-089 behaviour 4/8: the two live builder-class seat templates D-020/
+ *  D-023 declare — the only rows `process.cascade` (below) ever suppresses
+ *  its warning for. */
+const BUILDER_CLASS_SEAT_IDS = new Set(["builder", "builder-codex"]);
 /** A handoff older than this, on an active opus, gets a Stop-hook reminder. */
 const TRADITIO_STALE_MS = 24 * 60 * 60 * 1000;
 const ACTIVE_STATES = new Set(["building", "verifying", "review"]);
@@ -375,7 +379,13 @@ function handleTool(studio: string, sella: string, payload: Record<string, unkno
   };
   appendEvents(logPath, [event]);
 
-  if (rawFilePath !== undefined && !sella.startsWith("builder")) {
+  // W-089 behaviour 8: the two live builder-class templates behaviour 4
+  // declares — a resolved-row check, never a string-prefix guess. A retired
+  // tombstone (`builder-a`, or any of its instances), an unresolved id, and
+  // any other declared seat (`eng-lead`) all still warn.
+  const resolvedToolSella = resolveSeat(manifest, sella);
+  const isBuilderClass = resolvedToolSella !== undefined && !resolvedToolSella.seat.retired && BUILDER_CLASS_SEAT_IDS.has(resolvedToolSella.seat.id);
+  if (rawFilePath !== undefined && !isBuilderClass) {
     const isSource = /\.(tsx?|jsx?)$/.test(rawFilePath) && !rawFilePath.includes(".test.") && !rawFilePath.includes("/dossier/");
     if (isSource) {
       console.error(`⚠ process.cascade: sella "${sella}" is writing source (${redact(rawFilePath)}) — dispatch a builder subagent instead`);
