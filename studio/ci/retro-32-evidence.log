@@ -82,3 +82,15 @@ committed log carry a path that resolves to nothing.
   refusals: 1 (my round-1 FAIL verdict)
   reruns: 2 (builder-d's 429-resumed reconciliation; my own mutation re-run after
              the first browser pass ran against a stale dist)
+
+== D-errata. correction to §D above — appended 2026-09-25T01:46:33Z, qa-lead (censor) ==
+§D's text stands above unaltered; this is the correction, not a rewrite of it.
+All THREE stale background rows of that session were mine — bdgfwqhlh, bhwxcj4zd
+and bnuhjxw02 ("Wait for pass 2 to finish", which I had not yet seen when §D was
+written) — so §D undercounted at two and, more consequentially, its hedge was
+wrong: the orchestrator's "the pattern across three censors" was bad input, which
+it has since withdrawn, and no other censor's rows are implicated.
+The class is therefore NARROW, not reviewer-wide: I wrote redundant
+`until ! pgrep ...; do sleep; done` wait-loops polling for completions the harness
+already re-invokes on, so each loop was superfluous the moment it was written.
+The remedy is "stop writing them" — not a rule for other reviewers to carry.
