@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: npx playwright test --config=playwright.serve.config.ts -g W-075 behaviour 1
+# exit: 1
+# at: 2026-09-25T01:59:11.983Z
+# sella: builder-d
+# tree: dirty:1b165057208896a69b4d59e05e947187cdf5fb69
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests-serve/layout.spec.ts:104:3 › shell geometry with the token prompt open (W-075 behaviour 1) › the prompt does not displace the sidebar or main columns (519ms)
+
+
+  1) [chromium] › tests-serve/layout.spec.ts:104:3 › shell geometry with the token prompt open (W-075 behaviour 1) › the prompt does not displace the sidebar or main columns 
+
+    Error: expect(received).toBeCloseTo(expected, precision)
+
+    Expected: 0
+    Received: 220
+
+    Expected precision:    0
+    Expected difference: < 0.5
+    Received difference:   220
+
+      117 |       // The sidebar is still the grid's first column, not a wrapped strip
+      118 |       // pushed into the second column by an unplaced third grid child.
+    > 119 |       expect(sidebarBox.x).toBeCloseTo(0, 0);
+          |                            ^
+      120 |       expect(sidebarBox.width).toBeCloseTo(220, 0);
+      121 |       expect(mainBox.x).toBeGreaterThanOrEqual(220);
+      122 |       expect(mainBox.width).toBeGreaterThan(600);
+        at /tmp/claude-1000/w075-build/apps/web/tests-serve/layout.spec.ts:119:28
+
+    Error Context: test-results/layout-shell-geometry-with-ed05c-the-sidebar-or-main-columns-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests-serve/layout.spec.ts:104:3 › shell geometry with the token prompt open (W-075 behaviour 1) › the prompt does not displace the sidebar or main columns 
+npm notice
+npm notice New minor version of npm available! 11.13.0 -> 11.20.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.20.0
+npm notice To update run: npm install -g npm@11.20.0
+npm notice

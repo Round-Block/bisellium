@@ -93,3 +93,59 @@ test.describe("computed layout (W-065 behaviour 15)", () => {
     }
   });
 });
+
+test.describe("shell geometry with the token prompt open (W-075 behaviour 1)", () => {
+  let served: ServedInstance;
+
+  test.afterEach(async () => {
+    await served?.close();
+  });
+
+  test("the prompt does not displace the sidebar or main columns", async ({ page }) => {
+    served = await startServed("geometry-prompt-open");
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(served.baseURL);
+    await expect(page.locator(".token-prompt")).toBeVisible();
+
+    const sidebarBox = await page.locator(".sidebar").boundingBox();
+    const mainBox = await page.locator(".shell__main").boundingBox();
+    const promptBox = await page.locator(".token-prompt").boundingBox();
+    expect(sidebarBox).toBeTruthy();
+    expect(mainBox).toBeTruthy();
+    expect(promptBox).toBeTruthy();
+    if (sidebarBox && mainBox && promptBox) {
+      // The sidebar is still the grid's first column, not a wrapped strip
+      // pushed into the second column by an unplaced third grid child.
+      expect(sidebarBox.x).toBeCloseTo(0, 0);
+      expect(sidebarBox.width).toBeCloseTo(220, 0);
+      expect(mainBox.x).toBeGreaterThanOrEqual(220);
+      expect(mainBox.width).toBeGreaterThan(600);
+
+      // Rectangle intersection: both axes must overlap for the boxes to
+      // overlap. The prompt spans full width but sits in a row above the
+      // sidebar, so there must be no vertical overlap between them.
+      const overlapsSidebar =
+        promptBox.x < sidebarBox.x + sidebarBox.width &&
+        promptBox.x + promptBox.width > sidebarBox.x &&
+        promptBox.y < sidebarBox.y + sidebarBox.height &&
+        promptBox.y + promptBox.height > sidebarBox.y;
+      expect(overlapsSidebar).toBe(false);
+    }
+
+    await page.locator("#token-prompt-input").fill(served.token);
+    await page.locator(".token-prompt__submit").click();
+    await expect(page.locator(".token-prompt")).toBeHidden();
+
+    // Geometry unchanged except the prompt is gone.
+    const sidebarBoxAfter = await page.locator(".sidebar").boundingBox();
+    const mainBoxAfter = await page.locator(".shell__main").boundingBox();
+    expect(sidebarBoxAfter).toBeTruthy();
+    expect(mainBoxAfter).toBeTruthy();
+    if (sidebarBoxAfter && mainBoxAfter) {
+      expect(sidebarBoxAfter.x).toBeCloseTo(0, 0);
+      expect(sidebarBoxAfter.width).toBeCloseTo(220, 0);
+      expect(mainBoxAfter.x).toBeGreaterThanOrEqual(220);
+      expect(mainBoxAfter.width).toBeGreaterThan(600);
+    }
+  });
+});
