@@ -7,7 +7,7 @@
  * and the `--opus` branch) were never exercised by any test.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gitWorktreeProvider } from "@bisellium/shim";
@@ -125,8 +125,49 @@ probationes: []
   const instance = await runCommand(["--sella", "builder-a.W-200", "--studio", studio, "--no-worktree", "--", "true"]);
   check("run: an instance of a retired sella also exits 2", instance.exitCode === 2, String(instance.exitCode));
 
-  const live = await runCommand(["--sella", "builder", "--studio", studio, "--no-worktree", "--", "true"]);
+  const live = await runCommand(["--sella", "builder", "--opus", "W-1", "--studio", studio, "--no-worktree", "--", "true"]);
   check("run: the live template itself is unaffected", live.exitCode === 0, String(live.exitCode));
+
+  rmSync(studio, { recursive: true, force: true });
+}
+
+// ---------------------------------------------------------------------------
+// W-089 behaviour 5: run --sella <builder-class template> --opus <id> mints
+// the instance before dispatch and carries it into BISELLIUM_SELLA and the
+// receipt. A non-builder-class seat is unaffected.
+// ---------------------------------------------------------------------------
+{
+  const studio = mkdtempSync(join(tmpdir(), "run-mint-studio-"));
+  writeStudioRetired(studio); // declares "builder" (live) and "builder-a" (retired)
+  const outFile = join(studio, "out.txt");
+
+  const minted = await runCommand([
+    "--sella",
+    "builder",
+    "--opus",
+    "W-100",
+    "--studio",
+    studio,
+    "--no-worktree",
+    "--",
+    process.execPath,
+    "-e",
+    "require('fs').writeFileSync(process.argv[1], process.env.BISELLIUM_SELLA)",
+    outFile,
+  ]);
+  check("run: mints the instance — exits 0", minted.exitCode === 0, String(minted.exitCode));
+  check("run: the child sees BISELLIUM_SELLA=builder.W-100", readFileSync(outFile, "utf8") === "builder.W-100", readFileSync(outFile, "utf8"));
+  const receiptDirs = readdirSync(join(studio, "receipts"));
+  check("run: the receipt lives under receipts/builder.W-100/, not receipts/builder/", receiptDirs.includes("builder.W-100") && !receiptDirs.includes("builder"), JSON.stringify(receiptDirs));
+
+  const bareTemplate = await runCommand(["--sella", "builder", "--studio", studio, "--no-worktree", "--", "true"]);
+  check("run: a bare builder template with no --opus cannot be minted — refused", bareTemplate.exitCode === 2, String(bareTemplate.exitCode));
+
+  const alreadyInstance = await runCommand(["--sella", "builder.W-200", "--opus", "W-200", "--studio", studio, "--no-worktree", "--", "true"]);
+  check("run: a supplied instance whose suffix matches --opus succeeds", alreadyInstance.exitCode === 0, String(alreadyInstance.exitCode));
+
+  const disagreement = await runCommand(["--sella", "builder.W-200", "--opus", "W-999", "--studio", studio, "--no-worktree", "--", "true"]);
+  check("run: a supplied instance disagreeing with --opus exits 2 before dispatch", disagreement.exitCode === 2, String(disagreement.exitCode));
 
   rmSync(studio, { recursive: true, force: true });
 }

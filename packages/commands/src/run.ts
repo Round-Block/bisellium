@@ -15,7 +15,7 @@ import { existsSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import { join, resolve } from "node:path";
-import { readManifest, resolveSeat, retiredDispatchMessage } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance } from "@bisellium/adapter-native";
 import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
@@ -165,6 +165,30 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   if (resolvedSella.seat.retired) {
     console.error(retiredDispatchMessage(manifest, resolvedSella.seat));
     return { exitCode: 2 };
+  }
+
+  // W-089 behaviour 5: the minter runs at THIS boundary — a builder-class
+  // dispatch never proceeds under a bare template id. A supplied instance
+  // is re-minted from its own seat+suffix (never trusted verbatim); if
+  // --opus was ALSO given and disagrees with that suffix, refused before
+  // any worktree/child/receipt. A bare template with no --opus at all
+  // cannot be minted and is refused the same way.
+  if (isBuilderClassSeat(resolvedSella)) {
+    const opusForMint = resolvedSella.instance ?? opus;
+    if (opusForMint === undefined) {
+      console.error(`bisellium run: "${sella}" is a builder-class template — pass --opus <id> so an instance can be minted`);
+      return { exitCode: 2 };
+    }
+    if (resolvedSella.instance !== undefined && opus !== undefined && opus !== resolvedSella.instance) {
+      console.error(`bisellium run: --opus "${opus}" disagrees with the instance already in --sella "${sella}"`);
+      return { exitCode: 2 };
+    }
+    const minted = seatInstance(resolvedSella.seat.id, opusForMint);
+    if (!minted) {
+      console.error(`bisellium run: could not mint an instance from seat "${resolvedSella.seat.id}" and opus "${opusForMint}"`);
+      return { exitCode: 2 };
+    }
+    sella = minted;
   }
 
   // `bisellium pause` stops autonomous starting (bisellium tick), not

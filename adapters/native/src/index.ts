@@ -317,6 +317,21 @@ export function liveReplacementFor<T extends SeatLike & { collegium?: string; ha
   return candidates.find((r) => r.id === stem) ?? candidates[0];
 }
 
+/** W-089 behaviours 4/5/8: the two live builder-class seat templates D-020/
+ *  D-023 declare — the only seats the minter (`seatInstance`) is ever
+ *  called for at a dispatch boundary, and the only rows `process.cascade`
+ *  (hooks.ts) suppresses its warning for. A single shared definition so
+ *  hooks.ts and run.ts (and any future dispatch boundary) can never drift
+ *  on which two ids this means. */
+export const BUILDER_CLASS_SEAT_IDS = new Set(["builder", "builder-codex"]);
+
+/** True when `resolved` names one of the two live (non-retired)
+ *  builder-class templates — never true for a retired tombstone, an
+ *  instance's own seat included. */
+export function isBuilderClassSeat<T extends SeatLike>(resolved: ResolvedSeat<T> | undefined): boolean {
+  return resolved !== undefined && resolved.seat.retired !== true && BUILDER_CLASS_SEAT_IDS.has(resolved.seat.id);
+}
+
 /** The exact refusal text for a live-dispatch site (run.ts:160, writes.ts's
  *  handoff/emit --usage) naming a retired sella — pinned by W-089 behaviour
  *  6's own tests. Always names the resolved SEAT's own id, never the
