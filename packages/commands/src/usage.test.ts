@@ -92,7 +92,8 @@ const files = [join(repo, "packages", "cli", "src"), join(repo, "packages", "com
 // `ci.ts` USAGE constant had moved from 30); more single-line constants
 // landed after that without this comment's history being kept current, and
 // W-062's new `AMEND_USAGE` constant (`lifecycle.ts`) moves it once more,
-// 36 -> 37 in this commit; it is meant to move only when a deliberate edit
+// 36 -> 37 in that commit; W-082's verdict writer moves it 37 -> 38. It is
+// meant to move only when a deliberate edit
 // to a *_USAGE constant's line count — or a whole new constant — moves it,
 // in the same commit — the assertion is the thing forcing that edit to be
 // conscious.
@@ -106,7 +107,7 @@ for (const file of files) {
     }
   }
 }
-check("scanned every known usage constant", seen === 37, `${seen}`);
+check("scanned every known usage constant", seen === 38, `${seen}`);
 
 // W-065 behaviour 17: the contract is documented — this opus's half of it.
 // Asserts nothing about the origin tuple, the token-paste flow or the proxy

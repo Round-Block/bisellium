@@ -1,0 +1,25 @@
+# behaviour: 5
+# command: node --import tsx packages/cli/src/verdict.test.ts . 5
+# exit: 1
+# at: 2026-09-25T19:33:20.907Z
+# sella: builder-sol
+# tree: tree:864730b36e54b96b7f3355a7e2940473ed5e24ac
+
+FAIL  b5: unknown opus exits 2 and writes nothing                                  0
+FAIL  b5: round absent exits 2 and writes nothing                                  0
+FAIL  b5: round 0 exits 2 and writes nothing                                       0
+FAIL  b5: round -1 exits 2 and writes nothing                                      0
+FAIL  b5: round abc exits 2 and writes nothing                                     0
+FAIL  b5: round r1 exits 2 and writes nothing                                      0
+FAIL  b5: bad phase exits 2 and writes nothing                                     0
+FAIL  b5: outcome absent exits 2 and writes nothing                                0
+FAIL  b5: outcome blank exits 2 and writes nothing                                 0
+FAIL  b5: missing from exits 2 and writes nothing                                  0
+FAIL  b5: FIFO exits 2 and writes nothing                                          0
+FAIL  b5: empty stdin exits 2 and writes nothing                                   0
+FAIL  b5: blank sella exits 2 and writes nothing                                   0
+FAIL  b5: existing target exits 2 and writes nothing                               0
+FAIL  b5: outside-officina regular file is the positive control                    0
+FAIL  b5: round 3 gets its own file and never erases round 2                       0
+PASS  b5: historical W-024-review-r1.log remains untouched and is not producible   
+FAIL  b5: D-021 ownership fires before missing round/outcome validation            

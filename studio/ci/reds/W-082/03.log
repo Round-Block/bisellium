@@ -1,0 +1,14 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/verdict.test.ts . 3
+# exit: 1
+# at: 2026-09-25T19:33:20.074Z
+# sella: builder-sol
+# tree: tree:864730b36e54b96b7f3355a7e2940473ed5e24ac
+
+FAIL  b3: omitted model leaves no model header                                     
+FAIL  b3: --outcome rejects CR/LF                                                  0
+FAIL  b3: --sella rejects CR/LF                                                    0
+FAIL  b3: --model rejects CR/LF                                                    0
+FAIL  b3: an explicitly blank model never creates an empty model header            
+FAIL  b3: clean tree names the repository containing --studio                      
+FAIL  b3: dirty tree keeps the same capture-time hash spelling                     

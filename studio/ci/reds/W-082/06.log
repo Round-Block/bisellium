@@ -1,0 +1,8 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/verdict.test.ts . 6
+# exit: 1
+# at: 2026-09-25T19:33:21.350Z
+# sella: builder-sol
+# tree: tree:864730b36e54b96b7f3355a7e2940473ed5e24ac
+
+FAIL  b6: verdict spec evidence is citable and recurrence sees the class           retro: finding class "spec-verdict-gap" evidence "ci/W-270-spec-1.log" not found under the officina (dead link)

@@ -1,0 +1,8 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/verdict.test.ts . 4
+# exit: 1
+# at: 2026-09-25T19:33:20.506Z
+# sella: builder-sol
+# tree: tree:864730b36e54b96b7f3355a7e2940473ed5e24ac
+
+FAIL  b4: success writes evidence but leaves opus, gates, state, events and timeline byte-identical 
