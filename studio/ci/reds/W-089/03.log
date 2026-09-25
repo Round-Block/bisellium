@@ -1,9 +1,9 @@
 # behaviour: 3
-# command: sh -c node --import tsx adapters/native/src/resolveSeat.test.ts && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/seatedCandidates.test.ts && node --import tsx apps/server/test/server.test.ts .
+# command: sh -c node --import tsx adapters/native/src/resolveSeat.test.ts && node --import tsx packages/cli/src/context.test.ts . && node --import tsx packages/shim/test/talk.test.ts . && node --import tsx packages/cli/src/tick.test.ts . && node --import tsx packages/commands/src/delegate.test.ts . && node --import tsx packages/commands/src/seatedCandidates.test.ts && node --import tsx apps/server/test/server.test.ts . && node --import tsx packages/shim/test/hooks.test.ts .
 # exit: 1
-# at: 2026-09-25T18:18:56.728Z
-# sella: builder-a
-# tree: dirty:3fd6b9188fea5c4a1a10195ce5c3f7bd6300aeef
+# at: 2026-09-25T22:01:24.904Z
+# sella: builder.W-089
+# tree: dirty:572dd908276e8726606662f67fe86f188a191a13
 
 PASS  [W-089 b3] an exact declared template resolves with no instance                   {"seat":{"id":"builder","collegium":"engineering"}}
 PASS  [W-089 b3] <seat>.<instance> resolves the seat row and carries the instance       {"seat":{"id":"builder","collegium":"engineering"},"instance":"W-089"}
@@ -16,36 +16,1091 @@ PASS  [W-089 b3] a misspelled seat prefix refuses
 PASS  [W-089 b3] an empty instance ('builder.') refuses                                 
 PASS  [W-089 b3] an empty id refuses                                                    
 PASS  [W-089 b3] a leading-dot id (empty seat prefix) refuses                           
-PASS  builder-1: engineering lex present         
-PASS  builder-1: W-002 and W-004 handoffs present 
-PASS  builder-1: A-1 not included (addressed to patron) 
+PASS  builder: engineering lex present           
+PASS  builder: W-002 and W-004 handoffs present  
+PASS  builder: A-1 not included (addressed to patron) 
 PASS  patron: A-1 included (needs_you, to: patron) 
 PASS  maxTokens=300: sections dropped            
 PASS  maxTokens=300: text ends with 'truncated:' line 
 PASS  unknown sella: empty text, truncated ['unknown sella'] 
-PASS  builder-1: standing rules present          
+PASS  builder: standing rules present            
 PASS  patron: standing rules present             
 PASS  patron: CLI usage pointer present, warning intact 
 PASS  producer: CLI usage pointer present, warning intact 
 PASS  architect: CLI usage pointer present, warning intact 
 PASS  eng-lead: CLI usage pointer present, warning intact 
 PASS  builder: CLI usage pointer present, warning intact 
-PASS  builder-1: CLI usage pointer present, warning intact 
-PASS  builder-2: CLI usage pointer present, warning intact 
 PASS  art-lead: CLI usage pointer present, warning intact 
 PASS  qa-lead: CLI usage pointer present, warning intact 
-PASS  guest: CLI usage pointer present, warning intact 
-PASS  builder-1: pointer names no flag shapes    ## CLI usage
+PASS  builder: pointer names no flag shapes      ## CLI usage
 Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
-PASS  builder-1: full banner not inlined         
-PASS  realistic lex: fixture inflated past 1000 tokens tokens=1386
-PASS  maxTokens=600, realistic-size lex: CLI usage pointer survives truncation of the lex itself truncated=["providers","collegium index","opera","standing rules","lex"] tokens=84
+PASS  builder: full banner not inlined           
+PASS  realistic lex: fixture inflated past 1000 tokens tokens=1318
+PASS  maxTokens=600, realistic-size lex: CLI usage pointer survives truncation of the lex itself truncated=["providers","collegium index","standing rules","lex"] tokens=82
 PASS  needs_you: mentions W-004 and A-1          
 PASS  status W-003: mentions verifying and failed 
 PASS  burn: mentions engineering and conserve    
 PASS  hello: kind unknown                        
 PASS  burn: engineering listed once for 2026-W38 with a derived (non-unknown) posture ["2026-W38 · engineering · 1880000/3000000 tokens · 62.7% · conserve"]
 PASS  burn: engineering listed for 2026-W39 as unknown (not the current period) ["2026-W39 · engineering · 0/3000000 tokens · ?% · unknown"]
-FAIL  w089 b3: an instance id injects the same collegium lex as its template 
+PASS  w089 b3: an instance id injects the same collegium lex as its template 
 PASS  w089 b3: an empty-instance id ('builder.') is unknown 
 PASS  w089 b3: an unknown seat prefix is unknown 
+PASS  w089 b6: a retired sella is unknown        
+PASS  w089 b6: an instance of a retired sella is unknown 
+PASS  query path: exits 0                                        0
+PASS  query path: printed with 'query · ' prefix                 ["query · items waiting on a human gate:\n  W-004 · Inventory drag-and-drop · 204.1h old\npetitiones needing a reply:\n  A-1 · from eng-lead · 204.1h old"]
+PASS  query path: never called the harness                       {"start":0,"resume":0}
+PASS  query path: no session file written                        
+PASS  query path: no timeline file written                       
+PASS  free-form: exits 0                                         0
+PASS  free-form: prints the FAKE reply                           ["FAKE: PLEASE GIVE A STATUS UPDATE"]
+PASS  free-form: session file written                            
+PASS  free-form: session harness is fake                         fake
+PASS  free-form: session turns is 1                              1
+PASS  free-form: session has a sessionId                         
+PASS  free-form: timeline file written                           
+PASS  free-form: timeline has exactly two entries                2
+PASS  free-form: first entry is 'in' with the message            {"at":"2026-09-25T22:01:25.600Z","sella":"eng-lead","direction":"in","text":"please give a status update","sessionId":"02d26f40-5a8b-448c-936c-50d7e580df4e"}
+PASS  free-form: second entry is 'out' with the reply            {"at":"2026-09-25T22:01:25.600Z","sella":"eng-lead","direction":"out","text":"FAKE: PLEASE GIVE A STATUS UPDATE","sessionId":"02d26f40-5a8b-448c-936c-50d7e580df4e","model":"fake-1","usage":{"input":1,"output":2}}
+PASS  free-form: receipt dir written                             
+PASS  free-form: exactly one receipt                             ["02d26f40-5a8b-448c-936c-50d7e580df4e.json"]
+PASS  free-form: receipt harness is fake                         fake
+PASS  free-form: receipt sella is eng-lead                       eng-lead
+PASS  resume: exits 0                                            0
+PASS  resume: sessionId unchanged                                02d26f40-5a8b-448c-936c-50d7e580df4e vs 02d26f40-5a8b-448c-936c-50d7e580df4e
+PASS  resume: turns is 2                                         2
+PASS  resume: timeline now has four entries                      4
+PASS  petitio: exits 0                                           0
+PASS  petitio: prints 'petitio P-001 opened'                     ["FAKE: STATUS UPDATE\nPETITIO: NEED A SCOPE CALL","petitio P-001 opened"]
+PASS  petitio: P-001.md written                                  
+PASS  petitio: checkStudio has no blocking findings              []
+PASS  redaction: exits 0                                         0
+PASS  redaction: 'in' entry has no raw secret                    deploy with token=*** please
+PASS  redaction: 'in' entry is masked                            deploy with token=*** please
+PASS  redaction: 'out' entry has no raw secret                   FAKE: DEPLOY WITH TOKEN=*** PLEASE
+PASS  redaction: 'out' entry is masked                           FAKE: DEPLOY WITH TOKEN=*** PLEASE
+PASS  redaction: receipt still masked too                        ["deploy with token=*** please"]
+PASS  unknown sella: exits 2                                     2
+PASS  git-only: exits 2                                          2
+PASS  fenced petitio: exits 0                                    0
+PASS  fenced petitio: no 'petitio opened' line                   ["FAKE: NOTE\n```\nPETITIO: FENCED ASK\n```"]
+PASS  fenced petitio: no new petitio file                        2 -> 2
+PASS  echoed petitio: exits 0                                    0
+PASS  echoed petitio: no 'petitio opened' line                   ["FAKE: STATUS\nPETITIO: NEED HELP WITH SCOPE"]
+PASS  echoed petitio: no new petitio file                        3 -> 3
+PASS  no sessionId: exits 0                                      0
+PASS  no sessionId: session file written                         
+PASS  no sessionId: sessionId recorded as null                   {"harness":"fake","sessionId":null,"startedAt":"2026-09-25T22:01:26.083Z","lastAt":"2026-09-25T22:01:26.083Z","turns":1}
+PASS  no sessionId: timeline entries carry a note                [{"at":"2026-09-25T22:01:26.083Z","sella":"eng-lead","direction":"in","text":"hello","sessionId":"","note":"no sessionId from harness"},{"at":"2026-09-25T22:01:26.083Z","sella":"eng-lead","direction":"out","text":"no id from me","sessionId":"","model":"claude-opus-5","note":"no sessionId from harness"}]
+PASS  no sessionId: second call still exits 0 (never attempted resume) 0
+PASS  filterEnv: secret-shaped var stripped                      []
+PASS  filterEnv: PATH still present                              
+PASS  limit-in-reply-text: exits 0, not 3                        0
+PASS  limit-in-reply-text: reply delivered as-is                 ["we hit a rate limit yesterday, all clear now (429 was transient)"]
+PASS  limited fake harness: exits 3                              3
+PASS  paused talk: still exits 0                                 0
+PASS  paused talk: prints a pause warning                        ["warning: studio is paused since 2026-09-25T22:01:26.138Z: investigating — proceeding (pause stops starting, not talking)"]
+PASS  w089 b3: an instance id resolves the template's harness — exits 0 0
+PASS  w089 b3: an instance id resolves the template's harness — the harness actually ran {"start":1,"resume":0}
+unknown sella "builder." — not declared in /tmp/claude-1000/bisellium-talk-0mE6xQ/bisellium.yml
+PASS  w089 b3: an empty-instance id ('builder.') refuses as unknown 2
+sella "builder-1" is retired — dispatch "builder" instead
+PASS  w089 b6: talk refuses a retired sella — exits 2            2
+sella "builder-1" is retired — dispatch "builder" instead
+PASS  w089 b6: talk refuses an instance of a retired sella — exits 2 2
+PASS  w089 b6: neither refusal started the harness               {"start":0,"resume":0}
+talk: "builder" is a builder-class template — pass an already-minted instance (e.g. "builder.<opus-id>")
+PASS  w089 b5: talk refuses a bare builder-class template — exits 2 2
+PASS  w089 b5: the refused bare template never started a harness {"start":0,"resume":0}
+FAKE: HI
+PASS  w089 b5: a well-formed instance still starts the harness — exits 0 0
+PASS  w089 b5: the harness actually ran for the instance         {"start":1,"resume":0}
+PASS  dry-run: exit 0                                exitCode=0
+PASS  dry-run: lists daily due for producer          
+PASS  dry-run: lists daily due for eng-lead          
+PASS  dry-run: lists daily due for art-lead          
+PASS  dry-run: lists daily due for qa-lead           
+PASS  dry-run: no aerarium due (current week's file exists) 
+PASS  dry-run: no traditio due (all handoffs fresh)  
+PASS  dry-run: no acta files written                 
+PASS  harnessForSella: defaults to claude-code when unset 
+PASS  harnessForSella: honors an explicit override   
+PASS  computeDue: L0 collegium's magister not due    
+PASS  computeDue: L1 (default) collegium's magister still due 
+PASS  pause: writes PAUSED                           
+PASS  paused tick: exit 0 (check passes)             exitCode=0
+PASS  paused tick: prints 'paused since ... : ...'   paused since 2026-09-18T14:00:00.000Z: investigating a bad deploy
+PASS  paused tick: no daily due lines printed        
+PASS  paused tick: no new acta written               
+PASS  paused tick: no receipt written                
+PASS  paused tick: still writes health.json          
+PASS  resume: removes PAUSED                         
+PASS  health tick: exit 0                            
+PASS  health.json written                            
+PASS  health.json: ok matches check                  true vs true
+PASS  health.json: blocks matches check              
+PASS  health.json: advisories matches check          
+PASS  health.json: findingsByRule counts acta.daily = 5 {"probatio.certifies.mismatch":1,"petitio.subject":2,"acta.daily":5,"aerarium.missing":1,"lex.unchecked":2}
+PASS  health.json: autonomy.paused is false          
+PASS  health.json: due lists 5 dailies               [{"kind":"daily","sella":"producer"},{"kind":"daily","sella":"architect"},{"kind":"daily","sella":"eng-lead"},{"kind":"daily","sella":"art-lead"},{"kind":"daily","sella":"qa-lead"}]
+PASS  health.json: lastTick set                      
+PASS  test setup: manifest actually patched          
+PASS  check: invalid collegium.autonomy blocks       collegium.autonomy, probatio.certifies.mismatch, petitio.subject, petitio.subject, acta.daily, acta.daily, acta.daily, acta.daily, acta.daily, aerarium.missing, lex.unchecked, lex.unchecked
+PASS  check: overall not ok                          
+PASS  write tick: exit 0                             exitCode=0 logs=wrote /tmp/claude-1000/bisellium-tick-write-o0YQK6/acta/2026-09-18-producer-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-o0YQK6/acta/2026-09-18-architect-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-o0YQK6/acta/2026-09-18-eng-lead-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-o0YQK6/acta/2026-09-18-art-lead-daily.md | wrote /tmp/claude-1000/bisellium-tick-write-o0YQK6/acta/2026-09-18-qa-lead-daily.md
+PASS  write tick: one acta per due magister          2026-09-18-architect-daily.md, 2026-09-18-art-lead-daily.md, 2026-09-18-eng-lead-daily.md, 2026-09-18-producer-daily.md, 2026-09-18-qa-lead-daily.md
+PASS  write tick: eng-lead daily written at expected path 
+PASS  write tick: author is eng-lead                 author: "eng-lead"
+PASS  write tick: kind is daily                      
+PASS  write tick: evidence points at bisellium.yml (never dead in a clone) 
+PASS  write tick: body carries the fake reply        
+PASS  write tick: harness defaults to claude-code (sample-studio sets none) ---
+author: "eng-lead"
+kind: daily
+title: "eng-lead status stable (claude-code)"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+eng-lead status stable (claude-code)
+nothing blocked
+see you tomorrow
+
+PASS  write tick: receipt written under receipts/tick/ 
+PASS  write tick: second dry-run has nothing due     nothing due
+PASS  redact: exit 0                                 exitCode=0
+PASS  redact: eng-lead daily written                 
+PASS  redact: no raw secret in the acta file         ---
+author: "eng-lead"
+kind: daily
+title: "deploy token=*** status stable"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+deploy token=*** status stable
+nothing blocked
+see you tomorrow
+
+PASS  redact: title/body carry the masked form       ---
+author: "eng-lead"
+kind: daily
+title: "deploy token=*** status stable"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+deploy token=*** status stable
+nothing blocked
+see you tomorrow
+
+PASS  corrupt-at: eng-lead not called again (file untouched) 
+PASS  corrupt-at: eng-lead not counted as talked-to  
+PASS  corrupt-at: the other four magistri were still talked to 4
+PASS  tz-aerarium: sample-studio timezone is Europe/London Europe/London
+PASS  tz-aerarium: 2026-W39 (London-local week) is due [{"kind":"aerarium","period":"2026-W39"}]
+PASS  tz-aerarium: 2026-W38 (UTC week, already on disk) is not due [{"kind":"aerarium","period":"2026-W39"}]
+PASS  real seam setup: all five magistri patched to harness: fake 5
+PASS  real seam: exit 0                              exitCode=0 errs=
+PASS  real seam: one acta per due magister actually written 2026-09-18-architect-daily.md, 2026-09-18-art-lead-daily.md, 2026-09-18-eng-lead-daily.md, 2026-09-18-producer-daily.md, 2026-09-18-qa-lead-daily.md
+PASS  real seam: eng-lead daily written at expected path 
+PASS  real seam: body carries the real fake-harness reply ---
+author: "eng-lead"
+kind: daily
+title: "FAKE: WRITE TODAY'S ACTA DIURNA FOR YOUR COLLEGIUM IN THREE LINES"
+at: "2026-09-18T14:00:00.000Z"
+evidence:
+  - { label: health, href: bisellium.yml }
+---
+FAKE: WRITE TODAY'S ACTA DIURNA FOR YOUR COLLEGIUM IN THREE LINES
+
+PASS  real seam: receipt written under receipts/tick/ 
+PASS  b1 no ProbeInputs (the existing 3-arg call) emits no probe item                             
+PASS  b1 a pair with no HarnessProbe at all is due                                                
+PASS  b1 a pair whose at is older than the threshold is due                                       
+PASS  b1 a fresh pair is not due                                                                  
+PASS  b1 the due set is a subset of gatherCandidates' own union                                   
+PASS  b1 a declared model_probe_stale_days override flips a fresh pair to due                     
+PASS  b1 runTick gathers through opts.listModels                                                  
+PASS  b1 runTick gathers through opts.versions                                                    
+PASS  b1 formatDue renders 'due: probe — N pair(s)'                                               due: daily — producer | due: daily — architect | due: daily — eng-lead | due: daily — art-lead | due: daily — qa-lead | due: probe — 2 pair(s)
+PASS  b1 health.json's due array carries the probe item                                           [{"kind":"daily","sella":"producer"},{"kind":"daily","sella":"architect"},{"kind":"daily","sella":"eng-lead"},{"kind":"daily","sella":"art-lead"},{"kind":"daily","sella":"qa-lead"},{"kind":"probe","models":[{"id":"codex-noprobe","harness":"codex"},{"id":"codex-stale","harness":"codex"}]}]
+PASS  b1 a rejecting listing still yields the manifest-derived due pairs                          due: daily — producer | due: daily — architect | due: daily — eng-lead | due: daily — art-lead | due: daily — qa-lead | due: probe — 2 pair(s)
+PASS  b2 (a) recorded-vs-live version differ -> due though at is fresh                            
+PASS  b2 (a) positive control: the fresh claude-code pairs are not due in the same run            
+PASS  b2 (b) equal defined versions -> not due                                                    
+PASS  b2 (b) positive control: a genuinely stale pair still fires via age even with an equal version 
+PASS  b2 (c) live version undefined -> no version trigger                                         
+PASS  b2 (c) the recorded per-pair harnessVersion survives the following battery                  {"id":"codex-v1","state":"unverified","probes":[{"harness":"codex","state":"unverified","at":"2026-09-17T14:00:00.000Z","note":"control failed: codex","harnessVersion":"1.0.0"}]}
+PASS  b2 (d) a fresh pair with no recorded harnessVersion is not version-due                      
+PASS  b2 (e) all 5 version-changed pairs are due despite a fresh at                               ["codex-e1","codex-e2","codex-e3","codex-e4","codex-e5"]
+PASS  b2 (e) run one probes 2 and skips 3                                                         {"turns":2,"skipped":["codex-e3","codex-e4","codex-e5"]}
+PASS  b2 (e) a second computeDue still reports exactly the 3 skipped pairs due — not stranded     ["codex-e3","codex-e4","codex-e5"]
+PASS  b2 (e) run two probes exactly the 3 stranding would have lost                               []
+PASS  b2 after a complete battery, a second computeDue yields no probe item                       [{"kind":"daily","sella":"producer"},{"kind":"daily","sella":"architect"},{"kind":"daily","sella":"eng-lead"},{"kind":"daily","sella":"art-lead"},{"kind":"daily","sella":"qa-lead"}]
+PASS  b2 (f) top-level snapshot equals live but the per-pair evidence differs -> still due        
+PASS  b2 a battery that fails before writing changes nothing on disk                              
+PASS  b2 ...and the pair is still armed (never probed, still due)                                 
+PASS  b3 tick calls the injected battery exactly once                                             1
+PASS  b3 tick always passes MAX_PROBE_TURNS_PER_RUN as the cap                                    12
+PASS  b3 tick's own exit code is unaffected                                                       0
+bisellium probe: 13 turn(s) spent, 3 skipped
+PASS  b3 runProbe exits 0                                                                         0
+PASS  b3 runProbe passes no cap — all 13 codex candidates get a turn, none left behind            [["codex-rp0","available"],["codex-rp1","available"],["codex-rp10","available"],["codex-rp11","available"],["codex-rp12","available"],["codex-rp2","available"],["codex-rp3","available"],["codex-rp4","available"],["codex-rp5","available"],["codex-rp6","available"],["codex-rp7","available"],["codex-rp8","available"],["codex-rp9","available"]]
+PASS  b4 (a) L0: zero battery calls                                                               0
+PASS  b4 (a) L0: zero gather spawns (listModels)                                                  0
+PASS  b4 (a) L0: zero gather spawns (versions)                                                    0
+PASS  b4 (a) L0: no probe due item                                                                []
+PASS  b4 (b) paused: zero battery calls                                                           0
+PASS  b4 (b) paused: zero gather spawns (listModels)                                              0
+PASS  b4 (b) paused: zero gather spawns (versions)                                                0
+PASS  b4 (b) paused: models.json byte-for-byte unchanged                                          
+PASS  b4 (c) dry-run: the due line is printed                                                     due: daily — producer | due: daily — architect | due: daily — eng-lead | due: daily — art-lead | due: daily — qa-lead | due: probe — 1 pair(s)
+PASS  b4 (c) dry-run: zero battery calls                                                          0
+PASS  b4 (c) dry-run: models.json untouched                                                       
+PASS  b4 (c) dry-run positive control: the gather DOES spawn (it needs to, to print the due line) {"listModels":1,"versions":1}
+PASS  b4 (d) a failing battery is reported on stderr                                              tick: probe battery failed: battery exploded
+PASS  b4 (d) tick still writes its receipt                                                        
+PASS  b4 (d) exit code still comes from the check (0, check passes)                               0
+PASS  b4 positive control: L1 + unpaused calls the battery exactly once                           
+PASS  b4 positive control: called with the expected due pairs                                     [{"id":"codex-b4","harness":"codex"}]
+PASS  b4 positive control: the gather spawns exactly once each (listModels/versions)              {"listModels":1,"versions":1}
+PASS  b4 positive control: tick's own exit code is unaffected                                     0
+PASS  w089 b3 setup: the qa collegium marker line was found fixture text drifted
+PASS  w089 b3: no daily is written for the unresolvable magister ["2026-09-17-art-daily.md","2026-09-17-daily.md","2026-09-17-eng-daily.md","2026-09-17-icons-flat.md","2026-09-17-qa-daily.md","2026-09-18-architect-daily.md","2026-09-18-art-lead-daily.md","2026-09-18-eng-lead-daily.md","2026-09-18-producer-daily.md","2026-09-18-qa-lead-daily.md"]
+PASS  w089 b3: the other due magisters still get their daily 5 -> 10
+PASS  w089 b3: an error is reported for the unresolvable item ["tick: daily for \"totally-unknown-magister\" failed: unknown sella — not declared in bisellium.yml"]
+sella "builder-a": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  manifest-flow.yml: --sella exit 0                                              0
+PASS  manifest-flow.yml: --sella output matches the fixture with only the target field changed # fixture: flow-style manifest for W-065 behaviour 4 (delegate's format
+# preservation) — this comment must survive byte-for-byte.
+bisellium: 1
+studio: Delegate Fixture
+patron: patron
+collegia: [ { id: engineering, name: Engineering, magister: eng-lead } ]
+sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }, { id: builder-a, collegium: engineering, kind: agent, model: gpt-5.6-sol } ]
+probationes: []
+tiers: [ { id: mid, model: gpt-5.6-terra }, { id: high, model: gpt-5.6-sol } ]
+munera: [ { id: audit, tier: mid } ]
+
+PASS  manifest-flow.yml: --sella parse(after) deep-equals parse(before) with only the target changed 
+sella "builder-a": model gpt-5.6-sol -> gpt-5.6-sol
+PASS  manifest-flow.yml: --sella a second identical run exits 0                      0
+PASS  manifest-flow.yml: --sella a second identical run is byte-identical            
+munus "audit": tier mid -> high
+PASS  manifest-flow.yml: --munus exit 0                                              0
+PASS  manifest-flow.yml: --munus output matches the fixture with only the target field changed # fixture: flow-style manifest for W-065 behaviour 4 (delegate's format
+# preservation) — this comment must survive byte-for-byte.
+bisellium: 1
+studio: Delegate Fixture
+patron: patron
+collegia: [ { id: engineering, name: Engineering, magister: eng-lead } ]
+sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }, { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5 } ]
+probationes: []
+tiers: [ { id: mid, model: gpt-5.6-terra }, { id: high, model: gpt-5.6-sol } ]
+munera: [ { id: audit, tier: high } ]
+
+PASS  manifest-flow.yml: --munus parse(after) deep-equals parse(before) with only the target changed 
+munus "audit": tier high -> high
+PASS  manifest-flow.yml: --munus a second identical run exits 0                      0
+PASS  manifest-flow.yml: --munus a second identical run is byte-identical            
+sella "builder-a": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  manifest-block.yml: --sella exit 0                                             0
+PASS  manifest-block.yml: --sella output matches the fixture with only the target field changed # fixture: block-style manifest for W-065 behaviour 4 (delegate's format
+# preservation) — this comment must survive byte-for-byte.
+bisellium: 1
+studio: Delegate Fixture
+patron: patron
+collegia:
+  - id: engineering
+    name: Engineering
+    magister: eng-lead
+sellae:
+  - id: eng-lead
+    collegium: engineering
+    kind: agent
+    model: claude-opus-5
+  - id: builder-a
+    collegium: engineering
+    kind: agent
+    model: gpt-5.6-sol
+probationes: []
+tiers:
+  - id: mid
+    model: gpt-5.6-terra
+  - id: high
+    model: gpt-5.6-sol
+munera:
+  - id: audit
+    tier: mid
+
+PASS  manifest-block.yml: --sella parse(after) deep-equals parse(before) with only the target changed 
+sella "builder-a": model gpt-5.6-sol -> gpt-5.6-sol
+PASS  manifest-block.yml: --sella a second identical run exits 0                     0
+PASS  manifest-block.yml: --sella a second identical run is byte-identical           
+munus "audit": tier mid -> high
+PASS  manifest-block.yml: --munus exit 0                                             0
+PASS  manifest-block.yml: --munus output matches the fixture with only the target field changed # fixture: block-style manifest for W-065 behaviour 4 (delegate's format
+# preservation) — this comment must survive byte-for-byte.
+bisellium: 1
+studio: Delegate Fixture
+patron: patron
+collegia:
+  - id: engineering
+    name: Engineering
+    magister: eng-lead
+sellae:
+  - id: eng-lead
+    collegium: engineering
+    kind: agent
+    model: claude-opus-5
+  - id: builder-a
+    collegium: engineering
+    kind: agent
+    model: claude-sonnet-5
+probationes: []
+tiers:
+  - id: mid
+    model: gpt-5.6-terra
+  - id: high
+    model: gpt-5.6-sol
+munera:
+  - id: audit
+    tier: high
+
+PASS  manifest-block.yml: --munus parse(after) deep-equals parse(before) with only the target changed 
+munus "audit": tier high -> high
+PASS  manifest-block.yml: --munus a second identical run exits 0                     0
+PASS  manifest-block.yml: --munus a second identical run is byte-identical           
+sella "builder-a": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  manifest-crlf.yml: --sella exit 0                                              0
+PASS  manifest-crlf.yml: --sella output matches the fixture with only the target field changed # fixture: flow-style manifest for W-065 behaviour 4 (delegate's format
+# preservation) — this comment must survive byte-for-byte.
+bisellium: 1
+studio: Delegate Fixture
+patron: patron
+collegia: [ { id: engineering, name: Engineering, magister: eng-lead } ]
+sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }, { id: builder-a, collegium: engineering, kind: agent, model: gpt-5.6-sol } ]
+probationes: []
+tiers: [ { id: mid, model: gpt-5.6-terra }, { id: high, model: gpt-5.6-sol } ]
+munera: [ { id: audit, tier: mid } ]
+
+PASS  manifest-crlf.yml: --sella parse(after) deep-equals parse(before) with only the target changed 
+PASS  manifest-crlf.yml: --sella output round-trips as CRLF                          "# fixture: flow-style manifest for W-065"
+sella "builder-a": model gpt-5.6-sol -> gpt-5.6-sol
+PASS  manifest-crlf.yml: --sella a second identical run exits 0                      0
+PASS  manifest-crlf.yml: --sella a second identical run is byte-identical            
+munus "audit": tier mid -> high
+PASS  manifest-crlf.yml: --munus exit 0                                              0
+PASS  manifest-crlf.yml: --munus output matches the fixture with only the target field changed # fixture: flow-style manifest for W-065 behaviour 4 (delegate's format
+# preservation) — this comment must survive byte-for-byte.
+bisellium: 1
+studio: Delegate Fixture
+patron: patron
+collegia: [ { id: engineering, name: Engineering, magister: eng-lead } ]
+sellae: [ { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }, { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5 } ]
+probationes: []
+tiers: [ { id: mid, model: gpt-5.6-terra }, { id: high, model: gpt-5.6-sol } ]
+munera: [ { id: audit, tier: high } ]
+
+PASS  manifest-crlf.yml: --munus parse(after) deep-equals parse(before) with only the target changed 
+PASS  manifest-crlf.yml: --munus output round-trips as CRLF                          "# fixture: flow-style manifest for W-065"
+munus "audit": tier high -> high
+PASS  manifest-crlf.yml: --munus a second identical run exits 0                      0
+PASS  manifest-crlf.yml: --munus a second identical run is byte-identical            
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  live studio/bisellium.yml: --sella exit 0                                      0
+PASS  live studio/bisellium.yml: parse(after) deep-equals parse(before) with only the target changed 
+PASS  live studio/bisellium.yml: exactly a one-line textual diff                     1
+PASS  no flags: refused (nonzero exit)                                               2
+PASS  no flags: message names the refusing layer ("usage: bisellium delegate")       usage: bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+
+PASS  no flags: manifest bytes unchanged                                             
+PASS  no flags: timeline length unchanged                                            0
+PASS  --sella without --model: refused (nonzero exit)                                2
+PASS  --sella without --model: message names the refusing layer ("usage: bisellium delegate") usage: bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+
+PASS  --sella without --model: manifest bytes unchanged                              
+PASS  --sella without --model: timeline length unchanged                             0
+PASS  both shapes: refused (nonzero exit)                                            2
+PASS  both shapes: message names the refusing layer ("accepts exactly one shape, not both") delegate accepts exactly one shape, not both
+usage: bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+
+PASS  both shapes: manifest bytes unchanged                                          
+PASS  both shapes: timeline length unchanged                                         0
+PASS  unknown sella: refused (nonzero exit)                                          2
+PASS  unknown sella: message names the refusing layer ("unknown sella "nonexistent"") unknown sella "nonexistent" — not declared in bisellium.yml
+
+PASS  unknown sella: manifest bytes unchanged                                        
+PASS  unknown sella: timeline length unchanged                                       0
+PASS  unknown munus: refused (nonzero exit)                                          2
+PASS  unknown munus: message names the refusing layer ("unknown munus "nonexistent"") unknown munus "nonexistent" — not declared in bisellium.yml
+
+PASS  unknown munus: manifest bytes unchanged                                        
+PASS  unknown munus: timeline length unchanged                                       0
+PASS  unknown tier: refused (nonzero exit)                                           2
+PASS  unknown tier: message names the refusing layer ("unknown tier "nonexistent"")  unknown tier "nonexistent" — not declared in bisellium.yml
+
+PASS  unknown tier: manifest bytes unchanged                                         
+PASS  unknown tier: timeline length unchanged                                        0
+PASS  manifest with parse errors (openStudio): refused (nonzero exit)                2
+PASS  manifest with parse errors (openStudio): message names the refusing layer ("unparseable — not a studio") /tmp/claude-1000/w065-delegate-5-parse-error-MCrCUC/bisellium.yml unparseable — not a studio: Flow sequence in block collection must be sufficiently indented and end with a ] at line 3, column 1:
+
+  - this is not valid yaml: [[[
+
+^
+
+
+PASS  manifest with parse errors (openStudio): manifest bytes unchanged              
+PASS  manifest with parse errors (openStudio): timeline length unchanged             0
+PASS  manifest with a DUPLICATE_KEY (openStudio): refused (nonzero exit)             2
+PASS  manifest with a DUPLICATE_KEY (openStudio): message names the refusing layer ("unparseable — not a studio") /tmp/claude-1000/w065-delegate-5-dup-key-vmJonR/bisellium.yml unparseable — not a studio: Map keys must be unique at line 3, column 1:
+
+  - { id: builder-1, collegium: engineering, model: x }
+sellae:
+^
+
+
+PASS  manifest with a DUPLICATE_KEY (openStudio): manifest bytes unchanged           
+PASS  manifest with a DUPLICATE_KEY (openStudio): timeline length unchanged          0
+PASS  a multi-document manifest (openStudio): refused (nonzero exit)                 2
+PASS  a multi-document manifest (openStudio): message names the refusing layer ("unparseable — not a studio") /tmp/claude-1000/w065-delegate-5-multi-doc-59JEfO/bisellium.yml unparseable — not a studio: Source contains multiple documents; please use YAML.parseAllDocuments() at line 3, column 1:
+
+  - { id: builder-1, collegium: engineering, model: x }
+---
+^
+
+
+PASS  a multi-document manifest (openStudio): manifest bytes unchanged               
+PASS  a multi-document manifest (openStudio): timeline length unchanged              0
+PASS  manifest containing a merge key with an alias (anchor scan fires first): refused (nonzero exit) 2
+PASS  manifest containing a merge key with an alias (anchor scan fires first): message names the refusing layer ("anchors and aliases are not a supported form") /tmp/claude-1000/w065-delegate-5-merge-key-with-alias-BZ7eA5/bisellium.yml: anchors and aliases are not a supported form for delegate — a shared node cannot be edited field-by-field without collateral changes
+
+PASS  manifest containing a merge key with an alias (anchor scan fires first): manifest bytes unchanged 
+PASS  manifest containing a merge key with an alias (anchor scan fires first): timeline length unchanged 0
+PASS  manifest containing a merge key with no alias in the document: refused (nonzero exit) 2
+PASS  manifest containing a merge key with no alias in the document: message names the refusing layer ("a merge key ("<<")") /tmp/claude-1000/w065-delegate-5-merge-key-no-alias-FMTmZA/bisellium.yml: a merge key ("<<") is not a supported form for delegate — default YAML parsing does not resolve it into inheritance
+
+PASS  manifest containing a merge key with no alias in the document: manifest bytes unchanged 
+PASS  manifest containing a merge key with no alias in the document: timeline length unchanged 0
+PASS  manifest with an anchor on the target and an alias elsewhere: refused (nonzero exit) 2
+PASS  manifest with an anchor on the target and an alias elsewhere: message names the refusing layer ("anchors and aliases are not a supported form") /tmp/claude-1000/w065-delegate-5-anchor-alias-h8h9cc/bisellium.yml: anchors and aliases are not a supported form for delegate — a shared node cannot be edited field-by-field without collateral changes
+
+PASS  manifest with an anchor on the target and an alias elsewhere: manifest bytes unchanged 
+PASS  manifest with an anchor on the target and an alias elsewhere: timeline length unchanged 0
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  an ordinary manifest succeeds                                                  0
+sella "builder": model x -> y
+PASS  a manifest with an empty munera: succeeds                                      0
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  --from matching succeeds                                                       0
+sella "builder": --from "not-the-current-value" does not match the current value "claude-sonnet-5"
+PASS  --from not matching exits non-zero                                             3
+PASS  --from not matching: manifest bytes unchanged                                  
+PASS  --from not matching: timeline length unchanged                                 
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  --from omitted succeeds (it is optional)                                       0
+PASS  attribution: exits 0 under BISELLIUM_ROLE=patron                               status=0 stderr=
+PASS  attribution: exactly one timeline line                                         1
+PASS  attribution: role is "patron"                                                  {"role":"patron","at":"2026-09-24T12:00:00.000Z","action":"delegate","target":{"sella":"builder"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"}
+PASS  attribution: names the target/from/to                                          {"role":"patron","at":"2026-09-24T12:00:00.000Z","action":"delegate","target":{"sella":"builder"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"}
+PASS  attribution: exits 0 under BISELLIUM_ROLE=producer (main.ts does not force patron) status=0 stderr=
+PASS  attribution: acting role "producer" is recorded faithfully, not laundered to patron {"role":"producer","at":"2026-09-24T12:00:00.000Z","action":"delegate","target":{"sella":"builder"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"}
+delegate failed: EACCES: permission denied, open '/tmp/claude-1000/w065-delegate-7-rollback-vVDJrB/timeline/patron.jsonl'
+PASS  rollback: timeline/ unwritable -> exit 2                                       2
+PASS  rollback: manifest byte-identical after a failed write                         
+PASS  rollback failure: a DIFFERENT exit code (4)                                    4
+PASS  rollback failure: message names the manifest as possibly inconsistent          delegate failed (EACCES: permission denied, open '/tmp/claude-1000/w065-delegate-7-rollback-failure-IHb5X3/bisellium.yml') AND the manifest restore itself failed (EACCES: permission denied, open '/tmp/claude-1000/w065-delegate-7-rollback-failure-IHb5X3/bisellium.yml') — /tmp/claude-1000/w065-delegate-7-rollback-failure-IHb5X3/bisellium.yml may be left changed or partially written; check it by hand
+
+sella "builder": model claude-sonnet-5 -> gpt-5.6-sol
+PASS  w089 b3: an instance id targets the resolved template row — exits 0            0
+PASS  w089 b3: the TEMPLATE row's model changed, not a new row                       [{"id":"eng-lead","collegium":"engineering","kind":"agent","model":"claude-opus-5"},{"id":"builder","collegium":"engineering","kind":"agent","model":"gpt-5.6-sol"},{"id":"builder-a","collegium":"engineering","kind":"agent","model":"claude-sonnet-5","retired":true}]
+PASS  w089 b3: no new row named after the instance was created                       [{"id":"eng-lead","collegium":"engineering","kind":"agent","model":"claude-opus-5"},{"id":"builder","collegium":"engineering","kind":"agent","model":"gpt-5.6-sol"},{"id":"builder-a","collegium":"engineering","kind":"agent","model":"claude-sonnet-5","retired":true}]
+PASS  w089 b3: manifest bytes otherwise match the fixture with only the target field changed # fixture: W-089 behaviour 3/6 — a seat template plus a retired tombstone,
+# for delegate's instance-resolution and retired-refusal cases.
+bisellium: 1
+studio: Delegate Seat Template Fixture
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: eng-lead }
+sellae:
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
+  - { id: builder, collegium: engineering, kind: agent, model: gpt-5.6-sol }
+  - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+probationes: []
+
+sella "builder-a" is retired — dispatch "builder" instead
+PASS  w089 b6: delegate refuses a retired live target                                2
+PASS  w089 b6: manifest untouched on refusal                                         
+PASS  [W-089 b3] a retired row contributes no candidate of its own                      [{"id":"claude-sonnet-5","harness":"claude-code"}]
+PASS  [W-089 b3] the live row's model is still a candidate                              [{"id":"claude-sonnet-5","harness":"claude-code"}]
+PASS  [W-089 b3] a manifest with only a retired seat yields no candidates at all        []
+PASS  module graph: apps/server/src/index.ts never reaches @bisellium/cli or @bisellium/commands []
+PASS  index: .bisellium/index/index.db exists after startServer /tmp/claude-1000/bisellium-server-main-kewUIg/.bisellium/index/index.db
+PASS  index: store.query.opera() (the real Index) returns the studio's opera ["W-001","W-002","W-003","W-004","W-005","W-006","W-007"]
+GET /api/officina 200 5ms
+PASS  officina: 200                                        200
+PASS  officina: 5 collegia                                 [{"id":"production","name":"Production","magister":"producer","fallback":"eng-lead","autonomy":"L1"},{"id":"design","name":"Design","magister":"architect","autonomy":"L1"},{"id":"engineering","name":"Engineering","magister":"eng-lead","autonomy":"L1"},{"id":"art","name":"Art","magister":"art-lead","autonomy":"L1"},{"id":"qa","name":"QA","magister":"qa-lead","autonomy":"L1"}]
+PASS  events-log: no stray events.jsonl at studio root     /tmp/claude-1000/bisellium-server-main-kewUIg/events.jsonl
+PASS  events-log: real log exists at .bisellium/events.jsonl /tmp/claude-1000/bisellium-server-main-kewUIg/.bisellium/events.jsonl
+GET /api/inbox 200 7ms
+PASS  inbox: 200                                           200
+PASS  inbox: lists W-004                                   ["W-004"]
+PASS  inbox: lists A-1                                     ["A-1"]
+GET /api/aerarium 200 5ms
+PASS  aerarium: 200                                        200
+PASS  aerarium: engineering posture conserve               {"collegium":"engineering","period":"2026-W38","allowance":{"tokens":3000000},"burn":{"tokens":1880000},"posture":"conserve"}
+GET /api/opus/W-004 200 0ms
+PASS  opus/W-004: 200                                      200
+PASS  opus/W-004: has traditio                             {"sella":"builder-1","stage":"review","next":"await patron call","blocked_on":"patron","at":"2026-09-17T09:58:00Z"}
+GET /api/opus/NOPE 404 1ms
+PASS  opus/NOPE: 404                                       404
+PASS  opus/NOPE: {error}                                   {"error":"unknown opus"}
+GET /api/timeline/nobody 404 4ms
+PASS  timeline/nobody: 404                                 404
+PASS  timeline/nobody: {error}                             {"error":"unknown sella"}
+GET /api/timeline/builder.W-100 200 2ms
+PASS  w089 b3: timeline/builder.W-100 (instance): 200, not 404 200
+GET /api/timeline/ghost.W-100 404 1ms
+PASS  w089 b3: timeline/ghost.W-100 (unresolvable): 404    404
+GET /api/events?limit=-5 200 0ms
+PASS  events limit=-5: never throws (200)                  200
+GET /api/timeline/builder-1?limit=-5 200 2ms
+PASS  timeline limit=-5: never throws (200)                200
+GET /api/events?limit=0 200 0ms
+PASS  events limit=0: never throws (200)                   200
+GET /api/timeline/builder-1?limit=0 200 1ms
+PASS  timeline limit=0: never throws (200)                 200
+GET /api/events?limit=99999 200 1ms
+PASS  events limit=99999: never throws (200)               200
+GET /api/timeline/builder-1?limit=99999 200 1ms
+PASS  timeline limit=99999: never throws (200)             200
+GET /api/events?limit=abc 200 1ms
+PASS  events limit=abc: never throws (200)                 200
+GET /api/timeline/builder-1?limit=abc 200 2ms
+PASS  timeline limit=abc: never throws (200)               200
+POST /api/greenlight 403 0ms
+PASS  auth: valid token + Origin -> 403                    403
+POST /api/greenlight 401 0ms
+PASS  auth: no Origin, no token -> 401                     401
+POST /api/greenlight 415 0ms
+PASS  auth: token + text/plain -> 415                      415
+POST /api/greenlight 200 5ms
+PASS  auth: Origin (absent) -> 200 (auth passes)           200
+POST /api/greenlight 200 4ms
+PASS  auth: Origin http://127.0.0.1:45609 -> 200 (auth passes) 200
+POST /api/greenlight 200 4ms
+PASS  auth: Origin http://localhost:45609 -> 200 (auth passes) 200
+PASS  auth: the accepted-origin block — W-002.md unchanged 
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (the literal string null) -> 403        403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (right host, wrong port) -> 403         403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (https instead of http) -> 403          403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (the ::1 loopback form) -> 403          403
+POST /api/greenlight 403 0ms
+PASS  auth: Origin (a foreign host) -> 403                 403
+PASS  auth: the 403 block — W-002.md unchanged             
+POST /api/greenlight 401 0ms
+PASS  auth: valid Origin + wrong token -> 401              401
+POST /api/greenlight 415 0ms
+PASS  auth: valid Origin + text/plain -> 415               415
+POST /api/greenlight 400 1ms
+PASS  auth: valid Origin + missing field -> 400            400
+PASS  auth: the token/content-type/body block — W-002.md unchanged 
+POST /api/greenlight 200 5ms
+PASS  auth: Host: evil.example, no Origin -> 200 (no trust from Host) 200
+POST /api/greenlight 403 0ms
+PASS  auth: X-Forwarded-Host spoofed + foreign Origin -> still 403 403
+PASS  auth: the Host/X-Forwarded-Host block — W-002.md unchanged 
+POST /api/greenlight 413 2ms
+PASS  body cap: oversized POST answers 413                 413
+PASS  body cap: 413 body is real JSON with an error        {"error":"request body too large"}
+POST /api/greenlight 200 7ms
+PASS  greenlight: 200                                      200
+PASS  greenlight: ok true, exitCode 0                      {"ok":true,"exitCode":0,"output":"W-007: greenlit"}
+GET /api/opus/W-007 200 0ms
+PASS  opus/W-007: state greenlit                           {"id":"W-007","title":"Seasonal event framework","kind":"feature","collegium":"engineering","state":"greenlit","probationes":{}}
+POST /api/_poll 200 10ms
+PASS  _poll: absorbs the greenlight diff                   {"ok":true,"ingested":1}
+GET /api/events 200 0ms
+PASS  sse setup: W-002's state line found and replaced     
+POST /api/_poll 200 12ms
+PASS  _poll: 200                                           {"ok":true,"ingested":1}
+GET /api/events 200 1ms
+PASS  events: a write made after start is reflected without a restart 87 -> 88
+PASS  sse: exactly one state_changed event for W-002       [{"id":"server:42","name":"workflow.state_changed","ts":"2026-09-18T17:00:00.000Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-002","workflow.department":"engineering","workflow.state.from":"building","workflow.state.to":"verifying","workflow.source":"server","workflow.source.seq":42,"workflow.time.derived":true}}]
+GET /api/events 200 0ms
+PASS  events: seq is present on every event                
+PASS  events: seq strictly increasing and non-colliding across interleaved sources [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87]
+POST /api/_poll 404 0ms
+PASS  _poll: 404 outside NODE_ENV=test                     404
+GET /api/events 200 1ms
+PASS  close: port released                                 
+GET /api/events 200 0ms
+PASS  events-log: greenlight's own cli event visible after restart ["workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.actor_assigned","workflow.actor_assigned","workflow.actor_assigned","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.state_changed","workflow.state_changed","workflow.greenlight"]
+PASS  events-log: restart does not replay item_appeared events again before=14 after=14
+GET /api/live 200 100ms
+PASS  close: resolves within 3s with an open SSE client connected elapsedMs=1
+PASS  close: resolves within 3s after the SSE client aborted elapsedMs=1
+PASS  sse: exactly one store 'event' listener with three clients connected 1
+POST /api/_poll 200 15ms
+PASS  sse: fan-out reaches every connected client from the single listener [1,1,1]
+GET /api/officina 200 2ms
+PASS  sse: an errored client is dropped without taking the server down 200
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+PASS  sse: a client past MAX_SSE_CLIENTS gets 503          503
+GET /api/live 200 280ms
+GET /api/live 200 281ms
+GET /api/live 200 281ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 280ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 279ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 279ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 278ms
+GET /api/live 200 277ms
+GET /api/live 200 277ms
+GET /api/live 200 252ms
+GET /api/live 200 252ms
+GET /api/live 200 252ms
+GET /api/live 200 252ms
+GET /api/live 200 252ms
+GET /api/live 200 252ms
+GET /api/live 200 251ms
+GET /api/live 200 251ms
+GET /api/live 200 251ms
+GET /api/live 200 251ms
+PASS  containment: a sibling dir sharing WEB_DIST's name as a prefix is rejected /home/edckt/projects/bisellium/.worktrees/W-089/apps/web/dist vs /home/edckt/projects/bisellium/.worktrees/W-089/apps/web/dist-evil/x
+PASS  containment: the same sibling path WOULD have passed a bare startsWith() (the bug this replaces) /home/edckt/projects/bisellium/.worktrees/W-089/apps/web/dist-evil/x
+PASS  containment: a real file under WEB_DIST is accepted  /home/edckt/projects/bisellium/.worktrees/W-089/apps/web/dist/assets/app.js
+POST /api/talk 200 81ms
+POST /api/talk 200 118ms
+PASS  talk overlap: request A (message 'one') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: ONE"}
+PASS  talk overlap: request B (message 'two') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: TWO"}
+PASS  talk overlap: console.log restored to the real console afterwards 
+PASS  talk overlap: console.error restored to the real console afterwards 
+POST /api/greenlight 200 0ms
+PASS  stub runner (exit 3): HTTP 200, not a 4xx            200
+PASS  stub runner (exit 3): ok:false, exitCode:3           {"ok":false,"exitCode":3,"output":""}
+POST /api/delegate 200 5ms
+PASS  delegate (patron over seeded role): HTTP 200, ok:true {"ok":true,"exitCode":0,"output":"sella \"builder\": model claude-sonnet-5 -> gpt-5.6-sol"}
+PASS  delegate (patron over seeded role): recorded role is patron {"role":"patron","at":"2026-09-25T22:01:30.081Z","action":"delegate","target":{"sella":"builder"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"}
+PASS  delegate (patron over seeded role): BISELLIUM_ROLE restored after success builder-a
+POST /api/delegate 200 2ms
+PASS  delegate (rejected): refused, not a 4xx              {"ok":false,"exitCode":2,"output":"unknown sella \"no-such-sella\" — not declared in bisellium.yml"}
+PASS  delegate (rejected): BISELLIUM_ROLE restored after a rejection too builder-a
+POST /api/delegate 200 4ms
+POST /api/delegate 200 5ms
+PASS  delegate lock: overlapping call A succeeds           {"ok":true,"exitCode":0,"output":"sella \"builder\": model claude-sonnet-5 -> gpt-5.6-sol"}
+PASS  delegate lock: overlapping call B succeeds           {"ok":true,"exitCode":0,"output":"munus \"audit\": tier mid -> high"}
+PASS  delegate lock: two well-formed timeline lines        [{"role":"patron","at":"2026-09-25T22:01:30.115Z","action":"delegate","target":{"sella":"builder"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"},{"role":"patron","at":"2026-09-25T22:01:30.119Z","action":"delegate","target":{"munus":"audit"},"from":"mid","to":"high"}]
+PASS  delegate lock: the manifest is still a parseable single document 
+GET /api/officina 200 1ms
+PASS  officina: tiers matches the fixture                  [{"id":"fast","model":"gpt-5.6-luna"},{"id":"mid","model":"gpt-5.6-terra"},{"id":"high","model":"gpt-5.6-sol"},{"id":"escalation","model":"gpt-6-astra"},{"id":"build","model":"claude-sonnet-5"},{"id":"review","model":"claude-opus-5"}]
+PASS  officina: munera matches the fixture                 [{"id":"aggregation","tier":"fast"},{"id":"audit","tier":"mid"},{"id":"prereview","tier":"mid"},{"id":"research","tier":"high"},{"id":"redteam","tier":"high"},{"id":"escalation","tier":"escalation"},{"id":"build","tier":"build"},{"id":"spec","tier":"review"},{"id":"review","tier":"review"}]
+PASS  officina: models absent when models.json is absent   
+PASS  officina: sellae rows still carry kind/model/harness [{"id":"producer","collegium":"production","kind":"orchestrator","model":"claude-opus-5"},{"id":"architect","collegium":"design","kind":"agent","model":"claude-opus-5"},{"id":"eng-lead","collegium":"engineering","kind":"agent","model":"claude-opus-5"},{"id":"builder","collegium":"engineering","kind":"agent","model":"claude-sonnet-5"},{"id":"builder-1","collegium":"engineering","kind":"agent","model":"claude-sonnet-5","retired":true},{"id":"builder-2","collegium":"engineering","kind":"agent","model":"claude-sonnet-5","retired":true},{"id":"art-lead","collegium":"art","kind":"agent","model":"gpt-6-astra"},{"id":"qa-lead","collegium":"qa","kind":"agent","model":"claude-sonnet-5"}]
+GET /api/officina 200 1ms
+PASS  officina: an unparseable models.json degrades to absent, still 200 
+GET /api/models 200 6ms
+PASS  models: a newly listed id appears as unverified      [{"id":"gpt-5.6-sol","state":"available","harness":"codex"},{"id":"gpt-fresh","harness":"codex","state":"unverified"}]
+PASS  models: a recorded, still-listed id keeps its recorded state [{"id":"gpt-5.6-sol","state":"available","harness":"codex"},{"id":"gpt-fresh","harness":"codex","state":"unverified"}]
+GET /api/models 200 1ms
+PASS  models: two calls inside the TTL invoke the listing once 1
+GET /api/models 200 2ms
+PASS  models: a call AFTER the TTL refreshes the listing   2
+GET /api/models 200 1ms
+PASS  models: a record id the listing omits is flagged withdrawn (kept, downgraded to unverified) [{"id":"gpt-gone","state":"unverified","harness":"codex"}]
+GET /api/models 200 1ms
+PASS  models: a failing listing still answers 200 from the record alone [{"id":"gpt-5.6-sol","state":"available","harness":"codex"}]
+PASS  models: the dropdown is not emptied                  [{"id":"gpt-5.6-sol","state":"available","harness":"codex"}]
+PASS  models: the record's state is untouched by a failed listing (not downgraded) [{"id":"gpt-5.6-sol","state":"available","harness":"codex"}]
+GET /api/models 200 3002ms
+PASS  models: a hung listing still answers 200 past its timeout []
+GET /api/models 200 2ms
+PASS  models: no route runs a vendor turn                  status=200 listingCalls=1
+GET /api/inbox 200 5ms
+PASS  inbox body: W076-BODY is present                     ["A-1","W076-BODY"]
+PASS  inbox body: at least 2KB                             2770
+PASS  inbox body: byte-identical to the front matter body (newlines intact) **W-064's red gate: D-024's kill arm has fired, and only you can rule.**
+
+The builder disclosed that behaviours 7-9's reds were recorded by the
+implement then revert-to-skeleton then record then resto
+PASS  inbox body: subject is present and derived (no subject: key on this fixture) "W-064's red gate: D-024's kill arm has fired, and only you can rule."
+bisellium serve: 500 dcf5ef34-386b-410a-88ba-3ffa7e8c3157 ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/test/server.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/store.ts:358:22)
+    at route (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 3ms
+PASS  b1: status 500                                       500
+PASS  b1: body.error === 'internal error' exactly          {"error":"internal error","ref":"dcf5ef34-386b-410a-88ba-3ffa7e8c3157"}
+PASS  b1: body.ref is a non-empty string                   {"error":"internal error","ref":"dcf5ef34-386b-410a-88ba-3ffa7e8c3157"}
+PASS  b1: raw body carries no ENOENT                       {"error":"internal error","ref":"dcf5ef34-386b-410a-88ba-3ffa7e8c3157"}
+PASS  b1: raw body carries no /home/secret                 {"error":"internal error","ref":"dcf5ef34-386b-410a-88ba-3ffa7e8c3157"}
+PASS  b1: raw body carries no the word Error               {"error":"internal error","ref":"dcf5ef34-386b-410a-88ba-3ffa7e8c3157"}
+PASS  b2: body carries a ref                               {"error":"internal error","ref":"c1f151e1-633a-492e-9d57-8448a3ba42f6"}
+PASS  b2: stderr contains the same ref as the body         bisellium serve: 500 c1f151e1-633a-492e-9d57-8448a3ba42f6 ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/test/server.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/store.ts:358:22)
+    at route (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 1ms
+
+PASS  b2: stderr contains the original message             bisellium serve: 500 c1f151e1-633a-492e-9d57-8448a3ba42f6 ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/test/server.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/store.ts:358:22)
+    at route (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 1ms
+
+PASS  b2: stderr contains a stack                          bisellium serve: 500 c1f151e1-633a-492e-9d57-8448a3ba42f6 ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/test/server.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/store.ts:358:22)
+    at route (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 1ms
+
+PASS  b3: no sendJson/sendText call outside sendError's own body carries an object with an error key []
+PASS  b3 positive control: a second sendJson(..., {error}) outside sendError fails the pin [{"start":156,"snippet":"res, 400, { error: \"sneaky\" }"}]
+PASS  b3: sendError's own call never flags itself          []
+POST /api/greenlight 400 0ms
+PASS  b4: status 400                                       400
+PASS  b4: error is exactly 'invalid JSON body' — no V8 position text {"error":"invalid JSON body"}
+PASS  b5: both responses are 500                           500 500
+PASS  b5: both refs are non-empty strings                  ["006f4d24-0611-4249-bb58-f25f47b12730","374f4ca7-86d1-4e95-b267-7aefd1fa5200"]
+PASS  b5: the two refs differ                              ["006f4d24-0611-4249-bb58-f25f47b12730","374f4ca7-86d1-4e95-b267-7aefd1fa5200"]
+PASS  b5: both refs appear in the log                      bisellium serve: 500 006f4d24-0611-4249-bb58-f25f47b12730 ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/test/server.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/store.ts:358:22)
+    at route (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 1ms
+bisellium serve: 500 374f4ca7-86d1-4e95-b267-7aefd1fa5200 ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/test/server.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/store.ts:358:22)
+    at route (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-089/apps/server/src/http.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 1ms
+
+PASS  b6: the log shows the 500 path (ref + 'aborted'), never a 400 narrating the stream error bisellium serve: 500 2a06bb25-5a89-4ffb-90b9-81c505e1d4c1 aborted
+Error: aborted
+    at abortIncoming (node:_http_server:851:17)
+    at socketOnClose (node:_http_server:845:3)
+    at Socket.emit (node:events:521:24)
+    at TCP.<anonymous> (node:net:350:12)
+
+PASS  b6: the log carries a stack                          bisellium serve: 500 2a06bb25-5a89-4ffb-90b9-81c505e1d4c1 aborted
+Error: aborted
+    at abortIncoming (node:_http_server:851:17)
+    at socketOnClose (node:_http_server:845:3)
+    at Socket.emit (node:events:521:24)
+    at TCP.<anonymous> (node:net:350:12)
+
+PASS  b6: the server survives the induced stream error     200
+GET /api/officina 200 1ms
+GET /assets/does-not-exist.js 404 0ms
+PASS  b7 :451 assets not found: status 404                 404
+PASS  b7 :451 assets not found: raw body byte-identical to today's "{\"error\":\"not found\"}"
+PASS  b7 :451 assets not found: no ref field (500-only)    {"error":"not found"}
+GET /api/totally-unknown-route 404 0ms
+PASS  b7 :801 unrouted path: status 404                    404
+PASS  b7 :801 unrouted path: raw body byte-identical to today's "{\"error\":\"not found\"}"
+PASS  b7 :801 unrouted path: no ref field (500-only)       {"error":"not found"}
+GET /api/opus/NOPE 404 0ms
+PASS  b7 :609 unknown opus: status 404                     404
+PASS  b7 :609 unknown opus: raw body byte-identical to today's "{\"error\":\"unknown opus\"}"
+PASS  b7 :609 unknown opus: no ref field (500-only)        {"error":"unknown opus"}
+GET /api/timeline/nobody 404 1ms
+PASS  b7 :637 unknown sella: status 404                    404
+PASS  b7 :637 unknown sella: raw body byte-identical to today's "{\"error\":\"unknown sella\"}"
+PASS  b7 :637 unknown sella: no ref field (500-only)       {"error":"unknown sella"}
+POST /api/greenlight 401 0ms
+PASS  b7 :581 no token: status 401                         401
+PASS  b7 :581 no token: raw body byte-identical to today's "{\"error\":\"missing or invalid X-Bisellium-Token\"}"
+PASS  b7 :581 no token: no ref field (500-only)            {"error":"missing or invalid X-Bisellium-Token"}
+POST /api/greenlight 403 0ms
+PASS  b7 :581 bad Origin: status 403                       403
+PASS  b7 :581 bad Origin: raw body byte-identical to today's "{\"error\":\"cross-origin writes are refused\"}"
+PASS  b7 :581 bad Origin: no ref field (500-only)          {"error":"cross-origin writes are refused"}
+POST /api/greenlight 415 0ms
+PASS  b7 :581 wrong Content-Type: status 415               415
+PASS  b7 :581 wrong Content-Type: raw body byte-identical to today's "{\"error\":\"Content-Type must be application/json\"}"
+PASS  b7 :581 wrong Content-Type: no ref field (500-only)  {"error":"Content-Type must be application/json"}
+GET /api/events?item=x&since=1 400 0ms
+PASS  b7 :652 item combined with since: status 400         400
+PASS  b7 :652 item combined with since: raw body byte-identical to today's "{\"error\":\"item cannot be combined with since\"}"
+PASS  b7 :652 item combined with since: no ref field (500-only) {"error":"item cannot be combined with since"}
+POST /api/answer 400 0ms
+PASS  b7 :686 answer missing fields: status 400            400
+PASS  b7 :686 answer missing fields: raw body byte-identical to today's "{\"error\":\"petitio and reply are required strings\"}"
+PASS  b7 :686 answer missing fields: no ref field (500-only) {"error":"petitio and reply are required strings"}
+POST /api/greenlight 400 0ms
+PASS  b7 :701 greenlight missing opus: status 400          400
+PASS  b7 :701 greenlight missing opus: raw body byte-identical to today's "{\"error\":\"opus is required\"}"
+PASS  b7 :701 greenlight missing opus: no ref field (500-only) {"error":"opus is required"}
+PASS  b7 :717 budget missing fields: status 400            400
+POST /api/budget 400 0ms
+PASS  b7 :717 budget missing fields: raw body byte-identical to today's "{\"error\":\"period, collegium and tokens are required\"}"
+PASS  b7 :717 budget missing fields: no ref field (500-only) {"error":"period, collegium and tokens are required"}
+POST /api/handoff 400 0ms
+PASS  b7 :733 handoff missing fields: status 400           400
+PASS  b7 :733 handoff missing fields: raw body byte-identical to today's "{\"error\":\"opus, sella and next are required\"}"
+PASS  b7 :733 handoff missing fields: no ref field (500-only) {"error":"opus, sella and next are required"}
+POST /api/talk 400 0ms
+PASS  b7 :749 talk missing fields: status 400              400
+PASS  b7 :749 talk missing fields: raw body byte-identical to today's "{\"error\":\"sella and message are required\"}"
+PASS  b7 :749 talk missing fields: no ref field (500-only) {"error":"sella and message are required"}
+POST /api/delegate 400 0ms
+PASS  b7 :786 delegate missing fields: status 400          400
+PASS  b7 :786 delegate missing fields: raw body byte-identical to today's "{\"error\":\"either {sella, model} or {munus, tier} are required\"}"
+PASS  b7 :786 delegate missing fields: no ref field (500-only) {"error":"either {sella, model} or {munus, tier} are required"}
+POST /api/greenlight 400 0ms
+PASS  b7 :184 non-object JSON body: status 400             400
+PASS  b7 :184 non-object JSON body: raw body byte-identical to today's "{\"error\":\"request body must be a JSON object\"}"
+PASS  b7 :184 non-object JSON body: no ref field (500-only) {"error":"request body must be a JSON object"}
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+PASS  b7 :499 too many /api/live clients: status 503       503
+PASS  b7 :499 too many /api/live clients: raw body byte-identical to today's "{\"error\":\"too many /api/live clients\"}"
+PASS  b7 :499 too many /api/live clients: no ref field (500-only) {"error":"too many /api/live clients"}
+POST /api/greenlight 413 1ms
+PASS  b7 :181 oversized body: status 413                   413
+PASS  b7 :181 oversized body: raw body byte-identical to today's "{\"error\":\"request body too large\"}"
+PASS  b7 :181 oversized body: no ref field (500-only)      {"error":"request body too large"}
+POST /api/_poll 404 0ms
+PASS  b7 :671 /api/_poll outside test env: status 404      404
+PASS  b7 :671 /api/_poll outside test env: raw body byte-identical to today's "{\"error\":\"not found\"}"
+PASS  b7 :671 /api/_poll outside test env: no ref field (500-only) {"error":"not found"}
+PASS  b7 :441 forbidden — UNREACHABLE via any client request (WHATWG URL normalises '..' before serveStatic sees pathname, verified); isPathContained() itself still correctly refuses a sibling-prefix escape false
+GET /api/live 200 318ms
+GET /api/live 200 318ms
+GET /api/live 200 318ms
+GET /api/live 200 318ms
+GET /api/live 200 318ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 317ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 317ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+PASS  start: exitCode 0                                          0
+PASS  start: receipt file exists                                 /tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR/receipts/builder-1/sess-abc123.json
+PASS  start: receipt harness is claude-code                      {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR","cmd":[],"harness":"claude-code"}
+PASS  start: receipt sessionId from payload                      {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR","cmd":[],"harness":"claude-code"}
+PASS  start: receipt not yet closed                              {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR","cmd":[],"harness":"claude-code"}
+traditio reminder: W-002 handoff is 30.3h old (next: wire log filter, blocked_on: none)
+PASS  stop: exitCode 0                                           0
+PASS  stop: receipt closed (endedAt set)                         {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR","cmd":[],"harness":"claude-code","endedAt":"2026-09-18T17:01:00.000Z","exitCode":0,"durationMs":60000}
+PASS  stop: durationMs computed from the start receipt           {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR","cmd":[],"harness":"claude-code","endedAt":"2026-09-18T17:01:00.000Z","exitCode":0,"durationMs":60000}
+PASS  stop: sella/sessionId survive the rewrite                  {"sella":"builder-1","sessionId":"sess-abc123","startedAt":"2026-09-18T17:00:00.000Z","cwd":"/tmp/claude-1000/bisellium-hooks-start-stop-SlzTBR","cmd":[],"harness":"claude-code","endedAt":"2026-09-18T17:01:00.000Z","exitCode":0,"durationMs":60000}
+PASS  tool: exitCode 0                                           0
+PASS  tool: events.jsonl written under .bisellium/               /tmp/claude-1000/bisellium-hooks-tool-urbzrA/.bisellium/events.jsonl
+PASS  tool: exactly one event written                            1
+PASS  tool: event name is workflow.*                             workflow.tool_used
+PASS  tool: attrs carry the tool name                            {"workflow.actor.role":"builder-1","tool.name":"Edit","workflow.source":"hook","workflow.source.seq":0,"tool.file_path":"/repo/notes.md?token=***"}
+PASS  tool: file path token= value is masked                     /repo/notes.md?token=***
+PASS  tool: raw secret value is gone                             /repo/notes.md?token=***
+PASS  malformed: exitCode 0 (never blocks the harness)           0
+PASS  malformed: exactly one stderr line                         ["hook-event start: invalid JSON on stdin: Expected property name or '}' in JSON at position 1 (line 1 column 2)"]
+PASS  malformed: nothing on stdout                               []
+PASS  malformed: no receipt written                              
+PASS  print: exitCode 0                                          0
+PASS  print: exactly one stdout block                            1
+PASS  print: explains, on stderr, that it doesn't write settings.json ["paste the block above into .claude/settings.json under its \"hooks\" key (merge with anything already there — bisellium never writes that file for you). SubagentStart is intentionally left unwired (documented, no-op: a subagent has no sella of its own to hand a receipt or boot bundle to)."]
+PASS  print: hooks.SessionStart present                          ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: hooks.PreCompact present                            ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: hooks.Stop present                                  ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: hooks.PostToolUse present                           ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: SubagentStart intentionally absent                  ["SessionStart","PreCompact","Stop","PostToolUse"]
+PASS  print: the sella appears in the printed block              {"hooks":{"SessionStart":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event context --sella 'eng-lead' --studio '/studio'","timeout":2},{"type":"command","command":"bisellium hook-event start --sella 'eng-lead' --studio '/studio'","timeout":2}]}],"PreCompact":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event context --sella 'eng-lead' --studio '/studio'","timeout":2}]}],"Stop":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event stop --sella 'eng-lead' --studio '/studio'","timeout":2}]}],"PostToolUse":[{"matcher":"Write|Edit","hooks":[{"type":"command","command":"bisellium hook-event tool --sella 'eng-lead' --studio '/studio'","timeout":2}]}]}}
+hooks print: --harness must be "claude-code" (got "codex")
+usage: bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+PASS  print: unsupported --harness is a usage error              2
+PASS  check: exitCode 0                                          0
+PASS  check: builder-1 reported dead before any receipt exists   ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  check setup: hook-event start succeeded                    0
+PASS  check: builder-1 reported alive after hook-event start     ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=sess-live (started 2026-09-18T17:00:00.000Z) alive","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  check: an untouched sella (builder-2) is still dead        ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=sess-live (started 2026-09-18T17:00:00.000Z) alive","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  checkStudio: no hook.dead before the studio has any receipts/ at all []
+PASS  check rule setup: hook-event start succeeded               0
+PASS  checkStudio: hook.dead is advise-level, never block        [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/architect","message":"sella \"architect\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder","message":"sella \"builder\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+PASS  checkStudio: builder-2 (never run) flagged hook.dead       [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/architect","message":"sella \"architect\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder","message":"sella \"builder\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+PASS  checkStudio: builder-1 (hook-started) NOT flagged hook.dead [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/architect","message":"sella \"architect\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder","message":"sella \"builder\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+PASS  print(argv): exitCode 0                                    0
+PASS  print(argv): SessionStart command has no same-line env-var indirection bisellium hook-event context --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir'
+PASS  print(argv): PreCompact command has no same-line env-var indirection bisellium hook-event context --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir'
+PASS  print(argv): Stop command has no same-line env-var indirection bisellium hook-event stop --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir'
+PASS  print(argv): PostToolUse command has no same-line env-var indirection bisellium hook-event tool --sella 'builder-1' --studio '/tmp/weird "studio'\''s" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir'
+PASS  print(argv): stub shell run exited 0                       {"status":0,"stderr":""}
+PASS  print(argv): subcommand is hook-event context              ["hook-event","context","--sella","builder-1","--studio","/tmp/weird \"studio's\" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir"]
+PASS  print(argv): --sella resolves to the literal sella, not empty ["hook-event","context","--sella","builder-1","--studio","/tmp/weird \"studio's\" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir"]
+PASS  print(argv): --studio resolves to the literal studio, special chars intact ["hook-event","context","--sella","builder-1","--studio","/tmp/weird \"studio's\" $HOME `touch /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test` dir"]
+PASS  print(argv): backtick/$HOME inside the studio value never executed /tmp/claude-1000/bisellium-argv-pwn-Q67AYQ/qa-pwned-argv-test
+PASS  compact: exitCode 0                                        0
+PASS  compact: timeline file written                             /tmp/claude-1000/bisellium-hooks-compact-NxuZlR/timeline/builder-1.jsonl
+PASS  compact: exactly one timeline entry                        1
+PASS  compact: kind is compact                                   {"at":"2026-09-18T17:00:00.000Z","sella":"builder-1","direction":"out","kind":"compact","text":"context compacted (manual token=***","sessionId":"sess-compact-token=***"}
+PASS  compact: trigger token= value is masked                    context compacted (manual token=***
+PASS  compact: raw secret value is gone from text                context compacted (manual token=***
+PASS  compact: sessionId is redacted too                         sess-compact-token=***
+hook-event start: payload session_id is not a plain id (no path separators)
+PASS  traversal(start): still exits 0 (never blocks the harness) 0
+PASS  traversal(start): nothing written outside the studio dir   /tmp/claude-1000/qa-escape-receipt-267-1790373694530.json
+PASS  traversal(start): no receipt written inside the studio either 
+hook-event stop: payload session_id is not a plain id (no path separators)
+PASS  traversal(stop): still exits 0 (never blocks the harness)  0
+PASS  traversal(stop): nothing written outside the studio dir    /tmp/claude-1000/qa-escape-receipt-stop-267-1790373694534.json
+PASS  traversal(long): still exits 0                             0
+PASS  traversal(long): stderr stays short (no echoed 200KB value) [75]
+hook-event start: --sella must be a plain id (no path separators)
+PASS  traversal(sella): still exits 0                            0
+PASS  traversal(sella): nothing written outside the studio dir   /tmp/claude-1000/qa-escape-sella-267-1790373694542/sess-fine.json
+PASS  SessionStart: the printed profile also runs hook-event start (not just context) ["bisellium hook-event context --sella 'builder-1' --studio '/studio'","bisellium hook-event start --sella 'builder-1' --studio '/studio'"]
+PASS  SessionStart wiring: hook-event start exits 0              0
+PASS  SessionStart wiring: no receipt.shape block finding        []
+PASS  SessionStart wiring: hooks check reports builder-1 alive   ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=sess-real-session-start (started 2026-09-18T17:00:00.000Z) alive","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  context(healthy): exitCode 0                               0
+PASS  context(healthy): within 2s                                7ms
+PASS  context(healthy): something printed on stdout              ["## CLI usage\nRun `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.\n\n## Engineering lex\n--- data: leges/engineering.md ---\n# Engineering Lex\n\nMagister: `eng-lead` · Adopted: 2026-09-17\n\n## 1. Mandate\n\nShip greenlit features to `done` with passing tests and a lead review, inside\nthe weekly token allowance.\n\n## 2. Decides alone\n\n- Refactors that keep public contracts intact\n- Test scaffolding, dependency bumps, CI fixes\n- Assigning builders to greenlit items; ordering within the slate rank\n- Hygiene items inside the reserved share, up to one day of builder time each\n\n## 3. Digests\n\n- Architecture choices affecting more than one module\n- Contract changes with a migration path (client, API, schema)\n- Weekly: cycle time, review-fail loops, burn vs allowance\n\n## 4. Asks\n\n- A contract change with no migration path\n- Any change to a greenlit item's scope\n- Spending past allowance to finish an item\n\n## 5. Budget\n\n- Period: week · Allowance: 3.0M tokens, of which 20% is reserved for `kind: hygiene`\n  (refactor, cleanup, dependency bumps, test debt); features may not borrow it\n- Burn reporting: `aerarium/<period>.yml`\n- Over-budget: posture → conserve, digest the cause, no new items started\n\n## 6. Autonomy\n\n- Level: L2 dispatching — the tick starts greenlit items within WIP and posture\n- May self-start (L3 scope, not yet enabled): hygiene items from repo review\n- Stops starting at posture: closeout\n\n## 7. Evidence contract\n\nEvery `done` item carries: commit SHA, test log path, review note path.\n\n## 8. Liveness\n\nBuilders write a heartbeat line to their work item every 15 minutes while\nrunning; a missing heartbeat for 30 minutes marks the sella stale.\n\n## 9. Amendment log\n\n| Date | Change | Authority |\n|---|---|---|\n| 2026-09-17 | Adopted | Patron |\n--- end ---\n\n## Standing rules\n- Test-first with a recorded red.\n- Mechanical work is a script you write, run and keep.\n- Evidence is produced, never backfilled.\n\n## Engineering index\nW-001 · done · Save-slot migration\nW-002 · building · Combat log panel\nW-003 · verifying · Party AI targeting\nW-004 · review · Inventory drag-and-drop\nW-006 · greenlit · Guild chat\nW-007 · backlog · Seasonal event framework\n\n## Provider posture\nclaude · 81% · conserve · resets 2026-09-18T14:00:00Z\ncodex · 34% · ok · resets 2026-09-17T22:38:00Z"]
+PASS  context(missing): exitCode 0                               0
+PASS  context(missing): within 2s                                1ms
+PASS  context(missing): something printed on stdout              [""]
+PASS  context(broken): exitCode 0                                0
+PASS  context(broken): within 2s                                 0ms
+PASS  context(broken): something printed on stdout               [""]
+PASS  context(healthy): boot bundle is non-empty                 ["## CLI usage\nRun `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.\n\n## Engineering lex\n--- data: leges/engineering.md ---\n# Engineering Lex\n\nMagister: `eng-lead` · Adopted: 2026-09-17\n\n## 1. Mandate\n\nShip greenlit features to `done` with passing tests and a lead review, inside\nthe weekly token allowance.\n\n## 2. Decides alone\n\n- Refactors that keep public contracts intact\n- Test scaffolding, dependency bumps, CI fixes\n- Assigning builders to greenlit items; ordering within the slate rank\n- Hygiene items inside the reserved share, up to one day of builder time each\n\n## 3. Digests\n\n- Architecture choices affecting more than one module\n- Contract changes with a migration path (client, API, schema)\n- Weekly: cycle time, review-fail loops, burn vs allowance\n\n## 4. Asks\n\n- A contract change with no migration path\n- Any change to a greenlit item's scope\n- Spending past allowance to finish an item\n\n## 5. Budget\n\n- Period: week · Allowance: 3.0M tokens, of which 20% is reserved for `kind: hygiene`\n  (refactor, cleanup, dependency bumps, test debt); features may not borrow it\n- Burn reporting: `aerarium/<period>.yml`\n- Over-budget: posture → conserve, digest the cause, no new items started\n\n## 6. Autonomy\n\n- Level: L2 dispatching — the tick starts greenlit items within WIP and posture\n- May self-start (L3 scope, not yet enabled): hygiene items from repo review\n- Stops starting at posture: closeout\n\n## 7. Evidence contract\n\nEvery `done` item carries: commit SHA, test log path, review note path.\n\n## 8. Liveness\n\nBuilders write a heartbeat line to their work item every 15 minutes while\nrunning; a missing heartbeat for 30 minutes marks the sella stale.\n\n## 9. Amendment log\n\n| Date | Change | Authority |\n|---|---|---|\n| 2026-09-17 | Adopted | Patron |\n--- end ---\n\n## Standing rules\n- Test-first with a recorded red.\n- Mechanical work is a script you write, run and keep.\n- Evidence is produced, never backfilled.\n\n## Engineering index\nW-001 · done · Save-slot migration\nW-002 · building · Combat log panel\nW-003 · verifying · Party AI targeting\nW-004 · review · Inventory drag-and-drop\nW-006 · greenlit · Guild chat\nW-007 · backlog · Seasonal event framework\n\n## Provider posture\nclaude · 81% · conserve · resets 2026-09-18T14:00:00Z\ncodex · 34% · ok · resets 2026-09-17T22:38:00Z"]
+PASS  print: SessionStart's boot-context command is hook-event context [{"type":"command","command":"bisellium hook-event context --sella 'eng-lead' --studio 'studio'","timeout":2},{"type":"command","command":"bisellium hook-event start --sella 'eng-lead' --studio 'studio'","timeout":2}]
+PASS  print: PreCompact runs hook-event context                  [{"type":"command","command":"bisellium hook-event context --sella 'eng-lead' --studio 'studio'","timeout":2}]
+PASS  print: every hook's timeout is 2                           [2,2,2,2,2]
+PASS  tool(perf): exitCode 0                                     0
+PASS  tool(perf): finishes under 300ms with 5000 existing lines  4ms
+PASS  tool(perf): exactly one line appended                      5001
+PASS  tool(perf): cwd is present and masked like file_path       /repo/work?token=***
+PASS  tool(perf): raw secret value is gone from cwd              /repo/work?token=***
+PASS  claudeCodeHooksBlock({studio}): no command contains --sella {"hooks":{"SessionStart":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event context --studio 'studio'","timeout":2},{"type":"command","command":"bisellium hook-event start --studio 'studio'","timeout":2}]}],"PreCompact":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event context --studio 'studio'","timeout":2}]}],"Stop":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event stop --studio 'studio'","timeout":2}]}],"PostToolUse":[{"matcher":"Write|Edit","hooks":[{"type":"command","command":"bisellium hook-event tool --studio 'studio'","timeout":2}]}]}}
+PASS  claudeCodeHooksBlock({studio}): no leftover __SELLA__ placeholder {"hooks":{"SessionStart":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event context --studio 'studio'","timeout":2},{"type":"command","command":"bisellium hook-event start --studio 'studio'","timeout":2}]}],"PreCompact":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event context --studio 'studio'","timeout":2}]}],"Stop":[{"matcher":"*","hooks":[{"type":"command","command":"bisellium hook-event stop --studio 'studio'","timeout":2}]}],"PostToolUse":[{"matcher":"Write|Edit","hooks":[{"type":"command","command":"bisellium hook-event tool --studio 'studio'","timeout":2}]}]}}
+PASS  claudeCodeHooksBlock({sella}): every SessionStart command carries --sella 'eng-lead' ["bisellium hook-event context --sella 'eng-lead' --studio 'studio'","bisellium hook-event start --sella 'eng-lead' --studio 'studio'"]
+PASS  cascade guard: "builder.W-100" (live builder-class) writes silently []
+PASS  cascade guard: "builder-codex.W-100" (live builder-class) writes silently []
+PASS  cascade guard: "builder-a" still warns                     ["⚠ process.cascade: sella \"builder-a\" is writing source (/repo/src/index.ts) — dispatch a builder subagent instead"]
+PASS  cascade guard: "builder-a.W-100" still warns               ["⚠ process.cascade: sella \"builder-a.W-100\" is writing source (/repo/src/index.ts) — dispatch a builder subagent instead"]
+PASS  cascade guard: "builderish" still warns                    ["⚠ process.cascade: sella \"builderish\" is writing source (/repo/src/index.ts) — dispatch a builder subagent instead"]
+PASS  cascade guard: "eng-lead" still warns                      ["⚠ process.cascade: sella \"eng-lead\" is writing source (/repo/src/index.ts) — dispatch a builder subagent instead"]
+PASS  cascade guard: "ghost" still warns                         ["⚠ process.cascade: sella \"ghost\" is writing source (/repo/src/index.ts) — dispatch a builder subagent instead"]
+hook-event start: "builder" is a bare builder-class template — refusing to write without a minted instance
+PASS  w089 b5: hook-event start on a bare template exits 0 (never blocks the harness) 0
+PASS  w089 b5: hook-event start on a bare template writes no receipt 
+PASS  w089 b5: hook-event start on a minted instance exits 0     0
+PASS  w089 b5: hook-event start on a minted instance writes its receipt 
+hook-event compact: "builder" is a bare builder-class template — refusing to write without a minted instance
+PASS  w089 b5: hook-event compact on a bare template exits 0     0
+PASS  w089 b5: hook-event compact on a bare template writes no timeline 
+PASS  w089 b5: hook-event start on a non-builder-class (retired) sella still writes 0
+PASS  w089 b3 setup: hook-event start on the instance succeeded  0
+FAIL  w089 b3: hooks check attributes the instance directory to builder's harness, alive ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+FAIL  w089 b3: hooks check reports the unknown directory as unknown, not dead/alive ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  w089 b3: checkStudio does not flag the live instance directory hook.dead [{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/architect","message":"sella \"architect\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder","message":"sella \"builder\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-1","message":"sella \"builder-1\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unknownFindings":[],"dead":[{"rule":"hook.dead","level":"advise","where":"receipts/producer","message":"sella \"producer\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/architect","message":"sella \"architect\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/eng-lead","message":"sella \"eng-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder","message":"sella \"builder\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-1","message":"sella \"builder-1\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/builder-2","message":"sella \"builder-2\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/art-lead","message":"sella \"art-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"},{"rule":"hook.dead","level":"advise","where":"receipts/qa-lead","message":"sella \"qa-lead\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}]}
+PASS  w089 b3: hook.unknown is advisory, never block             []

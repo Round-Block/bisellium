@@ -146,11 +146,22 @@ function runHooksCheck(args: string[]): HooksResult {
     return { exitCode: 2 };
   }
 
+  // W-089 behaviour 3 (censor round-2 finding B3): seam S1's escape clause —
+  // this resolver stays here (the manifest is already open), and the shim
+  // only ever sees its result, never the <seat>.<instance> grammar itself.
   const statuses = hookReceiptStatuses(
     studio,
     manifest.sellae.map((s) => ({ id: s.id, harness: s.harness })),
+    (dirName) => {
+      const resolved = resolveSeat(manifest, dirName);
+      return resolved ? { harness: resolved.seat.harness } : undefined;
+    },
   );
   for (const s of statuses) {
+    if (s.unknown) {
+      console.log(`${s.sella}: unknown (no declared seat resolves this receipts directory)`);
+      continue;
+    }
     const last = s.lastReceipt ? `${s.lastReceipt.sessionId} (started ${s.lastReceipt.startedAt})` : "none";
     console.log(`${s.sella}: harness=${s.harness} last=${last} ${s.dead ? "dead" : "alive"}`);
   }
