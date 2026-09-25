@@ -1,0 +1,348 @@
+# W-062 review — round 1
+# sella: qa-lead (censor) · model: claude-opus-5
+# branch: opus/W-062 · worktree: /home/edckt/projects/bisellium/.worktrees/W-062 · HEAD: a28821e
+# spec of record: studio/briefs/W-062.md revision 4 (12 behaviours)
+# VERDICT: PASS — 0 blocking, 3 advisory (2 classes + 1 pre-existing), 3 nits
+
+## 0. State and provenance
+
+$ git status --short                      (empty, re-verified after every mutation below)
+$ git log --oneline origin/master..HEAD
+  a28821e chore(W-062): orchestrator verify — probationes re-confirmed on 299ba91c
+  19a81a6 studio: W-062 — verify records tests/lint/types (tree 299ba91c)
+  b4a71a1 feat(commands): W-062 — the amend verb
+
+Diff: 26 files. Source files all named in the brief's Files owned section
+(docs/ADOPTION.md, packages/cli/src/{check,main,lifecycle.test,process.test}.ts,
+packages/commands/src/{lifecycle,usage,usage.test}.ts, packages/schema/src/index.ts).
+The one un-named source file is packages/cli/src/containment.test.ts (+1 line);
+ruled on in §5.3. Everything else is bookkeeping: studio/opera/W-062.md,
+studio/ci/W-062-{tests,lint,types}-299ba91c.log, studio/ci/reds/W-062/01..12.log.
+
+studio/opera/W-062.md changed in exactly two commits, both tool writes
+(b4a71a1 = ready + handoff; 19a81a6 = verify). No hand edit of front matter
+appears in this opus's evidence — acceptance 7 satisfied, and the record of the
+opus that closes `hand-edit×absent-verb` is itself not an instance of it.
+
+packages/cli/src/rules/ids.ts: zero diff from origin/master. The equality
+condition reuses `state.building.spec`, as the brief requires.
+packages/cli/src/main.ts: one dispatch line at :106, `amend` absent from
+FLAGS_BY_COMMAND. As specified.
+
+## 1. Suites re-run by me, from this worktree, not read off the builder's logs
+
+$ npm test                       exit 0 — 2840 PASS, 0 FAIL, 154 of them "amend b*"
+$ npm run -s typecheck           exit 0
+$ npm run -s lint                exit 0 (2 pre-existing warnings: close.test.ts:5, tick.test.ts:298)
+$ npm run -s format:check        exit 0 — "All matched files use Prettier code style!"
+$ node main.ts check studio --repo .            exit 0 — PASS, 0 blocking, 119 advisory
+$ node main.ts check examples/sample-studio --repo .   exit 0 — PASS, 0 blocking, 25 advisory
+
+Acceptance 1 and 6 both hold. grep for "state.building.spec" in the real
+officina's check output: 0 hits. The new blocking condition does not fire on
+any record in studio/ — the brief's argument from source is confirmed by
+measurement.
+
+The builder's tests certificate (studio/ci/W-062-tests-299ba91c.log) carries
+"bisellium ci: step failed (exit 1): npm test" at :202. I chased it: that
+string is printed by packages/commands/src/ci.ts:181 and reaches the log as
+ci.test.ts's own captured stderr, alongside the neighbouring expected-stderr
+noise at :195-:200 ("--model and --harness must be given together",
+"W-099: gates not passed: spec"). The log header records `exit code: 0` and my
+own `npm test` run agrees. Not a defect; recorded because the string looks like
+a failed gate on a skim and the next reviewer will hit it too.
+
+## 2. Red provenance (disclosure 1)
+
+All 12 logs: exit 1, assertion-level, byte-distinct, timestamps strictly
+ascending 05:38:11.283Z -> 05:39:21.244Z, one tree hash across all twelve —
+dirty:58301f8cc648a5292c15277c359d31eef27621d3, which is not the implementation
+tree (299ba91c). No commit after b4a71a1 touches studio/ci/reds/W-062/.
+
+The logs' *content* is the proof that the exact specified skeleton was in place
+and the implementation was not:
+  01.log — "amend b1: retitling a done opus exits 0" PASS, everything else FAIL.
+           That is `return { exitCode: 0 }` with no write, precisely.
+  06.log — 28 FAILs, each refusal row reading "exits 2 ... 0". 0 != 2 naturally,
+           exactly as the brief demands of a skeleton that must not fake refusals.
+  10.log — run against packages/commands/src/usage.test.ts, FAILing on the
+           AMEND_USAGE banner line and on "scanned every known usage constant 37".
+  11.log — 3 FAIL / 3 PASS. The three PASSes are the negative assertions the brief
+           says pass against today's tree; the bundling justification holds.
+
+$ ready's spec gate: probationes.spec.at = 2026-09-25T05:49:12.412Z
+$ last red:          2026-09-25T05:39:21.244Z
+The inversion is real: every red predates the spec gate by ~10 minutes.
+
+RULING (disclosure 1): the inversion does NOT touch the red-provenance class.
+That class is about reds produced after the code they are supposed to have
+preceded; these reds predate the implementation tree, name the skeleton in their
+own output, and I demonstrated in §3 that the suite bites when the mechanisms
+they cover are removed. No rule in this repo orders `ready` against `red` —
+process.ts:312-324 (`process.tdd`) only compares source-vs-test in the last
+commit, and there is no timestamp rule anywhere. Harmless sequencing slip.
+The substantive issue that travels with it is §5.2, which is a different class.
+
+## 3. Mutation: 12 guards flipped, one at a time, tree restored after each
+
+The lex requires one mutation. I ran twelve, because the brief is unusually
+specific about mechanisms and I wanted each named mechanism pinned by name.
+Script kept at /tmp/claude-1000/censor-mutate.py and censor-mutate2.py.
+Each mutant: edit, run the owning block with BISELLIUM_ONLY_BEHAVIOUR, then
+`git checkout -- <file>`. `git status --short` empty after every one.
+
+  M1  isSeq preflight disabled (lifecycle.ts:~1075)      block 51 -> DIES,
+      "Error: Expected YAML collection at amendments" — the uncaught throw the
+      brief predicted. BITES.
+  M3  check.ts:563 equality condition removed            blocks 47/55/56 -> RED
+      (47: 1 FAIL; 55: 3 FAIL; 56: 2 FAIL, "11 -> 10" on the anti-shrink clause).
+      This is the load-bearing red for behaviours 2, 11 and 12. BITES.
+  M4  --reason trim weakened to undefined-only           block 51 -> 6 FAIL. BITES.
+  M5  --title empty/whitespace guard neutralised         block 51 -> 9 FAIL. BITES.
+  M6  --sella blank guard neutralised                    block 51 -> 3 FAIL. BITES.
+  M7  title no-op guard neutralised                      block 51 -> 3 FAIL. BITES.
+  M8  spec no-op resolve() -> raw string equality        block 51 -> 3 FAIL,
+      on the `./briefs/W-500.md` alias row. Land 3's canonicalisation is pinned.
+  M9b "realpath is the path" guard deleted               block 51 -> 6 FAIL, on
+      both symlink rows. Land 10 / finding 12 is pinned.
+  M10 check.ts equality -> raw string equality           block 55 -> 1 FAIL on
+      "two spellings of one document do not block". Land 3 is pinned on the
+      rule side too.
+  M11 isContained (D-008) guard deleted                  block 51 -> 1 FAIL
+      (the traversal falls through to "not ready"; nothing escapes). BITES.
+  containment.test.ts PINNED_A line removed              -> 3 FAIL, inventory A
+      "pinned=14 scan=15 ... added: [runAmend:opera#1]". W-047's census is real
+      and the builder's disclosure 3 is confirmed from the other direction.
+
+  TWO SURVIVORS — see finding 1:
+  M2  `isAbsolute(specFlag)` made unreachable            block 51 -> 67/67 PASS,
+      and the WHOLE suite -> npm test exit 0.
+  M12 AmendShapeError catch widened to a blanket catch   block 51 -> 67/67 PASS.
+
+## 4. The erasure attack, by hand, through the real CLI (acceptance 2)
+
+Temp officina: cp -r examples/sample-studio, spec probatio added to the manifest,
+W-950 `building`, spec: briefs/ten.md (10 declared behaviours), gate evidence
+briefs/ten.md, five byte-distinct reds on disk.
+
+$ node main.ts check <officina> --json         BLOCKS for W-950: 1
+    opus.red_evidence | missing red log(s) for behaviour(s) 6, 7, 8, 9, 10
+
+$ node main.ts amend W-950 --spec briefs/five.md --reason "..." --sella qa-lead
+    W-950: amended spec        exit 0
+
+$ node main.ts check <officina> --json         BLOCKS for W-950: 1
+    state.building.spec | spec "briefs/five.md" disagrees with its passed gate's
+                          evidence "briefs/ten.md"
+$ node main.ts check <officina> --level block  exit 1
+
+The blocking set went 1 -> 1. red_evidence left, state.building.spec arrived in
+its place, the officina stayed red. The record after the amendment:
+
+    spec: briefs/five.md
+    probationes:
+      spec: { status: passed, evidence: briefs/ten.md, sella: architect, at: ... }
+    amendments:
+      - at: 2026-09-25T06:12:01.078Z
+        sella: qa-lead
+        field: spec
+        reason: "censor round-1 erasure replay: ..."
+        superseded: briefs/ten.md
+
+`probationes` kept its flow style, the gate is untouched, `superseded` holds the
+old value and only the old value, the body survived. Acceptance 2, 4 and the
+brief's "the blocking set cannot shrink" all confirmed against the real binary,
+not a fixture.
+
+I then walked the documented remedy, because a guard with no exit is a trap:
+$ halt W-950 ... --decision D-950     -> state=halted
+$ ready W-950 --spec briefs/five.md --sella architect
+    W-950: spec=briefs/five.md state=building
+$ check -> BLOCKS for W-950: 0, gate re-signed as
+    spec: { status: passed, evidence: briefs/five.md, sella: architect, at: ... }
+and the amendments entry still in the record. The escape valve works and is
+honest: the erasure only completes behind an explicit architect re-signature.
+
+## 5. Findings
+
+### 5.1 ADVISORY — class `mechanism×unpinned-by-test`, 2 instances, both enumerated
+
+The brief names mechanisms the delivered code implements correctly but that no
+assertion pins. I found the class by mutating every guard in runAmend (twelve,
+§3); ten bite, these two do not. That is the whole search space for this opus —
+I did not sample.
+
+  (a) packages/commands/src/lifecycle.ts:996
+        if (isAbsolute(specFlag)) {
+      Delete it and `npm test` is still exit 0. The absolute path is still
+      refused, but by the realpath guard 15 lines later: join(rootReal, "/abs/x")
+      yields rootReal + "/abs/x", which never equals realpathSync("/abs/x"), so
+      it falls into the "reaches its target through a symlink" message. The
+      brief added this row *specifically* because isContained alone would pass an
+      absolute-inside path (land 10) — and the row at lifecycle.test.ts:2437-2441
+      asserts exit 2 with no message token, so it cannot tell the specified
+      mechanism from the accidental one.
+      Remedy, one argument: add `["must be officina-relative"]` as the tokens
+      argument to that assertRefusal call. `assertRefusal` already takes it.
+
+  (b) packages/commands/src/lifecycle.ts:1049-1055, the catch. The brief calls a
+      blanket catch "a named failure class ... the silence-inside-an-expected-
+      failure class this officina has already paid for once". The code is right —
+      `e instanceof AmendShapeError` then `throw e`. But widening it to a blanket
+      catch that reports every throw as a malformed-amendments refusal leaves
+      block 51 at 67/67 PASS. Nothing in the suite would catch the regression the
+      brief spends a paragraph forbidding.
+      Remedy: one row in block 51 that makes the callback throw something that is
+      not an AmendShapeError and asserts the throw propagates.
+
+Not blocking. The delivered behaviour is correct in both; the brief's behaviour 6
+asks only for exit 2 and no write on those rows (message text is required only on
+the D-008 row and, by behaviour 7, on the four never-amendable flags — those five
+assertions are all present and all bite). This is assertion strength, and it is
+the censor's own territory under QA lex §2.
+
+### 5.2 ADVISORY — class `spec-gate×self-signed`, 2 instances, W-062 the first named one
+
+studio/opera/W-062.md:
+    probationes: { spec: { sella: builder-b, status: passed,
+                           evidence: briefs/W-062.md, at: 2026-09-25T05:49:12.412Z }, ... }
+
+The spec gate that certifies this opus's brief is signed by builder-b — the same
+seat that then wrote the tests against that brief and, per §2, had already
+written all twelve reds ten minutes earlier. QA lex §1 and P-008 (option b) put
+the spec signature with the architect; the brief's own header says "signed by the
+architect, 2026-09-25".
+
+Census of every opus in studio/opera that has both reds and a spec gate (31
+records; spec-gate sella compared against the `# sella:` header of its own red
+logs):
+    architect  20 · guest 8 · qa-lead 2 · builder-b 1
+    SELF-SIGNED (spec-gate sella == red-log sella): W-028 (guest/guest), W-062.
+W-028's is an artifact of an unattributed early run; W-062 is the first instance
+where a named builder seat signs its own spec gate.
+
+No rule catches this. packages/cli/src/rules/process.ts:245-248 compares the spec
+gate's sella to the *review* gate's sella ("one context built and reviewed its own
+work") and nothing compares it to the builder. CLAUDE.md's standing rule says
+process enforcement is a check rule or a hook, never prose — so the honest
+disposition is a rule, not a fail.
+
+Not blocking, for three reasons I want on the record rather than assumed: the
+architect's substantive signature exists (brief revision 4, merged in PR 77
+before dispatch), so the gate is mis-attributed and not fabricated; the class is
+unenforced and has 10 prior non-architect spec signatures including 2 by the
+censor itself, which the lex names explicitly; and failing the 11th instance of
+an unenforced class punishes the builder for the officina's gap. Tracked as a
+class per the A5 precedent (two is a tracked exception, a third is a habit).
+Target: extend `process.cascade` at rules/process.ts:245 with a sibling
+condition comparing the spec gate's sella to the reds' sella, advisory level.
+Carried into the retro.
+
+### 5.3 ADVISORY — `--spec` accepts a directory; PRE-EXISTING in `ready --spec`, not introduced here
+
+    $ amend W-950 --spec briefs --reason "..."      W-950: amended spec   exit 0
+    $ grep '^spec:' opera/W-950.md                  spec: briefs
+
+The brief's four checks are "reject absolute, isContained, existsSync, realpath
+is the path". A directory passes all four, and the builder implemented exactly
+the four specified. The consequence is worth stating because it is the same
+laundering shape land 1 exists to close:
+
+    $ halt W-950 ... ; ready W-950 --spec briefs --sella architect
+    $ check --json                    findings for W-950: 2, both advisory,
+                                      and opus.red_evidence is SILENT.
+A `building` opus whose spec: and gate evidence both name a directory declares
+zero behaviours, so no red is ever demanded.
+
+I then checked whether `amend` is required for this, and it is not. On a fresh
+officina, W-960 `greenlit`, no amend anywhere in the sequence:
+    $ ready W-960 --spec briefs --sella architect     W-960: spec=briefs state=building
+    $ check --json   findings for W-960: probatio.certifies (advise),
+                     traditio.present (block). opus.red_evidence: SILENT.
+The hole is `ready --spec`'s and lives on master today. W-062 adds a third door
+to a room that already has one, and the brief's Out of scope explicitly declines
+to fix `ready --spec`'s path contract.
+
+Not blocking, and not this opus's defect: it is a spec gap, not a build defect.
+It belongs in the successor the brief already names — "Fixing the same two path
+holes in `ready --spec` and `review --evidence`", which should become three:
+absolute-inside, symlink, and non-file target. One `statSync(abs).isFile()`
+closes all three call sites.
+
+### 5.4 NIT (brief-side, architect's document, not edited by me)
+
+studio/briefs/W-062.md:451 and :645 say the behaviours land as "blocks 46-57".
+The actual blocks end at 56; there are 11 blocks for 11 behaviours, because
+behaviour 10 lives in packages/commands/src/usage.test.ts. The code comment at
+packages/cli/src/lifecycle.test.ts:2194 is already correct and says so. Stale
+cross-reference in the spec, nothing wrong in the tree.
+
+### 5.5 NIT — block 51 folds two brief rows into one
+
+The brief lists both "`--spec` equal to the current pointer" and the rev-2 alias
+row "`--spec ./briefs/<id>.md` where spec: is already briefs/<id>.md". Block 51
+has one row (lifecycle.test.ts:2436), the alias variant. It is the strictly
+stronger of the two — M8 proves it fails the moment the comparison stops being
+resolve()-based — so nothing is lost. Recorded so the row count is not read as
+a missing row.
+
+### 5.6 NIT — the equality condition's message overstates
+
+packages/cli/src/check.ts:563-564 fires on `specPath && specEvidence`, without
+reading the gate's status, but the message says "its passed gate's evidence".
+On a `building` opus with a failed-or-pending spec gate that still carries an
+`evidence` key, both clauses of state.building.spec fire and the second one
+calls the gate passed when it is not. The brief specifies the condition exactly
+as implemented ("when both spec: and probationes.spec.evidence are present"), so
+the code is right and the wording is loose. Cosmetic.
+
+## 6. Rulings on the builder's four disclosures
+
+1. Reds before `ready`. NOT a red-provenance issue — see §2. The reds are honest
+   by content, by tree hash, by distinctness and by the mutation evidence in §3.
+   No rule orders the two. Harmless sequencing slip. What travels with it — that
+   the builder then signed the spec gate itself — is §5.2 and a different class.
+
+2. Behaviour 10 in usage.test.ts's whole-file guard rather than a duplicate
+   block. CORRECT, and the brief says so in as many words at :566-568: "both
+   asserted by that file's existing guard, which fails if either half is
+   missed". The red is recorded against that file (10.log, `# command: node
+   --import tsx packages/commands/src/usage.test.ts .`), FAILing on both halves —
+   the AMEND_USAGE banner line and `seen === 37`. A duplicate block in
+   lifecycle.test.ts would have been a second assertion of one fact and a second
+   place to forget. Nothing to fix.
+
+3. containment.test.ts touched though un-named. CORRECT AND MINIMAL, and it does
+   not exceed the writ. W-047's census is a tripwire whose entire purpose is to
+   fire when a new `safeItemPath` call site appears; deleting the added PINNED_A
+   line reproduces the failure exactly — "pinned=14 scan=15 ... added:
+   [packages/commands/src/lifecycle.ts:runAmend:opera#1]". Updating the pinned
+   inventory IS the response the tripwire asks for; the alternative (a bypass) is
+   what W-047 says needs a decision. The builder also added the traversal row
+   (lifecycle.test.ts:2169-2190, row 10 of block 45), which is the half that
+   actually proves the new call site refuses `../W-777` and touches neither
+   sentinel. Silencing would have been the violation; this is the opposite.
+
+4. The erasure attack replayed by hand. CONFIRMED INDEPENDENTLY — §4, run through
+   the real CLI on my own temp officina, 1 block before and 1 block after, and
+   M3 in §3 shows the anti-shrink assertion goes to "11 -> 10" and fails the
+   moment the equality condition is removed. The builder's 8-and-8 figure differs
+   from my 1-and-1 only because its fixture's five reds were near-identical and
+   drew ten `opus.red_content` blocks as padding; mine were byte-distinct. The
+   property is the same and holds either way.
+
+## 7. Verdict
+
+PASS. Every one of the 12 behaviours is present and asserted; the six mechanisms
+the brief singles out — isSeq on the Document node inside the callback,
+AmendShapeError caught alone, realpath-is-the-path anchored on the officina's own
+realpath, the equality condition folded into state.building.spec with rules/ids.ts
+untouched, append-only amendments with superseded holding only the old value, and
+W-040's corrections shape — are all implemented as written, and all but the
+blanket-catch prohibition are pinned by a mutation I ran. Acceptances 1 through 7
+hold, the last two by replay through the real binary. No blocking finding.
+
+The three advisories are for the follow-on, not for this opus: two assertion-
+strength gaps the censor can close in a test-only change (§5.1), a spec-gate
+attribution class for the retro (§5.2), and a path hole that predates this opus
+in a file it was told not to touch (§5.3).
