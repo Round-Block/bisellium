@@ -19,6 +19,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { request as httpRequest, type IncomingMessage } from "node:http";
+import { connect as netConnect } from "node:net";
 import { parse as parseYaml } from "yaml";
 import { runAnswer, runGreenlight, runBudget, runHandoff } from "@bisellium/commands/writes.js";
 import { runTalk } from "@bisellium/commands/talk.js";
@@ -32,6 +33,15 @@ const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-18T17:00:00Z");
 const TEST_TOKEN = "test-token-w016";
+
+// W-057: `BISELLIUM_ONLY_BEHAVIOUR` (comma-separated behaviour numbers)
+// restricts the run to those blocks — same shape as lifecycle.test.ts's own
+// red-capture convention — so `bisellium red --behaviour <n>` can isolate a
+// single behaviour's assertion instead of the whole file's exit code. Unset,
+// every behaviour runs, exactly as before this existed.
+const only = process.env["BISELLIUM_ONLY_BEHAVIOUR"];
+const selected = only ? new Set(only.split(",").map(Number)) : undefined;
+const runs = (behaviour: number): boolean => selected === undefined || selected.has(behaviour);
 
 let failed = 0;
 const check = (name: string, ok: boolean, detail = "") => {
@@ -84,6 +94,9 @@ function freshStudio(tag: string): string {
 interface JsonResponse {
   status: number;
   body: any;
+  /** W-057 behaviour 7: the raw response bytes, for byte-identity assertions
+   *  that `JSON.parse` equality can't make (an added field, e.g. `ref`). */
+  text: string;
 }
 
 async function getJson(base: string, path: string): Promise<JsonResponse> {
@@ -95,7 +108,7 @@ async function getJson(base: string, path: string): Promise<JsonResponse> {
   } catch {
     body = text;
   }
-  return { status: res.status, body };
+  return { status: res.status, body, text };
 }
 
 async function postJson(base: string, path: string, payload: unknown, headers: Record<string, string> = {}): Promise<JsonResponse> {
@@ -111,7 +124,7 @@ async function postJson(base: string, path: string, payload: unknown, headers: R
   } catch {
     body = text;
   }
-  return { status: res.status, body };
+  return { status: res.status, body, text };
 }
 
 /** postJson, but over raw node:http instead of fetch — the only way to set
@@ -140,7 +153,7 @@ function rawPostJson(port: number, path: string, payload: unknown, headers: Reco
           } catch {
             parsedBody = raw;
           }
-          resolvePromise({ status: res.statusCode ?? 0, body: parsedBody });
+          resolvePromise({ status: res.statusCode ?? 0, body: parsedBody, text: raw });
         });
       },
     );
@@ -200,6 +213,130 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<bool
     await new Promise((r) => setTimeout(r, 25));
   }
   return predicate();
+}
+
+// ---------------------------------------------------------------------------
+// W-057: helpers for GHAS alert 3 (stack-trace exposure) closed.
+// ---------------------------------------------------------------------------
+
+/** A `checkStudio` stub that throws with server-detail-carrying text (an
+ *  absolute path, like a real ENOENT would) — reaches `route()`'s catch via
+ *  GET /api/health (store.ts's `health()` calls `checkStudio` directly when
+ *  no `health.json` exists yet, true of every `freshStudio()` fixture). */
+const throwingCheckStudio: StartServerOptions["checkStudio"] = () => {
+  throw new Error("ENOENT: open '/home/secret/studio/bisellium.yml'");
+};
+
+/** Swaps `process.stderr.write` for the duration of `fn` and returns
+ *  whatever was written. apps/server writes its log lines straight to
+ *  `process.stderr.write`, not `console.error` (deliberately — see :861's
+ *  own comment, so an in-flight write's captured console never eats them),
+ *  so lifecycle.test.ts's `console.error`-swapping `withStderr` can't
+ *  observe them; this is the same shape, generalised to the stream this
+ *  module actually uses. */
+async function withServerStderr<T>(fn: () => Promise<T> | T): Promise<{ result: T; stderr: string }> {
+  const orig = process.stderr.write.bind(process.stderr);
+  let stderr = "";
+  process.stderr.write = ((chunk: unknown) => {
+    stderr += typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString("utf8");
+    return true;
+  }) as typeof process.stderr.write;
+  try {
+    const result = await fn();
+    return { result, stderr };
+  } finally {
+    process.stderr.write = orig;
+  }
+}
+
+/** Opens a raw TCP connection to `port`, writes valid headers for a POST
+ *  with a `Content-Length` well beyond the bytes actually sent, then
+ *  destroys the socket mid-body (never `.end()`s it) — this is what makes
+ *  `readJsonBody`'s `req.on("error", reject)` (`:166`) fire with Node's own
+ *  unwrapped `Error: aborted`, the raw request-stream error behaviour 6
+ *  exercises. Verified empirically: a clean `.end()` (FIN) instead trips
+ *  Node's *own* `clientError` "400 Bad Request" — a different, unrelated
+ *  mechanism this opus has no business asserting on — so this must be a
+ *  hard `.destroy()`, never a graceful close. */
+function induceRequestStreamError(port: number, path: string, token: string): Promise<void> {
+  return new Promise((resolvePromise) => {
+    const sock = netConnect(port, "127.0.0.1", () => {
+      const headers = [`POST ${path} HTTP/1.1`, "Host: 127.0.0.1", "Content-Type: application/json", `X-Bisellium-Token: ${token}`, "Content-Length: 1000", "", ""].join("\r\n");
+      sock.write(headers);
+      sock.write('{"opus":"W-002"'); // far short of the declared 1000 bytes
+      setTimeout(() => {
+        sock.destroy();
+        resolvePromise();
+      }, 150);
+    });
+    sock.on("error", () => resolvePromise()); // a client-side ECONNRESET etc. here is expected, not a test failure
+  });
+}
+
+/** Finds every top-level call to `fnName(...)` in `source`, matching parens
+ *  by depth (not a regex up to the first `)`, which a nested call like
+ *  `store.api.officina()` would close early). ponytail: assumes no `(`/`)`
+ *  characters live inside a string/template literal in an argument list —
+ *  true of every call site in http.ts today, verified by reading the file;
+ *  a source pin over a small, human-read file, not a general JS parser. */
+function findCallArgs(source: string, fnName: string): { start: number; end: number; args: string }[] {
+  const calls: { start: number; end: number; args: string }[] = [];
+  const re = new RegExp(`\\b${fnName}\\s*\\(`, "g");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(source))) {
+    const argStart = m.index + m[0].length;
+    let depth = 1;
+    let i = argStart;
+    for (; i < source.length && depth > 0; i++) {
+      if (source[i] === "(") depth++;
+      else if (source[i] === ")") depth--;
+    }
+    calls.push({ start: m.index, end: i, args: source.slice(argStart, i - 1) });
+  }
+  return calls;
+}
+
+/** The span `[start, end)` of `function sendError(...) { ... }`'s own
+ *  declaration in `source`, brace-depth matched from its opening `{` to the
+ *  matching `}` — `{ start: -1, end: -1 }` (matches nothing) when the
+ *  function doesn't exist yet, which is exactly today's tree. */
+function sendErrorSpan(source: string): { start: number; end: number } {
+  const idx = source.indexOf("function sendError(");
+  if (idx === -1) return { start: -1, end: -1 };
+  let depth = 0;
+  let started = false;
+  let i = idx;
+  for (; i < source.length; i++) {
+    if (source[i] === "{") {
+      depth++;
+      started = true;
+    } else if (source[i] === "}") {
+      depth--;
+      if (started && depth === 0) {
+        i++;
+        break;
+      }
+    }
+  }
+  return { start: idx, end: i };
+}
+
+/** Behaviour 3's status-agnostic source pin: every `sendJson`/`sendText`
+ *  call whose argument list contains an `error:` key, outside the one call
+ *  lexically inside `sendError`'s own declaration — identified by position
+ *  (the span above), never by matching the shape of the call's argument,
+ *  which a second site could imitate. Returns the violations (empty when
+ *  the invariant holds). */
+function findErrorKeyResponseViolations(source: string): { start: number; snippet: string }[] {
+  const span = sendErrorSpan(source);
+  const calls = [...findCallArgs(source, "sendJson"), ...findCallArgs(source, "sendText")];
+  const violations: { start: number; snippet: string }[] = [];
+  for (const c of calls) {
+    if (!/\berror\s*:/.test(c.args)) continue;
+    const insideSendError = span.start !== -1 && c.start >= span.start && c.end <= span.end;
+    if (!insideSendError) violations.push({ start: c.start, snippet: c.args.slice(0, 80) });
+  }
+  return violations;
 }
 
 // ---------------------------------------------------------------------------
@@ -959,6 +1096,275 @@ async function main(): Promise<void> {
       check("inbox body: byte-identical to the front matter body (newlines intact)", row?.body === bigBody, String(row?.body).slice(0, 200));
       check("inbox body: subject is present and derived (no subject: key on this fixture)", typeof row?.subject === "string" && row.subject.length > 0, JSON.stringify(row?.subject));
     } finally {
+      await s.close();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // W-057 — GHAS alert 3 (js/stack-trace-exposure) closed: the 500 body
+  // carries nothing from the exception, the exception reaches the log
+  // correlated by `ref`, the choke point is closed, malformed JSON answers a
+  // constant, two 500s get two different refs, a request-stream error is
+  // never narrated to the client, and every error body stays byte-identical.
+  // ---------------------------------------------------------------------------
+
+  // ---- behaviour 1: a 500 body carries nothing from the exception ---------
+  if (runs(1)) {
+    const dir = freshStudio("w057-b1");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, checkStudio: throwingCheckStudio }));
+    try {
+      const base = `http://127.0.0.1:${s.port}`;
+      const res = await fetch(`${base}/api/health`);
+      const text = await res.text();
+      let body: any;
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = undefined;
+      }
+      check("b1: status 500", res.status === 500, String(res.status));
+      check("b1: body.error === 'internal error' exactly", body?.error === "internal error", JSON.stringify(body));
+      check("b1: body.ref is a non-empty string", typeof body?.ref === "string" && body.ref.length > 0, JSON.stringify(body));
+      check("b1: raw body carries no ENOENT", !text.includes("ENOENT"), text);
+      check("b1: raw body carries no /home/secret", !text.includes("/home/secret"), text);
+      check("b1: raw body carries no the word Error", !text.includes("Error"), text);
+    } finally {
+      await s.close();
+    }
+  }
+
+  // ---- behaviour 2: the exception reaches the log, correlated by ref ------
+  if (runs(2)) {
+    const dir = freshStudio("w057-b2");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, checkStudio: throwingCheckStudio }));
+    try {
+      const base = `http://127.0.0.1:${s.port}`;
+      const { result: res, stderr } = await withServerStderr(() => fetch(`${base}/api/health`));
+      const body: any = await res.json().catch(() => undefined);
+      const ref = body?.ref;
+      check("b2: body carries a ref", typeof ref === "string" && ref.length > 0, JSON.stringify(body));
+      check("b2: stderr contains the same ref as the body", typeof ref === "string" && stderr.includes(ref), stderr);
+      check("b2: stderr contains the original message", stderr.includes("ENOENT") && stderr.includes("/home/secret"), stderr);
+      check("b2: stderr contains a stack", /\bat .+\(?.*:\d+:\d+/.test(stderr) || / {2,}at /.test(stderr), stderr);
+    } finally {
+      await s.close();
+    }
+  }
+
+  // ---- behaviour 3: the choke point exists, is closed, and cannot be
+  // widened. Halves 1-2 (ErrorCode's closedness, the synthetic-edit
+  // typecheck failure) are compile-time — enforced by `npm run -s typecheck`
+  // over http.ts's own `@ts-expect-error` line, not by anything runnable
+  // here (a passing test file proves nothing about the compiler). Half 3,
+  // the status-agnostic source pin, is the one runtime-checkable half. -----
+  if (runs(3)) {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const httpTsPath = resolve(here, "..", "src", "http.ts");
+    const source = readFileSync(httpTsPath, "utf8");
+    const violations = findErrorKeyResponseViolations(source);
+    check(
+      "b3: no sendJson/sendText call outside sendError's own body carries an object with an error key",
+      violations.length === 0,
+      JSON.stringify(violations),
+    );
+
+    // Positive control: the scanner must catch a second such call — proving
+    // the pin isn't vacuously green (revision 4's "the pin forbade its own
+    // choke point" nit, guarded against here rather than just fixed once).
+    const synthetic = [
+      "function sendError(res, status, code, ref) {",
+      "  sendJson(res, status, ref === undefined ? { error: code } : { error: code, ref });",
+      "}",
+      "function other(res) {",
+      '  sendJson(res, 400, { error: "sneaky" });',
+      "}",
+    ].join("\n");
+    const controlViolations = findErrorKeyResponseViolations(synthetic);
+    check("b3 positive control: a second sendJson(..., {error}) outside sendError fails the pin", controlViolations.length === 1, JSON.stringify(controlViolations));
+
+    // The pin's own choke point must NOT flag itself.
+    const cleanSynthetic = ["function sendError(res, status, code, ref) {", "  sendJson(res, status, ref === undefined ? { error: code } : { error: code, ref });", "}"].join("\n");
+    check("b3: sendError's own call never flags itself", findErrorKeyResponseViolations(cleanSynthetic).length === 0, JSON.stringify(findErrorKeyResponseViolations(cleanSynthetic)));
+  }
+
+  // ---- behaviour 4: malformed JSON answers the constant --------------------
+  if (runs(4)) {
+    const dir = freshStudio("w057-b4");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    try {
+      const base = `http://127.0.0.1:${s.port}`;
+      const res = await fetch(`${base}/api/greenlight`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-bisellium-token": TEST_TOKEN },
+        body: "{",
+      });
+      const text = await res.text();
+      let body: any;
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = undefined;
+      }
+      check("b4: status 400", res.status === 400, String(res.status));
+      check("b4: error is exactly 'invalid JSON body' — no V8 position text", body?.error === "invalid JSON body", JSON.stringify(body));
+    } finally {
+      await s.close();
+    }
+  }
+
+  // ---- behaviour 5: two 500s get two different refs, both in the log ------
+  if (runs(5)) {
+    const dir = freshStudio("w057-b5");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW, checkStudio: throwingCheckStudio }));
+    try {
+      const base = `http://127.0.0.1:${s.port}`;
+      const { result: [r1, r2], stderr } = await withServerStderr(async () => [await getJson(base, "/api/health"), await getJson(base, "/api/health")] as const);
+      const ref1 = r1.body?.ref;
+      const ref2 = r2.body?.ref;
+      check("b5: both responses are 500", r1.status === 500 && r2.status === 500, `${r1.status} ${r2.status}`);
+      check("b5: both refs are non-empty strings", typeof ref1 === "string" && ref1.length > 0 && typeof ref2 === "string" && ref2.length > 0, JSON.stringify([ref1, ref2]));
+      check("b5: the two refs differ", ref1 !== ref2, JSON.stringify([ref1, ref2]));
+      check("b5: both refs appear in the log", typeof ref1 === "string" && typeof ref2 === "string" && stderr.includes(ref1) && stderr.includes(ref2), stderr);
+    } finally {
+      await s.close();
+    }
+  }
+
+  // ---- behaviour 6: a request-stream error is not narrated to the client --
+  if (runs(6)) {
+    const dir = freshStudio("w057-b6");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    try {
+      const { stderr } = await withServerStderr(async () => {
+        await induceRequestStreamError(s.port, "/api/greenlight", TEST_TOKEN);
+        await new Promise((r) => setTimeout(r, 200)); // let the error handler + log land
+      });
+      // Honest per the brief: the client destroyed its own socket, so no
+      // response is observable at all here — the assertion is on the log
+      // alone, which is the property that actually matters ("the message
+      // never becomes a response body"; an undeliverable response satisfies
+      // it just as well as a delivered {error:"internal error"} would).
+      check("b6: the log shows the 500 path (ref + 'aborted'), never a 400 narrating the stream error", /bisellium serve: 500 \S+ aborted/.test(stderr), stderr);
+      check("b6: the log carries a stack", /\bat .+\(?.*:\d+:\d+/.test(stderr) || / {2,}at /.test(stderr), stderr);
+
+      const health = await getJson(`http://127.0.0.1:${s.port}`, "/api/officina");
+      check("b6: the server survives the induced stream error", health.status === 200, String(health.status));
+    } finally {
+      await s.close();
+    }
+  }
+
+  // ---- behaviour 7: every one of the seventeen error bodies is
+  // byte-identical to today's (nineteen rows: :581 answers three). ----------
+  if (runs(7)) {
+    const dir = freshStudio("w057-b7");
+    const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
+    const base = `http://127.0.0.1:${s.port}`;
+    const opened: ReturnType<typeof connectSSE>[] = [];
+    try {
+      const rows: { label: string; status: number; body: string; run: () => Promise<JsonResponse> }[] = [
+        { label: ":451 assets not found", status: 404, body: '{"error":"not found"}', run: () => getJson(base, "/assets/does-not-exist.js") },
+        { label: ":801 unrouted path", status: 404, body: '{"error":"not found"}', run: () => getJson(base, "/api/totally-unknown-route") },
+        { label: ":609 unknown opus", status: 404, body: '{"error":"unknown opus"}', run: () => getJson(base, "/api/opus/NOPE") },
+        { label: ":637 unknown sella", status: 404, body: '{"error":"unknown sella"}', run: () => getJson(base, "/api/timeline/nobody") },
+        {
+          label: ":581 no token",
+          status: 401,
+          body: '{"error":"missing or invalid X-Bisellium-Token"}',
+          run: () => postJson(base, "/api/greenlight", { opus: "W-002" }, { "x-bisellium-token": "" }),
+        },
+        {
+          label: ":581 bad Origin",
+          status: 403,
+          body: '{"error":"cross-origin writes are refused"}',
+          run: () => postJson(base, "/api/greenlight", { opus: "W-002" }, { origin: "https://evil.test" }),
+        },
+        {
+          label: ":581 wrong Content-Type",
+          status: 415,
+          body: '{"error":"Content-Type must be application/json"}',
+          run: () => postJson(base, "/api/greenlight", { opus: "W-002" }, { "content-type": "text/plain" }),
+        },
+        { label: ":652 item combined with since", status: 400, body: '{"error":"item cannot be combined with since"}', run: () => getJson(base, "/api/events?item=x&since=1") },
+        { label: ":686 answer missing fields", status: 400, body: '{"error":"petitio and reply are required strings"}', run: () => postJson(base, "/api/answer", {}) },
+        { label: ":701 greenlight missing opus", status: 400, body: '{"error":"opus is required"}', run: () => postJson(base, "/api/greenlight", {}) },
+        { label: ":717 budget missing fields", status: 400, body: '{"error":"period, collegium and tokens are required"}', run: () => postJson(base, "/api/budget", {}) },
+        { label: ":733 handoff missing fields", status: 400, body: '{"error":"opus, sella and next are required"}', run: () => postJson(base, "/api/handoff", {}) },
+        { label: ":749 talk missing fields", status: 400, body: '{"error":"sella and message are required"}', run: () => postJson(base, "/api/talk", {}) },
+        {
+          label: ":786 delegate missing fields",
+          status: 400,
+          body: '{"error":"either {sella, model} or {munus, tier} are required"}',
+          run: () => postJson(base, "/api/delegate", {}),
+        },
+        { label: ":184 non-object JSON body", status: 400, body: '{"error":"request body must be a JSON object"}', run: () => postJson(base, "/api/greenlight", []) },
+      ];
+
+      for (const row of rows) {
+        const r = await row.run();
+        check(`b7 ${row.label}: status ${row.status}`, r.status === row.status, String(r.status));
+        check(`b7 ${row.label}: raw body byte-identical to today's`, r.text === row.body, JSON.stringify(r.text));
+        check(`b7 ${row.label}: no ref field (500-only)`, !r.text.includes('"ref"'), r.text);
+      }
+
+      // :499 too many /api/live clients — needs its own client burst.
+      {
+        for (let i = 0; i < 51; i++) opened.push(connectSSE(s.port));
+        await new Promise((r) => setTimeout(r, 300));
+        const r = await getJson(base, "/api/live");
+        check("b7 :499 too many /api/live clients: status 503", r.status === 503, String(r.status));
+        check("b7 :499 too many /api/live clients: raw body byte-identical to today's", r.text === '{"error":"too many /api/live clients"}', JSON.stringify(r.text));
+        check("b7 :499 too many /api/live clients: no ref field (500-only)", !r.text.includes('"ref"'), r.text);
+      }
+
+      // :181 oversized body (413) — a real 3MB body, same as the pre-W-057 test above.
+      {
+        const res = await fetch(`${base}/api/greenlight`, {
+          method: "POST",
+          headers: { "content-type": "application/json", "x-bisellium-token": TEST_TOKEN },
+          body: JSON.stringify({ opus: "W-BIG", pad: "x".repeat(3 * 1024 * 1024) }),
+        });
+        const text = await res.text();
+        check("b7 :181 oversized body: status 413", res.status === 413, String(res.status));
+        check("b7 :181 oversized body: raw body byte-identical to today's", text === '{"error":"request body too large"}', JSON.stringify(text));
+        check("b7 :181 oversized body: no ref field (500-only)", !text.includes('"ref"'), text);
+      }
+
+      // :671 the /api/_poll test-only hook's 404, reachable only with
+      // NODE_ENV not "test" — toggled here and restored immediately after,
+      // sequentially (no other block runs concurrently with this one).
+      {
+        const prevNodeEnv = process.env["NODE_ENV"];
+        process.env["NODE_ENV"] = "production";
+        let r: JsonResponse;
+        try {
+          r = await postJson(base, "/api/_poll", {});
+        } finally {
+          process.env["NODE_ENV"] = prevNodeEnv;
+        }
+        check("b7 :671 /api/_poll outside test env: status 404", r.status === 404, String(r.status));
+        check("b7 :671 /api/_poll outside test env: raw body byte-identical to today's", r.text === '{"error":"not found"}', JSON.stringify(r.text));
+        check("b7 :671 /api/_poll outside test env: no ref field (500-only)", !r.text.includes('"ref"'), r.text);
+      }
+
+      // :441 forbidden — unreachable via any client request: `new URL()`
+      // (used to derive `pathname` before `serveStatic` ever sees it)
+      // normalises dot-segments per the WHATWG URL spec, verified above,
+      // so a request path can never carry a literal ".." past that point —
+      // not this opus's gap to close, but "say so in the evidence rather
+      // than dropping it silently" (the brief's own instruction). The
+      // closest reachable proxy is `isPathContained` itself, exercised
+      // directly (it's exported precisely because tests need to reach it).
+      {
+        const contained = isPathContained("/a/b/web-dist", "/a/b/web-dist-evil/x");
+        check(
+          "b7 :441 forbidden — UNREACHABLE via any client request (WHATWG URL normalises '..' before serveStatic sees pathname, verified); isPathContained() itself still correctly refuses a sibling-prefix escape",
+          contained === false,
+          String(contained),
+        );
+      }
+    } finally {
+      for (const c of opened) c.close();
       await s.close();
     }
   }

@@ -1,0 +1,535 @@
+# behaviour: 7
+# command: node scripts/w057-behaviour7-mutation-check.mjs
+# exit: 1
+# at: 2026-09-25T15:45:07.342Z
+# sella: builder-c
+# tree: dirty:0bc65b48b76430f9484316d86a742f76fc8305f6
+
+GET /api/officina 200 6ms
+GET /api/inbox 200 9ms
+GET /api/aerarium 200 6ms
+GET /api/opus/W-004 200 1ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 3ms
+GET /api/events?limit=-5 200 1ms
+GET /api/timeline/builder-1?limit=-5 200 2ms
+GET /api/events?limit=0 200 1ms
+GET /api/timeline/builder-1?limit=0 200 2ms
+GET /api/events?limit=99999 200 0ms
+GET /api/timeline/builder-1?limit=99999 200 2ms
+GET /api/events?limit=abc 200 1ms
+GET /api/timeline/builder-1?limit=abc 200 2ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 0ms
+POST /api/greenlight 200 7ms
+POST /api/greenlight 200 4ms
+POST /api/greenlight 200 5ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 1ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 0ms
+POST /api/greenlight 400 1ms
+POST /api/greenlight 200 5ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 413 2ms
+POST /api/greenlight 200 10ms
+GET /api/opus/W-007 200 1ms
+POST /api/_poll 200 29ms
+GET /api/events 200 1ms
+POST /api/_poll 200 24ms
+GET /api/events 200 1ms
+GET /api/events 200 0ms
+POST /api/_poll 404 0ms
+GET /api/events 200 1ms
+GET /api/events 200 1ms
+GET /api/live 200 100ms
+POST /api/_poll 200 24ms
+GET /api/officina 200 3ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 266ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 262ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+POST /api/talk 200 108ms
+POST /api/talk 200 163ms
+POST /api/greenlight 200 0ms
+POST /api/delegate 200 6ms
+POST /api/delegate 200 3ms
+POST /api/delegate 200 4ms
+POST /api/delegate 200 5ms
+GET /api/officina 200 2ms
+GET /api/officina 200 1ms
+GET /api/models 200 9ms
+GET /api/models 200 2ms
+GET /api/models 200 2ms
+GET /api/models 200 2ms
+GET /api/models 200 1ms
+GET /api/models 200 3003ms
+GET /api/models 200 1ms
+GET /api/inbox 200 4ms
+GET /assets/does-not-exist.js 404 1ms
+GET /api/totally-unknown-route 404 0ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 415 0ms
+GET /api/events?item=x&since=1 400 0ms
+POST /api/answer 400 0ms
+POST /api/greenlight 400 0ms
+POST /api/budget 400 0ms
+POST /api/handoff 400 0ms
+POST /api/talk 400 0ms
+POST /api/delegate 400 0ms
+POST /api/greenlight 400 0ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+POST /api/greenlight 413 2ms
+POST /api/_poll 404 0ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 309ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+PASS  module graph: apps/server/src/index.ts never reaches @bisellium/cli or @bisellium/commands []
+PASS  index: .bisellium/index/index.db exists after startServer /tmp/claude-1000/bisellium-server-main-K4ghcV/.bisellium/index/index.db
+PASS  index: store.query.opera() (the real Index) returns the studio's opera ["W-001","W-002","W-003","W-004","W-005","W-006","W-007"]
+PASS  officina: 200                                        200
+PASS  officina: 5 collegia                                 [{"id":"production","name":"Production","magister":"producer","fallback":"eng-lead","autonomy":"L1"},{"id":"design","name":"Design","magister":"architect","autonomy":"L1"},{"id":"engineering","name":"Engineering","magister":"eng-lead","autonomy":"L1"},{"id":"art","name":"Art","magister":"art-lead","autonomy":"L1"},{"id":"qa","name":"QA","magister":"qa-lead","autonomy":"L1"}]
+PASS  events-log: no stray events.jsonl at studio root     /tmp/claude-1000/bisellium-server-main-K4ghcV/events.jsonl
+PASS  events-log: real log exists at .bisellium/events.jsonl /tmp/claude-1000/bisellium-server-main-K4ghcV/.bisellium/events.jsonl
+PASS  inbox: 200                                           200
+PASS  inbox: lists W-004                                   ["W-004"]
+PASS  inbox: lists A-1                                     ["A-1"]
+PASS  aerarium: 200                                        200
+PASS  aerarium: engineering posture conserve               {"collegium":"engineering","period":"2026-W38","allowance":{"tokens":3000000},"burn":{"tokens":1880000},"posture":"conserve"}
+PASS  opus/W-004: 200                                      200
+PASS  opus/W-004: has traditio                             {"sella":"builder-1","stage":"review","next":"await patron call","blocked_on":"patron","at":"2026-09-17T09:58:00Z"}
+PASS  opus/NOPE: 404                                       404
+PASS  opus/NOPE: {error}                                   {"error":"unknown opus"}
+PASS  timeline/nobody: 404                                 404
+PASS  timeline/nobody: {error}                             {"error":"unknown sella"}
+PASS  events limit=-5: never throws (200)                  200
+PASS  timeline limit=-5: never throws (200)                200
+PASS  events limit=0: never throws (200)                   200
+PASS  timeline limit=0: never throws (200)                 200
+PASS  events limit=99999: never throws (200)               200
+PASS  timeline limit=99999: never throws (200)             200
+PASS  events limit=abc: never throws (200)                 200
+PASS  timeline limit=abc: never throws (200)               200
+PASS  auth: valid token + Origin -> 403                    403
+PASS  auth: no Origin, no token -> 401                     401
+PASS  auth: token + text/plain -> 415                      415
+PASS  auth: Origin (absent) -> 200 (auth passes)           200
+PASS  auth: Origin http://127.0.0.1:43665 -> 200 (auth passes) 200
+PASS  auth: Origin http://localhost:43665 -> 200 (auth passes) 200
+PASS  auth: the accepted-origin block — W-002.md unchanged 
+PASS  auth: Origin (the literal string null) -> 403        403
+PASS  auth: Origin (right host, wrong port) -> 403         403
+PASS  auth: Origin (https instead of http) -> 403          403
+PASS  auth: Origin (the ::1 loopback form) -> 403          403
+PASS  auth: Origin (a foreign host) -> 403                 403
+PASS  auth: the 403 block — W-002.md unchanged             
+PASS  auth: valid Origin + wrong token -> 401              401
+PASS  auth: valid Origin + text/plain -> 415               415
+PASS  auth: valid Origin + missing field -> 400            400
+PASS  auth: the token/content-type/body block — W-002.md unchanged 
+PASS  auth: Host: evil.example, no Origin -> 200 (no trust from Host) 200
+PASS  auth: X-Forwarded-Host spoofed + foreign Origin -> still 403 403
+PASS  auth: the Host/X-Forwarded-Host block — W-002.md unchanged 
+PASS  body cap: oversized POST answers 413                 413
+PASS  body cap: 413 body is real JSON with an error        {"error":"request body too large"}
+PASS  greenlight: 200                                      200
+PASS  greenlight: ok true, exitCode 0                      {"ok":true,"exitCode":0,"output":"W-007: greenlit"}
+PASS  opus/W-007: state greenlit                           {"id":"W-007","title":"Seasonal event framework","kind":"feature","collegium":"engineering","state":"greenlit","probationes":{}}
+PASS  _poll: absorbs the greenlight diff                   {"ok":true,"ingested":1}
+PASS  sse setup: W-002's state line found and replaced     
+PASS  _poll: 200                                           {"ok":true,"ingested":1}
+PASS  events: a write made after start is reflected without a restart 83 -> 84
+PASS  sse: exactly one state_changed event for W-002       [{"id":"server:42","name":"workflow.state_changed","ts":"2026-09-18T17:00:00.000Z","projectId":"sample-studio","attrs":{"workflow.item.id":"W-002","workflow.department":"engineering","workflow.state.from":"building","workflow.state.to":"verifying","workflow.source":"server","workflow.source.seq":42,"workflow.time.derived":true}}]
+PASS  events: seq is present on every event                
+PASS  events: seq strictly increasing and non-colliding across interleaved sources [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83]
+PASS  _poll: 404 outside NODE_ENV=test                     404
+PASS  close: port released                                 
+PASS  events-log: greenlight's own cli event visible after restart ["workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.gate_evaluated","workflow.actor_assigned","workflow.item_appeared","workflow.item_appeared","workflow.attention","workflow.attention","workflow.digest","workflow.digest","workflow.digest","workflow.digest","workflow.digest","provider.status","provider.status","workflow.state_changed","workflow.state_changed","workflow.greenlight"]
+PASS  events-log: restart does not replay item_appeared events again before=14 after=14
+PASS  close: resolves within 3s with an open SSE client connected elapsedMs=0
+PASS  close: resolves within 3s after the SSE client aborted elapsedMs=0
+PASS  sse: exactly one store 'event' listener with three clients connected 1
+PASS  sse: fan-out reaches every connected client from the single listener [1,1,1]
+PASS  sse: an errored client is dropped without taking the server down 200
+PASS  sse: a client past MAX_SSE_CLIENTS gets 503          503
+PASS  containment: a sibling dir sharing WEB_DIST's name as a prefix is rejected /home/edckt/projects/bisellium/.worktrees/W-057/apps/web/dist vs /home/edckt/projects/bisellium/.worktrees/W-057/apps/web/dist-evil/x
+PASS  containment: the same sibling path WOULD have passed a bare startsWith() (the bug this replaces) /home/edckt/projects/bisellium/.worktrees/W-057/apps/web/dist-evil/x
+PASS  containment: a real file under WEB_DIST is accepted  /home/edckt/projects/bisellium/.worktrees/W-057/apps/web/dist/assets/app.js
+PASS  talk overlap: request A (message 'one') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: ONE"}
+PASS  talk overlap: request B (message 'two') gets its own reply {"ok":true,"exitCode":0,"output":"FAKE: TWO"}
+PASS  talk overlap: console.log restored to the real console afterwards 
+PASS  talk overlap: console.error restored to the real console afterwards 
+PASS  stub runner (exit 3): HTTP 200, not a 4xx            200
+PASS  stub runner (exit 3): ok:false, exitCode:3           {"ok":false,"exitCode":3,"output":""}
+PASS  delegate (patron over seeded role): HTTP 200, ok:true {"ok":true,"exitCode":0,"output":"sella \"builder-1\": model claude-sonnet-5 -> gpt-5.6-sol"}
+PASS  delegate (patron over seeded role): recorded role is patron {"role":"patron","at":"2026-09-25T15:45:09.472Z","action":"delegate","target":{"sella":"builder-1"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"}
+PASS  delegate (patron over seeded role): BISELLIUM_ROLE restored after success builder-a
+PASS  delegate (rejected): refused, not a 4xx              {"ok":false,"exitCode":2,"output":"unknown sella \"no-such-sella\" — not declared in bisellium.yml"}
+PASS  delegate (rejected): BISELLIUM_ROLE restored after a rejection too builder-a
+PASS  delegate lock: overlapping call A succeeds           {"ok":true,"exitCode":0,"output":"sella \"builder-1\": model claude-sonnet-5 -> gpt-5.6-sol"}
+PASS  delegate lock: overlapping call B succeeds           {"ok":true,"exitCode":0,"output":"munus \"audit\": tier mid -> high"}
+PASS  delegate lock: two well-formed timeline lines        [{"role":"patron","at":"2026-09-25T15:45:09.516Z","action":"delegate","target":{"sella":"builder-1"},"from":"claude-sonnet-5","to":"gpt-5.6-sol"},{"role":"patron","at":"2026-09-25T15:45:09.521Z","action":"delegate","target":{"munus":"audit"},"from":"mid","to":"high"}]
+PASS  delegate lock: the manifest is still a parseable single document 
+PASS  officina: tiers matches the fixture                  [{"id":"fast","model":"gpt-5.6-luna"},{"id":"mid","model":"gpt-5.6-terra"},{"id":"high","model":"gpt-5.6-sol"},{"id":"escalation","model":"gpt-6-astra"},{"id":"build","model":"claude-sonnet-5"},{"id":"review","model":"claude-opus-5"}]
+PASS  officina: munera matches the fixture                 [{"id":"aggregation","tier":"fast"},{"id":"audit","tier":"mid"},{"id":"prereview","tier":"mid"},{"id":"research","tier":"high"},{"id":"redteam","tier":"high"},{"id":"escalation","tier":"escalation"},{"id":"build","tier":"build"},{"id":"spec","tier":"review"},{"id":"review","tier":"review"}]
+PASS  officina: models absent when models.json is absent   
+PASS  officina: sellae rows still carry kind/model/harness [{"id":"producer","collegium":"production","kind":"orchestrator","model":"claude-opus-5"},{"id":"architect","collegium":"design","kind":"agent","model":"claude-opus-5"},{"id":"eng-lead","collegium":"engineering","kind":"agent","model":"claude-opus-5"},{"id":"builder-1","collegium":"engineering","kind":"agent","model":"claude-sonnet-5"},{"id":"builder-2","collegium":"engineering","kind":"agent","model":"claude-sonnet-5"},{"id":"art-lead","collegium":"art","kind":"agent","model":"gpt-6-astra"},{"id":"qa-lead","collegium":"qa","kind":"agent","model":"claude-sonnet-5"}]
+PASS  officina: an unparseable models.json degrades to absent, still 200 
+PASS  models: a newly listed id appears as unverified      [{"id":"gpt-5.6-sol","state":"available","harness":"codex"},{"id":"gpt-fresh","harness":"codex","state":"unverified"}]
+PASS  models: a recorded, still-listed id keeps its recorded state [{"id":"gpt-5.6-sol","state":"available","harness":"codex"},{"id":"gpt-fresh","harness":"codex","state":"unverified"}]
+PASS  models: two calls inside the TTL invoke the listing once 1
+PASS  models: a call AFTER the TTL refreshes the listing   2
+PASS  models: a record id the listing omits is flagged withdrawn (kept, downgraded to unverified) [{"id":"gpt-gone","state":"unverified","harness":"codex"}]
+PASS  models: a failing listing still answers 200 from the record alone [{"id":"gpt-5.6-sol","state":"available","harness":"codex"}]
+PASS  models: the dropdown is not emptied                  [{"id":"gpt-5.6-sol","state":"available","harness":"codex"}]
+PASS  models: the record's state is untouched by a failed listing (not downgraded) [{"id":"gpt-5.6-sol","state":"available","harness":"codex"}]
+PASS  models: a hung listing still answers 200 past its timeout []
+PASS  models: no route runs a vendor turn                  status=200 listingCalls=1
+PASS  inbox body: W076-BODY is present                     ["A-1","W076-BODY"]
+PASS  inbox body: at least 2KB                             2770
+PASS  inbox body: byte-identical to the front matter body (newlines intact) **W-064's red gate: D-024's kill arm has fired, and only you can rule.**
+
+The builder disclosed that behaviours 7-9's reds were recorded by the
+implement then revert-to-skeleton then record then resto
+PASS  inbox body: subject is present and derived (no subject: key on this fixture) "W-064's red gate: D-024's kill arm has fired, and only you can rule."
+PASS  b7 :451 assets not found: status 404                 404
+PASS  b7 :451 assets not found: raw body byte-identical to today's "{\"error\":\"not found\"}"
+PASS  b7 :451 assets not found: no ref field (500-only)    {"error":"not found"}
+PASS  b7 :801 unrouted path: status 404                    404
+PASS  b7 :801 unrouted path: raw body byte-identical to today's "{\"error\":\"not found\"}"
+PASS  b7 :801 unrouted path: no ref field (500-only)       {"error":"not found"}
+PASS  b7 :609 unknown opus: status 404                     404
+PASS  b7 :609 unknown opus: raw body byte-identical to today's "{\"error\":\"unknown opus\"}"
+PASS  b7 :609 unknown opus: no ref field (500-only)        {"error":"unknown opus"}
+PASS  b7 :637 unknown sella: status 404                    404
+PASS  b7 :637 unknown sella: raw body byte-identical to today's "{\"error\":\"unknown sella\"}"
+PASS  b7 :637 unknown sella: no ref field (500-only)       {"error":"unknown sella"}
+PASS  b7 :581 no token: status 401                         401
+PASS  b7 :581 no token: raw body byte-identical to today's "{\"error\":\"missing or invalid X-Bisellium-Token\"}"
+PASS  b7 :581 no token: no ref field (500-only)            {"error":"missing or invalid X-Bisellium-Token"}
+PASS  b7 :581 bad Origin: status 403                       403
+FAIL  b7 :581 bad Origin: raw body byte-identical to today's "{\"error\":\"cross-origin writes are refused (mutated)\"}"
+PASS  b7 :581 bad Origin: no ref field (500-only)          {"error":"cross-origin writes are refused (mutated)"}
+PASS  b7 :581 wrong Content-Type: status 415               415
+PASS  b7 :581 wrong Content-Type: raw body byte-identical to today's "{\"error\":\"Content-Type must be application/json\"}"
+PASS  b7 :581 wrong Content-Type: no ref field (500-only)  {"error":"Content-Type must be application/json"}
+PASS  b7 :652 item combined with since: status 400         400
+PASS  b7 :652 item combined with since: raw body byte-identical to today's "{\"error\":\"item cannot be combined with since\"}"
+PASS  b7 :652 item combined with since: no ref field (500-only) {"error":"item cannot be combined with since"}
+PASS  b7 :686 answer missing fields: status 400            400
+PASS  b7 :686 answer missing fields: raw body byte-identical to today's "{\"error\":\"petitio and reply are required strings\"}"
+PASS  b7 :686 answer missing fields: no ref field (500-only) {"error":"petitio and reply are required strings"}
+PASS  b7 :701 greenlight missing opus: status 400          400
+PASS  b7 :701 greenlight missing opus: raw body byte-identical to today's "{\"error\":\"opus is required\"}"
+PASS  b7 :701 greenlight missing opus: no ref field (500-only) {"error":"opus is required"}
+PASS  b7 :717 budget missing fields: status 400            400
+PASS  b7 :717 budget missing fields: raw body byte-identical to today's "{\"error\":\"period, collegium and tokens are required\"}"
+PASS  b7 :717 budget missing fields: no ref field (500-only) {"error":"period, collegium and tokens are required"}
+PASS  b7 :733 handoff missing fields: status 400           400
+PASS  b7 :733 handoff missing fields: raw body byte-identical to today's "{\"error\":\"opus, sella and next are required\"}"
+PASS  b7 :733 handoff missing fields: no ref field (500-only) {"error":"opus, sella and next are required"}
+PASS  b7 :749 talk missing fields: status 400              400
+PASS  b7 :749 talk missing fields: raw body byte-identical to today's "{\"error\":\"sella and message are required\"}"
+PASS  b7 :749 talk missing fields: no ref field (500-only) {"error":"sella and message are required"}
+PASS  b7 :786 delegate missing fields: status 400          400
+PASS  b7 :786 delegate missing fields: raw body byte-identical to today's "{\"error\":\"either {sella, model} or {munus, tier} are required\"}"
+PASS  b7 :786 delegate missing fields: no ref field (500-only) {"error":"either {sella, model} or {munus, tier} are required"}
+PASS  b7 :184 non-object JSON body: status 400             400
+PASS  b7 :184 non-object JSON body: raw body byte-identical to today's "{\"error\":\"request body must be a JSON object\"}"
+PASS  b7 :184 non-object JSON body: no ref field (500-only) {"error":"request body must be a JSON object"}
+PASS  b7 :499 too many /api/live clients: status 503       503
+PASS  b7 :499 too many /api/live clients: raw body byte-identical to today's "{\"error\":\"too many /api/live clients\"}"
+PASS  b7 :499 too many /api/live clients: no ref field (500-only) {"error":"too many /api/live clients"}
+PASS  b7 :181 oversized body: status 413                   413
+PASS  b7 :181 oversized body: raw body byte-identical to today's "{\"error\":\"request body too large\"}"
+PASS  b7 :181 oversized body: no ref field (500-only)      {"error":"request body too large"}
+PASS  b7 :671 /api/_poll outside test env: status 404      404
+PASS  b7 :671 /api/_poll outside test env: raw body byte-identical to today's "{\"error\":\"not found\"}"
+PASS  b7 :671 /api/_poll outside test env: no ref field (500-only) {"error":"not found"}
+PASS  b7 :441 forbidden — UNREACHABLE via any client request (WHATWG URL normalises '..' before serveStatic sees pathname, verified); isPathContained() itself still correctly refuses a sibling-prefix escape false
+GET /api/officina 200 6ms
+GET /api/inbox 200 9ms
+GET /api/aerarium 200 6ms
+GET /api/opus/W-004 200 1ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 3ms
+GET /api/events?limit=-5 200 1ms
+GET /api/timeline/builder-1?limit=-5 200 2ms
+GET /api/events?limit=0 200 1ms
+GET /api/timeline/builder-1?limit=0 200 2ms
+GET /api/events?limit=99999 200 0ms
+GET /api/timeline/builder-1?limit=99999 200 2ms
+GET /api/events?limit=abc 200 1ms
+GET /api/timeline/builder-1?limit=abc 200 2ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 0ms
+POST /api/greenlight 200 7ms
+POST /api/greenlight 200 4ms
+POST /api/greenlight 200 5ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 403 1ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 415 0ms
+POST /api/greenlight 400 1ms
+POST /api/greenlight 200 5ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 413 2ms
+POST /api/greenlight 200 10ms
+GET /api/opus/W-007 200 1ms
+POST /api/_poll 200 29ms
+GET /api/events 200 1ms
+POST /api/_poll 200 24ms
+GET /api/events 200 1ms
+GET /api/events 200 0ms
+POST /api/_poll 404 0ms
+GET /api/events 200 1ms
+GET /api/events 200 1ms
+GET /api/live 200 100ms
+POST /api/_poll 200 24ms
+GET /api/officina 200 3ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 266ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 267ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 266ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 265ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 262ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 227ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+GET /api/live 200 226ms
+POST /api/talk 200 108ms
+POST /api/talk 200 163ms
+POST /api/greenlight 200 0ms
+POST /api/delegate 200 6ms
+POST /api/delegate 200 3ms
+POST /api/delegate 200 4ms
+POST /api/delegate 200 5ms
+GET /api/officina 200 2ms
+GET /api/officina 200 1ms
+GET /api/models 200 9ms
+GET /api/models 200 2ms
+GET /api/models 200 2ms
+GET /api/models 200 2ms
+GET /api/models 200 1ms
+GET /api/models 200 3003ms
+GET /api/models 200 1ms
+GET /api/inbox 200 4ms
+GET /assets/does-not-exist.js 404 1ms
+GET /api/totally-unknown-route 404 0ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 415 0ms
+GET /api/events?item=x&since=1 400 0ms
+POST /api/answer 400 0ms
+POST /api/greenlight 400 0ms
+POST /api/budget 400 0ms
+POST /api/handoff 400 0ms
+POST /api/talk 400 0ms
+POST /api/delegate 400 0ms
+POST /api/greenlight 400 0ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+POST /api/greenlight 413 2ms
+POST /api/_poll 404 0ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 312ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 311ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 310ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 309ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 309ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+GET /api/live 200 308ms
+w057-behaviour7-mutation-check: mutation KILLED (behaviour 7 failed, as expected) — http.ts restored to its implemented state
