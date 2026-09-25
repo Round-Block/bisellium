@@ -95,6 +95,8 @@ const VOCABULARY: Array<{ latin: string; english: string; meaning: string }> = [
   { latin: "Officina", english: "Studio", meaning: "a directory of the files this glossary describes." },
   { latin: "Cascade", english: "Build round", meaning: "one batch of opera run together by a set of builders." },
   { latin: "Retrospectio", english: "Retro", meaning: "a cascade's closing review, written after it lands." },
+  { latin: "Seat", english: "Seat", meaning: "a sella template, one per build tier, declared in `sellae`." },
+  { latin: "Instance", english: "Instance", meaning: "`<seat>.<opus-id>`, minted at dispatch; carries no state of its own." },
 ];
 
 const PROBATIO_KINDS = [
