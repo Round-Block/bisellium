@@ -13,6 +13,10 @@ const check = (behaviour: number, name: string, ok: boolean, detail = ""): void 
   console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(76)} ${detail}`);
   if (!ok) failed++;
 };
+const skip = (behaviour: number, name: string, detail = ""): void => {
+  if (only !== undefined && only !== behaviour) return;
+  console.log(`SKIP  ${name.padEnd(76)} ${detail}`);
+};
 
 const roots: string[] = [];
 const NOW = new Date("2026-09-25T12:34:56.000Z");
@@ -198,7 +202,8 @@ try {
   }
 
   if (only === undefined || only === 3) {
-    const plain = studio("header-lines", ["W-219", "W-222", "W-223", "W-224", "W-225"]);
+    const forgedOpus = "W-226\n# opus: FORGED";
+    const plain = studio("header-lines", ["W-219", "W-222", "W-223", "W-224", "W-225", forgedOpus]);
     const plainSource = join(plain, "source.log");
     writeFileSync(plainSource, "body\n");
     const omitted = runVerdict(["W-219", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", plainSource, "--studio", plain], { now: NOW });
@@ -214,6 +219,16 @@ try {
       const result = runVerdict(args, { now: NOW });
       check(3, `b3: ${flag} rejects CR/LF`, result.exitCode === 2 && !existsSync(join(plain, "ci", `${id}-review-1.log`)), String(result.exitCode));
     }
+    const forgedOpusResult = runVerdict(
+      [forgedOpus, "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", plainSource, "--studio", plain],
+      { now: NOW },
+    );
+    check(
+      3,
+      "b3: <opus> rejects CR/LF",
+      forgedOpusResult.exitCode === 2 && !existsSync(join(plain, "ci", `${forgedOpus}-review-1.log`)),
+      String(forgedOpusResult.exitCode),
+    );
     const blankModel = runVerdict(
       ["W-225", "--round", "1", "--sella", "qa-lead", "--model", "   ", "--outcome", "PASS", "--from", plainSource, "--studio", plain],
       { now: NOW },
@@ -240,7 +255,8 @@ try {
       // spawn even though the repository command itself is valid. The
       // unsandboxed suite exercises both exact hashes; keep the local run
       // usable while making every other header assertion unconditional.
-      check(3, "b3: git-backed exact tree assertions (sandbox skip only)", err.code === "EPERM", err.message);
+      if (err.code === "EPERM") skip(3, "b3: git-backed exact tree assertions (sandbox only)", err.message);
+      else check(3, "b3: git-backed exact tree fixture succeeds", false, err.message);
     }
   }
 
@@ -274,12 +290,15 @@ try {
     writeFileSync(source, "body\n");
     const fifo = join(dir, "source.fifo");
     let fifoAvailable = true;
+    let fifoSkipDetail = "";
     try {
       execFileSync("mkfifo", [fifo]);
-    } catch {
+    } catch (e) {
       // The managed sandbox can return EPERM after creating the FIFO.
       fifoAvailable = existsSync(fifo);
+      if (!fifoAvailable) fifoSkipDetail = (e as Error).message;
     }
+    if (!fifoAvailable) skip(5, "b5: FIFO refusal row unavailable in sandbox", fifoSkipDetail);
     mkdirSync(join(dir, "ci"));
     writeFileSync(join(dir, "ci", "W-251-review-2.log"), "old evidence\n");
     const base = (id: string): string[] => [id, "--round", "2", "--sella", "qa-lead", "--outcome", "PASS", "--from", source, "--studio", dir];

@@ -114,6 +114,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     return { exitCode: 2 };
   }
   for (const [flag, value] of [
+    ["<opus>", opusId],
     ["--outcome", outcome],
     ["--sella", sella],
     ["--model", model],
@@ -159,10 +160,6 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
 
   const filenamePhase = phase === "build" ? "review" : "spec";
   const target = join(root, "ci", `${opusId}-${filenamePhase}-${round}.log`);
-  if (dirname(target) !== resolve(join(root, "ci"))) {
-    console.error(`invalid opus id "${opusId}"`);
-    return { exitCode: 2 };
-  }
   if (existsSync(target)) {
     console.error(`${relative(root, target)} already exists — verdict evidence is never overwritten`);
     return { exitCode: 2 };
