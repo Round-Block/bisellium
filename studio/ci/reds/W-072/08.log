@@ -1,0 +1,8 @@
+# behaviour: 8
+# command: node scripts/no-vendor.test.mjs 8
+# exit: 1
+# at: 2026-09-25T12:15:57.719Z
+# sella: builder-d
+# tree: dirty:deff847c9d17ca8d3678ce26db133c7169f117f1
+
+FAIL  [8] scripts/no-vendor.mjs, test/bin/claude and test/bin/codex all exist            mod=false claude=false codex=false

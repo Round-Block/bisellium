@@ -1,0 +1,47 @@
+#!/usr/bin/env node
+/**
+ * test/bin/claude (and test/bin/codex — identical file, checked in twice
+ * under the two names the runner shadows) — W-072's fail-closed shadow.
+ * Fires only when scripts/no-vendor.mjs has put this directory ahead of
+ * PATH; NEVER execs the real vendor CLI it stands in for. Appends one line
+ * to .bisellium/vendor-violations.log naming the binary invoked (its own
+ * argv[1] basename, so one file works under any name a test points it at —
+ * see the brief's behaviour 7), the argv, the cwd, and (best-effort) the
+ * calling process's command from /proc/<ppid>/cmdline — then exits
+ * non-zero. Adjudication happens out of band, in scripts/no-vendor.mjs,
+ * because a caught rejection can swallow this exit code but cannot unwrite
+ * the file (see the brief's "The adjudication").
+ *
+ * `BISELLIUM_TEST_PROC_PATH` overrides the /proc lookup — test-only
+ * plumbing (scripts/no-vendor.test.mjs behaviour 2) to simulate an
+ * unreadable /proc without needing a second platform; unset in every real
+ * invocation, including every production one (this file is never on a
+ * production spawn path at all).
+ */
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { basename, dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = dirname(dirname(HERE));
+const LOG_PATH = join(REPO_ROOT, ".bisellium", "vendor-violations.log");
+
+function callerCommand() {
+  const procPath = process.env.BISELLIUM_TEST_PROC_PATH ?? `/proc/${process.ppid}/cmdline`;
+  try {
+    const raw = readFileSync(procPath, "utf8").split("\0").filter(Boolean).join(" ");
+    return raw.length > 0 ? raw : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+mkdirSync(dirname(LOG_PATH), { recursive: true });
+const line = JSON.stringify({
+  bin: basename(process.argv[1] ?? "unknown"),
+  argv: process.argv.slice(2),
+  cwd: process.cwd(),
+  caller: callerCommand(),
+});
+appendFileSync(LOG_PATH, line + "\n");
+process.exit(17);
