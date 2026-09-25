@@ -1,0 +1,144 @@
+# W-084 — censor review, round 2
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-25T20:15:11Z
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-084 · branch: opus/W-084 · HEAD: 06d048b
+# VERDICT: PASS (3 blocking findings closed and re-verified; 2 nits closed; 1 new non-blocking note)
+# fix commits: f4f5687 (fix) · 06d048b (verify evidence on tree:87ed9d5d)
+
+== 0. preconditions ==
+`git fetch origin` + `git merge --ff-only origin/opus/W-084` -> 06d048b, matching the round-2
+claim. `git status --porcelain` empty at review start, after all eight mutation passes, after
+re-running the kept census script, and at the end. Every mutation applied by script with an
+exact-occurrence assertion and reverted with `git checkout --` immediately.
+
+Certificate re-derived, not read off the log: sha1 over `git ls-tree -r HEAD` minus
+[studio, .bisellium, examples] = 87ed9d5db9ad7139690296cde52e8c86adbb02d1, matching the
+tests/lint/types gates, and identical at f4f5687 — the later commit touched only studio/, so
+nothing is stale.
+
+Reds untouched, as claimed: `git diff 31f6a45..HEAD -- studio/ci/reds/` is empty.
+
+== 1. the two round-1 survivors are dead, and so is everything else ==
+
+Eight mutations, all KILLED (round 1: seven of nine):
+
+  #   mutation                                                     round 1      round 2
+  M3  fence exclusion neutered                                     SURVIVED     KILLED
+  M5  unreadable-brief `continue` -> `break` (abort mid-crawl)      SURVIVED     KILLED
+  M1  inline exclusion dropped                                     KILLED       KILLED
+  M2  quoted-span exclusion dropped                                KILLED       KILLED
+  M4  crawl reach narrowed to opera-referenced specs               KILLED       KILLED
+  M6  rule id removed from ids.ts                                  KILLED       KILLED (+ lex.test harvest)
+  M7  `if (declared === 0) continue` removed                       KILLED       KILLED
+  M8  boundary `cited <= declared` -> `<`                           KILLED       KILLED
+
+M3 now dies on the row that is supposed to own it:
+  FAIL  seven exclusions are silent and crawl continues after unreadable brief
+        [{"rule":"brief.behaviour_citation","level":"block", …}]
+M5 dies with the opposite detail, which is the point — the later brief's finding disappears:
+  FAIL  seven exclusions are silent and crawl continues after unreadable brief  []
+Renaming the unreadable entry to `00-unreadable.md` (sorts first in listMd's sorted listing)
+and adding `later.md` with an out-of-range citation makes the row discriminate skipping from
+aborting. That is the assertion the brief always asked for.
+
+== 2. the acceptance re-run ==
+
+  criterion                                                  measured                        verdict
+  npm test -s                                                exit 0 · 3260 PASS · 0 FAIL     PASS
+  npm run -s typecheck                                       exit 0 · silent                 PASS
+  npm run -s lint                                            exit 0 · 2 warnings             PASS (pre-existing,
+                                                                                             outside the diff)
+  npm run -s format:check                                    "All matched files use
+                                                             Prettier code style!"           PASS
+  npm run -s check -- studio --repo . --json                 0 blocking · 150 advisory       PASS
+  brief.behaviour_citation on the real corpus                0 findings                      PASS
+  seven false-positive constructs                            silent (behaviour 8 row)        PASS
+  unreferenced brief reached                                 behaviour 9 row green, M4 kills  PASS
+  census re-run, script kept, output recorded                see §3                          PASS
+
+W-084's three advisories: two house-norm `probatio.certifies` (the spec and review gates never
+carry a `certifies` — 82 of those across the officina) and the `opus.red_content` false
+positive I ruled on in round 1. `brief.behaviour_citation` itself contributes zero, which was
+the claim behind blocking.
+
+== 3. the census script, spot-checked against my own derivation ==
+
+`scripts/w084-citation-census.mjs` is kept and reproducible: running it rewrites
+studio/ci/W-084-citation-census.log and `git status --porcelain` stays empty — byte-identical.
+
+  quantity                     committed log   my independent re-derivation
+  briefs                       57              57
+  declaring >=1 behaviour      47              47
+  raw Behaviour-N              85              85
+  live after exclusions        75              75
+  excluded fenced              0               0
+  excluded inline              9               9
+  excluded quoted              1               1
+  OUT OF RANGE                 0               0 (offenders: none)
+
+Line for line. Arithmetic closes both ways: 85 - 75 = 10 = 0 + 9 + 1, against round 1's
+85 - 74 = 11 = 0 + 10 + 1 under the old multiline regex. The +1 live comes out of the inline
+bucket, exactly the prediction in round 1 §6. The script also records the before/after prose
+deletion, which is what round 1 asked to see measured rather than argued.
+
+== 4. F1 closed — the blind spot is bounded now, per brief and not just on average ==
+
+My own re-measurement under the shipped pipeline, non-fenced prose deleted before the rule
+looks:
+
+  brief        round 1 (multiline)                            round 2 (line-bounded)
+  W-047.md     81.5% · longest single "span" 14,965 chars      24.0% · longest span 96 chars
+  W-050.md     41.1% · 268                                     40.9% · 268
+  corpus       22.5% (inline+quoted)                           inline 20.833% -> 17.900%
+                                                               (the committed log's own numbers,
+                                                               reproduced)
+
+The pathological case is gone: no span crosses a line, so no delimiter can pair with another
+one thousands of characters away. W-050's 40.9% is a brief genuinely dense in single-line code
+spans (longest 268 chars) — a real exclusion, not a runaway.
+
+== 5. new note, non-blocking, measured rather than speculated ==
+
+N1: `citationProse`'s doc comment is now behind its code. It still says "Inline code may use
+any matching backtick-run length; an unmatched delimiter is prose, not a span" and says nothing
+about the line bound that is the whole point of the fix. With `[^`\n]` in the body, a
+multi-backtick span whose body CONTAINS a backtick is no longer matched as a unit:
+
+  "`` `Behaviour 9` ``"     -> "  "               excluded (delimiters consumed as empty
+                                                  spans, then the inner span is removed)
+  "``Behaviour 9 `x` ``"    -> "Behaviour 9  "    LEAKS
+  "``Behaviour 9``"         -> ""                 excluded
+  "the literal `Behaviour 9` is fixture" -> "the literal  is fixture"  excluded
+
+Corpus census of that shape: 20 multi-backtick spans, 18 with a backtick in the body, and
+exactly 2 carrying a Behaviour citation — both `` `Behaviour 9` `` in W-084's own brief, both
+in the excluded column above. ZERO instances of the leaking shape in 57 briefs, and
+out-of-range is 0, so nothing is hidden. Worth one comment line, not a round: the comment
+should say a span is line-bounded and that a multi-backtick body containing a backtick is not
+recognised as one span.
+
+The `opus.red_content` advisory persists, and correctly so. Selectors moved to 7-9, so any
+FUTURE red on this file carries only its own assertion; the recorded logs were not rewritten to
+chase a detector, which is the right call — re-recording evidence to silence a scanner is the
+backfill this officina forbids. The detector defect (rules/evidence.ts:216 grepping whole log
+text, PASS rows included) stays filed outside this opus. A reader re-running a red log's
+`# command:` must do it at the tree the log stamps (4a8c07a), which is W-020's contract and is
+what I verified in round 1.
+
+== 6. findings ledger ==
+
+  F1  inline exclusion matched across newlines                CLOSED — §4, M3 killed
+  F2  unreadable-brief row could not fail                     CLOSED — §1, M5 killed
+  F3  census not recorded, no kept script                     CLOSED — §3, byte-reproducible
+  F4  safeList rewritten off listMd                           CLOSED — delegates again, import restored
+  F5  red-log selector overlay                                CLOSED for future reds; recorded
+                                                              reds correctly left alone
+  N1  citationProse comment behind its code                   NEW, non-blocking, 0 corpus instances
+
+== 7. verdict ==
+
+PASS. Every round-1 finding is closed and re-verified by me rather than read off a claim: the
+two survivors are dead with the detail I expected, the census is reproducible and matches my
+own derivation line for line, the deletion measurement is bounded per brief, safeList delegates
+again, and the reds are untouched. Suites and gates green, certificate re-derived, zero
+blocking findings, and the rule contributes nothing to the noise floor. N1 is a comment line
+for whoever next touches the function.

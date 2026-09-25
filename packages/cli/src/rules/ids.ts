@@ -27,6 +27,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "aerarium.shape",
   "aerarium.stipendium",
   "backlog.depth",
+  "brief.behaviour_citation",
   "cap.hot_doc",
   "cap.instructions",
   "collegium.autonomy",

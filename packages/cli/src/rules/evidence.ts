@@ -13,7 +13,7 @@
  * `bisellium red`'s job alone.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
 import type { Finding, RuleOpts } from "../check.js";
@@ -273,7 +273,101 @@ function checkRedEvidence(root: string): Finding[] {
   return findings;
 }
 
+/** Remove the three contexts which carry examples rather than live
+ * citations. Fence tracking deliberately mirrors countBehaviours: only a
+ * backtick fence marker at Markdown's top three indentation columns toggles
+ * the fenced region. Inline code may use any matching backtick-run length;
+ * an unmatched delimiter is prose, not a span. */
+function citationProse(briefText: string): string {
+  const prose: string[] = [];
+  let inFence = false;
+  for (const line of briefText.split(/\r?\n/)) {
+    if (/^\s{0,3}```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (!inFence) prose.push(line);
+  }
+  return prose
+    .map(stripBacktickSpans)
+    .join("\n")
+    .replace(/"(?:\\.|[^"\\])*"/g, "");
+}
+
+/** The exact replacement performed by /(`+)[^`\n]*?\1/g, without its
+ * quadratic backtracking. A full opening run can only close at the next
+ * run; when that fails, regexp capture backtracking can only pair ticks
+ * within the opening run itself. */
+function stripBacktickSpans(text: string): string {
+  const runs: { start: number; end: number; length: number }[] = [];
+  for (let cursor = 0; cursor < text.length; ) {
+    const start = text.indexOf("`", cursor);
+    if (start === -1) break;
+    let end = start + 1;
+    while (text[end] === "`") end++;
+    runs.push({ start, end, length: end - start });
+    cursor = end;
+  }
+
+  let output = "";
+  let copyFrom = 0;
+  let position = 0;
+  let runIndex = 0;
+  while (runIndex < runs.length) {
+    const run = runs[runIndex]!;
+    const start = Math.max(position, run.start);
+    if (start >= run.end) {
+      runIndex++;
+      continue;
+    }
+
+    const openingLength = run.end - start;
+    const next = runs[runIndex + 1];
+    if (next && next.length >= openingLength) {
+      output += text.slice(copyFrom, start);
+      position = next.start + openingLength;
+      copyFrom = position;
+      runIndex++;
+      continue;
+    }
+
+    const selfClosingLength = Math.floor(openingLength / 2);
+    if (selfClosingLength === 0) break;
+    output += text.slice(copyFrom, start);
+    position = start + 2 * selfClosingLength;
+    copyFrom = position;
+  }
+  return output + text.slice(copyFrom);
+}
+
+function checkBehaviourCitations(root: string): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of safeList(join(root, "briefs"))) {
+    let briefText: string;
+    try {
+      if (!lstatSync(p).isFile()) continue;
+      briefText = readFileSync(p, "utf8");
+    } catch {
+      continue;
+    }
+
+    const declared = countBehaviours(briefText);
+    if (declared === 0) continue;
+    for (const match of citationProse(briefText).matchAll(/\bBehaviour (\d+)\b/g)) {
+      const cited = Number(match[1]);
+      if (cited <= declared) continue;
+      findings.push({
+        rule: "brief.behaviour_citation",
+        level: "block",
+        where: relative(root, p).split(sep).join("/"),
+        message: `brief cites Behaviour ${cited} but declares ${declared} behaviours`,
+      });
+    }
+  }
+  return findings;
+}
+
 export function checkEvidence(root: string, opts: RuleOpts): Finding[] {
   if (!existsSync(join(root, "bisellium.yml"))) return [];
-  return [...checkUntracked(root, opts), ...checkRedEvidence(root)];
+  return [...checkUntracked(root, opts), ...checkRedEvidence(root), ...checkBehaviourCitations(root)];
 }
