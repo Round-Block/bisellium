@@ -13,7 +13,7 @@
  * `bisellium red`'s job alone.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
 import type { Finding, RuleOpts } from "../check.js";
@@ -289,9 +289,55 @@ function citationProse(briefText: string): string {
     if (!inFence) prose.push(line);
   }
   return prose
-    .map((line) => line.replace(/(`+)[^`\n]*?\1/g, ""))
+    .map(stripBacktickSpans)
     .join("\n")
     .replace(/"(?:\\.|[^"\\])*"/g, "");
+}
+
+/** The exact replacement performed by /(`+)[^`\n]*?\1/g, without its
+ * quadratic backtracking. A full opening run can only close at the next
+ * run; when that fails, regexp capture backtracking can only pair ticks
+ * within the opening run itself. */
+function stripBacktickSpans(text: string): string {
+  const runs: { start: number; end: number; length: number }[] = [];
+  for (let cursor = 0; cursor < text.length; ) {
+    const start = text.indexOf("`", cursor);
+    if (start === -1) break;
+    let end = start + 1;
+    while (text[end] === "`") end++;
+    runs.push({ start, end, length: end - start });
+    cursor = end;
+  }
+
+  let output = "";
+  let copyFrom = 0;
+  let position = 0;
+  let runIndex = 0;
+  while (runIndex < runs.length) {
+    const run = runs[runIndex]!;
+    const start = Math.max(position, run.start);
+    if (start >= run.end) {
+      runIndex++;
+      continue;
+    }
+
+    const openingLength = run.end - start;
+    const next = runs[runIndex + 1];
+    if (next && next.length >= openingLength) {
+      output += text.slice(copyFrom, start);
+      position = next.start + openingLength;
+      copyFrom = position;
+      runIndex++;
+      continue;
+    }
+
+    const selfClosingLength = Math.floor(openingLength / 2);
+    if (selfClosingLength === 0) break;
+    output += text.slice(copyFrom, start);
+    position = start + 2 * selfClosingLength;
+    copyFrom = position;
+  }
+  return output + text.slice(copyFrom);
 }
 
 function checkBehaviourCitations(root: string): Finding[] {
@@ -299,6 +345,7 @@ function checkBehaviourCitations(root: string): Finding[] {
   for (const p of safeList(join(root, "briefs"))) {
     let briefText: string;
     try {
+      if (!lstatSync(p).isFile()) continue;
       briefText = readFileSync(p, "utf8");
     } catch {
       continue;

@@ -2,7 +2,8 @@
  * packages/cli/src/rules/evidence.test.ts — W-022: evidence content rules
  * (P-005), and W-084: brief Behaviour-N citations.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { checkStudio } from "../check.js";
@@ -15,6 +16,11 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   if (only !== undefined && only !== behaviour) return;
   console.log(`${ok ? "PASS" : "FAIL"}  ${name.padEnd(60)} ${detail}`);
   if (!ok) failed++;
+}
+
+function skip(behaviour: number, name: string, detail = "") {
+  if (only !== undefined && only !== behaviour) return;
+  console.log(`SKIP  ${name.padEnd(60)} ${detail}`);
 }
 
 const dirs: string[] = [];
@@ -104,9 +110,12 @@ try {
 
   // W-084 behaviour 2: all seven real false-positive shapes are silent, the
   // id exists (so this cannot pass vacuously before implementation), and one
-  // unreadable .md entry does not abort the rest of the crawl.
+  // unreadable or non-regular .md entry does not abort the rest of the
+  // crawl. The FIFO has a writer so a broken implementation fails instead
+  // of hanging this test; the writer is killed when the fixed rule skips it.
   {
     const dir = freshOfficina("w084-exclusions");
+    const briefsDir = join(dir, "briefs");
     writeFileSync(
       join(dir, "briefs", "constructs.md"),
       brief(
@@ -127,24 +136,62 @@ try {
         ].join("\n"),
       ),
     );
-    mkdirSync(join(dir, "briefs", "00-unreadable.md"));
-    writeFileSync(join(dir, "briefs", "later.md"), brief("Behaviour 99 is stale."));
+    mkdirSync(join(briefsDir, "00-unreadable.md"));
+    const outside = join(dir, "outside.md");
+    writeFileSync(outside, brief("Behaviour 97 is stale."));
+    symlinkSync(outside, join(briefsDir, "01-symlink.md"));
+    const fifo = join(briefsDir, "02-fifo.md");
+    let fifoAvailable = true;
+    let fifoSkipDetail = "";
+    try {
+      execFileSync("mkfifo", [fifo]);
+    } catch (e) {
+      // The managed sandbox can return EPERM after creating the FIFO.
+      fifoAvailable = existsSync(fifo);
+      if (!fifoAvailable) fifoSkipDetail = (e as Error).message;
+    }
+    if (!fifoAvailable) skip(8, "FIFO citation-crawl row unavailable in sandbox", fifoSkipDetail);
+    writeFileSync(join(briefsDir, "zz-later.md"), brief("Behaviour 99 is stale."));
+    const fifoWriter = fifoAvailable
+      ? spawn(process.execPath, ["-e", "require('node:fs').writeFileSync(process.argv[1], process.argv[2])", fifo, brief("Behaviour 98 is stale.")])
+      : undefined;
     let findings: ReturnType<typeof citationFindings> = [];
     let threw = false;
     try {
       findings = citationFindings(dir);
     } catch {
       threw = true;
+    } finally {
+      fifoWriter?.kill("SIGKILL");
     }
     checkW084(8, "brief.behaviour_citation is registered", RULE_IDS.has("brief.behaviour_citation"));
     checkW084(
       8,
-      "seven exclusions are silent and crawl continues after unreadable brief",
+      "unreadable, symlink, and FIFO briefs are skipped; later brief is reached",
       !threw &&
         findings.length === 1 &&
-        findings[0]!.where === "briefs/later.md" &&
+        findings[0]!.where === "briefs/zz-later.md" &&
         findings[0]!.message.includes("Behaviour 99"),
       JSON.stringify(findings),
+    );
+
+    const pathological = freshOfficina("w084-pathological");
+    writeFileSync(join(pathological, "briefs", "plain.md"), brief(`a${"`".repeat(10_000)} Behaviour 99`));
+    writeFileSync(
+      join(pathological, "briefs", "quadratic.md"),
+      brief(`a${"`".repeat(150_000)}${"x".repeat(150_000)} Behaviour 98`),
+    );
+    const started = performance.now();
+    const pathologicalFindings = citationFindings(pathological);
+    const elapsed = performance.now() - started;
+    checkW084(
+      8,
+      "10k backticks and the quadratic shape complete in bounded time",
+      elapsed < 200 &&
+        pathologicalFindings.length === 2 &&
+        pathologicalFindings.some((f) => f.message.includes("Behaviour 98")) &&
+        pathologicalFindings.some((f) => f.message.includes("Behaviour 99")),
+      `${elapsed.toFixed(1)}ms ${JSON.stringify(pathologicalFindings)}`,
     );
   }
 
