@@ -21,7 +21,8 @@
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "bisellium hook-event stop --studio studio", "timeout": 2 }
+          { "type": "command", "command": "bisellium hook-event stop --studio studio", "timeout": 2 },
+          { "type": "command", "command": "node scripts/concise-stop.mjs", "timeout": 5 }
         ]
       }
     ],
