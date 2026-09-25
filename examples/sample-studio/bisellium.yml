@@ -12,10 +12,13 @@ sellae:
   - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5 }
   - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
-  - { id: builder-1, collegium: engineering, kind: agent, model: claude-sonnet-5 }
-  - { id: builder-2, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  # W-089: seat templates, not enumerated builders — see studio/bisellium.yml.
+  - { id: builder, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-1, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+  - { id: builder-2, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
   - { id: art-lead, collegium: art, kind: agent, model: gpt-6-astra }
   - { id: qa-lead, collegium: qa, kind: agent, model: claude-sonnet-5 }
+  - { id: guest, collegium: production, kind: human }
 probationes:
   - { id: tests, name: Tests, kind: automated, command: "true" }
   - { id: lint, name: Lint, kind: automated, command: "true" }

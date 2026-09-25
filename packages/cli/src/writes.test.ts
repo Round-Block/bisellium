@@ -156,7 +156,7 @@ try {
     const beforeFront = parseYaml(beforeSplit.front) as Record<string, unknown>;
 
     const r = runHandoff(
-      ["--opus", "W-002", "--sella", "builder-1", "--stage", "building", "--next", "ship the filter", "--blocked-on", "none", "--studio", dir],
+      ["--opus", "W-002", "--sella", "eng-lead", "--stage", "building", "--next", "ship the filter", "--blocked-on", "none", "--studio", dir],
       { now: NOW },
     );
     check("handoff: exitCode 0", r.exitCode === 0, String(r.exitCode));
@@ -174,13 +174,13 @@ try {
     check(
       "handoff: traditio updated as requested",
       JSON.stringify(afterTraditio) ===
-        JSON.stringify({ sella: "builder-1", stage: "building", next: "ship the filter", blocked_on: "none", at: NOW.toISOString() }),
+        JSON.stringify({ sella: "eng-lead", stage: "building", next: "ship the filter", blocked_on: "none", at: NOW.toISOString() }),
       JSON.stringify(afterTraditio),
     );
 
     // --stage mismatch is a validation error
     const mismatch = runHandoff(
-      ["--opus", "W-002", "--sella", "builder-1", "--stage", "review", "--next", "x", "--studio", dir],
+      ["--opus", "W-002", "--sella", "eng-lead", "--stage", "review", "--next", "x", "--studio", dir],
       { now: NOW },
     );
     check("handoff: --stage mismatching opus state exits 2", mismatch.exitCode === 2, String(mismatch.exitCode));
@@ -223,7 +223,7 @@ try {
   // needed for this form.
   {
     const dir = freshStudio("emit-usage");
-    const r = runEmit(["--usage", "1234", "--opus", "W-002", "--sella", "builder-1", "--model", "claude-sonnet-5", "--studio", dir], { now: NOW });
+    const r = runEmit(["--usage", "1234", "--opus", "W-002", "--sella", "eng-lead", "--model", "claude-sonnet-5", "--studio", dir], { now: NOW });
     check("emit --usage: exitCode 0", r.exitCode === 0, String(r.exitCode));
 
     const events = readEventLines(dir);
@@ -232,7 +232,7 @@ try {
     check("emit --usage: event name is gen_ai.usage", e.name === "gen_ai.usage", JSON.stringify(e));
     check("emit --usage: gen_ai.usage.total_tokens carried", e.attrs?.["gen_ai.usage.total_tokens"] === 1234, JSON.stringify(e.attrs));
     check("emit --usage: workflow.item.id is the opus", e.attrs?.[WF.ITEM_ID] === "W-002", JSON.stringify(e.attrs));
-    check("emit --usage: workflow.actor.role is the sella", e.attrs?.[WF.ACTOR_ROLE] === "builder-1", JSON.stringify(e.attrs));
+    check("emit --usage: workflow.actor.role is the sella", e.attrs?.[WF.ACTOR_ROLE] === "eng-lead", JSON.stringify(e.attrs));
     check("emit --usage: gen_ai.request.model carried", e.attrs?.["gen_ai.request.model"] === "claude-sonnet-5", JSON.stringify(e.attrs));
     // W-002's collegium (examples/sample-studio/opera/W-002.md) — burn's
     // WF.DEPARTMENT filter is what makes this a real per-collegium spend
@@ -240,8 +240,8 @@ try {
     check("emit --usage: workflow.department is the opus's collegium", e.attrs?.[WF.DEPARTMENT] === "engineering", JSON.stringify(e.attrs));
 
     check("emit --usage: missing --sella exits 2", runEmit(["--usage", "10", "--opus", "W-002", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
-    check("emit --usage: non-numeric --usage exits 2", runEmit(["--usage", "nope", "--opus", "W-002", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
-    check("emit --usage: unknown --opus exits 2", runEmit(["--usage", "10", "--opus", "W-999", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
+    check("emit --usage: non-numeric --usage exits 2", runEmit(["--usage", "nope", "--opus", "W-002", "--sella", "eng-lead", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
+    check("emit --usage: unknown --opus exits 2", runEmit(["--usage", "10", "--opus", "W-999", "--sella", "eng-lead", "--model", "m", "--studio", dir], { now: NOW }).exitCode === 2);
   }
 
   // ---- answer: resolves A-1 with a [stated] line, passes check ----------
@@ -460,7 +460,7 @@ try {
     const insideBefore = readFileSync(insidePath, "utf8");
     const eventsBefore = readEventLines(dir).length;
 
-    const { result: r, stderr } = withStderr(() => runHandoff(["--opus", "../W-777", "--sella", "builder-1", "--next", "x", "--studio", dir], { now: NOW }));
+    const { result: r, stderr } = withStderr(() => runHandoff(["--opus", "../W-777", "--sella", "eng-lead", "--next", "x", "--studio", dir], { now: NOW }));
 
     check("row1 handoff: exits 2", r.exitCode === 2, String(r.exitCode));
     check("row1 handoff: stderr names unknown opus ../W-777", stderr.includes("unknown opus: ../W-777"), stderr);
@@ -480,7 +480,7 @@ try {
     const eventsBefore = readEventLines(dir).length;
 
     const { result: r, stderr } = withStderr(() =>
-      runEmit(["--usage", "10", "--opus", "../W-777", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW }),
+      runEmit(["--usage", "10", "--opus", "../W-777", "--sella", "eng-lead", "--model", "m", "--studio", dir], { now: NOW }),
     );
 
     check("row2 emit-usage: exits 2", r.exitCode === 2, String(r.exitCode));
@@ -551,6 +551,36 @@ try {
     check("row5 greenlight: outside sentinel byte-identical", readFileSync(outsidePath, "utf8") === outsideBefore);
     check("row5 greenlight: in-directory collision record byte-identical", readFileSync(insidePath, "utf8") === insideBefore);
     check("row5 greenlight: no event appended", readEventLines(dir).length === eventsBefore);
+  }
+
+  // ---- W-089 behaviour 6: the group-A membership sites at writes.ts:362
+  // (handoff) and writes.ts:505 (emit --usage) refuse a retired sella,
+  // exact or instance, no write / no event. examples/sample-studio's own
+  // "builder-1" is retired (W-089 behaviour 1's migration). ---------------
+  {
+    const dir = freshStudio("w089-b6-handoff");
+
+    const exact = runHandoff(["--opus", "W-002", "--sella", "eng-lead", "--next", "x", "--studio", dir], { now: NOW });
+    check("w089 b6: setup — a live sella still writes a handoff", exact.exitCode === 0, String(exact.exitCode));
+
+    const retired = runHandoff(["--opus", "W-002", "--sella", "builder-1", "--next", "x", "--studio", dir], { now: NOW });
+    check("w089 b6: handoff refuses a retired sella", retired.exitCode === 2, String(retired.exitCode));
+    const retiredInstance = runHandoff(["--opus", "W-002", "--sella", "builder-1.W-200", "--next", "x", "--studio", dir], { now: NOW });
+    check("w089 b6: handoff refuses an instance of a retired sella", retiredInstance.exitCode === 2, String(retiredInstance.exitCode));
+
+    const dir2 = freshStudio("w089-b6-handoff-nowrite");
+    const before2 = readFileSync(join(dir2, "opera", "W-002.md"), "utf8");
+    runHandoff(["--opus", "W-002", "--sella", "builder-1", "--next", "x", "--studio", dir2], { now: NOW });
+    check("w089 b6: a refused retired handoff writes nothing", readFileSync(join(dir2, "opera", "W-002.md"), "utf8") === before2);
+  }
+  {
+    const dir = freshStudio("w089-b6-emit-usage");
+    const eventsBefore = readEventLines(dir).length;
+    const retired = runEmit(["--usage", "10", "--opus", "W-002", "--sella", "builder-1", "--model", "m", "--studio", dir], { now: NOW });
+    check("w089 b6: emit --usage refuses a retired sella", retired.exitCode === 2, String(retired.exitCode));
+    check("w089 b6: a refused retired emit --usage appends no event", readEventLines(dir).length === eventsBefore);
+    const retiredInstance = runEmit(["--usage", "10", "--opus", "W-002", "--sella", "builder-1.W-200", "--model", "m", "--studio", dir], { now: NOW });
+    check("w089 b6: emit --usage refuses an instance of a retired sella", retiredInstance.exitCode === 2, String(retiredInstance.exitCode));
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

@@ -15,7 +15,7 @@ import { existsSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
 import { join, resolve } from "node:path";
-import { readManifest } from "@bisellium/adapter-native";
+import { readManifest, resolveSeat, retiredDispatchMessage } from "@bisellium/adapter-native";
 import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
@@ -157,8 +157,13 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
     console.error(`not a studio (unreadable manifest): ${(e as Error).message}`);
     return { exitCode: 2 };
   }
-  if (!(manifest.sellae ?? []).some((s) => s.id === sella)) {
+  const resolvedSella = resolveSeat(manifest, sella);
+  if (!resolvedSella) {
     console.error(`unknown sella "${sella}" — not declared in ${manifestPath}`);
+    return { exitCode: 2 };
+  }
+  if (resolvedSella.seat.retired) {
+    console.error(retiredDispatchMessage(manifest, resolvedSella.seat));
     return { exitCode: 2 };
   }
 

@@ -1,0 +1,19 @@
+# behaviour: 6
+# command: sh -c node --import tsx packages/commands/src/run.test.ts && node --import tsx packages/cli/src/writes.test.ts . && node --import tsx packages/cli/src/lifecycle.test.ts .
+# exit: 1
+# at: 2026-09-25T17:59:54.350Z
+# sella: builder-a
+# tree: dirty:ea6afd1862da47de06cb3cfcbf416fa32276d1b8
+
+bisellium run: --opus and --base are mutually exclusive
+usage: bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+PASS  --opus and --base together exits 2                           2
+worktree kept at /tmp/claude-1000/run-opus-repo-cnqrOs/.bisellium/worktrees/builder-1-1 (--keep)
+PASS  run --opus: exits 0                                          0
+PASS  worktree forked from the opus branch, not HEAD               /tmp/claude-1000/run-opus-repo-cnqrOs/.bisellium/worktrees/builder-1-1
+PASS  HEAD (master) never got the opus commit                      /tmp/claude-1000/run-opus-repo-cnqrOs
+FAIL  run: an exact retired sella exits 2                          0
+unknown sella "builder-a.W-200" — not declared in /tmp/claude-1000/run-retired-studio-3IeGP4/bisellium.yml
+PASS  run: an instance of a retired sella also exits 2             2
+PASS  run: the live template itself is unaffected                  0

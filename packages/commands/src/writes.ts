@@ -21,7 +21,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
-import { readManifest, type Manifest } from "@bisellium/adapter-native";
+import { readManifest, resolveSeat, retiredDispatchMessage, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
@@ -359,8 +359,13 @@ export function runHandoff(args: string[], opts: WriteOptions = {}): WriteResult
   }
   const { root, manifest } = opened;
 
-  if (!(manifest.sellae ?? []).some((s) => s.id === sella)) {
+  const resolvedHandoffSella = resolveSeat(manifest, sella);
+  if (!resolvedHandoffSella) {
     console.error(`unknown sella "${sella}" — not declared in bisellium.yml`);
+    return { exitCode: 2 };
+  }
+  if (resolvedHandoffSella.seat.retired) {
+    console.error(retiredDispatchMessage(manifest, resolvedHandoffSella.seat));
     return { exitCode: 2 };
   }
 
@@ -502,8 +507,13 @@ export function runEmit(args: string[], opts: WriteOptions = {}): WriteResult {
       console.error(EMIT_USAGE);
       return { exitCode: 2 };
     }
-    if (!(manifest.sellae ?? []).some((s) => s.id === sella)) {
+    const resolvedUsageSella = resolveSeat(manifest, sella);
+    if (!resolvedUsageSella) {
       console.error(`unknown sella "${sella}" — not declared in bisellium.yml`);
+      return { exitCode: 2 };
+    }
+    if (resolvedUsageSella.seat.retired) {
+      console.error(retiredDispatchMessage(manifest, resolvedUsageSella.seat));
       return { exitCode: 2 };
     }
     const opusPath = safeItemPath(join(root, "opera"), opusId);

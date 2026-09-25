@@ -1,0 +1,17 @@
+# behaviour: 4
+# command: node --import tsx adapters/native/src/seatInstance.test.ts
+# exit: 1
+# at: 2026-09-25T17:48:27.490Z
+# sella: builder-a
+# tree: dirty:ea6afd1862da47de06cb3cfcbf416fa32276d1b8
+
+/home/edckt/projects/bisellium/.worktrees/W-089/adapters/native/src/seatInstance.test.ts:8
+import { resolveSeat, seatInstance, type SeatLike } from "./index.js";
+         ^
+SyntaxError: The requested module './index.js' does not provide an export named 'resolveSeat'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0

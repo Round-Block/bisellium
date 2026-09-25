@@ -19,7 +19,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq } from "yaml";
-import { readFront, type Manifest } from "@bisellium/adapter-native";
+import { readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
 import { editOpusFrontMatter } from "./frontmatter.js";
@@ -39,26 +39,40 @@ const GIT_TIMEOUT_MS = 30_000;
 
 /** Same fallback chain `context`/`hook-event` already use: an explicit
  *  `--sella`, else $BISELLIUM_SELLA, else the "guest" sella every studio
- *  declares. */
-function resolveSella(flagValue: string | undefined): string {
-  return flagValue ?? process.env["BISELLIUM_SELLA"] ?? "guest";
+ *  declares. W-089 behaviour 6: roster-aware — the selected name is then
+ *  resolved against the manifest (template, instance, or a retired
+ *  tombstone all pass; this is an ATTRIBUTION gate, not a live-dispatch one,
+ *  so a retired id is accepted here and refused only at the load-bearing
+ *  sites in run.ts/writes.ts). An id that resolves to nothing is a usage
+ *  error, not a silent write. */
+function resolveSella(flagValue: string | undefined, manifest: Manifest): string | { error: string } {
+  const sella = flagValue ?? process.env["BISELLIUM_SELLA"] ?? "guest";
+  if (!resolveSeat(manifest, sella)) return { error: `unknown sella "${sella}" — not declared in bisellium.yml` };
+  return sella;
 }
 
 /** `red`'s own resolver (W-039): a red log is permanent evidence — once its
  *  behaviour is implemented the same red can never be recorded again — so,
  *  unlike `resolveSella`, this never falls back to "guest" on its own.
- *  Returns the first of `flagValue`/`$BISELLIUM_SELLA` whose value is
- *  non-empty after trim, or `undefined` when neither names anyone. Empty
- *  and whitespace-only count as unset in both places; a repeated `--sella`
- *  is `parseFlags`' own last-value-wins (`writes.ts`), not scanned here.
- *  Reads `process.env` once. Not exported: `runRed` and `runAmend` are its
- *  only callers, and keeping it unexported turns an import-shape mistake in
- *  a test into a module-load failure rather than a silently-passing red. */
-function namedSella(flagValue: string | undefined): string | undefined {
+ *  Returns `undefined` when neither `flagValue` nor `$BISELLIUM_SELLA` names
+ *  anyone (W-039's own no-name refusal, kept distinct — the caller checks
+ *  this before the roster check below runs). Otherwise (W-089 behaviour 6)
+ *  the selected name is resolved against the manifest the same way
+ *  `resolveSella` does — a retired tombstone passes (attribution, not
+ *  dispatch), an id that resolves to nothing is `{ error }`. Empty and
+ *  whitespace-only count as unset in both places; a repeated `--sella` is
+ *  `parseFlags`' own last-value-wins (`writes.ts`), not scanned here. Reads
+ *  `process.env` once. Not exported: `runRed` and `runAmend` are its only
+ *  callers, and keeping it unexported turns an import-shape mistake in a
+ *  test into a module-load failure rather than a silently-passing red. */
+function namedSella(flagValue: string | undefined, manifest: Manifest): string | { error: string } | undefined {
   const envValue = process.env["BISELLIUM_SELLA"];
-  if (flagValue !== undefined && flagValue.trim() !== "") return flagValue;
-  if (envValue !== undefined && envValue.trim() !== "") return envValue;
-  return undefined;
+  let name: string | undefined;
+  if (flagValue !== undefined && flagValue.trim() !== "") name = flagValue;
+  else if (envValue !== undefined && envValue.trim() !== "") name = envValue;
+  if (name === undefined) return undefined;
+  if (!resolveSeat(manifest, name)) return { error: `unknown sella "${name}" — not declared in bisellium.yml` };
+  return name;
 }
 
 interface OpusFront {
@@ -145,7 +159,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const sella = resolveSella(values.get("--sella"));
+  const sellaResult = resolveSella(values.get("--sella"), manifest);
+  if (typeof sellaResult !== "string") {
+    console.error(`ready: ${sellaResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = sellaResult;
   const hasSpecProbatio = manifest.probationes.some((p) => p.id === "spec");
 
   editOpusFrontMatter(opusPath, (doc) => {
@@ -287,7 +306,12 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 1 };
   }
 
-  const sella = resolveSella(values.get("--sella"));
+  const doneSellaResult = resolveSella(values.get("--sella"), manifest);
+  if (typeof doneSellaResult !== "string") {
+    console.error(`done: ${doneSellaResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = doneSellaResult;
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["state"], "done");
@@ -392,7 +416,12 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   }
 
   const reviewProbatioId = (manifest as unknown as { review_probatio?: string }).review_probatio ?? "review";
-  const sella = resolveSella(values.get("--sella"));
+  const reviewSellaResult = resolveSella(values.get("--sella"), manifest);
+  if (typeof reviewSellaResult !== "string") {
+    console.error(`review: ${reviewSellaResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = reviewSellaResult;
   const status = pass ? "passed" : "failed";
   const model = values.get("--model");
 
@@ -562,11 +591,16 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   // runCapture and mkdirSync — no command runs and nothing is written for
   // an unattributed red. --sella guest is accepted deliberately: the
   // refusal targets anonymity, not the name guest.
-  const sella = namedSella(values.get("--sella"));
-  if (sella === undefined) {
+  const namedResult = namedSella(values.get("--sella"), manifest);
+  if (namedResult === undefined) {
     console.error("red: no sella — pass --sella <id> or set $BISELLIUM_SELLA (use --sella guest to record as guest deliberately)");
     return { exitCode: 2 };
   }
+  if (typeof namedResult !== "string") {
+    console.error(`red: ${namedResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = namedResult;
   const cwdFlag = values.get("--cwd");
   const execCwd = cwdFlag !== undefined ? resolve(cwdFlag) : process.cwd();
 
@@ -711,7 +745,12 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const sella = resolveSella(values.get("--sella"));
+  const haltSellaResult = resolveSella(values.get("--sella"), manifest);
+  if (typeof haltSellaResult !== "string") {
+    console.error(`halt: ${haltSellaResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = haltSellaResult;
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["state"], "halted");
@@ -851,7 +890,12 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const sella = resolveSella(values.get("--sella"));
+  const waiveSellaResult = resolveSella(values.get("--sella"), manifest);
+  if (typeof waiveSellaResult !== "string") {
+    console.error(`waive: ${waiveSellaResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = waiveSellaResult;
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["probationes", gateId, "status"], "waived");
@@ -1062,8 +1106,14 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   // Land 8: `namedSella` treats a blank $BISELLIUM_SELLA as unset (an
   // explicit blank --sella was already refused above), falling back to
   // "guest" here — the fallback chain the spec calls for, with no third
-  // helper.
-  const sella = namedSella(sellaFlag) ?? "guest";
+  // helper. W-089 behaviour 6: an explicitly-named but undeclared id is
+  // still refused before any write.
+  const amendNamedResult = namedSella(sellaFlag, manifest);
+  if (typeof amendNamedResult !== "string" && amendNamedResult !== undefined) {
+    console.error(`amend: ${amendNamedResult.error}`);
+    return { exitCode: 2 };
+  }
+  const sella = amendNamedResult ?? "guest";
 
   // Both flags in one call append one entry per changed field, title first,
   // then spec, regardless of flag order — the record is deterministic
