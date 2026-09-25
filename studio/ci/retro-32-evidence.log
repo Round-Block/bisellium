@@ -1,0 +1,84 @@
+# Cascade 32 — retrospectio evidence, gathered by the censor
+# sella: qa-lead · at: 2026-09-24T23:18:29Z · worktree: /tmp/claude-1000/retro-32 @ 8965028
+# Produced before the retro was filed, not reconstructed after it.
+
+== A. dispatch ledger, cascade 32 ("the console became an actor": W-067 + W-065) ==
+Supplied by the orchestrator. Claude lanes are subagent-metered; codex lanes are NOT
+metered by this officina and are recorded as the vendor's own reported figures.
+
+  sella      role            model             tokens     lane
+  builder-a  builder         claude-sonnet-5    798000    metered   (W-065 build + fix round)
+  builder-d  builder         claude-sonnet-5    305000    metered   (W-067 build, incl. 429-resumed reconciliation)
+  architect  spec            claude-fable-5     393000    metered   (spec, 3 revisions, carve, 2 amendments, pre-merge strike)
+  qa-lead    censor          claude-fable-5     130000    metered   (W-067 review round)
+  qa-lead    censor          claude-fable-5     295000    metered   (W-065 review rounds 1-2 — my own figure)
+  ui-lead    reviewer        gpt-6-astra        234000    UNMETERED (codex-reported: 117k+73k+44k, 3 red-team/ruling passes)
+  Terra      pre-reviewer    gpt-5.6-terra      191000    UNMETERED (codex-reported: 117k+74k, W-067 + W-065 pre-reviews)
+  Luna       drafting        gpt-5.6-luna            0    UNMETERED (row drafting, negligible; recorded as 0, not measured)
+
+  metered subtotal   1921000
+  unmetered subtotal  425000   (18.1% of the cascade)
+  TOTAL              2346000
+
+Wall-clock minutes were NOT tracked by the dispatch ledger. Every agent is recorded
+with 0 min; read that as "not measured", not as "zero time". The retro's Numbers
+section renders "0 min" because the field is required, and this line is the caveat.
+
+== B. the aerarium gap, measured ==
+  isoWeek(2026-09-24) = 2026-W39 ; isoWeek(2026-09-25) = 2026-W39
+  studio/aerarium/ contains exactly one file: 2026-W38.yml
+  => there is NO aerarium for the period this cascade ran in.
+Consequence, visible in the retro's own Usage section: the posture line reads
+"(no aerarium on record for the current period)". That is honest output, not a
+tool failure — but it means no collegium's posture can be computed for cascade 32,
+including qa's own (qa lex §5 reports burn to aerarium/<period>.yml). The aerarium
+header says "Allowances only, Patron-written", so the missing week is the Patron's
+to write, not the Censor's. This is already surfaced by check as `aerarium.missing`.
+
+== C. no usage baseline exists for a trend ==
+`previousRetroTotalTokens` selects the highest-numbered retro below 32 — retro-28 —
+and greps it for "Total tokens:". Measured: retro-28 has NO ## Usage section, so the
+trend line will read "no prior retro found for comparison".
+Audited all 9 retros on record: 6 carry no Usage section at all —
+  retro-4b, retro-23, retro-25, retro-26, retro-27, retro-28
+Only retro-5, retro-6 and retro-7 have one. D-013 has required it since 2026-09-19.
+By my own lex §7 an absent usage section on a real cascade is "the Censor's own gap,
+not the tool's" — so this is a standing lapse of my own contract, named here rather
+than quietly skipped. Cascade 32 restores it; 29-31 are unfiled and are the
+orchestrator's call (backfill or recorded skip), not mine to take.
+
+== D. background-job reaping, this session ==
+Two of my own long-running waiters outlived their usefulness and were stopped by the
+main session rather than by me:
+  task bdgfwqhlh  "Wait for the mutation scripts to finish"   — stopped by main session
+  task bhwxcj4zd  "Wait for the round-1 battery re-run"        — stopped by main session
+Both were pure poll-loops (`until ! pgrep ...; do sleep`) left running after I had
+already read the same results from the completed task's own notification. Neither
+held a patched file or a port, so no harm followed — but they were mine to reap and
+I did not reap them.
+Reaped at the close of this session, verified:
+  pgrep -af 'mutate[0-9]*.py|playwright|npm test|bisellium serve' -> none alive
+  probe ports 4491 / 4493 / 4495 -> all free
+I can attest to MY OWN two stale rows from direct observation. The orchestrator
+reports the pattern across three censors; I have not seen the other two and do not
+certify them here.
+
+== E. a defect in my own evidence practice ==
+studio/ci/W-065-review-1.log and -2.log both cite the mutation battery as "Scripts
+kept: $TMPDIR/mut/mutate{,2,3,4}.py". $TMPDIR is session-scoped and will not survive
+this session, so that citation degrades to a dead reference the moment the session
+ends — while the logs that cite it are committed to the officina forever.
+The standing rule is "mechanical work is a script you write, run and keep". I wrote
+and ran them; "keep" is where I fell short. Naming it rather than letting a
+committed log carry a path that resolves to nothing.
+
+== F. cascade 32 gate/mutation totals (my own runs, both W-065 rounds) ==
+  npm test at the cascade's close (W-065 merge): 2473 PASS, 0 FAIL
+  mutants killed, distinct, final state: 47
+  mutants surviving: 3 — 02/02b and 13 (ruled equivalent, reasons in review-1 §9)
+                          and R2-b (the dropped emit has no regression guard;
+                          filed forward as briefs/W-069.md behaviour 13)
+  fix rounds: 1 (W-065 round 2, after my round-1 FAIL)
+  refusals: 1 (my round-1 FAIL verdict)
+  reruns: 2 (builder-d's 429-resumed reconciliation; my own mutation re-run after
+             the first browser pass ran against a stale dist)
