@@ -1,0 +1,295 @@
+# W-076 review — round 1 — qa-lead (censor) — claude-opus-5
+# spec: studio/briefs/W-076.md rev 3 (5 behaviours, 3 Sol rounds)
+# branch: opus/W-076 @ 708ca02 (orchestrator verify included)
+# at: 2026-09-25 (produced during review; nothing backfilled)
+# VERDICT: FAIL — 1 blocking finding (F1), fix is one line + one pinned string.
+
+================================================================
+GATES RE-RUN BY THE CENSOR (not taken from the builder's logs)
+================================================================
+$ npm test                        -> exit 0 (full suite green)
+$ npm run -s typecheck            -> exit 0
+$ npm run -s lint                 -> exit 0 (2 pre-existing warnings, 0 errors)
+$ npm run -s format:check         -> "All matched files use Prettier code style!"
+$ bisellium verify W-076 --studio studio --repo .
+    tests: passed  ci/W-076-tests-54141387.log
+    lint:  passed  ci/W-076-lint-54141387.log
+    types: passed  ci/W-076-types-54141387.log
+Working tree clean before and after every step (git status --short empty).
+
+================================================================
+ACCEPTANCE 5 / BEHAVIOUR 5 — the exact check delta, measured globally
+================================================================
+Method: `git archive origin/master` into $TMPDIR, symlink node_modules, then
+run master's checkStudio and the branch's checkStudio over the SAME studio
+(this worktree's studio/) with the SAME --repo (this worktree), so only the
+rule code differs. Findings keyed on level|rule|where|message.
+
+  master findings : 125
+  branch findings : 137
+  ADDED           : 12   -> {"petitio.subject": 12}, levels ["advise"]
+  added blocks    : 0
+  REMOVED         : 0
+  no other rule's finding set altered
+
+$ bisellium check studio --repo .  -> 12 petitio.subject findings, all advise:
+  P-001 P-002 P-003 P-004 P-005 P-007 P-008 P-009 P-010 P-011 P-012 P-013
+The exact delta the brief specifies. CONFIRMED.
+
+================================================================
+ACCEPTANCE 2 — the twelve real subjects, before and after
+================================================================
+Evidence exists in produced form, better than a hand-printed table:
+  BEFORE: studio/ci/reds/W-076/01.log records, per petitio, the OLD value as
+          the observed detail of the failing pin assertion.
+  AFTER : the PINNED table in packages/cli/src/check.test.ts, green in
+          studio/ci/W-076-tests-54141387.log.
+"pinned subject exact" lines in 01.log: 12 FAIL, 0 PASS  =>  12 of 12 changed.
+BEFORE values as recorded (wrap artifacts and raw markdown, the defect):
+  P-001 "Retrospectio 4b (acta/2026-09-18-retro-4b.md) found six failure classes"
+  P-002 "# Choose a licence"
+  P-004 "W-021's insurance clause (P-001 items 2-4, adopted verbatim): build"
+  P-008 "`process.cascade` advises whenever one sella signs both the spec and"
+  P-009 "Proposed amendment to the QA lex (`studio/leges/qa.md`), granting the"
+  P-012 "**A check rule for red provenance: `bisellium red` records a working-tree"
+  P-013 "**W-064's red gate: D-024's kill arm has fired, and only you can rule.**"
+  (P-003/P-005/P-007 152/152/146 chars; P-010, P-011 as in 01.log)
+CONFIRMED, with one exception: P-010's AFTER value is wrong — see F1.
+
+================================================================
+INDEPENDENT REPRODUCTION OF THE DERIVATION (all twelve)
+================================================================
+The censor implemented brief §Design.1 steps 1-4 from the spec prose, NOT by
+importing deriveSubject, and ran it over studio/petitiones/*.md:
+
+  P-001 MATCH len=119   P-002 MATCH len=16    P-003 MATCH len=115
+  P-004 MATCH len=119   P-005 MATCH len=115   P-007 MATCH len=119
+  P-008 MATCH len=116   P-009 MATCH len=119   P-010 MATCH len=116  <-- see F1
+  P-011 MATCH len=117   P-012 MATCH len=117   P-013 MATCH len=68
+All twelve pins reproduce byte-for-byte. Eleven are also the value the brief
+specifies. P-010 reproduces the builder's pin because the censor's first pass
+read the cap boundary the same ambiguous way the builder did; measuring the
+boundary character settled it against both (F1).
+
+================================================================
+F1  BLOCKING — P-010's pinned subject is wrong: an off-by-one in the cap
+================================================================
+Files: adapters/native/src/index.ts (deriveSubject, the cap block)
+       packages/cli/src/check.test.ts:405-412 (the comment), :422 (the pin)
+
+The brief pins the twelve output-by-output and states the post-fix P-010
+value verbatim:
+  "note the 120 for P-010 is the pre-land-7 implementation and must become
+   119+`…` under the corrected cap rule."
+i.e. 119 characters of text plus the ellipsis = 120 total.
+
+MEASUREMENT of P-010's first paragraph after unwrap + strip (197 chars):
+  index 110 " "  111 "("  112 "T"  113 "h"  114 "e"  115 " "
+        116 "g"  117 "a"  118 "p"  119 " "  120 "i"  121 "n"
+The word "gap" occupies 116-118 and ENDS EXACTLY at the 119-character text
+boundary, with a space at index 119. P-010 is the only one of the twelve
+where the character at index 119 is a space (censor measured s[119] for all
+twelve: "t" "-" "d" "r" "d" "—" "e" "d" " " "d" "g" "-").
+
+  spec value      : 119 chars + "…" = 120 total
+    "...not work. (The gap…"          <- does NOT cut mid-word (s[119] is a space)
+  builder's pin   : 115 chars + "…" = 116 total
+    "...not work. (The…"              <- drops the complete word "gap"
+
+ROOT CAUSE, one line:
+    const budget = LIMIT - 1;                 // 119
+    let cut = s.slice(0, budget);             // indices 0..118 only
+    const lastSpace = cut.lastIndexOf(" ");   // finds 115, never 119
+The space AT the boundary (index 119) is outside the search window, so the
+last full word before the cap is discarded whenever it ends exactly on the
+boundary. The no-space path (the synthetic long-URL row) is correct.
+
+THE BUILDER'S STATED JUSTIFICATION IS FACTUALLY FALSE. check.test.ts:405-412
+reads "P-010's length (116, uncapped)" and "P-010's first paragraph ends at
+'...not re-litigated here.)' well under the cap, so no truncation applies".
+The paragraph is 197 characters and the pinned string itself ends in "…", so
+truncation plainly applied. The brief's correction note was right; the
+builder's measurement and its comment are both wrong.
+
+CLASS OR SINGLE INSTANCE: one root cause, general in scope (any body whose
+word boundary lands exactly on the cap loses a whole word), but exactly ONE
+instance among the inputs under test. Searched: all twelve real petitiones
+(s[119] measured for each, above) plus behaviour 1's synthetic single-token
+row (unaffected). No other instance exists in this opus's fixtures.
+
+FIX AND ITS EXACT BLAST RADIUS (measured, both algorithms run over all twelve):
+  search a window of LIMIT (120) chars, not LIMIT-1:
+      const w = s.slice(0, LIMIT);
+      const sp = w.lastIndexOf(" ");
+      s = (sp > 0 ? w.slice(0, sp) : s.slice(0, LIMIT - 1)) + "…";
+  -> pins that change: 1 (P-010, 116 -> 120)
+  -> synthetic long-token row: identical, still 120
+  -> the other eleven pins: byte-identical
+So the fix is one line in deriveSubject plus one string in check.test.ts's
+PINNED table, plus deleting the false comment at :405-412.
+
+MUTATION CORROBORATION: setting `budget = LIMIT` makes P-010 produce exactly
+the brief's value —
+  FAIL [W-076 b1] P-010: pinned subject exact
+       "...not work. (The gap…"
+— and breaks the synthetic row to 121, which is why the fix needs the
+no-space fallback rather than the budget change alone.
+
+================================================================
+MUTATION TESTING — the suite bites (QA lex §2: one is enough; three run)
+================================================================
+M1  apps/server/src/store.ts: drop `body: p.body` from the needsYou row
+    -> FAIL  inbox body: at least 2KB                             undefined
+    -> FAIL  inbox body: byte-identical to the front matter body  undefined
+    Exactly the two failures 03.log records. CAUGHT. Reverted.
+
+M2  adapters/native/src/index.ts: `const budget = LIMIT;`
+    -> FAIL [W-076 b1] P-010: pinned subject exact
+    -> FAIL [W-076 b1] synthetic: single token longer than the cap — pinned exact
+    -> FAIL [W-076 b1] synthetic: capped at 120 total   121
+    CAUGHT. Reverted.
+
+M3  adapters/native/src/index.ts: `body: "" as string` (never carry the body)
+    -> packages/cli/src/check.test.ts: ZERO failures (b2 and b4 both green)
+    -> apps/server/test/server.test.ts: FAIL inbox body: at least 2KB (0)
+                                        FAIL inbox body: byte-identical
+    CAUGHT, but only by behaviour 3. See F3. Reverted.
+Working tree restored to 708ca02 after each mutation (git status --short empty).
+
+================================================================
+ACCEPTANCE 3 — P-012's full body over /api/inbox, verified by the censor
+================================================================
+Temp copy of the real officina (cp -r studio/. $TMPDIR/real-copy), server
+started on port 0, GET /api/inbox:
+  status: 200
+  needs_you ids: ["P-012"]                (the brief's claim: the only one)
+  P-012 subject: "A check rule for red provenance: bisellium red records a
+                  working-tree identity, and a rule verifies it — superseding…"
+  wire body length: 1730   file body length: 1730
+  byte-identical to the file body: true
+  lines in wire body: 29   (newlines intact, multi-paragraph, no truncation)
+CONFIRMED. Body required end to end holds: schema -> adapter -> store ->
+/api/inbox -> api.ts's non-optional `body: string`.
+
+================================================================
+F2  MINOR — behaviour 3's reds are untagged: genuine evidence, not a hole
+================================================================
+studio/ci/reds/W-076/03.log's two failures carry no [W-076 b3] tag (0/2).
+CAUSE, not a scoping hole: behaviour 3 is the only behaviour outside
+packages/cli/src/check.test.ts. It lives in apps/server/test/server.test.ts,
+whose pre-existing harness is check(name, cond, detail) — no behaviour-tag
+parameter, unlike check.test.ts's checkB(n, ...). The builder could not tag
+without editing that harness.
+
+ATTRIBUTION IS NEVERTHELESS SOUND, on four independent grounds:
+  1. the log header names it: "# behaviour: 3";
+  2. the command is scoped to that one file:
+     "node --import tsx apps/server/test/server.test.ts .";
+  3. the two failing names are unique to this opus ("inbox body: at least
+     2KB", "inbox body: byte-identical to the front matter body") — no other
+     assertion in that file matches "inbox body";
+  4. PROVENANCE: both failures report `undefined` for row.body, exactly the
+     pre-store.ts state, and the sibling PASS line shows the pre-fix raw
+     subject "**W-064's red gate: D-024's kill arm has fired, and only you
+     can rule.**" — the old body.split("\n")[0]. Post-fix the same line
+     prints the stripped derivation. The log cannot have been recorded after
+     the implementation.
+  5. Mutation M1 reproduced both failures verbatim, same names.
+SINGLE INSTANCE. Searched all five red logs for behaviour-tagged lines;
+01/02/04/05 are fully tagged (25/25, 2/2, 7/7, 13/13).
+
+================================================================
+F3  MINOR — two behaviour assertions are vacuous; the body carry rests on b3
+================================================================
+All five reds share tree dirty:554e3d5e..., and at that tree the ADAPTER's
+`body` carry was already implemented — these two behaviour assertions PASS in
+their own red:
+  02.log  PASS [W-076 b2] body is still carried verbatim alongside the
+               front-matter subject                                  ""
+  04.log  PASS [W-076 b4] an empty/whitespace-only body yields body: "" ""
+(contrast 03.log, where the same field is `undefined` at the wire because
+store.ts had not been changed — a consistent, honest partial tree.)
+
+Both assert `body === ""` against EMPTY-body fixtures
+(check.test.ts:495 on W076-B2-B, :531 on W076-B4-EMPTYBODY), so neither can
+distinguish "carries the body" from "always empty". Proved by mutation M3:
+`body: ""` in the adapter leaves every check.test.ts behaviour green.
+COVERAGE IS NOT LOST — M3 fails behaviour 3's two server assertions, which
+have a genuine recorded red — so this is assertion quality, not an evidence
+hole. b2's "verbatim" wording is the misleading one: nothing verbatim is
+being observed when the body is empty. Enumerated by grepping every
+behaviour-tagged PASS line in all five red logs; these are the two instances.
+
+================================================================
+F4  MINOR — acceptance 3 is unasserted in the suite
+================================================================
+Nothing in npm test asserts "GET /api/inbox on the REAL officina returns
+P-012's full body". Behaviour 3 uses a synthetic W076-BODY fixture in a fresh
+temp officina instead. DEFENSIBLE: behaviour 3 explicitly permits either
+("copy P-013's five-option body into a temp officina ... or assert against
+P-012"), and behaviour 3's own "2+ KB body" clause is unsatisfiable with
+P-012, whose body is 1730 bytes — one test cannot serve both. The censor
+verified acceptance 3 directly instead (section above); it holds.
+
+================================================================
+F5  NIT — docs/ADOPTION.md contradicts itself on subject:
+================================================================
+The example annotates the key
+  subject: "..."   # optional; see below
+and the paragraph immediately below it says subject: "is required for new
+petitiones". Suggest "required for new petitiones; advisory until W-038's
+writer stamps it" so the example and the prose agree.
+
+================================================================
+RULINGS ON THE BUILDER'S THREE DISCLOSED DEVIATIONS
+================================================================
+D1  Petitiones-scoped delta instead of a global pinned baseline — ACCEPTED.
+    The rationale is sound: a globally pinned baseline churns with this
+    opus's own ready/red/done bookkeeping and with probatio.certifies, which
+    keys off the live git tree. The assertion still bites (13 red failures
+    in 05.log). It IS weaker than behaviour 5's global "no other rule's
+    finding set altered", so the censor verified the stronger claim itself,
+    master-vs-branch over the same studio and the same --repo: 125 -> 137,
+    +12 advisory petitio.subject, 0 blocks added, 0 removed, no other rule
+    moved. Behaviour 5 and acceptance 5 hold at the stronger reading.
+    Note for the record: 05.log's "...and every one is petitio.subject" and
+    "...and every one is advisory" PASS vacuously on an empty set in the
+    red; they are conjunctive refinements of the count assertion, which did
+    fail, so this is acceptable.
+
+D2  The client placeholder assertion added without a red — ACCEPTED.
+    apps/web/src/screens/InboxView.tsx:69 is
+        {selected.body ? (...) : (<p ...>No content provided.</p>)}
+    empty-FALSY, not `=== undefined`, so body: "" genuinely reaches the
+    placeholder today; and the file is not owned by this opus, so no red is
+    obtainable without mutating unowned code. The builder labelled it in
+    place as "a regression-safety assertion, not a red". That is the honest
+    treatment and acceptance 4 is satisfied.
+
+D3  The P-010 pin — REJECTED. See F1. The brief's correction note was right
+    and the builder's measurement was wrong. This is the blocking finding.
+
+================================================================
+DIFF SCOPE
+================================================================
+git diff origin/master...HEAD --stat: 20 files, +1061 -13.
+All 11 code/docs files are named in the brief's "Files owned" (:191-213).
+The other 9 are this opus's own bookkeeping: studio/opera/W-076.md, three
+studio/ci/W-076-*.log, five studio/ci/reds/W-076/*.log. No write outside the
+declared set (QA lex §2, probatio.declared).
+
+================================================================
+WHAT ROUND 2 NEEDS
+================================================================
+F1 only, and it is one line plus one string plus a deleted comment:
+  1. adapters/native/src/index.ts — widen the cap's space search to a
+     120-char window, keeping s.slice(0, 119) as the no-space fallback.
+  2. packages/cli/src/check.test.ts — P-010's pin becomes
+     "...not work. (The gap…" (120 chars). Exactly one pin changes;
+     re-measure to confirm the other eleven and the synthetic are untouched.
+  3. packages/cli/src/check.test.ts:405-412 — delete the false comment
+     ("116, uncapped", "well under the cap"). If the cap boundary still
+     reads as ambiguous, that is a clarification to raise, not to resolve by
+     re-pinning against a measurement that does not hold.
+F2/F3/F4/F5 are advisory and do not require a round; F3 and F5 are cheap
+enough to fold into round 2 if the builder is already in the files.
