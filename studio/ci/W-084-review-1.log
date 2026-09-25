@@ -1,0 +1,238 @@
+# W-084 — censor review, round 1
+# sella: qa-lead (censor) · model: claude-opus-5 · at: 2026-09-25T19:53:20Z
+# worktree: /home/edckt/projects/bisellium/.worktrees/W-084 · branch: opus/W-084 · HEAD: b9c12b6
+# builder: builder-sol (gpt-5.6-sol) — a D-028 codex build, orchestrator-proxied reds, disclosed
+# VERDICT: FAIL (3 fixes, all small; 1 nit; 1 defect filed outside this opus)
+# build commits: 4a8c07a (harness) · 39640e6 (rule) · 8778886 (reds) · 0a7d16e (verify) · b9c12b6 (handoff)
+
+== 0. preconditions ==
+`git pull`: no upstream tracking on opus/W-084; `git fetch origin` then
+`git ls-remote origin refs/heads/opus/W-084` = b9c12b64802b4eb270917958efc8c9866ed3de3c,
+identical to local HEAD — nothing to pull.
+`git status --porcelain` empty at review start, after every mutation pass, and at the end.
+Every mutation was applied by script with an exact-occurrence assertion (a pattern that did
+not appear exactly once aborted rather than silently no-op'ing) and reverted with
+`git checkout -- <file>` immediately after its run.
+
+== 1. provenance re-derived, not trusted (W-079 admissibility rule) ==
+
+D-028 disclosure: reds re-recorded by orchestrator-executed CLI with `--sella builder-sol` at
+the committed pre-fix harness commit 4a8c07a; spec gate signed by the same proxy; the two
+source commits carry the builder's trailer via proxy. I re-derived all of it.
+
+  claim                                            re-derived                                     verdict
+  red logs stamp tree:24618090…                    sha1 over `git ls-tree -r 4a8c07a` minus       MATCH
+                                                   [studio, .bisellium, examples] (the exact
+                                                   exclusion set red.ts's hashRepo computes)
+                                                   = 24618090e2ebd6ad447e40fa49941db3b344dadc
+  gates certify tree:951c72dc…                     same hash at HEAD (b9c12b6)                    MATCH
+                                                   = 951c72dca188f6176daa3dfac715dfc24350307f
+                                                   — still current, certificate not stale
+  4a8c07a is a pre-fix tree                        `git diff --stat 4a8c07a~1 4a8c07a` =           CONFIRMED
+                                                   evidence.test.ts only, 125+/9-. No rule,
+                                                   no ids.ts entry.
+  history shape harness -> implementation          4a8c07a (test only) then 39640e6 (rule +        CONFIRMED
+                                                   ids.ts only). Real recorded red.
+
+The three red commands, re-run by me at a detached checkout of 4a8c07a:
+
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 1     exit 1
+    PASS  same body after header = duplicate                           true
+    FAIL  out-of-range citation blocks once and names both numbers     []
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 2     exit 1
+    PASS  different body = not duplicate                               false
+    FAIL  brief.behaviour_citation is registered
+    PASS  seven exclusions are silent and unreadable brief is skipped  []
+  $ node --import tsx packages/cli/src/rules/evidence.test.ts . 3     exit 1
+    PASS  ERR_MODULE_NOT_FOUND detected                                true
+    FAIL  unreferenced brief is reached by checkStudio                 []
+    PASS  real brief corpus has no out-of-range citation               []
+
+Byte-identical to the bodies of ci/reds/W-084/01..03.log, same exit codes. The reds are
+admissible: real, assertion-level, distinct, correctly stamped, correctly attributed.
+Behaviour 2 fails on the registration assertion and not on the vacuous silence assertion,
+which is exactly what the brief demanded of it.
+
+== 2. RULING 1 — red 3 is a genuine red; the detector, not the red, is wrong ==
+
+The log body's only FAIL row is `unreferenced brief is reached by checkStudio []` — an
+assertion failure with a printed actual value, no stack, no loader error. The exit 1 is that
+row's. The string ERR_MODULE_NOT_FOUND appears exactly once in the log, on a PASS row, and it
+is W-022 behaviour 3's own fixture text asserting that isModuleLoadFailure detects that
+string. Red 3 is assertion-level. The advisory is a FALSE POSITIVE and does not count against
+this opus.
+
+The detector is a defect, and it is the W-084 class exactly — a scanner beaten by its own
+fixture. `rules/evidence.ts:216` runs `isModuleLoadFailure(logText)` over the WHOLE log,
+header and PASS rows included, so any log that so much as quotes the string is reclassified as
+not-assertion-level. `# command:` lines are in scope too. Class enumeration, searched: all
+callers of isModuleLoadFailure (one, line 216) and every regex/`includes` over a whole log
+text in check.ts, rules/*.ts and commands/*.ts. ONE instance of the defect. One sibling worth
+naming but not the same bug: check.ts:503 accepts a gate log that merely `includes(hash)`
+anywhere — loose by design there, since the header's position is not fixed.
+
+Out of scope for W-084 (a different rule, P-005/W-022, with its own behaviours and no red
+here); filed as its own item. The remedy is to test only rows that are not `^PASS`, or only
+the log body's failing rows.
+
+W-084's own half of the collision, which IS in scope and is 2 lines: W-084's behaviours reuse
+the same numeric selector (1-3) as the file's legacy W-022 behaviours (1-6), so `checkW084`
+suppresses nothing of the legacy `check()` output and every W-084 red log carries one
+unrelated legacy PASS row. Behaviour 3's happens to be the ERR_MODULE_NOT_FOUND one. A
+distinct selector range (W-084 rows selected as 7-9, still recorded `--behaviour 1..3`) keeps
+each red log to its own assertion and removes the advisory — without a fourth file, which the
+brief does not own.
+
+== 3. acceptance criteria, re-run by me ==
+
+  criterion                                                  measured                        verdict
+  npm test -s                                                exit 0 · 3260 PASS · 0 FAIL     PASS
+  npm run -s typecheck                                       exit 0 · silent                 PASS
+  npm run -s lint                                            exit 0 · 2 warnings             PASS (note)
+  npm run -s format:check                                    "All matched files use
+                                                             Prettier code style!"           PASS
+  npm run -s check -- studio --repo . --json                 0 blocking · 149 advisory       PASS (note)
+  brief.behaviour_citation on the real corpus                0 findings                      PASS
+  rules/lex.test.ts harvest sees the id                      mutation M6 kills it            PASS
+  census re-run and RECORDED AS EVIDENCE (criterion 4)       no artifact on the branch       FAIL
+  broken-fixture output kept (criterion 5)                   behaviour 3's orphan brief is
+                                                             that fixture, in-suite          PASS
+
+lint's 2 warnings are pre-existing and outside this opus's diff (close.test.ts:5,
+tick.test.ts:298) and are byte-identical to the recorded ci/W-084-lint-951c72dc.log. Not this
+opus's.
+
+The 149 advisories include exactly one attributable to W-084: the red_content false positive
+ruled on above. `brief.behaviour_citation` itself contributes zero, which is the claim behind
+blocking. Criterion 2's literal words ("the advisory count is unchanged") are therefore not
+met, by one advisory, for a reason that is not the rule's.
+
+The four W-084 rows in my green run:
+  PASS  out-of-range citation blocks once and names both numbers  [{"rule":"brief.behaviour_citation","level":"block","where":"briefs/out.md","message":"brief cites Behaviour 7 but declares 3 behaviours"}]
+  PASS  brief.behaviour_citation is registered
+  PASS  seven exclusions are silent and unreadable brief is skipped  []
+  PASS  unreferenced brief is reached by checkStudio  [{"rule":"brief.behaviour_citation","level":"block","where":"briefs/orphan.md","message":"brief cites Behaviour 99 but declares 3 behaviours"}]
+  PASS  real brief corpus has no out-of-range citation  []
+
+== 4. the census, re-derived independently ==
+
+My own script over studio/briefs at HEAD, mirroring the shipped pipeline and importing the
+real countBehaviours:
+
+  briefs 57 · declaring >=1 behaviour 47 · raw Behaviour-N 85 · live after exclusions 74
+  excluded: fenced 0 · inline 10 · quoted 1   (0+10+1 = 85-74, internally consistent)
+  OUT OF RANGE: 0 · offenders: none
+
+Matches the census agent's 57/47/85/74/0. The builder's reported 56/46 was measured pre-rebase;
+W-087's brief landed in between. IMMATERIAL — the brief itself says the raw and excluded counts
+move with every edit and that the last row is the only load-bearing one, and the last row is
+zero on the tree that ships. What is NOT immaterial is that nothing in the officina records the
+re-run at all: criterion 4 asks for the census "re-run and recorded as evidence", and there is
+no census log and no kept script on the branch (standing rule: mechanical work is a script you
+write, run and keep). A censor-side re-derivation is not the opus's evidence.
+
+Attribution cross-check, independent of my script: mutation M1 (inline exclusion dropped) fires
+the rule on briefs/W-084.md and M2 (quoted exclusion dropped) on briefs/W-062.md — exactly the
+two attributions the brief's table claims.
+
+== 5. mutations — nine, each naming the row it is supposed to kill ==
+
+  #   mutation                                                     result
+  M1  inline-code exclusion line deleted                           KILLED — b2 (constructs.md) + b3 (real corpus: W-084.md)
+  M2  quoted-span exclusion deleted                                KILLED — b2 + b3 (real corpus: W-062.md)
+  M3  fence exclusion neutered (toggle+continue removed)           SURVIVED — full suite still exit 0
+  M4  crawl reach narrowed to opera-referenced specs               KILLED — b3 (unreferenced brief) + b1
+  M5  unreadable-brief `continue` -> `break` (abort mid-crawl)     SURVIVED — full suite still exit 0
+  M6  rule id removed from ids.ts                                  KILLED — b2 registration row AND
+                                                                   rules/lex.test.ts: {"missingFromRegistry":["brief.behaviour_citation"]}
+  M7  `if (declared === 0) continue` removed                       KILLED — b1
+  M8  range boundary `cited <= declared` -> `<`                    KILLED — b1 + b3
+  M9  message drops the declared count                             KILLED — b1
+
+Seven of nine killed. Behaviour 3's positive control does what revision 2 promised: M4 replaces
+the briefs crawl with the ACTIVE-opus/spec reach that opus.red_evidence has, and the
+unreferenced-brief row goes red. The all-brief crawl is proven, not asserted.
+
+The two survivors are one class, and I enumerated it rather than reporting the first instance:
+behaviour 2 asserts its eight rows in aggregate (`findings.length === 0`), so any row that is
+silent for the WRONG reason still passes. Of behaviour 2's rows, five (lowercase/plural
+cross-opus, the Files-owned partition, W-999, `see "Running talk"`) match no
+`Behaviour \d+` at all and are pure negative controls with no branch behind them — nothing to
+pin. The two that DO stand on a code branch are the fenced row and the unreadable-brief row,
+and both branches can be deleted with the suite green. That is the whole class: 2 instances.
+Searched: all 8 checkW084 assertions against every branch in citationProse and
+checkBehaviourCitations (fence toggle, inline replace, quote replace, readFileSync catch,
+declared===0 skip, cited<=declared skip, message shape).
+
+== 6. why M3 survives, and the finding underneath it ==
+
+The fenced exclusion is not pinned because the inline exclusion masks it. `citationProse`'s
+`.replace(/(`+)[\s\S]*?\1/g, "")` matches across newlines, so with the fence toggle removed the
+two ``` marker lines pair up as one "inline code span" and the fenced Behaviour 9 is deleted
+anyway. The comment above the function claims inline spans are matched by "any matching
+backtick-run length; an unmatched delimiter is prose" — measured on the real corpus, that
+across-newline pairing is not narrow:
+
+  prose deleted before the rule ever looks, studio/briefs at HEAD, after fence stripping:
+    corpus-wide  22.5%
+    W-047.md     81.5%  (35,604 of 43,923 chars) — three single "spans" of 11,320, 6,502 and
+                        14,965 chars, each a `` delimiter paired with another `` thousands of
+                        characters later:
+                        head "`` | `runMerge`/`runBranch` positional | a git **pathspec** …"
+                        tail "…adding a\n  raw ``"
+    W-050.md     41.1%
+    W-033.md     23.1%   W-042.md 27.5%   W-087.md 14.2%
+
+A block rule that is blind over 81.5% of one brief and 22.5% of the corpus has a reach far
+narrower than "the three exclusions" describes, and the brief's named limitation (lowercase
+forms) is not the big one. Today it costs nothing: bounding spans to a single line, which is
+what a Markdown code span is, raises live matches 74 -> 75 and leaves OUT OF RANGE AT 0, so no
+residue is being hidden right now. It is a prospective hole and an undocumented one.
+
+Verified remedy, because a wrong recommendation costs a round: replacing the multiline replace
+with a per-line `l.replace(/(`+)[^`\n]*?\1/g, "")` leaves evidence.test.ts and rules.test.ts
+green (all seven constructs still silent, real corpus still 0), AND makes M3 KILLED with the
+existing fixture — one line closes the blind spot and pins the fence branch that For Sol
+target 2 asked about.
+
+== 7. findings ==
+
+F1 (fix, blocking this round) — the inline exclusion matches across newlines. §6: 22.5% of the
+corpus, 81.5% of W-047, deleted before the rule looks; it also masks the fenced branch, which
+is why M3 survives. Verified one-line remedy in §6. If the builder prefers a different fix, the
+acceptance is: M3 KILLED, all seven constructs silent, real corpus 0, and the deleted-prose
+percentage measured and recorded.
+
+F2 (fix, blocking this round) — behaviour 2's unreadable-brief row does not discriminate (M5).
+`unreadable.md` sorts last in safeList's sorted listing and the only brief before it yields no
+findings, so aborting the crawl at that entry is indistinguishable from skipping it. The brief
+requires "the rest of the crawl completes". Name the entry so it sorts FIRST and assert a
+later brief's finding still appears.
+
+F3 (fix, blocking this round) — acceptance criterion 4 is unmet: no census recorded as
+evidence, no kept script. §4 has the numbers; the obligation is the opus's, not the censor's.
+Keep the script, record raw/live/per-exclusion/out-of-range as a log.
+
+F4 (nit, not blocking) — `safeList` was rewritten off `listMd`. The new body is
+`readdirSync().filter(.md).sort().map(join)`, i.e. a copy of the adapter's `listMd`
+(adapters/native/src/index.ts:125) minus an existsSync guard the try/catch already covers, and
+the `listMd` import was dropped. Functionally inert, but it is a shared helper that
+opus.untracked and opus.red_evidence also call, and it now diverges from the three sibling
+safeList copies (check.ts:127, rules/process.ts:35, rules/paths.ts:36) that all delegate to
+listMd. The brief's house constraints ask for reuse of what the file already does. Restore
+`return listMd(dir);`. Searched: every safeList definition and every listMd caller — 1 instance.
+
+F5 (nit, not blocking, recommended) — the red-log selector overlay of §2, which is the
+in-scope half of the false positive and is 2 lines.
+
+Not W-084's, filed separately: isModuleLoadFailure applied to whole log text
+(rules/evidence.ts:216).
+
+== 8. verdict ==
+
+FAIL, round 1. The build is genuinely good: TDD shape real and re-derived, provenance exact to
+the hash, the all-brief crawl proven by a mutation rather than asserted, seven of nine
+mutations killed, the corpus green, zero new blocking findings, suites clean. It fails on one
+measured precision hole in a BLOCK-level rule (F1), one behaviour whose robustness row cannot
+fail (F2), and one unmet acceptance criterion (F3). All three are small and mechanical; one
+round should close them.
