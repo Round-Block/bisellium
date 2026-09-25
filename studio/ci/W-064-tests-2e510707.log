@@ -7,92 +7,92 @@ GET /api/events 200 1ms
 POST /api/_poll 404 0ms
 GET /api/events 200 1ms
 GET /api/events 200 1ms
-GET /api/live 200 99ms
-POST /api/_poll 200 22ms
+GET /api/live 200 101ms
+POST /api/_poll 200 13ms
 GET /api/officina 200 2ms
-GET /api/live 503 1ms
 GET /api/live 503 0ms
-GET /api/live 200 285ms
-GET /api/live 200 285ms
-GET /api/live 200 285ms
-GET /api/live 200 285ms
-GET /api/live 200 285ms
-GET /api/live 200 285ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 284ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 283ms
-GET /api/live 200 282ms
-GET /api/live 200 282ms
-GET /api/live 200 282ms
-GET /api/live 200 282ms
-GET /api/live 200 261ms
-GET /api/live 200 261ms
-GET /api/live 200 261ms
-GET /api/live 200 260ms
-GET /api/live 200 260ms
-GET /api/live 200 260ms
-GET /api/live 200 260ms
-GET /api/live 200 260ms
-GET /api/live 200 260ms
-GET /api/live 200 260ms
-POST /api/talk 200 90ms
-POST /api/talk 200 133ms
+GET /api/live 503 0ms
+GET /api/live 200 273ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 272ms
+GET /api/live 200 272ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 271ms
+GET /api/live 200 270ms
+GET /api/live 200 270ms
+GET /api/live 200 270ms
+GET /api/live 200 270ms
+GET /api/live 200 270ms
+GET /api/live 200 270ms
+GET /api/live 200 256ms
+GET /api/live 200 256ms
+GET /api/live 200 256ms
+GET /api/live 200 256ms
+GET /api/live 200 256ms
+GET /api/live 200 255ms
+GET /api/live 200 255ms
+GET /api/live 200 255ms
+GET /api/live 200 255ms
+GET /api/live 200 255ms
+POST /api/talk 200 93ms
+POST /api/talk 200 137ms
 POST /api/greenlight 200 0ms
 POST /api/delegate 200 5ms
+POST /api/delegate 200 6ms
 POST /api/delegate 200 3ms
 POST /api/delegate 200 4ms
-POST /api/delegate 200 3ms
+GET /api/officina 200 1ms
 GET /api/officina 200 2ms
-GET /api/officina 200 2ms
-GET /api/models 200 6ms
+GET /api/models 200 7ms
 GET /api/models 200 1ms
 GET /api/models 200 1ms
 GET /api/models 200 1ms
 GET /api/models 200 2ms
-GET /api/models 200 3001ms
+GET /api/models 200 3002ms
 GET /api/models 200 1ms
 GET /api/officina 200 4ms
-GET /api/events 200 1ms
-GET /api/events?limit=3 200 0ms
+GET /api/events 200 2ms
+GET /api/events?limit=3 200 1ms
 GET /api/events?limit=9999 200 1ms
-GET /api/events?since=2 200 4ms
+GET /api/events?since=2 200 1ms
 GET /api/events?since=2026-09-18T17%3A00%3A00.000Z 200 1ms
-GET /api/events 200 1ms
-GET /api/events?item=W-002 200 0ms
+GET /api/events 200 0ms
+GET /api/events?item=W-002 200 1ms
 GET /api/events?item=W-002&limit=2 200 0ms
 GET /api/events?item=W-002 200 0ms
 GET /api/events?item=NOPE-NOT-REAL 200 0ms
-GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 1ms
+GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 0ms
 GET /api/events?item=W-002&since=1 400 0ms
 GET /api/events?item=W-002 200 0ms
-POST /api/_poll 200 12ms
+POST /api/_poll 200 14ms
 GET /api/live 200 119ms
 fatal: not a git repository (or any of the parent directories): .git
 --spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
@@ -101,9 +101,9 @@ fatal: not a git repository (or any of the parent directories): .git
 usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
 /********.yml not found — not a studio
 retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
-GET /api/health 200 33ms
-POST /api/greenlight 401 0ms
-POST /api/greenlight 200 10ms
+GET /api/health 200 31ms
+POST /api/greenlight 401 1ms
+POST /api/greenlight 200 9ms
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
   line 3: slate-heading: ### Backlog
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
@@ -153,7 +153,7 @@ W-002: --decision "D-does-not-exist" not found under decisions/
 W-002: --decision "../../etc/passwd" not found under decisions/
 W-002: --decision "../leges/qa" not found under decisions/
 unknown opus: ../petitiones/A-1
-Preparing worktree (detached HEAD 38af595)
+Preparing worktree (detached HEAD 129f19d)
 Preparing worktree (checking out 'opus/W-140')
 W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
 W-501: gates not passed: qa
