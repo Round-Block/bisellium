@@ -27,6 +27,7 @@ import { checkDocs } from "./rules/docs.js";
 import { checkEvidence } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
+import { diagnosticLabel } from "./reporting.js";
 
 // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
 // every id here can end up as a path component elsewhere) — reject anything
@@ -758,16 +759,17 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
         },
       )
     : []) {
+    const label = diagnosticLabel(s.sella);
     if (s.unknown) {
-      add("hook.unknown", "advise", `receipts/${s.sella}`, `receipts/${s.sella} does not resolve to any declared seat (template, retired tombstone, or instance) — no hook wiring can be inferred for it`);
+      add("hook.unknown", "advise", `receipts/${label}`, `receipts/${label} does not resolve to any declared seat (template, retired tombstone, or instance) — no hook wiring can be inferred for it`);
       continue;
     }
     if (s.dead)
       add(
         "hook.dead",
         "advise",
-        `receipts/${s.sella}`,
-        `sella "${s.sella}" (harness ${s.harness}) has no hook receipt in its last ${HOOK_DEAD_RECENT_RECEIPTS} session(s) — .claude/settings.json hooks may not be wired`,
+        `receipts/${label}`,
+        `sella "${label}" (harness ${s.harness}) has no hook receipt in its last ${HOOK_DEAD_RECENT_RECEIPTS} session(s) — .claude/settings.json hooks may not be wired`,
       );
   }
 

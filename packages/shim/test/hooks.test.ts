@@ -5,7 +5,7 @@
  * stream (Readable.from) — never a real `claude` CLI, never real process
  * stdin. `now` is pinned so receipt/event timestamps are reproducible.
  */
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -665,6 +665,101 @@ probationes: []
       JSON.stringify({ unknownFindings, dead }),
     );
     check("w089 b3: hook.unknown is advisory, never block", unknownFindings.every((f) => f.level === "advise"), JSON.stringify(unknownFindings));
+  }
+
+  // ---- Sec-lead W-089 pass: enumeration must not follow a symlinked
+  // receipts root, sella directory, or receipt file. The outside receipts
+  // are deliberately valid hook receipts: a following implementation calls
+  // them alive, while a non-following implementation cannot observe them. --
+  {
+    const dir = freshStudio("w089-sec-symlinks");
+    const outside = mkdtempSync(join(tmpdir(), "bisellium-hooks-w089-sec-outside-"));
+    dirs.push(outside);
+
+    const outsideEvil = join(outside, "evil");
+    mkdirSync(outsideEvil, { recursive: true });
+    writeFileSync(
+      join(outsideEvil, "sess-evil.json"),
+      JSON.stringify({ sella: "evil", sessionId: "sess-evil", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    mkdirSync(join(dir, "receipts"), { recursive: true });
+    symlinkSync(outsideEvil, join(dir, "receipts", "evil"));
+
+    const outsideInstance = join(outside, "builder.W-evil");
+    mkdirSync(outsideInstance, { recursive: true });
+    writeFileSync(
+      join(outsideInstance, "sess-seat-link.json"),
+      JSON.stringify({ sella: "builder.W-evil", sessionId: "sess-seat-link", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    symlinkSync(outsideInstance, join(dir, "receipts", "builder.W-evil"));
+
+    const realInstance = join(dir, "receipts", "builder.W-file-link");
+    mkdirSync(realInstance, { recursive: true });
+    const outsideReceipt = join(outside, "sess-file-link.json");
+    writeFileSync(
+      outsideReceipt,
+      JSON.stringify({ sella: "builder.W-file-link", sessionId: "sess-file-link", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    symlinkSync(outsideReceipt, join(realInstance, "sess-file-link.json"));
+
+    const { logs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", dir]));
+    check("w089 security: receipts/evil symlink is not enumerated", !logs.some((line) => line.includes("evil:")), JSON.stringify(logs));
+    check(
+      "w089 security: symlinked instance directory is not followed",
+      !logs.some((line) => line.includes("builder.W-evil")),
+      JSON.stringify(logs),
+    );
+    check(
+      "w089 security: symlinked receipt file is not read",
+      logs.some((line) => line.includes("builder.W-file-link") && line.includes("last=none") && line.includes("dead")) &&
+        !logs.some((line) => line.includes("sess-file-link")),
+      JSON.stringify(logs),
+    );
+
+    const rootLinkStudio = freshStudio("w089-sec-root-link");
+    const linkedRoot = join(outside, "receipts-root");
+    mkdirSync(join(linkedRoot, "builder"), { recursive: true });
+    writeFileSync(
+      join(linkedRoot, "builder", "sess-root-link.json"),
+      JSON.stringify({ sella: "builder", sessionId: "sess-root-link", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    symlinkSync(linkedRoot, join(rootLinkStudio, "receipts"));
+    const { logs: rootLogs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", rootLinkStudio]));
+    check(
+      "w089 security: symlinked receipts root is not followed",
+      rootLogs.some((line) => line.includes("builder:") && line.includes("last=none") && line.includes("dead")) &&
+        !rootLogs.some((line) => line.includes("sess-root-link")),
+      JSON.stringify(rootLogs),
+    );
+  }
+
+  // ---- Sec-lead W-089 pass: filesystem names are untrusted diagnostic
+  // data. Both plaintext reporting boundaries must strip controls/newlines
+  // and cap the rendered label; the status object may retain the raw name. --
+  {
+    const dir = freshStudio("w089-sec-hostile-name");
+    const hostile = `builder.W-hostile\n\u001b[31m-${"x".repeat(180)}`;
+    mkdirSync(join(dir, "receipts", hostile), { recursive: true });
+
+    const { logs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", dir]));
+    const hookLine = logs.find((line) => line.includes("builder.W-hostile"));
+    check(
+      "w089 security: hooks check sanitizes hostile enumerated name",
+      hookLine !== undefined && !/[\u0000-\u001f\u007f-\u009f]/u.test(hookLine) && hookLine.length <= 220 && hookLine.includes("..."),
+      JSON.stringify(hookLine),
+    );
+
+    const result = checkStudio(dir, NOW);
+    const finding = result.findings.find((row) => row.rule === "hook.dead" && row.where.includes("builder.W-hostile"));
+    check(
+      "w089 security: check finding sanitizes hostile enumerated name",
+      finding !== undefined &&
+        !/[\u0000-\u001f\u007f-\u009f]/u.test(`${finding.where}${finding.message}`) &&
+        finding.where.length <= 130 &&
+        finding.message.length <= 260 &&
+        finding.where.includes("..."),
+      JSON.stringify(finding),
+    );
   }
 } finally {
   for (const d of dirs) {
