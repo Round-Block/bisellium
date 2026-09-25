@@ -8,7 +8,7 @@
  * duplicates ~40 lines of temp-studio setup rather than importing
  * `server.test.ts` (which would execute its whole suite).
  */
-import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { request as httpRequest, type IncomingMessage } from "node:http";
@@ -143,6 +143,21 @@ function eventsLogLineCount(dir: string): number {
     .filter(Boolean).length;
 }
 
+/** Seeds `count` synthetic, valid `GantryEvent` lines directly into
+ *  `events.jsonl` BEFORE the server (and so its `Store`) is constructed —
+ *  `Store`'s constructor applies the log's EXISTING content into the SQLite
+ *  Index (`apply(this.log)`), so these become real, Index-backed rows the
+ *  unfiltered `/api/events` path can return, on top of the fixture's own
+ *  cold-ingest events. Without this a cold copy of examples/sample-studio
+ *  holds only 41 events, making "unlimited" and "clamped to 500" the same
+ *  number — the censor's B6. `500 + margin` lines makes the clamp bite. */
+function seedManyEvents(dir: string, count: number): void {
+  const eventsDir = join(dir, ".bisellium");
+  mkdirSync(eventsDir, { recursive: true });
+  const lines = Array.from({ length: count }, (_, i) => JSON.stringify({ id: `seed:${i}`, name: "gen_ai.usage", ts: NOW.toISOString(), projectId: "sample-studio", attrs: { "workflow.actor.role": "seed" } }));
+  appendFileSync(join(eventsDir, "events.jsonl"), lines.join("\n") + "\n", "utf8");
+}
+
 async function main(): Promise<void> {
   // ===========================================================================
   // GET /api/officina — lifecycle (additive) + every pre-existing key unchanged
@@ -175,6 +190,7 @@ async function main(): Promise<void> {
   // ===========================================================================
   {
     const dir = freshStudio("events-unfiltered");
+    seedManyEvents(dir, 520); // past the 500 clamp before the server (and its Store) exists
     const started = await startServer(baseOpts(dir));
     const base = `http://127.0.0.1:${started.port}`;
 

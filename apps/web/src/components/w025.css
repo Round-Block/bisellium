@@ -1008,6 +1008,12 @@
   overflow-x: auto;
   overflow-y: hidden;
   min-height: 0;
+  /* The column count/width changes as real data replaces the pre-data
+   * render (1 column -> the full set); without this the browser's own
+   * scroll-anchoring "helpfully" re-adjusts scrollLeft to compensate,
+   * racing Board.tsx's own programmatic scrollIntoView and landing
+   * somewhere neither specified nor deterministic (measured). */
+  overflow-anchor: none;
 }
 
 .board__column {
@@ -1189,6 +1195,13 @@
   padding: var(--sp-3) var(--sp-4);
   color: #96621a;
   font-size: 13px;
+}
+
+/* The banner's petitio text IS the link to its Inbox thread (DIRECTION §3:
+ * verdigris carries identity and interaction). */
+.board-drawer__banner-link {
+  color: var(--verdigris);
+  text-decoration: underline;
 }
 
 .board-drawer__gates,

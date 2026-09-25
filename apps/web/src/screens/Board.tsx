@@ -17,7 +17,7 @@ import { fetchEvents, fetchInbox, fetchOfficina, fetchOpera, subscribeLive } fro
 import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
-import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, liveLabel, reconcileReason } from "../lib/board.js";
+import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -41,6 +41,14 @@ export function Board(): JSX.Element {
   const [focusedByColumn, setFocusedByColumn] = useState<Record<string, string | undefined>>({});
   const [connected, setConnected] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
+  // True only once officina AND opera AND inbox have all landed from the
+  // SAME reconciliation. Each is set from its own independently-resolving
+  // fetch's .then() (so officina can commit, and re-render, before opera
+  // does) — `officina.lifecycle.id !== ""` alone is not a safe "real data
+  // has loaded" signal for exactly that reason: it can go true on a render
+  // where opera is still []. This flips only after `await Promise.all`
+  // below has genuinely completed.
+  const [everLoaded, setEverLoaded] = useState(false);
 
   const model = boardModel(officina, opera);
 
@@ -73,13 +81,23 @@ export function Board(): JSX.Element {
     setOfficina(o);
     setOpera(ops);
     setInbox(ib);
+    setEverLoaded(true);
     markRefreshed();
   }
 
+  // Driven by reconcileTargets' own output — not a hand-rolled duplicate of
+  // its list — so the brief's claim ("Reconciliation fetches exactly
+  // reconcileTargets(selected)") is literally true, and the one place that
+  // list lives is lib/board.ts's own already-pinned export (behaviour 3).
   async function fullReconcile(selectedId: string | undefined): Promise<void> {
-    const tasks: Promise<unknown>[] = [fetchOfficina().then(setOfficina), fetchOpera().then(setOpera), fetchInbox().then(setInbox)];
-    if (selectedId !== undefined) tasks.push(fetchDrawerEvents(selectedId));
+    const tasks = reconcileTargets(selectedId).map((target) => {
+      if (target === "/api/officina") return fetchOfficina().then(setOfficina);
+      if (target === "/api/opera") return fetchOpera().then(setOpera);
+      if (target === "/api/inbox") return fetchInbox().then(setInbox);
+      return fetchDrawerEvents(selectedId!);
+    });
     await Promise.all(tasks);
+    setEverLoaded(true);
     markRefreshed();
   }
 
@@ -145,7 +163,17 @@ export function Board(): JSX.Element {
   // in_progress — once, after the first real model lands. ------------------
   const didInitialScroll = useRef(false);
   useEffect(() => {
-    if (didInitialScroll.current || model.columns.length === 0) return;
+    if (didInitialScroll.current) return;
+    // NOT `model.columns.length === 0`: boardModel ALWAYS emits the
+    // needs_you column (board.ts), so that guard never holds and this
+    // effect was being consumed on the pre-data render, before any phase
+    // column exists in the DOM. `everLoaded` is the real "no data yet"
+    // signal — officina and opera land from independently-resolving
+    // fetches, so officina alone (e.g. `lifecycle.id !== ""`) can go true on
+    // a render where opera is still `[]` (needs_you reads as empty by
+    // accident, not because it is), which is the same class of bug one
+    // level up: `everLoaded` only flips after BOTH have actually committed.
+    if (!everLoaded) return;
     didInitialScroll.current = true;
     if (typeof window === "undefined" || !window.matchMedia?.("(max-width: 599px)").matches) return;
     const needsYou = model.columns.find((c) => c.id === "needs_you");
@@ -153,7 +181,7 @@ export function Board(): JSX.Element {
     requestAnimationFrame(() => {
       document.querySelector<HTMLElement>(`.board__columns [data-column-id="${targetId}"]`)?.scrollIntoView({ inline: "start", block: "nearest" });
     });
-  }, [model]);
+  }, [everLoaded, model]);
 
   // ---- Focus the pending roving-tabindex target after a render, so state
   // updates (React) and imperative focus (DOM) stay in sync. ----------------
@@ -177,7 +205,12 @@ export function Board(): JSX.Element {
   }
 
   function closeDrawer(): void {
-    const sel = selected;
+    // selectedRef, not `selected`: this function is also called from the
+    // keydown effect's MOUNT-ONCE closure (deps []), which would otherwise
+    // forever close over the FIRST render's `selected` (undefined) and skip
+    // the restoration branch below on every Esc — the ref is always current
+    // regardless of which render's closure invoked it.
+    const sel = selectedRef.current;
     setSelected(undefined);
     const scrollEl = document.querySelector<HTMLElement>(".board__columns");
     if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;

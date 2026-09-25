@@ -141,9 +141,13 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
  *  removed — TARGET-9's mounted-lifetime requirement, spanning mount,
  *  reconciliation, SSE delivery, disconnect/reconnect, every drawer and
  *  keyboard interaction, and unmount. */
-function installWriteCounter(page: Page): { count: () => number } {
+async function installWriteCounter(page: Page): Promise<{ count: () => number }> {
   let nonGet = 0;
-  void page.route("**/api/**", (route) => {
+  // Awaited, not fire-and-forget: TARGET-9's requirement is an ORDERING one
+  // (the counter live before page.goto) — awaiting page.route()'s own
+  // promise is what actually says so, rather than relying on Playwright's
+  // channel ordering to make it true in practice (censor round 1, A4).
+  await page.route("**/api/**", (route) => {
     if (route.request().method() !== "GET") nonGet++;
     void route.continue();
   });
@@ -203,7 +207,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
 
   test("renders every column, each count equal to the spec's own computation from GET /api/opera", async ({ page }) => {
     served = await startServed("board-counts");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
     const expected = await expectedModel(served);
@@ -218,7 +222,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
 
   test("live case: an SSE-delivered greenlight moves the card, no reload, within two poll intervals", async ({ page }) => {
     served = await startServed("board-live");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
     // W-007 (the only backlog opus in the fixture) starts uncounted in
@@ -240,7 +244,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
   test("negative: with /api/live blocked after the initial connection, the card never appears and no further /api/opera requests are issued", async ({ page }) => {
     const r = await startRestartable("board-negative");
     served = r;
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, r);
 
     // Block only AFTER initial connect+reconciliation — blocking before
@@ -263,7 +267,12 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     expect(result.exitCode).toBe(0);
     await forcePoll(r);
 
-    await page.waitForTimeout(2_000);
+    // Same window as the live case (:233's 11_000ms) — the brief binds both
+    // sides to "at least two configured poll intervals" ("The card NEVER
+    // appears within the same window"). A shorter window here would pass
+    // for the wrong reason against e.g. a client setInterval(5000) refetch,
+    // whose next tick simply hasn't fired yet at 2s.
+    await page.waitForTimeout(11_000);
     await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')).toHaveCount(0);
     expect(opusRequests).toBe(before);
 
@@ -275,7 +284,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
   test("reconnect reconciliation: a change made while disconnected appears on reconnect, without a reload", async ({ page }) => {
     const r = await startRestartable("board-reconnect");
     served = r;
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, r);
 
     r.kill();
@@ -291,7 +300,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
   test("reconnect repairs an OPEN DRAWER: an event appended while disconnected appears without closing/reopening", async ({ page }) => {
     const r = await startRestartable("board-reconnect-drawer");
     served = r;
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, r);
 
     await page.locator('.board__card[data-card-id="W-002"]').click();
@@ -310,7 +319,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
 
   test("coalescing: a poll delivering several frames issues exactly one /api/opera request", async ({ page }) => {
     served = await startServed("board-coalesce");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
     let opusRequests = 0;
@@ -340,7 +349,7 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
 
   test("j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays visible behind the drawer", async ({ page }) => {
     served = await startServed("board-keyboard");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
     const inProgress = page.locator('.board__column[data-column-id="in_progress"]');
@@ -363,11 +372,23 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
     await expect(page.locator(".board-drawer")).toBeVisible();
     await expect(page.locator(".board__columns")).toBeVisible();
 
-    // Esc closes it and returns focus to that card.
+    // Move focus INTO the drawer (a real user tabs into it) before Esc —
+    // without this, document.activeElement never actually leaves the card,
+    // and the restoration branch can be deleted entirely with the assertion
+    // below staying green for the wrong reason (censor round 1, B1).
+    await page.locator(".board-drawer__close").focus();
+    await expect(page.locator(".board-drawer__close")).toBeFocused();
+
+    // Esc closes it and returns focus to that card — never document.body.
+    // The restoration itself is scheduled via requestAnimationFrame (one
+    // frame after the drawer unmounts), so poll rather than read once.
     await page.keyboard.press("Escape");
     await expect(page.locator(".board-drawer")).toBeHidden();
-    const restored = await page.evaluate(() => document.activeElement?.getAttribute("data-card-id"));
-    expect(restored).toBe(firstFocused);
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.getAttribute("data-card-id")))
+      .toBe(firstFocused);
+    const isBody = await page.evaluate(() => document.activeElement === document.body);
+    expect(isBody).toBe(false);
 
     // The drawer's own close control also closes it.
     await page.keyboard.press("Enter");
@@ -381,7 +402,7 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
 
   test("ArrowRight/ArrowLeft move to the nearest card in the next/previous non-empty column", async ({ page }) => {
     served = await startServed("board-arrows");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
     const inProgress = page.locator('.board__column[data-column-id="in_progress"]');
@@ -403,7 +424,7 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
 
   test("removal: the drawer closes and focus lands on a remaining card in that column, or the column head — never document.body", async ({ page }) => {
     served = await startServed("board-removal");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
     await page.locator('.board__card[data-card-id="W-002"]').click();
@@ -431,7 +452,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
 
   test("1280px: 288px columns, sticky needs-you, 64px cards, 8px gaps, drawer shadow, card no-shadow, focus indicator", async ({ page }) => {
     served = await startServed("board-1280");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 1280, height: 900 });
     await openBoard(page, served);
 
@@ -467,13 +488,21 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     const outline = await card.evaluate((el) => getComputedStyle(el).outlineStyle);
     expect(outline).not.toBe("none");
 
+    // "Shadow exists once, on the drawer" (DIRECTION §3) — actually open it
+    // and check, rather than only asserting the CARD's absence of one.
+    await card.click();
+    const drawer = page.locator(".board-drawer");
+    await expect(drawer).toBeVisible();
+    const drawerShadow = await drawer.evaluate((el) => getComputedStyle(el).boxShadow);
+    expect(drawerShadow === "none" || drawerShadow === "").toBe(false);
+
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);
   });
 
   test("800px: columns still 288px, needs-you unpinned, drawer leaves the rail visible", async ({ page }) => {
     served = await startServed("board-800");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 800, height: 900 });
     await openBoard(page, served);
 
@@ -494,7 +523,7 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
 
   test("390x844: one column visible, the strip reaches the last column, needs-you-first-if-non-empty, full-width close control reachable without scrolling", async ({ page }) => {
     served = await startServed("board-phone");
-    const counter = installWriteCounter(page);
+    const counter = await installWriteCounter(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await openBoard(page, served);
 
@@ -513,9 +542,9 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     await expect(page.locator(".board__column").last()).toBeInViewport();
     expect(lastName?.length).toBeGreaterThan(0);
 
-    // needs-you non-empty on this fixture (W-003's human "patron" gate is
-    // pending — see examples/sample-studio); initial visible column is
-    // needs_you.
+    // needs-you non-empty on this fixture (W-004's human "patron" gate is
+    // pending — see examples/sample-studio; W-003's own pending gate is
+    // "qa", kind agent, not human); initial visible column is needs_you.
     await page.reload();
     await expect(page.locator(".board")).toBeVisible();
     const needsYouColumn = page.locator('.board__column[data-column-id="needs_you"]');
@@ -528,6 +557,28 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
     expect(closeBox?.width).toBeGreaterThanOrEqual(44);
     expect(closeBox?.height).toBeGreaterThanOrEqual(44);
     expect(closeBox && closeBox.y >= 0 && closeBox.y < 844).toBe(true);
+
+    await page.goto(`${served.baseURL}/#/inbox`);
+    expect(counter.count()).toBe(0);
+  });
+
+  test("390x844, empty needs_you: the initial visible column is in_progress, never an empty attention column", async ({ page }) => {
+    served = await startServed("board-phone-empty-needsyou");
+    const counter = await installWriteCounter(page);
+    // The fixture's only human gate (W-004's "patron") made NOT pending, so
+    // needs_you is empty — *Composition*'s other half: "An empty attention
+    // column is never the first thing the Patron sees" (censor round 1, B2).
+    const patronGatePath = join(served.studioDir, "opera", "W-004.md");
+    writeFileSync(patronGatePath, readFileSync(patronGatePath, "utf8").replace("patron: { status: pending }", "patron: { status: passed }"), "utf8");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openBoard(page, served);
+
+    await expect(page.locator('.board__column[data-column-id="needs_you"] .board__card')).toHaveCount(0);
+    const needsYouColumn = page.locator('.board__column[data-column-id="needs_you"]');
+    const inProgressColumn = page.locator('.board__column[data-column-id="in_progress"]');
+    await expect(inProgressColumn).toBeInViewport();
+    await expect(needsYouColumn).not.toBeInViewport();
 
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);

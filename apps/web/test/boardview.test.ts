@@ -201,8 +201,13 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   const boardDrawerSrc = readFileSync(join(SRC, "screens", "BoardDrawer.tsx"), "utf8");
   const libBoardSrc = readFileSync(join(SRC, "lib", "board.ts"), "utf8");
 
-  const apiImportLine = boardTsxSrc.split("\n").find((l) => l.includes('from "../api.js"') && !l.trim().startsWith("import type"));
-  const clause = apiImportLine ? /\{([^}]*)\}/.exec(apiImportLine)?.[1] ?? "" : "";
+  // .filter(), not .find(): the brief's wording is "No OTHER runtime import
+  // from that module" — a SECOND runtime import line from ../api.js must
+  // also be examined, not silently skipped by stopping at the first match
+  // (censor round 1, A3).
+  const apiImportLines = boardTsxSrc.split("\n").filter((l) => l.includes('from "../api.js"') && !l.trim().startsWith("import type"));
+  check(5, "Board.tsx: exactly one runtime import line from ../api.js", apiImportLines.length === 1, JSON.stringify(apiImportLines));
+  const clause = apiImportLines[0] ? (/\{([^}]*)\}/.exec(apiImportLines[0])?.[1] ?? "") : "";
   const names = clause
     .split(",")
     .map((s) => s.trim())
@@ -275,6 +280,10 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
   const withPetitio = renderToStaticMarkup(BoardDrawer({ detail: detail({ waitingOn: { gate: "owner", name: "Owner decision", petitio: { id: "P-1", from: "builder-a", subject: "accept drift?" } } }), onClose: () => undefined }));
   check(6, "BoardDrawer: with a petitio — shows its subject", withPetitio.includes("accept drift?"), withPetitio);
   check(6, "BoardDrawer: with a petitio — shows its from", withPetitio.includes("builder-a"), withPetitio);
+  // The compensating surface the Patron's "Read-only now, Reply as
+  // follow-on" decree rests on — a real <a> to the Inbox thread, not a
+  // write. A span here would satisfy the two checks above by accident.
+  check(6, "BoardDrawer: the petitio subject/from is a link (an <a> element) to the Inbox thread", /<a[^>]*href="#\/inbox"[^>]*>accept drift\?/.test(withPetitio), withPetitio);
 
   const withoutPetitio = renderToStaticMarkup(BoardDrawer({ detail: detail({ waitingOn: { gate: "owner", name: "Owner decision" } }), onClose: () => undefined }));
   check(6, "BoardDrawer: no petitio — names the gate", withoutPetitio.includes("Owner decision"), withoutPetitio);
@@ -292,7 +301,11 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
     ],
   });
   const html = renderToStaticMarkup(BoardDrawer({ detail: d, onClose: () => undefined }));
-  check(6, "BoardDrawer: gate row shows the literal status word (stale)", />stale</.test(html) || html.includes(">stale<") || html.includes("stale"), html);
+  // Strict: the word must be TEXT content (between tag boundaries), never
+  // carried only in an attribute (e.g. title="stale") — ruling 17's whole
+  // point. No escape-hatch disjunct: a status carried only via `title`
+  // produces no `>stale<` text-node match at all.
+  check(6, "BoardDrawer: gate row shows the literal status word (stale) as text, not only an attribute", />stale</.test(html), html);
   check(6, "BoardDrawer: gate row shows the evidence path", html.includes("ci/sim.log"), html);
   check(6, "BoardDrawer: a human gate is labelled", /human gate/i.test(html), html);
   check(6, "BoardDrawer: a gate with no evidence renders no empty link", !/<a[^>]*href=""/.test(html), html);
