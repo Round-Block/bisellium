@@ -289,27 +289,82 @@ if (runs(1)) {
     JSON.stringify(pathnameResult),
   );
 
-  const numericProblems: string[] = [];
-  for (const [name, invalid] of [
-    ["infinity", "9".repeat(309)],
-    ["unsafe-integer", "9007199254740992"],
-  ] as const) {
-    const fixture = initRepo(`b1-${name}`);
-    record(fixture.studio, "opera", "W-004");
-    commitAll(fixture.root, "numeric baseline");
-    rawTreeRecord(fixture.root, "studio", `${name}-suffix`, `W-${invalid}`);
-    const result = newItem(fixture.studio, {
-      kind: "task",
-      collegium: "engineering",
-      title: `${name} suffix`,
+  const boundary = localStudio("b1-boundary-success");
+  record(boundary, "opera", "W-999999998");
+  const boundaryResult = newItem(boundary, { kind: "task", collegium: "engineering", title: "final mintable id" });
+  check(
+    1,
+    "999,999,999 is the final mintable suffix",
+    boundaryResult.ok && boundaryResult.id === "W-999999999" && existsSync(join(boundary, "opera", "W-999999999.md")),
+    JSON.stringify(boundaryResult),
+  );
+
+  const exhausted = localStudio("b1-boundary-exhausted");
+  record(exhausted, "opera", "W-999999999");
+  let exhaustedRenders = 0;
+  let exhaustedError = "";
+  try {
+    createNextRecord(exhausted, "opera", "W", () => {
+      exhaustedRenders++;
+      return "must not render\n";
     });
-    if (!result.ok || result.id !== "W-005") numericProblems.push(`${name}=${JSON.stringify(result)}`);
+  } catch (error) {
+    exhaustedError = (error as Error).message;
   }
   check(
     1,
-    "suffixes over nine digits are ignored instead of minting Infinity or unsafe integers",
-    numericProblems.length === 0,
-    numericProblems.join(" | "),
+    "1,000,000,000 refuses before rendering or creating a partial record",
+    /id exhaustion/i.test(exhaustedError) &&
+      exhaustedRenders === 0 &&
+      !existsSync(join(exhausted, "opera", "W-1000000000.md")),
+    JSON.stringify({ exhaustedError, exhaustedRenders, files: readdirSync(join(exhausted, "opera")) }),
+  );
+
+  const overBoundLocal = localStudio("b1-over-bound-local");
+  record(overBoundLocal, "opera", "W-1000000000");
+  const localBefore = readdirSync(join(overBoundLocal, "opera")).sort();
+  const localRefusal = await spawnCli([
+    "new", "--kind", "task", "--collegium", "engineering", "--title", "over-bound local", "--brief", overBoundLocal,
+  ]);
+  check(
+    1,
+    "an over-bound local suffix refuses with no new record or companion",
+    localRefusal.status === 1 &&
+      localRefusal.stdout === "" &&
+      /id exhaustion/i.test(localRefusal.stderr) &&
+      JSON.stringify(readdirSync(join(overBoundLocal, "opera")).sort()) === JSON.stringify(localBefore) &&
+      !existsSync(join(overBoundLocal, "briefs")),
+    JSON.stringify(localRefusal),
+  );
+
+  const overBoundRef = initRepo("b1-over-bound-ref");
+  record(overBoundRef.studio, "opera", "W-004");
+  commitAll(overBoundRef.root, "over-bound ref baseline");
+  rawTreeRecord(overBoundRef.root, "studio", "over-bound-ref", "W-1000000000");
+  const refBefore = readdirSync(join(overBoundRef.studio, "opera")).sort();
+  const refRefusal = await spawnCli([
+    "new", "--kind", "task", "--collegium", "engineering", "--title", "over-bound ref", "--brief", overBoundRef.studio,
+  ]);
+  check(
+    1,
+    "an over-bound ref-only suffix refuses without Git fallback, a record, or a companion",
+    refRefusal.status === 1 &&
+      refRefusal.stdout === "" &&
+      /id exhaustion/i.test(refRefusal.stderr) &&
+      !/local records only/i.test(refRefusal.stderr) &&
+      JSON.stringify(readdirSync(join(overBoundRef.studio, "opera")).sort()) === JSON.stringify(refBefore) &&
+      !existsSync(join(overBoundRef.studio, "briefs")),
+    JSON.stringify(refRefusal),
+  );
+
+  const leadingZeroes = localStudio("b1-leading-zeroes");
+  record(leadingZeroes, "opera", `W-${"0".repeat(40)}998`);
+  const leadingResult = newItem(leadingZeroes, { kind: "task", collegium: "engineering", title: "leading zeroes" });
+  check(
+    1,
+    "long leading-zero suffixes contribute their exact numeric value",
+    leadingResult.ok && leadingResult.id === "W-999" && existsSync(join(leadingZeroes, "opera", "W-999.md")),
+    JSON.stringify(leadingResult),
   );
 }
 
@@ -461,9 +516,13 @@ function fakeGitDir(tag: string): string {
       `const args = process.argv.slice(2);\n` +
       `const mode = process.env.W101_GIT_MODE || "";\n` +
       `const root = process.env.W101_GIT_ROOT || "";\n` +
-      `if (args.includes("rev-parse")) { if (mode === "discovery") process.exit(41); console.log(root); process.exit(0); }\n` +
-      `if (args.includes("for-each-ref")) { if (mode === "refs") process.exit(42); console.log("refs/heads/high\\nrefs/remotes/origin/high"); process.exit(0); }\n` +
-      `if (args.includes("ls-tree")) { const p = process.env.W101_GIT_COUNT; let n = 0; try { n = Number(fs.readFileSync(p, "utf8")); } catch {} fs.writeFileSync(p, String(n + 1)); if (mode === "tree" && n > 0) process.exit(43); process.stdout.write((process.env.W101_GIT_TREE_ENTRY || "officina/opera/W-099.md") + "\\0"); process.exit(0); }\n` +
+      `const log = process.env.W101_GIT_LOG || "";\n` +
+      `if (log) fs.appendFileSync(log, JSON.stringify({ args, root, noLazyFetch: process.env.GIT_NO_LAZY_FETCH, literalPathspecs: process.env.GIT_LITERAL_PATHSPECS, noReplaceObjects: process.env.GIT_NO_REPLACE_OBJECTS }) + "\\n");\n` +
+      `if (args.includes("rev-parse")) { if (mode === "discovery") process.exit(41); fs.writeSync(1, root + "\\n"); process.exit(0); }\n` +
+      `if (args.includes("--version")) { fs.writeSync(1, (process.env.W101_GIT_VERSION || "git version 2.45.0") + "\\n"); process.exit(0); }\n` +
+      `if (args.includes("config")) { if (mode === "config") process.exit(45); fs.writeSync(1, (process.env.W101_GIT_CONFIG || "").split("|").join("\\0")); process.exit(0); }\n` +
+      `if (args.includes("for-each-ref")) { if (mode === "refs") process.exit(42); fs.writeSync(1, "refs/heads/high\\nrefs/remotes/origin/high\\n"); process.exit(0); }\n` +
+      `if (args.includes("ls-tree")) { const p = process.env.W101_GIT_COUNT; let n = 0; try { n = Number(fs.readFileSync(p, "utf8")); } catch {} fs.writeFileSync(p, String(n + 1)); if (mode === "tree" && n > 0) process.exit(43); fs.writeSync(1, (process.env.W101_GIT_TREE_ENTRY || "officina/opera/W-099.md") + "\\0"); process.exit(0); }\n` +
       `process.exit(44);\n`,
   );
   chmodSync(script, 0o755);
@@ -510,6 +569,83 @@ if (runs(3)) {
     });
     if (!warnedLocalOnly(result) || existsSync(join(studio, "opera", "W-100.md"))) problems.push(`${mode}=${JSON.stringify(result)}`);
   }
+
+  const partialCloneProblems: string[] = [];
+  for (const [name, version, config, expected, warns, readsObjects] of [
+    ["old-partial-clone", "git version 2.44.9", "extensions.partialClone\norigin|", "W-005", true, false],
+    ["old-promisor-remote", "git version 2.44.9", "remote.origin.promisor\ntrue|", "W-005", true, false],
+    ["old-no-markers", "git version 2.44.9", "core.filemode\ntrue|", "W-100", false, true],
+    ["new-with-markers", "git version 2.45.0", "extensions.partialClone\norigin|remote.origin.promisor\ntrue|", "W-100", false, true],
+    ["unparseable-version", "git version unknown", "", "W-005", true, false],
+  ] as const) {
+    const studio = localStudio(`b3-${name}`);
+    const fakeDir = fakeGitDir(name);
+    const log = join(dirname(studio), `${name}.log`);
+    const result = await spawnCli(["new", "--kind", "task", "--collegium", "engineering", "--title", name, studio], {
+      env: {
+        ...process.env,
+        PATH: `${fakeDir}${delimiter}${process.env["PATH"] ?? ""}`,
+        W101_GIT_ROOT: dirname(studio),
+        W101_GIT_LOG: log,
+        W101_GIT_COUNT: join(dirname(studio), `${name}.count`),
+        W101_GIT_VERSION: version,
+        W101_GIT_CONFIG: config,
+      },
+    });
+    const invocations = existsSync(log)
+      ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as {
+          args: string[];
+          noLazyFetch?: string;
+          literalPathspecs?: string;
+          noReplaceObjects?: string;
+        })
+      : [];
+    const commands = invocations.map(({ args }) => args.join(" ")).join("\n");
+    const objectRead = /(^|\s)(for-each-ref|ls-tree)(\s|$)/m.test(commands);
+    const fetched = /(^|\s)(fetch|pull|push|clone|ls-remote)(\s|$)/m.test(commands);
+    const envProtected = invocations.length > 0 && invocations.every(
+      ({ noLazyFetch, literalPathspecs, noReplaceObjects }) => noLazyFetch === "1" && literalPathspecs === "1" && noReplaceObjects === "1",
+    );
+    if (
+      result.status !== 0 ||
+      result.stdout.trim() !== expected ||
+      warns !== /local records only/i.test(result.stderr) ||
+      objectRead !== readsObjects ||
+      fetched ||
+      !envProtected
+    ) {
+      partialCloneProblems.push(`${name}=${JSON.stringify({ result, invocations, objectRead, fetched, envProtected })}`);
+    }
+  }
+  check(
+    3,
+    "older Git partial-clone markers fall back before object reads; marker-free and 2.45+ controls proceed",
+    partialCloneProblems.length === 0,
+    partialCloneProblems.join(" | "),
+  );
+
+  const configFailureStudio = localStudio("b3-config-failure");
+  const configFailureGit = fakeGitDir("config-failure");
+  const configFailureLog = join(dirname(configFailureStudio), "config-failure.log");
+  const configFailure = await spawnCli(
+    ["new", "--kind", "task", "--collegium", "engineering", "--title", "config failure", configFailureStudio],
+    {
+      env: {
+        ...process.env,
+        PATH: `${configFailureGit}${delimiter}${process.env["PATH"] ?? ""}`,
+        W101_GIT_MODE: "config",
+        W101_GIT_ROOT: dirname(configFailureStudio),
+        W101_GIT_LOG: configFailureLog,
+      },
+    },
+  );
+  const configFailureCommands = existsSync(configFailureLog) ? readFileSync(configFailureLog, "utf8") : "";
+  check(
+    3,
+    "failed Git configuration inspection warns and falls back without reading ref objects",
+    warnedLocalOnly(configFailure) && !/for-each-ref|ls-tree|fetch/.test(configFailureCommands),
+    JSON.stringify({ configFailure, configFailureCommands }),
+  );
 
   const fsRoot = scratch("b3-filesystem");
   const fsStudio = join(fsRoot, "officina");
@@ -722,6 +858,47 @@ if (runs(5)) {
       /100.*collision|collision.*100|retry.*100/i.test(flooded.stderr) &&
       !existsSync(join(floodStudio, "opera", "W-102.md")),
     JSON.stringify(flooded),
+  );
+
+  const ceilingRoot = scratch("b5-ceiling-collision");
+  const ceilingStudio = join(ceilingRoot, "studio");
+  const ceilingBarrier = join(ceilingRoot, "barrier");
+  writeManifest(ceilingStudio);
+  record(ceilingStudio, "opera", "W-999999998");
+  mkdirSync(ceilingBarrier);
+  const ceiling = spawnNewChild(ceilingStudio, "ceiling collision", ceilingBarrier, true);
+  await readyFiles(ceilingBarrier, 1, [ceiling.child]);
+  const ceilingSentinel = record(ceilingStudio, "opera", "W-999999999", "ceiling sentinel\n");
+  writeFileSync(join(ceilingBarrier, "release"), "go\n");
+  const ceilingResult = await ceiling.done;
+
+  const directCeilingStudio = localStudio("b5-direct-ceiling-collision");
+  record(directCeilingStudio, "opera", "W-999999998");
+  let directCeilingRenders = 0;
+  let directCeilingError = "";
+  try {
+    createNextRecord(directCeilingStudio, "opera", "W", (id) => {
+      directCeilingRenders++;
+      if (directCeilingRenders === 1) record(directCeilingStudio, "opera", id, "direct ceiling sentinel\n");
+      return "must never write\n";
+    });
+  } catch (error) {
+    directCeilingError = (error as Error).message;
+  }
+  check(
+    5,
+    "an EEXIST at 999,999,999 refuses before re-rendering, with no partial record or companion",
+    ceilingResult.status === 1 &&
+      ceilingResult.stdout === "" &&
+      /id exhaustion/i.test(ceilingResult.stderr) &&
+      readFileSync(ceilingSentinel, "utf8") === "ceiling sentinel\n" &&
+      !existsSync(join(ceilingStudio, "opera", "W-1000000000.md")) &&
+      !existsSync(join(ceilingStudio, "briefs", "W-999999999.md")) &&
+      !existsSync(join(ceilingStudio, "briefs", "W-1000000000.md")) &&
+      /id exhaustion/i.test(directCeilingError) &&
+      directCeilingRenders === 1 &&
+      !existsSync(join(directCeilingStudio, "opera", "W-1000000000.md")),
+    JSON.stringify({ ceilingResult, directCeilingError, directCeilingRenders }),
   );
   check(5, "exclusive create gives two writers distinct files and retries a direct EEXIST", problems.length === 0, problems.join(" | "));
 }
