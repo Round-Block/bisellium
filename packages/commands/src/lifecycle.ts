@@ -143,7 +143,13 @@ function nativePreflight(
   const problems = loaded.problems.map(({ problem }) => problem);
   const records = new Map(loaded.records);
   records.set(opusId, record);
-  problems.push(...validateNativeRecord(record, records));
+  // The native checker reports a missing kind on disk, but lifecycle writes
+  // predate that field being required.  Preserve those legacy records'
+  // transitions while still refusing every supplied non-native kind.  UI
+  // policy remains opt-in only through an explicit `kind: ui` below.
+  problems.push(
+    ...validateNativeRecord(record, records).filter((problem) => record.kind !== undefined || problem.rule !== "opus.kind"),
+  );
   problems.push(...validateRecordReferences(root, record));
   problems.push(...validateUiPolicy({ root, record, manifest, phase }));
   return problems;
