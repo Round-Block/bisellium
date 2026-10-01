@@ -318,13 +318,24 @@ function checkW096AssertionReds(root: string): Finding[] {
 
 function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
   const record = safeFront(root, join(root, "opera", "W-096.md"));
-  if (!record) return [];
   const unverifiable = (message: string): Finding[] => [{
     rule: "opus.records_unchanged",
     level: "block",
     where: "opera/W-096.md",
     message: `preservation is unverifiable: ${message}`,
   }];
+  if (!record) {
+    if (!opts.repo || currentBranch(opts.repo) !== "opus/W-096") return [];
+    try {
+      const repoReal = realpathSync(resolve(opts.repo));
+      const studioReal = realpathSync(resolve(root));
+      if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
+        return unverifiable("selected studio is not the native studio inside the supplied repository");
+    } catch {
+      return unverifiable("repository or studio identity cannot be resolved");
+    }
+    return unverifiable("W-096 record is missing, unsafe, or unreadable on its owning branch");
+  }
   if (!opts.repo) return unverifiable("repository context (--repo) is absent");
 
   try {
