@@ -8,21 +8,24 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 import { parseFrontMatter, readFront } from "@bisellium/adapter-native";
 import { checkStudio } from "./check.js";
 import { createOpusBranch, runBranch } from "./branch.js";
-import { runReady, runDone, runAmend, runReview } from "./lifecycle.js";
+import { runReady, runDone, runAmend, runReview, runHalt } from "./lifecycle.js";
 import { newItem, runNew } from "./new.js";
+import { runVerdict } from "./verdict.js";
 import { runVerify } from "./verify.js";
 import {
   comparePrompt,
   designDigest,
   fullCaseFold,
   substantiveUiTranscript,
+  titleProblem,
+  utcTimestampProblem,
 } from "@bisellium/commands/opus-model.js";
 
 const argv = process.argv.slice(2);
@@ -62,10 +65,12 @@ function writeManifest(root: string, probationes: string[] = []): void {
       "collegia:",
       "  - { id: design, name: Design, magister: ui-lead }",
       "  - { id: engineering, name: Engineering, magister: eng-lead }",
+      "  - { id: qa, name: QA, magister: qa-lead }",
       "sellae:",
       "  - { id: ui-lead, collegium: design, kind: agent, harness: fake }",
       "  - { id: architect, collegium: design, kind: agent, harness: fake }",
       "  - { id: eng-lead, collegium: engineering, kind: agent, harness: fake }",
+      "  - { id: qa-lead, collegium: qa, kind: agent, harness: fake }",
       "probationes:",
       ...(probationes.length === 0 ? ["  []"] : probationes.map((line) => `  ${line}`)),
       "wip_limit: 20",
@@ -170,6 +175,23 @@ function capture<T>(fn: () => T): T {
   console.warn = () => undefined;
   try {
     return fn();
+  } finally {
+    console.log = oldLog;
+    console.error = oldError;
+    console.warn = oldWarn;
+  }
+}
+
+function captureErrors<T>(fn: () => T): { value: T; errors: string[] } {
+  const oldLog = console.log;
+  const oldError = console.error;
+  const oldWarn = console.warn;
+  const errors: string[] = [];
+  console.log = () => undefined;
+  console.error = (...args: unknown[]) => errors.push(args.map(String).join(" "));
+  console.warn = (...args: unknown[]) => errors.push(args.map(String).join(" "));
+  try {
+    return { value: fn(), errors };
   } finally {
     console.log = oldLog;
     console.error = oldError;
@@ -512,6 +534,31 @@ if (runs(1)) {
         preservationProblems.push(`unrelated branch replayed W-096 preservation: ${JSON.stringify(findings)}`);
     } else preservationProblems.push(`could not prepare unrelated-branch fixture: ${unrelatedRun.stderr}`);
 
+    const everyState = bootstrapFixture("all-pinned-states");
+    const everyStateRun = runBootstrap(everyState);
+    if (everyStateRun.status === 0) {
+      commitAll(everyState.repo, "test: commit all-state preservation fixture pin");
+      const path = bootstrapRecord(everyState);
+      const original = readFileSync(path, "utf8");
+      for (const state of ["backlog", "greenlit", "building", "verifying", "review", "halted", "done"]) {
+        writeFileSync(path, original.replace("state: building", `state: ${state}`));
+        const withoutRepo = checkStudio(everyState.studio, NOW).findings.filter((finding) => finding.rule === "opus.records_unchanged");
+        if (!withoutRepo.some((finding) => finding.level === "block" && finding.message.includes("unverifiable")))
+          preservationProblems.push(`pinned ${state} record failed open without repository context`);
+        const owning = checkStudio(everyState.studio, NOW, { repo: everyState.repo }).findings.filter(
+          (finding) => finding.rule === "opus.records_unchanged",
+        );
+        if (owning.length !== 0) preservationProblems.push(`unchanged pinned ${state} record failed on its owning branch: ${JSON.stringify(owning)}`);
+      }
+      writeFileSync(path, original.replace("state: building", "state: done"));
+      git(everyState.repo, ["checkout", "--detach", "-q"]);
+      const detached = checkStudio(everyState.studio, NOW, { repo: everyState.repo }).findings.filter(
+        (finding) => finding.rule === "opus.records_unchanged",
+      );
+      if (!detached.some((finding) => finding.level === "block" && finding.message.includes("unverifiable")))
+        preservationProblems.push("detached HEAD failed open for an inactive pinned record");
+    } else preservationProblems.push(`could not prepare all-state preservation fixture: ${everyStateRun.stderr}`);
+
     expectBootstrapRefusal(bootstrapProblems, "wrong branch", (fixture) => {
       git(fixture.repo, ["switch", "-q", "-c", "not-the-owner"]);
     });
@@ -785,6 +832,123 @@ if (runs(2)) {
     }
     const unsafeRedRule = checkStudio(unsafeEvidenceRoot, NOW).findings.some((finding) => finding.rule === "opus.red_assertion");
 
+    const numberedPrompt = Array.from({ length: 9 }, (_, line) =>
+      `${line + 1}. ${Array.from({ length: 4 }, (__, word) => `copied${line * 4 + word + 1}`).join(" ")}`,
+    ).join("\n");
+    const numberedTranscript = numberedPrompt.replace(/^[1-9][0-9]*\.\s+/gm, "");
+    const symmetricNumberedPrefixes = comparePrompt(numberedTranscript, numberedPrompt);
+    const setextHeadingProblems = substantiveUiTranscript(
+      [
+        "## Findings",
+        "No findings",
+        "This apparent explanation is actually a Setext heading and must never count.",
+        "---",
+        "## Recommendation",
+        "This second apparent explanation is another Setext heading and must never count.",
+        "===",
+        "Verdict: passed",
+      ].join("\n"),
+      "passed",
+      "unrelated retained prompt vocabulary deliberately remains separate from this grammar fixture",
+    );
+    const malformedFenceProblems = substantiveUiTranscript(
+      [
+        "## Findings",
+        "No findings",
+        "~~~text",
+        "fenced content must never satisfy transcript content requirements here",
+        "~~~not-a-close",
+        "This apparent explanation remains fenced after a malformed close marker.",
+        "## Recommendation",
+        "This apparent recommendation also remains fenced and cannot count as evidence.",
+        "Verdict: passed",
+      ].join("\n"),
+      "passed",
+      "unrelated retained prompt vocabulary deliberately remains separate from this fence fixture",
+    );
+
+    const censorRoot = scratch("b2-sole-censor-writers");
+    writeManifest(censorRoot);
+    writeFileSync(join(censorRoot, "briefs", "W-020.md"), "# W-020\n\nSole censor fixture.\n");
+    writeOpus(censorRoot, "W-020", [
+      'title: "only the QA magister may write the UI build verdict"',
+      "kind: ui",
+      "collegium: design",
+      "state: building",
+      "spec: briefs/W-020.md",
+      "probationes: {}",
+    ]);
+    const censorInput = writeUiInput(censorRoot, "W-020");
+    const disposition = Buffer.from("## UI input disposition\n\nThe censor considered the complete design input before reaching this result.\n");
+    const wrongBuildVerdict = captureErrors(() => runVerdict(
+      ["W-020", "--phase", "build", "--round", "1", "--sella", "eng-lead", "--outcome", "passed", "--ui-input", censorInput, "--studio", censorRoot],
+      { now: NOW, stdin: disposition },
+    ));
+    const wrongBuildVerdictRefused =
+      wrongBuildVerdict.value.exitCode !== 0 &&
+      !existsSync(join(censorRoot, "ci", "W-020-review-1.log")) &&
+      wrongBuildVerdict.errors.some((line) => /censor|qa-lead/i.test(line));
+    const rightBuildVerdict = captureErrors(() => runVerdict(
+      ["W-020", "--phase", "build", "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--ui-input", censorInput, "--studio", censorRoot],
+      { now: NOW, stdin: disposition },
+    ));
+
+    const reviewAuthRoot = scratch("b2-sole-censor-review");
+    writeManifest(reviewAuthRoot);
+    writeOpus(reviewAuthRoot, "W-021", [
+      'title: "only the QA magister may pass review"',
+      "kind: task",
+      "collegium: engineering",
+      "state: building",
+      "probationes: {}",
+    ]);
+    writeFileSync(join(reviewAuthRoot, "ci", "review.log"), "review evidence\n");
+    const reviewAuthPath = join(reviewAuthRoot, "opera", "W-021.md");
+    const reviewAuthBefore = readFileSync(reviewAuthPath, "utf8");
+    const wrongReviewPass = captureErrors(() => runReview(
+      ["W-021", "--pass", "--evidence", "ci/review.log", "--sella", "eng-lead", "--studio", reviewAuthRoot],
+      { now: NOW },
+    ));
+    const wrongReviewPassRefused =
+      wrongReviewPass.value.exitCode !== 0 &&
+      readFileSync(reviewAuthPath, "utf8") === reviewAuthBefore &&
+      wrongReviewPass.errors.some((line) => /censor|qa-lead/i.test(line));
+    const rightReviewPass = captureErrors(() => runReview(
+      ["W-021", "--pass", "--evidence", "ci/review.log", "--sella", "qa-lead", "--studio", reviewAuthRoot],
+      { now: NOW },
+    ));
+
+    const citationProblems = (tag: string, gateSella: string, headerSella: string): string[] => {
+      const citationRoot = scratch(`b2-citation-${tag}`);
+      writeManifest(citationRoot);
+      writeFileSync(join(citationRoot, "briefs", "W-022.md"), "# W-022\n\nCitation identity fixture.\n");
+      const tree = "tree:2222222222222222222222222222222222222222";
+      writeServedLog(citationRoot, tree);
+      writeOpus(citationRoot, "W-022", [
+        'title: "citation identities must both name the censor"',
+        "kind: ui",
+        "collegium: design",
+        "state: building",
+        "spec: briefs/W-022.md",
+        "probationes:",
+        ...servedLines(tree),
+      ]);
+      const input = writeUiInput(citationRoot, "W-022");
+      const evidence = writeReviewEvidence(citationRoot, "W-022", input, "W-022-review.log");
+      const evidencePath = join(citationRoot, evidence);
+      if (headerSella !== "qa-lead") writeFileSync(evidencePath, readFileSync(evidencePath, "utf8").replace("# sella: qa-lead", `# sella: ${headerSella}`));
+      const path = join(citationRoot, "opera", "W-022.md");
+      writeFileSync(path, readFileSync(path, "utf8").replace(
+        "probationes:\n",
+        `probationes:\n  review:\n    status: passed\n    evidence: ${evidence}\n    sella: ${gateSella}\n    at: 2026-10-01T11:30:00.000Z\n`,
+      ));
+      return checkStudio(citationRoot, NOW).findings
+        .filter((finding) => finding.where === "opera/W-022.md" && finding.rule === "opus.ui.design")
+        .map((finding) => finding.message);
+    };
+    const wrongGateCitation = citationProblems("gate", "eng-lead", "qa-lead");
+    const wrongHeaderCitation = citationProblems("header", "qa-lead", "eng-lead");
+
     assert.deepEqual(
       {
         unchanged: readFileSync(join(root, "opera", "W-002.md"), "utf8") === before,
@@ -799,6 +963,7 @@ if (runs(2)) {
         whitespaceAndCaseRejected: !whitespaceChanged.accepted,
         promptPaddingRejected: !promptPadding.accepted,
         fullFoldExpansion: fullCaseFold("ß ẞ STRASSE ſ ﬁ I İ ı") === "ss ss strasse s fi i i\u0307 ı",
+        greekRhoCasePair: fullCaseFold("ῥ") === fullCaseFold("Ῥ"),
         unicodeCaseChangedRejected: !unicodeCaseChanged.accepted,
         dotlessIRemainsDistinct: fullCaseFold("ı") !== fullCaseFold("I"),
         overlapAndNoveltyBoundaries: {
@@ -814,6 +979,15 @@ if (runs(2)) {
         staleBriefRule,
         staleTitleRule,
         unsafeRedRule,
+        symmetricNumberedPrefixes,
+        setextHeadingsExcluded: setextHeadingProblems.some((problem) => problem.includes("four nonblank")) && setextHeadingProblems.some((problem) => problem.includes("two explanatory")),
+        malformedFenceStaysOpen: malformedFenceProblems.length > 0,
+        wrongBuildVerdictRefused,
+        rightBuildVerdictAccepted: rightBuildVerdict.value.exitCode === 0,
+        wrongReviewPassRefused,
+        rightReviewPassAccepted: rightReviewPass.value.exitCode === 0,
+        wrongGateCitation,
+        wrongHeaderCitation,
       },
       {
         unchanged: true,
@@ -828,6 +1002,7 @@ if (runs(2)) {
         whitespaceAndCaseRejected: true,
         promptPaddingRejected: true,
         fullFoldExpansion: true,
+        greekRhoCasePair: true,
         unicodeCaseChangedRejected: true,
         dotlessIRemainsDistinct: true,
         overlapAndNoveltyBoundaries: {
@@ -843,6 +1018,15 @@ if (runs(2)) {
         staleBriefRule: true,
         staleTitleRule: true,
         unsafeRedRule: true,
+        symmetricNumberedPrefixes: { transcript: 33, prompt: 33, shared: 33, novel: 0, accepted: false },
+        setextHeadingsExcluded: true,
+        malformedFenceStaysOpen: true,
+        wrongBuildVerdictRefused: true,
+        rightBuildVerdictAccepted: true,
+        wrongReviewPassRefused: true,
+        rightReviewPassAccepted: true,
+        wrongGateCitation: ["review gate sella must be the censor qa-lead"],
+        wrongHeaderCitation: ["review evidence header sella must be the censor qa-lead"],
       },
     );
   });
@@ -908,6 +1092,44 @@ if (runs(3)) {
       runReview(["W-017", "--pass", "--evidence", staleReviewEvidence, "--sella", "eng-lead", "--studio", staleRoot], { now: NOW }),
     );
 
+    const runServedSpy = (tag: string, failAt?: number): { status: number | null; calls: string[] } => {
+      const spy = scratch(`b3-served-script-${tag}`);
+      const calls = join(spy, "calls.log");
+      const count = join(spy, "count");
+      const npm = join(spy, "npm");
+      writeFileSync(
+        npm,
+        [
+          "#!/bin/sh",
+          `count_file=${JSON.stringify(count)}`,
+          `calls_file=${JSON.stringify(calls)}`,
+          "n=0",
+          "if [ -f \"$count_file\" ]; then n=$(sed -n '1p' \"$count_file\"); fi",
+          "n=$((n + 1))",
+          "printf '%s\\n' \"$n\" > \"$count_file\"",
+          "printf '%s\\n' \"$*\" >> \"$calls_file\"",
+          "if [ \"${SPY_FAIL_AT:-0}\" -eq \"$n\" ]; then exit ${SPY_FAIL_CODE:-7}; fi",
+          "exit 0",
+          "",
+        ].join("\n"),
+      );
+      chmodSync(npm, 0o755);
+      const result = spawnSync(process.execPath, [join(sourceRepo, "scripts", "served-e2e.mjs")], {
+        cwd: sourceRepo,
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          PATH: `${spy}:${process.env["PATH"] ?? ""}`,
+          SPY_FAIL_AT: String(failAt ?? 0),
+          SPY_FAIL_CODE: failAt === 2 ? "9" : "7",
+        },
+      });
+      return { status: result.status, calls: existsSync(calls) ? readFileSync(calls, "utf8").trim().split("\n") : [] };
+    };
+    const servedSuccess = runServedSpy("success");
+    const servedBuildFailure = runServedSpy("build-failure", 1);
+    const servedTestFailure = runServedSpy("test-failure", 2);
+
     assert.deepEqual(
       {
         exitCode: result.exitCode,
@@ -918,6 +1140,9 @@ if (runs(3)) {
           reviewWithoutServed.exitCode !== 0 && readFileSync(join(reviewRoot, "opera", "W-016.md"), "utf8") === reviewBefore,
         staleServedBindingRefused:
           staleReview.exitCode !== 0 && readFileSync(join(staleRoot, "opera", "W-017.md"), "utf8") === staleBefore,
+        servedSuccess,
+        servedBuildFailure,
+        servedTestFailure,
       },
       {
         exitCode: 1,
@@ -926,6 +1151,15 @@ if (runs(3)) {
         e2eRule: true,
         reviewWithoutServedRefused: true,
         staleServedBindingRefused: true,
+        servedSuccess: {
+          status: 0,
+          calls: ["--workspace @bisellium/web run build", "--workspace @bisellium/web run test:serve"],
+        },
+        servedBuildFailure: { status: 7, calls: ["--workspace @bisellium/web run build"] },
+        servedTestFailure: {
+          status: 9,
+          calls: ["--workspace @bisellium/web run build", "--workspace @bisellium/web run test:serve"],
+        },
       },
     );
   });
@@ -1012,6 +1246,75 @@ if (runs(4)) {
     );
     const malformedRulingRule = rules(grammarRoot, "W-019").includes("opus.ui.rulings");
 
+    const rulingCase = (
+      tag: string,
+      mutate: (root: string, digest: string, tree: string) => void,
+      refs = "[D-901]",
+    ): string[] => {
+      const caseRoot = scratch(`b4-ruling-${tag}`);
+      writeManifest(caseRoot);
+      mkdirSync(join(caseRoot, "decisions"), { recursive: true });
+      writeFileSync(join(caseRoot, "briefs", "W-023.md"), "# W-023\n\nComplete ruling grammar fixture.\n");
+      const caseTree = "tree:3333333333333333333333333333333333333333";
+      writeServedLog(caseRoot, caseTree);
+      writeOpus(caseRoot, "W-023", [
+        'title: "complete ruling grammar is enforced"',
+        "kind: ui",
+        "collegium: design",
+        "state: done",
+        "spec: briefs/W-023.md",
+        `ui_rulings: ${refs}`,
+        "probationes:",
+        ...servedLines(caseTree),
+      ]);
+      const caseInput = writeUiInput(caseRoot, "W-023");
+      const caseReview = writeReviewEvidence(caseRoot, "W-023", caseInput, "W-023-review.log");
+      const casePath = join(caseRoot, "opera", "W-023.md");
+      writeFileSync(casePath, readFileSync(casePath, "utf8").replace(
+        "probationes:\n",
+        `probationes:\n  review:\n    status: passed\n    evidence: ${caseReview}\n    sella: qa-lead\n    at: 2026-10-01T11:30:00.000Z\n`,
+      ));
+      const digest = designDigest(String(front(caseRoot, "W-023")["title"]), readFileSync(join(caseRoot, "briefs", "W-023.md")));
+      mutate(caseRoot, digest, caseTree);
+      return checkStudio(caseRoot, NOW).findings
+        .filter((finding) => finding.where === "opera/W-023.md" && finding.rule === "opus.ui.rulings")
+        .map((finding) => finding.message);
+    };
+    const decision = (overrides: string[] = [], body = "A concrete visual ruling for the current interface.\n"): string => [
+      "---",
+      "id: D-901",
+      "by: patron",
+      "provenance: stated",
+      "title: Current visual ruling",
+      "kill_when: the design or served source changes",
+      "opus: W-023",
+      "certifies: tree:3333333333333333333333333333333333333333",
+      `design_digest: ${"DIGEST"}`,
+      "at: 2026-10-01T11:45:00.000Z",
+      ...overrides,
+      "---",
+      body,
+    ].join("\n");
+    const writeDecisionCase = (root: string, digest: string, text: string): void =>
+      writeFileSync(join(root, "decisions", "D-901.md"), text.replace("DIGEST", digest));
+    const deadRuling = rulingCase("dead", () => undefined);
+    const emptyRuling = rulingCase("empty", (caseRoot, digest) => writeDecisionCase(caseRoot, digest, decision([], "")));
+    const bodyOnlyRuling = rulingCase("body-only", (caseRoot, digest, caseTree) => writeDecisionCase(
+      caseRoot,
+      digest,
+      `---\nid: D-901\nby: patron\nprovenance: stated\ntitle: Body pseudo-fields do not count\nkill_when: design changes\n---\nopus: W-023\ncertifies: ${caseTree}\ndesign_digest: ${digest}\nat: 2026-10-01T11:45:00.000Z\n`,
+    ));
+    const aliasRuling = rulingCase("alias", (caseRoot, digest) => writeDecisionCase(
+      caseRoot,
+      digest,
+      decision(["alias_source: &actor patron", "by: *actor"]),
+    ));
+    const actorRuling = rulingCase("actor", (caseRoot, digest) => writeDecisionCase(caseRoot, digest, decision(["by: architect"])));
+    const opusRuling = rulingCase("opus", (caseRoot, digest) => writeDecisionCase(caseRoot, digest, decision(["opus: W-999"])));
+    const treeRuling = rulingCase("tree", (caseRoot, digest) => writeDecisionCase(caseRoot, digest, decision(["certifies: tree:4444444444444444444444444444444444444444"])));
+    const earlyRuling = rulingCase("early", (caseRoot, digest) => writeDecisionCase(caseRoot, digest, decision(["at: 2026-10-01T11:00:00.000Z"])));
+    const validRuling = rulingCase("valid", (caseRoot, digest) => writeDecisionCase(caseRoot, digest, decision()));
+
     assert.deepEqual(
       {
         unchanged: readFileSync(join(root, "opera", "W-004.md"), "utf8") === before,
@@ -1020,8 +1323,36 @@ if (runs(4)) {
         reviewDoneRefused:
           doneFromReview.exitCode !== 0 && readFileSync(reviewPath, "utf8") === reviewBefore && front(reviewRoot, "W-018")["state"] === "review",
         malformedRulingRule,
+        rulingGrammarMatrix: {
+          dead: deadRuling.length > 0,
+          empty: emptyRuling.length > 0,
+          bodyOnly: bodyOnlyRuling.length > 0,
+          alias: aliasRuling.length > 0,
+          wrongActor: actorRuling.length > 0,
+          wrongOpus: opusRuling.length > 0,
+          wrongTree: treeRuling.length > 0,
+          tooEarly: earlyRuling.length > 0,
+          valid: validRuling,
+        },
       },
-      { unchanged: true, state: "done", rulingRule: true, reviewDoneRefused: true, malformedRulingRule: true },
+      {
+        unchanged: true,
+        state: "done",
+        rulingRule: true,
+        reviewDoneRefused: true,
+        malformedRulingRule: true,
+        rulingGrammarMatrix: {
+          dead: true,
+          empty: true,
+          bodyOnly: true,
+          alias: true,
+          wrongActor: true,
+          wrongOpus: true,
+          wrongTree: true,
+          tooEarly: true,
+          valid: [],
+        },
+      },
     );
   });
 }
@@ -1046,12 +1377,220 @@ if (runs(5)) {
       "probationes: {}",
     ]);
 
+    writeOpus(root, "W-100", [
+      'title: "first grouping arc"',
+      "kind: arc",
+      "collegium: engineering",
+      "state: backlog",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-101", [
+      'title: "ordinary parent in the first arc"',
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "arc: W-100",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-102", [
+      'title: "valid child inheriting its parent arc"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-101",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-103", [
+      'title: "self parent"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-103",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-104", [
+      'title: "nested subtask parent"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-102",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-105", [
+      'title: "conflicting explicit child arc"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-101",
+      "arc: W-999",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-106", [
+      'title: "hostile parent id"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      'parent: "../W-101"',
+      "probationes: {}",
+    ]);
+    const other = scratch("b5-cross-officina-parent");
+    writeManifest(other);
+    writeOpus(other, "W-999", [
+      'title: "record that exists only in another officina"',
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-107", [
+      'title: "cross officina parent remains dangling locally"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-999",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-108", [
+      'title: "first member of a forbidden parent cycle"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-109",
+      "probationes: {}",
+    ]);
+    writeOpus(root, "W-109", [
+      'title: "second member of a forbidden parent cycle"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-108",
+      "probationes: {}",
+    ]);
+
+    const amendRoot = scratch("b5-amend-whole-graph");
+    writeManifest(amendRoot);
+    writeOpus(amendRoot, "W-200", ['title: "arc A"', "kind: arc", "collegium: engineering", "state: backlog", "probationes: {}"]);
+    writeOpus(amendRoot, "W-201", ['title: "arc B"', "kind: arc", "collegium: engineering", "state: backlog", "probationes: {}"]);
+    writeOpus(amendRoot, "W-202", [
+      'title: "parent whose child pins arc A"',
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "arc: W-200",
+      "probationes: {}",
+    ]);
+    writeOpus(amendRoot, "W-203", [
+      'title: "child that would be invalidated by the parent amendment"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-202",
+      "arc: W-200",
+      "probationes: {}",
+    ]);
+    const amendPath = join(amendRoot, "opera", "W-202.md");
+    const amendBefore = readFileSync(amendPath, "utf8");
+    const invalidatingAmend = captureErrors(() => runAmend(
+      ["W-202", "--arc", "W-201", "--reason", "move the parent without moving its child", "--sella", "eng-lead", "--studio", amendRoot],
+      { now: NOW },
+    ));
+
+    const writerRoot = scratch("b5-writer-hierarchy");
+    writeManifest(writerRoot);
+    const directMissingParent = capture(() => newItem(writerRoot, { kind: "subtask", collegium: "engineering", title: "direct missing parent" }));
+    const cliMissingParent = capture(() => runNew(["--kind", "subtask", "--collegium", "engineering", "--title", "CLI missing parent", writerRoot]));
+
+    const specCase = (
+      tag: string,
+      spec: string,
+      prepare: (caseRoot: string) => void,
+    ): { refused: boolean; unchanged: boolean; errors: string[] } => {
+      const caseRoot = scratch(`b5-new-spec-${tag}`);
+      writeManifest(caseRoot);
+      prepare(caseRoot);
+      const beforeInventory = inventory(caseRoot);
+      const result = captureErrors(() => runNew([
+        "--kind", "task", "--collegium", "engineering", "--title", `spec containment ${tag}`, "--spec", spec, caseRoot,
+      ]));
+      return {
+        refused: result.value.exitCode !== 0,
+        unchanged: JSON.stringify(inventory(caseRoot)) === JSON.stringify(beforeInventory),
+        errors: result.errors,
+      };
+    };
+    const missingSpec = specCase("missing", "briefs/missing.md", () => undefined);
+    const directorySpec = specCase("directory", "briefs/directory.md", (caseRoot) => mkdirSync(join(caseRoot, "briefs", "directory.md")));
+    const symlinkSpec = specCase("symlink-leaf", "briefs/link.md", (caseRoot) => {
+      const outside = join(scratch("b5-new-spec-outside"), "outside.md");
+      writeFileSync(outside, "outside brief\n");
+      symlinkSync(outside, join(caseRoot, "briefs", "link.md"));
+    });
+    const intermediateSpec = specCase("symlink-directory", "briefs/linked/brief.md", (caseRoot) => {
+      const outside = scratch("b5-new-spec-linked-directory");
+      writeFileSync(join(outside, "brief.md"), "outside brief\n");
+      symlinkSync(outside, join(caseRoot, "briefs", "linked"));
+    });
+    const wrongDirectorySpec = specCase("wrong-directory", "ci/not-a-brief.md", (caseRoot) => writeFileSync(join(caseRoot, "ci", "not-a-brief.md"), "not a brief\n"));
+
+    const validSpecRoot = scratch("b5-new-spec-valid");
+    writeManifest(validSpecRoot);
+    writeFileSync(join(validSpecRoot, "briefs", "valid.md"), "# Valid brief\n");
+    const validSpec = captureErrors(() => runNew([
+      "--kind", "task", "--collegium", "engineering", "--title", "valid contained spec", "--spec", "briefs/valid.md", validSpecRoot,
+    ]));
+    const validCreated = readdirSync(join(validSpecRoot, "opera")).find((name) => name.endsWith(".md"));
+
     assert.deepEqual(
       {
         danglingArc: rules(root, "W-005").includes("opus.arc"),
         missingParent: rules(root, "W-006").includes("opus.parent"),
+        validInheritedArc: rules(root, "W-102").filter((rule) => rule === "opus.arc" || rule === "opus.parent"),
+        selfParent: rules(root, "W-103").includes("opus.parent"),
+        nestedParent: rules(root, "W-104").includes("opus.parent"),
+        conflictingArc: rules(root, "W-105").includes("opus.arc"),
+        hostileParent: rules(root, "W-106").includes("opus.parent"),
+        crossOfficinaParent: rules(root, "W-107").includes("opus.parent"),
+        parentCycle: rules(root, "W-108").includes("opus.parent") && rules(root, "W-109").includes("opus.parent"),
+        invalidatingAmendRefused:
+          invalidatingAmend.value.exitCode !== 0 &&
+          readFileSync(amendPath, "utf8") === amendBefore &&
+          invalidatingAmend.errors.some((line) => /W-203|child|arc/i.test(line)),
+        directMissingParentRefused: directMissingParent.ok === false,
+        cliMissingParentRefused: cliMissingParent.exitCode !== 0,
+        newSpecContainment: {
+          missing: missingSpec.refused && missingSpec.unchanged,
+          directory: directorySpec.refused && directorySpec.unchanged,
+          symlinkLeaf: symlinkSpec.refused && symlinkSpec.unchanged,
+          symlinkDirectory: intermediateSpec.refused && intermediateSpec.unchanged,
+          wrongDirectory: wrongDirectorySpec.refused && wrongDirectorySpec.unchanged,
+          valid:
+            validSpec.value.exitCode === 0 &&
+            validCreated !== undefined &&
+            front(validSpecRoot, validCreated.slice(0, -3))["spec"] === "briefs/valid.md",
+        },
       },
-      { danglingArc: true, missingParent: true },
+      {
+        danglingArc: true,
+        missingParent: true,
+        validInheritedArc: [],
+        selfParent: true,
+        nestedParent: true,
+        conflictingArc: true,
+        hostileParent: true,
+        crossOfficinaParent: true,
+        parentCycle: true,
+        invalidatingAmendRefused: true,
+        directMissingParentRefused: true,
+        cliMissingParentRefused: true,
+        newSpecContainment: {
+          missing: true,
+          directory: true,
+          symlinkLeaf: true,
+          symlinkDirectory: true,
+          wrongDirectory: true,
+          valid: true,
+        },
+      },
     );
   });
 }
@@ -1074,9 +1613,161 @@ if (runs(6)) {
     const done = capture(() => runDone(["W-007", "--sella", "eng-lead", "--studio", root], { now: ended }));
     const data = front(root, "W-007");
 
+    const acceptedDates = [
+      "0001-01-01T00:00:00Z",
+      "2000-02-29T23:59:59.999Z",
+      "2024-02-29T12:34:56Z",
+      "9999-12-31T23:59:59.000Z",
+    ];
+    const rejectedDates = [
+      "0000-01-01T00:00:00Z",
+      "1900-02-29T00:00:00Z",
+      "2026-04-31T00:00:00Z",
+      "2026-01-01T24:00:00Z",
+      "2026-01-01T23:60:00Z",
+      "2026-01-01T23:59:60Z",
+      "2026-01-01T00:00:00+00:00",
+      "2026-01-01T00:00:00-00:00",
+      "2026-01-01t00:00:00z",
+      "2026-01-01T00:00Z",
+      "2026-01-01T00:00:00.1Z",
+      "2026-01-01T00:00:00.12Z",
+      "2026-01-01T00:00:00.1234Z",
+      "2026-01-01",
+    ];
+    const dateRoot = scratch("b6-date-profile");
+    writeManifest(dateRoot);
+    acceptedDates.forEach((value, index) => writeOpus(dateRoot, `W-${String(300 + index)}`, [
+      `title: "accepted date ${index}"`,
+      "kind: task",
+      "collegium: engineering",
+      "state: building",
+      `${index % 2 === 0 ? "start" : "start"}: ${index % 2 === 0 ? value : JSON.stringify(value)}`,
+      "probationes: {}",
+    ]));
+    rejectedDates.forEach((value, index) => writeOpus(dateRoot, `W-${String(400 + index)}`, [
+      `title: "rejected date ${index}"`,
+      "kind: task",
+      "collegium: engineering",
+      "state: building",
+      `start: ${JSON.stringify(value)}`,
+      "probationes: {}",
+    ]));
+    writeOpus(dateRoot, "W-500", [
+      'title: "end precedes start"',
+      "kind: task",
+      "collegium: engineering",
+      "state: done",
+      "start: 2026-10-02T00:00:00.000Z",
+      "end: 2026-10-01T00:00:00.000Z",
+      "probationes: {}",
+    ]);
+    writeOpus(dateRoot, "W-501", [
+      'title: "end is forbidden before done"',
+      "kind: task",
+      "collegium: engineering",
+      "state: building",
+      "end: 2026-10-01T00:00:00.000Z",
+      "probationes: {}",
+    ]);
+
+    const badNowRoot = scratch("b6-malformed-now");
+    writeManifest(badNowRoot);
+    writeFileSync(join(badNowRoot, "briefs", "W-510.md"), "# W-510\n");
+    writeOpus(badNowRoot, "W-510", [
+      'title: "malformed now must not mutate"',
+      "kind: task",
+      "collegium: engineering",
+      "state: greenlit",
+      "probationes: {}",
+    ]);
+    const badNowPath = join(badNowRoot, "opera", "W-510.md");
+    const badNowBefore = readFileSync(badNowPath, "utf8");
+    const badNow = capture(() => runReady([
+      "W-510", "--sella", "eng-lead", "--studio", badNowRoot, "--now", "2026-10-01T24:00:00Z",
+    ]));
+
+    const haltRoot = scratch("b6-halt-resume-reopen");
+    writeManifest(haltRoot);
+    mkdirSync(join(haltRoot, "decisions"), { recursive: true });
+    writeFileSync(join(haltRoot, "briefs", "W-520.md"), "# W-520\n");
+    writeFileSync(join(haltRoot, "decisions", "D-900.md"), "# D-900\n\nResume fixture decision.\n");
+    writeFileSync(join(haltRoot, "ci", "review-fail.log"), "review failure evidence\n");
+    writeOpus(haltRoot, "W-520", [
+      'title: "halt resume and redo preserve transition facts"',
+      "kind: task",
+      "collegium: engineering",
+      "state: greenlit",
+      "probationes: {}",
+    ]);
+    const firstStart = new Date("2026-10-01T14:00:00.000Z");
+    const resumedAt = new Date("2026-10-01T15:00:00.000Z");
+    const firstEnd = new Date("2026-10-01T16:00:00.000Z");
+    const secondEnd = new Date("2026-10-01T18:00:00.000Z");
+    const firstReady = capture(() => runReady(["W-520", "--sella", "eng-lead", "--studio", haltRoot], { now: firstStart }));
+    const halted = capture(() => runHalt([
+      "W-520", "--reason", "fixture pause", "--resume-when", "fixture resumes", "--decision", "D-900", "--sella", "eng-lead", "--studio", haltRoot,
+    ], { now: new Date("2026-10-01T14:30:00.000Z") }));
+    const resumed = capture(() => runReady(["W-520", "--sella", "eng-lead", "--studio", haltRoot], { now: resumedAt }));
+    const firstDone = capture(() => runDone(["W-520", "--sella", "eng-lead", "--studio", haltRoot], { now: firstEnd }));
+    const reopened = capture(() => runReview([
+      "W-520", "--fail", "--evidence", "ci/review-fail.log", "--sella", "qa-lead", "--studio", haltRoot,
+    ], { now: new Date("2026-10-01T17:00:00.000Z") }));
+    const afterReopen = front(haltRoot, "W-520");
+    const redone = capture(() => runDone(["W-520", "--sella", "eng-lead", "--studio", haltRoot], { now: secondEnd }));
+    const afterRedo = front(haltRoot, "W-520");
+
     assert.deepEqual(
-      { ready: ready.exitCode, done: done.exitCode, state: data["state"], start: data["start"], end: data["end"] },
-      { ready: 0, done: 0, state: "done", start: started.toISOString(), end: ended.toISOString() },
+      {
+        ready: ready.exitCode,
+        done: done.exitCode,
+        state: data["state"],
+        start: data["start"],
+        end: data["end"],
+        dateProfile: {
+          accepted: acceptedDates.map((value) => utcTimestampProblem(value)),
+          rejected: rejectedDates.map((value) => utcTimestampProblem(value) !== undefined),
+          acceptedDisk: acceptedDates.map((__, index) => rules(dateRoot, `W-${String(300 + index)}`).includes("opus.dates")),
+          rejectedDisk: rejectedDates.map((__, index) => rules(dateRoot, `W-${String(400 + index)}`).includes("opus.dates")),
+          ordering: rules(dateRoot, "W-500").includes("opus.dates.order"),
+          endBeforeDone: rules(dateRoot, "W-501").includes("opus.dates"),
+        },
+        malformedNowRefused: badNow.exitCode !== 0 && readFileSync(badNowPath, "utf8") === badNowBefore,
+        haltResumeReopenRedo: {
+          exits: [firstReady.exitCode, halted.exitCode, resumed.exitCode, firstDone.exitCode, reopened.exitCode, redone.exitCode],
+          startAfterReopen: afterReopen["start"],
+          endAfterReopen: afterReopen["end"],
+          stateAfterReopen: afterReopen["state"],
+          startAfterRedo: afterRedo["start"],
+          endAfterRedo: afterRedo["end"],
+          stateAfterRedo: afterRedo["state"],
+        },
+      },
+      {
+        ready: 0,
+        done: 0,
+        state: "done",
+        start: started.toISOString(),
+        end: ended.toISOString(),
+        dateProfile: {
+          accepted: acceptedDates.map(() => undefined),
+          rejected: rejectedDates.map(() => true),
+          acceptedDisk: acceptedDates.map(() => false),
+          rejectedDisk: rejectedDates.map(() => true),
+          ordering: true,
+          endBeforeDone: true,
+        },
+        malformedNowRefused: true,
+        haltResumeReopenRedo: {
+          exits: [0, 0, 0, 0, 0, 0],
+          startAfterReopen: firstStart.toISOString(),
+          endAfterReopen: undefined,
+          stateAfterReopen: "building",
+          startAfterRedo: firstStart.toISOString(),
+          endAfterRedo: secondEnd.toISOString(),
+          stateAfterRedo: "done",
+        },
+      },
     );
   });
 }
@@ -1108,6 +1799,89 @@ if (runs(7)) {
     );
     const after = inventory(root);
 
+    const range = (start: number, end = start): number[] => Array.from({ length: end - start + 1 }, (__, index) => start + index);
+    const forbiddenCodePoints = [
+      ...range(0x0000, 0x001f),
+      ...range(0x007f, 0x009f),
+      ...range(0x2028, 0x2029),
+      ...range(0x00ad),
+      ...range(0x0600, 0x0605),
+      ...range(0x061c),
+      ...range(0x06dd),
+      ...range(0x070f),
+      ...range(0x0890, 0x0891),
+      ...range(0x08e2),
+      ...range(0x180e),
+      ...range(0x200b, 0x200f),
+      ...range(0x202a, 0x202e),
+      ...range(0x2060, 0x2064),
+      ...range(0x2066, 0x206f),
+      ...range(0xfeff),
+      ...range(0xfff9, 0xfffb),
+      ...range(0x110bd),
+      ...range(0x110cd),
+      ...range(0x13430, 0x1343f),
+      ...range(0x1bca0, 0x1bca3),
+      ...range(0x1d173, 0x1d17a),
+      ...range(0xe0001),
+      ...range(0xe0020, 0xe007f),
+    ];
+    const controlsRoot = scratch("b7-complete-control-set");
+    writeManifest(controlsRoot);
+    forbiddenCodePoints.forEach((codePoint, index) => writeOpus(controlsRoot, `W-${String(600 + index)}`, [
+      `title: ${JSON.stringify(`before${String.fromCodePoint(codePoint)}after`)}`,
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "probationes: {}",
+    ]));
+    const diskControlsRejected = forbiddenCodePoints.every((__, index) => rules(controlsRoot, `W-${String(600 + index)}`).includes("opus.title"));
+
+    const writerRoot = scratch("b7-complete-writer-controls");
+    writeManifest(writerRoot);
+    writeOpus(writerRoot, "W-900", [
+      'title: "writer control target"',
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "probationes: {}",
+    ], "Writer target body remains unchanged.\n");
+    const writerTarget = join(writerRoot, "opera", "W-900.md");
+    const writerTargetBefore = readFileSync(writerTarget);
+    const directControlsRejected = forbiddenCodePoints.every((codePoint) =>
+      capture(() => newItem(writerRoot, { kind: "task", collegium: "engineering", title: `before${String.fromCodePoint(codePoint)}after` })).ok === false,
+    );
+    const cliControlsRejected = forbiddenCodePoints.every((codePoint) =>
+      capture(() => runNew(["--kind", "task", "--collegium", "engineering", "--title", `before${String.fromCodePoint(codePoint)}after`, writerRoot])).exitCode !== 0,
+    );
+    const amendControlsRejected = forbiddenCodePoints.every((codePoint) =>
+      capture(() => runAmend([
+        "W-900", "--title", `before${String.fromCodePoint(codePoint)}after`, "--reason", "complete control set", "--sella", "eng-lead", "--studio", writerRoot,
+      ], { now: NOW })).exitCode !== 0,
+    );
+
+    const preserveRoot = scratch("b7-body-byte-preservation");
+    writeManifest(preserveRoot);
+    const preservePath = join(preserveRoot, "opera", "W-910.md");
+    const preservedBody = Buffer.from("\ufeffFirst body line with BOM and CRLF.\r\n\r\n<div>literal HTML remains byte-identical</div>\r\n", "utf8");
+    const preserveHeader = Buffer.from(
+      "---\nid: W-910\ntitle: body preservation target\nkind: task\ncollegium: engineering\nstate: backlog\nprobationes: {}\n---\n",
+      "utf8",
+    );
+    writeFileSync(preservePath, Buffer.concat([preserveHeader, preservedBody]));
+    const preserveAmend = capture(() => runAmend([
+      "W-910", "--title", "ordinary Unicode café 東京 remains verbatim", "--reason", "metadata-only amendment", "--sella", "eng-lead", "--studio", preserveRoot,
+    ], { now: NOW }));
+    const preserveAfter = readFileSync(preservePath);
+    const emptyDescriptionPath = writeOpus(preserveRoot, "W-911", [
+      'title: "empty description remains legal"',
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "probationes: {}",
+    ], "");
+    const preservedFront = front(preserveRoot, "W-910");
+
     assert.deepEqual(
       {
         diskTitleRule: rules(root, "W-008").includes("opus.title"),
@@ -1116,6 +1890,23 @@ if (runs(7)) {
         amendRefused: amend.exitCode !== 0,
         creationInventoryUnchanged: JSON.stringify(after) === JSON.stringify(before),
         amendBytesUnchanged: readFileSync(join(root, "opera", "W-009.md"), "utf8") === amendBefore,
+        completeControlSet: {
+          count: forbiddenCodePoints.length,
+          directFunction: forbiddenCodePoints.every((codePoint) => titleProblem(`before${String.fromCodePoint(codePoint)}after`) !== undefined),
+          disk: diskControlsRejected,
+          newItem: directControlsRejected,
+          runNew: cliControlsRejected,
+          amend: amendControlsRejected,
+          writerBytesUnchanged: readFileSync(writerTarget).equals(writerTargetBefore),
+        },
+        bodyPreservation: {
+          amended: preserveAmend.exitCode,
+          exactSuffix: preserveAfter.subarray(preserveAfter.length - preservedBody.length).equals(preservedBody),
+          title: preservedFront["title"],
+          noSummary: !("summary" in preservedFront),
+          noDescription: !("description" in preservedFront),
+          emptyDescriptionLegal: !rules(preserveRoot, "W-911").includes("opus.title") && readFileSync(emptyDescriptionPath).subarray(-1).equals(Buffer.from("\n")),
+        },
       },
       {
         diskTitleRule: true,
@@ -1124,6 +1915,23 @@ if (runs(7)) {
         amendRefused: true,
         creationInventoryUnchanged: true,
         amendBytesUnchanged: true,
+        completeControlSet: {
+          count: forbiddenCodePoints.length,
+          directFunction: true,
+          disk: true,
+          newItem: true,
+          runNew: true,
+          amend: true,
+          writerBytesUnchanged: true,
+        },
+        bodyPreservation: {
+          amended: 0,
+          exactSuffix: true,
+          title: "ordinary Unicode café 東京 remains verbatim",
+          noSummary: true,
+          noDescription: true,
+          emptyDescriptionLegal: true,
+        },
       },
     );
   });

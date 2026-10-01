@@ -96,7 +96,22 @@ const citationFindings = (root: string) =>
     "",
   ].join("\n");
   check(10, "W-096 completed selected TAP assertion is accepted", isW096AssertionRed(valid, 2));
-  check(10, "W-096 module-load text cannot masquerade as an assertion red", !isW096AssertionRed(`${valid}\nERR_MODULE_NOT_FOUND`, 2));
+  const noAssertionCode = valid.replace("  code: 'ERR_ASSERTION'", "  code: 'E_FIXTURE'");
+  const multipleTests = valid
+    .replace("1..1", "not ok 2 - W-096 behaviour 2: second fixture\n  ---\n  code: 'ERR_ASSERTION'\n  ...\n1..2")
+    .replace("# tests 1", "# tests 2")
+    .replace("# fail 1", "# fail 2");
+  const planMismatch = valid.replace("1..1", "1..2");
+  const moduleLoad = `${valid}\nError [ERR_MODULE_NOT_FOUND]: Cannot find module './fixture.js'\n`;
+  check(10, "W-096 TAP without ERR_ASSERTION is rejected", !isW096AssertionRed(noAssertionCode, 2));
+  check(10, "W-096 multiple-test TAP is rejected", !isW096AssertionRed(multipleTests, 2));
+  check(10, "W-096 plan mismatch is rejected", !isW096AssertionRed(planMismatch, 2));
+  check(10, "W-096 module-load text cannot masquerade as an assertion red", !isW096AssertionRed(moduleLoad, 2));
+}
+
+if (only === 10) {
+  for (const root of dirs.reverse()) rmSync(root, { recursive: true, force: true });
+  process.exit(failed === 0 ? 0 : 1);
 }
 
 // W-084 occupies selector rows 7-9 so a focused command does not also run a
