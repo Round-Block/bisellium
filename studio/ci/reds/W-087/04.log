@@ -1,9 +1,9 @@
 # behaviour: 4
 # command: npm --workspace @bisellium/web run test:serve -- tests-serve/board.spec.ts --grep W-087 behaviour 4:
 # exit: 1
-# at: 2026-10-01T06:53:36.197Z
+# at: 2026-10-01T07:54:23.756Z
 # sella: builder-codex.W-087
-# tree: tree:33d5ef6a088a41078fc36bfeb9b355934c78da27
+# tree: tree:af6b6ee630cbcd0fd0671a7b085dc48ddaa8b293
 
 
 > @bisellium/web@0.0.1 test:serve
@@ -12,38 +12,38 @@
 
 Running 1 test using 1 worker
 
-  ✘  1 [chromium] › tests-serve/board.spec.ts:811:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold (5.6s)
+  ✘  1 [chromium] › tests-serve/board.spec.ts:827:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold (6.2s)
 
 
-  1) [chromium] › tests-serve/board.spec.ts:811:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold 
+  1) [chromium] › tests-serve/board.spec.ts:827:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold 
 
-    Error: expect(locator).toBeFocused() failed
+    Error: expect(locator).toHaveAttribute(expected) failed
 
-    Locator:  locator('.board-drawer__close')
-    Expected: focused
-    Received: inactive
+    Locator:  locator('.board')
+    Expected: ""
+    Received: serializes to the same string
     Timeout:  5000ms
 
     Call log:
-      - Expect "toBeFocused" locator('.board-drawer__close') with timeout 5000ms
-      - waiting for locator('.board-drawer__close')
-        14 × locator resolved to <button type="button" aria-label="close" class="board-drawer__close">×</button>
-           - unexpected value "inactive"
+      - Expect "toHaveAttribute" locator('.board') with timeout 5000ms
+      - waiting for locator('.board')
+        14 × locator resolved to <div class="board">…</div>
+           - unexpected value "null"
 
 
-      846 |       const close = page.locator(".board-drawer__close");
-      847 |       await expect(close).toBeVisible();
-    > 848 |       await expect(close).toBeFocused();
-          |                           ^
-      849 |       const geometry = await page.evaluate(() => {
-      850 |         const workspace = document.querySelector(".board-workspace");
-      851 |         const board = document.querySelector(".board");
-        at /home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:848:27
+      865 |       const board = page.locator(".board");
+      866 |       if (row.board === 0) {
+    > 867 |         await expect(board).toHaveAttribute("inert", "");
+          |                             ^
+      868 |         await page.keyboard.press("Shift+Tab");
+      869 |         expect(await page.evaluate(() => document.activeElement?.closest(".board") === null)).toBe(true);
+      870 |         await close.focus();
+        at /home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:867:29
 
     Error Context: test-results/board-W-087-behaviour-4-th-4e324-oth-focus-return-paths-hold-chromium/error-context.md
 
   1 failed
-    [chromium] › tests-serve/board.spec.ts:811:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold 
+    [chromium] › tests-serve/board.spec.ts:827:3 › W-087 behaviour 4: the pushed drawer never covers reachable terminal columns › the binding breakpoint table, terminal reachability and both focus-return paths hold 
 npm error Lifecycle script `test:serve` failed with error:
 npm error code 1
 npm error path /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
