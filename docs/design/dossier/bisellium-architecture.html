@@ -336,8 +336,9 @@ stateDiagram-v2
   greenlit --> halted: production
   halted --> building: ready --spec
 </pre>
-<p>Only four transitions have a command behind them — <code>greenlight</code> (backlog only), <code>ready</code> (from <code>greenlit</code> or <code>halted</code>, and it refuses without a spec), <code>done</code> (from <code>building</code>, <code>verifying</code> or <code>review</code>) and <code>review --fail</code>'s reopen edge back to <code>building</code> from <code>review</code> or <code>done</code>; <code>verify</code> writes gate records and never touches <code>state</code>.</p>
-<p>The middle of the lifecycle is orchestrator-driven: nothing in the CLI moves an opus into <code>verifying</code> or <code>review</code>, and nothing writes <code>halted</code> — <code>adapters/native</code> names production's magister as halt's actor, and every state but <code>done</code> may halt (drawn once, from <code>greenlit</code>, rather than six times). That gap is L-015, open.</p>
+<p>Five transition commands are implemented — <code>greenlight</code> (backlog only), <code>ready</code> (from <code>greenlit</code> or <code>halted</code>, and it refuses without a spec), <code>done</code> (from <code>building</code>, <code>verifying</code> or <code>review</code>), <code>review --fail</code>'s reopen edge back to <code>building</code> from <code>review</code> or <code>done</code>, and <code>halt</code> from every non-done state. <code>ready</code> records the first <code>start</code>; <code>done</code> records <code>end</code>; reopening clears <code>end</code> but retains <code>start</code>. The same timestamp is emitted with the transition. <code>verify</code> writes gate records and never touches <code>state</code>.</p>
+<p>The middle of the lifecycle is orchestrator-driven: nothing in the CLI moves an opus into <code>verifying</code> or <code>review</code>. <code>adapters/native</code> names production's magister as halt's actor, and every state but <code>done</code> may halt (drawn once, from <code>greenlit</code>, rather than six times).</p>
+<p>Before the readiness/completion writers mutate a native opus they call the shared <code>packages/commands/src/opus-model.ts</code> policy. It narrows native kinds, titles, hierarchy and dates and, for UI work, establishes design-seat input, the effective <code>served-e2e</code> gate, sole-censor citation and Patron rulings. <code>check</code> translates the same structured problems to rule findings; <code>verify</code> uses the same effective-gate and protected-record predicates. The seam is read-only, keeping command writers and validation from becoming competing sources of truth.</p>
 <h2>3. Cascade</h2>
 <pre class="mermaid">
 flowchart TD
@@ -391,6 +392,8 @@ flowchart LR
 <ul>
 <li><code>createNextRecord</code> (<code>@bisellium/commands/ids.js</code>) — the one sequential-id</li>
 <p>seam for <code>W-*</code>, <code>P-*</code>, and <code>L-*</code>: it combines exact local filenames with every local and remote-tracking ref, then reserves the rendered record by exclusive create. Git failure warns and degrades to local records; it never fetches.</p>
+<li><code>opus-model</code> (<code>@bisellium/commands/opus-model.js</code>) — the read-only native</li>
+<p>work-model seam shared by <code>check</code>, lifecycle/verdict writers and <code>verify</code>: containment, hierarchy/dates, UI policy/effective gates, design digests and W-096's pinned-baseline comparison return structured problems but never mutate an officina.</p>
 <li><code>StartServerOptions.checkStudio</code> / <code>.runners</code> — the injection that keeps</li>
 <p><code>apps/server</code> free of <code>@bisellium/cli</code> (§1).</p>
 <li><code>MergePipeline</code> (<code>@bisellium/pipeline</code>) — <code>verify</code> runs gates through it, so a</li>
