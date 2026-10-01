@@ -122,9 +122,9 @@ lighter-on-darker sandwich.
 - **Hairlines, not boxes.** A panel is a 1px `--rule` top border plus a heading.
   Nesting depth cap is 2 (screen → panel). Anything that wants to be a card
   inside a card becomes a row inside a table.
-- **Density targets.** Board: 288px columns, 64px cards, 8px between, ≥12 cards
-  visible per column at 900px. Tables: 32px rows, 8px cell padding vertical,
-  16px horizontal, ≥20 rows visible. One density, no toggle.
+- **Density targets.** Board: 288px columns, cards bounded from 64px to 108px,
+  8px between. Tables: 32px rows, 8px cell padding vertical, 16px horizontal,
+  ≥20 rows visible. One density, no toggle.
 - **Chrome budget.** Nav ≤ 44px, no second toolbar, no breadcrumb bar. Content
   begins within 56px of the viewport top. ≥88% of vertical pixels are content.
 
@@ -183,7 +183,7 @@ badge. It is the only footer in the product.
   with the elapsed mono numeral beside it; it does not pulse. A stopped clock
   reads as stopped, and that is the honest signal.
 - **Drawer, never modal.** Board scroll position is snapshotted on open and
-  restored on close; the board stays live behind it.
+  restored on close; the board stays mounted and live beside the pushed drawer.
 - **Keyboard first.** Item lists are roving-tabindex listboxes: `j`/`k` move,
   `Enter` opens the drawer, `Esc` closes, `1`/`2`/`3` are approve/defer/decline
   in the Inbox, `⌘K` is the only palette. Shortcuts are printed in the drawer
@@ -213,10 +213,11 @@ amber past it. No donut, no gauge, no sparkline. Posture is the word itself at
 sentence someone can argue with, not a coloured chip. The pause brake is the one
 place a verdigris fill button is allowed.
 
-**Board** — phase columns at 288px; the card is three lines in 64px: gate ladder,
-title truncated at two lines (13/18), owner sella id in mono 12. Cards have no
-border and no shadow — they are separated by 8px of page and carry a 2px left
-rule only when blocked (`bad`) or waiting on you (amber). The column head is two
+**Board** — phase columns at 288px; cards grow from 64px to 108px: gate ladder,
+title clamped at four lines (13/18) with its complete source in a native title
+affordance, owner sella id in mono 12. Cards have no border and no shadow — they
+are separated by 8px of page and carry a 2px left rule only when blocked (`bad`)
+or waiting on you (amber). The column head is two
 lines: name + count at 13/500, then a 3px WIP rule filled to count/cap (ink under
 cap, amber at cap — a WIP breach is a human's problem) with median dwell time as
 a right-aligned mono numeral, so the header names the bottleneck instead of just

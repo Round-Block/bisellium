@@ -13,6 +13,9 @@ import { Colophon } from "../components/Colophon.js";
 export interface BoardViewProps {
   studio: string;
   model: BoardModel;
+  /** True only while the drawer reduces this mounted Board to a zero-width
+   *  track; removes its concealed controls from sequential focus. */
+  inert?: boolean;
   selectedId?: string;
   /** Roving tabindex: exactly one card per column carries tabIndex 0. */
   focusedByColumn: Record<string, string | undefined>;
@@ -56,7 +59,7 @@ function Card({
       onClick={() => onSelect(card.id, columnId)}
     >
       <GateLadder gates={card.gates} />
-      <span className="board__card-title">{card.title}</span>
+      <span className="board__card-title" title={card.title}>{card.title}</span>
       <span className="board__card-meta">
         {card.sella && <span className="board__card-sella">{card.sella}</span>}
         <span className="board__card-state">{card.state}</span>
@@ -113,9 +116,9 @@ function scrollColumnIntoView(columnId: string): void {
   el?.scrollIntoView({ inline: "start", block: "nearest" });
 }
 
-export function BoardView({ studio, model, selectedId, focusedByColumn, onSelectCard, liveness, generatedAt }: BoardViewProps): JSX.Element {
+export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, generatedAt }: BoardViewProps): JSX.Element {
   return (
-    <div className="board">
+    <div className="board" inert={inert || undefined}>
       <div className="board__header">
         <h1 className="board__title">Board</h1>
         <div className="board__project-select-wrap">

@@ -30,8 +30,9 @@
  * cadence "due" list are small enough to read/compute directly against the
  * studio's own files instead of reaching for packages/cli/src/{pause,tick}.ts.
  */
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { closeSync, constants, existsSync, fstatSync, lstatSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
 import { EVENTS_LOG_REL, readLog, Store as CoreStore } from "@bisellium/core";
 import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
@@ -64,11 +65,92 @@ interface OpusFrontMatter {
   [key: string]: unknown;
 }
 
-/** Same containment discipline as packages/commands/writes.ts's
- *  safeItemPath: an id must never carry a path separator or a bare `.`/`..`
- *  segment before it's joined into a path. */
 function safeId(id: string): boolean {
   return id.length > 0 && !/[\\/]/.test(id) && id !== "." && id !== "..";
+}
+
+const OPUS_BODY_LIMIT_BYTES = 64 * 1024;
+const OPUS_FRONT_MATTER_LIMIT_BYTES = 64 * 1024;
+const OPUS_BODY_TRUNCATION_MARKER = "\n\n[Record body truncated at 64 KiB.]";
+
+function bodyOffset(raw: Buffer): number | undefined {
+  const bomBytes = raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf ? 3 : 0;
+  const lfOpening = Buffer.from("---\n");
+  const crlfOpening = Buffer.from("---\r\n");
+  let openingLength: number;
+  if (raw.subarray(bomBytes, bomBytes + lfOpening.length).equals(lfOpening)) openingLength = lfOpening.length;
+  else if (raw.subarray(bomBytes, bomBytes + crlfOpening.length).equals(crlfOpening)) openingLength = crlfOpening.length;
+  else return undefined;
+
+  const searchFrom = bomBytes + openingLength - 1;
+  const endings = [Buffer.from("\n---\n"), Buffer.from("\r\n---\r\n")]
+    .map((delimiter) => ({ delimiter, index: raw.indexOf(delimiter, searchFrom) }))
+    .filter((candidate) => candidate.index !== -1)
+    .sort((a, b) => a.index - b.index);
+  const ending = endings[0];
+  return ending ? ending.index + ending.delimiter.length : undefined;
+}
+
+/**
+ * Read an opus body without `readFront`'s whitespace-wide `.trim()`. Bodies
+ * through 64 KiB preserve every authored byte; larger bodies carry a visible
+ * truncation marker. A conventional final line ending is file framing and is
+ * removed only from an otherwise complete body.
+ */
+function readOpusBody(studioDir: string, id: string): string {
+  const root = resolve(studioDir);
+  const dir = join(root, "opera");
+  let fd: number | undefined;
+  try {
+    // Match the established W-084/W-089 non-following read pattern. Every
+    // traversed component is lstat'd, the final entry must be a directory-
+    // enumerated regular file, and O_NOFOLLOW + fstat close the replacement
+    // race at open time. The id is compared with an entry name and is never
+    // interpolated into a path, so this server does not duplicate the shared
+    // commands safeItemPath helper (which its production graph may not import).
+    if (!lstatSync(root).isDirectory() || !lstatSync(dir).isDirectory()) return "";
+    const entry = readdirSync(dir, { withFileTypes: true }).find(
+      (candidate) => candidate.isFile() && candidate.name.endsWith(".md") && candidate.name.slice(0, -3) === id,
+    );
+    if (!entry) return "";
+    const path = join(dir, entry.name);
+    if (!lstatSync(path).isFile()) return "";
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const opened = fstatSync(fd);
+    if (!opened.isFile()) return "";
+
+    const header = Buffer.alloc(Math.min(opened.size, OPUS_FRONT_MATTER_LIMIT_BYTES));
+    const headerBytes = readSync(fd, header, 0, header.length, 0);
+    const offset = bodyOffset(header.subarray(0, headerBytes));
+    if (offset === undefined) return "";
+
+    const available = Math.max(0, opened.size - offset);
+    const bodyBuffer = Buffer.alloc(Math.min(available, OPUS_BODY_LIMIT_BYTES + 2));
+    const bytesRead = readSync(fd, bodyBuffer, 0, bodyBuffer.length, offset);
+    const bodyBytes = bodyBuffer.subarray(0, bytesRead);
+    const onlyFramingLf = available === OPUS_BODY_LIMIT_BYTES + 1 && bodyBytes[OPUS_BODY_LIMIT_BYTES] === 0x0a;
+    const onlyFramingCrlf =
+      available === OPUS_BODY_LIMIT_BYTES + 2 &&
+      bodyBytes[OPUS_BODY_LIMIT_BYTES] === 0x0d &&
+      bodyBytes[OPUS_BODY_LIMIT_BYTES + 1] === 0x0a;
+    const truncated = available > OPUS_BODY_LIMIT_BYTES && !onlyFramingLf && !onlyFramingCrlf;
+    if (truncated) {
+      const decoder = new StringDecoder("utf8");
+      return decoder.write(bodyBytes.subarray(0, OPUS_BODY_LIMIT_BYTES)) + OPUS_BODY_TRUNCATION_MARKER;
+    }
+    return bodyBytes.toString("utf8").replace(/\r?\n$/, "");
+  } catch {
+    return "";
+  } finally {
+    if (fd !== undefined) {
+      try {
+        closeSync(fd);
+      } catch {
+        // The body read has already failed or completed; closing cannot
+        // change the honest empty/truncated response selected above.
+      }
+    }
+  }
 }
 
 export type CheckStudioFn = (root: string, now?: Date) => { ok: boolean; blocks: number; advisories: number; findings: unknown[] };
@@ -265,6 +347,7 @@ export class Store extends CoreStore {
         .map((w) => ({
           id: w.id,
           title: w.meta["title"],
+          body: readOpusBody(this.studioDir, w.id),
           kind: w.kind,
           collegium: w.meta["collegium"],
           sella: w.meta["sella"],

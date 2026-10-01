@@ -149,6 +149,8 @@ export interface HealthResponse {
 export interface OpusEntry {
   id: string;
   title: string;
+  /** Complete record body from the officina source. */
+  body: string;
   kind: string;
   collegium: string;
   sella: string;

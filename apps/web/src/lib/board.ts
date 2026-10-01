@@ -196,16 +196,42 @@ export function reconcileTargets(selected: string | undefined): string[] {
   return selected === undefined ? base : [...base, `/api/events?item=${encodeURIComponent(selected)}`];
 }
 
+export function formatBoardTimestamp(value: string, timeZone?: string): string {
+  const instant = new Date(value);
+  if (Number.isNaN(instant.getTime())) return "—";
+
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+      ...(timeZone === undefined ? {} : { timeZone }),
+    }).formatToParts(instant);
+    const values = new Map(parts.map((part) => [part.type, part.value]));
+    const day = values.get("day");
+    const month = values.get("month");
+    const year = values.get("year");
+    const hour = values.get("hour");
+    const minute = values.get("minute");
+    if (!day || !month || !year || !hour || !minute) return "—";
+    return `${day}/${month}/${year} ${hour}:${minute}`;
+  } catch {
+    return "—";
+  }
+}
+
 /** Connection state and last successful refresh are reported SEPARATELY
  *  (ruling 10) — a connected stream that has not refreshed is not "updated".
  *  `now` is accepted for interface symmetry with a future relative-time
- *  upgrade; the literal ISO string is rendered rather than reformatted so
- *  the claim ("renders lastRefreshAt, never now") holds by construction. */
+ *  upgrade; `lastRefreshAt`, never `now`, supplies the localized display. */
 export function liveLabel(input: { connected: boolean; lastRefreshAt?: string; now: Date }): string {
   if (!input.connected) return "disconnected";
   if (input.lastRefreshAt === undefined) return "connected";
   if (Number.isNaN(new Date(input.lastRefreshAt).getTime())) return "connected";
-  return `live · updated ${input.lastRefreshAt}`;
+  return `live · updated ${formatBoardTimestamp(input.lastRefreshAt)}`;
 }
 
 export interface DrawerDetail {
@@ -214,6 +240,8 @@ export interface DrawerDetail {
   state: string;
   sella?: string;
   collegium?: string;
+  /** Complete record body, rendered as authored plain text. */
+  body: string;
   /** One row per DECLARED probatio, manifest order. `status` is the literal
    *  status WORD and is always rendered as text — never hover-only
    *  (ruling 17). */
@@ -296,7 +324,7 @@ export function drawerDetail(
   const traditio = opus.traditio;
   if (typeof traditio === "object" && traditio !== null) {
     for (const [key, value] of Object.entries(traditio as Record<string, unknown>)) {
-      if (typeof value === "string" && value.length > 0) record.push({ label: key, value });
+      if (typeof value === "string" && value.length > 0) record.push({ label: key, value: key === "at" ? formatBoardTimestamp(value) : value });
     }
   }
 
@@ -314,11 +342,12 @@ export function drawerDetail(
     state: opus.state,
     sella: opus.sella || undefined,
     collegium: opus.collegium || undefined,
+    body: opus.body,
     gates,
     waitingOn,
     record,
     tokensBySella: [...bySella.entries()].map(([sella, tokens]) => ({ sella, tokens })),
     tokensDeclared: opus.tokens,
-    events: [...events].reverse().map((e) => ({ at: e.ts, name: e.name, summary: summarizeEvent(e) })),
+    events: [...events].reverse().map((e) => ({ at: formatBoardTimestamp(e.ts), name: e.name, summary: summarizeEvent(e) })),
   };
 }

@@ -237,12 +237,27 @@ function detail(overrides: Partial<DrawerDetail> = {}): DrawerDetail {
     state: "verifying",
     sella: "builder-a",
     collegium: "engineering",
+    body: "",
     gates: [{ id: "sim", name: "Balance sim", status: "failed", human: false }],
     record: [],
     tokensBySella: [],
     events: [],
     ...overrides,
   };
+}
+
+// W-087: the body is the first record content, kept as literal escaped text;
+// an empty body has an explicit honest placeholder.
+{
+  const body = `First paragraph\n\n**literal markdown**\n${HOSTILE}`;
+  const withBody = renderToStaticMarkup(BoardDrawer({ detail: detail({ body, tokensDeclared: 12, record: [{ label: "next", value: "ship" }] }), onClose: () => undefined }));
+  const emptyBody = renderToStaticMarkup(BoardDrawer({ detail: detail({ body: "" }), onClose: () => undefined }));
+  const bodyPosition = withBody.indexOf("board-drawer__record-body");
+  const firstRecordRow = withBody.indexOf("board-drawer__record-row");
+  check(6, "BoardDrawer: record body renders before token/traditio rows", bodyPosition >= 0 && (firstRecordRow < 0 || bodyPosition < firstRecordRow), withBody);
+  check(6, "BoardDrawer: record body preserves authored text and newlines", withBody.includes("First paragraph\n\n**literal markdown**"), withBody);
+  check(6, "BoardDrawer: record body escapes HTML-like source", !withBody.includes("<img") && withBody.includes("&lt;img"), withBody);
+  check(6, 'BoardDrawer: empty record body says "No record body."', emptyBody.includes("No record body.") && !emptyBody.includes("undefined"), emptyBody);
 }
 
 // No selection -> no drawer element.

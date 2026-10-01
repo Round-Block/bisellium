@@ -12,12 +12,12 @@
  * relevant frame schedules the same reconciliation through one trailing
  * timer — never a `setInterval`.
  */
-import { useEffect, useRef, useState, type JSX } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type JSX } from "react";
 import { fetchEvents, fetchInbox, fetchOfficina, fetchOpera, subscribeLive } from "../api.js";
 import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
-import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
+import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -32,6 +32,12 @@ interface Selection {
   columnId: string;
 }
 
+interface PendingCloseRestoration {
+  selection: Selection;
+  fallback: boolean;
+  scrollLeft: number | undefined;
+}
+
 export function Board(): JSX.Element {
   const [officina, setOfficina] = useState<OfficinaResponse | typeof EMPTY_OFFICINA>(EMPTY_OFFICINA);
   const [opera, setOpera] = useState<OpusEntry[]>([]);
@@ -41,6 +47,9 @@ export function Board(): JSX.Element {
   const [focusedByColumn, setFocusedByColumn] = useState<Record<string, string | undefined>>({});
   const [connected, setConnected] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
+  const [boardTrackCollapsed, setBoardTrackCollapsed] = useState(
+    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 612px)").matches === true,
+  );
   // True only once officina AND opera AND inbox have all landed from the
   // SAME reconciliation. Each is set from its own independently-resolving
   // fetch's .then() (so officina can commit, and re-render, before opera
@@ -58,6 +67,7 @@ export function Board(): JSX.Element {
   const connRef = useRef<{ connected: boolean; everFetched: boolean }>({ connected: false, everFetched: false });
   const refetchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const scrollSnapshotRef = useRef<number | undefined>(undefined);
+  const pendingCloseRestorationRef = useRef<PendingCloseRestoration | undefined>(undefined);
   const pendingFocusRef = useRef<{ columnId: string; cardId: string } | undefined>(undefined);
 
   useEffect(() => {
@@ -66,6 +76,40 @@ export function Board(): JSX.Element {
   useEffect(() => {
     modelRef.current = model;
   }, [model]);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 612px)");
+    const update = (): void => setBoardTrackCollapsed(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  // Restore only after React has committed the closed layout. Scheduling this
+  // from the close event can race that commit, leaving the narrow drawer-open
+  // grid to clamp or replace the saved offset. preventScroll keeps focus
+  // restoration from changing the offset again.
+  useLayoutEffect(() => {
+    if (selected) return;
+    const pending = pendingCloseRestorationRef.current;
+    if (!pending) return;
+    pendingCloseRestorationRef.current = undefined;
+
+    const scrollEl = document.querySelector<HTMLElement>(".board__columns");
+    if (scrollEl && pending.scrollLeft !== undefined) scrollEl.scrollLeft = pending.scrollLeft;
+
+    const { selection, fallback } = pending;
+    const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${selection.columnId}"]`);
+    if (!fallback) {
+      columnEl?.querySelector<HTMLElement>(`[data-card-id="${selection.id}"]`)?.focus({ preventScroll: true });
+      return;
+    }
+    const firstCard = columnEl?.querySelector<HTMLElement>("[data-card-id]");
+    if (firstCard) {
+      firstCard.focus({ preventScroll: true });
+      return;
+    }
+    columnEl?.querySelector<HTMLElement>(".board__column-head")?.focus({ preventScroll: true });
+  }, [selected]);
 
   function markRefreshed(): void {
     setLastRefreshAt(new Date().toISOString());
@@ -144,20 +188,16 @@ export function Board(): JSX.Element {
     const column = model.columns.find((c) => c.id === sel.columnId);
     const stillThere = column?.cards.some((c) => c.id === sel.id) ?? false;
     if (stillThere) return;
+    pendingCloseRestorationRef.current = { selection: sel, fallback: true, scrollLeft: scrollSnapshotRef.current };
     setSelected(undefined);
-    const scrollEl = document.querySelector<HTMLElement>(".board__columns");
-    if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;
-    requestAnimationFrame(() => {
-      const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${sel.columnId}"]`);
-      const firstCard = columnEl?.querySelector<HTMLElement>("[data-card-id]");
-      if (firstCard) {
-        firstCard.focus();
-        return;
-      }
-      const head = columnEl?.querySelector<HTMLElement>(".board__column-head");
-      head?.focus();
-    });
   }, [model]);
+
+  // The pushed layout can collapse the Board cell to zero. Once the drawer
+  // has mounted, move focus to its visible close control at every width.
+  useEffect(() => {
+    if (!selected) return;
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".board-drawer__close")?.focus());
+  }, [selected]);
 
   // ---- Phone: initial visible column is needs_you (non-empty) else
   // in_progress — once, after the first real model lands. ------------------
@@ -211,14 +251,10 @@ export function Board(): JSX.Element {
     // the restoration branch below on every Esc — the ref is always current
     // regardless of which render's closure invoked it.
     const sel = selectedRef.current;
-    setSelected(undefined);
-    const scrollEl = document.querySelector<HTMLElement>(".board__columns");
-    if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;
     if (sel) {
-      requestAnimationFrame(() => {
-        document.querySelector<HTMLElement>(`.board__columns [data-column-id="${sel.columnId}"] [data-card-id="${sel.id}"]`)?.focus();
-      });
+      pendingCloseRestorationRef.current = { selection: sel, fallback: false, scrollLeft: scrollSnapshotRef.current };
     }
+    setSelected(undefined);
   }
 
   // ---- Keyboard: roving tabindex within a column, cross-column arrows,
@@ -268,19 +304,22 @@ export function Board(): JSX.Element {
     // Reads current state entirely through refs.
   }, []);
 
-  const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
+  const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
+  const generatedAt = formatBoardTimestamp(new Date().toISOString());
 
   return (
-    <>
+    <div className="board-workspace">
       <BoardView
         studio={officina.studio}
         model={model}
+        inert={selected !== undefined && boardTrackCollapsed}
         selectedId={selected?.id}
         focusedByColumn={focusedByColumn}
         onSelectCard={(id, columnId) => openDrawer(id, columnId)}
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
+        generatedAt={generatedAt}
       />
       <BoardDrawer detail={detail} onClose={closeDrawer} />
-    </>
+    </div>
   );
 }
