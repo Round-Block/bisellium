@@ -1,0 +1,262 @@
+# opus: W-087
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL — revision-3 regression assertions incomplete: no exact-64 KiB / UTF-8 split / authored-whitespace rows (brief:345); no Close focus-ring or open-drawer resize inert assertions (brief:392). Round-1 findings resolved.
+# at: 2026-10-01T08:11:13.866Z
+# tree: tree:251134c98e10e531e3ca2e67881e0a3ad3ebad20
+
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /home/edckt/projects/bisellium/.worktrees/W-087
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0f67f-7283-7153-81dd-213b7e537e81
+--------
+user
+You are the censor sella qa-lead, the sole review gate (D-014), reviewing opus W-087 round 2 on branch opus/W-087 (HEAD 9407428). Read studio/leges/qa.md, studio/briefs/W-087.md (revision 3, architect-signed 2026-10-01 — the revision table at the end records what changed), studio/opera/W-087.md, and your own round-1 verdict at studio/ci/W-087-review-1.log. Round 1 failed on: (1) a duplicated containment helper at store.ts:74; (2) the Files-owned boundary exceeded by packages/cli/src/containment.test.ts. Since then: the builder's fix commit 'fix(W-087): harden drawer body and collapsed focus' (git show it; the diff of the whole opus is git diff master...HEAD), reds for behaviours 2 and 4 re-recorded at a clean tree in studio/ci/reds/W-087/02.log and 04.log, verify certificates at tree 251134c9 (studio/ci/W-087-{tests,lint,types}-251134c9.log), and the architect's revision-3 ruling that widens Files owned to the census file, ratifies the 64 KiB body cap and non-following reads, and defers the shared core helper. Served Playwright passed 34/34 on the rebuilt bundle (/home/edckt/.bisellium-evidence/w087-serve7.log); the full suite log is w087-full7.log in the same directory. Your sandbox is read-only and may not be able to run node or git; read the files and logs directly if a command is refused. Judge independently against the brief and the QA charter: are both round-1 findings resolved, do the new reds certify assertion-level failures at a clean tree, does the fix stay within revision 3's Files owned, and is there any new blocking defect. Do not repair code or edit evidence. End with exactly one line 'VERDICT: PASS' or 'VERDICT: FAIL — <reason>' followed by numbered findings, each marked BLOCKING or ADVISORY with file:line.
+codex
+I’m booting the qa-lead context first, then I’ll dispatch the single censor review gate with the exact round-2 evidence scope. I’ll preserve the read-only boundary and won’t alter code or evidence.
+exec
+/usr/bin/zsh -lc bisellium in /home/edckt/projects/bisellium/.worktrees/W-087
+ exited 127 in 0ms:
+zsh:1: command not found: bisellium
+
+codex
+The global `bisellium` executable is unavailable in this shell. I’ll inspect the repository’s local launcher and evidence paths directly; if there is a local CLI, I’ll invoke it with no arguments before attempting the required context boot.
+exec
+/usr/bin/zsh -lc "rg --files -g 'bisellium*' -g 'package.json' -g 'qa.md' -g 'W-087*' -g 'SESSION-HANDOFF.md' | sort" in /home/edckt/projects/bisellium/.worktrees/W-087
+ succeeded in 0ms:
+adapters/epoch0/package.json
+adapters/native/package.json
+apps/server/package.json
+apps/web/package.json
+cascades/package.json
+docs/SESSION-HANDOFF.md
+docs/design/dossier/bisellium-architecture.html
+docs/design/dossier/bisellium-backlog.html
+docs/design/dossier/bisellium-direction.html
+docs/design/dossier/bisellium-dossier.html
+docs/design/dossier/bisellium-progress.html
+examples/fixtures/bad-dead-link/bisellium.yml
+examples/fixtures/bad-empty-budget/bisellium.yml
+examples/fixtures/bad-halted-no-exit/bisellium.yml
+examples/fixtures/bad-mirrored-burn/bisellium.yml
+examples/fixtures/bad-missing-handoff/bisellium.yml
+examples/fixtures/bad-non-string-id/bisellium.yml
+examples/fixtures/bad-review-failed-tests/bisellium.yml
+examples/fixtures/bad-unsupported-state/bisellium.yml
+examples/fixtures/bad-waived-agent/bisellium.yml
+examples/fixtures/bad-waived-automated/bisellium.yml
+examples/fixtures/bad-wip-cap/bisellium.yml
+examples/fixtures/good-minimal/bisellium.yml
+examples/sample-studio/bisellium.yml
+examples/sample-studio/leges/qa.md
+package.json
+packages/cli/bin/bisellium.mjs
+packages/cli/package.json
+packages/commands/package.json
+packages/core/package.json
+packages/pipeline/package.json
+packages/providers/package.json
+packages/schema/package.json
+packages/shim/package.json
+studio/bisellium.yml
+studio/briefs/W-087.md
+studio/ci/W-087-lint-251134c9.log
+studio/ci/W-087-lint-b28be2e7.log
+studio/ci/W-087-lint-bf12f82c.log
+studio/ci/W-087-lint-d0ac9b98.log
+studio/ci/W-087-review-1.log
+studio/ci/W-087-tests-251134c9.log
+studio/ci/W-087-tests-b28be2e7.log
+studio/ci/W-087-tests-bf12f82c.log
+studio/ci/W-087-tests-d0ac9b98.log
+studio/ci/W-087-types-251134c9.log
+studio/ci/W-087-types-b28be2e7.log
+studio/ci/W-087-types-bf12f82c.log
+studio/ci/W-087-types-d0ac9b98.log
+studio/leges/qa.md
+studio/opera/W-087.md
+
+exec
+/usr/bin/zsh -lc 'node packages/cli/bin/bisellium.mjs' in /home/edckt/projects/bisellium/.worktrees/W-087
+ exited 2 in 169ms:
+usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+       bisellium query <question> [dir] [--now <iso>] [--from-index]
+       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+       bisellium pause [--studio <dir>] [--reason <text>]
+       bisellium resume [--studio <dir>]
+       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+       bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+       bisellium merge <opus-id> --studio <dir> --repo <dir>
+       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+       bisellium prune --studio <dir> [--repo <dir>]
+       bisellium docs registry [--repo <dir>] [--now <iso>]
+
+exec
+/usr/bin/zsh -lc 'node packages/cli/bin/bisellium.mjs context --sella qa-lead studio' in /home/edckt/projects/bisellium/.worktrees/W-087
+ succeeded in 210ms:
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+## QA lex
+--- data: leges/qa.md ---
+# QA Lex
+
+Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
+
+## 1. Mandate
+
+Verify greenlit features against spec and regression test suite; reject
+autonomously when warranted. The Censor drives the first hour of every
+cascade, advisory only — it does not sign the spec gate, which belongs to
+the architect — and closes the last one.
+
+## 2. Decides alone
+
+- Verdicts on `review` items: pass, fail, or request clarification
+- Regression suite changes and test infrastructure
+- Severity classification for found issues
+- One mutation per opus is enough to demonstrate the suite bites; no more
+  are required to pass review
+- Blocks a write outside an opus's declared files (check: probatio.declared)
+- Adopting an advisory-only rule proposal alone, without a petitio to the
+  Patron
+- Stamping `addressed_by` on a recurring class the Censor closes by
+  adopting an advisory rule alone (check: lesson.addressed_by)
+
+## 3. Digests
+
+- Weekly: test coverage, failure patterns, cycle time
+- Regression insights affecting engineering priority
+- A `class` of finding recurring across cascades; the advisory goes quiet
+  once some lesson of the class names what addresses it (check:
+  lesson.recurrent)
+
+## 4. Asks
+
+- Policy changes to acceptance criteria
+- Resource constraints affecting test infrastructure
+- A blocking-rule or lex-wording proposal arising from a retrospective —
+  filed as a petitio to the Patron, never adopted alone
+- A recurring class the Censor cannot address alone — filed as a petitio
+  naming the proposed opus, rule, or acceptance decision. A class left
+  unaddressed at the close of the next cascade is an unmet obligation.
+
+## 5. Budget
+
+- Period: week · Allowance: 0.5M tokens
+- Burn reporting: `aerarium/<period>.yml`
+- Over-budget: posture → conserve, digest the cause
+
+## 6. Autonomy
+
+- Level: L1 scheduled
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
+
+Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+retro`) that files at least one lesson per distinct finding class, each with
+non-empty, non-dead evidence (check: lesson.evidence).
+
+A usage section is required in every retro (D-013): `bisellium retro`'s
+input carries `usage` (totals, checking/building ratio, tokens per opus,
+trend against the previous retro, posture from the current aerarium), not
+supplied as an afterthought once the numbers are already forgotten —
+`retro.ts` renders the section only when it's given, so an empty/absent
+`usage` on a real cascade is the Censor's own gap, not the tool's.
+
+The Censor carries the addressed ledger forward: every retro's `##
+Addressed` section lists each recurrent class with its target, and a class
+recorded as formally accepted names the `decisions/D-nnn.md` that accepts
+it, with its `kill_when`.
+
+## 9. Amendment log
+
+| Date | Change | Authority |
+|---|---|---|
+| 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+| 2026-09-19 | Usage section required in every retro (D-013) | Patron |
+| 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
+| 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+--- end ---
+
+## Standing rules
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Before structural screen changes, verify against the dossier's touchpoint mapping.
+
+## QA index
+W-093 · backlog · sec-lead runs per PR, concurrent with QA: every opus PR gets a security pass alongside the censor round, alerts name opera, the merge-gate exclusion becomes a record
+tokens: 1036
+
+codex
+The qa-lead context is loaded. I’m now handing the independent evidence review to the sole censor gate, including the revision-3 scope, round-1 findings, clean-tree red criteria, commit and full-opus diff, and the served/full-suite logs.
+codex
+The gate review is in progress. It is checking the actual branch state and line-level diff, then reconciling both red logs with the clean-tree and assertion-failure requirements before deciding.
+collab: Wait
+codex
+The censor has confirmed both prior blockers are resolved and both replacement reds are genuine assertion-level failures from a clean tree. It has identified a possible new acceptance-coverage blocker and is pinning that judgment to the exact revision-3 clauses and file lines before issuing the gate verdict.
+collab: Wait
+codex
+1. **BLOCKING** — Revision 3 requires exact-64-KiB, UTF-8 split-boundary, and authored-whitespace coverage ([studio/briefs/W-087.md:345](/home/edckt/projects/bisellium/.worktrees/W-087/studio/briefs/W-087.md:345)). The served test covers only oversized ASCII, symlink, and empty bodies ([apps/web/tests-serve/board.spec.ts:688](/home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:688)).
+
+2. **BLOCKING** — Revision 3 requires assertions for the Close button’s visible focus ring and inertness changes during an open-drawer resize ([studio/briefs/W-087.md:392](/home/edckt/projects/bisellium/.worktrees/W-087/studio/briefs/W-087.md:392)). The test resizes only before opening and never inspects the focus indicator ([apps/web/tests-serve/board.spec.ts:844](/home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:844)).
+
+3. **ADVISORY** — Both round-1 findings are resolved. The duplicate helper is gone ([apps/server/src/store.ts:100](/home/edckt/projects/bisellium/.worktrees/W-087/apps/server/src/store.ts:100)), and revision 3 now owns the census file ([studio/briefs/W-087.md:290](/home/edckt/projects/bisellium/.worktrees/W-087/studio/briefs/W-087.md:290)). All five changed source files are declared.
+
+4. **ADVISORY** — Both replacement reds record clean-tree, assertion-level failures ([02.log:1](/home/edckt/projects/bisellium/.worktrees/W-087/studio/ci/reds/W-087/02.log:1), [04.log:1](/home/edckt/projects/bisellium/.worktrees/W-087/studio/ci/reds/W-087/04.log:1)). Tests, lint, and types certify tree `251134c9`; the rebuilt served suite passed 34/34.
+
+VERDICT: FAIL — revision-3 regression assertions are incomplete
+tokens used
+21,111
+1. **BLOCKING** — Revision 3 requires exact-64-KiB, UTF-8 split-boundary, and authored-whitespace coverage ([studio/briefs/W-087.md:345](/home/edckt/projects/bisellium/.worktrees/W-087/studio/briefs/W-087.md:345)). The served test covers only oversized ASCII, symlink, and empty bodies ([apps/web/tests-serve/board.spec.ts:688](/home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:688)).
+
+2. **BLOCKING** — Revision 3 requires assertions for the Close button’s visible focus ring and inertness changes during an open-drawer resize ([studio/briefs/W-087.md:392](/home/edckt/projects/bisellium/.worktrees/W-087/studio/briefs/W-087.md:392)). The test resizes only before opening and never inspects the focus indicator ([apps/web/tests-serve/board.spec.ts:844](/home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:844)).
+
+3. **ADVISORY** — Both round-1 findings are resolved. The duplicate helper is gone ([apps/server/src/store.ts:100](/home/edckt/projects/bisellium/.worktrees/W-087/apps/server/src/store.ts:100)), and revision 3 now owns the census file ([studio/briefs/W-087.md:290](/home/edckt/projects/bisellium/.worktrees/W-087/studio/briefs/W-087.md:290)). All five changed source files are declared.
+
+4. **ADVISORY** — Both replacement reds record clean-tree, assertion-level failures ([02.log:1](/home/edckt/projects/bisellium/.worktrees/W-087/studio/ci/reds/W-087/02.log:1), [04.log:1](/home/edckt/projects/bisellium/.worktrees/W-087/studio/ci/reds/W-087/04.log:1)). Tests, lint, and types certify tree `251134c9`; the rebuilt served suite passed 34/34.
+
+VERDICT: FAIL — revision-3 regression assertions are incomplete
