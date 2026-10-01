@@ -6,7 +6,7 @@
  * (W-12). Against temp copies of examples/sample-studio, `--repo` pointed at
  * the real bisellium repo so `sourceTreeHash` has something real to hash.
  */
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
@@ -597,17 +597,19 @@ try {
 
     // The check delta on the real officina, exact: today, zero findings of
     // any rule are scoped to petitiones/ (verified directly below); after
-    // this opus, exactly twelve — one per real petitio, all `petitio.subject`
+    // this opus, exactly one per real petitio, all `petitio.subject`
     // advisories (no other rule's petitio-scoped finding set is touched,
-    // and none of the twelve has a malformed key, so none blocks). No
+    // and none of the real petitiones has a malformed key, so none blocks). No
     // `--repo` here: `probatio.certifies` and friends key off the live git
     // tree, which this very opus's own commits move — irrelevant to this
     // rule and excluded by staying hermetic, the same way most of this file
     // already does.
-    const REAL_IDS = ["P-001", "P-002", "P-003", "P-004", "P-005", "P-007", "P-008", "P-009", "P-010", "P-011", "P-012", "P-013"];
+    const REAL_IDS = readdirSync(join(realStudio, "petitiones"), { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+      .map((entry) => entry.name.slice(0, -".md".length));
     const r = checkStudio(realStudio, new Date("2026-09-25T12:00:00Z"));
     const petitioScoped = r.findings.filter((f) => f.where.startsWith("petitiones/"));
-    checkB(5, "petitiones-scoped findings are exactly twelve (one per real petitio)", petitioScoped.length === 12, JSON.stringify(petitioScoped));
+    checkB(5, "petitiones-scoped findings are exactly one per real petitio", petitioScoped.length === REAL_IDS.length, JSON.stringify(petitioScoped));
     checkB(5, "...and every one is petitio.subject (no other petitio rule's set altered)", petitioScoped.every((f) => f.rule === "petitio.subject"), JSON.stringify(petitioScoped));
     checkB(5, "...and every one is advisory (zero new blocking findings)", petitioScoped.every((f) => f.level === "advise"), JSON.stringify(petitioScoped));
     for (const id of REAL_IDS) {
