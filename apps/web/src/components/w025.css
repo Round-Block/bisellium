@@ -1021,6 +1021,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   min-height: 0;
+  min-width: 0;
   /* The column count/width changes as real data replaces the pre-data
    * render (1 column -> the full set); without this the browser's own
    * scroll-anchoring "helpfully" re-adjusts scrollLeft to compensate,
@@ -1107,6 +1108,11 @@
 
 .board__card--bad {
   border-left-color: var(--bad);
+}
+
+.board__card > .gate-ladder {
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .board__card-title {

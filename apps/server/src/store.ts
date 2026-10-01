@@ -71,6 +71,24 @@ function safeId(id: string): boolean {
   return id.length > 0 && !/[\\/]/.test(id) && id !== "." && id !== "..";
 }
 
+/**
+ * Read an opus body without `readFront`'s whitespace-wide `.trim()`. Studio
+ * markdown files conventionally carry one final line ending, which is file
+ * framing rather than record content; remove only that line ending and leave
+ * every authored byte before it intact.
+ */
+function readOpusBody(studioDir: string, id: string, fallback: string): string {
+  if (!safeId(id)) return fallback;
+  try {
+    const raw = readFileSync(join(studioDir, "opera", `${id}.md`), "utf8").replace(/^﻿/, "");
+    const match = /^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
+    if (!match) return fallback;
+    return (match[1] ?? "").replace(/\r?\n$/, "");
+  } catch {
+    return fallback;
+  }
+}
+
 export type CheckStudioFn = (root: string, now?: Date) => { ok: boolean; blocks: number; advisories: number; findings: unknown[] };
 
 /** `<studio>/PAUSED` — same shape packages/commands/pause.ts's
@@ -265,7 +283,7 @@ export class Store extends CoreStore {
         .map((w) => ({
           id: w.id,
           title: w.meta["title"],
-          body: typeof w.meta["notes"] === "string" ? w.meta["notes"] : "",
+          body: readOpusBody(this.studioDir, w.id, typeof w.meta["notes"] === "string" ? w.meta["notes"] : ""),
           kind: w.kind,
           collegium: w.meta["collegium"],
           sella: w.meta["sella"],
