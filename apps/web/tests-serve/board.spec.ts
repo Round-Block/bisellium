@@ -736,6 +736,73 @@ test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body"
     await expect(page.locator(".board-drawer__record-body")).toHaveText("No record body.");
     await expect(page.locator(".board-drawer__record-body")).not.toContainText("undefined");
   });
+
+  test("an exact 64 KiB body is retained whole without a truncation marker", async ({ page }) => {
+    served = await startServed("w087-record-body-exact-cap");
+    const bodyLimit = 64 * 1024;
+    const truncationMarker = "\n\n[Record body truncated at 64 KiB.]";
+    const body = "x".repeat(bodyLimit);
+    expect(Buffer.byteLength(body, "utf8")).toBe(bodyLimit);
+    setOpusBody(served.studioDir, "W-004", body);
+
+    const response = await fetch(`${served.baseURL}/api/opera`);
+    expect(response.status).toBe(200);
+    const opera = (await response.json()) as OpusEntry[];
+    const returnedBody = opera.find((row) => row.id === "W-004")?.body;
+    expect(returnedBody).toBe(body);
+    expect(returnedBody).not.toContain(truncationMarker);
+
+    await openBoard(page, served);
+    await page.locator('.board__card[data-card-id="W-004"]').first().click();
+    expect(await page.locator(".board-drawer__record-body").textContent()).toBe(body);
+  });
+
+  test("a UTF-8 character split by the 64 KiB cap is dropped before the exact marker", async ({ page }) => {
+    served = await startServed("w087-record-body-utf8-cap");
+    const bodyLimit = 64 * 1024;
+    const truncationMarker = "\n\n[Record body truncated at 64 KiB.]";
+    const retainedAscii = "a".repeat(bodyLimit - 1);
+    const body = `${retainedAscii}€after the cap`;
+    const encoded = Buffer.from(body, "utf8");
+    expect(encoded.subarray(bodyLimit - 1, bodyLimit + 2)).toEqual(Buffer.from("€", "utf8"));
+    setOpusBody(served.studioDir, "W-004", body);
+
+    const response = await fetch(`${served.baseURL}/api/opera`);
+    expect(response.status).toBe(200);
+    const opera = (await response.json()) as OpusEntry[];
+    const returnedBody = opera.find((row) => row.id === "W-004")?.body;
+    // readOpusBody uses StringDecoder.write() without end(): the incomplete
+    // code point at the retained boundary is omitted, never replaced by U+FFFD.
+    const expectedBody = retainedAscii + truncationMarker;
+    expect(returnedBody).toBe(expectedBody);
+    expect(returnedBody).not.toContain("�");
+    expect(Buffer.from(returnedBody ?? "", "utf8").toString("utf8")).toBe(returnedBody);
+
+    await openBoard(page, served);
+    await page.locator('.board__card[data-card-id="W-004"]').first().click();
+    expect(await page.locator(".board-drawer__record-body").textContent()).toBe(expectedBody);
+  });
+
+  test("authored spaces, tabs, blank lines and trailing spaces survive the response and pre-wrap drawer", async ({ page }) => {
+    served = await startServed("w087-record-body-whitespace");
+    const body = "  leading spaces\n\ttabbed line\n\nline with trailing spaces  \nfinal trailing spaces   ";
+    setOpusBody(served.studioDir, "W-004", body);
+
+    const response = await fetch(`${served.baseURL}/api/opera`);
+    expect(response.status).toBe(200);
+    const opera = (await response.json()) as OpusEntry[];
+    expect(opera.find((row) => row.id === "W-004")?.body).toBe(body);
+
+    await openBoard(page, served);
+    await page.locator('.board__card[data-card-id="W-004"]').first().click();
+    const renderedBody = page.locator(".board-drawer__record-body");
+    const rendered = await renderedBody.evaluate((el) => ({
+      text: el.textContent,
+      whiteSpace: getComputedStyle(el).whiteSpace,
+    }));
+    expect(rendered.text).toBe(body);
+    expect(rendered.whiteSpace).toBe("pre-wrap");
+  });
 });
 
 test.describe("W-087 behaviour 3: every generated Board time has the viewer-local shape", () => {
@@ -822,6 +889,60 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
   let served: ServedInstance;
   test.afterEach(async () => {
     await served?.close();
+  });
+
+  test("the keyboard-focused close ring remains visible while live resize toggles Board inert at 613/612", async ({ page }) => {
+    served = await startServed("w087-pushed-drawer-focus-inert");
+    await page.setViewportSize({ width: 613, height: 900 });
+    await openBoard(page, served);
+
+    const source = page.locator('.board__card[data-card-id="W-002"]');
+    await source.focus();
+    await page.keyboard.press("Enter");
+    const close = page.locator(".board-drawer__close");
+    await expect(close).toBeVisible();
+    await expect(close).toBeFocused();
+
+    // Return to Close with keyboard navigation so :focus-visible is the
+    // asserted state, independent of the drawer's programmatic initial focus.
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    await expect(close).toBeFocused();
+    const focusRing = await close.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        outlineColor: style.outlineColor,
+        verdigris: getComputedStyle(document.documentElement).getPropertyValue("--verdigris").trim(),
+      };
+    });
+    expect(focusRing.outlineStyle).not.toBe("none");
+    expect(focusRing.outlineWidth).toBe("2px");
+    expect(focusRing.verdigris).toBe("#0b6e5f");
+    expect(focusRing.outlineColor).toBe("rgb(11, 110, 95)");
+
+    const board = page.locator(".board");
+    const drawer = page.locator(".board-drawer");
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(1, 0);
+    await expect(board).not.toHaveAttribute("inert", "");
+
+    await page.setViewportSize({ width: 612, height: 900 });
+    await expect(drawer).toBeVisible();
+    await expect(board).toHaveAttribute("inert", "");
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBe(0);
+
+    await close.focus();
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => document.activeElement?.closest(".board") === null)).toBe(true);
+    await close.focus();
+    await page.keyboard.press("Shift+Tab");
+    expect(await page.evaluate(() => document.activeElement?.closest(".board") === null)).toBe(true);
+
+    await page.setViewportSize({ width: 613, height: 900 });
+    await expect(drawer).toBeVisible();
+    await expect(board).not.toHaveAttribute("inert", "");
+    expect(await board.evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(1, 0);
   });
 
   test("the binding breakpoint table, terminal reachability and both focus-return paths hold", async ({ page }) => {
