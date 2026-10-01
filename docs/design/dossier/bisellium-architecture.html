@@ -389,6 +389,8 @@ flowchart LR
 <p>One direction of truth: the studio's files are the state, <code>snapshotDir()</code> reads them into a Snapshot, the core Store diffs consecutive snapshots into the append-only <code>events.jsonl</code> and folds each new event into the SQLite index — <code>/api/events</code> is answered from that index, the other GETs re-read the files through <code>adapter-native</code> on every call (no cache to invalidate), and the POSTs never write directly: they call the runners <code>serve.ts</code> injected, which edit the files the next poll picks up.</p>
 <h2>Seams</h2>
 <ul>
+<li><code>createNextRecord</code> (<code>@bisellium/commands/ids.js</code>) — the one sequential-id</li>
+<p>seam for <code>W-*</code>, <code>P-*</code>, and <code>L-*</code>: it combines exact local filenames with every local and remote-tracking ref, then reserves the rendered record by exclusive create. Git failure warns and degrades to local records; it never fetches.</p>
 <li><code>StartServerOptions.checkStudio</code> / <code>.runners</code> — the injection that keeps</li>
 <p><code>apps/server</code> free of <code>@bisellium/cli</code> (§1).</p>
 <li><code>MergePipeline</code> (<code>@bisellium/pipeline</code>) — <code>verify</code> runs gates through it, so a</li>
