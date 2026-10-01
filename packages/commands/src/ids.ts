@@ -4,7 +4,7 @@
  * branch/ref, then reserve the next candidate with an exclusive create.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 export type RecordDirectory = "opera" | "petitiones" | "lessons";
@@ -16,10 +16,18 @@ export interface CreatedRecord {
 }
 
 const GIT_OUTPUT_LIMIT = 16 * 1024 * 1024;
+// Record suffixes are bounded to nine decimal digits; 999,999,999 is final.
+const MAX_SUFFIX_DIGITS = 9;
+const MAX_SUFFIX = 999_999_999;
+// A single allocation may absorb at most 100 concurrent EEXIST collisions.
+const MAX_EEXIST_RETRIES = 100;
 
 function numericSuffix(name: string, pattern: RegExp): number | undefined {
   const match = pattern.exec(name);
-  return match ? Number(match[1]) : undefined;
+  const digits = match?.[1];
+  if (digits === undefined || digits.length > MAX_SUFFIX_DIGITS) return undefined;
+  const suffix = Number(digits);
+  return Number.isSafeInteger(suffix) && suffix <= MAX_SUFFIX ? suffix : undefined;
 }
 
 function localMaximum(directoryPath: string, pattern: RegExp): number {
@@ -34,6 +42,13 @@ function localMaximum(directoryPath: string, pattern: RegExp): number {
 function gitOutput(cwd: string, args: string[]): string {
   return execFileSync("git", ["-C", cwd, ...args], {
     encoding: "utf8",
+    env: {
+      ...process.env,
+      // Tree discovery must be local, literal and independent of refs/replace.
+      GIT_NO_LAZY_FETCH: "1",
+      GIT_LITERAL_PATHSPECS: "1",
+      GIT_NO_REPLACE_OBJECTS: "1",
+    },
     maxBuffer: GIT_OUTPUT_LIMIT,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -46,10 +61,9 @@ function gitOutput(cwd: string, args: string[]): string {
  */
 function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: RegExp): number | undefined {
   try {
-    const physicalStudio = realpathSync(studioRoot);
-    const discoveredRoot = gitOutput(physicalStudio, ["rev-parse", "--show-toplevel"]).trim();
+    const discoveredRoot = gitOutput(studioRoot, ["rev-parse", "--show-toplevel"]).trim();
     const physicalRepo = realpathSync(discoveredRoot);
-    const studioRelative = relative(physicalRepo, physicalStudio);
+    const studioRelative = relative(physicalRepo, studioRoot);
     if (studioRelative === ".." || studioRelative.startsWith(`..${sep}`)) throw new Error("officina is outside its Git worktree");
 
     const gitDirectory = [...(studioRelative ? studioRelative.split(sep) : []), directory].join("/");
@@ -64,9 +78,7 @@ function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: Reg
 
     let maximum = 0;
     for (const ref of refs) {
-      const paths = gitOutput(physicalRepo, ["ls-tree", "-r", "-z", "--name-only", ref, "--", gitDirectory]).split(
-        /\0|\r?\n/,
-      );
+      const paths = gitOutput(physicalRepo, ["ls-tree", "-r", "-z", "--name-only", ref, "--", gitDirectory]).split("\0");
       const directoryPrefix = `${gitDirectory}/`;
       for (const path of paths) {
         if (!path.startsWith(directoryPrefix)) continue;
@@ -82,30 +94,47 @@ function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: Reg
   }
 }
 
+function requireRealDirectory(path: string): void {
+  const stat = lstatSync(path);
+  if (stat.isSymbolicLink() || !stat.isDirectory()) {
+    throw new Error(`record directory must be a real directory, not a symbolic link: ${path}`);
+  }
+}
+
 export function createNextRecord(
   studioRoot: string,
   directory: RecordDirectory,
   prefix: RecordPrefix,
   render: (id: string) => string | Uint8Array,
 ): CreatedRecord {
-  const directoryPath = join(studioRoot, directory);
+  const physicalStudio = realpathSync(studioRoot);
+  const directoryPath = join(physicalStudio, directory);
   mkdirSync(directoryPath, { recursive: true });
+  requireRealDirectory(directoryPath);
   const pattern = new RegExp(`^${prefix}-(\\d+)\\.md$`);
   const local = localMaximum(directoryPath, pattern);
-  const fromRefs = refMaximum(studioRoot, directory, pattern);
+  const fromRefs = refMaximum(physicalStudio, directory, pattern);
   if (fromRefs === undefined) {
     console.error("warning: Git ref-wide allocation unavailable; using local records only");
   }
 
   let candidate = Math.max(local, fromRefs ?? 0) + 1;
-  for (;;) {
+  for (let collisions = 0; ; collisions++) {
+    if (candidate > MAX_SUFFIX) {
+      throw new Error(`record id suffix exhausted at ${MAX_SUFFIX_DIGITS} digits for prefix ${prefix}`);
+    }
     const id = `${prefix}-${String(candidate).padStart(3, "0")}`;
     const path = join(directoryPath, `${id}.md`);
     try {
-      writeFileSync(path, render(id), { flag: "wx" });
+      const contents = render(id);
+      requireRealDirectory(directoryPath);
+      writeFileSync(path, contents, { flag: "wx" });
       return { id, path };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      if (collisions + 1 >= MAX_EEXIST_RETRIES) {
+        throw new Error(`record allocation stopped after ${MAX_EEXIST_RETRIES} EEXIST collisions for prefix ${prefix}`);
+      }
       candidate++;
     }
   }
