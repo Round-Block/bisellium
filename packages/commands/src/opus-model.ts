@@ -491,6 +491,11 @@ export interface UiPolicyContext {
 }
 
 export function validateRecordReferences(root: string, record: NativeRecord): OpusModelProblem[] {
+  // A non-UI done opus is historical: no lifecycle policy reads its current
+  // brief again, just as the legacy active-spec rule does not revisit it.
+  // UI is different because done policy recomputes the design digest from
+  // the current brief, so that reference remains live and must stay bounded.
+  if (record.state === "done" && record.kind !== "ui") return [];
   if (record.spec === undefined) return [];
   if (typeof record.spec !== "string") return [{ rule: "opus.reference", message: "spec must be a contained brief path" }];
   const brief = readContainedRegularFile(root, record.spec, "briefs");
