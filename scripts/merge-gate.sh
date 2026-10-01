@@ -32,6 +32,14 @@ for _ in $(seq 1 60); do
   # The ruleset requires an up-to-date branch and auto-merge never updates it:
   # a PR that falls behind while its checks run stalls forever (PRs 139, 147).
   if [ "$mstate" = "BEHIND" ]; then gh pr update-branch "$PR" >/dev/null 2>&1 && echo "updated branch (was BEHIND)"; fi
+  # Auto-merge does not always fire once a PR is green (PRs 139, 147, 149):
+  # when nothing is pending or failing, ask for the merge directly as well.
+  if [ "$mstate" = "CLEAN" ] || [ "$mstate" = "BLOCKED" ]; then
+    checks=$(gh pr checks "$PR" 2>/dev/null)
+    if [ "$(echo "$checks" | grep -c pending)" -eq 0 ] && [ "$(echo "$checks" | grep -c fail)" -eq 0 ]; then
+      gh pr merge "$PR" --squash >/dev/null 2>&1 && echo "direct merge requested (green, $mstate)"
+    fi
+  fi
   sleep 20
 done
 [ "$state" != "MERGED" ] && { echo "state=QUEUE_TIMEOUT"; exit 1; }
