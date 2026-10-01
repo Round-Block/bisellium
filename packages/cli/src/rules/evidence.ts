@@ -284,7 +284,9 @@ export function isW096AssertionRed(text: string, behaviour: number): boolean {
   const body = stripHeader(text);
   const exit = header.get("exit") ?? "";
   if (header.get("behaviour") !== String(behaviour) || !/^-?\d+$/.test(exit) || exit === "0" || !selected || INVALID_RED_OUTPUT.test(body)) return false;
-  if (!/^TAP version 13$/m.test(body)) return false;
+  // The TAP stream must be the command's output, not a later quoted/heredoc
+  // fixture embedded in shell diagnostics or source text.
+  if (!body.startsWith("TAP version 13\n")) return false;
   const statuses = [...body.matchAll(/^(?:not )?ok \d+ - (.+)$/gm)];
   if (statuses.length !== 1 || !statuses[0]![0].startsWith("not ok ") || !statuses[0]![1]!.startsWith(name)) return false;
   const diagnosticStart = body.indexOf("\n  ---\n", statuses[0]!.index);

@@ -27,6 +27,7 @@ import {
   censorSella,
   effectiveProbationes,
   loadNativeRecords,
+  parseVerdictHeader,
   readContainedRegularFile,
   titleProblem,
   utcTimestampProblem,
@@ -568,14 +569,19 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
   const sella = reviewSellaResult;
-  if (pass && currentFront.kind === "ui") {
+  if (currentFront.kind === "ui") {
     const censor = censorSella(manifest);
     if (!censor) {
-      console.error("review --pass cannot identify the manifest QA magister censor");
+      console.error("UI review cannot identify the manifest QA magister censor");
       return { exitCode: 2 };
     }
     if (sella !== censor) {
-      console.error(`review --pass must be attributed to the censor ${censor}`);
+      console.error(`UI review must be attributed to the censor ${censor}`);
+      return { exitCode: 2 };
+    }
+    const evidenceHeader = parseVerdictHeader(containedEvidence.bytes.toString("utf8"));
+    if (evidenceHeader.duplicates.includes("sella") || evidenceHeader.values.get("sella") !== censor) {
+      console.error(`UI review evidence header sella must be the censor ${censor}`);
       return { exitCode: 2 };
     }
   }

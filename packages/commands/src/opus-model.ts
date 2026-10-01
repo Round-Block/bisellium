@@ -640,28 +640,29 @@ function validateServed(root: string, record: NativeRecord): { at?: string; tree
   return { at, tree: certifies, problems };
 }
 
-function reviewCitation(
+function reviewIdentity(
   root: string,
-  record: NativeRecord,
-  input: UiInput,
-  expectedDigest: string,
-  reviewId: string,
+  gate: Record<string, unknown>,
   censor: string | undefined,
-): string[] {
-  const gates = typeof record.probationes === "object" && record.probationes !== null && !Array.isArray(record.probationes) ? (record.probationes as Record<string, unknown>) : {};
-  const review = gates[reviewId];
-  if (typeof review !== "object" || review === null || Array.isArray(review)) return ["passed UI review evidence is missing"];
-  const gate = review as Record<string, unknown>;
-  if (gate["status"] !== "passed") return ["UI completion needs the sole review gate passed"];
-  const evidence = typeof gate["evidence"] === "string" ? gate["evidence"] : "";
-  const file = readContainedRegularFile(root, evidence, "ci");
-  if ("error" in file) return [`review evidence is unsafe or unreadable: ${file.error}`];
-  const header = parseVerdictHeader(file.bytes.toString("utf8"));
+): { header?: ReturnType<typeof parseVerdictHeader>; problems: string[] } {
   const problems: string[] = [];
   if (!censor) problems.push("review gate cannot identify the manifest QA magister censor");
   else if (gate["sella"] !== censor) problems.push(`review gate sella must be the censor ${censor}`);
+  const evidence = typeof gate["evidence"] === "string" ? gate["evidence"] : "";
+  const file = readContainedRegularFile(root, evidence, "ci");
+  if ("error" in file) return { problems: [...problems, `review evidence is unsafe or unreadable: ${file.error}`] };
+  const header = parseVerdictHeader(file.bytes.toString("utf8"));
   if (header.duplicates.length) problems.push("review evidence contains duplicate header keys");
   if (censor && header.values.get("sella") !== censor) problems.push(`review evidence header sella must be the censor ${censor}`);
+  return { header, problems };
+}
+
+function reviewCitation(
+  input: UiInput,
+  expectedDigest: string,
+  header: ReturnType<typeof parseVerdictHeader>,
+): string[] {
+  const problems: string[] = [];
   if (header.values.get("ui_input") !== input.relative) problems.push("review evidence does not cite the current ui-lead input");
   if (header.values.get("design_digest") !== expectedDigest) problems.push("review evidence design_digest is missing or stale");
   const sections = contentLines(header.body);
@@ -725,7 +726,8 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   const reviewGate = typeof recordedGates[reviewId] === "object" && recordedGates[reviewId] !== null && !Array.isArray(recordedGates[reviewId])
     ? (recordedGates[reviewId] as Record<string, unknown>)
     : {};
-  const validateDesign = needsInput || hasInputCandidate || record.ui_rulings !== undefined || reviewGate["status"] === "passed";
+  const reviewStatus = reviewGate["status"];
+  const validateDesign = needsInput || hasInputCandidate || record.ui_rulings !== undefined || reviewStatus === "passed" || reviewStatus === "failed";
   const needsRoute = needsInput || hasInputCandidate;
   const uiSeat = manifest.sellae.find((seat) => seat.id === "ui-lead");
   if (needsRoute && (!uiSeat || uiSeat.retired === true || uiSeat.collegium !== "design"))
@@ -745,8 +747,16 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   const served = validateServed(root, record);
   const needsServed = phase === "review" || phase === "done" || state === "review" || state === "done";
   if (needsServed) for (const message of served.problems) addPolicyProblem("opus.ui.e2e", message);
-  if ((phase === "done" || state === "done" || reviewGate["status"] === "passed") && input.input && design.digest)
-    for (const message of reviewCitation(root, record, input.input, design.digest, reviewId, censor)) addPolicyProblem("opus.ui.design", message);
+  const review = reviewStatus === "passed" || reviewStatus === "failed" ? reviewIdentity(root, reviewGate, censor) : undefined;
+  if (review) for (const message of review.problems) addPolicyProblem("opus.ui.design", message);
+  const needsPassedReview = phase === "done" || state === "done" || reviewStatus === "passed";
+  if (needsPassedReview) {
+    if (typeof recordedGates[reviewId] !== "object" || recordedGates[reviewId] === null || Array.isArray(recordedGates[reviewId]))
+      addPolicyProblem("opus.ui.design", "passed UI review evidence is missing");
+    else if (reviewStatus !== "passed") addPolicyProblem("opus.ui.design", "UI completion needs the sole review gate passed");
+    else if (input.input && design.digest && review?.header)
+      for (const message of reviewCitation(input.input, design.digest, review.header)) addPolicyProblem("opus.ui.design", message);
+  }
 
   const refs = record.ui_rulings;
   if (refs !== undefined && (!Array.isArray(refs) || refs.length === 0 || refs.some((value) => typeof value !== "string") || new Set(refs as unknown[]).size !== refs.length))
@@ -837,21 +847,29 @@ export function validateProtectedRecords(repoArg: string, studioRoot: string, re
 
     const studioRel = relative(repo, resolve(studioRoot)).split(sep).join("/");
     if (studioRel !== "studio") problems.push("W-096 preservation requires the native studio at repo path studio/");
-    const history = git(repo, ["log", "--reverse", "--format=%H", "--", "studio/opera/W-096.md"]).trim().split("\n").filter(Boolean);
-    let introduced: string | undefined;
+    const recordPath = "studio/opera/W-096.md";
+    const history = git(repo, ["log", "--full-history", "--format=%H", "HEAD", "--", recordPath]).trim().split("\n").filter(Boolean);
+    let recordedPin = false;
+    const conflictingPins = new Set<string>();
     for (const commit of history) {
+      const entry = git(repo, ["ls-tree", commit, "--", recordPath]).trim();
+      if (entry === "") continue;
       let raw: string;
-      try { raw = git(repo, ["show", `${commit}:studio/opera/W-096.md`]); }
+      try { raw = git(repo, ["show", `${commit}:${recordPath}`]); }
       catch (error) { throw new Error(`record history is incomplete at ${commit}: ${(error as Error).message}`); }
       const split = splitFront(raw);
       if (!split) throw new Error(`record history is malformed at ${commit}`);
       const historical = parseDocument(split.front);
       if (historical.errors.length) throw new Error(`record history is malformed at ${commit}`);
       const data = historical.toJS() as NativeRecord;
-      if (typeof data["baseline_commit"] === "string") { introduced = data["baseline_commit"] as string; break; }
+      if (typeof data["baseline_commit"] === "string") {
+        recordedPin = true;
+        if (data["baseline_commit"] !== baseline) conflictingPins.add(data["baseline_commit"] as string);
+      }
     }
-    if (!introduced) problems.push("baseline_commit has no verifiable first introduction in record history");
-    else if (introduced !== baseline) problems.push(`baseline_commit changed after first introduction (${introduced})`);
+    if (!recordedPin) problems.push("baseline_commit has no verifiable introduction in record history");
+    if (conflictingPins.size > 0)
+      problems.push(`baseline_commit conflicts with reachable record history (${[...conflictingPins].sort().join(", ")})`);
 
     const tree = git(repo, ["ls-tree", "-r", "-z", "--full-tree", baseline, "--", "studio/opera", "examples/sample-studio/opera"]);
     for (const row of tree.split("\0")) {
