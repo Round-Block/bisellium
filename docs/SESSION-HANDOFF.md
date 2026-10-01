@@ -102,25 +102,19 @@ lex, a decision, or a check rule and delete it here.
 - Reds: `--grep` without a `^` anchor; confirm "N failed" with an assertion error, not "No tests found".
 - The orchestrator model is now Claude Fable 5.1; use the commit trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 
-## Where things stand (2026-10-01)
+- The Codex builder sandbox cannot spawn git or child Node processes, so the
+  pre-existing amend, close, review, census, W-089 and W-101-row suites run
+  only at the producer's gate. This caused most W-096 rounds; W-125 addresses
+  it. CI gates/officina jobs check out full history and the PR-head branch
+  (W-096 revisions 9–10).
 
-W-087 merged as PR 133 after three censor rounds: round 1 FAIL (duplicate helper + Files-owned boundary), round 2 FAIL (revision-3 regression gaps), and round 3 PASS. The Patron's look-and-feel ruling is recorded as brief revision row 4. The sec-lead's end-to-end symlink finding was assigned by the architect to the follow-on opus “Reject symlinked opus records before snapshot projection and detail delivery.” W-089 merged; D-029 was decided (munus → seat); W-096 was amended with the typed-kind vocabulary, including the `ui` kind; W-077 was greenlit with the Officina decrees; W-101 is merged and done (PR 135, three censor rounds, sec-lead clear), and its acceptance filings ran on master through the new allocator.
+## Where things stand (2026-10-02)
+
+W-096 merged as PR 145 and is done after a ten-revision brief: prereviewer READY at 2; six sec-lead spec passes; and architect rulings in rounds 3–10, including the one-time bootstrap pin, the closed 48-row regression contract, and CI full-history plus PR-head checkout. Five censor rounds followed: rounds 1–2 found defects, round 3 found contract conflicts, round 4 found three closed-list rows, and round 5 PASSed; sec-lead code review was CLEAR at pass 5. D-030–D-032 were recorded with W-122 as the read-efficiency instrument; P-014/P-015 were answered with W-120/W-121; W-123 (PR hygiene in the verbs), W-124 (cascade order as a verb), and W-125 (review rounds bounded by mechanism) were filed on the Patron's rulings. `scripts/merge-gate.sh` and `scripts/open-pr.sh` remain in the repo: complete means PR MERGED plus master fetched, and every PR is rebased first.
 
 ## Queue
 
-All queued opera below are in `backlog`, filed 2026-10-01 through the ref-aware allocator; evidence is in `~/.bisellium-evidence/w101-acceptance/`.
-- W-110 — Officina/every-screen nav-rail e2e with screenshot evidence for `ui`-kind opera.
-- W-111 — the experimentation workflow.
-- W-112 — one Board bottom timestamp.
-- W-113 — Inbox prettified body (UI/UX ruling with the Patron).
-- W-114 — e2e that a Patron reply carries through to the next step.
-- W-115 — reject symlinked opus records before snapshot projection and detail delivery; sec-lead's W-087 High finding stays open against it. The architect's dictated brief is at `~/.bisellium-evidence/w087-symlink-followon-brief.md`.
-- W-116 — Roster separator and live models.
-- W-117 — D-029 build (munus → seat).
-- W-118 — the interface arc.
-- W-119 — backlog grooming.
-- W-096 holds titles/descriptions in the Jira layout (summary vs description, type, parent/epic, start/end); the drawer laid out like an issue view is its follow-on.
-Next is greenlighting and speccing in Patron-priority order, W-096 first unless the Patron reorders.
+W-125 spec in flight (architect draft; it must apply its own split rule), then W-124, then W-114, W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-121. W-113 needs the Patron's UI/UX ruling at spec time.
 
 ## Research lane (on the side)
 
