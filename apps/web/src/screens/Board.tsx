@@ -47,6 +47,9 @@ export function Board(): JSX.Element {
   const [focusedByColumn, setFocusedByColumn] = useState<Record<string, string | undefined>>({});
   const [connected, setConnected] = useState(false);
   const [lastRefreshAt, setLastRefreshAt] = useState<string | undefined>(undefined);
+  const [boardTrackCollapsed, setBoardTrackCollapsed] = useState(
+    () => typeof window !== "undefined" && window.matchMedia?.("(max-width: 612px)").matches === true,
+  );
   // True only once officina AND opera AND inbox have all landed from the
   // SAME reconciliation. Each is set from its own independently-resolving
   // fetch's .then() (so officina can commit, and re-render, before opera
@@ -73,6 +76,13 @@ export function Board(): JSX.Element {
   useEffect(() => {
     modelRef.current = model;
   }, [model]);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 612px)");
+    const update = (): void => setBoardTrackCollapsed(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   // Restore only after React has committed the closed layout. Scheduling this
   // from the close event can race that commit, leaving the narrow drawer-open
@@ -302,6 +312,7 @@ export function Board(): JSX.Element {
       <BoardView
         studio={officina.studio}
         model={model}
+        inert={selected !== undefined && boardTrackCollapsed}
         selectedId={selected?.id}
         focusedByColumn={focusedByColumn}
         onSelectCard={(id, columnId) => openDrawer(id, columnId)}

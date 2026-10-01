@@ -1191,6 +1191,12 @@
   color: var(--ink-2);
 }
 
+.board-drawer__close:focus-visible,
+.board__column-head:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
 .board-drawer__id {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -1282,6 +1288,7 @@
 
 .board-drawer__record-body {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 13px;
   margin-bottom: var(--sp-2);
 }
