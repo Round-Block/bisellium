@@ -314,6 +314,11 @@ const PINNED_B: PinnedB[] = [
     why: "runCommand passes opus through seatInstance's ID_RE-equivalent guard before runBuilderCommand can attach the receipt",
   },
   {
+    key: "packages/commands/src/builder-run.ts:runBuilderCommand#1",
+    disposition: "guarded",
+    why: "runCommand passes request.opus through seatInstance's ID_RE-equivalent guard before the only call to runBuilderCommand",
+  },
+  {
     key: "packages/commands/src/builder-run.ts:admitCurrentRunReceipt#1",
     disposition: "guarded",
     why: "runReview passes opus through safeItemPath and readContainedRegularFile before calling receipt admission",
