@@ -158,8 +158,13 @@ try {
   writeFileSync(join(runtime, "home", ".npmrc"), "ignore-scripts=true\naudit=false\nfund=false\n");
   writeFileSync(join(runtime, "home", ".npmrc-global"), "ignore-scripts=true\n");
   const leasePath = join(repo, ".bisellium", "leases", request.opus);
-  mkdirSync(dirname(leasePath), { recursive: true });
-  mkdirSync(leasePath); // atomic, concurrent producer publication refuses here
+  if (request.leaseOwned === true) {
+    if (!existsSync(leasePath) || !statSync(leasePath).isDirectory())
+      throw new Error("producer lease was not retained through marker persistence");
+  } else {
+    mkdirSync(dirname(leasePath), { recursive: true });
+    mkdirSync(leasePath); // atomic, concurrent producer publication refuses here
+  }
   lease = leasePath;
 
   const clone = join(runtime, "clone");

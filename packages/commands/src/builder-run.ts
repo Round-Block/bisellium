@@ -1,6 +1,6 @@
 /** Private W-125 builder runtime and current-tree review admission seam. */
 import { spawn, spawnSync } from "node:child_process";
-import { closeSync, existsSync, lstatSync, openSync, readFileSync, realpathSync, readdirSync, unlinkSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, readdirSync, rmSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,7 +9,7 @@ import {
   isDirtyOutside, makeSessionId, sourceTreeHash, writeReceiptEnd, writeReceiptStart,
   type WorktreeProvider,
 } from "@bisellium/shim";
-import { editOpusFrontMatter } from "./frontmatter.js";
+import { builderRuntimeObligation, editOpusFrontMatter, markIsolatedBuilderRuntime } from "./frontmatter.js";
 
 interface BuilderRunCompletion {
   schema: 1; origin: "host-producer"; opus: string; branch: string; builder: string; producer: string;
@@ -116,35 +116,72 @@ function attachReceipt(studioRoot: string, opus: string, receiptFile: string): v
 }
 
 export async function runBuilderCommand(request: BuilderRunRequest): Promise<BuilderRunResult> {
-  if (request.provider !== undefined) return runProviderFixture(request);
-  const sessionId = makeSessionId(request.now);
-  const receiptFile = writeReceiptStart(request.studioRoot, { sella: request.sella, sessionId, startedAt: request.now.toISOString(), cwd: "disposable-clone (pending)", cmd: request.cmd });
-  const wallStart = Date.now();
-  const encoded = Buffer.from(JSON.stringify({ ...request, now: request.now.toISOString(), sessionId })).toString("base64url");
-  const child = spawnSync(process.execPath, [HOST_RUNNER, "--request", encoded], {
-    cwd: request.repo, env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" },
-    encoding: "utf8", timeout: 60 * 60_000,
-  });
-  if (child.stdout) process.stdout.write(child.stdout.replace(/^BISELLIUM_HOST_RESULT .*$/gm, ""));
-  if (child.stderr) process.stderr.write(child.stderr);
-  let host: HostResult = { exitCode: child.status ?? 1, runtime: "unknown", error: child.error?.message };
-  const resultLine = child.stdout?.split("\n").find((line) => line.startsWith("BISELLIUM_HOST_RESULT "));
-  if (resultLine !== undefined) {
-    try { host = JSON.parse(resultLine.slice("BISELLIUM_HOST_RESULT ".length)) as HostResult; }
-    catch { host = { exitCode: 1, runtime: "unknown", error: "malformed host-runner result" }; }
-  }
-  let exitCode = host.exitCode;
-  if (child.error !== undefined || child.status === null || host.completion === undefined) exitCode = exitCode === 0 ? 1 : exitCode;
-  writeReceiptEnd(receiptFile, { endedAt: new Date().toISOString(), exitCode, durationMs: Date.now() - wallStart, ...(exitCode === 0 && host.completion ? { completion: host.completion } : {}) });
-  if (exitCode === 0) {
-    try { attachReceipt(request.studioRoot, request.opus, receiptFile); }
+  const opusPath = join(request.studioRoot, "opera", `${request.opus}.md`);
+  if (request.provider !== undefined) {
+    try { markIsolatedBuilderRuntime(opusPath); }
     catch (error) {
-      console.error(`bisellium run: could not attach host receipt: ${(error as Error).message}`);
-      exitCode = 1;
-      writeReceiptEnd(receiptFile, { endedAt: new Date().toISOString(), exitCode, durationMs: Date.now() - wallStart });
+      console.error(`bisellium run: could not persist builder_runtime: ${(error as Error).message}`);
+      return { exitCode: 1 };
     }
+    return runProviderFixture(request);
   }
-  return { exitCode };
+
+  const branch = `opus/${request.opus}`;
+  const branchResult = spawnSync("git", ["rev-parse", "--verify", `refs/heads/${branch}^{commit}`], {
+    cwd: request.repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS,
+  });
+  if (branchResult.status !== 0) {
+    console.error(`bisellium run: owning branch ${branch} is unavailable`);
+    return { exitCode: 1 };
+  }
+
+  const leasePath = join(request.repo, ".bisellium", "leases", request.opus);
+  try {
+    mkdirSync(resolve(leasePath, ".."), { recursive: true });
+    mkdirSync(leasePath);
+  } catch (error) {
+    console.error(`bisellium run: producer lease for ${request.opus} is unavailable: ${(error as Error).message}`);
+    return { exitCode: 1 };
+  }
+
+  try {
+    try { markIsolatedBuilderRuntime(opusPath); }
+    catch (error) {
+      console.error(`bisellium run: could not persist builder_runtime: ${(error as Error).message}`);
+      return { exitCode: 1 };
+    }
+
+    const sessionId = makeSessionId(request.now);
+    const receiptFile = writeReceiptStart(request.studioRoot, { sella: request.sella, sessionId, startedAt: request.now.toISOString(), cwd: "disposable-clone (pending)", cmd: request.cmd });
+    const wallStart = Date.now();
+    const encoded = Buffer.from(JSON.stringify({ ...request, now: request.now.toISOString(), sessionId, leaseOwned: true })).toString("base64url");
+    const child = spawnSync(process.execPath, [HOST_RUNNER, "--request", encoded], {
+      cwd: request.repo, env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" },
+      encoding: "utf8", timeout: 60 * 60_000,
+    });
+    if (child.stdout) process.stdout.write(child.stdout.replace(/^BISELLIUM_HOST_RESULT .*$/gm, ""));
+    if (child.stderr) process.stderr.write(child.stderr);
+    let host: HostResult = { exitCode: child.status ?? 1, runtime: "unknown", error: child.error?.message };
+    const resultLine = child.stdout?.split("\n").find((line) => line.startsWith("BISELLIUM_HOST_RESULT "));
+    if (resultLine !== undefined) {
+      try { host = JSON.parse(resultLine.slice("BISELLIUM_HOST_RESULT ".length)) as HostResult; }
+      catch { host = { exitCode: 1, runtime: "unknown", error: "malformed host-runner result" }; }
+    }
+    let exitCode = host.exitCode;
+    if (child.error !== undefined || child.status === null || host.completion === undefined) exitCode = exitCode === 0 ? 1 : exitCode;
+    writeReceiptEnd(receiptFile, { endedAt: new Date().toISOString(), exitCode, durationMs: Date.now() - wallStart, ...(exitCode === 0 && host.completion ? { completion: host.completion } : {}) });
+    if (exitCode === 0) {
+      try { attachReceipt(request.studioRoot, request.opus, receiptFile); }
+      catch (error) {
+        console.error(`bisellium run: could not attach host receipt: ${(error as Error).message}`);
+        exitCode = 1;
+        writeReceiptEnd(receiptFile, { endedAt: new Date().toISOString(), exitCode, durationMs: Date.now() - wallStart });
+      }
+    }
+    return { exitCode };
+  } finally {
+    rmSync(leasePath, { recursive: true, force: true });
+  }
 }
 
 export type RunReceiptAdmission = { ok: true; receipt: string } | { ok: false; error: string };
@@ -153,6 +190,9 @@ export type RunReceiptAdmission = { ok: true; receipt: string } | { ok: false; e
 export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunReceiptAdmission {
   try {
     const opusPath = join(studioRoot, "opera", `${opus}.md`);
+    const obligation = builderRuntimeObligation(opusPath);
+    if (obligation.kind === "invalid") return { ok: false, error: obligation.error };
+    if (obligation.kind === "legacy") return { ok: true, receipt: "legacy-unmarked" };
     const front = readFront<{ run_receipt?: unknown }>(opusPath).data;
     if (typeof front.run_receipt !== "string" || front.run_receipt.trim() === "") return { ok: false, error: `${opus}: review requires a current host-produced run receipt` };
     const path = resolve(studioRoot, front.run_receipt);
