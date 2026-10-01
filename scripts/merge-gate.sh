@@ -26,9 +26,20 @@ open_alerts=$(gh api "repos/$REPO/code-scanning/alerts?state=open&per_page=100" 
 gh pr merge "$PR" --squash --auto || { echo "state=MERGE_FAILED"; exit 1; }
 state=QUEUED
 for _ in $(seq 1 60); do
-  prstate=$(gh pr view "$PR" --json state -q .state)
+  read -r prstate mstate <<<"$(gh pr view "$PR" --json state,mergeStateStatus -q '.state + " " + .mergeStateStatus')"
   if [ "$prstate" = "MERGED" ]; then state=MERGED; break; fi
   if [ "$prstate" = "CLOSED" ]; then echo "state=QUEUE_REJECTED"; exit 1; fi
+  # The ruleset requires an up-to-date branch and auto-merge never updates it:
+  # a PR that falls behind while its checks run stalls forever (PRs 139, 147).
+  if [ "$mstate" = "BEHIND" ]; then gh pr update-branch "$PR" >/dev/null 2>&1 && echo "updated branch (was BEHIND)"; fi
+  # Auto-merge does not always fire once a PR is green (PRs 139, 147, 149):
+  # when nothing is pending or failing, ask for the merge directly as well.
+  if [ "$mstate" = "CLEAN" ] || [ "$mstate" = "BLOCKED" ]; then
+    checks=$(gh pr checks "$PR" 2>/dev/null)
+    if [ "$(echo "$checks" | grep -c pending)" -eq 0 ] && [ "$(echo "$checks" | grep -c fail)" -eq 0 ]; then
+      gh pr merge "$PR" --squash >/dev/null 2>&1 && echo "direct merge requested (green, $mstate)"
+    fi
+  fi
   sleep 20
 done
 [ "$state" != "MERGED" ] && { echo "state=QUEUE_TIMEOUT"; exit 1; }
