@@ -643,6 +643,26 @@ if (runs(1)) {
     const everyStateRun = runBootstrap(everyState);
     if (everyStateRun.status === 0) {
       commitAll(everyState.repo, "test: commit all-state preservation fixture pin");
+      const foreignStudio = scratch("foreign-officina");
+      writeManifest(foreignStudio);
+      const missingForeignRecord = checkStudio(foreignStudio, NOW, { repo: everyState.repo }).findings.filter(
+        (finding) => finding.rule === "opus.records_unchanged",
+      );
+      if (missingForeignRecord.length !== 0)
+        preservationProblems.push(`a different officina without W-096 inherited the owner branch gate: ${JSON.stringify(missingForeignRecord)}`);
+      writeOpus(foreignStudio, "W-096", [
+        'title: "foreign pinned-record fixture"',
+        "kind: opus",
+        "collegium: engineering",
+        "state: backlog",
+        `baseline_commit: ${everyState.baseline}`,
+        "probationes: {}",
+      ]);
+      const foreignRecord = checkStudio(foreignStudio, NOW, { repo: everyState.repo }).findings.filter(
+        (finding) => finding.rule === "opus.records_unchanged",
+      );
+      if (foreignRecord.length !== 0)
+        preservationProblems.push(`a different officina with W-096 inherited the owner branch gate: ${JSON.stringify(foreignRecord)}`);
       const path = bootstrapRecord(everyState);
       const original = readFileSync(path, "utf8");
       for (const state of ["backlog", "greenlit", "building", "verifying", "review", "halted", "done"]) {

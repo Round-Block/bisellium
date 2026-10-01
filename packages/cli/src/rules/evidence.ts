@@ -14,7 +14,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { listMd, parseFrontMatter } from "@bisellium/adapter-native";
 import { currentBranch, readContainedRegularFile, validateProtectedRecords } from "@bisellium/commands/opus-model.js";
 import type { Finding, RuleOpts } from "../check.js";
@@ -316,6 +316,39 @@ function checkW096AssertionReds(root: string): Finding[] {
     : [];
 }
 
+const W096_RECORD_PATH = "studio/opera/W-096.md";
+
+/** Resolve the physical officina which owns W-096 from the pinned record at
+ * HEAD and require that the pin's baseline tree contains that same record.
+ * The canonical native path remains the fail-closed fallback when the record
+ * history itself cannot be inspected; callers must still compare physical
+ * paths before applying the gate. */
+function w096OwningStudio(repoArg: string): string {
+  const repoReal = realpathSync(resolve(repoArg));
+  try {
+    const raw = execFileSync("git", ["show", `HEAD:${W096_RECORD_PATH}`], {
+      cwd: repoReal,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: TIMEOUT_MS,
+    });
+    const parsed = parseFrontMatter<unknown>(raw, W096_RECORD_PATH);
+    const baseline = isDict(parsed.data) ? str(parsed.data["baseline_commit"]) : undefined;
+    if (!baseline || !/^[0-9a-f]{40}$/.test(baseline)) throw new Error("the committed W-096 record has no usable baseline pin");
+    const entry = execFileSync("git", ["ls-tree", baseline, "--", W096_RECORD_PATH], {
+      cwd: repoReal,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: TIMEOUT_MS,
+    }).trim();
+    if (!/^100(?:644|755) blob [0-9a-f]+\tstudio\/opera\/W-096\.md$/.test(entry))
+      throw new Error("the pinned baseline tree does not contain the W-096 record");
+    return realpathSync(join(repoReal, dirname(dirname(W096_RECORD_PATH))));
+  } catch {
+    return realpathSync(join(repoReal, "studio"));
+  }
+}
+
 function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
   const record = safeFront(root, join(root, "opera", "W-096.md"));
   const unverifiable = (message: string): Finding[] => [{
@@ -324,25 +357,13 @@ function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
     where: "opera/W-096.md",
     message: `preservation is unverifiable: ${message}`,
   }];
-  if (!record) {
-    if (!opts.repo || currentBranch(opts.repo) !== "opus/W-096") return [];
-    try {
-      const repoReal = realpathSync(resolve(opts.repo));
-      const studioReal = realpathSync(resolve(root));
-      if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
-        return unverifiable("selected studio is not the native studio inside the supplied repository");
-    } catch {
-      return unverifiable("repository or studio identity cannot be resolved");
-    }
-    return unverifiable("W-096 record is missing, unsafe, or unreadable on its owning branch");
-  }
-  if (!opts.repo) return unverifiable("repository context (--repo) is absent");
+  if (!opts.repo) return record ? unverifiable("repository context (--repo) is absent") : [];
 
+  let repoReal: string;
+  let studioReal: string;
   try {
-    const repoReal = realpathSync(resolve(opts.repo));
-    const studioReal = realpathSync(resolve(root));
-    if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
-      return unverifiable("selected studio is not the native studio inside the supplied repository");
+    repoReal = realpathSync(resolve(opts.repo));
+    studioReal = realpathSync(resolve(root));
   } catch {
     return unverifiable("repository or studio identity cannot be resolved");
   }
@@ -351,6 +372,19 @@ function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
   // must equal the record owner's canonical ref, opus/W-096. Other branches
   // do not replay this opus-specific boundary after the record is merged.
   const branch = currentBranch(opts.repo);
+  if (branch === "opus/W-096") {
+    let ownerReal: string;
+    try { ownerReal = w096OwningStudio(opts.repo); }
+    catch { return unverifiable("owning officina identity cannot be resolved"); }
+    // Branch identity alone does not make every checked officina the owner.
+    // A fixture, sample, or temporary officina remains outside this gate.
+    if (studioReal !== ownerReal) return [];
+    if (!record) return unverifiable("W-096 record is missing, unsafe, or unreadable on its owning branch");
+  } else {
+    if (!record) return [];
+    if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
+      return unverifiable("selected studio is not the native studio inside the supplied repository");
+  }
   if (branch === undefined) return unverifiable("repository identity or current branch is unavailable");
   if (branch !== "opus/W-096") return [];
   const result = validateProtectedRecords(opts.repo, root);
