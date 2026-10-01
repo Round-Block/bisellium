@@ -15,7 +15,8 @@ import { readManifest, snapshotDir } from "@bisellium/adapter-native";
 import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline } from "@bisellium/pipeline";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
-import { recordOwnerRefusal } from "./writes.js";
+import { recordOwnerRefusal, safeItemPath } from "./writes.js";
+import { effectiveProbationes, readContainedRegularFile, utcTimestampProblem, validateProtectedRecords } from "./opus-model.js";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -71,8 +72,8 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (a === "--repo") repo = v;
       else if (a === "--commit") commit = v;
       else {
+        if (utcTimestampProblem(v)) return { error: `--now must match the exact UTC timestamp profile\n${USAGE}` };
         const d = new Date(v);
-        if (Number.isNaN(d.getTime())) return { error: `--now must be an ISO date\n${USAGE}` };
         now = d;
       }
       continue;
@@ -133,11 +134,17 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     return { exitCode: 2 };
   }
 
-  const opusPath = join(studioDir, "opera", `${opusId}.md`);
-  if (!existsSync(opusPath)) {
+  const safeOpusPath = safeItemPath(join(studioDir, "opera"), opusId);
+  if (typeof safeOpusPath !== "string" || !existsSync(safeOpusPath)) {
     console.error(`unknown opus: ${opusId}`);
     return { exitCode: 2 };
   }
+  const containedOpus = readContainedRegularFile(studioDir, `opera/${opusId}.md`, "opera");
+  if ("error" in containedOpus) {
+    console.error(`${opusId}: opus.reference: ${containedOpus.error}`);
+    return { exitCode: 2 };
+  }
+  const opusPath = safeOpusPath;
 
   const refusal = recordOwnerRefusal(studioDir, opusId);
   if (refusal !== undefined) {
@@ -146,6 +153,13 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   }
 
   const repo = resolve(parsed.repo ?? (isGitRepo(resolve(studioDir, "..")) ? resolve(studioDir, "..") : process.cwd()));
+  if (opusId === "W-096") {
+    const preservation = validateProtectedRecords(repo, studioDir);
+    if (!preservation.ok) {
+      console.error(preservation.problems.map((problem) => `opus.records_unchanged: ${problem}`).join("\n"));
+      return { exitCode: 1 };
+    }
+  }
   // The studio's own bookkeeping (opera front matter, ci logs, receipts)
   // never counts toward what a probatio certifies or whether the tree is
   // "dirty" — otherwise verify writing its own result, or committing that
@@ -181,9 +195,6 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     }
   }
 
-  const commands: Record<string, string> = {};
-  for (const p of manifest.probationes) if (p.kind === "automated" && p.command) commands[p.id] = p.command;
-
   let snap: ReturnType<typeof snapshotDir>;
   try {
     snap = snapshotDir(studioDir, "verify", now);
@@ -196,6 +207,14 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     console.error(`unknown opus: ${opusId}`);
     return { exitCode: 2 };
   }
+
+  const effective = effectiveProbationes(opus.kind, manifest.probationes);
+  if (effective.problems.length) {
+    console.error(effective.problems.map((problem) => `${problem.rule}: ${problem.message}`).join("\n"));
+    return { exitCode: 1 };
+  }
+  const commands: Record<string, string> = {};
+  for (const p of effective.probationes) if (p.kind === "automated" && p.command) commands[p.id] = p.command;
 
   const raw = readFileSync(opusPath, "utf8");
   const split = splitFront(raw);
@@ -239,6 +258,7 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
       freshDoc.setIn(["probationes", gateId, "status"], r.status);
       freshDoc.setIn(["probationes", gateId, "evidence"], r.evidence);
       freshDoc.setIn(["probationes", gateId, "certifies"], r.certifies);
+      if (gateId === "served-e2e") freshDoc.setIn(["probationes", gateId, "at"], now.toISOString());
     }
     return undefined;
   });

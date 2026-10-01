@@ -16,6 +16,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
+import { currentBranch, validateProtectedRecords } from "@bisellium/commands/opus-model.js";
 import type { Finding, RuleOpts } from "../check.js";
 
 type Dict = Record<string, unknown>;
@@ -273,6 +274,60 @@ function checkRedEvidence(root: string): Finding[] {
   return findings;
 }
 
+const INVALID_RED_OUTPUT =
+  /ERR_MODULE_NOT_FOUND|SyntaxError:|command not found|ENOENT|unknown (?:option|flag)|not permitted|permission denied|operation not permitted|sandbox/i;
+
+/** W-096's seven reds are selectable completed TAP assertion failures. */
+export function isW096AssertionRed(text: string, behaviour: number): boolean {
+  const header = parseLogHeader(text);
+  const command = header.get("command") ?? "";
+  const selected = new RegExp(`(?:^|\\s)--behaviour\\s+${behaviour}(?:\\s|$)`).test(command);
+  const name = `W-096 behaviour ${behaviour}:`;
+  const body = stripHeader(text);
+  const exit = header.get("exit") ?? "";
+  if (header.get("behaviour") !== String(behaviour) || !/^-?\d+$/.test(exit) || exit === "0" || !selected || INVALID_RED_OUTPUT.test(body)) return false;
+  if (!/^TAP version 13$/m.test(body)) return false;
+  const statuses = [...body.matchAll(/^(?:not )?ok \d+ - (.+)$/gm)];
+  if (statuses.length !== 1 || !statuses[0]![0].startsWith("not ok ") || !statuses[0]![1]!.startsWith(name)) return false;
+  const diagnosticStart = body.indexOf("\n  ---\n", statuses[0]!.index);
+  const diagnosticEnd = diagnosticStart < 0 ? -1 : body.indexOf("\n  ...", diagnosticStart + 7);
+  if (diagnosticStart < 0 || diagnosticEnd < 0 || !/^\s*code: ['"]ERR_ASSERTION['"]\s*$/m.test(body.slice(diagnosticStart, diagnosticEnd))) return false;
+  const plan = /^1\.\.(\d+)\s*$/m.exec(body);
+  const tests = /^# tests (\d+)\s*$/m.exec(body);
+  const failed = /^# fail (\d+)\s*$/m.exec(body);
+  const passed = /^# pass (\d+)\s*$/m.exec(body);
+  return plan?.[1] === "1" && tests?.[1] === "1" && failed?.[1] === "1" && (passed?.[1] ?? "0") === "0" && !/^ok \d+ -/m.test(body);
+}
+
+function checkW096AssertionReds(root: string): Finding[] {
+  const path = join(root, "opera", "W-096.md");
+  const record = safeFront(path);
+  const state = record ? str(record["state"]) : undefined;
+  if (!state || !new Set(["building", "verifying", "review", "done"]).has(state)) return [];
+  const bad: number[] = [];
+  for (let behaviour = 1; behaviour <= 7; behaviour++) {
+    try {
+      const text = readFileSync(join(root, "ci", "reds", "W-096", `${String(behaviour).padStart(2, "0")}.log`), "utf8");
+      if (!isW096AssertionRed(text, behaviour)) bad.push(behaviour);
+    } catch {
+      bad.push(behaviour);
+    }
+  }
+  return bad.length
+    ? [{ rule: "opus.red_assertion", level: "block", where: "opera/W-096.md", message: `behaviour red(s) ${bad.join(", ")} are missing or not completed selected Node TAP ERR_ASSERTION failures` }]
+    : [];
+}
+
+function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
+  if (!opts.repo) return [];
+  if (relative(resolve(opts.repo), resolve(root)).split(sep).join("/") !== "studio") return [];
+  const record = safeFront(join(root, "opera", "W-096.md"));
+  if (currentBranch(opts.repo) !== "opus/W-096" && typeof record?.["baseline_commit"] !== "string") return [];
+  const result = validateProtectedRecords(opts.repo, root);
+  if (result.ok) return [];
+  return result.problems.map((message) => ({ rule: "opus.records_unchanged", level: "block" as const, where: "opera/W-096.md", message }));
+}
+
 /** Remove the three contexts which carry examples rather than live
  * citations. Fence tracking deliberately mirrors countBehaviours: only a
  * backtick fence marker at Markdown's top three indentation columns toggles
@@ -369,5 +424,11 @@ function checkBehaviourCitations(root: string): Finding[] {
 
 export function checkEvidence(root: string, opts: RuleOpts): Finding[] {
   if (!existsSync(join(root, "bisellium.yml"))) return [];
-  return [...checkUntracked(root, opts), ...checkRedEvidence(root), ...checkBehaviourCitations(root)];
+  return [
+    ...checkUntracked(root, opts),
+    ...checkRedEvidence(root),
+    ...checkW096AssertionReds(root),
+    ...checkW096ProtectedRecords(root, opts),
+    ...checkBehaviourCitations(root),
+  ];
 }

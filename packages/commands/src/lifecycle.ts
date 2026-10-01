@@ -24,6 +24,18 @@ import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
 import { editOpusFrontMatter } from "./frontmatter.js";
 import {
+  effectiveProbationes,
+  loadNativeRecords,
+  readContainedRegularFile,
+  titleProblem,
+  utcTimestampProblem,
+  validateNativeRecord,
+  validateRecordReferences,
+  validateUiPolicy,
+  type NativeRecord,
+  type OpusModelProblem,
+} from "./opus-model.js";
+import {
   emitEvent,
   mintDispatchSella,
   openStudio,
@@ -98,10 +110,77 @@ function namedSella(flagValue: string | undefined, manifest: Manifest, opusId: s
 }
 
 interface OpusFront {
+  id?: unknown;
+  kind?: unknown;
+  collegium?: unknown;
   state?: unknown;
   probationes?: Record<string, { status?: unknown; evidence?: unknown; certifies?: unknown; reason?: unknown; waived_by?: unknown }>;
   title?: unknown;
   spec?: unknown;
+  arc?: unknown;
+  parent?: unknown;
+  start?: unknown;
+  end?: unknown;
+  ui_rulings?: unknown;
+}
+
+function resolveExactNow(raw: string | undefined, fallback: Date | undefined): Date | undefined {
+  if (raw !== undefined && utcTimestampProblem(raw)) return undefined;
+  const value = resolveNow(raw, fallback);
+  if (!value) return undefined;
+  try { return utcTimestampProblem(value.toISOString()) ? undefined : value; }
+  catch { return undefined; }
+}
+
+function nativePreflight(
+  root: string,
+  manifest: Manifest,
+  opusId: string,
+  record: NativeRecord,
+  phase: "check" | "ready" | "done" = "check",
+): OpusModelProblem[] {
+  const loaded = loadNativeRecords(root);
+  const problems = loaded.problems.map(({ problem }) => problem);
+  const records = new Map(loaded.records);
+  records.set(opusId, record);
+  problems.push(...validateNativeRecord(record, records));
+  problems.push(...validateRecordReferences(root, record));
+  problems.push(...validateUiPolicy({ root, record, manifest, phase }));
+  return problems;
+}
+
+function refuseModel(opusId: string, problems: readonly OpusModelProblem[]): boolean {
+  const blocking = problems.filter((problem) => problem.level !== "advise");
+  if (blocking.length === 0) return false;
+  console.error(blocking.map((problem) => `${opusId}: ${problem.rule}: ${problem.message}`).join("\n"));
+  return true;
+}
+
+function unsafeOpusProblem(root: string, opusId: string): string | undefined {
+  const inspected = readContainedRegularFile(root, `opera/${opusId}.md`, "opera");
+  return "error" in inspected ? inspected.error : undefined;
+}
+
+function uiSourceProblem(root: string, manifest: Manifest, record: NativeRecord): string | undefined {
+  if (record.kind !== "ui") return undefined;
+  const gates = typeof record.probationes === "object" && record.probationes !== null && !Array.isArray(record.probationes)
+    ? (record.probationes as Record<string, unknown>)
+    : {};
+  const served = typeof gates["served-e2e"] === "object" && gates["served-e2e"] !== null && !Array.isArray(gates["served-e2e"])
+    ? (gates["served-e2e"] as Record<string, unknown>)
+    : {};
+  const expected = typeof served["certifies"] === "string" ? served["certifies"] : undefined;
+  try {
+    const repo = execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: GIT_TIMEOUT_MS }).trim();
+    const studioRel = relative(repo, root);
+    if (isAbsolute(studioRel) || studioRel.split(sep)[0] === "..") return "could not establish the current SOURCE tree";
+    const exclusions = [studioRel.split(sep).join("/"), ".bisellium", ...(manifest.source_excludes ?? [])];
+    if (isDirtyOutside(repo, exclusions)) return "current SOURCE tree is dirty";
+    const actual = `tree:${sourceTreeHash(repo, exclusions, "HEAD")}`;
+    return expected === actual ? undefined : `served-e2e certifies ${expected ?? "nothing"}, current SOURCE is ${actual}`;
+  } catch (error) {
+    return `current SOURCE tree is unavailable: ${(error as Error).message}`;
+  }
 }
 
 /** True when `relPath` resolved against `root` stays inside it — D-008's
@@ -133,9 +212,9 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
-    console.error("--now must be an ISO date");
+    console.error("--now must match the exact UTC timestamp profile");
     return { exitCode: 2 };
   }
 
@@ -149,6 +228,11 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   const opusPath = safeItemPath(join(root, "opera"), opusId);
   if (typeof opusPath !== "string" || !existsSync(opusPath)) {
     console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+  const unsafeOpus = unsafeOpusProblem(root, opusId);
+  if (unsafeOpus) {
+    console.error(`${opusId}: opus.reference: ${unsafeOpus}`);
     return { exitCode: 2 };
   }
 
@@ -176,8 +260,9 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     console.error(`${opusId}: --spec "${specRel}" resolves outside the officina (D-008) — refused`);
     return { exitCode: 2 };
   }
-  if (!existsSync(join(root, specRel))) {
-    console.error(`${opusId}: no spec at ${specRel} — not ready`);
+  const containedSpec = readContainedRegularFile(root, specRel, "briefs");
+  if ("error" in containedSpec) {
+    console.error(`${opusId}: no safe spec at ${specRel} — ${containedSpec.error}`);
     return { exitCode: 2 };
   }
 
@@ -188,6 +273,13 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   }
   const sella = sellaResult;
   const hasSpecProbatio = manifest.probationes.some((p) => p.id === "spec");
+  const currentFront = readFront<NativeRecord>(opusPath).data;
+  const proposed: NativeRecord = {
+    ...currentFront,
+    spec: specRel,
+    start: currentFront.start === undefined ? now.toISOString() : currentFront.start,
+  };
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["spec"], specRel);
@@ -198,6 +290,7 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
       doc.setIn(["probationes", "spec", "at"], now.toISOString());
     }
     doc.setIn(["state"], "building");
+    if (doc.get("start") === undefined) doc.set("start", now.toISOString());
     // A halt's exit conditions describe a state this opus is no longer in.
     for (const k of ["halted_at", "reason", "resume_when", "halted_by"]) doc.delete(k);
     return undefined;
@@ -234,7 +327,7 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
     console.error("--now must be an ISO date");
     return { exitCode: 2 };
@@ -252,10 +345,14 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     console.error(`unknown opus: ${opusId}`);
     return { exitCode: 2 };
   }
-
   // D-021 (W-033 round-1 A1): right after the record-existence check, before
   // any state/gate check, so a trunk caller gets the ownership message
   // rather than "not building, verifying or review" or a gate refusal.
+  const unsafeDoneOpus = unsafeOpusProblem(root, opusId);
+  if (unsafeDoneOpus) {
+    console.error(`${opusId}: opus.reference: ${unsafeDoneOpus}`);
+    return { exitCode: 2 };
+  }
   const refusal = recordOwnerRefusal(root, opusId);
   if (refusal !== undefined) {
     console.error(refusal);
@@ -273,6 +370,15 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, front as NativeRecord))) return { exitCode: 1 };
+  const proposedDone: NativeRecord = { ...(front as NativeRecord), state: "done", end: now.toISOString() };
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedDone, "done"))) return { exitCode: 1 };
+  const sourceProblem = uiSourceProblem(root, manifest, front as NativeRecord);
+  if (sourceProblem) {
+    console.error(`${opusId}: opus.ui.e2e: ${sourceProblem}`);
+    return { exitCode: 1 };
+  }
+
   const recorded = front.probationes ?? {};
   const missing: string[] = [];
   // Per-gate refusal detail (W-034): the first line ("gates not passed: …")
@@ -284,7 +390,9 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
   // permanently on stdout (never a silent pass): "done (waived: patron by
   // D-900)". A waiver is never rewritten into a `passed`.
   const honoured: { id: string; decision: string }[] = [];
-  for (const p of manifest.probationes) {
+  const effective = effectiveProbationes(front.kind, manifest.probationes);
+  if (refuseModel(opusId, effective.problems)) return { exitCode: 1 };
+  for (const p of effective.probationes) {
     const rec = recorded[p.id];
     const status = typeof rec?.status === "string" ? rec.status : undefined;
     const certifies = typeof rec?.certifies === "string" ? rec.certifies : undefined;
@@ -337,6 +445,7 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["state"], "done");
+    doc.setIn(["end"], now.toISOString());
     return undefined;
   });
 
@@ -397,7 +506,7 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     }
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
     console.error("--now must be an ISO date");
     return { exitCode: 2 };
@@ -416,6 +525,11 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
 
+  const unsafeReviewOpus = unsafeOpusProblem(root, opusId);
+  if (unsafeReviewOpus) {
+    console.error(`${opusId}: opus.reference: ${unsafeReviewOpus}`);
+    return { exitCode: 2 };
+  }
   const refusal = recordOwnerRefusal(root, opusId);
   if (refusal !== undefined) {
     console.error(refusal);
@@ -446,6 +560,21 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   const sella = reviewSellaResult;
   const status = pass ? "passed" : "failed";
   const model = values.get("--model");
+  const currentFront = readFront<NativeRecord>(opusPath).data;
+  const currentGates =
+    typeof currentFront.probationes === "object" && currentFront.probationes !== null && !Array.isArray(currentFront.probationes)
+      ? (currentFront.probationes as Record<string, unknown>)
+      : {};
+  const proposedReview: NativeRecord = {
+    ...currentFront,
+    state: fail && (currentState === "review" || currentState === "done") ? "building" : currentState,
+    ...(fail && currentState === "done" ? { end: undefined } : {}),
+    probationes: {
+      ...currentGates,
+      [reviewProbatioId]: { status, evidence, sella, at: now.toISOString(), ...(model === undefined ? {} : { model }) },
+    },
+  };
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedReview))) return { exitCode: 1 };
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["probationes", reviewProbatioId, "sella"], sella);
@@ -467,7 +596,10 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     // gap cascade 6's round-2 review exposed, F5). An opus already in
     // `building` (or anywhere else) keeps its state; `review` performs no
     // forward transition, that's `done`'s job.
-    if (fail && (currentState === "review" || currentState === "done")) doc.setIn(["state"], "building");
+    if (fail && (currentState === "review" || currentState === "done")) {
+      doc.setIn(["state"], "building");
+      doc.delete("end");
+    }
     return undefined;
   });
 
@@ -590,7 +722,7 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   }
   const behaviour = Number(behaviourRaw);
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
     console.error("--now must be an ISO date");
     return { exitCode: 2 };
@@ -716,7 +848,7 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
     console.error("--now must be an ISO date");
     return { exitCode: 2 };
@@ -732,6 +864,11 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   const opusPath = safeItemPath(join(root, "opera"), opusId);
   if (typeof opusPath !== "string" || !existsSync(opusPath)) {
     console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+  const unsafeHaltOpus = unsafeOpusProblem(root, opusId);
+  if (unsafeHaltOpus) {
+    console.error(`${opusId}: opus.reference: ${unsafeHaltOpus}`);
     return { exitCode: 2 };
   }
 
@@ -764,6 +901,11 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
   if (typeof decisionPath !== "string" || !existsSync(decisionPath)) {
     console.error(`${opusId}: --decision "${decisionId}" not found under decisions/`);
+    return { exitCode: 2 };
+  }
+  const containedDecision = readContainedRegularFile(root, `decisions/${decisionId}.md`, "decisions");
+  if ("error" in containedDecision) {
+    console.error(`${opusId}: --decision "${decisionId}" is unsafe: ${containedDecision.error}`);
     return { exitCode: 2 };
   }
 
@@ -808,6 +950,8 @@ function patronDecisionProblem(root: string, manifest: Manifest, decisionId: unk
   if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
   if (typeof decisionPath !== "string" || !existsSync(decisionPath)) return `decision "${decisionId}" not found`;
+  const contained = readContainedRegularFile(root, `decisions/${decisionId}.md`, "decisions");
+  if ("error" in contained) return `decision "${decisionId}" is unsafe: ${contained.error}`;
   let data: Record<string, unknown>;
   try {
     data = readFront<Record<string, unknown>>(decisionPath).data;
@@ -846,7 +990,7 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
     console.error("--now must be an ISO date");
     return { exitCode: 2 };
@@ -862,6 +1006,11 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
   const opusPath = safeItemPath(join(root, "opera"), opusId);
   if (typeof opusPath !== "string" || !existsSync(opusPath)) {
     console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+  const unsafeWaiveOpus = unsafeOpusProblem(root, opusId);
+  if (unsafeWaiveOpus) {
+    console.error(`${opusId}: opus.reference: ${unsafeWaiveOpus}`);
     return { exitCode: 2 };
   }
 
@@ -948,7 +1097,7 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
 //    evidence or identity, never amendable — refused by name below.
 // ---------------------------------------------------------------------------
 
-const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
+const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
 
 /** Never-amendable fields, refused by name before argv is even parsed (an
  *  exact-arg scan, so `--title "--state"` is also refused — harmless, since
@@ -988,7 +1137,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     }
   }
 
-  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--reason", "--sella", "--studio", "--now"] });
+  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--arc", "--parent", "--ui-ruling", "--reason", "--sella", "--studio", "--now"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${AMEND_USAGE}`);
     return { exitCode: 2 };
@@ -1002,7 +1151,10 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
 
   const titleFlag = values.get("--title");
   const specFlag = values.get("--spec");
-  if (titleFlag === undefined && specFlag === undefined) {
+  const arcFlag = values.get("--arc");
+  const parentFlag = values.get("--parent");
+  const rulingFlag = values.get("--ui-ruling");
+  if (titleFlag === undefined && specFlag === undefined && arcFlag === undefined && parentFlag === undefined && rulingFlag === undefined) {
     console.error(AMEND_USAGE);
     return { exitCode: 2 };
   }
@@ -1018,8 +1170,9 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
 
   // check.ts:432 requires a non-empty title — refused here at the source
   // rather than leaving it to a later opus.keys finding.
-  if (titleFlag !== undefined && titleFlag.trim() === "") {
-    console.error(`amend: --title must be non-empty`);
+  const amendTitleProblem = titleFlag === undefined ? undefined : titleProblem(titleFlag);
+  if (amendTitleProblem) {
+    console.error(`amend: --title ${amendTitleProblem}`);
     return { exitCode: 2 };
   }
 
@@ -1032,7 +1185,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const now = resolveExactNow(values.get("--now"), opts.now);
   if (!now) {
     console.error("--now must be an ISO date");
     return { exitCode: 2 };
@@ -1050,6 +1203,11 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     console.error(`unknown opus: ${opusId}`);
     return { exitCode: 2 };
   }
+  const unsafeAmendOpus = unsafeOpusProblem(root, opusId);
+  if (unsafeAmendOpus) {
+    console.error(`${opusId}: opus.reference: ${unsafeAmendOpus}`);
+    return { exitCode: 2 };
+  }
 
   // D-021, right after the record-existence check — the five siblings' own
   // ordering (the never-amendable scan above already ran, deliberately
@@ -1063,6 +1221,9 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   const current = readFront<OpusFront>(opusPath).data;
   const currentTitle = typeof current.title === "string" ? current.title : undefined;
   const currentSpec = typeof current.spec === "string" ? current.spec : undefined;
+  const currentArc = typeof current.arc === "string" ? current.arc : undefined;
+  const currentParent = typeof current.parent === "string" ? current.parent : undefined;
+  const currentRulings = Array.isArray(current.ui_rulings) ? current.ui_rulings.filter((value): value is string => typeof value === "string") : [];
 
   let specRel: string | undefined;
   if (specFlag !== undefined) {
@@ -1124,6 +1285,28 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     console.error(`${opusId}: --title is identical to the current title — nothing to amend`);
     return { exitCode: 2 };
   }
+  if (arcFlag !== undefined && currentArc === arcFlag) {
+    console.error(`${opusId}: --arc is identical to the current arc — nothing to amend`);
+    return { exitCode: 2 };
+  }
+  if (parentFlag !== undefined && currentParent === parentFlag) {
+    console.error(`${opusId}: --parent is identical to the current parent — nothing to amend`);
+    return { exitCode: 2 };
+  }
+  if (rulingFlag !== undefined && currentRulings.includes(rulingFlag)) {
+    console.error(`${opusId}: --ui-ruling ${rulingFlag} is already present — nothing to amend`);
+    return { exitCode: 2 };
+  }
+
+  const proposedAmend: NativeRecord = {
+    ...(current as NativeRecord),
+    ...(titleFlag === undefined ? {} : { title: titleFlag }),
+    ...(specRel === undefined ? {} : { spec: specRel }),
+    ...(arcFlag === undefined ? {} : { arc: arcFlag }),
+    ...(parentFlag === undefined ? {} : { parent: parentFlag }),
+    ...(rulingFlag === undefined ? {} : { ui_rulings: [...currentRulings, rulingFlag] }),
+  };
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedAmend))) return { exitCode: 1 };
 
   // Land 8: `namedSella` treats a blank $BISELLIUM_SELLA as unset (an
   // explicit blank --sella was already refused above), falling back to
@@ -1140,9 +1323,12 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   // Both flags in one call append one entry per changed field, title first,
   // then spec, regardless of flag order — the record is deterministic
   // regardless of argv order.
-  const fields: { field: "title" | "spec"; value: string; superseded: string }[] = [];
+  const fields: { field: "title" | "spec" | "arc" | "parent" | "ui_rulings"; value: unknown; superseded: unknown }[] = [];
   if (titleFlag !== undefined) fields.push({ field: "title", value: titleFlag, superseded: currentTitle ?? "" });
   if (specRel !== undefined) fields.push({ field: "spec", value: specRel, superseded: currentSpec ?? "" });
+  if (arcFlag !== undefined) fields.push({ field: "arc", value: arcFlag, superseded: currentArc ?? "" });
+  if (parentFlag !== undefined) fields.push({ field: "parent", value: parentFlag, superseded: currentParent ?? "" });
+  if (rulingFlag !== undefined) fields.push({ field: "ui_rulings", value: [...currentRulings, rulingFlag], superseded: currentRulings });
 
   try {
     editOpusFrontMatter(opusPath, (doc) => {

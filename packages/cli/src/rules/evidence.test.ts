@@ -3,11 +3,11 @@
  * (P-005), and W-084: brief Behaviour-N citations.
  */
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { checkStudio } from "../check.js";
-import { checkEvidence, isDuplicateRed, isModuleLoadFailure } from "./evidence.js";
+import { checkEvidence, isDuplicateRed, isModuleLoadFailure, isW096AssertionRed } from "./evidence.js";
 import { RULE_IDS } from "./ids.js";
 
 let failed = 0;
@@ -75,6 +75,28 @@ const citationFindings = (root: string) =>
 // W-022 behaviour 6: empty body is not a module load failure
 {
   check(6, "empty body not flagged", isModuleLoadFailure("") === false, String(isModuleLoadFailure("")));
+}
+
+// W-096 supplementary assertion-level TAP parser regression.
+{
+  const valid = [
+    "# behaviour: 2",
+    "# command: node --test-reporter=tap fixture.test.ts --behaviour 2",
+    "# exit: 1",
+    "",
+    "TAP version 13",
+    "not ok 1 - W-096 behaviour 2: fixture",
+    "  ---",
+    "  code: 'ERR_ASSERTION'",
+    "  ...",
+    "1..1",
+    "# tests 1",
+    "# pass 0",
+    "# fail 1",
+    "",
+  ].join("\n");
+  check(10, "W-096 completed selected TAP assertion is accepted", isW096AssertionRed(valid, 2));
+  check(10, "W-096 module-load text cannot masquerade as an assertion red", !isW096AssertionRed(`${valid}\nERR_MODULE_NOT_FOUND`, 2));
 }
 
 // W-084 occupies selector rows 7-9 so a focused command does not also run a
@@ -215,6 +237,37 @@ try {
       (f) => f.rule === "brief.behaviour_citation",
     );
     checkW084(9, "real brief corpus has no out-of-range citation", real.length === 0, JSON.stringify(real));
+  }
+
+
+  // W-096 pinned-baseline rule: the command-produced first pin is clean,
+  // then a one-byte working-tree change to a protected record blocks.
+  {
+    const repo = mkdtempSync(join(tmpdir(), "bisellium-evidence-w096-git-"));
+    dirs.push(repo);
+    const root = join(repo, "studio");
+    mkdirSync(join(root, "opera"), { recursive: true });
+    mkdirSync(join(root, "ci", "reds", "W-096"), { recursive: true });
+    writeFileSync(join(root, "bisellium.yml"), "bisellium: 1\nstudio: fixture\ncollegia: []\nsellae: []\nprobationes: []\n");
+    writeFileSync(join(root, "opera", "W-095.md"), "---\nid: W-095\ntitle: protected\nkind: task\ncollegium: engineering\nstate: backlog\nprobationes: {}\n---\n");
+    writeFileSync(join(root, "opera", "W-096.md"), "---\nid: W-096\ntitle: fixture\nkind: opus\ncollegium: engineering\nstate: building\nprobationes: {}\n---\n");
+    execFileSync("git", ["init", "-q", "-b", "master"], { cwd: repo });
+    execFileSync("git", ["config", "user.name", "fixture"], { cwd: repo });
+    execFileSync("git", ["config", "user.email", "fixture@example.invalid"], { cwd: repo });
+    execFileSync("git", ["add", "."], { cwd: repo });
+    execFileSync("git", ["commit", "-qm", "reviewed trunk"], { cwd: repo });
+    const baseline = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" }).trim();
+    execFileSync("git", ["update-ref", "refs/remotes/origin/master", baseline], { cwd: repo });
+    execFileSync("git", ["switch", "-qc", "opus/W-096"], { cwd: repo });
+    const own = join(root, "opera", "W-096.md");
+    writeFileSync(own, readFileSync(own, "utf8").replace("probationes: {}", `baseline_commit: ${baseline}\nprobationes: {}`));
+    execFileSync("git", ["add", own], { cwd: repo });
+    execFileSync("git", ["commit", "-qm", "pin baseline"], { cwd: repo });
+    const clean = checkEvidence(root, { now: new Date("2026-10-01T00:00:00Z"), repo }).filter((finding) => finding.rule === "opus.records_unchanged");
+    writeFileSync(join(root, "opera", "W-095.md"), `${readFileSync(join(root, "opera", "W-095.md"), "utf8")}x`);
+    const changed = checkEvidence(root, { now: new Date("2026-10-01T00:00:00Z"), repo }).filter((finding) => finding.rule === "opus.records_unchanged");
+    check(10, "W-096 preservation rule accepts baseline bytes", clean.length === 0, JSON.stringify(clean));
+    check(10, "W-096 preservation rule blocks changed baseline bytes", changed.some((finding) => finding.level === "block"), JSON.stringify(changed));
   }
 } finally {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });

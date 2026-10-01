@@ -81,7 +81,7 @@ records a review transcript without evaluating or changing any gate.
 ## bisellium verdict
 
 ```bash
-npm run bisellium -- verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]
 ```
 
 `verdict` copies a transcript from `--from` (or stdin when omitted) into
@@ -92,6 +92,17 @@ file. The header records the opus, phase, positive-integer round, non-blank
 sella and free-text outcome, optional model, timestamp, and the capture-time
 state of the repository containing `--studio`. Header values cannot contain
 CR or LF. An existing target is never overwritten.
+
+For a native `kind: ui` opus, a spec verdict is the required `ui-lead`
+design input. Its outcome is exactly `passed`, `failed`, or `revise`; none of
+those values itself signs or vetoes a gate. `--dispatch-prompt` must name a
+contained regular file under `ci/`. The writer validates the Findings and
+Recommendation structure and records both that prompt and a `design_digest`
+of the exact title plus raw current brief. A UI build verdict instead requires
+`--ui-input` naming the current highest-round UI input and a nonblank
+`## UI input disposition`; it records the citation and the same digest. These
+references reject symlinks, non-regular files, traversal and stale design
+bytes. Non-UI verdict behavior is unchanged.
 
 The command writes evidence only: it does not update `probationes`, state,
 events, or timelines. A build orchestrator can follow it with
@@ -373,6 +384,85 @@ fails closed, the gate stays demanded, same as if `since` weren't declared
 at all. This is what let W-018 add a `spec` probatio without turning every
 already-`done` opus red: they all handed off before its `since`.
 
+## Native opus model
+
+The native officina accepts exactly these case-sensitive opus kinds: `opus`,
+`task`, `subtask`, `bug`, `research`, `feature`, `hygiene`, `art-batch`, `ui`,
+and `arc`. This is native file policy; the cross-adapter `Opus.kind` wire
+field remains an open string. `bisellium check` reports `opus.kind` for every
+native record that is missing, ill-typed or outside this vocabulary, and both
+creation entry points reject it before allocating a record or brief.
+
+`title` is the sole summary. It is a nonblank decoded YAML string on one
+logical line: C0/C1 controls, line/paragraph separators and the format/bidi
+controls enumerated by the implementation contract are forbidden. Everything
+after the front-matter delimiter is the description, may be empty, and is
+preserved byte-for-byte by metadata writers. There are no duplicate
+`summary:` or `description:` fields.
+
+An `arc` is an ordinary `kind: arc` opus. A non-arc record may carry
+`arc: W-n`; the target must exist locally and have kind `arc`. An arc cannot
+itself carry `arc` or `parent`. `kind: subtask` requires `parent: W-n`, whose
+target must be neither an arc nor a subtask; no other kind may carry
+`parent`. A subtask inherits its parent's arc in the model. If it writes an
+explicit arc, it must equal the parent's; it cannot introduce one when the
+parent has none. These references add no dependency or roll-up semantics.
+
+`start` and `end` are optional actual transition timestamps in the exact
+profile `YYYY-MM-DDTHH:MM:SSZ` or `YYYY-MM-DDTHH:MM:SS.sssZ`, years
+0001–9999 and real Gregorian dates only. Writers emit milliseconds. `ready`
+sets `start` once, `done` sets `end`, and a failed review reopening a done
+opus clears `end` while retaining `start`; refused commands write neither
+dates nor events. `end` is legal only in `done` and cannot precede `start`.
+Legacy absence is valid and is never reconstructed from mtime or event logs.
+
+Creation accepts hierarchy fields directly:
+
+```bash
+npm run bisellium -- new --kind <kind> --collegium <id> --title <title> [--arc <W-id>] [--parent <W-id>] [--spec <path>] [--brief] [studio]
+```
+
+Every W-096 reference read—opus, arc/parent, brief, UI log and decision—is a
+contained regular-file read beneath its expected officina directory. A
+symlink leaf or intervening symlink directory, escape, dangling path or
+non-regular target fails closed as `opus.reference` plus the relevant
+field-specific rule.
+
+While W-096 is active, `opus.red_assertion` also requires each of its seven
+selected red logs to contain a completed Node TAP plan and at least one
+`ERR_ASSERTION` failure whose test name begins `W-096 behaviour N:` for that
+log's behavior. A module-load/syntax/tool/sandbox failure, skipped or zero-test
+plan, plain `FAIL` text, aggregate wrong selector, or arbitrary nonzero exit is
+not assertion-level evidence.
+
+### UI policy
+
+A UI opus requires a live `ui-lead` seat in the design collegium and current,
+substantive spec input from that seat before `ready`; active and done records
+are checked for the same evidence. The input's `design_digest` binds the exact
+decoded title and the raw bytes of the current brief, so either kind of edit
+makes it stale. The substantive check uses NFKC followed by Unicode 17 full
+default C/F case folding, four-word distinct shingles, at most 30% overlap
+with the retained dispatch prompt, and at least 12 novel shingles. These are
+mechanical minima, not a judgment of the recommendation.
+
+UI's effective probationes always include reserved automated gate
+`served-e2e`, command `node scripts/served-e2e.mjs`, even when the manifest
+does not declare it. A same-id declaration must have exactly that automated
+shape. `verify` builds the web application and then runs its served-browser
+suite, recording a timestamp, log and SOURCE certificate. Review and done
+require a corroborating successful result; done additionally requires the
+current clean SOURCE tree to match it. Non-UI opera retain the manifest's
+ordinary gate list.
+
+The censor remains the sole review signer. A passed UI review cites the
+authoritative UI input and current design digest in its verdict header and
+contains a nonblank `## UI input disposition`. Completion also requires at
+least one distinct `ui_rulings` decision reference whose structured Patron
+front matter binds this opus, the current design digest and served SOURCE
+tree, at or after both inputs. Supplied stale rulings advise before done and
+block at done; prose or a generic human-gate waiver is not a ruling.
+
 ## Lifecycle (fixed)
 
 `backlog → greenlit → building → verifying → review → done`, plus `halted`.
@@ -419,19 +509,22 @@ document the opus is no longer built against — survived untouched.
 ## bisellium amend
 
 ```bash
-npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
 ```
 
-`amend` is the one CLI path for an opus's two descriptive fields, `title` and
-`spec:` — fields no other verb owns once set (`new --spec`/`--brief` and
+`amend` is the one CLI path for an opus's descriptive/reference fields:
+`title`, `spec`, `arc`, `parent`, and an appended `ui_rulings` reference.
+These are fields no other verb owns once set (`new --spec`/`--brief` and
 `ready` write `spec:`'s *first* value only; nothing ever writes `title`
 again). It carries no state gate — it works in any state, `done` and
 `halted` included, since retitling or re-pointing a record is never a
 lifecycle transition. `--reason` is mandatory and non-empty. Each changed
 field appends one entry to the record's own `amendments:` list — append-only,
 the same `{at, sella, field, reason, superseded}` shape W-040's gate
-corrections use — `title` first, then `spec`, when both are given in one
-call, regardless of flag order. A value identical to the current one is
+corrections use — in stable field order when several are given in one call,
+regardless of flag order. `--ui-ruling` validates and appends one decision id;
+it never creates a decision or evidence. A duplicate or a value identical to
+the current one is
 refused as a no-op: `title` compared as an exact scalar (leading/trailing
 whitespace is a real change), `spec` by canonical resolved target (a path
 alias like `./briefs/x.md` names the same document, not a change). `--spec`
@@ -475,11 +568,14 @@ probationes:
 tokens: 412000
 traditio: { sella: builder-1, stage: review, next: await patron call, blocked_on: patron, at: 2026-09-17T09:58Z }
 ---
-Free-form notes below the front matter.
+The description below the front matter.
 ```
 
 Required keys: `id` (must equal the filename), `title`, `kind`, `collegium`,
-`state` — all non-empty strings. `traditio` (`sella`, `stage`, `next`,
+`state` — all non-empty strings, with native `kind` and `title` narrowed as
+described above. Optional native fields are `arc`, `parent`, `start`, `end`,
+and `ui_rulings`; their kind-, hierarchy-, time- and UI-specific constraints
+are enforced by `check` and by affected writers. `traditio` (`sella`, `stage`, `next`,
 `blocked_on`, `at` as an ISO date) is required on every active item
 (`building`, `verifying`, `review`) and validated wherever present; it is stale
 past `handoff_stale_days`. `halted` items require `reason` and `resume_when`,
@@ -489,7 +585,7 @@ is what "needs you" means. Passed and failed gates need `evidence` that exists
 certify, quoted; a newer substantive change makes them `stale`, never silently
 green. `amendments` (optional; written only by `bisellium amend`) is an
 append-only list of `{at, sella, field, reason, superseded}` entries, one per
-changed descriptive field (`title` or `spec`) — nothing else touches it, and
+changed amendable field (`title`, `spec`, `arc`, `parent`, or `ui_rulings`) — nothing else touches it, and
 nothing removes an entry once appended.
 
 ## petitiones/<id>.md
@@ -596,6 +692,22 @@ fires on a log that was hand-edited or came from elsewhere).
 runs the sample and every fixture.
 
 ## The SOURCE tree hash
+
+W-096 has an additional, opus-scoped preservation boundary. Its producer-run
+`bisellium branch W-096 --studio studio --repo .` must begin on a clean
+`master` exactly equal to `origin/master`, create and check out
+`opus/W-096` at that resolved commit, then write that full commit id once as
+`baseline_commit` on the owning branch. The trunk copy is never changed by
+the writer, and the pin is never inferred or repinned later.
+
+On `opus/W-096` (and when verification explicitly targets W-096),
+`opus.records_unchanged` enumerates the direct `studio/opera/*.md` and
+`examples/sample-studio/opera/*.md` blobs at that immutable baseline, except
+W-096 itself. It compares raw bytes and regular-file mode at both HEAD and the
+working tree. Deletion, rename, symlink substitution, mode/byte changes,
+untrusted ancestry or unavailable Git history fail closed. New records are
+outside the pinned set; they cannot replace or exempt an old one. `check` and
+`verify` call the same comparison helper.
 
 A `tree:<hash>` certificate is not `git rev-parse <ref>^{tree}`. That would
 include the officina's own bookkeeping — opera front matter, `ci/*.log`,

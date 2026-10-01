@@ -90,16 +90,27 @@ stateDiagram-v2
   halted --> building: ready --spec
 ```
 
-Only four transitions have a command behind them — `greenlight` (backlog only),
+Five transition commands are implemented — `greenlight` (backlog only),
 `ready` (from `greenlit` or `halted`, and it refuses without a spec), `done`
-(from `building`, `verifying` or `review`) and `review --fail`'s reopen edge
-back to `building` from `review` or `done`; `verify` writes gate records and
-never touches `state`.
+(from `building`, `verifying` or `review`), `review --fail`'s reopen edge back
+to `building` from `review` or `done`, and `halt` from every non-done state.
+`ready` records the first `start`; `done` records `end`; reopening clears
+`end` but retains `start`. The same timestamp is emitted with the transition.
+`verify` writes gate records and never touches `state`.
 
 The middle of the lifecycle is orchestrator-driven: nothing in the CLI moves an
-opus into `verifying` or `review`, and nothing writes `halted` — `adapters/native`
-names production's magister as halt's actor, and every state but `done` may halt
-(drawn once, from `greenlit`, rather than six times). That gap is L-015, open.
+opus into `verifying` or `review`. `adapters/native` names production's
+magister as halt's actor, and every state but `done` may halt (drawn once, from
+`greenlit`, rather than six times).
+
+Before the readiness/completion writers mutate a native opus they call the
+shared `packages/commands/src/opus-model.ts` policy. It narrows native kinds,
+titles, hierarchy and dates and, for UI work, establishes design-seat input,
+the effective `served-e2e` gate, sole-censor citation and Patron rulings.
+`check` translates the same structured problems to rule findings; `verify`
+uses the same effective-gate and protected-record predicates. The seam is
+read-only, keeping command writers and validation from becoming competing
+sources of truth.
 
 ## 3. Cascade
 
@@ -178,6 +189,11 @@ files the next poll picks up.
   every local and remote-tracking ref, then reserves the rendered record by
   exclusive create. Git failure warns and degrades to local records; it never
   fetches.
+- `opus-model` (`@bisellium/commands/opus-model.js`) — the read-only native
+  work-model seam shared by `check`, lifecycle/verdict writers and `verify`:
+  containment, hierarchy/dates, UI policy/effective gates, design digests and
+  W-096's pinned-baseline comparison return structured problems but never
+  mutate an officina.
 - `StartServerOptions.checkStudio` / `.runners` — the injection that keeps
   `apps/server` free of `@bisellium/cli` (§1).
 - `MergePipeline` (`@bisellium/pipeline`) — `verify` runs gates through it, so a

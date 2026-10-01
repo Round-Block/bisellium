@@ -99,6 +99,43 @@ export interface ProbatioResult {
   at?: string;
 }
 
+/**
+ * Work kinds accepted by the native officina.  This is deliberately
+ * narrower than {@link Opus.kind}: adapters for external systems retain
+ * their own vocabularies and narrow only at their native boundary.
+ */
+export const NATIVE_OPUS_KINDS = [
+  "opus",
+  "task",
+  "subtask",
+  "bug",
+  "research",
+  "feature",
+  "hygiene",
+  "art-batch",
+  "ui",
+  "arc",
+] as const;
+export type NativeOpusKind = (typeof NATIVE_OPUS_KINDS)[number];
+
+/** Native-only front-matter fields added by W-096. */
+export interface NativeOpusFields {
+  kind: NativeOpusKind;
+  arc?: string;
+  parent?: string;
+  start?: string;
+  end?: string;
+  ui_rulings?: string[];
+  baseline_commit?: string;
+}
+
+/** Structured references carried by UI verdict evidence. */
+export interface UiEvidenceReferences {
+  design_digest: `sha256:${string}`;
+  dispatch_prompt?: string;
+  ui_input?: string;
+}
+
 export interface Opus {
   id: string;
   projectId: string;

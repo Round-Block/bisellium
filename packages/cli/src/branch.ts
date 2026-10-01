@@ -18,6 +18,8 @@ import { parseFrontMatter, readFront, readManifest, type Manifest } from "@bisel
 import { opusBranchName } from "@bisellium/commands/writes.js";
 import { sourceTreeHash } from "@bisellium/shim";
 import { parse as parseYaml } from "yaml";
+import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 
 // One definition of the branch name lives in @bisellium/commands/writes.js
 // (W-033: the guard `recordOwnerRefusal` and this module must never spell
@@ -279,6 +281,48 @@ export function createOpusBranch(repo: string, opusId: string): BranchResult {
   if (create.status !== 0) return { ok: false, error: create.stderr.trim() || "failed to create branch" };
 
   return { ok: true };
+}
+
+/**
+ * W-096's one-time producer bootstrap.  The reviewed remote trunk is
+ * resolved once, the owning branch is checked out at that exact object, and
+ * only then is the immutable pin written to the owning copy of the record.
+ */
+export function createW096Branch(repo: string, studio: string): BranchResult {
+  const cwd = resolve(repo);
+  const studioRoot = resolve(studio);
+  if (relative(cwd, studioRoot).split(sep).join("/") !== "studio")
+    return { ok: false, error: "W-096 branch creation requires --studio at <repo>/studio" };
+  const branch = opusBranchName("W-096");
+  if (git(["rev-parse", "--verify", branch], cwd).status === 0) return { ok: false, error: `branch ${branch} already exists` };
+  const origin = git(["rev-parse", "--verify", "origin/master^{commit}"], cwd);
+  if (origin.status !== 0) return { ok: false, error: "origin/master is missing or does not resolve to a commit" };
+  const baseline = origin.stdout.trim();
+  if (!/^[0-9a-f]{40}$/.test(baseline)) return { ok: false, error: "origin/master did not resolve to a full commit id" };
+  const current = git(["branch", "--show-current"], cwd).stdout.trim();
+  const head = git(["rev-parse", "HEAD"], cwd).stdout.trim();
+  if (current !== "master" || head !== baseline) return { ok: false, error: "W-096 branch creation requires a master checkout exactly at origin/master" };
+  if (git(["status", "--porcelain", "--untracked-files=normal"], cwd).stdout !== "") return { ok: false, error: "W-096 branch creation requires a clean checkout" };
+  const recordPath = join(studioRoot, "opera", "W-096.md");
+  let existing: unknown;
+  try {
+    const contained = readContainedRegularFile(studioRoot, "opera/W-096.md", "opera");
+    if ("error" in contained) return { ok: false, error: `could not safely read W-096 record: ${contained.error}` };
+    existing = parseFrontMatter<Record<string, unknown>>(contained.bytes.toString("utf8"), recordPath).data["baseline_commit"];
+  }
+  catch (error) { return { ok: false, error: `could not read W-096 record: ${(error as Error).message}` }; }
+  if (existing !== undefined) return { ok: false, error: "W-096 baseline_commit is already present and immutable" };
+  const create = git(["switch", "-c", branch, baseline], cwd);
+  if (create.status !== 0) return { ok: false, error: create.stderr.trim() || `failed to create ${branch}` };
+  try {
+    editOpusFrontMatter(recordPath, (doc) => {
+      doc.set("baseline_commit", baseline);
+      return undefined;
+    });
+  } catch (error) {
+    return { ok: false, error: `created ${branch} but could not write baseline_commit: ${(error as Error).message}` };
+  }
+  return { ok: true, note: `baseline_commit=${baseline}` };
 }
 
 /** The trunk branch — "master" if it exists, else "main". Merges always
@@ -551,9 +595,9 @@ export function runBranch(args: string[]): { exitCode: number } {
   }
 
   const repo = resolve(values.get("--repo") ?? ".");
-  const result = createOpusBranch(repo, opusId);
+  const result = opusId === "W-096" ? createW096Branch(repo, studio) : createOpusBranch(repo, opusId);
   if (!result.ok) { console.error(result.error); return { exitCode: 1 }; }
-  console.log(`created ${opusBranchName(opusId)}`);
+  console.log(`created ${opusBranchName(opusId)}${result.note ? ` (${result.note})` : ""}`);
   return { exitCode: 0 };
 }
 
