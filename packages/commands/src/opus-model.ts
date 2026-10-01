@@ -206,7 +206,7 @@ export interface ContainedFile {
  * Resolve a studio-relative regular file without following a symlink in any
  * path component. `expectedDir` is the required first component.
  */
-export function readContainedRegularFile(root: string, relPath: string, expectedDir: string): ContainedFile | { error: string } {
+export function readContainedRegularFile(root: string, relPath: string, expectedDir: string): ContainedFile | { error: string; code?: string } {
   if (typeof relPath !== "string" || relPath.length === 0 || isAbsolute(relPath)) return { error: "path must be a nonempty officina-relative string" };
   try {
     const rootReal = realpathSync(resolve(root));
@@ -236,7 +236,8 @@ export function readContainedRegularFile(root: string, relPath: string, expected
       closeSync(fd);
     }
   } catch (error) {
-    return { error: (error as Error).message };
+    const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : undefined;
+    return { error: (error as Error).message, ...(code === undefined ? {} : { code }) };
   }
 }
 

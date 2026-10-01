@@ -194,8 +194,14 @@ export function runNew(args: string[]): { exitCode: number } {
     return { exitCode: 1 };
   }
   if (specOpt !== undefined && !brief) {
-    const inspected = readContainedRegularFile(root, specOpt, "briefs");
-    if ("error" in inspected) {
+    // Preserve `new --spec`'s existing dangling-pointer contract: resolve the
+    // officina-relative spelling exactly as before, then apply physical
+    // containment to every target that exists. ENOENT is the one accepted
+    // outcome; the helper has already rejected an earlier symlink or a path
+    // outside briefs/ before it can encounter a missing component.
+    const resolvedSpec = relative(root, resolve(root, specOpt));
+    const inspected = readContainedRegularFile(root, resolvedSpec, "briefs");
+    if ("error" in inspected && inspected.code !== "ENOENT") {
       console.error(`--spec "${specOpt}" must name a contained regular file under briefs/: ${inspected.error}`);
       return { exitCode: 1 };
     }
@@ -226,7 +232,6 @@ export function runNew(args: string[]): { exitCode: number } {
       kind,
       collegium,
       state: "backlog",
-      ...(!brief && specOpt !== undefined ? { spec: specOpt } : {}),
       arc: values.get("--arc"),
       parent: values.get("--parent"),
     };

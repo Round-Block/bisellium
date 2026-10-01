@@ -1558,7 +1558,7 @@ if (runs(5)) {
         directMissingParentRefused: directMissingParent.ok === false,
         cliMissingParentRefused: cliMissingParent.exitCode !== 0,
         newSpecContainment: {
-          missing: missingSpec.refused && missingSpec.unchanged,
+          danglingAccepted: !missingSpec.refused && !missingSpec.unchanged,
           directory: directorySpec.refused && directorySpec.unchanged,
           symlinkLeaf: symlinkSpec.refused && symlinkSpec.unchanged,
           symlinkDirectory: intermediateSpec.refused && intermediateSpec.unchanged,
@@ -1583,7 +1583,7 @@ if (runs(5)) {
         directMissingParentRefused: true,
         cliMissingParentRefused: true,
         newSpecContainment: {
-          missing: true,
+          danglingAccepted: true,
           directory: true,
           symlinkLeaf: true,
           symlinkDirectory: true,
