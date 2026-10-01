@@ -309,6 +309,16 @@ const PINNED_B: PinnedB[] = [
     why: "sella id read from bisellium.yml, unguarded at the join, and it writes acta/<date>-<sella>-daily.md. Mitigation, not a guard: path.id.unvalidated blocks a non-id sella at check time. Newly surfaced — see Intent",
   },
   {
+    key: "packages/commands/src/builder-run.ts:attachReceipt#1",
+    disposition: "guarded",
+    why: "runCommand passes opus through seatInstance's ID_RE-equivalent guard before runBuilderCommand can attach the receipt",
+  },
+  {
+    key: "packages/commands/src/builder-run.ts:admitCurrentRunReceipt#1",
+    disposition: "guarded",
+    why: "runReview passes opus through safeItemPath and readContainedRegularFile before calling receipt admission",
+  },
+  {
     key: "packages/commands/src/context.ts:buildContextFor#1",
     disposition: "derived",
     why: "a display label inside the context bundle; never reaches the filesystem",
