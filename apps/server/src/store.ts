@@ -265,6 +265,7 @@ export class Store extends CoreStore {
         .map((w) => ({
           id: w.id,
           title: w.meta["title"],
+          body: typeof w.meta["notes"] === "string" ? w.meta["notes"] : "",
           kind: w.kind,
           collegium: w.meta["collegium"],
           sella: w.meta["sella"],

@@ -951,11 +951,24 @@
 
 /* ── Board (W-064) ────────────────────────────────────────────────── */
 
+.board-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.board-workspace:has(.board-drawer) {
+  grid-template-columns: minmax(0, 1fr) 540px;
+}
+
 .board {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  min-width: 0;
 }
 
 .board__header {
@@ -1072,7 +1085,10 @@
 }
 
 .board__card {
-  height: 64px;
+  min-height: 64px;
+  height: auto;
+  max-height: 108px;
+  flex-shrink: 0;
   box-sizing: border-box;
   padding: 4px var(--sp-2);
   display: flex;
@@ -1097,9 +1113,10 @@
   font-size: 13px;
   line-height: 18px;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .board__card-meta {
@@ -1107,6 +1124,7 @@
   gap: var(--sp-2);
   font-family: var(--font-mono);
   font-size: 12px;
+  line-height: 14px;
   color: var(--ink-2);
 }
 
@@ -1131,11 +1149,8 @@
 /* ── Board drawer (W-064) ─────────────────────────────────────────── */
 
 .board-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 540px;
+  min-width: 0;
+  height: 100%;
   background: #ffffff;
   border-left: 1px solid var(--rule);
   box-shadow:
@@ -1247,8 +1262,20 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-3);
-  width: 64px;
-  flex-shrink: 0;
+  width: 112px;
+  flex: 0 0 112px;
+  white-space: nowrap;
+}
+
+.board-drawer__event-summary {
+  min-width: 0;
+  flex: 1;
+}
+
+.board-drawer__record-body {
+  white-space: pre-wrap;
+  font-size: 13px;
+  margin-bottom: var(--sp-2);
 }
 
 .board-drawer__record-row {
@@ -1268,8 +1295,8 @@
     left: auto;
   }
 
-  .board-drawer {
-    width: min(540px, calc(100vw - 72px));
+  .board-workspace:has(.board-drawer) {
+    grid-template-columns: minmax(0, 1fr) min(540px, calc(100vw - 72px));
   }
 }
 
@@ -1307,7 +1334,7 @@
     box-sizing: border-box;
   }
 
-  .board-drawer {
-    width: 100vw;
+  .board-workspace:has(.board-drawer) {
+    grid-template-columns: minmax(0, 1fr) 100vw;
   }
 }

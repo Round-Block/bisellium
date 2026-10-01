@@ -76,6 +76,7 @@ export function BoardDrawer({ detail, onClose }: BoardDrawerProps): JSX.Element 
 
       <div className="board-drawer__record">
         <h3 className="board-drawer__section-head">From the officina record</h3>
+        <div className="board-drawer__record-body">{detail.body.length > 0 ? detail.body : "No record body."}</div>
         {detail.tokensDeclared !== undefined && (
           <div className="board-drawer__record-row">
             <span className="board-drawer__record-label">tokens (declared)</span>

@@ -149,7 +149,7 @@ export interface HealthResponse {
 export interface OpusEntry {
   id: string;
   title: string;
-  /** W-087 phase-one wire-shape seam; the server supplies it in phase 2. */
+  /** Complete record body from the officina source. */
   body: string;
   kind: string;
   collegium: string;

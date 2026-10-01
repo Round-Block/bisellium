@@ -13,7 +13,7 @@ export interface ColophonProps {
    * available — not fetched by W-024's Inbox, but a later caller may
    * pass it. Truncated to 8 chars and rendered first. */
   treeHash?: string;
-  /** ISO timestamp; defaults to render time when the caller has no better
+  /** Display timestamp; defaults to render time when the caller has no better
    * source (no endpoint currently returns a snapshot generated-at). */
   generatedAt?: string;
 }

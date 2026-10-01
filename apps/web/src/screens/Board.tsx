@@ -17,7 +17,7 @@ import { fetchEvents, fetchInbox, fetchOfficina, fetchOpera, subscribeLive } fro
 import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
-import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
+import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -145,9 +145,9 @@ export function Board(): JSX.Element {
     const stillThere = column?.cards.some((c) => c.id === sel.id) ?? false;
     if (stillThere) return;
     setSelected(undefined);
-    const scrollEl = document.querySelector<HTMLElement>(".board__columns");
-    if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;
     requestAnimationFrame(() => {
+      const scrollEl = document.querySelector<HTMLElement>(".board__columns");
+      if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;
       const columnEl = document.querySelector<HTMLElement>(`.board__columns [data-column-id="${sel.columnId}"]`);
       const firstCard = columnEl?.querySelector<HTMLElement>("[data-card-id]");
       if (firstCard) {
@@ -158,6 +158,13 @@ export function Board(): JSX.Element {
       head?.focus();
     });
   }, [model]);
+
+  // The pushed layout can collapse the Board cell to zero. Once the drawer
+  // has mounted, move focus to its visible close control at every width.
+  useEffect(() => {
+    if (!selected) return;
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".board-drawer__close")?.focus());
+  }, [selected]);
 
   // ---- Phone: initial visible column is needs_you (non-empty) else
   // in_progress — once, after the first real model lands. ------------------
@@ -212,10 +219,10 @@ export function Board(): JSX.Element {
     // regardless of which render's closure invoked it.
     const sel = selectedRef.current;
     setSelected(undefined);
-    const scrollEl = document.querySelector<HTMLElement>(".board__columns");
-    if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;
     if (sel) {
       requestAnimationFrame(() => {
+        const scrollEl = document.querySelector<HTMLElement>(".board__columns");
+        if (scrollEl && scrollSnapshotRef.current !== undefined) scrollEl.scrollLeft = scrollSnapshotRef.current;
         document.querySelector<HTMLElement>(`.board__columns [data-column-id="${sel.columnId}"] [data-card-id="${sel.id}"]`)?.focus();
       });
     }
@@ -269,9 +276,10 @@ export function Board(): JSX.Element {
   }, []);
 
   const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
+  const generatedAt = formatBoardTimestamp(new Date().toISOString());
 
   return (
-    <>
+    <div className="board-workspace">
       <BoardView
         studio={officina.studio}
         model={model}
@@ -279,8 +287,9 @@ export function Board(): JSX.Element {
         focusedByColumn={focusedByColumn}
         onSelectCard={(id, columnId) => openDrawer(id, columnId)}
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
+        generatedAt={generatedAt}
       />
       <BoardDrawer detail={detail} onClose={closeDrawer} />
-    </>
+    </div>
   );
 }

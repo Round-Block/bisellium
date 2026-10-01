@@ -56,7 +56,7 @@ function Card({
       onClick={() => onSelect(card.id, columnId)}
     >
       <GateLadder gates={card.gates} />
-      <span className="board__card-title">{card.title}</span>
+      <span className="board__card-title" title={card.title}>{card.title}</span>
       <span className="board__card-meta">
         {card.sella && <span className="board__card-sella">{card.sella}</span>}
         <span className="board__card-state">{card.state}</span>

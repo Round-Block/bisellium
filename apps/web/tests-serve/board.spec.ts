@@ -374,7 +374,7 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
     await served?.close();
   });
 
-  test("j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays visible behind the drawer", async ({ page }) => {
+  test("j/k move and stop at column ends; Enter opens; Esc closes and restores focus; the board stays mounted beside the drawer", async ({ page }) => {
     served = await startServed("board-keyboard");
     const counter = await installWriteCounter(page);
     await openBoard(page, served);
@@ -394,7 +394,7 @@ test.describe("W-064 behaviour 8: keyboard traversal, the drawer, and focus rest
     const firstFocused = await page.evaluate(() => document.activeElement?.getAttribute("data-card-id"));
     expect(firstFocused).toBe(ids[0]);
 
-    // Enter opens the drawer for the focused card; the board is still visible.
+    // Enter opens the drawer for the focused card; the board stays mounted.
     await page.keyboard.press("Enter");
     await expect(page.locator(".board-drawer")).toBeVisible();
     await expect(page.locator(".board__columns")).toBeVisible();
