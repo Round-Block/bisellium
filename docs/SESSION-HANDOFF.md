@@ -104,13 +104,23 @@ lex, a decision, or a check rule and delete it here.
 
 ## Where things stand (2026-10-01)
 
-W-087 merged as PR 133 after three censor rounds: round 1 FAIL (duplicate helper + Files-owned boundary), round 2 FAIL (revision-3 regression gaps), and round 3 PASS. The Patron's look-and-feel ruling is recorded as brief revision row 4. The sec-lead's end-to-end symlink finding was assigned by the architect to the follow-on opus “Reject symlinked opus records before snapshot projection and detail delivery.” W-089 merged; D-029 was decided (munus → seat); W-096 was amended with the typed-kind vocabulary, including the `ui` kind; W-077 was greenlit with the Officina decrees; W-101 was filed and greenlit for the ref-aware allocator, and its phase-1 build is in flight on `opus/W-101`.
+W-087 merged as PR 133 after three censor rounds: round 1 FAIL (duplicate helper + Files-owned boundary), round 2 FAIL (revision-3 regression gaps), and round 3 PASS. The Patron's look-and-feel ruling is recorded as brief revision row 4. The sec-lead's end-to-end symlink finding was assigned by the architect to the follow-on opus “Reject symlinked opus records before snapshot projection and detail delivery.” W-089 merged; D-029 was decided (munus → seat); W-096 was amended with the typed-kind vocabulary, including the `ui` kind; W-077 was greenlit with the Officina decrees; W-101 is merged and done (PR 135, three censor rounds, sec-lead clear), and its acceptance filings ran on master through the new allocator.
 
 ## Queue
 
-- W-101 (ref-aware ID allocator) build: two-phase Sol builder. Then file through it: the five acceptance opera; the roster `·` fix; the D-029 build (munus → seat); the interface arc; the Officina/nav e2e opus, widened to walk every screen, check content, check that an Inbox reply carries into the next step, and require screenshot evidence for `ui`-kind opera; a backlog-grooming opus (41 opera sit in `backlog`, which the Board hides from its columns and counts only in the footer); and the architect-dictated engineering opus “Reject symlinked opus records before snapshot projection and detail delivery” — sec-lead's W-087 round-2 High finding 1 stays open against it.
+All queued opera below are in `backlog`, filed 2026-10-01 through the ref-aware allocator; evidence is in `~/.bisellium-evidence/w101-acceptance/`.
+- W-110 — Officina/every-screen nav-rail e2e with screenshot evidence for `ui`-kind opera.
+- W-111 — the experimentation workflow.
+- W-112 — one Board bottom timestamp.
+- W-113 — Inbox prettified body (UI/UX ruling with the Patron).
+- W-114 — e2e that a Patron reply carries through to the next step.
+- W-115 — reject symlinked opus records before snapshot projection and detail delivery; sec-lead's W-087 High finding stays open against it. The architect's dictated brief is at `~/.bisellium-evidence/w087-symlink-followon-brief.md`.
+- W-116 — Roster separator and live models.
+- W-117 — D-029 build (munus → seat).
+- W-118 — the interface arc.
+- W-119 — backlog grooming.
 - W-096 holds titles/descriptions in the Jira layout (summary vs description, type, parent/epic, start/end); the drawer laid out like an issue view is its follow-on.
-- Retro-34 is owed.
+Next is greenlighting and speccing in Patron-priority order, W-096 first unless the Patron reorders.
 
 ## Research lane (on the side)
 
