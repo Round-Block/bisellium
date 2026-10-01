@@ -655,6 +655,18 @@ if (runs(1)) {
         );
         if (owning.length !== 0) preservationProblems.push(`unchanged pinned ${state} record failed on its owning branch: ${JSON.stringify(owning)}`);
       }
+      writeFileSync(path, "---\n[unterminated\n---\n");
+      const corruptOwnRecord = checkStudio(everyState.studio, NOW, { repo: everyState.repo }).findings.filter(
+        (finding) => finding.rule === "opus.records_unchanged",
+      );
+      if (!corruptOwnRecord.some((finding) => finding.level === "block" && finding.message.includes("unverifiable")))
+        preservationProblems.push("a corrupt W-096 record failed open on its owning branch");
+      rmSync(path);
+      const missingOwnRecord = checkStudio(everyState.studio, NOW, { repo: everyState.repo }).findings.filter(
+        (finding) => finding.rule === "opus.records_unchanged",
+      );
+      if (!missingOwnRecord.some((finding) => finding.level === "block" && finding.message.includes("unverifiable")))
+        preservationProblems.push("a missing W-096 record failed open on its owning branch");
       writeFileSync(path, original.replace("state: building", "state: done"));
       git(everyState.repo, ["checkout", "--detach", "-q"]);
       const detached = checkStudio(everyState.studio, NOW, { repo: everyState.repo }).findings.filter(
@@ -1088,6 +1100,14 @@ if (runs(2)) {
       wrongUiReviewPass.value.exitCode !== 0 &&
       readFileSync(uiReviewPath, "utf8") === uiReviewBefore &&
       wrongUiReviewPass.errors.some((line) => /censor|qa-lead/i.test(line));
+    const uiLeadReviewPass = captureErrors(() => runReview(
+      ["W-020", "--pass", "--evidence", "ci/W-020-review-1.log", "--sella", "ui-lead", "--studio", censorRoot],
+      { now: NOW },
+    ));
+    const uiLeadReviewPassRefused =
+      uiLeadReviewPass.value.exitCode !== 0 &&
+      readFileSync(uiReviewPath, "utf8") === uiReviewBefore &&
+      uiLeadReviewPass.errors.some((line) => /censor|qa-lead/i.test(line));
 
     const failedReviewCase = (tag: string, sella: string, evidenceSella = "qa-lead"): {
       result: ReturnType<typeof captureErrors<ReturnType<typeof runReview>>>;
@@ -1248,6 +1268,7 @@ if (runs(2)) {
         legacyReviewFailAccepted: legacyReviewFail.value.exitCode === 0 && legacyReviewFailGate?.["sella"] === "eng-lead" && legacyReviewFailGate?.["status"] === "failed",
         legacyBuildVerdictAccepted: legacyBuildVerdict.value.exitCode === 0,
         wrongUiReviewPassRefused,
+        uiLeadReviewPassRefused,
         failedReviewAuthorization: {
           engLead: engLeadFailedReview.result.value.exitCode !== 0 && engLeadFailedReview.unchanged && engLeadFailedReview.result.errors.some((line) => /censor|qa-lead/i.test(line)),
           uiLead: uiLeadFailedReview.result.value.exitCode !== 0 && uiLeadFailedReview.unchanged && uiLeadFailedReview.result.errors.some((line) => /censor|qa-lead/i.test(line)),
@@ -1305,6 +1326,7 @@ if (runs(2)) {
         legacyReviewFailAccepted: true,
         legacyBuildVerdictAccepted: true,
         wrongUiReviewPassRefused: true,
+        uiLeadReviewPassRefused: true,
         failedReviewAuthorization: { engLead: true, uiLead: true, wrongEvidenceHeader: true, censor: true },
         censorReviewPassAccepted: true,
         passedCitationIdentities: {
@@ -1788,6 +1810,26 @@ if (runs(5)) {
       ["W-202", "--arc", "W-201", "--reason", "move the parent without moving its child", "--sella", "eng-lead", "--studio", amendRoot],
       { now: NOW },
     ));
+    writeOpus(amendRoot, "W-204", [
+      'title: "parent whose child inherits its arc"',
+      "kind: task",
+      "collegium: engineering",
+      "state: backlog",
+      "arc: W-200",
+      "probationes: {}",
+    ]);
+    writeOpus(amendRoot, "W-205", [
+      'title: "child that follows its parent arc"',
+      "kind: subtask",
+      "collegium: engineering",
+      "state: backlog",
+      "parent: W-204",
+      "probationes: {}",
+    ]);
+    const consistentAmend = captureErrors(() => runAmend(
+      ["W-204", "--arc", "W-201", "--reason", "move a parent whose child inherits its arc", "--sella", "eng-lead", "--studio", amendRoot],
+      { now: NOW },
+    ));
 
     const writerRoot = scratch("b5-writer-hierarchy");
     writeManifest(writerRoot);
@@ -1798,7 +1840,7 @@ if (runs(5)) {
       tag: string,
       spec: string,
       prepare: (caseRoot: string) => void,
-    ): { refused: boolean; unchanged: boolean; errors: string[] } => {
+    ): { refused: boolean; unchanged: boolean; errors: string[]; laterRequiredReadRefused: boolean } => {
       const caseRoot = scratch(`b5-new-spec-${tag}`);
       writeManifest(caseRoot);
       prepare(caseRoot);
@@ -1806,10 +1848,16 @@ if (runs(5)) {
       const result = captureErrors(() => runNew([
         "--kind", "task", "--collegium", "engineering", "--title", `spec containment ${tag}`, "--spec", spec, caseRoot,
       ]));
+      const created = readdirSync(join(caseRoot, "opera")).find((name) => name.endsWith(".md"));
       return {
         refused: result.value.exitCode !== 0,
         unchanged: JSON.stringify(inventory(caseRoot)) === JSON.stringify(beforeInventory),
         errors: result.errors,
+        laterRequiredReadRefused:
+          created !== undefined &&
+          checkStudio(caseRoot, NOW).findings.some(
+            (finding) => finding.where === `opera/${created}` && finding.rule === "opus.reference" && /unsafe|unreadable/i.test(finding.message),
+          ),
       };
     };
     const missingSpec = specCase("missing", "briefs/missing.md", () => undefined);
@@ -1849,10 +1897,15 @@ if (runs(5)) {
           invalidatingAmend.value.exitCode !== 0 &&
           readFileSync(amendPath, "utf8") === amendBefore &&
           invalidatingAmend.errors.some((line) => /W-203|child|arc/i.test(line)),
+        consistentAmendSucceeded:
+          consistentAmend.value.exitCode === 0 &&
+          front(amendRoot, "W-204")["arc"] === "W-201" &&
+          !rules(amendRoot, "W-205").some((rule) => rule === "opus.arc" || rule === "opus.parent"),
         directMissingParentRefused: directMissingParent.ok === false,
         cliMissingParentRefused: cliMissingParent.exitCode !== 0,
         newSpecContainment: {
           danglingAccepted: !missingSpec.refused && !missingSpec.unchanged,
+          danglingRejectedOnRequiredRead: missingSpec.laterRequiredReadRefused,
           directory: directorySpec.refused && directorySpec.unchanged,
           symlinkLeaf: symlinkSpec.refused && symlinkSpec.unchanged,
           symlinkDirectory: intermediateSpec.refused && intermediateSpec.unchanged,
@@ -1874,10 +1927,12 @@ if (runs(5)) {
         crossOfficinaParent: true,
         parentCycle: true,
         invalidatingAmendRefused: true,
+        consistentAmendSucceeded: true,
         directMissingParentRefused: true,
         cliMissingParentRefused: true,
         newSpecContainment: {
           danglingAccepted: true,
+          danglingRejectedOnRequiredRead: true,
           directory: true,
           symlinkLeaf: true,
           symlinkDirectory: true,
