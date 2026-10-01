@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 import type { WorktreeProvider } from "@bisellium/shim";
+import { readFront } from "@bisellium/adapter-native";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -84,6 +85,21 @@ function fixture(tag: string, prepare?: (repo: string, studio: string) => void):
   git(repo, ["config", "user.email", "w125@example.invalid"]);
   const studio = join(repo, "studio");
   writeManifest(studio);
+  writeFileSync(
+    join(studio, "opera", `${OPUS}.md`),
+    [
+      "---",
+      `id: ${OPUS}`,
+      "title: W-125 builder runtime fixture",
+      "kind: task",
+      "collegium: engineering",
+      "state: building",
+      "probationes: {}",
+      "---",
+      "Fixture body.",
+      "",
+    ].join("\n"),
+  );
   writeFileSync(join(repo, "source.txt"), "candidate source\n");
   prepare?.(repo, studio);
   git(repo, ["add", "-A"]);
@@ -124,6 +140,10 @@ function oneReceipt(studio: string, sella = `builder.${OPUS}`): Record<string, u
   return JSON.parse(readFileSync(join(receiptDir, files[0]!), "utf8")) as Record<string, unknown>;
 }
 
+function builderRuntime(studio: string): unknown {
+  return readFront<Record<string, unknown>>(join(studio, "opera", `${OPUS}.md`)).data["builder_runtime"];
+}
+
 if (runs(1)) {
   test("W-125 behaviour 1: builder admission refuses in-place execution", async () => {
     const f = fixture("b1-admission");
@@ -134,11 +154,70 @@ if (runs(1)) {
       "--no-worktree", "--", process.execPath, "-e", "process.exit(0)",
     ]);
     assert.equal(generic.exitCode, 0);
+    assert.equal(builderRuntime(f.studio), undefined, "a non-builder run must not introduce the marker");
 
     // Genuine pre-change red: current run.ts accepts this builder flag and
     // executes the child in the caller's officina.
     const admitted = await run(builderArgs(f, ["--no-worktree"], [process.execPath, "-e", "process.exit(0)"]));
     assert.notEqual(admitted.exitCode, 0, "builder --no-worktree must be refused before dispatch");
+    assert.equal(builderRuntime(f.studio), undefined, "a builder refused by flags must not introduce the marker");
+  });
+
+  test("W-125 behaviour 1 marker written: builder admission persists before preparation and survives failures", async () => {
+    const preparation = fixture("b1-marker-preparation");
+    let preparationCalls = 0;
+    const preparationFailure: WorktreeProvider = {
+      id: "w125-preparation-failure",
+      async acquire() {
+        preparationCalls++;
+        assert.equal(builderRuntime(preparation.studio), "isolated", "the marker must exist before runtime preparation");
+        throw new Error("fixture preparation failure");
+      },
+    };
+    const prepared = await run(builderArgs(preparation, [], [process.execPath, "-e", "process.exit(0)"]), preparationFailure);
+    assert.notEqual(prepared.exitCode, 0);
+    assert.equal(preparationCalls, 1);
+    assert.equal(builderRuntime(preparation.studio), "isolated", "preparation failure must retain the marker");
+
+    const execution = fixture("b1-marker-execution");
+    git(execution.repo, ["switch", "-q", `opus/${OPUS}`]);
+    const executionFailure: WorktreeProvider = {
+      id: "w125-execution-failure",
+      async acquire() {
+        assert.equal(builderRuntime(execution.studio), "isolated", "the marker must exist before child dispatch");
+        return { path: execution.repo, branch: `opus/${OPUS}`, release: async () => undefined };
+      },
+    };
+    const executed = await run(builderArgs(execution, [], [process.execPath, "-e", "process.exit(19)"]), executionFailure);
+    assert.equal(executed.exitCode, 19);
+    assert.equal(builderRuntime(execution.studio), "isolated", "unsuccessful execution must retain the marker");
+
+    const successful = fixture("b1-marker-success");
+    git(successful.repo, ["switch", "-q", `opus/${OPUS}`]);
+    const successProvider: WorktreeProvider = {
+      id: "w125-success",
+      async acquire() {
+        assert.equal(builderRuntime(successful.studio), "isolated");
+        return { path: successful.repo, branch: `opus/${OPUS}`, release: async () => undefined };
+      },
+    };
+    const success = await run(builderArgs(successful, [], [process.execPath, "-e", "process.exit(0)"]), successProvider);
+    assert.equal(success.exitCode, 0, success.errors.join("; "));
+    assert.equal(builderRuntime(successful.studio), "isolated", "successful builder execution retains the marker");
+
+    const persistence = fixture("b1-marker-persistence");
+    rmSync(join(persistence.studio, "opera", `${OPUS}.md`));
+    let dispatched = 0;
+    const dispatchSpy: WorktreeProvider = {
+      id: "w125-persistence-dispatch-spy",
+      async acquire() {
+        dispatched++;
+        return { path: persistence.repo, branch: `opus/${OPUS}`, release: async () => undefined };
+      },
+    };
+    const refused = await run(builderArgs(persistence, [], [process.execPath, "-e", "process.exit(0)"]), dispatchSpy);
+    assert.notEqual(refused.exitCode, 0, "failed marker persistence must fail the builder run");
+    assert.equal(dispatched, 0, "failed marker persistence must prevent runtime preparation and dispatch");
   });
 }
 
