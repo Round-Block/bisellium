@@ -1,0 +1,314 @@
+# opus: W-101
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL — createNextRecord returns a relative path when studioRoot is relative; the signed interface requires the absolute created path (ids.ts:91). Advisory: census retro dispositions still cite the removed nextId.
+# at: 2026-10-01T09:04:18.175Z
+# tree: tree:83d11e8d59571f31ea0fab15b2e7fe5dafa5398f
+
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /home/edckt/projects/bisellium/.worktrees/W-101
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0f6b0-09d9-7c42-a78d-c2a2048ef418
+--------
+user
+You are the censor sella qa-lead, the sole review gate (D-014), reviewing opus W-101 round 1 on branch opus/W-101 (HEAD c9afc7c, rebased on master 3149129). Read studio/leges/qa.md, studio/briefs/W-101.md (signed revision 2), studio/opera/W-101.md. The build was two-phase: 'test(ids): add W-101 allocator red suite' (tests + the private BISELLIUM_IDS_TEST_BARRIER_DIR seam, no allocator), reds for behaviours 1–7 at tree 6b5a091d (studio/ci/reds/W-101/0N.log), then 'feat(ids): allocate records across refs' (packages/commands/src/ids.ts, new.ts, retro.ts, talk.ts, containment.test.ts census, docs/ARCHITECTURE.md). The diff of the whole opus is git diff master...HEAD (or read the files if git is refused). Evidence: focused suite 8/8 rows (/home/edckt/.bisellium-evidence/w101-focused.log), npm test clean (w101-full.log), verify certificates at tree 83d11e8d (studio/ci/W-101-{tests,lint,types}-83d11e8d.log), check 0 blocking. Judge independently against the brief: does each red fail for the brief's stated pre-change reason (not a missing module); does ids.ts honour the interface in the brief (one seam, discovery + exclusive write as one operation, no scan/write gap, no fetch or network command, warned local-only fallback discarding partials, physical officina identity, wx + EEXIST retry without re-entering the one-shot barrier); are all five callers routed and the old local max scans gone; is the barrier seam inert in ordinary calls with no public flag; stdout byte-compatibility; Files owned respected; census not weakened; ARCHITECTURE.md updated per the design lex. Note the brief's acceptance also requires five real filings on master through the new allocator — those happen after merge by the producer and are not part of this round's judgment; say so explicitly if you would otherwise block on them. Do not repair code or edit evidence. End with exactly one line 'VERDICT: PASS' or 'VERDICT: FAIL — <reason>' followed by numbered findings marked BLOCKING or ADVISORY with file:line.
+codex
+I’ll conduct this as the D-014 gate without changing code or evidence. Per the repository’s orchestration rule, I’m booting the qa-lead context and dispatching exactly one censor reviewer, then I’ll return that reviewer’s independent finding in the required format.
+exec
+/usr/bin/zsh -lc "sed -n '1,240p' AGENTS.md && npm exec -- bisellium" in /home/edckt/projects/bisellium/.worktrees/W-101
+ exited 2 in 411ms:
+usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+       bisellium query <question> [dir] [--now <iso>] [--from-index]
+       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+       bisellium pause [--studio <dir>] [--reason <text>]
+       bisellium resume [--studio <dir>]
+       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+       bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+       bisellium merge <opus-id> --studio <dir> --repo <dir>
+       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+       bisellium prune --studio <dir> [--repo <dir>]
+       bisellium docs registry [--repo <dir>] [--now <iso>]
+
+exec
+/usr/bin/zsh -lc 'npm exec -- bisellium context --sella qa-lead studio' in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 487ms:
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+## QA lex
+--- data: leges/qa.md ---
+# QA Lex
+
+Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
+
+## 1. Mandate
+
+Verify greenlit features against spec and regression test suite; reject
+autonomously when warranted. The Censor drives the first hour of every
+cascade, advisory only — it does not sign the spec gate, which belongs to
+the architect — and closes the last one.
+
+## 2. Decides alone
+
+- Verdicts on `review` items: pass, fail, or request clarification
+- Regression suite changes and test infrastructure
+- Severity classification for found issues
+- One mutation per opus is enough to demonstrate the suite bites; no more
+  are required to pass review
+- Blocks a write outside an opus's declared files (check: probatio.declared)
+- Adopting an advisory-only rule proposal alone, without a petitio to the
+  Patron
+- Stamping `addressed_by` on a recurring class the Censor closes by
+  adopting an advisory rule alone (check: lesson.addressed_by)
+
+## 3. Digests
+
+- Weekly: test coverage, failure patterns, cycle time
+- Regression insights affecting engineering priority
+- A `class` of finding recurring across cascades; the advisory goes quiet
+  once some lesson of the class names what addresses it (check:
+  lesson.recurrent)
+
+## 4. Asks
+
+- Policy changes to acceptance criteria
+- Resource constraints affecting test infrastructure
+- A blocking-rule or lex-wording proposal arising from a retrospective —
+  filed as a petitio to the Patron, never adopted alone
+- A recurring class the Censor cannot address alone — filed as a petitio
+  naming the proposed opus, rule, or acceptance decision. A class left
+  unaddressed at the close of the next cascade is an unmet obligation.
+
+## 5. Budget
+
+- Period: week · Allowance: 0.5M tokens
+- Burn reporting: `aerarium/<period>.yml`
+- Over-budget: posture → conserve, digest the cause
+
+## 6. Autonomy
+
+- Level: L1 scheduled
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
+
+Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+retro`) that files at least one lesson per distinct finding class, each with
+non-empty, non-dead evidence (check: lesson.evidence).
+
+A usage section is required in every retro (D-013): `bisellium retro`'s
+input carries `usage` (totals, checking/building ratio, tokens per opus,
+trend against the previous retro, posture from the current aerarium), not
+supplied as an afterthought once the numbers are already forgotten —
+`retro.ts` renders the section only when it's given, so an empty/absent
+`usage` on a real cascade is the Censor's own gap, not the tool's.
+
+The Censor carries the addressed ledger forward: every retro's `##
+Addressed` section lists each recurrent class with its target, and a class
+recorded as formally accepted names the `decisions/D-nnn.md` that accepts
+it, with its `kill_when`.
+
+## 9. Amendment log
+
+| Date | Change | Authority |
+|---|---|---|
+| 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+| 2026-09-19 | Usage section required in every retro (D-013) | Patron |
+| 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
+| 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+--- end ---
+
+## Standing rules
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Before structural screen changes, verify against the dossier's touchpoint mapping.
+
+## QA index
+W-093 · backlog · sec-lead runs per PR, concurrent with QA: every opus PR gets a security pass alongside the censor round, alerts name opera, the merge-gate exclusion becomes a record
+
+## Recent decisions
+2026-10-01-retro-34 · Retrospectio 34 · 2026-10-01T08:42:25.584Z
+--- data: acta/2026-10-01-retro-34.md ---
+# Retrospectio 34
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 2840
+- Fix rounds: 1
+- Mutations caught: 20
+- Agents:
+  - builder-b — W-062 build (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-a — W-064 build and fix round (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-sol — W-079 D-025 trial build (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-062 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-064 review rounds 1-2 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-079 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+
+## Findings by class
+
+- environment×sandbox-forces-proxy-evidence: 1
+- mechanism×unpinned-by-test: 1
+- process×insurance-clause-fired: 1
+- spec-gate×self-signed: 1
+
+## Lessons filed
+
+- L-039 (environment×sandbox-forces-proxy-evidence) → lessons/L-039.md
+- L-040 (mechanism×unpinned-by-test) → lessons/L-040.md
+- L-041 (process×insurance-clause-fired) → lessons/L-041.md
+- L-042 (spec-gate×self-signed) → lessons/L-042.md
+
+## Recurrence
+
+- "process×insurance-clause-fired" recurs across cascades 6, 34
+
+## Addressed
+
+- "process×insurance-clause-fired" → nothing yet
+
+## Proposals
+
+- "environment×sandbox-forces-proxy-evidence": advisory rule — adopt alone
+- "mechanism×unpinned-by-test": advisory rule — adopt alone
+- "process×insurance-clause-fired": blocking-rule/lex-wording change — petitio filed at petitiones/P-014.md
+- "spec-gate×self-signed": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+2026-10-01-retro-35 · Retrospectio 35 · 2026-10-01T08:42:26.107Z
+--- data: acta/2026-10-01-retro-35.md ---
+# Retrospectio 35
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 3431
+- Fix rounds: 6
+- Mutations caught: 19
+- Agents:
+  - builder.W-089 — seat-template build and fixes (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - qa-lead — W-089 review rounds (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - builder-codex.W-087 — Board decrees build and fixes (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-087 review round 1 (gpt-5.6-sol): 170931 tokens, 0 min
+  - qa-lead — W-087 review round 2 (gpt-5.6-sol): 21111 tokens, 0 min
+  - qa-lead — W-087 review round 3 (gpt-5.6-sol): 91232 tokens, 0 min
+  - sec-lead — end-to-end symlink review (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - ui-lead — W-087 clearance (usage not retained; zero is unmeasured) (gpt-6-astra): 0 tokens, 0 min
+
+## Findings by class
+
+- architecture×containment-helper-duplicated: 1
+- design×indirection-duplicates-source-of-truth: 1
+- mechanism×id-allocation-local-tree-only: 1
+- mechanism×identity-normalization-not-centralized: 1
+- mechanism×served-suite-does-not-rebuild-bundle: 1
+- research×claimed-metric-without-enforced-methodology: 1
+- review×security-boundary-found-after-censor-pass: 1
+- tests×wall-clock-sleep-for-a-missing-seam: 1
+- workflow×failure-report-not-actionable: 1
+- workflow×files-owned-boundary-exceeded: 1
+
+## Lessons filed
+
+- L-043 (architecture×containment-helper-duplicated) → lessons/L-043.md
+- L-044 (design×indirection-duplicates-source-of-truth) → lessons/L-044.md
+- L-045 (mechanism×id-allocation-local-tree-only) → lessons/L-045.md
+- L-046 (mechanism×identity-normalization-not-centralized) → lessons/L-046.md
+- L-047 (mechanism×served-suite-does-not-rebuild-bundle) → lessons/L-047.md
+- L-048 (research×claimed-metric-without-enforced-methodology) → lessons/L-048.md
+- L-049 (review×security-boundary-found-after-censor-pass) → lessons/L-049.md
+- L-050 (tests×wall-clock-sleep-for-a-missing-seam) → lessons/L-050.md
+- L-051 (workflow×failure-report-not-actionable) → lessons/L-051.md
+- L-052 (workflow×files-owned-boundary-exceeded) → lessons/L-052.md
+
+## Recurrence
+
+- "tests×wall-clock-sleep-for-a-missing-seam" recurs across cascades 32, 35
+
+## Addressed
+
+- "tests×wall-clock-sleep-for-a-missing-seam" → nothing yet
+
+## Proposals
+
+- "architecture×containment-helper-duplicated": advisory rule — adopt alone
+- "design×indirection-duplicates-source-of-truth": advisory rule — adopt alone
+- "mechanism×id-allocation-local-tree-only": advisory rule — adopt alone
+- "mechanism×identity-normalization-not-centralized": advisory rule — adopt alone
+- "mechanism×served-suite-does-not-rebuild-bundle": advisory rule — adopt alone
+- "research×claimed-metric-without-enforced-methodology": advisory rule — adopt alone
+- "review×security-boundary-found-after-censor-pass": advisory rule — adopt alone
+- "tests×wall-clock-sleep-for-a-missing-seam": blocking-rule/lex-wording change — petitio filed at petitiones/P-015.md
+- "workflow×failure-report-not-actionable": advisory rule — adopt alone
+- "workflow×files-owned-boundary-exceeded": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+tokens: 2357
+
+collab: Wait
+codex
+The censor review is in progress. It is checking both the recorded-red ancestry and the allocator’s cross-ref locking behavior, since those are the two places where passing tests alone would not establish the brief’s guarantees.
+collab: Wait
+collab: Wait
+codex
+The reviewer is still working through the implementation and evidence; no code or bookkeeping has been touched. I’m holding the gate open until that single review is complete.
+collab: Wait
+codex
+VERDICT: FAIL — createNextRecord does not guarantee the signed interface’s absolute returned path
+1. BLOCKING — `directoryPath` is formed directly from the caller-supplied `studioRoot` and returned unchanged, so `createNextRecord("studio", …)` returns `studio/<directory>/<id>.md`, not an absolute path as the signed interface requires. Resolve or canonicalize the write root before constructing and returning the target, and pin the direct seam with a relative-root test. packages/commands/src/ids.ts:91
+2. ADVISORY — The containment census still has full source-wide strength and correctly adds the centralized allocator sink, but its two retro dispositions still say the ids come “from nextId”; that helper was removed and the ids now come from `createNextRecord`, leaving the hand-audited rationale stale. packages/cli/src/containment.test.ts:298
+3. ADVISORY — The five real master filings are explicitly post-merge producer work and are not a blocker for this review round. studio/briefs/W-101.md:305
+tokens used
+13,702
+VERDICT: FAIL — createNextRecord does not guarantee the signed interface’s absolute returned path
+1. BLOCKING — `directoryPath` is formed directly from the caller-supplied `studioRoot` and returned unchanged, so `createNextRecord("studio", …)` returns `studio/<directory>/<id>.md`, not an absolute path as the signed interface requires. Resolve or canonicalize the write root before constructing and returning the target, and pin the direct seam with a relative-root test. packages/commands/src/ids.ts:91
+2. ADVISORY — The containment census still has full source-wide strength and correctly adds the centralized allocator sink, but its two retro dispositions still say the ids come “from nextId”; that helper was removed and the ids now come from `createNextRecord`, leaving the hand-audited rationale stale. packages/cli/src/containment.test.ts:298
+3. ADVISORY — The five real master filings are explicitly post-merge producer work and are not a blocker for this review round. studio/briefs/W-101.md:305

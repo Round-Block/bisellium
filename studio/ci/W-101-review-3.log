@@ -1,0 +1,353 @@
+# opus: W-101
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: PASS — exact suffix comparison, 999,999,999 ceiling refusal with no partial record, partial-clone fallback, stdout compatibility and Files owned all satisfy the amended brief; no findings. Five master filings remain post-merge producer work.
+# at: 2026-10-01T09:52:35.906Z
+# tree: tree:befe2aae75e7daa87b242915d059be62eb6a33a0
+
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /home/edckt/projects/bisellium/.worktrees/W-101
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0f6dd-3bce-7f93-b262-da6042657f16
+--------
+user
+You are the censor sella qa-lead, the sole review gate (D-014), reviewing opus W-101 round 3 on branch opus/W-101 (HEAD c26da1f). Your round-2 verdict studio/ci/W-101-review-2.log blocked on the nine-digit suffix cap filtering discovery against the id-universe contract. Since then the architect ruled (brief revision now carries three paragraphs marked 'Architect ruling A/B/C, round 2' plus a 'Round-2 rulings' paragraph under Signing amendments — read them): A every exact match contributes with exact comparison, mint bound 999,999,999, refusal beyond it before rendering/writing; B older Git with partial-clone markers takes the warned local-only fallback; C the directory-replacement race is accepted. Commits: 'test(ids): pin W-101 round-2 ceiling and partial-clone rows' (seven rows) and 'fix(ids): enforce W-101 allocation ceilings' (packages/commands/src/ids.ts). Evidence: with the fix absent exactly the 7 new rows fail and 14 pass (/home/edckt/.bisellium-evidence/w101-r2-mutation.log); with it 21/21 (w101-r2-focused.log); npm test clean (w101-r2-full.log); verify at tree befe2aae (studio/ci/W-101-{tests,lint,types}-befe2aae.log); check 0 blocking. Sec-lead is re-checking in parallel. Read the diff (git diff 6f2620c..HEAD, or the files if git is refused). Judge independently against the amended brief: does discovery now count every exact match exactly (leading zeroes, over-long digits, local and ref-only) with no filtering; does refusal happen before render/write with no partial record or companion in every case including after an EEXIST collision; is the partial-clone guard correct (version parse, both markers, both controls, failed inspection → fallback, no object reads on fallback); stdout byte-identical; Files owned respected; the five master filings remain post-merge. Do not repair code or edit evidence. End with exactly one line 'VERDICT: PASS' or 'VERDICT: FAIL — <reason>' followed by numbered findings marked BLOCKING or ADVISORY with file:line.
+codex
+I’m applying the repository’s mandated review workflow: I’ll first load the local instructions and CLI contract, then dispatch the single censor subagent to perform the independent round-3 gate. I will not modify code or evidence.
+codex
+The `bisellium` executable is not on this shell’s PATH. I’m resolving the repository-local entry point read-only before any lifecycle call; the review itself remains delegated to the one mandated censor.
+exec
+/usr/bin/zsh -lc "rg -n '\"bin\"|bisellium' package.json packages/*/package.json | head -80 && rg --files | rg '("'^|/)(bisellium|cli)('"\\.[cm]?[jt]s)?"'$|packages/.*/dist'"'" in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 0ms:
+packages/shim/package.json:2:  "name": "@bisellium/shim",
+packages/schema/package.json:2:  "name": "@bisellium/schema",
+packages/providers/package.json:2:  "name": "@bisellium/providers",
+packages/providers/package.json:8:    "@bisellium/adapter-native": "*",
+packages/providers/package.json:9:    "@bisellium/schema": "*"
+packages/pipeline/package.json:2:  "name": "@bisellium/pipeline",
+packages/pipeline/package.json:8:    "@bisellium/schema": "*",
+packages/pipeline/package.json:9:    "@bisellium/shim": "*"
+packages/core/package.json:2:  "name": "@bisellium/core",
+packages/core/package.json:8:    "@bisellium/schema": "*"
+packages/core/package.json:11:    "@bisellium/adapter-native": "*"
+packages/commands/package.json:2:  "name": "@bisellium/commands",
+packages/commands/package.json:11:    "@bisellium/adapter-native": "*",
+packages/commands/package.json:12:    "@bisellium/core": "*",
+packages/commands/package.json:13:    "@bisellium/pipeline": "*",
+packages/commands/package.json:14:    "@bisellium/schema": "*",
+packages/commands/package.json:15:    "@bisellium/shim": "*",
+packages/commands/package.json:19:    "@bisellium/server": "*"
+packages/cli/package.json:2:  "name": "@bisellium/cli",
+packages/cli/package.json:6:  "bin": {
+packages/cli/package.json:7:    "bisellium": "bin/bisellium.mjs"
+packages/cli/package.json:10:    "@bisellium/adapter-native": "*",
+packages/cli/package.json:11:    "@bisellium/commands": "*",
+packages/cli/package.json:12:    "@bisellium/core": "*",
+packages/cli/package.json:13:    "@bisellium/pipeline": "*",
+packages/cli/package.json:14:    "@bisellium/providers": "*",
+packages/cli/package.json:15:    "@bisellium/schema": "*",
+packages/cli/package.json:16:    "@bisellium/server": "*",
+packages/cli/package.json:17:    "@bisellium/shim": "*",
+package.json:2:  "name": "bisellium",
+package.json:13:    "bisellium": "node --import tsx packages/cli/src/main.ts",
+adapters/native/src/cli.ts
+packages/cli/bin/bisellium.mjs
+
+exec
+/usr/bin/zsh -lc 'npm run -s bisellium --' in /home/edckt/projects/bisellium/.worktrees/W-101
+ exited 2 in 179ms:
+usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+       bisellium query <question> [dir] [--now <iso>] [--from-index]
+       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+       bisellium pause [--studio <dir>] [--reason <text>]
+       bisellium resume [--studio <dir>]
+       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+       bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+       bisellium merge <opus-id> --studio <dir> --repo <dir>
+       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+       bisellium prune --studio <dir> [--repo <dir>]
+       bisellium docs registry [--repo <dir>] [--now <iso>]
+
+exec
+/usr/bin/zsh -lc 'npm run -s bisellium -- context --sella qa-lead studio' in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 227ms:
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+## QA lex
+--- data: leges/qa.md ---
+# QA Lex
+
+Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
+
+## 1. Mandate
+
+Verify greenlit features against spec and regression test suite; reject
+autonomously when warranted. The Censor drives the first hour of every
+cascade, advisory only — it does not sign the spec gate, which belongs to
+the architect — and closes the last one.
+
+## 2. Decides alone
+
+- Verdicts on `review` items: pass, fail, or request clarification
+- Regression suite changes and test infrastructure
+- Severity classification for found issues
+- One mutation per opus is enough to demonstrate the suite bites; no more
+  are required to pass review
+- Blocks a write outside an opus's declared files (check: probatio.declared)
+- Adopting an advisory-only rule proposal alone, without a petitio to the
+  Patron
+- Stamping `addressed_by` on a recurring class the Censor closes by
+  adopting an advisory rule alone (check: lesson.addressed_by)
+
+## 3. Digests
+
+- Weekly: test coverage, failure patterns, cycle time
+- Regression insights affecting engineering priority
+- A `class` of finding recurring across cascades; the advisory goes quiet
+  once some lesson of the class names what addresses it (check:
+  lesson.recurrent)
+
+## 4. Asks
+
+- Policy changes to acceptance criteria
+- Resource constraints affecting test infrastructure
+- A blocking-rule or lex-wording proposal arising from a retrospective —
+  filed as a petitio to the Patron, never adopted alone
+- A recurring class the Censor cannot address alone — filed as a petitio
+  naming the proposed opus, rule, or acceptance decision. A class left
+  unaddressed at the close of the next cascade is an unmet obligation.
+
+## 5. Budget
+
+- Period: week · Allowance: 0.5M tokens
+- Burn reporting: `aerarium/<period>.yml`
+- Over-budget: posture → conserve, digest the cause
+
+## 6. Autonomy
+
+- Level: L1 scheduled
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
+
+Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+retro`) that files at least one lesson per distinct finding class, each with
+non-empty, non-dead evidence (check: lesson.evidence).
+
+A usage section is required in every retro (D-013): `bisellium retro`'s
+input carries `usage` (totals, checking/building ratio, tokens per opus,
+trend against the previous retro, posture from the current aerarium), not
+supplied as an afterthought once the numbers are already forgotten —
+`retro.ts` renders the section only when it's given, so an empty/absent
+`usage` on a real cascade is the Censor's own gap, not the tool's.
+
+The Censor carries the addressed ledger forward: every retro's `##
+Addressed` section lists each recurrent class with its target, and a class
+recorded as formally accepted names the `decisions/D-nnn.md` that accepts
+it, with its `kill_when`.
+
+## 9. Amendment log
+
+| Date | Change | Authority |
+|---|---|---|
+| 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+| 2026-09-19 | Usage section required in every retro (D-013) | Patron |
+| 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
+| 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+--- end ---
+
+## Standing rules
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Before structural screen changes, verify against the dossier's touchpoint mapping.
+
+## QA index
+W-093 · backlog · sec-lead runs per PR, concurrent with QA: every opus PR gets a security pass alongside the censor round, alerts name opera, the merge-gate exclusion becomes a record
+
+## Recent decisions
+2026-10-01-retro-34 · Retrospectio 34 · 2026-10-01T08:42:25.584Z
+--- data: acta/2026-10-01-retro-34.md ---
+# Retrospectio 34
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 2840
+- Fix rounds: 1
+- Mutations caught: 20
+- Agents:
+  - builder-b — W-062 build (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-a — W-064 build and fix round (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-sol — W-079 D-025 trial build (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-062 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-064 review rounds 1-2 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-079 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+
+## Findings by class
+
+- environment×sandbox-forces-proxy-evidence: 1
+- mechanism×unpinned-by-test: 1
+- process×insurance-clause-fired: 1
+- spec-gate×self-signed: 1
+
+## Lessons filed
+
+- L-039 (environment×sandbox-forces-proxy-evidence) → lessons/L-039.md
+- L-040 (mechanism×unpinned-by-test) → lessons/L-040.md
+- L-041 (process×insurance-clause-fired) → lessons/L-041.md
+- L-042 (spec-gate×self-signed) → lessons/L-042.md
+
+## Recurrence
+
+- "process×insurance-clause-fired" recurs across cascades 6, 34
+
+## Addressed
+
+- "process×insurance-clause-fired" → nothing yet
+
+## Proposals
+
+- "environment×sandbox-forces-proxy-evidence": advisory rule — adopt alone
+- "mechanism×unpinned-by-test": advisory rule — adopt alone
+- "process×insurance-clause-fired": blocking-rule/lex-wording change — petitio filed at petitiones/P-014.md
+- "spec-gate×self-signed": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+2026-10-01-retro-35 · Retrospectio 35 · 2026-10-01T08:42:26.107Z
+--- data: acta/2026-10-01-retro-35.md ---
+# Retrospectio 35
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 3431
+- Fix rounds: 6
+- Mutations caught: 19
+- Agents:
+  - builder.W-089 — seat-template build and fixes (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - qa-lead — W-089 review rounds (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - builder-codex.W-087 — Board decrees build and fixes (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-087 review round 1 (gpt-5.6-sol): 170931 tokens, 0 min
+  - qa-lead — W-087 review round 2 (gpt-5.6-sol): 21111 tokens, 0 min
+  - qa-lead — W-087 review round 3 (gpt-5.6-sol): 91232 tokens, 0 min
+  - sec-lead — end-to-end symlink review (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - ui-lead — W-087 clearance (usage not retained; zero is unmeasured) (gpt-6-astra): 0 tokens, 0 min
+
+## Findings by class
+
+- architecture×containment-helper-duplicated: 1
+- design×indirection-duplicates-source-of-truth: 1
+- mechanism×id-allocation-local-tree-only: 1
+- mechanism×identity-normalization-not-centralized: 1
+- mechanism×served-suite-does-not-rebuild-bundle: 1
+- research×claimed-metric-without-enforced-methodology: 1
+- review×security-boundary-found-after-censor-pass: 1
+- tests×wall-clock-sleep-for-a-missing-seam: 1
+- workflow×failure-report-not-actionable: 1
+- workflow×files-owned-boundary-exceeded: 1
+
+## Lessons filed
+
+- L-043 (architecture×containment-helper-duplicated) → lessons/L-043.md
+- L-044 (design×indirection-duplicates-source-of-truth) → lessons/L-044.md
+- L-045 (mechanism×id-allocation-local-tree-only) → lessons/L-045.md
+- L-046 (mechanism×identity-normalization-not-centralized) → lessons/L-046.md
+- L-047 (mechanism×served-suite-does-not-rebuild-bundle) → lessons/L-047.md
+- L-048 (research×claimed-metric-without-enforced-methodology) → lessons/L-048.md
+- L-049 (review×security-boundary-found-after-censor-pass) → lessons/L-049.md
+- L-050 (tests×wall-clock-sleep-for-a-missing-seam) → lessons/L-050.md
+- L-051 (workflow×failure-report-not-actionable) → lessons/L-051.md
+- L-052 (workflow×files-owned-boundary-exceeded) → lessons/L-052.md
+
+## Recurrence
+
+- "tests×wall-clock-sleep-for-a-missing-seam" recurs across cascades 32, 35
+
+## Addressed
+
+- "tests×wall-clock-sleep-for-a-missing-seam" → nothing yet
+
+## Proposals
+
+- "architecture×containment-helper-duplicated": advisory rule — adopt alone
+- "design×indirection-duplicates-source-of-truth": advisory rule — adopt alone
+- "mechanism×id-allocation-local-tree-only": advisory rule — adopt alone
+- "mechanism×identity-normalization-not-centralized": advisory rule — adopt alone
+- "mechanism×served-suite-does-not-rebuild-bundle": advisory rule — adopt alone
+- "research×claimed-metric-without-enforced-methodology": advisory rule — adopt alone
+- "review×security-boundary-found-after-censor-pass": advisory rule — adopt alone
+- "tests×wall-clock-sleep-for-a-missing-seam": blocking-rule/lex-wording change — petitio filed at petitiones/P-015.md
+- "workflow×failure-report-not-actionable": advisory rule — adopt alone
+- "workflow×files-owned-boundary-exceeded": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+tokens: 2357
+
+codex
+The QA context is loaded. I’m now dispatching the single `censor` subagent required by D-014 and the repository rules, with the amended-contract checks and no-write constraint from your brief.
+collab: Wait
+codex
+The censor is still working through the amended brief, implementation paths, tests, and evidence. No verdict has been returned yet.
+collab: Wait
+codex
+Review remains in progress; the censor is validating the failure-ordering and partial-clone fallback cases rather than relying only on the supplied green logs.
+collab: Wait
+codex
+The independent gate has not completed yet. I’m checking only its execution status; I’m not adding a second review or modifying the tree.
+collab: Wait
+codex
+VERDICT: PASS
+1. ADVISORY — No blocking or advisory defects found; exact suffix comparison, ceiling refusal, partial-clone fallback, stdout compatibility, and file ownership satisfy the amended brief. The five master filings remain post-merge producer work. packages/commands/src/ids.ts:24; packages/commands/src/ids.ts:54; packages/commands/src/ids.ts:140; studio/briefs/W-101.md:340
+tokens used
+18,205
+VERDICT: PASS
+1. ADVISORY — No blocking or advisory defects found; exact suffix comparison, ceiling refusal, partial-clone fallback, stdout compatibility, and file ownership satisfy the amended brief. The five master filings remain post-merge producer work. packages/commands/src/ids.ts:24; packages/commands/src/ids.ts:54; packages/commands/src/ids.ts:140; studio/briefs/W-101.md:340
