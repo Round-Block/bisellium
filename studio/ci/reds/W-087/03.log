@@ -1,0 +1,76 @@
+# behaviour: 3
+# command: sh -c node --import tsx apps/web/src/lib/board.test.ts . 3; a=$?; npm --workspace @bisellium/web run test:serve -- tests-serve/board.spec.ts --grep "W-087 behaviour 3:"; b=$?; [ $a -eq 0 ] && [ $b -eq 0 ]
+# exit: 1
+# at: 2026-10-01T06:53:43.172Z
+# sella: builder-codex.W-087
+# tree: tree:33d5ef6a088a41078fc36bfeb9b355934c78da27
+
+FAIL  formatBoardTimestamp: Singapore                                                
+FAIL  formatBoardTimestamp: New York                                                 
+FAIL  formatBoardTimestamp: midnight uses 00, never 24                               
+FAIL  formatBoardTimestamp: invalid input is an em dash                              
+PASS  liveLabel: connected, no refresh — says connected                              connected
+PASS  liveLabel: connected, no refresh — never says updated                          connected
+FAIL  liveLabel: renders lastRefreshAt in the Board timestamp shape                  live · updated 2026-09-25T11:58:00.000Z
+FAIL  liveLabel: never leaks the raw ISO timestamp                                   live · updated 2026-09-25T11:58:00.000Z
+PASS  liveLabel: never renders `now` instead                                         live · updated 2026-09-25T11:58:00.000Z
+PASS  liveLabel: disconnected — says so                                              disconnected
+PASS  liveLabel: disconnected — never contains 'live'                                disconnected
+PASS  liveLabel: an unparseable lastRefreshAt degrades, never 'Invalid Date'         connected
+PASS  drawerDetail: newest-first remains based on raw machine order                  [{"at":"2026-10-01T00:01:00.000Z","name":"workflow.attention","summary":"attention newer"},{"at":"2026-09-25T11:58:00.000Z","name":"workflow.attention","summary":"attention fixed"}]
+FAIL  drawerDetail: event displays use the Board timestamp shape                     [{"at":"2026-10-01T00:01:00.000Z","name":"workflow.attention","summary":"attention newer"},{"at":"2026-09-25T11:58:00.000Z","name":"workflow.attention","summary":"attention fixed"}]
+FAIL  drawerDetail: structured traditio at uses the Board timestamp shape            [{"label":"at","value":"2026-09-25T11:58:00.000Z"},{"label":"next","value":"keep 2026-09-25T11:58:00.000Z verbatim"}]
+PASS  drawerDetail: ISO-looking traditio free text remains verbatim                  [{"label":"at","value":"2026-09-25T11:58:00.000Z"},{"label":"next","value":"keep 2026-09-25T11:58:00.000Z verbatim"}]
+PASS  reconcileReason: "initial" on the first connect                                
+PASS  reconcileReason: "reconnect" on a connect after a disconnect                   
+PASS  reconcileReason: undefined on a repeated connected:true (no periodic reconciliation) 
+PASS  reconcileReason: undefined on going disconnected                               
+PASS  reconcileTargets: exactly the three base paths with no selection               ["/api/officina","/api/opera","/api/inbox"]
+PASS  reconcileTargets: with a selection, those three PLUS the item's events         ["/api/officina","/api/opera","/api/inbox","/api/events?item=W-002"]
+PASS  reconcileTargets: with a selection, exactly four targets (dropping the fourth is a red) ["/api/officina","/api/opera","/api/inbox","/api/events?item=W-002"]
+
+> @bisellium/web@0.0.1 test:serve
+> playwright test --config=playwright.serve.config.ts tests-serve/board.spec.ts --grep W-087 behaviour 3:
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests-serve/board.spec.ts:732:3 › W-087 behaviour 3: every generated Board time has the viewer-local shape › four timestamp fields localize without touching ISO-like authored content or raw ordering (5.7s)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:732:3 › W-087 behaviour 3: every generated Board time has the viewer-local shape › four timestamp fields localize without touching ISO-like authored content or raw ordering 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('.board-drawer__event').filter({ has: locator('.board-drawer__event-summary').filter({ hasText: /^attention fixed$/ }) }).locator('.board-drawer__event-at')
+    Expected: "25/09/26 19:58"
+    Received: "2026-09-25T11:58:00.000Z"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" locator('.board-drawer__event').filter({ has: locator('.board-drawer__event-summary').filter({ hasText: /^attention fixed$/ }) }).locator('.board-drawer__event-at') with timeout 5000ms
+      - waiting for locator('.board-drawer__event').filter({ has: locator('.board-drawer__event-summary').filter({ hasText: /^attention fixed$/ }) }).locator('.board-drawer__event-at')
+        14 × locator resolved to <span class="board-drawer__event-at">2026-09-25T11:58:00.000Z</span>
+           - unexpected value "2026-09-25T11:58:00.000Z"
+
+
+      749 |
+      750 |     const fixedEvent = page.locator(".board-drawer__event").filter({ has: page.locator(".board-drawer__event-summary", { hasText: /^attention fixed$/ }) });
+    > 751 |     await expect(fixedEvent.locator(".board-drawer__event-at")).toHaveText("25/09/26 19:58");
+          |                                                                 ^
+      752 |     const summaries = await page.locator(".board-drawer__event-summary").allTextContents();
+      753 |     expect(summaries.indexOf("attention newer")).toBeLessThan(summaries.indexOf("attention fixed"));
+      754 |
+        at /home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:751:65
+
+    Error Context: test-results/board-W-087-behaviour-3-ev-70bae-red-content-or-raw-ordering-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests-serve/board.spec.ts:732:3 › W-087 behaviour 3: every generated Board time has the viewer-local shape › four timestamp fields localize without touching ISO-like authored content or raw ordering 
+npm error Lifecycle script `test:serve` failed with error:
+npm error code 1
+npm error path /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
+npm error workspace @bisellium/web@0.0.1
+npm error location /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
+npm error command failed
+npm error command sh -c playwright test --config=playwright.serve.config.ts tests-serve/board.spec.ts --grep 'W-087 behaviour 3:'

@@ -1,0 +1,44 @@
+# behaviour: 2
+# command: npm --workspace @bisellium/web run test:serve -- tests-serve/board.spec.ts --grep W-087 behaviour 2:
+# exit: 1
+# at: 2026-10-01T06:53:34.369Z
+# sella: builder-codex.W-087
+# tree: tree:33d5ef6a088a41078fc36bfeb9b355934c78da27
+
+
+> @bisellium/web@0.0.1 test:serve
+> playwright test --config=playwright.serve.config.ts tests-serve/board.spec.ts --grep W-087 behaviour 2:
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests-serve/board.spec.ts:688:3 › W-087 behaviour 2: the served drawer carries the complete opus body › the collection and drawer preserve a long literal body and expose an honest empty state (425ms)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:688:3 › W-087 behaviour 2: the served drawer carries the complete opus body › the collection and drawer preserve a long literal body and expose an honest empty state 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      704 |     const w004 = opera.find((row) => row.id === "W-004");
+      705 |     expect(w004).toBeDefined();
+    > 706 |     expect(Object.prototype.hasOwnProperty.call(w004, "body")).toBe(true);
+          |                                                                ^
+      707 |     expect(w004?.body).toBe(body);
+      708 |
+      709 |     await openBoard(page, served);
+        at /home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:706:64
+
+    Error Context: test-results/board-W-087-behaviour-2-th-23b03-xpose-an-honest-empty-state-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests-serve/board.spec.ts:688:3 › W-087 behaviour 2: the served drawer carries the complete opus body › the collection and drawer preserve a long literal body and expose an honest empty state 
+npm error Lifecycle script `test:serve` failed with error:
+npm error code 1
+npm error path /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
+npm error workspace @bisellium/web@0.0.1
+npm error location /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
+npm error command failed
+npm error command sh -c playwright test --config=playwright.serve.config.ts tests-serve/board.spec.ts --grep 'W-087 behaviour 2:'

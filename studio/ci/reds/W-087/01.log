@@ -1,0 +1,53 @@
+# behaviour: 1
+# command: npm --workspace @bisellium/web run test:serve -- tests-serve/board.spec.ts --grep W-087 behaviour 1:
+# exit: 1
+# at: 2026-10-01T06:53:26.491Z
+# sella: builder-codex.W-087
+# tree: tree:33d5ef6a088a41078fc36bfeb9b355934c78da27
+
+
+> @bisellium/web@0.0.1 test:serve
+> playwright test --config=playwright.serve.config.ts tests-serve/board.spec.ts --grep W-087 behaviour 1:
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests-serve/board.spec.ts:621:3 › W-087 behaviour 1: bounded titles retain their native full-title affordance › a 300-character mixed title clamps to four lines while a short card remains 64px (6.0s)
+
+
+  1) [chromium] › tests-serve/board.spec.ts:621:3 › W-087 behaviour 1: bounded titles retain their native full-title affordance › a 300-character mixed title clamps to four lines while a short card remains 64px 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  locator('.board__card[data-card-id="W-002"]').locator('.board__card-title')
+    Expected: "Several ordinary words must wrap before this unbroken token xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" locator('.board__card[data-card-id="W-002"]').locator('.board__card-title') with timeout 5000ms
+      - waiting for locator('.board__card[data-card-id="W-002"]').locator('.board__card-title')
+        14 × locator resolved to <span class="board__card-title">Several ordinary words must wrap before this unbr…</span>
+           - unexpected value "null"
+
+
+      632 |     const titleNode = card.locator(".board__card-title");
+      633 |     await expect(titleNode).toHaveText(title);
+    > 634 |     await expect(titleNode).toHaveAttribute("title", title);
+          |                             ^
+      635 |
+      636 |     const titleMetrics = await titleNode.evaluate((el) => {
+      637 |       const style = getComputedStyle(el);
+        at /home/edckt/projects/bisellium/.worktrees/W-087/apps/web/tests-serve/board.spec.ts:634:29
+
+    Error Context: test-results/board-W-087-behaviour-1-bo-1467d-e-a-short-card-remains-64px-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests-serve/board.spec.ts:621:3 › W-087 behaviour 1: bounded titles retain their native full-title affordance › a 300-character mixed title clamps to four lines while a short card remains 64px 
+npm error Lifecycle script `test:serve` failed with error:
+npm error code 1
+npm error path /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
+npm error workspace @bisellium/web@0.0.1
+npm error location /home/edckt/projects/bisellium/.worktrees/W-087/apps/web
+npm error command failed
+npm error command sh -c playwright test --config=playwright.serve.config.ts tests-serve/board.spec.ts --grep 'W-087 behaviour 1:'
