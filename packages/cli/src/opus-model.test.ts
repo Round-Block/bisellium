@@ -893,30 +893,32 @@ if (runs(2)) {
       { now: NOW, stdin: disposition },
     ));
 
-    const reviewAuthRoot = scratch("b2-sole-censor-review");
-    writeManifest(reviewAuthRoot);
-    writeOpus(reviewAuthRoot, "W-021", [
-      'title: "only the QA magister may pass review"',
+    const legacyReviewRoot = scratch("b2-non-ui-review");
+    writeManifest(legacyReviewRoot);
+    writeOpus(legacyReviewRoot, "W-021", [
+      'title: "non-UI review keeps its legacy signer contract"',
       "kind: task",
       "collegium: engineering",
       "state: building",
       "probationes: {}",
     ]);
-    writeFileSync(join(reviewAuthRoot, "ci", "review.log"), "review evidence\n");
-    const reviewAuthPath = join(reviewAuthRoot, "opera", "W-021.md");
-    const reviewAuthBefore = readFileSync(reviewAuthPath, "utf8");
-    const wrongReviewPass = captureErrors(() => runReview(
-      ["W-021", "--pass", "--evidence", "ci/review.log", "--sella", "eng-lead", "--studio", reviewAuthRoot],
+    writeFileSync(join(legacyReviewRoot, "ci", "review.log"), "review evidence\n");
+    const legacyReviewPass = captureErrors(() => runReview(
+      ["W-021", "--pass", "--evidence", "ci/review.log", "--sella", "eng-lead", "--studio", legacyReviewRoot],
       { now: NOW },
     ));
-    const wrongReviewPassRefused =
-      wrongReviewPass.value.exitCode !== 0 &&
-      readFileSync(reviewAuthPath, "utf8") === reviewAuthBefore &&
-      wrongReviewPass.errors.some((line) => /censor|qa-lead/i.test(line));
-    const rightReviewPass = captureErrors(() => runReview(
-      ["W-021", "--pass", "--evidence", "ci/review.log", "--sella", "qa-lead", "--studio", reviewAuthRoot],
+    const legacyReviewGate = (front(legacyReviewRoot, "W-021")["probationes"] as Record<string, Record<string, unknown>>)["review"];
+
+    const uiReviewPath = join(censorRoot, "opera", "W-020.md");
+    const uiReviewBefore = readFileSync(uiReviewPath, "utf8");
+    const wrongUiReviewPass = captureErrors(() => runReview(
+      ["W-020", "--pass", "--evidence", "ci/W-020-review-1.log", "--sella", "eng-lead", "--studio", censorRoot],
       { now: NOW },
     ));
+    const wrongUiReviewPassRefused =
+      wrongUiReviewPass.value.exitCode !== 0 &&
+      readFileSync(uiReviewPath, "utf8") === uiReviewBefore &&
+      wrongUiReviewPass.errors.some((line) => /censor|qa-lead/i.test(line));
 
     const citationProblems = (tag: string, gateSella: string, headerSella: string): string[] => {
       const citationRoot = scratch(`b2-citation-${tag}`);
@@ -984,8 +986,8 @@ if (runs(2)) {
         malformedFenceStaysOpen: malformedFenceProblems.length > 0,
         wrongBuildVerdictRefused,
         rightBuildVerdictAccepted: rightBuildVerdict.value.exitCode === 0,
-        wrongReviewPassRefused,
-        rightReviewPassAccepted: rightReviewPass.value.exitCode === 0,
+        legacyReviewPassAccepted: legacyReviewPass.value.exitCode === 0 && legacyReviewGate?.["sella"] === "eng-lead",
+        wrongUiReviewPassRefused,
         wrongGateCitation,
         wrongHeaderCitation,
       },
@@ -1023,8 +1025,8 @@ if (runs(2)) {
         malformedFenceStaysOpen: true,
         wrongBuildVerdictRefused: true,
         rightBuildVerdictAccepted: true,
-        wrongReviewPassRefused: true,
-        rightReviewPassAccepted: true,
+        legacyReviewPassAccepted: true,
+        wrongUiReviewPassRefused: true,
         wrongGateCitation: ["review gate sella must be the censor qa-lead"],
         wrongHeaderCitation: ["review evidence header sella must be the censor qa-lead"],
       },
@@ -1061,7 +1063,7 @@ if (runs(3)) {
     const reviewEvidence = writeReviewEvidence(reviewRoot, "W-016", reviewInput, "W-016-review.log");
     const reviewBefore = readFileSync(join(reviewRoot, "opera", "W-016.md"), "utf8");
     const reviewWithoutServed = capture(() =>
-      runReview(["W-016", "--pass", "--evidence", reviewEvidence, "--sella", "eng-lead", "--studio", reviewRoot], { now: NOW }),
+      runReview(["W-016", "--pass", "--evidence", reviewEvidence, "--sella", "qa-lead", "--studio", reviewRoot], { now: NOW }),
     );
 
     const repo = scratch("b3-review-stale-source");
@@ -1089,7 +1091,7 @@ if (runs(3)) {
     git(repo, ["switch", "-qc", "opus/W-017"]);
     const staleBefore = readFileSync(join(staleRoot, "opera", "W-017.md"), "utf8");
     const staleReview = capture(() =>
-      runReview(["W-017", "--pass", "--evidence", staleReviewEvidence, "--sella", "eng-lead", "--studio", staleRoot], { now: NOW }),
+      runReview(["W-017", "--pass", "--evidence", staleReviewEvidence, "--sella", "qa-lead", "--studio", staleRoot], { now: NOW }),
     );
 
     const runServedSpy = (tag: string, failAt?: number): { status: number | null; calls: string[] } => {

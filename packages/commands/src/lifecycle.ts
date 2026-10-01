@@ -560,6 +560,7 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
 
+  const currentFront = readFront<NativeRecord>(opusPath).data;
   const reviewProbatioId = (manifest as unknown as { review_probatio?: string }).review_probatio ?? "review";
   const reviewSellaResult = resolveSella(values.get("--sella"), manifest, opusId, "review");
   if (typeof reviewSellaResult !== "string") {
@@ -567,7 +568,7 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
   const sella = reviewSellaResult;
-  if (pass) {
+  if (pass && currentFront.kind === "ui") {
     const censor = censorSella(manifest);
     if (!censor) {
       console.error("review --pass cannot identify the manifest QA magister censor");
@@ -580,7 +581,6 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   }
   const status = pass ? "passed" : "failed";
   const model = values.get("--model");
-  const currentFront = readFront<NativeRecord>(opusPath).data;
   const currentGates =
     typeof currentFront.probationes === "object" && currentFront.probationes !== null && !Array.isArray(currentFront.probationes)
       ? (currentFront.probationes as Record<string, unknown>)
