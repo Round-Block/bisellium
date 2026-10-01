@@ -8,7 +8,7 @@
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { lstatSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { NATIVE_OPUS_KINDS, type NativeOpusKind } from "@bisellium/schema";
@@ -193,6 +193,7 @@ export interface ContainedFile {
   absolute: string;
   relative: string;
   bytes: Buffer;
+  mode: number;
 }
 
 /**
@@ -206,17 +207,30 @@ export function readContainedRegularFile(root: string, relPath: string, expected
   const parts = rel.split(sep);
   if (isAbsolute(rel) || parts[0] === ".." || parts[0] !== expectedDir) return { error: `path must remain under ${expectedDir}/` };
   try {
-    let cursor = resolve(root);
+    const rootPath = resolve(root);
+    if (lstatSync(rootPath).isSymbolicLink()) return { error: "officina root must not be a symlink" };
+    let cursor = rootPath;
     for (const part of parts) {
       cursor = join(cursor, part);
       if (lstatSync(cursor).isSymbolicLink()) return { error: "path reaches its target through a symlink" };
     }
-    if (!statSync(lexical).isFile()) return { error: "target is not a regular file" };
-    const rootReal = realpathSync(root);
-    const real = realpathSync(lexical);
-    const realRel = relative(rootReal, real);
-    if (isAbsolute(realRel) || realRel.split(sep)[0] === ".." || realRel.split(sep)[0] !== expectedDir) return { error: `real target escapes ${expectedDir}/` };
-    return { absolute: lexical, relative: parts.join("/"), bytes: readFileSync(lexical) };
+    const rootReal = realpathSync(rootPath);
+    const parentReal = realpathSync(resolve(lexical, ".."));
+    const parentRel = relative(rootReal, parentReal);
+    if (isAbsolute(parentRel) || parentRel.split(sep)[0] === ".." || parentRel.split(sep)[0] !== expectedDir)
+      return { error: `real parent escapes ${expectedDir}/` };
+    const fd = openSync(lexical, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const opened = fstatSync(fd);
+      if (!opened.isFile()) return { error: "target is not a regular file" };
+      const real = realpathSync(lexical);
+      const realRel = relative(rootReal, real);
+      if (isAbsolute(realRel) || realRel.split(sep)[0] === ".." || realRel.split(sep)[0] !== expectedDir)
+        return { error: `real target escapes ${expectedDir}/` };
+      return { absolute: lexical, relative: parts.join("/"), bytes: readFileSync(fd), mode: opened.mode };
+    } finally {
+      closeSync(fd);
+    }
   } catch (error) {
     return { error: (error as Error).message };
   }
@@ -423,11 +437,12 @@ function contentLines(markdown: string): { headings: { level: number; name: stri
       }
       line = line.slice(0, start) + line.slice(end + 3);
     }
-    const heading = /^(#{1,2})\s+(.+?)\s*$/.exec(line.trim());
+    const heading = /^(#{1,6})\s+(.+?)\s*$/.exec(line.trim());
     if (heading) {
       const name = heading[2]!.trim();
-      headings.push({ level: heading[1]!.length, name, line: index });
-      section = heading[1]!.length === 2 ? name : undefined;
+      const level = heading[1]!.length;
+      headings.push({ level, name, line: index });
+      if (level <= 2) section = level === 2 ? name : undefined;
       continue;
     }
     if (line.trim() !== "") lines.push({ text: line.trim(), section });
@@ -445,7 +460,7 @@ function hasPlaceholder(text: string): boolean {
   ).test(folded);
 }
 
-export function substantiveUiTranscript(body: string, outcome: string, prompt: string): string[] {
+export function substantiveUiTranscript(body: string, outcome: string, prompt?: string): string[] {
   const problems: string[] = [];
   const parsed = contentLines(body);
   const findingsHeadings = parsed.headings.filter((heading) => heading.level === 2 && heading.name === "Findings");
@@ -477,9 +492,11 @@ export function substantiveUiTranscript(body: string, outcome: string, prompt: s
     .filter((line) => !structural(line))
     .map((line) => line.replace(/^[1-9][0-9]*\.\s+/, ""))
     .join(" ");
-  const comparison = comparePrompt(retained, prompt);
-  if (!comparison.accepted)
-    problems.push(`dispatch-prompt comparison rejected (${comparison.shared}/${comparison.transcript} shared; ${comparison.novel} novel distinct shingles)`);
+  if (prompt !== undefined) {
+    const comparison = comparePrompt(retained, prompt);
+    if (!comparison.accepted)
+      problems.push(`dispatch-prompt comparison rejected (${comparison.shared}/${comparison.transcript} shared; ${comparison.novel} novel distinct shingles)`);
+  }
   return [...new Set(problems)];
 }
 
@@ -487,7 +504,7 @@ export interface UiPolicyContext {
   root: string;
   record: NativeRecord;
   manifest: Pick<Manifest, "sellae" | "probationes"> & { review_probatio?: unknown };
-  phase: "check" | "ready" | "done";
+  phase: "check" | "ready" | "review" | "done";
 }
 
 export function validateRecordReferences(root: string, record: NativeRecord): OpusModelProblem[] {
@@ -550,13 +567,13 @@ function authoritativeUiInput(root: string, record: NativeRecord, expectedDigest
   if (!DIGEST.test(digest) || digest !== expectedDigest) problems.push("latest ui-lead verdict has a missing, malformed or stale design_digest");
   const promptRel = h.values.get("dispatch_prompt");
   if (!promptRel) problems.push("latest ui-lead verdict has no dispatch_prompt header");
-  let prompt = "";
+  let prompt: string | undefined;
   if (promptRel) {
     const file = readContainedRegularFile(root, promptRel, "ci");
     if ("error" in file) problems.push(`dispatch prompt is unsafe or unreadable: ${file.error}`);
     else prompt = file.bytes.toString("utf8");
   }
-  if (promptRel && prompt !== "") problems.push(...substantiveUiTranscript(h.body, outcome, prompt));
+  problems.push(...substantiveUiTranscript(h.body, outcome, prompt));
   if (problems.length) return { problems };
   return { input: { relative: latest.relative, header: h, round: latest.round, at, digest }, problems };
 }
@@ -694,7 +711,7 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   if (needsInput || input.input || input.problems.some((problem) => !problem.startsWith("no ui-lead")))
     for (const message of input.problems) addPolicyProblem("opus.ui.design", message);
   const served = validateServed(root, record);
-  const needsServed = phase === "done" || state === "review" || state === "done";
+  const needsServed = phase === "review" || phase === "done" || state === "review" || state === "done";
   if (needsServed) for (const message of served.problems) addPolicyProblem("opus.ui.e2e", message);
   if ((phase === "done" || state === "done" || reviewGate["status"] === "passed") && input.input && design.digest)
     for (const message of reviewCitation(root, record, input.input, design.digest, reviewId)) addPolicyProblem("opus.ui.design", message);
@@ -764,6 +781,10 @@ export function validateProtectedRecords(repoArg: string, studioRoot: string, re
   const problems: string[] = [];
   let current = record;
   try {
+    const repoReal = realpathSync(repo);
+    const studioReal = realpathSync(studioRoot);
+    if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
+      throw new Error("repository identity does not contain the selected native studio at studio/");
     if (!current) {
       const contained = readContainedRegularFile(studioRoot, "opera/W-096.md", "opera");
       if ("error" in contained) throw new Error(`W-096 record is unsafe or unreadable: ${contained.error}`);
@@ -774,19 +795,24 @@ export function validateProtectedRecords(repoArg: string, studioRoot: string, re
     if (!baseline || !/^[0-9a-f]{40}$/.test(baseline)) return { ok: false, protectedPaths, problems: ["baseline_commit is missing or is not a full lowercase commit id"] };
     git(repo, ["cat-file", "-e", `${baseline}^{commit}`]);
     git(repo, ["cat-file", "-e", "origin/master^{commit}"]);
+    const shallow = git(repo, ["rev-parse", "--is-shallow-repository"]).trim();
+    if (shallow !== "false") throw new Error("repository history is shallow or incomplete");
     if (!isAncestor(repo, baseline, "origin/master")) problems.push("baseline_commit is not an ancestor of origin/master");
     if (!isAncestor(repo, baseline, "HEAD")) problems.push("baseline_commit is not an ancestor of HEAD");
 
-    const studioRel = relative(repo, studioRoot).split(sep).join("/");
+    const studioRel = relative(repo, resolve(studioRoot)).split(sep).join("/");
     if (studioRel !== "studio") problems.push("W-096 preservation requires the native studio at repo path studio/");
     const history = git(repo, ["log", "--reverse", "--format=%H", "--", "studio/opera/W-096.md"]).trim().split("\n").filter(Boolean);
     let introduced: string | undefined;
     for (const commit of history) {
       let raw: string;
-      try { raw = git(repo, ["show", `${commit}:studio/opera/W-096.md`]); } catch { continue; }
+      try { raw = git(repo, ["show", `${commit}:studio/opera/W-096.md`]); }
+      catch (error) { throw new Error(`record history is incomplete at ${commit}: ${(error as Error).message}`); }
       const split = splitFront(raw);
-      if (!split) continue;
-      const data = parseDocument(split.front).toJS() as NativeRecord;
+      if (!split) throw new Error(`record history is malformed at ${commit}`);
+      const historical = parseDocument(split.front);
+      if (historical.errors.length) throw new Error(`record history is malformed at ${commit}`);
+      const data = historical.toJS() as NativeRecord;
       if (typeof data["baseline_commit"] === "string") { introduced = data["baseline_commit"] as string; break; }
     }
     if (!introduced) problems.push("baseline_commit has no verifiable first introduction in record history");
@@ -810,17 +836,12 @@ export function validateProtectedRecords(repoArg: string, studioRoot: string, re
       if (!head || head[1] !== match[1]) { problems.push(`${path}: missing, renamed, non-regular or mode-changed at HEAD`); continue; }
       const headBytes = execFileSync("git", ["show", `HEAD:${path}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 }) as Buffer;
       if (!baselineBytes.equals(headBytes)) problems.push(`${path}: bytes differ from baseline at HEAD`);
-      const working = join(repo, path);
-      try {
-        const st = lstatSync(working);
-        if (!st.isFile() || st.isSymbolicLink()) problems.push(`${path}: working-tree entry is not a regular file`);
-        else {
-          const mode = st.mode & 0o111 ? "100755" : "100644";
-          if (mode !== match[1]) problems.push(`${path}: working-tree mode differs from baseline`);
-          if (!baselineBytes.equals(readFileSync(working))) problems.push(`${path}: working-tree bytes differ from baseline`);
-        }
-      } catch {
-        problems.push(`${path}: missing from working tree`);
+      const working = readContainedRegularFile(repo, path, path.split("/")[0]!);
+      if ("error" in working) problems.push(`${path}: working-tree entry is unsafe or unreadable: ${working.error}`);
+      else {
+        const mode = working.mode & 0o111 ? "100755" : "100644";
+        if (mode !== match[1]) problems.push(`${path}: working-tree mode differs from baseline`);
+        if (!baselineBytes.equals(working.bytes)) problems.push(`${path}: working-tree bytes differ from baseline`);
       }
     }
     protectedPaths.sort();

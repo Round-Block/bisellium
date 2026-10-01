@@ -137,7 +137,7 @@ function nativePreflight(
   manifest: Manifest,
   opusId: string,
   record: NativeRecord,
-  phase: "check" | "ready" | "done" = "check",
+  phase: "check" | "ready" | "review" | "done" = "check",
 ): OpusModelProblem[] {
   const loaded = loadNativeRecords(root);
   const problems = loaded.problems.map(({ problem }) => problem);
@@ -542,12 +542,9 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
 
-  if (!isContained(root, evidence)) {
-    console.error(`${opusId}: --evidence "${evidence}" resolves outside the officina (D-008) — refused`);
-    return { exitCode: 2 };
-  }
-  if (!existsSync(join(root, evidence))) {
-    console.error(`--evidence "${evidence}" not found under studio`);
+  const containedEvidence = readContainedRegularFile(root, evidence, "ci");
+  if ("error" in containedEvidence) {
+    console.error(`${opusId}: --evidence "${evidence}" is unsafe or unreadable: ${containedEvidence.error}`);
     return { exitCode: 2 };
   }
 
@@ -580,7 +577,14 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
       [reviewProbatioId]: { status, evidence, sella, at: now.toISOString(), ...(model === undefined ? {} : { model }) },
     },
   };
-  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedReview))) return { exitCode: 1 };
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedReview, pass ? "review" : "check"))) return { exitCode: 1 };
+  if (pass) {
+    const sourceProblem = uiSourceProblem(root, manifest, proposedReview);
+    if (sourceProblem) {
+      console.error(`${opusId}: opus.ui.e2e: ${sourceProblem}`);
+      return { exitCode: 1 };
+    }
+  }
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["probationes", reviewProbatioId, "sella"], sella);

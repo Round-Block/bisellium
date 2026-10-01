@@ -450,10 +450,9 @@ UI's effective probationes always include reserved automated gate
 `served-e2e`, command `node scripts/served-e2e.mjs`, even when the manifest
 does not declare it. A same-id declaration must have exactly that automated
 shape. `verify` builds the web application and then runs its served-browser
-suite, recording a timestamp, log and SOURCE certificate. Review and done
-require a corroborating successful result; done additionally requires the
-current clean SOURCE tree to match it. Non-UI opera retain the manifest's
-ordinary gate list.
+suite, recording a timestamp, log and SOURCE certificate. A passed review and
+done both require a corroborating successful result bound to the current clean
+SOURCE tree. Non-UI opera retain the manifest's ordinary gate list.
 
 The censor remains the sole review signer. A passed UI review cites the
 authoritative UI input and current design digest in its verdict header and
@@ -700,12 +699,18 @@ W-096 has an additional, opus-scoped preservation boundary. Its producer-run
 `baseline_commit` on the owning branch. The trunk copy is never changed by
 the writer, and the pin is never inferred or repinned later.
 
-On `opus/W-096` (and when verification explicitly targets W-096),
+For ordinary `check`, the owning branch is Git's current symbolic branch and
+must equal the canonical owner ref `opus/W-096`; other branches do not replay
+this boundary after merge. When that owning branch is active, omitted or
+unresolvable repository identity fails closed rather than disabling the rule.
+Verification explicitly targeting W-096 applies the boundary independently of
+the current branch. In either applicable context,
 `opus.records_unchanged` enumerates the direct `studio/opera/*.md` and
 `examples/sample-studio/opera/*.md` blobs at that immutable baseline, except
 W-096 itself. It compares raw bytes and regular-file mode at both HEAD and the
-working tree. Deletion, rename, symlink substitution, mode/byte changes,
-untrusted ancestry or unavailable Git history fail closed. New records are
+working tree. Deletion, rename, a symlink leaf or intervening symlink directory,
+mode/byte changes, shallow/incomplete history, untrusted ancestry or unavailable
+Git identity fail closed. New records are
 outside the pinned set; they cannot replace or exempt an old one. `check` and
 `verify` call the same comparison helper.
 

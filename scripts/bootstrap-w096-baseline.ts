@@ -6,8 +6,10 @@
  * the exceptional branch described by the brief, then writes its fixed
  * reviewed branch point through the same guarded front-matter writer.
  * Tests may set BISELLIUM_W096_BOOTSTRAP_EXPECTED_BASE to a temporary
- * repository's branch point.  That test-only override is otherwise inert;
- * production keeps the fixed reviewed commit below.
+ * repository's branch point only together with the explicit
+ * BISELLIUM_W096_BOOTSTRAP_TEST_SEAM=1 marker.  Supplying the expected-base
+ * override without that marker is a refusal, so production cannot activate
+ * the test seam accidentally and keeps the fixed reviewed commit below.
  */
 import { spawnSync } from "node:child_process";
 import { resolve, relative, sep } from "node:path";
@@ -22,7 +24,10 @@ import {
 } from "@bisellium/commands/opus-model.js";
 
 export const W096_BOOTSTRAP_BASELINE = "0935d518d576f5e1cf81079d631b8b10a5d76742";
-const EXPECTED_BASELINE = process.env["BISELLIUM_W096_BOOTSTRAP_EXPECTED_BASE"] ?? W096_BOOTSTRAP_BASELINE;
+const EXPECTED_BASELINE_OVERRIDE = process.env["BISELLIUM_W096_BOOTSTRAP_EXPECTED_BASE"];
+const BOOTSTRAP_TEST_SEAM = process.env["BISELLIUM_W096_BOOTSTRAP_TEST_SEAM"] === "1";
+const EXPECTED_BASELINE =
+  BOOTSTRAP_TEST_SEAM && EXPECTED_BASELINE_OVERRIDE ? EXPECTED_BASELINE_OVERRIDE : W096_BOOTSTRAP_BASELINE;
 const RECORD_REL = "studio/opera/W-096.md";
 const EXPECTED_UNPINNED_HISTORY_PROBLEM = "baseline_commit has no verifiable first introduction in record history";
 
@@ -55,6 +60,8 @@ function gitFailure(result: GitResult, fallback: string): string {
  * result therefore always leaves the W-096 record byte-identical.
  */
 export function bootstrapW096Baseline(repoArg: string, studioArg: string): BootstrapResult {
+  if (EXPECTED_BASELINE_OVERRIDE !== undefined && !BOOTSTRAP_TEST_SEAM)
+    return { ok: false, error: "BISELLIUM_W096_BOOTSTRAP_EXPECTED_BASE requires BISELLIUM_W096_BOOTSTRAP_TEST_SEAM=1" };
   const repo = resolve(repoArg);
   const studio = resolve(studioArg);
   if (relative(repo, studio).split(sep).join("/") !== "studio")

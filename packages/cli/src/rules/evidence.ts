@@ -13,10 +13,10 @@
  * `bisellium red`'s job alone.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { listMd, readFront } from "@bisellium/adapter-native";
-import { currentBranch, validateProtectedRecords } from "@bisellium/commands/opus-model.js";
+import { listMd, parseFrontMatter } from "@bisellium/adapter-native";
+import { currentBranch, readContainedRegularFile, validateProtectedRecords } from "@bisellium/commands/opus-model.js";
 import type { Finding, RuleOpts } from "../check.js";
 
 type Dict = Record<string, unknown>;
@@ -26,9 +26,12 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 const ACTIVE = new Set(["building", "verifying", "review"]);
 const TIMEOUT_MS = 30_000;
 
-function safeFront(path: string): Dict | undefined {
+function safeFront(root: string, path: string): Dict | undefined {
   try {
-    const fm = readFront<unknown>(path);
+    const rel = relative(root, path).split(sep).join("/");
+    const contained = readContainedRegularFile(root, rel, "opera");
+    if ("error" in contained) return undefined;
+    const fm = parseFrontMatter<unknown>(contained.bytes.toString("utf8"), path);
     return isDict(fm.data) ? fm.data : undefined;
   } catch {
     return undefined;
@@ -76,7 +79,7 @@ function checkUntracked(root: string, opts: RuleOpts): Finding[] {
 
   const findings: Finding[] = [];
   for (const p of safeList(join(root, "opera"))) {
-    const d = safeFront(p);
+    const d = safeFront(root, p);
     if (!d) continue;
     const state = str(d["state"]);
     if (!state || !ACTIVE.has(state)) continue;
@@ -160,7 +163,7 @@ function checkRedEvidence(root: string): Finding[] {
 
   const findings: Finding[] = [];
   for (const p of safeList(join(root, "opera"))) {
-    const d = safeFront(p);
+    const d = safeFront(root, p);
     if (!d) continue;
     const state = str(d["state"]);
     if (!state || !ACTIVE.has(state)) continue;
@@ -168,18 +171,18 @@ function checkRedEvidence(root: string): Finding[] {
     const spec = str(d["spec"]);
     if (!id || !spec) continue;
 
-    const briefAbs = resolve(root, spec);
-    const briefRel = relative(root, briefAbs);
-    if (isAbsolute(briefRel) || briefRel.split(sep)[0] === "..") continue; // must resolve inside the officina
-
-    let briefText: string;
-    try {
-      briefText = readFileSync(briefAbs, "utf8");
-    } catch {
+    const where = relative(root, p).split(sep).join("/");
+    const brief = readContainedRegularFile(root, spec, "briefs");
+    if ("error" in brief) {
+      findings.push({
+        rule: "opus.red_evidence",
+        level: "block",
+        where,
+        message: `brief evidence is unsafe or unreadable: ${brief.error}`,
+      });
       continue;
     }
-
-    const where = relative(root, p).split(sep).join("/");
+    const briefText = brief.bytes.toString("utf8");
     const n = countBehaviours(briefText);
     if (n === 0) {
       findings.push({
@@ -196,18 +199,13 @@ function checkRedEvidence(root: string): Finding[] {
     const moduleLoad: number[] = [];
     const logTexts = new Map<number, string>();
     for (let nn = 1; nn <= n; nn++) {
-      const logPath = join(redsDir, id, `${String(nn).padStart(2, "0")}.log`);
-      if (!existsSync(logPath)) {
+      const logRel = `ci/reds/${id}/${String(nn).padStart(2, "0")}.log`;
+      const log = readContainedRegularFile(root, logRel, "ci");
+      if ("error" in log) {
         missing.push(nn);
         continue;
       }
-      let logText: string;
-      try {
-        logText = readFileSync(logPath, "utf8");
-      } catch {
-        missing.push(nn);
-        continue;
-      }
+      const logText = log.bytes.toString("utf8");
       logTexts.set(nn, logText);
       const exit = parseLogHeader(logText).get("exit");
       if (exit === undefined || !/^-?\d+$/.test(exit) || exit === "0") notRed.push(nn);
@@ -301,15 +299,13 @@ export function isW096AssertionRed(text: string, behaviour: number): boolean {
 
 function checkW096AssertionReds(root: string): Finding[] {
   const path = join(root, "opera", "W-096.md");
-  const record = safeFront(path);
+  const record = safeFront(root, path);
   const state = record ? str(record["state"]) : undefined;
   if (!state || !new Set(["building", "verifying", "review", "done"]).has(state)) return [];
   const bad: number[] = [];
   for (let behaviour = 1; behaviour <= 7; behaviour++) {
-    try {
-      const text = readFileSync(join(root, "ci", "reds", "W-096", `${String(behaviour).padStart(2, "0")}.log`), "utf8");
-      if (!isW096AssertionRed(text, behaviour)) bad.push(behaviour);
-    } catch {
+    const log = readContainedRegularFile(root, `ci/reds/W-096/${String(behaviour).padStart(2, "0")}.log`, "ci");
+    if ("error" in log || !isW096AssertionRed(log.bytes.toString("utf8"), behaviour)) {
       bad.push(behaviour);
     }
   }
@@ -319,10 +315,32 @@ function checkW096AssertionReds(root: string): Finding[] {
 }
 
 function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
-  if (!opts.repo) return [];
-  if (relative(resolve(opts.repo), resolve(root)).split(sep).join("/") !== "studio") return [];
-  const record = safeFront(join(root, "opera", "W-096.md"));
-  if (currentBranch(opts.repo) !== "opus/W-096" && typeof record?.["baseline_commit"] !== "string") return [];
+  const record = safeFront(root, join(root, "opera", "W-096.md"));
+  const state = record ? str(record["state"]) : undefined;
+  const appearsActive = state !== undefined && new Set(["building", "verifying", "review"]).has(state);
+  const unverifiable = (message: string): Finding[] => [{
+    rule: "opus.records_unchanged",
+    level: "block",
+    where: "opera/W-096.md",
+    message: `preservation is unverifiable: ${message}`,
+  }];
+  if (!opts.repo) return appearsActive ? unverifiable("repository context (--repo) is absent") : [];
+
+  try {
+    const repoReal = realpathSync(resolve(opts.repo));
+    const studioReal = realpathSync(resolve(root));
+    if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
+      return appearsActive ? unverifiable("selected studio is not the native studio inside the supplied repository") : [];
+  } catch {
+    return appearsActive ? unverifiable("repository or studio identity cannot be resolved") : [];
+  }
+
+  // The owning branch is determined from Git's current symbolic branch and
+  // must equal the record owner's canonical ref, opus/W-096. Other branches
+  // do not replay this opus-specific boundary after the record is merged.
+  const branch = currentBranch(opts.repo);
+  if (branch === undefined) return appearsActive ? unverifiable("repository identity or current branch is unavailable") : [];
+  if (branch !== "opus/W-096") return [];
   const result = validateProtectedRecords(opts.repo, root);
   if (result.ok) return [];
   return result.problems.map((message) => ({ rule: "opus.records_unchanged", level: "block" as const, where: "opera/W-096.md", message }));
@@ -398,13 +416,10 @@ function stripBacktickSpans(text: string): string {
 function checkBehaviourCitations(root: string): Finding[] {
   const findings: Finding[] = [];
   for (const p of safeList(join(root, "briefs"))) {
-    let briefText: string;
-    try {
-      if (!lstatSync(p).isFile()) continue;
-      briefText = readFileSync(p, "utf8");
-    } catch {
-      continue;
-    }
+    const rel = relative(root, p).split(sep).join("/");
+    const contained = readContainedRegularFile(root, rel, "briefs");
+    if ("error" in contained) continue;
+    const briefText = contained.bytes.toString("utf8");
 
     const declared = countBehaviours(briefText);
     if (declared === 0) continue;
