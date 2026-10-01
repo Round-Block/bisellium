@@ -1,0 +1,8 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/ids.test.ts . --behaviour 1
+# exit: 1
+# at: 2026-10-01T08:45:43.885Z
+# sella: builder-codex.W-101
+# tree: tree:6b5a091d034e6f4e4d9eec87a01ba9c55d86811f
+
+FAIL  b1 newItem and runNew allocate max-plus-one from each ref source and the dirty tree         first local branch decisive/newItem: expected=W-010 actual=W-005 target=false sentinel=true added=["W-005.md"] | first local branch decisive/runNew: expected=W-010 actual=W-005 target=false sentinel=true added=["W-005.md"] | second local branch decisive/newItem: expected=W-012 actual=W-005 target=false sentinel=true added=["W-005.md"] | second local branch decisive/runNew: expected=W-012 actual=W-005 target=false sentinel=true added=["W-005.md"] | remote-tracking ref decisive/newItem: expected=W-014 actual=W-005 target=false sentinel=true added=["W-005.md"] | remote-tracking ref decisive/runNew: expected=W-014 actual=W-005 target=false sentinel=true added=["W-005.md"]

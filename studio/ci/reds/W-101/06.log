@@ -1,0 +1,8 @@
+# behaviour: 6
+# command: node --import tsx packages/cli/src/ids.test.ts . --behaviour 6
+# exit: 1
+# at: 2026-10-01T08:45:51.519Z
+# sella: builder-codex.W-101
+# tree: tree:6b5a091d034e6f4e4d9eec87a01ba9c55d86811f
+
+FAIL  b6 sample and real officinae stay isolated through aliases, linked worktrees and unrelated cwd normal={"sample":{"status":0,"stdout":"W-008\n","stderr":""},"studio":{"status":0,"stdout":"W-002\n","stderr":""}} | symlink={"sample":{"status":0,"stdout":"W-008\n","stderr":""},"studio":{"status":0,"stdout":"W-002\n","stderr":""}} | linked={"sample":{"status":0,"stdout":"W-008\n","stderr":""},"studio":{"status":0,"stdout":"W-002\n","stderr":""}}

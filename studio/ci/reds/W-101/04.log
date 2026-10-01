@@ -1,0 +1,8 @@
+# behaviour: 4
+# command: node --import tsx packages/cli/src/ids.test.ts . --behaviour 4
+# exit: 1
+# at: 2026-10-01T08:45:48.761Z
+# sella: builder-codex.W-101
+# tree: tree:6b5a091d034e6f4e4d9eec87a01ba9c55d86811f
+
+FAIL  b4 cached origin W-005 yields W-006 without network; explicit fetch of W-009 yields W-010   {"first":{"status":0,"stdout":"W-002\n","stderr":""},"commands":[],"forbidden":false,"second":{"status":0,"stdout":"W-003\n","stderr":""}}

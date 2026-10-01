@@ -1,0 +1,8 @@
+# behaviour: 2
+# command: node --import tsx packages/cli/src/ids.test.ts . --behaviour 2
+# exit: 1
+# at: 2026-10-01T08:45:45.462Z
+# sella: builder-codex.W-101
+# tree: tree:6b5a091d034e6f4e4d9eec87a01ba9c55d86811f
+
+FAIL  b2 all five allocator rows use the shared ids seam and observe off-branch maxima            draftRetro lesson=lessons/L-002.md | draftRetro petitio=petitiones/P-001.md | talk={"result":{"exitCode":0},"logs":["PETITIO: ref-aware escalation","petitio P-001 opened"]} | source census expected=["packages/cli/src/new.ts:newItem","packages/cli/src/new.ts:runNew","packages/cli/src/retro.ts:draftRetro","packages/cli/src/retro.ts:draftRetro","packages/commands/src/talk.ts:openPetitio"] actual=[] | old local max scanner remains

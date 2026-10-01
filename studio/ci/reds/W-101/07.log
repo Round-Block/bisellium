@@ -1,0 +1,8 @@
+# behaviour: 7
+# command: node --import tsx packages/cli/src/ids.test.ts . --behaviour 7
+# exit: 1
+# at: 2026-10-01T08:45:53.989Z
+# sella: builder-codex.W-101
+# tree: tree:6b5a091d034e6f4e4d9eec87a01ba9c55d86811f
+
+FAIL  b7 retro keeps consecutive recurrence semantics and --brief refuses/rolls back collision    brief collision={"status":0,"stdout":"W-001\n","stderr":""} brief="# W-001 — must not overwrite brief\n\n## Intent\n\nTODO.\n\n## Files owned\n\nTODO.\n\n## Interfaces\n\nTODO.\n\n## Behaviours to test\n\nTODO.\n\n## Acceptance\n\nTODO.\n\n## Out of scope\n\nTODO.\n" opus=true

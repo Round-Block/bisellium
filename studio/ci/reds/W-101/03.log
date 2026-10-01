@@ -1,0 +1,8 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/ids.test.ts . --behaviour 3
+# exit: 1
+# at: 2026-10-01T08:45:46.570Z
+# sella: builder-codex.W-101
+# tree: tree:6b5a091d034e6f4e4d9eec87a01ba9c55d86811f
+
+FAIL  b3 Git failures warn and discard partial refs; filesystem failures retain caller errors     non-repo={"status":0,"stdout":"W-005\n","stderr":""} | no-git={"status":0,"stdout":"W-005\n","stderr":""} | discovery={"status":0,"stdout":"W-005\n","stderr":""} | refs={"status":0,"stdout":"W-005\n","stderr":""} | tree={"status":0,"stdout":"W-005\n","stderr":""}
