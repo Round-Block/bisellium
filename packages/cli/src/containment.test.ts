@@ -336,11 +336,6 @@ const PINNED_B: PinnedB[] = [
     disposition: "guarded",
     why: "decisionId matches ^D-[0-9]{3,}$ then passes readContainedRegularFile under decisions/",
   },
-  {
-    key: "packages/commands/src/opus-model.ts:validateProtectedRecords#1",
-    disposition: "derived",
-    why: "commit is enumerated by git log and used only as a git object spec for the fixed studio/opera/W-096.md path",
-  },
   { key: "packages/commands/src/talk.ts:writeActum#1", disposition: "derived", why: "slugify strips to [a-z0-9-], capped at 40" },
   { key: "packages/commands/src/talk.ts:writeActum#2", disposition: "derived", why: "same slug plus a numeric suffix" },
   {
