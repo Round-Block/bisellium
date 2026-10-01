@@ -11,7 +11,7 @@ Read your charter first: @studio/leges/engineering.md
 
 Boot your context before doing anything else:
 
-run: bisellium context --sella builder-a studio
+run: bisellium context studio
 
 Run `bisellium` with no arguments before your first CLI call and use the
 flag shapes it prints. The allowlists are strict, an invocation recalled

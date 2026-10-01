@@ -22,7 +22,7 @@
  */
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { readFront, readManifest, listMd, type Manifest } from "@bisellium/adapter-native";
+import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
 import { WF, type GantryEvent } from "@bisellium/schema";
 import {
@@ -35,6 +35,7 @@ import {
   writeReceiptStart,
 } from "@bisellium/shim";
 import { buildContext } from "./context.js";
+import { diagnosticLabel } from "./reporting.js";
 
 export interface HooksResult {
   exitCode: number;
@@ -146,13 +147,25 @@ function runHooksCheck(args: string[]): HooksResult {
     return { exitCode: 2 };
   }
 
+  // W-089 behaviour 3 (censor round-2 finding B3): seam S1's escape clause —
+  // this resolver stays here (the manifest is already open), and the shim
+  // only ever sees its result, never the <seat>.<instance> grammar itself.
   const statuses = hookReceiptStatuses(
     studio,
     manifest.sellae.map((s) => ({ id: s.id, harness: s.harness })),
+    (dirName) => {
+      const resolved = resolveSeat(manifest, dirName);
+      return resolved ? { harness: resolved.seat.harness } : undefined;
+    },
   );
   for (const s of statuses) {
+    const label = diagnosticLabel(s.sella);
+    if (s.unknown) {
+      console.log(`${label}: unknown (no declared seat resolves this receipts directory)`);
+      continue;
+    }
     const last = s.lastReceipt ? `${s.lastReceipt.sessionId} (started ${s.lastReceipt.startedAt})` : "none";
-    console.log(`${s.sella}: harness=${s.harness} last=${last} ${s.dead ? "dead" : "alive"}`);
+    console.log(`${label}: harness=${s.harness} last=${last} ${s.dead ? "dead" : "alive"}`);
   }
   return { exitCode: 0 };
 }
@@ -216,6 +229,36 @@ export async function runHookEvent(args: string[], opts: HookEventOptions = {}):
   if (!payload.ok) {
     console.error(`hook-event ${sub}: ${payload.error}`);
     return { exitCode: 0 };
+  }
+
+  // W-089 behaviour 5: start/stop (a receipt) and compact (a timeline entry)
+  // must never write under a bare builder-class template — no --opus here
+  // to mint from, so the instance must already have arrived through
+  // $BISELLIUM_SELLA. Re-minted from its own seat+suffix (never trusted
+  // verbatim), same discipline as every other dispatch boundary. `context`
+  // is a read, so it is exempt outright (the brief names both by name:
+  // "`context` is a read, and `delegate` edits a template" — briefs/W-089.md
+  // behaviour 5, hook-event bullet).
+  //
+  // `tool` is carved out of this same refusal DELIBERATELY, by ruling, not
+  // by omission: the bullet's own text scopes the refusal to "a receipt or
+  // timeline write" (briefs/W-089.md:382); `tool` appends to the shared
+  // events.jsonl log (`workflow.tool_used`, handled below), which is
+  // neither. Its warning-suppression membership check (behaviour 8) is a
+  // different concern — whether to print `process.cascade`'s advisory, not
+  // whether the actor identity is trustworthy enough to write. A refusal
+  // here still never blocks the harness — it prints and skips the write,
+  // exiting 0 same as every other guard in this function.
+  if (sub === "start" || sub === "stop" || sub === "compact") {
+    const manifest = readManifestSafe(studio);
+    const resolved = manifest ? resolveSeat(manifest, sella) : undefined;
+    if (resolved && isBuilderClassSeat(resolved)) {
+      const ok = resolved.instance !== undefined && seatInstance(resolved.seat.id, resolved.instance) === sella;
+      if (!ok) {
+        console.error(`hook-event ${sub}: "${sella}" is a bare builder-class template — refusing to write without a minted instance`);
+        return { exitCode: 0 };
+      }
+    }
   }
 
   try {
@@ -375,7 +418,12 @@ function handleTool(studio: string, sella: string, payload: Record<string, unkno
   };
   appendEvents(logPath, [event]);
 
-  if (rawFilePath !== undefined && !sella.startsWith("builder")) {
+  // W-089 behaviour 8: the two live builder-class templates behaviour 4
+  // declares — a resolved-row check, never a string-prefix guess. A retired
+  // tombstone (`builder-a`, or any of its instances), an unresolved id, and
+  // any other declared seat (`eng-lead`) all still warn.
+  const resolvedToolSella = resolveSeat(manifest, sella);
+  if (rawFilePath !== undefined && !isBuilderClassSeat(resolvedToolSella)) {
     const isSource = /\.(tsx?|jsx?)$/.test(rawFilePath) && !rawFilePath.includes(".test.") && !rawFilePath.includes("/dossier/");
     if (isSource) {
       console.error(`⚠ process.cascade: sella "${sella}" is writing source (${redact(rawFilePath)}) — dispatch a builder subagent instead`);

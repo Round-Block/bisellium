@@ -257,7 +257,17 @@ withTempCopy(join(repo, "studio"), (dir) => {
     const hasTools = /^tools:/m.test(front);
     report(`agent.${name}.front-matter`, hasModel && hasTools, front.slice(0, 200));
     const hasLex = /@studio\/leges\/[a-z-]+\.md/.test(text);
-    const hasContextLine = /bisellium context --sella [\w-]+ studio/.test(text);
+    // W-089 behaviour 10: the builder agent's own boot line omits --sella
+    // entirely (census F — a literal or shell-expanded flag both strand an
+    // unset-env boot with an empty bundle) so the CLI's own
+    // `--sella ?? $BISELLIUM_SELLA ?? "guest"` chain supplies the dispatched
+    // instance. A fixed-seat agent (architect/censor/clerk) still names its
+    // own sella explicitly. Two distinct branches, not one regex that
+    // accepts either form for every agent (censor W-089 round-1 finding B7)
+    // — that older, single-regex shape would pass silently if a fixed-seat
+    // agent's own `--sella` were ever dropped by mistake.
+    const hasContextLine =
+      name === "builder" ? /bisellium context studio/.test(text) && !text.includes("bisellium context --sella") : /bisellium context --sella [\w-]+ studio/.test(text);
     report(`agent.${name}.body`, hasLex && hasContextLine, hasLex ? (hasContextLine ? "ok" : "missing context line") : "missing lex reference");
   }
 }

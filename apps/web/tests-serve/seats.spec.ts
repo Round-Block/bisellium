@@ -37,7 +37,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
       route.continue();
     });
 
-    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+    const modelSelect = page.locator('select[aria-label="model for seat builder"]');
     const tierSelect = page.locator('select[aria-label="tier for munus audit"]');
     await expect(modelSelect).toBeVisible();
 
@@ -62,7 +62,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
       page.locator(".seats__confirm-btn").click(),
     ]);
     const body = request.postDataJSON() as { sella: string; model: string; from: string };
-    expect(body.sella).toBe("builder-1");
+    expect(body.sella).toBe("builder");
     expect(body.model).toBe("claude-opus-5");
     expect(body.from).toBe("claude-sonnet-5");
     expect(delegateRequests).toBe(1);
@@ -71,7 +71,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
     // value, and the manifest on disk carries it.
     await expect(page.locator(".seats__confirm-bar")).toBeHidden();
     await expect(modelSelect).toHaveValue("claude-opus-5");
-    expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder-1")?.model).toBe("claude-opus-5");
+    expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder")?.model).toBe("claude-opus-5");
   });
 
   test("Confirm clicked three times overlapping still issues exactly 1 request; Enter submits identically", async ({ page }) => {
@@ -92,7 +92,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
       await route.continue();
     });
 
-    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+    const modelSelect = page.locator('select[aria-label="model for seat builder"]');
     await modelSelect.selectOption("claude-opus-5");
     // Three native clicks dispatched in one synchronous pass — deliberately
     // NOT Playwright's own `.click()` three times over (which waits for
@@ -117,7 +117,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
     await page.locator(".token-prompt__submit").click();
     await expect(page.locator(".token-prompt")).toBeHidden();
 
-    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+    const modelSelect = page.locator('select[aria-label="model for seat builder"]');
     await modelSelect.selectOption("claude-opus-5");
     const [request] = await Promise.all([
       page.waitForRequest((r) => r.url().endsWith("/api/delegate") && r.method() === "POST"),
@@ -134,13 +134,13 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
     await page.locator(".token-prompt__submit").click();
     await expect(page.locator(".token-prompt")).toBeHidden();
 
-    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+    const modelSelect = page.locator('select[aria-label="model for seat builder"]');
     await modelSelect.selectOption("claude-opus-5");
     await expect(page.locator(".seats__confirm-bar")).toBeVisible();
 
     // The fixture is changed on disk by a direct runDelegate call after the
     // page rendered — same studio dir the server already has open.
-    const cliResult = runDelegate(["--sella", "builder-1", "--model", "gpt-5.6-sol", "--studio", served.studioDir]);
+    const cliResult = runDelegate(["--sella", "builder", "--model", "gpt-5.6-sol", "--studio", served.studioDir]);
     expect(cliResult.exitCode).toBe(0);
 
     const [response] = await Promise.all([
@@ -160,7 +160,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
     await expect(modelSelect).toHaveValue("claude-opus-5"); // the draft, not reverted
 
     // The manifest on disk stays at the CLI's value.
-    expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder-1")?.model).toBe("gpt-5.6-sol");
+    expect(manifestOf(served.studioDir).sellae.find((s) => s.id === "builder")?.model).toBe("gpt-5.6-sol");
   });
 
   test("a transport error re-opens the token prompt, draft retained", async ({ page }) => {
@@ -172,7 +172,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
 
     await page.route("**/api/delegate", (route) => route.fulfill({ status: 401, contentType: "application/json", body: "{}" }));
 
-    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+    const modelSelect = page.locator('select[aria-label="model for seat builder"]');
     await modelSelect.selectOption("claude-opus-5");
     await page.locator(".seats__confirm-btn").click();
 
@@ -199,7 +199,7 @@ test.describe("the decree surface, end to end (W-065 behaviour 14)", () => {
       await route.continue();
     });
 
-    const modelSelect = page.locator('select[aria-label="model for seat builder-1"]');
+    const modelSelect = page.locator('select[aria-label="model for seat builder"]');
     const tierSelect = page.locator('select[aria-label="tier for munus audit"]');
     await modelSelect.selectOption("claude-opus-5");
     await page.locator(".seats__confirm-btn").click();

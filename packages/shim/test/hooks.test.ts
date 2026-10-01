@@ -5,7 +5,7 @@
  * stream (Readable.from) — never a real `claude` CLI, never real process
  * stdin. `now` is pinned so receipt/event timestamps are reproducible.
  */
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -443,7 +443,7 @@ try {
     for (const [label, dir] of [["healthy", healthy], ["missing", missing], ["broken", broken]] as const) {
       const t0 = Date.now();
       const { result, logs } = await capture(() =>
-        runHookEvent(["context", "--sella", "builder-1", "--studio", dir], { now: NOW, stdin: stdinOf("{}") }),
+        runHookEvent(["context", "--sella", "eng-lead", "--studio", dir], { now: NOW, stdin: stdinOf("{}") }),
       );
       const elapsed = Date.now() - t0;
       check(`context(${label}): exitCode 0`, result.exitCode === 0, String(result.exitCode));
@@ -451,7 +451,7 @@ try {
       check(`context(${label}): something printed on stdout`, logs.length >= 1, JSON.stringify(logs));
     }
     const { logs: healthyLogs } = await capture(() =>
-      runHookEvent(["context", "--sella", "builder-1", "--studio", healthy], { now: NOW, stdin: stdinOf("{}") }),
+      runHookEvent(["context", "--sella", "eng-lead", "--studio", healthy], { now: NOW, stdin: stdinOf("{}") }),
     );
     check("context(healthy): boot bundle is non-empty", (healthyLogs[0] ?? "").length > 0, JSON.stringify(healthyLogs));
 
@@ -524,6 +524,241 @@ try {
       "claudeCodeHooksBlock({sella}): every SessionStart command carries --sella 'eng-lead'",
       sessionStartCmds.every((c) => c.includes("--sella 'eng-lead'")),
       JSON.stringify(sessionStartCmds),
+    );
+  }
+  // ---- W-089 behaviour 8: process.cascade stops guessing from a prefix —
+  // `hooks.ts:378`'s `!sella.startsWith("builder")` becomes a `resolveSeat`
+  // lookup. Suppressed only for the two live builder-class templates
+  // (behaviour 4); retired, unknown, prefix-only-lookalike and non-builder
+  // seats all still warn. A dedicated manifest (not sample-studio) so a
+  // `builder-codex` row can be declared. --------------------------------
+  {
+    const dir = mkdtempSync(join(tmpdir(), "hooks-cascade-"));
+    writeFileSync(
+      join(dir, "bisellium.yml"),
+      `bisellium: 1
+studio: Cascade Guard Test Studio
+patron: patron
+collegia:
+  - { id: engineering, name: Engineering, magister: builder }
+sellae:
+  - { id: builder, collegium: engineering, kind: agent }
+  - { id: builder-codex, collegium: engineering, kind: agent, harness: codex }
+  - { id: builder-a, collegium: engineering, kind: agent, retired: true }
+  - { id: eng-lead, collegium: engineering, kind: agent }
+probationes: []
+`,
+    );
+    const toolPayload = (sella: string) => {
+      const p = JSON.stringify({ session_id: `sess-${sella}`, tool_name: "Write", tool_input: { file_path: "/repo/src/index.ts" } });
+      return runHookEvent(["tool", "--sella", sella, "--studio", dir], { now: NOW, stdin: stdinOf(p) });
+    };
+
+    const noWarnCases = ["builder.W-100", "builder-codex.W-100"];
+    for (const sella of noWarnCases) {
+      const { errs } = await capture(() => toolPayload(sella));
+      check(`cascade guard: "${sella}" (live builder-class) writes silently`, errs.length === 0, JSON.stringify(errs));
+    }
+
+    const warnCases = ["builder-a", "builder-a.W-100", "builderish", "eng-lead", "ghost"];
+    for (const sella of warnCases) {
+      const { errs } = await capture(() => toolPayload(sella));
+      check(`cascade guard: "${sella}" still warns`, errs.some((e) => e.includes("process.cascade")), JSON.stringify(errs));
+    }
+  }
+
+  // ---- W-089 behaviour 5: hook-event start/stop/compact refuse a bare
+  // builder-class template — no --opus to mint from, so it must already
+  // arrive as a minted instance (via $BISELLIUM_SELLA) — before any
+  // receipt or timeline write. A non-builder-class sella (including a
+  // retired letter) is unaffected. -------------------------------------------
+  {
+    const dir = freshStudio("w089-b5-hookevent");
+    const bareStart = await runHookEvent(["start", "--sella", "builder", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-bare" })),
+    });
+    check("w089 b5: hook-event start on a bare template exits 0 (never blocks the harness)", bareStart.exitCode === 0, String(bareStart.exitCode));
+    check("w089 b5: hook-event start on a bare template writes no receipt", !existsSync(join(dir, "receipts", "builder")), "");
+
+    const instanceStart = await runHookEvent(["start", "--sella", "builder.W-300", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-instance" })),
+    });
+    check("w089 b5: hook-event start on a minted instance exits 0", instanceStart.exitCode === 0, String(instanceStart.exitCode));
+    check(
+      "w089 b5: hook-event start on a minted instance writes its receipt",
+      existsSync(receiptPath(dir, "builder.W-300", "sess-instance")),
+      "",
+    );
+
+    const bareCompact = await runHookEvent(["compact", "--sella", "builder", "--studio", dir], { now: NOW, stdin: stdinOf("{}") });
+    check("w089 b5: hook-event compact on a bare template exits 0", bareCompact.exitCode === 0, String(bareCompact.exitCode));
+    check(
+      "w089 b5: hook-event compact on a bare template writes no timeline",
+      !existsSync(join(dir, "timeline", "builder.jsonl")),
+      "",
+    );
+
+    // Unaffected: a non-builder-class sella, retired letter included.
+    const retiredStart = await runHookEvent(["start", "--sella", "builder-1", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-retired" })),
+    });
+    check("w089 b5: hook-event start on a non-builder-class (retired) sella still writes", instanceStart.exitCode === 0 && existsSync(receiptPath(dir, "builder-1", "sess-retired")), String(retiredStart.exitCode));
+  }
+
+  // ---- Censor W-089 round-2, finding B3: hookReceiptStatuses enumerates
+  // the actual receipts/ directory, not just declared row ids
+  // (receiptStatus.ts:74 used to map declared rows straight to
+  // receipts/<row.id>/, so an instance directory — receipts/builder.W-089/
+  // — was invisible, and an unknown directory — receipts/ghost.dir/ — was
+  // silently ignored). Two requirements: an instance directory attributes
+  // to its template row's harness with real (not fabricated) liveness; an
+  // unknown directory is reported as unknown, never dropped and never given
+  // a fabricated dead/alive verdict. Both `hooks check` (hooks.ts) and
+  // `check`'s `hook.dead` rule (check.ts) share the one function — both are
+  // exercised here so they can't silently disagree. -------------------------
+  {
+    const dir = freshStudio("w089-b3-receipt-enum");
+
+    // An instance directory: a real hook-written receipt under the live
+    // "builder" template's own instance form.
+    const instanceStart = await runHookEvent(["start", "--sella", "builder.W-089", "--studio", dir], {
+      now: NOW,
+      stdin: stdinOf(JSON.stringify({ session_id: "sess-b3-instance", cwd: dir })),
+    });
+    check("w089 b3 setup: hook-event start on the instance succeeded", instanceStart.exitCode === 0, String(instanceStart.exitCode));
+
+    // An unknown directory: nothing declared resolves "ghost.dir" — not a
+    // seat, not an instance of one, just a stray directory under receipts/.
+    mkdirSync(join(dir, "receipts", "ghost.dir"), { recursive: true });
+    writeFileSync(
+      join(dir, "receipts", "ghost.dir", "sess-ghost.json"),
+      JSON.stringify({ sella: "ghost.dir", sessionId: "sess-ghost", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+
+    const { logs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", dir]));
+    check(
+      "w089 b3: hooks check attributes the instance directory to builder's harness, alive",
+      logs.some((l) => l.includes("builder.W-089") && l.includes("harness=claude-code") && l.includes("alive")),
+      JSON.stringify(logs),
+    );
+    check(
+      "w089 b3: hooks check reports the unknown directory as unknown, not dead/alive",
+      logs.some((l) => l.includes("ghost.dir") && l.includes("unknown")) &&
+        !logs.some((l) => l.includes("ghost.dir") && (l.includes(" dead") || l.includes(" alive"))),
+      JSON.stringify(logs),
+    );
+
+    const r = checkStudio(dir, NOW);
+    const dead = r.findings.filter((f) => f.rule === "hook.dead");
+    check(
+      "w089 b3: checkStudio does not flag the live instance directory hook.dead",
+      !dead.some((f) => f.where.includes("builder.W-089")),
+      JSON.stringify(dead),
+    );
+    const unknownFindings = r.findings.filter((f) => f.rule === "hook.unknown");
+    check(
+      "w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead",
+      unknownFindings.some((f) => f.where.includes("ghost.dir")) && !dead.some((f) => f.where.includes("ghost.dir")),
+      JSON.stringify({ unknownFindings, dead }),
+    );
+    check("w089 b3: hook.unknown is advisory, never block", unknownFindings.every((f) => f.level === "advise"), JSON.stringify(unknownFindings));
+  }
+
+  // ---- Sec-lead W-089 pass: enumeration must not follow a symlinked
+  // receipts root, sella directory, or receipt file. The outside receipts
+  // are deliberately valid hook receipts: a following implementation calls
+  // them alive, while a non-following implementation cannot observe them. --
+  {
+    const dir = freshStudio("w089-sec-symlinks");
+    const outside = mkdtempSync(join(tmpdir(), "bisellium-hooks-w089-sec-outside-"));
+    dirs.push(outside);
+
+    const outsideEvil = join(outside, "evil");
+    mkdirSync(outsideEvil, { recursive: true });
+    writeFileSync(
+      join(outsideEvil, "sess-evil.json"),
+      JSON.stringify({ sella: "evil", sessionId: "sess-evil", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    mkdirSync(join(dir, "receipts"), { recursive: true });
+    symlinkSync(outsideEvil, join(dir, "receipts", "evil"));
+
+    const outsideInstance = join(outside, "builder.W-evil");
+    mkdirSync(outsideInstance, { recursive: true });
+    writeFileSync(
+      join(outsideInstance, "sess-seat-link.json"),
+      JSON.stringify({ sella: "builder.W-evil", sessionId: "sess-seat-link", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    symlinkSync(outsideInstance, join(dir, "receipts", "builder.W-evil"));
+
+    const realInstance = join(dir, "receipts", "builder.W-file-link");
+    mkdirSync(realInstance, { recursive: true });
+    const outsideReceipt = join(outside, "sess-file-link.json");
+    writeFileSync(
+      outsideReceipt,
+      JSON.stringify({ sella: "builder.W-file-link", sessionId: "sess-file-link", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    symlinkSync(outsideReceipt, join(realInstance, "sess-file-link.json"));
+
+    const { logs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", dir]));
+    check("w089 security: receipts/evil symlink is not enumerated", !logs.some((line) => line.includes("evil:")), JSON.stringify(logs));
+    check(
+      "w089 security: symlinked instance directory is not followed",
+      !logs.some((line) => line.includes("builder.W-evil")),
+      JSON.stringify(logs),
+    );
+    check(
+      "w089 security: symlinked receipt file is not read",
+      logs.some((line) => line.includes("builder.W-file-link") && line.includes("last=none") && line.includes("dead")) &&
+        !logs.some((line) => line.includes("sess-file-link")),
+      JSON.stringify(logs),
+    );
+
+    const rootLinkStudio = freshStudio("w089-sec-root-link");
+    const linkedRoot = join(outside, "receipts-root");
+    mkdirSync(join(linkedRoot, "builder"), { recursive: true });
+    writeFileSync(
+      join(linkedRoot, "builder", "sess-root-link.json"),
+      JSON.stringify({ sella: "builder", sessionId: "sess-root-link", startedAt: NOW.toISOString(), harness: "claude-code" }),
+    );
+    symlinkSync(linkedRoot, join(rootLinkStudio, "receipts"));
+    const { logs: rootLogs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", rootLinkStudio]));
+    check(
+      "w089 security: symlinked receipts root is not followed",
+      rootLogs.some((line) => line.includes("builder:") && line.includes("last=none") && line.includes("dead")) &&
+        !rootLogs.some((line) => line.includes("sess-root-link")),
+      JSON.stringify(rootLogs),
+    );
+  }
+
+  // ---- Sec-lead W-089 pass: filesystem names are untrusted diagnostic
+  // data. Both plaintext reporting boundaries must strip controls/newlines
+  // and cap the rendered label; the status object may retain the raw name. --
+  {
+    const dir = freshStudio("w089-sec-hostile-name");
+    const hostile = `builder.W-hostile\n\u001b[31m-${"x".repeat(180)}`;
+    mkdirSync(join(dir, "receipts", hostile), { recursive: true });
+
+    const { logs } = await capture(() => runHooks(["check", "--harness", "claude-code", "--studio", dir]));
+    const hookLine = logs.find((line) => line.includes("builder.W-hostile"));
+    check(
+      "w089 security: hooks check sanitizes hostile enumerated name",
+      hookLine !== undefined && !/[\u0000-\u001f\u007f-\u009f]/u.test(hookLine) && hookLine.length <= 220 && hookLine.includes("..."),
+      JSON.stringify(hookLine),
+    );
+
+    const result = checkStudio(dir, NOW);
+    const finding = result.findings.find((row) => row.rule === "hook.dead" && row.where.includes("builder.W-hostile"));
+    check(
+      "w089 security: check finding sanitizes hostile enumerated name",
+      finding !== undefined &&
+        !/[\u0000-\u001f\u007f-\u009f]/u.test(`${finding.where}${finding.message}`) &&
+        finding.where.length <= 130 &&
+        finding.message.length <= 260 &&
+        finding.where.includes("..."),
+      JSON.stringify(finding),
     );
   }
 } finally {

@@ -9,6 +9,7 @@
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { parse as parseYaml } from "yaml";
 import { sourceTreeHash } from "@bisellium/shim";
 import { deriveSubject, snapshotDir } from "@bisellium/adapter-native";
 import { checkStudio } from "./check.js";
@@ -612,6 +613,135 @@ try {
     for (const id of REAL_IDS) {
       checkB(5, `petitio.subject advises on ${id} (no subject: key today)`, petitioScoped.some((f) => f.where === `petitiones/${id}.md`), JSON.stringify(petitioScoped.map((f) => f.where)));
     }
+  }
+
+  // ---- W-089 behaviour 1: seat templates, not enumerated seats -----------
+  // Manifest-edit behaviour: the red is this assertion run BEFORE the
+  // manifest edit (studio/briefs/W-089.md behaviour 1's own framing) —
+  // `builder`/`builder-codex` don't exist yet and the retired flags aren't
+  // there, so this fails until bisellium.yml itself is edited.
+  const checkB89 = (behaviour: number, name: string, ok: boolean, detail = "") => {
+    if (onlyBehaviour !== undefined && onlyBehaviour !== behaviour) return;
+    check(`[W-089 b${behaviour}] ${name}`, ok, detail);
+  };
+  const b89 = (name: string, ok: boolean, detail = "") => checkB89(1, name, ok, detail);
+  {
+    interface RawSella {
+      id?: unknown;
+      collegium?: unknown;
+      harness?: unknown;
+      model?: unknown;
+      retired?: unknown;
+    }
+    const readSellae = (path: string): RawSella[] => (parseYaml(readFileSync(path, "utf8")) as { sellae: RawSella[] }).sellae;
+
+    const realSellae = readSellae(join(realStudio, "bisellium.yml"));
+    const builderTemplate = realSellae.find((s) => s.id === "builder");
+    b89("studio: a 'builder' template row is declared", builderTemplate?.collegium === "engineering", JSON.stringify(builderTemplate));
+    const builderCodex = realSellae.find((s) => s.id === "builder-codex");
+    b89("studio: a 'builder-codex' template row is declared", builderCodex?.collegium === "engineering" && builderCodex?.harness === "codex", JSON.stringify(builderCodex));
+    for (const letter of ["builder-a", "builder-b", "builder-c", "builder-d", "builder-sol"]) {
+      const row = realSellae.find((s) => s.id === letter);
+      b89(`studio: "${letter}" keeps its row, now retired: true`, row?.retired === true, JSON.stringify(row));
+    }
+    const retiredCount = realSellae.filter((s) => s.retired === true).length;
+    b89("studio: exactly the five lettered rows carry retired: true", retiredCount === 5, String(retiredCount));
+
+    const sampleSellae = readSellae(join(sampleStudio, "bisellium.yml"));
+    const sampleBuilder = sampleSellae.find((s) => s.id === "builder");
+    b89("sample-studio: builder-1/builder-2 collapse into one 'builder' template", sampleBuilder?.collegium === "engineering", JSON.stringify(sampleBuilder));
+    for (const letter of ["builder-1", "builder-2"]) {
+      const row = sampleSellae.find((s) => s.id === letter);
+      b89(`sample-studio: "${letter}" keeps its row, now retired: true`, row?.retired === true, JSON.stringify(row));
+    }
+
+    const realResult = checkStudio(realStudio, new Date("2026-09-26T12:00:00Z"), { repo });
+    b89("studio: check reports zero blocking findings after the manifest edit", realResult.blocks === 0, JSON.stringify(realResult.findings.filter((f) => f.level === "block")));
+    const sampleResult = checkStudio(sampleStudio, new Date("2026-09-26T12:00:00Z"), { repo });
+    b89("sample-studio: check reports zero blocking findings after the manifest edit", sampleResult.blocks === 0, JSON.stringify(sampleResult.findings.filter((f) => f.level === "block")));
+  }
+
+  // ---- W-089 behaviour 2: retired is a declared, typed sella key ---------
+  {
+    const dir = freshStudio("w089-b2-bad");
+    const manifestPath = join(dir, "bisellium.yml");
+    // sample-studio's sellae[4] is builder-1, "retired: true" today (after
+    // behaviour 1's edit) — corrupt it to a non-boolean to exercise the
+    // shape rule, same "one targeted string replace on a temp copy" idiom
+    // stripIntegration/setSourceExcludes above use.
+    const before = readFileSync(manifestPath, "utf8");
+    const after = before.replace("{ id: builder-1, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }", "{ id: builder-1, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: yes-please }");
+    checkB89(2, "setup: the fixture line was actually replaced", before !== after, "replace() found nothing — fixture text drifted");
+    writeFileSync(manifestPath, after);
+    const r = checkStudio(dir, NOW, { repo });
+    const shapeFindings = r.findings.filter((f) => f.rule === "manifest.shape" && f.where === "bisellium.yml#sellae[4].retired");
+    checkB89(2, "a non-boolean retired is a blocking manifest.shape finding at sellae[<i>].retired", shapeFindings.length === 1 && shapeFindings[0]!.level === "block", JSON.stringify(shapeFindings));
+
+    const goodDir = freshStudio("w089-b2-good");
+    const goodResult = checkStudio(goodDir, NOW, { repo });
+    checkB89(2, "a boolean retired: true produces no manifest.shape finding on that key", !goodResult.findings.some((f) => f.rule === "manifest.shape" && f.where.includes(".retired")), JSON.stringify(goodResult.findings.filter((f) => f.rule === "manifest.shape")));
+  }
+
+  // ---- W-089 behaviour 7: traditio.sella/opus.sella accept an instance id
+  // whose seat is declared; they keep blocking one that resolves to nothing.
+  {
+    const dir = freshStudio("w089-b7");
+    const opusPath = join(dir, "opera", "W-989.md");
+    writeFileSync(
+      opusPath,
+      [
+        "---",
+        'id: "W-989"',
+        'title: "W-089 behaviour 7 fixture"',
+        "kind: feature",
+        "collegium: engineering",
+        "state: building",
+        "sella: builder.W-989",
+        "traditio: { sella: builder.W-989, stage: building, next: ship, blocked_on: none, at: 2026-09-26T00:00:00Z }",
+        "probationes: {}",
+        "---",
+        "An instance id in sella/traditio.sella.",
+        "",
+      ].join("\n"),
+    );
+    const r = checkStudio(dir, NOW, { repo });
+    const scoped = r.findings.filter((f) => f.where === "opera/W-989.md");
+    checkB89(7, "an instance id in sella: produces no opus.sella finding", !scoped.some((f) => f.rule === "opus.sella"), JSON.stringify(scoped));
+    checkB89(7, "an instance id in traditio.sella produces no traditio.sella finding", !scoped.some((f) => f.rule === "traditio.sella"), JSON.stringify(scoped));
+
+    for (const [tag, badId] of [
+      ["misspelled seat", "bulider.W-989"],
+      ["unknown seat", "ghost.W-989"],
+      ["empty instance", "builder."],
+      ["bare unknown", "builder-e"],
+    ] as const) {
+      const badDir = freshStudio(`w089-b7-${tag.replace(/\s+/g, "-")}`);
+      writeFileSync(
+        join(badDir, "opera", "W-989.md"),
+        [
+          "---",
+          'id: "W-989"',
+          'title: "W-089 behaviour 7 negative fixture"',
+          "kind: feature",
+          "collegium: engineering",
+          "state: building",
+          `sella: ${badId}`,
+          `traditio: { sella: ${badId}, stage: building, next: ship, blocked_on: none, at: 2026-09-26T00:00:00Z }`,
+          "probationes: {}",
+          "---",
+          "A bad id in sella/traditio.sella.",
+          "",
+        ].join("\n"),
+      );
+      const badResult = checkStudio(badDir, NOW, { repo });
+      const badScoped = badResult.findings.filter((f) => f.where === "opera/W-989.md");
+      checkB89(7, `${tag} ("${badId}") still blocks opus.sella`, badScoped.some((f) => f.rule === "opus.sella"), JSON.stringify(badScoped));
+      checkB89(7, `${tag} ("${badId}") still blocks traditio.sella`, badScoped.some((f) => f.rule === "traditio.sella"), JSON.stringify(badScoped));
+    }
+
+    // The 34/15 historical records (real studio) stay clean throughout.
+    const realResult = checkStudio(realStudio, new Date("2026-09-26T12:00:00Z"), { repo });
+    checkB89(7, "studio: check stays at zero blocking findings (historical builder-* records untouched)", realResult.blocks === 0, JSON.stringify(realResult.findings.filter((f) => f.level === "block")));
   }
 } finally {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });

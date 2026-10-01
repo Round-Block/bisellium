@@ -54,11 +54,18 @@ function defaultHarness(row: { harness?: string }): string {
 
 /** The manifest's own seated candidates — the pairs the studio ASSERTS it
  *  runs (a `sellae` row), distinct from `gatherCandidates`' full union: the
- *  control rule (below) is defined only in terms of what is seated. */
-function seatedCandidatesFor(manifest: Manifest): Candidate[] {
+ *  control rule (below) is defined only in terms of what is seated. W-089
+ *  behaviour 3: a retired row is skipped outright — it is history, not
+ *  something the studio still runs, so its model is never probed on the
+ *  strength of a tombstone alone (a live seat sharing the same model still
+ *  gets it probed normally). Exported (same precedent as
+ *  `readModelsRecord`/`gatherCandidates`) so its own tests don't need a
+ *  whole `probeBattery` call to exercise this contract. */
+export function seatedCandidatesFor(manifest: Manifest): Candidate[] {
   const out: Candidate[] = [];
   const seen = new Set<string>();
   for (const row of manifest.sellae ?? []) {
+    if (row.retired) continue;
     if (!row.model) continue;
     const c: Candidate = { id: row.model, harness: defaultHarness(row) };
     const key = `${c.id}\u0000${c.harness}`;

@@ -13,11 +13,19 @@ sellae:
   - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
   - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }
   - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
-  - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5 }
-  - { id: builder-b, collegium: engineering, kind: agent, model: claude-sonnet-5 }
-  - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5 }
-  - { id: builder-d, collegium: engineering, kind: agent, model: claude-sonnet-5 }
-  - { id: builder-sol, collegium: engineering, kind: agent, model: gpt-5.6-sol, harness: codex }
+  # W-089: seats are templates, not enumerated builders — one row per build
+  # tier, instance identity minted at dispatch as `<seat>.<opus-id>`
+  # (resolveSeat/seatInstance, @bisellium/adapter-native). The five lettered
+  # rows below are retired tombstones: kept declared so every record that
+  # ever named one stays readable and blocking-clean, refused as a live
+  # dispatch target.
+  - { id: builder, collegium: engineering, kind: agent, model: claude-sonnet-5 }
+  - { id: builder-codex, collegium: engineering, kind: agent, model: gpt-5.6-sol, harness: codex }
+  - { id: builder-a, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+  - { id: builder-b, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+  - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+  - { id: builder-d, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
+  - { id: builder-sol, collegium: engineering, kind: agent, model: gpt-5.6-sol, harness: codex, retired: true }
   - { id: qa-lead, collegium: qa, kind: agent, model: claude-opus-5 }
   - { id: sec-lead, collegium: qa, kind: agent, model: gpt-5.6-sol, harness: codex }
   - { id: guest, collegium: production, kind: human }

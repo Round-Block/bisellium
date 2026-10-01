@@ -18,7 +18,7 @@ import {
   PROVIDER_STATUSES,
   PETITIO_STATES,
 } from "@bisellium/schema";
-import { listMd, readFront, STATES } from "@bisellium/adapter-native";
+import { listMd, readFront, resolveSeat, STATES } from "@bisellium/adapter-native";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
@@ -27,6 +27,7 @@ import { checkDocs } from "./rules/docs.js";
 import { checkEvidence } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
+import { diagnosticLabel } from "./reporting.js";
 
 // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
 // every id here can end up as a path component elsewhere) — reject anything
@@ -229,6 +230,15 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellae = listOf("sellae");
   const probationes = listOf("probationes");
 
+  // W-089 behaviour 2: `retired` is a declared, typed sella key — a
+  // historical seat kept declared so every record naming it stays readable
+  // (S3). Same precedent as integration.push above: shape-checked here,
+  // never silently cast.
+  sellae.forEach((s, i) => {
+    if (s["retired"] !== undefined && typeof s["retired"] !== "boolean")
+      add("manifest.shape", "block", `bisellium.yml#sellae[${i}].retired`, "retired must be a boolean");
+  });
+
   const uniq = (key: string, rows: Dict[]) => {
     const seen = new Set<string>();
     for (const r of rows) {
@@ -245,6 +255,15 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const sellaIds = uniq("sellae", sellae);
   const probatioIds = uniq("probationes", probationes);
   const sellaCollegium = new Map(sellae.map((s) => [str(s["id"]) ?? "", str(s["collegium"]) ?? ""] as const));
+  // W-089 behaviour 7: `resolveSeat`'s own minimal row shape, built off the
+  // same raw `sellae` this rule module already parsed — `traditio.sella`/
+  // `opus.sella` route their membership test through it (S1) rather than
+  // re-implementing "split on the first dot" here. `harness` rides along
+  // too (round-2 finding B3): the receipts/ enumeration below resolves an
+  // instance directory's harness off this same roster.
+  const seatRoster = {
+    sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true, collegium: str(s["collegium"]) ?? "", harness: str(s["harness"]) })),
+  };
   const probatioKind = new Map(probationes.map((g) => [str(g["id"]) ?? "", str(g["kind"]) ?? ""] as const));
   const magisterOf = new Map(collegia.map((d) => [str(d["id"]) ?? "", str(d["magister"]) ?? ""] as const));
   const stateIds = new Set(STATES.map((s) => s.id));
@@ -410,7 +429,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     for (const k of TRADITIO_KEYS) if (str(h[k]) === undefined && !(k === "at" && h[k] instanceof Date))
       add("traditio.keys", "block", where, `handoff missing or non-string "${k}"`);
     const sella = str(h["sella"]);
-    if (sella && !sellaIds.has(sella)) add("traditio.sella", "block", where, `handoff sella "${sella}" not declared`);
+    if (sella && !resolveSeat(seatRoster, sella)) add("traditio.sella", "block", where, `handoff sella "${sella}" not declared`);
     const stage = str(h["stage"]);
     if (stage && stage !== state) add("traditio.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
     if (h["at"] !== undefined) {
@@ -449,9 +468,10 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (collegium && !collegiumIds.has(collegium)) add("opus.collegium", "block", where, `collegium "${collegium}" not declared`);
     const sellaId = str(d["sella"]);
     if (d["sella"] !== undefined) {
-      if (!sellaId || !sellaIds.has(sellaId)) add("opus.sella", "block", where, `sella "${sellaId ?? ""}" is not a declared sella`);
-      else if (collegium && sellaCollegium.get(sellaId) !== collegium)
-        add("opus.sella.collegium", "advise", where, `sella "${sellaId}" belongs to ${sellaCollegium.get(sellaId)}, item is ${collegium}`);
+      const resolvedOpusSella = sellaId ? resolveSeat(seatRoster, sellaId) : undefined;
+      if (!sellaId || !resolvedOpusSella) add("opus.sella", "block", where, `sella "${sellaId ?? ""}" is not a declared sella`);
+      else if (collegium && resolvedOpusSella.seat.collegium !== collegium)
+        add("opus.sella.collegium", "advise", where, `sella "${sellaId}" belongs to ${resolvedOpusSella.seat.collegium}, item is ${collegium}`);
     }
     if (d["tokens"] !== undefined && num(d["tokens"]) === undefined) add("opus.tokens", "advise", where, "tokens is not a number");
 
@@ -729,14 +749,27 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     ? hookReceiptStatuses(
         root,
         sellae.map((row) => ({ id: str(row["id"]) ?? "", harness: str(row["harness"]) })).filter((row) => row.id),
+        // Round-2 finding B3: the same resolved-mapping seam `hooks check`
+        // uses (S1's escape clause — the grammar stays here, the shim only
+        // sees the result) so the two surfaces can never disagree on what a
+        // receipts/ directory name means.
+        (dirName) => {
+          const resolved = resolveSeat(seatRoster, dirName);
+          return resolved ? { harness: resolved.seat.harness } : undefined;
+        },
       )
     : []) {
+    const label = diagnosticLabel(s.sella);
+    if (s.unknown) {
+      add("hook.unknown", "advise", `receipts/${label}`, `receipts/${label} does not resolve to any declared seat (template, retired tombstone, or instance) — no hook wiring can be inferred for it`);
+      continue;
+    }
     if (s.dead)
       add(
         "hook.dead",
         "advise",
-        `receipts/${s.sella}`,
-        `sella "${s.sella}" (harness ${s.harness}) has no hook receipt in its last ${HOOK_DEAD_RECENT_RECEIPTS} session(s) — .claude/settings.json hooks may not be wired`,
+        `receipts/${label}`,
+        `sella "${label}" (harness ${s.harness}) has no hook receipt in its last ${HOOK_DEAD_RECENT_RECEIPTS} session(s) — .claude/settings.json hooks may not be wired`,
       );
   }
 

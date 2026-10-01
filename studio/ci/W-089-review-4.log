@@ -1,0 +1,167 @@
+# W-089 review round 4 — censor (qa-lead), claude-opus-5
+# tree: c7c21eb9468ef4a7caa5f8c6b5932a11e6260191  branch: opus/W-089
+# at: 2026-09-25T22:46:21Z
+# scope: sec-lead's two blockers in the B3 fix — both of which MY round-3 PASS missed.
+# generator: /home/edckt/.bisellium-evidence/W-089-review-4/r4-evidence.sh
+
+## 1. Gates re-run by the censor
+$ npm run -s typecheck
+TYPES exit=0
+$ npm run -s lint
+✖ 2 problems (0 errors, 2 warnings)
+
+LINT exit=0
+$ npm run -s test:suite
+PASS lines: 3431  FAIL lines: 0
+TESTS exit=0
+$ npm run -s check -- studio --repo .
+PASS — 0 blocking, 149 advisory
+$ npm run -s check -- examples/sample-studio --repo .
+PASS — 0 blocking, 28 advisory
+
+## 2. Both blockers reproduced against bd90c90 — the tree I PASSED at round 3
+##    — and confirmed dead at HEAD. Fixture: a symlinked receipts subdirectory
+##    and receipt file pointing outside the studio, plus directory names carrying
+##    a newline, an ANSI escape, and 400 characters. Output through `cat -v`.
+=============== PRE-FIX (source at bd90c90 — the tree I passed) ===============
+--- bisellium hooks check ---
+eng-lead: harness=claude-code last=none dead
+builder: harness=claude-code last=none dead
+ansi^[[31mRED^[[0m: unknown (no declared seat resolves this receipts directory)
+builder.W-089: harness=claude-code last=LEAKED-FROM-OUTSIDE-THE-STUDIO (started 2026-09-26T00:00:00Z) alive
+escape: unknown (no declared seat resolves this receipts directory)
+ghost
+eng-lead: harness=claude-code last=FORGED (started 2026-01-01T00:00:00Z) alive: unknown (no declared seat resolves this receipts directory)
+--- checkStudio hook.* findings (where | message), cat -v ---
+advise hook.dead :: receipts/eng-lead :: sella "eng-lead" (harness claude-code) has no hook receipt in its last 3 session(s) M-bM-^@M-^T .claude/settings.json hooks may not be wired
+advise hook.dead :: receipts/builder :: sella "builder" (harness claude-code) has no hook receipt in its last 3 session(s) M-bM-^@M-^T .claude/settings.json hooks may not be wired
+advise hook.unknown :: receipts/ansi^[[31mRED^[[0m :: receipts/ansi^[[31mRED^[[0m does not resolve to any declared seat (template, retired tombstone, or instance) M-bM-^@M-^T no hook wiring can be inferred for it
+advise hook.unknown :: receipts/escape :: receipts/escape does not resolve to any declared seat (template, retired tombstone, or instance) M-bM-^@M-^T no hook wiring can be inferred for it
+advise hook.unknown :: receipts/ghost
+eng-lead: harness=claude-code last=FORGED (started 2026-01-01T00:00:00Z) alive :: receipts/ghost
+eng-lead: harness=claude-code last=FORGED (started 2026-01-01T00:00:00Z) alive does not resolve to any declared seat (template, retired tombstone, or instance) M-bM-^@M-^T no hook wiring can be inferred for it
+
+=============== AT HEAD (after the hardening) ===============
+--- bisellium hooks check ---
+eng-lead: harness=claude-code last=none dead
+builder: harness=claude-code last=none dead
+ansi[31mRED[0m: unknown (no declared seat resolves this receipts directory)
+builder.W-089: harness=claude-code last=s1 (started 2026-09-26T00:00:00Z) alive
+ghosteng-lead: harness=claude-code last=FORGED (started 2026-01-01T00:00:00Z) alive: unknown (no declared seat resolves this receipts directory)
+--- checkStudio hook.* findings (where | message), cat -v ---
+advise hook.dead :: receipts/eng-lead :: sella "eng-lead" (harness claude-code) has no hook receipt in its last 3 session(s) M-bM-^@M-^T .claude/settings.json hooks may not be wired
+advise hook.dead :: receipts/builder :: sella "builder" (harness claude-code) has no hook receipt in its last 3 session(s) M-bM-^@M-^T .claude/settings.json hooks may not be wired
+advise hook.unknown :: receipts/ansi[31mRED[0m :: receipts/ansi[31mRED[0m does not resolve to any declared seat (template, retired tombstone, or instance) M-bM-^@M-^T no hook wiring can be inferred for it
+advise hook.unknown :: receipts/ghosteng-lead: harness=claude-code last=FORGED (started 2026-01-01T00:00:00Z) alive :: receipts/ghosteng-lead: harness=claude-code last=FORGED (started 2026-01-01T00:00:00Z) alive does not resolve to any declared seat (template, retired tombstone, or instance) M-bM-^@M-^T no hook wiring can be inferred for it
+
+--- regression rows in the suite ---
+PASS  traversal(start): nothing written outside the studio dir   /tmp/claude-1000/qa-escape-receipt-161-1790376384041.json
+PASS  traversal(stop): nothing written outside the studio dir    /tmp/claude-1000/qa-escape-receipt-stop-161-1790376384045.json
+PASS  traversal(sella): nothing written outside the studio dir   /tmp/claude-1000/qa-escape-sella-161-1790376384052/sess-fine.json
+PASS  w089 security: receipts/evil symlink is not enumerated     ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead","builder.W-file-link: harness=claude-code last=none dead"]
+PASS  w089 security: symlinked instance directory is not followed ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead","builder.W-file-link: harness=claude-code last=none dead"]
+PASS  w089 security: symlinked receipt file is not read          ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead","builder.W-file-link: harness=claude-code last=none dead"]
+PASS  w089 security: symlinked receipts root is not followed     ["producer: harness=claude-code last=none dead","architect: harness=claude-code last=none dead","eng-lead: harness=claude-code last=none dead","builder: harness=claude-code last=none dead","builder-1: harness=claude-code last=none dead","builder-2: harness=claude-code last=none dead","art-lead: harness=claude-code last=none dead","qa-lead: harness=claude-code last=none dead"]
+PASS  w089 security: hooks check sanitizes hostile enumerated name "builder.W-hostile[31m-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...: harness=claude-code last=none dead"
+PASS  w089 security: check finding sanitizes hostile enumerated name {"rule":"hook.dead","level":"advise","where":"receipts/builder.W-hostile[31m-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...","message":"sella \"builder.W-hostile[31m-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...\" (harness claude-code) has no hook receipt in its last 3 session(s) — .claude/settings.json hooks may not be wired"}
+### restored; tracked-dirty: 0
+
+  READ THE TWO 'hooks check' BLOCKS ABOVE SIDE BY SIDE:
+  pre-fix  builder.W-089 ... last=LEAKED-FROM-OUTSIDE-THE-STUDIO ... alive
+           -> a symlinked receipt file inside a legitimate seat directory made
+              data from outside the studio the seat's reported liveness.
+  at HEAD  builder.W-089 ... last=s1 ... alive   (the real receipt; link ignored)
+
+  pre-fix  the hostile directory name emitted a SECOND, forged report line:
+             'eng-lead: harness=claude-code last=FORGED (...) alive'
+           indistinguishable from a real one, and split check's own where/message.
+  at HEAD  one line, control characters stripped, ANSI gone.
+
+  NOTE the 400-character name could not be created (ENAMETOOLONG, 255-byte limit),
+  so the 120-character cap is exercised by the suite's own row, not by this fixture.
+
+## 3. The claimed six-failure pre-fix red: the LOG is absent from the officina,
+##    but the STATE is real and I reached it independently
+$ git log --oneline bd90c90..HEAD -- studio/ci/reds/   (reds untouched since my PASS)
+  (empty)
+$ git diff --name-status bd90c90..HEAD | grep '^A'   (everything added this round)
+A	packages/cli/src/reporting.ts
+A	studio/ci/W-089-lint-4a64b6f2.log
+A	studio/ci/W-089-tests-4a64b6f2.log
+A	studio/ci/W-089-types-4a64b6f2.log
+  -> no red log was committed. Running the new rows against the pre-fix source:
+-- source reverted to bd90c90 (my round-3 PASS tree); new tests kept
+FAIL  w089 security: receipts/evil symlink is not enumerated     ["producer: harness=claude-code last=none dead","archit
+FAIL  w089 security: symlinked instance directory is not followed ["producer: harness=claude-code last=none dead","archi
+FAIL  w089 security: symlinked receipt file is not read          ["producer: harness=claude-code last=none dead","archit
+FAIL  w089 security: symlinked receipts root is not followed     ["producer: harness=claude-code last=none dead","archit
+FAIL  w089 security: hooks check sanitizes hostile enumerated name "builder.W-hostile\n\u001b[31m-xxxxxxxxxxxxxxxxxxxxxx
+FAIL  w089 security: check finding sanitizes hostile enumerated name {"rule":"hook.dead","level":"advise","where":"recei
+-- total FAIL rows at the pre-fix state: 6
+-- at HEAD: 0 FAIL rows
+### restored; tracked-dirty: 0
+  -> exactly six failures pre-fix, zero at HEAD. The claim is TRUE as a state a
+     third party can reach independently (the studio's own admissibility standard,
+     cascade 34). What is missing is the artifact, not the work.
+
+## 4. Each guard is load-bearing on its own
+### MUTATION M14 (sec-1) the traversal follows links again (lstat -> stat, no O_NOFOLLOW)
+FAIL  w089 security: receipts/evil symlink is not enumerated     ["producer: harness=claude-cod
+FAIL  w089 security: symlinked instance directory is not followed ["producer: harness=claude-co
+FAIL  w089 security: symlinked receipt file is not read          ["producer: harness=claude-cod
+FAIL  w089 security: symlinked receipts root is not followed     ["producer: harness=claude-cod
+### restored; tracked-dirty: 0
+### MUTATION M15 (sec-2) diagnosticLabel becomes the identity function
+FAIL  w089 security: hooks check sanitizes hostile enumerated name "builder.W-hostile\n\u001b[3
+FAIL  w089 security: check finding sanitizes hostile enumerated name {"rule":"hook.dead","level
+### restored; tracked-dirty: 0
+  -> 4 symlink rows + 2 sanitization rows = the same six. Clean split.
+
+## 5. Round-3's B3 set intact at HEAD
+### MUTATION M10 (B3) receipts/ enumeration removed — instances invisible again
+FAIL  w089 b3: hooks check attributes the instance directory to builder's harness, alive ["producer: harn
+FAIL  w089 b3: hooks check reports the unknown directory as unknown, not dead/alive ["producer: harness=c
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unknownFin
+FAIL  w089 security: symlinked receipt file is not read          ["producer: harness=claude-code last=non
+FAIL  w089 security: hooks check sanitizes hostile enumerated name 
+FAIL  w089 security: check finding sanitizes hostile enumerated name 
+### restored; tracked-dirty: 0
+### MUTATION M11 (B3) an unresolved directory is given a fabricated liveness verdict
+FAIL  w089 b3: hooks check reports the unknown directory as unknown, not dead/alive ["producer: harness=c
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unknownFin
+### restored; tracked-dirty: 0
+### MUTATION M13 (B3) hooks check's caller stops resolving instance directories
+FAIL  w089 b3: hooks check attributes the instance directory to builder's harness, alive ["producer: harn
+FAIL  w089 security: symlinked receipt file is not read          ["producer: harness=claude-code last=non
+### restored; tracked-dirty: 0
+### MUTATION M12 (B3, re-anchored) check.ts drops the hook.unknown branch
+FAIL  w089 b3: checkStudio reports the unknown directory via a dedicated rule, not hook.dead {"unkno
+### restored; tracked-dirty: 0
+  -> all four still bite. M10 and M13 now also kill security rows, because the
+     enumeration they disable is the same path the hardening guards.
+
+## 6. Reds 01-10: untouched this round
+$ git diff --stat bd90c90..HEAD -- studio/ci/reds/
+  (empty — nothing under reds/ moved)
+  01.log  bd90c90=c524ba12ca40  HEAD=c524ba12ca40  same
+  02.log  bd90c90=0601982d30ed  HEAD=0601982d30ed  same
+  03.log  bd90c90=a310c9584204  HEAD=a310c9584204  same
+  04.log  bd90c90=b06256e17d7f  HEAD=b06256e17d7f  same
+  05.log  bd90c90=36599f75cf3f  HEAD=36599f75cf3f  same
+  06.log  bd90c90=08d30895f9b3  HEAD=08d30895f9b3  same
+  07.log  bd90c90=a23814b5821a  HEAD=a23814b5821a  same
+  08.log  bd90c90=583c62bde190  HEAD=583c62bde190  same
+  09.log  bd90c90=e92e9686e215  HEAD=e92e9686e215  same
+  10.log  bd90c90=eb51be4d6bf3  HEAD=eb51be4d6bf3  same
+
+## 7. The record
+---
+id: "W-089"
+title: "seats become templates: the builder letter dies — one builder seat per tier, instance identity minted at dispatch as builder.<opus>, D-021 k
+kind: "opus"
+collegium: "engineering"
+state: done
+probationes: { tests: { status: passed, evidence: ci/W-089-tests-4a64b6f2.log, certifies: tree:4a64b6f2e6c4af4768eedc92f5c3b4c566bb2057 }, lint: { sta
+
+## end. git status:
+?? studio/ci/W-089-review-4.log

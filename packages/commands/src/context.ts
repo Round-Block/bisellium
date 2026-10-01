@@ -8,7 +8,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { listMd, readFront, readManifest, snapshotDir } from "@bisellium/adapter-native";
+import { listMd, readFront, readManifest, resolveSeat, snapshotDir } from "@bisellium/adapter-native";
 
 export interface ContextBundle {
   text: string;
@@ -72,8 +72,19 @@ export function buildContext(root: string, sella: string, opts: { now: Date; max
   }
   const patron = manifest.patron ?? "patron";
   const isPatron = sella === patron;
-  const sellaRow = manifest.sellae.find((s) => s.id === sella);
-  if (!isPatron && !sellaRow) return unknownSella;
+  // W-089 behaviour 3: a template or one of its instance ids resolves the
+  // same row (S1).
+  const resolved = resolveSeat(manifest, sella);
+  if (!isPatron && !resolved) return unknownSella;
+  // W-089 behaviour 6: `context` is the command every agent boots through
+  // (see the CLI usage pointer section below) — booting AS a retired letter
+  // is a live-dispatch attempt, not a historical read, so it gets the same
+  // refusal posture as an unresolved id (brief: "context, talk, and
+  // delegate also refuse a retired live target"). A historical reader that
+  // truly needs a tombstone's collegium can still call `resolveSeat`
+  // directly; this CLI-facing boot path cannot.
+  if (!isPatron && resolved?.seat.retired) return unknownSella;
+  const sellaRow = resolved?.seat;
 
   try {
     return buildContextFor(root, manifest, sella, sellaRow, maxTokens, opts.now);

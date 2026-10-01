@@ -1,0 +1,68 @@
+# behaviour: 10
+# command: node --import tsx packages/cli/src/docs.test.ts .
+# exit: 1
+# at: 2026-09-25T20:09:18.296Z
+# sella: builder
+# tree: dirty:59c23c8d311055040f991d8ad24e9bec807364e5
+
+PASS  real repo: checkDocs finds nothing at now=2026-09-19T10:00:00Z []
+PASS  checkDocs returns [] when opts.repo is omitted             
+PASS  empty repo root: checkDocs never throws                    
+PASS  empty repo root: checkDocs returns []                      []
+PASS  unknown kind: doc.fields advises                           [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"unregistered kind \"not-a-real-kind\""}]
+PASS  fixed kind: clears                                         []
+PASS  owner not declared: doc.fields advises                     [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"owner \"not-a-sella\" is not a declared sella or the patron"}]
+PASS  owner is the patron literal: clears                        []
+PASS  missing "kind": doc.fields advises                         [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"kind\""}]
+PASS  missing "kind": clears once fixed                          []
+PASS  missing "owner": doc.fields advises                        [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"owner\""}]
+PASS  missing "owner": clears once fixed                         []
+PASS  missing "tier": doc.fields advises                         [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"tier\""}]
+PASS  missing "tier": clears once fixed                          []
+PASS  missing "review": doc.fields advises                       [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"review\""}]
+PASS  missing "review": clears once fixed                        []
+PASS  missing "kill": doc.fields advises                         [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"missing front-matter key \"kill\""}]
+PASS  missing "kill": clears once fixed                          []
+PASS  review before now: doc.fields advises                      [{"rule":"doc.fields","level":"advise","where":"docs/TEST.md","message":"review date 2020-01-01 is before now"}]
+PASS  review after now: clears                                   []
+PASS  dead relative link: doc.link advises                       [{"rule":"doc.link","level":"advise","where":"docs/TEST.md","message":"dead relative link \"./NOPE.md\""}]
+PASS  link resolves once the target exists: clears               []
+PASS  http(s) and bare-anchor links are ignored                  []
+docs registry: 2 doc(s) at 2026-09-19T10:00:00.000Z -> .bisellium/registry.json
+PASS  docs registry: exits 0                                     
+PASS  docs registry: writes .bisellium/registry.json             
+PASS  docs registry: one entry per registered doc                [{"path":"docs/A.md","kind":"guide","owner":"eng-lead","tier":"reference","review":"2026-12-01","kill":"never, this is a fixture"},{"path":"docs/B.md","kind":"guide","owner":"eng-lead","tier":"reference","review":"2026-12-01","kill":"never, this is a fixture"}]
+PASS  docs registry: at matches --now                            2026-09-19T10:00:00.000Z
+docs registry: 2 doc(s) at 2026-09-19T10:00:00.000Z -> .bisellium/registry.json
+PASS  docs registry: two runs at the same --now are byte-identical 
+PASS  buildRegistry matches what runDocs wrote                   
+PASS  builder.md: has a 'run: bisellium context' boot line       ---
+name: builder
+description: Implements one opus in the engineering collegium — writes the code, the tests, and the recorded red before the fix.
+tools: Read, Write, Edit, Bash, Glob, Grep
+model: claude-sonnet-5
+---
+
+You are a builder sella in the engineering collegium.
+
+Read your charter first: @studio/leges/engineering.md
+
+Boot your context before doing anything else:
+
+run: bisellium context --sella builder-a studio
+
+Run `bisellium` with no arguments before your first CLI call and use the
+flag shapes it prints. The allowlists are strict, an invocation recalled
+from memory is usually wrong, and a wrong one can write real bookkeeping
+before it fails.
+
+Test-first with a recorded red; evidence is produced, never backfilled.
+
+Never leave a backgrounded watcher shell behind: no `run_in_background`
+wait loops polling for a log or a process. Wait in the foreground, or
+re-check on your next step. Every orphaned watcher becomes a phantom
+"running task" in the Patron's console (retro-32's watcher class — six
+instances and counting).
+
+FAIL  builder.md: the boot line is exactly "run: bisellium context studio" "run: bisellium context --sella builder-a studio"
+FAIL  builder.md: the boot line names no --sella flag            "run: bisellium context --sella builder-a studio"
