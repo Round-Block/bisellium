@@ -492,13 +492,20 @@ try {
         !admitCurrentRunReceipt(historyStudio, "W-002").ok,
       );
 
-      type ReceiptMode = "valid" | "failed" | "stale" | "missing";
+      type ReceiptMode = "valid" | "failed" | "stale" | "missing" | "partial-reds";
       const markedReview = (tag: string, outcome: "--pass" | "--fail", mode: ReceiptMode): { result: WriteResult; unchanged: boolean } => {
         const markedRepo = tmpGitStudioRepo(`w125-marked-${tag}`);
         const markedStudio = join(markedRepo, "studio");
         const markedPath = join(markedStudio, "opera", "W-002.md");
         writeFileSync(markedPath, readFileSync(markedPath, "utf8").replace("state: building\n", "state: building\nbuilder_runtime: isolated\n"));
         writeFileSync(join(markedRepo, "source.txt"), "candidate source\n");
+        // The receipt must carry a replayed red for EVERY numbered behaviour the brief declares.
+        mkdirSync(join(markedStudio, "briefs"), { recursive: true });
+        const declared = mode === "partial-reds" ? 2 : 1;
+        writeFileSync(
+          join(markedStudio, "briefs", "W-002.md"),
+          ["# W-002", "", "## Behaviours to test", "", ...Array.from({ length: declared }, (_, i) => `${i + 1}. **Behaviour ${i + 1}.**`), "", "## Out of scope", ""].join("\n"),
+        );
         gitCommitAll(markedRepo, "test: establish marked review source");
         gitBranch(markedRepo, "opus/W-002");
         gitCheckout(markedRepo, "opus/W-002");
@@ -558,7 +565,7 @@ try {
         };
       };
 
-      for (const mode of ["missing", "failed", "stale"] as const) {
+      for (const mode of ["missing", "failed", "stale", "partial-reds"] as const) {
         for (const outcome of ["--pass", "--fail"] as const) {
           const row = markedReview(`${mode}-${outcome.slice(2)}`, outcome, mode);
           check(`W-125 marked admission: ${mode} receipt refuses ${outcome}`, row.result.exitCode !== 0, String(row.result.exitCode));
