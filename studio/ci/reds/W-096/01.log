@@ -1,0 +1,73 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour 1
+# exit: 1
+# at: 2026-10-01T11:20:17.361Z
+# sella: builder-codex.W-096
+# tree: tree:addfc3ff80700abaade07ceaf530b3f648b92f2b
+
+TAP version 13
+# Subtest: W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk
+not ok 1 - W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk
+  ---
+  duration_ms: 67.777631
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:1:3137'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+    +   baselineCommit: undefined,
+    -   baselineCommit: '13d09dfc4c2c02138c68c49bc822d126654e227a',
+        branchSucceeded: true,
+    +   checkedOutOwningBranch: false,
+    +   creationInventoryUnchanged: false,
+    +   diskKindRule: false,
+    +   newItemRefused: false,
+    +   preservationRule: false,
+    +   runNewRefused: false
+    -   checkedOutOwningBranch: true,
+    -   creationInventoryUnchanged: true,
+    -   diskKindRule: true,
+    -   newItemRefused: true,
+    -   preservationRule: true,
+    -   runNewRefused: true
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    diskKindRule: true
+    newItemRefused: true
+    runNewRefused: true
+    creationInventoryUnchanged: true
+    branchSucceeded: true
+    checkedOutOwningBranch: true
+    baselineCommit: '13d09dfc4c2c02138c68c49bc822d126654e227a'
+    preservationRule: true
+  actual:
+    diskKindRule: false
+    newItemRefused: false
+    runNewRefused: false
+    creationInventoryUnchanged: false
+    branchSucceeded: true
+    checkedOutOwningBranch: false
+    preservationRule: false
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:162:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 75.845733

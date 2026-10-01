@@ -1,0 +1,51 @@
+# behaviour: 5
+# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour 5
+# exit: 1
+# at: 2026-10-01T11:20:19.023Z
+# sella: builder-codex.W-096
+# tree: tree:addfc3ff80700abaade07ceaf530b3f648b92f2b
+
+TAP version 13
+# Subtest: W-096 behaviour 5: arcs and subtask parents are bounded valid references
+not ok 1 - W-096 behaviour 5: arcs and subtask parents are bounded valid references
+  ---
+  duration_ms: 20.591466
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:9:2183'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+    +   danglingArc: false,
+    +   missingParent: false
+    -   danglingArc: true,
+    -   missingParent: true
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    danglingArc: true
+    missingParent: true
+  actual:
+    danglingArc: false
+    missingParent: false
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:320:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27.587637
