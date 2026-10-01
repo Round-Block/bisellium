@@ -641,7 +641,10 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
 
   // W-096 native model: disk-level validation is deliberately separate
   // from writer validation so hand edits cannot bypass it.
-  for (const { where, problem } of validateStudioNativeModel(root, m as unknown as Pick<import("@bisellium/adapter-native").Manifest, "sellae" | "probationes">))
+  for (const { where, problem } of validateStudioNativeModel(
+    root,
+    m as unknown as Pick<import("@bisellium/adapter-native").Manifest, "collegia" | "sellae" | "probationes">,
+  ))
     addModelProblem(where, problem);
 
   // ---- petitiones -----------------------------------------------------------

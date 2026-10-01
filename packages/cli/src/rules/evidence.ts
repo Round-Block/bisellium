@@ -316,30 +316,29 @@ function checkW096AssertionReds(root: string): Finding[] {
 
 function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
   const record = safeFront(root, join(root, "opera", "W-096.md"));
-  const state = record ? str(record["state"]) : undefined;
-  const appearsActive = state !== undefined && new Set(["building", "verifying", "review"]).has(state);
+  if (!record) return [];
   const unverifiable = (message: string): Finding[] => [{
     rule: "opus.records_unchanged",
     level: "block",
     where: "opera/W-096.md",
     message: `preservation is unverifiable: ${message}`,
   }];
-  if (!opts.repo) return appearsActive ? unverifiable("repository context (--repo) is absent") : [];
+  if (!opts.repo) return unverifiable("repository context (--repo) is absent");
 
   try {
     const repoReal = realpathSync(resolve(opts.repo));
     const studioReal = realpathSync(resolve(root));
     if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
-      return appearsActive ? unverifiable("selected studio is not the native studio inside the supplied repository") : [];
+      return unverifiable("selected studio is not the native studio inside the supplied repository");
   } catch {
-    return appearsActive ? unverifiable("repository or studio identity cannot be resolved") : [];
+    return unverifiable("repository or studio identity cannot be resolved");
   }
 
   // The owning branch is determined from Git's current symbolic branch and
   // must equal the record owner's canonical ref, opus/W-096. Other branches
   // do not replay this opus-specific boundary after the record is merged.
   const branch = currentBranch(opts.repo);
-  if (branch === undefined) return appearsActive ? unverifiable("repository identity or current branch is unavailable") : [];
+  if (branch === undefined) return unverifiable("repository identity or current branch is unavailable");
   if (branch !== "opus/W-096") return [];
   const result = validateProtectedRecords(opts.repo, root);
   if (result.ok) return [];

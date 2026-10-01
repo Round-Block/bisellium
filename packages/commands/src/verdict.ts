@@ -5,6 +5,7 @@ import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
 import { readFront } from "@bisellium/adapter-native";
 import {
+  censorSella,
   designDigest,
   inspectUiDesignInput,
   readContainedRegularFile,
@@ -229,6 +230,15 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     promptHeader = prompt.relative;
   }
   if (isUi && phase === "build") {
+    const censor = censorSella(manifest);
+    if (!censor) {
+      console.error("UI build verdict cannot identify the manifest QA magister censor");
+      return { exitCode: 2 };
+    }
+    if (sella !== censor) {
+      console.error(`UI build verdict must be attributed to the censor ${censor}`);
+      return { exitCode: 2 };
+    }
     if (!uiInput) {
       console.error("UI build verdict requires --ui-input <ci-relative-path>");
       return { exitCode: 2 };

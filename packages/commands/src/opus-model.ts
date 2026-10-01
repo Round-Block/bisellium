@@ -70,6 +70,12 @@ export function isNativeOpusKind(value: unknown): value is NativeOpusKind {
   return typeof value === "string" && NATIVE_KIND_SET.has(value);
 }
 
+/** D-014's sole review gate is the magister of the manifest's QA collegium. */
+export function censorSella(manifest: Pick<Manifest, "collegia">): string | undefined {
+  const qa = manifest.collegia.find((collegium) => collegium.id === "qa");
+  return typeof qa?.magister === "string" && qa.magister.length > 0 ? qa.magister : undefined;
+}
+
 /** Frozen W-096 set, deliberately independent of the runtime's Unicode data. */
 export function titleProblem(value: unknown): string | undefined {
   if (typeof value !== "string" || value.trim() === "") return "title must be a nonblank string";
@@ -322,7 +328,7 @@ const FULL_FOLD_SEED = new Map<string, string>([
   ["ᾀ", "ἀι"], ["ᾁ", "ἁι"], ["ᾂ", "ἂι"], ["ᾃ", "ἃι"], ["ᾄ", "ἄι"], ["ᾅ", "ἅι"], ["ᾆ", "ἆι"], ["ᾇ", "ἇι"],
   ["ᾐ", "ἠι"], ["ᾑ", "ἡι"], ["ᾒ", "ἢι"], ["ᾓ", "ἣι"], ["ᾔ", "ἤι"], ["ᾕ", "ἥι"], ["ᾖ", "ἦι"], ["ᾗ", "ἧι"],
   ["ᾠ", "ὠι"], ["ᾡ", "ὡι"], ["ᾢ", "ὢι"], ["ᾣ", "ὣι"], ["ᾤ", "ὤι"], ["ᾥ", "ὥι"], ["ᾦ", "ὦι"], ["ᾧ", "ὧι"],
-  ["ᾳ", "αι"], ["ῃ", "ηι"], ["ῳ", "ωι"], ["ῒ", "ι\u0308\u0300"], ["ΐ", "ι\u0308\u0301"], ["ῢ", "υ\u0308\u0300"], ["ΰ", "υ\u0308\u0301"], ["ῥ", "ῥ"],
+  ["ᾳ", "αι"], ["ῃ", "ηι"], ["ῳ", "ωι"], ["ῒ", "ι\u0308\u0300"], ["ΐ", "ι\u0308\u0301"], ["ῢ", "υ\u0308\u0300"], ["ΰ", "υ\u0308\u0301"],
 ]);
 
 // Compact code-point form of every Unicode 17 C/F mapping which differs
@@ -346,6 +352,7 @@ export function fullCaseFold(value: string): string {
 
 export function normalizedWords(value: string): string[] {
   return fullCaseFold(value)
+    .replace(/^\s*[1-9][0-9]*\.\s+/gmu, "")
     .replace(/^\s{0,3}#{1,6}\s+/gmu, "")
     .replace(/\p{P}/gu, " ")
     .match(/[\p{L}\p{M}\p{N}]+/gu) ?? [];
@@ -409,12 +416,17 @@ function contentLines(markdown: string): { headings: { level: number; name: stri
   let fence: string | undefined;
   let comment = false;
   let section: string | undefined;
-  for (const [index, raw] of markdown.split(/\r?\n/).entries()) {
+  const sourceLines = markdown.split(/\r?\n/);
+  for (let index = 0; index < sourceLines.length; index++) {
+    const raw = sourceLines[index]!;
     const trimmed = raw.trim();
-    const fenceMatch = /^(```+|~~~+)/.exec(trimmed);
+    const fenceMatch = /^(`{3,}|~{3,})(.*)$/.exec(trimmed);
     if (fenceMatch) {
       if (!fence) fence = fenceMatch[1];
-      else if (trimmed.startsWith(fence[0]!.repeat(fence.length))) fence = undefined;
+      else {
+        const close = new RegExp(`^${fence[0] === "`" ? "`" : "~"}{${fence.length},}\\s*$`);
+        if (close.test(trimmed)) fence = undefined;
+      }
       continue;
     }
     if (fence) continue;
@@ -434,6 +446,16 @@ function contentLines(markdown: string): { headings: { level: number; name: stri
         break;
       }
       line = line.slice(0, start) + line.slice(end + 3);
+    }
+    const next = sourceLines[index + 1];
+    const setext = next === undefined ? undefined : /^\s{0,3}(=+|-+)\s*$/.exec(next);
+    if (line.trim() !== "" && setext) {
+      const level = setext[1]![0] === "=" ? 1 : 2;
+      const name = line.trim();
+      headings.push({ level, name, line: index });
+      section = level === 2 ? name : undefined;
+      index++;
+      continue;
     }
     const heading = /^(#{1,6})\s+(.+?)\s*$/.exec(line.trim());
     if (heading) {
@@ -501,7 +523,7 @@ export function substantiveUiTranscript(body: string, outcome: string, prompt?: 
 export interface UiPolicyContext {
   root: string;
   record: NativeRecord;
-  manifest: Pick<Manifest, "sellae" | "probationes"> & { review_probatio?: unknown };
+  manifest: Pick<Manifest, "collegia" | "sellae" | "probationes"> & { review_probatio?: unknown };
   phase: "check" | "ready" | "review" | "done";
 }
 
@@ -617,7 +639,14 @@ function validateServed(root: string, record: NativeRecord): { at?: string; tree
   return { at, tree: certifies, problems };
 }
 
-function reviewCitation(root: string, record: NativeRecord, input: UiInput, expectedDigest: string, reviewId: string): string[] {
+function reviewCitation(
+  root: string,
+  record: NativeRecord,
+  input: UiInput,
+  expectedDigest: string,
+  reviewId: string,
+  censor: string | undefined,
+): string[] {
   const gates = typeof record.probationes === "object" && record.probationes !== null && !Array.isArray(record.probationes) ? (record.probationes as Record<string, unknown>) : {};
   const review = gates[reviewId];
   if (typeof review !== "object" || review === null || Array.isArray(review)) return ["passed UI review evidence is missing"];
@@ -628,7 +657,10 @@ function reviewCitation(root: string, record: NativeRecord, input: UiInput, expe
   if ("error" in file) return [`review evidence is unsafe or unreadable: ${file.error}`];
   const header = parseVerdictHeader(file.bytes.toString("utf8"));
   const problems: string[] = [];
+  if (!censor) problems.push("review gate cannot identify the manifest QA magister censor");
+  else if (gate["sella"] !== censor) problems.push(`review gate sella must be the censor ${censor}`);
   if (header.duplicates.length) problems.push("review evidence contains duplicate header keys");
+  if (censor && header.values.get("sella") !== censor) problems.push(`review evidence header sella must be the censor ${censor}`);
   if (header.values.get("ui_input") !== input.relative) problems.push("review evidence does not cite the current ui-lead input");
   if (header.values.get("design_digest") !== expectedDigest) problems.push("review evidence design_digest is missing or stale");
   const sections = contentLines(header.body);
@@ -688,6 +720,7 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
     ? (record.probationes as Record<string, unknown>)
     : {};
   const reviewId = typeof manifest.review_probatio === "string" && manifest.review_probatio.length > 0 ? manifest.review_probatio : "review";
+  const censor = censorSella(manifest);
   const reviewGate = typeof recordedGates[reviewId] === "object" && recordedGates[reviewId] !== null && !Array.isArray(recordedGates[reviewId])
     ? (recordedGates[reviewId] as Record<string, unknown>)
     : {};
@@ -712,7 +745,7 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   const needsServed = phase === "review" || phase === "done" || state === "review" || state === "done";
   if (needsServed) for (const message of served.problems) addPolicyProblem("opus.ui.e2e", message);
   if ((phase === "done" || state === "done" || reviewGate["status"] === "passed") && input.input && design.digest)
-    for (const message of reviewCitation(root, record, input.input, design.digest, reviewId)) addPolicyProblem("opus.ui.design", message);
+    for (const message of reviewCitation(root, record, input.input, design.digest, reviewId, censor)) addPolicyProblem("opus.ui.design", message);
 
   const refs = record.ui_rulings;
   if (refs !== undefined && (!Array.isArray(refs) || refs.length === 0 || refs.some((value) => typeof value !== "string") || new Set(refs as unknown[]).size !== refs.length))
@@ -741,7 +774,10 @@ export function validateUiPolicy(context: UiPolicyContext): OpusModelProblem[] {
   return problems;
 }
 
-export function validateStudioNativeModel(root: string, manifest: Pick<Manifest, "sellae" | "probationes">): { where: string; problem: OpusModelProblem }[] {
+export function validateStudioNativeModel(
+  root: string,
+  manifest: Pick<Manifest, "collegia" | "sellae" | "probationes">,
+): { where: string; problem: OpusModelProblem }[] {
   const loaded = loadNativeRecords(root);
   const out = [...loaded.problems];
   for (const entry of loaded.entries) {

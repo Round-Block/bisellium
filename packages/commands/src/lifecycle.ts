@@ -24,6 +24,7 @@ import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
 import { editOpusFrontMatter } from "./frontmatter.js";
 import {
+  censorSella,
   effectiveProbationes,
   loadNativeRecords,
   readContainedRegularFile,
@@ -138,6 +139,7 @@ function nativePreflight(
   opusId: string,
   record: NativeRecord,
   phase: "check" | "ready" | "review" | "done" = "check",
+  wholeGraph = false,
 ): OpusModelProblem[] {
   const loaded = loadNativeRecords(root);
   const problems = loaded.problems.map(({ problem }) => problem);
@@ -147,9 +149,13 @@ function nativePreflight(
   // predate that field being required.  Preserve those legacy records'
   // transitions while still refusing every supplied non-native kind.  UI
   // policy remains opt-in only through an explicit `kind: ui` below.
-  problems.push(
-    ...validateNativeRecord(record, records).filter((problem) => record.kind !== undefined || problem.rule !== "opus.kind"),
-  );
+  const graphRecords = wholeGraph ? [...records.values()] : [record];
+  for (const graphRecord of graphRecords)
+    problems.push(
+      ...validateNativeRecord(graphRecord, records).filter(
+        (problem) => graphRecord.kind !== undefined || problem.rule !== "opus.kind",
+      ),
+    );
   problems.push(...validateRecordReferences(root, record));
   problems.push(...validateUiPolicy({ root, record, manifest, phase }));
   return problems;
@@ -561,6 +567,17 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
   const sella = reviewSellaResult;
+  if (pass) {
+    const censor = censorSella(manifest);
+    if (!censor) {
+      console.error("review --pass cannot identify the manifest QA magister censor");
+      return { exitCode: 2 };
+    }
+    if (sella !== censor) {
+      console.error(`review --pass must be attributed to the censor ${censor}`);
+      return { exitCode: 2 };
+    }
+  }
   const status = pass ? "passed" : "failed";
   const model = values.get("--model");
   const currentFront = readFront<NativeRecord>(opusPath).data;
@@ -1316,7 +1333,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     ...(parentFlag === undefined ? {} : { parent: parentFlag }),
     ...(rulingFlag === undefined ? {} : { ui_rulings: [...currentRulings, rulingFlag] }),
   };
-  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedAmend))) return { exitCode: 1 };
+  if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedAmend, "check", true))) return { exitCode: 1 };
 
   // Land 8: `namedSella` treats a blank $BISELLIUM_SELLA as unset (an
   // explicit blank --sella was already refused above), falling back to

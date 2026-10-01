@@ -14,7 +14,14 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { Manifest } from "@bisellium/adapter-native";
 import { createNextRecord } from "@bisellium/commands/ids.js";
-import { isNativeOpusKind, loadNativeRecords, titleProblem, validateNativeRecord } from "@bisellium/commands/opus-model.js";
+import {
+  isNativeOpusKind,
+  loadNativeRecords,
+  readContainedRegularFile,
+  titleProblem,
+  validateNativeRecord,
+  validateRecordReferences,
+} from "@bisellium/commands/opus-model.js";
 
 export interface NewOptions {
   kind: string;
@@ -186,6 +193,13 @@ export function runNew(args: string[]): { exitCode: number } {
     console.error(`--spec "${specOpt}" must be an officina-relative path with no ".." segment, inside the studio`);
     return { exitCode: 1 };
   }
+  if (specOpt !== undefined && !brief) {
+    const inspected = readContainedRegularFile(root, specOpt, "briefs");
+    if ("error" in inspected) {
+      console.error(`--spec "${specOpt}" must name a contained regular file under briefs/: ${inspected.error}`);
+      return { exitCode: 1 };
+    }
+  }
   try {
     const collegia = manifest.collegia ?? [];
     if (!collegia.some((d) => d.id === collegium)) {
@@ -212,17 +226,25 @@ export function runNew(args: string[]): { exitCode: number } {
       kind,
       collegium,
       state: "backlog",
+      ...(!brief && specOpt !== undefined ? { spec: specOpt } : {}),
       arc: values.get("--arc"),
       parent: values.get("--parent"),
     };
-    const modelProblem = validateNativeRecord(proposed, loaded.records)[0];
+    const modelProblem = [
+      ...validateNativeRecord(proposed, loaded.records),
+      ...validateRecordReferences(root, proposed),
+    ][0];
     if (modelProblem) {
       console.error(`${modelProblem.rule}: ${modelProblem.message}`);
       return { exitCode: 1 };
     }
 
     const created = createNextRecord(root, "opera", "W", (id) => {
-      const candidateProblem = validateNativeRecord({ ...proposed, id }, loaded.records)[0];
+      const candidate = { ...proposed, id };
+      const candidateProblem = [
+        ...validateNativeRecord(candidate, loaded.records),
+        ...validateRecordReferences(root, candidate),
+      ][0];
       if (candidateProblem) throw new Error(`${candidateProblem.rule}: ${candidateProblem.message}`);
       // --brief always wins over an explicit --spec: it creates the canonical
       // briefs/<id>.md and points spec: at exactly that path, so the two
