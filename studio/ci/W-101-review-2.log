@@ -1,0 +1,1162 @@
+# opus: W-101
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL — the nine-digit suffix cap (sec finding 2 fix) makes exact ^W-(\d+)\.md$ matches over nine digits stop contributing to the maximum, against the signed ID-universe contract (brief:80); round-1 blocker closed and pinned.
+# at: 2026-10-01T09:28:00.089Z
+# tree: tree:22d45abbbf33fa71646b659b73a3e446633d2a48
+
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /home/edckt/projects/bisellium/.worktrees/W-101
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0f6c6-3bc8-7b10-9690-90cee96dff28
+--------
+user
+You are the censor sella qa-lead, the sole review gate (D-014), reviewing opus W-101 round 2 on branch opus/W-101 (HEAD 6ae5a53). Your round-1 verdict is studio/ci/W-101-review-1.log: BLOCKING — createNextRecord returned a relative path for a relative studioRoot (signed interface requires the absolute created path); ADVISORY — containment census rationale cited the removed nextId. Sec-lead's seven findings (/tmp/claude-1000/-home-edckt-projects-bisellium/54cefaf8-a6df-46b5-9f84-fcbde1e23b2f/scratchpad/sec-w101.log, final block) were fixed in the same round. Since then: 'test(ids): pin W-101 round-1 hardening rows' (seven rows added to packages/cli/src/ids.test.ts, census rationale updated) and 'fix(ids): harden W-101 allocation' (packages/commands/src/ids.ts: realpath + lstat-verified real record directory for scan and create; NUL-only parsing of ls-tree -z; nine-digit suffix bound; GIT_NO_LAZY_FETCH=1 and literal pathspecs and no-replace-objects on every git spawn; 100-collision EEXIST bound; absolute returned path). Evidence: with the fix absent and the rows present, exactly the 7 new rows fail and the 7 original pass (/home/edckt/.bisellium-evidence/w101-r1-mutation.log); with the fix, 14/14 (w101-r1-focused.log); npm test clean (w101-r1-full.log); verify certificates at tree 22d45abb (studio/ci/W-101-{tests,lint,types}-22d45abb.log); check 0 blocking. Read the diff (git diff 25eefb1..HEAD, or the files if git is refused). Judge independently: is your blocker closed with a pinned row; does the hardening stay within the brief's interface and Files owned; do the stdout contracts remain byte-identical; is the barrier seam still inert; any new blocking defect. The five real master filings remain post-merge producer work. Do not repair code or edit evidence. End with exactly one line 'VERDICT: PASS' or 'VERDICT: FAIL — <reason>' followed by numbered findings marked BLOCKING or ADVISORY with file:line.
+codex
+I’m booting the qa-lead context first, then I’ll run the repository’s single censor review gate against the stated base and HEAD. I’ll keep the review read-only and independently verify the pinned blocker, interface/ownership boundaries, stdout bytes, and barrier seam.
+exec
+/usr/bin/zsh -lc bisellium in /home/edckt/projects/bisellium/.worktrees/W-101
+ exited 127 in 0ms:
+zsh:1: command not found: bisellium
+
+codex
+The global `bisellium` shim is not on this shell’s PATH. I’m locating the repository-local executable so the required no-argument usage check and qa-lead boot still happen before any project CLI action.
+exec
+/usr/bin/zsh -lc "pwd && rg -n '\"bin\"|\"bisellium\"|context --sella' package.json packages apps adapters 2>/dev/null | head -80 && rg --files | rg '("'^|/)bisellium($|'"\\.)|packages/.*/src/(cli|index)\\.ts"'$'"' | head -80" in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 0ms:
+/home/edckt/projects/bisellium/.worktrees/W-101
+adapters/native/src/index.ts:37:export const NATIVE_LIFECYCLE_ID = "bisellium";
+packages/shim/test/hooks.test.ts:49:  const bin = join(dir, "bisellium");
+packages/shim/src/hooks/claude-code.ts:23: * argv (e.g. `bisellium context --sella __SELLA__ --studio __STUDIO__`).
+packages/shim/src/hooks/claude-code.json:9:            "command": "bisellium hook-event context --sella __SELLA__ --studio __STUDIO__",
+packages/shim/src/hooks/claude-code.json:26:            "command": "bisellium hook-event context --sella __SELLA__ --studio __STUDIO__",
+package.json:2:  "name": "bisellium",
+package.json:13:    "bisellium": "node --import tsx packages/cli/src/main.ts",
+apps/server/test/board.test.ts:172:    check('officina.lifecycle.id is "bisellium"', r.body.lifecycle?.id === "bisellium", String(r.body.lifecycle?.id));
+apps/web/src/lib/board.test.ts:35:  id: "bisellium",
+packages/cli/package.json:6:  "bin": {
+packages/cli/package.json:7:    "bisellium": "bin/bisellium.mjs"
+packages/cli/src/instructions.ts:70:  "installed for you. Boot yourself with `bisellium context --sella <you>",
+packages/cli/src/talk-boundary.test.ts:104:// "bisellium" on each line) plus one verb the CLI does not have.
+packages/cli/src/talk-boundary.test.ts:321:      check(`behaviour 2 ${form}: bare bisellium admitted`, admits(allowed, "bisellium"));
+packages/cli/src/instructions.template.md:24:- Boot yourself: `bisellium context --sella <you> studio`
+packages/cli/src/instructions.test.ts:270:      name === "builder" ? /bisellium context studio/.test(text) && !text.includes("bisellium context --sella") : /bisellium context --sella [\w-]+ studio/.test(text);
+packages/cli/src/tick.ts:314:      cmd: ["bisellium", "tick"],
+packages/cli/src/check.ts:183:  if (num(m["bisellium"]) !== 1)
+packages/cli/src/check.ts:184:    add("manifest.version", "block", "bisellium.yml", `contract version must be 1 (got ${JSON.stringify(m["bisellium"])})`);
+examples/sample-studio/bisellium.yml
+examples/fixtures/good-minimal/bisellium.yml
+examples/fixtures/bad-non-string-id/bisellium.yml
+studio/bisellium.yml
+examples/fixtures/bad-waived-agent/bisellium.yml
+examples/fixtures/bad-review-failed-tests/bisellium.yml
+examples/fixtures/bad-halted-no-exit/bisellium.yml
+examples/fixtures/bad-empty-budget/bisellium.yml
+packages/commands/src/index.ts
+examples/fixtures/bad-unsupported-state/bisellium.yml
+packages/shim/src/index.ts
+packages/schema/src/index.ts
+examples/fixtures/bad-waived-automated/bisellium.yml
+examples/fixtures/bad-wip-cap/bisellium.yml
+examples/fixtures/bad-dead-link/bisellium.yml
+examples/fixtures/bad-mirrored-burn/bisellium.yml
+packages/providers/src/index.ts
+packages/core/src/index.ts
+packages/cli/bin/bisellium.mjs
+packages/pipeline/src/index.ts
+examples/fixtures/bad-missing-handoff/bisellium.yml
+
+exec
+/usr/bin/zsh -lc 'npm run -s bisellium' in /home/edckt/projects/bisellium/.worktrees/W-101
+ exited 2 in 175ms:
+usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+       bisellium query <question> [dir] [--now <iso>] [--from-index]
+       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+       bisellium pause [--studio <dir>] [--reason <text>]
+       bisellium resume [--studio <dir>]
+       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+       bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+       bisellium merge <opus-id> --studio <dir> --repo <dir>
+       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+       bisellium prune --studio <dir> [--repo <dir>]
+       bisellium docs registry [--repo <dir>] [--now <iso>]
+
+exec
+/usr/bin/zsh -lc 'npm run -s bisellium -- context --sella qa-lead studio' in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 232ms:
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+## QA lex
+--- data: leges/qa.md ---
+# QA Lex
+
+Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
+
+## 1. Mandate
+
+Verify greenlit features against spec and regression test suite; reject
+autonomously when warranted. The Censor drives the first hour of every
+cascade, advisory only — it does not sign the spec gate, which belongs to
+the architect — and closes the last one.
+
+## 2. Decides alone
+
+- Verdicts on `review` items: pass, fail, or request clarification
+- Regression suite changes and test infrastructure
+- Severity classification for found issues
+- One mutation per opus is enough to demonstrate the suite bites; no more
+  are required to pass review
+- Blocks a write outside an opus's declared files (check: probatio.declared)
+- Adopting an advisory-only rule proposal alone, without a petitio to the
+  Patron
+- Stamping `addressed_by` on a recurring class the Censor closes by
+  adopting an advisory rule alone (check: lesson.addressed_by)
+
+## 3. Digests
+
+- Weekly: test coverage, failure patterns, cycle time
+- Regression insights affecting engineering priority
+- A `class` of finding recurring across cascades; the advisory goes quiet
+  once some lesson of the class names what addresses it (check:
+  lesson.recurrent)
+
+## 4. Asks
+
+- Policy changes to acceptance criteria
+- Resource constraints affecting test infrastructure
+- A blocking-rule or lex-wording proposal arising from a retrospective —
+  filed as a petitio to the Patron, never adopted alone
+- A recurring class the Censor cannot address alone — filed as a petitio
+  naming the proposed opus, rule, or acceptance decision. A class left
+  unaddressed at the close of the next cascade is an unmet obligation.
+
+## 5. Budget
+
+- Period: week · Allowance: 0.5M tokens
+- Burn reporting: `aerarium/<period>.yml`
+- Over-budget: posture → conserve, digest the cause
+
+## 6. Autonomy
+
+- Level: L1 scheduled
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
+
+Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+retro`) that files at least one lesson per distinct finding class, each with
+non-empty, non-dead evidence (check: lesson.evidence).
+
+A usage section is required in every retro (D-013): `bisellium retro`'s
+input carries `usage` (totals, checking/building ratio, tokens per opus,
+trend against the previous retro, posture from the current aerarium), not
+supplied as an afterthought once the numbers are already forgotten —
+`retro.ts` renders the section only when it's given, so an empty/absent
+`usage` on a real cascade is the Censor's own gap, not the tool's.
+
+The Censor carries the addressed ledger forward: every retro's `##
+Addressed` section lists each recurrent class with its target, and a class
+recorded as formally accepted names the `decisions/D-nnn.md` that accepts
+it, with its `kill_when`.
+
+## 9. Amendment log
+
+| Date | Change | Authority |
+|---|---|---|
+| 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+| 2026-09-19 | Usage section required in every retro (D-013) | Patron |
+| 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
+| 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+--- end ---
+
+## Standing rules
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Before structural screen changes, verify against the dossier's touchpoint mapping.
+
+## QA index
+W-093 · backlog · sec-lead runs per PR, concurrent with QA: every opus PR gets a security pass alongside the censor round, alerts name opera, the merge-gate exclusion becomes a record
+
+## Recent decisions
+2026-10-01-retro-34 · Retrospectio 34 · 2026-10-01T08:42:25.584Z
+--- data: acta/2026-10-01-retro-34.md ---
+# Retrospectio 34
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 2840
+- Fix rounds: 1
+- Mutations caught: 20
+- Agents:
+  - builder-b — W-062 build (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-a — W-064 build and fix round (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-sol — W-079 D-025 trial build (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-062 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-064 review rounds 1-2 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-079 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+
+## Findings by class
+
+- environment×sandbox-forces-proxy-evidence: 1
+- mechanism×unpinned-by-test: 1
+- process×insurance-clause-fired: 1
+- spec-gate×self-signed: 1
+
+## Lessons filed
+
+- L-039 (environment×sandbox-forces-proxy-evidence) → lessons/L-039.md
+- L-040 (mechanism×unpinned-by-test) → lessons/L-040.md
+- L-041 (process×insurance-clause-fired) → lessons/L-041.md
+- L-042 (spec-gate×self-signed) → lessons/L-042.md
+
+## Recurrence
+
+- "process×insurance-clause-fired" recurs across cascades 6, 34
+
+## Addressed
+
+- "process×insurance-clause-fired" → nothing yet
+
+## Proposals
+
+- "environment×sandbox-forces-proxy-evidence": advisory rule — adopt alone
+- "mechanism×unpinned-by-test": advisory rule — adopt alone
+- "process×insurance-clause-fired": blocking-rule/lex-wording change — petitio filed at petitiones/P-014.md
+- "spec-gate×self-signed": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+2026-10-01-retro-35 · Retrospectio 35 · 2026-10-01T08:42:26.107Z
+--- data: acta/2026-10-01-retro-35.md ---
+# Retrospectio 35
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 3431
+- Fix rounds: 6
+- Mutations caught: 19
+- Agents:
+  - builder.W-089 — seat-template build and fixes (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - qa-lead — W-089 review rounds (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - builder-codex.W-087 — Board decrees build and fixes (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-087 review round 1 (gpt-5.6-sol): 170931 tokens, 0 min
+  - qa-lead — W-087 review round 2 (gpt-5.6-sol): 21111 tokens, 0 min
+  - qa-lead — W-087 review round 3 (gpt-5.6-sol): 91232 tokens, 0 min
+  - sec-lead — end-to-end symlink review (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - ui-lead — W-087 clearance (usage not retained; zero is unmeasured) (gpt-6-astra): 0 tokens, 0 min
+
+## Findings by class
+
+- architecture×containment-helper-duplicated: 1
+- design×indirection-duplicates-source-of-truth: 1
+- mechanism×id-allocation-local-tree-only: 1
+- mechanism×identity-normalization-not-centralized: 1
+- mechanism×served-suite-does-not-rebuild-bundle: 1
+- research×claimed-metric-without-enforced-methodology: 1
+- review×security-boundary-found-after-censor-pass: 1
+- tests×wall-clock-sleep-for-a-missing-seam: 1
+- workflow×failure-report-not-actionable: 1
+- workflow×files-owned-boundary-exceeded: 1
+
+## Lessons filed
+
+- L-043 (architecture×containment-helper-duplicated) → lessons/L-043.md
+- L-044 (design×indirection-duplicates-source-of-truth) → lessons/L-044.md
+- L-045 (mechanism×id-allocation-local-tree-only) → lessons/L-045.md
+- L-046 (mechanism×identity-normalization-not-centralized) → lessons/L-046.md
+- L-047 (mechanism×served-suite-does-not-rebuild-bundle) → lessons/L-047.md
+- L-048 (research×claimed-metric-without-enforced-methodology) → lessons/L-048.md
+- L-049 (review×security-boundary-found-after-censor-pass) → lessons/L-049.md
+- L-050 (tests×wall-clock-sleep-for-a-missing-seam) → lessons/L-050.md
+- L-051 (workflow×failure-report-not-actionable) → lessons/L-051.md
+- L-052 (workflow×files-owned-boundary-exceeded) → lessons/L-052.md
+
+## Recurrence
+
+- "tests×wall-clock-sleep-for-a-missing-seam" recurs across cascades 32, 35
+
+## Addressed
+
+- "tests×wall-clock-sleep-for-a-missing-seam" → nothing yet
+
+## Proposals
+
+- "architecture×containment-helper-duplicated": advisory rule — adopt alone
+- "design×indirection-duplicates-source-of-truth": advisory rule — adopt alone
+- "mechanism×id-allocation-local-tree-only": advisory rule — adopt alone
+- "mechanism×identity-normalization-not-centralized": advisory rule — adopt alone
+- "mechanism×served-suite-does-not-rebuild-bundle": advisory rule — adopt alone
+- "research×claimed-metric-without-enforced-methodology": advisory rule — adopt alone
+- "review×security-boundary-found-after-censor-pass": advisory rule — adopt alone
+- "tests×wall-clock-sleep-for-a-missing-seam": blocking-rule/lex-wording change — petitio filed at petitiones/P-015.md
+- "workflow×failure-report-not-actionable": advisory rule — adopt alone
+- "workflow×files-owned-boundary-exceeded": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+tokens: 2357
+
+codex
+The qa-lead context is loaded. Per D-014 and the repository’s standing rule, I’m now dispatching exactly one censor as the sole review/QA gate; no separate reviewer will be added, and neither of us will modify source or evidence.
+exec
+/usr/bin/zsh -lc 'git status --short --branch && git rev-parse HEAD && git branch --show-current && git diff --stat 25eefb1..HEAD && git diff --name-only 25eefb1..HEAD' in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 0ms:
+## opus/W-101...origin/opus/W-101
+6ae5a53ea03b76449255f925e45d4db9f4ac1a7d
+opus/W-101
+ packages/cli/src/containment.test.ts |   4 +-
+ packages/cli/src/ids.test.ts         | 153 ++++++++++++++++++++++++--
+ packages/commands/src/ids.ts         |  53 ++++++---
+ studio/ci/W-101-lint-22d45abb.log    |  14 +++
+ studio/ci/W-101-tests-22d45abb.log   | 204 +++++++++++++++++++++++++++++++++++
+ studio/ci/W-101-types-22d45abb.log   |   5 +
+ studio/opera/W-101.md                |   2 +-
+ 7 files changed, 413 insertions(+), 22 deletions(-)
+packages/cli/src/containment.test.ts
+packages/cli/src/ids.test.ts
+packages/commands/src/ids.ts
+studio/ci/W-101-lint-22d45abb.log
+studio/ci/W-101-tests-22d45abb.log
+studio/ci/W-101-types-22d45abb.log
+studio/opera/W-101.md
+
+codex
+The checkout matches the requested branch and exact HEAD, with a clean worktree. The full range changes only the command implementation, its CLI/containment tests, and generated opus/evidence bookkeeping; I’m waiting on the sole censor’s line-level analysis and test-contract checks.
+collab: Wait
+codex
+The censor has identified a possible new signed-contract regression in the nine-digit hardening: an otherwise matching ten-digit record is ignored instead of participating in max-plus-one allocation. I’m checking that finding against the exact W-101 brief language and the pinned test before accepting the gate result.
+exec
+/usr/bin/zsh -lc "nl -ba studio/briefs/W-101.md | sed -n '1,180p'
+nl -ba packages/commands/src/ids.ts | sed -n '1,190p'
+nl -ba packages/cli/src/ids.test.ts | sed -n '260,530p'
+nl -ba studio/ci/W-101-review-1.log | sed -n '1,180p'" in /home/edckt/projects/bisellium/.worktrees/W-101
+ succeeded in 0ms:
+     1	# W-101 — bisellium new allocates past every id on every branch
+     2	
+     3	Status: **architect-signed** under D-027 — architect (active Codex mapping:
+     4	Astra-medium), 2026-10-01. Sol drafted; the architect amended and signed.
+     5	Revision: **3**, expands queued acceptance filings from two to five; signing
+     6	amendments below. This text signature does not
+     7	write the opus's spec gate; that remains a CLI operation on its owning ref.
+     8	
+     9	## Intent
+    10	
+    11	An id that is absent from the checked-out tree is not necessarily unused.
+    12	`bisellium new` currently scans only `<studio>/opera/`, so a filing from
+    13	`master` can mint an id already committed on another branch. This is the
+    14	actual shape in this repository on 2026-10-01:
+    15	
+    16	- `codex/maps-lookup-experiment` contains `W-102` through `W-106`;
+    17	- `codex/public-source-canary` contains `W-107` through `W-109` as well;
+    18	- `codex/persistent-workflow` contains another `W-102`;
+    19	- `codex/read-efficiency` contains `W-102` through `W-107`, and
+    20	  `codex/source-adapter-canary` contains `W-102` through `W-108`;
+    21	- `master` contains none of those ids; and
+    22	- this worktree contains `W-101`, while the maximum `W-*` visible through
+    23	  local and remote-tracking refs is `W-109`.
+    24	
+    25	The next `W-*` allocation in `studio` must therefore be `W-110`, even from a
+    26	checkout whose local `studio/opera/` ends earlier.
+    27	
+    28	This is not only a `new` defect. There are five record-family/call-site rows
+    29	that mint sequential ids, implemented by four scan bodies in three modules:
+    30	
+    31	| Record | Production allocator | Present behaviour |
+    32	| --- | --- | --- |
+    33	| opus `W-*` | `packages/cli/src/new.ts:53` (`newItem`) | scans local `opera/`; allocates at line 57 |
+    34	| opus `W-*` | `packages/cli/src/new.ts:170` (`runNew`) | duplicates that local scan; allocates at line 174 |
+    35	| lesson `L-*` | `packages/cli/src/retro.ts:381` (`draftRetro`, helper at line 74) | scans local `lessons/`, then carries an in-memory offset at line 383 because lessons are written later |
+    36	| petitio `P-*` | `packages/cli/src/retro.ts:430` (`draftRetro`, same helper) | scans local `petitiones/` |
+    37	| petitio `P-*` | `packages/commands/src/talk.ts:173` (`openPetitio`) | independently scans local `petitiones/`; allocates at line 177 |
+    38	
+    39	`packages/commands/src/writes.ts:616` (`runAnswer`) does **not** allocate: it resolves
+    40	and edits an existing petitio. Nor is there a production `D-*` allocator.
+    41	Decision records are read and validated; `talk`'s `ACTUM:` path writes a
+    42	date-and-slug acta entry (`packages/commands/src/talk.ts:201`, with a
+    43	filename collision suffix at line 207), not `decisions/D-*.md`. That suffix
+    44	is outside the sequential record-id families. The ref-wide maxima measured
+    45	today are `P-013`, `L-038`, and `D-028`; the last is measurement, not a new
+    46	decision-writing scope.
+    47	
+    48	Replace every real sequential allocator above with one shared implementation
+    49	in `@bisellium/commands`. The helper owns both discovery and the exclusive
+    50	creation attempt; callers supply the officina root, record directory, prefix,
+    51	and a renderer for the bytes. Keeping the write in the helper is necessary:
+    52	returning a supposedly free string to a later ordinary `writeFileSync` would
+    53	retain the race this opus is meant to close.
+    54	
+    55	## The id universe
+    56	
+    57	Ids remain separate families. A `W-*` allocation takes the maximum numeric
+    58	suffix among `W-*.md` in that officina's `opera/`; `P-*` uses its
+    59	`petitiones/`, and `L-*` its `lessons/`. A high `P-*` must not advance a
+    60	`W-*`: the prefixes name different record kinds, their directories have
+    61	different contracts, and existing ids already overlap numerically.
+    62	
+    63	For one family, the candidate maximum is the union of:
+    64	
+    65	1. exact matching filenames in the requested directory of the current
+    66	   working tree, including untracked and otherwise uncommitted records; and
+    67	2. exact matching paths in the same officina directory in every existing
+    68	   `refs/heads/*` and `refs/remotes/*` ref.
+    69	
+    70	The implementation finds the repository containing the officina, computes
+    71	the officina's repository-relative path, obtains refs with the read-only
+    72	equivalent of:
+    73	
+    74	```text
+    75	git for-each-ref --format=%(refname) refs/heads refs/remotes
+    76	```
+    77	
+    78	and reads each relevant tree with `git ls-tree`, also read-only. Commands use
+    79	argument arrays, not a shell-built command line. Only a basename exactly
+    80	matching `^<prefix>-(\d+)\.md$` contributes. File contents and front matter
+    81	do not: the filename is the collision being prevented.
+    82	
+    83	Canonicalize the officina root and Git worktree root with `realpath` before
+    84	computing the relative path. Discover Git from that officina, not the process
+    85	cwd; linked worktrees use their own worktree root, not the common Git directory.
+    86	This keeps symlink aliases from silently selecting a different tree path.
+    87	
+    88	The repository-relative officina path is part of the lookup. For
+    89	`examples/sample-studio`, refs are inspected at
+    90	`examples/sample-studio/opera/`, never at `studio/opera/`. Its ref-wide opus
+    91	maximum is `W-007`, so it allocates `W-008` even though the same repository's
+    92	real officina reaches `W-109`. This is the necessary meaning of "same
+    93	officina on every ref", and prevents the fixture from inheriting production
+    94	bookkeeping merely because both live in one Git repository.
+    95	
+    96	Tags, stash, refs outside `refs/heads/*` and `refs/remotes/*` (including
+    97	`refs/pull/*`), and an upstream server not represented locally are outside
+    98	the universe. Every ref inside the two required namespaces contributes,
+    99	including any cached queue or pull-request ref there; no name-based exclusions.
+   100	
+   101	### Git degradation and stale remote state
+   102	
+   103	Allocation stays usable when `git` cannot be executed or the officina is not
+   104	inside a repository. If repository discovery, ref enumeration, or tree
+   105	inspection fails, the helper falls back to the working-tree directory scan
+   106	and writes a clear warning to stderr saying that ref-wide allocation was
+   107	unavailable and local records alone were used. It does not throw merely
+   108	because Git is unavailable. The caller's existing result/exit-code contract
+   109	otherwise remains unchanged.
+   110	
+   111	This chooses filing availability over ref-wide uniqueness during Git failure;
+   112	the warning must not claim that the degraded id is unused on other refs.
+   113	Discard partial ref results on any such failure so the fallback has one
+   114	testable meaning. Filesystem scan/create errors are not Git degradation.
+   115	
+   116	The allocator never runs `git fetch`, implicitly or otherwise. Fetch is a
+   117	network mutation, would make an ordinary local filing depend on credentials
+   118	and availability, and still could not provide a global lock. Remote-tracking
+   119	refs are a cache: the helper uses the cache present when invoked. If it is
+   120	stale, ids known only to the server are necessarily invisible. Operators who
+   121	need fresher knowledge fetch explicitly before filing.
+   122	
+   123	### Concurrent writers in one checkout
+   124	
+   125	After discovering maximum `N`, the helper renders `N + 1` and creates the
+   126	record itself with `writeFileSync(target, bytes, { flag: "wx" })`, following
+   127	the non-overwrite pattern at `packages/commands/src/verdict.ts:181`. On
+   128	`EEXIST`, it increments and tries the next id; it never overwrites, truncates,
+   129	or treats the collision as success. Other I/O errors propagate to the
+   130	caller's established error handling. This closes the same-checkout race
+   131	without a stale lock file.
+   132	
+   133	The guarantee is deliberately bounded: exclusive create coordinates
+   134	processes that share a filesystem checkout. Separate worktrees can still
+   135	race after observing the same ref set; Git refs are evidence, not a
+   136	distributed reservation service. Once either filing becomes a visible ref,
+   137	later allocations advance past it.
+   138	
+   139	`runNew --brief` reserves the opus record exclusively before writing its
+   140	companion brief, and the brief is also a non-overwriting `wx` write. If the
+   141	brief write fails, the newly created opus record from this invocation is
+   142	removed before reporting failure, so the command does not leave a `spec:`
+   143	pointer to an absent or pre-existing brief. `newItem` has no companion file.
+   144	Retro writes each allocated lesson through the shared helper as it is
+   145	allocated; its recurrence calculation continues to use the history snapshot
+   146	taken before this retro, so its meaning does not change. Petitiones from
+   147	retro and talk use the same helper and collision retry.
+   148	Recurrence still combines that snapshot with this invocation's new lesson,
+   149	exactly as `packages/cli/src/retro.ts:402` does today; it does not reread the
+   150	newly written lessons into history. Retro is not an all-or-nothing transaction.
+   151	
+   152	## Interfaces
+   153	
+   154	Add one commands-package module with one production seam, named for ids rather
+   155	than for any caller. Its effective contract is:
+   156	
+   157	```ts
+   158	createNextRecord(
+   159	  studioRoot: string,
+   160	  directory: "opera" | "petitiones" | "lessons",
+   161	  prefix: "W" | "P" | "L",
+   162	  render: (id: string) => string | Uint8Array,
+   163	): { id: string; path: string };
+   164	```
+   165	
+   166	The exact type names may follow house style, but discovery plus exclusive
+   167	write must remain one operation and callers must not regain a scan/write
+   168	gap. The helper returns the absolute created path so `runNew --brief` can
+   169	perform its bounded rollback without reconstructing it. It may be generic
+   170	enough for a future `D-*` writer, but this opus adds no decision verb and no
+   171	unused decision-specific branch.
+   172	
+   173	The helper may synchronously invoke Git because every caller is synchronous
+   174	today. It must not print in the normal Git-backed case. Its only direct user
+   175	output is the stderr degradation warning; existing caller stdout stays byte
+   176	compatible (`W-NNN`, `petitio P-NNN opened`, and existing retro results).
+   177	
+   178	## Files owned
+   179	
+   180	- `packages/commands/src/ids.ts` — shared ref-aware, exclusive-create
+     1	/**
+     2	 * Shared sequential-record allocator.  The filename is the id claim: find
+     3	 * the highest matching filename in this checkout and every locally-known
+     4	 * branch/ref, then reserve the next candidate with an exclusive create.
+     5	 */
+     6	import { execFileSync } from "node:child_process";
+     7	import { lstatSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+     8	import { join, relative, sep } from "node:path";
+     9	
+    10	export type RecordDirectory = "opera" | "petitiones" | "lessons";
+    11	export type RecordPrefix = "W" | "P" | "L";
+    12	
+    13	export interface CreatedRecord {
+    14	  id: string;
+    15	  path: string;
+    16	}
+    17	
+    18	const GIT_OUTPUT_LIMIT = 16 * 1024 * 1024;
+    19	// Record suffixes are bounded to nine decimal digits; 999,999,999 is final.
+    20	const MAX_SUFFIX_DIGITS = 9;
+    21	const MAX_SUFFIX = 999_999_999;
+    22	// A single allocation may absorb at most 100 concurrent EEXIST collisions.
+    23	const MAX_EEXIST_RETRIES = 100;
+    24	
+    25	function numericSuffix(name: string, pattern: RegExp): number | undefined {
+    26	  const match = pattern.exec(name);
+    27	  const digits = match?.[1];
+    28	  if (digits === undefined || digits.length > MAX_SUFFIX_DIGITS) return undefined;
+    29	  const suffix = Number(digits);
+    30	  return Number.isSafeInteger(suffix) && suffix <= MAX_SUFFIX ? suffix : undefined;
+    31	}
+    32	
+    33	function localMaximum(directoryPath: string, pattern: RegExp): number {
+    34	  let maximum = 0;
+    35	  for (const name of readdirSync(directoryPath)) {
+    36	    const suffix = numericSuffix(name, pattern);
+    37	    if (suffix !== undefined) maximum = Math.max(maximum, suffix);
+    38	  }
+    39	  return maximum;
+    40	}
+    41	
+    42	function gitOutput(cwd: string, args: string[]): string {
+    43	  return execFileSync("git", ["-C", cwd, ...args], {
+    44	    encoding: "utf8",
+    45	    env: {
+    46	      ...process.env,
+    47	      // Tree discovery must be local, literal and independent of refs/replace.
+    48	      GIT_NO_LAZY_FETCH: "1",
+    49	      GIT_LITERAL_PATHSPECS: "1",
+    50	      GIT_NO_REPLACE_OBJECTS: "1",
+    51	    },
+    52	    maxBuffer: GIT_OUTPUT_LIMIT,
+    53	    stdio: ["ignore", "pipe", "pipe"],
+    54	  });
+    55	}
+    56	
+    57	/**
+    58	 * Returns the ref-wide maximum, or `undefined` after any Git failure.  The
+    59	 * result is all-or-nothing so a failed tree read cannot leave a misleading
+    60	 * partial maximum in use.
+    61	 */
+    62	function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: RegExp): number | undefined {
+    63	  try {
+    64	    const discoveredRoot = gitOutput(studioRoot, ["rev-parse", "--show-toplevel"]).trim();
+    65	    const physicalRepo = realpathSync(discoveredRoot);
+    66	    const studioRelative = relative(physicalRepo, studioRoot);
+    67	    if (studioRelative === ".." || studioRelative.startsWith(`..${sep}`)) throw new Error("officina is outside its Git worktree");
+    68	
+    69	    const gitDirectory = [...(studioRelative ? studioRelative.split(sep) : []), directory].join("/");
+    70	    const refs = gitOutput(physicalRepo, [
+    71	      "for-each-ref",
+    72	      "--format=%(refname)",
+    73	      "refs/heads",
+    74	      "refs/remotes",
+    75	    ])
+    76	      .split(/\r?\n/)
+    77	      .filter((ref) => ref.length > 0);
+    78	
+    79	    let maximum = 0;
+    80	    for (const ref of refs) {
+    81	      const paths = gitOutput(physicalRepo, ["ls-tree", "-r", "-z", "--name-only", ref, "--", gitDirectory]).split("\0");
+    82	      const directoryPrefix = `${gitDirectory}/`;
+    83	      for (const path of paths) {
+    84	        if (!path.startsWith(directoryPrefix)) continue;
+    85	        const name = path.slice(directoryPrefix.length);
+    86	        if (name.includes("/")) continue;
+    87	        const suffix = numericSuffix(name, pattern);
+    88	        if (suffix !== undefined) maximum = Math.max(maximum, suffix);
+    89	      }
+    90	    }
+    91	    return maximum;
+    92	  } catch {
+    93	    return undefined;
+    94	  }
+    95	}
+    96	
+    97	function requireRealDirectory(path: string): void {
+    98	  const stat = lstatSync(path);
+    99	  if (stat.isSymbolicLink() || !stat.isDirectory()) {
+   100	    throw new Error(`record directory must be a real directory, not a symbolic link: ${path}`);
+   101	  }
+   102	}
+   103	
+   104	export function createNextRecord(
+   105	  studioRoot: string,
+   106	  directory: RecordDirectory,
+   107	  prefix: RecordPrefix,
+   108	  render: (id: string) => string | Uint8Array,
+   109	): CreatedRecord {
+   110	  const physicalStudio = realpathSync(studioRoot);
+   111	  const directoryPath = join(physicalStudio, directory);
+   112	  mkdirSync(directoryPath, { recursive: true });
+   113	  requireRealDirectory(directoryPath);
+   114	  const pattern = new RegExp(`^${prefix}-(\\d+)\\.md$`);
+   115	  const local = localMaximum(directoryPath, pattern);
+   116	  const fromRefs = refMaximum(physicalStudio, directory, pattern);
+   117	  if (fromRefs === undefined) {
+   118	    console.error("warning: Git ref-wide allocation unavailable; using local records only");
+   119	  }
+   120	
+   121	  let candidate = Math.max(local, fromRefs ?? 0) + 1;
+   122	  for (let collisions = 0; ; collisions++) {
+   123	    if (candidate > MAX_SUFFIX) {
+   124	      throw new Error(`record id suffix exhausted at ${MAX_SUFFIX_DIGITS} digits for prefix ${prefix}`);
+   125	    }
+   126	    const id = `${prefix}-${String(candidate).padStart(3, "0")}`;
+   127	    const path = join(directoryPath, `${id}.md`);
+   128	    try {
+   129	      const contents = render(id);
+   130	      requireRealDirectory(directoryPath);
+   131	      writeFileSync(path, contents, { flag: "wx" });
+   132	      return { id, path };
+   133	    } catch (error) {
+   134	      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+   135	      if (collisions + 1 >= MAX_EEXIST_RETRIES) {
+   136	        throw new Error(`record allocation stopped after ${MAX_EEXIST_RETRIES} EEXIST collisions for prefix ${prefix}`);
+   137	      }
+   138	      candidate++;
+   139	    }
+   140	  }
+   141	}
+   260	        JSON.stringify(added) !== JSON.stringify([`${expectedId}.md`])
+   261	      ) {
+   262	        problems.push(
+   263	          `${row.name}/${caller}: expected=${expectedId} actual=${String(id)} target=${existsSync(target)} sentinel=${readFileSync(fixture.sentinel, "utf8") === before} added=${JSON.stringify(added)}`,
+   264	        );
+   265	      }
+   266	    }
+   267	  }
+   268	  check(1, "newItem and runNew allocate max-plus-one from each ref source and the dirty tree", problems.length === 0, problems.join(" | "));
+   269	
+   270	  const pathnameFixture = initRepo("b1-nul-pathnames");
+   271	  record(pathnameFixture.studio, "opera", "W-009");
+   272	  commitAll(pathnameFixture.root, "baseline nine");
+   273	  git(pathnameFixture.root, ["switch", "-c", "hostile-pathnames"]);
+   274	  writeFileSync(join(pathnameFixture.studio, "opera", "W-999999.md\nsuffix"), "not an id filename\n");
+   275	  const nested = join(pathnameFixture.studio, "opera", "nested\nstudio", "opera");
+   276	  mkdirSync(nested, { recursive: true });
+   277	  writeFileSync(join(nested, "W-888888.md"), "nested\n");
+   278	  commitAll(pathnameFixture.root, "newline pathnames");
+   279	  git(pathnameFixture.root, ["switch", "main"]);
+   280	  const pathnameResult = newItem(pathnameFixture.studio, {
+   281	    kind: "task",
+   282	    collegium: "engineering",
+   283	    title: "NUL-only pathname parsing",
+   284	  });
+   285	  check(
+   286	    1,
+   287	    "ls-tree -z treats newlines as pathname bytes and still excludes nested records",
+   288	    pathnameResult.ok && pathnameResult.id === "W-010",
+   289	    JSON.stringify(pathnameResult),
+   290	  );
+   291	
+   292	  const numericProblems: string[] = [];
+   293	  for (const [name, invalid] of [
+   294	    ["infinity", "9".repeat(309)],
+   295	    ["unsafe-integer", "9007199254740992"],
+   296	  ] as const) {
+   297	    const fixture = initRepo(`b1-${name}`);
+   298	    record(fixture.studio, "opera", "W-004");
+   299	    commitAll(fixture.root, "numeric baseline");
+   300	    rawTreeRecord(fixture.root, "studio", `${name}-suffix`, `W-${invalid}`);
+   301	    const result = newItem(fixture.studio, {
+   302	      kind: "task",
+   303	      collegium: "engineering",
+   304	      title: `${name} suffix`,
+   305	    });
+   306	    if (!result.ok || result.id !== "W-005") numericProblems.push(`${name}=${JSON.stringify(result)}`);
+   307	  }
+   308	  check(
+   309	    1,
+   310	    "suffixes over nine digits are ignored instead of minting Infinity or unsafe integers",
+   311	    numericProblems.length === 0,
+   312	    numericProblems.join(" | "),
+   313	  );
+   314	}
+   315	
+   316	// ---------------------------------------------------------------------------
+   317	// Behaviour 2 — retro/talk observable allocation plus five-row source census.
+   318	// ---------------------------------------------------------------------------
+   319	
+   320	function retroRefFixture(tag: string): { root: string; studio: string } {
+   321	  const { root, studio } = initRepo(tag);
+   322	  writeFileSync(join(studio, "evidence.log"), "evidence\n");
+   323	  record(
+   324	    studio,
+   325	    "lessons",
+   326	    "L-001",
+   327	    '---\nid: "L-001"\nat: 2026-09-01T00:00:00Z\nclass: "recurring"\nevidence: ["evidence.log"]\ncascade: 1\n---\nold\n',
+   328	  );
+   329	  commitAll(root, "baseline");
+   330	  branchRecord(root, "studio", "lesson-high", "lessons", "L-020");
+   331	  const remoteCommit = branchRecord(root, "studio", "petitio-seed", "petitiones", "P-030");
+   332	  git(root, ["update-ref", "refs/remotes/origin/petition", remoteCommit]);
+   333	  git(root, ["branch", "-D", "petitio-seed"]);
+   334	  return { root, studio };
+   335	}
+   336	
+   337	function functionName(node: ts.Node): string {
+   338	  let current: ts.Node | undefined = node.parent;
+   339	  while (current) {
+   340	    if (ts.isFunctionDeclaration(current) && current.name) return current.name.text;
+   341	    current = current.parent;
+   342	  }
+   343	  return "<module>";
+   344	}
+   345	
+   346	function idSeamCalls(rel: string): string[] {
+   347	  const path = join(repo, ...rel.split("/"));
+   348	  const source = ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true);
+   349	  const direct = new Set<string>();
+   350	  const namespaces = new Set<string>();
+   351	  for (const statement of source.statements) {
+   352	    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+   353	    if (statement.moduleSpecifier.text !== "@bisellium/commands/ids.js") continue;
+   354	    const bindings = statement.importClause?.namedBindings;
+   355	    if (bindings && ts.isNamedImports(bindings)) {
+   356	      for (const specifier of bindings.elements) {
+   357	        if ((specifier.propertyName ?? specifier.name).text === "createNextRecord") direct.add(specifier.name.text);
+   358	      }
+   359	    } else if (bindings && ts.isNamespaceImport(bindings)) namespaces.add(bindings.name.text);
+   360	  }
+   361	  const calls: string[] = [];
+   362	  function visit(node: ts.Node): void {
+   363	    if (ts.isCallExpression(node)) {
+   364	      const expression = node.expression;
+   365	      const matches =
+   366	        (ts.isIdentifier(expression) && direct.has(expression.text)) ||
+   367	        (ts.isPropertyAccessExpression(expression) &&
+   368	          expression.name.text === "createNextRecord" &&
+   369	          ts.isIdentifier(expression.expression) &&
+   370	          namespaces.has(expression.expression.text));
+   371	      if (matches) calls.push(`${rel}:${functionName(node)}`);
+   372	    }
+   373	    ts.forEachChild(node, visit);
+   374	  }
+   375	  visit(source);
+   376	  return calls;
+   377	}
+   378	
+   379	if (runs(2)) {
+   380	  const problems: string[] = [];
+   381	  const retroFixture = retroRefFixture("b2-retro");
+   382	  const retroInput: RetroInput = {
+   383	    verifierIssues: 0,
+   384	    reviewFindings: [{ class: "recurring", where: "fixture", evidence: ["evidence.log"] }],
+   385	    agents: [],
+   386	    tests: 1,
+   387	    fixRounds: 0,
+   388	    mutationsCaught: 0,
+   389	  };
+   390	  const drafted = draftRetro(retroFixture.studio, 2, retroInput, new Date("2026-10-01T00:00:00Z"));
+   391	  if (drafted.lessons[0]?.path !== "lessons/L-021.md") problems.push(`draftRetro lesson=${drafted.lessons[0]?.path}`);
+   392	  if (drafted.petitiones[0] !== "petitiones/P-031.md") problems.push(`draftRetro petitio=${drafted.petitiones[0]}`);
+   393	
+   394	  const talkFixture = retroRefFixture("b2-talk");
+   395	  const fake: HarnessProfile = {
+   396	    id: "fake",
+   397	    tier: 1,
+   398	    available: async () => true,
+   399	    start: async (): Promise<Turn> => ({ sessionId: "w101", reply: "PETITIO: ref-aware escalation", exitCode: 0 }),
+   400	    resume: async (): Promise<Turn> => ({ sessionId: "w101", reply: "PETITIO: ref-aware escalation", exitCode: 0 }),
+   401	  };
+   402	  const talked = await (async () => {
+   403	    const logs: string[] = [];
+   404	    const old = console.log;
+   405	    console.log = (...parts: unknown[]) => logs.push(parts.map(String).join(" "));
+   406	    try {
+   407	      const result = await runTalk(
+   408	        ["--sella", "eng-lead", "--harness", "fake", "--model-only", "--studio", talkFixture.studio, "escalate"],
+   409	        { harnesses: { fake } },
+   410	      );
+   411	      return { result, logs };
+   412	    } finally {
+   413	      console.log = old;
+   414	    }
+   415	  })();
+   416	  if (talked.result.exitCode !== 0 || !talked.logs.includes("petitio P-031 opened")) problems.push(`talk=${JSON.stringify(talked)}`);
+   417	
+   418	  const actualCalls = [
+   419	    ...idSeamCalls("packages/cli/src/new.ts"),
+   420	    ...idSeamCalls("packages/cli/src/retro.ts"),
+   421	    ...idSeamCalls("packages/commands/src/talk.ts"),
+   422	  ];
+   423	  const expectedCalls = [
+   424	    "packages/cli/src/new.ts:newItem",
+   425	    "packages/cli/src/new.ts:runNew",
+   426	    "packages/cli/src/retro.ts:draftRetro",
+   427	    "packages/cli/src/retro.ts:draftRetro",
+   428	    "packages/commands/src/talk.ts:openPetitio",
+   429	  ];
+   430	  if (JSON.stringify(actualCalls) !== JSON.stringify(expectedCalls)) {
+   431	    problems.push(`source census expected=${JSON.stringify(expectedCalls)} actual=${JSON.stringify(actualCalls)}`);
+   432	  }
+   433	  const newSource = readFileSync(join(repo, "packages/cli/src/new.ts"), "utf8");
+   434	  const retroSource = readFileSync(join(repo, "packages/cli/src/retro.ts"), "utf8");
+   435	  const talkSource = readFileSync(join(repo, "packages/commands/src/talk.ts"), "utf8");
+   436	  if (/const\s+ID_RE\s*=/.test(newSource) || /function\s+nextId\s*\(/.test(retroSource) || /PETITIO_ID_RE/.test(talkSource)) {
+   437	    problems.push("old local max scanner remains");
+   438	  }
+   439	  check(2, "all five allocator rows use the shared ids seam and observe off-branch maxima", problems.length === 0, problems.join(" | "));
+   440	}
+   441	
+   442	// ---------------------------------------------------------------------------
+   443	// Behaviour 3 — warned local-only fallback and non-Git filesystem errors.
+   444	// ---------------------------------------------------------------------------
+   445	
+   446	function localStudio(tag: string): string {
+   447	  const root = scratch(tag);
+   448	  const studio = join(root, "officina");
+   449	  writeManifest(studio);
+   450	  record(studio, "opera", "W-004");
+   451	  return studio;
+   452	}
+   453	
+   454	function fakeGitDir(tag: string): string {
+   455	  const dir = scratch(`fake-git-${tag}`);
+   456	  const script = join(dir, "git");
+   457	  writeFileSync(
+   458	    script,
+   459	    `#!${process.execPath}\n` +
+   460	      `const fs = require("node:fs");\n` +
+   461	      `const args = process.argv.slice(2);\n` +
+   462	      `const mode = process.env.W101_GIT_MODE || "";\n` +
+   463	      `const root = process.env.W101_GIT_ROOT || "";\n` +
+   464	      `if (args.includes("rev-parse")) { if (mode === "discovery") process.exit(41); console.log(root); process.exit(0); }\n` +
+   465	      `if (args.includes("for-each-ref")) { if (mode === "refs") process.exit(42); console.log("refs/heads/high\\nrefs/remotes/origin/high"); process.exit(0); }\n` +
+   466	      `if (args.includes("ls-tree")) { const p = process.env.W101_GIT_COUNT; let n = 0; try { n = Number(fs.readFileSync(p, "utf8")); } catch {} fs.writeFileSync(p, String(n + 1)); if (mode === "tree" && n > 0) process.exit(43); process.stdout.write((process.env.W101_GIT_TREE_ENTRY || "officina/opera/W-099.md") + "\\0"); process.exit(0); }\n` +
+   467	      `process.exit(44);\n`,
+   468	  );
+   469	  chmodSync(script, 0o755);
+   470	  return dir;
+   471	}
+   472	
+   473	function warnedLocalOnly(result: RunResult): boolean {
+   474	  return result.status === 0 && result.stdout.trim() === "W-005" && /git|ref/i.test(result.stderr) && /local[^\n]*only|only[^\n]*local/i.test(result.stderr);
+   475	}
+   476	
+   477	if (runs(3)) {
+   478	  const problems: string[] = [];
+   479	  const outside = localStudio("b3-nonrepo");
+   480	  const nonRepo = await spawnCli(["new", "--kind", "task", "--collegium", "engineering", "--title", "nonrepo", outside]);
+   481	  if (!warnedLocalOnly(nonRepo)) problems.push(`non-repo=${JSON.stringify(nonRepo)}`);
+   482	
+   483	  const directStudio = localStudio("b3-direct-result");
+   484	  const direct = newItem(directStudio, { kind: "task", collegium: "engineering", title: "direct result contract" });
+   485	  if (!direct.ok || direct.id !== "W-005" || direct.message !== "W-005") problems.push(`newItem result=${JSON.stringify(direct)}`);
+   486	
+   487	  const relativeStudio = localStudio("b3-relative-root");
+   488	  const relativeRoot = relative(repo, relativeStudio);
+   489	  const relativeCreated = createNextRecord(relativeRoot, "lessons", "L", (id) => `${id}\n`);
+   490	  check(
+   491	    3,
+   492	    "direct createNextRecord with a relative officina returns the absolute created path",
+   493	    isAbsolute(relativeCreated.path) && existsSync(relativeCreated.path) && relativeCreated.id === "L-001",
+   494	    JSON.stringify(relativeCreated),
+   495	  );
+   496	
+   497	  const noGitStudio = localStudio("b3-no-git");
+   498	  const emptyPath = scratch("b3-empty-path");
+   499	  const noGit = await spawnCli(["new", "--kind", "task", "--collegium", "engineering", "--title", "no git", noGitStudio], {
+   500	    env: { ...process.env, PATH: emptyPath },
+   501	  });
+   502	  if (!warnedLocalOnly(noGit)) problems.push(`no-git=${JSON.stringify(noGit)}`);
+   503	
+   504	  for (const mode of ["discovery", "refs", "tree"] as const) {
+   505	    const studio = localStudio(`b3-${mode}`);
+   506	    const fakeDir = fakeGitDir(mode);
+   507	    const count = join(dirname(studio), `${mode}.count`);
+   508	    const result = await spawnCli(["new", "--kind", "task", "--collegium", "engineering", "--title", mode, studio], {
+   509	      env: { ...process.env, PATH: `${fakeDir}${delimiter}${process.env["PATH"] ?? ""}`, W101_GIT_MODE: mode, W101_GIT_ROOT: dirname(studio), W101_GIT_COUNT: count },
+   510	    });
+   511	    if (!warnedLocalOnly(result) || existsSync(join(studio, "opera", "W-100.md"))) problems.push(`${mode}=${JSON.stringify(result)}`);
+   512	  }
+   513	
+   514	  const fsRoot = scratch("b3-filesystem");
+   515	  const fsStudio = join(fsRoot, "officina");
+   516	  writeManifest(fsStudio);
+   517	  writeFileSync(join(fsStudio, "opera"), "not a directory\n");
+   518	  const fsError = await spawnCli(["new", "--kind", "task", "--collegium", "engineering", "--title", "fs", fsStudio]);
+   519	  if (fsError.status !== 1 || !/new failed:/i.test(fsError.stderr) || /local[^\n]*only/i.test(fsError.stderr)) {
+   520	    problems.push(`filesystem=${JSON.stringify(fsError)}`);
+   521	  }
+   522	
+   523	  const literal = initRepo("b3-literal-pathspec", ":officina");
+   524	  record(literal.studio, "opera", "W-001");
+   525	  commitAll(literal.root, "literal baseline");
+   526	  branchRecord(literal.root, ":officina", "literal-high", "opera", "W-012");
+   527	  const literalResult = newItem(literal.studio, { kind: "task", collegium: "engineering", title: "literal pathspec" });
+   528	
+   529	  const replaced = initRepo("b3-replace-object");
+   530	  record(replaced.studio, "opera", "W-001");
+     1	# opus: W-101
+     2	# phase: build
+     3	# round: 1
+     4	# sella: qa-lead
+     5	# model: gpt-5.6-sol
+     6	# outcome: FAIL — createNextRecord returns a relative path when studioRoot is relative; the signed interface requires the absolute created path (ids.ts:91). Advisory: census retro dispositions still cite the removed nextId.
+     7	# at: 2026-10-01T09:04:18.175Z
+     8	# tree: tree:83d11e8d59571f31ea0fab15b2e7fe5dafa5398f
+     9	
+    10	Reading additional input from stdin...
+    11	OpenAI Codex v0.153.4
+    12	--------
+    13	workdir: /home/edckt/projects/bisellium/.worktrees/W-101
+    14	model: gpt-5.6-sol
+    15	provider: openai
+    16	approval: never
+    17	sandbox: read-only
+    18	reasoning effort: high
+    19	reasoning summaries: none
+    20	session id: 01a0f6b0-09d9-7c42-a78d-c2a2048ef418
+    21	--------
+    22	user
+    23	You are the censor sella qa-lead, the sole review gate (D-014), reviewing opus W-101 round 1 on branch opus/W-101 (HEAD c9afc7c, rebased on master 3149129). Read studio/leges/qa.md, studio/briefs/W-101.md (signed revision 2), studio/opera/W-101.md. The build was two-phase: 'test(ids): add W-101 allocator red suite' (tests + the private BISELLIUM_IDS_TEST_BARRIER_DIR seam, no allocator), reds for behaviours 1–7 at tree 6b5a091d (studio/ci/reds/W-101/0N.log), then 'feat(ids): allocate records across refs' (packages/commands/src/ids.ts, new.ts, retro.ts, talk.ts, containment.test.ts census, docs/ARCHITECTURE.md). The diff of the whole opus is git diff master...HEAD (or read the files if git is refused). Evidence: focused suite 8/8 rows (/home/edckt/.bisellium-evidence/w101-focused.log), npm test clean (w101-full.log), verify certificates at tree 83d11e8d (studio/ci/W-101-{tests,lint,types}-83d11e8d.log), check 0 blocking. Judge independently against the brief: does each red fail for the brief's stated pre-change reason (not a missing module); does ids.ts honour the interface in the brief (one seam, discovery + exclusive write as one operation, no scan/write gap, no fetch or network command, warned local-only fallback discarding partials, physical officina identity, wx + EEXIST retry without re-entering the one-shot barrier); are all five callers routed and the old local max scans gone; is the barrier seam inert in ordinary calls with no public flag; stdout byte-compatibility; Files owned respected; census not weakened; ARCHITECTURE.md updated per the design lex. Note the brief's acceptance also requires five real filings on master through the new allocator — those happen after merge by the producer and are not part of this round's judgment; say so explicitly if you would otherwise block on them. Do not repair code or edit evidence. End with exactly one line 'VERDICT: PASS' or 'VERDICT: FAIL — <reason>' followed by numbered findings marked BLOCKING or ADVISORY with file:line.
+    24	codex
+    25	I’ll conduct this as the D-014 gate without changing code or evidence. Per the repository’s orchestration rule, I’m booting the qa-lead context and dispatching exactly one censor reviewer, then I’ll return that reviewer’s independent finding in the required format.
+    26	exec
+    27	/usr/bin/zsh -lc "sed -n '1,240p' AGENTS.md && npm exec -- bisellium" in /home/edckt/projects/bisellium/.worktrees/W-101
+    28	 exited 2 in 411ms:
+    29	usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+    30	       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+    31	       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]
+    32	       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+    33	       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+    34	       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+    35	       bisellium query <question> [dir] [--now <iso>] [--from-index]
+    36	       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+    37	       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+    38	       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+    39	       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+    40	       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+    41	       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+    42	       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+    43	       bisellium pause [--studio <dir>] [--reason <text>]
+    44	       bisellium resume [--studio <dir>]
+    45	       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+    46	       bisellium emit <json> [--studio <dir>] [--now <iso>]
+    47	       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+    48	       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+    49	       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+    50	       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+    51	       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+    52	       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+    53	       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+    54	       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+    55	       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+    56	       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+    57	       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+    58	       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+    59	       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+    60	       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]
+    61	       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+    62	       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+    63	       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+    64	       bisellium hooks check --harness claude-code [--studio <dir>]
+    65	       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+    66	       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+    67	       bisellium merge <opus-id> --studio <dir> --repo <dir>
+    68	       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+    69	       bisellium prune --studio <dir> [--repo <dir>]
+    70	       bisellium docs registry [--repo <dir>] [--now <iso>]
+    71	
+    72	exec
+    73	/usr/bin/zsh -lc 'npm exec -- bisellium context --sella qa-lead studio' in /home/edckt/projects/bisellium/.worktrees/W-101
+    74	 succeeded in 487ms:
+    75	## CLI usage
+    76	Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+    77	
+    78	## QA lex
+    79	--- data: leges/qa.md ---
+    80	# QA Lex
+    81	
+    82	Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
+    83	
+    84	## 1. Mandate
+    85	
+    86	Verify greenlit features against spec and regression test suite; reject
+    87	autonomously when warranted. The Censor drives the first hour of every
+    88	cascade, advisory only — it does not sign the spec gate, which belongs to
+    89	the architect — and closes the last one.
+    90	
+    91	## 2. Decides alone
+    92	
+    93	- Verdicts on `review` items: pass, fail, or request clarification
+    94	- Regression suite changes and test infrastructure
+    95	- Severity classification for found issues
+    96	- One mutation per opus is enough to demonstrate the suite bites; no more
+    97	  are required to pass review
+    98	- Blocks a write outside an opus's declared files (check: probatio.declared)
+    99	- Adopting an advisory-only rule proposal alone, without a petitio to the
+   100	  Patron
+   101	- Stamping `addressed_by` on a recurring class the Censor closes by
+   102	  adopting an advisory rule alone (check: lesson.addressed_by)
+   103	
+   104	## 3. Digests
+   105	
+   106	- Weekly: test coverage, failure patterns, cycle time
+   107	- Regression insights affecting engineering priority
+   108	- A `class` of finding recurring across cascades; the advisory goes quiet
+   109	  once some lesson of the class names what addresses it (check:
+   110	  lesson.recurrent)
+   111	
+   112	## 4. Asks
+   113	
+   114	- Policy changes to acceptance criteria
+   115	- Resource constraints affecting test infrastructure
+   116	- A blocking-rule or lex-wording proposal arising from a retrospective —
+   117	  filed as a petitio to the Patron, never adopted alone
+   118	- A recurring class the Censor cannot address alone — filed as a petitio
+   119	  naming the proposed opus, rule, or acceptance decision. A class left
+   120	  unaddressed at the close of the next cascade is an unmet obligation.
+   121	
+   122	## 5. Budget
+   123	
+   124	- Period: week · Allowance: 0.5M tokens
+   125	- Burn reporting: `aerarium/<period>.yml`
+   126	- Over-budget: posture → conserve, digest the cause
+   127	
+   128	## 6. Autonomy
+   129	
+   130	- Level: L1 scheduled
+   131	- Stops starting at posture: closeout
+   132	
+   133	## 7. Evidence contract
+   134	
+   135	Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+   136	retro`) that files at least one lesson per distinct finding class, each with
+   137	non-empty, non-dead evidence (check: lesson.evidence).
+   138	
+   139	A usage section is required in every retro (D-013): `bisellium retro`'s
+   140	input carries `usage` (totals, checking/building ratio, tokens per opus,
+   141	trend against the previous retro, posture from the current aerarium), not
+   142	supplied as an afterthought once the numbers are already forgotten —
+   143	`retro.ts` renders the section only when it's given, so an empty/absent
+   144	`usage` on a real cascade is the Censor's own gap, not the tool's.
+   145	
+   146	The Censor carries the addressed ledger forward: every retro's `##
+   147	Addressed` section lists each recurrent class with its target, and a class
+   148	recorded as formally accepted names the `decisions/D-nnn.md` that accepts
+   149	it, with its `kill_when`.
+   150	
+   151	## 9. Amendment log
+   152	
+   153	| Date | Change | Authority |
+   154	|---|---|---|
+   155	| 2026-09-17 | Adopted | Patron |
+   156	| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+   157	| 2026-09-19 | Usage section required in every retro (D-013) | Patron |
+   158	| 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
+   159	| 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+   160	--- end ---
+   161	
+   162	## Standing rules
+   163	- Test-first with a recorded red.
+   164	- Mechanical work is a script you write, run and keep.
+   165	- Evidence is produced, never backfilled.
+   166	- Before structural screen changes, verify against the dossier's touchpoint mapping.
+   167	
+   168	## QA index
+   169	W-093 · backlog · sec-lead runs per PR, concurrent with QA: every opus PR gets a security pass alongside the censor round, alerts name opera, the merge-gate exclusion becomes a record
+   170	
+   171	## Recent decisions
+   172	2026-10-01-retro-34 · Retrospectio 34 · 2026-10-01T08:42:25.584Z
+   173	--- data: acta/2026-10-01-retro-34.md ---
+   174	# Retrospectio 34
+   175	
+   176	## Numbers
+   177	
+   178	- Verifier issues: 0
+   179	- Tests: 2840
+   180	- Fix rounds: 1
+
+codex
+VERDICT: FAIL — the nine-digit suffix cap violates the signed ID-universe contract
+1. BLOCKING — Although the round-1 absolute-path blocker is closed and pinned, `numericSuffix` now ignores exact `^<prefix>-(\d+)\.md$` matches longer than nine digits. Thus `W-1000000000.md` does not contribute to the required maximum, and the new test pins this incompatible behavior. packages/commands/src/ids.ts:28; packages/cli/src/ids.test.ts:310; studio/briefs/W-101.md:80
+tokens used
+26,614
+VERDICT: FAIL — the nine-digit suffix cap violates the signed ID-universe contract
+1. BLOCKING — Although the round-1 absolute-path blocker is closed and pinned, `numericSuffix` now ignores exact `^<prefix>-(\d+)\.md$` matches longer than nine digits. Thus `W-1000000000.md` does not contribute to the required maximum, and the new test pins this incompatible behavior. packages/commands/src/ids.ts:28; packages/cli/src/ids.test.ts:310; studio/briefs/W-101.md:80
