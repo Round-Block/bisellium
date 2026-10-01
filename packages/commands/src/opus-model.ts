@@ -202,19 +202,17 @@ export interface ContainedFile {
  */
 export function readContainedRegularFile(root: string, relPath: string, expectedDir: string): ContainedFile | { error: string } {
   if (typeof relPath !== "string" || relPath.length === 0 || isAbsolute(relPath)) return { error: "path must be a nonempty officina-relative string" };
-  const lexical = resolve(root, relPath);
-  const rel = relative(resolve(root), lexical);
-  const parts = rel.split(sep);
-  if (isAbsolute(rel) || parts[0] === ".." || parts[0] !== expectedDir) return { error: `path must remain under ${expectedDir}/` };
   try {
-    const rootPath = resolve(root);
-    if (lstatSync(rootPath).isSymbolicLink()) return { error: "officina root must not be a symlink" };
-    let cursor = rootPath;
+    const rootReal = realpathSync(resolve(root));
+    const lexical = resolve(rootReal, relPath);
+    const rel = relative(rootReal, lexical);
+    const parts = rel.split(sep);
+    if (isAbsolute(rel) || parts[0] === ".." || parts[0] !== expectedDir) return { error: `path must remain under ${expectedDir}/` };
+    let cursor = rootReal;
     for (const part of parts) {
       cursor = join(cursor, part);
       if (lstatSync(cursor).isSymbolicLink()) return { error: "path reaches its target through a symlink" };
     }
-    const rootReal = realpathSync(rootPath);
     const parentReal = realpathSync(resolve(lexical, ".."));
     const parentRel = relative(rootReal, parentReal);
     if (isAbsolute(parentRel) || parentRel.split(sep)[0] === ".." || parentRel.split(sep)[0] !== expectedDir)
