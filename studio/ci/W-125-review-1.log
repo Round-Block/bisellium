@@ -1,0 +1,20 @@
+# opus: W-125
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: FAIL — the production runner cannot launch (bwrap precheck misses /lib on usr-merged hosts; probe ro-bind under a ro-bound dir) and has zero real-runtime test coverage; the git broker permits host read/write via option pass-through; candidate code recomputed unconfined; package.json outside Files owned; one red suffices for a receipt. Reds, certificates, marker and admission logic sound.
+# at: 2026-10-01T22:59:00.063Z
+# tree: tree:77c14bfb2b240fd5c528e3a593603c68621177a1
+
+W-125 round 1 censor review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD ada81ce.
+VERDICT: FAIL — the production builder runtime (scripts/run-builder-host.mjs) cannot launch and has no automated or live test, the Git broker permits host file read/write, and candidate code is recomputed unconfined; admission and marker logic are sound.
+BLOCKING:
+1 (brief:209–218,257–262,419–422,434) the real outer boundary cannot start: (a) the confinement precheck binds only /usr and execs /usr/bin/true — on a usr-merged host /lib and /lib64 live outside /usr, so bwrap fails execvp; (b) --ro-bind of the probe file into a destination under an earlier --ro-bind directory fails "Read-only file system". No builder-class run can succeed in production; "mocked probe never waives live acceptance" applies.
+2 (brief:357–403) the real runtime has zero test coverage — no test references run-builder-host, probe-builder-runtime or bwrap; behaviours 2–4 pass only against the WorktreeProvider fixture seam.
+3 (brief:209–212,221–226) the Git broker forwards arbitrary options to unconfined host git — --output= writes host paths, --no-index reads host files; no per-command option allowlist.
+4 (brief:297–299) candidate code recomputed unconfined: the red replay (run-builder-host.mjs:445) and the ci --opus gate (:505) are plain host spawnSync, no bwrap.
+5 (brief:154,186,436) package.json is outside Files owned (test:suite line changed); needs an architect scope ruling or a revert.
+6 (brief:271–272) missing reds do not refuse completion: one NN.log suffices for a receipt; nothing checks every numbered behaviour has a red.
+ADVISORY: red logs' tree header b125d9d2 matches no commit after the rebase (replay reproduces at ce68778; producer to attest identity); censor-dispatch admission is a seam only; no signal/timeout teardown of the runner's own death; export ownership fails open with no Files-owned list; no producer log/certificate retained, "producer" hard-coded; one regression expectation weakened; marker-history fails open to legacy when git cannot spawn and the marker is absent; spec gate signed at revision 2 while the brief is revision 4.
+HOLDS: all four reds genuine TAP ERR_ASSERTION (replayed at ce68778); certificates at 77c14bfb; marker semantics sound and immutable; admission refuses both outcomes for marked opera before any write; the 18-name environment allowlist exact; stdout contracts unchanged; .claude/agents/builder.md and docs/SESSION-HANDOFF.md are owned (brief:178–179).
