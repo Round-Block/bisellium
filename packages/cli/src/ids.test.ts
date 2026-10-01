@@ -18,7 +18,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { delimiter, dirname, join, resolve } from "node:path";
+import { delimiter, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import ts from "typescript";
@@ -26,6 +26,7 @@ import type { HarnessProfile, Turn } from "@bisellium/shim";
 import { newItem, runNew } from "./new.js";
 import { draftRetro, type RetroInput } from "./retro.js";
 import { runTalk } from "./talk.js";
+import { createNextRecord } from "@bisellium/commands/ids.js";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -139,6 +140,21 @@ function branchRecord(
   return commit;
 }
 
+function rawTreeRecord(root: string, studioDirectory: string, branch: string, id: string): void {
+  const fixturePath = join(root, `.raw-${branch}`);
+  writeFileSync(fixturePath, "raw tree fixture\n");
+  const blob = git(root, ["hash-object", "-w", fixturePath]);
+  const treeObject = (mode: string, name: string, oid: string): string => {
+    writeFileSync(fixturePath, Buffer.concat([Buffer.from(`${mode} ${name}\0`), Buffer.from(oid, "hex")]));
+    return git(root, ["hash-object", "-w", "-t", "tree", fixturePath]);
+  };
+  const records = treeObject("100644", `${id}.md`, blob);
+  const studio = treeObject("40000", "opera", records);
+  const tree = treeObject("40000", studioDirectory, studio);
+  const commit = git(root, ["commit-tree", tree, "-p", "HEAD", "-m", `${branch} ${id}`]);
+  git(root, ["update-ref", `refs/heads/${branch}`, commit]);
+}
+
 interface RunResult {
   status: number | null;
   stdout: string;
@@ -250,6 +266,51 @@ if (runs(1)) {
     }
   }
   check(1, "newItem and runNew allocate max-plus-one from each ref source and the dirty tree", problems.length === 0, problems.join(" | "));
+
+  const pathnameFixture = initRepo("b1-nul-pathnames");
+  record(pathnameFixture.studio, "opera", "W-009");
+  commitAll(pathnameFixture.root, "baseline nine");
+  git(pathnameFixture.root, ["switch", "-c", "hostile-pathnames"]);
+  writeFileSync(join(pathnameFixture.studio, "opera", "W-999999.md\nsuffix"), "not an id filename\n");
+  const nested = join(pathnameFixture.studio, "opera", "nested\nstudio", "opera");
+  mkdirSync(nested, { recursive: true });
+  writeFileSync(join(nested, "W-888888.md"), "nested\n");
+  commitAll(pathnameFixture.root, "newline pathnames");
+  git(pathnameFixture.root, ["switch", "main"]);
+  const pathnameResult = newItem(pathnameFixture.studio, {
+    kind: "task",
+    collegium: "engineering",
+    title: "NUL-only pathname parsing",
+  });
+  check(
+    1,
+    "ls-tree -z treats newlines as pathname bytes and still excludes nested records",
+    pathnameResult.ok && pathnameResult.id === "W-010",
+    JSON.stringify(pathnameResult),
+  );
+
+  const numericProblems: string[] = [];
+  for (const [name, invalid] of [
+    ["infinity", "9".repeat(309)],
+    ["unsafe-integer", "9007199254740992"],
+  ] as const) {
+    const fixture = initRepo(`b1-${name}`);
+    record(fixture.studio, "opera", "W-004");
+    commitAll(fixture.root, "numeric baseline");
+    rawTreeRecord(fixture.root, "studio", `${name}-suffix`, `W-${invalid}`);
+    const result = newItem(fixture.studio, {
+      kind: "task",
+      collegium: "engineering",
+      title: `${name} suffix`,
+    });
+    if (!result.ok || result.id !== "W-005") numericProblems.push(`${name}=${JSON.stringify(result)}`);
+  }
+  check(
+    1,
+    "suffixes over nine digits are ignored instead of minting Infinity or unsafe integers",
+    numericProblems.length === 0,
+    numericProblems.join(" | "),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -402,7 +463,7 @@ function fakeGitDir(tag: string): string {
       `const root = process.env.W101_GIT_ROOT || "";\n` +
       `if (args.includes("rev-parse")) { if (mode === "discovery") process.exit(41); console.log(root); process.exit(0); }\n` +
       `if (args.includes("for-each-ref")) { if (mode === "refs") process.exit(42); console.log("refs/heads/high\\nrefs/remotes/origin/high"); process.exit(0); }\n` +
-      `if (args.includes("ls-tree")) { const p = process.env.W101_GIT_COUNT; let n = 0; try { n = Number(fs.readFileSync(p, "utf8")); } catch {} fs.writeFileSync(p, String(n + 1)); if (mode === "tree" && n > 0) process.exit(43); console.log("officina/opera/W-099.md"); process.exit(0); }\n` +
+      `if (args.includes("ls-tree")) { const p = process.env.W101_GIT_COUNT; let n = 0; try { n = Number(fs.readFileSync(p, "utf8")); } catch {} fs.writeFileSync(p, String(n + 1)); if (mode === "tree" && n > 0) process.exit(43); process.stdout.write((process.env.W101_GIT_TREE_ENTRY || "officina/opera/W-099.md") + "\\0"); process.exit(0); }\n` +
       `process.exit(44);\n`,
   );
   chmodSync(script, 0o755);
@@ -422,6 +483,16 @@ if (runs(3)) {
   const directStudio = localStudio("b3-direct-result");
   const direct = newItem(directStudio, { kind: "task", collegium: "engineering", title: "direct result contract" });
   if (!direct.ok || direct.id !== "W-005" || direct.message !== "W-005") problems.push(`newItem result=${JSON.stringify(direct)}`);
+
+  const relativeStudio = localStudio("b3-relative-root");
+  const relativeRoot = relative(repo, relativeStudio);
+  const relativeCreated = createNextRecord(relativeRoot, "lessons", "L", (id) => `${id}\n`);
+  check(
+    3,
+    "direct createNextRecord with a relative officina returns the absolute created path",
+    isAbsolute(relativeCreated.path) && existsSync(relativeCreated.path) && relativeCreated.id === "L-001",
+    JSON.stringify(relativeCreated),
+  );
 
   const noGitStudio = localStudio("b3-no-git");
   const emptyPath = scratch("b3-empty-path");
@@ -448,6 +519,29 @@ if (runs(3)) {
   if (fsError.status !== 1 || !/new failed:/i.test(fsError.stderr) || /local[^\n]*only/i.test(fsError.stderr)) {
     problems.push(`filesystem=${JSON.stringify(fsError)}`);
   }
+
+  const literal = initRepo("b3-literal-pathspec", ":officina");
+  record(literal.studio, "opera", "W-001");
+  commitAll(literal.root, "literal baseline");
+  branchRecord(literal.root, ":officina", "literal-high", "opera", "W-012");
+  const literalResult = newItem(literal.studio, { kind: "task", collegium: "engineering", title: "literal pathspec" });
+
+  const replaced = initRepo("b3-replace-object");
+  record(replaced.studio, "opera", "W-001");
+  const replacedMain = commitAll(replaced.root, "replace baseline");
+  git(replaced.root, ["switch", "-c", "replacement-source"]);
+  record(replaced.studio, "opera", "W-777");
+  const replacementCommit = commitAll(replaced.root, "replacement poison");
+  git(replaced.root, ["switch", "main"]);
+  git(replaced.root, ["branch", "-D", "replacement-source"]);
+  git(replaced.root, ["replace", replacedMain, replacementCommit]);
+  const replacedResult = newItem(replaced.studio, { kind: "task", collegium: "engineering", title: "ignore replacements" });
+  check(
+    3,
+    "Git paths are literal and replacement objects cannot poison the ref maximum",
+    literalResult.ok && literalResult.id === "W-013" && replacedResult.ok && replacedResult.id === "W-002",
+    JSON.stringify({ literalResult, replacedResult }),
+  );
   check(3, "Git failures warn and discard partial refs; filesystem failures retain caller errors", problems.length === 0, problems.join(" | "));
 }
 
@@ -460,9 +554,9 @@ function makeGitSpy(tag: string, log: string): string {
   const script = join(dir, "git");
   writeFileSync(
     script,
-    `#!${process.execPath}\n` +
+      `#!${process.execPath}\n` +
       `const fs = require("node:fs"); const cp = require("node:child_process");\n` +
-      `fs.appendFileSync(process.env.W101_GIT_LOG, JSON.stringify(process.argv.slice(2)) + "\\n");\n` +
+      `fs.appendFileSync(process.env.W101_GIT_LOG, JSON.stringify({ args: process.argv.slice(2), noLazyFetch: process.env.GIT_NO_LAZY_FETCH }) + "\\n");\n` +
       `const r = cp.spawnSync(process.env.W101_REAL_GIT, process.argv.slice(2), { stdio: "inherit" });\n` +
       `process.exit(r.status === null ? 127 : r.status);\n`,
   );
@@ -503,9 +597,13 @@ if (runs(4)) {
   const first = await spawnCli(["new", "--kind", "task", "--collegium", "engineering", "--title", "cached", join(clone, "studio")], {
     env: { ...process.env, PATH: `${spy}${delimiter}${process.env["PATH"] ?? ""}`, W101_GIT_LOG: log, W101_REAL_GIT: realGit },
   });
-  const commands = existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as string[]) : [];
+  const invocations = existsSync(log)
+    ? readFileSync(log, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line) as { args: string[]; noLazyFetch?: string })
+    : [];
+  const commands = invocations.map(({ args }) => args);
   const flat = commands.map((parts) => parts.join(" ")).join("\n");
   const forbidden = /(^|\s)(fetch|pull|push|clone|ls-remote)(\s|$)/m.test(flat);
+  const lazyFetchDisabled = invocations.length > 0 && invocations.every(({ noLazyFetch }) => noLazyFetch === "1");
 
   git(clone, ["remote", "set-url", "origin", origin]);
   git(clone, ["fetch", "origin"]); // Explicit test setup, never allocator behavior.
@@ -513,8 +611,8 @@ if (runs(4)) {
   check(
     4,
     "cached origin W-005 yields W-006 without network; explicit fetch of W-009 yields W-010",
-    first.status === 0 && first.stdout.trim() === "W-006" && flat.includes("for-each-ref") && flat.includes("ls-tree") && !forbidden && second.status === 0 && second.stdout.trim() === "W-010",
-    JSON.stringify({ first, commands, forbidden, second }),
+    first.status === 0 && first.stdout.trim() === "W-006" && flat.includes("for-each-ref") && flat.includes("ls-tree") && !forbidden && lazyFetchDisabled && second.status === 0 && second.stdout.trim() === "W-010",
+    JSON.stringify({ first, invocations, forbidden, lazyFetchDisabled, second }),
   );
 }
 
@@ -603,6 +701,28 @@ if (runs(5)) {
   if (collided.status !== 0 || collided.stdout.trim() !== "W-002" || readFileSync(sentinel, "utf8") !== "pre-existing collision\n" || !existsSync(join(collisionStudio, "opera", "W-002.md"))) {
     problems.push(`direct collision=${JSON.stringify(collided)} sentinel=${JSON.stringify(readFileSync(sentinel, "utf8"))}`);
   }
+
+  const floodRoot = scratch("b5-flood");
+  const floodStudio = join(floodRoot, "studio");
+  const floodBarrier = join(floodRoot, "barrier");
+  writeManifest(floodStudio);
+  mkdirSync(floodBarrier);
+  const flood = spawnNewChild(floodStudio, "bounded collision flood", floodBarrier);
+  await readyFiles(floodBarrier, 1, [flood.child]);
+  for (let candidate = 1; candidate <= 101; candidate++) {
+    record(floodStudio, "opera", `W-${String(candidate).padStart(3, "0")}`, "collision flood\n");
+  }
+  writeFileSync(join(floodBarrier, "release"), "go\n");
+  const flooded = await flood.done;
+  check(
+    5,
+    "allocator stops with a clear error after 100 consecutive EEXIST collisions",
+    flooded.status === 1 &&
+      flooded.stdout === "" &&
+      /100.*collision|collision.*100|retry.*100/i.test(flooded.stderr) &&
+      !existsSync(join(floodStudio, "opera", "W-102.md")),
+    JSON.stringify(flooded),
+  );
   check(5, "exclusive create gives two writers distinct files and retries a direct EEXIST", problems.length === 0, problems.join(" | "));
 }
 
@@ -649,6 +769,25 @@ if (runs(6)) {
   symlinkSync(symlinked.studio, studioAlias, "dir");
   const aliasResult = await fileBoth(sampleAlias, studioAlias, unrelated);
   if (aliasResult.sample.stdout.trim() !== "W-013" || aliasResult.studio.stdout.trim() !== "W-1000") problems.push(`symlink=${JSON.stringify(aliasResult)}`);
+
+  const recordLinkRoot = scratch("b6-record-directory-link");
+  const recordLinkStudio = join(recordLinkRoot, "studio");
+  const outsideRecords = join(recordLinkRoot, "outside-opera");
+  writeManifest(recordLinkStudio);
+  mkdirSync(outsideRecords);
+  writeFileSync(join(outsideRecords, "W-500.md"), "outside sentinel\n");
+  symlinkSync(outsideRecords, join(recordLinkStudio, "opera"), "dir");
+  const recordLinkResult = await spawnCli(
+    ["new", "--kind", "task", "--collegium", "engineering", "--title", "reject record link", recordLinkStudio],
+  );
+  check(
+    6,
+    "physical officina rejects a symlinked record directory without writing through it",
+    recordLinkResult.status === 1 &&
+      /real directory|symbolic link|symlink/i.test(recordLinkResult.stderr) &&
+      !existsSync(join(outsideRecords, "W-501.md")),
+    JSON.stringify(recordLinkResult),
+  );
 
   const linked = dualStudioRepo("b6-linked");
   const linkedRoot = scratch("b6-linked-target");

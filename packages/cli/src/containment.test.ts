@@ -295,8 +295,8 @@ const PINNED_B: PinnedB[] = [
   { key: "packages/cli/src/new.ts:runNew#1", disposition: "derived", why: "W-### from createNextRecord, front-matter spec: value" },
   { key: "packages/cli/src/new.ts:runNew#2", disposition: "derived", why: "same allocated id, briefs/ companion write" },
   { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
-  { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from nextId" },
-  { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from nextId" },
+  { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from createNextRecord" },
+  { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from createNextRecord" },
   {
     key: "packages/cli/src/retro.ts:draftRetro#3",
     disposition: "derived",
