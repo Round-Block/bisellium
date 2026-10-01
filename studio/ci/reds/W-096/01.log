@@ -1,54 +1,41 @@
 # behaviour: 1
-# command: node --import tsx packages/cli/src/branch.test.ts . 33
+# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour 1
 # exit: 1
-# at: 2026-10-01T12:22:52.092Z
+# at: 2026-10-01T12:44:08.689Z
 # sella: builder-codex.W-096
-# tree: tree:cc8925d73bfc006b6677fc65554a4107cd1626aa
+# tree: tree:39b84297721ba6089804e2f1e8b08cac6c34ac77
 
-FAIL  bootstrap pins the already-building W-096 branch             
-FAIL  bootstrap changes only baseline_commit                       ---
-id: "W-096"
-title: "the officina model learns Jira's vocabulary where it earns it: a closed, typed kind vocabulary (task, subtask, bug, research and the measured existing kinds) including a ui kind that routes review to ui-lead, requires the served e2e, and refuses done until the Patron's look-and-feel rulings are recorded; arcs (epics) as records opera belong to; start and end derived from events; summary versus body settled"
-kind: "opus"
-collegium: "design"
-state: building
-probationes: { spec: { sella: architect, status: passed, evidence: briefs/W-096.md, at: 2026-10-01T11:06:36.805Z } }
-amendments:
-  - at: 2026-10-01T07:24:20.818Z
-    sella: producer
-    field: title
-    reason: "Patron decree 2026-10-01: differentiate UI/UX from engineering by a typed ui kind rather than a new collegium"
-    superseded: "the officina model learns Jira's vocabulary where it earns it: arcs (epics) as records opera belong to, start and end derived from events, summary versus body settled — the Patron's field-model question"
-spec: briefs/W-096.md
-traditio:
-  sella: producer
-  stage: building
-  next: "phase 1: builder writes the seven-behaviour focused test and skeleton seams; producer records reds at a clean tree; phase 2 implements"
-  blocked_on: none
-  at: 2026-10-01T11:06:37.207Z
----
-
-FAIL  bootstrap leaves only the W-096 record dirty                 
-FAIL  ordinary check passes after the committed bootstrap          bootstrap did not write the pin
-FAIL  ordinary verify passes after the committed bootstrap         bootstrap did not write the pin
-FAIL  bootstrap on the wrong branch: refuses                       
-PASS  bootstrap on the wrong branch: leaves the record byte-identical 
-FAIL  bootstrap with the wrong record: refuses                     
-PASS  bootstrap with the wrong record: leaves the record byte-identical 
-FAIL  bootstrap on a dirty checkout: refuses                       
-PASS  bootstrap on a dirty checkout: leaves the record byte-identical 
-FAIL  bootstrap with a mismatched merge-base: refuses              
-PASS  bootstrap with a mismatched merge-base: leaves the record byte-identical 
-FAIL  bootstrap with an ambiguous merge-base: refuses              
-PASS  bootstrap with an ambiguous merge-base: leaves the record byte-identical 
-FAIL  bootstrap with unavailable refs: refuses                     
-PASS  bootstrap with unavailable refs: leaves the record byte-identical 
-FAIL  bootstrap with unavailable history: refuses                  
-PASS  bootstrap with unavailable history: leaves the record byte-identical 
-FAIL  bootstrap after a previous pin: refuses                      
-PASS  bootstrap after a previous pin: leaves the record byte-identical 
-FAIL  bootstrap over a present pin: refuses                        
-PASS  bootstrap over a present pin: leaves the record byte-identical 
-FAIL  bootstrap with changed protected records: refuses            
-PASS  bootstrap with changed protected records: leaves the record byte-identical 
-PASS  ordinary branch writer still refuses an existing branch      branch opus/W-096-ordinary already exists
+TAP version 13
+# Subtest: W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk
+not ok 1 - W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk
+  ---
+  duration_ms: 721.249389
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:1:7156'
+  failureType: 'testCodeFailure'
+  error: |-
+    bootstrap did not pin: no result; bootstrap did not refuse: wrong branch; bootstrap did not refuse: wrong record; bootstrap did not refuse: dirty checkout; bootstrap did not refuse: mismatched merge-base; bootstrap did not refuse: ambiguous merge-base; bootstrap did not refuse: unavailable refs; bootstrap did not refuse: unavailable history; bootstrap did not refuse: previous pin; bootstrap did not refuse: present pin; bootstrap did not refuse: changed protected records
+    
+    11 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 11
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:399:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 755.8863
