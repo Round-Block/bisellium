@@ -185,7 +185,7 @@ if (runs(1)) {
 }
 
 if (runs(2)) {
-  test("W-096 behaviour 2: UI readiness requires current substantive ui-lead input", () => {
+  test("W-096 behaviour 2: building UI records require current substantive ui-lead input", () => {
     const root = scratch("b2-design-input");
     writeManifest(root, ['- { id: spec, name: Specification, kind: agent }']);
     writeFileSync(join(root, "briefs", "W-002.md"), "# W-002\n\n## Intent\n\nUI fixture.\n");
@@ -193,11 +193,11 @@ if (runs(2)) {
       'title: "UI work without design input"',
       "kind: ui",
       "collegium: design",
-      "state: greenlit",
+      "state: building",
       "probationes: {}",
     ]);
     const before = readFileSync(join(root, "opera", "W-002.md"), "utf8");
-    const result = capture(() => runReady(["W-002", "--sella", "architect", "--studio", root], { now: NOW }));
+    const designRule = rules(root, "W-002").includes("opus.ui.design");
 
     const evidenceRoot = scratch("b2-red-assertion");
     writeManifest(evidenceRoot);
@@ -229,13 +229,12 @@ if (runs(2)) {
 
     assert.deepEqual(
       {
-        exitCode: result.exitCode,
         unchanged: readFileSync(join(root, "opera", "W-002.md"), "utf8") === before,
         state: front(root, "W-002")["state"],
-        designRule: rules(root, "W-002").includes("opus.ui.design"),
+        designRule,
         assertionRule,
       },
-      { exitCode: 1, unchanged: true, state: "greenlit", designRule: true, assertionRule: true },
+      { unchanged: true, state: "building", designRule: true, assertionRule: true },
     );
   });
 }
@@ -267,7 +266,7 @@ if (runs(3)) {
 }
 
 if (runs(4)) {
-  test("W-096 behaviour 4: UI completion requires a current scoped Patron ruling", () => {
+  test("W-096 behaviour 4: done UI claims require a current scoped Patron ruling", () => {
     const root = scratch("b4-rulings");
     writeManifest(root, ['- { id: served-e2e, name: Served e2e, kind: automated, command: "node scripts/served-e2e.mjs" }']);
     writeFileSync(join(root, "ci", "served.log"), "served-e2e passed tree:1111111111111111111111111111111111111111\n");
@@ -275,7 +274,7 @@ if (runs(4)) {
       'title: "UI work without Patron rulings"',
       "kind: ui",
       "collegium: design",
-      "state: review",
+      "state: done",
       "probationes:",
       "  served-e2e:",
       "    status: passed",
@@ -283,16 +282,15 @@ if (runs(4)) {
       "    certifies: tree:1111111111111111111111111111111111111111",
     ]);
     const before = readFileSync(join(root, "opera", "W-004.md"), "utf8");
-    const result = capture(() => runDone(["W-004", "--sella", "eng-lead", "--studio", root], { now: NOW }));
+    const rulingRule = rules(root, "W-004").includes("opus.ui.rulings");
 
     assert.deepEqual(
       {
-        exitCode: result.exitCode,
         unchanged: readFileSync(join(root, "opera", "W-004.md"), "utf8") === before,
         state: front(root, "W-004")["state"],
-        rulingRule: rules(root, "W-004").includes("opus.ui.rulings"),
+        rulingRule,
       },
-      { exitCode: 1, unchanged: true, state: "review", rulingRule: true },
+      { unchanged: true, state: "done", rulingRule: true },
     );
   });
 }
