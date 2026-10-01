@@ -16,25 +16,22 @@ export interface CreatedRecord {
 }
 
 const GIT_OUTPUT_LIMIT = 16 * 1024 * 1024;
-// Record suffixes are bounded to nine decimal digits; 999,999,999 is final.
-const MAX_SUFFIX_DIGITS = 9;
-const MAX_SUFFIX = 999_999_999;
+// Existing filenames are compared exactly; only newly minted suffixes stop here.
+const MAX_SUFFIX = 999_999_999n;
 // A single allocation may absorb at most 100 concurrent EEXIST collisions.
 const MAX_EEXIST_RETRIES = 100;
 
-function numericSuffix(name: string, pattern: RegExp): number | undefined {
+function numericSuffix(name: string, pattern: RegExp): bigint | undefined {
   const match = pattern.exec(name);
   const digits = match?.[1];
-  if (digits === undefined || digits.length > MAX_SUFFIX_DIGITS) return undefined;
-  const suffix = Number(digits);
-  return Number.isSafeInteger(suffix) && suffix <= MAX_SUFFIX ? suffix : undefined;
+  return digits === undefined ? undefined : BigInt(digits);
 }
 
-function localMaximum(directoryPath: string, pattern: RegExp): number {
-  let maximum = 0;
+function localMaximum(directoryPath: string, pattern: RegExp): bigint {
+  let maximum = 0n;
   for (const name of readdirSync(directoryPath)) {
     const suffix = numericSuffix(name, pattern);
-    if (suffix !== undefined) maximum = Math.max(maximum, suffix);
+    if (suffix !== undefined && suffix > maximum) maximum = suffix;
   }
   return maximum;
 }
@@ -54,17 +51,39 @@ function gitOutput(cwd: string, args: string[]): string {
   });
 }
 
+function supportsSafeRefInspection(cwd: string): boolean {
+  const version = gitOutput(cwd, ["--version"]).trim();
+  // Read the effective config even when the version text proves unusable;
+  // both capability inputs are gathered before any ref-object command.
+  const config = gitOutput(cwd, ["config", "--null", "--list"]);
+  const match = /^git version\s+(\d+)\.(\d+)\.(\d+)(?:\D|$)/.exec(version);
+  if (!match) return false;
+
+  // `--list` succeeds even when neither marker is configured, so any command
+  // failure remains distinguishable from an inspected marker-free config.
+  const hasPartialCloneMarker = config.split("\0").some((entry) => {
+    const key = entry.slice(0, entry.indexOf("\n")).toLowerCase();
+    return key === "extensions.partialclone" || /^remote\..+\.promisor$/.test(key);
+  });
+
+  const major = BigInt(match[1]!);
+  const minor = BigInt(match[2]!);
+  const supportsNoLazyFetch = major > 2n || (major === 2n && minor >= 45n);
+  return supportsNoLazyFetch || !hasPartialCloneMarker;
+}
+
 /**
  * Returns the ref-wide maximum, or `undefined` after any Git failure.  The
  * result is all-or-nothing so a failed tree read cannot leave a misleading
  * partial maximum in use.
  */
-function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: RegExp): number | undefined {
+function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: RegExp): bigint | undefined {
   try {
     const discoveredRoot = gitOutput(studioRoot, ["rev-parse", "--show-toplevel"]).trim();
     const physicalRepo = realpathSync(discoveredRoot);
     const studioRelative = relative(physicalRepo, studioRoot);
     if (studioRelative === ".." || studioRelative.startsWith(`..${sep}`)) throw new Error("officina is outside its Git worktree");
+    if (!supportsSafeRefInspection(physicalRepo)) return undefined;
 
     const gitDirectory = [...(studioRelative ? studioRelative.split(sep) : []), directory].join("/");
     const refs = gitOutput(physicalRepo, [
@@ -76,7 +95,7 @@ function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: Reg
       .split(/\r?\n/)
       .filter((ref) => ref.length > 0);
 
-    let maximum = 0;
+    let maximum = 0n;
     for (const ref of refs) {
       const paths = gitOutput(physicalRepo, ["ls-tree", "-r", "-z", "--name-only", ref, "--", gitDirectory]).split("\0");
       const directoryPrefix = `${gitDirectory}/`;
@@ -85,7 +104,7 @@ function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: Reg
         const name = path.slice(directoryPrefix.length);
         if (name.includes("/")) continue;
         const suffix = numericSuffix(name, pattern);
-        if (suffix !== undefined) maximum = Math.max(maximum, suffix);
+        if (suffix !== undefined && suffix > maximum) maximum = suffix;
       }
     }
     return maximum;
@@ -118,10 +137,10 @@ export function createNextRecord(
     console.error("warning: Git ref-wide allocation unavailable; using local records only");
   }
 
-  let candidate = Math.max(local, fromRefs ?? 0) + 1;
+  let candidate = (local > (fromRefs ?? 0n) ? local : (fromRefs ?? 0n)) + 1n;
   for (let collisions = 0; ; collisions++) {
     if (candidate > MAX_SUFFIX) {
-      throw new Error(`record id suffix exhausted at ${MAX_SUFFIX_DIGITS} digits for prefix ${prefix}`);
+      throw new Error(`record id exhaustion: no suffix at or below ${MAX_SUFFIX} remains for prefix ${prefix}`);
     }
     const id = `${prefix}-${String(candidate).padStart(3, "0")}`;
     const path = join(directoryPath, `${id}.md`);
