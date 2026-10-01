@@ -1014,6 +1014,7 @@
 }
 
 .board__columns {
+  position: relative;
   flex-grow: 1;
   display: flex;
   gap: var(--sp-4);

@@ -218,6 +218,7 @@ function collectInventoryB(root: string, rel: string): string[] {
 // ---------------------------------------------------------------------------
 
 const PINNED_A: string[] = [
+  "apps/server/src/store.ts:readOpusBody:opera#1",
   "packages/cli/src/retro.ts:classifyAddressedTarget:opera#1",
   "packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1",
   "packages/commands/src/lifecycle.ts:runReady:opera#1",
@@ -254,7 +255,8 @@ interface PinnedB {
 // joins an id onto a ".md" path surfaces here too — dispositioned "bypass"
 // above rather than silently exempted.
 const PINNED_B: PinnedB[] = [
-  { key: "apps/server/src/store.ts:opus#1", disposition: "guarded", why: 'safeId(id) refuses one line above (":223")' },
+  { key: "apps/server/src/store.ts:safeItemPath#1", disposition: "helper", why: "the server-local containment helper's own join; kept local to preserve the server/commands dependency boundary" },
+  { key: "apps/server/src/store.ts:opus#1", disposition: "guarded", why: "safeId(id) refuses before the raw join" },
   {
     key: "apps/web/tests-serve/answer.spec.ts:<module>#1",
     disposition: "bypass",
@@ -267,6 +269,16 @@ const PINNED_B: PinnedB[] = [
   },
   {
     key: "apps/web/tests-serve/board.spec.ts:setOpusTitle#1",
+    disposition: "bypass",
+    why: "same function family as setOpusState#1 above — a literal id, a throwaway temp studio",
+  },
+  {
+    key: "apps/web/tests-serve/board.spec.ts:setOpusBody#1",
+    disposition: "bypass",
+    why: "same function family as setOpusState#1 above — a literal id, a throwaway temp studio",
+  },
+  {
+    key: "apps/web/tests-serve/board.spec.ts:setTraditioNext#1",
     disposition: "bypass",
     why: "same function family as setOpusState#1 above — a literal id, a throwaway temp studio",
   },

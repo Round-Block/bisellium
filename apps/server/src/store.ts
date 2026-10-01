@@ -31,7 +31,7 @@
  * studio's own files instead of reaching for packages/cli/src/{pause,tick}.ts.
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
 import { EVENTS_LOG_REL, readLog, Store as CoreStore } from "@bisellium/core";
 import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
@@ -71,6 +71,15 @@ function safeId(id: string): boolean {
   return id.length > 0 && !/[\\/]/.test(id) && id !== "." && id !== "..";
 }
 
+/** Server-local counterpart to packages/commands' helper. Importing that
+ * package here would invert the server/commands dependency boundary. */
+function safeItemPath(dir: string, id: string): string | undefined {
+  if (!safeId(id)) return undefined;
+  const resolvedDir = resolve(dir);
+  const path = join(resolvedDir, `${id}.md`);
+  return dirname(path) === resolvedDir ? path : undefined;
+}
+
 /**
  * Read an opus body without `readFront`'s whitespace-wide `.trim()`. Studio
  * markdown files conventionally carry one final line ending, which is file
@@ -78,9 +87,10 @@ function safeId(id: string): boolean {
  * every authored byte before it intact.
  */
 function readOpusBody(studioDir: string, id: string, fallback: string): string {
-  if (!safeId(id)) return fallback;
+  const path = safeItemPath(join(studioDir, "opera"), id);
+  if (path === undefined) return fallback;
   try {
-    const raw = readFileSync(join(studioDir, "opera", `${id}.md`), "utf8").replace(/^﻿/, "");
+    const raw = readFileSync(path, "utf8").replace(/^﻿/, "");
     const match = /^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/.exec(raw);
     if (!match) return fallback;
     return (match[1] ?? "").replace(/\r?\n$/, "");
