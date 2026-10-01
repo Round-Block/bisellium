@@ -17,13 +17,14 @@
  * 3 the harness reported a usage/rate limit (posture "limited") · anything
  * else the harness's own turn.exitCode, relayed as-is.
  */
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
 import { pauseWarning } from "./pause.js";
+import { createNextRecord } from "@bisellium/commands/ids.js";
 
 export interface RunTalkOptions {
   /** Harness registry override — tests inject { fake: fakeProfile, ... }
@@ -163,28 +164,22 @@ function appendTimeline(root: string, sella: string, entries: TimelineEntry[]): 
 // Escalation: PETITIO:/ACTUM: lines in a reply.
 // ---------------------------------------------------------------------------
 
-const PETITIO_ID_RE = /^P-(\d+)\.md$/;
-
 /** Allocates the next P-NNN and writes it, addressed to the patron. Returns the new id. */
 function openPetitio(root: string, manifest: Manifest, sella: string, text: string, now: Date): string {
-  const dir = join(root, "petitiones");
-  mkdirSync(dir, { recursive: true });
-  let max = 0;
-  for (const f of readdirSync(dir)) {
-    const m = PETITIO_ID_RE.exec(f);
-    if (m) max = Math.max(max, Number(m[1]));
-  }
-  const id = `P-${String(max + 1).padStart(3, "0")}`;
   const patron = manifest.patron ?? "patron";
-  const front =
-    `---\n` +
-    `id: ${JSON.stringify(id)}\n` +
-    `from: ${JSON.stringify(sella)}\n` +
-    `to: ${JSON.stringify(patron)}\n` +
-    `state: needs_you\n` +
-    `opened: ${JSON.stringify(now.toISOString())}\n` +
-    `---\n${text}\n`;
-  writeFileSync(join(dir, `${id}.md`), front);
+  const { id } = createNextRecord(
+    root,
+    "petitiones",
+    "P",
+    (candidate) =>
+      `---\n` +
+      `id: ${JSON.stringify(candidate)}\n` +
+      `from: ${JSON.stringify(sella)}\n` +
+      `to: ${JSON.stringify(patron)}\n` +
+      `state: needs_you\n` +
+      `opened: ${JSON.stringify(now.toISOString())}\n` +
+      `---\n${text}\n`,
+  );
   return id;
 }
 

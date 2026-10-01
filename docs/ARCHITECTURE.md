@@ -173,6 +173,11 @@ files the next poll picks up.
 
 ## Seams
 
+- `createNextRecord` (`@bisellium/commands/ids.js`) — the one sequential-id
+  seam for `W-*`, `P-*`, and `L-*`: it combines exact local filenames with
+  every local and remote-tracking ref, then reserves the rendered record by
+  exclusive create. Git failure warns and degrades to local records; it never
+  fetches.
 - `StartServerOptions.checkStudio` / `.runners` — the injection that keeps
   `apps/server` free of `@bisellium/cli` (§1).
 - `MergePipeline` (`@bisellium/pipeline`) — `verify` runs gates through it, so a

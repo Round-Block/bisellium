@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { isAbsolute, join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek } from "@bisellium/adapter-native";
+import { createNextRecord } from "@bisellium/commands/ids.js";
 import { safeItemPath } from "@bisellium/commands/writes.js";
 
 export interface RetroFinding {
@@ -70,22 +71,6 @@ export interface RetroDraft {
 }
 
 const isExternal = (href: string): boolean => /^[a-z][a-z0-9+.-]*:\/\//i.test(href);
-
-function nextId(dir: string, prefix: string): string {
-  let max = 0;
-  let files: string[] = [];
-  try {
-    files = existsSync(dir) ? readdirSync(dir) : [];
-  } catch {
-    files = [];
-  }
-  const re = new RegExp(`^${prefix}-(\\d+)\\.md$`);
-  for (const f of files) {
-    const m = re.exec(f);
-    if (m) max = Math.max(max, Number(m[1]));
-  }
-  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
-}
 
 /** All existing lessons on disk, keyed by class, mapping to the (cascade,
  *  lesson-id, addressedBy) entries already filed — used for the recurrence
@@ -367,31 +352,26 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
   const dateStr = now.toISOString().slice(0, 10);
 
   // ---- lessons: one stub per distinct class, evidence = union of hrefs ----
-  const lessonsDir = join(studioRoot, "lessons");
   const existingByClass = existingLessonsByClass(studioRoot);
   const lessons: { path: string; markdown: string; id: string; class: string }[] = [];
-  let lessonSeq = 0;
   for (const cls of classesInOrder) {
     const findings = findingsByClass.get(cls)!;
     const evidence = [...new Set(findings.flatMap((f) => f.evidence))];
-    lessonSeq++;
-    // nextId reads the dir fresh each call, but two lessons in the same
-    // run would otherwise collide on the same next number — offset by how
-    // many we've already assigned this run.
-    const base = nextId(lessonsDir, "L");
-    const baseNum = Number(/L-(\d+)/.exec(base)![1]);
-    const id = `L-${String(baseNum + lessonSeq - 1).padStart(3, "0")}`;
-    const markdown = [
-      "---",
-      `id: ${JSON.stringify(id)}`,
-      `at: ${now.toISOString()}`,
-      `class: ${JSON.stringify(cls)}`,
-      `evidence: ${JSON.stringify(evidence)}`,
-      `cascade: ${cascade}`,
-      "---",
-      `Filed by \`bisellium retro --cascade ${cascade}\`. ${findings.length} finding(s) in this cascade.`,
-      "",
-    ].join("\n");
+    let markdown = "";
+    const { id } = createNextRecord(studioRoot, "lessons", "L", (candidate) => {
+      markdown = [
+        "---",
+        `id: ${JSON.stringify(candidate)}`,
+        `at: ${now.toISOString()}`,
+        `class: ${JSON.stringify(cls)}`,
+        `evidence: ${JSON.stringify(evidence)}`,
+        `cascade: ${cascade}`,
+        "---",
+        `Filed by \`bisellium retro --cascade ${cascade}\`. ${findings.length} finding(s) in this cascade.`,
+        "",
+      ].join("\n");
+      return markdown;
+    });
     lessons.push({ path: `lessons/${id}.md`, markdown, id, class: cls });
   }
 
@@ -412,7 +392,6 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
   // existing lesson's `addressed_by`) files no petitio at all — re-filing
   // one for work already open, accepted or ruled-on is the duplication this
   // opus exists to end. It appears under "## Addressed" instead.
-  const petitionesDir = join(studioRoot, "petitiones");
   const petitiones: string[] = [];
   const proposals: { class: string; kind: "adopt-alone" | "petitio"; petitioPath?: string }[] = [];
   for (const cls of classesInOrder) {
@@ -421,27 +400,20 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
       // An unresolvable (e.g. path-traversal) target is never "addressed":
       // the class still needs the Patron's attention, so it still files.
       if (targetForProposal !== undefined && classifyAddressedTarget(studioRoot, targetForProposal).kind !== "unresolvable") continue;
-      // Petitiones are written *inside* this loop (just below), so `nextId`
-      // already sees every one filed earlier in the same run — unlike
-      // `lessonSeq` above (lessons are written after their loop, so
-      // `nextId` alone would see none of them), no manual offset is needed
-      // here, and adding one double-counts (the numbering-skip bug this
-      // opus fixes).
-      const pid = nextId(petitionesDir, "P");
+      const { id: pid } = createNextRecord(studioRoot, "petitiones", "P", (candidate) =>
+        [
+          "---",
+          `id: ${JSON.stringify(candidate)}`,
+          "from: qa-lead",
+          "to: patron",
+          "state: needs_you",
+          `opened: ${now.toISOString()}`,
+          "---",
+          `Recurring finding class "${cls}" (cascade ${cascade} retro). Proposing a blocking rule or lex amendment — see the retro for detail.`,
+          "",
+        ].join("\n"),
+      );
       const ppath = `petitiones/${pid}.md`;
-      const pmarkdown = [
-        "---",
-        `id: ${JSON.stringify(pid)}`,
-        "from: qa-lead",
-        "to: patron",
-        "state: needs_you",
-        `opened: ${now.toISOString()}`,
-        "---",
-        `Recurring finding class "${cls}" (cascade ${cascade} retro). Proposing a blocking rule or lex amendment — see the retro for detail.`,
-        "",
-      ].join("\n");
-      mkdirSync(petitionesDir, { recursive: true });
-      writeFileSync(join(studioRoot, ppath), pmarkdown);
       petitiones.push(ppath);
       proposals.push({ class: cls, kind: "petitio", petitioPath: ppath });
     } else if (classesInOrder.length > 0) {
@@ -533,9 +505,6 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
   mkdirSync(actaDir, { recursive: true });
   const actaPath = `acta/${dateStr}-retro-${cascade}.md`;
   writeFileSync(join(studioRoot, actaPath), markdown);
-
-  mkdirSync(lessonsDir, { recursive: true });
-  for (const l of lessons) writeFileSync(join(studioRoot, l.path), l.markdown);
 
   return { path: actaPath, markdown, lessons: lessons.map((l) => ({ path: l.path, markdown: l.markdown })), petitiones };
 }

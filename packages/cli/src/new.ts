@@ -9,10 +9,11 @@
  * (cli.test.ts, which this builder does not own, must stay green), plus
  * `--spec <path>` and `--brief` (Design collegium, W-018).
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { Manifest } from "@bisellium/adapter-native";
+import { createNextRecord } from "@bisellium/commands/ids.js";
 
 export interface NewOptions {
   kind: string;
@@ -27,8 +28,6 @@ export interface NewResult {
   /** true when `dir` isn't a studio at all (missing/unparseable manifest) — main.ts exits 2, not 1. */
   notAStudio?: boolean;
 }
-
-const ID_RE = /^W-(\d+)\.md$/;
 
 /**
  * Private W-101 test seam.  A focused child-process test supplies a fresh
@@ -71,25 +70,15 @@ export function newItem(dir: string, opts: NewOptions): NewResult {
     if (!collegia.some((d) => d.id === opts.collegium))
       return { ok: false, message: `collegium "${opts.collegium}" is not declared in ${manifestPath}` };
 
-    const operaDir = join(root, "opera");
-    mkdirSync(operaDir, { recursive: true });
-    let max = 0;
-    for (const f of readdirSync(operaDir)) {
-      const m = ID_RE.exec(f);
-      if (m) max = Math.max(max, Number(m[1]));
-    }
-    const id = `W-${String(max + 1).padStart(3, "0")}`;
-
-    const front = `---
-id: ${JSON.stringify(id)}
+    const { id } = createNextRecord(root, "opera", "W", (candidate) => `---
+id: ${JSON.stringify(candidate)}
 title: ${JSON.stringify(opts.title)}
 kind: ${JSON.stringify(opts.kind)}
 collegium: ${JSON.stringify(opts.collegium)}
 state: backlog
 probationes: {}
 ---
-`;
-    writeFileSync(join(operaDir, `${id}.md`), front);
+`);
     return { ok: true, message: id, id };
   } catch (e) {
     return { ok: false, message: `new failed: ${(e as Error).message}` };
@@ -188,22 +177,13 @@ export function runNew(args: string[]): { exitCode: number } {
       return { exitCode: 1 };
     }
 
-    const operaDir = join(root, "opera");
-    mkdirSync(operaDir, { recursive: true });
-    let max = 0;
-    for (const f of readdirSync(operaDir)) {
-      const m = ID_RE.exec(f);
-      if (m) max = Math.max(max, Number(m[1]));
-    }
-    const id = `W-${String(max + 1).padStart(3, "0")}`;
-
-    // --brief always wins over an explicit --spec: it creates the canonical
-    // briefs/<id>.md and points spec: at exactly that path, so the two
-    // never disagree.
-    const briefRelPath = `briefs/${id}.md`;
-    const specValue = brief ? briefRelPath : specOpt;
-
-    const front = `---
+    const created = createNextRecord(root, "opera", "W", (id) => {
+      // --brief always wins over an explicit --spec: it creates the canonical
+      // briefs/<id>.md and points spec: at exactly that path, so the two
+      // never disagree.
+      const briefRelPath = `briefs/${id}.md`;
+      const specValue = brief ? briefRelPath : specOpt;
+      const front = `---
 id: ${JSON.stringify(id)}
 title: ${JSON.stringify(title)}
 kind: ${JSON.stringify(kind)}
@@ -212,14 +192,20 @@ state: backlog${specValue !== undefined ? `\nspec: ${JSON.stringify(specValue)}`
 probationes: {}
 ---
 `;
-    waitAtIdsTestBarrier(id);
+      waitAtIdsTestBarrier(id);
+      return front;
+    });
     if (brief) {
       const briefsDir = join(root, "briefs");
       mkdirSync(briefsDir, { recursive: true });
-      writeFileSync(join(briefsDir, `${id}.md`), briefTemplate(id, title));
+      try {
+        writeFileSync(join(briefsDir, `${created.id}.md`), briefTemplate(created.id, title), { flag: "wx" });
+      } catch (error) {
+        unlinkSync(created.path);
+        throw error;
+      }
     }
-    writeFileSync(join(operaDir, `${id}.md`), front);
-    console.log(id);
+    console.log(created.id);
     return { exitCode: 0 };
   } catch (e) {
     console.error(`new failed: ${(e as Error).message}`);
