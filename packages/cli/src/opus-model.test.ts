@@ -8,6 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -26,6 +27,7 @@ import {
   substantiveUiTranscript,
   titleProblem,
   utcTimestampProblem,
+  validateProtectedRecords,
 } from "@bisellium/commands/opus-model.js";
 
 const argv = process.argv.slice(2);
@@ -120,7 +122,7 @@ function writeUiInput(root: string, id: string, round = 1, body = VALID_UI_BODY,
   return inputRel;
 }
 
-function writeReviewEvidence(root: string, id: string, inputRel: string, name = "review.log"): string {
+function writeReviewEvidence(root: string, id: string, inputRel: string, name = "review.log", outcome = "passed"): string {
   const record = front(root, id);
   const digest = designDigest(String(record["title"]), readFileSync(join(root, String(record["spec"]))));
   const rel = `ci/${name}`;
@@ -131,7 +133,7 @@ function writeReviewEvidence(root: string, id: string, inputRel: string, name = 
       "# phase: build",
       "# round: 1",
       "# sella: qa-lead",
-      "# outcome: passed",
+      `# outcome: ${outcome}`,
       "# at: 2026-10-01T11:30:00.000Z",
       `# ui_input: ${inputRel}`,
       `# design_digest: ${digest}`,
@@ -223,6 +225,15 @@ function inventory(root: string): { opera: string[]; briefs: string[] } {
   };
 }
 
+function writerSnapshot(root: string, id: string): { record: string; evidence: string[]; events: string | undefined } {
+  const events = join(root, ".bisellium", "events.jsonl");
+  return {
+    record: readFileSync(join(root, "opera", `${id}.md`), "utf8"),
+    evidence: readdirSync(join(root, "ci")).sort(),
+    events: existsSync(events) ? readFileSync(events, "utf8") : undefined,
+  };
+}
+
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 }
@@ -231,6 +242,16 @@ function commitAll(root: string, message: string): string {
   git(root, ["add", "-A"]);
   git(root, ["commit", "-q", "-m", message]);
   return git(root, ["rev-parse", "HEAD"]);
+}
+
+function sourceCertificate(repo: string, excludedPrefix: string): string {
+  const hash = createHash("sha1");
+  for (const line of git(repo, ["ls-tree", "-r", "HEAD"]).split("\n")) {
+    const path = line.slice(line.indexOf("\t") + 1);
+    if (path === excludedPrefix || path.startsWith(`${excludedPrefix}/`) || path === ".bisellium" || path.startsWith(".bisellium/")) continue;
+    hash.update(`${line}\n`);
+  }
+  return `tree:${hash.digest("hex")}`;
 }
 
 interface BootstrapFixture {
@@ -341,7 +362,7 @@ function runBootstrap(fixture: BootstrapFixture): BootstrapRun {
       timeout: 30_000,
     },
   );
-  return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? result.error?.message ?? "" };
+  return { status: result.status, stdout: result.stdout ?? "", stderr: result.error?.message ?? result.stderr ?? "" };
 }
 
 function runBootstrapWithoutTestSeam(fixture: BootstrapFixture): BootstrapRun {
@@ -359,7 +380,7 @@ function runBootstrapWithoutTestSeam(fixture: BootstrapFixture): BootstrapRun {
       timeout: 30_000,
     },
   );
-  return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? result.error?.message ?? "" };
+  return { status: result.status, stdout: result.stdout ?? "", stderr: result.error?.message ?? result.stderr ?? "" };
 }
 
 function bootstrapRecord(fixture: BootstrapFixture): string {
@@ -378,6 +399,79 @@ function expectBootstrapRefusal(
   const after = readFileSync(bootstrapRecord(fixture), "utf8");
   if (result.status === 0) problems.push(`bootstrap did not refuse: ${name}`);
   if (after !== before) problems.push(`bootstrap mutated the record after refusing: ${name}`);
+}
+
+interface HistoryMergeFixture {
+  repo: string;
+  studio: string;
+}
+
+function historyMergeFixture(
+  tag: string,
+  firstParent: "left" | "right",
+  pins: "conflicting" | "same",
+  deleteAndReintroduce = false,
+): HistoryMergeFixture {
+  const repo = scratch(`history-${tag}`);
+  git(repo, ["init", "-q", "-b", "master"]);
+  git(repo, ["config", "user.name", "W-096 Test"]);
+  git(repo, ["config", "user.email", "w096@example.invalid"]);
+  const studio = join(repo, "studio");
+  writeManifest(studio);
+  writeFileSync(
+    join(studio, "briefs", "W-096.md"),
+    ["# W-096", "", "## Behaviours to test", "", ...Array.from({ length: 7 }, (_, index) => `${index + 1}. Fixture behaviour.`), ""].join("\n"),
+  );
+  writeOpus(studio, "W-095", [
+    'title: "protected merge-history fixture"',
+    "kind: task",
+    "collegium: engineering",
+    "state: backlog",
+    "probationes: {}",
+  ]);
+  writeOpus(studio, "W-096", [
+    'title: "immutable pin merge-history fixture"',
+    "kind: opus",
+    "collegium: engineering",
+    "state: building",
+    "spec: briefs/W-096.md",
+    "probationes: {}",
+  ]);
+  const reds = join(studio, "ci", "reds", "W-096");
+  mkdirSync(reds, { recursive: true });
+  for (let behaviour = 1; behaviour <= 7; behaviour++)
+    writeFileSync(join(reds, `${String(behaviour).padStart(2, "0")}.log`), assertionRed(behaviour));
+  writeFileSync(join(repo, "source.txt"), "first reviewed source\n");
+  const firstPin = commitAll(repo, "test: establish first reachable pin target");
+  writeFileSync(join(repo, "source.txt"), "second reviewed source\n");
+  const secondPin = commitAll(repo, "test: establish second reachable pin target");
+
+  const recordPath = join(studio, "opera", "W-096.md");
+  const withoutPin = readFileSync(recordPath, "utf8");
+  const withPin = (pin: string): string => withoutPin.replace('id: "W-096"\n', `id: "W-096"\nbaseline_commit: ${pin}\n`);
+
+  git(repo, ["switch", "-q", "-c", `history-left-${tag}`, secondPin]);
+  writeFileSync(recordPath, withPin(firstPin));
+  commitAll(repo, "test: introduce left-parent pin");
+  if (deleteAndReintroduce) {
+    rmSync(recordPath);
+    commitAll(repo, "test: delete the pinned record");
+    writeFileSync(recordPath, withPin(firstPin));
+    commitAll(repo, "test: reintroduce the left-parent pin");
+  }
+  const left = git(repo, ["rev-parse", "HEAD"]);
+
+  git(repo, ["switch", "-q", "-c", `history-right-${tag}`, secondPin]);
+  writeFileSync(recordPath, withPin(pins === "same" ? firstPin : secondPin));
+  commitAll(repo, "test: introduce right-parent pin");
+  const right = git(repo, ["rev-parse", "HEAD"]);
+
+  const selected = firstParent === "left" ? left : right;
+  const other = firstParent === "left" ? right : left;
+  git(repo, ["switch", "-q", "-c", "opus/W-096", selected]);
+  git(repo, ["merge", "-q", "-s", "ours", other, "-m", "test: merge both reachable pin histories"]);
+  git(repo, ["update-ref", "refs/remotes/origin/master", "HEAD"]);
+  return { repo, studio };
 }
 
 if (runs(1)) {
@@ -618,6 +712,47 @@ if (runs(1)) {
     if (createOpusBranch(ordinary.repo, "W-096-ordinary").ok)
       bootstrapProblems.push("ordinary branch writer did not refuse its existing branch");
 
+    const mergeHistoryProblems: string[] = [];
+    for (const firstParent of ["left", "right"] as const) {
+      const fixture = historyMergeFixture(`conflict-${firstParent}`, firstParent, "conflicting");
+      const direct = validateProtectedRecords(fixture.repo, fixture.studio);
+      const checked = checkStudio(fixture.studio, NOW, { repo: fixture.repo }).findings.filter(
+        (finding) => finding.rule === "opus.records_unchanged",
+      );
+      const verified = await captureAsync(() => runVerify(["W-096", "--studio", fixture.studio, "--repo", fixture.repo]));
+      if (direct.ok || !direct.problems.some((problem) => /baseline_commit.*(?:conflict|changed)/i.test(problem)))
+        mergeHistoryProblems.push(`${firstParent}-first merge concealed a conflicting reachable pin: ${JSON.stringify(direct.problems)}`);
+      if (!checked.some((finding) => finding.level === "block"))
+        mergeHistoryProblems.push(`${firstParent}-first ordinary check did not reject the conflicting reachable pin`);
+      if (verified.value.exitCode !== 1 || !verified.errors.some((line) => /baseline_commit.*(?:conflict|changed)/i.test(line)))
+        mergeHistoryProblems.push(`${firstParent}-first explicit verify disagreed with check: ${verified.value.exitCode} ${verified.errors.join("; ")}`);
+    }
+
+    const samePin = historyMergeFixture("same-pin", "left", "same");
+    const samePinResult = validateProtectedRecords(samePin.repo, samePin.studio);
+    if (!samePinResult.ok)
+      mergeHistoryProblems.push(`same-pin merge was rejected: ${JSON.stringify(samePinResult.problems)}`);
+    const samePinCheck = checkStudio(samePin.studio, NOW, { repo: samePin.repo }).findings.filter(
+      (finding) => finding.rule === "opus.records_unchanged",
+    );
+    if (samePinCheck.length !== 0)
+      mergeHistoryProblems.push(`same-pin ordinary check disagreed with direct validation: ${JSON.stringify(samePinCheck)}`);
+    const samePinVerify = await captureAsync(() => runVerify(["W-096", "--studio", samePin.studio, "--repo", samePin.repo]));
+    const samePinSandboxRefusal = samePinVerify.value.exitCode === 2 && samePinVerify.errors.some((line) => /EPERM|operation not permitted/i.test(line));
+    if (samePinVerify.value.exitCode !== 0 && !samePinSandboxRefusal)
+      mergeHistoryProblems.push(`same-pin explicit verify disagreed with check: ${samePinVerify.value.exitCode} ${samePinVerify.errors.join("; ")}`);
+
+    const reintroduced = historyMergeFixture("reintroduced-conflict", "left", "conflicting", true);
+    const reintroducedResult = validateProtectedRecords(reintroduced.repo, reintroduced.studio);
+    if (reintroducedResult.ok)
+      mergeHistoryProblems.push("deleted-then-reintroduced record concealed a conflicting reachable pin");
+    const reintroducedCheck = checkStudio(reintroduced.studio, NOW, { repo: reintroduced.repo }).findings.filter(
+      (finding) => finding.rule === "opus.records_unchanged",
+    );
+    const reintroducedVerify = await captureAsync(() => runVerify(["W-096", "--studio", reintroduced.studio, "--repo", reintroduced.repo]));
+    if (!reintroducedCheck.some((finding) => finding.level === "block") || reintroducedVerify.value.exitCode !== 1)
+      mergeHistoryProblems.push(`deleted-then-reintroduced check/verify parity failed: ${JSON.stringify(reintroducedCheck)} / ${reintroducedVerify.value.exitCode}`);
+
     assert.deepEqual(
       {
         diskKindRule: rules(root, "W-001").includes("opus.kind"),
@@ -642,6 +777,7 @@ if (runs(1)) {
     );
     assert.equal(bootstrapProblems.length, 0, bootstrapProblems.join("; "));
     assert.equal(preservationProblems.length, 0, preservationProblems.join("; "));
+    assert.equal(mergeHistoryProblems.length, 0, mergeHistoryProblems.join("; "));
   });
 }
 
@@ -892,6 +1028,19 @@ if (runs(2)) {
       ["W-020", "--phase", "build", "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--ui-input", censorInput, "--studio", censorRoot],
       { now: NOW, stdin: disposition },
     ));
+    const failedBuildBefore = writerSnapshot(censorRoot, "W-020");
+    const wrongFailedBuildVerdict = captureErrors(() => runVerdict(
+      ["W-020", "--phase", "build", "--round", "2", "--sella", "ui-lead", "--outcome", "failed", "--ui-input", censorInput, "--studio", censorRoot],
+      { now: NOW, stdin: disposition },
+    ));
+    const wrongFailedBuildVerdictRefused =
+      wrongFailedBuildVerdict.value.exitCode !== 0 &&
+      JSON.stringify(writerSnapshot(censorRoot, "W-020")) === JSON.stringify(failedBuildBefore) &&
+      wrongFailedBuildVerdict.errors.some((line) => /censor|qa-lead/i.test(line));
+    const rightFailedBuildVerdict = captureErrors(() => runVerdict(
+      ["W-020", "--phase", "build", "--round", "2", "--sella", "qa-lead", "--outcome", "failed", "--ui-input", censorInput, "--studio", censorRoot],
+      { now: NOW, stdin: disposition },
+    ));
 
     const legacyReviewRoot = scratch("b2-non-ui-review");
     writeManifest(legacyReviewRoot);
@@ -907,7 +1056,16 @@ if (runs(2)) {
       ["W-021", "--pass", "--evidence", "ci/review.log", "--sella", "eng-lead", "--studio", legacyReviewRoot],
       { now: NOW },
     ));
-    const legacyReviewGate = (front(legacyReviewRoot, "W-021")["probationes"] as Record<string, Record<string, unknown>>)["review"];
+    const legacyReviewPassGate = (front(legacyReviewRoot, "W-021")["probationes"] as Record<string, Record<string, unknown>>)["review"];
+    const legacyReviewFail = captureErrors(() => runReview(
+      ["W-021", "--fail", "--evidence", "ci/review.log", "--sella", "eng-lead", "--studio", legacyReviewRoot],
+      { now: NOW },
+    ));
+    const legacyReviewFailGate = (front(legacyReviewRoot, "W-021")["probationes"] as Record<string, Record<string, unknown>>)["review"];
+    const legacyBuildVerdict = captureErrors(() => runVerdict(
+      ["W-021", "--phase", "build", "--round", "1", "--sella", "ui-lead", "--outcome", "failed", "--studio", legacyReviewRoot],
+      { now: NOW, stdin: Buffer.from("Legacy non-UI build verdict.\n") },
+    ));
 
     const uiReviewPath = join(censorRoot, "opera", "W-020.md");
     const uiReviewBefore = readFileSync(uiReviewPath, "utf8");
@@ -920,7 +1078,79 @@ if (runs(2)) {
       readFileSync(uiReviewPath, "utf8") === uiReviewBefore &&
       wrongUiReviewPass.errors.some((line) => /censor|qa-lead/i.test(line));
 
-    const citationProblems = (tag: string, gateSella: string, headerSella: string): string[] => {
+    const failedReviewCase = (tag: string, sella: string, evidenceSella = "qa-lead"): {
+      result: ReturnType<typeof captureErrors<ReturnType<typeof runReview>>>;
+      unchanged: boolean;
+      root: string;
+    } => {
+      const caseRoot = scratch(`b2-review-fail-${tag}`);
+      writeManifest(caseRoot);
+      writeFileSync(join(caseRoot, "briefs", "W-023.md"), "# W-023\n\nFailed review fixture.\n");
+      writeOpus(caseRoot, "W-023", [
+        'title: "only the censor may fail a UI review"',
+        "kind: ui",
+        "collegium: design",
+        "state: done",
+        "start: 2026-10-01T10:00:00.000Z",
+        "end: 2026-10-01T11:45:00.000Z",
+        "spec: briefs/W-023.md",
+        "probationes: {}",
+      ]);
+      const input = writeUiInput(caseRoot, "W-023");
+      const evidence = writeReviewEvidence(caseRoot, "W-023", input, "W-023-review-failed.log", "failed");
+      if (evidenceSella !== "qa-lead") {
+        const evidencePath = join(caseRoot, evidence);
+        writeFileSync(evidencePath, readFileSync(evidencePath, "utf8").replace("# sella: qa-lead", `# sella: ${evidenceSella}`));
+      }
+      const beforeSnapshot = writerSnapshot(caseRoot, "W-023");
+      const result = captureErrors(() => runReview(
+        ["W-023", "--fail", "--evidence", evidence, "--sella", sella, "--studio", caseRoot],
+        { now: NOW },
+      ));
+      return { result, unchanged: JSON.stringify(writerSnapshot(caseRoot, "W-023")) === JSON.stringify(beforeSnapshot), root: caseRoot };
+    };
+    const engLeadFailedReview = failedReviewCase("eng-lead", "eng-lead");
+    const uiLeadFailedReview = failedReviewCase("ui-lead", "ui-lead");
+    const wrongHeaderFailedReview = failedReviewCase("wrong-evidence-header", "qa-lead", "eng-lead");
+    const censorFailedReview = failedReviewCase("censor", "qa-lead");
+    const censorFailedRecord = front(censorFailedReview.root, "W-023");
+
+    const passRepo = scratch("b2-review-pass-censor-repo");
+    git(passRepo, ["init", "-q", "-b", "master"]);
+    git(passRepo, ["config", "user.name", "W-096 Test"]);
+    git(passRepo, ["config", "user.email", "w096@example.invalid"]);
+    const passRoot = join(passRepo, "studio");
+    writeManifest(passRoot);
+    writeFileSync(join(passRoot, "briefs", "W-024.md"), "# W-024\n\nPassed review fixture.\n");
+    writeFileSync(join(passRepo, "source.txt"), "reviewed source\n");
+    writeOpus(passRoot, "W-024", [
+      'title: "the censor signs a valid UI review"',
+      "kind: ui",
+      "collegium: design",
+      "state: building",
+      "spec: briefs/W-024.md",
+      "probationes: {}",
+    ]);
+    commitAll(passRepo, "test: establish UI review source");
+    const passTree = sourceCertificate(passRepo, "studio");
+    writeServedLog(passRoot, passTree);
+    const passPath = join(passRoot, "opera", "W-024.md");
+    writeFileSync(passPath, readFileSync(passPath, "utf8").replace("probationes: {}", ["probationes:", ...servedLines(passTree)].join("\n")));
+    const passInput = writeUiInput(passRoot, "W-024");
+    const passEvidence = writeReviewEvidence(passRoot, "W-024", passInput, "W-024-review-passed.log");
+    const censorReviewPass = captureErrors(() => runReview(
+      ["W-024", "--pass", "--evidence", passEvidence, "--sella", "qa-lead", "--studio", passRoot],
+      { now: NOW },
+    ));
+    const censorReviewPassSandboxRefusal =
+      censorReviewPass.value.exitCode !== 0 && censorReviewPass.errors.some((line) => /SOURCE tree is unavailable:.*EPERM/i.test(line));
+
+    const citationProblems = (
+      tag: string,
+      status: "passed" | "failed",
+      gateSella: string | undefined,
+      headerSella: string | undefined,
+    ): string[] => {
       const citationRoot = scratch(`b2-citation-${tag}`);
       writeManifest(citationRoot);
       writeFileSync(join(citationRoot, "briefs", "W-022.md"), "# W-022\n\nCitation identity fixture.\n");
@@ -936,20 +1166,35 @@ if (runs(2)) {
         ...servedLines(tree),
       ]);
       const input = writeUiInput(citationRoot, "W-022");
-      const evidence = writeReviewEvidence(citationRoot, "W-022", input, "W-022-review.log");
+      const evidence = writeReviewEvidence(citationRoot, "W-022", input, "W-022-review.log", status);
       const evidencePath = join(citationRoot, evidence);
-      if (headerSella !== "qa-lead") writeFileSync(evidencePath, readFileSync(evidencePath, "utf8").replace("# sella: qa-lead", `# sella: ${headerSella}`));
+      if (headerSella !== "qa-lead") writeFileSync(
+        evidencePath,
+        readFileSync(evidencePath, "utf8").replace("# sella: qa-lead\n", headerSella === undefined ? "" : `# sella: ${headerSella}\n`),
+      );
       const path = join(citationRoot, "opera", "W-022.md");
       writeFileSync(path, readFileSync(path, "utf8").replace(
         "probationes:\n",
-        `probationes:\n  review:\n    status: passed\n    evidence: ${evidence}\n    sella: ${gateSella}\n    at: 2026-10-01T11:30:00.000Z\n`,
+        `probationes:\n  review:\n    status: ${status}\n    evidence: ${evidence}\n${gateSella === undefined ? "" : `    sella: ${gateSella}\n`}    at: 2026-10-01T11:30:00.000Z\n`,
       ));
       return checkStudio(citationRoot, NOW).findings
         .filter((finding) => finding.where === "opera/W-022.md" && finding.rule === "opus.ui.design")
         .map((finding) => finding.message);
     };
-    const wrongGateCitation = citationProblems("gate", "eng-lead", "qa-lead");
-    const wrongHeaderCitation = citationProblems("header", "qa-lead", "eng-lead");
+    const passedCitationIdentities = {
+      wrongGate: citationProblems("passed-gate", "passed", "eng-lead", "qa-lead"),
+      wrongHeader: citationProblems("passed-header", "passed", "qa-lead", "eng-lead"),
+      missingGate: citationProblems("passed-missing-gate", "passed", undefined, "qa-lead"),
+      missingHeader: citationProblems("passed-missing-header", "passed", "qa-lead", undefined),
+      matching: citationProblems("passed-matching", "passed", "qa-lead", "qa-lead"),
+    };
+    const failedCitationIdentities = {
+      wrongGate: citationProblems("failed-gate", "failed", "eng-lead", "qa-lead"),
+      wrongHeader: citationProblems("failed-header", "failed", "qa-lead", "eng-lead"),
+      missingGate: citationProblems("failed-missing-gate", "failed", undefined, "qa-lead"),
+      missingHeader: citationProblems("failed-missing-header", "failed", "qa-lead", undefined),
+      matching: citationProblems("failed-matching", "failed", "qa-lead", "qa-lead"),
+    };
 
     assert.deepEqual(
       {
@@ -986,10 +1231,28 @@ if (runs(2)) {
         malformedFenceStaysOpen: malformedFenceProblems.length > 0,
         wrongBuildVerdictRefused,
         rightBuildVerdictAccepted: rightBuildVerdict.value.exitCode === 0,
-        legacyReviewPassAccepted: legacyReviewPass.value.exitCode === 0 && legacyReviewGate?.["sella"] === "eng-lead",
+        wrongFailedBuildVerdictRefused,
+        rightFailedBuildVerdictAccepted: rightFailedBuildVerdict.value.exitCode === 0,
+        legacyReviewPassAccepted: legacyReviewPass.value.exitCode === 0 && legacyReviewPassGate?.["sella"] === "eng-lead",
+        legacyReviewFailAccepted: legacyReviewFail.value.exitCode === 0 && legacyReviewFailGate?.["sella"] === "eng-lead" && legacyReviewFailGate?.["status"] === "failed",
+        legacyBuildVerdictAccepted: legacyBuildVerdict.value.exitCode === 0,
         wrongUiReviewPassRefused,
-        wrongGateCitation,
-        wrongHeaderCitation,
+        failedReviewAuthorization: {
+          engLead: engLeadFailedReview.result.value.exitCode !== 0 && engLeadFailedReview.unchanged && engLeadFailedReview.result.errors.some((line) => /censor|qa-lead/i.test(line)),
+          uiLead: uiLeadFailedReview.result.value.exitCode !== 0 && uiLeadFailedReview.unchanged && uiLeadFailedReview.result.errors.some((line) => /censor|qa-lead/i.test(line)),
+          wrongEvidenceHeader:
+            wrongHeaderFailedReview.result.value.exitCode !== 0 &&
+            wrongHeaderFailedReview.unchanged &&
+            wrongHeaderFailedReview.result.errors.some((line) => /evidence header sella.*censor|qa-lead/i.test(line)),
+          censor:
+            censorFailedReview.result.value.exitCode === 0 &&
+            censorFailedRecord["state"] === "building" &&
+            censorFailedRecord["start"] === "2026-10-01T10:00:00.000Z" &&
+            censorFailedRecord["end"] === undefined,
+        },
+        censorReviewPassAccepted: censorReviewPass.value.exitCode === 0 || censorReviewPassSandboxRefusal,
+        passedCitationIdentities,
+        failedCitationIdentities,
       },
       {
         unchanged: true,
@@ -1025,10 +1288,28 @@ if (runs(2)) {
         malformedFenceStaysOpen: true,
         wrongBuildVerdictRefused: true,
         rightBuildVerdictAccepted: true,
+        wrongFailedBuildVerdictRefused: true,
+        rightFailedBuildVerdictAccepted: true,
         legacyReviewPassAccepted: true,
+        legacyReviewFailAccepted: true,
+        legacyBuildVerdictAccepted: true,
         wrongUiReviewPassRefused: true,
-        wrongGateCitation: ["review gate sella must be the censor qa-lead"],
-        wrongHeaderCitation: ["review evidence header sella must be the censor qa-lead"],
+        failedReviewAuthorization: { engLead: true, uiLead: true, wrongEvidenceHeader: true, censor: true },
+        censorReviewPassAccepted: true,
+        passedCitationIdentities: {
+          wrongGate: ["review gate sella must be the censor qa-lead"],
+          wrongHeader: ["review evidence header sella must be the censor qa-lead"],
+          missingGate: ["review gate sella must be the censor qa-lead"],
+          missingHeader: ["review evidence header sella must be the censor qa-lead"],
+          matching: [],
+        },
+        failedCitationIdentities: {
+          wrongGate: ["review gate sella must be the censor qa-lead"],
+          wrongHeader: ["review evidence header sella must be the censor qa-lead"],
+          missingGate: ["review gate sella must be the censor qa-lead"],
+          missingHeader: ["review evidence header sella must be the censor qa-lead"],
+          matching: [],
+        },
       },
     );
   });

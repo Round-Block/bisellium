@@ -102,11 +102,72 @@ const citationFindings = (root: string) =>
     .replace("# tests 1", "# tests 2")
     .replace("# fail 1", "# fail 2");
   const planMismatch = valid.replace("1..1", "1..2");
+  const syntaxOnly = "# behaviour: 2\n# command: node fixture.js --behaviour 2\n# exit: 1\n\nSyntaxError: Unexpected token '}'\n";
+  const syntaxAlongside = `${valid}\nSyntaxError: Unexpected token '}'\n`;
+  const commandNotFoundOnly = "# behaviour: 2\n# command: missing-test --behaviour 2\n# exit: 127\n\nsh: missing-test: command not found\n";
+  const commandNotFoundAlongside = `${valid}\nsh: missing-test: command not found\n`;
+  const unknownFlagOnly = "# behaviour: 2\n# command: node fixture.js --behaviour 2 --unknown\n# exit: 2\n\nunknown flag --unknown\n";
+  const unknownFlagAlongside = `${valid}\nunknown flag --unknown\n`;
+  const sandboxOnly = "# behaviour: 2\n# command: node fixture.js --behaviour 2\n# exit: 1\n\nsandbox: operation not permitted\n";
+  const sandboxAlongside = `${valid}\nsandbox: operation not permitted\n`;
+  const gitPermissionOnly = "# behaviour: 2\n# command: node fixture.js --behaviour 2\n# exit: 128\n\nfatal: cannot open .git/index: Permission denied\n";
+  const gitPermissionAlongside = `${valid}\nfatal: cannot open .git/index: Permission denied\n`;
+  const plainFail = "# behaviour: 2\n# command: node fixture.js --behaviour 2\n# exit: 1\n\nFAIL expected true but received false\n";
+  const zeroTest = valid
+    .replace(/^not ok 1.*\n(?:  .*\n)*/m, "")
+    .replace("1..1", "1..0")
+    .replace("# tests 1", "# tests 0")
+    .replace("# fail 1", "# fail 0");
+  const missingPlan = valid.replace("1..1\n", "");
+  const skippedOnly = valid
+    .replace("not ok 1 - W-096 behaviour 2: fixture", "ok 1 - W-096 behaviour 2: fixture # SKIP unavailable")
+    .replace("  code: 'ERR_ASSERTION'\n", "")
+    .replace("# pass 0", "# pass 1")
+    .replace("# fail 1", "# fail 0");
+  const wrongPrefix = valid.replace("not ok 1 - W-096 behaviour 2: fixture", "not ok 1 - unrelated fixture");
+  const mismatchedIdentity = valid.replace("# behaviour: 2", "# behaviour: 3");
   const moduleLoad = `${valid}\nError [ERR_MODULE_NOT_FOUND]: Cannot find module './fixture.js'\n`;
+  const moduleLoadOnly = "# behaviour: 2\n# command: node fixture.js --behaviour 2\n# exit: 1\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module './fixture.js'\n";
+  const quotedTap = [
+    "# behaviour: 2",
+    "# command: node fixture.js --behaviour 2",
+    "# exit: 1",
+    "",
+    "$ cat <<'QUOTED_TAP'",
+    "TAP version 13",
+    "not ok 1 - W-096 behaviour 2: fixture",
+    "  ---",
+    "  code: 'ERR_ASSERTION'",
+    "  ...",
+    "1..1",
+    "# tests 1",
+    "# pass 0",
+    "# fail 1",
+    "QUOTED_TAP",
+    "",
+  ].join("\n");
   check(10, "W-096 TAP without ERR_ASSERTION is rejected", !isW096AssertionRed(noAssertionCode, 2));
   check(10, "W-096 multiple-test TAP is rejected", !isW096AssertionRed(multipleTests, 2));
   check(10, "W-096 plan mismatch is rejected", !isW096AssertionRed(planMismatch, 2));
-  check(10, "W-096 module-load text cannot masquerade as an assertion red", !isW096AssertionRed(moduleLoad, 2));
+  check(10, "W-096 syntax failure alone is rejected", !isW096AssertionRed(syntaxOnly, 2));
+  check(10, "W-096 syntax failure alongside TAP is rejected", !isW096AssertionRed(syntaxAlongside, 2));
+  check(10, "W-096 command-not-found alone is rejected", !isW096AssertionRed(commandNotFoundOnly, 2));
+  check(10, "W-096 command-not-found alongside TAP is rejected", !isW096AssertionRed(commandNotFoundAlongside, 2));
+  check(10, "W-096 unknown-flag failure alone is rejected", !isW096AssertionRed(unknownFlagOnly, 2));
+  check(10, "W-096 unknown-flag failure alongside TAP is rejected", !isW096AssertionRed(unknownFlagAlongside, 2));
+  check(10, "W-096 sandbox denial alone is rejected", !isW096AssertionRed(sandboxOnly, 2));
+  check(10, "W-096 sandbox denial alongside TAP is rejected", !isW096AssertionRed(sandboxAlongside, 2));
+  check(10, "W-096 Git permission failure alone is rejected", !isW096AssertionRed(gitPermissionOnly, 2));
+  check(10, "W-096 Git permission failure alongside TAP is rejected", !isW096AssertionRed(gitPermissionAlongside, 2));
+  check(10, "W-096 plain nonzero FAIL output is rejected", !isW096AssertionRed(plainFail, 2));
+  check(10, "W-096 zero-test plan is rejected", !isW096AssertionRed(zeroTest, 2));
+  check(10, "W-096 missing plan is rejected", !isW096AssertionRed(missingPlan, 2));
+  check(10, "W-096 skipped-only report is rejected", !isW096AssertionRed(skippedOnly, 2));
+  check(10, "W-096 wrong behaviour test-name prefix is rejected", !isW096AssertionRed(wrongPrefix, 2));
+  check(10, "W-096 mismatched behaviour identity is rejected", !isW096AssertionRed(mismatchedIdentity, 2));
+  check(10, "W-096 module-load failure alone is rejected", !isW096AssertionRed(moduleLoadOnly, 2));
+  check(10, "W-096 module-load failure alongside TAP is rejected", !isW096AssertionRed(moduleLoad, 2));
+  check(10, "W-096 quoted or echoed TAP text is rejected", !isW096AssertionRed(quotedTap, 2));
 }
 
 if (only === 10) {
