@@ -13,9 +13,10 @@
  * `bisellium red`'s job alone.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import { listMd, readFront } from "@bisellium/adapter-native";
+import { existsSync, realpathSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { listMd, parseFrontMatter } from "@bisellium/adapter-native";
+import { currentBranch, readContainedRegularFile, validateProtectedRecords } from "@bisellium/commands/opus-model.js";
 import type { Finding, RuleOpts } from "../check.js";
 
 type Dict = Record<string, unknown>;
@@ -25,9 +26,12 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 const ACTIVE = new Set(["building", "verifying", "review"]);
 const TIMEOUT_MS = 30_000;
 
-function safeFront(path: string): Dict | undefined {
+function safeFront(root: string, path: string): Dict | undefined {
   try {
-    const fm = readFront<unknown>(path);
+    const rel = relative(root, path).split(sep).join("/");
+    const contained = readContainedRegularFile(root, rel, "opera");
+    if ("error" in contained) return undefined;
+    const fm = parseFrontMatter<unknown>(contained.bytes.toString("utf8"), path);
     return isDict(fm.data) ? fm.data : undefined;
   } catch {
     return undefined;
@@ -75,7 +79,7 @@ function checkUntracked(root: string, opts: RuleOpts): Finding[] {
 
   const findings: Finding[] = [];
   for (const p of safeList(join(root, "opera"))) {
-    const d = safeFront(p);
+    const d = safeFront(root, p);
     if (!d) continue;
     const state = str(d["state"]);
     if (!state || !ACTIVE.has(state)) continue;
@@ -159,7 +163,7 @@ function checkRedEvidence(root: string): Finding[] {
 
   const findings: Finding[] = [];
   for (const p of safeList(join(root, "opera"))) {
-    const d = safeFront(p);
+    const d = safeFront(root, p);
     if (!d) continue;
     const state = str(d["state"]);
     if (!state || !ACTIVE.has(state)) continue;
@@ -167,18 +171,18 @@ function checkRedEvidence(root: string): Finding[] {
     const spec = str(d["spec"]);
     if (!id || !spec) continue;
 
-    const briefAbs = resolve(root, spec);
-    const briefRel = relative(root, briefAbs);
-    if (isAbsolute(briefRel) || briefRel.split(sep)[0] === "..") continue; // must resolve inside the officina
-
-    let briefText: string;
-    try {
-      briefText = readFileSync(briefAbs, "utf8");
-    } catch {
+    const where = relative(root, p).split(sep).join("/");
+    const brief = readContainedRegularFile(root, spec, "briefs");
+    if ("error" in brief) {
+      findings.push({
+        rule: "opus.red_evidence",
+        level: "block",
+        where,
+        message: `brief evidence is unsafe or unreadable: ${brief.error}`,
+      });
       continue;
     }
-
-    const where = relative(root, p).split(sep).join("/");
+    const briefText = brief.bytes.toString("utf8");
     const n = countBehaviours(briefText);
     if (n === 0) {
       findings.push({
@@ -195,18 +199,13 @@ function checkRedEvidence(root: string): Finding[] {
     const moduleLoad: number[] = [];
     const logTexts = new Map<number, string>();
     for (let nn = 1; nn <= n; nn++) {
-      const logPath = join(redsDir, id, `${String(nn).padStart(2, "0")}.log`);
-      if (!existsSync(logPath)) {
+      const logRel = `ci/reds/${id}/${String(nn).padStart(2, "0")}.log`;
+      const log = readContainedRegularFile(root, logRel, "ci");
+      if ("error" in log) {
         missing.push(nn);
         continue;
       }
-      let logText: string;
-      try {
-        logText = readFileSync(logPath, "utf8");
-      } catch {
-        missing.push(nn);
-        continue;
-      }
+      const logText = log.bytes.toString("utf8");
       logTexts.set(nn, logText);
       const exit = parseLogHeader(logText).get("exit");
       if (exit === undefined || !/^-?\d+$/.test(exit) || exit === "0") notRed.push(nn);
@@ -271,6 +270,126 @@ function checkRedEvidence(root: string): Finding[] {
       });
   }
   return findings;
+}
+
+const INVALID_RED_OUTPUT =
+  /ERR_MODULE_NOT_FOUND|SyntaxError:|command not found|ENOENT|unknown (?:option|flag)|not permitted|permission denied|operation not permitted|sandbox/i;
+
+/** W-096's seven reds are selectable completed TAP assertion failures. */
+export function isW096AssertionRed(text: string, behaviour: number): boolean {
+  const header = parseLogHeader(text);
+  const command = header.get("command") ?? "";
+  const selected = new RegExp(`(?:^|\\s)--behaviour\\s+${behaviour}(?:\\s|$)`).test(command);
+  const name = `W-096 behaviour ${behaviour}:`;
+  const body = stripHeader(text);
+  const exit = header.get("exit") ?? "";
+  if (header.get("behaviour") !== String(behaviour) || !/^-?\d+$/.test(exit) || exit === "0" || !selected || INVALID_RED_OUTPUT.test(body)) return false;
+  // The TAP stream must be the command's output, not a later quoted/heredoc
+  // fixture embedded in shell diagnostics or source text.
+  if (!body.startsWith("TAP version 13\n")) return false;
+  const statuses = [...body.matchAll(/^(?:not )?ok \d+ - (.+)$/gm)];
+  if (statuses.length !== 1 || !statuses[0]![0].startsWith("not ok ") || !statuses[0]![1]!.startsWith(name)) return false;
+  const diagnosticStart = body.indexOf("\n  ---\n", statuses[0]!.index);
+  const diagnosticEnd = diagnosticStart < 0 ? -1 : body.indexOf("\n  ...", diagnosticStart + 7);
+  if (diagnosticStart < 0 || diagnosticEnd < 0 || !/^\s*code: ['"]ERR_ASSERTION['"]\s*$/m.test(body.slice(diagnosticStart, diagnosticEnd))) return false;
+  const plan = /^1\.\.(\d+)\s*$/m.exec(body);
+  const tests = /^# tests (\d+)\s*$/m.exec(body);
+  const failed = /^# fail (\d+)\s*$/m.exec(body);
+  const passed = /^# pass (\d+)\s*$/m.exec(body);
+  return plan?.[1] === "1" && tests?.[1] === "1" && failed?.[1] === "1" && (passed?.[1] ?? "0") === "0" && !/^ok \d+ -/m.test(body);
+}
+
+function checkW096AssertionReds(root: string): Finding[] {
+  const path = join(root, "opera", "W-096.md");
+  const record = safeFront(root, path);
+  const state = record ? str(record["state"]) : undefined;
+  if (!state || !new Set(["building", "verifying", "review", "done"]).has(state)) return [];
+  const bad: number[] = [];
+  for (let behaviour = 1; behaviour <= 7; behaviour++) {
+    const log = readContainedRegularFile(root, `ci/reds/W-096/${String(behaviour).padStart(2, "0")}.log`, "ci");
+    if ("error" in log || !isW096AssertionRed(log.bytes.toString("utf8"), behaviour)) {
+      bad.push(behaviour);
+    }
+  }
+  return bad.length
+    ? [{ rule: "opus.red_assertion", level: "block", where: "opera/W-096.md", message: `behaviour red(s) ${bad.join(", ")} are missing or not completed selected Node TAP ERR_ASSERTION failures` }]
+    : [];
+}
+
+const W096_RECORD_PATH = "studio/opera/W-096.md";
+
+/** Resolve the physical officina which owns W-096 from the pinned record at
+ * HEAD and require that the pin's baseline tree contains that same record.
+ * The canonical native path remains the fail-closed fallback when the record
+ * history itself cannot be inspected; callers must still compare physical
+ * paths before applying the gate. */
+function w096OwningStudio(repoArg: string): string {
+  const repoReal = realpathSync(resolve(repoArg));
+  try {
+    const raw = execFileSync("git", ["show", `HEAD:${W096_RECORD_PATH}`], {
+      cwd: repoReal,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: TIMEOUT_MS,
+    });
+    const parsed = parseFrontMatter<unknown>(raw, W096_RECORD_PATH);
+    const baseline = isDict(parsed.data) ? str(parsed.data["baseline_commit"]) : undefined;
+    if (!baseline || !/^[0-9a-f]{40}$/.test(baseline)) throw new Error("the committed W-096 record has no usable baseline pin");
+    const entry = execFileSync("git", ["ls-tree", baseline, "--", W096_RECORD_PATH], {
+      cwd: repoReal,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: TIMEOUT_MS,
+    }).trim();
+    if (!/^100(?:644|755) blob [0-9a-f]+\tstudio\/opera\/W-096\.md$/.test(entry))
+      throw new Error("the pinned baseline tree does not contain the W-096 record");
+    return realpathSync(join(repoReal, dirname(dirname(W096_RECORD_PATH))));
+  } catch {
+    return realpathSync(join(repoReal, "studio"));
+  }
+}
+
+function checkW096ProtectedRecords(root: string, opts: RuleOpts): Finding[] {
+  const record = safeFront(root, join(root, "opera", "W-096.md"));
+  const unverifiable = (message: string): Finding[] => [{
+    rule: "opus.records_unchanged",
+    level: "block",
+    where: "opera/W-096.md",
+    message: `preservation is unverifiable: ${message}`,
+  }];
+  if (!opts.repo) return record ? unverifiable("repository context (--repo) is absent") : [];
+
+  let repoReal: string;
+  let studioReal: string;
+  try {
+    repoReal = realpathSync(resolve(opts.repo));
+    studioReal = realpathSync(resolve(root));
+  } catch {
+    return unverifiable("repository or studio identity cannot be resolved");
+  }
+
+  // The owning branch is determined from Git's current symbolic branch and
+  // must equal the record owner's canonical ref, opus/W-096. Other branches
+  // do not replay this opus-specific boundary after the record is merged.
+  const branch = currentBranch(opts.repo);
+  if (branch === "opus/W-096") {
+    let ownerReal: string;
+    try { ownerReal = w096OwningStudio(opts.repo); }
+    catch { return unverifiable("owning officina identity cannot be resolved"); }
+    // Branch identity alone does not make every checked officina the owner.
+    // A fixture, sample, or temporary officina remains outside this gate.
+    if (studioReal !== ownerReal) return [];
+    if (!record) return unverifiable("W-096 record is missing, unsafe, or unreadable on its owning branch");
+  } else {
+    if (!record) return [];
+    if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
+      return unverifiable("selected studio is not the native studio inside the supplied repository");
+  }
+  if (branch === undefined) return unverifiable("repository identity or current branch is unavailable");
+  if (branch !== "opus/W-096") return [];
+  const result = validateProtectedRecords(opts.repo, root);
+  if (result.ok) return [];
+  return result.problems.map((message) => ({ rule: "opus.records_unchanged", level: "block" as const, where: "opera/W-096.md", message }));
 }
 
 /** Remove the three contexts which carry examples rather than live
@@ -343,13 +462,10 @@ function stripBacktickSpans(text: string): string {
 function checkBehaviourCitations(root: string): Finding[] {
   const findings: Finding[] = [];
   for (const p of safeList(join(root, "briefs"))) {
-    let briefText: string;
-    try {
-      if (!lstatSync(p).isFile()) continue;
-      briefText = readFileSync(p, "utf8");
-    } catch {
-      continue;
-    }
+    const rel = relative(root, p).split(sep).join("/");
+    const contained = readContainedRegularFile(root, rel, "briefs");
+    if ("error" in contained) continue;
+    const briefText = contained.bytes.toString("utf8");
 
     const declared = countBehaviours(briefText);
     if (declared === 0) continue;
@@ -369,5 +485,11 @@ function checkBehaviourCitations(root: string): Finding[] {
 
 export function checkEvidence(root: string, opts: RuleOpts): Finding[] {
   if (!existsSync(join(root, "bisellium.yml"))) return [];
-  return [...checkUntracked(root, opts), ...checkRedEvidence(root), ...checkBehaviourCitations(root)];
+  return [
+    ...checkUntracked(root, opts),
+    ...checkRedEvidence(root),
+    ...checkW096AssertionReds(root),
+    ...checkW096ProtectedRecords(root, opts),
+    ...checkBehaviourCitations(root),
+  ];
 }

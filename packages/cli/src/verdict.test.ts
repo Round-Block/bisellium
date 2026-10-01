@@ -5,6 +5,7 @@ import { join, relative } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { draftRetro, type RetroInput } from "./retro.js";
 import { runVerdict } from "./verdict.js";
+import { comparePrompt, fullCaseFold } from "@bisellium/commands/opus-model.js";
 
 const only = process.argv[3] === undefined ? undefined : Number(process.argv[3]);
 let failed = 0;
@@ -32,8 +33,10 @@ function studio(tag: string, ids: string[] = ["W-200"]): string {
       "patron: patron",
       "collegia:",
       "  - { id: engineering, name: Engineering, magister: eng-lead }",
+      "  - { id: qa, name: QA, magister: qa-lead }",
       "sellae:",
       "  - { id: builder-sol, collegium: engineering, kind: agent }",
+      "  - { id: qa-lead, collegium: qa, kind: agent }",
       "probationes:",
       "  - { id: spec, name: Spec, kind: agent }",
       "  - { id: review, name: Review, kind: agent }",
@@ -410,6 +413,56 @@ try {
       verdict.exitCode === 0 && first?.lessons.length === 1 && second?.lessons.length === 1 && second.markdown.includes('"spec-verdict-gap" recurs across cascades 1, 2'),
       error || second?.markdown || "no retro",
     );
+  }
+
+  if (only === undefined || only === 7) {
+    check(7, "b7: full Unicode folding expands sharp-s", fullCaseFold("ß ẞ STRASSE") === "ss ss strasse");
+    check(7, "b7: long-s and ligature compatibility forms fold", fullCaseFold("ſ ﬁ") === "s fi");
+    check(7, "b7: Turkic T mappings stay excluded", fullCaseFold("ı I İ") === "ı i i\u0307");
+    const tokens = (count: number) => Array.from({ length: count }, (_, index) => `token${String(index + 1).padStart(2, "0")}`);
+    const reordered = (values: string[], width: number) => {
+      const blocks: string[][] = [];
+      for (let at = 0; at < values.length; at += width) blocks.push(values.slice(at, at + width));
+      return blocks.reverse().flat().join(" ");
+    };
+    const rejected = comparePrompt(reordered(tokens(24), 6), tokens(24).join(" "));
+    check(7, "b7: 24-token block reorder is rejected at width four", !rejected.accepted && rejected.shared === 12 && rejected.novel === 9, JSON.stringify(rejected));
+    const residual = comparePrompt(reordered(tokens(32), 4), tokens(32).join(" "));
+    check(7, "b7: specified 32-token block-reorder residual remains accepted", residual.accepted && residual.shared === 8 && residual.novel === 21, JSON.stringify(residual));
+  }
+
+  if (only === undefined || only === 8) {
+    const dir = studio("ui-structured", ["W-280"]);
+    mkdirSync(join(dir, "briefs"), { recursive: true });
+    mkdirSync(join(dir, "ci"), { recursive: true });
+    writeFileSync(join(dir, "briefs", "W-280.md"), "# UI brief\n\nBuild the settled interface.\n");
+    writeFileSync(join(dir, "ci", "dispatch.md"), "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n");
+    writeFileSync(
+      join(dir, "opera", "W-280.md"),
+      "---\nid: W-280\ntitle: Structured UI input\nkind: ui\ncollegium: engineering\nstate: building\nspec: briefs/W-280.md\nprobationes: {}\n---\n",
+    );
+    const transcript = [
+      "## Findings",
+      "No findings",
+      "The navigation relationships remain legible across the complete narrow viewport arrangement.",
+      "## Recommendation",
+      "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.",
+      "Additional original observations cover focus movement responsive density and stable content grouping throughout.",
+      "Verdict: passed",
+      "",
+    ].join("\n");
+    const spec = runVerdict(
+      ["W-280", "--phase", "spec", "--round", "1", "--sella", "ui-lead", "--outcome", "passed", "--dispatch-prompt", "ci/dispatch.md", "--studio", dir],
+      { now: NOW, stdin: Buffer.from(transcript) },
+    );
+    const specRaw = existsSync(join(dir, "ci", "W-280-spec-1.log")) ? readFileSync(join(dir, "ci", "W-280-spec-1.log"), "utf8") : "";
+    check(8, "b8: UI spec verdict writes prompt and design digest headers", spec.exitCode === 0 && /^# dispatch_prompt: ci\/dispatch\.md$/m.test(specRaw) && /^# design_digest: sha256:[0-9a-f]{64}$/m.test(specRaw), specRaw);
+    const build = runVerdict(
+      ["W-280", "--phase", "build", "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--ui-input", "ci/W-280-spec-1.log", "--studio", dir],
+      { now: NOW, stdin: Buffer.from("## UI input disposition\n\nThe censor considered the complete ui-lead input and accepted its recommendation.\n") },
+    );
+    const buildRaw = existsSync(join(dir, "ci", "W-280-review-1.log")) ? readFileSync(join(dir, "ci", "W-280-review-1.log"), "utf8") : "";
+    check(8, "b8: UI build verdict cites the authoritative input and digest", build.exitCode === 0 && /^# ui_input: ci\/W-280-spec-1\.log$/m.test(buildRaw) && /^# design_digest: sha256:[0-9a-f]{64}$/m.test(buildRaw), buildRaw);
   }
 } finally {
   for (const root of roots.reverse()) rmSync(root, { recursive: true, force: true });

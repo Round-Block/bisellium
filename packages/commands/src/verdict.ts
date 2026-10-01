@@ -3,9 +3,19 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "no
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
+import { readFront } from "@bisellium/adapter-native";
+import {
+  censorSella,
+  designDigest,
+  inspectUiDesignInput,
+  readContainedRegularFile,
+  substantiveUiTranscript,
+  utcTimestampProblem,
+  type NativeRecord,
+} from "./opus-model.js";
 
 export const VERDICT_USAGE =
-  "usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]";
+  "usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]";
 
 export interface VerdictOptions extends WriteOptions {
   stdin?: Buffer;
@@ -47,7 +57,7 @@ function hasHeaderBreak(value: string): boolean {
 /** Records a review transcript under the officina without changing any gate. */
 export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
-    valued: ["--round", "--sella", "--outcome", "--phase", "--model", "--from", "--studio", "--now"],
+    valued: ["--round", "--sella", "--outcome", "--phase", "--model", "--from", "--dispatch-prompt", "--ui-input", "--studio", "--now"],
   });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${VERDICT_USAGE}`);
@@ -69,6 +79,11 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   const opusPath = safeItemPath(join(root, "opera"), opusId);
   if (typeof opusPath !== "string" || !existsSync(opusPath)) {
     console.error(`unknown opus: ${opusId}`);
+    return { exitCode: 2 };
+  }
+  const containedOpus = readContainedRegularFile(root, `opera/${opusId}.md`, "opera");
+  if ("error" in containedOpus) {
+    console.error(`${opusId}: opus.reference: ${containedOpus.error}`);
     return { exitCode: 2 };
   }
 
@@ -125,9 +140,10 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
   }
 
-  const now = resolveNow(values.get("--now"), opts.now);
+  const nowRaw = values.get("--now");
+  const now = nowRaw !== undefined && utcTimestampProblem(nowRaw) ? undefined : resolveNow(nowRaw, opts.now);
   if (now === undefined) {
-    console.error("--now must be an ISO date");
+    console.error("--now must match the exact UTC timestamp profile");
     return { exitCode: 2 };
   }
 
@@ -158,6 +174,93 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
   }
 
+  const record = readFront<NativeRecord>(opusPath).data;
+  const isUi = record.kind === "ui";
+  const dispatchPrompt = values.get("--dispatch-prompt");
+  const uiInput = values.get("--ui-input");
+  if (!isUi && (dispatchPrompt !== undefined || uiInput !== undefined)) {
+    console.error("--dispatch-prompt and --ui-input are UI-only flags");
+    return { exitCode: 2 };
+  }
+  if (phase === "spec" && uiInput !== undefined) {
+    console.error("--ui-input is valid only for a build-phase UI verdict");
+    return { exitCode: 2 };
+  }
+  if (phase === "build" && dispatchPrompt !== undefined) {
+    console.error("--dispatch-prompt is valid only for a spec-phase UI verdict");
+    return { exitCode: 2 };
+  }
+
+  let uiDigest: string | undefined;
+  let promptHeader: string | undefined;
+  let inputHeader: string | undefined;
+  if (isUi && phase === "spec") {
+    if (sella !== "ui-lead") {
+      console.error("UI spec input must be attributed to ui-lead");
+      return { exitCode: 2 };
+    }
+    if (!/^(passed|failed|revise)$/.test(outcome)) {
+      console.error("UI spec outcome must be exactly passed, failed or revise");
+      return { exitCode: 2 };
+    }
+    if (!dispatchPrompt) {
+      console.error("UI spec input requires --dispatch-prompt <ci-relative-path>");
+      return { exitCode: 2 };
+    }
+    const prompt = readContainedRegularFile(root, dispatchPrompt, "ci");
+    if ("error" in prompt) {
+      console.error(`--dispatch-prompt is unsafe or unreadable: ${prompt.error}`);
+      return { exitCode: 2 };
+    }
+    if (typeof record.title !== "string" || typeof record.spec !== "string") {
+      console.error("UI spec input requires a string title and current spec pointer");
+      return { exitCode: 2 };
+    }
+    const brief = readContainedRegularFile(root, record.spec, "briefs");
+    if ("error" in brief) {
+      console.error(`current brief is unsafe or unreadable: ${brief.error}`);
+      return { exitCode: 2 };
+    }
+    uiDigest = designDigest(record.title, brief.bytes);
+    const contentProblems = substantiveUiTranscript(transcript.toString("utf8"), outcome, prompt.bytes.toString("utf8"));
+    if (contentProblems.length) {
+      console.error(contentProblems.map((problem) => `opus.ui.design: ${problem}`).join("\n"));
+      return { exitCode: 2 };
+    }
+    promptHeader = prompt.relative;
+  }
+  if (isUi && phase === "build") {
+    const censor = censorSella(manifest);
+    if (!censor) {
+      console.error("UI build verdict cannot identify the manifest QA magister censor");
+      return { exitCode: 2 };
+    }
+    if (sella !== censor) {
+      console.error(`UI build verdict must be attributed to the censor ${censor}`);
+      return { exitCode: 2 };
+    }
+    if (!uiInput) {
+      console.error("UI build verdict requires --ui-input <ci-relative-path>");
+      return { exitCode: 2 };
+    }
+    const inspected = inspectUiDesignInput(root, record);
+    if (!inspected.digest || !inspected.input || inspected.problems.length) {
+      console.error(inspected.problems.map((problem) => `opus.ui.design: ${problem}`).join("\n"));
+      return { exitCode: 2 };
+    }
+    if (uiInput !== inspected.input.relative) {
+      console.error(`--ui-input must cite the current authoritative round ${inspected.input.relative}`);
+      return { exitCode: 2 };
+    }
+    const disposition = /(?:^|\n)## UI input disposition\s*\r?\n([\s\S]*?)(?=\r?\n#{1,2}\s|$)/.exec(transcript.toString("utf8"));
+    if (!disposition || !disposition[1]!.split(/\r?\n/).some((line) => line.trim() !== "" && !/^\s*<!--/.test(line))) {
+      console.error("UI build verdict requires a nonblank ## UI input disposition section");
+      return { exitCode: 2 };
+    }
+    uiDigest = inspected.digest;
+    inputHeader = inspected.input.relative;
+  }
+
   const filenamePhase = phase === "build" ? "review" : "spec";
   const target = join(root, "ci", `${opusId}-${filenamePhase}-${round}.log`);
   if (existsSync(target)) {
@@ -174,6 +277,9 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     `# outcome: ${outcome}`,
     `# at: ${now.toISOString()}`,
     `# tree: ${treeAtCapture(root, manifest.source_excludes ?? [])}`,
+    ...(promptHeader === undefined ? [] : [`# dispatch_prompt: ${promptHeader}`]),
+    ...(inputHeader === undefined ? [] : [`# ui_input: ${inputHeader}`]),
+    ...(uiDigest === undefined ? [] : [`# design_digest: ${uiDigest}`]),
   ].join("\n");
 
   mkdirSync(dirname(target), { recursive: true });

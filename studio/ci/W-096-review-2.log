@@ -1,0 +1,315 @@
+# opus: W-096
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: VERDICT: FAIL — sole-censor authorization, reference containment, whole-graph amendment validation, and required regression coverage remain incomplete (sec-lead blocks in parallel: sec-w096-code2.log)
+# at: 2026-10-01T13:59:52.865Z
+# tree: tree:7a56f4ecb058977f98c494f1ba75bdb7463ad76b
+
+Reading additional input from stdin...
+OpenAI Codex v0.153.4
+--------
+workdir: /home/edckt/projects/bisellium/.worktrees/W-096
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a0f7b9-ec91-7cd2-a4bc-95dadd0cfbcc
+--------
+user
+You are the censor sella qa-lead, the sole review gate (D-014), reviewing opus W-096 round 2 on branch opus/W-096 (HEAD 8beaa34). Read studio/leges/qa.md, studio/briefs/W-096.md in full (architect-signed revision 6, plus revision 7's ruling on the one-time bootstrap pin and the behaviour 2/4 fixture qualifications — see the revision table), studio/opera/W-096.md (note baseline_commit, written by the producer through scripts/bootstrap-w096-baseline.ts per revision 7). Your round-1 verdict is studio/ci/W-096-review-1.log (six BLOCKING); sec-lead's parallel code findings are in /tmp/claude-1000/-home-edckt-projects-bisellium/54cefaf8-a6df-46b5-9f84-fcbde1e23b2f/scratchpad/sec-w096-code.log (six). The fix round: 'test(W-096): cover round-one review blockers' then 'fix(W-096): close UI and preservation review gaps' (mutation evidence with the fix absent: /home/edckt/.bisellium-evidence/w096-r1-mutation.log shows the new rows failing; with it /home/edckt/.bisellium-evidence/w096-r1-focused.log 7/7), then 'fix(W-096): allow physical officina root aliases' (a merged W-101 row regressed: the containment check refused an aliased officina root; the root is now canonicalised first, inner containment retained). Judge finding by finding whether your six and sec-lead's six are closed as the brief specifies, plus any new blocking defect. Build history: phase 1 'test(W-096): add selectable opus model reds' with seven reds at tree d2d62d9 (studio/ci/reds/W-096/0N.log); phase 2 'feat(W-096): enforce native opus model'; two rows realigned to the brief ('test(W-096): align UI policy fixtures with lifecycle') with reds 2 and 4 re-recorded at tree a5be489; bootstrap rows made hermetic TAP with red 1 re-recorded at tree 39b8429 with the script set aside; 'fix(W-096): allow a test bootstrap branch point' (test-only env override, inert in production); 'fix(W-096): preserve done amendment findings' (the new model introduced a finding on an unchanged done record; guarded in opus-model.ts) and 'fix(W-096): preserve kindless lifecycle transitions' (legacy records without a kind field were treated as invalid, blocking done; the predicate now permits an absent legacy kind). Evidence: focused 7/7 (/home/edckt/.bisellium-evidence/w096-focused6.log), npm test clean (/home/edckt/.bisellium-evidence/w096-full5.log), typecheck clean, check 0 blocking, verify certificates in studio/ci/W-096-*-*.log at the current tree. The whole diff is git diff master...HEAD (or read files if git is refused). Judge independently against the brief: every red genuine and assertion-level (W-096's own opus.red_assertion rule now enforces TAP ERR_ASSERTION — confirm the reds satisfy it); Files owned respected (scripts/bootstrap-w096-baseline.ts owned by revision 7); the 108 existing records byte-identical and the records_unchanged rule honouring the bootstrap pin; the ui-kind policy (ui-lead input required and cited, censor sole gate, digest-bound clearance, shingle rule constants, done refusal) implemented as specified; kind vocabulary closed without retiring measured values; arcs/parents contained; date grammar exact; summary/body; usage banner; ADOPTION/ARCHITECTURE updated; the test-only override seam inert in production; stdout contracts; any blocking defect. Do not repair code or edit evidence. End with exactly one line 'VERDICT: PASS' or 'VERDICT: FAIL — <reason>' followed by numbered findings marked BLOCKING or ADVISORY with file:line.
+codex
+I’m following the repository’s sole-gate workflow: I’ll boot the qa-lead context, then dispatch exactly one censor reviewer to inspect the brief, both prior finding sets, the full diff, and all cited evidence. I will not edit code or evidence.
+exec
+/usr/bin/zsh -lc "sed -n '1,260p' AGENTS.md && npm exec -- bisellium" in /home/edckt/projects/bisellium/.worktrees/W-096
+ exited 2 in 341ms:
+usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+       bisellium init [dir] [--now <iso>] [--timezone <iana>]
+       bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+       bisellium query <question> [dir] [--now <iso>] [--from-index]
+       bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+       bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+       bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+       bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+       bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+       bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+       bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+       bisellium pause [--studio <dir>] [--reason <text>]
+       bisellium resume [--studio <dir>]
+       bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+       bisellium emit <json> [--studio <dir>] [--now <iso>]
+       bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+       bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+       bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+       bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+       bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]
+       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+       bisellium hooks check --harness claude-code [--studio <dir>]
+       bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+       bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+       bisellium merge <opus-id> --studio <dir> --repo <dir>
+       bisellium close <opus-id> --studio <dir> [--repo <dir>]
+       bisellium prune --studio <dir> [--repo <dir>]
+       bisellium docs registry [--repo <dir>] [--now <iso>]
+
+exec
+/usr/bin/zsh -lc 'npm exec -- bisellium context --sella qa-lead studio' in /home/edckt/projects/bisellium/.worktrees/W-096
+ succeeded in 386ms:
+## CLI usage
+Run `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.
+
+## QA lex
+--- data: leges/qa.md ---
+# QA Lex
+
+Magister: `qa-lead` (the Censor) · Adopted: 2026-09-17 · Amended: see §9
+
+## 1. Mandate
+
+Verify greenlit features against spec and regression test suite; reject
+autonomously when warranted. The Censor drives the first hour of every
+cascade, advisory only — it does not sign the spec gate, which belongs to
+the architect — and closes the last one.
+
+## 2. Decides alone
+
+- Verdicts on `review` items: pass, fail, or request clarification
+- Regression suite changes and test infrastructure
+- Severity classification for found issues
+- One mutation per opus is enough to demonstrate the suite bites; no more
+  are required to pass review
+- Blocks a write outside an opus's declared files (check: probatio.declared)
+- Adopting an advisory-only rule proposal alone, without a petitio to the
+  Patron
+- Stamping `addressed_by` on a recurring class the Censor closes by
+  adopting an advisory rule alone (check: lesson.addressed_by)
+
+## 3. Digests
+
+- Weekly: test coverage, failure patterns, cycle time
+- Regression insights affecting engineering priority
+- A `class` of finding recurring across cascades; the advisory goes quiet
+  once some lesson of the class names what addresses it (check:
+  lesson.recurrent)
+
+## 4. Asks
+
+- Policy changes to acceptance criteria
+- Resource constraints affecting test infrastructure
+- A blocking-rule or lex-wording proposal arising from a retrospective —
+  filed as a petitio to the Patron, never adopted alone
+- A recurring class the Censor cannot address alone — filed as a petitio
+  naming the proposed opus, rule, or acceptance decision. A class left
+  unaddressed at the close of the next cascade is an unmet obligation.
+
+## 5. Budget
+
+- Period: week · Allowance: 0.5M tokens
+- Burn reporting: `aerarium/<period>.yml`
+- Over-budget: posture → conserve, digest the cause
+
+## 6. Autonomy
+
+- Level: L1 scheduled
+- Stops starting at posture: closeout
+
+## 7. Evidence contract
+
+Owns the retrospectio: every cascade ends with a retrospective (`bisellium
+retro`) that files at least one lesson per distinct finding class, each with
+non-empty, non-dead evidence (check: lesson.evidence).
+
+A usage section is required in every retro (D-013): `bisellium retro`'s
+input carries `usage` (totals, checking/building ratio, tokens per opus,
+trend against the previous retro, posture from the current aerarium), not
+supplied as an afterthought once the numbers are already forgotten —
+`retro.ts` renders the section only when it's given, so an empty/absent
+`usage` on a real cascade is the Censor's own gap, not the tool's.
+
+The Censor carries the addressed ledger forward: every retro's `##
+Addressed` section lists each recurrent class with its target, and a class
+recorded as formally accepted names the `decisions/D-nnn.md` that accepts
+it, with its `kill_when`.
+
+## 9. Amendment log
+
+| Date | Change | Authority |
+|---|---|---|
+| 2026-09-17 | Adopted | Patron |
+| 2026-09-18 | Rewritten into enforceable clauses; role named as the Censor; retrospectio ownership recorded (W-018) | Patron |
+| 2026-09-19 | Usage section required in every retro (D-013) | Patron |
+| 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
+| 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+--- end ---
+
+## Standing rules
+- Test-first with a recorded red.
+- Mechanical work is a script you write, run and keep.
+- Evidence is produced, never backfilled.
+- Before structural screen changes, verify against the dossier's touchpoint mapping.
+
+## QA index
+W-093 · backlog · sec-lead runs per PR, concurrent with QA: every opus PR gets a security pass alongside the censor round, alerts name opera, the merge-gate exclusion becomes a record
+
+## Recent decisions
+2026-10-01-retro-34 · Retrospectio 34 · 2026-10-01T08:42:25.584Z
+--- data: acta/2026-10-01-retro-34.md ---
+# Retrospectio 34
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 2840
+- Fix rounds: 1
+- Mutations caught: 20
+- Agents:
+  - builder-b — W-062 build (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-a — W-064 build and fix round (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - builder-sol — W-079 D-025 trial build (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-062 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-064 review rounds 1-2 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - qa-lead — W-079 review round 1 (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+
+## Findings by class
+
+- environment×sandbox-forces-proxy-evidence: 1
+- mechanism×unpinned-by-test: 1
+- process×insurance-clause-fired: 1
+- spec-gate×self-signed: 1
+
+## Lessons filed
+
+- L-039 (environment×sandbox-forces-proxy-evidence) → lessons/L-039.md
+- L-040 (mechanism×unpinned-by-test) → lessons/L-040.md
+- L-041 (process×insurance-clause-fired) → lessons/L-041.md
+- L-042 (spec-gate×self-signed) → lessons/L-042.md
+
+## Recurrence
+
+- "process×insurance-clause-fired" recurs across cascades 6, 34
+
+## Addressed
+
+- "process×insurance-clause-fired" → nothing yet
+
+## Proposals
+
+- "environment×sandbox-forces-proxy-evidence": advisory rule — adopt alone
+- "mechanism×unpinned-by-test": advisory rule — adopt alone
+- "process×insurance-clause-fired": blocking-rule/lex-wording change — petitio filed at petitiones/P-014.md
+- "spec-gate×self-signed": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+2026-10-01-retro-35 · Retrospectio 35 · 2026-10-01T08:42:26.107Z
+--- data: acta/2026-10-01-retro-35.md ---
+# Retrospectio 35
+
+## Numbers
+
+- Verifier issues: 0
+- Tests: 3431
+- Fix rounds: 6
+- Mutations caught: 19
+- Agents:
+  - builder.W-089 — seat-template build and fixes (usage not retained; zero is unmeasured) (claude-sonnet-5): 0 tokens, 0 min
+  - qa-lead — W-089 review rounds (usage not retained; zero is unmeasured) (claude-opus-5): 0 tokens, 0 min
+  - builder-codex.W-087 — Board decrees build and fixes (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - qa-lead — W-087 review round 1 (gpt-5.6-sol): 170931 tokens, 0 min
+  - qa-lead — W-087 review round 2 (gpt-5.6-sol): 21111 tokens, 0 min
+  - qa-lead — W-087 review round 3 (gpt-5.6-sol): 91232 tokens, 0 min
+  - sec-lead — end-to-end symlink review (usage not retained; zero is unmeasured) (gpt-5.6-sol): 0 tokens, 0 min
+  - ui-lead — W-087 clearance (usage not retained; zero is unmeasured) (gpt-6-astra): 0 tokens, 0 min
+
+## Findings by class
+
+- architecture×containment-helper-duplicated: 1
+- design×indirection-duplicates-source-of-truth: 1
+- mechanism×id-allocation-local-tree-only: 1
+- mechanism×identity-normalization-not-centralized: 1
+- mechanism×served-suite-does-not-rebuild-bundle: 1
+- research×claimed-metric-without-enforced-methodology: 1
+- review×security-boundary-found-after-censor-pass: 1
+- tests×wall-clock-sleep-for-a-missing-seam: 1
+- workflow×failure-report-not-actionable: 1
+- workflow×files-owned-boundary-exceeded: 1
+
+## Lessons filed
+
+- L-043 (architecture×containment-helper-duplicated) → lessons/L-043.md
+- L-044 (design×indirection-duplicates-source-of-truth) → lessons/L-044.md
+- L-045 (mechanism×id-allocation-local-tree-only) → lessons/L-045.md
+- L-046 (mechanism×identity-normalization-not-centralized) → lessons/L-046.md
+- L-047 (mechanism×served-suite-does-not-rebuild-bundle) → lessons/L-047.md
+- L-048 (research×claimed-metric-without-enforced-methodology) → lessons/L-048.md
+- L-049 (review×security-boundary-found-after-censor-pass) → lessons/L-049.md
+- L-050 (tests×wall-clock-sleep-for-a-missing-seam) → lessons/L-050.md
+- L-051 (workflow×failure-report-not-actionable) → lessons/L-051.md
+- L-052 (workflow×files-owned-boundary-exceeded) → lessons/L-052.md
+
+## Recurrence
+
+- "tests×wall-clock-sleep-for-a-missing-seam" recurs across cascades 32, 35
+
+## Addressed
+
+- "tests×wall-clock-sleep-for-a-missing-seam" → nothing yet
+
+## Proposals
+
+- "architecture×containment-helper-duplicated": advisory rule — adopt alone
+- "design×indirection-duplicates-source-of-truth": advisory rule — adopt alone
+- "mechanism×id-allocation-local-tree-only": advisory rule — adopt alone
+- "mechanism×identity-normalization-not-centralized": advisory rule — adopt alone
+- "mechanism×served-suite-does-not-rebuild-bundle": advisory rule — adopt alone
+- "research×claimed-metric-without-enforced-methodology": advisory rule — adopt alone
+- "review×security-boundary-found-after-censor-pass": advisory rule — adopt alone
+- "tests×wall-clock-sleep-for-a-missing-seam": blocking-rule/lex-wording change — petitio filed at petitiones/P-015.md
+- "workflow×failure-report-not-actionable": advisory rule — adopt alone
+- "workflow×files-owned-boundary-exceeded": advisory rule — adopt alone
+
+## Pruning candidates
+
+- (none — no decision's kill_when matches this cascade's findings)
+--- end ---
+tokens: 2357
+
+codex
+The sole censor review is now running. Its scope includes all 12 prior findings, the revision-7 bootstrap exception, red-evidence authenticity, preservation hashes, UI approval semantics, containment, compatibility, documentation, stdout, and regression evidence.
+collab: Wait
+codex
+VERDICT: FAIL — sole-censor authorization, reference containment, whole-graph amendment validation, and required regression coverage remain incomplete
+1. BLOCKING — `packages/commands/src/verdict.ts:231`, `packages/commands/src/lifecycle.ts:557`, `packages/commands/src/opus-model.ts:620` — UI build verdicts and `review --pass` accept any declared sella, while review-citation validation never checks either the gate sella or evidence-header sella. An `eng-lead` can therefore sign the UI review gate, violating the sole-censor contract.
+2. BLOCKING — `packages/commands/src/lifecycle.ts:142`, `packages/commands/src/lifecycle.ts:1311` — `amend` replaces the target in the record map but validates only that record. Changing a parent’s arc can invalidate existing children and still be written, contrary to whole-proposed-graph validation.
+3. BLOCKING — `packages/cli/src/new.ts:182`, `packages/cli/src/new.ts:209`, `packages/cli/src/new.ts:224`, `packages/commands/src/opus-model.ts:508` — `new --spec` performs only lexical containment, omits `spec` from validation, then writes it. Missing, nonregular, or symlinked brief references can therefore be created despite the physical-containment requirement.
+4. BLOCKING — `packages/cli/src/opus-model.test.ts:1029`, `packages/cli/src/opus-model.test.ts:1059`, `packages/cli/src/opus-model.test.ts:1084`, `packages/cli/src/rules/evidence.test.ts:80` — Round-one finding 6 remains open. Behaviours 5–7 retain only narrow happy/minimal cases, and the red parser has only two supplementary checks; the required hierarchy/writer, exact-date/lifecycle, complete control-set/body-preservation, UI/ruling, served-script, and malformed-red matrices remain absent.
+5. ADVISORY — `packages/commands/src/opus-model.ts:438`, `packages/commands/src/opus-model.ts:574`, `packages/commands/src/opus-model.ts:712`, `packages/cli/src/rules/evidence.ts:317`, `scripts/bootstrap-w096-baseline.ts:62` — Round-one findings 1–5 are closed: all heading levels are excluded, empty prompts are validated, review pass requires served evidence, active preservation fails closed without repository identity, and the bootstrap override requires the explicit test seam.
+6. ADVISORY — `packages/commands/src/opus-model.ts:203`, `packages/commands/src/opus-model.ts:796`, `packages/cli/src/rules/evidence.ts:29`, `packages/cli/src/rules/evidence.ts:307`, `packages/cli/src/rules/evidence.ts:338` — All six parallel sec-lead findings are closed: contained reads reject intervening symlinks, shallow history fails, missing active repository context blocks, evidence logs use contained readers, and preservation does not replay on unrelated branches. The seven retained reds are genuine one-test TAP `ERR_ASSERTION` failures (`studio/ci/reds/W-096/01.log:10` through `studio/ci/reds/W-096/07.log:10`), and current test/type/lint certificates report exit code zero (`studio/ci/W-096-tests-7a56f4ec.log:1`, `studio/ci/W-096-types-7a56f4ec.log:1`).
+tokens used
+13,501
+VERDICT: FAIL — sole-censor authorization, reference containment, whole-graph amendment validation, and required regression coverage remain incomplete
+1. BLOCKING — `packages/commands/src/verdict.ts:231`, `packages/commands/src/lifecycle.ts:557`, `packages/commands/src/opus-model.ts:620` — UI build verdicts and `review --pass` accept any declared sella, while review-citation validation never checks either the gate sella or evidence-header sella. An `eng-lead` can therefore sign the UI review gate, violating the sole-censor contract.
+2. BLOCKING — `packages/commands/src/lifecycle.ts:142`, `packages/commands/src/lifecycle.ts:1311` — `amend` replaces the target in the record map but validates only that record. Changing a parent’s arc can invalidate existing children and still be written, contrary to whole-proposed-graph validation.
+3. BLOCKING — `packages/cli/src/new.ts:182`, `packages/cli/src/new.ts:209`, `packages/cli/src/new.ts:224`, `packages/commands/src/opus-model.ts:508` — `new --spec` performs only lexical containment, omits `spec` from validation, then writes it. Missing, nonregular, or symlinked brief references can therefore be created despite the physical-containment requirement.
+4. BLOCKING — `packages/cli/src/opus-model.test.ts:1029`, `packages/cli/src/opus-model.test.ts:1059`, `packages/cli/src/opus-model.test.ts:1084`, `packages/cli/src/rules/evidence.test.ts:80` — Round-one finding 6 remains open. Behaviours 5–7 retain only narrow happy/minimal cases, and the red parser has only two supplementary checks; the required hierarchy/writer, exact-date/lifecycle, complete control-set/body-preservation, UI/ruling, served-script, and malformed-red matrices remain absent.
+5. ADVISORY — `packages/commands/src/opus-model.ts:438`, `packages/commands/src/opus-model.ts:574`, `packages/commands/src/opus-model.ts:712`, `packages/cli/src/rules/evidence.ts:317`, `scripts/bootstrap-w096-baseline.ts:62` — Round-one findings 1–5 are closed: all heading levels are excluded, empty prompts are validated, review pass requires served evidence, active preservation fails closed without repository identity, and the bootstrap override requires the explicit test seam.
+6. ADVISORY — `packages/commands/src/opus-model.ts:203`, `packages/commands/src/opus-model.ts:796`, `packages/cli/src/rules/evidence.ts:29`, `packages/cli/src/rules/evidence.ts:307`, `packages/cli/src/rules/evidence.ts:338` — All six parallel sec-lead findings are closed: contained reads reject intervening symlinks, shallow history fails, missing active repository context blocks, evidence logs use contained readers, and preservation does not replay on unrelated branches. The seven retained reds are genuine one-test TAP `ERR_ASSERTION` failures (`studio/ci/reds/W-096/01.log:10` through `studio/ci/reds/W-096/07.log:10`), and current test/type/lint certificates report exit code zero (`studio/ci/W-096-tests-7a56f4ec.log:1`, `studio/ci/W-096-types-7a56f4ec.log:1`).

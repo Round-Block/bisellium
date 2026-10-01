@@ -1,0 +1,67 @@
+# behaviour: 7
+# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour 7
+# exit: 1
+# at: 2026-10-01T11:20:19.808Z
+# sella: builder-codex.W-096
+# tree: tree:addfc3ff80700abaade07ceaf530b3f648b92f2b
+
+TAP version 13
+# Subtest: W-096 behaviour 7: title is a one-line summary at every native writer boundary
+not ok 1 - W-096 behaviour 7: title is a one-line summary at every native writer boundary
+  ---
+  duration_ms: 33.615957
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:9:3665'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+    +   amendBytesUnchanged: false,
+    +   amendRefused: false,
+    +   creationInventoryUnchanged: false,
+    +   diskTitleRule: false,
+    +   newItemRefused: false,
+    +   runNewRefused: false
+    -   amendBytesUnchanged: true,
+    -   amendRefused: true,
+    -   creationInventoryUnchanged: true,
+    -   diskTitleRule: true,
+    -   newItemRefused: true,
+    -   runNewRefused: true
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    diskTitleRule: true
+    newItemRefused: true
+    runNewRefused: true
+    amendRefused: true
+    creationInventoryUnchanged: true
+    amendBytesUnchanged: true
+  actual:
+    diskTitleRule: false
+    newItemRefused: false
+    runNewRefused: false
+    amendRefused: false
+    creationInventoryUnchanged: false
+    amendBytesUnchanged: false
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:382:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 40.592069

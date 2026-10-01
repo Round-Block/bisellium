@@ -14,11 +14,21 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { Manifest } from "@bisellium/adapter-native";
 import { createNextRecord } from "@bisellium/commands/ids.js";
+import {
+  isNativeOpusKind,
+  loadNativeRecords,
+  readContainedRegularFile,
+  titleProblem,
+  validateNativeRecord,
+  validateRecordReferences,
+} from "@bisellium/commands/opus-model.js";
 
 export interface NewOptions {
   kind: string;
   collegium: string;
   title: string;
+  arc?: string;
+  parent?: string;
 }
 
 export interface NewResult {
@@ -70,15 +80,29 @@ export function newItem(dir: string, opts: NewOptions): NewResult {
     if (!collegia.some((d) => d.id === opts.collegium))
       return { ok: false, message: `collegium "${opts.collegium}" is not declared in ${manifestPath}` };
 
-    const { id } = createNextRecord(root, "opera", "W", (candidate) => `---
+    if (!isNativeOpusKind(opts.kind)) return { ok: false, message: `kind ${JSON.stringify(opts.kind)} is not a native opus kind` };
+    const badTitle = titleProblem(opts.title);
+    if (badTitle) return { ok: false, message: badTitle };
+    const loaded = loadNativeRecords(root);
+    if (loaded.problems.length) return { ok: false, message: loaded.problems[0]!.problem.message };
+    const proposed = { id: "W-0", title: opts.title, kind: opts.kind, collegium: opts.collegium, state: "backlog", arc: opts.arc, parent: opts.parent };
+    const problem = validateNativeRecord(proposed, loaded.records).find((candidate) => candidate.rule !== "opus.title" && candidate.rule !== "opus.kind") ??
+      validateNativeRecord(proposed, loaded.records)[0];
+    if (problem) return { ok: false, message: `${problem.rule}: ${problem.message}` };
+
+    const { id } = createNextRecord(root, "opera", "W", (candidate) => {
+      const candidateProblem = validateNativeRecord({ ...proposed, id: candidate }, loaded.records)[0];
+      if (candidateProblem) throw new Error(`${candidateProblem.rule}: ${candidateProblem.message}`);
+      return `---
 id: ${JSON.stringify(candidate)}
 title: ${JSON.stringify(opts.title)}
 kind: ${JSON.stringify(opts.kind)}
 collegium: ${JSON.stringify(opts.collegium)}
 state: backlog
-probationes: {}
+${opts.arc === undefined ? "" : `arc: ${JSON.stringify(opts.arc)}\n`}${opts.parent === undefined ? "" : `parent: ${JSON.stringify(opts.parent)}\n`}probationes: {}
 ---
-`);
+`;
+    });
     return { ok: true, message: id, id };
   } catch (e) {
     return { ok: false, message: `new failed: ${(e as Error).message}` };
@@ -90,7 +114,7 @@ probationes: {}
 // ---------------------------------------------------------------------------
 
 const NEW_USAGE =
-  "usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]";
+  "usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]";
 
 const BRIEF_SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 
@@ -119,7 +143,7 @@ function parseNewArgs(args: string[]): { values: Map<string, string>; brief: boo
   const values = new Map<string, string>();
   let brief = false;
   const positionals: string[] = [];
-  const valuedFlags = new Set(["--kind", "--collegium", "--title", "--spec"]);
+  const valuedFlags = new Set(["--kind", "--collegium", "--title", "--arc", "--parent", "--spec"]);
 
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
@@ -169,15 +193,64 @@ export function runNew(args: string[]): { exitCode: number } {
     console.error(`--spec "${specOpt}" must be an officina-relative path with no ".." segment, inside the studio`);
     return { exitCode: 1 };
   }
-
+  if (specOpt !== undefined && !brief) {
+    // Preserve `new --spec`'s existing dangling-pointer contract: resolve the
+    // officina-relative spelling exactly as before, then apply physical
+    // containment to every target that exists. ENOENT is the one accepted
+    // outcome; the helper has already rejected an earlier symlink or a path
+    // outside briefs/ before it can encounter a missing component.
+    const resolvedSpec = relative(root, resolve(root, specOpt));
+    const inspected = readContainedRegularFile(root, resolvedSpec, "briefs");
+    if ("error" in inspected && inspected.code !== "ENOENT") {
+      console.error(`--spec "${specOpt}" must name a contained regular file under briefs/: ${inspected.error}`);
+      return { exitCode: 1 };
+    }
+  }
   try {
     const collegia = manifest.collegia ?? [];
     if (!collegia.some((d) => d.id === collegium)) {
       console.error(`collegium "${collegium}" is not declared in ${manifestPath}`);
       return { exitCode: 1 };
     }
+    if (!isNativeOpusKind(kind)) {
+      console.error(`kind ${JSON.stringify(kind)} is not a native opus kind`);
+      return { exitCode: 1 };
+    }
+    const badTitle = titleProblem(title);
+    if (badTitle) {
+      console.error(badTitle);
+      return { exitCode: 1 };
+    }
+    const loaded = loadNativeRecords(root);
+    if (loaded.problems.length) {
+      console.error(loaded.problems[0]!.problem.message);
+      return { exitCode: 1 };
+    }
+    const proposed = {
+      id: "W-0",
+      title,
+      kind,
+      collegium,
+      state: "backlog",
+      arc: values.get("--arc"),
+      parent: values.get("--parent"),
+    };
+    const modelProblem = [
+      ...validateNativeRecord(proposed, loaded.records),
+      ...validateRecordReferences(root, proposed),
+    ][0];
+    if (modelProblem) {
+      console.error(`${modelProblem.rule}: ${modelProblem.message}`);
+      return { exitCode: 1 };
+    }
 
     const created = createNextRecord(root, "opera", "W", (id) => {
+      const candidate = { ...proposed, id };
+      const candidateProblem = [
+        ...validateNativeRecord(candidate, loaded.records),
+        ...validateRecordReferences(root, candidate),
+      ][0];
+      if (candidateProblem) throw new Error(`${candidateProblem.rule}: ${candidateProblem.message}`);
       // --brief always wins over an explicit --spec: it creates the canonical
       // briefs/<id>.md and points spec: at exactly that path, so the two
       // never disagree.
@@ -189,7 +262,7 @@ title: ${JSON.stringify(title)}
 kind: ${JSON.stringify(kind)}
 collegium: ${JSON.stringify(collegium)}
 state: backlog${specValue !== undefined ? `\nspec: ${JSON.stringify(specValue)}` : ""}
-probationes: {}
+${values.get("--arc") === undefined ? "" : `arc: ${JSON.stringify(values.get("--arc"))}\n`}${values.get("--parent") === undefined ? "" : `parent: ${JSON.stringify(values.get("--parent"))}\n`}probationes: {}
 ---
 `;
       waitAtIdsTestBarrier(id);

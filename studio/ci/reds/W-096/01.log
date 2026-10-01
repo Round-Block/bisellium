@@ -1,0 +1,41 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour 1
+# exit: 1
+# at: 2026-10-01T12:44:08.689Z
+# sella: builder-codex.W-096
+# tree: tree:39b84297721ba6089804e2f1e8b08cac6c34ac77
+
+TAP version 13
+# Subtest: W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk
+not ok 1 - W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk
+  ---
+  duration_ms: 721.249389
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:1:7156'
+  failureType: 'testCodeFailure'
+  error: |-
+    bootstrap did not pin: no result; bootstrap did not refuse: wrong branch; bootstrap did not refuse: wrong record; bootstrap did not refuse: dirty checkout; bootstrap did not refuse: mismatched merge-base; bootstrap did not refuse: ambiguous merge-base; bootstrap did not refuse: unavailable refs; bootstrap did not refuse: unavailable history; bootstrap did not refuse: previous pin; bootstrap did not refuse: present pin; bootstrap did not refuse: changed protected records
+    
+    11 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 11
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:399:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 755.8863

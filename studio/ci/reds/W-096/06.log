@@ -1,0 +1,58 @@
+# behaviour: 6
+# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour 6
+# exit: 1
+# at: 2026-10-01T11:20:19.419Z
+# sella: builder-codex.W-096
+# tree: tree:addfc3ff80700abaade07ceaf530b3f648b92f2b
+
+TAP version 13
+# Subtest: W-096 behaviour 6: successful lifecycle transitions persist their exact start and end
+not ok 1 - W-096 behaviour 6: successful lifecycle transitions persist their exact start and end
+  ---
+  duration_ms: 20.372788
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:9:2778'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      {
+        done: 0,
+    +   end: undefined,
+    -   end: '2026-10-01T13:45:01.456Z',
+        ready: 0,
+    +   start: undefined,
+    -   start: '2026-10-01T12:34:56.123Z',
+        state: 'done'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    ready: 0
+    done: 0
+    state: 'done'
+    start: '2026-10-01T12:34:56.123Z'
+    end: '2026-10-01T13:45:01.456Z'
+  actual:
+    ready: 0
+    done: 0
+    state: 'done'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-096/packages/cli/src/opus-model.test.ts:348:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 29.270628

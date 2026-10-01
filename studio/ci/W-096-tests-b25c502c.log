@@ -1,0 +1,204 @@
+certifies: tree:b25c502c4e5bb4597eeedcc2c5f71d705be9b0a0
+command: npm test -s
+exit code: 1
+
+GET /api/live 200 264ms
+GET /api/live 200 264ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 263ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 262ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 261ms
+GET /api/live 200 243ms
+GET /api/live 200 243ms
+GET /api/live 200 243ms
+GET /api/live 200 243ms
+GET /api/live 200 243ms
+GET /api/live 200 243ms
+GET /api/live 200 243ms
+GET /api/live 200 242ms
+GET /api/live 200 242ms
+GET /api/live 200 242ms
+GET /api/live 200 242ms
+GET /api/live 200 242ms
+GET /api/live 200 242ms
+POST /api/talk 200 86ms
+POST /api/talk 200 127ms
+POST /api/greenlight 200 1ms
+POST /api/delegate 200 5ms
+POST /api/delegate 200 2ms
+POST /api/delegate 200 3ms
+POST /api/delegate 200 5ms
+GET /api/officina 200 2ms
+GET /api/officina 200 1ms
+GET /api/models 200 10ms
+GET /api/models 200 2ms
+GET /api/models 200 2ms
+GET /api/models 200 2ms
+GET /api/models 200 1ms
+GET /api/models 200 3002ms
+GET /api/models 200 2ms
+GET /api/inbox 200 4ms
+bisellium serve: 500 ******** ENOENT: open '/home/secret/studio/bisellium.yml'
+Error: ENOENT: open '/home/secret/studio/bisellium.yml'
+    at throwingCheckStudio (/home/edckt/projects/bisellium/.********.test.ts:227:9)
+    at Object.health (/home/edckt/projects/bisellium/.********.ts:441:22)
+    at route (/home/edckt/projects/bisellium/.********.ts:705:91)
+    at Server.<anonymous> (/home/edckt/projects/bisellium/.********.ts:941:5)
+    at Server.emit (node:events:509:20)
+    at parserOnIncoming (node:_http_server:1216:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:125:17)
+GET /api/health 500 3ms
+POST /api/greenlight 400 1ms
+GET /api/officina 200 1ms
+GET /assets/does-not-exist.js 404 1ms
+GET /api/totally-unknown-route 404 0ms
+GET /api/opus/NOPE 404 0ms
+GET /api/timeline/nobody 404 1ms
+POST /api/greenlight 401 0ms
+POST /api/greenlight 403 0ms
+POST /api/greenlight 415 0ms
+GET /api/events?item=x&since=1 400 0ms
+POST /api/answer 400 0ms
+POST /api/greenlight 400 0ms
+POST /api/budget 400 0ms
+POST /api/handoff 400 0ms
+POST /api/talk 400 0ms
+POST /api/delegate 400 0ms
+POST /api/greenlight 400 0ms
+GET /api/live 503 0ms
+GET /api/live 503 0ms
+POST /api/greenlight 413 2ms
+POST /api/_poll 404 0ms
+GET /api/live 200 316ms
+GET /api/live 200 317ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 316ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 315ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/live 200 314ms
+GET /api/officina 200 4ms
+GET /api/events 200 1ms
+GET /api/events?limit=3 200 1ms
+GET /api/events?limit=9999 200 1ms
+GET /api/events?since=2 200 2ms
+GET /api/events?since=2026-09-18T17%3A00%3A00.000Z 200 2ms
+GET /api/events 200 1ms
+GET /api/events?item=W-002 200 0ms
+GET /api/events?item=W-002&limit=2 200 0ms
+GET /api/events?item=W-002 200 0ms
+GET /api/events?item=NOPE-NOT-REAL 200 0ms
+GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 1ms
+GET /api/events?item=W-002&since=1 400 0ms
+GET /api/events?item=W-002 200 0ms
+POST /api/_poll 200 12ms
+GET /api/live 200 118ms
+fatal: not a git repository (or any of the parent directories): .git
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+--spec "/etc/passwd" must be an officina-relative path with no ".." segment, inside the studio
+--spec "../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+--spec "briefs/../../escape.md" must be an officina-relative path with no ".." segment, inside the studio
+usage: bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+/********.yml not found — not a studio
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+retro: finding class "x" has empty evidence — refusing to file a lesson with no evidence
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+

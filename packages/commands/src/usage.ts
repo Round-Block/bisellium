@@ -9,7 +9,7 @@
 export const USAGE =
   "usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]\n" +
   "       bisellium init [dir] [--now <iso>] [--timezone <iana>]\n" +
-  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [--spec <path>] [--brief] [dir]\n" +
+  "       bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]\n" +
   "       bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]\n" +
   "       bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]\n" +
@@ -35,10 +35,10 @@ export const USAGE =
   "       bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium amend <opus> [--title <text>] [--spec <path>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>\n" +
   "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +

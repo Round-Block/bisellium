@@ -7,11 +7,12 @@
  * outside 1-7 (0, 8, 9) are extra regression coverage, not brief behaviours.
  */
 import { execSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
-import { createOpusBranch, mergeOpusBranch, opusBranchName } from "./branch.js";
+import { createOpusBranch, createW096Branch, mergeOpusBranch, opusBranchName } from "./branch.js";
+import { checkStudio } from "./check.js";
 
 let failed = 0;
 const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
@@ -1170,4 +1171,43 @@ function originMasterRev(bare: string): string {
   }
 }
 
+// W-096 supplementary regression: the special bootstrap pins the exact
+// reviewed origin/master commit only after switching to the owning branch.
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio");
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-096.md"), '---\nid: W-096\ntitle: fixture\nkind: opus\ncollegium: engineering\nstate: greenlit\nprobationes: {}\n---\n');
+    execSync("git add . && git commit -m 'test: reviewed W-096 trunk'", { cwd: dir, stdio: "pipe" });
+    const baseline = execSync("git rev-parse HEAD", { cwd: dir, encoding: "utf8" }).trim();
+    execSync(`git update-ref refs/remotes/origin/master ${baseline}`, { cwd: dir, stdio: "pipe" });
+    const before = execSync("git show master:studio/opera/W-096.md", { cwd: dir, encoding: "utf8" });
+    const result = createW096Branch(dir, studio);
+    const after = readFileSync(join(studio, "opera", "W-096.md"), "utf8");
+    check(32, "W-096 bootstrap succeeds from reviewed clean master", result.ok === true, String(result.error));
+    check(32, "W-096 bootstrap checks out the owning branch", currentBranch(dir) === "opus/W-096", currentBranch(dir));
+    check(32, "W-096 bootstrap writes the exact branch-point pin", after.includes(`baseline_commit: ${baseline}`), after);
+    check(32, "W-096 trunk record remains byte-identical", execSync("git show master:studio/opera/W-096.md", { cwd: dir, encoding: "utf8" }) === before);
+    check(32, "W-096 immutable existing branch refuses a second bootstrap", createW096Branch(dir, studio).ok === false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+{
+  const dir = tmpRepo();
+  const studio = join(dir, "studio");
+  try {
+    mkdirSync(join(studio, "opera"), { recursive: true });
+    writeFileSync(join(studio, "opera", "W-096.md"), '---\nid: W-096\ntitle: fixture\nkind: opus\ncollegium: engineering\nstate: greenlit\nprobationes: {}\n---\n');
+    execSync("git add . && git commit -m 'test: reviewed W-096 trunk'", { cwd: dir, stdio: "pipe" });
+    execSync("git update-ref refs/remotes/origin/master HEAD", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "dirty.txt"), "uncommitted");
+    const result = createW096Branch(dir, studio);
+    check(32, "W-096 bootstrap refuses a dirty trusted-trunk checkout", result.ok === false && !branches(dir).includes("opus/W-096"), String(result.error));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
 process.exit(failed ? 1 : 0);

@@ -28,6 +28,8 @@ import { checkEvidence } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
 import { diagnosticLabel } from "./reporting.js";
+import { effectiveProbationes, readContainedRegularFile, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
+import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
 
 // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
 // every id here can end up as a path component elsewhere) — reject anything
@@ -161,6 +163,23 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const findings: Finding[] = [];
   const add = (rule: string, level: Level, where: string, message: string) =>
     findings.push({ rule, level, where, message });
+  const addModelProblem = (where: string, problem: OpusModelProblem): void => {
+    const level = problem.level ?? "block";
+    switch (problem.rule) {
+      case "opus.kind": add("opus.kind", level, where, problem.message); break;
+      case "opus.title": add("opus.title", level, where, problem.message); break;
+      case "opus.arc": add("opus.arc", level, where, problem.message); break;
+      case "opus.parent": add("opus.parent", level, where, problem.message); break;
+      case "opus.dates": add("opus.dates", level, where, problem.message); break;
+      case "opus.dates.order": add("opus.dates.order", level, where, problem.message); break;
+      case "opus.reference": add("opus.reference", level, where, problem.message); break;
+      case "opus.ui.route": add("opus.ui.route", level, where, problem.message); break;
+      case "opus.ui.design": add("opus.ui.design", level, where, problem.message); break;
+      case "opus.ui.e2e": add("opus.ui.e2e", level, where, problem.message); break;
+      case "opus.ui.rulings": add("opus.ui.rulings", level, where, problem.message); break;
+      case "opus.records_unchanged": add("opus.records_unchanged", level, where, problem.message); break;
+    }
+  };
   const rel = (p: string) => (isAbsolute(p) && p.startsWith(root) ? p.slice(root.length + 1).replace(/\\/g, "/") : p);
   const done = (notAStudio = false): CheckResult => {
     const blocks = findings.filter((f) => f.level === "block").length;
@@ -253,7 +272,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   };
   const collegiumIds = uniq("collegia", collegia);
   const sellaIds = uniq("sellae", sellae);
-  const probatioIds = uniq("probationes", probationes);
+  uniq("probationes", probationes);
   const sellaCollegium = new Map(sellae.map((s) => [str(s["id"]) ?? "", str(s["collegium"]) ?? ""] as const));
   // W-089 behaviour 7: `resolveSeat`'s own minimal row shape, built off the
   // same raw `sellae` this rule module already parsed — `traditio.sella`/
@@ -264,7 +283,6 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const seatRoster = {
     sellae: sellae.map((s) => ({ id: str(s["id"]) ?? "", retired: s["retired"] === true, collegium: str(s["collegium"]) ?? "", harness: str(s["harness"]) })),
   };
-  const probatioKind = new Map(probationes.map((g) => [str(g["id"]) ?? "", str(g["kind"]) ?? ""] as const));
   const magisterOf = new Map(collegia.map((d) => [str(d["id"]) ?? "", str(d["magister"]) ?? ""] as const));
   const stateIds = new Set(STATES.map((s) => s.id));
 
@@ -380,10 +398,6 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const k = str(g["kind"]) ?? "";
     if (!(PROBATIO_KINDS as readonly string[]).includes(k)) add("probatio.kind", "block", `bisellium.yml#${str(g["id"]) ?? "?"}`, `gate kind "${k}" invalid`);
   }
-  const automated = probationes.filter((g) => g["kind"] === "automated").map((g) => str(g["id"]) ?? "");
-  const agentGates = probationes.filter((g) => g["kind"] === "agent").map((g) => str(g["id"]) ?? "");
-  const humanGates = probationes.filter((g) => g["kind"] === "human").map((g) => str(g["id"]) ?? "");
-
   // Seam S3 — a manifest probatio may carry `since: <ISO datetime>`. It lets
   // state.review.automated/agent and state.done.probationes skip a gate for
   // an opus that handed off before the gate existed, without backfilling
@@ -442,6 +456,9 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
 
   for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
+    // Do not let the legacy front-matter reader follow an opus symlink;
+    // the model pass below emits opus.reference for the unsafe entry.
+    if ("error" in readContainedRegularFile(root, where, "opera")) continue;
     const fm = safeFront(p);
     if (!fm.data) { add("opus.parse", "block", where, fm.error ?? "unreadable"); continue; }
     const d = fm.data;
@@ -475,13 +492,28 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     }
     if (d["tokens"] !== undefined && num(d["tokens"]) === undefined) add("opus.tokens", "advise", where, "tokens is not a number");
 
+    // W-096: UI has one reserved effective automated gate without mutating
+    // the manifest.  Every gate calculation below uses this per-opus view.
+    const effective = effectiveProbationes(d["kind"], probationes as {
+      id: string;
+      name: string;
+      kind: string;
+      command?: string;
+      since?: unknown;
+    }[]);
+    const itemProbatioIds = new Set(effective.probationes.map((gate) => gate.id));
+    const itemProbatioKind = new Map(effective.probationes.map((gate) => [gate.id, gate.kind] as const));
+    const itemAutomated = effective.probationes.filter((gate) => gate.kind === "automated").map((gate) => gate.id);
+    const itemAgentGates = effective.probationes.filter((gate) => gate.kind === "agent").map((gate) => gate.id);
+    const itemHumanGates = effective.probationes.filter((gate) => gate.kind === "human").map((gate) => gate.id);
+
     // gates
     const g = d["probationes"];
     const status = new Map<string, string>();
     const certifies = new Map<string, string>();
     if (g !== undefined && !isDict(g)) add("probatio.shape", "block", where, "gates must be a mapping");
     for (const [gid, gv] of Object.entries(isDict(g) ? g : {})) {
-      if (!probatioIds.has(gid)) { add("probatio.declared", "block", where, `gate "${gid}" not in manifest`); continue; }
+      if (!itemProbatioIds.has(gid)) { add("probatio.declared", "block", where, `gate "${gid}" not in manifest or the opus's effective gate set`); continue; }
       if (!isDict(gv)) { add("probatio.shape", "block", where, `gate "${gid}" is not a mapping`); continue; }
       const gs = str(gv["status"]) ?? "";
       if (!(PROBATIO_STATUSES as readonly string[]).includes(gs)) { add("probatio.status", "block", where, `gate "${gid}" status "${gs}" invalid`); continue; }
@@ -503,7 +535,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
             // already happened, and re-flagging it every time the tree
             // moves on would just be noise a done item can't act on anyway.
             if (ACTIVE.has(state)) {
-              if (treeHash && probatioKind.get(gid) === "automated" && cs.startsWith("tree:") && cs !== `tree:${treeHash}`)
+              if (treeHash && itemProbatioKind.get(gid) === "automated" && cs.startsWith("tree:") && cs !== `tree:${treeHash}`)
                 add("probatio.certifies.stale", "advise", where, `gate "${gid}" certifies ${cs}, current tree is tree:${treeHash}`);
               if (cs.startsWith("dirty:"))
                 add("probatio.certifies.dirty", "advise", where, `gate "${gid}" certifies a dirty working tree (${cs}) — not what "--repo" resolves as committed`);
@@ -511,7 +543,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
               // record the tree/dirty hash it certifies in its own header
               // (packages/pipeline writes it) — if the log doesn't mention it,
               // the certificate can't be corroborated from the evidence alone.
-              const hashMatch = probatioKind.get(gid) === "automated" ? /^(?:tree|dirty):(.+)$/.exec(cs) : null;
+              const hashMatch = itemProbatioKind.get(gid) === "automated" ? /^(?:tree|dirty):(.+)$/.exec(cs) : null;
               if (hashMatch) {
                 const hash = hashMatch[1]!;
                 let logText: string | undefined;
@@ -528,8 +560,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
         }
       }
       if (gs === "waived") {
-        if (probatioKind.get(gid) === "automated") add("probatio.waived.automated", "block", where, `automated gate "${gid}" cannot be waived`);
-        if (probatioKind.get(gid) === "agent") add("probatio.waived.agent", "block", where, `agent gate "${gid}" cannot be waived`);
+        if (itemProbatioKind.get(gid) === "automated") add("probatio.waived.automated", "block", where, `automated gate "${gid}" cannot be waived`);
+        if (itemProbatioKind.get(gid) === "agent") add("probatio.waived.agent", "block", where, `agent gate "${gid}" cannot be waived`);
         if (!str(gv["reason"])) add("probatio.waived.reason", "block", where, `gate "${gid}" waived without a reason`);
       }
     }
@@ -540,28 +572,28 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
 
     // state vs evidence: the asserted state must be supportable
     if (state === "review") {
-      const a = notPassed(automated);
+      const a = notPassed(itemAutomated);
       if (a.length) add("state.review.automated", "block", where, `state "review" but automated gates not passed: ${a.join(", ")}`);
-      const q = notPassed(agentGates.filter((x) => x !== reviewProbatioId));
+      const q = notPassed(itemAgentGates.filter((x) => x !== reviewProbatioId));
       if (q.length) add("state.review.agent", "block", where, `state "review" but agent gates not passed: ${q.join(", ")}`);
       if (status.get(reviewProbatioId) === "failed") add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
     }
     if (state === "done") {
       const missing = [
-        ...notPassed(automated),
-        ...notPassed(agentGates),
-        ...humanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!) && !gateExempt(x, traditioAt)),
+        ...notPassed(itemAutomated),
+        ...notPassed(itemAgentGates),
+        ...itemHumanGates.filter((x) => status.has(x) && !["passed", "waived"].includes(status.get(x)!) && !gateExempt(x, traditioAt)),
       ];
       if (missing.length) add("state.done.probationes", "block", where, `state "done" but gates not passed: ${missing.join(", ")}`);
     }
-    if (state === "verifying" && !automated.some((x) => status.has(x)))
+    if (state === "verifying" && !itemAutomated.some((x) => status.has(x)))
       add("state.verifying.none", "advise", where, `state "verifying" with no automated gate recorded`);
 
     // Seam S4 — state.building.spec fires ONLY when the manifest declares a
     // probatio with id "spec" (so the six bad-* fixtures, which declare no
     // such probatio, are untouched). Active states only: done/halted are
     // history, never gated retroactively.
-    if (probatioIds.has("spec") && ACTIVE.has(state)) {
+    if (itemProbatioIds.has("spec") && ACTIVE.has(state)) {
       const specPath = str(d["spec"]);
       if (!specPath || status.get("spec") !== "passed")
         add("state.building.spec", "block", where, `active opus needs a spec: key and a passed "spec" gate`);
@@ -606,6 +638,14 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   if (wipLimit !== undefined && wip > wipLimit) add("wip.cap", "block", "opera/", `${wip} items in progress, WIP cap is ${wipLimit}`);
   for (const [collegium, n] of backlogByCollegium)
     if (n > defaults.backlog_depth) add("backlog.depth", "advise", `opera/#${collegium}`, `${n} backlog items (cap ${defaults.backlog_depth})`);
+
+  // W-096 native model: disk-level validation is deliberately separate
+  // from writer validation so hand edits cannot bypass it.
+  for (const { where, problem } of validateStudioNativeModel(
+    root,
+    m as unknown as Pick<import("@bisellium/adapter-native").Manifest, "collegia" | "sellae" | "probationes">,
+  ))
+    addModelProblem(where, problem);
 
   // ---- petitiones -----------------------------------------------------------
   const openByCollegium = new Map<string, number>();
