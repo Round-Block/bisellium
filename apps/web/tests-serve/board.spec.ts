@@ -19,7 +19,7 @@ process.env["NODE_ENV"] = "test";
 
 import { expect, test, type Page } from "@playwright/test";
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
-import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -679,23 +679,26 @@ test.describe("W-087 behaviour 1: bounded titles retain their native full-title 
   });
 });
 
-test.describe("W-087 behaviour 2: the served drawer carries the complete opus body", () => {
+test.describe("W-087 behaviour 2: the served drawer carries a bounded opus body", () => {
   let served: ServedInstance;
   test.afterEach(async () => {
     await served?.close();
   });
 
-  test("the collection and drawer preserve a long literal body and expose an honest empty state", async ({ page }) => {
+  test("the collection and drawer cap a long literal body, mark truncation, refuse linked bodies and expose an honest empty state", async ({ page }) => {
     served = await startServed("w087-record-body");
+    const bodyLimit = 64 * 1024;
+    const truncationMarker = "\n\n[Record body truncated at 64 KiB.]";
     const body = [
       "First paragraph remains whole.",
       "",
       "## Literal markdown stays source",
       '<article data-test="literal"><img src=x onerror=alert(1)></article>',
       "",
-      ...Array.from({ length: 48 }, (_, i) => `Paragraph ${String(i + 1).padStart(2, "0")}: ${"untruncated record prose ".repeat(3)}`),
+      "x".repeat(bodyLimit + 1024),
     ].join("\n");
-    expect(Buffer.byteLength(body, "utf8")).toBeGreaterThan(2048);
+    const expectedBody = Buffer.from(body, "utf8").subarray(0, bodyLimit).toString("utf8") + truncationMarker;
+    expect(Buffer.byteLength(body, "utf8")).toBeGreaterThan(bodyLimit);
     setOpusBody(served.studioDir, "W-004", body);
 
     const response = await fetch(`${served.baseURL}/api/opera`);
@@ -704,16 +707,29 @@ test.describe("W-087 behaviour 2: the served drawer carries the complete opus bo
     const w004 = opera.find((row) => row.id === "W-004");
     expect(w004).toBeDefined();
     expect(Object.prototype.hasOwnProperty.call(w004, "body")).toBe(true);
-    expect(w004?.body).toBe(body);
+    expect(w004?.body).toBe(expectedBody);
 
     await openBoard(page, served);
     await page.locator('.board__card[data-card-id="W-004"]').first().click();
     const renderedBody = page.locator(".board-drawer__record-body");
-    await expect(renderedBody).toHaveText(body);
+    await expect(renderedBody).toHaveText(expectedBody);
     expect(await renderedBody.evaluate((el) => getComputedStyle(el).whiteSpace)).toBe("pre-wrap");
+    expect(await renderedBody.evaluate((el) => getComputedStyle(el).overflowWrap)).toBe("anywhere");
     const renderedSource = await renderedBody.innerHTML();
     expect(renderedSource).toContain("&lt;article");
     expect(renderedSource).not.toContain("<article");
+
+    const linkedSecret = "linked body must not cross the opera boundary";
+    setOpusBody(served.studioDir, "W-004", linkedSecret);
+    const opusPath = join(served.studioDir, "opera", "W-004.md");
+    const linkedPath = join(served.studioDir, "linked-W-004.md");
+    writeFileSync(linkedPath, readFileSync(opusPath));
+    rmSync(opusPath);
+    symlinkSync("../linked-W-004.md", opusPath);
+    const linkedResponse = await fetch(`${served.baseURL}/api/opera`);
+    expect(linkedResponse.status).toBe(200);
+    const linkedOpera = (await linkedResponse.json()) as OpusEntry[];
+    expect(linkedOpera.find((row) => row.id === "W-004")?.body).toBe("");
 
     await page.locator(".board-drawer__close").click();
     await page.locator('.board__card[data-card-id="W-002"]').click();
@@ -846,6 +862,15 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
       const close = page.locator(".board-drawer__close");
       await expect(close).toBeVisible();
       await expect(close).toBeFocused();
+      const board = page.locator(".board");
+      if (row.board === 0) {
+        await expect(board).toHaveAttribute("inert", "");
+        await page.keyboard.press("Shift+Tab");
+        expect(await page.evaluate(() => document.activeElement?.closest(".board") === null)).toBe(true);
+        await close.focus();
+      } else {
+        await expect(board).not.toHaveAttribute("inert", "");
+      }
       const geometry = await page.evaluate(() => {
         const workspace = document.querySelector(".board-workspace");
         const board = document.querySelector(".board");
@@ -896,6 +921,7 @@ test.describe("W-087 behaviour 4: the pushed drawer never covers reachable termi
       else await close.click();
       await expect(page.locator(".board-drawer")).toBeHidden();
       await expect(source).toBeFocused();
+      await expect(board).not.toHaveAttribute("inert", "");
       expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
       expect(await page.locator(".board").evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(row.main, 0);
       expect(await columns.evaluate((el) => el.scrollLeft)).toBeCloseTo(beforeOpenScroll, 0);
