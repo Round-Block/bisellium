@@ -1,8 +1,8 @@
 /** Private W-125 builder runtime and current-tree review admission seam. */
 import { spawn, spawnSync } from "node:child_process";
-import { closeSync, existsSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, readdirSync, rmSync, unlinkSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, realpathSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFront, readManifest } from "@bisellium/adapter-native";
 import {
@@ -115,6 +115,68 @@ function attachReceipt(studioRoot: string, opus: string, receiptFile: string): v
   editOpusFrontMatter(opusPath, (doc) => { doc.set("run_receipt", rel); return undefined; });
 }
 
+/**
+ * The per-opus producer lease: an atomically created directory naming its
+ * owner. A lease whose owner process is gone (a double kill) is reclaimed; a
+ * live owner's is refused. A lease with no readable owner is treated as live.
+ */
+export function acquireProducerLease(repo: string, opus: string): string | undefined {
+  const lease = join(repo, ".bisellium", "leases", opus);
+  mkdirSync(dirname(lease), { recursive: true });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      mkdirSync(lease);
+      writeFileSync(join(lease, "pid"), `${process.pid}\n`);
+      return lease;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      const owner = Number.parseInt(readOptional(join(lease, "pid")) ?? "", 10);
+      if (!Number.isInteger(owner) || owner <= 0 || ownerAlive(owner)) return undefined;
+      rmSync(lease, { recursive: true, force: true });
+    }
+  }
+  return undefined;
+}
+
+function readOptional(path: string): string | undefined {
+  try { return readFileSync(path, "utf8"); } catch { return undefined; }
+}
+
+function ownerAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; }
+  catch (error) { return (error as NodeJS.ErrnoException).code === "EPERM"; }
+}
+
+/**
+ * A runner that died without running its `finally` (SIGKILL, OOM, our own
+ * timeout) reported its runtime in the result file before it could be killed;
+ * remove exactly that directory, and only if it is a runner-made directory
+ * directly under the temp root.
+ */
+export function cleanupAbandonedRuntime(resultFile: string, tmpRoot: string = tmpdir()): void {
+  let runtime: unknown;
+  try { runtime = (JSON.parse(readFileSync(resultFile, "utf8")) as { runtime?: unknown }).runtime; } catch { return; }
+  if (typeof runtime !== "string" || !isAbsolute(runtime)) return;
+  if (dirname(runtime) !== resolve(tmpRoot) || !/^bisellium-W-[0-9]+-/.test(basename(runtime))) return;
+  rmSync(runtime, { recursive: true, force: true });
+}
+
+/** Same rule as rules/evidence.ts `countBehaviours` (packages/commands cannot import the CLI package). */
+function declaredBehaviours(briefText: string): number {
+  const lines = briefText.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trim() === "## Behaviours to test");
+  if (start === -1) return 0;
+  let count = 0;
+  let inFence = false;
+  for (const line of lines.slice(start + 1)) {
+    if (/^\s{0,3}```/.test(line)) inFence = !inFence;
+    else if (inFence) continue;
+    else if (/^## /.test(line)) break;
+    else if (/^\s{0,3}\d+\.\s/.test(line)) count++;
+  }
+  return count;
+}
+
 export async function runBuilderCommand(request: BuilderRunRequest): Promise<BuilderRunResult> {
   const opusPath = join(request.studioRoot, "opera", `${request.opus}.md`);
   if (request.provider !== undefined) {
@@ -135,15 +197,22 @@ export async function runBuilderCommand(request: BuilderRunRequest): Promise<Bui
     return { exitCode: 1 };
   }
 
-  const leasePath = join(request.repo, ".bisellium", "leases", request.opus);
+  let leasePath: string | undefined;
   try {
-    mkdirSync(resolve(leasePath, ".."), { recursive: true });
-    mkdirSync(leasePath);
+    leasePath = acquireProducerLease(request.repo, request.opus);
   } catch (error) {
     console.error(`bisellium run: producer lease for ${request.opus} is unavailable: ${(error as Error).message}`);
     return { exitCode: 1 };
   }
+  if (leasePath === undefined) {
+    console.error(`bisellium run: producer lease for ${request.opus} is held by a live run`);
+    return { exitCode: 1 };
+  }
 
+  // The host result travels through a file in a directory no sandbox can see
+  // (never stdout, which candidate code shares): the only source of truth.
+  const resultDir = mkdtempSync(join(tmpdir(), "bisellium-result-"));
+  const resultFile = join(resultDir, "result.json");
   try {
     try { markIsolatedBuilderRuntime(opusPath); }
     catch (error) {
@@ -154,21 +223,21 @@ export async function runBuilderCommand(request: BuilderRunRequest): Promise<Bui
     const sessionId = makeSessionId(request.now);
     const receiptFile = writeReceiptStart(request.studioRoot, { sella: request.sella, sessionId, startedAt: request.now.toISOString(), cwd: "disposable-clone (pending)", cmd: request.cmd });
     const wallStart = Date.now();
-    const encoded = Buffer.from(JSON.stringify({ ...request, now: request.now.toISOString(), sessionId, leaseOwned: true })).toString("base64url");
+    const encoded = Buffer.from(JSON.stringify({ ...request, now: request.now.toISOString(), sessionId, leaseOwned: true, resultFile })).toString("base64url");
     const child = spawnSync(process.execPath, [HOST_RUNNER, "--request", encoded], {
-      cwd: request.repo, env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" },
-      encoding: "utf8", timeout: 60 * 60_000,
+      cwd: request.repo,
+      env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC", ...(process.env["TMPDIR"] ? { TMPDIR: process.env["TMPDIR"] } : {}) },
+      encoding: "utf8", timeout: 60 * 60_000, maxBuffer: 512 * 1024 * 1024,
     });
-    if (child.stdout) process.stdout.write(child.stdout.replace(/^BISELLIUM_HOST_RESULT .*$/gm, ""));
-    if (child.stderr) process.stderr.write(child.stderr);
+    if (child.stdout) console.log(child.stdout.trimEnd());
+    if (child.stderr) console.error(child.stderr.trimEnd());
     let host: HostResult = { exitCode: child.status ?? 1, runtime: "unknown", error: child.error?.message };
-    const resultLine = child.stdout?.split("\n").find((line) => line.startsWith("BISELLIUM_HOST_RESULT "));
-    if (resultLine !== undefined) {
-      try { host = JSON.parse(resultLine.slice("BISELLIUM_HOST_RESULT ".length)) as HostResult; }
-      catch { host = { exitCode: 1, runtime: "unknown", error: "malformed host-runner result" }; }
-    }
+    try { host = JSON.parse(readFileSync(resultFile, "utf8")) as HostResult; }
+    catch { host = { exitCode: child.status === 0 ? 1 : (child.status ?? 1), runtime: "unknown", error: "host runner left no result" }; }
+    // A runner killed before its own teardown (timeout, OOM, SIGKILL) leaves its runtime behind.
+    cleanupAbandonedRuntime(resultFile);
     let exitCode = host.exitCode;
-    if (child.error !== undefined || child.status === null || host.completion === undefined) exitCode = exitCode === 0 ? 1 : exitCode;
+    if (child.error !== undefined || child.status === null || child.status !== 0 || host.completion === undefined) exitCode = exitCode === 0 ? 1 : exitCode;
     writeReceiptEnd(receiptFile, { endedAt: new Date().toISOString(), exitCode, durationMs: Date.now() - wallStart, ...(exitCode === 0 && host.completion ? { completion: host.completion } : {}) });
     if (exitCode === 0) {
       try { attachReceipt(request.studioRoot, request.opus, receiptFile); }
@@ -180,6 +249,7 @@ export async function runBuilderCommand(request: BuilderRunRequest): Promise<Bui
     }
     return { exitCode };
   } finally {
+    rmSync(resultDir, { recursive: true, force: true });
     rmSync(leasePath, { recursive: true, force: true });
   }
 }
@@ -228,6 +298,11 @@ export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunRec
       if (redReachable.status !== 0 || `tree:${sourceTreeHash(repo, exclusions, red.commit)}` !== red.sourceTree)
         return { ok: false, error: `${opus}: run_receipt has an unreachable or mismatched red identity` };
     }
+    // One red does not suffice: every numbered behaviour in the brief needs its replayed red.
+    const declared = declaredBehaviours(readFileSync(join(studioRoot, "briefs", `${opus}.md`), "utf8"));
+    if (declared === 0) return { ok: false, error: `${opus}: brief declares no numbered behaviours to replay` };
+    for (let n = 1; n <= declared; n++)
+      if (!behaviours.has(n)) return { ok: false, error: `${opus}: run_receipt lacks a replayed red for behaviour ${n}` };
     return { ok: true, receipt: front.run_receipt };
   } catch (error) {
     return { ok: false, error: `${opus}: invalid run_receipt: ${(error as Error).message}` };

@@ -324,6 +324,11 @@ const PINNED_B: PinnedB[] = [
     why: "runReview passes opus through safeItemPath and readContainedRegularFile before calling receipt admission",
   },
   {
+    key: "packages/commands/src/builder-run.ts:admitCurrentRunReceipt#2",
+    disposition: "guarded",
+    why: "same caller guard as #1: runReview passes opus through safeItemPath before admission, and the briefs/ join is read-only (a missing or unreadable brief refuses admission)",
+  },
+  {
     key: "packages/commands/src/context.ts:buildContextFor#1",
     disposition: "derived",
     why: "a display label inside the context bundle; never reaches the filesystem",

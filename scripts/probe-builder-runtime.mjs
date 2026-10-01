@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Capability probe run inside the actual builder namespace, before source work. */
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { join } from "node:path";
 
@@ -25,6 +25,9 @@ const expected = [
   "npm_config_globalconfig",
   "npm_config_registry",
 ].sort();
+// bwrap --chdir exports PWD into the cleared environment; it is not one of the
+// 18 producer-set names, and the cwd itself is asserted below.
+delete process.env.PWD;
 const actual = Object.keys(process.env).sort();
 if (JSON.stringify(actual) !== JSON.stringify(expected))
   throw new Error(`environment allowlist mismatch: ${actual.join(",")}`);
@@ -67,8 +70,9 @@ try {
   });
 
   if (existsSync("package.json") && existsSync("node_modules/@bisellium/shim")) {
-    const resolved = import.meta.resolve("@bisellium/shim");
-    if (!resolved.includes("/workspace/")) throw new Error(`workspace dependency escaped clone: ${resolved}`);
+    // Resolve from the clone, not from this probe's own (tools) directory.
+    const resolved = realpathSync("node_modules/@bisellium/shim");
+    if (!resolved.startsWith("/workspace/")) throw new Error(`workspace dependency escaped clone: ${resolved}`);
   }
   if (process.argv.includes("--require-browser")) {
     const browsers = ["chromium", "chromium-browser", "google-chrome"];
