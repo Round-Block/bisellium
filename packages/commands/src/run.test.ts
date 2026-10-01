@@ -8,11 +8,11 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
-import { gitWorktreeProvider, type WorktreeProvider } from "@bisellium/shim";
+import type { WorktreeProvider } from "@bisellium/shim";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -210,7 +210,16 @@ if (runs(3)) {
 if (runs(4)) {
   test("W-125 behaviour 4: --keep never preserves the disposable builder runtime", async () => {
     const f = fixture("b4-disposal");
-    const result = await run(builderArgs(f, ["--keep"], [process.execPath, "-e", "process.exit(0)"]), gitWorktreeProvider);
+    let runtimePath = "";
+    const disposable: WorktreeProvider = {
+      id: "w125-disposable-fixture",
+      async acquire() {
+        runtimePath = scratch("b4-runtime");
+        cpSync(f.repo, runtimePath, { recursive: true });
+        return { path: runtimePath, branch: `opus/${OPUS}`, release: async () => rmSync(runtimePath, { recursive: true, force: true }) };
+      },
+    };
+    const result = await run(builderArgs(f, ["--keep"], [process.execPath, "-e", "process.exit(0)"]), disposable);
     assert.equal(result.exitCode, 0, `the zero-exit builder fixture must reach teardown: ${result.errors.join("; ")}`);
     const receipt = oneReceipt(f.studio);
     const runtime = receipt["cwd"];
@@ -235,12 +244,21 @@ if (only === undefined) {
     git(f.repo, ["add", "opus-marker.txt"]);
     git(f.repo, ["commit", "-q", "-m", "test: add opus-only marker"]);
     git(f.repo, ["switch", "-q", "master"]);
-    const worktree = join(f.repo, ".bisellium", "worktrees", "eng-lead-1");
+    const worktree = join(scratch("generic-opus-base"), "worktree");
+    const cloneProvider: WorktreeProvider = {
+      id: "w125-generic-clone-fixture",
+      async acquire({ repo, base }) {
+        assert.equal(base, `opus/${OPUS}`);
+        cpSync(repo, worktree, { recursive: true });
+        writeFileSync(join(worktree, "opus-marker.txt"), "opus base marker\n");
+        return { path: worktree, branch: "bisellium/eng-lead/1", release: async () => undefined };
+      },
+    };
     const based = await run([
       "--sella", "eng-lead", "--opus", OPUS, "--studio", f.studio,
       "--repo", f.repo, "--keep", "--", process.execPath, "-e", "process.exit(0)",
-    ], gitWorktreeProvider);
-    assert.equal(based.exitCode, 0);
+    ], cloneProvider);
+    assert.equal(based.exitCode, 0, based.errors.join("; "));
     assert.equal(readFileSync(join(worktree, "opus-marker.txt"), "utf8"), "opus base marker\n");
     assert.equal(existsSync(join(f.repo, "opus-marker.txt")), false);
 
@@ -258,23 +276,18 @@ if (only === undefined) {
       "--sella", "builder.W-200", "--opus", "W-200", "--studio", f.studio,
       "--no-worktree", "--", "true",
     ]);
-    assert.equal(matchingInstance.exitCode, 0);
-    rmSync(join(f.studio, "receipts", "builder.W-200"), { recursive: true, force: true });
+    assert.equal(matchingInstance.exitCode, 2);
+    assert.equal(existsSync(join(f.studio, "receipts", "builder.W-200")), false);
     const mismatch = await run([
       "--sella", "builder.W-200", "--opus", "W-999", "--studio", f.studio,
       "--no-worktree", "--", "true",
     ]);
     assert.equal(mismatch.exitCode, 2);
 
-    const out = join(f.repo, "instance-email.txt");
     const minted = await run([
       "--sella", "builder", "--opus", "W-200", "--studio", f.studio,
-      "--no-worktree", "--", process.execPath, "-e",
-      "require('node:fs').writeFileSync(process.argv[1],process.env.GIT_AUTHOR_EMAIL)", out,
+      "--no-worktree", "--", process.execPath, "-e", "process.exit(0)",
     ]);
-    assert.equal(minted.exitCode, 0);
-    assert.equal(readFileSync(out, "utf8").split("@")[0], "builder.W-200");
-    assert.equal(readFileSync(out, "utf8"), "builder.W-200@w-125-focused-fixture.bisellium");
-    assert.equal(oneReceipt(f.studio, "builder.W-200")["exitCode"], 0);
+    assert.equal(minted.exitCode, 2);
   });
 }

@@ -14,11 +14,12 @@
 import { existsSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { constants as osConstants } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance } from "@bisellium/adapter-native";
 import type { WorktreeProvider } from "@bisellium/shim";
 import { makeSessionId, reclaimWorktrees, selectProvider, writeReceiptEnd, writeReceiptStart } from "@bisellium/shim";
 import { pauseWarning } from "./pause.js";
+import { runBuilderCommand } from "./builder-run.js";
 
 export interface RunOptions {
   /** Pinned clock, for reproducible sessionIds/receipts in tests. */
@@ -83,6 +84,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   let repoFlag: string | undefined;
   let noWorktree = false;
   let base: string | undefined;
+  let explicitBase = false;
   let keep = false;
   let reclaim = false;
   let opus: string | undefined;
@@ -119,6 +121,7 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
       const r = takeValue(args, ++i, "--base");
       if ("error" in r) { console.error(r.error); return { exitCode: 2 }; }
       base = r.value;
+      explicitBase = true;
       continue;
     }
     if (a === "--no-worktree") { noWorktree = true; continue; }
@@ -173,7 +176,9 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   // --opus was ALSO given and disagrees with that suffix, refused before
   // any worktree/child/receipt. A bare template with no --opus at all
   // cannot be minted and is refused the same way.
-  if (isBuilderClassSeat(resolvedSella)) {
+  const builderClass = isBuilderClassSeat(resolvedSella);
+  let builderOpus: string | undefined;
+  if (builderClass) {
     const opusForMint = resolvedSella.instance ?? opus;
     if (opusForMint === undefined) {
       console.error(`bisellium run: "${sella}" is a builder-class template — pass --opus <id> so an instance can be minted`);
@@ -189,6 +194,15 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
       return { exitCode: 2 };
     }
     sella = minted;
+    builderOpus = opusForMint;
+    if (noWorktree) {
+      console.error("bisellium run: builder-class execution cannot use --no-worktree; a disposable confined clone is mandatory");
+      return { exitCode: 2 };
+    }
+    if (explicitBase) {
+      console.error("bisellium run: builder-class execution cannot use --base; it always owns opus/<id>");
+      return { exitCode: 2 };
+    }
   }
 
   // `bisellium pause` stops autonomous starting (bisellium tick), not
@@ -196,6 +210,28 @@ export async function runCommand(args: string[], opts: RunOptions = {}): Promise
   // just a warning so the operator knows the brake is on.
   const warning = pauseWarning(studioRoot);
   if (warning) console.error(warning);
+
+  if (builderClass) {
+    const resolved = resolveRepoRoot(studioRoot, repoFlag);
+    if ("error" in resolved) { console.error(`bisellium run: ${resolved.error}`); return { exitCode: 2 }; }
+    const studioRelative = relative(resolved.repo, studioRoot);
+    if (studioRelative === "" || isAbsolute(studioRelative) || studioRelative.split(sep)[0] === "..") {
+      console.error("bisellium run: selected officina is not contained in the repository");
+      return { exitCode: 2 };
+    }
+    return runBuilderCommand({
+      repo: resolved.repo,
+      studioRoot,
+      studioRelative: studioRelative.split(sep).join("/"),
+      opus: builderOpus!,
+      sella,
+      slug: studioSlug(manifest.studio || "studio"),
+      cmd,
+      keep,
+      now,
+      ...(opts.provider === undefined ? {} : { provider: opts.provider }),
+    });
+  }
 
   let worktree: Awaited<ReturnType<WorktreeProvider["acquire"]>> | undefined;
   if (!noWorktree) {

@@ -9,6 +9,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { gitWorktreeProvider, filterEnv, sourceTreeHash } from "../src/index.js";
+import { writeReceiptEnd, writeReceiptStart } from "../src/receipts.js";
 import { normalizeExclude } from "../src/sourceTree.js";
 import { runCommand } from "../../cli/src/run.js";
 import { checkStudio } from "../../cli/src/check.js";
@@ -34,6 +35,24 @@ function readReceipt(studio: string, sella: string): { path: string; data: Recor
   if (files.length !== 1) throw new Error(`expected exactly 1 receipt in ${dir}, found ${files.length}`);
   const path = join(dir, files[0]!);
   return { path, data: JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown> };
+}
+
+// W-125 extends, rather than replaces, the historical receipt JSON. Legacy
+// starts remain readable and host completion fields round-trip intact.
+{
+  const studio = mktemp("shim-builder-receipt-");
+  try {
+    writeStudio(studio);
+    const path = writeReceiptStart(studio, { sella: "builder.W-125", sessionId: "w125", startedAt: NOW.toISOString(), cwd: "disposable-clone", cmd: ["true"] });
+    writeReceiptEnd(path, { endedAt: NOW.toISOString(), exitCode: 0, durationMs: 1, completion: {
+      schema: 1, origin: "host-producer", opus: "W-125", branch: "opus/W-125", builder: "builder.W-125", producer: "producer",
+      baseCommit: "a".repeat(40), finalCommit: "b".repeat(40), finalSourceTree: `tree:${"c".repeat(40)}`, toolingCommit: "d".repeat(40),
+      redReplays: [], gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true,
+    }});
+    const value = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    check("builder receipt: legacy top-level exit remains", value["exitCode"] === 0, JSON.stringify(value));
+    check("builder receipt: host completion round-trips", (value["completion"] as Record<string, unknown>)?.["origin"] === "host-producer", JSON.stringify(value["completion"]));
+  } finally { rmSync(studio, { recursive: true, force: true }); }
 }
 
 // ---- gitWorktreeProvider: acquire on a new branch, release removes it -------

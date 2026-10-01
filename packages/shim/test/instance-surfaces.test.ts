@@ -7,7 +7,7 @@
  * mint a doubled dot is refused before it ever reaches a join, proven
  * end to end through `bisellium run`'s own boundary (behaviour 5).
  */
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -90,12 +90,9 @@ probationes: []
   }
 }
 
-// ---- 3. GIT_AUTHOR_EMAIL is exactly one "@" — read from `bisellium run`'s
-// OWN child env (censor W-089 round-1 finding B5): the mutation battery
-// showed the previous version of this block asserted a string the test
-// itself built, so it survived a mutation that broke the real minting path.
-// This spawns a real child through `runCommand` and inspects what actually
-// landed in its environment. -------------------------------------------------
+// ---- 3. W-125: an instance cannot regain the removed in-place escape ----
+// Minting still happens before admission, but the child must never execute
+// in the officina merely because the caller supplied an already-minted id.
 {
   const studio = mktemp("w089-b9-email-studio-");
   const outFile = join(studio, "email.txt");
@@ -131,10 +128,8 @@ probationes: []
       ],
       { now: NOW },
     );
-    check("b9: run mints the instance and dispatches the child — exits 0", result.exitCode === 0, String(result.exitCode));
-    const email = readFileSync(outFile, "utf8");
-    check("b9: GIT_AUTHOR_EMAIL has exactly one '@'", email.split("@").length === 2, email);
-    check("b9: GIT_AUTHOR_EMAIL is <instance>@<slug>.bisellium", email === `${INSTANCE}@studio.bisellium`, email);
+    check("b9: minted instance refuses --no-worktree", result.exitCode === 2, String(result.exitCode));
+    check("b9: refused in-place child did not write", !existsSync(outFile), outFile);
   } finally {
     rmSync(studio, { recursive: true, force: true });
   }

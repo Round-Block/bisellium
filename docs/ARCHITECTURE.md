@@ -145,6 +145,20 @@ Builder isolation is the hard rule around the build phase: a worktree per
 builder, or a commit of its own files before the Censor runs, because a
 verifier's result is void if the tree moved under it (engineering lex §2).
 
+W-125 makes that boundary executable: builder-class `run` bypasses the
+generic `WorktreeProvider` and invokes the host-owned runner. The producer
+leases the owning branch, creates an independent disposable clone, mounts it
+inside outer PID/user/mount/network isolation, and exposes Git only through a
+branch/index broker. The child runtime has an exact credential-free
+environment and no external egress. Clean owned commits cross back through a
+quarantined, compare-and-swap export; the runtime and descendants are gone
+before immutable host tooling recomputes reds and gates. A host completion
+receipt binds those results to the final SOURCE tree.
+
+The lifecycle review edge is now guarded by that receipt. Both pass and fail
+call the same read-only admission seam before evidence parsing or mutation;
+there is still one independent censor and no automatic review transition.
+
 ## 4. Console read path
 
 ```mermaid
@@ -199,7 +213,10 @@ files the next poll picks up.
 - `MergePipeline` (`@bisellium/pipeline`) — `verify` runs gates through it, so a
   merge-blocking pipeline is a drop-in for the local runner.
 - `WorktreeProvider` / `HarnessProfile` (`@bisellium/shim`) — where a builder
-  runs, and what drives it.
+  runs, and what drives it. Builder-class execution uses the stricter private
+  `builder-run`/host-runner seam instead of this generic provider.
+- `admitCurrentRunReceipt` (`@bisellium/commands/builder-run`) — the shared
+  current-SOURCE host-completion predicate used before either review outcome.
 - `SnapshotAdapter` (`adapters/native`, `adapters/epoch0`) — the only thing that
   knows a studio's file layout.
 - `workflow.*` (`@bisellium/schema`) — the wire vocabulary every layer shares.

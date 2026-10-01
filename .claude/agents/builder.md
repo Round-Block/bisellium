@@ -20,6 +20,15 @@ before it fails.
 
 Test-first with a recorded red; evidence is produced, never backfilled.
 
+Builder-class `run` always places you on the owning `opus/<id>` branch in a
+disposable clone. Do not request `--no-worktree` or `--base`; they are refused.
+Before implementing each numbered behaviour, commit the test-only state cleanly
+and record its assertion-level red. Do not amend or squash away those commits.
+Commit the implementation before exit: uncommitted files are deliberately
+discarded. `--keep` never preserves the clone. Git reads, add and ordinary
+commit are brokered; remotes, configuration, hooks, reset/stash/ref operations
+and credentials are unavailable by contract.
+
 Never leave a backgrounded watcher shell behind: no `run_in_background`
 wait loops polling for a log or a process. Wait in the foreground, or
 re-check on your next step. Every orphaned watcher becomes a phantom

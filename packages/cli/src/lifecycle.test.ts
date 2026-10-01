@@ -23,13 +23,20 @@ import { checkStudio } from "./check.js";
 import { executeClose } from "./close.js";
 import { runCi } from "./ci.js";
 import { splitFront } from "./frontmatter.js";
-import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
+import { runReady, runDone, runReview as runReviewCommand, runRed, runHalt, runWaive, runAmend, type RunReviewOptions } from "./lifecycle.js";
 import { runVerify } from "./verify.js";
 import { runGreenlight, runHandoff, type WriteResult } from "./writes.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-19T13:00:00Z");
+
+// Existing lifecycle rows isolate review's mutation grammar. W-125's actual
+// admission behavior has dedicated rows below; this seam keeps the older
+// rows from having to counterfeit host receipts.
+function runReview(args: string[], opts: RunReviewOptions = {}): WriteResult {
+  return runReviewCommand(args, { ...opts, runReceiptAdmission: () => ({ ok: true, receipt: "receipts/producer/test.json" }) });
+}
 
 // W-039: a stray $BISELLIUM_SELLA on the host would let a `red` call that
 // passes no --sella slip past the new refusal on a local run and fail only
@@ -516,6 +523,14 @@ try {
     check("review: nonexistent --evidence exits 2", badEvidence.exitCode === 2, String(badEvidence.exitCode));
 
     check("review: file untouched by every usage refusal", readFileSync(opusPath, "utf8") === before);
+
+    // W-125: the real, direct command has no test bypass. Missing admission
+    // refuses both outcomes before evidence or lifecycle state is consumed.
+    for (const outcome of ["--pass", "--fail"] as const) {
+      const result = runReviewCommand(["W-002", outcome, "--evidence", "ci/W-002-tests-6b416199.log", "--studio", dir], { now: NOW });
+      check(`review: ${outcome} refuses without current-tree run receipt`, result.exitCode === 2, String(result.exitCode));
+      check(`review: ${outcome} refusal leaves opus unchanged`, readFileSync(opusPath, "utf8") === before);
+    }
   }
 
   // =========================================================================

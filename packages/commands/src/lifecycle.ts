@@ -23,6 +23,7 @@ import { readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
 import { editOpusFrontMatter } from "./frontmatter.js";
+import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
   censorSella,
   effectiveProbationes,
@@ -481,7 +482,12 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
 const REVIEW_USAGE =
   "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]";
 
-export function runReview(args: string[], opts: WriteOptions = {}): WriteResult {
+export interface RunReviewOptions extends WriteOptions {
+  /** Deterministic admission seam for command tests; production uses the host receipt validator. */
+  runReceiptAdmission?: typeof admitCurrentRunReceipt;
+}
+
+export function runReview(args: string[], opts: RunReviewOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
     valued: ["--evidence", "--round", "--sella", "--model", "--studio", "--now"],
     boolean: ["--pass", "--fail"],
@@ -546,6 +552,14 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   const refusal = recordOwnerRefusal(root, opusId);
   if (refusal !== undefined) {
     console.error(refusal);
+    return { exitCode: 2 };
+  }
+
+  // W-125: both verdicts require the same producer-certified current source
+  // before evidence is read or any gate/event/front matter can be changed.
+  const runAdmission = (opts.runReceiptAdmission ?? admitCurrentRunReceipt)(root, opusId);
+  if (!runAdmission.ok) {
+    console.error(runAdmission.error);
     return { exitCode: 2 };
   }
 
