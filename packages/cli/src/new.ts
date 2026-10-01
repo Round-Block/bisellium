@@ -30,6 +30,30 @@ export interface NewResult {
 
 const ID_RE = /^W-(\d+)\.md$/;
 
+/**
+ * Private W-101 test seam.  A focused child-process test supplies a fresh
+ * temporary directory, waits for two `<pid>.ready` files, then creates the
+ * `release` file.  Keeping the wait after rendering and before the first
+ * write makes the existing scan/write race deterministic without adding a
+ * public flag or changing an ordinary invocation.  It is one-shot because
+ * the eventual exclusive-create implementation retries after EEXIST and a
+ * retry must not re-enter the barrier.
+ */
+let idsTestBarrierUsed = false;
+function waitAtIdsTestBarrier(candidate: string): void {
+  const barrierDir = process.env["BISELLIUM_IDS_TEST_BARRIER_DIR"];
+  if (!barrierDir || idsTestBarrierUsed) return;
+  idsTestBarrierUsed = true;
+  writeFileSync(join(barrierDir, `${process.pid}.ready`), candidate, { flag: "wx" });
+  const release = join(barrierDir, "release");
+  const deadline = Date.now() + 30_000;
+  const sleeper = new Int32Array(new SharedArrayBuffer(4));
+  while (!existsSync(release)) {
+    if (Date.now() >= deadline) throw new Error(`ids test barrier timed out waiting for ${release}`);
+    Atomics.wait(sleeper, 0, 0, 10);
+  }
+}
+
 export function newItem(dir: string, opts: NewOptions): NewResult {
   const root = resolve(dir);
   const manifestPath = join(root, "bisellium.yml");
@@ -188,6 +212,7 @@ state: backlog${specValue !== undefined ? `\nspec: ${JSON.stringify(specValue)}`
 probationes: {}
 ---
 `;
+    waitAtIdsTestBarrier(id);
     if (brief) {
       const briefsDir = join(root, "briefs");
       mkdirSync(briefsDir, { recursive: true });
