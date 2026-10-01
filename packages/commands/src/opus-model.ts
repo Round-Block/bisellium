@@ -819,6 +819,67 @@ export interface ProtectedRecordsResult {
   problems: string[];
 }
 
+function compareProtectedRecordContentsAtBaseline(
+  repo: string,
+  baseline: string,
+  protectedPaths: string[],
+  problems: string[],
+): void {
+  const tree = git(repo, ["ls-tree", "-r", "-z", "--full-tree", baseline, "--", "studio/opera", "examples/sample-studio/opera"]);
+  for (const row of tree.split("\0")) {
+    if (!row) continue;
+    const match = /^(\d+) (\w+) ([0-9a-f]+)\t(.+)$/.exec(row);
+    if (!match) continue;
+    const path = match[4]!;
+    if (!/^(?:studio\/opera|examples\/sample-studio\/opera)\/[^/]+\.md$/.test(path) || path === "studio/opera/W-096.md") continue;
+    protectedPaths.push(path);
+    if (match[2] !== "blob" || (match[1] !== "100644" && match[1] !== "100755")) {
+      problems.push(`${path}: baseline entry is not a regular file`);
+      continue;
+    }
+    const baselineBytes = execFileSync("git", ["show", `${baseline}:${path}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 }) as Buffer;
+    const headRow = git(repo, ["ls-tree", "HEAD", "--", path]).trim();
+    const head = /^(\d+) blob ([0-9a-f]+)\t/.exec(headRow);
+    if (!head || head[1] !== match[1]) { problems.push(`${path}: missing, renamed, non-regular or mode-changed at HEAD`); continue; }
+    const headBytes = execFileSync("git", ["show", `HEAD:${path}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 }) as Buffer;
+    if (!baselineBytes.equals(headBytes)) problems.push(`${path}: bytes differ from baseline at HEAD`);
+    const working = readContainedRegularFile(repo, path, path.split("/")[0]!);
+    if ("error" in working) problems.push(`${path}: working-tree entry is unsafe or unreadable: ${working.error}`);
+    else {
+      const mode = working.mode & 0o111 ? "100755" : "100644";
+      if (mode !== match[1]) problems.push(`${path}: working-tree mode differs from baseline`);
+      if (!baselineBytes.equals(working.bytes)) problems.push(`${path}: working-tree bytes differ from baseline`);
+    }
+  }
+}
+
+/**
+ * Compare the protected record bytes and modes at HEAD and in the working
+ * tree with an explicitly supplied baseline.  This is the W-096 bootstrap's
+ * pre-write comparison; immutable-pin history belongs to post-commit
+ * validateProtectedRecords instead.
+ */
+export function compareProtectedRecordContents(repoArg: string, studioRoot: string, baseline: string): ProtectedRecordsResult {
+  const repo = resolve(repoArg);
+  const protectedPaths: string[] = [];
+  const problems: string[] = [];
+  try {
+    const repoReal = realpathSync(repo);
+    const studioReal = realpathSync(studioRoot);
+    if (relative(repoReal, studioReal).split(sep).join("/") !== "studio")
+      throw new Error("repository identity does not contain the selected native studio at studio/");
+    if (!/^[0-9a-f]{40}$/.test(baseline))
+      return { ok: false, protectedPaths, problems: ["baseline_commit is missing or is not a full lowercase commit id"] };
+    git(repo, ["cat-file", "-e", `${baseline}^{commit}`]);
+    compareProtectedRecordContentsAtBaseline(repo, baseline, protectedPaths, problems);
+    protectedPaths.sort();
+    return { ok: problems.length === 0, baseline, protectedPaths, problems };
+  } catch (error) {
+    problems.push(`preservation is unverifiable: ${(error as Error).message}`);
+    return { ok: false, protectedPaths, problems };
+  }
+}
+
 /** W-096 immutable reviewed-trunk record comparison. */
 export function validateProtectedRecords(repoArg: string, studioRoot: string, record?: NativeRecord): ProtectedRecordsResult {
   const repo = resolve(repoArg);
@@ -871,32 +932,7 @@ export function validateProtectedRecords(repoArg: string, studioRoot: string, re
     if (conflictingPins.size > 0)
       problems.push(`baseline_commit conflicts with reachable record history (${[...conflictingPins].sort().join(", ")})`);
 
-    const tree = git(repo, ["ls-tree", "-r", "-z", "--full-tree", baseline, "--", "studio/opera", "examples/sample-studio/opera"]);
-    for (const row of tree.split("\0")) {
-      if (!row) continue;
-      const match = /^(\d+) (\w+) ([0-9a-f]+)\t(.+)$/.exec(row);
-      if (!match) continue;
-      const path = match[4]!;
-      if (!/^(?:studio\/opera|examples\/sample-studio\/opera)\/[^/]+\.md$/.test(path) || path === "studio/opera/W-096.md") continue;
-      protectedPaths.push(path);
-      if (match[2] !== "blob" || (match[1] !== "100644" && match[1] !== "100755")) {
-        problems.push(`${path}: baseline entry is not a regular file`);
-        continue;
-      }
-      const baselineBytes = execFileSync("git", ["show", `${baseline}:${path}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 }) as Buffer;
-      const headRow = git(repo, ["ls-tree", "HEAD", "--", path]).trim();
-      const head = /^(\d+) blob ([0-9a-f]+)\t/.exec(headRow);
-      if (!head || head[1] !== match[1]) { problems.push(`${path}: missing, renamed, non-regular or mode-changed at HEAD`); continue; }
-      const headBytes = execFileSync("git", ["show", `HEAD:${path}`], { cwd: repo, encoding: "buffer", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 }) as Buffer;
-      if (!baselineBytes.equals(headBytes)) problems.push(`${path}: bytes differ from baseline at HEAD`);
-      const working = readContainedRegularFile(repo, path, path.split("/")[0]!);
-      if ("error" in working) problems.push(`${path}: working-tree entry is unsafe or unreadable: ${working.error}`);
-      else {
-        const mode = working.mode & 0o111 ? "100755" : "100644";
-        if (mode !== match[1]) problems.push(`${path}: working-tree mode differs from baseline`);
-        if (!baselineBytes.equals(working.bytes)) problems.push(`${path}: working-tree bytes differ from baseline`);
-      }
-    }
+    compareProtectedRecordContentsAtBaseline(repo, baseline, protectedPaths, problems);
     protectedPaths.sort();
     return { ok: problems.length === 0, baseline, protectedPaths, problems };
   } catch (error) {

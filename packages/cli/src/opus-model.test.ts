@@ -21,6 +21,7 @@ import { newItem, runNew } from "./new.js";
 import { runVerdict } from "./verdict.js";
 import { runVerify } from "./verify.js";
 import {
+  compareProtectedRecordContents,
   comparePrompt,
   designDigest,
   fullCaseFold,
@@ -28,6 +29,7 @@ import {
   titleProblem,
   utcTimestampProblem,
   validateProtectedRecords,
+  type NativeRecord,
 } from "@bisellium/commands/opus-model.js";
 
 const argv = process.argv.slice(2);
@@ -533,6 +535,15 @@ if (runs(1)) {
     const positivePath = bootstrapRecord(positive);
     const positiveBeforeRaw = readFileSync(positivePath, "utf8");
     const positiveBefore = parseFrontMatter<Record<string, unknown>>(positiveBeforeRaw, positivePath);
+    const positivePrewriteComparison = compareProtectedRecordContents(positive.repo, positive.studio, positive.baseline);
+    if (!positivePrewriteComparison.ok)
+      bootstrapProblems.push(`pre-write protected-record comparison rejected the absent pin: ${positivePrewriteComparison.problems.join("; ")}`);
+    const positiveOrdinaryValidation = validateProtectedRecords(positive.repo, positive.studio, {
+      ...positiveBefore.data,
+      baseline_commit: positive.baseline,
+    } as NativeRecord);
+    if (!positiveOrdinaryValidation.problems.includes("baseline_commit has no verifiable introduction in record history"))
+      bootstrapProblems.push("ordinary validation did not require the pin's committed introduction");
     const positiveResult = runBootstrap(positive);
     const positiveAfterRaw = readFileSync(positivePath, "utf8");
     const positiveAfter = parseFrontMatter<Record<string, unknown>>(positiveAfterRaw, positivePath);

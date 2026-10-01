@@ -17,9 +17,8 @@ import { fileURLToPath } from "node:url";
 import { parseFrontMatter } from "@bisellium/adapter-native";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import {
+  compareProtectedRecordContents,
   readContainedRegularFile,
-  recordWith,
-  validateProtectedRecords,
   type NativeRecord,
 } from "@bisellium/commands/opus-model.js";
 
@@ -29,7 +28,6 @@ const BOOTSTRAP_TEST_SEAM = process.env["BISELLIUM_W096_BOOTSTRAP_TEST_SEAM"] ==
 const EXPECTED_BASELINE =
   BOOTSTRAP_TEST_SEAM && EXPECTED_BASELINE_OVERRIDE ? EXPECTED_BASELINE_OVERRIDE : W096_BOOTSTRAP_BASELINE;
 const RECORD_REL = "studio/opera/W-096.md";
-const EXPECTED_UNPINNED_HISTORY_PROBLEM = "baseline_commit has no verifiable first introduction in record history";
 
 export interface BootstrapResult {
   ok: boolean;
@@ -139,20 +137,14 @@ export function bootstrapW096Baseline(repoArg: string, studioArg: string): Boots
     if (ancestor.status !== 0) return { ok: false, error: `${EXPECTED_BASELINE} is not a verified ancestor of ${ref}` };
   }
 
-  // validateProtectedRecords is the ordinary check/verify policy seam.  The
-  // synthetic pin lets it compare the fixed baseline against both HEAD and
-  // the working tree before any write.  The one expected history diagnostic
-  // is precisely what this bootstrap is authorized to repair; all other
-  // diagnostics remain blocking.
-  const preservation = validateProtectedRecords(
-    repo,
-    studio,
-    recordWith(record, { baseline_commit: EXPECTED_BASELINE }),
-  );
-  if (preservation.problems.length !== 1 || preservation.problems[0] !== EXPECTED_UNPINNED_HISTORY_PROBLEM) {
+  // The pin cannot have an introduction until the producer commits this
+  // script's write.  Compare only protected bytes and modes here; ordinary
+  // check/verify performs immutable-pin history validation after that commit.
+  const preservation = compareProtectedRecordContents(repo, studio, EXPECTED_BASELINE);
+  if (!preservation.ok) {
     return {
       ok: false,
-      error: `protected-record comparison failed: ${preservation.problems.join("; ") || "expected an unpinned history"}`,
+      error: `protected-record comparison failed: ${preservation.problems.join("; ")}`,
     };
   }
 
