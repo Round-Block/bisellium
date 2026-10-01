@@ -179,6 +179,33 @@ function setOpusTitle(studioDir: string, id: string, title: string): void {
   writeFileSync(path, raw.replace(/^title: .*$/m, `title: ${title}`), "utf8");
 }
 
+function setOpusBody(studioDir: string, id: string, body: string): void {
+  const path = join(studioDir, "opera", `${id}.md`);
+  const raw = readFileSync(path, "utf8");
+  const closing = raw.indexOf("\n---\n", 4);
+  if (closing < 0) throw new Error(`${id} has no closing front-matter delimiter`);
+  writeFileSync(path, `${raw.slice(0, closing + 5)}${body}\n`, "utf8");
+}
+
+function setTraditioNext(studioDir: string, id: string, value: string): void {
+  const path = join(studioDir, "opera", `${id}.md`);
+  const raw = readFileSync(path, "utf8");
+  const changed = raw.replace(/next: [^,}]*/, `next: "${value}"`);
+  if (changed === raw) throw new Error(`${id} has no inline traditio.next`);
+  writeFileSync(path, changed, "utf8");
+}
+
+function appendFixtureEvent(studioDir: string, itemId: string, ts: string, marker: string): void {
+  const line = JSON.stringify({
+    id: `w087:${marker}`,
+    name: "workflow.attention",
+    ts,
+    projectId: PROJECT_ID,
+    attrs: { "workflow.item.id": itemId, "workflow.attention.event": marker },
+  });
+  appendFileSync(join(studioDir, ".bisellium", "events.jsonl"), line + "\n", "utf8");
+}
+
 /** Appends one valid `GantryEvent` line directly to `events.jsonl` — the
  *  survey's own proof case (an externally-appended event, never seen by a
  *  running Index, must still reach `/api/events?item=`). */
@@ -582,5 +609,318 @@ test.describe("W-064 behaviour 9: computed composition at desktop, tablet and ph
 
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);
+  });
+});
+
+test.describe("W-087 behaviour 1: bounded titles retain their native full-title affordance", () => {
+  let served: ServedInstance;
+  test.afterEach(async () => {
+    await served?.close();
+  });
+
+  test("a 300-character mixed title clamps to four lines while a short card remains 64px", async ({ page }) => {
+    served = await startServed("w087-title-bounds");
+    const prose = "Several ordinary words must wrap before this unbroken token ";
+    const title = prose + "x".repeat(300 - prose.length);
+    expect(title).toHaveLength(300);
+    setOpusTitle(served.studioDir, "W-002", title);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await openBoard(page, served);
+
+    const card = page.locator('.board__card[data-card-id="W-002"]');
+    const titleNode = card.locator(".board__card-title");
+    await expect(titleNode).toHaveText(title);
+    await expect(titleNode).toHaveAttribute("title", title);
+
+    const titleMetrics = await titleNode.evaluate((el) => {
+      const style = getComputedStyle(el);
+      return {
+        clamp: style.getPropertyValue("-webkit-line-clamp"),
+        overflow: style.overflow,
+        overflowWrap: style.overflowWrap,
+        clientHeight: el.clientHeight,
+        scrollHeight: el.scrollHeight,
+      };
+    });
+    expect(titleMetrics.clamp).toBe("4");
+    expect(titleMetrics.overflow).toBe("hidden");
+    expect(titleMetrics.overflowWrap).toBe("anywhere");
+    expect(titleMetrics.clientHeight).toBe(72);
+    expect(titleMetrics.scrollHeight).toBeGreaterThan(titleMetrics.clientHeight);
+
+    const containment = await card.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const ladder = el.querySelector(".gate-ladder")?.getBoundingClientRect();
+      const metaElement = el.querySelector(".board__card-meta");
+      const meta = metaElement?.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return {
+        height: box.height,
+        minHeight: style.minHeight,
+        maxHeight: style.maxHeight,
+        flexShrink: style.flexShrink,
+        metaLineHeight: metaElement ? getComputedStyle(metaElement).lineHeight : "",
+        ladderInside: !!ladder && ladder.height > 0 && ladder.top >= box.top && ladder.bottom <= box.bottom,
+        metaInside: !!meta && meta.height > 0 && meta.top >= box.top && meta.bottom <= box.bottom,
+      };
+    });
+    expect(containment.height).toBe(108);
+    expect(containment.height).toBeLessThanOrEqual(108);
+    expect(containment.minHeight).toBe("64px");
+    expect(containment.maxHeight).toBe("108px");
+    expect(containment.flexShrink).toBe("0");
+    expect(containment.metaLineHeight).toBe("14px");
+    expect(containment.ladderInside).toBe(true);
+    expect(containment.metaInside).toBe(true);
+
+    const shortCard = page.locator('.board__card[data-card-id="W-005"]');
+    expect((await shortCard.boundingBox())?.height).toBe(64);
+  });
+});
+
+test.describe("W-087 behaviour 2: the served drawer carries the complete opus body", () => {
+  let served: ServedInstance;
+  test.afterEach(async () => {
+    await served?.close();
+  });
+
+  test("the collection and drawer preserve a long literal body and expose an honest empty state", async ({ page }) => {
+    served = await startServed("w087-record-body");
+    const body = [
+      "First paragraph remains whole.",
+      "",
+      "## Literal markdown stays source",
+      '<article data-test="literal"><img src=x onerror=alert(1)></article>',
+      "",
+      ...Array.from({ length: 48 }, (_, i) => `Paragraph ${String(i + 1).padStart(2, "0")}: ${"untruncated record prose ".repeat(3)}`),
+    ].join("\n");
+    expect(Buffer.byteLength(body, "utf8")).toBeGreaterThan(2048);
+    setOpusBody(served.studioDir, "W-004", body);
+
+    const response = await fetch(`${served.baseURL}/api/opera`);
+    expect(response.status).toBe(200);
+    const opera = (await response.json()) as OpusEntry[];
+    const w004 = opera.find((row) => row.id === "W-004");
+    expect(w004).toBeDefined();
+    expect(Object.prototype.hasOwnProperty.call(w004, "body")).toBe(true);
+    expect(w004?.body).toBe(body);
+
+    await openBoard(page, served);
+    await page.locator('.board__card[data-card-id="W-004"]').first().click();
+    const renderedBody = page.locator(".board-drawer__record-body");
+    await expect(renderedBody).toHaveText(body);
+    expect(await renderedBody.evaluate((el) => getComputedStyle(el).whiteSpace)).toBe("pre-wrap");
+    const renderedSource = await renderedBody.innerHTML();
+    expect(renderedSource).toContain("&lt;article");
+    expect(renderedSource).not.toContain("<article");
+
+    await page.locator(".board-drawer__close").click();
+    await page.locator('.board__card[data-card-id="W-002"]').click();
+    await expect(page.locator(".board-drawer__record-body")).toHaveText("No record body.");
+    await expect(page.locator(".board-drawer__record-body")).not.toContainText("undefined");
+  });
+});
+
+test.describe("W-087 behaviour 3: every generated Board time has the viewer-local shape", () => {
+  test.use({ timezoneId: "Asia/Singapore" });
+  let served: ServedInstance;
+  test.afterEach(async () => {
+    await served?.close();
+  });
+
+  test("four timestamp fields localize without touching ISO-like authored content or raw ordering", async ({ page }) => {
+    served = await startServed("w087-local-times");
+    const fixed = "2026-09-25T11:58:00.000Z";
+    const newer = "2026-10-01T00:01:00.000Z";
+    const sourceTitle = `Title keeps ${fixed} verbatim`;
+    const sourceBody = `Body keeps ${fixed} verbatim.`;
+    const sourceNext = `next keeps ${fixed} verbatim`;
+    setOpusTitle(served.studioDir, "W-002", sourceTitle);
+    setOpusBody(served.studioDir, "W-002", sourceBody);
+    setTraditioNext(served.studioDir, "W-002", sourceNext);
+    appendFixtureEvent(served.studioDir, "W-002", fixed, "fixed");
+    appendFixtureEvent(served.studioDir, "W-002", newer, "newer");
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openBoard(page, served);
+    await expect(page.locator(".board__liveness")).toContainText("updated");
+    await page.locator('.board__card[data-card-id="W-002"]').click();
+
+    const fixedEvent = page.locator(".board-drawer__event").filter({ has: page.locator(".board-drawer__event-summary", { hasText: /^attention fixed$/ }) });
+    await expect(fixedEvent.locator(".board-drawer__event-at")).toHaveText("25/09/26 19:58");
+    const summaries = await page.locator(".board-drawer__event-summary").allTextContents();
+    expect(summaries.indexOf("attention newer")).toBeLessThan(summaries.indexOf("attention fixed"));
+
+    const liveness = (await page.locator(".board__liveness").textContent())?.replace(/^.*updated\s+/, "") ?? "";
+    const colophonLine = (await page.locator(".board footer > div").nth(1).textContent()) ?? "";
+    const generatedAt = colophonLine.split(" · ").at(-1) ?? "";
+    const atRecord = page.locator(".board-drawer__record-row").filter({ has: page.locator(".board-drawer__record-label", { hasText: /^at$/ }) });
+    const recordAt = (await atRecord.locator(".board-drawer__record-value").textContent()) ?? "";
+    const eventAt = (await fixedEvent.locator(".board-drawer__event-at").textContent()) ?? "";
+    for (const [name, value] of [
+      ["liveness", liveness],
+      ["colophon", generatedAt],
+      ["event", eventAt],
+      ["record at", recordAt],
+    ] as const) {
+      expect(value, name).toMatch(/^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/);
+      expect(value, name).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+      expect(value, name).not.toMatch(/Z$/);
+    }
+
+    await expect(page.locator('.board__card[data-card-id="W-002"] .board__card-title')).toHaveText(sourceTitle);
+    await expect(page.locator(".board-drawer__record-body")).toHaveText(sourceBody);
+    const nextRecord = page.locator(".board-drawer__record-row").filter({ has: page.locator(".board-drawer__record-label", { hasText: /^next$/ }) });
+    await expect(nextRecord.locator(".board-drawer__record-value")).toHaveText(sourceNext);
+
+    const allocation = await fixedEvent.evaluate((row) => {
+      const at = row.querySelector<HTMLElement>(".board-drawer__event-at")!;
+      const summary = row.querySelector<HTMLElement>(".board-drawer__event-summary")!;
+      const rowBox = row.getBoundingClientRect();
+      const atBox = at.getBoundingClientRect();
+      const summaryBox = summary.getBoundingClientRect();
+      const gap = Number.parseFloat(getComputedStyle(row).columnGap);
+      return {
+        atWidth: atBox.width,
+        atFlexBasis: getComputedStyle(at).flexBasis,
+        atWhiteSpace: getComputedStyle(at).whiteSpace,
+        atClientWidth: at.clientWidth,
+        atScrollWidth: at.scrollWidth,
+        textLength: at.textContent?.length ?? 0,
+        rowWidth: rowBox.width,
+        summaryWidth: summaryBox.width,
+        gap,
+      };
+    });
+    expect(allocation.atWidth).toBeCloseTo(112, 0);
+    expect(allocation.atFlexBasis).toBe("112px");
+    expect(allocation.atWhiteSpace).toBe("nowrap");
+    expect(allocation.textLength).toBe(14);
+    expect(allocation.atScrollWidth).toBeLessThanOrEqual(allocation.atClientWidth);
+    expect(allocation.summaryWidth).toBeCloseTo(allocation.rowWidth - allocation.atWidth - allocation.gap, 0);
+  });
+});
+
+test.describe("W-087 behaviour 4: the pushed drawer never covers reachable terminal columns", () => {
+  let served: ServedInstance;
+  test.afterEach(async () => {
+    await served?.close();
+  });
+
+  test("the binding breakpoint table, terminal reachability and both focus-return paths hold", async ({ page }) => {
+    test.setTimeout(60_000);
+    served = await startServed("w087-pushed-drawer");
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openBoard(page, served);
+
+    const widths = [
+      { viewport: 1440, board: 680, main: 1220, close: "escape" },
+      { viewport: 800, board: 188, main: 728, close: "escape" },
+      { viewport: 900, board: 140, main: 680, close: "escape" },
+      { viewport: 613, board: 1, main: 541, close: "escape" },
+      { viewport: 612, board: 0, main: 540, close: "escape" },
+      { viewport: 606, board: 0, main: 534, close: "escape" },
+      { viewport: 600, board: 0, main: 528, close: "escape" },
+      { viewport: 390, board: 0, main: 390, close: "button" },
+    ] as const;
+
+    for (const row of widths) {
+      await page.setViewportSize({ width: row.viewport, height: 900 });
+      const source = page.locator('.board__card[data-card-id="W-002"]');
+      await source.scrollIntoViewIfNeeded();
+      await source.focus();
+      const columns = page.locator(".board__columns");
+      await columns.evaluate((el) => {
+        el.scrollLeft = Math.min(137, Math.max(0, el.scrollWidth - el.clientWidth));
+      });
+      const beforeOpenScroll = await columns.evaluate((el) => el.scrollLeft);
+      const fullWidth = await page.locator(".board").evaluate((el) => el.getBoundingClientRect().width);
+      expect(fullWidth).toBeCloseTo(row.main, 0);
+      await page.evaluate(() => {
+        const holder = window as typeof window & { __w087Board?: Element | null };
+        holder.__w087Board = document.querySelector(".board");
+      });
+
+      await page.keyboard.press("Enter");
+      const close = page.locator(".board-drawer__close");
+      await expect(close).toBeVisible();
+      await expect(close).toBeFocused();
+      const geometry = await page.evaluate(() => {
+        const workspace = document.querySelector(".board-workspace");
+        const board = document.querySelector(".board");
+        const drawer = document.querySelector(".board-drawer");
+        if (!workspace || !board || !drawer) return null;
+        const workspaceBox = workspace.getBoundingClientRect();
+        const boardBox = board.getBoundingClientRect();
+        const drawerBox = drawer.getBoundingClientRect();
+        const holder = window as typeof window & { __w087Board?: Element | null };
+        return {
+          workspaceWidth: workspaceBox.width,
+          boardWidth: boardBox.width,
+          boardRight: boardBox.right,
+          drawerLeft: drawerBox.left,
+          sameBoard: holder.__w087Board === board,
+        };
+      });
+      expect(geometry).not.toBeNull();
+      expect(geometry?.workspaceWidth).toBeCloseTo(row.main, 0);
+      expect(geometry?.boardWidth).toBeCloseTo(row.board, 0);
+      expect(Math.abs((geometry?.boardRight ?? 0) - (geometry?.drawerLeft ?? 0))).toBeLessThanOrEqual(1);
+      expect(geometry?.sameBoard).toBe(true);
+
+      if (row.viewport === 1440) {
+        const needsYou = page.locator('.board__column[data-column-id="needs_you"]');
+        await expect(needsYou).toBeVisible();
+        expect(await needsYou.evaluate((el) => getComputedStyle(el).position)).toBe("sticky");
+        for (const terminal of ["done", "halted"]) {
+          const terminalColumn = page.locator(`.board__column[data-column-id="${terminal}"]`);
+          await columns.evaluate((el, id) => {
+            const target = el.querySelector<HTMLElement>(`.board__column[data-column-id="${id}"]`)!;
+            el.scrollLeft = target.offsetLeft + target.offsetWidth - el.clientWidth + 24;
+          }, terminal);
+          await expect(terminalColumn).toBeVisible();
+          const boxes = await page.evaluate((id) => {
+            const pinned = document.querySelector('.board__column[data-column-id="needs_you"]')?.getBoundingClientRect();
+            const terminalBox = document.querySelector(`.board__column[data-column-id="${id}"]`)?.getBoundingClientRect();
+            const drawer = document.querySelector(".board-drawer")?.getBoundingClientRect();
+            return pinned && terminalBox && drawer ? { pinnedRight: pinned.right, terminalLeft: terminalBox.left, terminalRight: terminalBox.right, drawerLeft: drawer.left } : null;
+          }, terminal);
+          expect(boxes).not.toBeNull();
+          expect((boxes?.terminalLeft ?? 0) + 1).toBeGreaterThanOrEqual(boxes?.pinnedRight ?? Number.POSITIVE_INFINITY);
+          expect(boxes?.terminalRight ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual((boxes?.drawerLeft ?? 0) + 1);
+        }
+      }
+
+      if (row.close === "escape") await page.keyboard.press("Escape");
+      else await close.click();
+      await expect(page.locator(".board-drawer")).toBeHidden();
+      await expect(source).toBeFocused();
+      expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+      expect(await page.locator(".board").evaluate((el) => el.getBoundingClientRect().width)).toBeCloseTo(row.main, 0);
+      expect(await columns.evaluate((el) => el.scrollLeft)).toBeCloseTo(beforeOpenScroll, 0);
+    }
+
+    // The established reconciliation fallback is part of the focus contract:
+    // if the source leaves its column, focus lands on that column's nearest
+    // remaining card (or its head), never on document.body.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    const inProgress = page.locator('.board__column[data-column-id="in_progress"]');
+    const beforeIds = await inProgress.locator(".board__card").evaluateAll((els) => els.map((el) => el.getAttribute("data-card-id")));
+    const expectedFallback = beforeIds.find((id) => id !== "W-002");
+    const columns = page.locator(".board__columns");
+    const source = page.locator('.board__card[data-card-id="W-002"]');
+    await source.scrollIntoViewIfNeeded();
+    await source.focus();
+    const beforeOpenScroll = await columns.evaluate((el) => el.scrollLeft);
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".board-drawer__close")).toBeFocused();
+    setOpusState(served.studioDir, "W-002", "building", "review");
+    await forcePoll(served);
+    await expect(page.locator(".board-drawer")).toBeHidden({ timeout: 11_000 });
+    if (expectedFallback) await expect(inProgress.locator(`.board__card[data-card-id="${expectedFallback}"]`)).toBeFocused();
+    else await expect(inProgress.locator(".board__column-head")).toBeFocused();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(false);
+    expect(await columns.evaluate((el) => el.scrollLeft)).toBeCloseTo(beforeOpenScroll, 0);
   });
 });

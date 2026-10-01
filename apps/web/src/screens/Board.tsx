@@ -268,7 +268,7 @@ export function Board(): JSX.Element {
     // Reads current state entirely through refs.
   }, []);
 
-  const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
+  const detail = selected ? drawerDetail(opera.find((o) => o.id === selected.id) ?? { id: selected.id, title: selected.id, body: "", kind: "", collegium: "", sella: "", state: "", tokens: 0, probationes: {}, traditio: undefined }, officina, inbox, eventsByItem[selected.id] ?? []) : undefined;
 
   return (
     <>

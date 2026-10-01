@@ -196,6 +196,13 @@ export function reconcileTargets(selected: string | undefined): string[] {
   return selected === undefined ? base : [...base, `/api/events?item=${encodeURIComponent(selected)}`];
 }
 
+/** W-087 phase-one seam. The formatter's behaviour is supplied in phase 2;
+ *  keeping the export loadable makes the phase-one red an assertion red. */
+export function formatBoardTimestamp(value: string, timeZone?: string): string {
+  void timeZone;
+  return value;
+}
+
 /** Connection state and last successful refresh are reported SEPARATELY
  *  (ruling 10) — a connected stream that has not refreshed is not "updated".
  *  `now` is accepted for interface symmetry with a future relative-time
@@ -214,6 +221,8 @@ export interface DrawerDetail {
   state: string;
   sella?: string;
   collegium?: string;
+  /** W-087 phase-one shape seam; populated from the opus in phase 2. */
+  body: string;
   /** One row per DECLARED probatio, manifest order. `status` is the literal
    *  status WORD and is always rendered as text — never hover-only
    *  (ruling 17). */
@@ -314,6 +323,7 @@ export function drawerDetail(
     state: opus.state,
     sella: opus.sella || undefined,
     collegium: opus.collegium || undefined,
+    body: "",
     gates,
     waitingOn,
     record,

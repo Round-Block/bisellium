@@ -7,8 +7,10 @@ import {
   boardModel,
   boardNeedsRefetch,
   cardRow,
+  drawerDetail,
   drawerNeedsRefetch,
   EXCLUDED_PHASES,
+  formatBoardTimestamp,
   gateRow,
   humanGateIds,
   liveLabel,
@@ -46,6 +48,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   return {
     id: "W-100",
     title: "a title",
+    body: "",
     kind: "task",
     collegium: "engineering",
     sella: "builder-a",
@@ -273,13 +276,21 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
 // ===========================================================================
 
 {
+  check(3, "formatBoardTimestamp: Singapore", formatBoardTimestamp("2026-09-25T11:58:00.000Z", "Asia/Singapore") === "25/09/26 19:58");
+  check(3, "formatBoardTimestamp: New York", formatBoardTimestamp("2026-09-25T11:58:00.000Z", "America/New_York") === "25/09/26 07:58");
+  check(3, "formatBoardTimestamp: midnight uses 00, never 24", formatBoardTimestamp("2026-09-24T16:00:00.000Z", "Asia/Singapore") === "25/09/26 00:00");
+  check(3, "formatBoardTimestamp: invalid input is an em dash", formatBoardTimestamp("not-a-date", "Asia/Singapore") === "—");
+}
+
+{
   const now = new Date("2026-09-25T12:00:00.000Z");
   const connectedNoRefresh = liveLabel({ connected: true, now });
   check(3, "liveLabel: connected, no refresh — says connected", connectedNoRefresh.length > 0, connectedNoRefresh);
   check(3, "liveLabel: connected, no refresh — never says updated", !connectedNoRefresh.includes("updated"), connectedNoRefresh);
 
   const connectedWithRefresh = liveLabel({ connected: true, lastRefreshAt: "2026-09-25T11:58:00.000Z", now });
-  check(3, "liveLabel: renders lastRefreshAt", connectedWithRefresh.includes("2026-09-25T11:58:00.000Z"), connectedWithRefresh);
+  check(3, "liveLabel: renders lastRefreshAt in the Board timestamp shape", /updated \d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/.test(connectedWithRefresh), connectedWithRefresh);
+  check(3, "liveLabel: never leaks the raw ISO timestamp", !connectedWithRefresh.includes("2026-09-25T11:58:00.000Z"), connectedWithRefresh);
   check(3, "liveLabel: never renders `now` instead", !connectedWithRefresh.includes("2026-09-25T12:00:00.000Z"), connectedWithRefresh);
 
   const disconnected = liveLabel({ connected: false, lastRefreshAt: "2026-09-25T11:58:00.000Z", now });
@@ -288,6 +299,28 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
 
   const bad = liveLabel({ connected: true, lastRefreshAt: "not-a-date", now });
   check(3, "liveLabel: an unparseable lastRefreshAt degrades, never 'Invalid Date'", !bad.includes("Invalid Date"), bad);
+}
+
+// Formatting happens after the established raw-timestamp ordering. These
+// instants deliberately sort in the opposite order if their DD/MM/YY display
+// strings are used as keys. Only the structured traditio `at` is formatted;
+// ISO-looking free text remains byte-faithful.
+{
+  const fixed = "2026-09-25T11:58:00.000Z";
+  const newer = "2026-10-01T00:01:00.000Z";
+  const detail = drawerDetail(
+    opus({ traditio: { at: fixed, next: `keep ${fixed} verbatim` } }),
+    { probationes: [] },
+    { petitiones: [] },
+    [
+      { name: "workflow.attention", ts: fixed, attrs: { "workflow.attention.event": "fixed" } },
+      { name: "workflow.attention", ts: newer, attrs: { "workflow.attention.event": "newer" } },
+    ],
+  );
+  check(3, "drawerDetail: newest-first remains based on raw machine order", JSON.stringify(detail.events.map((e) => e.summary)) === JSON.stringify(["attention newer", "attention fixed"]), JSON.stringify(detail.events));
+  check(3, "drawerDetail: event displays use the Board timestamp shape", detail.events.every((e) => /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/.test(e.at)), JSON.stringify(detail.events));
+  check(3, "drawerDetail: structured traditio at uses the Board timestamp shape", /^\d{2}\/\d{2}\/\d{2} \d{2}:\d{2}$/.test(detail.record.find((r) => r.label === "at")?.value ?? ""), JSON.stringify(detail.record));
+  check(3, "drawerDetail: ISO-looking traditio free text remains verbatim", detail.record.find((r) => r.label === "next")?.value === `keep ${fixed} verbatim`, JSON.stringify(detail.record));
 }
 
 {
