@@ -7,16 +7,17 @@
  * examples/sample-studio.
  */
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { after, test } from "node:test";
-import { readFront } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront } from "@bisellium/adapter-native";
 import { checkStudio } from "./check.js";
-import { runBranch } from "./branch.js";
+import { createOpusBranch, runBranch } from "./branch.js";
 import { runReady, runDone, runAmend } from "./lifecycle.js";
 import { newItem, runNew } from "./new.js";
+import { runVerify } from "./verify.js";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -27,6 +28,9 @@ if (behaviourAt !== -1 && (!Number.isInteger(only) || only! < 1 || only! > 7)) {
 }
 const runs = (behaviour: number): boolean => only === undefined || only === behaviour;
 const NOW = new Date("2026-10-01T12:00:00.000Z");
+const repoArg = argv.find((arg, index) => arg !== "--behaviour" && (index === 0 || argv[index - 1] !== "--behaviour"));
+const sourceRepo = resolve(repoArg ?? ".");
+const bootstrapScript = join(sourceRepo, "scripts", "bootstrap-w096-baseline.ts");
 
 const roots: string[] = [];
 function scratch(tag: string): string {
@@ -105,8 +109,134 @@ function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 }
 
+function commitAll(root: string, message: string): string {
+  git(root, ["add", "-A"]);
+  git(root, ["commit", "-q", "-m", message]);
+  return git(root, ["rev-parse", "HEAD"]);
+}
+
+interface BootstrapFixture {
+  repo: string;
+  studio: string;
+  baseline: string;
+}
+
+interface BootstrapRun {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
+
+function assertionRed(behaviour: number): string {
+  return [
+    `# behaviour: ${behaviour}`,
+    `# command: node --test-reporter=tap --import tsx packages/cli/src/opus-model.test.ts . --behaviour ${behaviour}`,
+    "# exit: 1",
+    "# sella: builder-codex.W-096",
+    "",
+    "TAP version 13",
+    `# Subtest: W-096 behaviour ${behaviour}: fixture red`,
+    `not ok 1 - W-096 behaviour ${behaviour}: fixture red`,
+    "  ---",
+    "  code: 'ERR_ASSERTION'",
+    "  ...",
+    "1..1",
+    "# tests 1",
+    "# pass 0",
+    "# fail 1",
+    "",
+  ].join("\n");
+}
+
+/** A wholly synthetic historical W-096 branch; no fixture state is cloned. */
+function bootstrapFixture(tag: string): BootstrapFixture {
+  const repo = scratch(`bootstrap-${tag}`);
+  git(repo, ["init", "-q", "-b", "master"]);
+  git(repo, ["config", "user.name", "W-096 Test"]);
+  git(repo, ["config", "user.email", "w096@example.invalid"]);
+  const studio = join(repo, "studio");
+  writeManifest(studio, ['- { id: spec, name: Specification, kind: agent }']);
+  writeFileSync(
+    join(studio, "briefs", "W-096.md"),
+    ["# W-096", "", "## Behaviours to test", "", ...Array.from({ length: 7 }, (_, index) => `${index + 1}. Fixture behaviour.`), ""].join("\n"),
+  );
+  writeOpus(studio, "W-094", [
+    'title: "first protected fixture record"',
+    "kind: task",
+    "collegium: engineering",
+    "state: backlog",
+    "probationes: {}",
+  ]);
+  writeOpus(studio, "W-095", [
+    'title: "second protected fixture record"',
+    "kind: bug",
+    "collegium: engineering",
+    "state: backlog",
+    "probationes: {}",
+  ]);
+  writeOpus(studio, "W-096", [
+    'title: "already building one-time bootstrap fixture"',
+    "kind: opus",
+    "collegium: design",
+    "state: building",
+    'probationes: { spec: { sella: architect, status: passed, evidence: "briefs/W-096.md", at: 2026-10-01T11:00:00.000Z } }',
+    "spec: briefs/W-096.md",
+    'traditio: { sella: architect, stage: building, next: "fixture", blocked_on: none, at: 2026-10-01T11:00:00.000Z }',
+  ]);
+  const reds = join(studio, "ci", "reds", "W-096");
+  mkdirSync(reds, { recursive: true });
+  for (let behaviour = 1; behaviour <= 7; behaviour++)
+    writeFileSync(join(reds, `${String(behaviour).padStart(2, "0")}.log`), assertionRed(behaviour));
+  writeFileSync(join(repo, "source.txt"), "reviewed trunk\n");
+  const baseline = commitAll(repo, "test: establish reviewed W-096 trunk");
+
+  const origin = scratch(`bootstrap-${tag}-origin`);
+  git(origin, ["init", "-q", "--bare"]);
+  git(repo, ["remote", "add", "origin", origin]);
+  git(repo, ["push", "-q", "-u", "origin", "master"]);
+  git(repo, ["switch", "-q", "-c", "opus/W-096"]);
+  writeFileSync(join(repo, "implementation.txt"), "historical branch work\n");
+  commitAll(repo, "test: establish already-building W-096 branch");
+  return { repo, studio, baseline };
+}
+
+function runBootstrap(fixture: BootstrapFixture): BootstrapRun {
+  // A missing implementation is a successful no-op so the red is always an
+  // assertion about pin/refusal behaviour, never a loader or spawn failure.
+  if (!existsSync(bootstrapScript)) return { status: 0, stdout: "", stderr: "" };
+  const result = spawnSync(
+    process.execPath,
+    ["--import", "tsx", bootstrapScript, "--repo", fixture.repo, "--studio", fixture.studio],
+    {
+      cwd: sourceRepo,
+      encoding: "utf8",
+      env: { ...process.env, BISELLIUM_W096_BOOTSTRAP_EXPECTED_BASE: fixture.baseline },
+      timeout: 30_000,
+    },
+  );
+  return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? result.error?.message ?? "" };
+}
+
+function bootstrapRecord(fixture: BootstrapFixture): string {
+  return join(fixture.studio, "opera", "W-096.md");
+}
+
+function expectBootstrapRefusal(
+  problems: string[],
+  name: string,
+  prepare: (fixture: BootstrapFixture) => void,
+): void {
+  const fixture = bootstrapFixture(name.replaceAll(" ", "-"));
+  prepare(fixture);
+  const before = readFileSync(bootstrapRecord(fixture), "utf8");
+  const result = runBootstrap(fixture);
+  const after = readFileSync(bootstrapRecord(fixture), "utf8");
+  if (result.status === 0) problems.push(`bootstrap did not refuse: ${name}`);
+  if (after !== before) problems.push(`bootstrap mutated the record after refusing: ${name}`);
+}
+
 if (runs(1)) {
-  test("W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk", () => {
+  test("W-096 behaviour 1: native kinds are closed and branch creation pins the reviewed trunk", async () => {
     const root = scratch("b1-kinds");
     writeManifest(root);
     writeOpus(root, "W-001", [
@@ -159,6 +289,91 @@ if (runs(1)) {
     writeFileSync(join(studio, "opera", "W-095.md"), `${readFileSync(join(studio, "opera", "W-095.md"), "utf8")}tampered\n`);
     const preservationRule = checkStudio(studio, NOW, { repo }).findings.some((finding) => finding.rule === "opus.records_unchanged");
 
+    const bootstrapProblems: string[] = [];
+    const positive = bootstrapFixture("positive");
+    const positivePath = bootstrapRecord(positive);
+    const positiveBeforeRaw = readFileSync(positivePath, "utf8");
+    const positiveBefore = parseFrontMatter<Record<string, unknown>>(positiveBeforeRaw, positivePath);
+    const positiveResult = runBootstrap(positive);
+    const positiveAfterRaw = readFileSync(positivePath, "utf8");
+    const positiveAfter = parseFrontMatter<Record<string, unknown>>(positiveAfterRaw, positivePath);
+    const { baseline_commit: bootstrapPin, ...positiveAfterWithoutPin } = positiveAfter.data;
+    if (positiveResult.status !== 0 || bootstrapPin !== positive.baseline)
+      bootstrapProblems.push(`bootstrap did not pin: ${`${positiveResult.stdout}${positiveResult.stderr}`.trim() || "no result"}`);
+    if (
+      bootstrapPin === positive.baseline &&
+      (JSON.stringify(positiveAfterWithoutPin) !== JSON.stringify(positiveBefore.data) || positiveAfter.body !== positiveBefore.body)
+    ) bootstrapProblems.push("bootstrap changed more than baseline_commit");
+    if (bootstrapPin === positive.baseline && git(positive.repo, ["status", "--porcelain"]) !== "M studio/opera/W-096.md")
+      bootstrapProblems.push("bootstrap dirtied paths other than the W-096 record");
+    if (bootstrapPin === positive.baseline) {
+      commitAll(positive.repo, "test: commit one-time W-096 baseline bootstrap");
+      const ordinaryCheck = checkStudio(positive.studio, NOW, { repo: positive.repo });
+      if (!ordinaryCheck.ok)
+        bootstrapProblems.push(`ordinary check rejected the bootstrap: ${JSON.stringify(ordinaryCheck.findings.filter((finding) => finding.level === "block"))}`);
+      const verified = await runVerify(["W-096", "--studio", positive.studio, "--repo", positive.repo]);
+      if (verified.exitCode !== 0) bootstrapProblems.push(`ordinary verify rejected the bootstrap: exit ${verified.exitCode}`);
+    }
+
+    expectBootstrapRefusal(bootstrapProblems, "wrong branch", (fixture) => {
+      git(fixture.repo, ["switch", "-q", "-c", "not-the-owner"]);
+    });
+    expectBootstrapRefusal(bootstrapProblems, "wrong record", (fixture) => {
+      const path = bootstrapRecord(fixture);
+      writeFileSync(path, readFileSync(path, "utf8").replace('id: "W-096"', 'id: "W-097"'));
+      commitAll(fixture.repo, "test: put the wrong record at the W-096 path");
+    });
+    expectBootstrapRefusal(bootstrapProblems, "dirty checkout", (fixture) => {
+      writeFileSync(join(fixture.repo, "untracked.txt"), "dirty\n");
+    });
+    expectBootstrapRefusal(bootstrapProblems, "mismatched merge-base", (fixture) => {
+      git(fixture.repo, ["update-ref", "refs/remotes/origin/master", "HEAD"]);
+    });
+    expectBootstrapRefusal(bootstrapProblems, "ambiguous merge-base", (fixture) => {
+      const tree = git(fixture.repo, ["rev-parse", "HEAD^{tree}"]);
+      const commitTree = (message: string, parents: string[]): string =>
+        git(fixture.repo, ["commit-tree", tree, ...parents.flatMap((parent) => ["-p", parent]), "-m", message]);
+      const left = commitTree("left", [fixture.baseline]);
+      const right = commitTree("right", [fixture.baseline]);
+      const head = commitTree("head merge", [left, right]);
+      const trunk = commitTree("trunk merge", [right, left]);
+      git(fixture.repo, ["reset", "-q", "--hard", head]);
+      git(fixture.repo, ["update-ref", "refs/remotes/origin/master", trunk]);
+      assert.equal(git(fixture.repo, ["merge-base", "--all", "HEAD", "origin/master"]).split("\n").length, 2);
+    });
+    expectBootstrapRefusal(bootstrapProblems, "unavailable refs", (fixture) => {
+      git(fixture.repo, ["update-ref", "-d", "refs/remotes/origin/master"]);
+    });
+    expectBootstrapRefusal(bootstrapProblems, "unavailable history", (fixture) => {
+      writeFileSync(join(fixture.repo, ".git", "shallow"), `${git(fixture.repo, ["rev-parse", "HEAD"])}\n`);
+    });
+    expectBootstrapRefusal(bootstrapProblems, "previous pin", (fixture) => {
+      const path = bootstrapRecord(fixture);
+      const original = readFileSync(path, "utf8");
+      writeFileSync(path, original.replace('id: "W-096"\n', `id: "W-096"\nbaseline_commit: ${fixture.baseline}\n`));
+      commitAll(fixture.repo, "test: introduce a historical pin");
+      writeFileSync(path, original);
+      commitAll(fixture.repo, "test: remove the historical pin");
+    });
+    expectBootstrapRefusal(bootstrapProblems, "present pin", (fixture) => {
+      const path = bootstrapRecord(fixture);
+      writeFileSync(
+        path,
+        readFileSync(path, "utf8").replace('id: "W-096"\n', `id: "W-096"\nbaseline_commit: ${fixture.baseline}\n`),
+      );
+      commitAll(fixture.repo, "test: record an existing pin");
+    });
+    expectBootstrapRefusal(bootstrapProblems, "changed protected records", (fixture) => {
+      const protectedPath = join(fixture.studio, "opera", "W-095.md");
+      writeFileSync(protectedPath, `${readFileSync(protectedPath, "utf8")}changed\n`);
+      commitAll(fixture.repo, "test: change a protected record");
+    });
+
+    const ordinary = bootstrapFixture("ordinary-duplicate");
+    createOpusBranch(ordinary.repo, "W-096-ordinary");
+    if (createOpusBranch(ordinary.repo, "W-096-ordinary").ok)
+      bootstrapProblems.push("ordinary branch writer did not refuse its existing branch");
+
     assert.deepEqual(
       {
         diskKindRule: rules(root, "W-001").includes("opus.kind"),
@@ -181,6 +396,7 @@ if (runs(1)) {
         preservationRule: true,
       },
     );
+    assert.equal(bootstrapProblems.length, 0, bootstrapProblems.join("; "));
   });
 }
 

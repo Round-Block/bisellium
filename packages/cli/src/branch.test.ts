@@ -6,16 +6,13 @@
  * packages/commands/src/run.test.ts since it lives in run.ts). Numbers
  * outside 1-7 (0, 8, 9) are extra regression coverage, not brief behaviours.
  */
-import { execFileSync, execSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
-import { parseFrontMatter } from "@bisellium/adapter-native";
-import type { MergePipeline } from "@bisellium/pipeline";
 import { sourceTreeHash } from "@bisellium/shim";
 import { createOpusBranch, createW096Branch, mergeOpusBranch, opusBranchName } from "./branch.js";
 import { checkStudio } from "./check.js";
-import { runVerify } from "./verify.js";
 
 let failed = 0;
 const only = process.argv[3] !== undefined ? Number(process.argv[3]) : undefined;
@@ -85,7 +82,6 @@ function masterLog(dir: string): string {
   return execSync("git log --oneline master", { cwd: dir, encoding: "utf8" });
 }
 
-if (only !== 33) {
 // behaviour 0: opusBranchName produces the right format
 {
   check(0, "opusBranchName('W-026') === 'opus/W-026'", opusBranchName("W-026") === "opus/W-026");
@@ -1214,189 +1210,4 @@ function originMasterRev(bare: string): string {
     rmSync(dir, { recursive: true, force: true });
   }
 }
-}
-
-// W-096 revision 7: the kept one-off bootstrap operates only on disposable
-// clones of this repository.  The script itself stays outside those clones,
-// so the pre-implementation run can reach assertion-level failures without
-// trying to import a file that does not exist yet.
-const W096_BASELINE = "0935d518d576f5e1cf81079d631b8b10a5d76742";
-const sourceRepo = resolve(process.argv[2] ?? ".");
-const bootstrapScript = join(sourceRepo, "scripts", "bootstrap-w096-baseline.ts");
-
-function tmpW096BootstrapRepo(): string {
-  const parent = mkdtempSync(join(tmpdir(), "bisellium-w096-bootstrap-"));
-  const dir = join(parent, "repo");
-  execFileSync("git", ["clone", "-q", "--shared", "--branch", "opus/W-096", sourceRepo, dir], { stdio: "pipe" });
-  execFileSync("git", ["config", "user.name", "test"], { cwd: dir, stdio: "pipe" });
-  execFileSync("git", ["config", "user.email", "test@test"], { cwd: dir, stdio: "pipe" });
-  return dir;
-}
-
-function commitAll(dir: string, message: string): void {
-  execFileSync("git", ["add", "-A"], { cwd: dir, stdio: "pipe" });
-  execFileSync("git", ["commit", "-q", "-m", message], { cwd: dir, stdio: "pipe" });
-}
-
-function runW096Bootstrap(dir: string): { status: number | null; stdout: string; stderr: string } {
-  // Deliberately model an unimplemented bootstrap as a successful no-op.
-  // That makes both success and refusal expectations fail as assertions in
-  // this test file, rather than failing Node's module loader.
-  if (!existsSync(bootstrapScript)) return { status: 0, stdout: "", stderr: "" };
-  const run = spawnSync(
-    process.execPath,
-    ["--import", "tsx", bootstrapScript, "--repo", dir, "--studio", join(dir, "studio")],
-    { cwd: sourceRepo, encoding: "utf8", timeout: 30_000 },
-  );
-  return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
-}
-
-function recordPath(dir: string): string {
-  return join(dir, "studio", "opera", "W-096.md");
-}
-
-function bootstrapRefusal(name: string, prepare: (dir: string) => void): void {
-  const dir = tmpW096BootstrapRepo();
-  try {
-    prepare(dir);
-    const before = readFileSync(recordPath(dir), "utf8");
-    const result = runW096Bootstrap(dir);
-    const after = readFileSync(recordPath(dir), "utf8");
-    check(33, `${name}: refuses`, result.status !== 0, `${result.stdout}${result.stderr}`.trim());
-    check(33, `${name}: leaves the record byte-identical`, after === before);
-  } finally {
-    rmSync(resolve(dir, ".."), { recursive: true, force: true });
-  }
-}
-
-// The historical branch already exists and W-096 is already building.  The
-// bootstrap changes only baseline_commit; after that write is committed, the
-// ordinary checker and verifier apply their normal preservation predicate.
-{
-  const dir = tmpW096BootstrapRepo();
-  const studio = join(dir, "studio");
-  try {
-    // Remove unrelated legacy petition debt so this disposable studio is a
-    // positive control for the complete ordinary check, not merely its
-    // opus.records_unchanged finding.
-    rmSync(join(studio, "petitiones"), { recursive: true, force: true });
-    commitAll(dir, "test: remove unrelated fixture petition debt");
-    const beforeRaw = readFileSync(recordPath(dir), "utf8");
-    const before = parseFrontMatter<Record<string, unknown>>(beforeRaw, recordPath(dir));
-    const result = runW096Bootstrap(dir);
-    const afterRaw = readFileSync(recordPath(dir), "utf8");
-    const after = parseFrontMatter<Record<string, unknown>>(afterRaw, recordPath(dir));
-    const { baseline_commit: pin, ...afterWithoutPin } = after.data;
-    check(33, "bootstrap pins the already-building W-096 branch", result.status === 0 && pin === W096_BASELINE, `${result.stdout}${result.stderr}`.trim());
-    check(
-      33,
-      "bootstrap changes only baseline_commit",
-      pin === W096_BASELINE && JSON.stringify(afterWithoutPin) === JSON.stringify(before.data) && after.body === before.body,
-      afterRaw,
-    );
-    check(
-      33,
-      "bootstrap leaves only the W-096 record dirty",
-      execFileSync("git", ["status", "--porcelain"], { cwd: dir, encoding: "utf8" }).trim() === "M studio/opera/W-096.md",
-    );
-    if (pin === W096_BASELINE) {
-      commitAll(dir, "test: commit one-time W-096 baseline bootstrap");
-      const ordinaryCheck = checkStudio(studio, new Date("2026-10-01T12:00:00.000Z"), { repo: dir });
-      check(33, "ordinary check passes after the committed bootstrap", ordinaryCheck.ok, JSON.stringify(ordinaryCheck.findings.filter((finding) => finding.level === "block")));
-      const passingPipeline: MergePipeline = {
-        id: "bootstrap-test",
-        async run(opts) {
-          return Object.fromEntries(
-            Object.keys(opts.commands).map((id) => [id, { status: "passed" as const, evidence: `ci/${id}.log`, certifies: `tree:${opts.treeHash}` }]),
-          );
-        },
-      };
-      const verified = await runVerify(["W-096", "--studio", studio, "--repo", dir], { pipeline: passingPipeline });
-      check(33, "ordinary verify passes after the committed bootstrap", verified.exitCode === 0, String(verified.exitCode));
-    } else {
-      check(33, "ordinary check passes after the committed bootstrap", false, "bootstrap did not write the pin");
-      check(33, "ordinary verify passes after the committed bootstrap", false, "bootstrap did not write the pin");
-    }
-  } finally {
-    rmSync(resolve(dir, ".."), { recursive: true, force: true });
-  }
-}
-
-bootstrapRefusal("bootstrap on the wrong branch", (dir) => {
-  execFileSync("git", ["switch", "-q", "-c", "not-the-owner"], { cwd: dir, stdio: "pipe" });
-});
-
-bootstrapRefusal("bootstrap with the wrong record", (dir) => {
-  writeFileSync(recordPath(dir), readFileSync(recordPath(dir), "utf8").replace('id: "W-096"', 'id: "W-097"'));
-  commitAll(dir, "test: put the wrong record at the W-096 path");
-});
-
-bootstrapRefusal("bootstrap on a dirty checkout", (dir) => {
-  writeFileSync(join(dir, "untracked.txt"), "dirty\n");
-});
-
-bootstrapRefusal("bootstrap with a mismatched merge-base", (dir) => {
-  execFileSync("git", ["update-ref", "refs/remotes/origin/master", "HEAD"], { cwd: dir, stdio: "pipe" });
-});
-
-bootstrapRefusal("bootstrap with an ambiguous merge-base", (dir) => {
-  const tree = execFileSync("git", ["rev-parse", "HEAD^{tree}"], { cwd: dir, encoding: "utf8" }).trim();
-  const commitTree = (message: string, parents: string[]): string =>
-    execFileSync("git", ["commit-tree", tree, ...parents.flatMap((parent) => ["-p", parent])], {
-      cwd: dir,
-      encoding: "utf8",
-      input: `${message}\n`,
-    }).trim();
-  const left = commitTree("left", [W096_BASELINE]);
-  const right = commitTree("right", [W096_BASELINE]);
-  const head = commitTree("head merge", [left, right]);
-  const trunk = commitTree("trunk merge", [right, left]);
-  execFileSync("git", ["reset", "-q", "--hard", head], { cwd: dir, stdio: "pipe" });
-  execFileSync("git", ["update-ref", "refs/remotes/origin/master", trunk], { cwd: dir, stdio: "pipe" });
-  const bases = execFileSync("git", ["merge-base", "--all", "HEAD", "origin/master"], { cwd: dir, encoding: "utf8" }).trim().split("\n");
-  if (bases.length !== 2) throw new Error(`test fixture expected two merge-bases, got ${bases.join(", ")}`);
-});
-
-bootstrapRefusal("bootstrap with unavailable refs", (dir) => {
-  execFileSync("git", ["update-ref", "-d", "refs/remotes/origin/master"], { cwd: dir, stdio: "pipe" });
-});
-
-bootstrapRefusal("bootstrap with unavailable history", (dir) => {
-  const head = execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir, encoding: "utf8" }).trim();
-  writeFileSync(join(dir, ".git", "shallow"), `${head}\n`);
-});
-
-bootstrapRefusal("bootstrap after a previous pin", (dir) => {
-  const original = readFileSync(recordPath(dir), "utf8");
-  writeFileSync(recordPath(dir), original.replace('id: "W-096"\n', `id: "W-096"\nbaseline_commit: ${W096_BASELINE}\n`));
-  commitAll(dir, "test: introduce a historical pin");
-  writeFileSync(recordPath(dir), original);
-  commitAll(dir, "test: remove the historical pin");
-});
-
-bootstrapRefusal("bootstrap over a present pin", (dir) => {
-  const original = readFileSync(recordPath(dir), "utf8");
-  writeFileSync(recordPath(dir), original.replace('id: "W-096"\n', `id: "W-096"\nbaseline_commit: ${W096_BASELINE}\n`));
-  commitAll(dir, "test: record an existing pin");
-});
-
-bootstrapRefusal("bootstrap with changed protected records", (dir) => {
-  const protectedRecord = join(dir, "studio", "opera", "W-001.md");
-  writeFileSync(protectedRecord, `${readFileSync(protectedRecord, "utf8")}\nchanged\n`);
-  commitAll(dir, "test: change a protected record");
-});
-
-// Revision 7 must not weaken the ordinary branch writer's pre-existing
-// duplicate-branch guard.
-{
-  const dir = tmpW096BootstrapRepo();
-  try {
-    createOpusBranch(dir, "W-096-ordinary");
-    const duplicate = createOpusBranch(dir, "W-096-ordinary");
-    check(33, "ordinary branch writer still refuses an existing branch", duplicate.ok === false, String(duplicate.error));
-  } finally {
-    rmSync(resolve(dir, ".."), { recursive: true, force: true });
-  }
-}
-
 process.exit(failed ? 1 : 0);
