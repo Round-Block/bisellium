@@ -1,0 +1,716 @@
+{
+  "curated": {
+    "cases": [
+      {
+        "id": "B6",
+        "project": "bisellium",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "B6-R1",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A1",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "B6-R2",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A2",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A3",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "B6-R3",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A4",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A5",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          }
+        ],
+        "complete": true
+      },
+      {
+        "id": "B7",
+        "project": "bisellium",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "B7-R1",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A6",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A7",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A8",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "B7-R2",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A9",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A10",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "B7-R3",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A11",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A12",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          }
+        ],
+        "complete": true
+      },
+      {
+        "id": "E6",
+        "project": "epoch0",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "E6-R1",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A13",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A14",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A15",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "E6-R2",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A16",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A17",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "E6-R3",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A18",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A19",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A20",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          }
+        ],
+        "complete": true
+      },
+      {
+        "id": "E7",
+        "project": "epoch0",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "E7-R1",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A21",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A22",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "E7-R2",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A23",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A24",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A25",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "E7-R3",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A26",
+                "type": "metadataCriterion",
+                "covered": true
+              }
+            ]
+          }
+        ],
+        "complete": true
+      },
+      {
+        "id": "Y6",
+        "project": "yan-mo",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "Y6-R1",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A27",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A28",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A29",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "Y6-R2",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A30",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A31",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A32",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "Y6-R3",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A33",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A34",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          }
+        ],
+        "complete": true
+      },
+      {
+        "id": "Y7",
+        "project": "yan-mo",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "Y7-R1",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A35",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A36",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          },
+          {
+            "id": "Y7-R2",
+            "covered": true,
+            "anchors": [
+              {
+                "id": "A37",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A38",
+                "type": "sourceText",
+                "covered": true
+              },
+              {
+                "id": "A39",
+                "type": "sourceText",
+                "covered": true
+              }
+            ]
+          }
+        ],
+        "complete": true
+      }
+    ],
+    "coveredRequirements": 17,
+    "totalRequirements": 17,
+    "coveredAnchors": 39,
+    "totalAnchors": 39,
+    "completeCases": 6,
+    "sourceAndQuestionIdentityChecksPassing": true
+  },
+  "empty": {
+    "cases": [
+      {
+        "id": "B6",
+        "project": "bisellium",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "B6-R1",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A1",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "B6-R2",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A2",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A3",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "B6-R3",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A4",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A5",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          }
+        ],
+        "complete": false
+      },
+      {
+        "id": "B7",
+        "project": "bisellium",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "B7-R1",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A6",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A7",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A8",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "B7-R2",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A9",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A10",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "B7-R3",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A11",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A12",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          }
+        ],
+        "complete": false
+      },
+      {
+        "id": "E6",
+        "project": "epoch0",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "E6-R1",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A13",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A14",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A15",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "E6-R2",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A16",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A17",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "E6-R3",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A18",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A19",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A20",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          }
+        ],
+        "complete": false
+      },
+      {
+        "id": "E7",
+        "project": "epoch0",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "E7-R1",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A21",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A22",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "E7-R2",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A23",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A24",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A25",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "E7-R3",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A26",
+                "type": "metadataCriterion",
+                "covered": false
+              }
+            ]
+          }
+        ],
+        "complete": false
+      },
+      {
+        "id": "Y6",
+        "project": "yan-mo",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "Y6-R1",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A27",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A28",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A29",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "Y6-R2",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A30",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A31",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A32",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "Y6-R3",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A33",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A34",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          }
+        ],
+        "complete": false
+      },
+      {
+        "id": "Y7",
+        "project": "yan-mo",
+        "identity": true,
+        "requirements": [
+          {
+            "id": "Y7-R1",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A35",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A36",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          },
+          {
+            "id": "Y7-R2",
+            "covered": false,
+            "anchors": [
+              {
+                "id": "A37",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A38",
+                "type": "sourceText",
+                "covered": false
+              },
+              {
+                "id": "A39",
+                "type": "sourceText",
+                "covered": false
+              }
+            ]
+          }
+        ],
+        "complete": false
+      }
+    ],
+    "coveredRequirements": 0,
+    "totalRequirements": 17,
+    "coveredAnchors": 0,
+    "totalAnchors": 39,
+    "completeCases": 0,
+    "sourceAndQuestionIdentityChecksPassing": true
+  },
+  "masks": 39,
+  "masksDetected": 39,
+  "allRemovalMasksDetected": true,
+  "sourceAndQuestionIdentityChecksPassing": true
+}

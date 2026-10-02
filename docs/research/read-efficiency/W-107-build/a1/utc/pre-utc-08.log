@@ -1,0 +1,24 @@
+# behaviour: 8
+# command: node docs/research/read-efficiency/targeted-read-eval-a1.test.mjs .
+# exit: 1
+# at: 2026-09-28T15:41:42.662Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b8/A1 nonempty scalar preparation validates                                          {"version":1,"status":"INVALID","errorCodes":["MANIFEST"],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"c688009b3d17d1271e7c354d5455dad75e9d0bdf0487033fe4394255a95ac753"}}
+
+FAIL  b8/A1 empty/object/array/null/omitted preparation fail closed                        1,0,0,1,1
+FAIL  b8/A1 duplicate anchor identity is rejected                                          {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"d1b7a93055195efdf70133f78ec5aeb07f88d44884b9f5455057bdc234816049","manifest":"af60c909517121bcc0f7670a972d23ee1aa7a45e3bd5715323bd157e4e125356"}}
+
+FAIL  b8/A1 anchor must belong to its owning case project                                  {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"431b2914b180739165cb16e769c9607d0a573090f51eabf56410a8b01f8ff52d","manifest":"7c58e55c0499a1d7d1f0a196d7746b1feb49a7aabac555248ae95262b24e28c5"}}
+
+FAIL  b8/A1 oversized coverage requires a cited file over 4096 code points                 {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"68578fec614f4c717d15a230d5bda78f4a5eea0f79b517f494bf2c341299678e","manifest":"5a4fcd0a029535989d45f9d9b35058addb3bc5555502b370e75c18dbfc4a6a80"}}
+
+FAIL  b8/A1 registry requires the three named evaluation projects                          {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"cc454ceb389dece8d4de1d6ec9bb41ef8534b680c2967e58c6f3658adb8115b4","cases":"3dddba6ec254cd246c56a298df7d4d282d90709c69c06b90627ca7cbd1a372e7","keyCommitment":"3845144700021560b7d2db169eb9444aaafd1d9ee56c9fbe1c76ba94464818c8","manifest":"5512d1acb5891bfa6a14ee847955bf12bd2f816f2c943b78fe6b8563a32fe642"}}
+
+FAIL  b8/A1 preparedAt requires UTC Z form                                                 {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"836464cfd6b2232b305b082cc43fb408622ee511ba58979076d4ae9a6270f09f"}}
+
+FAIL  b8/A1 lexically traversing snapshotPath is rejected                                  {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"52bceb7b96cda057752e73de976c21592ddc58c67c2e667c7040e7a565aa3590"}}
+
+FAIL  b8/A1 symlink snapshotPath is rejected even when target is in root                   {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"337fd2aa0161872ac2f38fe56183e67999da691af283ee276e0d426496d64fae","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"09dd059941c7e24ef44f2d825b3a684e272df3d2213de86d1cfbf6881ca3d5bc"}}
+

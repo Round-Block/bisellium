@@ -1,0 +1,18 @@
+# opus: W-105
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-28T09:27:27.185Z
+# tree: dirty:bcba8c7a84ddd007cd162251e3fc7a19843d2da5
+
+FAIL
+
+Blocking finding:
+
+- scorePackets (maps-repair-driver.mjs:270) does not refuse identity mismatches. Source SHA/path/repository/position mismatches merely become uncovered anchors, while question/project mismatches return a score with identity: false. Worse, a wrong source SHA still reports sourceAndQuestionIdentityChecksPassing: true. This can misclassify source drift as retrieval failure and violates the signed brief’s required nonzero refusal on hash or identity mismatch. Add focused reds and make every required identity mismatch stop scoring with a concrete error.
+
+Independent checks otherwise passed: focused tests 9/9; replay had zero semantic differences and eight permitted score deltas, maximum 3.552713678800501e-15; controls were 17/17 curated, 0/17 empty, and 39/39 masks; the 15-file freeze verified under Node v25.9.0. The worktree remains clean.
+
+For fresh execution, root cwd with the absolute frozen driver and absolute root research output directory works. Use the exact frozen harness path or separately freeze the root checkout copy. Key line and character coordinates are one-based UTF-16 positions with an exclusive end.

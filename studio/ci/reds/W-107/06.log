@@ -1,0 +1,10 @@
+# behaviour: 6
+# command: node --import tsx packages/commands/src/source.test.ts . 6
+# exit: 1
+# at: 2026-09-28T14:36:41.452Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+PASS  b6 final symlink escape returns no source bytes                                   {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}
+PASS  b6 binary source never returns body bytes                                         {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}
+FAIL  b6 working content hash changes independent of HEAD                               {}

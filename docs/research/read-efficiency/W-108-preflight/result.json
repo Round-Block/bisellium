@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "kind": "w108-source-adapter-preflight",
+  "outcome": "REFUSED",
+  "reason": "EFFECTIVE_TOOL_INVENTORY_UNPROVEN",
+  "canaryExecuted": false,
+  "modelSpawns": 0,
+  "attempts": 0,
+  "calls": 0,
+  "resultBytes": 0,
+  "usage": null,
+  "deterministicOutcome": "PASS",
+  "configPreflightOutcome": "REFUSED",
+  "transcriptSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "modelEventsSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "passingThisGateAuthorizesLargerEvaluation": false
+}

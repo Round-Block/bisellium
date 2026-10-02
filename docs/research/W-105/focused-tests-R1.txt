@@ -1,0 +1,21 @@
+# command: W105_FROZEN_ROOT=/home/edckt/projects/bisellium node --test docs/research/maps-repair-driver.test.mjs
+# exit: 0
+
+✔ Behaviour 1 output containment and exclusive creation (8.196201ms)
+✔ Behaviour 2 strict source admission (3.708767ms)
+✔ Behaviour 3 passage lines and headings (1.190871ms)
+✔ Behaviour 4 UTF-16 budget and oversized omission (0.597755ms)
+✔ Behaviour 5 tokenizer IDF body and heading scores (0.180681ms)
+✔ Behaviour 6 deterministic ties caps and continue (0.25235ms)
+✔ Behaviour 7 A1 comparator bounds only finite score leaves (0.527157ms)
+✔ Behaviour 7 candidate B semantic replay (40.19275ms)
+✔ Behaviour 8 scorer refuses provable identity drift but permits missing evidence (0.800296ms)
+✔ Behaviour 8 scorer controls and separation (6.484547ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148.327287

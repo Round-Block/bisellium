@@ -1,0 +1,27 @@
+# behaviour: 4
+# command: node --import tsx docs/research/read-efficiency/W-109-public-canary.test.mjs b4 .
+# exit: 1
+# at: 2026-09-29T04:45:10.118Z
+# sella: builder-sol
+# tree: dirty:8f50fe6339e30b9e7a236173da111c2b0de9ed6d
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: stdout
+
+true !== false
+
+    at behaviour4 (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:260:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:268:30 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: true,
+  expected: false,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0

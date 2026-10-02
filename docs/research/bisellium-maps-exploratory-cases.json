@@ -1,0 +1,409 @@
+{
+  "at": "2026-09-26T14:44:12.722719+00:00",
+  "method": "Bounded literal source ranges, selected after source inspection. Counts exclude instructions, discovery, prior audit and orchestration. No runtime query implementation or independent holdout evaluation. Hashes capture files actually read.",
+  "checkouts": {
+    "bisellium": {
+      "head": "f391c2945e6af7e1a8cec1de70ca8a05a2a36408",
+      "branch": "codex/persistent-workflow",
+      "trackedDirty": false
+    },
+    "epoch0": {
+      "head": "fdbbb00ea496f6976e2ba5446d1921598cef7045",
+      "branch": "master",
+      "trackedDirty": false
+    },
+    "yan-mo": {
+      "head": "dd842eb45017c6021378ce07ea00b5069e6f097c",
+      "branch": "main",
+      "trackedDirty": true
+    }
+  },
+  "cases": [
+    {
+      "id": "B1",
+      "project": "bisellium",
+      "category": "status",
+      "question": "Is W-102 building or done, and is its recorded next action current?",
+      "expectedScopedOutcome": "Done; earlier building handoff predates review and must not be presented as current.",
+      "references": [
+        {
+          "path": "studio/opera/W-102.md",
+          "start": 6,
+          "end": 14,
+          "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+          "excerpt": "state: done\nspec: \"briefs/W-102.md\"\nprobationes: { spec: { sella: architect, status: passed, evidence: briefs/W-102.md, at: 2026-09-26T07:47:12.630Z }, tests: { status: passed, evidence: ci/W-102-tests-261460a5.log, certifies: tree:261460a57a1c6c61c8525f70a8270a92e16f671d }, lint: { status: passed, evidence: ci/W-102-lint-261460a5.log, certifies: tree:261460a57a1c6c61c8525f70a8270a92e16f671d }, types: { status: passed, evidence: ci/W-102-types-261460a5.log, certifies: tree:261460a57a1c6c61c8525f70a8270a92e16f671d }, review: { sella: qa-lead, status: passed, evidence: ci/W-102-review-1.log, at: 2026-09-26T08:18:11.706Z, model: gpt-6-astra } }\ntraditio:\n  sella: pre-reviewer\n  stage: building\n  next: Verify W-102 changed files and evidence mechanically, then return findings to producer for the sole censor gate.\n  blocked_on: none\n  at: 2026-09-26T08:06:36.425Z",
+          "excerptCharacters": 870
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 870
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "B2",
+      "project": "bisellium",
+      "category": "authority",
+      "question": "Which model and effort govern new censor dispatches?",
+      "expectedScopedOutcome": "Sol high; prospective amendment preserves older evidence.",
+      "references": [
+        {
+          "path": ".codex/agents/censor.toml",
+          "start": 1,
+          "end": 5,
+          "fileSha256": "913d6aa466ab63b6ef2de63df43d4437cdf7e8b34c2b807b2b46646f3650b587",
+          "excerpt": "name = \"censor\"\ndescription = \"The independent sole review and QA gate for an opus.\"\nmodel = \"gpt-5.6-sol\"\nmodel_reasoning_effort = \"high\"\nsandbox_mode = \"read-only\"",
+          "excerptCharacters": 165
+        },
+        {
+          "path": "studio/decisions/D-014.md",
+          "start": 84,
+          "end": 90,
+          "fileSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+          "excerpt": "Amended 2026-09-26 (Patron correction): the active censor assignment in the\npreceding amendment is corrected to `gpt-5.6-sol` at high reasoning effort.\nThe producer and architect remain on `gpt-6-astra` at medium effort. The\n`spec` munus therefore maps to the Astra escalation tier while `review`\nmaps to the Sol review tier. The censor remains independent, read-only and the\nsole review gate. Historical Astra and Opus review records remain accepted;\nthis prospective correction rewrites or re-signs none of them.",
+          "excerptCharacters": 514
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 2,
+        "excerptCharacters": 679
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "B3",
+      "project": "bisellium",
+      "category": "behavior",
+      "question": "Can the current epoch0 adapter already supply project work items?",
+      "expectedScopedOutcome": "No; snapshot returns empty work items and send is unimplemented. Comments are intent, not capability.",
+      "references": [
+        {
+          "path": "adapters/epoch0/src/index.ts",
+          "start": 18,
+          "end": 38,
+          "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
+          "excerpt": "export function createEpoch0Adapter(repoRoot: string): SnapshotAdapter {\n  return {\n    style: \"snapshot\",\n    projectId: \"epoch0\",\n    intervalMs: 10_000,\n    describeLifecycles: () => lifecycles,\n\n    async snapshot(): Promise<Snapshot> {\n      // TODO(build-order-3): parse the surfaces listed above.\n      void repoRoot;\n      return { sellae: [], opera: [] };\n    },\n\n    async send(target, message) {\n      // Snapshot source degradation path (dossier: adapter contract):\n      // write into the train journal's Handoff/inbox so the Controller\n      // absorbs it at its next read (\"redirects absorbed as re-planning\").\n      void target;\n      void message;\n      return { delivered: false, note: \"not implemented — inbox-file degradation planned\" };\n    },",
+          "excerptCharacters": 764
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 764
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "B4",
+      "project": "bisellium",
+      "category": "evidence",
+      "question": "Where are W-089 brief and review references in the selected root checkout?",
+      "expectedScopedOutcome": "No links in this checkout; disclose absence here, then explicitly select opus worktree if locating project-wide evidence.",
+      "references": [
+        {
+          "path": "studio/opera/W-089.md",
+          "start": 1,
+          "end": 8,
+          "fileSha256": "da68764daa89d8605efa9c70f61fcee723e49d9c2071a5c860c4f7ab4d743cfa",
+          "excerpt": "---\nid: \"W-089\"\ntitle: \"seats become templates: the builder letter dies — one builder seat per tier, instance identity minted at dispatch as builder@<opus>, D-021 keyed on the opus it already owns — Patron decree\"\nkind: \"opus\"\ncollegium: \"engineering\"\nstate: greenlit\nprobationes: {}\n---",
+          "excerptCharacters": 287
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 287
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "B5",
+      "project": "bisellium",
+      "category": "history",
+      "question": "Does an older Astra censor assignment invalidate current Sol routing or historical Astra review evidence?",
+      "expectedScopedOutcome": "Explicit correction makes new censor Sol high and preserves historical review evidence.",
+      "references": [
+        {
+          "path": "studio/decisions/D-014.md",
+          "start": 60,
+          "end": 90,
+          "fileSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+          "excerpt": "Amended 2026-09-26 (Patron): the Claude-specific role assignments above are\nsuperseded prospectively by the approved Codex workflow; the gates are not.\nThe producer/orchestrator runs on `gpt-6-astra` at medium reasoning effort.\nA separate architect runs on `gpt-6-astra` at medium effort and alone signs\nthe `spec` gate. A separate censor (`qa-lead`) runs on `gpt-6-astra` at high\neffort and remains the sole `review` gate. Sol drafts and builds; a separate\nSol context red-teams briefs and handles security; Terra pre-reviews every\ncensor round; Luna performs clerical work. D-020's earlier worker mapping is\nsuperseded only where it conflicts with these assignments.\n\nReasoning effort is an effective Codex project/role dispatch setting, not a\nlabel in prose. `bisellium talk` remains a separate read-only conversational\nharness and is not the orchestration dispatcher this amendment configures.\nReview independence still rests on separate roles and contexts: the architect\ndoes not censor its own spec, the censor does not repair what it judges, and a\nbrief's drafting/build context is distinct from its security red-team context.\n`process.cascade` continues to expose equal recorded spec/review sellae; it\ndoes not claim to prove context identity.\n\nHistorical evidence is unchanged. Existing Opus-model review records remain\naccepted under the tier check, new honest Astra censor records are accepted,\nand no old gate is rewritten or re-signed. The existing `kill_when` remains;\nthis amendment adds no trial or new kill mechanism.\n\nAmended 2026-09-26 (Patron correction): the active censor assignment in the\npreceding amendment is corrected to `gpt-5.6-sol` at high reasoning effort.\nThe producer and architect remain on `gpt-6-astra` at medium effort. The\n`spec` munus therefore maps to the Astra escalation tier while `review`\nmaps to the Sol review tier. The censor remains independent, read-only and the\nsole review gate. Historical Astra and Opus review records remain accepted;\nthis prospective correction rewrites or re-signs none of them.",
+          "excerptCharacters": 2050
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 2050
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "E1",
+      "project": "epoch0",
+      "category": "status",
+      "question": "Which source owns queued work, and what stored state remains when a train picks it up?",
+      "expectedScopedOutcome": "Board scheduled entries; in-train derived, not stored. No live train claim without worktree/PR evidence.",
+      "references": [
+        {
+          "path": "docs/program/PROGRAM.md",
+          "start": 44,
+          "end": 52,
+          "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+          "excerpt": "## Current Work\n\n**[CORRECTED 2026-09-11 reconciliation]** this line named\n`docs/superpowers/plans/2026-08-27-m2-world-story.md` while the last\n~15 merges have actually been driven by `docs/program/BOARD.md` rows\n(PB-084, PB-085, the Tower of Ascension proposal, the art-workflow\ncanon train), not that plan. Current work is whatever `docs/program/\nBOARD.md`'s `scheduled` section names — that board, not this line, is\nthe live source of truth for in-flight work (see WORKFLOW.md",
+          "excerptCharacters": 479
+        },
+        {
+          "path": "docs/program/BOARD.md",
+          "start": 12,
+          "end": 35,
+          "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+          "excerpt": "BOARD.md stores DURABLE states only: `reported` (raised, not yet\ntriaged) → `validated` (confirmed real, reproduced or verified —\nincludes \"note for the record\" rows with no action needed) →\n`backlogged` (real, scheduled for a future milestone/train, not in\nflight) → `scheduled` (next up, explicitly queued — including a row a\ntrain has actually picked up and is actively working) → `done`\n(shipped, verified — true on master because the merge that made it true\nalready landed) or `rejected` (investigated, not real / not worth\ndoing, reason on the row).\n\n**\"in-train\" is NEVER a stored state.** It is DERIVED live from\n`git worktree list` + `gh pr list` — `scripts/train_status.sh` computes\nit on demand (falling back to \"worktrees only\" when `gh` is\nunavailable), and `.claude/hooks/journal-context.sh` surfaces it the\nsame way at session start. A row a train has picked up stays\n`scheduled` in storage; `start_train.sh --board-id <ID>` annotates it\n(\"started `<date>`, see worktree\") rather than changing its state —\nthe annotation is a hint for humans/tools, not the source of truth for\nwhether work is live (a stale annotation naming a dead worktree is a\ngrooming finding, not evidence of anything). This design exists because\na STORED in-train state and a git worktree can silently diverge (sol's\n2026-08-29 task review of this exact train, D3/D6/D7, caught exactly\nthat: a stored `in-train` row can claim liveness a worktree no longer\nbacks, or claim `done` before a merge has actually happened) — deriving",
+          "excerptCharacters": 1514
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 2,
+        "excerptCharacters": 1993
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "E2",
+      "project": "epoch0",
+      "category": "authority",
+      "question": "Which sources own task state and milestone sequencing?",
+      "expectedScopedOutcome": "Board owns task state; Product is named sequencing authority for P ladder; Program retains milestone scope. Exact priority requires reading Product.",
+      "references": [
+        {
+          "path": "docs/program/PROGRAM.md",
+          "start": 17,
+          "end": 42,
+          "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+          "excerpt": "## P-overlay (operative ordering, 2026-09-11)\n\n**`docs/program/PRODUCT.md` is now the operative sequencing authority.**\nThe M-ladder above stays as the phase map (it still correctly describes\neach milestone's SCOPE), but the ORDER work happens in is the P1-P5\nPlayable Ladder: P1 \"It feels like a game\" → P2 \"It looks like our\nworld\" → P3 \"Characters at scale\" → P4 \"It's a live game\" → P5 \"It's\nin your hands anywhere.\" See PRODUCT.md §3 for the full ladder and §4\nfor the exact M↔P mapping table. In short: M2 is done; M3 splits into\nP2 (2D portraits/environments/Cala-in-game) then P3 (3D batch\nproduction); M5→P4; M6→P5; M4 (Audio) is not yet placed on the P-ladder\nby any ruling found (flagged in PRODUCT.md, not silently ordered).\n\n## Task Board\n\n<!-- board-migration-complete: 2026-08-29; new backlog items go to\n     docs/program/BOARD.md, not a table here — scripts/check_process.py\n     fails the gate on any new backlog-shaped table below this marker. -->\n\n**All task/backlog state lives in `docs/program/BOARD.md`** — the\n\"Absorbed Backlog\" table that used to live here (49 rows, M0's parked-\nprogram absorption through 2026-08-29's accumulated review findings)\nwas migrated there wholesale on 2026-08-29 (workflow-canon train), with\nprovenance and two stale-row corrections noted in BOARD.md's own\n\"Migration provenance\" section. This file keeps milestones, gates, and\nstrategy — not task-level state.",
+          "excerptCharacters": 1414
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 1414
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "E3",
+      "project": "epoch0",
+      "category": "behavior",
+      "question": "Which independent battle-state paths and guard should be investigated for a stage-mechanic change?",
+      "expectedScopedOutcome": "Production start_session and simulator build_battle_state; differential combat-adapter test. Route only, no assertion implementation is correct.",
+      "references": [
+        {
+          "path": "AGENTS.md",
+          "start": 123,
+          "end": 129,
+          "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+          "excerpt": "## Rules that reviews most often catch violations of\n- **Parallel battle-state paths**: `battle.py:start_session` (production)\n  and `backend/sim/progression/combat_adapter.py:build_battle_state`\n  (sim) construct state independently. A change to one MUST be mirrored\n  in the other; `backend/tests/combat/test_combat_adapter_mechanics.py`\n  is the differential guard. History: a divergence once silently\n  no-op'ed all stage mechanics for an entire rebalance.",
+          "excerptCharacters": 460
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 460
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "E4",
+      "project": "epoch0",
+      "category": "evidence",
+      "question": "What does a board done claim require and does reading it prove a fresh PASS?",
+      "expectedScopedOutcome": "Shipped/verified definition and reachability rule; document is not a fresh Git/test verification.",
+      "references": [
+        {
+          "path": "docs/program/BOARD.md",
+          "start": 12,
+          "end": 20,
+          "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+          "excerpt": "BOARD.md stores DURABLE states only: `reported` (raised, not yet\ntriaged) → `validated` (confirmed real, reproduced or verified —\nincludes \"note for the record\" rows with no action needed) →\n`backlogged` (real, scheduled for a future milestone/train, not in\nflight) → `scheduled` (next up, explicitly queued — including a row a\ntrain has actually picked up and is actively working) → `done`\n(shipped, verified — true on master because the merge that made it true\nalready landed) or `rejected` (investigated, not real / not worth\ndoing, reason on the row).",
+          "excerptCharacters": 555
+        },
+        {
+          "path": "docs/program/BOARD.md",
+          "start": 43,
+          "end": 55,
+          "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+          "excerpt": "## Grooming\n\nThe Controller grooms this board after every QA triage and at milestone\nplanning (`WORKFLOW.md` §Controller). Grooming = re-state rows whose\nevidence has changed (a \"backlogged\" row a later train actually fixed\nmoves to `done`; a stale row gets a note, not silent deletion), fold new\nQA/tester findings in, and check `scheduled` rows' \"started...\"\nannotations against `scripts/train_status.sh`'s live view — a\nstale annotation naming a dead worktree gets a note, not a silent\ndemotion (see WORKFLOW.md §5 Escalation, crash recovery).\n`scripts/check_process.py` enforces the mechanical half: no row EVER\nstores `in-train` (fails the gate if one does), and a `done` row must\nbe reachable on master or the current branch.",
+          "excerptCharacters": 731
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 1286
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "E5",
+      "project": "epoch0",
+      "category": "history",
+      "question": "How should older M2 in-progress or M3 pending claims be treated?",
+      "expectedScopedOutcome": "Explicit corrections replace those descriptions; live task status still requires board/live evidence.",
+      "references": [
+        {
+          "path": "docs/program/PROGRAM.md",
+          "start": 9,
+          "end": 15,
+          "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+          "excerpt": "| M0 — Audit & Baseline | DONE (2026-08-26, PR #106) | Gap audit, asset-estate inventory, program state layer, journal restructure, baseline APK, M1 plan. |\n| M1 — Legible Core | DONE (2026-08-27) | 5 trains (PR #107-111): deploy hardening, M0 screen fixes, shield visibility, Taste Gate 1 locked, finn/lena/grub 4★ batch (sim-gated), complete battle screen (6 review cycles), balance measured+closed, local LAN hosting (cloud deferred). Remainder re-scopes logged in DECISIONS. |\n| M2 — World & Story | DONE (2026-08-27-m2-world-story.md's task list is fully merged; only the M2-close housekeeping task remained, since folded into board-driven work) | Narrative surfaced in-game, FTUE, endgame/retention loop design + build. **[CORRECTED 2026-09-11 reconciliation — see the P-overlay below]** this row previously read \"in progress\" while every M2-plan task row on BOARD.md was already `done`. |\n| M3 — Art at Scale | live, not \"pending\" | Pipeline bake-off, TASTE GATE 2, batch production of characters/enemies/bosses/environments/VFX. **[CORRECTED 2026-09-11 reconciliation]** this row previously read \"pending\" — the Cala pilot (`feature/cala-pilot-2`) and the astra status-icon batch (PR #199) have been the live art-track lane for roughly two weeks; see the P-overlay below for how this milestone is being re-sequenced. |\n| M4 — Audio | pending | TASTE GATE 3, full soundscape. |\n| M5 — Live Service | pending | Event system + timeline, player customization, service hardening, security backlog. |\n| M6 — Prod-Ready | pending | Device perf, QA sweeps, settings/QoL, final balance pass. Finish-line build. |",
+          "excerptCharacters": 1611
+        },
+        {
+          "path": "docs/program/PROGRAM.md",
+          "start": 44,
+          "end": 52,
+          "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+          "excerpt": "## Current Work\n\n**[CORRECTED 2026-09-11 reconciliation]** this line named\n`docs/superpowers/plans/2026-08-27-m2-world-story.md` while the last\n~15 merges have actually been driven by `docs/program/BOARD.md` rows\n(PB-084, PB-085, the Tower of Ascension proposal, the art-workflow\ncanon train), not that plan. Current work is whatever `docs/program/\nBOARD.md`'s `scheduled` section names — that board, not this line, is\nthe live source of truth for in-flight work (see WORKFLOW.md",
+          "excerptCharacters": 479
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 2090
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "Y1",
+      "project": "yan-mo",
+      "category": "status",
+      "question": "What next build does the overview name, and is that a verified live status?",
+      "expectedScopedOutcome": "README claims pre-build/E1 next; qualify as document claim and retrieve current execution sources for live status.",
+      "references": [
+        {
+          "path": "README.md",
+          "start": 1,
+          "end": 8,
+          "fileSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73",
+          "excerpt": "# Yan Mo (研墨)\n\n*\"Grind ink.\"* A **deterministic, mercy-driven action-adventure descent through Diyu** — the Chinese underworld — set in the Tang dynasty during the An Lushan rebellion. A timid scholar, **Gù Míngyuǎn**, is cast **alive** into Diyu by the fiend **Qiongqi** and descends through it, discovering hell by hell what the war did to his two brothers. Contemplative, melancholy, and built on a single idea: **reading is the whole game — *not speed, clarity.***\n\nEngine: **Godot 4**. Solo dev, AI-assisted.\n\n> **Status: design-complete, pre-build.** The whole descent (B0→B11) is played out and the systems are specced. Next step is the **E1 combat vertical slice** — proving the reading-combat is fun before committing to content.\n",
+          "excerptCharacters": 739
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 739
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "Y2",
+      "project": "yan-mo",
+      "category": "authority",
+      "question": "Where should design-authority and build-workflow questions be routed?",
+      "expectedScopedOutcome": "Map points to authoritative game-design-canonical and dev-workflow; plans and summaries are not interchangeable with either.",
+      "references": [
+        {
+          "path": "CLAUDE.md",
+          "start": 25,
+          "end": 46,
+          "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+          "excerpt": "## The doc map\n\n*All design docs live under **`docs/`**; code under **`game/`** (`data` · `systems` · `scenes` · `tests` · `assets`). `CLAUDE.md` + `README.md` are the root **LAWS**. The map below is tagged by **kind** — **CANON** (what's true / what good is) · **CONTENT** (the produced deliverable) · **METHOD** (how we work) · **PLAN** (what to build, in what order) · **LOG** (where we are / why).*\n\n| Kind | Doc (`docs/`) | What it is |\n|---|---|---|\n| **CANON** | `game-design-canonical.md` | The committed design — **authoritative** |\n| **CANON** | `story-spine.md` | High-level narrative (frame, acts, endings) |\n| **CANON** | `mythology-reference.md` | **The pinned Diyu cosmology** — the lore ground truth; every scene checks against it |\n| **CANON** | `biome-playthroughs.md` | **B0→B11 played out end-to-end** — the content spine + the connective-spine (transitions, memory, ink/blood) |\n| **CANON** | `combat-architecture.md` | The **buildable** data model: `Tell` / `Archetype` / `perceive()` / poise / tally, with the Godot mapping |\n| **CANON** | `jian-reference.md` | The **jiàn (劍) technique vocabulary** — authentic 剑法, kept spare and read-driven; feeds combat |\n| **CANON** | `boss-compendium.md` | **The nine biome bosses, per-boss to depth** — identity/grounding · fight/AI · exam · art · audio · staging; instantiates the boss doctrine (per-boss review COMPLETE, B1–B9) |\n| **CANON** | `prose-voice-bible.md` | **The locked prose voice** — the 意境 register, the two-axis character model, the pitfalls + scene gate; every scene checks against it |\n| **CANON** | `camera-registers.md` | **The camera quick-reference** — the ~6-register vocabulary + rules + the focal-击 PULL-IN rule + the implemented numbers (code = truth) |\n| **CANON** | `player-kit-glossary.md` | **The player-kit quick-reference** — the 5 verbs · 击 · resources · actives · lock/movement, slice-current (code = truth) + the full-game canon pointers |\n| **CANON** | `wu-ability-ladders.md` | **The nine wǔ ability ladders, per-tier** (A10) — every tier a new capability + the kit-wide laws; the 5/4 offense/defense accounting; E2/E5 tuning flags |\n| **CONTENT** | `script-pivotal-scenes.md` | Verbatim drafts of the load-bearing scenes — **all 17 drafted** (B0→B11: the opening, nine hells, Threshold, Avici, the five endings); the beat-ledger tracks sign-offs (Scene 10 ✅, rest 🔷) + the arc-ledger + tiered dialogue — see `narrative-workflow.md` |\n| **CONTENT** | `soul-journal-entries.md` | **The 11 soul-journal entries, all ✅ locked** — Míngyuǎn's own hand (the 研墨 record); the signed state model (enum states · depth inks paragraphs · dimming pales them); consumed by E6/E8 |\n| **CONTENT** | `reload-tips.md` | **The reload-tip pool** — S×5 + G×13 + T×3, context-tagged, availability-guarded, deterministic selector (amends canonical:714); carries the pause ruling (bosses unpausable · blur-pause elsewhere); consumed by E8 |\n| **METHOD** | `dev-workflow.md` | **How we build** — the per-feature loop, gates, testing, git |\n| **METHOD** | `narrative-workflow.md` | **How we write** — the scene-drafting loop, the 意境 prose register, the tiered dialogue, the locked narrative calibrations |",
+          "excerptCharacters": 3181
+        },
+        {
+          "path": "README.md",
+          "start": 11,
+          "end": 31,
+          "fileSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73",
+          "excerpt": "## Where things are\n\n| Path | What |\n|---|---|\n| **`CLAUDE.md`** | **Read first** — the project guide: the thematic spine, the four design laws, the doc map, working style |\n| **`docs/`** | The full design corpus (see below) |\n| **`game/`** | The Godot project (`data/` · `systems/` · `scenes/` · `tests/` · `assets/`) |\n\n## The design corpus (`docs/`)\n\n| Doc | What it is |\n|---|---|\n| `game-design-canonical.md` | The committed design — **authoritative** |\n| `biome-playthroughs.md` | **B0→B11 played out end-to-end** — the content spine |\n| `combat-architecture.md` | The buildable data model (`Tell` / `Archetype` / `perceive()` / poise / tally) + Godot mapping |\n| `roadmap-epics.md` | The E0–E10 build roadmap (slice-first) |\n| `vertical-slice-spec.md` | **The first build (E1)** — the go/no-go bar |\n| `epic-e2…e9-*.md` | Detailed epic specs (e2 enemies · e3 progression · e4 traversal/puzzle · e5 content-pipeline + Biome 1 · e6 narrative · e7 Avici finale · e8 meta · e9 art/audio) |\n| `story-spine.md` · `open-questions.md` · `ideation-log.md` · `handoff.md` · `jian-reference.md` | Narrative, work list, reasoning, continuity, weapon research |\n| `dev-workflow.md` | How we build — the per-feature loop, de-risking gates, testing, git |\n| `ui-workflow.md` | How UI is designed & built — anti-chrome philosophy, UI inventory, the ink-wash Theme, mock→build→wire→test |",
+          "excerptCharacters": 1378
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 2,
+        "excerptCharacters": 4559
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "Y3",
+      "project": "yan-mo",
+      "category": "behavior",
+      "question": "Does no RNG forbid every seeded configuration choice?",
+      "expectedScopedOutcome": "Detailed law permits seeded deterministic configuration among challenge-equivalent options; read/outcome behavior remains deterministic. Do not answer blanket prohibition from README.",
+      "references": [
+        {
+          "path": "README.md",
+          "start": 34,
+          "end": 39,
+          "fileSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73",
+          "excerpt": "## The four design laws (full detail in `CLAUDE.md`)\n\n1. **No RNG / fully deterministic** — enemy behavior is a pure function of state; difficulty scales the read-window, never randomness.\n2. **Reading is the win condition, everywhere** — combat, traversal, puzzles, the ending; one `perceive()` engine.\n3. **Spend complexity on the read** — a low managed-resource count (HP · Poise · heal charges · one qi meter).\n4. **Mercy is deliberate** — no accidental kills; ink = witness, blood = force, and the ratio is the record.",
+          "excerptCharacters": 523
+        },
+        {
+          "path": "CLAUDE.md",
+          "start": 18,
+          "end": 23,
+          "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+          "excerpt": "## Core design laws — non-negotiable\n\n1. **No RNG in anything read or answered.** Required by the perfect-reading fantasy. No crit/dodge/damage variance; enemy behavior, tells, and outcomes are **pure functions of state**; difficulty scales the *read-window*, never randomness. **Configurational variety** — selection among *challenge-equivalent* options (e.g., which arena fixture activates) — may draw from a **seeded deterministic stream** in sim state (same seed → same fight; goldens hold). *The enemy never rolls dice; the hell may deal the room.* In code: fixed-timestep (`_physics_process`), frame counters not wall-clock, **no bare `random()`** — the seeded stream only.\n2. **Reading is the win condition, everywhere.** Combat = break Poise by reading tells; traversal = read the space; puzzles = read the buried truth (研墨·拓); the ending = read who you became. All run through **one `perceive()` engine**. Sights *assist* reads, never *gate* them (fairness floor).\n3. **Spend complexity on the read.** Keep the managed-resource count low — **HP · enemy Poise (势) · heal charges · one qi meter.** Every new tracked resource taxes the attention the game is about. This vetoes feature creep.\n4. **Mercy is deliberate.** Standard enemies have **no HP** — every kill is a held 击 (tap = subdue / hold = kill). No accidental kills. **Ink = witness/mercy, blood = force; the ratio on the page is the record** (and the Mercy axis of the ending).",
+          "excerptCharacters": 1445
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 2,
+        "excerptCharacters": 1968
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "Y4",
+      "project": "yan-mo",
+      "category": "evidence",
+      "question": "Do green automated tests alone establish visual slice correctness?",
+      "expectedScopedOutcome": "No; observed frame/behavior and appropriate measurements required. No PASS without actual evidence.",
+      "references": [
+        {
+          "path": "docs/dev-workflow.md",
+          "start": 30,
+          "end": 31,
+          "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+          "excerpt": "4. **Verify** — `superpowers:verification-before-completion`: actually run it and observe behavior — **via the godot MCP** (run_project · game_screenshot · game_eval asserts); green tests are not proof it works. *(main loop)*\n   > **SILENT VISUAL FAILURE is the dominant failure mode in presentation work** *(named 2026-07-27, after a session of them)*. Scripts ran clean, exports succeeded, 277 tests passed — and the blade was upside down with the guard at the tip, the torso leaned instead of twisting, the mesh normals were inverted, and the texture bake was solid black. **No automated gate we have covers any of that.** Therefore: (a) anything visual gets **eyes on the actual frame** before it is called done; (b) **measure instead of eyeballing wherever a number exists** — the inverted blade was caught by computing guard-to-hand distance (0.34 m, should be 0), not by squinting; (c) when appearance and a hypothesis disagree, **run the A/B** (the \"shadow\" artifact was diagnosed by killing the light and seeing the blotches survive — proving normals, not shadows).",
+          "excerptCharacters": 1074
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 1074
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    },
+    {
+      "id": "Y5",
+      "project": "yan-mo",
+      "category": "history",
+      "question": "Should soul-sight be a player toggle in E1?",
+      "expectedScopedOutcome": "Explicit correction makes it passive at spawn; fairness checked via configuration/tests, not toggle.",
+      "references": [
+        {
+          "path": "docs/vertical-slice-spec.md",
+          "start": 18,
+          "end": 20,
+          "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+          "excerpt": "PLAYER KIT  jiàn verbs 点 / 刺 / 格 / 截  ·  dodge-read (the perfect-read flurry)  ·  击 (tap / hold)\n            HP + 1 heal charge  ·  qi meter (earned-by-reading)  ·  2 abilities: Shout (space) + Displacement (an opener)\n            ONE soul-sight, PASSIVE — surface-penetration possessed from spawn (canon correction 2026-07-25: sights are never toggled; the fairness floor — is the raw feint fair without it? — is validated via sim-state config + tests, not a player toggle)",
+          "excerptCharacters": 474
+        },
+        {
+          "path": "docs/vertical-slice-spec.md",
+          "start": 43,
+          "end": 45,
+          "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+          "excerpt": "\n- **Art / animation** — grey-box capsules. **The one exception: tell *legibility*.** Fidelity is faked everywhere except the clarity of the tell telegraph — that's literally what's being tested, so it gets real attention (a legible windup, not a pretty one).\n- **Soul-sight** — surface-penetration as a PASSIVE possession seeded at spawn (no progression; canon correction 2026-07-25 — wén sights are possessed, never toggled) — proves `perceive()` changes the reading problem; the fairness floor (the feint must be readable *without* the sight) is checked by test/sim-state config, not a toggle.",
+          "excerptCharacters": 596
+        }
+      ],
+      "measurement": {
+        "uniqueFiles": 1,
+        "excerptCharacters": 1070
+      },
+      "evaluationStatus": "exploratory source route inspected; no independent model answer scored"
+    }
+  ]
+}

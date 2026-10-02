@@ -1,0 +1,713 @@
+{
+  "version": 2,
+  "state": "frozen_before_candidate_outputs",
+  "frozenDate": "2026-09-28",
+  "inputs": {
+    "questions": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/questions.json",
+      "sha256": "79e2c4a7edc8116b026c7a5a0e1d02d629de204e47d5f4e2b7186d8af0136219"
+    },
+    "legacyKey": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/answer-key.json",
+      "sha256": "3aa6b52306ad95b511bf9b06ab2f9099e64e06e043d81a58e616f5a4d9585083"
+    },
+    "routeResults": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/route-results.json",
+      "sha256": "8b063b433c67c433e4cce83a13cf6299d2d4bff4d762ccb6e6124dac7f984a68"
+    },
+    "curatedPacket": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/packet-A.json",
+      "sha256": "3e8b7e85a55d17c3f33ea4c6fa07e070d68f2076130b49e3ead46e99f1a129fe"
+    }
+  },
+  "definitions": {
+    "evidenceAvailability": "anchored requested facts present",
+    "answerQuality": "separate; not measured",
+    "coordinates": "1-based, end exclusive",
+    "alternatives": "none found in inspected frozen excerpts; equivalents may exist elsewhere",
+    "liveState": "E7 uses metadata limitation, no fabricated quote"
+  },
+  "cases": [
+    {
+      "id": "B6",
+      "project": "bisellium",
+      "question": "What workflow records does `bisellium verdict` change, and how may a captured build-phase verdict be used afterward?",
+      "requiredEvidence": [
+        {
+          "id": "B6-R1",
+          "essentialRequestedFact": "build verdict log; build default",
+          "questionClause": "What workflow records",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 89,
+              "startCharacter": 1,
+              "endLine": 89,
+              "endCharacterExclusive": 62,
+              "exactText": "`ci/<opus>-review-<n>.log` for `--phase build` (the default)."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "B6-R2",
+          "essentialRequestedFact": "evidence only; no probationes/state/events/timelines",
+          "questionClause": "What workflow records",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A2",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 96,
+              "startCharacter": 13,
+              "endLine": 96,
+              "endCharacterExclusive": 75,
+              "exactText": "writes evidence only: it does not update `probationes`, state,"
+            },
+            {
+              "id": "A3",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 97,
+              "startCharacter": 1,
+              "endLine": 97,
+              "endCharacterExclusive": 22,
+              "exactText": "events, or timelines."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "B6-R3",
+          "essentialRequestedFact": "path may feed review --evidence",
+          "questionClause": "used afterward?",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A4",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 97,
+              "startCharacter": 23,
+              "endLine": 97,
+              "endCharacterExclusive": 62,
+              "exactText": "A build orchestrator can follow it with"
+            },
+            {
+              "id": "A5",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 98,
+              "startCharacter": 1,
+              "endLine": 98,
+              "endCharacterExclusive": 27,
+              "exactText": "`review --evidence <path>`"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        }
+      ]
+    },
+    {
+      "id": "B7",
+      "project": "bisellium",
+      "question": "What does a Bisellium `tree:<hash>` certificate cover, and when does a changed file leave that certificate unchanged?",
+      "requiredEvidence": [
+        {
+          "id": "B7-R1",
+          "essentialRequestedFact": "path-sorted committed ls-tree entries outside exclusions",
+          "questionClause": "certificate cover",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A6",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 592,
+              "startCharacter": 21,
+              "endLine": 592,
+              "endCharacterExclusive": 50,
+              "exactText": "hashes `git ls-tree -r <ref>`"
+            },
+            {
+              "id": "A7",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 593,
+              "startCharacter": 31,
+              "endLine": 593,
+              "endCharacterExclusive": 50,
+              "exactText": "already path-sorted"
+            },
+            {
+              "id": "A8",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 594,
+              "startCharacter": 12,
+              "endLine": 594,
+              "endCharacterExclusive": 52,
+              "exactText": "path is *not* under one of `excludeDirs`"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "B7-R2",
+          "essentialRequestedFact": "studio/.bisellium plus source_excludes excluded",
+          "questionClause": "certificate cover",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A9",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 595,
+              "startCharacter": 43,
+              "endLine": 595,
+              "endCharacterExclusive": 76,
+              "exactText": "studio dir and `.bisellium`, plus"
+            },
+            {
+              "id": "A10",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 596,
+              "startCharacter": 1,
+              "endLine": 596,
+              "endCharacterExclusive": 44,
+              "exactText": "any `source_excludes` the manifest declares"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "B7-R3",
+          "essentialRequestedFact": "excluded-only commit leaves hash unchanged",
+          "questionClause": "when does a changed file leave that certificate unchanged?",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A11",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 596,
+              "startCharacter": 55,
+              "endLine": 596,
+              "endCharacterExclusive": 74,
+              "exactText": "Committing a change"
+            },
+            {
+              "id": "A12",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "docs/ADOPTION.md",
+              "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+              "startLine": 597,
+              "startCharacter": 6,
+              "endLine": 597,
+              "endCharacterExclusive": 57,
+              "exactText": "only touches an excluded path can't move this hash."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "project": "epoch0",
+      "question": "When assigned as Epoch0's design pre-reviewer, what may a Codex agent produce or change, and does that role authorize a merge?",
+      "requiredEvidence": [
+        {
+          "id": "E6-R1",
+          "essentialRequestedFact": "checks design premises against code",
+          "questionClause": "design pre-reviewer",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A13",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 29,
+              "startCharacter": 45,
+              "endLine": 29,
+              "endCharacterExclusive": 70,
+              "exactText": "premise/consistency check"
+            },
+            {
+              "id": "A14",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 30,
+              "startCharacter": 39,
+              "endLine": 30,
+              "endCharacterExclusive": 72,
+              "exactText": "verify factual claims against the"
+            },
+            {
+              "id": "A15",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 31,
+              "startCharacter": 10,
+              "endLine": 31,
+              "endCharacterExclusive": 37,
+              "exactText": "flag wrong premises loudly."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "E6-R2",
+          "essentialRequestedFact": "named-scope artifact only; no implementation",
+          "questionClause": "produce or change",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A16",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 51,
+              "startCharacter": 50,
+              "endLine": 51,
+              "endCharacterExclusive": 70,
+              "exactText": "you NEVER implement."
+            },
+            {
+              "id": "A17",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 62,
+              "startCharacter": 1,
+              "endLine": 62,
+              "endCharacterExclusive": 59,
+              "exactText": "artifact-producing roles create output — Design Pre-Review"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "E6-R3",
+          "essentialRequestedFact": "no merge authority; never executes merge",
+          "questionClause": "authorize a merge?",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A18",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 58,
+              "startCharacter": 44,
+              "endLine": 58,
+              "endCharacterExclusive": 61,
+              "exactText": "design pre-review"
+            },
+            {
+              "id": "A19",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 59,
+              "startCharacter": 34,
+              "endLine": 59,
+              "endCharacterExclusive": 61,
+              "exactText": "carries any merge authority"
+            },
+            {
+              "id": "A20",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 60,
+              "startCharacter": 1,
+              "endLine": 60,
+              "endCharacterExclusive": 43,
+              "exactText": "never execute merges yourself in any role."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "project": "epoch0",
+      "question": "How must an Epoch0 database schema change be added without rewriting migration history, and can this corpus establish which migrations a running deployment has applied?",
+      "requiredEvidence": [
+        {
+          "id": "E7-R1",
+          "essentialRequestedFact": "next sequential no-gap migration; transaction wrapper",
+          "questionClause": "schema change be added",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A21",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 43,
+              "startCharacter": 49,
+              "endLine": 43,
+              "endCharacterExclusive": 81,
+              "exactText": "next sequential number, no gaps."
+            },
+            {
+              "id": "A22",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 44,
+              "startCharacter": 15,
+              "endLine": 44,
+              "endCharacterExclusive": 35,
+              "exactText": "`BEGIN; ... COMMIT;`"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "E7-R2",
+          "essentialRequestedFact": "no edit after apply; hash mismatch; next migration",
+          "questionClause": "without rewriting migration history",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A23",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 47,
+              "startCharacter": 3,
+              "endLine": 47,
+              "endCharacterExclusive": 52,
+              "exactText": "Never edit a migration after it has been applied."
+            },
+            {
+              "id": "A24",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 48,
+              "startCharacter": 1,
+              "endLine": 48,
+              "endCharacterExclusive": 21,
+              "exactText": "SHA-256 of each file"
+            },
+            {
+              "id": "A25",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 49,
+              "startCharacter": 36,
+              "endLine": 49,
+              "endCharacterExclusive": 75,
+              "exactText": "To amend behavior, write `NNN+1_*.sql`."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "E7-R3",
+          "essentialRequestedFact": "static corpus cannot establish live ledger state",
+          "questionClause": "can this corpus establish",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A26",
+              "type": "metadataCriterion",
+              "artifact": "docs/research/maps-sufficiency-2026-09-28/packet-A.json",
+              "artifactSha256": "3e8b7e85a55d17c3f33ea4c6fa07e070d68f2076130b49e3ead46e99f1a129fe",
+              "caseId": "E7",
+              "availableEvidenceClass": "static_repository_excerpt",
+              "requiredButUnavailable": [
+                "live schema_migrations ledger",
+                "deployment startup evidence"
+              ],
+              "criterion": "packet metadata has repository excerpts only; no live artifact"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        }
+      ]
+    },
+    {
+      "id": "Y6",
+      "project": "yan-mo",
+      "question": "What repository workflow applies to a Yan Mo task that has a journal entry, and who performs the merge?",
+      "requiredEvidence": [
+        {
+          "id": "Y6-R1",
+          "essentialRequestedFact": "journaled docs/code task uses branch+worktree",
+          "questionClause": "task that has a journal entry",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A27",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 71,
+              "startCharacter": 153,
+              "endLine": 71,
+              "endCharacterExclusive": 194,
+              "exactText": "if it has a journal task, it has a branch"
+            },
+            {
+              "id": "A28",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 71,
+              "startCharacter": 199,
+              "endLine": 71,
+              "endCharacterExclusive": 219,
+              "exactText": "docs and code alike."
+            },
+            {
+              "id": "A29",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 74,
+              "startCharacter": 9,
+              "endLine": 74,
+              "endCharacterExclusive": 43,
+              "exactText": "git worktree add .worktrees/<slug>"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "Y6-R2",
+          "essentialRequestedFact": "journal rides branch; push; close/Completed then PR",
+          "questionClause": "repository workflow",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A30",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 75,
+              "startCharacter": 13,
+              "endLine": 75,
+              "endCharacterExclusive": 68,
+              "exactText": "journal task dir + Active row are created ON the branch"
+            },
+            {
+              "id": "A31",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 77,
+              "startCharacter": 9,
+              "endLine": 77,
+              "endCharacterExclusive": 47,
+              "exactText": "commits on the branch; push the branch"
+            },
+            {
+              "id": "A32",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 81,
+              "startCharacter": 9,
+              "endLine": 81,
+              "endCharacterExclusive": 69,
+              "exactText": "close-out note + Completed flip committed on the branch → PR"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "Y6-R3",
+          "essentialRequestedFact": "Edene merges; agent opens PR and stops",
+          "questionClause": "who performs the merge?",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A33",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 81,
+              "startCharacter": 74,
+              "endLine": 81,
+              "endCharacterExclusive": 86,
+              "exactText": "EDENE MERGES"
+            },
+            {
+              "id": "A34",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 82,
+              "startCharacter": 33,
+              "endLine": 82,
+              "endCharacterExclusive": 73,
+              "exactText": "Claude opens PRs and stops, never merges"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        }
+      ]
+    },
+    {
+      "id": "Y7",
+      "project": "yan-mo",
+      "question": "In Yan Mo's E1 vertical slice, which presentation elements may remain deliberately fake, and what exception still requires real attention?",
+      "requiredEvidence": [
+        {
+          "id": "Y7-R1",
+          "essentialRequestedFact": "art/animation may be grey-box capsules",
+          "questionClause": "presentation elements may remain deliberately fake",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A35",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 44,
+              "startCharacter": 5,
+              "endLine": 44,
+              "endCharacterExclusive": 20,
+              "exactText": "Art / animation"
+            },
+            {
+              "id": "A36",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 44,
+              "startCharacter": 25,
+              "endLine": 44,
+              "endCharacterExclusive": 43,
+              "exactText": "grey-box capsules."
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        },
+        {
+          "id": "Y7-R2",
+          "essentialRequestedFact": "tell clarity is exception; legible not pretty windup",
+          "questionClause": "exception still requires real attention?",
+          "satisfactionRule": "all minimal anchors; larger containing excerpt allowed; no whole-span/keyword-only match",
+          "evidenceAnchors": [
+            {
+              "id": "A37",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 44,
+              "startCharacter": 46,
+              "endLine": 44,
+              "endCharacterExclusive": 83,
+              "exactText": "The one exception: tell *legibility*."
+            },
+            {
+              "id": "A38",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 44,
+              "startCharacter": 126,
+              "endLine": 44,
+              "endCharacterExclusive": 155,
+              "exactText": "clarity of the tell telegraph"
+            },
+            {
+              "id": "A39",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 44,
+              "startCharacter": 223,
+              "endLine": 44,
+              "endCharacterExclusive": 257,
+              "exactText": "a legible windup, not a pretty one"
+            }
+          ],
+          "alternativeEquivalentAnchors": [],
+          "alternativeAvailability": "none found in inspected frozen excerpts"
+        }
+      ]
+    }
+  ]
+}

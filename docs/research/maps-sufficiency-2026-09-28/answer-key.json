@@ -1,0 +1,167 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "B6",
+      "project": "bisellium",
+      "requiredFacts": [
+        "`verdict` copies a transcript into a build-phase review evidence file (`ci/<opus>-review-<n>.log`; build is the default phase).",
+        "The command writes evidence only and does not update probationes, opus state, events, or timelines.",
+        "A build orchestrator may subsequently pass that evidence path to `review --evidence`."
+      ],
+      "forbiddenOverclaims": [
+        "Do not claim that `verdict` itself passes or fails the review gate.",
+        "Do not claim that capturing a verdict changes the opus lifecycle state."
+      ],
+      "expectedAbstentionOrLimitations": [
+        "The cited contract describes command behavior; it does not establish that a particular verdict or review command has run."
+      ],
+      "authoritativeSources": [
+        {
+          "repository": "bisellium-main",
+          "path": "docs/ADOPTION.md",
+          "start": 87,
+          "end": 99,
+          "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321"
+        }
+      ]
+    },
+    {
+      "id": "B7",
+      "project": "bisellium",
+      "requiredFacts": [
+        "A `tree:<hash>` certificate is a hash of path-sorted committed `git ls-tree -r <ref>` entries outside the configured exclusions, not the repository's raw Git tree hash.",
+        "The standard exclusions supplied by verify/check are the studio directory and `.bisellium/`; manifest `source_excludes` add repo-root-relative exclusions.",
+        "A committed change that touches only an excluded path leaves this SOURCE hash unchanged."
+      ],
+      "forbiddenOverclaims": [
+        "Do not claim that all repository files are covered.",
+        "Do not conflate the committed SOURCE hash with the separate working-tree dirtiness check.",
+        "Do not claim that `source_excludes` disables validation of the studio's bookkeeping."
+      ],
+      "expectedAbstentionOrLimitations": [
+        "The evidence defines the certificate algorithm; it does not attest that any particular current certificate matches."
+      ],
+      "authoritativeSources": [
+        {
+          "repository": "bisellium-main",
+          "path": "docs/ADOPTION.md",
+          "start": 581,
+          "end": 610,
+          "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321"
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "project": "epoch0",
+      "requiredFacts": [
+        "The design pre-reviewer checks a major design's premises and consistency against code and flags wrong premises before the design is recorded.",
+        "Design pre-review is an artifact-producing role only within its named scope; it does not authorize general implementation.",
+        "The role has no merge authority and the agent never executes merges."
+      ],
+      "forbiddenOverclaims": [
+        "Do not grant the design pre-reviewer gameplay, backend, migration, or general implementation authority.",
+        "Do not equate producing pre-review findings with authorizing or performing a merge."
+      ],
+      "expectedAbstentionOrLimitations": [
+        "The cited role policy does not show that a particular design has passed review or merged."
+      ],
+      "authoritativeSources": [
+        {
+          "repository": "epoch0-main",
+          "path": "AGENTS.md",
+          "start": 29,
+          "end": 31,
+          "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad"
+        },
+        {
+          "repository": "epoch0-main",
+          "path": "AGENTS.md",
+          "start": 51,
+          "end": 65,
+          "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad"
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "project": "epoch0",
+      "requiredFacts": [
+        "Add a new sequential `db/migrations/NNN_description.sql` file with no numbering gap; wrap multi-statement migrations in `BEGIN`/`COMMIT`.",
+        "Applied migrations must not be edited because the ledger stores each file's SHA-256 and a later hash mismatch aborts startup; amend behavior with the next migration.",
+        "The API startup applier runs migrations in filename order and records them in `schema_migrations`.",
+        "The fixed corpus cannot establish which migrations a running deployment has applied because it supplies the static contract, not that deployment's live `schema_migrations` ledger or startup evidence."
+      ],
+      "forbiddenOverclaims": [
+        "Do not infer a running deployment's applied migration set from the documentation.",
+        "Do not recommend editing an already-applied migration.",
+        "Do not claim that a restart shown in documentation actually occurred."
+      ],
+      "expectedAbstentionOrLimitations": [
+        "Explicitly state that live applied state is unknown from this corpus and would require deployment or database evidence."
+      ],
+      "authoritativeSources": [
+        {
+          "repository": "epoch0-main",
+          "path": "README.md",
+          "start": 33,
+          "end": 49,
+          "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03"
+        }
+      ]
+    },
+    {
+      "id": "Y6",
+      "project": "yan-mo",
+      "requiredFacts": [
+        "Any task with a journal entry uses its own branch and worktree, including documentation work; `main` contains completed merged work.",
+        "The journal task and Active row ride on the branch, in-flight work is committed and pushed, and finishing includes the close-out/Completed change followed by a PR.",
+        "Edene performs the merge as the acceptance act; the agent opens the PR and stops."
+      ],
+      "forbiddenOverclaims": [
+        "Do not say the agent may merge its own PR.",
+        "Do not apply the direct-to-main exception to a task that has a journal entry.",
+        "Do not omit the branch/worktree requirement for journaled documentation tasks."
+      ],
+      "expectedAbstentionOrLimitations": [
+        "The cited workflow does not prove that a particular task's branch, PR, or merge currently exists."
+      ],
+      "authoritativeSources": [
+        {
+          "repository": "yan-mo-main",
+          "path": "docs/dev-workflow.md",
+          "start": 69,
+          "end": 89,
+          "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af"
+        }
+      ]
+    },
+    {
+      "id": "Y7",
+      "project": "yan-mo",
+      "requiredFacts": [
+        "E1 may use grey-box capsules for art and animation rather than polished presentation.",
+        "Tell legibility is the exception: the telegraph's clarity receives real attention because reading it is what the slice tests.",
+        "The exception requires a legible windup, not visual polish."
+      ],
+      "forbiddenOverclaims": [
+        "Do not say all animation or telegraph quality is out of scope.",
+        "Do not turn the legibility exception into a requirement for finished art polish.",
+        "Do not claim that the static spec proves the slice's tells are currently legible."
+      ],
+      "expectedAbstentionOrLimitations": [
+        "The source states the design boundary; actual tell legibility would require observed build evidence."
+      ],
+      "authoritativeSources": [
+        {
+          "repository": "yan-mo-main",
+          "path": "docs/vertical-slice-spec.md",
+          "start": 36,
+          "end": 47,
+          "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74"
+        }
+      ]
+    }
+  ]
+}

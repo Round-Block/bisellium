@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "questionsSha256": "3cfa3289eb0ceae3d31ad452f5ad47e3e7da0ed24eadbd386467d6550e42ca1d",
+  "sourceFreezeSha256": "89a8b5ac61bf43843e99e55eeaf3ad463eb33fd322c3b5cbbac0e6b91243b6bd",
+  "hiddenKeySha256": "404b0b8d2762b06b6b768e2eb2b79093f291d90fb6f987570b47f87d01a52771",
+  "counts": {
+    "questions": 12,
+    "sourceFiles": 23,
+    "projects": {
+      "bisellium": 4,
+      "epoch0": 4,
+      "yan-mo": 4
+    }
+  },
+  "scriptSha256": "5c9000f706675e7de23bc2e1c87a21dbe23710aa7e709809ef87ed96a10ae4e1"
+}

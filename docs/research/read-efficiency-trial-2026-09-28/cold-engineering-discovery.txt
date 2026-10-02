@@ -1,0 +1,9 @@
+path: studio/leges/engineering.md
+5:## 1. Mandate
+11:## 2. Decides alone
+35:## 3. Digests
+40:## 4. Asks
+47:## 5. Budget
+53:## 6. Autonomy
+58:## 7. Evidence contract
+63:## 9. Amendment log

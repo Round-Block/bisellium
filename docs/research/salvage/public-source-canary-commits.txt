@@ -1,0 +1,54 @@
+66c0f00 chore(W-109): record censor review
+f137dad chore(studio): certify W-109 terminal evidence
+a22b468 chore(studio): hand off W-109 terminal evidence
+b4db645 test(research): record W-109 public canary failure
+3ae90ef chore(studio): recertify W-109 privacy gate
+e1261d3 fix(research): withhold credential-derived canary hashes
+d32f939 chore(studio): record W-109 preflight handoff
+8da8796 chore(studio): certify W-109 canary controller
+0fb865b feat(research): add W-109 public source canary
+eba69fa docs(studio): sign W-109 public canary spec
+5352a79 chore(W-108): record censor review
+15d0e2f chore(studio): certify W-108 adapter evidence
+18ba3f6 test(research): record W-108 typed adapter refusal
+e60b1e5 docs(studio): sign W-108 adapter preflight
+2c90e30 chore(studio): record W-107 no-go censor verdict
+c819915 chore(studio): refresh W-107 certificates for final source tree
+dddd842 chore(production): retain W-107 preflight canaries
+140db1b chore(production): record W-107 CI certificate
+8379123 chore(production): retain W-107 CI attempt
+6a01360 chore(production): format W-107 checkpoint script
+c32e54b chore(production): checkpoint W-107 pre-review
+5efe274 chore(studio): close W-105 and capture evaluation gate debt
+50be022 chore(studio): record W-105 review pass
+39d27fa chore(W-105): refresh R3 verification certificates
+6388ac8 fix(W-105): handle truncated baseline excerpts
+d774a97 chore(W-105): refresh R2 verification certificates
+2f63b5b fix(W-105): validate claimed source identity
+a21e83c chore(W-105): refresh verification certificates
+944e1a1 fix(W-105): reject scorer identity drift
+60f98f9 chore(W-105): record verification certificates
+7cb8d5b feat(W-105): retain reproducible MAPS driver
+e8bf1c0 docs(W-105): record signed MAPS repair brief
+e4b217e chore(studio): close W-104 with reviewed negative result
+5fe6ff7 chore(studio): persist W-104 verification evidence
+2aab2a3 feat(research): test bounded diverse source selection
+825e400 test(research): record W-104 selection reds before implementation
+5520ef7 docs(research): sign W-104 bounded selection experiment
+4ed7ed5 chore(studio): close W-103 after independent review
+933e7bd chore(studio): persist W-103 round-two verification
+378c6bb fix(research): enforce W-103 metadata and case output budgets
+b9ed56d docs(research): save W-103 usage-limit handoff
+55a30e6 test(research): reproduce W-103 censor findings
+36d1c49 chore(research): record W-103 independent review findings
+2865c0b fix(research): exclude canonical inventory aliases
+97d9758 chore(research): record W-103 verification checkpoint
+af19b78 feat(research): implement W-103 source lookup experiment
+6f28f54 docs(research): record W-103 input preflight
+0d2e134 test(research): checkpoint W-103 test-first restart
+f391c29 chore(workflow): record Sol censor correction review
+5a9f7e4 fix(workflow): assign Sol high censor
+97d91c9 chore(W-102): record independent review and completion
+40d6bd1 test(W-102): record verifier evidence
+72a49fd feat(W-102): persist Codex workflow roles
+f6fdc84 docs(W-102): specify persistent Codex workflow

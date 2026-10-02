@@ -1,0 +1,204 @@
+{
+  "identity": [
+    "project stream",
+    "arm stream",
+    "repository",
+    "path",
+    "sha256",
+    "absolute source line number",
+    "exact line text"
+  ],
+  "measure": "optimistic upper bound for exact source-line body bytes recurring in later distinct runs, by arm and project; within-run repeats are reported separately; excludes metadata/receipt cost and is neither billed-token saving nor correctness evidence; cold sessions still need content",
+  "projects": {
+    "bisellium": {
+      "baseline": {
+        "acrossRunRepeatedBodyBytes": 502,
+        "mappingFailures": 0,
+        "readBytes": 56817,
+        "runs": 2,
+        "uniqueMappedBodyBytes": 11714,
+        "withinRunRepeatedBodyBytes": 2017
+      },
+      "candidate": {
+        "acrossRunRepeatedBodyBytes": 147,
+        "mappingFailures": 0,
+        "readBytes": 61543,
+        "runs": 2,
+        "uniqueMappedBodyBytes": 16627,
+        "withinRunRepeatedBodyBytes": 1711
+      }
+    },
+    "epoch0": {
+      "baseline": {
+        "acrossRunRepeatedBodyBytes": 6297,
+        "mappingFailures": 0,
+        "readBytes": 120061,
+        "runs": 2,
+        "uniqueMappedBodyBytes": 54861,
+        "withinRunRepeatedBodyBytes": 2777
+      },
+      "candidate": {
+        "acrossRunRepeatedBodyBytes": 1070,
+        "mappingFailures": 0,
+        "readBytes": 125326,
+        "runs": 2,
+        "uniqueMappedBodyBytes": 53610,
+        "withinRunRepeatedBodyBytes": 1663
+      }
+    },
+    "yan-mo": {
+      "baseline": {
+        "acrossRunRepeatedBodyBytes": 782,
+        "mappingFailures": 0,
+        "readBytes": 61073,
+        "runs": 2,
+        "uniqueMappedBodyBytes": 12135,
+        "withinRunRepeatedBodyBytes": 695
+      },
+      "candidate": {
+        "acrossRunRepeatedBodyBytes": 202,
+        "mappingFailures": 0,
+        "readBytes": 56325,
+        "runs": 2,
+        "uniqueMappedBodyBytes": 11292,
+        "withinRunRepeatedBodyBytes": 931
+      }
+    }
+  },
+  "runOrderSource": "frozen runs.json array",
+  "runs": [
+    {
+      "acrossRunRepeatedBodyBytes": 0,
+      "arm": "baseline",
+      "case": "B8",
+      "mappingFailures": [],
+      "ordinal": 1,
+      "project": "bisellium",
+      "readBytes": 19111,
+      "uniqueMappedBodyBytes": 3569,
+      "withinRunRepeatedBodyBytes": 633
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 0,
+      "arm": "candidate",
+      "case": "B8",
+      "mappingFailures": [],
+      "ordinal": 2,
+      "project": "bisellium",
+      "readBytes": 14407,
+      "uniqueMappedBodyBytes": 4907,
+      "withinRunRepeatedBodyBytes": 308
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 147,
+      "arm": "candidate",
+      "case": "B9",
+      "mappingFailures": [],
+      "ordinal": 3,
+      "project": "bisellium",
+      "readBytes": 47136,
+      "uniqueMappedBodyBytes": 11720,
+      "withinRunRepeatedBodyBytes": 1403
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 502,
+      "arm": "baseline",
+      "case": "B9",
+      "mappingFailures": [],
+      "ordinal": 4,
+      "project": "bisellium",
+      "readBytes": 37706,
+      "uniqueMappedBodyBytes": 8145,
+      "withinRunRepeatedBodyBytes": 1384
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 0,
+      "arm": "baseline",
+      "case": "E8",
+      "mappingFailures": [],
+      "ordinal": 5,
+      "project": "epoch0",
+      "readBytes": 40812,
+      "uniqueMappedBodyBytes": 16500,
+      "withinRunRepeatedBodyBytes": 2006
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 0,
+      "arm": "candidate",
+      "case": "E8",
+      "mappingFailures": [],
+      "ordinal": 6,
+      "project": "epoch0",
+      "readBytes": 33253,
+      "uniqueMappedBodyBytes": 7491,
+      "withinRunRepeatedBodyBytes": 698
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 1070,
+      "arm": "candidate",
+      "case": "E9",
+      "mappingFailures": [],
+      "ordinal": 7,
+      "project": "epoch0",
+      "readBytes": 92073,
+      "uniqueMappedBodyBytes": 46119,
+      "withinRunRepeatedBodyBytes": 965
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 6297,
+      "arm": "baseline",
+      "case": "E9",
+      "mappingFailures": [],
+      "ordinal": 8,
+      "project": "epoch0",
+      "readBytes": 79249,
+      "uniqueMappedBodyBytes": 38361,
+      "withinRunRepeatedBodyBytes": 771
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 0,
+      "arm": "baseline",
+      "case": "Y8",
+      "mappingFailures": [],
+      "ordinal": 9,
+      "project": "yan-mo",
+      "readBytes": 34791,
+      "uniqueMappedBodyBytes": 8453,
+      "withinRunRepeatedBodyBytes": 695
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 0,
+      "arm": "candidate",
+      "case": "Y8",
+      "mappingFailures": [],
+      "ordinal": 10,
+      "project": "yan-mo",
+      "readBytes": 32083,
+      "uniqueMappedBodyBytes": 7774,
+      "withinRunRepeatedBodyBytes": 281
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 202,
+      "arm": "candidate",
+      "case": "Y9",
+      "mappingFailures": [],
+      "ordinal": 11,
+      "project": "yan-mo",
+      "readBytes": 24242,
+      "uniqueMappedBodyBytes": 3518,
+      "withinRunRepeatedBodyBytes": 650
+    },
+    {
+      "acrossRunRepeatedBodyBytes": 782,
+      "arm": "baseline",
+      "case": "Y9",
+      "mappingFailures": [],
+      "ordinal": 12,
+      "project": "yan-mo",
+      "readBytes": 26282,
+      "uniqueMappedBodyBytes": 3682,
+      "withinRunRepeatedBodyBytes": 0
+    }
+  ],
+  "version": 1
+}

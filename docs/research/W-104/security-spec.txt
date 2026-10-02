@@ -1,0 +1,9 @@
+Separate Sol security red-team: three brief blockers for architect resolution.
+
+1. Behaviour 3's mandatory red conflicts with its compatibility purpose. Existing search, route, invalid-mode, and invalid-limit tests should remain green. Attach red evidence to a genuinely new search-diverse property.
+
+2. Explicitly apply W-103's full search trust boundary to search-diverse, including safe case-field projection, containment, exclusions, read-only Git, scan bounds, and poisoned-oracle byte-identity testing.
+
+3. Define low-budget cycle termination and counters: fixed global file selection, eligible turns per cycle, behavior at zero remaining characters, no empty excerpts, and one omission per truncated or wholly unserved range in its owning repository.
+
+No implementation edits or gate signature were made by the security reviewer.

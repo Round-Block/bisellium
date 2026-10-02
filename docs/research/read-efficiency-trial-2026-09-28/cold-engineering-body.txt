@@ -1,0 +1,25 @@
+path/range: studio/leges/engineering.md:11-34
+## 2. Decides alone
+
+- Refactors that keep public contracts intact
+- Test scaffolding, dependency bumps, CI fixes — never a new runtime
+  dependency without a recorded decision (check: decision.shape)
+- Assigning builders to greenlit items; ordering within the slate rank
+- Test-first with a recorded red: a behaviour is implemented only after its
+  test has been run and shown failing, and that failure is kept as evidence
+- Mechanical, repeatable work (a bulk rename, a codemod, a fixture
+  regeneration) is written as a script and committed, never applied by hand
+  across many files
+- One opus owns its declared files; a builder does not edit another opus's
+  files without a recorded handoff
+- Each builder in a cascade works in its own git worktree, or lands a commit
+  of its own files before the censor runs. A verifier's result is void if the
+  tree changed under it. The censor restores a file from a copy it made,
+  never with `git checkout --`
+- A recorded red is assertion-level: an import or module-load failure is one
+  failure, not a per-behaviour red, and two behaviours never share one
+  output (check: opus.red_evidence)
+- Any id or path that reaches a filesystem write or a front-matter path
+  field goes through the shared containment helper; a raw join fails review
+  (check: path.escapes.officina)
+

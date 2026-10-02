@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "runtime": "v25.9.0",
+  "descriptor": {
+    "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/freeze-descriptor.json",
+    "sha256": "96cfe8dbce0497fb0dbe12f8bda9fd21616873360cdcb9841873feb4fd87fed2"
+  },
+  "commands": [
+    "/usr/bin/python3 docs/research/maps-fresh-2026-09-28/run-posthoc-reanalysis.py --corrected-key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --validator-receipt /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/blind-validation-final.md --validator-receipt-sha256 c88ad410efe7a8ac8e500ac8f487a716742fdde52506570a9e5932cd269ad916 --release RELEASE",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs freeze --descriptor /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/freeze-descriptor.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output pre-score-manifest.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs verify-freeze --manifest /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/pre-score-manifest.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output pre-score-verification.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output baseline-score-corrected.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output policy-B-score-corrected.json"
+  ],
+  "files": [
+    {
+      "role": "operational-replay-script",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/run-posthoc-reanalysis.py",
+      "bytes": 13567,
+      "sha256": "732e8b41fc8a45f5725e70ee42850175a8b83f8dd741bdb9a295f02adbbcf926"
+    },
+    {
+      "role": "preflight",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/preflight.json",
+      "bytes": 7155,
+      "sha256": "5490e63b6ae94a6e6f5518fba6e34bd1a9a0ae421032b1d74c61246ffbd3c83d"
+    },
+    {
+      "role": "execution-plan",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/execution-plan.json",
+      "bytes": 2609,
+      "sha256": "2177c383743597a259f29aa639a0876deeae740c16e568db6e40df36fd5ae5ed"
+    },
+    {
+      "role": "corrected-key",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json",
+      "bytes": 41249,
+      "sha256": "7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7"
+    },
+    {
+      "role": "invalid-original-key-retained",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/hidden-key.json",
+      "bytes": 39804,
+      "sha256": "404b0b8d2762b06b6b768e2eb2b79093f291d90fb6f987570b47f87d01a52771"
+    },
+    {
+      "role": "frozen-questions",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/questions.json",
+      "bytes": 2552,
+      "sha256": "3cfa3289eb0ceae3d31ad452f5ad47e3e7da0ed24eadbd386467d6550e42ca1d"
+    },
+    {
+      "role": "question-source-freeze",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/question-source-freeze.json",
+      "bytes": 6035,
+      "sha256": "89a8b5ac61bf43843e99e55eeaf3ad463eb33fd322c3b5cbbac0e6b91243b6bd"
+    },
+    {
+      "role": "original-to-corrected-key-diff",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/original-to-corrected-key.diff",
+      "bytes": 65651,
+      "sha256": "7fe73696ea06e79e11c0c2d0f3ca14f1cbad29b310fc9f7bf9d0dc9593e81e7d"
+    },
+    {
+      "role": "correction-v1-to-final-diff",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/correction-v1-to-final.diff",
+      "bytes": 4010,
+      "sha256": "d080599f73acdd5c4fce65137482a07235901fec8b02de06833f9cb2b3f4f622"
+    },
+    {
+      "role": "independent-validator-receipt",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/blind-validation-final.md",
+      "bytes": 1519,
+      "sha256": "c88ad410efe7a8ac8e500ac8f487a716742fdde52506570a9e5932cd269ad916"
+    },
+    {
+      "role": "accepted-W105-driver",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs",
+      "bytes": 29506,
+      "sha256": "ac0ca16b2781d387fe3ae2ccc15b79742be4784f26c1bc1c3d9522725f7267e3"
+    },
+    {
+      "role": "reviewed-W103-harness",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs",
+      "bytes": 19586,
+      "sha256": "d7703fbf9810cc6540236c55a7d478708497d94e65a3bae0b00c2d3294396624"
+    },
+    {
+      "role": "accepted-W105-manifest-R3",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/pre-preparation-manifest-R3.json",
+      "bytes": 7551,
+      "sha256": "5ebf97ca3925d7bf2d9a3ad52bb5b9715d12c0a7e36caee42aa2a354e039ee21"
+    },
+    {
+      "role": "post-score-preservation-disclosure",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/post-score-preservation.json",
+      "bytes": 1341,
+      "sha256": "d362743252097c7f75d3bd92683532144dfd9a44e41b526c1157a2c58f953658"
+    },
+    {
+      "role": "unchanged-baseline-packets",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json",
+      "bytes": 115152,
+      "sha256": "736b9b5a1d6ecba34e08b089146cadce19342d9142c6b6a977fa0eb32042f9b5"
+    },
+    {
+      "role": "unchanged-policy-B-packets",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json",
+      "bytes": 314594,
+      "sha256": "cf2ae4f987994eb621a6a9a2e3497f141321d1c62b234cbd0df5dc222325510e"
+    },
+    {
+      "role": "frozen-source:bisellium-main/README.md",
+      "path": "/home/edckt/projects/bisellium/README.md",
+      "bytes": 11648,
+      "sha256": "2c2e5b4084be04e919dbc40fb3683efc4d32a49014cbdbcef5fbef5ede3b6d9e"
+    },
+    {
+      "role": "frozen-source:bisellium-main/AGENTS.md",
+      "path": "/home/edckt/projects/bisellium/AGENTS.md",
+      "bytes": 3981,
+      "sha256": "7857747d9b658cadd62f41a1573464358c22ea2b81a8894f652de4115fb6aec3"
+    },
+    {
+      "role": "frozen-source:bisellium-main/package.json",
+      "path": "/home/edckt/projects/bisellium/package.json",
+      "bytes": 4879,
+      "sha256": "2262ead2a9f33b2d398f68b071ab42d892cfe331b81fb1714c9f21ce7689820c"
+    },
+    {
+      "role": "frozen-source:bisellium-main/docs/ADOPTION.md",
+      "path": "/home/edckt/projects/bisellium/docs/ADOPTION.md",
+      "bytes": 73266,
+      "sha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321"
+    },
+    {
+      "role": "frozen-source:bisellium-main/docs/STUDIO.md",
+      "path": "/home/edckt/projects/bisellium/docs/STUDIO.md",
+      "bytes": 5922,
+      "sha256": "6e54462d61bb1309822d2144a415717a8853c3f447200ad562b1e4e1cb142e4b"
+    },
+    {
+      "role": "frozen-source:bisellium-main/docs/LEX_TEMPLATE.md",
+      "path": "/home/edckt/projects/bisellium/docs/LEX_TEMPLATE.md",
+      "bytes": 2096,
+      "sha256": "2bd043b4add108d6caf2459d2a821200b68204c5f8298c3a3038a8fef829b856"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/cli/src/main.ts",
+      "path": "/home/edckt/projects/bisellium/packages/cli/src/main.ts",
+      "bytes": 11576,
+      "sha256": "6df7b91dcffacb516b82e2e563b30cb9c0a35d4cc9e0e40f01b4f1b07305eaeb"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/cli/src/context.ts",
+      "path": "/home/edckt/projects/bisellium/packages/cli/src/context.ts",
+      "bytes": 355,
+      "sha256": "6b4435482ee2c910ef94629b3611c996f3e228759d3ececbf7ef8e15a7fdd94e"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/core/src/index.ts",
+      "path": "/home/edckt/projects/bisellium/packages/core/src/index.ts",
+      "bytes": 675,
+      "sha256": "d6612bb09bc34e64384521fc08a002e0eac8d37035619ae6c7ff4f95a60ee984"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/schema/src/index.ts",
+      "path": "/home/edckt/projects/bisellium/packages/schema/src/index.ts",
+      "bytes": 11415,
+      "sha256": "1dbe7ad4be42394cb2c86b021c06b2a9bd491111cb2d22e6b72326c7e77fd515"
+    },
+    {
+      "role": "frozen-source:bisellium-main/adapters/epoch0/src/index.ts",
+      "path": "/home/edckt/projects/bisellium/adapters/epoch0/src/index.ts",
+      "bytes": 1698,
+      "sha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/decisions/D-014.md",
+      "path": "/home/edckt/projects/bisellium/studio/decisions/D-014.md",
+      "bytes": 5194,
+      "sha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/leges/engineering.md",
+      "path": "/home/edckt/projects/bisellium/studio/leges/engineering.md",
+      "bytes": 2792,
+      "sha256": "8cb5877402303e859175ce6f1f251f0c41178c30822b0ac6b071d59e95c2690f"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/opera/W-089.md",
+      "path": "/home/edckt/projects/bisellium/studio/opera/W-089.md",
+      "bytes": 292,
+      "sha256": "da68764daa89d8605efa9c70f61fcee723e49d9c2071a5c860c4f7ab4d743cfa"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/opera/W-102.md",
+      "path": "/home/edckt/projects/bisellium/studio/opera/W-102.md",
+      "bytes": 970,
+      "sha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718"
+    },
+    {
+      "role": "frozen-source:epoch0-main/README.md",
+      "path": "/home/edckt/projects/epoch0/README.md",
+      "bytes": 4409,
+      "sha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03"
+    },
+    {
+      "role": "frozen-source:epoch0-main/AGENTS.md",
+      "path": "/home/edckt/projects/epoch0/AGENTS.md",
+      "bytes": 10184,
+      "sha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad"
+    },
+    {
+      "role": "frozen-source:epoch0-main/docs/program/PROGRAM.md",
+      "path": "/home/edckt/projects/epoch0/docs/program/PROGRAM.md",
+      "bytes": 3753,
+      "sha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b"
+    },
+    {
+      "role": "frozen-source:epoch0-main/docs/program/BOARD.md",
+      "path": "/home/edckt/projects/epoch0/docs/program/BOARD.md",
+      "bytes": 322573,
+      "sha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/README.md",
+      "path": "/home/edckt/projects/Yan Mo/README.md",
+      "bytes": 3216,
+      "sha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/CLAUDE.md",
+      "path": "/home/edckt/projects/Yan Mo/CLAUDE.md",
+      "bytes": 12123,
+      "sha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/docs/dev-workflow.md",
+      "path": "/home/edckt/projects/Yan Mo/docs/dev-workflow.md",
+      "bytes": 16223,
+      "sha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/docs/vertical-slice-spec.md",
+      "path": "/home/edckt/projects/Yan Mo/docs/vertical-slice-spec.md",
+      "bytes": 4811,
+      "sha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74"
+    }
+  ]
+}

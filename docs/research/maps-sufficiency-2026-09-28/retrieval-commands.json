@@ -1,0 +1,18 @@
+[
+  [
+    "node",
+    "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs",
+    "--dataset=/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/route-dataset.json",
+    "--binding=/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/bindings.json",
+    "--mode=search",
+    "--limits={\"excerptFiles\":4,\"excerptCharacters\":6000}"
+  ],
+  [
+    "node",
+    "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs",
+    "--dataset=/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/route-dataset.json",
+    "--binding=/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/bindings.json",
+    "--mode=route",
+    "--limits={\"excerptFiles\":4,\"excerptCharacters\":6000}"
+  ]
+]

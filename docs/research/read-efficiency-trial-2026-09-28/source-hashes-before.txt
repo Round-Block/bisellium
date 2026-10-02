@@ -1,0 +1,3 @@
+d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321  docs/ADOPTION.md
+27a5ed3ad614b1ac241a831413c1e4282f25f3b0fd69bb827e1e153213ebcfca  studio/leges/design.md
+8cb5877402303e859175ce6f1f251f0c41178c30822b0ac6b071d59e95c2690f  studio/leges/engineering.md

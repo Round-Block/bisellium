@@ -1,0 +1,11 @@
+# behaviour: 1
+# command: node --import tsx packages/commands/src/source.test.ts . 1
+# exit: 1
+# at: 2026-09-28T14:36:37.525Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b1 locate succeeds deterministically                                              {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}
+FAIL  b1 locate returns registered identity/path/range/reason                           
+FAIL  b1 locate returns heading ancestry                                                
+PASS  b1 duplicate project ids are rejected                                             {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}

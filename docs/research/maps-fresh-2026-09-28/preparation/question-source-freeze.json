@@ -1,0 +1,169 @@
+{
+  "version": 1,
+  "frozenAt": "2026-09-28T10:00:26.946502+00:00",
+  "questionsPath": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/questions.json",
+  "questionsSha256": "3cfa3289eb0ceae3d31ad452f5ad47e3e7da0ed24eadbd386467d6550e42ca1d",
+  "files": [
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "README.md",
+      "fileSha256": "2c2e5b4084be04e919dbc40fb3683efc4d32a49014cbdbcef5fbef5ede3b6d9e"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "AGENTS.md",
+      "fileSha256": "7857747d9b658cadd62f41a1573464358c22ea2b81a8894f652de4115fb6aec3"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "package.json",
+      "fileSha256": "2262ead2a9f33b2d398f68b071ab42d892cfe331b81fb1714c9f21ce7689820c"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "docs/ADOPTION.md",
+      "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "docs/STUDIO.md",
+      "fileSha256": "6e54462d61bb1309822d2144a415717a8853c3f447200ad562b1e4e1cb142e4b"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "docs/LEX_TEMPLATE.md",
+      "fileSha256": "2bd043b4add108d6caf2459d2a821200b68204c5f8298c3a3038a8fef829b856"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "packages/cli/src/main.ts",
+      "fileSha256": "6df7b91dcffacb516b82e2e563b30cb9c0a35d4cc9e0e40f01b4f1b07305eaeb"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "packages/cli/src/context.ts",
+      "fileSha256": "6b4435482ee2c910ef94629b3611c996f3e228759d3ececbf7ef8e15a7fdd94e"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "packages/core/src/index.ts",
+      "fileSha256": "d6612bb09bc34e64384521fc08a002e0eac8d37035619ae6c7ff4f95a60ee984"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "packages/schema/src/index.ts",
+      "fileSha256": "1dbe7ad4be42394cb2c86b021c06b2a9bd491111cb2d22e6b72326c7e77fd515"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "adapters/epoch0/src/index.ts",
+      "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "studio/decisions/D-014.md",
+      "fileSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "studio/leges/engineering.md",
+      "fileSha256": "8cb5877402303e859175ce6f1f251f0c41178c30822b0ac6b071d59e95c2690f"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "studio/opera/W-089.md",
+      "fileSha256": "da68764daa89d8605efa9c70f61fcee723e49d9c2071a5c860c4f7ab4d743cfa"
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "root": "/home/edckt/projects/bisellium",
+      "path": "studio/opera/W-102.md",
+      "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718"
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "root": "/home/edckt/projects/epoch0",
+      "path": "README.md",
+      "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03"
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "root": "/home/edckt/projects/epoch0",
+      "path": "AGENTS.md",
+      "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad"
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "root": "/home/edckt/projects/epoch0",
+      "path": "docs/program/PROGRAM.md",
+      "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b"
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "root": "/home/edckt/projects/epoch0",
+      "path": "docs/program/BOARD.md",
+      "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6"
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "root": "/home/edckt/projects/Yan Mo",
+      "path": "README.md",
+      "fileSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73"
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "root": "/home/edckt/projects/Yan Mo",
+      "path": "CLAUDE.md",
+      "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e"
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "root": "/home/edckt/projects/Yan Mo",
+      "path": "docs/dev-workflow.md",
+      "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af"
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "root": "/home/edckt/projects/Yan Mo",
+      "path": "docs/vertical-slice-spec.md",
+      "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74"
+    }
+  ]
+}

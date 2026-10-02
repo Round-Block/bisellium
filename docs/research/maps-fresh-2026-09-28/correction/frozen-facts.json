@@ -1,0 +1,266 @@
+{
+  "version": 1,
+  "questions": {
+    "version": 1,
+    "cases": [
+      {
+        "id": "B8",
+        "project": "bisellium",
+        "question": "What does the current epoch0 snapshot adapter actually return, and what does its send operation report?",
+        "references": []
+      },
+      {
+        "id": "B9",
+        "project": "bisellium",
+        "question": "What evidence must every done engineering item carry, and what posture follows when the weekly allowance is exceeded?",
+        "references": []
+      },
+      {
+        "id": "B10",
+        "project": "bisellium",
+        "question": "Which model and effort does the corrected active censor assignment use, and what independence constraints remain explicit?",
+        "references": []
+      },
+      {
+        "id": "B11",
+        "project": "bisellium",
+        "question": "What are the recorded states of W-089 and W-102, and what does each file identify about its work?",
+        "references": []
+      },
+      {
+        "id": "E8",
+        "project": "epoch0",
+        "question": "Which source surfaces are authoritative for project task state, and what rule prevents editing an applied migration?",
+        "references": []
+      },
+      {
+        "id": "E9",
+        "project": "epoch0",
+        "question": "Which two battle-state constructors must stay mirrored, what test guards them, and how are registry ability values interpreted?",
+        "references": []
+      },
+      {
+        "id": "E10",
+        "project": "epoch0",
+        "question": "What is the current status of M2 and M3, and which ladder now controls work ordering?",
+        "references": []
+      },
+      {
+        "id": "E11",
+        "project": "epoch0",
+        "question": "Which durable board states exist around scheduled and done, and how is in-train status determined?",
+        "references": []
+      },
+      {
+        "id": "Y8",
+        "project": "yan-mo",
+        "question": "What are Yan Mo’s rules for randomness, managed resources, and deliberate mercy?",
+        "references": []
+      },
+      {
+        "id": "Y9",
+        "project": "yan-mo",
+        "question": "What build gates precede content expansion, and what is the required per-feature implementation and verification loop?",
+        "references": []
+      },
+      {
+        "id": "Y10",
+        "project": "yan-mo",
+        "question": "What does the E1 slice include, and which major systems are explicitly out of scope?",
+        "references": []
+      },
+      {
+        "id": "Y11",
+        "project": "yan-mo",
+        "question": "What are the E1 success criteria for the read, mercy, and determinism loop, and what evidence defines completion?",
+        "references": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "B8",
+      "project": "bisellium",
+      "question": "What does the current epoch0 snapshot adapter actually return, and what does its send operation report?",
+      "requirements": [
+        {
+          "id": "B8-R1",
+          "essentialRequestedFact": "Snapshot is empty."
+        },
+        {
+          "id": "B8-R2",
+          "essentialRequestedFact": "Send is undelivered and unimplemented."
+        }
+      ]
+    },
+    {
+      "id": "B9",
+      "project": "bisellium",
+      "question": "What evidence must every done engineering item carry, and what posture follows when the weekly allowance is exceeded?",
+      "requirements": [
+        {
+          "id": "B9-R1",
+          "essentialRequestedFact": "Done items carry test, review, and red evidence."
+        },
+        {
+          "id": "B9-R2",
+          "essentialRequestedFact": "Over-budget means conserve and no new items."
+        }
+      ]
+    },
+    {
+      "id": "B10",
+      "project": "bisellium",
+      "question": "Which model and effort does the corrected active censor assignment use, and what independence constraints remain explicit?",
+      "requirements": [
+        {
+          "id": "B10-R1",
+          "essentialRequestedFact": "Censor is gpt-5.6-sol at high effort."
+        },
+        {
+          "id": "B10-R2",
+          "essentialRequestedFact": "Censor is read-only, sole gate, historical records preserved."
+        }
+      ]
+    },
+    {
+      "id": "B11",
+      "project": "bisellium",
+      "question": "What are the recorded states of W-089 and W-102, and what does each file identify about its work?",
+      "requirements": [
+        {
+          "id": "B11-R1",
+          "essentialRequestedFact": "W-089 is greenlit."
+        },
+        {
+          "id": "B11-R2",
+          "essentialRequestedFact": "W-102 is done with passed gates."
+        }
+      ]
+    },
+    {
+      "id": "E8",
+      "project": "epoch0",
+      "question": "Which source surfaces are authoritative for project task state, and what rule prevents editing an applied migration?",
+      "requirements": [
+        {
+          "id": "E8-R1",
+          "essentialRequestedFact": "Backend then migrations then tests then docs."
+        },
+        {
+          "id": "E8-R2",
+          "essentialRequestedFact": "Never edit applied migration; use next sequential file."
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "project": "epoch0",
+      "question": "Which two battle-state constructors must stay mirrored, what test guards them, and how are registry ability values interpreted?",
+      "requirements": [
+        {
+          "id": "E9-R1",
+          "essentialRequestedFact": "Production and sim constructors must mirror; differential test guards."
+        },
+        {
+          "id": "E9-R2",
+          "essentialRequestedFact": "Registry values are maxed; subtract upgrade rungs."
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "project": "epoch0",
+      "question": "What is the current status of M2 and M3, and which ladder now controls work ordering?",
+      "requirements": [
+        {
+          "id": "E10-R1",
+          "essentialRequestedFact": "M2 done, M3 live."
+        },
+        {
+          "id": "E10-R2",
+          "essentialRequestedFact": "P ladder controls order; M ladder maps scope."
+        }
+      ]
+    },
+    {
+      "id": "E11",
+      "project": "epoch0",
+      "question": "Which durable board states exist around scheduled and done, and how is in-train status determined?",
+      "requirements": [
+        {
+          "id": "E11-R1",
+          "essentialRequestedFact": "Board durable states include scheduled and done."
+        },
+        {
+          "id": "E11-R2",
+          "essentialRequestedFact": "In-train is derived and picked-up rows stay scheduled."
+        }
+      ]
+    },
+    {
+      "id": "Y8",
+      "project": "yan-mo",
+      "question": "What are Yan Mo’s rules for randomness, managed resources, and deliberate mercy?",
+      "requirements": [
+        {
+          "id": "Y8-R1",
+          "essentialRequestedFact": "No RNG; state functions and seeded variety only."
+        },
+        {
+          "id": "Y8-R2",
+          "essentialRequestedFact": "Resources are HP, Poise, heals, qi."
+        },
+        {
+          "id": "Y8-R3",
+          "essentialRequestedFact": "Kills are explicit tap/hold; ink and blood record mercy."
+        }
+      ]
+    },
+    {
+      "id": "Y9",
+      "project": "yan-mo",
+      "question": "What build gates precede content expansion, and what is the required per-feature implementation and verification loop?",
+      "requirements": [
+        {
+          "id": "Y9-R1",
+          "essentialRequestedFact": "E0/E1/fun/tone/E2-E3/E5-cost precede content."
+        },
+        {
+          "id": "Y9-R2",
+          "essentialRequestedFact": "Ground/spec/plan/implement/test/verify/review/commit."
+        }
+      ]
+    },
+    {
+      "id": "Y10",
+      "project": "yan-mo",
+      "question": "What does the E1 slice include, and which major systems are explicitly out of scope?",
+      "requirements": [
+        {
+          "id": "Y10-R1",
+          "essentialRequestedFact": "E1 includes arena, kit, enemies, deterministic systems."
+        },
+        {
+          "id": "Y10-R2",
+          "essentialRequestedFact": "Traversal and other major systems are out of scope."
+        }
+      ]
+    },
+    {
+      "id": "Y11",
+      "project": "yan-mo",
+      "question": "What are the E1 success criteria for the read, mercy, and determinism loop, and what evidence defines completion?",
+      "requirements": [
+        {
+          "id": "Y11-R1",
+          "essentialRequestedFact": "Eight criteria cover read, mercy, qi, fairness, hesitation, determinism."
+        },
+        {
+          "id": "Y11-R2",
+          "essentialRequestedFact": "Done requires playable build, fresh players, deterministic evidence, tuning record."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "cwd": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment",
+  "argv": [
+    "node",
+    "docs/research/read-efficiency/targeted-read-eval.mjs",
+    "aggregate",
+    "--scoring-package",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/run-v1-2026-09-29/review/scoring-package.json",
+    "--verdicts",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/run-v1-2026-09-29/censor/answer-verdicts.json",
+    "--output",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/run-v1-2026-09-29/decision.json"
+  ]
+}

@@ -1,0 +1,18 @@
+# opus: W-105
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-28T09:44:58.820Z
+# tree: tree:1b3f2838f7cacc5049ff638bf2857e7dfed38647
+
+FAIL
+
+Blocking finding:
+
+- sourceAnchorIdentityDrift (maps-repair-driver.mjs:261) incorrectly treats normal baseline excerpt truncation as positioned-content drift. The W-103 harness preserves full line ranges while truncating excerpt text at the character budget. An entry can therefore name the anchor line without supplying enough characters to reach the anchor slice. An independent probe of this valid shape threw source identity mismatch: positioned content instead of recording missing evidence.
+
+Wrong SHA for the expected repository/path should remain immediate drift. Positioned-content drift requires the excerpt to contain the complete anchor extent; text ending before that extent is uncovered evidence. Focused tests should cover single-line character truncation and multiline truncation.
+
+The four round-two adversarial cases now behave correctly, Behavior 8 passes 2/2, controls remain 17/17 curated, 0/17 empty, and 39/39 masks, the 21-file freeze verifies under Node v25.9.0, and the tree is clean.

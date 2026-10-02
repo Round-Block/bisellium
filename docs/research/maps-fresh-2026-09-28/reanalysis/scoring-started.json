@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "at": "2026-09-28T10:31:03.575159+00:00",
+  "correctedKeySha256": "7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7",
+  "commands": [
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output baseline-score-corrected.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output policy-B-score-corrected.json"
+  ],
+  "retryPermitted": false
+}

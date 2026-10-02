@@ -1,0 +1,223 @@
+# behaviour: 4
+# command: node --test --test-isolation=none --test-name-pattern=behaviour 4 docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-26T15:22:22.827Z
+# sella: builder-sol
+# tree: dirty:91dcef9ef0a15b49e4aecbfcdd0a3e71db41d14d
+
+▶ behaviour 4 containment and budgets
+  ✖ actually reaches and rejects a final symlink escape after an earlier candidate (6.580989ms)
+  ✖ rejects intermediate parent escapes, dangling links, absolute/traversal/dot/backslash paths, and excessive path shapes (10.434334ms)
+  ✖ applies inventory and component exclusions to lexical and canonical paths, including in-root aliases (4.763418ms)
+  ✖ uses only manifest candidates and rejects unsupported extension, binary, invalid UTF-8, NUL, and non-regular inputs (4.648026ms)
+  ✖ lets route read an explicitly mapped research reference without admitting it to search (2.503948ms)
+  ✖ enforces every scan budget independently and validates lower bounds and hard maxima before source access (1.122ms)
+  ✖ skips oversized files by metadata and counts candidates, failed attempts, opens, and bytes honestly (2.077581ms)
+  ✖ enforces excerpt-file and character budgets separately while continuing the full scan (1.976613ms)
+  ✖ caps failure samples at 32 while preserving the aggregate rejection count (2.288802ms)
+  ✖ caps each CLI JSON input at one MiB before parsing (69.320916ms)
+✖ behaviour 4 containment and budgets (108.882663ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 0
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 128.955683
+
+✖ failing tests:
+
+test at docs/research/bisellium-maps-harness.test.mjs:382:11
+✖ actually reaches and rejects a final symlink escape after an earlier candidate (6.580989ms)
+  AssertionError [ERR_ASSERTION]: the escaping symlink itself must be examined and rejected, not masked by an earlier file budget stop
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:392:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:382:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:400:11
+✖ rejects intermediate parent escapes, dangling links, absolute/traversal/dot/backslash paths, and excessive path shapes (10.434334ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(failures.some(failure => failure.path === "linked/secret.md" && /parent.*escape|contain/i.test(failure.reason)))
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:415:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:400:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:421:11
+✖ applies inventory and component exclusions to lexical and canonical paths, including in-root aliases (4.763418ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(repo.failures.some(failure => failure.path === "oracle-alias.md" && /canonical.*excl|excluded.*target|alias/i.test(failure.reason)))
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:436:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:421:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:440:11
+✖ uses only manifest candidates and rejects unsupported extension, binary, invalid UTF-8, NUL, and non-regular inputs (4.648026ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'listed.md'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:453:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:440:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:458:11
+✖ lets route read an explicitly mapped research reference without admitting it to search (2.503948ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'research/curated.md'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:470:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:458:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:473:11
+✖ enforces every scan budget independently and validates lower bounds and hard maxima before source access (1.122ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:479:7)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:473:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid budget directories/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:513:11
+✖ skips oversized files by metadata and counts candidates, failed attempts, opens, and bytes honestly (2.077581ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'b-small.md'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:521:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:513:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:527:11
+✖ enforces excerpt-file and character budgets separately while continuing the full scan (1.976613ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:535:7)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:527:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /invalid budget excerptFiles/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:549:11
+✖ caps failure samples at 32 while preserving the aggregate rejection count (2.288802ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 40
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:557:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:549:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 40,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:562:11
+✖ caps each CLI JSON input at one MiB before parsing (69.320916ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /dataset|JSON input.*1 MiB|1 MiB.*dataset/i. Input:
+  
+  'W-103 harness is intentionally unimplemented\n'
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:574:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:562:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'W-103 harness is intentionally unimplemented\n',
+    expected: /dataset|JSON input.*1 MiB|1 MiB.*dataset/i,
+    operator: 'match',
+    diff: 'simple'
+  }

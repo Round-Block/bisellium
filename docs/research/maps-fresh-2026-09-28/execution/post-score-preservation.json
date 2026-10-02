@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "recordedAt": "2026-09-28T10:09:05.634927+00:00",
+  "stage": "post_score_preservation_only",
+  "notAPreScoreFreeze": true,
+  "files": [
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/accepted-preparation-verification.json",
+      "sha256": "432d777efb7f1c33f6720f01fb25cb2a9f92df88092db9a8f0ff489b1eea09ec",
+      "bytes": 67
+    },
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json",
+      "sha256": "736b9b5a1d6ecba34e08b089146cadce19342d9142c6b6a977fa0eb32042f9b5",
+      "bytes": 115152
+    },
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-score.json",
+      "sha256": "fdb02582b7a8cd9deae48ad44b554ced507aa4a80bc6c7c39614607f790d1784",
+      "bytes": 6976
+    },
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json",
+      "sha256": "cf2ae4f987994eb621a6a9a2e3497f141321d1c62b234cbd0df5dc222325510e",
+      "bytes": 314594
+    },
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-score.json",
+      "sha256": "fdb02582b7a8cd9deae48ad44b554ced507aa4a80bc6c7c39614607f790d1784",
+      "bytes": 6976
+    }
+  ]
+}

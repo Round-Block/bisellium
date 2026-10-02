@@ -1,0 +1,16 @@
+{
+  "cwd": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment",
+  "argv": [
+    "npm",
+    "run",
+    "-s",
+    "bisellium",
+    "--",
+    "verify",
+    "W-107",
+    "--studio",
+    "studio",
+    "--repo",
+    "."
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "aggregate": {
+    "callsByTool": {
+      "expand": 0,
+      "locate": 12,
+      "read": 0
+    },
+    "fallbackCalls": 17,
+    "fallbackResponseBytes": 178866,
+    "productionCalls": 12,
+    "productionErrors": {
+      "INVALID_INPUT": 12
+    },
+    "productionSuccesses": 0,
+    "runs": 6
+  },
+  "candidateInputSchema": {
+    "expand": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "locate": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "read": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "source": "docs/research/read-efficiency/targeted-read-eval.mjs evalTools"
+  },
+  "measure": "trial interface behavior only; this does not prove a corrected interface would meet adoption",
+  "runs": [
+    {
+      "calls": {
+        "expand": 0,
+        "locate": 3,
+        "read": 0
+      },
+      "case": "B8",
+      "fallbackCalls": 3,
+      "fallbackResponseBytes": 9568,
+      "ordinal": 2,
+      "productionCalls": 3,
+      "productionErrors": {
+        "INVALID_INPUT": 3
+      },
+      "productionSuccesses": 0
+    },
+    {
+      "calls": {
+        "expand": 0,
+        "locate": 2,
+        "read": 0
+      },
+      "case": "B9",
+      "fallbackCalls": 3,
+      "fallbackResponseBytes": 42308,
+      "ordinal": 3,
+      "productionCalls": 2,
+      "productionErrors": {
+        "INVALID_INPUT": 2
+      },
+      "productionSuccesses": 0
+    },
+    {
+      "calls": {
+        "expand": 0,
+        "locate": 1,
+        "read": 0
+      },
+      "case": "E8",
+      "fallbackCalls": 3,
+      "fallbackResponseBytes": 22198,
+      "ordinal": 6,
+      "productionCalls": 1,
+      "productionErrors": {
+        "INVALID_INPUT": 1
+      },
+      "productionSuccesses": 0
+    },
+    {
+      "calls": {
+        "expand": 0,
+        "locate": 4,
+        "read": 0
+      },
+      "case": "E9",
+      "fallbackCalls": 4,
+      "fallbackResponseBytes": 80875,
+      "ordinal": 7,
+      "productionCalls": 4,
+      "productionErrors": {
+        "INVALID_INPUT": 4
+      },
+      "productionSuccesses": 0
+    },
+    {
+      "calls": {
+        "expand": 0,
+        "locate": 1,
+        "read": 0
+      },
+      "case": "Y8",
+      "fallbackCalls": 2,
+      "fallbackResponseBytes": 15902,
+      "ordinal": 10,
+      "productionCalls": 1,
+      "productionErrors": {
+        "INVALID_INPUT": 1
+      },
+      "productionSuccesses": 0
+    },
+    {
+      "calls": {
+        "expand": 0,
+        "locate": 1,
+        "read": 0
+      },
+      "case": "Y9",
+      "fallbackCalls": 2,
+      "fallbackResponseBytes": 8015,
+      "ordinal": 11,
+      "productionCalls": 1,
+      "productionErrors": {
+        "INVALID_INPUT": 1
+      },
+      "productionSuccesses": 0
+    }
+  ],
+  "version": 1
+}

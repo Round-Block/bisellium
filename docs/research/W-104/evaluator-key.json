@@ -1,0 +1,602 @@
+{
+  "version": 1,
+  "rule": "A unit is a nonblank authoritative-span source line and is covered only when an emitted excerpt supplies the entire line at its keyed repository/path/line and file hash. Blank lines are excluded; unions do not double count. A span is covered only when every unit is covered.",
+  "characterConvention": "JavaScript UTF-16 String.length and String.slice",
+  "spans": [
+    {
+      "case": "B6",
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "docs/ADOPTION.md",
+      "start": 87,
+      "end": 99,
+      "sha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+      "lines": [
+        "`verdict` copies a transcript from `--from` (or stdin when omitted) into",
+        "`ci/<opus>-spec-<n>.log` for `--phase spec`, or",
+        "`ci/<opus>-review-<n>.log` for `--phase build` (the default). A `--from`",
+        "path is a read source and may be outside the officina; it must name a regular",
+        "file. The header records the opus, phase, positive-integer round, non-blank",
+        "sella and free-text outcome, optional model, timestamp, and the capture-time",
+        "state of the repository containing `--studio`. Header values cannot contain",
+        "CR or LF. An existing target is never overwritten.",
+        "",
+        "The command writes evidence only: it does not update `probationes`, state,",
+        "events, or timelines. A build orchestrator can follow it with",
+        "`review --evidence <path>`; spec verdicts are citable evidence for `retro`, not a second",
+        "spec gate."
+      ],
+      "units": [
+        {
+          "line": 87,
+          "text": "`verdict` copies a transcript from `--from` (or stdin when omitted) into"
+        },
+        {
+          "line": 88,
+          "text": "`ci/<opus>-spec-<n>.log` for `--phase spec`, or"
+        },
+        {
+          "line": 89,
+          "text": "`ci/<opus>-review-<n>.log` for `--phase build` (the default). A `--from`"
+        },
+        {
+          "line": 90,
+          "text": "path is a read source and may be outside the officina; it must name a regular"
+        },
+        {
+          "line": 91,
+          "text": "file. The header records the opus, phase, positive-integer round, non-blank"
+        },
+        {
+          "line": 92,
+          "text": "sella and free-text outcome, optional model, timestamp, and the capture-time"
+        },
+        {
+          "line": 93,
+          "text": "state of the repository containing `--studio`. Header values cannot contain"
+        },
+        {
+          "line": 94,
+          "text": "CR or LF. An existing target is never overwritten."
+        },
+        {
+          "line": 96,
+          "text": "The command writes evidence only: it does not update `probationes`, state,"
+        },
+        {
+          "line": 97,
+          "text": "events, or timelines. A build orchestrator can follow it with"
+        },
+        {
+          "line": 98,
+          "text": "`review --evidence <path>`; spec verdicts are citable evidence for `retro`, not a second"
+        },
+        {
+          "line": 99,
+          "text": "spec gate."
+        }
+      ]
+    },
+    {
+      "case": "B7",
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "docs/ADOPTION.md",
+      "start": 581,
+      "end": 610,
+      "sha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321",
+      "lines": [
+        "A `tree:<hash>` certificate is not `git rev-parse <ref>^{tree}`. That would",
+        "include the officina's own bookkeeping — opera front matter, `ci/*.log`,",
+        "receipts — everything under the studio dir and `.bisellium/`. If it were",
+        "used: (a) `bisellium verify` writing its own result back into an opus, once",
+        "committed, moves the hash, so every certificate a previous `verify` wrote",
+        "goes `stale` purely because `verify` (or a commit of its output) ran; and",
+        "(b) `verify`'s own writes, before they're even committed, would make the",
+        "working tree \"dirty\" and refuse to certify anything at all — a studio can",
+        "never verify itself twice in a row.",
+        "",
+        "Instead, `sourceTreeHash(repo, excludeDirs, ref = \"HEAD\")`",
+        "(`@bisellium/shim`) hashes `git ls-tree -r <ref>` — one line per entry",
+        "(mode, type, blob sha, path), already path-sorted — with a sha1 over every",
+        "line whose path is *not* under one of `excludeDirs` (repo-root-relative;",
+        "`verify` and `check --repo` both pass the studio dir and `.bisellium`, plus",
+        "any `source_excludes` the manifest declares — below). Committing a change",
+        "that only touches an excluded path can't move this hash. The matching",
+        "working-tree check, `isDirtyOutside(repo, excludeDirs)`, is the same idea",
+        "applied to `git status --porcelain`: an uncommitted change only counts as",
+        "\"dirty\" when it's outside those same paths. `verify`'s `--repo` clean-tree",
+        "requirement (below) and `check --repo`'s staleness comparison both use this",
+        "pair, not the raw git plumbing.",
+        "",
+        "`source_excludes` (`bisellium.yml`, above) extends the exclusion set beyond",
+        "the studio dir and `.bisellium/` with repo-root-relative paths of the",
+        "manifest's own choosing — a studio nested in a monorepo alongside unrelated",
+        "sibling studios or fixtures (e.g. `studio/`'s own `source_excludes:",
+        "[examples/]`, and `examples/sample-studio`'s `source_excludes: [studio/,",
+        "examples/fixtures/]`) so that sibling's churn never moves this studio's",
+        "certificates. `check` blocks a non-list-of-strings value (`manifest.shape`)."
+      ],
+      "units": [
+        {
+          "line": 581,
+          "text": "A `tree:<hash>` certificate is not `git rev-parse <ref>^{tree}`. That would"
+        },
+        {
+          "line": 582,
+          "text": "include the officina's own bookkeeping — opera front matter, `ci/*.log`,"
+        },
+        {
+          "line": 583,
+          "text": "receipts — everything under the studio dir and `.bisellium/`. If it were"
+        },
+        {
+          "line": 584,
+          "text": "used: (a) `bisellium verify` writing its own result back into an opus, once"
+        },
+        {
+          "line": 585,
+          "text": "committed, moves the hash, so every certificate a previous `verify` wrote"
+        },
+        {
+          "line": 586,
+          "text": "goes `stale` purely because `verify` (or a commit of its output) ran; and"
+        },
+        {
+          "line": 587,
+          "text": "(b) `verify`'s own writes, before they're even committed, would make the"
+        },
+        {
+          "line": 588,
+          "text": "working tree \"dirty\" and refuse to certify anything at all — a studio can"
+        },
+        {
+          "line": 589,
+          "text": "never verify itself twice in a row."
+        },
+        {
+          "line": 591,
+          "text": "Instead, `sourceTreeHash(repo, excludeDirs, ref = \"HEAD\")`"
+        },
+        {
+          "line": 592,
+          "text": "(`@bisellium/shim`) hashes `git ls-tree -r <ref>` — one line per entry"
+        },
+        {
+          "line": 593,
+          "text": "(mode, type, blob sha, path), already path-sorted — with a sha1 over every"
+        },
+        {
+          "line": 594,
+          "text": "line whose path is *not* under one of `excludeDirs` (repo-root-relative;"
+        },
+        {
+          "line": 595,
+          "text": "`verify` and `check --repo` both pass the studio dir and `.bisellium`, plus"
+        },
+        {
+          "line": 596,
+          "text": "any `source_excludes` the manifest declares — below). Committing a change"
+        },
+        {
+          "line": 597,
+          "text": "that only touches an excluded path can't move this hash. The matching"
+        },
+        {
+          "line": 598,
+          "text": "working-tree check, `isDirtyOutside(repo, excludeDirs)`, is the same idea"
+        },
+        {
+          "line": 599,
+          "text": "applied to `git status --porcelain`: an uncommitted change only counts as"
+        },
+        {
+          "line": 600,
+          "text": "\"dirty\" when it's outside those same paths. `verify`'s `--repo` clean-tree"
+        },
+        {
+          "line": 601,
+          "text": "requirement (below) and `check --repo`'s staleness comparison both use this"
+        },
+        {
+          "line": 602,
+          "text": "pair, not the raw git plumbing."
+        },
+        {
+          "line": 604,
+          "text": "`source_excludes` (`bisellium.yml`, above) extends the exclusion set beyond"
+        },
+        {
+          "line": 605,
+          "text": "the studio dir and `.bisellium/` with repo-root-relative paths of the"
+        },
+        {
+          "line": 606,
+          "text": "manifest's own choosing — a studio nested in a monorepo alongside unrelated"
+        },
+        {
+          "line": 607,
+          "text": "sibling studios or fixtures (e.g. `studio/`'s own `source_excludes:"
+        },
+        {
+          "line": 608,
+          "text": "[examples/]`, and `examples/sample-studio`'s `source_excludes: [studio/,"
+        },
+        {
+          "line": 609,
+          "text": "examples/fixtures/]`) so that sibling's churn never moves this studio's"
+        },
+        {
+          "line": 610,
+          "text": "certificates. `check` blocks a non-list-of-strings value (`manifest.shape`)."
+        }
+      ]
+    },
+    {
+      "case": "E6",
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "AGENTS.md",
+      "start": 29,
+      "end": 31,
+      "sha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+      "lines": [
+        "3. **DESIGN PRE-REVIEWER** (major designs): premise/consistency check on a",
+        "   design doc before it is recorded — verify factual claims against the",
+        "   code, flag wrong premises loudly."
+      ],
+      "units": [
+        {
+          "line": 29,
+          "text": "3. **DESIGN PRE-REVIEWER** (major designs): premise/consistency check on a"
+        },
+        {
+          "line": 30,
+          "text": "   design doc before it is recorded — verify factual claims against the"
+        },
+        {
+          "line": 31,
+          "text": "   code, flag wrong premises loudly."
+        }
+      ]
+    },
+    {
+      "case": "E6",
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "AGENTS.md",
+      "start": 51,
+      "end": 65,
+      "sha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+      "lines": [
+        "**In every role EXCEPT the 3D-ASSET IMPLEMENTER: you NEVER implement.**",
+        "Merge authority belongs to exactly ONE role for standard code/process/records",
+        "trains — the CONSOLIDATED FINAL REVIEW (owner ruling 2026-08-30): only when",
+        "dispatched in that role does your PASS authorize the Controller to run",
+        "`finish_train.sh`. Stream-B brief/lore trains instead require separate fresh",
+        "Sol per-brief review plus Astra confirmation; reconciliation voids that",
+        "confirmation and requires fresh review and Astra reconfirmation. No other role",
+        "(canon reviewer alone, QA lead, architect, design pre-review, image",
+        "generator, 3D-asset implementer) carries any merge authority, and you",
+        "never execute merges yourself in any role. Review honestly; do not soften",
+        "findings; do not make edits unless your task explicitly says to. Only the",
+        "artifact-producing roles create output — Design Pre-Review, Image",
+        "Generator, and 3D-Asset Implementer — each solely within the scope its",
+        "role names; a reviewer role never touches code, and the 3D-Asset",
+        "Implementer never touches backend/client gameplay, migrations, or canon."
+      ],
+      "units": [
+        {
+          "line": 51,
+          "text": "**In every role EXCEPT the 3D-ASSET IMPLEMENTER: you NEVER implement.**"
+        },
+        {
+          "line": 52,
+          "text": "Merge authority belongs to exactly ONE role for standard code/process/records"
+        },
+        {
+          "line": 53,
+          "text": "trains — the CONSOLIDATED FINAL REVIEW (owner ruling 2026-08-30): only when"
+        },
+        {
+          "line": 54,
+          "text": "dispatched in that role does your PASS authorize the Controller to run"
+        },
+        {
+          "line": 55,
+          "text": "`finish_train.sh`. Stream-B brief/lore trains instead require separate fresh"
+        },
+        {
+          "line": 56,
+          "text": "Sol per-brief review plus Astra confirmation; reconciliation voids that"
+        },
+        {
+          "line": 57,
+          "text": "confirmation and requires fresh review and Astra reconfirmation. No other role"
+        },
+        {
+          "line": 58,
+          "text": "(canon reviewer alone, QA lead, architect, design pre-review, image"
+        },
+        {
+          "line": 59,
+          "text": "generator, 3D-asset implementer) carries any merge authority, and you"
+        },
+        {
+          "line": 60,
+          "text": "never execute merges yourself in any role. Review honestly; do not soften"
+        },
+        {
+          "line": 61,
+          "text": "findings; do not make edits unless your task explicitly says to. Only the"
+        },
+        {
+          "line": 62,
+          "text": "artifact-producing roles create output — Design Pre-Review, Image"
+        },
+        {
+          "line": 63,
+          "text": "Generator, and 3D-Asset Implementer — each solely within the scope its"
+        },
+        {
+          "line": 64,
+          "text": "role names; a reviewer role never touches code, and the 3D-Asset"
+        },
+        {
+          "line": 65,
+          "text": "Implementer never touches backend/client gameplay, migrations, or canon."
+        }
+      ]
+    },
+    {
+      "case": "E7",
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "README.md",
+      "start": 33,
+      "end": 49,
+      "sha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+      "lines": [
+        "## Migrations",
+        "",
+        "Schema + seed data live in `db/migrations/NNN_name.sql`, run in filename",
+        "order. The `api` container applies them at startup via",
+        "[backend/app/core/migrations.py](backend/app/core/migrations.py) and records",
+        "each file in a `schema_migrations` ledger (hash-checked so retroactive edits",
+        "to applied migrations fail loudly).",
+        "",
+        "To add a migration:",
+        "",
+        "1. Create `db/migrations/NNN_description.sql` — next sequential number, no gaps.",
+        "2. Wrap it in `BEGIN; ... COMMIT;` (all multi-statement migrations do).",
+        "3. Restart the API: `docker compose restart api`. The applier picks it up.",
+        "",
+        "**Never edit a migration after it has been applied.** The applier records a",
+        "SHA-256 of each file; editing `NNN_*.sql` after it has run will abort the",
+        "next startup with a hash mismatch. To amend behavior, write `NNN+1_*.sql`."
+      ],
+      "units": [
+        {
+          "line": 33,
+          "text": "## Migrations"
+        },
+        {
+          "line": 35,
+          "text": "Schema + seed data live in `db/migrations/NNN_name.sql`, run in filename"
+        },
+        {
+          "line": 36,
+          "text": "order. The `api` container applies them at startup via"
+        },
+        {
+          "line": 37,
+          "text": "[backend/app/core/migrations.py](backend/app/core/migrations.py) and records"
+        },
+        {
+          "line": 38,
+          "text": "each file in a `schema_migrations` ledger (hash-checked so retroactive edits"
+        },
+        {
+          "line": 39,
+          "text": "to applied migrations fail loudly)."
+        },
+        {
+          "line": 41,
+          "text": "To add a migration:"
+        },
+        {
+          "line": 43,
+          "text": "1. Create `db/migrations/NNN_description.sql` — next sequential number, no gaps."
+        },
+        {
+          "line": 44,
+          "text": "2. Wrap it in `BEGIN; ... COMMIT;` (all multi-statement migrations do)."
+        },
+        {
+          "line": 45,
+          "text": "3. Restart the API: `docker compose restart api`. The applier picks it up."
+        },
+        {
+          "line": 47,
+          "text": "**Never edit a migration after it has been applied.** The applier records a"
+        },
+        {
+          "line": 48,
+          "text": "SHA-256 of each file; editing `NNN_*.sql` after it has run will abort the"
+        },
+        {
+          "line": 49,
+          "text": "next startup with a hash mismatch. To amend behavior, write `NNN+1_*.sql`."
+        }
+      ]
+    },
+    {
+      "case": "Y6",
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "docs/dev-workflow.md",
+      "start": 69,
+      "end": 89,
+      "sha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+      "lines": [
+        "## 5 · Git conventions",
+        "",
+        "**The branch-per-task rule (locked 2026-07-23; supersedes the same-day two-track split — Edene: one machine, N tasks in flight).** The discriminator: **if it has a journal task, it has a branch** — docs and code alike. `main` holds only completed, merged work.",
+        "",
+        "```",
+        "START   git worktree add .worktrees/<slug> -b <type>/<slug>     type: docs/ · feature/ · chore/",
+        "        the journal task dir + Active row are created ON the branch (the journal rides the branch);",
+        "        tasks touching game/: one godot --headless --path game --import in the fresh worktree",
+        "WORK    commits on the branch; push the branch (in-flight work gets remote backup too);",
+        "        in-conversation review before each commit stays the review — the PR is the MERGE point.",
+        "        Messages: the docs prefixes (Narrative:/Design:/Docs:/Journal:/Tooling:/Workflow:) or",
+        "        type(scope): for code (feat(sim): · fix(perceive): · test(combat): …)",
+        "FINISH  close-out note + Completed flip committed on the branch → PR → **EDENE MERGES** (the merge",
+        "        is the acceptance act — Claude opens PRs and stops, never merges; squash-vs-merge is",
+        "        Edene's per-PR choice) → teardown after. Code PRs additionally need green CI (from E0).",
+        "        Pre-merge guard: git log main..HEAD | grep \"chore(journal): close\"  — never a separate journal PR",
+        "DIRECT-TO-MAIN — the one remaining case: single-commit conversational edits made and signed",
+        "        off live in-session. Everything task-shaped goes through a branch.",
+        "```",
+        "",
+        "The `start-task` / `finish-task` skills run this flow end-to-end. Enforcement: **the agent-merge ban hook** (`check-agent-merge.sh` blocks any agent-run `gh pr merge` — Claude cannot merge, by construction) + the worktree-edit guard hook + **branch protection on `main`** (PR required; owner bypass covers the direct-to-main case — pending Edene's token/UI, see §7)."
+      ],
+      "units": [
+        {
+          "line": 69,
+          "text": "## 5 · Git conventions"
+        },
+        {
+          "line": 71,
+          "text": "**The branch-per-task rule (locked 2026-07-23; supersedes the same-day two-track split — Edene: one machine, N tasks in flight).** The discriminator: **if it has a journal task, it has a branch** — docs and code alike. `main` holds only completed, merged work."
+        },
+        {
+          "line": 73,
+          "text": "```"
+        },
+        {
+          "line": 74,
+          "text": "START   git worktree add .worktrees/<slug> -b <type>/<slug>     type: docs/ · feature/ · chore/"
+        },
+        {
+          "line": 75,
+          "text": "        the journal task dir + Active row are created ON the branch (the journal rides the branch);"
+        },
+        {
+          "line": 76,
+          "text": "        tasks touching game/: one godot --headless --path game --import in the fresh worktree"
+        },
+        {
+          "line": 77,
+          "text": "WORK    commits on the branch; push the branch (in-flight work gets remote backup too);"
+        },
+        {
+          "line": 78,
+          "text": "        in-conversation review before each commit stays the review — the PR is the MERGE point."
+        },
+        {
+          "line": 79,
+          "text": "        Messages: the docs prefixes (Narrative:/Design:/Docs:/Journal:/Tooling:/Workflow:) or"
+        },
+        {
+          "line": 80,
+          "text": "        type(scope): for code (feat(sim): · fix(perceive): · test(combat): …)"
+        },
+        {
+          "line": 81,
+          "text": "FINISH  close-out note + Completed flip committed on the branch → PR → **EDENE MERGES** (the merge"
+        },
+        {
+          "line": 82,
+          "text": "        is the acceptance act — Claude opens PRs and stops, never merges; squash-vs-merge is"
+        },
+        {
+          "line": 83,
+          "text": "        Edene's per-PR choice) → teardown after. Code PRs additionally need green CI (from E0)."
+        },
+        {
+          "line": 84,
+          "text": "        Pre-merge guard: git log main..HEAD | grep \"chore(journal): close\"  — never a separate journal PR"
+        },
+        {
+          "line": 85,
+          "text": "DIRECT-TO-MAIN — the one remaining case: single-commit conversational edits made and signed"
+        },
+        {
+          "line": 86,
+          "text": "        off live in-session. Everything task-shaped goes through a branch."
+        },
+        {
+          "line": 87,
+          "text": "```"
+        },
+        {
+          "line": 89,
+          "text": "The `start-task` / `finish-task` skills run this flow end-to-end. Enforcement: **the agent-merge ban hook** (`check-agent-merge.sh` blocks any agent-run `gh pr merge` — Claude cannot merge, by construction) + the worktree-edit guard hook + **branch protection on `main`** (PR required; owner bypass covers the direct-to-main case — pending Edene's token/UI, see §7)."
+        }
+      ]
+    },
+    {
+      "case": "Y7",
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "docs/vertical-slice-spec.md",
+      "start": 36,
+      "end": 47,
+      "sha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+      "lines": [
+        "## Out of scope (hard — resist creep)",
+        "",
+        "traversal / platforming · puzzles · soul-encounter narrative · other biomes · animation & art polish · cutscenes · save/load · menus · the full 9 abilities · difficulty tiers · Assist Mode · **阵势 guard-crowds / crowd-击 (→ E2)** · progression / leveling · the ending-matrix UI.",
+        "",
+        "---",
+        "",
+        "## Deliberately faked / stubbed",
+        "",
+        "- **Art / animation** — grey-box capsules. **The one exception: tell *legibility*.** Fidelity is faked everywhere except the clarity of the tell telegraph — that's literally what's being tested, so it gets real attention (a legible windup, not a pretty one).",
+        "- **Soul-sight** — surface-penetration as a PASSIVE possession seeded at spawn (no progression; canon correction 2026-07-25 — wén sights are possessed, never toggled) — proves `perceive()` changes the reading problem; the fairness floor (the feint must be readable *without* the sight) is checked by test/sim-state config, not a toggle.",
+        "- **Tally** — raw debug counters, not the real (hidden) Decision Board.",
+        "- **Boss** — one Sergeant with Poise+HP and 2–4 readable attacks (task item A appended a 4th, an honest JIE, to complete the GE/JIE-feint/DODGE/honest-JIE read set); not a themed biome boss."
+      ],
+      "units": [
+        {
+          "line": 36,
+          "text": "## Out of scope (hard — resist creep)"
+        },
+        {
+          "line": 38,
+          "text": "traversal / platforming · puzzles · soul-encounter narrative · other biomes · animation & art polish · cutscenes · save/load · menus · the full 9 abilities · difficulty tiers · Assist Mode · **阵势 guard-crowds / crowd-击 (→ E2)** · progression / leveling · the ending-matrix UI."
+        },
+        {
+          "line": 40,
+          "text": "---"
+        },
+        {
+          "line": 42,
+          "text": "## Deliberately faked / stubbed"
+        },
+        {
+          "line": 44,
+          "text": "- **Art / animation** — grey-box capsules. **The one exception: tell *legibility*.** Fidelity is faked everywhere except the clarity of the tell telegraph — that's literally what's being tested, so it gets real attention (a legible windup, not a pretty one)."
+        },
+        {
+          "line": 45,
+          "text": "- **Soul-sight** — surface-penetration as a PASSIVE possession seeded at spawn (no progression; canon correction 2026-07-25 — wén sights are possessed, never toggled) — proves `perceive()` changes the reading problem; the fairness floor (the feint must be readable *without* the sight) is checked by test/sim-state config, not a toggle."
+        },
+        {
+          "line": 46,
+          "text": "- **Tally** — raw debug counters, not the real (hidden) Decision Board."
+        },
+        {
+          "line": 47,
+          "text": "- **Boss** — one Sergeant with Poise+HP and 2–4 readable attacks (task item A appended a 4th, an honest JIE, to complete the GE/JIE-feint/DODGE/honest-JIE read set); not a themed biome boss."
+        }
+      ]
+    }
+  ],
+  "e7FilenameOrderLines": [
+    35,
+    36
+  ],
+  "e7FilenameOrderDerivation": "The literal phrase `filename order` is line-wrapped across two adjacent authoritative E7 source lines; both exact full lines must be covered."
+}

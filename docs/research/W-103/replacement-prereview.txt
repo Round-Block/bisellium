@@ -1,0 +1,7 @@
+1. **Search does not intrinsically exclude required W-103 artifacts.** `searchExclusion()` only rejects component/test-name rules and exact `binding.exclusions` entries. A binding can include `docs/research/bisellium-maps-harness.mjs`, its test, the W-103 brief, or a report output in `corpusFiles` without listing it in exclusions, and search will read/match it. This violates the signed mandatory exclusions.  
+   Locator: `searchExclusion()` / `runExperiment()` inventory construction.  
+   Failing input: manifest containing `docs/research/bisellium-maps-harness.mjs` with an empty `binding.exclusions`.
+
+2. **Binding exclusion inventory is not canonicalized, so an excluded artifact can re-enter through the reverse symlink direction.** The code canonicalizes a candidate and compares its canonical-relative string against the *literal* inventory strings, but never resolves inventory paths themselves.  
+   Locator: `retrieve()`, `searchExclusion(canonicalRelative, inventory)`.  
+   Failing input: `excluded-alias.md` is a symlink to `oracle.md`; `binding.exclusions = ["excluded-alias.md"]`; manifest contains `oracle.md`. `oracle.md` is accepted and searched, despite the exclusion designating the same canonical file.

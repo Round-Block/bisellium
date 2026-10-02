@@ -1,0 +1,9 @@
+# behaviour: 5
+# command: node --import tsx packages/commands/src/source.test.ts . 5
+# exit: 1
+# at: 2026-09-28T14:36:40.687Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b5 bounded range from oversized admissible file succeeds                          {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}
+FAIL  b5 section exhaustion names LIMIT and exact remainder                             {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}

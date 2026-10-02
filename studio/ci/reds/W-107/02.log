@@ -1,0 +1,10 @@
+# behaviour: 2
+# command: node --import tsx packages/commands/src/source.test.ts . 2
+# exit: 1
+# at: 2026-09-28T14:36:38.359Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b2 multi-section read succeeds with explicit empty-file omission                  {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}
+FAIL  b2 read provenance and counters are truthful                                      
+FAIL  b2 terminal newline and inclusive range are reported                              

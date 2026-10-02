@@ -1,0 +1,46 @@
+# behaviour: 8
+# command: node --test docs/research/maps-repair-driver.test.mjs
+# exit: 1
+# at: 2026-09-28T09:45:44.582Z
+# sella: builder-sol
+# tree: dirty:1b3f2838f7cacc5049ff638bf2857e7dfed38647
+
+✖ Behaviour 8 scorer validates claimed source identity without quote heuristics (1.975772ms)
+✔ Behaviour 8 scorer controls and separation (11.705119ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105.456825
+
+✖ failing tests:
+
+test at docs/research/maps-repair-driver.test.mjs:18:14
+✖ Behaviour 8 scorer validates claimed source identity without quote heuristics (1.975772ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted exception.
+  Actual message: "source identity mismatch: positioned content for A"
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:18:1405)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: Error: source identity mismatch: positioned content for A
+        at fail (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs:12:33)
+        at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs:313:22
+        at Array.map (<anonymous>)
+        at scorePackets (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs:309:59)
+        at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:18:1439
+        at getActual (node:assert:586:5)
+        at strict.doesNotThrow (node:assert:754:32)
+        at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:18:1405)
+        at Test.runInAsyncScope (node:async_hooks:226:14)
+        at Test.run (node:internal/test_runner/test:1201:25),
+    expected: undefined,
+    operator: 'doesNotThrow',
+    diff: 'simple'
+  }

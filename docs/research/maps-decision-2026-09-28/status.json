@@ -1,0 +1,124 @@
+{
+  "planVersion": 1,
+  "stage": "complete",
+  "state": "closed_scoped_no_go",
+  "budget": {
+    "startUsedPercent": 10,
+    "lastUsedPercent": 27,
+    "resetTimestamp": 1791075671,
+    "priorStopUsedPercent": 12,
+    "continuationAuthorization": "User authorized completion to conclusion using cheaper subagents; prior 12% ceiling superseded.",
+    "continuationStartUsedPercent": 12
+  },
+  "completed": [
+    "Persistent plan committed4460416",
+    "Version2 evidence key frozen:6cases17requirements39anchors",
+    "Corrected controls independently replayed:curated17/17;39/39 actual masks detected",
+    "Development screen: baseline 2/6 cases (6/17 requirements); A 3/6 (11/17), rejected for losing E7; B 6/6 (17/17), no baseline losses.",
+    "All 21 admitted source files matched frozen hashes; command transcript and output hashes saved.",
+    "Independent Sol-high final validity assessment: INVALID / INCONCLUSIVE. Decision saved; no fresh trials ran.",
+    "W105 reproducibility repair DONE, independentSolhighR4PASS.",
+    "Independent finalresearchdecisionNO-GO afterblindlabelcorrectionreanalysis; originalfreshinvalidrecordsretained."
+  ],
+  "next": "No further variants or trials. W105 DONE; W106 backlog for deterministic label/seal gates. Any future method needs separately specified study.",
+  "frozenArtifacts": [
+    {
+      "path": "analysis-commands.txt",
+      "sha256": "a1dca1d753d56ec029457350eb7d0cd35cef6d7a0aec59945bc18272e4bd3a71"
+    },
+    {
+      "path": "candidate-A.json",
+      "sha256": "46f0288a6e697feda3cb940527fc0a6d9426b8fd085f2925b621812aecc1f527"
+    },
+    {
+      "path": "candidate-B.json",
+      "sha256": "6282013610d6883b1926892297b3653935b59af36da0e1789db3018815c1dada"
+    },
+    {
+      "path": "control-replay.txt",
+      "sha256": "bcf2b6c869c10b6a3c5079c1a53be947b9beb4adc6b8cc2e33cd1e7c76c84c53"
+    },
+    {
+      "path": "development-key.json",
+      "sha256": "bafe47ddd506381be2212b62bb7ca673d81b61c84153902a1d59465be9b5dc53"
+    },
+    {
+      "path": "development-scoreboard.json",
+      "sha256": "b0fd53a2c70e78fcad883bbd46c3bdaef08fd2f40f8a7bd3fc1643d1efcb9b03"
+    },
+    {
+      "path": "development-screen.md",
+      "sha256": "561d769ed9f58f8a79da91e5556ebf76091cbbf7f0fb4bed87b8bc7d93a9408b"
+    },
+    {
+      "path": "measurement-controls.json",
+      "sha256": "f3f85f92cd8ea0e660b2441ce8728fe4b61be5b8af8bb8e8ad89fd9d0d6252d5"
+    },
+    {
+      "path": "measurement-notes.md",
+      "sha256": "48956fcc8fb2866d7e8178b69363b002b6f9c14508e2f6d5ecdc302cb7a33df7"
+    },
+    {
+      "path": "selection-output-hashes.json",
+      "sha256": "c91b167f1f7a251c95a073f8a84e58d966008e926e79afb69aef246ade4ab24a"
+    },
+    {
+      "path": "selection-rules.md",
+      "sha256": "b59c74acef5c6a12dc5ee8529e5dc12c88b0fa19968d02ff02e84d29d4616573"
+    }
+  ],
+  "note": "Completed. Original development and fresh-run defects are preserved and disclosed. W105 retained implementation reviewed PASS and DONE. Conservative corrected reanalysis NO-GO; no production integration or further trials. Historical frozenArtifact lists describe their respective earlier checkpoints.",
+  "selectedPolicy": "B: heading-assisted passage selection",
+  "conclusion": "Independent final NO-GO for both tested methods. Recovery baseline1/12,B5/12; bothfail10/12overalland3/4/project. Originalfreshinvalid; correctedpacket-fixedblindlabelreanalysis supportsconservativeno-goonly.",
+  "provenanceCorrection": "analysis-commands.txt contains a placeholder, not the exact executed selector. Original agent confirms inline selector was never retained or hashed. Output hashes and successful measurement controls do not establish selector reproducibility.",
+  "finalArtifacts": [
+    {
+      "path": "PLAN.md",
+      "sha256": "c81954b3f5886a19c20d31c1e9e78f5f54446e8ee9d8846fd99d658d9df0b3fa"
+    },
+    {
+      "path": "decision.md",
+      "sha256": "67a8011885fe9a7ce15942379b9bade80c980084e097d50039a39cb4e697e8e4"
+    },
+    {
+      "path": "independent-final-assessment.md",
+      "sha256": "3958759520f3177c8ec642ce5a78889cc5800e79f710c00747ba4e55cd0d325e"
+    }
+  ],
+  "repairAuthorization": "2026-09-28: user explicitly authorized repair of reproducibility and completion of fresh evaluation. Previous invalid conclusion remains historical; missing original selector will not be backfilled.",
+  "repairOpus": "W-105",
+  "repairWorktree": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment",
+  "repairSpecSha256": "cb4235ed51e91dd3b67abd67c82222697b59a77527bbf8d8e98c228ae78b2c19",
+  "repairSpec": "studio/briefs/W-105-A1.md",
+  "repairProgress": "Independent Sol-high round4 PASS; accepted23filemanifest5ebf97ca3925d7bf2d9a3ad52bb5b9715d12c0a7e36caee42aa2a354e039ee21 before fresh preparation.",
+  "repairCandidate": "39d27faeecf27c47a358dba4da38697a46ca4f5c",
+  "repairImplementation": "7cb8d5b",
+  "repairFreezeSha256": "5ebf97ca3925d7bf2d9a3ad52bb5b9715d12c0a7e36caee42aa2a354e039ee21",
+  "repairReview": "Independent Sol-high R4 PASS, ci/W-105-review-4.log",
+  "repairCertifiedTree": "d5f96a6135d00feba89f00acb42aa778023d4ad3",
+  "repairReviewCommit": "50be022",
+  "freshDirectory": "docs/research/maps-fresh-2026-09-28",
+  "freshPreparer": "Separate gpt-5.6-luna low context, candidate outcomes withheld",
+  "freshIncident": "Original fresh score invalid:24/25 multilineendcoordinateswrong,0/25questionClauseverbatim,overbroadanchors,packetpre-scorefreeze writefailedbutclerkcontinued. Originalartifacts preserved; retrievaleachranonce; post-scorehashescandidlyretained;23sourcesunchanged. IndependentcensorconditionalGO forposthocpacket-fixedblindlabelcorrectionreanalysis, notpreregisteredacceptance.",
+  "repairCloseoutCommit": "5efe274",
+  "finalReport": "docs/research/maps-fresh-2026-09-28/report.md",
+  "finalIndependentAssessment": "docs/research/maps-fresh-2026-09-28/independent-final-assessment.md",
+  "finalResearchArtifacts": [
+    {
+      "path": "docs/research/maps-fresh-2026-09-28/report.md",
+      "sha256": "d7f548bb6687a9eaf54fca23149939566c1688c02768eec08a5c351c74edd982"
+    },
+    {
+      "path": "docs/research/maps-fresh-2026-09-28/independent-final-assessment.md",
+      "sha256": "850672f9cf0139ac3b27e7c3e3a237fe49ff5ce9365965bc9b29f902aaf47422"
+    },
+    {
+      "path": "docs/research/maps-fresh-2026-09-28/reanalysis/pre-score-manifest.json",
+      "sha256": "3c5141aec7e1615006f3581f56ff32be838da387812dc329a102cab7f5eee69e"
+    },
+    {
+      "path": "docs/research/maps-fresh-2026-09-28/reanalysis/mechanical-aggregate.json",
+      "sha256": "59409cdda8d0b14815baf1190b145ffe4ad26b09d67df080ac388dbe0af75ca2"
+    }
+  ]
+}

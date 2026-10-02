@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "B8",
+      "project": "bisellium",
+      "question": "What does the current epoch0 snapshot adapter actually return, and what does its send operation report?",
+      "references": []
+    },
+    {
+      "id": "B9",
+      "project": "bisellium",
+      "question": "What evidence must every done engineering item carry, and what posture follows when the weekly allowance is exceeded?",
+      "references": []
+    },
+    {
+      "id": "B10",
+      "project": "bisellium",
+      "question": "Which model and effort does the corrected active censor assignment use, and what independence constraints remain explicit?",
+      "references": []
+    },
+    {
+      "id": "B11",
+      "project": "bisellium",
+      "question": "What are the recorded states of W-089 and W-102, and what does each file identify about its work?",
+      "references": []
+    },
+    {
+      "id": "E8",
+      "project": "epoch0",
+      "question": "Which source surfaces are authoritative for project task state, and what rule prevents editing an applied migration?",
+      "references": []
+    },
+    {
+      "id": "E9",
+      "project": "epoch0",
+      "question": "Which two battle-state constructors must stay mirrored, what test guards them, and how are registry ability values interpreted?",
+      "references": []
+    },
+    {
+      "id": "E10",
+      "project": "epoch0",
+      "question": "What is the current status of M2 and M3, and which ladder now controls work ordering?",
+      "references": []
+    },
+    {
+      "id": "E11",
+      "project": "epoch0",
+      "question": "Which durable board states exist around scheduled and done, and how is in-train status determined?",
+      "references": []
+    },
+    {
+      "id": "Y8",
+      "project": "yan-mo",
+      "question": "What are Yan Mo’s rules for randomness, managed resources, and deliberate mercy?",
+      "references": []
+    },
+    {
+      "id": "Y9",
+      "project": "yan-mo",
+      "question": "What build gates precede content expansion, and what is the required per-feature implementation and verification loop?",
+      "references": []
+    },
+    {
+      "id": "Y10",
+      "project": "yan-mo",
+      "question": "What does the E1 slice include, and which major systems are explicitly out of scope?",
+      "references": []
+    },
+    {
+      "id": "Y11",
+      "project": "yan-mo",
+      "question": "What are the E1 success criteria for the read, mercy, and determinism loop, and what evidence defines completion?",
+      "references": []
+    }
+  ]
+}

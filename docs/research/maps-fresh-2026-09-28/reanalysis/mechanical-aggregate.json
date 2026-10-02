@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "pythonRuntime": "3.12.3",
+  "nodeRuntime": "v25.9.0",
+  "correctedKeySha256": "7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7",
+  "scores": {
+    "baseline": {
+      "totals": {
+        "coveredRequirements": 4,
+        "totalRequirements": 25,
+        "coveredAnchors": 6,
+        "totalAnchors": 49,
+        "completeCases": 1
+      },
+      "byProject": {
+        "bisellium": {
+          "cases": 4,
+          "requirements": 8,
+          "coveredRequirements": 0,
+          "completeCases": 0,
+          "anchors": 15,
+          "coveredAnchors": 0
+        },
+        "epoch0": {
+          "cases": 4,
+          "requirements": 8,
+          "coveredRequirements": 1,
+          "completeCases": 0,
+          "anchors": 13,
+          "coveredAnchors": 2
+        },
+        "yan-mo": {
+          "cases": 4,
+          "requirements": 9,
+          "coveredRequirements": 3,
+          "completeCases": 1,
+          "anchors": 21,
+          "coveredAnchors": 4
+        }
+      }
+    },
+    "policyB": {
+      "totals": {
+        "coveredRequirements": 16,
+        "totalRequirements": 25,
+        "coveredAnchors": 30,
+        "totalAnchors": 49,
+        "completeCases": 5
+      },
+      "byProject": {
+        "bisellium": {
+          "cases": 4,
+          "requirements": 8,
+          "coveredRequirements": 5,
+          "completeCases": 1,
+          "anchors": 15,
+          "coveredAnchors": 7
+        },
+        "epoch0": {
+          "cases": 4,
+          "requirements": 8,
+          "coveredRequirements": 5,
+          "completeCases": 2,
+          "anchors": 13,
+          "coveredAnchors": 7
+        },
+        "yan-mo": {
+          "cases": 4,
+          "requirements": 9,
+          "coveredRequirements": 6,
+          "completeCases": 2,
+          "anchors": 21,
+          "coveredAnchors": 16
+        }
+      }
+    }
+  },
+  "lostBaselineCases": [],
+  "advancedOverBaselineCases": [
+    "B10",
+    "E9",
+    "E10",
+    "Y9"
+  ],
+  "suppliedUtf16": {
+    "baseline": {
+      "total": 72000,
+      "cases": [
+        {
+          "id": "B8",
+          "project": "bisellium",
+          "utf16Units": 6000
+        },
+        {
+          "id": "B9",
+          "project": "bisellium",
+          "utf16Units": 6000
+        },
+        {
+          "id": "B10",
+          "project": "bisellium",
+          "utf16Units": 6000
+        },
+        {
+          "id": "B11",
+          "project": "bisellium",
+          "utf16Units": 6000
+        },
+        {
+          "id": "E8",
+          "project": "epoch0",
+          "utf16Units": 6000
+        },
+        {
+          "id": "E9",
+          "project": "epoch0",
+          "utf16Units": 6000
+        },
+        {
+          "id": "E10",
+          "project": "epoch0",
+          "utf16Units": 6000
+        },
+        {
+          "id": "E11",
+          "project": "epoch0",
+          "utf16Units": 6000
+        },
+        {
+          "id": "Y8",
+          "project": "yan-mo",
+          "utf16Units": 6000
+        },
+        {
+          "id": "Y9",
+          "project": "yan-mo",
+          "utf16Units": 6000
+        },
+        {
+          "id": "Y10",
+          "project": "yan-mo",
+          "utf16Units": 6000
+        },
+        {
+          "id": "Y11",
+          "project": "yan-mo",
+          "utf16Units": 6000
+        }
+      ]
+    },
+    "policyB": {
+      "total": 71354,
+      "cases": [
+        {
+          "id": "B8",
+          "project": "bisellium",
+          "utf16Units": 5987
+        },
+        {
+          "id": "B9",
+          "project": "bisellium",
+          "utf16Units": 5973
+        },
+        {
+          "id": "B10",
+          "project": "bisellium",
+          "utf16Units": 5897
+        },
+        {
+          "id": "B11",
+          "project": "bisellium",
+          "utf16Units": 5997
+        },
+        {
+          "id": "E8",
+          "project": "epoch0",
+          "utf16Units": 5905
+        },
+        {
+          "id": "E9",
+          "project": "epoch0",
+          "utf16Units": 5961
+        },
+        {
+          "id": "E10",
+          "project": "epoch0",
+          "utf16Units": 5825
+        },
+        {
+          "id": "E11",
+          "project": "epoch0",
+          "utf16Units": 5954
+        },
+        {
+          "id": "Y8",
+          "project": "yan-mo",
+          "utf16Units": 5916
+        },
+        {
+          "id": "Y9",
+          "project": "yan-mo",
+          "utf16Units": 5977
+        },
+        {
+          "id": "Y10",
+          "project": "yan-mo",
+          "utf16Units": 5983
+        },
+        {
+          "id": "Y11",
+          "project": "yan-mo",
+          "utf16Units": 5979
+        }
+      ]
+    }
+  },
+  "processes": {
+    "freeze": {
+      "command": "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs freeze --descriptor /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/freeze-descriptor.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output pre-score-manifest.json",
+      "stdout": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/freeze.stdout.log",
+      "stderr": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/freeze.stderr.log",
+      "exitCode": 0
+    },
+    "verifyFreeze": {
+      "command": "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs verify-freeze --manifest /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/pre-score-manifest.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output pre-score-verification.json",
+      "stdout": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/verify-freeze.stdout.log",
+      "stderr": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/verify-freeze.stderr.log",
+      "exitCode": 0
+    },
+    "baselineScore": {
+      "command": "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output baseline-score-corrected.json",
+      "stdout": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/baseline-score.stdout.log",
+      "stderr": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/baseline-score.stderr.log",
+      "exitCode": 0
+    },
+    "policyBScore": {
+      "command": "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output policy-B-score-corrected.json",
+      "stdout": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/policy-B-score.stdout.log",
+      "stderr": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/policy-B-score.stderr.log",
+      "exitCode": 0
+    }
+  },
+  "interpretation": "mechanical aggregate only; no verdict"
+}

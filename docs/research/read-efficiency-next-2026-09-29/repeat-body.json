@@ -1,0 +1,198 @@
+{
+  "byArm": {
+    "baseline": {
+      "firstTimeBodyBytes": 86291,
+      "mappingFailures": 0,
+      "readBytes": 237951,
+      "repeatedBodyBytes": 5489,
+      "runs": 6
+    },
+    "candidate": {
+      "firstTimeBodyBytes": 82948,
+      "mappingFailures": 0,
+      "readBytes": 243194,
+      "repeatedBodyBytes": 4305,
+      "runs": 6
+    }
+  },
+  "byCase": {
+    "B8": {
+      "firstTimeBodyBytes": 8476,
+      "mappingFailures": 0,
+      "readBytes": 33518,
+      "repeatedBodyBytes": 941,
+      "runs": 2
+    },
+    "B9": {
+      "firstTimeBodyBytes": 20514,
+      "mappingFailures": 0,
+      "readBytes": 84842,
+      "repeatedBodyBytes": 2787,
+      "runs": 2
+    },
+    "E8": {
+      "firstTimeBodyBytes": 23991,
+      "mappingFailures": 0,
+      "readBytes": 74065,
+      "repeatedBodyBytes": 2704,
+      "runs": 2
+    },
+    "E9": {
+      "firstTimeBodyBytes": 91847,
+      "mappingFailures": 0,
+      "readBytes": 171322,
+      "repeatedBodyBytes": 1736,
+      "runs": 2
+    },
+    "Y8": {
+      "firstTimeBodyBytes": 16227,
+      "mappingFailures": 0,
+      "readBytes": 66874,
+      "repeatedBodyBytes": 976,
+      "runs": 2
+    },
+    "Y9": {
+      "firstTimeBodyBytes": 8184,
+      "mappingFailures": 0,
+      "readBytes": 50524,
+      "repeatedBodyBytes": 650,
+      "runs": 2
+    }
+  },
+  "measure": "optimistic ceiling for exact repeated source-line bodies only; ignores receipt and metadata cost and is not total potential or subscription savings",
+  "runs": [
+    {
+      "arm": "baseline",
+      "case": "B8",
+      "firstTimeBodyBytes": 3569,
+      "mappedBodyBytes": 4202,
+      "mappingFailures": [],
+      "ordinal": 1,
+      "project": "bisellium",
+      "readBytes": 19111,
+      "repeatedBodyBytes": 633
+    },
+    {
+      "arm": "candidate",
+      "case": "B8",
+      "firstTimeBodyBytes": 4907,
+      "mappedBodyBytes": 5215,
+      "mappingFailures": [],
+      "ordinal": 2,
+      "project": "bisellium",
+      "readBytes": 14407,
+      "repeatedBodyBytes": 308
+    },
+    {
+      "arm": "candidate",
+      "case": "B9",
+      "firstTimeBodyBytes": 11867,
+      "mappedBodyBytes": 13270,
+      "mappingFailures": [],
+      "ordinal": 3,
+      "project": "bisellium",
+      "readBytes": 47136,
+      "repeatedBodyBytes": 1403
+    },
+    {
+      "arm": "baseline",
+      "case": "B9",
+      "firstTimeBodyBytes": 8647,
+      "mappedBodyBytes": 10031,
+      "mappingFailures": [],
+      "ordinal": 4,
+      "project": "bisellium",
+      "readBytes": 37706,
+      "repeatedBodyBytes": 1384
+    },
+    {
+      "arm": "baseline",
+      "case": "E8",
+      "firstTimeBodyBytes": 16500,
+      "mappedBodyBytes": 18506,
+      "mappingFailures": [],
+      "ordinal": 5,
+      "project": "epoch0",
+      "readBytes": 40812,
+      "repeatedBodyBytes": 2006
+    },
+    {
+      "arm": "candidate",
+      "case": "E8",
+      "firstTimeBodyBytes": 7491,
+      "mappedBodyBytes": 8189,
+      "mappingFailures": [],
+      "ordinal": 6,
+      "project": "epoch0",
+      "readBytes": 33253,
+      "repeatedBodyBytes": 698
+    },
+    {
+      "arm": "candidate",
+      "case": "E9",
+      "firstTimeBodyBytes": 47189,
+      "mappedBodyBytes": 48154,
+      "mappingFailures": [],
+      "ordinal": 7,
+      "project": "epoch0",
+      "readBytes": 92073,
+      "repeatedBodyBytes": 965
+    },
+    {
+      "arm": "baseline",
+      "case": "E9",
+      "firstTimeBodyBytes": 44658,
+      "mappedBodyBytes": 45429,
+      "mappingFailures": [],
+      "ordinal": 8,
+      "project": "epoch0",
+      "readBytes": 79249,
+      "repeatedBodyBytes": 771
+    },
+    {
+      "arm": "baseline",
+      "case": "Y8",
+      "firstTimeBodyBytes": 8453,
+      "mappedBodyBytes": 9148,
+      "mappingFailures": [],
+      "ordinal": 9,
+      "project": "yan-mo",
+      "readBytes": 34791,
+      "repeatedBodyBytes": 695
+    },
+    {
+      "arm": "candidate",
+      "case": "Y8",
+      "firstTimeBodyBytes": 7774,
+      "mappedBodyBytes": 8055,
+      "mappingFailures": [],
+      "ordinal": 10,
+      "project": "yan-mo",
+      "readBytes": 32083,
+      "repeatedBodyBytes": 281
+    },
+    {
+      "arm": "candidate",
+      "case": "Y9",
+      "firstTimeBodyBytes": 3720,
+      "mappedBodyBytes": 4370,
+      "mappingFailures": [],
+      "ordinal": 11,
+      "project": "yan-mo",
+      "readBytes": 24242,
+      "repeatedBodyBytes": 650
+    },
+    {
+      "arm": "baseline",
+      "case": "Y9",
+      "firstTimeBodyBytes": 4464,
+      "mappedBodyBytes": 4464,
+      "mappingFailures": [],
+      "ordinal": 12,
+      "project": "yan-mo",
+      "readBytes": 26282,
+      "repeatedBodyBytes": 0
+    }
+  ],
+  "version": 1
+}

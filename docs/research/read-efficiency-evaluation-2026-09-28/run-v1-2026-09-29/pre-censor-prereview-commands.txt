@@ -1,0 +1,8 @@
+# W-107 pre-censor mechanical check commands (2026-09-29)
+sha256sum freeze.json runs.json review/review-packet.json review/scoring-package.json
+python3 pre-censor-prereview-check.py
+python3 structural metadata inspection: freeze commitments; 12 runs/audits; review/scoring cardinality and anonymous-id linkage; raw transcript hashes; certificate exit
+find/grep inspection of commands.txt for ordinal-1 retry retention
+cat certification/command.json certification/exit.json certification/verify.log
+git -C /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment status --short
+git -C /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment rev-parse HEAD HEAD^{tree}

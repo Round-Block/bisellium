@@ -1,0 +1,270 @@
+# opus: W-108
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-6-astra
+# outcome: PASS
+# at: 2026-09-29T02:51:00.751Z
+# tree: tree:0e4c3f0d931539b3c6096f34cedbabd7763b98d1
+
+# W-108 — Agent-usable source adapter preflight
+
+## Intent
+
+Test the cheapest unresolved W-107 question: can one model session use the
+production source library through a typed MCP adapter? Build a separate
+read-only preflight driver, prove its schemas and session binding
+deterministically, then run one public synthetic Luna-low canary. This is a
+usability feasibility test only. It makes no adoption, answer-quality, byte,
+token, subscription, or savings claim.
+
+W-107 remains NO adoption. Its runner, retained inputs, transcripts, reports,
+and frozen artifacts are immutable.
+
+## Files owned
+
+- `docs/research/read-efficiency/source-adapter-preflight.mjs`
+- `docs/research/read-efficiency/source-adapter-preflight.test.mjs`
+- `docs/research/read-efficiency/fixtures/W-108/registry.json`
+- `docs/research/read-efficiency/fixtures/W-108/project/AGENTS.md`
+- `docs/research/read-efficiency/fixtures/W-108/project/source.md`
+- `docs/research/read-efficiency/W-108-preflight/README.md`
+- `docs/research/read-efficiency/W-108-preflight/live-command.json`
+- `docs/research/read-efficiency/W-108-preflight/server-transcript.jsonl`
+- `docs/research/read-efficiency/W-108-preflight/model-events.jsonl`
+- `docs/research/read-efficiency/W-108-preflight/result.json`
+
+No other source, test, manifest, W-107 artifact, target project, or officina
+bookkeeping file is in scope. Import and call the existing W-107 `runSource`
+library; do not fork or alter its implementation.
+
+## Interfaces
+
+`source-adapter-preflight.mjs` has deterministic synthetic-test and live-canary
+subcommands and one stdio MCP-server mode. Every mode takes explicit input and
+output paths, validates them before source access, and uses Node standard
+library plus the existing production source module.
+
+The MCP server exposes exactly three tools with concrete closed JSON Schemas:
+
+- `orient`: an empty object with `additionalProperties:false`.
+- `locate`: `{query,maxResults?}`. `query` is a nonempty bounded string and
+  `maxResults` is a bounded integer.
+- `read`: `{locations,maxSectionChars?}`. `locations` is a nonempty bounded
+  array of closed `{repository,path,startLine,endLine}` objects; the remaining
+  limits are bounded integers.
+
+The server starts unbound. A successful `orient` validates the trusted canary
+configuration and registry, invokes `runSource` to obtain the current
+orientation, and binds that session to its project, objective, repository
+selection, orientation digest, registry identity, and configured limits.
+Later tools accept only the fields above. The adapter injects the bound
+`version`, operation, project, objective, repository ids, orientation digest,
+and limits into each production request. The model never supplies or guesses
+those production wire fields. Calls before orientation, repeated orientation,
+unknown fields, identity drift, an unsuccessful production result, or a result
+over budget fail closed and do not advance the session.
+
+The server writes append-only JSONL for every request and complete tool-result
+text. Each row includes the sequence, tool, exact arguments, exact result text,
+UTF-8 byte count and SHA-256. Verification compares the complete result text
+and canonical arguments with retained model JSONL, retaining separate call-ID namespaces; truncation,
+missing events, reordered calls, or unmatched rows invalidate the canary.
+
+## Behaviours to test
+
+1. Tool discovery returns only the three tools and their recursively closed,
+   concrete schemas. A schema validator rejects unknown properties, malformed
+   ranges, empty queries/locations, and limits outside the declared bounds
+   before `runSource` is called.
+2. The session refuses production calls before `orient`. A successful
+   `orient` binds trusted project/objective/repositories/digest once; later
+   `locate` and `read` requests contain those exact injected values regardless
+   of model arguments, and changed registry or orientation state fails closed.
+3. A deterministic synthetic sequence `orient -> locate -> read` calls the
+   real `runSource` library, returns the expected exact source lines with
+   provenance, and records exact request/result text, hashes, bytes and order.
+   Independent negative sequences prove that failure, retry, extra call and
+   byte-cap paths stop without returning a partial success.
+4. The live runner refuses to spawn the model unless behaviours 1–3 pass, the
+   public fixture hashes match, the exact executable/model/effort command is
+   frozen, and the final MCP configuration preflight succeeds.
+5. Exactly one fresh public synthetic canary runs
+   `gpt-5.6-luna` at low effort in an empty read-only working directory. It must
+   call `orient` first, then obtain successful production `locate` and `read`
+   results, cite the requested exact fixture fact, use at most 4 total tool
+   calls and receive at most 32,768 UTF-8 bytes of tool-result text. No fallback
+   tool exists. Any other tool, direct file/shell/web access, retry after a
+   refusal, model/effort drift, nonzero exit, missing usage, cap breach, or
+   transcript mismatch makes the result FAIL.
+
+Each behaviour gets its own assertion-level deterministic recorded red before its fix. Behaviour 5 uses synthetic verifier events, never a red model trial.
+
+## Acceptance
+
+- The focused deterministic test passes and covers every numbered behaviour
+  except the live model outcome; its red logs predate the corresponding fixes.
+- The retained `result.json` says PASS only when the single canary satisfies
+  the required call order, both production operations return `ok:true`, the
+  exact citation check passes, all transcript rows match, and both caps hold.
+- `README.md` records the exact commands, hashes, model usage, calls, result
+  bytes and outcome. If any preflight fails, it records the refusal and no
+  model process is started. If the canary fails, stop; do not tune, rerun, or
+  proceed to a multi-project or held-out trial.
+- The existing W-107 files and target projects remain byte-identical, and the
+  adapter performs no writes outside its declared evidence directory.
+
+## Out of scope
+
+Adoption; savings or answer-quality evaluation; fallback tools; `expand`;
+receipt/elision work; hidden keys; private or multi-project cases; held-out
+trials; changes to `runSource`, the frozen W-107 runner, CLI, packages, target
+projects, or officina bookkeeping.
+
+## Architect amendment — revision 2, 2026-09-29
+
+This section supplies the exact contracts for the preceding interfaces and
+acceptance. It resolves the independent security findings without expanding
+the one-canary scope.
+
+### Fixed orientation and fixture identity
+
+Production has no orient operation. Adapter orient calls runSource with:
+version 1, op locate, project w108-canary, objective frozen in configuration,
+repositoryIds ["w108-fixture"], query "__W108_ORIENT_NO_MATCH__",
+maxResults 1, maxBytes 8192. Freeze proves the sentinel absent from fixture
+paths/text. Require ok:true, zero items/errors/omissions and a nonempty digest;
+return the complete JSON-serialized production result as one MCP text block.
+This includes full instruction bodies. Do not fabricate a production op.
+
+Registry version is 1, with exactly project w108-canary and repository
+w108-fixture, state public-synthetic, corpusFiles ["AGENTS.md","source.md"],
+instructionFiles ["AGENTS.md"]. Root is the canonical absolute path of this
+checkout's docs/research/read-efficiency/fixtures/W-108/project. Freeze pins
+that root, registry bytes/SHA-256 and both regular fixture files' bytes/hashes.
+Each file has at most 64 lines and 4096 UTF-8 bytes. Put the unique fact on a
+single source.md line, so a located single-line range suffices.
+
+Before every production-bound attempt, reopen/hash the bounded regular
+registry without symlink following; check its strict shape, exact IDs/root/
+allowlists and frozen hash. Reject symlinks and canonical drift in all path
+components from the pinned checkout root through fixture files before
+accessing fixture contents. Only then validate/hash the two allowed files.
+Registry/path failures precede source access; content drift is detected by
+that permitted validation read, before runSource. Recheck identities after
+production before releasing any result. Pin production rootIdentity and
+Git HEAD/branch independently of orientationDigest: that digest covers
+registry/instructions, not corpus or Git identity. Tests must change corpus
+without changing orientationDigest and prove refusal.
+
+This bounded single-user preflight does not claim hostile concurrent-writer
+isolation. Such changes still invalidate results on the before/after checks.
+
+### Exact schemas and sequence
+
+locate query is 1–128 Unicode code points, with no controls/unpaired
+surrogates; maxResults is 1–4, default 4. read accepts 1–4 unique locations,
+repository/path fixture enums, integer line bounds 1–64 with end >= start,
+and maxSectionChars 1–1024, default 1024. Every object is closed recursively.
+Only adapter-injected fields may carry production identities and maxBytes.
+
+Allow exactly one successful orient, one successful model locate, then one
+successful read. Any other order, repeated operation, refusal or production
+failure terminates the session. Model locate uses the bound common fields,
+maxBytes 8192 and validated query/maxResults; require matching orientation
+digest, at least one item, and no error/omission. Read accepts only exact
+location tuples from that preceding model locate, never arbitrary, widened,
+duplicate or orient-derived tuples. Remember each located SHA/root/Git
+identity. Inject orientationDigest/common fields; require each read result
+to match the requested tuple and remembered provenance/SHA and complete body.
+Validate fixture hashes before/after read too. Failed production results
+yield a bounded adapter refusal, never partial source bodies.
+
+### Server limits and process limits
+
+Count every tools/call attempt, including unknown names and invalid args.
+Before registry/fixture access enforce order/state, at most 4 attempts and
+reserve 8192 bytes against the cumulative 32768 tool-text-byte budget.
+Pass maxBytes 8192 to production and enforce that bound on emitted text.
+Count actual UTF-8 bytes of success and refusal texts. Refusals are fixed
+JSON at most 256 bytes, emitted only if remaining budget permits; otherwise
+close with no response and retain the terminal reason. Every refusal closes
+the session. Fifth attempts, exhausted reservation, retries and malformed
+calls cause no further production or fixture access. PASS requires exactly
+three success calls; four is only an absolute safety cap.
+
+Allow only initialize, initialized notification, tools/list, tools/call and
+bounded ping protocol methods. Freeze concrete protocol version/schemas.
+Bound inbound JSONL lines to 16384 bytes and protocol messages to 64;
+model events to 256 lines/1 MiB; stderr to 64 KiB. Whole-canary deadline is
+120 seconds, server startup 10 seconds, and a production call 10 seconds.
+Kill the process group at caps/deadlines. A synchronous library hang requires
+termination of its server process; an in-process timer cannot interrupt it.
+
+### Complete event allowlist and transcript join
+
+Server rows retain sequence, JSON-RPC ID, tool, parsed arguments and canonical
+JSON, injected production request, full result text (or terminal refusal),
+UTF-8 bytes and SHA-256. Codex IDs and server JSON-RPC IDs are distinct
+namespaces. Retain both, require uniqueness within each, and join completed
+calls one-to-one by sequence, exact tool/server, canonical arguments, exact
+decoded single text result, bytes/hash. Do not require cross-namespace ID
+equality. Reject missing/extra/reordered calls, inconsistent args, non-text
+or extra result blocks, ambiguous decoding, or truncated results.
+
+Allowed Codex events are thread.started, turn.started, item.started,
+item.updated, item.completed, turn.completed. Every item event must be valid;
+allowed items are reasoning, agent_message and mcp_tool_call. Check all
+lifecycle events, not just completed items. MCP calls may name only this
+server's three tools; ID/tool/args must stay consistent across their lifecycle,
+with exactly one completion. Reject unknown events/items, command_execution,
+file_change, web/search, foreign servers, fallback tools, error, turn.failed,
+malformed JSON, duplicate completion and post-turn events. Require one
+completed turn, nonnegative integer usage fields and unambiguous final answer.
+Freeze supported concrete schemas using retained public W-107 events and
+synthetic fixtures. Unsupported installed-client event shapes fail closed
+and do not justify another model probe.
+
+### Freeze and deterministic reds
+
+Additional owned generated evidence under W-108-preflight is freeze.json,
+deterministic-result.json, bounded stderr and isolated runtime/config/
+empty-cwd files needed by the driver. Temporary deterministic tests use their
+own scratch roots. No production package changes. Update docs/ARCHITECTURE.md
+narrative for this research seam if required by design lex; regenerate its
+module graph with the existing script if affected.
+
+Generate a freeze receipt before live execution. Pin driver/test/production
+source and fixture/registry hashes, paths, prompt/fact/citation predicate,
+limits, event schemas, deterministic results, exact executable/version/hash,
+argv, model/effort and effective configuration. The prompt asks for the fact
+and exact source.md line citation without disclosing the answer.
+
+Use fresh read-only empty cwd and only this MCP server. Disable shell/file/
+web tools using supported configuration; do not inherit ambient MCP servers
+or project instructions. Preflight the final config without a model spawn.
+If installed Codex cannot establish this boundary, refuse with zero model
+spawns. Event inspection is evidence checking, not OS containment proof.
+Inherit only necessary authentication access, never credentials in evidence;
+runtime writes under the evidence root are allowed.
+
+Atomically create a one-attempt marker before spawn; existing markers/evidence
+refuse overwrite or resume. Spawn failure consumes the marker. The single
+live call uses gpt-5.6-luna at low effort after freeze. No red model trial,
+retry, tuning run or continuation.
+
+The five numbered behaviours above all require deterministic recorded reds:
+(1) schemas; (2) identity/binding; (3) real-library sequence, source-access
+counters, caps/refusals/process limits; (4) fake-process zero-spawn tests for
+every freeze/hash/config/model/effort/test-result/marker predicate; (5) the
+actual live verifier's PASS conjunction, using synthetic event fixtures.
+Behaviour 5 reds never require vendor execution. Cover differing ID
+namespaces, changed args/text/hash/bytes, missing usage/results, forbidden
+tools at each lifecycle stage, unknown events, caps, nonzero exit, wrong fact/
+citation and model/effort drift. Exactly one real canary follows deterministic
+success and freeze. Its outcome is acceptance evidence, not a red.
+
+README retains commands, hashes, usage, calls, bytes, outcome and limitations.
+Preflight failure records refusal/no spawn; live failure records FAIL and
+stops. Passing this gate authorizes no larger evaluation. The independent
+censor retains sole review and QA authority.

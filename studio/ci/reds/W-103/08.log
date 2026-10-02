@@ -1,0 +1,39 @@
+# behaviour: 8
+# command: node --test --test-isolation=none --test-name-pattern=behaviour 8 docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-26T16:32:39.826Z
+# sella: builder-sol
+# tree: dirty:731f9f492e6edccbfcc9d1ad22f2da54837dc1ef
+
+▶ behaviour 8 case-wide excerpt budgets
+  ✖ shares excerpt-file and character caps across repositories in one case (14.519458ms)
+✖ behaviour 8 case-wide excerpt budgets (15.681963ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 39.169259
+
+✖ failing tests:
+
+test at docs/research/bisellium-maps-harness.test.mjs:687:11
+✖ shares excerpt-file and character caps across repositories in one case (14.519458ms)
+  AssertionError [ERR_ASSERTION]: one case may emit excerpts for at most one file across all repositories
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:702:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:687:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

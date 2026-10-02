@@ -1,0 +1,74 @@
+# behaviour: 3
+# command: node --test --test-isolation=none --test-name-pattern=behaviour 3 docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-26T15:22:21.923Z
+# sella: builder-sol
+# tree: dirty:91dcef9ef0a15b49e4aecbfcdd0a3e71db41d14d
+
+▶ behaviour 3 freshness and provenance
+  ✖ an actual edit changes the observed hash, mismatches the capture, and is dirty while HEAD stays fixed (61.41985ms)
+  ✖ hashes each fully read source once and does not call an oversized file complete (2.83443ms)
+✖ behaviour 3 freshness and provenance (65.795535ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.551601
+
+✖ failing tests:
+
+test at docs/research/bisellium-maps-harness.test.mjs:332:11
+✖ an actual edit changes the observed hash, mismatches the capture, and is dirty while HEAD stays fixed (61.41985ms)
+  AssertionError [ERR_ASSERTION]: route provenance must hash the edited bytes rather than describe them with captured data or HEAD
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     'source.ts',
+  -     '8f74d16f017e9d8d294165665765927ee4ea4bc6641e6ca0497edd9850570681',
+  -     false
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:354:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:332:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:366:11
+✖ hashes each fully read source once and does not call an oversized file complete (2.83443ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     'exact.txt',
+  -     '09881f6ed93360a2f6ad81f435a8ca51ca4575d0f954f197ff8f7d16c6565562'
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:374:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:366:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

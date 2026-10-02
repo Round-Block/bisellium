@@ -1,0 +1,42 @@
+path/range: docs/ADOPTION.md:579-619
+## The SOURCE tree hash
+
+A `tree:<hash>` certificate is not `git rev-parse <ref>^{tree}`. That would
+include the officina's own bookkeeping — opera front matter, `ci/*.log`,
+receipts — everything under the studio dir and `.bisellium/`. If it were
+used: (a) `bisellium verify` writing its own result back into an opus, once
+committed, moves the hash, so every certificate a previous `verify` wrote
+goes `stale` purely because `verify` (or a commit of its output) ran; and
+(b) `verify`'s own writes, before they're even committed, would make the
+working tree "dirty" and refuse to certify anything at all — a studio can
+never verify itself twice in a row.
+
+Instead, `sourceTreeHash(repo, excludeDirs, ref = "HEAD")`
+(`@bisellium/shim`) hashes `git ls-tree -r <ref>` — one line per entry
+(mode, type, blob sha, path), already path-sorted — with a sha1 over every
+line whose path is *not* under one of `excludeDirs` (repo-root-relative;
+`verify` and `check --repo` both pass the studio dir and `.bisellium`, plus
+any `source_excludes` the manifest declares — below). Committing a change
+that only touches an excluded path can't move this hash. The matching
+working-tree check, `isDirtyOutside(repo, excludeDirs)`, is the same idea
+applied to `git status --porcelain`: an uncommitted change only counts as
+"dirty" when it's outside those same paths. `verify`'s `--repo` clean-tree
+requirement (below) and `check --repo`'s staleness comparison both use this
+pair, not the raw git plumbing.
+
+`source_excludes` (`bisellium.yml`, above) extends the exclusion set beyond
+the studio dir and `.bisellium/` with repo-root-relative paths of the
+manifest's own choosing — a studio nested in a monorepo alongside unrelated
+sibling studios or fixtures (e.g. `studio/`'s own `source_excludes:
+[examples/]`, and `examples/sample-studio`'s `source_excludes: [studio/,
+examples/fixtures/]`) so that sibling's churn never moves this studio's
+certificates. `check` blocks a non-list-of-strings value (`manifest.shape`).
+
+Certificate staleness/dirtiness/corroboration (`probatio.certifies.stale`,
+`.dirty`, `.mismatch`, `.evidence.tree`) is judged only for opera in an
+ACTIVE state — `building`, `verifying`, `review` — never for `done` or
+`halted`: a done opus's certificate is history, and re-flagging it every
+time the tree moves on afterward would be noise a done item can't act on.
+`bisellium check --repo .` on a studio whose non-active opera carry old or
+mismatched certifies shows no certifies advisories for them.
+

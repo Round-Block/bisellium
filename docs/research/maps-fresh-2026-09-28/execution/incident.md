@@ -1,0 +1,19 @@
+# Fresh-run incident — recorded after scoring
+
+The execution clerk reports: accepted W-105 R3 manifest verification passed; baseline and Policy B each ran once. The required packet-freeze descriptor write failed before scoring, but the clerk nevertheless ran both scoring commands. This violated the required ordering. There was no pre-score packet manifest. The original score files are invalid as effectiveness results: the original key used joined-passage length for multiline endCharacterExclusive rather than final-line UTF-16 position. No retrieval rerun or driver/input/source modification occurred according to the clerk. Current output hashes are post-score preservation only and must not be represented as a historical pre-score freeze.
+
+No executable orchestration script was retained by the clerk. The actual successful command texts were subsequently returned from its visible tool history and are recorded below. The exact failed descriptor command was not recoverable without reconstruction. Reported errors were UNC file write failure, PowerShell Unexpected token ':' / Missing argument in parameter list, and Set-Content Access denied for incident.md. Root persisted this incident using the established WSL Python write method; this is not evidence of a general WSL write prohibition.
+
+Successful commands (reported from executed tool history):
+
+```text
+wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && node .worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs verify-freeze --manifest /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/pre-preparation-manifest-R3.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution --output accepted-preparation-verification.json'
+
+wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs baseline --dataset /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/questions.json --bindings /home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/bindings.json --harness /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution --output baseline-packets.json'
+
+wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs select --baseline /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json --bindings /home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/bindings.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution --output policy-B-packets.json'
+
+wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && node .worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json --key docs/research/maps-fresh-2026-09-28/preparation/hidden-key.json --key-sha256 404b0b8d2762b06b6b768e2eb2b79093f291d90fb6f987570b47f87d01a52771 --output-root docs/research/maps-fresh-2026-09-28/execution --output baseline-score.json'
+
+wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && node .worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json --key docs/research/maps-fresh-2026-09-28/preparation/hidden-key.json --key-sha256 404b0b8d2762b06b6b768e2eb2b79093f291d90fb6f987570b47f87d01a52771 --output-root docs/research/maps-fresh-2026-09-28/execution --output policy-B-score.json'
+```

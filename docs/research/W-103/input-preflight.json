@@ -1,0 +1,447 @@
+{
+  "at": "2026-09-26T15:38:57.954150+00:00",
+  "scope": "Input freshness and route-binding preflight only; not harness execution or review approval. Historical bindings/results unchanged.",
+  "cases": 15,
+  "references": [
+    {
+      "case": "B1",
+      "project": "bisellium",
+      "reference": 0,
+      "path": "studio/opera/W-102.md",
+      "repository": "bisellium-main",
+      "actualSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+      "bytes": 970,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "B2",
+      "project": "bisellium",
+      "reference": 0,
+      "path": ".codex/agents/censor.toml",
+      "repository": "bisellium-main",
+      "actualSha256": "913d6aa466ab63b6ef2de63df43d4437cdf7e8b34c2b807b2b46646f3650b587",
+      "bytes": 591,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "B2",
+      "project": "bisellium",
+      "reference": 1,
+      "path": "studio/decisions/D-014.md",
+      "repository": "bisellium-main",
+      "actualSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+      "bytes": 5194,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "B3",
+      "project": "bisellium",
+      "reference": 0,
+      "path": "adapters/epoch0/src/index.ts",
+      "repository": "bisellium-main",
+      "actualSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
+      "bytes": 1698,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "B4",
+      "project": "bisellium",
+      "reference": 0,
+      "path": "studio/opera/W-089.md",
+      "repository": "bisellium-main",
+      "actualSha256": "da68764daa89d8605efa9c70f61fcee723e49d9c2071a5c860c4f7ab4d743cfa",
+      "bytes": 292,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "B5",
+      "project": "bisellium",
+      "reference": 0,
+      "path": "studio/decisions/D-014.md",
+      "repository": "bisellium-main",
+      "actualSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+      "bytes": 5194,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E1",
+      "project": "epoch0",
+      "reference": 0,
+      "path": "docs/program/PROGRAM.md",
+      "repository": "epoch0-main",
+      "actualSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+      "bytes": 3753,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E1",
+      "project": "epoch0",
+      "reference": 1,
+      "path": "docs/program/BOARD.md",
+      "repository": "epoch0-main",
+      "actualSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+      "bytes": 322573,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E2",
+      "project": "epoch0",
+      "reference": 0,
+      "path": "docs/program/PROGRAM.md",
+      "repository": "epoch0-main",
+      "actualSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+      "bytes": 3753,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E3",
+      "project": "epoch0",
+      "reference": 0,
+      "path": "AGENTS.md",
+      "repository": "epoch0-main",
+      "actualSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+      "bytes": 10184,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E4",
+      "project": "epoch0",
+      "reference": 0,
+      "path": "docs/program/BOARD.md",
+      "repository": "epoch0-main",
+      "actualSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+      "bytes": 322573,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E4",
+      "project": "epoch0",
+      "reference": 1,
+      "path": "docs/program/BOARD.md",
+      "repository": "epoch0-main",
+      "actualSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+      "bytes": 322573,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E5",
+      "project": "epoch0",
+      "reference": 0,
+      "path": "docs/program/PROGRAM.md",
+      "repository": "epoch0-main",
+      "actualSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+      "bytes": 3753,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "E5",
+      "project": "epoch0",
+      "reference": 1,
+      "path": "docs/program/PROGRAM.md",
+      "repository": "epoch0-main",
+      "actualSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+      "bytes": 3753,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y1",
+      "project": "yan-mo",
+      "reference": 0,
+      "path": "README.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73",
+      "bytes": 3216,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y2",
+      "project": "yan-mo",
+      "reference": 0,
+      "path": "CLAUDE.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+      "bytes": 12123,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y2",
+      "project": "yan-mo",
+      "reference": 1,
+      "path": "README.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73",
+      "bytes": 3216,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y3",
+      "project": "yan-mo",
+      "reference": 0,
+      "path": "README.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "a6bb0e4c396e5518d7548d25ce1d740af5529e1cb262cf9040eb0bdcc9764d73",
+      "bytes": 3216,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y3",
+      "project": "yan-mo",
+      "reference": 1,
+      "path": "CLAUDE.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+      "bytes": 12123,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y4",
+      "project": "yan-mo",
+      "reference": 0,
+      "path": "docs/dev-workflow.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+      "bytes": 16223,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y5",
+      "project": "yan-mo",
+      "reference": 0,
+      "path": "docs/vertical-slice-spec.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+      "bytes": 4811,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    },
+    {
+      "case": "Y5",
+      "project": "yan-mo",
+      "reference": 1,
+      "path": "docs/vertical-slice-spec.md",
+      "repository": "yan-mo-main",
+      "actualSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+      "bytes": 4811,
+      "hashMatches": true,
+      "rangeValid": true,
+      "status": "matches"
+    }
+  ],
+  "corpus": [
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "README.md",
+      "status": "exists",
+      "bytes": 11648
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "AGENTS.md",
+      "status": "exists",
+      "bytes": 3981
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "package.json",
+      "status": "exists",
+      "bytes": 4879
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "docs/ADOPTION.md",
+      "status": "exists",
+      "bytes": 73266
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "docs/STUDIO.md",
+      "status": "exists",
+      "bytes": 5922
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "docs/LEX_TEMPLATE.md",
+      "status": "exists",
+      "bytes": 2096
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "packages/cli/src/main.ts",
+      "status": "exists",
+      "bytes": 11576
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "packages/cli/src/context.ts",
+      "status": "exists",
+      "bytes": 355
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "packages/core/src/index.ts",
+      "status": "exists",
+      "bytes": 675
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "packages/schema/src/index.ts",
+      "status": "exists",
+      "bytes": 11415
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "adapters/epoch0/src/index.ts",
+      "status": "exists",
+      "bytes": 1698
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "studio/decisions/D-014.md",
+      "status": "exists",
+      "bytes": 5194
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "studio/leges/engineering.md",
+      "status": "exists",
+      "bytes": 2792
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "studio/opera/W-089.md",
+      "status": "exists",
+      "bytes": 292
+    },
+    {
+      "project": "bisellium",
+      "repository": "bisellium-main",
+      "path": "studio/opera/W-102.md",
+      "status": "exists",
+      "bytes": 970
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "README.md",
+      "status": "exists",
+      "bytes": 4409
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "AGENTS.md",
+      "status": "exists",
+      "bytes": 10184
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "package.json",
+      "status": "missing"
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "docs/program/PROGRAM.md",
+      "status": "exists",
+      "bytes": 3753
+    },
+    {
+      "project": "epoch0",
+      "repository": "epoch0-main",
+      "path": "docs/program/BOARD.md",
+      "status": "exists",
+      "bytes": 322573
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "README.md",
+      "status": "exists",
+      "bytes": 3216
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "CLAUDE.md",
+      "status": "exists",
+      "bytes": 12123
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "project.godot",
+      "status": "missing"
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "docs/dev-workflow.md",
+      "status": "exists",
+      "bytes": 16223
+    },
+    {
+      "project": "yan-mo",
+      "repository": "yan-mo-main",
+      "path": "docs/vertical-slice-spec.md",
+      "status": "exists",
+      "bytes": 4811
+    }
+  ],
+  "bindingIssues": []
+}

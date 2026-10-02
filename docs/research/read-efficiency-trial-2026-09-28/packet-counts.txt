@@ -1,0 +1,19 @@
+ 73289 docs/research/read-efficiency-trial-2026-09-28/cold-adoption-baseline.txt
+  2038 docs/research/read-efficiency-trial-2026-09-28/cold-design-baseline.txt
+  2826 docs/research/read-efficiency-trial-2026-09-28/cold-engineering-baseline.txt
+   662 docs/research/read-efficiency-trial-2026-09-28/cold-adoption-discovery.txt
+   183 docs/research/read-efficiency-trial-2026-09-28/cold-design-discovery.txt
+   188 docs/research/read-efficiency-trial-2026-09-28/cold-engineering-discovery.txt
+  2555 docs/research/read-efficiency-trial-2026-09-28/cold-adoption-body.txt
+   466 docs/research/read-efficiency-trial-2026-09-28/cold-design-body.txt
+  1370 docs/research/read-efficiency-trial-2026-09-28/cold-engineering-body.txt
+ 73289 docs/research/read-efficiency-trial-2026-09-28/repeat-adoption-baseline.txt
+  2038 docs/research/read-efficiency-trial-2026-09-28/repeat-design-baseline.txt
+  2826 docs/research/read-efficiency-trial-2026-09-28/repeat-engineering-baseline.txt
+   662 docs/research/read-efficiency-trial-2026-09-28/repeat-adoption-discovery.txt
+   183 docs/research/read-efficiency-trial-2026-09-28/repeat-design-discovery.txt
+   188 docs/research/read-efficiency-trial-2026-09-28/repeat-engineering-discovery.txt
+  2555 docs/research/read-efficiency-trial-2026-09-28/repeat-adoption-body.txt
+   466 docs/research/read-efficiency-trial-2026-09-28/repeat-design-body.txt
+  1370 docs/research/read-efficiency-trial-2026-09-28/repeat-engineering-body.txt
+167154 total

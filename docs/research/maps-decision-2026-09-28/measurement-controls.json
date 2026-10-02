@@ -1,0 +1,931 @@
+{
+  "version": 2,
+  "inputs": {
+    "developmentKey": {
+      "path": "docs/research/maps-decision-2026-09-28/development-key.json",
+      "sha256": "bafe47ddd506381be2212b62bb7ca673d81b61c84153902a1d59465be9b5dc53"
+    },
+    "questions": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/questions.json",
+      "sha256": "79e2c4a7edc8116b026c7a5a0e1d02d629de204e47d5f4e2b7186d8af0136219"
+    },
+    "legacyKey": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/answer-key.json",
+      "sha256": "3aa6b52306ad95b511bf9b06ab2f9099e64e06e043d81a58e616f5a4d9585083"
+    },
+    "routeResults": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/route-results.json",
+      "sha256": "8b063b433c67c433e4cce83a13cf6299d2d4bff4d762ccb6e6124dac7f984a68"
+    },
+    "curatedPacket": {
+      "path": "docs/research/maps-sufficiency-2026-09-28/packet-A.json",
+      "sha256": "3e8b7e85a55d17c3f33ea4c6fa07e070d68f2076130b49e3ead46e99f1a129fe"
+    }
+  },
+  "sourceAndQuestionChecks": [
+    {
+      "caseId": "B6",
+      "requirementId": "B6-R1",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A1",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "B6",
+      "requirementId": "B6-R2",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A2",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A3",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "B6",
+      "requirementId": "B6-R3",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A4",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A5",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "B7",
+      "requirementId": "B7-R1",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A6",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A7",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A8",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "B7",
+      "requirementId": "B7-R2",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A9",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A10",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "B7",
+      "requirementId": "B7-R3",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A11",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A12",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "E6",
+      "requirementId": "E6-R1",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A13",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A14",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A15",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "E6",
+      "requirementId": "E6-R2",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A16",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A17",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "E6",
+      "requirementId": "E6-R3",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A18",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A19",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A20",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "E7",
+      "requirementId": "E7-R1",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A21",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A22",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "E7",
+      "requirementId": "E7-R2",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A23",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A24",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A25",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "E7",
+      "requirementId": "E7-R3",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A26",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "Y6",
+      "requirementId": "Y6-R1",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A27",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A28",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A29",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "Y6",
+      "requirementId": "Y6-R2",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A30",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A31",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A32",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "Y6",
+      "requirementId": "Y6-R3",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A33",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A34",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "Y7",
+      "requirementId": "Y7-R1",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A35",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A36",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    },
+    {
+      "caseId": "Y7",
+      "requirementId": "Y7-R2",
+      "questionClauseExactMatch": true,
+      "anchorChecks": [
+        {
+          "anchorId": "A37",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A38",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        },
+        {
+          "anchorId": "A39",
+          "originalCuratedAndLabelMatch": true,
+          "fabricatedQuote": false
+        }
+      ]
+    }
+  ],
+  "positiveControl": {
+    "passed": true,
+    "requirements": 17
+  },
+  "emptyControl": {
+    "passed": true,
+    "failedRequirements": 17
+  },
+  "singleAnchorDeletionControls": {
+    "passed": true,
+    "mutants": [
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R1",
+        "droppedAnchorId": "A1",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R2",
+        "droppedAnchorId": "A2",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R2",
+        "droppedAnchorId": "A3",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R3",
+        "droppedAnchorId": "A4",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R3",
+        "droppedAnchorId": "A5",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R1",
+        "droppedAnchorId": "A6",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R1",
+        "droppedAnchorId": "A7",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R1",
+        "droppedAnchorId": "A8",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R2",
+        "droppedAnchorId": "A9",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R2",
+        "droppedAnchorId": "A10",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R3",
+        "droppedAnchorId": "A11",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R3",
+        "droppedAnchorId": "A12",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R1",
+        "droppedAnchorId": "A13",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R1",
+        "droppedAnchorId": "A14",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R1",
+        "droppedAnchorId": "A15",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R2",
+        "droppedAnchorId": "A16",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R2",
+        "droppedAnchorId": "A17",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R3",
+        "droppedAnchorId": "A18",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R3",
+        "droppedAnchorId": "A19",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R3",
+        "droppedAnchorId": "A20",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R1",
+        "droppedAnchorId": "A21",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R1",
+        "droppedAnchorId": "A22",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R2",
+        "droppedAnchorId": "A23",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R2",
+        "droppedAnchorId": "A24",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R2",
+        "droppedAnchorId": "A25",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R3",
+        "droppedAnchorId": "A26",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R1",
+        "droppedAnchorId": "A27",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R1",
+        "droppedAnchorId": "A28",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R1",
+        "droppedAnchorId": "A29",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R2",
+        "droppedAnchorId": "A30",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R2",
+        "droppedAnchorId": "A31",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R2",
+        "droppedAnchorId": "A32",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R3",
+        "droppedAnchorId": "A33",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R3",
+        "droppedAnchorId": "A34",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R1",
+        "droppedAnchorId": "A35",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R1",
+        "droppedAnchorId": "A36",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R2",
+        "droppedAnchorId": "A37",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R2",
+        "droppedAnchorId": "A38",
+        "requirementPassAfterDrop": false
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R2",
+        "droppedAnchorId": "A39",
+        "requirementPassAfterDrop": false
+      }
+    ]
+  },
+  "summary": {
+    "caseCount": 6,
+    "requirementCount": 17,
+    "anchorCount": 39,
+    "sourceChecks": true,
+    "curatedPacketAll": true,
+    "emptyPacketFailsAll": true,
+    "everyAnchorDropFails": true,
+    "overallPass": true
+  },
+  "correction": {
+    "date": "2026-09-28",
+    "reason": "Initial retained command asserted stored booleans and deletion rows were constructed, not packet mutations.",
+    "action": "Replay derives source/question matches, evaluates an empty packet, and masks each actual text or metadata anchor in a packet copy.",
+    "keyOrAnchorChange": false
+  },
+  "replayEvidence": {
+    "command": "bash docs/research/maps-decision-2026-09-28/control-replay.txt",
+    "result": {
+      "sourceAndQuestionChecksPassed": true,
+      "curatedPacketPassedAllRequirements": true,
+      "emptyPacketFailedAllRequirements": true,
+      "everyActualAnchorMaskFailedItsRequirement": true,
+      "caseCount": 6,
+      "requirementCount": 17,
+      "anchorMutationCount": 39,
+      "overallPass": true
+    },
+    "mutants": [
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R1",
+        "maskedAnchorId": "A1",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R2",
+        "maskedAnchorId": "A2",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R2",
+        "maskedAnchorId": "A3",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R3",
+        "maskedAnchorId": "A4",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B6",
+        "requirementId": "B6-R3",
+        "maskedAnchorId": "A5",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R1",
+        "maskedAnchorId": "A6",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R1",
+        "maskedAnchorId": "A7",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R1",
+        "maskedAnchorId": "A8",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R2",
+        "maskedAnchorId": "A9",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R2",
+        "maskedAnchorId": "A10",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R3",
+        "maskedAnchorId": "A11",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "B7",
+        "requirementId": "B7-R3",
+        "maskedAnchorId": "A12",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R1",
+        "maskedAnchorId": "A13",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R1",
+        "maskedAnchorId": "A14",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R1",
+        "maskedAnchorId": "A15",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R2",
+        "maskedAnchorId": "A16",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R2",
+        "maskedAnchorId": "A17",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R3",
+        "maskedAnchorId": "A18",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R3",
+        "maskedAnchorId": "A19",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E6",
+        "requirementId": "E6-R3",
+        "maskedAnchorId": "A20",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R1",
+        "maskedAnchorId": "A21",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R1",
+        "maskedAnchorId": "A22",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R2",
+        "maskedAnchorId": "A23",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R2",
+        "maskedAnchorId": "A24",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R2",
+        "maskedAnchorId": "A25",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "E7",
+        "requirementId": "E7-R3",
+        "maskedAnchorId": "A26",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R1",
+        "maskedAnchorId": "A27",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R1",
+        "maskedAnchorId": "A28",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R1",
+        "maskedAnchorId": "A29",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R2",
+        "maskedAnchorId": "A30",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R2",
+        "maskedAnchorId": "A31",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R2",
+        "maskedAnchorId": "A32",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R3",
+        "maskedAnchorId": "A33",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y6",
+        "requirementId": "Y6-R3",
+        "maskedAnchorId": "A34",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R1",
+        "maskedAnchorId": "A35",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R1",
+        "maskedAnchorId": "A36",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R2",
+        "maskedAnchorId": "A37",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R2",
+        "maskedAnchorId": "A38",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      },
+      {
+        "caseId": "Y7",
+        "requirementId": "Y7-R2",
+        "maskedAnchorId": "A39",
+        "actualMaskCount": 1,
+        "requirementPassAfterMask": false,
+        "detected": true
+      }
+    ]
+  }
+}

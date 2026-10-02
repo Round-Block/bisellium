@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/baseline-score-corrected.json",
+      "sha256": "c29fc6052a7145b0ff12d6b7d6c61dcded220140a5cb5333af65e60927710643",
+      "bytes": 10865
+    },
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/policy-B-score-corrected.json",
+      "sha256": "8152a084c5dde6c6c2bf90a9d2d977cb98468938d4c1d605bc7d8931ee099184",
+      "bytes": 10827
+    },
+    {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/mechanical-aggregate.json",
+      "sha256": "59409cdda8d0b14815baf1190b145ffe4ad26b09d67df080ac388dbe0af75ca2",
+      "bytes": 7881
+    }
+  ]
+}

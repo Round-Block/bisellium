@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "id": "w108-canary",
+      "repositories": [
+        {
+          "id": "w108-fixture",
+          "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+          "corpusFiles": ["AGENTS.md", "source.md"],
+          "instructionFiles": ["AGENTS.md"],
+          "state": "public-synthetic"
+        }
+      ]
+    }
+  ]
+}

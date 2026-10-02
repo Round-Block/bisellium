@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "kind": "w108-deterministic-result",
+  "outcome": "PASS",
+  "command": [
+    "/home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin/node",
+    "--import",
+    "tsx",
+    "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs",
+    "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment"
+  ],
+  "exitCode": 0,
+  "signal": null,
+  "behaviours": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "stdout": "PASS b1 closed concrete schemas and strict argument validation\nPASS b2 session binding injects trusted identity and detects drift\nPASS b3 real source sequence, exact transcript, and fail-closed caps\nPASS b4 live runner gates every frozen predicate before one spawn\nPASS b5 synthetic live verifier enforces event and transcript conjunction\n",
+  "stderr": "",
+  "stdoutSha256": "3e35285d59347398054d4ac14f1fc23c83f4d5418dae7a407c847836f72289cd",
+  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

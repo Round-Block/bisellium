@@ -1,0 +1,9 @@
+# behaviour: 1
+# command: node --import tsx packages/cli/src/instructions.test.ts . w102.config
+# exit: 1
+# at: 2026-09-26T07:49:42.954Z
+# sella: builder-sol
+# tree: dirty:248d3112df76ebf1c515279381e2d31523538837
+
+fatal: not a git repository (or any of the parent directories): .git
+FAIL  w102.config.roles                      {"config":"/home/edckt/projects/bisellium/.worktrees/codex-persistent-workflow/.codex/config.toml","roleDetails":[{"name":"architect","ok":false},{"name":"builder","ok":false},{"name":"censor","ok":false},{"name":"security","ok":false},{"name":"prereviewer","ok":false},{"name":"clerk","ok":false}]}

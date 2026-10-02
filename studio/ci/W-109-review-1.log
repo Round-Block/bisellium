@@ -1,0 +1,46 @@
+# opus: W-109
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-29T05:05:26.698Z
+# tree: tree:e1ba8219dec0c83f617c37acd779326d24afe273
+
+# W-109 sole-censor review
+
+**Verdict: FAIL**
+
+**Code/process compliance:** FAIL  
+**Live usability:** FAIL / UNPROVEN  
+**Adoption or wider evaluation:** NOT AUTHORIZED
+
+## Blocking findings
+
+1. **The live acceptance criterion failed.**  
+   The sole authorized attempt ended `FAIL / TRANSCRIPT_MISSING`. It records one model spawn but no successful tool calls, usage, answer, or inspectable transcript. This is a valid negative experiment result, but it does not prove that the client/model can use the adapter.
+
+2. **The terminal publisher can discard a more precise failure category.**  
+   [`finalizeAttempt`](</home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.mjs:386>) checks for the transcript before checking `controlled.reason` at line 399. A timeout, output cap, or cleanup failure accompanied by a missing transcript is therefore published as `TRANSCRIPT_MISSING`. This violates the signed requirement to preserve the precise failure category. Behaviour 2 tests the controller directly and does not exercise this full-run ordering.
+
+3. **The required pipe-holding descendant test is absent.**  
+   The brief requires a fake grandchild that holds a pipe. In [`behaviour2`](</home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:106>), the grandchild is spawned with all stdio set to `"ignore"` at line 119. The test proves process-group termination, but it does not prove that inherited pipe handles are closed and drained after the direct child exits.
+
+4. **The retained failure metadata is incomplete.**  
+   The signed publication contract requires withheld stderr/event content to retain byte counts, hashes, and a fixed diagnostic. Credential scanning completed without producing `CREDENTIAL_LEAK`, yet [`result.json`](</home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary/evidence/result.json:1>) retains only byte counts. It has no stdout/stderr hashes and no stderr diagnostic. The raw data and private runtime are gone, and the signed scope forbids a retry, so this attempt’s evidence cannot be repaired retrospectively.
+
+## Confirmed evidence
+
+- W-108’s missing production runner and process-timeout blockers were implemented in W-109.
+- Four genuine, ordered assertion-level reds predate their fixes.
+- I independently reproduced behaviours 1–4; all exited successfully.
+- Credential matches suppress raw publication and credential-derived hashes.
+- The retained freeze and marker share SHA-256 `5af241…93993`.
+- Exactly one Luna-low model spawn is recorded. I performed no model rerun.
+- The private runtime was removed and the attempt marker remains.
+- W-107/W-108 source, adapter, registry, and fixture content remained unchanged.
+- Final tests, lint, and type certificates cover source tree `e1ba8219…`.
+- `bisellium check --level block` reports **PASS — 0 blocking**.
+- The worktree is clean.
+
+The cheapest valid next step is to stop here and retain the negative result. Any repair or another live attempt requires a fresh signed scope.

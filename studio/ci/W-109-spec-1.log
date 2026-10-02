@@ -1,0 +1,16 @@
+# opus: W-109
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-6-astra
+# outcome: PASS
+# at: 2026-09-29T04:06:35.177Z
+# tree: tree:ceffdf2b12cf5dd67983b9ff44695e75ac1b889e
+
+# W-109 architect spec verdict
+
+PASS - revision 2 is ready for one bounded public usability canary.
+
+The brief reuses W-108 exports and leaves W-107/W-108 results intact. It explicitly drops W-108 effective-inventory precondition without claiming isolation, savings or adoption. Auth staging/environment allowlist, private raw capture and guarded publication, external whole-process-group timeout/reaping, raw framing and exact identity/attempt binding resolve the four security blockers. Crash cleanup cannot erase or repeat an attempt. Three recorded-red behaviours exercise the executable wrapper rather than disconnected seams. Any inability to keep this a thin wrapper stops before model spawn; no broad harness or follow-on trial is authorized.
+
+This is a specification decision only, not an implementation or review verdict.

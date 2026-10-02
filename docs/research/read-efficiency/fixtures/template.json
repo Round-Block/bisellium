@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "projects": [
+    { "id": "bisellium", "repository": "bisellium-repo" },
+    { "id": "epoch0", "repository": "epoch0-repo" },
+    { "id": "yan-mo", "repository": "yan-mo-repo" }
+  ]
+}
