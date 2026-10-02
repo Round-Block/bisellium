@@ -883,6 +883,7 @@ if (runs(1)) {
     const budget = ["--budget", "100000"];
     /** One rung boundary: the step line, its actor and why, and nothing written. */
     const rung = (w: World, row: string, step: string, status: string, extra?: (o: Out) => void): Out => {
+      if (['spec','reds','build','review'].includes(step) && !/traditio/.test(recordOf(w, existsSync(w.wt) ? "wt" : "repo"))) handoffAt(w, existsSync(w.wt) ? "wt" : "repo", T.handoffFresh);
       const before = snap(w);
       const o = next(w, [OPUS, ...budget]);
       expectStep(o, step, status, row);
@@ -1254,7 +1255,7 @@ if (runs(3)) {
     assert.match(readsOut.out, /state=MERGED/, ran("the landing scenario merges", readsOut));
     assert.deepEqual(unmatched(reads), [], "the verb made no gh call the scenario did not expect");
     const gh = ghCalls(reads);
-    assert.ok(gh.length > 0 && gh.every((a) => a.includes("-R") && a[a.indexOf("-R") + 1] === SLUG), "-R <slug> is pinned on every gh call");
+    assert.ok(gh.length > 0 && gh.filter((a) => a[0] !== "repo" && a[0] !== "api").every((a) => a.includes("-R") && a[a.indexOf("-R") + 1] === SLUG), "-R <slug> is pinned on every gh call that accepts it");
     for (const a of gh) assert.ok(!a.includes("-q") && !a.includes("--jq") && !a.includes("--template"), `no -q/--jq read: gh ${a.join(" ")}`);
     const list = gh.find((a) => a[0] === "pr" && a[1] === "list");
     assert.match(list?.[list.indexOf("--json") + 1] ?? "", /headRefOid/, "pr list reads a fixed --json field list");
@@ -1456,7 +1457,7 @@ if (runs(3)) {
     };
     const outcome = (o: Out, what: RegExp): string => {
       const line = o.out.split("\n").find((l) => what.test(l) && /(ran|skipped \(absent\)|held)/.test(l));
-      return /(ran|skipped \(absent\)|held)/.exec(line ?? "")?.[1] ?? "(not reported)";
+      return /\b(ran|skipped \(absent\)|held)(?!\w)/.exec(line ?? "")?.[1] ?? "(not reported)";
     };
     const WORKTREE = /worktree/i;
     const LOCAL = /^\s*(local )?branch/i;
