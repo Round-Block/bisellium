@@ -791,6 +791,7 @@ async function readyFiles(barrier: string, count: number, children: ChildProcess
     const files = readdirSync(barrier).filter((name) => name.endsWith(".ready"));
     if (files.length >= count) return files.sort();
     if (children.some((child) => child.exitCode !== null)) break;
+    // sleep-seam: BISELLIUM_IDS_TEST_BARRIER_DIR -- poll cadence only; the loop exits when the barrier dir holds the expected .ready files
     await new Promise((resolveWait) => setTimeout(resolveWait, 10));
   }
   for (const child of children) child.kill("SIGKILL");

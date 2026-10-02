@@ -224,6 +224,7 @@ async function testServeWiring(): Promise<void> {
     child.stderr?.on("data", (c: Buffer) => (stderrBuf += c.toString()));
 
     const port = await new Promise<number | undefined>((resolvePort) => {
+      // sleep-waiver: guard -- a ten second deadline on the server printing its port; it fails the test, correctness does not wait on it
       const timer = setTimeout(() => resolvePort(undefined), 10_000);
       const tryMatch = () => {
         const m = /listening on http:\/\/127\.0\.0\.1:(\d+)/.exec(stdout);
@@ -262,6 +263,7 @@ async function testServeWiring(): Promise<void> {
 
     child.kill("SIGTERM");
     const exitedCleanly = await new Promise<boolean>((resolveExit) => {
+      // sleep-waiver: guard -- a five second deadline on the server exiting after SIGTERM; it fails the test, correctness does not wait on it
       const timer = setTimeout(() => resolveExit(false), 5000);
       child.once("exit", () => {
         clearTimeout(timer);

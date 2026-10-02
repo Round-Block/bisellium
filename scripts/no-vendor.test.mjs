@@ -628,14 +628,15 @@ if (runs(9) && requireBuilt(9)) {
   }
 
   // Row 3: release-before-adjudicate. A runs as a genuinely separate OS
-  // process (so it can be raced against for real, not just called
-  // in-process); its suite writes a violation and exits immediately. While
-  // A's process is alive, this test polls — from OUTSIDE A's process, the
-  // only way an external actor genuinely could — trying to acquire the same
-  // lock. Rev 2's bug released the lock right after the suite's spawnSync
-  // returned, BEFORE reading the log; ours reads the snapshot first and
-  // releases last, so the lock must never come free until A's whole process
-  // (acquire-through-adjudicate-through-release) has finished.
+  // process; its suite writes a violation and exits immediately. A passes
+  // runOnce the test-only `beforeRelease` seam (W-121): the hook fires after
+  // adjudication and immediately before the lock is released, tells this test
+  // so on stdout, and blocks on stdin. At that one instant the lock must still
+  // be held, so this test probes it from OUTSIDE A's process and expects
+  // EEXIST. Rev 2's bug released the lock right after the suite's spawnSync
+  // returned, BEFORE reading the log. No timer, no poll: only events. The
+  // spawn `timeout` is the row's deadline (kernel-level kill, so CI cannot
+  // hang here), not a wait.
   {
     const { dir, shadowDir, lockPath, logPath } = lockFixture("b9-3");
     const aResultPath = join(dir, "a-result.json");
@@ -645,41 +646,42 @@ if (runs(9) && requireBuilt(9)) {
       aScript,
       [
         `import { runOnce } from ${JSON.stringify(`file://${join(REPO_ROOT, "scripts", "no-vendor.mjs")}`)};`,
-        `import { writeFileSync } from "node:fs";`,
-        `const r = runOnce({ repoRoot: ${JSON.stringify(dir)}, shadowDir: ${JSON.stringify(shadowDir)}, lockPath: ${JSON.stringify(lockPath)}, logPath: ${JSON.stringify(logPath)}, suiteCommand: ${JSON.stringify(`node -e ${JSON.stringify(suiteInner)}`)} });`,
+        `import { readFileSync, writeFileSync, writeSync } from "node:fs";`,
+        `const beforeRelease = () => { writeSync(1, "HOLD\\n"); readFileSync(0); };`,
+        `const r = runOnce({ repoRoot: ${JSON.stringify(dir)}, shadowDir: ${JSON.stringify(shadowDir)}, lockPath: ${JSON.stringify(lockPath)}, logPath: ${JSON.stringify(logPath)}, suiteCommand: ${JSON.stringify(`node -e ${JSON.stringify(suiteInner)}`)}, beforeRelease });`,
         `writeFileSync(${JSON.stringify(aResultPath)}, JSON.stringify(r));`,
       ].join("\n"),
     );
 
-    const aChild = spawn(process.execPath, [aScript], { stdio: "ignore" });
-    let aExited = false;
-    aChild.on("exit", () => {
-      aExited = true;
+    const aChild = spawn(process.execPath, [aScript], { stdio: ["pipe", "pipe", "inherit"], timeout: 30_000, killSignal: "SIGKILL" });
+    aChild.stdin.on("error", () => {}); // A already gone: EPIPE on the closing end() is not a failure
+    const aExit = new Promise((resolve) => {
+      aChild.on("error", (err) => resolve({ code: null, signal: null, err }));
+      aChild.on("exit", (code, signal) => resolve({ code, signal }));
+    });
+    let aOut = "";
+    const hold = new Promise((resolve) => {
+      aChild.stdout.on("data", (d) => {
+        aOut += d;
+        if (aOut.includes("HOLD\n")) resolve("hold");
+      });
     });
 
-    // A free lock only counts as a real race if A had NOT yet produced its
-    // result at that instant — the 'exit' event and this poll loop's own
-    // timer both ride the same event loop, so a free lock noticed a tick
-    // after A's own natural, correctly-ordered completion is expected, not
-    // a bug: it is exactly what "release last" looks like from outside.
-    let racedEarly = false;
-    let attempts = 0;
-    const pollDeadline = Date.now() + 8000;
-    while (!aExited && Date.now() < pollDeadline) {
-      attempts++;
-      try {
-        closeSync(openSync(lockPath, "wx"));
-        if (!existsSync(aResultPath)) racedEarly = true;
-        unlinkSync(lockPath); // we're not the real owner — undo the damage.
-      } catch {
-        /* expected: A still holds it */
+    let probe = "A sent no HOLD line (it exited first)";
+    try {
+      if ((await Promise.race([hold, aExit.then(() => "exit")])) === "hold") {
+        try {
+          closeSync(openSync(lockPath, "wx"));
+          unlinkSync(lockPath); // we're not the real owner — undo the damage.
+          probe = "the lock was FREE while A held it before release";
+        } catch (err) {
+          probe = err && err.code === "EEXIST" ? "held" : `unexpected probe error: ${err}`;
+        }
       }
-      await new Promise((r) => setTimeout(r, 1));
+    } finally {
+      aChild.stdin.end(); // never leave A blocked, whatever happened above
     }
-    const flushDeadline = Date.now() + 8000;
-    while (!existsSync(aResultPath) && Date.now() < flushDeadline) {
-      await new Promise((r) => setTimeout(r, 5));
-    }
+    const aEnd = await aExit;
     const aResult = existsSync(aResultPath) ? JSON.parse(readFileSync(aResultPath, "utf8")) : { log: [] };
     check(
       9,
@@ -689,10 +691,11 @@ if (runs(9) && requireBuilt(9)) {
     );
     check(
       9,
-      "row 3: the lock was never free before A had already produced its (correct) result",
-      racedEarly === false,
-      `attempts=${attempts}`,
+      "row 3: the lock is still held when A reaches its release point, and A then exits 0",
+      probe === "held" && aEnd.code === 0,
+      aEnd.signal ? `A was killed after the deadline (${aEnd.signal})` : `${probe}; exit=${aEnd.code}`,
     );
+    check(9, "row 3: the lock is gone once A has exited", !existsSync(lockPath), lockPath);
   }
 
   // Row 4: a lock left behind by a crashed run refuses the next run; the

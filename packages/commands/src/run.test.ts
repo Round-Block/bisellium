@@ -316,6 +316,7 @@ async function waitFor(what: string, ready: () => boolean, ms = 40_000): Promise
   const deadline = Date.now() + ms;
   while (!ready()) {
     if (Date.now() > deadline) throw new Error(`timed out waiting for ${what}`);
+    // sleep-seam: ready -- poll cadence only; the loop exits when the ready() predicate turns true or the deadline passes
     await new Promise((ok) => setTimeout(ok, 100));
   }
 }
@@ -644,6 +645,7 @@ if (runs(2)) {
         const s = require('node:net').connect({ host: '1.1.1.1', port: 443 });
         s.once('error', (e) => res(e.code));
         s.once('connect', () => { s.destroy(); res('connected'); });
+        // sleep-waiver: guard -- the embedded script gives the socket probe five seconds, a deadline and not what correctness waits on
         setTimeout(() => { s.destroy(); res('timeout'); }, 5000);
       });
       ev.loopback = await new Promise((res) => {
@@ -721,6 +723,7 @@ if (runs(3)) {
       const s = net.connect({ host: '1.1.1.1', port: 443 });
       s.once('error', (e) => res(e.code));
       s.once('connect', () => { s.destroy(); res('connected'); });
+      // sleep-waiver: guard -- the embedded script gives the socket probe five seconds, a deadline and not what correctness waits on
       setTimeout(() => { s.destroy(); res('timeout'); }, 5000);
     });
     // Hex: the replay's failure classifier scans raw output for errno names.
@@ -828,6 +831,7 @@ if (runs(4)) {
   live("W-125 behaviour 4 live: SIGTERM to the runner kills the group and removes the runtime and lease", async () => {
     const f = liveFixture("b4-sigterm");
     const resultFile = join(scratch("result"), "result.json");
+    // sleep-waiver: fixture -- the builder script keeps itself alive with an interval so the runner can be signalled mid-run
     const cmd = builder("fs.writeFileSync('/tmp/ready','1');setInterval(()=>{},1000);");
     const child = spawn(process.execPath, [RUNNER, "--request", directRequest(f, cmd, resultFile)], { cwd: f.repo, env: RUNNER_ENV(f), stdio: "ignore" });
     const exited = new Promise<void>((ok) => child.once("exit", () => ok()));
@@ -848,6 +852,7 @@ if (runs(4)) {
   live("W-125 behaviour 4 live: after a SIGKILLed runner the parent cleans the reported runtime", async () => {
     const f = liveFixture("b4-sigkill");
     const resultFile = join(scratch("result"), "result.json");
+    // sleep-waiver: fixture -- the builder script keeps itself alive with an interval so the runner can be signalled mid-run
     const cmd = builder("fs.writeFileSync('/tmp/ready','1');setInterval(()=>{},1000);");
     const child = spawn(process.execPath, [RUNNER, "--request", directRequest(f, cmd, resultFile)], { cwd: f.repo, env: RUNNER_ENV(f), stdio: "ignore" });
     const exited = new Promise<void>((ok) => child.once("exit", () => ok()));

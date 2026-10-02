@@ -100,10 +100,21 @@ async function postJson(base: string, path: string, payload: unknown): Promise<J
 
 /** A minimal SSE client for /api/live — same recipe as server.test.ts's own
  *  `connectSSE`, duplicated per this file's own header note. */
-function connectSSE(port: number): { events: Record<string, unknown>[]; close: () => void } {
+function connectSSE(port: number): { events: Record<string, unknown>[]; close: () => void; ready: Promise<void> } {
   const events: Record<string, unknown>[] = [];
   let buffer = "";
+  // W-121: `ready` resolves when the response callback fires; handleLive
+  // registers the client in the same synchronous run as writing the headers,
+  // so a response implies registration. A refused or reset connection rejects.
+  let markReady!: () => void;
+  let failReady!: (err: Error) => void;
+  const ready = new Promise<void>((resolve, reject) => {
+    markReady = resolve;
+    failReady = reject;
+  });
+  ready.catch(() => undefined); // a test that never awaits it raises no unhandled rejection
   const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET" }, (res: IncomingMessage) => {
+    markReady();
     res.setEncoding("utf8");
     res.on("data", (chunk: string) => {
       buffer += chunk;
@@ -122,15 +133,16 @@ function connectSSE(port: number): { events: Record<string, unknown>[]; close: (
       }
     });
   });
-  req.on("error", () => undefined);
+  req.on("error", (err) => failReady(err)); // a no-op once ready has resolved
   req.end();
-  return { events, close: () => req.destroy() };
+  return { events, close: () => req.destroy(), ready };
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (predicate()) return true;
+    // sleep-seam: predicate -- poll cadence only; the loop exits when predicate() turns true or the deadline passes
     await new Promise((r) => setTimeout(r, 25));
   }
   return predicate();
@@ -280,7 +292,7 @@ async function main(): Promise<void> {
     const dir = freshStudio("live");
     const started = await startServer(baseOpts(dir));
     const sse = connectSSE(started.port);
-    await new Promise((r) => setTimeout(r, 75)); // let the SSE connection register
+    await sse.ready;
 
     const opusPath = join(dir, "opera", "W-002.md");
     writeFileSync(opusPath, readFileSync(opusPath, "utf8").replace("state: building", "state: verifying"), "utf8");

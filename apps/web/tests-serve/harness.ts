@@ -40,6 +40,7 @@ async function waitForReady(baseURL: string, timeoutMs = 20_000): Promise<void> 
     } catch (e) {
       lastErr = e;
     }
+    // sleep-seam: waitForReady -- poll cadence only; the loop exits when GET /api/officina answers 200 or the deadline passes
     await new Promise((r) => setTimeout(r, 100));
   }
   throw new Error(`served instance never became ready at ${baseURL}: ${String(lastErr)}`);
@@ -65,6 +66,7 @@ export async function startServed(tag: string): Promise<ServedInstance> {
   let token: string | undefined;
 
   await new Promise<void>((resolvePromise, reject) => {
+    // sleep-waiver: guard -- a fifteen second startup deadline that fails the spec; correctness waits on the printed port and token
     const timer = setTimeout(() => {
       reject(new Error(`bisellium serve never printed its port/token within 15s:\n${stdout}`));
     }, 15_000);
@@ -104,6 +106,7 @@ export async function startServed(tag: string): Promise<ServedInstance> {
           return;
         }
         child.once("exit", () => r());
+        // sleep-waiver: guard -- a two second cap on waiting for the child to exit; teardown proceeds either way
         setTimeout(r, 2000);
       });
       rmSync(studioDir, { recursive: true, force: true });
