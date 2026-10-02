@@ -1,0 +1,94 @@
+# opus: W-114
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T09:59:02.017Z
+# tree: tree:57aa9a24b96b481bd9db640ce33358157cf6812a
+
+W-114 censor review round 1 — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 94c58e0. REVIEW: PASS (0 blocking, 4 advisory).
+
+1. Reds (PASS). All six logs in studio/ci/reds/W-114/ are a single `not ok 1 - W-114 behaviour N:` with code ERR_ASSERTION, failing on
+   the brief's genuine-red row: 1c, 2i, 3g, 4b, 5a, 6d, each with a distinct message, none a load error. Header `# tree:` is
+   678b7d8f0ea0731ffe1df8695e436d753d32cfa9 in all six. I recomputed sourceTreeHash(repo, [studio, .bisellium, examples/], ref):
+   21e64c2 = 8e72827 = 678b7d8f... (a committed source identity, = tests commit); 248cbce = 94c58e0 = 57aa9a24... (the fix tree was
+   restored byte-exact). The repair is honest. I also replayed all six in a detached worktree at 21e64c2 with its own
+   @bisellium workspace links (a first attempt that symlinked node_modules wrongly resolved the fix and passed; discarded, then
+   redone correctly): all six fail with the same row messages. The worktree was removed.
+2. Green (PASS). `--behaviour 1..6` at HEAD: six `ok`, pass 1 / fail 0 each. `npm test` (full): exit 0, no `not ok`/FAIL;
+   package.json test:suite registers answer-carry.test.ts after rules/tests.test.ts. `npm run -s typecheck`: exit 0.
+   `check -- studio --repo .`: PASS 0 blocking, 200 advisory. `check -- examples/sample-studio --repo .`: PASS 0 blocking,
+   28 advisory. Nothing named test.sleep appears in the studio check output.
+3. Fix vs brief rule (PASS). packages/commands/src/context.ts carries: state resolved; sella !== patron (manifest.patron ?? "patron");
+   counterparty is the patron in either direction; last line-start `^\[stated\] (\S+) ` token must match ISO-Z, `at <= now` (its
+   own test, not daysBetween), and `daysBetween <= DECISION_WINDOW_DAYS`. Newest 3 by stamp, ties by id; tail trim
+   `…`+last 1000 chars (carried only, pending asks never trimmed); carried pushed after pending. Probes on a temp copy of
+   examples/sample-studio via the real CLI (--now 2026-09-17T15:00:00Z):
+   - last stamp malformed (`2026-09-17`) after a valid earlier one: hidden. Stamp 1s in the future: hidden. Mid-line `[stated]`: hidden.
+   - `+00:00` offset token: hidden (ISO-Z only). Stamp exactly 48h old: shown (<= 2d). 48h+1s: hidden. Stamp == now: shown.
+   - from eng-lead to qa-lead resolved, validly stamped: hidden from eng-lead. needs_you with a stamp: not carried.
+   - Five qualifying petitiones with identical stamps, plus a pending awaiting_reply: eng-lead sees C-9 (pending) first, then
+     C-3, C-4, C-5 (higher id wins the tie). patron and builder boots show no carried entry; qa-lead sees only its own C-8.
+   - manifest `patron: boss`: the carry follows the manifest, not the literal "patron".
+   - CRLF body: carried.
+   - Real studio/ at --now 2026-10-02T12:00:00Z: qa-lead sees P-014 and P-015 only (tokens: 2573, no truncated line). At
+     2026-10-03T12:00:00Z both have aged out. This matches the brief's landing note.
+4. Scope (PASS). `git diff 21e64c2 94c58e0 --stat`: docs/ADOPTION.md (one parenthetical sentence in the answer paragraph),
+   packages/commands/src/context.ts (+33), six red logs, studio/opera/W-114.md traditio. No package.json change after the tests
+   commit (the entry was already there). answer-carry.test.ts has zero sleep/setTimeout/sleep-seam/sleep-waiver strings. The
+   harness matches the brief: argv-array spawnSync, 120s timeout, TZ=UTC, BISELLIUM_SELLA/ROLE deleted, cpSync with dereference,
+   REPO/MAIN off import.meta.url, imports only node builtins and adapter-native. Surface rows assert full header or stamp-line
+   substrings on stdout (5e asserts headers [A-14,A-15,A-16], pending first, per-block tail stamp, <= 1001 chars, no truncated:).
+5. Residuals (PASS). The brief's 14 residuals are stated; nothing in the diff widens them. The unauthenticated-stamp and
+   silent-cap behaviour is exactly as residuals 7, 8 and 10. I found no new class.
+
+ADVISORY (none blocking; no brief line violated)
+A1. Carried entries render oldest-first (`.reverse()` after the newest-3 slice). The brief fixes the selection (newest 3) but not the
+    display order; 5e asserts only the sorted header set. Fine as is. If newest-first was intended, say so in the next brief.
+A2. Tie direction: on equal stamps the higher id is kept as "newer". The brief says only "ties by id". Probed and consistent; worth
+    one clause in the code comment.
+A3. The worktree has an uncommitted CLI-written line in studio/opera/W-114.md (`run_receipt: receipts/builder.W-114/...`). It is
+    bookkeeping, outside the diff I reviewed, and will ride along with whichever bookkeeping commit the orchestrator makes.
+A4. The brief's acceptance asks `npm test` twice at a clean tree. I ran it once as instructed (green, exit 0). A second run
+    is the builder's/orchestrator's claim; I did not re-run it.
+
+Class check: no defect found, so no class enumeration. Searched: the carry rule's six clauses (state, patron-self, counterparty,
+stamp shape, future/window, cap/trim), pending-ask survival, per-sella visibility, manifest.patron, CRLF, mid-line stamps, offset tokens.
+W-114 sec-lead code review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 94c58e0. SEC: CLEAR (0 blocking, 5 advisories).
+Scope: git diff 21e64c2 94c58e0 (context.ts carry, ADOPTION.md line) + answer-carry.test.ts. Residuals 7-14 not re-raised.
+Probes: tsx scripts calling buildContext on temp copies of examples/sample-studio (scratchpad/p/probe*.ts); e2e run twice.
+
+Verified fail-closed / no defect (probe evidence)
+ V1 Party rule (context.ts:197-199): exact === compares. Hidden for: from "Eng-Lead", to "Patron", from==to==eng-lead,
+    from==to==patron, missing from/to, [STATED], indented "  [stated]". Shown only for eng-lead/patron exact. Patron's own boot: none.
+ V2 ReDoS: STAMP_LINE only starts at line starts, ISO_Z is anchored and linear. 5 MB "[stated] aaaa..." (no space): 65 ms;
+    5 MB fractional-digit token: 50 ms; 5x200k-char stamp lines: fine.
+ V3 Clock: `now` is the caller's Date (--now or new Date() in main.ts:165); never body-derived. Future stamp hidden (A-5/A-3/A-4 in e2e).
+ V4 Cap: exactly 3 qualifying -> all 3 shown; 4 equal-stamp -> E-2,E-3,E-4 (E-1 dropped); order oldest-to-newest in output. Pending asks not counted.
+ V5 Trim: 999/1000 chars shown whole; 1001 -> "…"+last 1000 (shown length 1001). No new framing break: the first tail line is always
+    prefixed "…", so it can never equal "--- end ---"; every later line is a line of the full body. A body with an embedded "--- end ---"
+    breaks identically trimmed or full (residual 5). Probe: 1091-char body with inner end marker -> same 1 early marker as untrimmed.
+ V6 e2e harness: spawnSync(process.execPath, argv-array), no shell/exec anywhere; REPO derived from import.meta.url, no absolute paths;
+    cwd REPO; only the temp copy is written (git status identical before/after; 6/6 pass, 12.8 s); `after()` rmSyncs every fresh() dir;
+    the hook-event context path is a read.
+
+Findings (all non-blocking)
+ 1. [LOW, correctness] Tail trim can split a surrogate pair. context.ts:206 `trimmed.slice(-CARRY_TAIL_CHARS)` cuts by UTF-16 unit.
+    Repro: body = "😀".repeat(600)+"z"+"\n\n[stated] 2026-09-17T14:00:00.000Z patron: ok", resolved, eng-lead<->patron, now 2026-09-17T15:00Z:
+    shown block m.isWellFormed()===false, m.charCodeAt(1)===0xde00 (lone low surrogate right after "…"); UTF-8 bytes e280a6 efbfbd f09f9880...
+    (U+FFFD on stdout). Cosmetic on stdout; if `talk` passes buildContext().text into a JSON API request, a lone surrogate may be refused
+    (not verified). Class: one site (the only slice of petitio text). Fix: advance start by one when charCodeAt(start) is 0xDC00-0xDFFF.
+ 2. [LOW] Regex /m treats \r, U+2028, U+2029 as line starts as well as \n (context.ts:38). Repro: body "Q\r[stated] 2026-09-17T14:00:00.000Z patron: cr"
+    (also  ,  ) is carried to eng-lead although no \n-delimited line starts with [stated]; the e2e/`split("\n")` readers disagree
+    with the rule. Same unauthenticated-stamp class as residual 7/10 (no fail-open beyond it); spec text said "(multiline)", so as written.
+ 3. [LOW] Tie-break is lexicographic, not numeric: 12 equal-stamp petitiones E-1..E-12 -> shown E-7,E-8,E-9 (E-12 loses to E-9).
+    Deterministic, but "newest id" is not newest. Also comparator returns -1 for both orders when ids are equal (duplicate `id:` in two
+    files: 4 files id X-1 -> F-1 dropped, F-2..F-4 shown; order = listMd order). Not exploitable beyond residual 8.
+ 4. [LOW] Over-1000-char replies lose the "[stated] <ts> patron:" attribution in the shown tail (residual 13 covers the stamp token; this notes the
+    sella then sees an unattributed text tail while the qualifying test used the untrimmed body).
+ 5. [INFO, harness] Env strip removes only BISELLIUM_SELLA/ROLE (answer-carry.test.ts:46-47); BISELLIUM_TEST_CLOCK, BISELLIUM_FAKE_MODE and
+    NODE_OPTIONS still inherit. Temp-dir cleanup lives in after(); a SIGKILL/timeout leaks (two w114-* dirs from earlier runs sit in $TMPDIR; my
+    runs left none). Worktree shows pre-existing unrelated dirt: M studio/opera/W-114.md (not touched by this review).
+Searched: all slice/substr of petitio text in context.ts (one site); all `from === sella`/`to === ` compares in the carry (two, exact); all
+regexes on body text (STAMP_LINE, ISO_Z); dataBlock call sites in context.ts; env reads in packages for BISELLIUM_*.
