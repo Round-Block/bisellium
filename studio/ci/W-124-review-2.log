@@ -1,0 +1,14 @@
+# opus: W-124
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: PASS — both censor blockers and both sec blockers closed, verified by an independent mutation check against the round-1 implementation; red 2's two-test form accepted as recorded (not a precedent); sec-lead CLEAR in parallel. Advisories only.
+# at: 2026-10-02T04:38:06.813Z
+# tree: tree:8b4ea5d3f4b2893ea8a408d187d5e4a8a11129b7
+
+W-124 round 2 censor review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 28a9fe3, tree 8b4ea5d3.
+VERDICT: PASS — no blocking findings.
+Both round-1 blockers closed (unverifiable split from unrelated with every settleMerged caller enumerated; the kind: ui review order lists the ui-lead input and carries --ui-input matching verdict.ts's requirement). Both sec blockers closed (HEAD_MOVED before update-branch, descends() ancestry at all three adoption sites, fail-closed on fetch/merge-base errors; one clean() choke point in say() covering every line incl. inputs:/dirty:/conflict:). Independent verification: sourceTreeHash recomputed equals the certificates; 16/16 at HEAD; mutation check against the round-1 implementation reproduced the builder's red log (9 failures, only the descendant control passing); the host receipt replayed red 2 with assertionFailed: true.
+RULING — red 2's two-test TAP (1..2) is acceptable as recorded: both failures are assertion-level with distinct names and stated reasons; the host replay attested the form; opus.red_assertion is pinned to W-096 (brief residual 4); a re-record at a pre-fix identity is impossible without backfilling. Not a precedent for the six pinned reds; later rounds put fix rows in their own selection.
+ADVISORY: record the red-form departure in the retro; commit a durable ci/ copy of the fix-row red log; add a row for the unverifiable-then-resolved fetch path; descends() accepts any descendant (inherent to the ancestry remedy, sec-lead's call); sec advisories A1–A8/A10–A13 remain open as advisories.

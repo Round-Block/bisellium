@@ -129,7 +129,7 @@ export function countBehaviours(briefText: string): number {
 
 /** The leading `# key: value` header lines of a red log (W-020's contract),
  *  stopping at the first non-header line. */
-function parseLogHeader(text: string): Map<string, string> {
+export function parseLogHeader(text: string): Map<string, string> {
   const header = new Map<string, string>();
   for (const line of text.split(/\r?\n/)) {
     const m = /^#\s*([A-Za-z_]+):\s*(.*)$/.exec(line);
@@ -139,7 +139,7 @@ function parseLogHeader(text: string): Map<string, string> {
   return header;
 }
 
-function stripHeader(text: string): string {
+export function stripHeader(text: string): string {
   const lines = text.split(/\r?\n/);
   const firstNonHeader = lines.findIndex((l) => !/^#\s*[A-Za-z_]+:/.test(l));
   return (firstNonHeader === -1 ? [] : lines.slice(firstNonHeader)).join("\n").trim();

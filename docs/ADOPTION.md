@@ -847,6 +847,117 @@ scratch checkout is untouched. Exit codes: 0 every step passed (with
 failed, 2 usage error, no git repo for `--ref`, or a ref that cannot be
 checked out.
 
+## Running next
+
+```bash
+npm run bisellium -- next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]
+npm run bisellium -- next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]
+```
+
+`next` is the cascade order as a verb (`packages/cli/src/next.ts`). From the
+record and its evidence alone it derives the one legal next step of the
+twelve-rung ladder `STEPS` (`greenlight`, `spec`, `branch`, `ready`, `reds`,
+`build`, `review`, `pr`, `merge`, `cleanup`, `done`, `checkpoint`), names it,
+and refuses to skip. A rung is met by evidence, never by memory: the committed
+trunk (`refs/heads/master`, read with `git show`, never a working tree) carries
+the signed spec, and, once it carries the opus's `done` record, settles every
+rung up to `done`. The opus branch's own evidence (record, `ci/`, reds, run
+receipt) is read from its worktree `<repo>/.worktrees/<id>`. A MERGED PR settles
+the rungs up to `merge` only by reachability (its merge commit is in the local
+trunk by `trunkContainsMerge`, `@bisellium/commands/trunk.js`, and a
+still-present local branch tip is the PR's head or an ancestor of it); a merged
+opus whose trunk is behind is `merge`, never `branch`. `done` is therefore
+reported and performed only from a fresh MERGED read AND a trunk that contains
+the merge ("complete means merged and fetched").
+
+Run it from the repository's **main checkout** (`--repo` names it; a linked
+worktree exits 2). Without `--perform` it only reports and writes nothing, and
+the only network use is `gh` read calls for the PR rungs. "Dirty" means tracked
+changes only (staged or unstaged); an untracked file never makes a tree dirty.
+
+Output: the first stdout line is `next: <opus> <step> <named|performed|held|running|dead|complete>`,
+then `key: value` lines (`actor:`, `why:`, `command:`, `head:`, `health:`;
+`attributed:` for `ready`, which `next` runs with the sella of the passed spec
+log; `state=<X>` lines for performed PR steps, using the scripts' vocabulary
+`CONFLICT`, `CHECKS_FAILED`, `GHAS_STOP`, `MERGE_FAILED`, `QUEUE_REJECTED`,
+`QUEUE_TIMEOUT`, `HEAD_MOVED`, `MERGED`, plus `WAITING` when the checks never
+turned green and `MERGED_NOT_FETCHED` when the merge landed but the trunk could
+not be fetched or does not yet contain it; after a performed step `next-step:`
+names the re-derived rung and `next-why:` says why when it is held). Every
+printed line is stripped of control characters (C0 and C1, newline included) and
+each element clipped, so a check name or a `gh` reply cannot start a `state=`
+line. A MERGED PR whose head this clone cannot resolve stays at `merge`; its
+perform fetches `refs/remotes/origin/opus/<id>` and holds, naming the oid, if
+the head is still unknown. A BEHIND PR is updated only while its head is the
+reviewed one, and a head that appears afterwards is adopted only if it descends
+from it (else `HEAD_MOVED`). Exit 0: a step named or performed, a
+live step reported running, or the ladder complete. Exit 1: refused, held, dead,
+or a performed step failed. Exit 2: usage, unknown opus, not a studio, not the
+main checkout. **`running` is a header word at exit 0, not an exit code: an
+orchestrator must read the word.**
+
+`--expect <step>` exits 1 with `refusing: next step for <opus> is <A>, not <B>`
+whenever `<B>` is not the derived step. `--perform` executes only the derived
+rung (`branch`, `ready`, `pr`, `merge`, `cleanup`, `done`) and then re-derives;
+it never runs a second rung in one call and stops at the first named-only rung
+(a dispatch, `greenlight`, `checkpoint`), running nothing. It takes the step
+marker first, derives again, checks `--expect` against that second derivation,
+then acts; it never sets `BISELLIUM_ROLE` (a `greenlight` rung is the Patron's
+alone) and relays any refusal from `ready` (D-021) or `done` unchanged as
+`held`. `branch` refuses unless HEAD is the `master` branch at the `master` tip
+and the tree is not dirty. `pr` rebases onto the fetched trunk, stops before
+push and PR if the rebase changes the SOURCE tree, pushes `--force-with-lease`,
+and creates the PR from `--title` and `--body-file` (without them it only names
+the command; an existing OPEN PR is reused). `merge` updates a BEHIND branch,
+refuses on a failing check, on fewer than `MIN_CHECKS` (5) checks in bucket
+`pass`, and on any open GHAS alert, then queues `--squash --auto` and, only when
+`CLEAN` with every check passing, asks directly; `BLOCKED` is never merged
+directly. `cleanup` deletes the worktree, the local branch and the remote branch
+in that order, each after a fresh MERGED re-read, idempotently (an absent piece
+is `skipped (absent)`). Performed `done` creates `chore/done-<opus>` from the
+`master` tip, runs `done`, commits only `<studio>/opera/<opus>.md`, and returns to
+`master`; landing that branch is still the existing scripts' job.
+
+`gh` and `git` are spawned by bare name through `PATH` with argument arrays (no
+shell). Every `gh` read asks for a fixed `--json` field list, is bounded to
+1 MiB, is pinned `-R <owner/repo>` where `gh` accepts it, and fails closed: a
+non-zero exit, empty or non-JSON output, a missing field or an unknown `state`,
+`mergeStateStatus` or check `bucket` is a hold with nothing mutated. A PR counts
+only if its head is `opus/<id>`, its base `master`, it is not from a fork, and
+its head repository is this repository; `gh pr merge` is pinned
+`--match-head-commit <headRefOid>`. `--body-file` must be a regular file of at
+most 64 KiB under the repository or the temp directory; `--title` at most 256
+characters on one line.
+
+Dispatch rungs (`spec`, `reds`, `build`, `review`) print an order (`role:`,
+`sella:`, `budget_tokens:`, `phase:`, `inputs:`, `command:`; the brief and the
+record's `traditio` block are the inputs). They need `--budget <tokens>` (ten
+digits at most, a syntax error on any step): absent is `held`
+(`dispatch budget undeclared`), more than `DISPATCH_TOKEN_CAP` (500000) is
+`held`, and a dispatch that resumes existing evidence is `held` unless the
+record's `traditio.at` is not older than the newest red or review log
+(`stale handover: run bisellium handoff first`). `--budget` is the
+orchestrator's attestation of the dispatch's context allowance: nothing measures
+the subagent and enforcement is the harness's.
+
+Step health comes from evidence only. `next --perform` writes
+`<repo>/.bisellium/steps/<opus>.json` (`pid`, `start_ticks`, `output`,
+`writer`) and appends to `steps/<opus>.log`; `--track` registers a step the
+orchestrator launched itself (an unverified attestation: pid greater than 1, not
+`next` or its parent, `/proc` start time read by `next`, `<step>` equal to the
+derived rung, `--output` a plain file already under `.bisellium/steps/`). A
+marker is live only if `/proc/<pid>/stat` exists, is not a zombie and field 22
+equals `start_ticks` (a reused pid reads dead) and the output file's mtime is
+inside the step's silence budget; otherwise it reports `dead` (or `stalled`, the
+pid named and never killed) with the last output line as a JSON-quoted
+`last-output:`, its age and a `resume:` line. An unreadable or unparseable
+`/proc` entry is `unknown`, which is `held`, never `dead`. No marker is
+`health: no step recorded`, never "running" or "healthy". Linux only.
+
+Test seams, honoured only with `BISELLIUM_TEST_CLOCK=1`: `--now <iso>` (otherwise
+a usage error) and `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every
+health read, including the verb's own `/proc/self/stat`.
+
 ## Writing to a studio (handoff, emit, answer, greenlight, budget)
 
 ```bash

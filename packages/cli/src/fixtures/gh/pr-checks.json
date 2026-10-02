@@ -1,0 +1,52 @@
+[
+  {
+    "bucket": "pass",
+    "name": "CodeQL",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "Analyze (python)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "gates",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "Analyze (actions)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "Analyze (javascript-typescript)",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "officina",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "web-e2e",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "gates",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "officina",
+    "state": "SUCCESS"
+  },
+  {
+    "bucket": "pass",
+    "name": "web-e2e",
+    "state": "SUCCESS"
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "baseRefName": "master",
+  "headRefName": "spec/W-124",
+  "headRefOid": "37d47ee16f450f06feb90360491248162b67be78",
+  "mergeCommit": {
+    "oid": "ec420d7268db6ded798782513a8e2d310c0c7a4d"
+  },
+  "mergeStateStatus": "UNKNOWN",
+  "number": 152,
+  "state": "MERGED"
+}

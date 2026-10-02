@@ -1,0 +1,56 @@
+# behaviour: 5
+# command: node --test-reporter=tap --import tsx packages/cli/src/next.test.ts --behaviour 5
+# exit: 1
+# at: 2026-10-02T01:48:29.320Z
+# sella: builder.W-124
+# tree: tree:cfcaafc990d4bb5b16572cf8dfb49f2975f17a9e
+
+TAP version 13
+# Subtest: W-124 behaviour 5: step health comes from the pid, /proc start time and the output mtime, never assumption
+not ok 1 - W-124 behaviour 5: step health comes from the pid, /proc start time and the output mtime, never assumption
+  ---
+  duration_ms: 976.521292
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:43066'
+  failureType: 'testCodeFailure'
+  error: |-
+    a dead gate chain is dead, never running
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    flag --budget not allowed for "next"
+    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+           bisellium init [dir] [--now <iso>] [--timezone <iana>]
+           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+           bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+          
+    + actual - expected
+    
+    + ''
+    - 'next: W-900 build dead'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 build dead'
+  actual: ''
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:729:10)
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1681:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 993.674833

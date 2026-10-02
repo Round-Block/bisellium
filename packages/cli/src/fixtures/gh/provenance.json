@@ -1,0 +1,152 @@
+{
+  "tool": "scripts/capture-gh-fixtures.mjs",
+  "ghVersion": "gh version 2.101.0 (2026-09-15)",
+  "capturedAt": "2026-10-02T01:45:32.621Z",
+  "repo": "Round-Block/bisellium",
+  "prNumbers": [
+    150,
+    151,
+    152
+  ],
+  "checksPr": 152,
+  "heads": {
+    "150": "opus/W-125",
+    "151": "chore/w125-done",
+    "152": "spec/W-124"
+  },
+  "captures": [
+    {
+      "file": "repo-view.json",
+      "argv": [
+        "gh",
+        "repo",
+        "view",
+        "--json",
+        "nameWithOwner"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-view-150.json",
+      "argv": [
+        "gh",
+        "pr",
+        "view",
+        "150",
+        "-R",
+        "Round-Block/bisellium",
+        "--json",
+        "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-view-151.json",
+      "argv": [
+        "gh",
+        "pr",
+        "view",
+        "151",
+        "-R",
+        "Round-Block/bisellium",
+        "--json",
+        "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-view-152.json",
+      "argv": [
+        "gh",
+        "pr",
+        "view",
+        "152",
+        "-R",
+        "Round-Block/bisellium",
+        "--json",
+        "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,mergeCommit"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-list-150.json",
+      "argv": [
+        "gh",
+        "pr",
+        "list",
+        "-R",
+        "Round-Block/bisellium",
+        "--head",
+        "opus/W-125",
+        "--state",
+        "all",
+        "--limit",
+        "20",
+        "--json",
+        "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,isCrossRepository,headRepositoryOwner,headRepository,mergeCommit"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-list-151.json",
+      "argv": [
+        "gh",
+        "pr",
+        "list",
+        "-R",
+        "Round-Block/bisellium",
+        "--head",
+        "chore/w125-done",
+        "--state",
+        "all",
+        "--limit",
+        "20",
+        "--json",
+        "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,isCrossRepository,headRepositoryOwner,headRepository,mergeCommit"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-list-152.json",
+      "argv": [
+        "gh",
+        "pr",
+        "list",
+        "-R",
+        "Round-Block/bisellium",
+        "--head",
+        "spec/W-124",
+        "--state",
+        "all",
+        "--limit",
+        "20",
+        "--json",
+        "number,state,mergeStateStatus,headRefName,headRefOid,baseRefName,isCrossRepository,headRepositoryOwner,headRepository,mergeCommit"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "pr-checks.json",
+      "argv": [
+        "gh",
+        "pr",
+        "checks",
+        "152",
+        "-R",
+        "Round-Block/bisellium",
+        "--json",
+        "name,bucket,state"
+      ],
+      "exit": 0
+    },
+    {
+      "file": "code-scanning-alerts.json",
+      "argv": [
+        "gh",
+        "api",
+        "repos/Round-Block/bisellium/code-scanning/alerts?state=open&per_page=100"
+      ],
+      "exit": 0
+    }
+  ]
+}

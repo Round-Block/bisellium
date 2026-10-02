@@ -1,0 +1,56 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx packages/cli/src/next.test.ts --behaviour 4
+# exit: 1
+# at: 2026-10-02T01:48:27.401Z
+# sella: builder.W-124
+# tree: tree:cfcaafc990d4bb5b16572cf8dfb49f2975f17a9e
+
+TAP version 13
+# Subtest: W-124 behaviour 4: complete means MERGED and FETCHED (done needs a fresh MERGED read and a trunk that contains it)
+not ok 1 - W-124 behaviour 4: complete means MERGED and FETCHED (done needs a fresh MERGED read and a trunk that contains it)
+  ---
+  duration_ms: 1456.965951
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:36885'
+  failureType: 'testCodeFailure'
+  error: |-
+    MERGED with the trunk one commit behind is merge, with the branch present
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    flag --repo not allowed for "next"
+    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+           bisellium init [dir] [--now <iso>] [--timezone <iana>]
+           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+           bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+           b
+    + actual - expected
+    
+    + ''
+    - 'next: W-900 merge named'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 merge named'
+  actual: ''
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:729:10)
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1567:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1478.182365
