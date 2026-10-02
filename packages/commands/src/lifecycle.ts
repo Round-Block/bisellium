@@ -22,7 +22,8 @@ import { isSeq } from "yaml";
 import { readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
-import { editOpusFrontMatter } from "./frontmatter.js";
+import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
+import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
   censorSella,
   effectiveProbationes,
@@ -124,6 +125,7 @@ interface OpusFront {
   start?: unknown;
   end?: unknown;
   ui_rulings?: unknown;
+  builder_runtime?: unknown;
 }
 
 function resolveExactNow(raw: string | undefined, fallback: Date | undefined): Date | undefined {
@@ -291,10 +293,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     ...currentFront,
     spec: specRel,
     start: currentFront.start === undefined ? now.toISOString() : currentFront.start,
+    builder_runtime: ISOLATED_BUILDER_RUNTIME,
   };
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
 
   editOpusFrontMatter(opusPath, (doc) => {
+    doc.set("builder_runtime", ISOLATED_BUILDER_RUNTIME);
     doc.setIn(["spec"], specRel);
     if (hasSpecProbatio) {
       doc.setIn(["probationes", "spec", "sella"], sella);
@@ -481,7 +485,12 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
 const REVIEW_USAGE =
   "usage: bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]";
 
-export function runReview(args: string[], opts: WriteOptions = {}): WriteResult {
+export interface RunReviewOptions extends WriteOptions {
+  /** Deterministic admission seam for command tests; production uses the host receipt validator. */
+  runReceiptAdmission?: typeof admitCurrentRunReceipt;
+}
+
+export function runReview(args: string[], opts: RunReviewOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
     valued: ["--evidence", "--round", "--sella", "--model", "--studio", "--now"],
     boolean: ["--pass", "--fail"],
@@ -547,6 +556,22 @@ export function runReview(args: string[], opts: WriteOptions = {}): WriteResult 
   if (refusal !== undefined) {
     console.error(refusal);
     return { exitCode: 2 };
+  }
+
+  // W-125 migration boundary: legacy records retain the pre-W-125 path.
+  // Marked records require the same producer-certified current source for
+  // both verdicts, before evidence or any gate/event/lifecycle mutation.
+  const obligation = builderRuntimeObligation(opusPath);
+  if (obligation.kind === "invalid") {
+    console.error(obligation.error);
+    return { exitCode: 2 };
+  }
+  if (obligation.kind === "marked") {
+    const runAdmission = (opts.runReceiptAdmission ?? admitCurrentRunReceipt)(root, opusId);
+    if (!runAdmission.ok) {
+      console.error(runAdmission.error);
+      return { exitCode: 2 };
+    }
   }
 
   const containedEvidence = readContainedRegularFile(root, evidence, "ci");

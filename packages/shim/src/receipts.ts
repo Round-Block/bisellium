@@ -21,6 +21,30 @@ export interface Receipt {
   endedAt?: string;
   exitCode?: number;
   durationMs?: number;
+  /** Present only on a host-produced, successfully recomputed builder run. */
+  completion?: BuilderRunCompletion;
+}
+
+/**
+ * The review-admission payload is deliberately part of the existing run
+ * receipt.  It is not a second, easier-to-forge receipt format.  Every field
+ * is supplied by the host producer after the disposable runtime has gone.
+ */
+export interface BuilderRunCompletion {
+  schema: 1;
+  origin: "host-producer";
+  opus: string;
+  branch: string;
+  builder: string;
+  producer: string;
+  baseCommit: string;
+  finalCommit: string;
+  finalSourceTree: `tree:${string}`;
+  toolingCommit: string;
+  redReplays: Array<{ behaviour: number; commit: string; sourceTree: `tree:${string}`; command: string; assertionFailed: true }>;
+  gates: { ci: true; verify: true; check: true };
+  teardownComplete: true;
+  completed: true;
 }
 
 // A counter folded in with the pid keeps sessionIds unique even across
@@ -57,7 +81,10 @@ export function writeReceiptStart(
 }
 
 /** Rewrites the receipt at `path` with the exit-time fields, keeping the rest. */
-export function writeReceiptEnd(path: string, patch: { endedAt: string; exitCode: number; durationMs: number }): void {
+export function writeReceiptEnd(
+  path: string,
+  patch: { endedAt: string; exitCode: number; durationMs: number; completion?: BuilderRunCompletion },
+): void {
   let existing: Partial<Receipt> = {};
   try {
     existing = JSON.parse(readFileSync(path, "utf8")) as Partial<Receipt>;

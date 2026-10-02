@@ -127,6 +127,7 @@ export interface NativeOpusFields {
   end?: string;
   ui_rulings?: string[];
   baseline_commit?: string;
+  builder_runtime?: "isolated";
 }
 
 /** Structured references carried by UI verdict evidence. */

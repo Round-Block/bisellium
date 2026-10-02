@@ -108,6 +108,16 @@ lex, a decision, or a check rule and delete it here.
   it. CI gates/officina jobs check out full history and the PR-head branch
   (W-096 revisions 9–10).
 
+- W-125 replaces that proxy path for builder-class `bisellium run`: dispatch
+  now needs the owning opus branch and launches `scripts/run-builder-host.mjs`.
+  The producer host must provide bubblewrap user/PID/mount/network namespaces
+  and a separable model control plane; otherwise the run intentionally fails
+  closed. Builder work is committed in the disposable clone. The producer
+  exports only validated owned commits, destroys the runtime, recomputes with
+  pinned master tooling, and then attaches the current-tree run receipt.
+  Neither `review --pass` nor `review --fail` may be dispatched until that
+  receipt exists and remains current.
+
 ## Where things stand (2026-10-02)
 
 W-096 merged as PR 145 and is done after a ten-revision brief: prereviewer READY at 2; six sec-lead spec passes; and architect rulings in rounds 3–10, including the one-time bootstrap pin, the closed 48-row regression contract, and CI full-history plus PR-head checkout. Five censor rounds followed: rounds 1–2 found defects, round 3 found contract conflicts, round 4 found three closed-list rows, and round 5 PASSed; sec-lead code review was CLEAR at pass 5. D-030–D-032 were recorded with W-122 as the read-efficiency instrument; P-014/P-015 were answered with W-120/W-121; W-123 (PR hygiene in the verbs), W-124 (cascade order as a verb), and W-125 (review rounds bounded by mechanism) were filed on the Patron's rulings. `scripts/merge-gate.sh` and `scripts/open-pr.sh` remain in the repo: complete means PR MERGED plus master fetched, and every PR is rebased first.

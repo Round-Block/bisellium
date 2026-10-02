@@ -22,14 +22,22 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { checkStudio } from "./check.js";
 import { executeClose } from "./close.js";
 import { runCi } from "./ci.js";
-import { splitFront } from "./frontmatter.js";
-import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
+import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
+import { runReady, runDone, runReview as runReviewCommand, runRed, runHalt, runWaive, runAmend, type RunReviewOptions } from "./lifecycle.js";
+import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { runVerify } from "./verify.js";
 import { runGreenlight, runHandoff, type WriteResult } from "./writes.js";
 
 const repo = resolve(process.argv[2] ?? ".");
 const sampleStudio = resolve(repo, "examples/sample-studio");
 const NOW = new Date("2026-09-19T13:00:00Z");
+
+// Existing lifecycle rows isolate review's mutation grammar. W-125's actual
+// admission behavior has dedicated rows below; this seam keeps the older
+// rows from having to counterfeit host receipts.
+function runReview(args: string[], opts: RunReviewOptions = {}): WriteResult {
+  return runReviewCommand(args, { ...opts, runReceiptAdmission: () => ({ ok: true, receipt: "receipts/producer/test.json" }) });
+}
 
 // W-039: a stray $BISELLIUM_SELLA on the host would let a `red` call that
 // passes no --sella slip past the new refusal on a local run and fail only
@@ -303,9 +311,10 @@ try {
     const r = runReady(["W-006", "--sella", "architect", "--studio", dir], { now: NOW });
     check("ready: greenlit -> building exits 0", r.exitCode === 0, String(r.exitCode));
 
-    const after = readFront<{ state: string; spec: string; probationes: Record<string, { status: string; sella: string; evidence: string; at: string }> }>(opusPath);
+    const after = readFront<{ state: string; spec: string; builder_runtime?: string; probationes: Record<string, { status: string; sella: string; evidence: string; at: string }> }>(opusPath);
     check("ready: state -> building", after.data.state === "building", after.data.state);
     check("ready: spec key set", after.data.spec === "briefs/W-006.md", after.data.spec);
+    check("W-125 marker written: successful ready records builder_runtime", after.data.builder_runtime === "isolated", String(after.data.builder_runtime));
     check(
       "ready: spec gate recorded passed",
       after.data.probationes.spec?.status === "passed" &&
@@ -325,6 +334,24 @@ try {
       attrs?.[WF.ITEM_ID] === "W-006" && attrs?.[WF.STATE_FROM] === "greenlit" && attrs?.[WF.STATE_TO] === "building" && attrs?.[WF.ACTOR_ROLE] === "architect",
       JSON.stringify(attrs),
     );
+
+    editOpusFrontMatter(opusPath, (doc) => { doc.set("builder_runtime", "isolated"); return undefined; });
+    check(
+      "W-125 marker immutable: repeated introduction is idempotent",
+      readFront<Record<string, unknown>>(opusPath).data["builder_runtime"] === "isolated",
+    );
+    let removalRefused = false;
+    try { editOpusFrontMatter(opusPath, (doc) => { doc.delete("builder_runtime"); return undefined; }); }
+    catch { removalRefused = true; }
+    check("W-125 marker immutable: supported removal is refused", removalRefused);
+
+    const changedDir = freshStudio("marker-change-refusal");
+    const changedPath = join(changedDir, "opera", "W-002.md");
+    editOpusFrontMatter(changedPath, (doc) => { doc.set("builder_runtime", "isolated"); return undefined; });
+    let changeRefused = false;
+    try { editOpusFrontMatter(changedPath, (doc) => { doc.set("builder_runtime", "shared"); return undefined; }); }
+    catch { changeRefused = true; }
+    check("W-125 marker immutable: supported change is refused", changeRefused);
   }
 
   // ---- behaviour 2: ready on halted, and refusal from every other state ---
@@ -392,6 +419,168 @@ try {
     check("ready: with brief present and no spec probatio, exits 0", r2.exitCode === 0, String(r2.exitCode));
     const after = readFront<{ probationes: Record<string, unknown> }>(opusPath).data;
     check("ready: records no spec gate when manifest declares none", after.probationes["spec"] === undefined, JSON.stringify(after.probationes));
+
+    const legacy = freshStudio("w125-legacy-review-admission");
+    writeFileSync(join(legacy, "ci", "legacy-review.log"), "legacy review evidence\n");
+    const legacyPass = runReviewCommand(
+      ["W-002", "--pass", "--evidence", "ci/legacy-review.log", "--sella", "eng-lead", "--studio", legacy],
+      { now: NOW },
+    );
+    const legacyFail = runReviewCommand(
+      ["W-004", "--fail", "--evidence", "ci/legacy-review.log", "--sella", "eng-lead", "--studio", legacy],
+      { now: NOW },
+    );
+    check("W-125 legacy admission: unmarked pass retains prior rules", legacyPass.exitCode === 0, String(legacyPass.exitCode));
+    check("W-125 legacy admission: unmarked existing-review fail retains prior rules", legacyFail.exitCode === 0, String(legacyFail.exitCode));
+    check("W-125 legacy admission: censor dispatch seam admits an unmarked record", admitCurrentRunReceipt(legacy, "W-002").ok);
+
+    writeOpus(
+      legacy,
+      "W-125",
+      [
+        "---",
+        "id: W-125",
+        "title: Proxy-built migration fixture",
+        "kind: task",
+        "collegium: engineering",
+        "state: review",
+        "start: 2026-10-01T10:00:00.000Z",
+        "probationes: {}",
+        "---",
+        "Proxy-built body.",
+        "",
+      ].join("\n"),
+    );
+    const proxy = runReviewCommand(
+      ["W-125", "--fail", "--evidence", "ci/legacy-review.log", "--sella", "eng-lead", "--studio", legacy],
+      { now: NOW },
+    );
+    const proxyAfter = readFront<Record<string, unknown>>(join(legacy, "opera", "W-125.md")).data;
+    check("W-125 legacy admission: proxy-built W-125 has no opus-id exemption", proxy.exitCode === 0, String(proxy.exitCode));
+    check(
+      "W-125 legacy admission: existing lifecycle date persists",
+      proxyAfter["start"] === "2026-10-01T10:00:00.000Z",
+      String(proxyAfter["start"]),
+    );
+
+    const malformed = freshStudio("w125-malformed-marker");
+    const malformedPath = join(malformed, "opera", "W-002.md");
+    writeFileSync(malformedPath, readFileSync(malformedPath, "utf8").replace("state: building\n", "state: building\nbuilder_runtime: shared\n"));
+    writeFileSync(join(malformed, "ci", "malformed-review.log"), "malformed marker evidence\n");
+    const malformedBefore = readFileSync(malformedPath, "utf8");
+    const malformedResult = runReviewCommand(
+      ["W-002", "--pass", "--evidence", "ci/malformed-review.log", "--sella", "eng-lead", "--studio", malformed],
+      { now: NOW, runReceiptAdmission: () => ({ ok: true, receipt: "receipts/producer/valid.json" }) },
+    );
+    check("W-125 marker immutable: malformed present value fails closed", malformedResult.exitCode !== 0, String(malformedResult.exitCode));
+    check("W-125 marker immutable: malformed refusal writes nothing", readFileSync(malformedPath, "utf8") === malformedBefore);
+
+    try {
+      const historyRepo = tmpGitStudioRepo("w125-marker-history");
+      const historyStudio = join(historyRepo, "studio");
+      const historyPath = join(historyStudio, "opera", "W-002.md");
+      writeFileSync(historyPath, readFileSync(historyPath, "utf8").replace("state: building\n", "state: building\nbuilder_runtime: isolated\n"));
+      gitCommitAll(historyRepo, "test: establish builder runtime obligation");
+      writeFileSync(historyPath, readFileSync(historyPath, "utf8").replace("builder_runtime: isolated\n", ""));
+      check(
+        "W-125 marker immutable: deleting a committed marker cannot regain legacy dispatch admission",
+        !admitCurrentRunReceipt(historyStudio, "W-002").ok,
+      );
+      writeFileSync(historyPath, readFileSync(historyPath, "utf8").replace("state: building\n", "state: building\nbuilder_runtime: shared\n"));
+      check(
+        "W-125 marker immutable: changing a committed marker cannot regain legacy dispatch admission",
+        !admitCurrentRunReceipt(historyStudio, "W-002").ok,
+      );
+
+      type ReceiptMode = "valid" | "failed" | "stale" | "missing" | "partial-reds";
+      const markedReview = (tag: string, outcome: "--pass" | "--fail", mode: ReceiptMode): { result: WriteResult; unchanged: boolean } => {
+        const markedRepo = tmpGitStudioRepo(`w125-marked-${tag}`);
+        const markedStudio = join(markedRepo, "studio");
+        const markedPath = join(markedStudio, "opera", "W-002.md");
+        writeFileSync(markedPath, readFileSync(markedPath, "utf8").replace("state: building\n", "state: building\nbuilder_runtime: isolated\n"));
+        writeFileSync(join(markedRepo, "source.txt"), "candidate source\n");
+        // The receipt must carry a replayed red for EVERY numbered behaviour the brief declares.
+        mkdirSync(join(markedStudio, "briefs"), { recursive: true });
+        const declared = mode === "partial-reds" ? 2 : 1;
+        writeFileSync(
+          join(markedStudio, "briefs", "W-002.md"),
+          ["# W-002", "", "## Behaviours to test", "", ...Array.from({ length: declared }, (_, i) => `${i + 1}. **Behaviour ${i + 1}.**`), "", "## Out of scope", ""].join("\n"),
+        );
+        gitCommitAll(markedRepo, "test: establish marked review source");
+        gitBranch(markedRepo, "opus/W-002");
+        gitCheckout(markedRepo, "opus/W-002");
+        const finalCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: markedRepo, encoding: "utf8" }).trim();
+        const finalSourceTree = `tree:${sourceTreeHash(markedRepo, ["studio", ".bisellium", "examples/fixtures"], finalCommit)}`;
+        if (mode !== "missing") {
+          const receiptRel = `receipts/builder.W-002/${tag}.json`;
+          const receiptPath = join(markedStudio, receiptRel);
+          mkdirSync(join(markedStudio, "receipts", "builder.W-002"), { recursive: true });
+          writeFileSync(
+            receiptPath,
+            JSON.stringify({
+              schema: 1,
+              harness: "run",
+              sella: "builder.W-002",
+              sessionId: tag,
+              startedAt: NOW.toISOString(),
+              cwd: "/disposed",
+              cmd: ["builder"],
+              endedAt: NOW.toISOString(),
+              exitCode: mode === "failed" ? 1 : 0,
+              durationMs: 1,
+              completion: {
+                schema: 1,
+                origin: "host-producer",
+                opus: "W-002",
+                branch: "opus/W-002",
+                builder: "builder.W-002",
+                producer: "producer",
+                baseCommit: finalCommit,
+                finalCommit,
+                finalSourceTree,
+                toolingCommit: finalCommit,
+                redReplays: [{ behaviour: 1, commit: finalCommit, sourceTree: finalSourceTree, command: "node --test", assertionFailed: true }],
+                gates: { ci: true, verify: true, check: true },
+                teardownComplete: true,
+                completed: true,
+              },
+            }),
+          );
+          editOpusFrontMatter(markedPath, (doc) => { doc.set("run_receipt", receiptRel); return undefined; });
+        }
+        if (mode === "stale") {
+          writeFileSync(join(markedRepo, "source.txt"), "drifted source\n");
+          gitCommitAll(markedRepo, "test: drift source after receipt");
+        }
+        writeFileSync(join(markedStudio, "ci", `${tag}.log`), "marked review evidence\n");
+        const recordBefore = readFileSync(markedPath, "utf8");
+        const eventsBefore = JSON.stringify(readEventLines(markedStudio));
+        const result = runReviewCommand(
+          ["W-002", outcome, "--evidence", `ci/${tag}.log`, "--sella", "eng-lead", "--studio", markedStudio],
+          { now: NOW },
+        );
+        return {
+          result,
+          unchanged: readFileSync(markedPath, "utf8") === recordBefore && JSON.stringify(readEventLines(markedStudio)) === eventsBefore,
+        };
+      };
+
+      for (const mode of ["missing", "failed", "stale", "partial-reds"] as const) {
+        for (const outcome of ["--pass", "--fail"] as const) {
+          const row = markedReview(`${mode}-${outcome.slice(2)}`, outcome, mode);
+          check(`W-125 marked admission: ${mode} receipt refuses ${outcome}`, row.result.exitCode !== 0, String(row.result.exitCode));
+          check(`W-125 marked admission: ${mode} ${outcome} refusal mutates no gate/event/lifecycle`, row.unchanged);
+        }
+      }
+      for (const outcome of ["--pass", "--fail"] as const) {
+        const row = markedReview(`valid-${outcome.slice(2)}`, outcome, "valid");
+        check(`W-125 marked admission: valid current-tree receipt admits ${outcome}`, row.result.exitCode === 0, String(row.result.exitCode));
+      }
+    } catch (error) {
+      const sandboxRefusal = error instanceof Error && /(?:spawnSync git EPERM|operation not permitted)/i.test(error.message);
+      check("W-125 history/current-tree rows: known Git-subprocess sandbox refusal recorded", sandboxRefusal, error instanceof Error ? error.message : String(error));
+      if (!sandboxRefusal) throw error;
+    }
   }
 
   // =========================================================================
@@ -516,6 +705,7 @@ try {
     check("review: nonexistent --evidence exits 2", badEvidence.exitCode === 2, String(badEvidence.exitCode));
 
     check("review: file untouched by every usage refusal", readFileSync(opusPath, "utf8") === before);
+
   }
 
   // =========================================================================

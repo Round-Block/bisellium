@@ -1385,3 +1385,46 @@ whose last few receipts (default 3) carry no `harness: "claude-code"` entry
 receipt history (a never-run studio isn't "dead", it's just new). `check`'s
 own `hook.dead` rule reports the same thing for every studio check already
 runs.
+## Disposable builder execution and review admission
+
+Builder-class `bisellium run` dispatches are different from the generic
+runner. A builder needs an effective opus from `--opus` or its instance
+suffix; a mismatch, `--base`, or `--no-worktree` is refused. `--keep` keeps
+host diagnostics and published commits only. It never keeps the runtime.
+
+The producer pins `opus/<id>` and `master`, takes an exclusive publication
+lease, and makes a `git clone --no-local --no-hardlinks --dissociate` with no
+remote or alternates. The clone is mounted into a bubblewrap PID/user/mount/
+network namespace. Raw `.git` is read-only. The only `git` on `PATH` is a
+host broker which allows reads, staging and ordinary commits on the owning
+branch, fixes identity/config/hooks, and rejects ref/config/reset/stash/
+remote/destructive operations. The child starts from an empty environment
+with only the runtime allowlist, private home/temp/npm paths, no credentials
+or proxy variables, private loopback, and no external tool-runtime egress.
+If this outer boundary, the broker, dependency preparation, or the retained
+child/grandchild/index/temp/loopback probe is unavailable, dispatch fails
+closed before source work.
+
+After the builder exits, only clean commits descending from the pinned tip
+and touching the brief's `Files owned` are eligible for export. Protected
+officina/evidence paths, extra refs, working files and dependency directories
+are never imported. Publication is compare-and-swap. The producer kills the
+whole process group, closes broker/network endpoints and deletes all private
+runtime paths on every exit path. Cleanup failure is failure.
+
+Only after disposal does the producer use the pinned host-master controller
+to replay clean committed reds and run the fixed CI, verify and check gates
+in fresh candidate checkouts. A successful existing run receipt gains a
+`completion` object with `origin: host-producer`, opus/branch/builder/producer,
+base and final commits, final SOURCE tree, tooling commit, red replay claims,
+all three gate outcomes, teardown completion and final exit zero. The opus's
+`run_receipt` is a contained repository-relative pointer written only after
+all of those conditions succeed.
+
+Both `review --pass` and `review --fail` run the same admission check before
+reading evidence or changing a gate/event. The receipt must be a contained
+regular file in `receipts/`, host-produced and complete, for the same opus and
+owning branch, reachable from the clean current checkout, and certify its
+current SOURCE tree. Missing, malformed, forged, failed, incomplete, dirty,
+unreachable or stale receipts remain historical evidence but cannot admit a
+new review. `verdict` remains transcript-only and grants no admission.

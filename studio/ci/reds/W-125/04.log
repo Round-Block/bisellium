@@ -1,0 +1,40 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx packages/commands/src/run.test.ts --behaviour 4
+# exit: 1
+# at: 2026-10-01T17:16:22.386Z
+# sella: builder-codex.W-125
+# tree: tree:b125d9d22b963d8cfc43c0ff165c2cc94d2e1057
+
+TAP version 13
+# Subtest: W-125 behaviour 4: --keep never preserves the disposable builder runtime
+not ok 1 - W-125 behaviour 4: --keep never preserves the disposable builder runtime
+  ---
+  duration_ms: 114.722648
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-125/packages/commands/src/run.test.ts:1:6128'
+  failureType: 'testCodeFailure'
+  error: |-
+    the disposable runtime must be gone before run returns
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-125/packages/commands/src/run.test.ts:221:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 120.725137
