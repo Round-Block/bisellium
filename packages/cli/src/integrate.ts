@@ -132,7 +132,7 @@ const onDisk = (path: string): "none" | "dir" | "other" | "error" => {
  * ignored entry. `undefined` means none; a string starting with "?" is an unreadable state (hold).
  */
 function overwritten(repo: string, from: string, to: string): string | undefined {
-  const added = git(repo, ["diff", "--no-renames", "--name-only", "-z", "--diff-filter=A", from, to]);
+  const added = git(repo, ["diff", "--no-renames", "--ignore-submodules=none", "--name-only", "-z", "--diff-filter=A", from, to]);
   if (added.status !== 0 || added.error !== undefined) return `?git diff failed: ${why(added)}`;
   const ignored = git(repo, ["ls-files", "-o", "-i", "--exclude-standard", "-z"]);
   if (ignored.status !== 0 || ignored.error !== undefined) return `?git ls-files failed: ${why(ignored)}`;
@@ -158,7 +158,8 @@ function overwritten(repo: string, from: string, to: string): string | undefined
  * rung) nothing is moved. Every read fails closed into a hold with nothing mutated.
  */
 export function fetchTrunk(repo: string, target?: string): Trunk {
-  const hold = (reason: string): Trunk => ({ ok: false, reason: clean(reason, 400) });
+  // the tail (advice naming a path) is clipped on its own so a long head can never cut it off
+  const hold = (reason: string, tail = ""): Trunk => ({ ok: false, reason: clean(reason, 400) + clean(tail, 600) });
   if (target !== undefined && !wellFormedOid(target)) return hold("the reviewed merge commit is not a well formed commit id");
   const r = git(repo, ["fetch", "-q", "origin", "master:master"]);
   if (r.status === 0) return { ok: true };
@@ -171,6 +172,8 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   const origin = commitOf(repo, REMOTE_MASTER);
   const reviewed = target === undefined ? undefined : commitOf(repo, target);
   if (local === undefined || origin === undefined || (target !== undefined && reviewed === undefined)) return hold("could not read master, origin/master or the reviewed merge commit");
+  // a tag or other object that merely peels to a commit is not the reviewed commit
+  if (reviewed !== target && target !== undefined) return hold("the reviewed merge commit id is not itself a commit");
   if (reviewed !== undefined) {
     const contained = isAncestor(repo, reviewed, local);
     if (contained === true) return { ok: true };
@@ -196,19 +199,19 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   const fastForward = isAncestor(repo, local, reviewed);
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
-  const status = git(repo, ["status", "--porcelain", "--untracked-files=no"]);
+  const status = git(repo, ["status", "--porcelain", "--untracked-files=no", "--ignore-submodules=none"]);
   if (status.status !== 0 || status.error !== undefined) return hold(`git status failed: ${why(status)}`);
   if (status.stdout.trim() !== "") return hold(`${repo} has uncommitted tracked changes; commit or restore them, then re-run`);
   const clash = overwritten(repo, local, reviewed);
   if (clash?.startsWith("?")) return hold(clash.slice(1));
-  if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry: ${clean(clash, 120)}; move it aside, then re-run`);
+  if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry (or swaps a tracked file and directory, which a manual pull handles): ${clean(clash, 120)}; move it aside, then re-run`);
   // the merge acts on the branch that was checked, not on whatever was switched to meanwhile
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]);
   if (head.stdout.trim() !== TRUNK_REF) return hold(`HEAD of ${repo} is ${clean(head.stdout.trim()) || "detached"}, not master; switch back and re-run`);
   const partly = `; the working tree may be partly updated: git -C ${repo} status`;
   const merged = git(repo, ["-c", "submodule.recurse=false", "merge", "-q", "--ff-only", reviewed]);
-  if (merged.status !== 0 || merged.error !== undefined) return hold(`git merge --ff-only failed: ${why(merged)}${partly}`);
-  if (commitOf(repo, TRUNK_REF) !== reviewed) return hold(`master did not move to the reviewed merge commit${partly}`);
+  if (merged.status !== 0 || merged.error !== undefined) return hold(`git merge --ff-only failed: ${why(merged)}`, partly);
+  if (commitOf(repo, TRUNK_REF) !== reviewed) return hold("master did not move to the reviewed merge commit", partly);
   return { ok: true };
 }
 

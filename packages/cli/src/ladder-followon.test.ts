@@ -108,7 +108,7 @@ function fixture(tag: string): Fx {
   G(dir, ["init", "-q", "--bare", "-b", "master", origin]);
   G(dir, ["init", "-q", "-b", "master", other]);
   put(other, "README", "base\n");
-  put(other, ".gitignore", "ignored.txt\nnode_modules/\ngen/\n");
+  put(other, ".gitignore", "ignored.txt\nnode_modules/\ngen/\nign-sub\n");
   G(other, ["add", "-A"]);
   G(other, ["commit", "-q", "-m", "base"]);
   G(other, ["remote", "add", "origin", origin]);
@@ -401,6 +401,26 @@ if (runs(5)) {
     assert.equal(readFileSync(join(l.clone, "gen", "out", "x.txt"), "utf8"), "local data", "5l: the nested ignored file's bytes are unchanged");
     rmSync(join(l.clone, "gen"), { recursive: true });
     okCase("5l-retry", l, lTip, lTip);
+
+    // (m) a gitlink where an ignored local file sits, with diff.ignoreSubmodules=all in the clone's config
+    const m = fixture("b5m");
+    G(m.other, ["update-index", "--add", "--cacheinfo", `160000,${G(m.other, ["rev-parse", "HEAD"])},ign-sub`]);
+    G(m.other, ["commit", "-q", "-m", "adds a gitlink at ign-sub"]);
+    G(m.other, ["push", "-q", "origin", "master"]);
+    const mTip = G(m.other, ["rev-parse", "HEAD"]);
+    G(m.clone, ["config", "diff.ignoreSubmodules", "all"]);
+    put(m.clone, "ign-sub", "local data");
+    holdCase("5m", m, mTip, ["untracked or ignored", "ign-sub"]);
+    assert.equal(readFileSync(join(m.clone, "ign-sub"), "utf8"), "local data", "5m: the ignored file's bytes are unchanged");
+    rmSync(join(m.clone, "ign-sub"));
+    okCase("5m-retry", m, mTip, mTip);
+
+    // (n) an annotated-tag oid peels to a commit but is not the reviewed commit itself
+    const n = fixture("b5n");
+    const nTip = pushFrom(n, { "c1.txt": "c1\n" }, "c1");
+    G(n.clone, ["fetch", "-q", "origin"]);
+    G(n.clone, ["tag", "-a", "-m", "tag", "t1", nTip]);
+    holdCase("5n", n, G(n.clone, ["rev-parse", "refs/tags/t1"]), ["not itself a commit"]);
   });
 }
 
