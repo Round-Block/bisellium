@@ -1,0 +1,76 @@
+# opus: W-129
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: revise — prereview 3 MUST, sec F1-F7
+# at: 2026-10-02T18:16:57.349Z
+# tree: tree:efafebf45c271a5baf195cf8802eaf84b4236308
+
+W-129 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 2. PREREVIEW: REVISE, 3 MUST, 5 SHOULD.
+Scope: commit 99fee03 (738 lines). Probes in scratchpad copies only; the spec worktree is clean. Round-1 dispositions all verified present and consistent.
+
+(1) Renumbering: countBehaviours = 16 (run on the file). Every cross-reference resolves: 49->2(d), 360->1, 516->11, 546->13(i), 549->14(a), 571->16,
+    581 (13,14), 582 (10,11,12,15), 583 (3-9), 584 (1,2), 612->7(c), 614->5(f),5(g),6, 621->15, 634->13, 635->14, 642->1, 643->16, 697-698->3-9,2. No dangling row.
+(2) Replays on pristine code, ERR_ASSERTION as claimed: 1(b), 2(a) (cwd apps/web), 3(b) (and 5(a), 6(b) share the fixture/mechanism), 7(a pass/b fail), 8(a) with
+    both FIFOs held O_RDWR (0s, assertion; see MUST 2), 10(e)/11(a)/14(g)/13(i) via the round-1 probes, 13(a)-(f) pass today (probed), 16(b).
+(3) Transition table vs readers: re-grepped; HEAD-only, compare-and-set and the new review --fail event touch no reader. In a scratch build the revised cycle gives all six
+    events (b>v, v>review, review>b, b>v, v>review, review>done), and adding the review --fail state_changed leaves lifecycle/verdict/rules/branch/next/ci/close/prune tests green unedited.
+    validateOpusFront rules applied to all 136 real and sample records: none would be dropped.
+(4) Client touches: api.ts field, Board.tsx pass-through, BoardView one line are named in Files owned (288-290) and in the stop condition (661-662): inside. See SHOULD d.
+
+MUST
+1. B1-2 cannot be recorded as reds: board-truth.test.ts must call `branchNote` (359-371, 235-241), which does not exist on current code. A named import
+   (`import { boardModel, branchNote } from "../src/lib/board.js"`) dies at load with "does not provide an export named 'branchNote'" (probed on pristine, under apps/web, no TAP at all);
+   evidence.ts isModuleLoadFailure matches it, so next treats all of B1 and B2 as missing reds. Row 1(d) already implies a namespace import for EXCLUDED_PHASES; say so for
+   branchNote too: `import * as board` and call `board.branchNote` after the first genuine-red rows (2(e) is after 2(a)). Same rule for any export the other three files need that does not yet exist.
+2. B8(a)'s "in a finally a byte is written to both FIFOs" (442-444, 270-272) hangs on today's code. Only the announcement FIFO is stated to be held O_RDWR; the blocking FIFO has no
+   reader on pre-fix code (the shim never runs), and a write-open of a FIFO with no reader blocks the whole process. Probed: naive write = killed at 25s, no TAP; both held O_RDWR =
+   `not ok ... ERR_ASSERTION` in 0s, process exits. State: both FIFOs are opened O_RDWR (or O_NONBLOCK) by the test before the poll, and the finally writes through those handles.
+3. B15(e) "the only finding check may report for the record is the traditio.stage advisory" (547-549) is false in the real cycle. After `done` (and after every `review`
+   verb) check also reports advise `probatio.certifies` ("gate review evidence has no identity (certifies)"; likewise `spec` when its gate has none), because `review` writes
+   no `certifies`. Probed with the real CLI in a tmp repo. Reword: no block, and `traditio.stage` is the only `traditio.*` finding; rows (a)-(d) already say "no block".
+
+SHOULD
+a. B9(a) (451-452): "the field does not exist today". A test that reads `body.branchRecords.status` throws TypeError (not ERR_ASSERTION). Require `assert.ok(body.branchRecords, ...)`
+   or `?.` first, so the red is an assertion. Same for any first-red row that dereferences a field the fix introduces.
+b. B9(b)/(c) "nothing is written to stderr" / "stderr gains exactly one line" (453-456, 212-213) cannot hold literally: http.ts:939 writes an access-log line per request to
+   process.stderr, including each `POST /api/_poll`. Define the line (prefix `bisellium serve: branch records`, which revision 2 no longer states) and filter the spy on it.
+c. B10(h) (479-480): no seam exists between verify's read (verify.ts:219) and the start write, and the stub pipeline runs after the write, so the test cannot change the state in
+   that window. Name a test-only RunVerifyOptions hook (verify.ts is owned; "no flag" is unaffected) or move the start CAS to a unit-level row; otherwise it is a phase-2 stop.
+d. The `p.board__branch-note` line is new Patron-visible UI that D-034 does not rule (memory: UI/UX is human-only), and the board refetches /api/officina only on listed events,
+   so a status change (ok -> stale) shows only at the next unrelated refetch. Either record the Patron's nod for the line (the brief says "the Patron's to restyle") and say it appears
+   on the next refetch, or defer the client line to a follow-on. Not a stop-condition breach as written.
+e. Revision row 2 says "three added"; 14 -> 16 is two. Cosmetic, but countBehaviours is the contract; fix the sentence.
+Not findings: B13 rows (a)-(f), B14, B2(d) escaping rows, FIFO-safe open mechanics, red `--cwd apps/web` (lifecycle.ts:816-851 resolves --cwd against the caller and hashes the repo found there).
+W-129 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 2. SEC-SPEC: REVISE.
+Searched: brief rev 2 (all 737 lines) against rev 1 findings; re-read verify.ts:110-262, ci.ts:150-217, opus-model.ts parseVerdictHeader (:397), next.ts reviewGate (:526), board.ts drawerDetail/cardRow, snapshotDir. Prior 9 findings: all closed in text except where reopened below.
+The four asks:
+ (1) Open sequence: lstat regular -> open O_RDONLY|O_NOFOLLOW|O_NONBLOCK -> fstat same dev/ino -> /proc/self/fd containment is airtight FOR THE OPERA FILE. Exact guarantee: O_NONBLOCK makes open(2) of a FIFO (read side) and of a tty/device return immediately; a socket is ENXIO; a symlink is ELOOP; a directory opens but fstat refuses; once open returns the fd's type is fixed, so fstat S_ISREG is authoritative. A swap between lstat and open can therefore only yield a FIFO (open returns, fstat refuses), another regular file (dev/ino mismatch) or a symlink (ELOOP): none can park the pool thread. It holds ONLY if O_NONBLOCK is actually passed and fstat precedes the first read - see F2 (untested) and F1 (a second path not covered).
+ (2) Predicate: NOT airtight. Unreadable/missing/unsafe log, missing certifies, dirty: cert, headerless log all answer true (good). But there are inputs where it answers false without proof: F3.
+ (3) Allowlist: stops `done`/`halted`/unknown state (6b/6c), tokens, title, kind, collegium, body. It does NOT stop a forged `probationes`: F6.
+ (4) Status field: ok/partial/stale/unavailable/off and counts are server-derived and id is regex-bound, but dropped[].reason is not sanitized: F7.
+
+Findings (blocking = F1-F5):
+F1. HIGH (same class as rev-1 #1, new instance) `.git` corroboration read has no FIFO-safe, bounded open (brief 195-196). The list says "the worktree's `.git` is a regular file whose gitdir: target resolves..." with no open discipline: a plain readFile/readFileSync on `<wt>/.git` replaced by a FIFO parks a pool thread (sync: the event loop) and a huge regular file is read whole. Builder owns that path. Row 5(f) FIFOs only the opera file; 5(h) only mis-points `.git`.
+   Fix: one shared opener helper (lstat isFile, O_RDONLY|O_NOFOLLOW|O_NONBLOCK, fstat dev/ino, bounded read: 4 KiB + 1 for `.git`, 64 KiB + 1 for the record) used for BOTH files; add rows 5(i) `.git` as a FIFO and as a 10 MB file: poll settles, committed tip served. Close the fd in `finally` when the wall-clock race loses.
+F2. MED  The acceptance claim at 614-616 ("5(f), 5(g), 6 would fail on an open without O_NONBLOCK") is false. 5(f) puts a static FIFO in place, `lstat` refuses it, open is never reached; omitting O_NONBLOCK passes every row and leaves the lstat->open swap window open.
+   Fix: give the reader an injectable `afterLstat` hook (exported from branchRecords.ts, called directly by the test) and add a row that swaps the regular file for a FIFO inside the hook; assert undefined within the poll budget. Reword 614-616 to name that row.
+F3. MED  `reviewFailedAtCertifiedTree` still passes without proof (109-123): (a) `ctx.automatedIds` empty (a kind/manifest with no automated gate, or a caller bug): "every id has tree: certifies / none equals" is vacuously true -> false -> a failed review at the certified tree no longer blocks; (b) header value only needs the form `tree:<id>`: `# tree: tree:` or `tree:x` proves "older"; (c) duplicate `tree` keys (parseVerdictHeader keeps the first, lists the rest in `duplicates`, opus-model.ts:405) are not mentioned; (d) the log is not bound to the opus: the gate's `evidence` is hand-editable, so any old readable verdict log with an older tree header proves staleness (13(e) covers only a headerless unrelated log).
+   Fix: require `automatedIds.length > 0`; header tree must match `^tree:[0-9a-f]{40,64}$`; `duplicates` containing `tree` -> true; require header `opus` == record id (verdict logs carry `# opus:`). Rows for each in behaviour 13.
+F4. MED  Which record the predicate reads in `verify` is unspecified (91, 110-111: "the raw front-matter dictionary (both callers hold one)"). `verify` holds the PRE-write record whose `certifies` are the previous run's. Then (i) a failed review of this run's tree T1 with old certs T0 reads "stale" -> `review` written -> `check` (post-write certs T1) blocks: the verb writes a state its own checker blocks; (ii) the legitimate case (15(c)) answers true and wrongly stays `verifying`.
+   Fix: say the end rule evaluates the doc as it will be written (this run's results merged), inside the CAS callback, via the same function `check` uses. Row in 11 with pre-existing certs that differ from this run's.
+F5. MED  Third instance of the "verify aimed at the wrong tree" class (87, 90, 91; rev-1 #5). The HEAD-only rule keys on `--commit` default and `studioRepoRelative`. `verify W-X --studio studio --repo <another checkout or clone>` (documented flag, verify.ts:~75,148) certifies that repo's HEAD and runs commands there while recordOwnerRefusal (on the studio's branch) passes; state is then written to this record. Instances searched: `--commit`, `ci --ref` (covered), `--repo` (not), `ci --repo` (same path).
+   Fix: write state only when realpath(`git -C repo rev-parse --show-toplevel`) == realpath(`git -C studioDir rev-parse --show-toplevel`) and `commit` is HEAD and no `studioRepoRelative`. Row in behaviours 10 and 11 with `--repo` at a second clone.
+F6. MED  (should-fix; REVISE-or-explicit-accept) Live `probationes` is wholly allowlisted (204-205, residual 2). A hostile builder can write `passed` on the review gate and on any human gate (hides a Needs-you card: cardRow `needsYou` is derived from pending human gates, board.ts:92) with state review: the card shows a reviewed, gate-green opus to the Patron. Residual 2 states it honestly but the bound ("nothing reaches done") does not protect the board.
+   Fix: live read takes `probationes` only for gates the manifest declares `automated` (all `verify` writes); human and agent gates come from the committed tip. Also validate `status` against PROBATIO_STATUSES in validateOpusFront. Rows 6(f) inverted: live human-gate flip is NOT reflected.
+F7. LOW-MED `branchRecords.dropped[].reason` and the stderr line (209-212) come from caught errors. YAML parse messages quote record text, fs errors carry absolute paths, and either may hold newlines/ANSI: log injection on stderr, record text and paths in an unauthenticated JSON response. The note itself shows ids only (good).
+   Fix: reason is a fixed code from an enumerated list (`no-front-matter`, `id-mismatch`, `invalid-shape`, `too-large`, `unreadable`, `parse-error`), never the error message; stderr written through JSON.stringify. Row 9(c) asserts the reason is in the enum.
+
+Advisories (not blocking):
+A1. A live-record rejection (state: done, FIFO, `.git` mismatch) is invisible: "no error, no drop" (205). Count `liveRejected` in `branchRecords` (not `partial`) so a hostile attempt is observable.
+A2. Cap hit alone gives status `partial` with empty `dropped`; make `branchNote` mention `capped` and add a 2(e) row.
+A3. Clearing after 6 failures, or a per-opus drop, makes ingest mint reversal `state_changed` events (building->greenlit, then back). Residual 11 names the display, not the events; add a sentence.
+A4. Gitdir corroboration (196) is satisfied by pointing `.git` at ANY admin dir; also require `<admin>/gitdir` to point back at `<wt>/.git`.
+A5. `--allow-dirty` run reaches `review` on a `dirty:` certificate (91): intended, but say the board then shows Awaiting review for uncommitted code.
+Checked and clean: SSE frames are one-line JSON; no dangerouslySetInnerHTML or markdown sink; traditio rendering is string-guarded (board.ts:325-328), so a hostile traditio/heartbeat object cannot crash React; git argv constant, object-name read has no TOCTOU, env scrubbed, SIGKILL, Map keyed ids, cap counts trunk-backed candidates worktree-first and is surfaced.

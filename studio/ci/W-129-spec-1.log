@@ -1,0 +1,85 @@
+# opus: W-129
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: revise — prereview 8 MUST, sec 3 HIGH
+# at: 2026-10-02T18:16:56.895Z
+# tree: tree:efafebf45c271a5baf195cf8802eaf84b4236308
+
+W-129 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 1. PREREVIEW: REVISE, 8 MUST, 8 SHOULD.
+Method: scratch copies under scratchpad (pristine w0, implemented w); repo untouched. Probes: first-red replays of 1,2,3,5,6,8,9,11,12,14 on pristine code;
+the brief's design implemented in w, then npm test chain, board/boardview/backlog-page tests, playwright board.spec, and the real verb cycle of behaviour 13.
+Replays OK (ERR_ASSERTION, first-red row as claimed): 1(b), 3(b), 5(a), 6(a passes/b fails), 8(d), 9(a: state+exit pass, events fail), 11(e), 12(e), 14(b).
+State readers: grepped every "building|verifying|review" literal and state ===/has() in packages/ apps/ scripts/ adapters/: no reader missed (hooks, context, close,
+prune, evidence.ts:26/306, next.ts:63, opus-model UI, branch.ts:446 all accept the three active states). In w, lifecycle/ci/pipeline/containment/opus-model/next tests stay green unedited.
+
+MUST
+1. B2's command cannot give ERR_ASSERTION (brief 209-214, 273-279, 422-423). From the repo root BoardView's JSX hits the root tsconfig: probe on pristine code gives
+   "React is not defined", code ERR_TEST_FAILURE. Every other web test runs inside `(cd apps/web && ... --import ./test/support/register-css-stub.mjs --import tsx test/x.test.ts)`
+   (package.json test:suite); cwd apps/web (or TSX_TSCONFIG_PATH=apps/web/tsconfig.json) gives ERR_ASSERTION. B1 alone is fine from root. Fix: register B1-2 inside the apps/web
+   group (not "after ladder-followon") and record the red with `--cwd apps/web` and cwd-relative paths; state it in both places.
+2. B13(f) expects a `review`->`building` state_changed event that no verb writes (brief 86-87, 404-407; Files-owned lifecycle.ts names only the source set). lifecycle.ts:664-672
+   `review --fail` emits only workflow.gate_evaluated. Real cycle in w: state_changed = b>v, v>review, b>v, v>review, review>done (5, not 6). Either have `review --fail` emit
+   it (add to Files owned, table, B10 row) or drop it from (f). As written (f) cannot go green and "each exactly once" fails.
+3. B13 "each followed by check (no traditio.stage finding)" (400-403) contradicts rule 2 and B12(a) (98-108, 389-391): after (e) `done` the committed handoff stage is still
+   `building`, and the real run gives advise traditio.stage `building` != `done`. Exempt (e) or have the row run `handoff` first; say which.
+4. B9(i) "final record satisfies check, no state.* block, cases (a)-(h)" (366-367) is false for (d): manifest declares `spec`, so an active opus with an unpassed spec gate is
+   blocked by `state.building.spec` (check.ts:597-600) before and after verify (probe: block at start, same block after). Restrict (i) to `state.review.*`/`state.verifying.*`, or exclude (d).
+5. Existing-test list misses apps/web/tests-serve/board.spec.ts:296-308 (brief 232-233 lists only :257-267). The "negative: /api/live blocked" test asserts W-007 has no Planned card
+   (`toHaveCount(0)` at :307); once backlog cards render it is there from the start. Playwright run in w: :260 and :307 both fail ("Expected 0, Received 1"). :307's premise
+   (card never appears) needs rewording to "state stays backlog". Searched backlog/W-007/planned across web tests, tests-serve, server tests: only these two sites.
+6. B7(a)'s "never hangs" (333-335) is false as specified. The test holds the announcement FIFO O_RDWR and awaits a read on it; on today's code the race is lost, the assertion fails,
+   but the read stays blocked in the threadpool and node never exits (probe: ERR_ASSERTION then killed at 20s, exit 124). A red that hangs cannot be recorded. Require the
+   test to write a byte to the announcement FIFO in a finally/after() before closing (probe: exits in 0s). Same for any other row that parks a read on a FIFO.
+7. The seam in `snapshotDir` does not reach what the brief promises (114-121, 164 "whole record ... body", 291 row 3(d)). store.ts `api.opus` (:364-377) reads
+   opera/<id>.md straight off disk with readFront, and `api.opera` body is `readOpusBody` (:100-129, :350), also disk. So `GET /api/opus/W-006` frontMatter.state stays the
+   trunk's and the drawer body stays stale. Name both: route `opus()` and `readOpusBody` through the same overlay text (parseFrontMatter on it), or narrow the claim.
+8. `reviewFailedAtCertifiedTree(root, record)` (91-96) cannot be the one predicate for check and verify. It has no review gate id (manifest `review_probatio`, ADOPTION.md:258,
+   check.ts:208, lifecycle.ts:590, next.ts:527) and no effective automated set (kind-dependent, effectiveProbationes). Input that splits verify from check: a manifest with
+   `review_probatio: censor` and a current failed `censor` gate (by reading, not probed): a predicate keyed on "review" says not-failed, so verify writes `review` and check's
+   loosened rule no longer blocks it (the safety net silently drops for such manifests). Add the two parameters (record shape too:
+   check passes a raw dict, verify an adapter record) so the stop condition "needs more than the log text" (515-516) is not tripped.
+Byte-level equivalence otherwise holds: verify's end condition is a subset of check's state.review.* (stricter on certificates and since:), and both read the same record.
+
+SHOULD
+a. board.test.ts also fails at module load: line 12 imports EXCLUDED_PHASES ("does not provide an export"), not in the :76-80/:121-129/:174-179 list; list it (else "not one of these is a stop").
+b. B1/B2 do not pin the column set. A builder who keeps `backlog` as an extra empty column and copies cards into Planned passes rows (a)-(e); add "column ids exactly
+   needs_you, planned, in_progress, verifying, awaiting_review, done, halted" to B1 (the old check is in the block the brief tells the builder to edit).
+c. Acceptance (453-456) omits `npm run -s lint` and `npm run -s format:check` (ci.ts:50-57; the opus's own `lint` gate). Four new files go through them.
+d. 6(e) "at most 32 cat-file calls" passes with 0: branches need 33 trunk records (step 3 skips branches without one) and the row should assert exactly 32. Also the cap keeps
+   the alphabetically first 32, so the newest ids are dropped first; say the order (e.g. --sort=-committerdate) or accept it as a residual.
+e. 6(c) "no argument contains -f" and 4(c) "no show" fail on a substring reading: the required `--format=` contains "-f" and `rev-parse --show-toplevel` contains "show".
+   Say "no argv element equals" and match the verb (argv[0]) exactly.
+f. Step 1 (132-135): any rev-parse failure disables the overlay for the server's life, silently, including a timeout or ENOENT on git. Distinguish exit 128 (not a repo) from the rest.
+g. Rows that "pass today" and read the events log (8c, 8f, 9a) must tolerate a missing .bisellium/events.jsonl, else the red is ENOENT, not ERR_ASSERTION. Say so.
+h. scripts/w041-mutation-check.mjs:36 pins the old In-flight caption and verify.ts's header (:5-8, "writes ONLY ... status/evidence/certifies") becomes false: list both as
+   touched (the first is not in the suite, so nothing flags it). Also next.ts reads the review tree from the log header (`# tree:`, reviewGate) while the predicate uses includes(hash);
+   prefer parseVerdictHeader equality so check, verify and next agree.
+Not findings: B3-B6 first-reds, B14, B11/B12 rows; item 4 seam shape is implementable (snapshotDir 4th positional arg, ingestOnce is the poll seam at start and in doPoll; differ emits
+state_changed from the overlay diff); package.json entries, stop conditions, red-at-committed-tree, no annotations, npm test twice, isolated runtime are present.
+W-129 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 1. SEC-SPEC: REVISE.
+Searched: brief (all), check.ts:445-460,505-600,619-630, verify.ts:60-262, ci.ts:150-240, lifecycle.ts:560-660, opus-model.ts evidence readers, store.ts:72-130,295-420, adapters/native index.ts:117-123,357-470, http.ts SSE (535-600), BoardDrawer.tsx, D-034, real repo refs (0 opus/* branches today). Probes run: FIFO open, snapshotDir on a malformed record.
+Blast radius note: state.done.probationes (check.ts:589) still demands a passed review, so no finding below lets an opus reach `done`/merge. They corrupt the board, CI signals and the append-only event log.
+
+1. HIGH  FIFO / special-file hang stalls the whole poll (brief 143-148, 131, 155-156). Read "opens with O_NOFOLLOW, requires a regular file" - order unspecified, no O_NONBLOCK, and the 5s timeout covers git only. Probed: fs.promises.open(fifo, O_RDONLY|O_NOFOLLOW) never settles (and process.exit hung). A builder runs `mkfifo <wt>/studio/opera/W-006.md`: poll never finishes, doPoll refuses a second poll (156), board freezes at last snapshot, threadpool thread lost per FIFO.
+   Fix: lstat+isFile BEFORE open; open O_RDONLY|O_NOFOLLOW|O_NONBLOCK; fstat dev/ino must equal lstat's; read at most cap+1 bytes (do not trust st_size); wrap each entry in a wall-clock race (branchGitTimeoutMs). Add a mkfifo row to behaviour 5 (poll settles, committed tip served).
+2. HIGH  One parseable-but-malformed live record 500s every route and the ingest (115-116, 149-150). Acceptance test is only "parseFrontMatter accepts + id equal". Probed: `probationes:\n  review: ~` makes snapshotDir throw "Cannot read properties of null (reading 'status')" (index.ts:402-405, no per-record guard). With the overlay, an UNCOMMITTED builder file takes down the Patron's board.
+   Fix: at refresh, run the same per-record mapping inside try/catch (shape: state string in lifecycle STATES, probationes dict of dicts, tokens number|undefined, traditio dict); drop the entry on throw; add rows (null gate, state object, tokens string) to behaviour 5.
+3. HIGH  Information-flow change not stated as one (143-148, 163-164, 525-528; D-034 ruling 2 says "live state from the branch", not "uncommitted builder edits"). The architect extended it to make `verifying` visible, then listed only half-write flicker as residual. Consequences: the builder hand-writes `state: done`, flips a human gate (hides/creates a Needs-you card), sets `tokens: 1e12` (aerarium posture, index.ts:437-445) and the Patron's board shows it, unreviewed, never through check/CI.
+   Fix: say so in Intent + Residuals; live (worktree) reads may apply only when `state` is one of {building,verifying,review}; anything else (done/halted/unknown id) falls to the committed tip; ignore live `tokens` (committed tip only). Add rows.
+4. MED   reviewFailedAtCertifiedTree fails OPEN (91-96, 100-103, behaviour 11 rows 380-387). "Unreadable = true" is right, but false is returned whenever the log is readable and holds no certified hash: (a) automated gates with no `certifies` (hand-deleted; probatio.certifies is advise-only, check.ts:528) - zero hashes to match; (b) log with no tree header at all; (c) certs are `dirty:H'` while the verdict header says `tree:H` for the same content; (d) the review gate's `evidence` field is hand-editable and can name any readable unrelated log (check.ts has no corroboration). Each lets `state: review` + failed review pass CI where today it blocks.
+   Fix: make staleness affirmative: true unless the log parses (parseVerdictHeader `# tree:`) to a tree id AND every automated cert is `tree:` AND none equals it. Rows for (a)-(d) in behaviour 11.
+5. MED   verify can be aimed at the wrong tree and write a state (66-75, 91-96; verify.ts:116,174 `--commit` -> treeHash of <ref>, pipeline index.ts:79 still runs in the repo working tree; ci.ts:150-217 `--ref` verifies a scratch checkout of any ref but writes the live studio record). `verify --commit <older-green-tree>` or `ci --ref <ref> --opus W-X` certifies a tree that is not this checkout's HEAD, probatio.certifies.stale is advise-only, and the end transition + "certified tree" predicate then write `review` for a HEAD never verified (or dodge a current failed review by naming an older tree). Also the end rule reads "every effective automated gate passed with tree:/dirty:" - a gate whose command was removed keeps an old pass (commands only built from p.command, verify.ts:~123) and counts.
+   Fix: write state (start AND end) only when commit === "HEAD" and no studioRepoRelative/--ref; compute the end rule over THIS run's `results`: every effective automated id present and certifies === `${dirty?"dirty":"tree"}:${treeHash}`. Rows for --commit older, ci --ref, stale pass on commandless gate in behaviour 9.
+6. MED   End write is not compare-and-set (66-75, 83). verify runs minutes; meanwhile review --fail / halt / done can run. The table says "From verifying" but not that it is tested inside editOpusFrontMatter's callback on the fresh doc (verify.ts:251 already re-parses). Decided pre-write, the end write can resurrect done/halted into review or building. Fix: CAS in the callback; if fresh state != verifying write gates only, no state, no event. Row in behaviour 9.
+7. MED   Silent fail-to-trunk class (question 5). The board reverting to `greenlit` is the exact lie D-034 exists to remove. Instances: (a) 32 cap (140, behaviour 6e 323-325): for-each-ref default order is alphabetical; not stated whether the cap precedes the trunk-record filter; 32 stale/junk `opus/0*` branches hide every later in-flight opus; nothing surfaces it. (b) maxBuffer 256 KiB on for-each-ref (129): ~4k refs (trivial to create) turns the whole overlay off; stderr line repeats every 5s. (c) per-opus drops (150-154) are silent. (d) first-refresh rev-parse failure disables the overlay for the server's life with NO output (132-135) and does not distinguish "not a repo" (exit 128) from a timeout/transient. (e) clearing on any git error (138-139) makes ingest write reversal events (building->greenlit, then back) into events.jsonl; ref spam or a flapping worktree file mints unbounded permanent state_changed events (residual 2 bounds only accidental half-writes).
+   Fix: --sort=-committerdate, worktree-backed branches first, count the cap AFTER the trunk filter, bound concurrency not branch count; deduped stderr line for every cap hit / per-opus drop with reason / degraded transition; keep the last good overlay for transient failures (stale-while-error) and disable for life only on "not a git repository"; larger maxBuffer; rows for each.
+8. MED   CPU amplification and trunk/branch mixing (118-124, 164). snap() re-parses up to 32 x 256 KiB YAML per request on the event loop; real records are <=2 KB and store.ts:73 already caps front matter at 64 KiB. Also `opera` takes `body` from readOpusBody (store.ts:350) and `opus` reads disk via readFront - neither listed as going through the overlay though 164 promises the whole record. Fix: parse once at refresh, cache the parsed record, cap at 64 KiB; route body/opus() through the overlay entry.
+9. LOW   traditio.stage relaxation (104-108). The advisory guarded a baton that disagrees with reality; active/active relaxation also silences stage AHEAD of state, e.g. handoff `review` after `review --fail` put the opus back in `building` - the misdirecting case. Fix: suppress only when rank(stage) <= rank(state) in building<verifying<review; rows for stage review/state building still advising.
+
+Advisories:
+A1. Worktree path is data from `git worktree list` (.git is builder-writable), so "realpath under worktree" is only as strong as that root. Cheap corroboration: `<wt>/.git` gitdir lies under the repo's .git/worktrees. Do the realpath check on the open fd (/proc/self/fd/N) to close the realpath->open race.
+A2. BoardDrawer.tsx:59 `href={g.evidence}`: React 19.3 blocks javascript: but not data:/https phish; no CSP header anywhere in http.ts. Checked clean: no dangerouslySetInnerHTML/markdown sinks, titles escaped by React, SSE frames are one-line JSON.stringify (no frame injection).
+A3. git hygiene: argv constants only; `<oid>:<studioRel>/..` cannot be read as an option and cat-file by captured object name has no TOCTOU. Scrub inherited GIT_DIR/GIT_WORK_TREE/GIT_INDEX_FILE/GIT_CONFIG*; killSignal SIGKILL; keep the overlay a Map (id "constructor" passes the id regex).
+A4. verify has no actor, so anyone on the branch can flip review->verifying; accepted by the brief (88) but note it hides "awaiting review".
