@@ -118,13 +118,13 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-02)
+## Where things stand (2026-10-02 evening)
 
-W-125 merged PR 150 and is done. Builders now execute in a bwrap-confined disposable clone with mediated git, credential-free environment, confined recomputation, fail-closed export and mandatory teardown; the entire review cycle ran on Claude substitutes per the Patron while Codex sits at its usage limit (resets Oct 4 09:01): censor rounds 1–3 (two FAILs closed, runner proven live; round 3 PASS) and sec-lead twice CLEAR with an 80-vector broker fuzz. Brief revisions 3–5 applied census ownership, a package.json line grant, and red-identity attestation by replay after a rebase. The substituted-review model worked well at Sonnet cost.
+W-124 merged PR 153 and is done. `bisellium next <opus>` derives the one legal next step of the twelve-rung ladder, performs it with `--perform`, refuses to skip, absorbs the two kept scripts behind a hardened gh contract, and mechanizes the three standing rules: step health from `/proc`, 500k budget refusal, done only when MERGED and the fetched trunk contains the merge. Two censor rounds (FAIL then PASS with an independent mutation check) and sec BLOCKS then CLEAR, all Claude substitutes. W-125's marked-opus admission gated each review round behind a host run receipt—its first live enforcement. The verb then walked its own tail live: cleanup (idempotent skips), done (its own chore/done-W-124 branch, PR 155), and named this checkpoint. **Operating changes to record:** the main checkout now sits on master (codex research branch keeps its state in a WIP commit); every opus close-out now needs `verdict --phase spec` (spec rung reads `ci/<id>-spec-<n>.log` on committed trunk—W-124's persisted retroactively, PR 154); kept scripts frozen byte-identical (W-124 behaviour 3 pins them)—chore-head PRs use the session helper until chore-head rung follow-on lands. Codex resets Oct 4 09:01; Claude-substitute mapping continues until the Patron rules.
 
 ## Queue
 
-Next is W-124 (cascade order as a verb — bisellium next; its brief must also absorb the stale-task health check and the ≤500k context caps as behaviours), then W-114, W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-121, W-126, W-127. W-113 needs the Patron's UI/UX ruling at spec time.
+Next is W-121 (the no-vendor lock-race flake—it has now cost three PR round-trips), then W-114, W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127. W-113 needs the Patron's UI/UX ruling at spec time.
 
 ## Research lane (on the side)
 
