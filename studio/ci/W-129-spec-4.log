@@ -1,0 +1,43 @@
+# opus: W-129
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T18:16:58.226Z
+# tree: tree:efafebf45c271a5baf195cf8802eaf84b4236308
+
+W-129 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 3. PREREVIEW: READY-TO-SIGN, 0 MUST, 4 SHOULD.
+Scope: commit b82efc8. Probes only in scratchpad copies; the spec worktree is clean. countBehaviours = 16 (run). Cross-references re-checked (13, 11(l)-(m), 5(f)/(g)/(i)/(j), 6, 9(c),
+10(h), 15 -> 13/14(a)); none dangle. Round-2 MUSTs all verified closed (below).
+
+Replays on pristine code (the new rows were argued; these were run):
+- Behaviour 13 (full verdict-header logs, 40-hex H1/H2): rows (a)-(l) all pass today (block count 1; (f) 0), row (m) is the FIRST failure: ERR_ASSERTION "13m older tree: no finding"
+  (expected 0, actual 1). The same file against a scratch build of the revision-3 predicate (header-based, opus match, 40-hex, non-empty automatedIds, duplicates) is green: (a)-(l) block, (m) clear.
+- Behaviour 1 and 2 with `import * as board` and BoardView by name, cwd apps/web + css stub: 1(a) passes, 1(b) ERR_ASSERTION; 2(a) ERR_ASSERTION (head count 2), and 2(e)
+  reaches `board.branchNote` only after it. No module-load failure.
+- Behaviour 5(a): ERR_ASSERTION (W-006 greenlit, not building). Behaviour 8(a) with both FIFOs held O_RDWR and the finally writing through those handles: ERR_ASSERTION, process exits in 0s.
+  Behaviour 10(d) (older --commit, studioRepoRelative, --repo a second clone): the stub runs and the record stays `building` today, as claimed.
+- Behaviour 15 with the real `verdict` verb and the revision-3 predicate: verify -> review; verdict(failed) + review --fail -> building; fix; verify -> review; verdict(passed); review --pass;
+  done; check clean at every step through (d); after done only `traditio.stage` among traditio.*; events b>v, v>review, review>b, b>v, v>review, review>done (six, once each).
+- validateOpusFront with `status` in PROBATIO_STATUSES applied to all 136 real and sample records: none dropped. Adding the review --fail state_changed breaks no existing test.
+
+Round-2 MUSTs: (1) namespace/dynamic-import rule present at 408-414 and 317-318, 331-332: closed. (2) 8(a) opens both FIFOs O_RDWR first (518-528): closed, probed.
+(3) 15(e) reworded (658-661): closed, matches the probe. Stop conditions (786-791) cover the seams, the live-probationes question and the branch-note nod.
+
+SHOULD (none blocks signing; each is a row that will otherwise cost a phase-2 round)
+a. 5(j) vs the file-wide FIFO rule (327-330, 485-492). If the test opens the FIFO O_RDWR "before anything can block on it", a blocking open() finds a writer and returns at once
+   (probed: pre-held O_RDWR opens in 0 ms; no writer parks until the 1.5 s timer), so 5(j) answers `not-regular` even without O_NONBLOCK and the row cannot catch the omission.
+   Say 5(j) is exempt: the FIFO is created inside `afterLstat`, opened O_RDWR by the test only in the `finally`, after the opener has answered.
+b. 15 (652-653): `verdict --from <file>` stamps `# tree: dirty:<hash>` if the transcript lives in the repo working tree outside studio/ (probed: header went dirty, then verify#2 stayed
+   `verifying` because the predicate fail-closes on `dirty:`). Put the transcript under os.tmpdir() outside the repo, or under studio/.
+c. 11(h) (587-591) never says its review logs carry the full verdict header; the predicate fail-closes without `opus:`, so an "older tree" log written as a bare `# tree:` line
+   stays `verifying` instead of `review`. Say "full header" for all of 11 as 13 does.
+d. nit: apps/server tsconfig includes test/, so a literal `await import("../src/branchRecords.js")` in branch-records.test.ts is TS2307 on the phase-1 commit (the brief already
+   casts `branchGitTimeoutMs` for the same reason); use a computed specifier or a cast.
+W-129 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 4. SEC-SPEC: CLEAR.
+Read: full diff 8321fcf vs b82efc8 (39 insertions, 18 deletions, studio/briefs/W-129.md only).
+1. F8 closed as prescribed. Own-tree rule now requires realpath(rev-parse --show-toplevel) of --repo equal to the studio's AND an empty `rev-parse --show-prefix` (equivalently realpath(repo) == top level); any rev-parse failure writes nothing. It names the subdirectory case and why (ls-tree lists only the subtree). Rows 10(d) and 11(j) both gain `--repo <subdirectory of the same checkout>` (gates written, state untouched, no events); the Revisions row states the same.
+2. Advisory source-pin applied: 5(j) asserts store.ts has no \bafterLstat\b / \btimeoutMs\b (branchGitTimeoutMs does not match \btimeoutMs\b, so the legitimate option is not caught); 10(h) asserts main.ts and ci.ts have no \bafterRead\b. Residual note only: the pin covers the callers named (store.ts, main.ts, ci.ts); branchRecords.ts's own refresh calls are policed by the 5(j)/9 rows, not the pin.
+3. Other changes in the diff, none reopens F1-F7: (a) 5(j) is exempted from the pre-opened-FIFO rule - correct and security-positive (a held O_RDWR FIFO would let an opener without O_NONBLOCK pass; now the FIFO is created inside afterLstat, held by nobody, and released afterwards in a finally); (b) tsc-safe dynamic import (`const spec = ...; await import(spec) as OpenerModule`) is test mechanics only; (c) behaviour 11 logs carry the full verdict header (strengthens F3 coverage); (d) behaviour 15 transcript is kept outside the repo working tree so certificates read `tree:` not `dirty:` (test hygiene, no production effect).
+F1-F7 re-checked against the unchanged text: opener sequence and its three callers, 5(j) discriminator, fail-closed predicate (13(i)-(l)), merged-doc end rule (11(l)/(m)), no live probationes (6(f)), enumerated reason codes (9(c)) are all intact. No new hole found.

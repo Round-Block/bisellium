@@ -1,0 +1,60 @@
+# opus: W-129
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: revise — prereview READY, sec F8
+# at: 2026-10-02T18:16:57.787Z
+# tree: tree:efafebf45c271a5baf195cf8802eaf84b4236308
+
+W-129 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 3. PREREVIEW: READY-TO-SIGN, 0 MUST, 4 SHOULD.
+Scope: commit b82efc8. Probes only in scratchpad copies; the spec worktree is clean. countBehaviours = 16 (run). Cross-references re-checked (13, 11(l)-(m), 5(f)/(g)/(i)/(j), 6, 9(c),
+10(h), 15 -> 13/14(a)); none dangle. Round-2 MUSTs all verified closed (below).
+
+Replays on pristine code (the new rows were argued; these were run):
+- Behaviour 13 (full verdict-header logs, 40-hex H1/H2): rows (a)-(l) all pass today (block count 1; (f) 0), row (m) is the FIRST failure: ERR_ASSERTION "13m older tree: no finding"
+  (expected 0, actual 1). The same file against a scratch build of the revision-3 predicate (header-based, opus match, 40-hex, non-empty automatedIds, duplicates) is green: (a)-(l) block, (m) clear.
+- Behaviour 1 and 2 with `import * as board` and BoardView by name, cwd apps/web + css stub: 1(a) passes, 1(b) ERR_ASSERTION; 2(a) ERR_ASSERTION (head count 2), and 2(e)
+  reaches `board.branchNote` only after it. No module-load failure.
+- Behaviour 5(a): ERR_ASSERTION (W-006 greenlit, not building). Behaviour 8(a) with both FIFOs held O_RDWR and the finally writing through those handles: ERR_ASSERTION, process exits in 0s.
+  Behaviour 10(d) (older --commit, studioRepoRelative, --repo a second clone): the stub runs and the record stays `building` today, as claimed.
+- Behaviour 15 with the real `verdict` verb and the revision-3 predicate: verify -> review; verdict(failed) + review --fail -> building; fix; verify -> review; verdict(passed); review --pass;
+  done; check clean at every step through (d); after done only `traditio.stage` among traditio.*; events b>v, v>review, review>b, b>v, v>review, review>done (six, once each).
+- validateOpusFront with `status` in PROBATIO_STATUSES applied to all 136 real and sample records: none dropped. Adding the review --fail state_changed breaks no existing test.
+
+Round-2 MUSTs: (1) namespace/dynamic-import rule present at 408-414 and 317-318, 331-332: closed. (2) 8(a) opens both FIFOs O_RDWR first (518-528): closed, probed.
+(3) 15(e) reworded (658-661): closed, matches the probe. Stop conditions (786-791) cover the seams, the live-probationes question and the branch-note nod.
+
+SHOULD (none blocks signing; each is a row that will otherwise cost a phase-2 round)
+a. 5(j) vs the file-wide FIFO rule (327-330, 485-492). If the test opens the FIFO O_RDWR "before anything can block on it", a blocking open() finds a writer and returns at once
+   (probed: pre-held O_RDWR opens in 0 ms; no writer parks until the 1.5 s timer), so 5(j) answers `not-regular` even without O_NONBLOCK and the row cannot catch the omission.
+   Say 5(j) is exempt: the FIFO is created inside `afterLstat`, opened O_RDWR by the test only in the `finally`, after the opener has answered.
+b. 15 (652-653): `verdict --from <file>` stamps `# tree: dirty:<hash>` if the transcript lives in the repo working tree outside studio/ (probed: header went dirty, then verify#2 stayed
+   `verifying` because the predicate fail-closes on `dirty:`). Put the transcript under os.tmpdir() outside the repo, or under studio/.
+c. 11(h) (587-591) never says its review logs carry the full verdict header; the predicate fail-closes without `opus:`, so an "older tree" log written as a bare `# tree:` line
+   stays `verifying` instead of `review`. Say "full header" for all of 11 as 13 does.
+d. nit: apps/server tsconfig includes test/, so a literal `await import("../src/branchRecords.js")` in branch-records.test.ts is TS2307 on the phase-1 commit (the brief already
+   casts `branchGitTimeoutMs` for the same reason); use a computed specifier or a cast.
+W-129 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-03, brief revision 3. SEC-SPEC: REVISE.
+One new hole (F8, small, mechanical); F1-F7 are closed as described. Read: brief rev 3 (868 lines; Intent 41-55, state cycle 89-144, overlay 170-264, rows 5-13, acceptance, stop conditions), packages/shim/src/sourceTree.ts, board.ts cardRow/drawerDetail, store needsYou, verify.ts. Probe run: `git ls-tree -r HEAD` from a subdirectory.
+
+Dispositions:
+F1 CLOSED. One opener (234-247) covers record, worktree `.git` (4 KiB+1) and admin gitdir back-pointer (219-222); finally-close on every path; rows 5(i) (.git FIFO + 10 MB) and 5(h) (wrong admin dir).
+F2 CLOSED. 5(j) swaps file->FIFO inside afterLstat and asserts `not-regular`, not `timeout`; acceptance 727-731 now says 5(f)/5(i) do not pin the flag and 5(j) does. Order lstat -> open(O_NONBLOCK) -> fstat dev/ino -> /proc containment -> read is the airtight sequence stated in my round-2 log.
+F3 CLOSED. Non-empty automatedIds, no duplicate tree/opus, header opus == id, `^tree:[0-9a-f]{40}$` on header and every certifies (matches sourceTree.ts: sha1 hex), differing; rows 13(i)-(l) cover each input.
+F4 CLOSED. End rule evaluated inside the CAS callback on the merged document (96, 125-127); 11(l)/(m) are a real discriminator (T0 vs T1 in both directions).
+F5 PARTLY - see F8. `--commit`, `ci --ref`, `--repo <other clone>` and `ci --repo` now write nothing; rev-parse failure fails closed.
+F6 CLOSED. `probationes` is not live-allowlisted (225-229); state/traditio/heartbeat only. 6(f) inverted; validateOpusFront checks PROBATIO_STATUSES (5(g)).
+F7 CLOSED. Six DropReason + three StatusReason codes only; stderr is fixed prefix + JSON.stringify; 9(c) uses an ESC-and-newline record and asserts none of it reaches body or stderr.
+
+Your two questions:
+Q1 Is the 5(j) seam safe to ship? Yes, with one pin. `afterLstat`/`timeoutMs` (243-247) are in-process function/number parameters of an exported helper; nothing in argv, env, HTTP or StartServerOptions reaches them, and store.ts passes none. The sibling `RunVerifyOptions.afterRead` (10(h)) is the same shape as the existing `pipeline` option; `main.ts` passes no options. The stop condition at 787-789 already forbids making either reachable. Advisory A1: add a one-line source pin (a test that greps store.ts/main.ts for `afterLstat|afterRead|timeoutMs`) so the stop condition is enforced rather than prose.
+Q2 Can any other live field hide a Needs-you card? No. Needs-you is derived only from `probationes` (cardRow board.ts:92-93; store needsYou) and petitiones, neither of which is overlaid now. `state` only moves the card between columns (a card with a pending human gate stays in needs_you whatever its state, board.ts:131), `heartbeat` is rendered nowhere (grep of apps/web, server, core), `traditio` reaches the page only as string rows in the drawer (board.ts:325-328). Row 6(f)/(g) pin both.
+
+F8. MED (blocking; new, a hole in the own-tree rule at 102-109, row 10(d)/11(j)). The rule compares `rev-parse --show-toplevel` of `--repo` and of the studio, so `--repo` pointing at a SUBDIRECTORY of the same checkout (`verify W-X --studio studio --repo packages/cli`, or `ci --repo packages/cli`) passes. Probed: from a subdirectory `git ls-tree -r HEAD` lists only that subtree with relative paths, and sourceTreeHash (sourceTree.ts:44-58) hashes exactly that; commands also run with cwd = the subdirectory (pipeline index.ts:79). So a certificate over a partial tree plus a `review` state is written. Same class as --commit / ci --ref / --repo clone (4th instance; searched: --commit, --repo clone, --repo subdir, ci --ref, ci --repo, --studio-relative exclude path).
+   Fix: add to the rule that `git -C <repo> rev-parse --show-prefix` is empty (equivalently realpath(repo) == realpath(toplevel)), still fail-closed on error. Rows: 10(d) and 11(j) gain `--repo <subdirectory of the checkout>`: gates written, state untouched, no events.
+
+Advisories (non-blocking):
+A1. See Q1: pin that the injections are unreachable from production callers.
+A2. Admin-gitdir back-pointer and `.git` are both in builder-writable .git; the corroboration guards mistakes, not a hostile builder who edits both. The real bounds are the allowlist (state in 3 active states, traditio, heartbeat) and the committed base - which the brief states. No action.
+A3. Clearing after 6 failures or a per-opus drop still mints reversal state_changed events (A3 residual) - accepted by the brief.
