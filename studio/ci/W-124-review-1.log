@@ -1,0 +1,15 @@
+# opus: W-124
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: FAIL — unverifiable merged heads route to pr instead of staying at merge (integrate.ts:235–237, next.ts:466–470, brief:169–173; sec-lead converged on the same defect), and the kind: ui review order omits the ui-lead input path and --ui-input (next.ts:457/551, brief:321–323). Sec-lead adds: the BEHIND path adopts an unreviewed head (integrate.ts:342–353) and PR-controlled check names reach the state-line protocol unsanitised (integrate.ts:364). Reds, greens, ownership, census and the rest of the mechanics hold.
+# at: 2026-10-02T03:08:13.503Z
+# tree: tree:5b479b9025483502470a75acbb9c0cebaf0f81b3
+
+W-124 round 1 censor review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 2cd1015, tree 5b479b90.
+VERDICT: FAIL — an unverifiable merged head is not left at merge (a merged opus can be walked back to pr), and the review order omits the ui-lead input path.
+BLOCKING 1 (brief:169–173, 183–186, 198; integrate.ts:235–237, next.ts:339/466–470): settleMerged returns unrelated when the merge commit is contained and the head is unverifiable (merge-base exit 128); classify maps that to pr, so a merged opus walks back to pr (a --perform would rebase and push merged work). Distinguish exit 128 (unverifiable → merge; perform fetches refs/remotes/origin/opus/<id> and re-checks; still unknown after the fetch → held naming it) from exit 1 (unrelated). Test row 1146–1148 is mislabelled (an unknown oid asserted as unrelated); add a real-unrelated row and an unverifiable→merge row. Cleanup reread and performDone already hold safely.
+BLOCKING 2 (brief:321–323; next.ts:457, 551): the review order for kind: ui omits the ui-lead input path in inputs: (inspectUiDesignInput's input.relative is unused) and the command: carries no --ui-input; no kind: ui review row exists. Confined to ui review orders; other dispatch fields conform.
+ADVISORY: state=WAITING, state=MERGED_NOT_FETCHED, next-step:/next-why: missing from ADOPTION's vocabulary; red 6's early malformed-budget rows pass vacuously (red still genuine); --expect also checked pre-marker (safe, writes nothing); the early-PR-read gate on a pruned remote-tracking ref deserves a row; the master-checked-out held path is live-proof territory.
+HOLDS: all six reds genuine and tree-matched (replayed from f88e867); 7/7 green matching captured logs; certificates at 5b479b90 = HEAD; Files owned exact; scripts byte-identical; census three guarded entries, nothing loosened; trunkContainsMerge, gh fail-closed reads, --match-head-commit, cleanup bounds, /proc parsing, marker takeover, test-clock gating all conform; four of five builder judgement calls accepted (the settlement narrowing is finding 1).
