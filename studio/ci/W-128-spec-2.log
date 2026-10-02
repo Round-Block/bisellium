@@ -1,0 +1,91 @@
+# opus: W-128
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: revise — sec CLEAR, prereview 1 MUST
+# at: 2026-10-02T11:19:05.243Z
+# tree: tree:f5792a043c4f5b48fca18776b2efd88e6d585d31
+
+W-128 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 2. PREREVIEW: REVISE, 1 MUST, 3 SHOULD.
+Brief commit 2bebbcb on spec/W-128 (HEAD of the worktree); read-only; probes in scratch repos; bounded re-verify as asked.
+
+MUST
+1. Behaviour 2 row (d) (brief lines 277-279) cannot go green within Files owned. It requires integrate.ts to contain none of
+   `exec(`. integrate.ts:305 already has `const found = /\/pull\/([1-9][0-9]*)\s*$/.exec(created.stdout.trim());` (the regex .exec(
+   method in openPr), so a substring check fails today and after any fix; passing it would mean editing :305, which is outside the
+   owned edits (fetchTrunk, the landed() argument, four comments). Verified by grep: the only `spawnSync(` is :44 (ok), no `shell:`,
+   no `"bash"`, no `execSync`, but one `.exec(`. Fix: match `exec(` only when not preceded by `.` or a word char
+   (e.g. /(?<![.\w])exec\(/) or name the forbidden forms (`execSync`, `execFileSync`, `child_process.exec(`, `shell:`, `"bash"`).
+   Row (d) sits after the Genuine red (b), so the red is unaffected; the green would be impossible.
+
+SHOULD
+2. Behaviour 5 sentence (lines 334-337) "every other row ... asserts a reason substring or a success that current code never
+   produces" is false for row (f): no target, behind, reason contains `pull --ff-only` and names the clone. Today's hold text
+   ("master is checked out at <clone> ... git -C <clone> pull --ff-only origin master") satisfies both, and "no merge" holds, so (f)
+   passes in full today. Not a red-order problem (it follows (c)), but the "builder stops if a passes-today row fails" rule is
+   unaffected only because the claim is made loosely; either move (f) before (c) with (a),(b) or reword the claim.
+3. Rewritten b4-checked-out row (lines 216-219): it says `gitCalls` holds a merge call "whose argv is `-c submodule.recurse=false
+   merge -q --ff-only <oid>`". next.test.ts:666-675 `gitArgs` strips leading -c/-C pairs, so `gitCalls` yields
+   `merge -q --ff-only <oid>`; the stated argv can never match. Say "`calls(w)` raw" (the -c pair is then present) or state the
+   stripped argv. Likewise the `mutating()` extension must match `merge` after gitArgs (the brief's "before gitArgs strips -c"
+   is not what the function does).
+4. Phase 1 commits a test that calls `fetchTrunk(clone, tip)` against the current one-parameter signature: tsc TS2554 until phase 2,
+   while the acceptance and any pre-push `typecheck` run on the tree. Reds still record (tsx does not typecheck). State it, or have
+   the test call through a local `(repo: string, target?: string) => ...` view of the import so each commit typechecks.
+
+VERIFIED on current code (no finding)
+- Numbering: countBehaviours(rev 2)=8; headings 1..8 contiguous; "passes today" rows precede each Genuine red in 2,3,5,6,7,8.
+- Behaviour 5 table: (a) second worktree holds master + target = origin tip: today returns the "checked out at <wt> ... pull
+  --ff-only" hold, wt untouched, no merge: passes in full. (b) origin = missing path: ok:false, non-empty one line, nothing moved:
+  passes. (c) first failing assertion is `uncommitted` (today's reason never contains it; probed fixtures return only the
+  checked-out text); (d) `diverged`, (e) `ahead`, (g) (h) `untracked or ignored`, (i) `not on origin/master`, (j) `may be partly
+  updated`, (k) retry ok:true: all fail today (ok:false, wrong text). Fixtures feasible: ignored file/dir needs `git add -f` on
+  the pushing clone (probed: unguarded `merge --ff-only` overwrites an ignored file and replaces an ignored dir with a file;
+  `diff --no-renames --name-only -z --diff-filter=A` lists both; `ls-files -o -i` lists node_modules/dep.js).
+- (j): with `.git/index.lock` present, `status --porcelain --untracked-files=no` exits 0 and `merge --ff-only` exits 1 with HEAD and
+  master unmoved, so the row is constructible and uid-independent.
+- Behaviour 4 two-commit row: fetchTrunk(clone, C1) today ok:false (red (b)); with the contract C1 ff stops at C1 not C2, the
+  second call is "contained" with no further merge; rev-list --count old..master = 1.
+- Shim: `sh()` is spawnSync(cmd,args,{cwd,...}) with no env, so a process.env.PATH prefixed with a logging git script is honoured
+  in process; next.test.ts already uses the same device (SETUP_ENV/BIN, unit-separator log). Truncate the log per call.
+- Step 9.2 cost: `git ls-files -o -i --exclude-standard -z` is 205 KB in this repo (0.1 s), far below the 16 MB maxBuffer.
+- Behaviours 1, 6, 7, 8 unchanged in substance and still verified: 1(a) red; 6(d) red; 7(c) red; 8(a)-(c) pass, (d) red; rev 2's
+  per-row behaviour numbers (K=1,2,3) work, (b) dirty exit-0 writes no 02.log. b1(c) whole-tree git grep with the three
+  pathspec exclusions leaves exactly the owned edits (ARCHITECTURE 220-221, integrate 3/21/273/314, next.test 1279/1373/1403/1409,
+  next.ts 380, trunk.ts 16) plus the scripts themselves, all removed by the owned changes.
+- b2 (b) scope/case now unambiguous; every `parity`/`SCRIPTS`/`bash` hit in next.test.ts is in the revised edit list.
+W-128 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 2. SEC-SPEC: CLEAR.
+Brief: studio/briefs/W-128.md @2bebbcb (spec/W-128). Read-only; probes ran in $TMPDIR git repos (git 2.43.0). No bisellium verb run.
+
+ROUND-1 DISPOSITIONS (each verified against revision-2 text, brief lines of 2bebbcb)
+1. HIGH ignored overwrite — CLOSED. Step 9.2 (120-126) + rows 5(g)/(h)/(k) (321-333). Probed the case asked about: incoming commit adds
+   assets/gen/out.bin under a NEW directory assets/, local has an ignored assets/gen/out.bin. Unguarded merge --ff-only overwrote it (exit 0).
+   `git diff --no-renames --name-only -z --diff-filter=A L T` lists the FULL nested path (assets/gen/keep.txt, assets/gen/out.bin), so the lstat clause
+   fires; an ignored file standing where a new directory goes hits the non-directory-ancestor clause; an ignored directory where a file goes
+   hits the ancestor-of-`ls-files -o -i` clause. All three sub-cases are covered by the text. Diff is L..T, matching the bounded merge.
+2. MED reviewed-commit binding — CLOSED. Steps 1, 5, 6, 8, 9 (83-139). Target T is wellFormedOid, resolved ^{commit}, required to be an
+   ancestor of origin/master O and to descend from local L, and the literal T (never O) goes to merge; master stops AT T. No-target (pr rung) path
+   only classifies and holds. Hostile/rewound origin: O is used for nothing but `T ancestor-of O`; a rewind drops T out of O -> hold
+   `not on origin/master`; a divergent local -> `diverged`; a hostile O that still contains T cannot move master past T. No route found.
+3. MED partial state — CLOSED as stated (134, residual 5, row 5(j) via index.lock); real partial write honestly left unasserted.
+4. MED call-level pins — CLOSED. Shim log (191-194), mutating() extension (213-214), exactly-one-merge argv with the literal oid (299-304, 214-223),
+   forbidden verbs and flags listed; acceptance 424-427 names the censor's mutation check.
+5. MED HEAD check — CLOSED to the stated narrowing (127-129, residual 6).
+6. LOW spawn surface — CLOSED (277-278, case-sensitive SCRIPTS at 272).
+
+NEW FINDINGS (none blocking)
+A. LOW (liveness, false positive) — step 9.2's "ancestor exists on disk as a non-directory" and "exists on disk" clauses also fire on a LEGITIMATE tracked
+   type swap: L tracks file `d`, T deletes it and adds `d/x` (probed: the ff itself succeeds cleanly; the diff-filter=A list is `d/x`, ancestor `d` is a file
+   on disk) -> permanent hold until a human pulls; the reverse (tracked dir -> file) likewise. Safe direction, no data at risk. Fix if wanted: skip
+   ancestors/paths that are tracked in L (`git ls-tree -r --name-only -z L`). Otherwise add one sentence to residual 2.
+B. LOW (test strength) — 4(d) asserts the `symbolic-ref` call is "earlier in the log than" the merge; a symbolic-ref moved back to step 3 would still pass. Say
+   "the call immediately before the merge is `symbolic-ref -q HEAD`" in 4(d) and the b4-checked-out row (219).
+C. LOW (test coverage) — no row for the nested case verified above. Add 5(l): incoming adds `newdir/sub/f.bin`, local ignored `newdir/sub/f.bin` (and a
+   variant where local ignored `newdir/sub` is a file); hold, bytes unchanged. Cheap, and it is the shape a top-level-name-only implementation gets wrong.
+D. INFO — `ls-files -o -i --exclude-standard` lists every ignored file; this repo is 3,710 entries / 207 KB / 0.16 s, fine. sh() maxBuffer is 16 MiB and
+   120 s; a larger tree fails closed (hold), never open. A `--directory` listing would shrink it but then ancestor tests need prefix matching; not required.
+E. INFO — TOCTOU between 9.2 and the merge (an ignored file created in those milliseconds) is the same class as residual 6; add it to that sentence.
+
+CLEARED, unchanged from round 1: `+` refspec readers (branch.ts:298-304, opus-model.ts:903-906 fail closed); regex (no hole); red warning (fixed literal);
+script deletion (no live reference; b1 pathspec now whole tree minus history, 263-265); substring includes(id) now residual 7 + follow-on filing (514-516).

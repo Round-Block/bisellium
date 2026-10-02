@@ -1,0 +1,107 @@
+# opus: W-128
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: revise — prereview 2 MUST, sec 1 HIGH + 4 MED
+# at: 2026-10-02T11:19:05.014Z
+# tree: tree:f5792a043c4f5b48fca18776b2efd88e6d585d31
+
+W-128 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 1. PREREVIEW: REVISE, 2 MUST, 3 SHOULD.
+Brief commit 32731ad on spec/W-128; read-only; probes run in scratch repos under the scratchpad/tmp, worktree left clean.
+
+MUST
+1. Behaviour 5 (brief lines 253-263): the claim "Rows (a) to (e) hold today too ... not the red; Genuine red: row (f)" is falsified.
+   Rows (a), (b), (c) each assert a reason substring (`uncommitted`, `diverged`, `ahead`). Current fetchTrunk (integrate.ts:111-118)
+   returns only "master is checked out at <path> ... pull --ff-only" in all three. Probed with the real fetchTrunk on fixtures
+   built as the brief describes (bare origin + clone, master checked out): b5a/b5d/b5e all returned that text, and no row
+   (a)-(c) reason contains those words. So the first failing assertion in b5 today is row (a)'s substring, not (f), and the
+   Acceptance rule (lines 330-332: a "passes today" row that fails means the brief is wrong, builder stops) fires on day one.
+   Fix: restate which of (a)-(e) pass today (only (d) and (e) do), name the true first red (row (a)'s reason check), or reorder
+   so the hold/no-mutation assertions run first and the reason-substring assertions come after (f).
+2. Landing remedy (lines 119-127, behaviour 7(e) lines 293-295): the chore-done command ends `git pull --ff-only origin master` while
+   HEAD is still on chore/done-<id> (the kept leading `git switch chore/done-<id> &&`). After the squash-merge that pull is
+   non-fast-forward. Probed: chore branch + squash merge on origin, `git pull --ff-only origin master` from the chore branch
+   exits 128 "Not possible to fast-forward". The old script path fetched master:master and did not have this flaw, so the
+   "plain gh and git path" is a regression for the done rung (the opus's own title item). The spec rung has the same
+   dependence on the caller's current branch. Fix: the tail must switch to master first (`git switch master && git pull
+   --ff-only origin master`), and 7(d)/(e) must assert that ordering, or the done command must not leave HEAD on the chore branch.
+
+SHOULD
+3. Behaviour 2 row (b) (lines 223-226) is ambiguous and the next.test.ts edit list (lines 168-178, "limited to") does not cover what row
+   (b) would match. "It contains none of ... SCRIPTS, parity (case-insensitive)": whole file or the behaviour-3 test body, and is
+   SCRIPTS case-insensitive? If whole file/insensitive, further hits remain after the listed edits: `ParityName` (:1181), the tag
+   `b3-parity-` (:1195), comments :677, :1158-1159, :1193, :1276, the test title at :1248 ("do what the scripts do"), and the
+   assertion messages `parity ${p.name}: ...` (:1282-1286). If body-only, `SCRIPTS` (:77) and `spawnSync("bash"` (:657) live
+   outside it and row (b) would not pin their removal. State the scope and case rule, and add those lines to the edit list.
+4. Behaviour 8 (lines 302-309): row (b) says "a command that exits 0 on a dirty tree ... no log is written", but the dirt is only created
+   in row (c), after (b), and `--behaviour 1` already has 01.log from row (a) (probed: a clean run writes 01.log). As written (b) is
+   either on a clean tree (vacuous for the warning) or "no log" is false. Specify: dirty the tree before (b), use a different
+   behaviour number for (b) and assert that NN.log is absent.
+5. Behaviour 5 title (line 249) says "leaves the repository byte-identical", but step 3 force-updates refs/remotes/origin/master
+   on every holder path (rows (a)-(d)), and the rows compare only master, HEAD, working-tree hashes and status. Reword so a
+   builder does not drop step 3 to satisfy the title. Also step 6 should compare realpath of BOTH sides (listWorktrees paths
+   are not realpath'd; opusWorktree realpaths only the repo side).
+
+VERIFIED (no finding)
+- b1/b2 reds are ERR_ASSERTION: scripts and `open-pr.sh|merge-gate.sh` pins exist today (next.test.ts:77,657,922-923,1182,1277-1279,1373,1403,1409).
+  git grep outside studio/handoff/html finds exactly the brief's list (integrate.ts:3,21,273,314; trunk.ts:16; next.ts:380;
+  ARCHITECTURE.md:220-221). `.claude`, `.github`, package.json: no match (rc=1). packages/pipeline "merge-gate seam" is unrelated prose.
+- b3/b4: `fetchTrunk` is exported; a tsx test imports it and drives it on a local bare origin + clone with no network. Today b3(b) and b4(b)
+  return ok:false "master is checked out"; git 2.43 refuses with "refusing to fetch into branch" (row a control real). Step 3 fetch
+  exit 0, merge-base statuses 0/1 and `merge --ff-only <oid>` behave as the contract states.
+- b6: afterDone reads only id/handoff (state check via trunkRecord); all (c) anchoring lines fail the new regex, (e) subsection logic
+  holds (### does not stop a ## section); (a)-(c) pass today, (d) is the red. b7: Facts has ~27 fields, the spec and done paths read ~10;
+  the cast is sound; (a)(b) pass today, (c) red. b8: real CLI via main.ts works as described (stdout line, header line 6 tree:/dirty:,
+  exit-0 refusal), no warning on stderr today, so (d) is the red; lifecycle.test.ts red tests assert no stderr content.
+- Next.test.ts "no other row changes" holds: only b4-checked-out runs performMerge with mainOnMaster true.
+- Contract steps 1-9 consistent, fail-closed, no write into another worktree (remote-tracking ref is shared git-dir state, not a worktree).
+- countBehaviours(brief)=8; `npm run -s check -- studio --repo .` PASS (0 blocking). Red-order note present (phase 1 commits tests, clean tree,
+  then reds; lines 313-323).
+W-128 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 1. SEC-SPEC: REVISE.
+Brief: studio/briefs/W-128.md @32731ad (spec/W-128). Read-only; git probes ran in $TMPDIR repos (git 2.43.0). No bisellium verb run.
+
+FINDINGS (blockers first)
+1. HIGH — step 8 / residual 2 are false: a fast-forward silently destroys IGNORED files and dirs. Brief 99-101, 102-104, 380-381.
+   Path: step 8 `status --porcelain --untracked-files=no` sees tracked changes only; step 9 `merge --ff-only <O>` then runs unpack_trees, which
+   treats files matched by .gitignore as overwritable. Reproduced: ignored `ignored.cfg` holding local data, and ignored dir `node_modules/dep.js`,
+   with an incoming commit that tracks a file of each name: merge exit 0, no warning, cfg overwritten, node_modules/ replaced by a file, data gone,
+   status clean afterwards. Plain untracked (non-ignored) files are refused by git as the brief says; ignored ones are not. The brief's claim "handled by step 9" is wrong for this class.
+   Fix: new step 8b before the merge: take the added paths `git diff --no-renames --name-only -z --diff-filter=A L O` and hold (reason contains `untracked`/`ignored`) if any
+   is present on disk (lstat), has a non-directory ancestor on disk, or is an ancestor of an entry in `git ls-files -o -i --exclude-standard -z`. Add behaviour 5 rows:
+   (g) ignored file at an incoming-added path, (h) ignored directory replaced by an incoming file; both byte-identical + hold, and retry succeeds after removal. Reword residual 2.
+2. MEDIUM — "pinned object id" does not bind the move to a reviewed commit; the ff reaches arbitrary origin tip. Brief 87-88, 102-104, 369-374 (residual 1 overstates the guard).
+   Path: O is read AFTER the fetch (step 4), so the pin only closes the 4->9 race; any descendant of L that origin serves (a push by anyone with write, a compromised origin) is
+   checked out into the working tree. Tracked executable config rides along: .claude/settings.json hooks, package.json scripts, .github, agent files, i.e. code that runs on the
+   next session in the main checkout with no human `git pull`. The old verb moved refs only. Worse, openPr (integrate.ts:284) calls fetchTrunk before any PR is merged, so the pr rung also ff's.
+   Fix (prefer): `fetchTrunk(repo, target?)`; `landed` passes the already well-formed `pr.mergeOid`; require target ancestor-or-equal of O and merge exactly `target`, not O;
+   with no target (pr rung) keep the old hold when behind. Alternative: state in residual 1 that the verb advances the checkout to the origin tip, unreviewed beyond branch protection, and have the Patron ruling cover it.
+3. MEDIUM — failed step 9 leaves a half-updated tree, and the hold hides it. Brief 102-104, 5(a-e) 249-263 only test holds that mutate nothing.
+   Reproduced: read-only subdirectory in the incoming change set: `merge --ff-only` exits 1 ("unable to unlink"), but other incoming files were already rewritten; HEAD unmoved,
+   status shows ` M`, no MERGE_HEAD. The next fetchTrunk then holds `uncommitted` with no hint the verb caused it. A 120 s sh() timeout (integrate.ts:44) can do the same and strand index.lock.
+   Fix: on non-zero or `r.error` at step 9, the reason ends `; the working tree may be partly updated: git -C <repo> status`. Add a behaviour 5 row (chmod a-w on a subdir; skip is NOT allowed under root, so use a directory/file collision instead of chmod if getuid()===0) asserting the reason text and that master did not move.
+4. MEDIUM — nothing pins "no force/reset/pull/stash" or the literal-oid argument. Brief 106-108, 174-178, behaviours 3-5.
+   `mutating()` (next.test.ts:678-692) does not recognise `git merge`, so the new main-checkout mutation is invisible to every ordered-calls pin; behaviours 3-5 call fetchTrunk in process with real git and no call log.
+   Fix: in the rewritten b4 row assert from gitCalls (check BEFORE gitArgs strips -c): exactly one `merge`, argv `-c submodule.recurse=false merge -q --ff-only <40-hex equal to the origin tip>`, and no call among
+   reset|pull|stash|checkout|switch|restore|clean, no `--force`/`-f`/`--update-head-ok`; extend mutating() with "git merge --ff-only". Without this a regression to `merge origin/master` or `pull` stays green.
+5. LOW-MEDIUM — step 9 acts on HEAD, not on master. Brief 95-104.
+   Path: holder identity is checked at step 2 and the merge runs minutes later (network fetch between). If the operator `git switch other` in that window, `merge --ff-only O` advances `other` when O descends from it;
+   step 9's re-read of refs/heads/master then fails (hold) but `other` has already moved. Fix: immediately before step 9 require `symbolic-ref -q HEAD` === refs/heads/master (hold otherwise); keep the re-read.
+6. LOW — Q3, parity-pin removal: no new blocker. Surviving verb guards (verified in next.test.ts): TERMINALS rows kept with `terminal` and `calls` (GHAS_STOP calls [] at :1184); refusals at :1387-1397 (alerts, API
+   error, non-array); BLOCKED -> QUEUE_TIMEOUT at :1373; `-R`/`--json`/`--match-head-commit` reads at :1263-1275; unmatched() for any unscripted gh call. Gap: `gh` reached through a shell wrapper would pass.
+   Fix (cheap): behaviour 2 row (d): integrate.ts has exactly one `spawnSync(` (inside `sh`), no `shell:`, `"bash"`, `exec(`, `execSync`. Also row (b) "SCRIPTS" must be case-sensitive or the :1248 title/comment "scripts" trips it; say so.
+
+CLEARED (checked, no finding)
+- Q2 `+` refspec: origin/master after step 3 is exactly what origin serves; L===O ok, O ancestor of L -> `ahead`, neither -> `diverged`, non-commit -> merge-base exit 128 -> hold. Rewind cannot move local master. Other readers of refs/remotes/origin/master: branch.ts:298-304 and opus-model.ts:903-906, both fail closed.
+- Q1 ordering: O read (4) -> ancestry (7) -> literal 40-hex to merge (9); cannot start with `-`; ff-only itself rejects a HEAD that moved off an ancestor of O. Mid-merge MERGE_HEAD is not left by ff-only (checked). Assume-unchanged tracked edits: git refuses (checked). Symlinks in the incoming tree: git's leading-symlink check applies.
+- Q4 regex: no path makes the rung complete without the id in the section; `(a (b))`, `(`, `Not Where...`, `)` after newline, NBSP all NO MATCH; `(a (b)` matches (harmless); \r\n matches (JS `$`); 200k-char tail runs in 0 ms (no ReDoS).
+- Q5: warning is a fixed literal; treeHeader is `dirty:`+sha1 hex (shim sourceTree.ts:44-56); no injection.
+- Q6: no live reference in .github/ci.yml, .claude/**, package.json, hooks, apps/, adapters/, examples/ (grep -r over whole tree minus studio/, dossier).
+
+ADVISORIES
+a. Pre-existing, in a function the brief edits: afterDone `section.includes(id)` (next.ts:507) is a substring test: a done W-12 reads checkpoint-complete when the section names W-124. Needs an architect scope ruling (brief says "nothing else"); fix a boundary match and add a behaviour 6 row (W-90 vs W-900).
+b. Step 4: reuse `wellFormedOid` (already imported, rejects all-zero) and `OID_RE`; resolve `^{commit}`.
+c. Checkout runs repo-config filter drivers (git-lfs smudge reads `.lfsconfig` from the incoming tree) and the post-merge hook with the verb's env (GH_TOKEN): same as `git pull`, record in residual 4.
+d. The ff rewrites the verb's own source in the main checkout mid-run; lazy imports could see mixed code. Note in residuals.
+e. Behaviour 1(c) pathspec lists five dirs; widen to `.` minus the exclusions so apps/, adapters/, examples/ cannot reintroduce a name.
+f. Out of repo, not the builder's: memory/feedback-done-means-master-fetched.md:17 tells operators to run scripts/open-pr.sh; ~/.bisellium-evidence/{open-pr,merge-gate}.sh copies; docs/SESSION-HANDOFF.md:127 (producer's checkpoint).
