@@ -1,0 +1,95 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx packages/cli/src/next.test.ts --behaviour 2
+# exit: 1
+# at: 2026-10-02T01:48:24.159Z
+# sella: builder.W-124
+# tree: tree:cfcaafc990d4bb5b16572cf8dfb49f2975f17a9e
+
+TAP version 13
+# Subtest: W-124 behaviour 2: next refuses to skip, and every refusal is bounded
+not ok 1 - W-124 behaviour 2: next refuses to skip, and every refusal is bounded
+  ---
+  duration_ms: 876.200625
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:9460'
+  failureType: 'testCodeFailure'
+  error: |-
+    an OPEN PR with no passing review names review, not merge: refusal text
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    flag --expect not allowed for "next"
+    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+           bisellium init [dir] [--now <iso>] [--timezone <iana>]
+           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+           bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+          
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    flag --expect not allowed for "next"
+    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
+           bisellium init [dir] [--now <iso>] [--timezone <iana>]
+           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
+           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
+           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+           bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
+           bisellium query <question> [dir] [--now <iso>] [--from-index]
+           bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
+           bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
+           bisellium run --reclaim [--studio <dir>] [--repo <dir>]
+           bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
+           bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+           bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+           bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
+           bisellium pause [--studio <dir>] [--reason <text>]
+           bisellium resume [--studio <dir>]
+           bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
+           bisellium emit <json> [--studio <dir>] [--now <iso>]
+           bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
+           bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
+           bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
+           bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+           bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
+           bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
+           bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+           bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
+           bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+           bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
+           bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+           bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+           bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
+           bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]
+           bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
+           bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+           bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
+           bisellium hooks check --harness claude-code [--studio <dir>]
+           bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
+           bisellium branch <opus-id> --studio <dir> [--repo <dir>]
+           bisellium merge <opus-id> --studio <dir> --repo <dir>
+           bisellium close <opus-id> --studio <dir> [--repo <dir>]
+           bisellium prune --studio <dir> [--repo <dir>]
+           bisellium docs registry [--repo <dir>] [--now <iso>]
+    
+  operator: 'match'
+  stack: |-
+    refusal (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1032:14)
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1040:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 893.489571
