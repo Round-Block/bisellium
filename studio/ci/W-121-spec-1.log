@@ -1,0 +1,13 @@
+# opus: W-121
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: passed — prereview READY-TO-SIGN at revision 1 (census independently replayed); sec red-team REVISE then CLEAR at revision 2; signed by ready on revision 2, merged PR 158
+# at: 2026-10-02T07:44:18.068Z
+# tree: tree:ed08faaff335cf05aae419b7ec07393106b3be15
+
+W-121 spec review attestation — persisted through verdict --phase spec (the next verb's spec rung requires this log on the trunk; the reviews preceded the spec merge).
+Prereviewer (claude-sonnet-5-5): revision 1 READY-TO-SIGN with 0 MUST and 9 SHOULD (it independently replayed the 36-site census and verified the SSE repair feasibility).
+Sec-lead (claude-sonnet-5-5): revision 1 REVISE (6 blocking); revision 2 CLEAR with every closure checked against the brief text, including the no-timer deadline deviation judged honest.
+Signed by ready --sella architect on brief revision 2 at opus-branch commit 824219f; the brief merged as PR 158.
