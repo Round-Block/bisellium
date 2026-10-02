@@ -1,0 +1,10 @@
+{
+  "status": "Rejected initial evidence: exit-only logs do not demonstrate assertion failures; preserved unchanged before an explicit test-first restart. Not qualifying reds.",
+  "logs": {
+    "01.log": "# behaviour: 1\n# command: node --test --test-name-pattern behaviour 1 docs/research/bisellium-maps-harness.test.mjs\n# exit: 1\n# at: 2026-09-26T15:05:32.630Z\n# sella: builder-sol\n# tree: unknown\n\n",
+    "02.log": "# behaviour: 2\n# command: node --test --test-name-pattern behaviour 2 docs/research/bisellium-maps-harness.test.mjs\n# exit: 1\n# at: 2026-09-26T15:05:33.379Z\n# sella: builder-sol\n# tree: unknown\n\n",
+    "03.log": "# behaviour: 3\n# command: node --test --test-name-pattern behaviour 3 docs/research/bisellium-maps-harness.test.mjs\n# exit: 1\n# at: 2026-09-26T15:05:34.105Z\n# sella: builder-sol\n# tree: unknown\n\n",
+    "04.log": "# behaviour: 4\n# command: node --test --test-name-pattern behaviour 4 docs/research/bisellium-maps-harness.test.mjs\n# exit: 1\n# at: 2026-09-26T15:05:34.827Z\n# sella: builder-sol\n# tree: unknown\n\n",
+    "05.log": "# behaviour: 5\n# command: node --test --test-name-pattern behaviour 5 docs/research/bisellium-maps-harness.test.mjs\n# exit: 1\n# at: 2026-09-26T15:05:35.623Z\n# sella: builder-sol\n# tree: unknown\n\n"
+  }
+}

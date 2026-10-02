@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "w108-config-preflight",
+  "protocolVersion": "2025-06-18",
+  "objective": "Find the public synthetic fact and cite its exact source.md line.",
+  "fixtureIdentity": {
+    "checkoutRoot": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment",
+    "registryPath": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json",
+    "registryBytes": 438,
+    "registrySha256": "8b41927615fd30ae43059a1c0c30cdcd15109597fe40c28678c8741f580cd599",
+    "registry": {
+      "version": 1,
+      "projects": [
+        {
+          "id": "w108-canary",
+          "repositories": [
+            {
+              "id": "w108-fixture",
+              "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+              "corpusFiles": [
+                "AGENTS.md",
+                "source.md"
+              ],
+              "instructionFiles": [
+                "AGENTS.md"
+              ],
+              "state": "public-synthetic"
+            }
+          ]
+        }
+      ]
+    },
+    "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+    "rootIdentity": "62fd5b6c3d65d51b4e4b9c1b3dc072a7ad4045c5b03d5e38edc387adc971b9f9",
+    "gitHead": "e60b1e517c047e338f30ac17704f4df75da5fc4b",
+    "gitBranch": "codex/source-adapter-canary",
+    "files": {
+      "AGENTS.md": {
+        "bytes": 98,
+        "sha256": "7a4a63ce80fd4dd9386c711315abd2b4c593019792ce5e4f5a722cba6da3f3f5",
+        "lines": 3
+      },
+      "source.md": {
+        "bytes": 71,
+        "sha256": "12a1e83fd32ce73c2bdf80054228a09aede061b67c1a9d4099fde5f5dc3e358c",
+        "lines": 3
+      }
+    }
+  }
+}

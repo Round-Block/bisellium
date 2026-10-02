@@ -1,0 +1,20 @@
+6015b95 wip(codex): preserve uncommitted research-era state before the main checkout moves to master
+f36ca76 docs(research): attribute W-107 source response bytes
+136d91f docs(studio): supersede stale canary handoff
+5aad711 docs(studio): record W-109 checkpoint
+0d995ca docs(research): quantify cross-run repeated source bodies
+45c2234 docs(studio): record W-108 checkpoint
+aa36b83 docs(research): diagnose W-107 source tool failure
+941ce49 docs(research): preserve read-consumption continuation
+b096298 docs(research): close W-107 no-go
+c3cb2fd docs(research): conclude MAPS lookup study with scoped no-go
+6efd746 docs(W-105): retain sealed recovery reanalysis
+1aa3327 docs(research): close MAPS evaluation on provenance gap
+651743c docs(research): checkpoint MAPS development screen
+4460416 docs(research): persist bounded MAPS decision plan
+f391c29 chore(workflow): record Sol censor correction review
+5a9f7e4 fix(workflow): assign Sol high censor
+97d91c9 chore(W-102): record independent review and completion
+40d6bd1 test(W-102): record verifier evidence
+72a49fd feat(W-102): persist Codex workflow roles
+f6fdc84 docs(W-102): specify persistent Codex workflow

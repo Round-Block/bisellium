@@ -1,0 +1,28 @@
+# behaviour: 7
+# command: node --test docs/research/maps-repair-driver.test.mjs
+# exit: 1
+# at: 2026-09-28T09:02:16.940Z
+# sella: builder-sol
+# tree: dirty:66e49a4471d1f3389fa7a9e6c151086e4332cd43
+
+✖ Behaviour 7 candidate B semantic replay (0.951988ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 93.000385
+
+✖ failing tests:
+
+test at docs/research/maps-repair-driver.test.mjs:16:14
+✖ Behaviour 7 candidate B semantic replay (0.951988ms)
+  Error: W-105 implementation pending
+      at pending (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs:2:31)
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:16:141)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)

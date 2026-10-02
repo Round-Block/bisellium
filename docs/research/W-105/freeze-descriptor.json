@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "commands": [
+    "W105_FROZEN_ROOT=/home/edckt/projects/bisellium node --test docs/research/maps-repair-driver.test.mjs",
+    "node docs/research/maps-repair-driver.mjs replay --candidate /home/edckt/projects/bisellium/docs/research/maps-decision-2026-09-28/candidate-B.json --baseline /home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/search-results.json --bindings /home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/bindings.json --output-root docs/research/W-105 --output amended-replay-report.json",
+    "node docs/research/maps-repair-driver.mjs controls --packets /home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/packet-A.json --key /home/edckt/projects/bisellium/docs/research/maps-decision-2026-09-28/development-key.json --key-sha256 bafe47ddd506381be2212b62bb7ca673d81b61c84153902a1d59465be9b5dc53 --output-root docs/research/W-105 --output development-controls-final.json"
+  ],
+  "files": [
+    {
+      "role": "retained-driver-and-scorer",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs"
+    },
+    {
+      "role": "focused-tests",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs"
+    },
+    {
+      "role": "signed-amendment-A1",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/studio/briefs/W-105-A1.md"
+    },
+    {
+      "role": "frozen-selection-rules",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-decision-2026-09-28/selection-rules.md"
+    },
+    {
+      "role": "reviewed-W-103-harness",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs"
+    },
+    {
+      "role": "development-questions",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/questions.json"
+    },
+    {
+      "role": "development-search-results",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/search-results.json"
+    },
+    {
+      "role": "authoritative-bindings-15-4-4",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/bindings.json"
+    },
+    {
+      "role": "historical-candidate-B",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-decision-2026-09-28/candidate-B.json"
+    },
+    {
+      "role": "development-key",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-decision-2026-09-28/development-key.json"
+    },
+    {
+      "role": "curated-control-packet",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28/packet-A.json"
+    },
+    {
+      "role": "original-exact-replay-mismatch",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/replay-report.json"
+    },
+    {
+      "role": "A1-amended-replay",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/amended-replay-report.json"
+    },
+    {
+      "role": "executed-controls",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/development-controls-final.json"
+    },
+    {
+      "role": "focused-test-output",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/focused-tests-final.txt"
+    }
+  ]
+}

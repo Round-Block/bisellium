@@ -1,0 +1,32 @@
+Phase A complete.
+
+- Preserved rejected prototype at `/tmp/w103-rejected-prototype.mjs`.
+- Replaced [bisellium-maps-harness.mjs](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs) with a contract-shaped, non-I/O skeleton.
+- Rebuilt [bisellium-maps-harness.test.mjs](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs) with comprehensive `node:test` coverage.
+- Left prior rejected reds and current red logs untouched.
+- Verified all five filtered commands exit 1 with behavior-specific `AssertionError` output and no `TypeError`.
+- Did not run `bisellium red`. `bisellium` is unavailable on this sandbox’s PATH.
+
+Root proxy must first run `bisellium` without arguments in its environment, then record exactly these five reds:
+
+```sh
+bisellium red W-103 --behaviour 1 --sella builder-sol --studio studio --repo . -- node --test --test-isolation=none '--test-name-pattern=behaviour 1' docs/research/bisellium-maps-harness.test.mjs
+```
+
+```sh
+bisellium red W-103 --behaviour 2 --sella builder-sol --studio studio --repo . -- node --test --test-isolation=none '--test-name-pattern=behaviour 2' docs/research/bisellium-maps-harness.test.mjs
+```
+
+```sh
+bisellium red W-103 --behaviour 3 --sella builder-sol --studio studio --repo . -- node --test --test-isolation=none '--test-name-pattern=behaviour 3' docs/research/bisellium-maps-harness.test.mjs
+```
+
+```sh
+bisellium red W-103 --behaviour 4 --sella builder-sol --studio studio --repo . -- node --test --test-isolation=none '--test-name-pattern=behaviour 4' docs/research/bisellium-maps-harness.test.mjs
+```
+
+```sh
+bisellium red W-103 --behaviour 5 --sella builder-sol --studio studio --repo . -- node --test --test-isolation=none '--test-name-pattern=behaviour 5' docs/research/bisellium-maps-harness.test.mjs
+```
+
+`--test-isolation=none` is necessary on Node 25; default isolation collapses the useful assertion output into a generic file-level failure. No implementation work should begin until those five outside-sandbox records exist.

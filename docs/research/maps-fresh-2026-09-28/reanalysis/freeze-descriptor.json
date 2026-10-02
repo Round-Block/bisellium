@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "commands": [
+    "/usr/bin/python3 docs/research/maps-fresh-2026-09-28/run-posthoc-reanalysis.py --corrected-key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --validator-receipt /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/blind-validation-final.md --validator-receipt-sha256 c88ad410efe7a8ac8e500ac8f487a716742fdde52506570a9e5932cd269ad916 --release RELEASE",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs freeze --descriptor /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/freeze-descriptor.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output pre-score-manifest.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs verify-freeze --manifest /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/pre-score-manifest.json --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output pre-score-verification.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output baseline-score-corrected.json",
+    "/home/linuxbrew/.linuxbrew/bin/node /home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs score --packets /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json --key /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json --key-sha256 7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7 --output-root /home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis --output policy-B-score-corrected.json"
+  ],
+  "files": [
+    {
+      "role": "operational-replay-script",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/run-posthoc-reanalysis.py"
+    },
+    {
+      "role": "preflight",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/preflight.json"
+    },
+    {
+      "role": "execution-plan",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/reanalysis/execution-plan.json"
+    },
+    {
+      "role": "corrected-key",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json"
+    },
+    {
+      "role": "invalid-original-key-retained",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/hidden-key.json"
+    },
+    {
+      "role": "frozen-questions",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/questions.json"
+    },
+    {
+      "role": "question-source-freeze",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/question-source-freeze.json"
+    },
+    {
+      "role": "original-to-corrected-key-diff",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/original-to-corrected-key.diff"
+    },
+    {
+      "role": "correction-v1-to-final-diff",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/correction-v1-to-final.diff"
+    },
+    {
+      "role": "independent-validator-receipt",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/blind-validation-final.md"
+    },
+    {
+      "role": "accepted-W105-driver",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.mjs"
+    },
+    {
+      "role": "reviewed-W103-harness",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs"
+    },
+    {
+      "role": "accepted-W105-manifest-R3",
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/W-105/pre-preparation-manifest-R3.json"
+    },
+    {
+      "role": "post-score-preservation-disclosure",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/post-score-preservation.json"
+    },
+    {
+      "role": "unchanged-baseline-packets",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/baseline-packets.json"
+    },
+    {
+      "role": "unchanged-policy-B-packets",
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/execution/policy-B-packets.json"
+    },
+    {
+      "role": "frozen-source:bisellium-main/README.md",
+      "path": "/home/edckt/projects/bisellium/README.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/AGENTS.md",
+      "path": "/home/edckt/projects/bisellium/AGENTS.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/package.json",
+      "path": "/home/edckt/projects/bisellium/package.json"
+    },
+    {
+      "role": "frozen-source:bisellium-main/docs/ADOPTION.md",
+      "path": "/home/edckt/projects/bisellium/docs/ADOPTION.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/docs/STUDIO.md",
+      "path": "/home/edckt/projects/bisellium/docs/STUDIO.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/docs/LEX_TEMPLATE.md",
+      "path": "/home/edckt/projects/bisellium/docs/LEX_TEMPLATE.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/cli/src/main.ts",
+      "path": "/home/edckt/projects/bisellium/packages/cli/src/main.ts"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/cli/src/context.ts",
+      "path": "/home/edckt/projects/bisellium/packages/cli/src/context.ts"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/core/src/index.ts",
+      "path": "/home/edckt/projects/bisellium/packages/core/src/index.ts"
+    },
+    {
+      "role": "frozen-source:bisellium-main/packages/schema/src/index.ts",
+      "path": "/home/edckt/projects/bisellium/packages/schema/src/index.ts"
+    },
+    {
+      "role": "frozen-source:bisellium-main/adapters/epoch0/src/index.ts",
+      "path": "/home/edckt/projects/bisellium/adapters/epoch0/src/index.ts"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/decisions/D-014.md",
+      "path": "/home/edckt/projects/bisellium/studio/decisions/D-014.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/leges/engineering.md",
+      "path": "/home/edckt/projects/bisellium/studio/leges/engineering.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/opera/W-089.md",
+      "path": "/home/edckt/projects/bisellium/studio/opera/W-089.md"
+    },
+    {
+      "role": "frozen-source:bisellium-main/studio/opera/W-102.md",
+      "path": "/home/edckt/projects/bisellium/studio/opera/W-102.md"
+    },
+    {
+      "role": "frozen-source:epoch0-main/README.md",
+      "path": "/home/edckt/projects/epoch0/README.md"
+    },
+    {
+      "role": "frozen-source:epoch0-main/AGENTS.md",
+      "path": "/home/edckt/projects/epoch0/AGENTS.md"
+    },
+    {
+      "role": "frozen-source:epoch0-main/docs/program/PROGRAM.md",
+      "path": "/home/edckt/projects/epoch0/docs/program/PROGRAM.md"
+    },
+    {
+      "role": "frozen-source:epoch0-main/docs/program/BOARD.md",
+      "path": "/home/edckt/projects/epoch0/docs/program/BOARD.md"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/README.md",
+      "path": "/home/edckt/projects/Yan Mo/README.md"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/CLAUDE.md",
+      "path": "/home/edckt/projects/Yan Mo/CLAUDE.md"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/docs/dev-workflow.md",
+      "path": "/home/edckt/projects/Yan Mo/docs/dev-workflow.md"
+    },
+    {
+      "role": "frozen-source:yan-mo-main/docs/vertical-slice-spec.md",
+      "path": "/home/edckt/projects/Yan Mo/docs/vertical-slice-spec.md"
+    }
+  ]
+}

@@ -1,0 +1,520 @@
+# opus: W-107
+# phase: spec
+# round: 1
+# sella: architect
+# model: gpt-6-astra
+# outcome: PASS - A1 preparation scalar clarification; pending lifecycle gate activation
+# at: 2026-09-28T15:36:10.781Z
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+# W-107 — Context-preserving targeted reads with decisive evaluation
+
+## Intent
+
+Add one small, read-only Bisellium source interface for explicitly registered
+projects and repositories. It locates compact source locations, returns exact
+bounded sections with orientation and provenance, and expands an adjacent or
+explicitly referenced section. It has no index, cache, embeddings, summaries,
+or target-project writes.
+
+Then run the Patron-approved frozen comparison as actual model sessions, not a
+packet replay: six read-only questions, baseline and candidate once each, in 12
+fresh isolated Luna-low sessions. Adoption is YES only when correctness,
+provenance, confinement, completeness, and the byte gates all pass. Otherwise
+report NO with the reason and keep the capability opt-in.
+
+The approved scope in
+`docs/research/read-efficiency/approved-plan.md` is authoritative. The historical
+MAPS packet result is background only and cannot satisfy this opus.
+
+## Files owned
+
+Production:
+
+- `packages/commands/src/source.ts` and `source.test.ts`
+- `packages/cli/src/source.ts` (the normal commands-package re-export shim)
+- the source-command dispatch/usage/test-list edits in `packages/cli/src/main.ts`,
+  `packages/commands/src/usage.ts`, `packages/commands/src/usage.test.ts`, and
+  root `package.json`
+- the source-command contract in `docs/ADOPTION.md` and the new seam in
+  `docs/ARCHITECTURE.md` (regenerate any module graph through its owning script)
+
+Evaluation:
+
+- `docs/research/read-efficiency/targeted-read-eval.mjs` and its focused test
+- small synthetic development fixtures under
+  `docs/research/read-efficiency/fixtures/`
+- `docs/research/read-efficiency/design-notes.md`
+- commands, manifests, raw transcripts, hashes, anonymised review packet and
+  report under one new producer-assigned W-107 output directory in
+  `docs/research/read-efficiency/`
+
+Keep the retained W-103/W-105 programs and all historical results unchanged.
+The architect/preparer owns the frozen evaluation cases and hidden key in a
+separate context. The builder receives their schemas and hashes, never their
+held-out contents. Officina records and receipts remain CLI-owned.
+
+## Interfaces
+
+### Production source command and library
+
+Expose `runSource` and its typed request/result shapes from
+`@bisellium/commands/source.js`, with this CLI wrapper:
+
+```text
+bisellium source --registry <json> --request <json>
+```
+
+The command accepts exactly one compact JSON request and emits exactly one
+compact JSON result. Unknown/duplicate flags, unknown JSON fields, malformed or
+oversized input, and non-integer/out-of-range budgets are usage failures. It
+uses Node standard library only and never executes source text or makes a
+network request.
+
+The versioned registry explicitly names projects and their repositories. Each
+repository has a unique caller-supplied id, an absolute root, a fixed
+`corpusFiles` list, and a fixed list of applicable instruction files. Reuse the
+W-103 binding rules: project/repository identity is never inferred from a root
+basename, a matching path, or list order; manifests use deterministic UTF-16
+code-unit order; paths reject empty/dot/traversal components, backslashes and
+absolute forms. The production module owns the shared validation, canonical
+containment, strict UTF-8 reads, bounded file observation and identity logic;
+the evaluation adapter calls it instead of implementing a second targeted-read
+engine.
+
+Requests are a strict tagged union:
+
+- `locate`: project id, objective/query, optional repository ids, and bounded
+  result/output limits. Return compact repository/path/range candidates,
+  heading ancestry and match reason, without section bodies.
+- `read`: project id and one or more exact repository/path/inclusive-line
+  locations. Return every requested section body, heading ancestry, source
+  identity and explicit per-location failure/omission. One request may read
+  multiple sections and counts as one source-access call in evaluation.
+- `expand`: project id, one or more prior locations, and either bounded adjacent
+  lines/heading section or an explicit relative Markdown path plus optional
+  heading fragment found in a returned section. Resolve references relative to
+  the referring file and only within the same registered repository. Return
+  bodies under the same contract as `read`; unresolved, unregistered or
+  cross-repository references are explicit failures, never guesses.
+
+Every successful result carries the selected project and repository ids,
+canonical-root identity, current Git HEAD/branch when available, current
+full-file SHA-256, inclusive line range, heading ancestry, configured and actual
+byte/line counters, and an orientation digest. Identity is observed afresh for
+each request; a working-tree content change changes the source hash even when
+HEAD does not. Non-Git repositories remain usable with explicit unknown Git
+fields. No result is described as whole-worktree clean: dirty scope is limited
+to files actually selected.
+
+The registry's applicable instructions and project-state orientation are read
+under the same confinement rules. `locate` returns their exact bodies in a
+separate orientation block; `read` and `expand` require the orientation digest
+from that block and repeat the compact objective/project/repository/state
+identity. A missing, changed, unreadable or over-budget mandatory instruction
+refuses the source result. Nothing silently drops an instruction. A fresh
+`locate`, repeated `read`, or repeated `expand` returns bodies again; there is no
+repeat suppression or cross-call cache.
+
+All limits have conservative defaults and hard maxima fixed in code and named
+in output. The fixed version-1 ceilings are: registry 256 KiB; request 16 KiB;
+8 projects; 4 repositories per project; 128 corpus paths per repository; 16
+instruction paths per repository; 64 KiB total mandatory instruction UTF-8;
+32 located results (default 12); 8 sections per request; 8 MiB observed per
+file and 32 MiB per request; 100,000 lines per file; 16,384 Unicode code points
+per section (default 4,096); 131,072 UTF-8 bytes per serialized result (default
+65,536); 16 failure samples; 2 Git calls per repository, each 2 seconds and
+4 KiB output. A fixed small refusal envelope may exceed a caller's smaller
+output budget but never the hard result ceiling. Baseline search/read and
+candidate fallbacks use the same observation, section and result ceilings.
+Oversized coverage means a real file exceeding the default section limit.
+ Read files by bounded
+streaming/line iteration. A file larger than a section-output limit is still
+readable by range and hashable within the separate hard source-observation
+limit; a file beyond that hard limit fails explicitly. Preserve Unicode and
+empty lines, define one-based inclusive lines, and report whether a terminal
+newline was present. Output exhaustion reports omitted ranges and the exact
+limit; it never presents a prefix as complete.
+
+Canonicalize each repository root once per request. Before every source or
+instruction read, resolve every parent and final path and require the target to
+remain beneath that canonical root and be a regular file. Recheck identity at
+open/read completion and refuse detected changes. Symlink escapes, dangling
+links, traversal, cross-project ids and unregistered files never return bytes.
+Use argument arrays, a scrubbed environment, time/output bounds and the narrow
+read-only Git observation allowlist already proven by W-103; no fetch, checkout,
+config write, index mutation, or broader fallback command.
+
+The builder may choose TypeScript type names, but version-1 JSON wire shapes
+are closed: registry `{version:1,projects:[{id,repositories:[{id,root,corpusFiles,
+instructionFiles,state}]}]}` where `state` is a plain string; request common
+fields `{version:1,op,project,objective,repositoryIds?,maxBytes?}`. Locate adds
+`query`, `maxResults?`; read adds `orientationDigest`, `locations`,
+`maxSectionChars?`; expand adds `orientationDigest`, `locations`, `mode` and
+one of `adjacentLines` (1..200), or `reference` (literal Markdown destination),
+or neither for `mode:"heading"`. A location is `{repository,path,startLine,
+endLine}` with positive inclusive integer lines. `mode` is `adjacent`,
+`reference`, or `heading`. Reference expansion accepts exactly one referring
+location and must verify the literal destination occurs there. Omitted optional
+limits use the stated defaults; caller budgets cannot exceed hard ceilings.
+The result is `{version:1,ok,op,project,orientation?,orientationDigest?,items,
+omissions,errors,limits,counts}`; items carry exact bodies only for reads and
+expansions plus the provenance already required above. Exact nested shapes are fixed in the security resolution below.
+
+### Actual model evaluation
+
+`targeted-read-eval.mjs` is one focused standard-library program with strict
+subcommands for synthetic controls, freeze validation, one-arm execution,
+transcript verification, scoring-package assembly, and final aggregation. Its
+stdio MCP server mode exposes only source access:
+
+- both arms: `orient`, returning the same frozen question, objective, project
+  state and complete applicable instructions;
+- baseline: competent bounded `grep` over the registered manifest and
+  `read_file` over exact ranges (multiple queries/ranges per call are allowed);
+- candidate: production `locate`, `read`, and `expand`, plus clearly named
+  `fallback_grep` and `fallback_read_file` with exactly the baseline semantics.
+
+Baseline operations are ordinary lexical search and bounded exact reads, not
+forced whole-file reads, curated routes, answer packets, or crippled limits.
+Candidate fallback is never hidden inside a production result. Every orient,
+search, locate, read, expand, fallback, error and retry request counts toward a
+hard maximum of 12 source-access calls. The server rejects call 13 before source
+access and records the refusal. All returned bodies come from the frozen source
+snapshots during that live session.
+
+Run exactly one fresh process for each case/arm. Alternate arm order by case and
+retain the declared order. The command is pinned and recorded from the tested
+CLI, including `codex exec --json --ephemeral --ignore-user-config
+--ignore-rules --skip-git-repo-check --model gpt-5.6-luna -c
+model_reasoning_effort="low" --sandbox read-only`, an empty per-run working
+directory, and a command-line-configured fresh stdio MCP server. The initial
+prompt contains only the common protocol and tells the model to obtain the
+frozen orientation through the tool. No opposite-arm tool, prior answer,
+hidden key, neighbouring research artifact, network tool or source root is
+placed in the working directory or prompt.
+
+The runner must prove the harness boundary before held-out work. A retained
+Unicode/error canary must show that Codex JSONL contains the complete MCP result
+text and call identity byte-for-byte with the server's append-only transcript,
+and that `turn.completed.usage` is present. Any shell/command execution, direct
+file read, web call, unregistered MCP call, missing event, transcript mismatch,
+response truncation, nonzero model exit, model/effort drift or >12th call makes
+that run invalid. The runner does not claim it can disable a tool unless the
+control demonstrates it; detection plus fail-closed invalidation is required.
+
+For read-byte measurement, count the UTF-8 bytes of the complete model-visible
+MCP result text, including JSON keys, paths, identities, headings, bodies,
+omissions, errors and fallback responses. This deliberately charges candidate
+metadata/wrapper payload. JSONL event envelopes, MCP transport framing, tool
+schemas, the common initial prompt/question, final answer, and runner log lines
+are reported separately as overhead and excluded from the read-byte ratio
+because they are not source responses. The common `orient` result is byte-identical for the two arms of a task and is
+counted in both arms. Candidate `locate` repeats production mandatory instruction
+bodies in addition to that common orientation; this repetition is charged,
+never subtracted or used to give baseline additional source text. Retain all categories and their formulas;
+do not report byte reduction as subscription, token, or money savings. Record
+provider input/cached/cache-write/output/reasoning tokens when present as
+secondary observations only.
+
+The installed CLI feasibility check established that `gpt-5.6-luna` at low
+effort completes an ephemeral read-only JSONL turn and emits usage. The same
+ChatGPT account rejects the distinct id `gpt-6-luna`; the runner must never
+substitute it or silently fall back. Pin the executable version and model-catalog
+entry in the freeze manifest, preflight the exact final command, and stop before
+held-out runs if the selected model is unavailable.
+
+### Freeze, key isolation and decision
+
+The architect/preparer may prepare and hash snapshots and keys before the build.
+Held-out execution starts only after implementation, synthetic controls and the
+runner canary pass. Mechanically require
+exactly six cases, two per named project (Bisellium, epoch0, Yan Mo), with one
+local qualification/exception question and one cross-document
+rule/dependency/state question per project; require the declared oversized and
+plausibly outdated-source coverage. Before a model run, a separate validator
+checks every snapshot hash, referenced range, exact quote, question/orientation
+identity, mandatory instruction and acceptable/failure criterion. Any unknown
+field, duplicate id, missing qualification, hash/range/quote mismatch, source
+drift or incomplete freeze is INVALID and blocks execution.
+
+The hidden key is frozen and hashed before either arm but is never accepted by
+the run/MCP subcommands, never copied into a run working directory, registered corpus, or MCP input, and never
+named in a prompt or source response. Selection/run schemas reject key,
+expected-answer, pass/fail and anchor fields rather than ignoring them. The key is read before trials only by an isolated offline freeze validator, and
+after trials by the offline scoring-package command once both arms' raw
+transcripts and answers are frozen. Read-only sandboxing is not proof of global
+read isolation: any non-allowlisted tool access invalidates the run, and a canary
+must prove detection. Never claim the key is physically unreadable to the model
+unless an independently verified OS boundary establishes that fact. Keep question preparation, key
+validation, retrieval, and scoring as separate fresh processes with explicit
+input allowlists.
+
+Run each arm once per frozen case. Do not replace tasks, tune prompts/tools,
+selectively rerun, or add a variant after results. A genuine infrastructure
+failure may be rerun only with identical hashes and the original failed run
+retained; correctness or efficiency failure ends this evaluation version. Give
+the sole censor anonymised answers, source-backed requirements and transcripts.
+Mechanical anchor/span checks assist review but never decide semantic answer
+correctness.
+
+
+### Architect security resolution (normative version 1)
+
+This section resolves the advisory findings in `security-spec.md` and takes
+precedence over less-specific descriptions above. It does not expand the
+threat model beyond a trusted local registry and cooperative repositories.
+
+**Control inputs and strings.** CLI `<json>` arguments are file paths, not JSON
+literals. Open only regular files, enforce byte ceilings before parsing, use
+fatal UTF-8 decoding, and reject duplicate JSON member names (including escaped
+equivalents), trailing data, unknown fields at every closed-schema depth, and
+invalid union combinations. Validate the entire registry and request before
+source/Git observation. JSON nesting is at most 12; ids match
+`[A-Za-z0-9][A-Za-z0-9_-]{0,63}`; project ids are globally unique and repository
+ids are globally unique. State/objective/query are at most 2,048 Unicode code
+points (objective/query nonempty); roots at most 4,096 code points; relative
+paths at most 1,024 code points, 32 components, 255 per component. Reject NUL,
+control characters U+0000..001F/U+007F, unpaired surrogates, and URI/absolute
+forms in paths; no dot, empty, traversal or backslash components. Registry
+arrays are nonempty except instructionFiles; paths in each list are unique.
+Instruction files must also occur in corpusFiles. Locations number 1..8, with
+1 <= startLine <= endLine <= 100000. Budgets are positive safe integers within
+the fixed maxima. Multiple identities may name a canonical root, but ids never
+alias authority. Strings never become shell commands/globs/options/env names.
+
+**One source observation.** Canonicalize roots once per request. Check every
+parent and final target inside that root; open a regular final component with
+O_NOFOLLOW when supported. Hash, strict decoding, line counting, newline status,
+and returned body derive from one handle and one byte stream. Compare handle
+dev/ino/size/mtimeNs/ctimeNs before and after, then recheck the canonical path,
+parent identities and final identity before releasing buffered output. Refuse
+an affected body on any detected rename/replacement/truncation/append/symlink
+change. Never return a body prefix after invalid decoding or detected change.
+These are observed containment/freshness checks, not an atomic sandbox or proof
+against a hostile filesystem racer. No target-project writes are permitted.
+
+Lines split only on LF; preserve all original CRLF/LF bytes in bodies; a
+terminal LF does not add a phantom final line; the empty file has zero lines.
+A successful body contains complete requested lines only. If a Unicode code
+point or byte budget cannot fit them, return a bounded whole-line prefix only
+when its reduced endLine and explicit remainder omission are present; otherwise
+omit the section. Hash raw bytes. Count every handle byte, including hash-only
+bytes, against the file/request observation ceilings; do not initiate reads
+past remaining capacity. fstat rejects an oversized regular file up front.
+NUL marks binary data. The final serialized compact JSON UTF-8 payload, not
+characters or an estimate, determines maxBytes. 16 error+omission samples in
+total; aggregate omittedCount reports additional omitted locations. Preflight
+mandatory orientation serialization: if it cannot fit, refuse the whole
+request. The fixed refusal is `{version:1,ok:false,error:{code}}`, with code from
+`INVALID_INPUT`, `ORIENTATION_REFUSED`, `LIMIT`, `CHANGED`, `IO`; it contains no
+host paths, is <=256 UTF-8 bytes, may exceed a smaller caller budget, and is
+charged in full whenever delivered. Detailed errors never interpolate absolute
+paths or raw exception text.
+
+**Identity and Git.** Define C(x) as compact JSON with object keys recursively
+sorted by UTF-16 code-unit order, arrays preserved, JSON string escaping, and no
+whitespace or normalization. Root identity is SHA-256 of UTF-8 C(["source-root-v1",
+projectId,repositoryId,canonicalRoot]); emit this opaque value, never the host
+root. Registry identity hashes C(the complete validated registry). Resolve Git
+once from the trusted process PATH before requests, require an absolute regular
+executable, and freeze that executable path in the evaluation's private control
+manifest. Only argv `['-C',canonicalRoot,'rev-parse','--verify','HEAD']` and
+`['-C',canonicalRoot,'symbolic-ref','--quiet','--short','HEAD']` are allowed.
+Environment is exactly PATH (directory of resolved Git + `/usr/bin:/bin`),
+LANG=C, LC_ALL=C, GIT_CONFIG_NOSYSTEM=1, GIT_CONFIG_GLOBAL=/dev/null,
+GIT_OPTIONAL_LOCKS=0, GIT_TERMINAL_PROMPT=0. No inherited Git/env settings.
+Each call gets 2 seconds and 4096 combined stdout/stderr bytes; terminate on
+excess/timeout and return null Git fields on failure. No fallback command.
+Git is informational and does not certify selected-file cleanliness.
+
+**Orientation.** repositoryIds defaults to all repositories in the project and
+otherwise names a nonempty unique subset, sorted by code-unit order. Every
+location must belong to that set. Applicable instructions are exactly all
+instructionFiles in that set, ordered by repository id then registered path.
+Let repositories be ordered objects `{id,rootIdentity,state,instructions}` with
+instructions `{path,sha256,body}`. Orientation is
+`{objective,project,repositories}`. Digest is SHA-256 of UTF-8
+C(["source-orientation-v1",registryIdentity,orientation]). It includes exact
+objective/state/body text and raw instruction hashes. read/expand re-observe all
+these instructions and recompute the digest before releasing any item; a bad
+instruction, changed objective/selection/state/registry or mismatch refuses the
+whole request. locate emits full orientation; read/expand emit the same shape
+but instruction entries contain only `{path,sha256}`. Digest always uses bodies.
+No digest permits omission of instructions from a fresh locate.
+
+**Result schema.** Ordinary results have exactly
+`{version,ok,op,project,orientation,orientationDigest,items,omissions,errors,
+limits,counts}`. orientation/digest may be null for failed or baseline results.
+ok means no error or omission. Items are exactly
+`{repository,path,rootIdentity,gitHead,gitBranch,sha256,startLine,endLine,
+headings,terminalNewline,matchReason,body}`. gitHead/gitBranch are string or null;
+headings is an ordered string array of ATX Markdown heading ancestry (levels
+1..6, ignore fenced blocks); body is null on locate, exact string otherwise;
+matchReason is `path`, `heading`, `text`, or null for read/expand. Locate uses
+case-insensitive literal substring search (no regex), ranking path before
+heading before text, then repository/path/startLine; each hit range is a
+single matching line (path hits line 1, empty files omitted). Heading expansion
+starts at the nearest preceding heading and ends before the next same-or-higher
+level heading; missing heading is unresolved. Adjacent expansion adds the
+requested lines on both sides, clipped to actual file bounds. Reference heading
+fragments use lowercase, trim, replace runs of whitespace with hyphen, retain
+Unicode letters/digits/hyphens, remove other punctuation; ambiguous/missing
+fragments fail. An explicit Markdown destination must occur in a link in the
+referring location, with no URL scheme; percent decoding occurs once before
+strict relative-path containment validation. Fragment-only links refer to the
+same registered file. No inferred or code-language references.
+Omissions are `{repository,path,startLine,endLine,code}`; errors are
+`{repository,path,code}` with repository/path null for request-wide errors and
+codes from `LIMIT`, `CHANGED`, `IO`, `UNRESOLVED`, `INVALID_INPUT`.
+limits has exactly `{maxBytes,maxSectionChars,maxResults,maxFileBytes,
+maxObservedBytes,maxLines,maxFailures}`; inapplicable values retain defaults.
+counts has `{observedBytes,observedLines,returnedBytes,omittedCount,errorCount}`;
+returnedBytes equals final serialized byte length (compute to a fixed point).
+Failure samples share the ceiling; aggregate counts retain complete totals.
+
+**Evaluation protocol.** `evaluation-data-schema.md` is the closed held-out
+input contract; its offline schema includes human semantic criteria, which
+are mechanically checked for nonempty shape and anchors, not judged by code.
+The offline validator reads key/manifest/cases/registry and emits only status,
+error codes and hashes; no facts, quotes, paths, routes or partial key data.
+Input JSON files each have a 2 MiB cap except registry's 256 KiB; nesting <=12;
+all arrays <=128 except exactly six cases and <=512 manifest files. Per case:
+1..32 facts, 1..32 qualifications, 1..32 failure conditions, 1..32 anchors,
+coverage drawn from `oversized-document`, `plausible-outdated-source`; anchors
+must exactly match raw snapshot spans and hashes. All data schemas are closed.
+A run selects exactly one case by id and one arm, accepts no hidden key input,
+and supplies the MCP only the selected public case, registry, and snapshots.
+Control manifest and key paths/hashes never enter tool descriptions or results.
+
+Server first successful call must be orient; earlier retrieval attempts return
+counted refusal. A final answer without successful orient is invalid. Freeze
+one prompt, exact tool schemas/descriptions, C(orientation) bytes, ascending
+case-id order and alternating arms (baseline first on odd case ordinal).
+Every tool attempt increments the counter, including malformed/denied/error
+attempts; call 13 refuses before source access and its result bytes still count.
+Baseline/fallback grep/read share code, limits, metadata, output schemas and
+errors and give byte-identical results for identical inputs. grep accepts
+`{queries:[string],maxResults?,maxBytes?}` (1..8 nonempty literal queries, each
+<=2048 code points); read_file accepts `{locations,maxSectionChars?,maxBytes?}`.
+Both use the production item/result schema without orientation digest handshake
+(orientationDigest=null); grep ranks repository/path/line and returns complete
+matching lines, bounded by the same section/output limits. orient takes `{}`;
+candidate operations take the production requests. No other tools exist in MCP.
+
+Every result is one text MCP content block containing canonical compact JSON.
+Record pre-framing UTF-8 bytes, call id, sequence, tool and status append-only;
+compare to fully JSON-decoded Codex MCP text content, not escaped JSONL bytes.
+Require a bijection in delivery order: no missing/duplicate/reordered/transformed
+results. Count all delivered error/refusal/retry bytes even for invalid runs.
+The pinned JSONL allowlist is `thread.started`, `turn.started`, `item.started`,
+`item.updated`, `item.completed`, `turn.completed`; item types are only
+`reasoning`, `agent_message`, `mcp_tool_call`, with MCP server/tool limited to
+that arm's explicit server/tools. Any other event or item/tool attempt,
+including denied shell/file/web access, makes the run invalid. `turn.failed`
+and `error` are retained failure evidence, never successful allowed execution.
+The canary must prove the actual pinned version provides the complete decoded
+MCP results and terminal usage; an unrecognized harmless event still fails
+closed until a pre-trial signed specification revision. Freeze model/effort
+command and effective configuration; do not infer model identity from prose.
+Retain live Unicode/error/usage and bypass canaries plus verifier fixtures for
+unknown/forbidden events before held-out execution.
+
+Freeze and verify before every arm hashes of source reader, runner/server,
+verifier, prompt/tool schemas, executable/version/model/effort, public inputs,
+orientations, order, snapshots and hidden-key commitment. Key/preparation
+program/prior answers/opposite-arm output/control paths are absent from run
+cwd, registered corpora, prompts, environment and MCP inputs. No stage globs a
+containing directory. Read-only sandboxing is not global read confinement.
+Only failures before usable model output with no forbidden access and identical
+frozen inputs may rerun; retain the original failure. Access or possible access
+to key/opposite arm/prior answers/unregistered sources invalidates this whole
+evaluation version and requires new hidden material, not a selective rerun.
+Correctness, citation, completeness, efficiency, call cap and ordinary model
+failures never qualify as infrastructure reruns. Scoring reads keys only after
+all 12 answers/raw transcripts are frozen. Infeasible delivery verification is
+NO (invalid evidence); no packet surrogate is permitted.
+
+## Behaviours to test
+
+Use a separate build dispatch. Before implementing each numbered behaviour, run
+its focused assertion through `bisellium red W-107 --behaviour <n> ...` and keep
+the genuine failure; no two behaviours share one output.
+
+1. Strict registry/request parsing keeps duplicate ids and cross-project roots
+   distinct, rejects ambiguous/unregistered inputs, and produces deterministic
+   compact `locate` results with path/range/match reason and heading ancestry.
+2. `read` returns exact one-based bounded bodies for multiple sections,
+   including boundary, empty, CRLF/terminal-newline and supplementary-Unicode
+   cases, with truthful ancestry, hashes, counters and omissions.
+3. `expand` returns the requested adjacent/heading section and resolves only an
+   explicit contained Markdown path/fragment; missing fragments, escapes and
+   cross-repository references fail without guessed content.
+4. Orientation returns every applicable instruction body and current project,
+   repository and state identity; missing/changed/over-budget instructions or
+   stale digests refuse reads, while fresh and repeated calls return bodies.
+5. Independent scan/source/section/response/Git limits stop before excess,
+   identify the exact limit, and still permit a bounded range from an oversized
+   but admissible file without loading it wholly into memory.
+6. Traversal, absolute/backslash paths, parent/final symlink escapes,
+   non-regular/binary/invalid-UTF-8 files and detected concurrent identity changes return
+   no source bytes; current content hash and worktree identity change when the
+   source changes even if HEAD does not.
+7. The live stdio MCP/runner control proves exact response delivery and UTF-8
+   accounting, twelve-call refusal, full error/fallback logs and JSONL usage;
+   any shell/file/web/bad-tool bypass or model/effort/transcript drift invalidates
+   a run. Baseline bounded grep/read remains competent and candidate fallbacks
+   remain visible and charged.
+8. Freeze validation rejects malformed counts, invalid keys, bad hashes,
+   ranges/quotes, missing qualifications, leaked key fields and source drift;
+   12 isolated alternating sessions produce immutable raw/anonymised artifacts,
+   and aggregation applies every correctness and byte gate without replaying
+   packets as model trials.
+
+## Acceptance
+
+- Every numbered behaviour has its own retained assertion-level red and passes
+  in focused tests; production source tests, evaluation controls, typecheck and
+  full repository tests pass.
+- The exact pinned Luna-low command and MCP canary pass immediately before the
+  frozen run. All twelve fresh sessions complete under the same model, effort,
+  protocol, sources, orientation and 12-call cap. No run is silently repaired.
+- Independent Sol-high censor review finds all six baseline answers and all six
+  candidate answers correct, cited and complete with every required
+  qualification; there is no candidate-only unsupported claim, error or missing
+  context.
+- Candidate aggregate counted read bytes are at most 70% of baseline, and the
+  candidate aggregate does not increase for Bisellium, epoch0 or Yan Mo.
+- Freeze/key validation, complete raw transcripts, hashes, source identities,
+  byte formulas, calls/status/answers, usage observations, exact commands and
+  replayable scoring package are retained. Evaluation/runtime overhead remains
+  separately labelled.
+- If any deterministic check, run, correctness gate, per-project gate,
+  aggregate gate, provenance requirement or sole review fails, publish NO with
+  `implementation failure`, `insufficient savings`, or `invalid evidence` and
+  keep the production command opt-in. INVALID evidence never becomes a pass.
+
+## Out of scope
+
+Embeddings, semantic databases, generated summaries, caching/repeat
+suppression, daemon/index/UI/workflow integration, automatic source discovery,
+network access, target-project writes, arbitrary language-aware reference
+resolution, cross-repository reference guessing, dependencies, multiple
+candidate variants, packet-only model simulations, subscription/cost claims,
+editing epoch0 or Yan Mo, held-out case/key creation by the builder, and any
+post-result tuning or adoption when a gate fails.
+
+## Architect amendment A1 — pretrial preparation scalar
+
+The manifest preparation field is a nonempty provenance/status string, not an
+object. This resolves the primitive type omitted from the public handoff and
+matches the original architect-prepared input. No other schema, limit, task
+meaning, acceptance gate, hidden input or source changes. No held-out trial
+has run. Correct the validator using synthetic data and revalidate the
+unchanged held-out inputs into a new receipt; preserve the original failure.
+
+Original signed brief SHA-256: `018dc802447a7c08552cf78b28fa165ffdd9b2b41050ff66c663b93652aab4a1`. The original brief remains
+unchanged. This amendment is an architect specification decision only, not an
+implementation or review verdict. CLI spec-verdict capture records the decision;
+it does not rewrite the lifecycle spec gate. Active pointer/gate transition
+requires the owning lifecycle commands under a relevant recorded decision.

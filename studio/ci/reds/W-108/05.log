@@ -1,0 +1,15 @@
+# behaviour: 5
+# command: node --import tsx docs/research/read-efficiency/source-adapter-preflight.test.mjs . 5
+# exit: 1
+# at: 2026-09-29T03:10:50.744Z
+# sella: builder-sol
+# tree: dirty:0e4c3f0d931539b3c6096f34cedbabd7763b98d1
+
+FAIL b5 synthetic live verifier enforces event and transcript conjunction
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'FAIL' !== 'PASS'
+
+    at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:528:10
+    at test (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:34:11)
+    at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:423:7

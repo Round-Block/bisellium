@@ -1,0 +1,14 @@
+diff --git a/studio/opera/W-101.md b/studio/opera/W-101.md
+new file mode 100644
+index 0000000..4633fbd
+--- /dev/null
++++ b/studio/opera/W-101.md
+@@ -0,0 +1,8 @@
++---
++id: "W-101"
++title: "the sentinel's lock poll gets a seam: no-vendor.test.mjs row 9-3 races under load — twice measured in review rounds, L-035's wall-clock class — censor W-089 finding"
++kind: "opus"
++collegium: "engineering"
++state: backlog
++probationes: {}
++---

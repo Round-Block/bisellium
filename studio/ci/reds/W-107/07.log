@@ -1,0 +1,9 @@
+# behaviour: 7
+# command: node docs/research/read-efficiency/targeted-read-eval.test.mjs . 7
+# exit: 1
+# at: 2026-09-28T14:32:34.177Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b7 live runner canary verifies Unicode/error/call-id delivery and terminal usage      {"status":1,"data":{"version":1,"ok":false,"error":{"code":"NOT_IMPLEMENTED"}},"stderr":""}
+FAIL  b7 bypass and thirteenth-call controls fail closed                                    {"version":1,"ok":false,"error":{"code":"NOT_IMPLEMENTED"}}

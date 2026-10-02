@@ -1,0 +1,129 @@
+{
+  "projects": {
+    "bisellium": {
+      "repositories": [
+        {
+          "id": "bisellium-main",
+          "root": "/home/edckt/projects/bisellium",
+          "corpusFiles": [
+            "README.md",
+            "AGENTS.md",
+            "package.json",
+            "docs/ADOPTION.md",
+            "docs/STUDIO.md",
+            "docs/LEX_TEMPLATE.md",
+            "packages/cli/src/main.ts",
+            "packages/cli/src/context.ts",
+            "packages/core/src/index.ts",
+            "packages/schema/src/index.ts",
+            "adapters/epoch0/src/index.ts",
+            "studio/decisions/D-014.md",
+            "studio/leges/engineering.md",
+            "studio/opera/W-089.md",
+            "studio/opera/W-102.md"
+          ]
+        }
+      ]
+    },
+    "epoch0": {
+      "repositories": [
+        {
+          "id": "epoch0-main",
+          "root": "/home/edckt/projects/epoch0",
+          "corpusFiles": [
+            "README.md",
+            "AGENTS.md",
+            "docs/program/PROGRAM.md",
+            "docs/program/BOARD.md"
+          ]
+        }
+      ]
+    },
+    "yan-mo": {
+      "repositories": [
+        {
+          "id": "yan-mo-main",
+          "root": "/home/edckt/projects/Yan Mo",
+          "corpusFiles": [
+            "README.md",
+            "CLAUDE.md",
+            "docs/dev-workflow.md",
+            "docs/vertical-slice-spec.md"
+          ]
+        }
+      ]
+    }
+  },
+  "routes": [
+    {
+      "project": "bisellium",
+      "case": "B6",
+      "reference": 0,
+      "repository": "bisellium-main"
+    },
+    {
+      "project": "bisellium",
+      "case": "B7",
+      "reference": 0,
+      "repository": "bisellium-main"
+    },
+    {
+      "project": "epoch0",
+      "case": "E6",
+      "reference": 0,
+      "repository": "epoch0-main"
+    },
+    {
+      "project": "epoch0",
+      "case": "E6",
+      "reference": 1,
+      "repository": "epoch0-main"
+    },
+    {
+      "project": "epoch0",
+      "case": "E7",
+      "reference": 0,
+      "repository": "epoch0-main"
+    },
+    {
+      "project": "yan-mo",
+      "case": "Y6",
+      "reference": 0,
+      "repository": "yan-mo-main"
+    },
+    {
+      "project": "yan-mo",
+      "case": "Y7",
+      "reference": 0,
+      "repository": "yan-mo-main"
+    }
+  ],
+  "exclusions": [
+    "docs/research/bisellium-maps-exploratory-cases.json",
+    "docs/research/W-103/bindings.json",
+    "docs/research/bisellium-maps-harness.mjs",
+    "docs/research/bisellium-maps-harness.test.mjs",
+    "studio/briefs/W-103.md",
+    "docs/research/W-103/search-results.json",
+    "docs/research/W-103/route-results.json",
+    "docs/research/W-103/report.md",
+    "docs/research/W-103/CHECKPOINT.md",
+    "docs/research/W-103/architect-handoff.txt",
+    "docs/research/W-103/input-preflight.json",
+    "docs/research/W-103/initial-prereview.txt",
+    "docs/research/W-103/rejected-initial-reds.json",
+    "docs/research/W-103/rejected-prototype-bindings.json",
+    "docs/research/W-103/rejected-prototype-route-results.json",
+    "docs/research/W-103/rejected-prototype-search-results.json",
+    "docs/research/W-103/rejected-prototype-report.md",
+    "docs/research/W-103/rejected-prototype.mjs.txt",
+    "docs/research/W-103/restart-test-handoff.txt",
+    "docs/research/W-103/security-findings.txt",
+    "docs/research/maps-sufficiency-2026-09-28/protocol.md",
+    "docs/research/maps-sufficiency-2026-09-28/questions.json",
+    "docs/research/maps-sufficiency-2026-09-28/answer-key.json",
+    "docs/research/maps-sufficiency-2026-09-28/route-dataset.json",
+    "docs/research/maps-sufficiency-2026-09-28/bindings.json",
+    "docs/research/maps-sufficiency-2026-09-28/preparation.md"
+  ]
+}

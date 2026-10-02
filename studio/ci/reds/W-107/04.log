@@ -1,0 +1,9 @@
+# behaviour: 4
+# command: node --import tsx packages/commands/src/source.test.ts . 4
+# exit: 1
+# at: 2026-09-28T14:36:39.911Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b4 locate returns every exact mandatory instruction                               
+FAIL  b4 stale orientation digest refuses the whole read                                {"version":1,"ok":false,"error":{"code":"INVALID_INPUT"}}

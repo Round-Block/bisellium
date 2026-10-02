@@ -1,0 +1,17 @@
+certifies: tree:45d2e7501f4e7145e051afcf9807f85fed4fdd30
+command: npm run -s lint
+exit code: 0
+
+
+/home/edckt/projects/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/projects/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/projects/bisellium/.********.test.ts
+  3:16  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+✖ 3 problems (0 errors, 3 warnings)
+
+

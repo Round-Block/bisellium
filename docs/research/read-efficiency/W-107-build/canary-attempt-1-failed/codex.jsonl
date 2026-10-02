@@ -1,0 +1,8 @@
+{"type":"thread.started","thread_id":"01a0e870-a229-71a1-8d6b-39ee905924fc"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"mcp_tool_call","server":"canary","tool":"echo","arguments":{"text":"W107 Ω漢😀 \"quoted\" line\nsecond"},"result":null,"error":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"mcp_tool_call","server":"canary","tool":"echo","arguments":{"text":"W107 Ω漢😀 \"quoted\" line\nsecond"},"result":null,"error":{"message":"MCP tool call requires approval, but approval policy is never"},"status":"failed"}}
+{"type":"item.started","item":{"id":"item_1","type":"mcp_tool_call","server":"canary","tool":"fail","arguments":{"code":"CANARY_ERROR"},"result":null,"error":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"mcp_tool_call","server":"canary","tool":"fail","arguments":{"code":"CANARY_ERROR"},"result":null,"error":{"message":"MCP tool call requires approval, but approval policy is never"},"status":"failed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"CANARY COMPLETE"}}
+{"type":"turn.completed","usage":{"input_tokens":46318,"cached_input_tokens":39936,"cache_write_input_tokens":0,"output_tokens":483,"reasoning_output_tokens":200}}

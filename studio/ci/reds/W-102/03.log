@@ -1,0 +1,8 @@
+# behaviour: 3
+# command: node --import tsx packages/cli/src/rules/process.test.ts . 23
+# exit: 1
+# at: 2026-09-26T07:49:55.390Z
+# sella: builder-sol
+# tree: dirty:248d3112df76ebf1c515279381e2d31523538837
+
+FAIL  Astra review model is silent                                 review sella "qa-lead" ran on gpt-6-astra, not an opus-tier model

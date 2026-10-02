@@ -1,0 +1,16 @@
+# opus: W-103
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-26T16:29:51.620Z
+# tree: tree:731f9f492e6edccbfcc9d1ad22f2da54837dc1ef
+
+FAIL
+
+- Canonical exclusion normalization bypasses the signed resource accounting. Every exclusion is resolved with `realpath` before candidate processing, without an exclusion-count bound or directory/candidate counter charge. Thus even `files: 0` or `directories: 1` permits undisclosed metadata work; the regression test explicitly locks in that undercount. See [harness.mjs](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:156) and [test](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:656). This conflicts with the signed stop-before-operation and actual-counter requirements.
+
+- Excerpt limits are implemented per repository, but the contract specifies per case. `excerptCharacters` and `result.files.length` reset for every repository, so an eight-repository case can emit up to eight times the configured limits. Existing coverage tests only one repository. See [harness.mjs](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:168) and the [signed contract](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/studio/briefs/W-103.md:80).
+
+The supplied evidence records 33 targeted passes and passing verifier tests/lint/types, but those checks do not cover these contract violations. No additional root-proxy reproduction is essential.

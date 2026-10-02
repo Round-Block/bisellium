@@ -1,0 +1,200 @@
+{
+  "search": {
+    "cases": [
+      {
+        "directories": 20,
+        "candidates": 41,
+        "opens": 15,
+        "bytes": 136759,
+        "omittedExcerpts": 421,
+        "rejections": 0,
+        "id": "B6",
+        "excerptCharacters": 6000,
+        "excerptFiles": 2,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 20,
+        "candidates": 41,
+        "opens": 15,
+        "bytes": 136759,
+        "omittedExcerpts": 410,
+        "rejections": 0,
+        "id": "B7",
+        "excerptCharacters": 6000,
+        "excerptFiles": 2,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 7,
+        "candidates": 30,
+        "opens": 3,
+        "bytes": 18346,
+        "omittedExcerpts": 12,
+        "rejections": 1,
+        "id": "E6",
+        "excerptCharacters": 6000,
+        "excerptFiles": 2,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 7,
+        "candidates": 30,
+        "opens": 3,
+        "bytes": 18346,
+        "omittedExcerpts": 12,
+        "rejections": 1,
+        "id": "E7",
+        "excerptCharacters": 6000,
+        "excerptFiles": 2,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 6,
+        "candidates": 30,
+        "opens": 4,
+        "bytes": 36373,
+        "omittedExcerpts": 81,
+        "rejections": 0,
+        "id": "Y6",
+        "excerptCharacters": 5999,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 6,
+        "candidates": 30,
+        "opens": 4,
+        "bytes": 36373,
+        "omittedExcerpts": 49,
+        "rejections": 0,
+        "id": "Y7",
+        "excerptCharacters": 6000,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      }
+    ],
+    "totals": {
+      "directories": 66,
+      "candidates": 202,
+      "opens": 44,
+      "bytes": 382956,
+      "omittedExcerpts": 985,
+      "rejections": 2,
+      "excerptCharacters": 35999,
+      "excerptFiles": 10
+    },
+    "packetBytes": 44329
+  },
+  "route": {
+    "cases": [
+      {
+        "directories": 2,
+        "candidates": 1,
+        "opens": 1,
+        "bytes": 73266,
+        "omittedExcerpts": 0,
+        "rejections": 0,
+        "id": "B6",
+        "excerptCharacters": 789,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 2,
+        "candidates": 1,
+        "opens": 1,
+        "bytes": 73266,
+        "omittedExcerpts": 0,
+        "rejections": 0,
+        "id": "B7",
+        "excerptCharacters": 1971,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 1,
+        "candidates": 1,
+        "opens": 1,
+        "bytes": 10184,
+        "omittedExcerpts": 0,
+        "rejections": 0,
+        "id": "E6",
+        "excerptCharacters": 1268,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 1,
+        "candidates": 1,
+        "opens": 1,
+        "bytes": 4409,
+        "omittedExcerpts": 0,
+        "rejections": 0,
+        "id": "E7",
+        "excerptCharacters": 808,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 2,
+        "candidates": 1,
+        "opens": 1,
+        "bytes": 16223,
+        "omittedExcerpts": 0,
+        "rejections": 0,
+        "id": "Y6",
+        "excerptCharacters": 1868,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      },
+      {
+        "directories": 2,
+        "candidates": 1,
+        "opens": 1,
+        "bytes": 4811,
+        "omittedExcerpts": 0,
+        "rejections": 0,
+        "id": "Y7",
+        "excerptCharacters": 1213,
+        "excerptFiles": 1,
+        "coverage": [
+          "complete"
+        ]
+      }
+    ],
+    "totals": {
+      "directories": 10,
+      "candidates": 6,
+      "opens": 6,
+      "bytes": 182159,
+      "omittedExcerpts": 0,
+      "rejections": 0,
+      "excerptCharacters": 7917,
+      "excerptFiles": 6
+    },
+    "packetBytes": 13159
+  }
+}

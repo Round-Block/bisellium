@@ -1,0 +1,33 @@
+# behaviour: 1
+# command: node --test --test-isolation=none --test-name-pattern=^W-104 behaviour 1$ docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-28T05:39:05.183Z
+# sella: builder-sol
+# tree: dirty:7e0961b0143353e063eba39b8db75851bc0b6a07
+
+✖ W-104 behaviour 1 (8.335838ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 31.646893
+
+✖ failing tests:
+
+test at docs/research/bisellium-maps-harness.test.mjs:716:1
+✖ W-104 behaviour 1 (8.335838ms)
+  AssertionError [ERR_ASSERTION]: search-diverse must complete: mode must be search or route
+      at runSearchDiverse (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:712:12)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:736:18)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'fail',
+    diff: 'simple'
+  }

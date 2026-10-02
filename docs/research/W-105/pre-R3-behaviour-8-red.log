@@ -1,0 +1,35 @@
+# behaviour: 8
+# command: node --test docs/research/maps-repair-driver.test.mjs
+# exit: 1
+# at: 2026-09-28T09:36:39.670Z
+# sella: builder-sol
+# tree: dirty:213503da74e7b34699a32f84447bfd9393e13e40
+
+✖ Behaviour 8 scorer validates claimed source identity without quote heuristics (1.597356ms)
+✔ Behaviour 8 scorer controls and separation (11.946179ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105.5822
+
+✖ failing tests:
+
+test at docs/research/maps-repair-driver.test.mjs:18:14
+✖ Behaviour 8 scorer validates claimed source identity without quote heuristics (1.597356ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:18:902)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /identity mismatch.*SHA-256/i,
+    operator: 'throws',
+    diff: 'simple'
+  }

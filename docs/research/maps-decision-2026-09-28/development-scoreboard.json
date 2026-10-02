@@ -1,0 +1,1198 @@
+{
+  "advanceRule": {
+    "decision": {
+      "outcome": "advance",
+      "reason": "qualifies under frozen development rule",
+      "selectedPolicy": "B"
+    },
+    "text": "More complete cases than baseline and no loss of baseline complete cases; tie: complete cases, covered requirements, fewer supplied UTF-16 units, then A."
+  },
+  "controls": {
+    "anchorMutationsDetected": 39,
+    "overallPass": true,
+    "requirements": 17,
+    "source": "measurement-controls.json v2"
+  },
+  "limitations": [
+    "Equivalent evidence outside frozen positioned anchors is not credited.",
+    "E7-R3 is derived only from packet metadata: static repository excerpts and no live deployment artifact keys.",
+    "Current root HEAD 44604163087b7a51c26cb0064c005acd22182ffc differs from frozen baseline snapshot f391; every admitted source file matched its frozen byte hash."
+  ],
+  "measurement": "exact positioned-anchor evidence availability; answer quality not measured",
+  "policies": {
+    "A": {
+      "caseCount": 6,
+      "cases": [
+        {
+          "caseId": "B6",
+          "complete": false,
+          "coveredRequirements": 1,
+          "distinctFiles": 4,
+          "project": "bisellium",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A1",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "build verdict log; build default",
+              "requirementId": "B6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A2",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A3",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "evidence only; no probationes/state/events/timelines",
+              "requirementId": "B6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A4",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A5",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "path may feed review --evidence",
+              "requirementId": "B6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5991
+        },
+        {
+          "caseId": "B7",
+          "complete": false,
+          "coveredRequirements": 0,
+          "distinctFiles": 1,
+          "project": "bisellium",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A6",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A7",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A8",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "path-sorted committed ls-tree entries outside exclusions",
+              "requirementId": "B7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A9",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A10",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "studio/.bisellium plus source_excludes excluded",
+              "requirementId": "B7-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A11",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A12",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "excluded-only commit leaves hash unchanged",
+              "requirementId": "B7-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5991
+        },
+        {
+          "caseId": "E6",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 2,
+          "project": "epoch0",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A13",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A14",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A15",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "checks design premises against code",
+              "requirementId": "E6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A16",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A17",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "named-scope artifact only; no implementation",
+              "requirementId": "E6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A18",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A19",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A20",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "no merge authority; never executes merge",
+              "requirementId": "E6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5959
+        },
+        {
+          "caseId": "E7",
+          "complete": false,
+          "coveredRequirements": 2,
+          "distinctFiles": 2,
+          "project": "epoch0",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A21",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A22",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "next sequential no-gap migration; transaction wrapper",
+              "requirementId": "E7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A23",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A24",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A25",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "no edit after apply; hash mismatch; next migration",
+              "requirementId": "E7-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A26",
+                  "covered": true,
+                  "type": "metadataCriterion"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "static corpus cannot establish live ledger state",
+              "requirementId": "E7-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5991
+        },
+        {
+          "caseId": "Y6",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 4,
+          "project": "yan-mo",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A27",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A28",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A29",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "journaled docs/code task uses branch+worktree",
+              "requirementId": "Y6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A30",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A31",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A32",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "journal rides branch; push; close/Completed then PR",
+              "requirementId": "Y6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A33",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A34",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "Edene merges; agent opens PR and stops",
+              "requirementId": "Y6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5879
+        },
+        {
+          "caseId": "Y7",
+          "complete": true,
+          "coveredRequirements": 2,
+          "distinctFiles": 4,
+          "project": "yan-mo",
+          "requirementCount": 2,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A35",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A36",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "art/animation may be grey-box capsules",
+              "requirementId": "Y7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A37",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A38",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A39",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "tell clarity is exception; legible not pretty windup",
+              "requirementId": "Y7-R2"
+            }
+          ],
+          "suppliedUtf16Units": 5936
+        }
+      ],
+      "completeCases": 3,
+      "coveredRequirements": 11,
+      "lostBaselineCompleteCases": [
+        "E7"
+      ],
+      "qualifiesForDevelopmentAdvance": false,
+      "requirementCount": 17,
+      "suppliedUtf16Units": 35747
+    },
+    "B": {
+      "caseCount": 6,
+      "cases": [
+        {
+          "caseId": "B6",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 3,
+          "project": "bisellium",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A1",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "build verdict log; build default",
+              "requirementId": "B6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A2",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A3",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "evidence only; no probationes/state/events/timelines",
+              "requirementId": "B6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A4",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A5",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "path may feed review --evidence",
+              "requirementId": "B6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5995
+        },
+        {
+          "caseId": "B7",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 2,
+          "project": "bisellium",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A6",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A7",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A8",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "path-sorted committed ls-tree entries outside exclusions",
+              "requirementId": "B7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A9",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A10",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "studio/.bisellium plus source_excludes excluded",
+              "requirementId": "B7-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A11",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A12",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "excluded-only commit leaves hash unchanged",
+              "requirementId": "B7-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5990
+        },
+        {
+          "caseId": "E6",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 2,
+          "project": "epoch0",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A13",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A14",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A15",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "checks design premises against code",
+              "requirementId": "E6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A16",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A17",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "named-scope artifact only; no implementation",
+              "requirementId": "E6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A18",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A19",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A20",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "no merge authority; never executes merge",
+              "requirementId": "E6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5959
+        },
+        {
+          "caseId": "E7",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 2,
+          "project": "epoch0",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A21",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A22",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "next sequential no-gap migration; transaction wrapper",
+              "requirementId": "E7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A23",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A24",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A25",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "no edit after apply; hash mismatch; next migration",
+              "requirementId": "E7-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A26",
+                  "covered": true,
+                  "type": "metadataCriterion"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "static corpus cannot establish live ledger state",
+              "requirementId": "E7-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5946
+        },
+        {
+          "caseId": "Y6",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 4,
+          "project": "yan-mo",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A27",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A28",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A29",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "journaled docs/code task uses branch+worktree",
+              "requirementId": "Y6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A30",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A31",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A32",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "journal rides branch; push; close/Completed then PR",
+              "requirementId": "Y6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A33",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A34",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "Edene merges; agent opens PR and stops",
+              "requirementId": "Y6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 5879
+        },
+        {
+          "caseId": "Y7",
+          "complete": true,
+          "coveredRequirements": 2,
+          "distinctFiles": 4,
+          "project": "yan-mo",
+          "requirementCount": 2,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A35",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A36",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "art/animation may be grey-box capsules",
+              "requirementId": "Y7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A37",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A38",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A39",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "tell clarity is exception; legible not pretty windup",
+              "requirementId": "Y7-R2"
+            }
+          ],
+          "suppliedUtf16Units": 5980
+        }
+      ],
+      "completeCases": 6,
+      "coveredRequirements": 17,
+      "lostBaselineCompleteCases": [],
+      "qualifiesForDevelopmentAdvance": true,
+      "requirementCount": 17,
+      "suppliedUtf16Units": 35749
+    },
+    "baseline": {
+      "caseCount": 6,
+      "cases": [
+        {
+          "caseId": "B6",
+          "complete": false,
+          "coveredRequirements": 0,
+          "distinctFiles": 2,
+          "project": "bisellium",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A1",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "build verdict log; build default",
+              "requirementId": "B6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A2",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A3",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "evidence only; no probationes/state/events/timelines",
+              "requirementId": "B6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A4",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A5",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "path may feed review --evidence",
+              "requirementId": "B6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 6000
+        },
+        {
+          "caseId": "B7",
+          "complete": false,
+          "coveredRequirements": 0,
+          "distinctFiles": 2,
+          "project": "bisellium",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A6",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A7",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A8",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "path-sorted committed ls-tree entries outside exclusions",
+              "requirementId": "B7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A9",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A10",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "studio/.bisellium plus source_excludes excluded",
+              "requirementId": "B7-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A11",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A12",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "excluded-only commit leaves hash unchanged",
+              "requirementId": "B7-R3"
+            }
+          ],
+          "suppliedUtf16Units": 6000
+        },
+        {
+          "caseId": "E6",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 2,
+          "project": "epoch0",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A13",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A14",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A15",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "checks design premises against code",
+              "requirementId": "E6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A16",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A17",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "named-scope artifact only; no implementation",
+              "requirementId": "E6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A18",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A19",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A20",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "no merge authority; never executes merge",
+              "requirementId": "E6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 6000
+        },
+        {
+          "caseId": "E7",
+          "complete": true,
+          "coveredRequirements": 3,
+          "distinctFiles": 2,
+          "project": "epoch0",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A21",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A22",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "next sequential no-gap migration; transaction wrapper",
+              "requirementId": "E7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A23",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A24",
+                  "covered": true,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A25",
+                  "covered": true,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "no edit after apply; hash mismatch; next migration",
+              "requirementId": "E7-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A26",
+                  "covered": true,
+                  "type": "metadataCriterion"
+                }
+              ],
+              "covered": true,
+              "essentialRequestedFact": "static corpus cannot establish live ledger state",
+              "requirementId": "E7-R3"
+            }
+          ],
+          "suppliedUtf16Units": 6000
+        },
+        {
+          "caseId": "Y6",
+          "complete": false,
+          "coveredRequirements": 0,
+          "distinctFiles": 1,
+          "project": "yan-mo",
+          "requirementCount": 3,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A27",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A28",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A29",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "journaled docs/code task uses branch+worktree",
+              "requirementId": "Y6-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A30",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A31",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A32",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "journal rides branch; push; close/Completed then PR",
+              "requirementId": "Y6-R2"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A33",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A34",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "Edene merges; agent opens PR and stops",
+              "requirementId": "Y6-R3"
+            }
+          ],
+          "suppliedUtf16Units": 6000
+        },
+        {
+          "caseId": "Y7",
+          "complete": false,
+          "coveredRequirements": 0,
+          "distinctFiles": 1,
+          "project": "yan-mo",
+          "requirementCount": 2,
+          "requirements": [
+            {
+              "anchors": [
+                {
+                  "anchorId": "A35",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A36",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "art/animation may be grey-box capsules",
+              "requirementId": "Y7-R1"
+            },
+            {
+              "anchors": [
+                {
+                  "anchorId": "A37",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A38",
+                  "covered": false,
+                  "type": "sourceText"
+                },
+                {
+                  "anchorId": "A39",
+                  "covered": false,
+                  "type": "sourceText"
+                }
+              ],
+              "covered": false,
+              "essentialRequestedFact": "tell clarity is exception; legible not pretty windup",
+              "requirementId": "Y7-R2"
+            }
+          ],
+          "suppliedUtf16Units": 6000
+        }
+      ],
+      "completeCases": 2,
+      "coveredRequirements": 6,
+      "requirementCount": 17,
+      "suppliedUtf16Units": 36000
+    }
+  },
+  "version": 1
+}

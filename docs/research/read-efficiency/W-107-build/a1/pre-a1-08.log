@@ -1,0 +1,8 @@
+# behaviour: 8
+# command: node docs/research/read-efficiency/targeted-read-eval.test.mjs . 8
+# exit: 1
+# at: 2026-09-28T14:36:42.236Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+FAIL  b8 freeze/schema negative controls and synthetic two-arm aggregation pass             {"status":1,"data":{"version":1,"ok":false,"error":{"code":"NOT_IMPLEMENTED"}},"stderr":""}

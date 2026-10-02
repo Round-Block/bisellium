@@ -1,0 +1,20 @@
+# opus: W-102
+# phase: spec
+# round: 2
+# sella: architect
+# model: gpt-6-astra
+# outcome: PASS
+# at: 2026-09-26T07:47:11.417Z
+# tree: tree:248d3112df76ebf1c515279381e2d31523538837
+
+PASS — architect signature authorized for the supplied W-102 brief.
+
+The amended brief resolves both red-team findings: legacy Claude artifacts are explicitly identified without requiring unowned edits, and configuration tests establish declarations while independent dispatch records establish operational context separation.
+
+The scope preserves the existing lifecycle, sole censor review gate, advisory severity, historical evidence, and seat identities. Astra effort defaults apply explicitly to orchestration; the conversational harness remains outside this change. Acceptance conditions are concrete and testable without adding trial requirements.
+
+I expressly authorize the producer to persist this exact transcript through `verdict` and record `ready --sella architect` for W-102 under D-021, on the opus-owned branch, using CLI syntax confirmed by no-argument help.
+
+Signing role: independent architect. Actual model: `gpt-6-astra`, reasoning effort: `medium`.
+
+This signature accepts the supplied brief for implementation; it does not certify implementation or test results.

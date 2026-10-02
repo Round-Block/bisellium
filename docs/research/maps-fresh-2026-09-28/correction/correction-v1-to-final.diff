@@ -1,0 +1,85 @@
+--- correction/corrected-key-v1.json
++++ correction/corrected-key.json
+@@ -47,10 +47,22 @@
+               "path": "adapters/epoch0/src/index.ts",
+               "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
+               "startLine": 37,
+-              "startCharacter": 7,
++              "startCharacter": 16,
+               "endLine": 37,
+-              "endCharacterExclusive": 93,
+-              "exactText": "return { delivered: false, note: \"not implemented — inbox-file degradation planned\" };"
++              "endCharacterExclusive": 32,
++              "exactText": "delivered: false"
++            },
++            {
++              "id": "B8-R2-A2",
++              "type": "sourceText",
++              "repository": "bisellium-main",
++              "path": "adapters/epoch0/src/index.ts",
++              "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
++              "startLine": 37,
++              "startCharacter": 41,
++              "endLine": 37,
++              "endCharacterExclusive": 56,
++              "exactText": "not implemented"
+             }
+           ],
+           "alternativeEquivalentAnchors": []
+@@ -328,9 +340,9 @@
+               "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+               "startLine": 47,
+               "startCharacter": 1,
+-              "endLine": 49,
+-              "endCharacterExclusive": 75,
+-              "exactText": "**Never edit a migration after it has been applied.** The applier records a\nSHA-256 of each file; editing `NNN_*.sql` after it has run will abort the\nnext startup with a hash mismatch. To amend behavior, write `NNN+1_*.sql`."
++              "endLine": 47,
++              "endCharacterExclusive": 54,
++              "exactText": "**Never edit a migration after it has been applied.**"
+             }
+           ],
+           "alternativeEquivalentAnchors": []
+@@ -404,10 +416,10 @@
+               "path": "docs/program/PROGRAM.md",
+               "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+               "startLine": 11,
+-              "startCharacter": 1,
++              "startCharacter": 3,
+               "endLine": 11,
+-              "endCharacterExclusive": 172,
+-              "exactText": "| M2 — World & Story | DONE (2026-08-27-m2-world-story.md's task list is fully merged; only the M2-close housekeeping task remained, since folded into board-driven work) |"
++              "endCharacterExclusive": 28,
++              "exactText": "M2 — World & Story | DONE"
+             },
+             {
+               "id": "E10-R1-A2",
+@@ -477,10 +489,10 @@
+               "path": "docs/program/BOARD.md",
+               "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+               "startLine": 16,
+-              "startCharacter": 11,
+-              "endLine": 17,
+-              "endCharacterExclusive": 54,
+-              "exactText": "`scheduled` (next up, explicitly queued — including a row a\ntrain has actually picked up and is actively working)"
++              "startCharacter": 9,
++              "endLine": 16,
++              "endCharacterExclusive": 22,
++              "exactText": "→ `scheduled`"
+             },
+             {
+               "id": "E11-R1-A3",
+@@ -489,10 +501,10 @@
+               "path": "docs/program/BOARD.md",
+               "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+               "startLine": 17,
+-              "startCharacter": 57,
+-              "endLine": 19,
+-              "endCharacterExclusive": 16,
+-              "exactText": "`done`\n(shipped, verified — true on master because the merge that made it true\nalready landed)"
++              "startCharacter": 55,
++              "endLine": 17,
++              "endCharacterExclusive": 63,
++              "exactText": "→ `done`"
+             }
+           ],
+           "alternativeEquivalentAnchors": []

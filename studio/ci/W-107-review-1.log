@@ -1,0 +1,75 @@
+# opus: W-107
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-28T16:50:07.956Z
+# tree: tree:0e4c3f0d931539b3c6096f34cedbabd7763b98d1
+
+# W-107 sole-censor review
+
+Verdict: FAIL  
+Adoption: NO  
+Classification: invalid evidence, semantic failure, and insufficient savings.
+
+## Reviewed identities
+
+- Commit: `c819915d3da6dfd4ba6c1ddd6ef88c32f9af72af`
+- Certified source tree: `0e4c3f0d931539b3c6096f34cedbabd7763b98d1`
+- Original brief SHA-256: `018dc802447a7c08552cf78b28fa165ffdd9b2b41050ff66c663b93652aab4a1`
+- Active W-107-A1 brief SHA-256: `e0feea39982db7573346eac460701313ebb2f56e13c77762ec4956ead7b3aa22`
+- Approved plan SHA-256: `4da3c10a72a35fd488ebec27be6e7d4c26ad1b820274db778d61fa7df9a22cd0`
+- Freeze SHA-256: `96f22c5b2c9e5c235e22bf25f81e2eb81098d6284f057aeb29586059084041ac`
+- Review packet SHA-256: `67fce8eef6c104fca859a8ff2af12f6adda2112c95020a061b54f784a3ce2d1d`
+- Scoring package SHA-256: `a1148cea5edc193a1fc0d53bfd3f12a8f0d0fd98654c0fbfbe83a8d60f9d83bf`
+
+Semantic grades were frozen before reading the arm mapping.
+
+## Findings
+
+1. BLOCKING — The semantic gate fails. All 12 answers are factually correct, cited, and free of unsupported claims, but only 5/12 are complete with every required qualification. Baseline passes 2/6 answers; candidate passes 3/6.
+
+   - `35dffb7f1119a651` and `b28d10e544690dbf` omit the worktrees-only fallback when `gh` is unavailable and omit that frozen documents cannot establish current live train status.
+   - `95060439f79c0481` omits the PRODUCT.md/M-ladder authority relationship and the unchanged finish line.
+   - `dbbd5a3801fa6c76` omits the unchanged-finish-line qualification.
+   - `bb6c62940e5dc77b` and `d3d5824a2641a49c` omit that `amend` works on existing title/spec fields in every lifecycle state and omit title’s exact-scalar no-op rule.
+   - `d8d4b70e73027177` omits that the Censor’s first-hour involvement is advisory.
+
+   Full semantic passes are `16dc220afd5f640c`, `1c1b0feb13496514`, `492532b7990a48cd`, `5aaaa55a572561ba`, and `e21f0efd4319fea3`.
+
+2. BLOCKING — The aggregate efficiency gate fails. Candidate responses total 243,194 bytes in 35 calls; baseline totals 237,951 bytes in 23 calls. The candidate ratio is 1.022033948166, an increase of 2.203395%, against the required maximum ratio of 0.70.
+
+3. BLOCKING — Two per-project gates fail.
+
+   | Project | Baseline bytes | Candidate bytes | Result |
+   | --- | ---: | ---: | --- |
+   | Bisellium | 56,817 | 61,543 | FAIL |
+   | epoch0 | 120,061 | 125,326 | FAIL |
+   | Yan Mo | 61,073 | 56,325 | PASS |
+
+4. BLOCKING — The evaluation evidence is invalid under the signed retry rule. Ordinal 1 reportedly encountered a pre-output `ENOENT` and was rerun, but the original command/failure record was not retained. The later clerk recollection does not independently establish command/hash identity. Completed-run audits cannot repair that historical provenance gap. The signed brief requires the original infrastructure failure to be retained and frozen inputs to be identical.
+
+The deterministic aggregator will classify the semantic failure first as `implementation failure`. The independent evidence review additionally finds `invalid evidence`, and the measured byte results independently establish `insufficient savings`. Each is sufficient for adoption NO.
+
+## Reproduced checks
+
+Run independently at commit `c819915d3da6dfd4ba6c1ddd6ef88c32f9af72af`:
+
+- `npm test -s` — exit 0
+- `npm run -s typecheck` — exit 0
+- `npm run -s lint` — exit 0 with three warnings and no errors
+
+Existing CLI-owned certificates remain current for source tree `0e4c3f0d931539b3c6096f34cedbabd7763b98d1`:
+
+- `studio/ci/W-107-tests-0e4c3f0d.log`
+- `studio/ci/W-107-lint-0e4c3f0d.log`
+- `studio/ci/W-107-types-0e4c3f0d.log`
+
+All eight retained behavior reds are genuine failures. The final worktree is clean.
+
+## Review scope
+
+I inspected the signed brief and amendment, approved plan, W-107 diff footprint, eight reds, production source validation/containment/result seams, evaluation freeze/run/audit/package/aggregate seams, all 12 anonymised answers and their delivered-source transcripts, scoring mapping, certificates, and retry evidence. Product-code review was bounded rather than exhaustive because the semantic, efficiency, per-project, and evidence gates already independently decide FAIL. No mutation campaign was needed to support this rejection.
+
+No model trial, tuning, source repair, evidence edit, or official lifecycle write was performed by the Censor. The producer must persist this review verbatim through the owning verdict and review commands under D-021.

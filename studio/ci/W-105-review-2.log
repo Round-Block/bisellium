@@ -1,0 +1,22 @@
+# opus: W-105
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-28T09:35:49.985Z
+# tree: tree:213503da74e7b34699a32f84447bfd9393e13e40
+
+FAIL
+
+Blocking finding:
+
+- sourceAnchorIdentityDrift (maps-repair-driver.mjs:261) gates all identity checks on entry.text.includes(anchor.exactText), producing both false negatives and false positives:
+  - The expected repository/path with a wrong full-file SHA is accepted when its excerpt omits the anchor, with sourceAndQuestionIdentityChecksPassing: true.
+  - The same quote and hash at another legitimate path is incorrectly rejected as path drift.
+  - The same file/hash containing the quote at another line is incorrectly rejected as position drift.
+  - An entry claiming the exact anchor range but containing conflicting text is accepted if it omits the expected quote.
+
+The correct boundary is: detect a wrong SHA for the expected repository/path independently of excerpt text; treat matching quotes elsewhere as missing evidence; infer position/content drift only when the expected file entry claims to cover the anchor coordinates and its positioned slice conflicts.
+
+The new red is genuine, the focused Behavior 8 tests pass 2/2, the 18-file freeze verifies under Node v25.9.0, and the worktree remains clean.

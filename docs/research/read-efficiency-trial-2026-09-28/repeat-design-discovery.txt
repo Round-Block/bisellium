@@ -1,0 +1,9 @@
+path: studio/leges/design.md
+5:## 1. Mandate
+14:## 2. Decides alone
+26:## 3. Digests
+30:## 4. Asks
+36:## 5. Budget
+41:## 6. Autonomy
+46:## 7. Evidence contract
+52:## 9. Amendment log

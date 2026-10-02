@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "gatePassed": false,
+  "gateRule": "At least one B6/B7/Y6/Y7 span absent at baseline becomes fully covered, with no loss of an E6 baseline-covered unit.",
+  "gains": [
+    "Y7:yan-mo-main:docs/vertical-slice-spec.md:42",
+    "Y7:yan-mo-main:docs/vertical-slice-spec.md:44",
+    "Y7:yan-mo-main:docs/vertical-slice-spec.md:46",
+    "Y7:yan-mo-main:docs/vertical-slice-spec.md:47"
+  ],
+  "losses": [],
+  "spans": [
+    {
+      "id": "B6:bisellium-main:docs/ADOPTION.md:87-99",
+      "case": "B6",
+      "baselineUnits": 0,
+      "diverseUnits": 0,
+      "totalUnits": 12,
+      "baselineCovered": false,
+      "diverseCovered": false
+    },
+    {
+      "id": "B7:bisellium-main:docs/ADOPTION.md:581-610",
+      "case": "B7",
+      "baselineUnits": 0,
+      "diverseUnits": 0,
+      "totalUnits": 28,
+      "baselineCovered": false,
+      "diverseCovered": false
+    },
+    {
+      "id": "E6:epoch0-main:AGENTS.md:29-31",
+      "case": "E6",
+      "baselineUnits": 3,
+      "diverseUnits": 3,
+      "totalUnits": 3,
+      "baselineCovered": true,
+      "diverseCovered": true
+    },
+    {
+      "id": "E6:epoch0-main:AGENTS.md:51-65",
+      "case": "E6",
+      "baselineUnits": 12,
+      "diverseUnits": 12,
+      "totalUnits": 15,
+      "baselineCovered": false,
+      "diverseCovered": false
+    },
+    {
+      "id": "E7:epoch0-main:README.md:33-49",
+      "case": "E7",
+      "baselineUnits": 11,
+      "diverseUnits": 11,
+      "totalUnits": 13,
+      "baselineCovered": false,
+      "diverseCovered": false
+    },
+    {
+      "id": "Y6:yan-mo-main:docs/dev-workflow.md:69-89",
+      "case": "Y6",
+      "baselineUnits": 0,
+      "diverseUnits": 0,
+      "totalUnits": 18,
+      "baselineCovered": false,
+      "diverseCovered": false
+    },
+    {
+      "id": "Y7:yan-mo-main:docs/vertical-slice-spec.md:36-47",
+      "case": "Y7",
+      "baselineUnits": 0,
+      "diverseUnits": 4,
+      "totalUnits": 8,
+      "baselineCovered": false,
+      "diverseCovered": false
+    }
+  ],
+  "e7FilenameOrder": [
+    {
+      "line": 35,
+      "baseline": true,
+      "diverse": true
+    },
+    {
+      "line": 36,
+      "baseline": false,
+      "diverse": false
+    }
+  ],
+  "measures": {
+    "baseline": {
+      "cases": 6,
+      "repositories": 6,
+      "directories": 66,
+      "candidates": 202,
+      "opens": 44,
+      "bytes": 382956,
+      "retrievedFiles": 41,
+      "suppliedFiles": 10,
+      "suppliedCharactersUtf16": 36000,
+      "omissions": 985,
+      "failures": 2,
+      "incomplete": 0
+    },
+    "diverse": {
+      "cases": 6,
+      "repositories": 6,
+      "directories": 66,
+      "candidates": 202,
+      "opens": 44,
+      "bytes": 382956,
+      "retrievedFiles": 41,
+      "suppliedFiles": 22,
+      "suppliedCharactersUtf16": 36000,
+      "omissions": 943,
+      "failures": 2,
+      "incomplete": 0
+    }
+  }
+}

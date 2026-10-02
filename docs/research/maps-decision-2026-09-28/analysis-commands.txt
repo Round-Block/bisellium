@@ -1,0 +1,60 @@
+MAPS development-screen command transcript — 2026-09-28
+
+Environment/bootstrap (executed in WSL from /home/edckt/projects/bisellium):
+  sed -n '1,240p' studio/leges/engineering.md
+  ./node_modules/.bin/bisellium
+  ./node_modules/.bin/bisellium context --sella builder-sol studio
+Result: usage printed; builder-sol context booted.
+
+Pre-key inputs opened:
+  sed -n '1,260p' docs/research/maps-decision-2026-09-28/PLAN.md
+  sed -n '1,320p' docs/research/maps-decision-2026-09-28/selection-rules.md
+  jq -S . docs/research/maps-sufficiency-2026-09-28/questions.json
+  jq -S . docs/research/maps-sufficiency-2026-09-28/search-results.json
+  jq 'del(.routes)' docs/research/maps-sufficiency-2026-09-28/bindings.json
+Result: six questions; exact per-case baseline file pools and repository roots admitted. The routes value was not inspected or used.
+
+Candidate generation (executed once before any key/control/old-answer material was opened):
+  $py = @'<one-off Python Path program>'@; $py | wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && python3 -'
+The inline program implemented selection-rules.md v1 literally: containment/stat/SHA/UTF-8 checks before semantic reading; distinct-file cache; contiguous nonblank passages; Markdown heading metadata (a heading at the start of a passage is that passage's associated heading); UTF-16 units; exact regex/stoplist; per-case IDF; A body score; B body plus 2x heading score; code-unit tie order; greedy 6000-unit/four-file selection; whole passages and omission records.
+First sandbox attempt result: Wsl/Service/CreateInstance/E_ACCESSDENIED. Same command rerun with approved wsl.exe escalation.
+Result:
+  candidate-A.json 184740 bytes sha256 46f0288a6e697feda3cb940527fc0a6d9426b8fd085f2925b621812aecc1f527
+  candidate-B.json 186713 bytes sha256 6282013610d6883b1926892297b3653935b59af36da0e1789db3018815c1dada
+  distinct preparation reads 21; all containment=true, sizeAdmitted=true, and SHA matched frozen metadata.
+
+Freeze boundary (executed before development-key.json was opened):
+  python3 -  # one-off Path program hashing candidates, questions, search-results, bindings and selection-rules into selection-output-hashes.json
+  sha256sum docs/research/maps-decision-2026-09-28/candidate-{A,B}.json
+Result: candidate hashes matched the manifest above.
+
+Post-freeze key/control reads:
+  sed -n '1,320p' docs/research/maps-decision-2026-09-28/development-key.json
+  sed -n '1,360p' docs/research/maps-decision-2026-09-28/measurement-controls.json
+  sed -n '1,280p' docs/research/maps-decision-2026-09-28/control-replay.txt
+Only after this point were route-results.json, packet-A.json and answer-key.json consumed by the read-only control replay.
+
+Read-only equivalent execution of control-replay.txt:
+  $py = @'<control-replay Python with writes removed>'@; $py | wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && python3 -'
+Result:
+  {"curatedPassed":17,"emptyPassed":0,"mutations":39,"mutationsDetected":39,"requirements":17,"sourceAndQuestionChecksPassed":true}
+No pre-existing control/key/note artifact was changed.
+
+Literal scoring command:
+  $py = @'<one-off positioned-anchor scorer>'@; $py | wsl.exe bash -lc 'cd /home/edckt/projects/bisellium && python3 -'
+The scorer reconstructed lines from baseline ranges/excerpts and candidate whole passages, matched every anchor by repository/path/full SHA/1-based line/character slice, and derived E7-R3 from packet structure by refusing liveArtifacts, deploymentLedger, startupEvidence, or schemaMigrationsRows keys. It did not consume stored expected pass flags.
+Result:
+  baseline: 2/6 complete, 6/17 requirements, 36000 UTF-16 units
+  A:        3/6 complete, 11/17 requirements, 35747 UTF-16 units; lost baseline case E7; does not qualify
+  B:        6/6 complete, 17/17 requirements, 35749 UTF-16 units; lost none; qualifies and advances
+  development-scoreboard.json sha256 b0fd53a2c70e78fcad883bbd46c3bdaef08fd2f40f8a7bd3fc1643d1efcb9b03
+
+Final validation:
+  jq -e . candidate-A.json candidate-B.json selection-output-hashes.json development-scoreboard.json
+  sha256sum candidate-A.json candidate-B.json selection-output-hashes.json development-scoreboard.json development-screen.md
+Result hashes:
+  candidate-A.json 46f0288a6e697feda3cb940527fc0a6d9426b8fd085f2925b621812aecc1f527
+  candidate-B.json 6282013610d6883b1926892297b3653935b59af36da0e1789db3018815c1dada
+  selection-output-hashes.json c91b167f1f7a251c95a073f8a84e58d966008e926e79afb69aef246ade4ab24a
+  development-scoreboard.json b0fd53a2c70e78fcad883bbd46c3bdaef08fd2f40f8a7bd3fc1643d1efcb9b03
+  development-screen.md 561d769ed9f58f8a79da91e5556ebf76091cbbf7f0fb4bed87b8bc7d93a9408b

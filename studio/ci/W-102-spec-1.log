@@ -1,0 +1,13 @@
+# opus: W-102
+# phase: spec
+# round: 1
+# sella: sec-lead
+# model: gpt-5.6-sol
+# outcome: AMEND-FIRST
+# at: 2026-09-26T07:47:10.166Z
+# tree: tree:248d3112df76ebf1c515279381e2d31523538837
+
+AMEND-FIRST
+
+- Behaviour 2 requires “Claude agent files” to be labelled legacy, but no `.claude/agents/*` files are owned. Either add those files to scope or clarify that only `CLAUDE.md`/generated instructions must label the unchanged Claude artifacts as legacy.
+- The required separation of drafting/building/security execution contexts is not testable from static role configuration and prose alone, while a dispatch framework is out of scope. Define an observable assertion—such as distinct dispatch invocations/context identifiers—or narrow acceptance to verifying the role files and orchestration instructions.

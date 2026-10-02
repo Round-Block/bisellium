@@ -1,0 +1,12 @@
+{
+  "status": "reproduced",
+  "baselineByteIdentical": true,
+  "diverseRepeatByteIdentical": true,
+  "poisonedByteIdentical": true,
+  "hashes": {
+    "baseline": "028d2e66b363005b2569568c00c1e10986344f33a7f36256a5c2cd2638abc9fc",
+    "diverse": "49d3eed923e37642099dcf3972ef31478b267e291e3be14113a77006cc45fa72",
+    "diverseRepeat": "49d3eed923e37642099dcf3972ef31478b267e291e3be14113a77006cc45fa72",
+    "poisoned": "49d3eed923e37642099dcf3972ef31478b267e291e3be14113a77006cc45fa72"
+  }
+}

@@ -1,0 +1,17 @@
+# behaviour: 2
+# command: node --import tsx docs/research/read-efficiency/source-adapter-preflight.test.mjs . 2
+# exit: 1
+# at: 2026-09-29T03:01:56.430Z
+# sella: builder-sol
+# tree: dirty:0e4c3f0d931539b3c6096f34cedbabd7763b98d1
+
+FAIL b2 session binding injects trusted identity and detects drift
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'NOT_IMPLEMENTED'
+- 'ORDER'
+
+    at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:176:10
+    at async test (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:30:5)
+    at async file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:156:1

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "valid": true,
+  "checks": {
+    "questionsSha256MatchesFreeze": true,
+    "questionsPayloadMatchesFrozenFacts": true,
+    "allFrozenSourceHashesMatch": true,
+    "caseCountIs12": true,
+    "requirementCountIs25": true,
+    "caseIdentityProjectQuestionPreserved": true,
+    "requirementIdsAndFactsPreserved": true,
+    "allQuestionClausesAreExactSubstrings": true,
+    "allRequirementsHaveEvidence": true,
+    "allSatisfactionRulesExact": true,
+    "allAlternativeEquivalentAnchorsEmpty": true,
+    "anchorIdsUnique": true,
+    "anchorSchemaExact": true,
+    "allAnchorsUseFrozenIdentities": true,
+    "allCoordinatesExtractExactText": true,
+    "allCoordinatesOneBasedPositive": true,
+    "allEndCharactersReferToEndLine": true,
+    "keyVersionAndStateExact": true,
+    "inputQuestionsPathAbsoluteAndExact": true,
+    "inputQuestionsHashActual": true
+  },
+  "counts": {
+    "cases": 12,
+    "requirements": 25,
+    "anchors": 49,
+    "frozenSources": 23
+  },
+  "artifacts": {
+    "correctedKey": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/corrected-key.json",
+    "correctedKeySha256": "7ea66bb3527bfd582bb8ad8cb7df0811e2ba11988c3de093a62e1818098ae8f7",
+    "generator": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/correction/build-corrected-key.py"
+  }
+}

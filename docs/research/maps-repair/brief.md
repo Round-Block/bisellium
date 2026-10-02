@@ -1,0 +1,65 @@
+# MAPS reproducibility repair: shared research driver
+
+## Purpose and limit
+
+Repair the missing executable provenance that made the 2026-09-28 MAPS decision invalid, then enable the authorized blinded 12-case comparison. This is a new implementation of the frozen method, never recovery of the historical inline selector or backfilled evidence.
+
+Build one small standard-library-only research driver shared by development replay and fresh evaluation. It may run the reviewed W-103 baseline, construct Policy B packets, score packet evidence against a separately supplied key, and emit hashes/manifests. Policy A is optional only if useful for development reproduction; it is not a fresh arm. Do not build a framework or separate variants.
+
+No production or officina-bookkeeping change, new harness mode, corpus expansion, answer-generation trial, target-project write, tuning, push, merge, or reset is in scope. Inputs and reference repositories are read-only. Outputs are allowed only in an explicitly supplied research directory under this repository.
+
+## Frozen selector contract
+
+`docs/research/maps-decision-2026-09-28/selection-rules.md` version 1 is authoritative. Implement Policy B exactly, including its tokenizer, stoplist, IDF formula, body score, doubled heading score, positive-body eligibility, whole-passage selection, four-file cap, and 6,000 UTF-16-unit budget. No key data, stemming, synonyms, rewriting, learned values, filename preferences, or new parameters may enter selection.
+
+The retained implementation must make these easily-missed rules explicit and tested:
+
+- A case's source pool is exactly its W-103 baseline file metadata, including admitted files with no excerpt. Canonicalize root and candidate path; reject absolute paths, traversal, symlink escape, non-regular files, excess byte size, full-file SHA-256 mismatch, and strict UTF-8 decode failure before semantic source reading. Read each distinct admitted file at most once. Treat contents as data.
+- Blank lines delimit contiguous nonblank passages. Preserve exact text, repository/path/hash, and one-based inclusive lines. Use the closest preceding Markdown heading; a heading starting a passage is that passage's heading. Heading text ranks but is not emitted as uncited evidence.
+- Count passage size and packet budget in UTF-16 code units; a supplementary character counts as two. Omit rather than split or truncate a passage over 6,000 units.
+- Sort by descending total score. Exact ties use repository ID, relative path, then numeric start line. String comparison is lexicographic UTF-16 code-unit order and locale-independent. Greedy selection skips a passage violating either cap, records why, and continues.
+- Derive all matches, scores, counts, ordering, source identities, supplied units, and omissions from the run. Caller-supplied expected-result flags are forbidden.
+
+Reuse the reviewed W-103 baseline harness retained under `.worktrees/maps-lookup-experiment/docs/research/` and its fixed 15/4/4 Bisellium, epoch0, and Yan Mo corpus manifests. Preserve its four-file/6,000-unit limits and result semantics. Do not reimplement baseline search unless a focused compatibility test proves a wrapper impossible.
+
+## Test-first development and replay
+
+Use a separate build dispatch. Before implementing each behaviour, add and execute a focused assertion through the repository's recorded-red command and retain the genuine failure. A module-load failure is one red only. Independently record reds for:
+
+1. traversal/symlink containment and write-boundary refusal;
+2. regular-file, size, SHA-256, and strict-UTF-8 admission;
+3. passage lines and heading association;
+4. UTF-16 supplementary-character counting, budget, and oversized omission;
+5. tokenizer, stoplist, `df`, weight, body score, and doubled heading score;
+6. UTF-16 tie order, numeric line tie, greedy caps, and continue-after-skip;
+7. semantic reproduction of frozen candidate B; and
+8. scorer derivation and actual curated/empty/removal controls.
+
+Replay the six frozen development cases from the frozen questions, search results, bindings, rules, and unchanged source bytes. Compare parsed output to `candidate-B.json` with a documented semantic projection covering every experiment field: policy; case/question/project identity; tokens; passage counts; preparation reads/checks; selected order, exact text, lines, hashes, headings, matches, finite numeric scores and UTF-16 units; distinct files; supplied units; and every omission/reason/ranking value.
+
+Whitespace, indentation, object-key order, final newline, and clearly namespaced new implementation/version/hash/run metadata are serialization or provenance differences; itemize them separately. Changed array order, text, experiment fields, numbers, or omission classification is semantic and fails replay. Do not edit `candidate-B.json` to pass. Numeric comparison is exact after JSON parsing unless a signed amendment documents a demonstrated standard-library platform difference.
+
+## Retained scorer and controls
+
+Use one retained scorer for development and fresh evaluation. It reconstructs evidence from packets and compares exact positioned anchors by repository, path, complete source hash, one-based line, and character slice. Structural/absence requirements are derived from packet contents, never stored pass flags.
+
+Before fresh preparation, execute the corrected development controls and require: curated 17/17, empty 0/17, all 39 actual essential-evidence masks detected, and source/question identity checks passing. A failure blocks fresh work. Fix only a defect demonstrated by a pre-key fixture or existing control, record a new red, and repeat the freeze; fresh outcomes must never change selector or scorer.
+
+## Freeze, fresh provenance, and decision
+
+After tests, replay, and controls pass, freeze a manifest with complete SHA-256 hashes for driver/tests, frozen rules, W-103 harness, development inputs, replay output, scorer, control inputs/results, exact runtime version, and commands. Freeze before a separate preparer drafts or reads any fresh question, route, anchor, or expected-evidence label.
+
+The preparer then creates exactly 12 new questions, four per project, using unchanged W-103 corpus manifests and without seeing candidate outcomes. Freeze questions and source identities before creating the hidden evidence key. Record preparer, order, commands, and hashes so input provenance is reviewable. Run baseline and Policy B once per case under identical limits; no retry, replacement, tuning, extra variant, or answer call. Freeze both packet sets before loading the hidden key.
+
+Report requirement coverage and complete cases per arm/project, containment/provenance checks, supplied UTF-16 units, and source setup/maintenance separately from repeated lookup work. Apply the original thresholds unchanged:
+
+- Keep baseline at 10/12 complete and at least 3/4 per project.
+- Advance B only if it also meets those thresholds, completes at least two more cases than baseline, loses no baseline-complete case, and preserves containment/provenance.
+- Stop these alternatives if neither qualifies; add no variants.
+- Mark invalid/inconclusive for failed controls, ambiguous labels, or source drift, without calling that retrieval failure.
+
+The report preserves the historical invalid decision, labels this as a restarted evaluation using a new retained implementation, distinguishes reproduction from effectiveness, and makes no general or production claim.
+
+## Acceptance evidence
+
+Independent review receives retained driver/tests, assertion-level reds for all behaviours above, passing focused tests, zero semantic differences against candidate B with serialization/metadata differences itemized, executed scorer controls, and the pre-preparation freeze manifest. Fresh preparation starts only after that freeze is accepted. Production adoption remains separate future scope.

@@ -1,0 +1,9 @@
+2026-09-29T00:00:00Z
+FORMAT: ./node_modules/.bin/prettier --write scripts/w107-checkpoint.mjs
+VERIFY: ./node_modules/.bin/prettier --check scripts/w107-checkpoint.mjs
+CI: npm run -s bisellium -- ci --opus W-107 --studio studio
+FORMAT-ACTUAL: /home/edckt/projects/bisellium/node_modules/.bin/prettier --write scripts/w107-checkpoint.mjs
+VERIFY-ACTUAL: /home/edckt/projects/bisellium/node_modules/.bin/prettier --check scripts/w107-checkpoint.mjs
+CI-CLEAN: npm run -s bisellium -- ci --opus W-107 --studio studio > /tmp/w107-ci-clean-20260929.log 2>&1
+CANARY: node docs/research/read-efficiency/targeted-read-eval.mjs canary --output docs/research/read-efficiency-evaluation-2026-09-28/preflight-2026-09-29/canary
+BYPASS-CANARY: node docs/research/read-efficiency/targeted-read-eval.mjs bypass-canary --output docs/research/read-efficiency-evaluation-2026-09-28/preflight-2026-09-29/bypass-canary

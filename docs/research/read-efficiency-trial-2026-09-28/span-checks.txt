@@ -1,0 +1,18 @@
+cold adoption baseline-span then targeted-body payload
+4448dc77b7174c1aa1e671d3d662b1b56f5630580ff62512cdd97ecfedc737a7  -
+4448dc77b7174c1aa1e671d3d662b1b56f5630580ff62512cdd97ecfedc737a7  -
+cold design baseline-span then targeted-body payload
+98198b93d1b5cbf4b6559d57b42b7ba4539b13c6517390ef3f1597b9f2850895  -
+98198b93d1b5cbf4b6559d57b42b7ba4539b13c6517390ef3f1597b9f2850895  -
+cold engineering baseline-span then targeted-body payload
+e8ed110544c40e7b7252e179b011462c17bb0a1156b905e1aa49b1a24ce72f55  -
+e8ed110544c40e7b7252e179b011462c17bb0a1156b905e1aa49b1a24ce72f55  -
+repeat adoption baseline-span then targeted-body payload
+4448dc77b7174c1aa1e671d3d662b1b56f5630580ff62512cdd97ecfedc737a7  -
+4448dc77b7174c1aa1e671d3d662b1b56f5630580ff62512cdd97ecfedc737a7  -
+repeat design baseline-span then targeted-body payload
+98198b93d1b5cbf4b6559d57b42b7ba4539b13c6517390ef3f1597b9f2850895  -
+98198b93d1b5cbf4b6559d57b42b7ba4539b13c6517390ef3f1597b9f2850895  -
+repeat engineering baseline-span then targeted-body payload
+e8ed110544c40e7b7252e179b011462c17bb0a1156b905e1aa49b1a24ce72f55  -
+e8ed110544c40e7b7252e179b011462c17bb0a1156b905e1aa49b1a24ce72f55  -

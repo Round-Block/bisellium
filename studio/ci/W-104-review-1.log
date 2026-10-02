@@ -1,0 +1,19 @@
+# opus: W-104
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: PASS
+# at: 2026-09-28T05:54:22.069Z
+# tree: tree:66e49a4471d1f3389fa7a9e6c151086e4332cd43
+
+PASS
+
+No blocking findings.
+
+- Candidate 2aab2a3 stays within W-104’s declared files. The three assertion reds at 825e400 are separate W-104 behavior tests recorded after signed spec 5520ef7 and before implementation; targeted independent replay passes 3/3.
+- The search-diverse allocator implements fixed global repository-ID/path selection, per-cycle floor quotas, permanent truncation, quota-zero finite progress, ordered range prefixes, and exactly-once per-repository omission accounting, including zero/low caps. Existing search/route paths remain structurally unchanged apart from accepting the new mode.
+- The new mode retains the inherited lexical/canonical exclusions, containment, bounded scan/accounting, Git allowlist/environment, and forbidden-field isolation. No target writes or source execution are introduced.
+- Frozen pilot input hashes and every reported W-104 output hash independently match. A read-only live replay reproduced baseline search byte-for-byte at 028d2e66… and search-diverse byte-for-byte at 49d3eed9….
+- Evaluation is separated after retrieval and conservatively reports 4 Y7 line-unit gains, 0 losses, no recovered target span, and preserved E6 coverage. The negative gate result is therefore correct; no model trial was run.
+- Recorded verification certifies source tree 66e49a44 with tests, lint, and types at exit 0; evidence commit 5fe6ff7 is present and the worktree is clean.

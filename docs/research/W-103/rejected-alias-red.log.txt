@@ -1,0 +1,7 @@
+# behaviour: 6
+# command: node --test --test-isolation=none --test-name-pattern ^behaviour 6 canonical exclusion inventory$ docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-26T16:19:03.035Z
+# sella: builder-sol
+# tree: unknown
+

@@ -1,0 +1,1382 @@
+{
+  "byArm": {
+    "baseline": {
+      "callsAndModelUsage": {
+        "baseline.calls": 23,
+        "baseline.metadataAndErrorBytes": 146171,
+        "baseline.responseBytes": 237951,
+        "baseline.sourceBodyBytes": 91780,
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 696576,
+        "calls": 23,
+        "input_tokens": 865860,
+        "output_tokens": 3819,
+        "reasoning_output_tokens": 838
+      },
+      "categories": {
+        "keyedAnchorBodyBytes": 16539,
+        "nonKeyedBodyBytesInKeyedFiles": 73297,
+        "otherSourceFileBodyBytes": 1944,
+        "responseMetadataAndErrorsBytes": 146171
+      },
+      "expectedResponseBytes": 237951,
+      "reconciles": true,
+      "responseBytes": 237951,
+      "topSourceFiles": [
+        {
+          "bodyBytes": 54697,
+          "path": "docs/program/BOARD.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 6429,
+          "path": "docs/ADOPTION.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 5455,
+          "path": "docs/program/PRODUCT.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 5377,
+          "path": "studio/decisions/D-014.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 5098,
+          "path": "docs/vertical-slice-spec.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 4847,
+          "path": "docs/dev-workflow.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 3710,
+          "path": "docs/program/PROGRAM.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 2775,
+          "path": "CLAUDE.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 1448,
+          "path": "studio/leges/qa.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 979,
+          "path": "AGENTS.md",
+          "repository": "bisellium-main"
+        }
+      ]
+    },
+    "candidate": {
+      "callsAndModelUsage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 1011200,
+        "calls": 35,
+        "fallback.calls": 17,
+        "fallback.metadataAndErrorBytes": 91613,
+        "fallback.responseBytes": 178866,
+        "fallback.sourceBodyBytes": 87253,
+        "input_tokens": 1235212,
+        "other.calls": 6,
+        "other.metadataAndErrorBytes": 63644,
+        "other.responseBytes": 63644,
+        "other.sourceBodyBytes": 0,
+        "output_tokens": 6607,
+        "production.calls": 12,
+        "production.metadataAndErrorBytes": 684,
+        "production.responseBytes": 684,
+        "production.sourceBodyBytes": 0,
+        "reasoning_output_tokens": 2284
+      },
+      "categories": {
+        "keyedAnchorBodyBytes": 16080,
+        "nonKeyedBodyBytesInKeyedFiles": 69530,
+        "otherSourceFileBodyBytes": 1643,
+        "responseMetadataAndErrorsBytes": 155941
+      },
+      "expectedResponseBytes": 243194,
+      "reconciles": true,
+      "responseBytes": 243194,
+      "topSourceFiles": [
+        {
+          "bodyBytes": 37524,
+          "path": "docs/program/BOARD.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 15009,
+          "path": "docs/program/PRODUCT.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 7768,
+          "path": "docs/ADOPTION.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 6383,
+          "path": "studio/decisions/D-014.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 5086,
+          "path": "docs/vertical-slice-spec.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 3753,
+          "path": "docs/program/PROGRAM.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 3413,
+          "path": "studio/leges/qa.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 3413,
+          "path": "docs/dev-workflow.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 3261,
+          "path": "CLAUDE.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 845,
+          "path": "AGENTS.md",
+          "repository": "bisellium-main"
+        }
+      ]
+    }
+  },
+  "classification": {
+    "keyedAnchorBodyBytes": "body line is within any answer-key anchor span for the exact repository/path/SHA-256",
+    "nonKeyedBodyBytesInKeyedFiles": "body line is elsewhere in a file that has one or more answer-key anchors",
+    "otherSourceFileBodyBytes": "body line is in a source file without an answer-key anchor",
+    "responseMetadataAndErrorsBytes": "event UTF-8 text bytes less logical source body bytes; includes JSON encoding/structure and any errors or non-source content"
+  },
+  "measure": "logical UTF-8 source body bytes mapped by answer-key file/hash/line; response-byte remainder is metadata, JSON escaping/structure, errors, and any non-source text. Keyed anchors are a lower bound on necessary evidence; other body bytes are not classified as waste.",
+  "runs": [
+    {
+      "arm": "baseline",
+      "calls": 3,
+      "case": "B8",
+      "categories": {
+        "keyedAnchorBodyBytes": 2638,
+        "nonKeyedBodyBytesInKeyedFiles": 1564,
+        "responseMetadataAndErrorsBytes": 14909
+      },
+      "deliveryChannels": {
+        "baseline": {
+          "calls": 3,
+          "metadataAndErrorBytes": 14909,
+          "responseBytes": 19111,
+          "sourceBodyBytes": 4202
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 4668,
+          "responseBytes": 4668,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 9417,
+          "responseBytes": 11035,
+          "sequence": 2,
+          "sourceBodyBytes": 1618,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 824,
+          "responseBytes": 3408,
+          "sequence": 3,
+          "sourceBodyBytes": 2584,
+          "status": "ok",
+          "tool": "read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 1,
+      "project": "bisellium",
+      "responseBytes": 19111,
+      "toolCalls": {
+        "grep": 1,
+        "orient": 1,
+        "read_file": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 3543,
+          "path": "docs/ADOPTION.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 563,
+          "path": "studio/decisions/D-014.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 96,
+          "path": "studio/leges/qa.md",
+          "repository": "bisellium-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 84736,
+        "input_tokens": 107302,
+        "output_tokens": 497,
+        "reasoning_output_tokens": 96
+      }
+    },
+    {
+      "arm": "candidate",
+      "calls": 7,
+      "case": "B8",
+      "categories": {
+        "keyedAnchorBodyBytes": 1995,
+        "nonKeyedBodyBytesInKeyedFiles": 3144,
+        "otherSourceFileBodyBytes": 76,
+        "responseMetadataAndErrorsBytes": 9192
+      },
+      "deliveryChannels": {
+        "fallback": {
+          "calls": 3,
+          "metadataAndErrorBytes": 4353,
+          "responseBytes": 9568,
+          "sourceBodyBytes": 5215
+        },
+        "other": {
+          "calls": 1,
+          "metadataAndErrorBytes": 4668,
+          "responseBytes": 4668,
+          "sourceBodyBytes": 0
+        },
+        "production": {
+          "calls": 3,
+          "metadataAndErrorBytes": 171,
+          "responseBytes": 171,
+          "sourceBodyBytes": 0
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 4668,
+          "responseBytes": 4668,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 2,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 3,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 4,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 1168,
+          "responseBytes": 1259,
+          "sequence": 5,
+          "sourceBodyBytes": 91,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 878,
+          "responseBytes": 5634,
+          "sequence": 6,
+          "sourceBodyBytes": 4756,
+          "status": "ok",
+          "tool": "fallback_read_file"
+        },
+        {
+          "metadataAndErrorBytes": 2307,
+          "responseBytes": 2675,
+          "sequence": 7,
+          "sourceBodyBytes": 368,
+          "status": "ok",
+          "tool": "fallback_grep"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 2,
+      "project": "bisellium",
+      "responseBytes": 14407,
+      "toolCalls": {
+        "fallback_grep": 2,
+        "fallback_read_file": 1,
+        "locate": 3,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 5139,
+          "path": "docs/ADOPTION.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 76,
+          "path": "README.md",
+          "repository": "bisellium-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 180736,
+        "input_tokens": 216767,
+        "output_tokens": 1069,
+        "reasoning_output_tokens": 286
+      }
+    },
+    {
+      "arm": "candidate",
+      "calls": 6,
+      "case": "B9",
+      "categories": {
+        "keyedAnchorBodyBytes": 3501,
+        "nonKeyedBodyBytesInKeyedFiles": 8924,
+        "otherSourceFileBodyBytes": 845,
+        "responseMetadataAndErrorsBytes": 33866
+      },
+      "deliveryChannels": {
+        "fallback": {
+          "calls": 3,
+          "metadataAndErrorBytes": 29038,
+          "responseBytes": 42308,
+          "sourceBodyBytes": 13270
+        },
+        "other": {
+          "calls": 1,
+          "metadataAndErrorBytes": 4714,
+          "responseBytes": 4714,
+          "sourceBodyBytes": 0
+        },
+        "production": {
+          "calls": 2,
+          "metadataAndErrorBytes": 114,
+          "responseBytes": 114,
+          "sourceBodyBytes": 0
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 4714,
+          "responseBytes": 4714,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 2,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 3,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 14371,
+          "responseBytes": 16833,
+          "sequence": 4,
+          "sourceBodyBytes": 2462,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 13177,
+          "responseBytes": 15378,
+          "sequence": 5,
+          "sourceBodyBytes": 2201,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 1490,
+          "responseBytes": 10097,
+          "sequence": 6,
+          "sourceBodyBytes": 8607,
+          "status": "ok",
+          "tool": "fallback_read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 3,
+      "project": "bisellium",
+      "responseBytes": 47136,
+      "toolCalls": {
+        "fallback_grep": 2,
+        "fallback_read_file": 1,
+        "locate": 2,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 6383,
+          "path": "studio/decisions/D-014.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 3413,
+          "path": "studio/leges/qa.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 2629,
+          "path": "docs/ADOPTION.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 845,
+          "path": "AGENTS.md",
+          "repository": "bisellium-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 152576,
+        "input_tokens": 200269,
+        "output_tokens": 1165,
+        "reasoning_output_tokens": 355
+      }
+    },
+    {
+      "arm": "baseline",
+      "calls": 4,
+      "case": "B9",
+      "categories": {
+        "keyedAnchorBodyBytes": 3515,
+        "nonKeyedBodyBytesInKeyedFiles": 5537,
+        "otherSourceFileBodyBytes": 979,
+        "responseMetadataAndErrorsBytes": 27675
+      },
+      "deliveryChannels": {
+        "baseline": {
+          "calls": 4,
+          "metadataAndErrorBytes": 27675,
+          "responseBytes": 37706,
+          "sourceBodyBytes": 10031
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 4714,
+          "responseBytes": 4714,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 14371,
+          "responseBytes": 16833,
+          "sequence": 2,
+          "sourceBodyBytes": 2462,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 6874,
+          "responseBytes": 8116,
+          "sequence": 3,
+          "sourceBodyBytes": 1242,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 1716,
+          "responseBytes": 8043,
+          "sequence": 4,
+          "sourceBodyBytes": 6327,
+          "status": "ok",
+          "tool": "read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 4,
+      "project": "bisellium",
+      "responseBytes": 37706,
+      "toolCalls": {
+        "grep": 2,
+        "orient": 1,
+        "read_file": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 4814,
+          "path": "studio/decisions/D-014.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 2886,
+          "path": "docs/ADOPTION.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 1352,
+          "path": "studio/leges/qa.md",
+          "repository": "bisellium-main"
+        },
+        {
+          "bodyBytes": 979,
+          "path": "AGENTS.md",
+          "repository": "bisellium-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 117248,
+        "input_tokens": 146959,
+        "output_tokens": 919,
+        "reasoning_output_tokens": 272
+      }
+    },
+    {
+      "arm": "baseline",
+      "calls": 4,
+      "case": "E8",
+      "categories": {
+        "keyedAnchorBodyBytes": 2195,
+        "nonKeyedBodyBytesInKeyedFiles": 16311,
+        "responseMetadataAndErrorsBytes": 22306
+      },
+      "deliveryChannels": {
+        "baseline": {
+          "calls": 4,
+          "metadataAndErrorBytes": 22306,
+          "responseBytes": 40812,
+          "sourceBodyBytes": 18506
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 10998,
+          "responseBytes": 10998,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 4986,
+          "responseBytes": 8301,
+          "sequence": 2,
+          "sourceBodyBytes": 3315,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 5108,
+          "responseBytes": 17654,
+          "sequence": 3,
+          "sourceBodyBytes": 12546,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 1214,
+          "responseBytes": 3859,
+          "sequence": 4,
+          "sourceBodyBytes": 2645,
+          "status": "ok",
+          "tool": "read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 5,
+      "project": "epoch0",
+      "responseBytes": 40812,
+      "toolCalls": {
+        "grep": 2,
+        "orient": 1,
+        "read_file": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 18445,
+          "path": "docs/program/BOARD.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 61,
+          "path": "docs/program/PRODUCT.md",
+          "repository": "epoch0-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 118272,
+        "input_tokens": 146445,
+        "output_tokens": 480,
+        "reasoning_output_tokens": 94
+      }
+    },
+    {
+      "arm": "candidate",
+      "calls": 5,
+      "case": "E8",
+      "categories": {
+        "keyedAnchorBodyBytes": 2353,
+        "nonKeyedBodyBytesInKeyedFiles": 5779,
+        "otherSourceFileBodyBytes": 57,
+        "responseMetadataAndErrorsBytes": 25064
+      },
+      "deliveryChannels": {
+        "fallback": {
+          "calls": 3,
+          "metadataAndErrorBytes": 14009,
+          "responseBytes": 22198,
+          "sourceBodyBytes": 8189
+        },
+        "other": {
+          "calls": 1,
+          "metadataAndErrorBytes": 10998,
+          "responseBytes": 10998,
+          "sourceBodyBytes": 0
+        },
+        "production": {
+          "calls": 1,
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sourceBodyBytes": 0
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 10998,
+          "responseBytes": 10998,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 2,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 398,
+          "responseBytes": 398,
+          "sequence": 3,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 12416,
+          "responseBytes": 18950,
+          "sequence": 4,
+          "sourceBodyBytes": 6534,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 1195,
+          "responseBytes": 2850,
+          "sequence": 5,
+          "sourceBodyBytes": 1655,
+          "status": "ok",
+          "tool": "fallback_read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 6,
+      "project": "epoch0",
+      "responseBytes": 33253,
+      "toolCalls": {
+        "fallback_grep": 2,
+        "fallback_read_file": 1,
+        "locate": 1,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 8132,
+          "path": "docs/program/BOARD.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 57,
+          "path": "AGENTS.md",
+          "repository": "epoch0-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 139520,
+        "input_tokens": 164637,
+        "output_tokens": 782,
+        "reasoning_output_tokens": 261
+      }
+    },
+    {
+      "arm": "candidate",
+      "calls": 9,
+      "case": "E9",
+      "categories": {
+        "keyedAnchorBodyBytes": 3353,
+        "nonKeyedBodyBytesInKeyedFiles": 44801,
+        "responseMetadataAndErrorsBytes": 43919
+      },
+      "deliveryChannels": {
+        "fallback": {
+          "calls": 4,
+          "metadataAndErrorBytes": 32721,
+          "responseBytes": 80875,
+          "sourceBodyBytes": 48154
+        },
+        "other": {
+          "calls": 1,
+          "metadataAndErrorBytes": 10970,
+          "responseBytes": 10970,
+          "sourceBodyBytes": 0
+        },
+        "production": {
+          "calls": 4,
+          "metadataAndErrorBytes": 228,
+          "responseBytes": 228,
+          "sourceBodyBytes": 0
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 10970,
+          "responseBytes": 10970,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 2,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 3,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 4,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 5,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 13523,
+          "responseBytes": 18886,
+          "sequence": 6,
+          "sourceBodyBytes": 5363,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 16557,
+          "responseBytes": 40586,
+          "sequence": 7,
+          "sourceBodyBytes": 24029,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 1714,
+          "responseBytes": 17415,
+          "sequence": 8,
+          "sourceBodyBytes": 15701,
+          "status": "ok",
+          "tool": "fallback_read_file"
+        },
+        {
+          "metadataAndErrorBytes": 927,
+          "responseBytes": 3988,
+          "sequence": 9,
+          "sourceBodyBytes": 3061,
+          "status": "ok",
+          "tool": "fallback_read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 7,
+      "project": "epoch0",
+      "responseBytes": 92073,
+      "toolCalls": {
+        "fallback_grep": 2,
+        "fallback_read_file": 2,
+        "locate": 4,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 29392,
+          "path": "docs/program/BOARD.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 15009,
+          "path": "docs/program/PRODUCT.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 3753,
+          "path": "docs/program/PROGRAM.md",
+          "repository": "epoch0-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 302080,
+        "input_tokens": 349315,
+        "output_tokens": 1640,
+        "reasoning_output_tokens": 562
+      }
+    },
+    {
+      "arm": "baseline",
+      "calls": 5,
+      "case": "E9",
+      "categories": {
+        "keyedAnchorBodyBytes": 3274,
+        "nonKeyedBodyBytesInKeyedFiles": 42082,
+        "otherSourceFileBodyBytes": 73,
+        "responseMetadataAndErrorsBytes": 33820
+      },
+      "deliveryChannels": {
+        "baseline": {
+          "calls": 5,
+          "metadataAndErrorBytes": 33820,
+          "responseBytes": 79249,
+          "sourceBodyBytes": 45429
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 10970,
+          "responseBytes": 10970,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 10918,
+          "responseBytes": 29836,
+          "sequence": 2,
+          "sourceBodyBytes": 18918,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 2187,
+          "responseBytes": 5631,
+          "sequence": 3,
+          "sourceBodyBytes": 3444,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 8352,
+          "responseBytes": 23086,
+          "sequence": 4,
+          "sourceBodyBytes": 14734,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 1393,
+          "responseBytes": 9726,
+          "sequence": 5,
+          "sourceBodyBytes": 8333,
+          "status": "ok",
+          "tool": "read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 8,
+      "project": "epoch0",
+      "responseBytes": 79249,
+      "toolCalls": {
+        "grep": 3,
+        "orient": 1,
+        "read_file": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 36252,
+          "path": "docs/program/BOARD.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 5394,
+          "path": "docs/program/PRODUCT.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 3710,
+          "path": "docs/program/PROGRAM.md",
+          "repository": "epoch0-main"
+        },
+        {
+          "bodyBytes": 73,
+          "path": "AGENTS.md",
+          "repository": "epoch0-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 167168,
+        "input_tokens": 207066,
+        "output_tokens": 720,
+        "reasoning_output_tokens": 128
+      }
+    },
+    {
+      "arm": "baseline",
+      "calls": 4,
+      "case": "Y8",
+      "categories": {
+        "keyedAnchorBodyBytes": 2173,
+        "nonKeyedBodyBytesInKeyedFiles": 6489,
+        "otherSourceFileBodyBytes": 486,
+        "responseMetadataAndErrorsBytes": 25643
+      },
+      "deliveryChannels": {
+        "baseline": {
+          "calls": 4,
+          "metadataAndErrorBytes": 25643,
+          "responseBytes": 34791,
+          "sourceBodyBytes": 9148
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 16124,
+          "responseBytes": 16124,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 6883,
+          "responseBytes": 8976,
+          "sequence": 2,
+          "sourceBodyBytes": 2093,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 1762,
+          "responseBytes": 5135,
+          "sequence": 3,
+          "sourceBodyBytes": 3373,
+          "status": "ok",
+          "tool": "read_file"
+        },
+        {
+          "metadataAndErrorBytes": 874,
+          "responseBytes": 4556,
+          "sequence": 4,
+          "sourceBodyBytes": 3682,
+          "status": "ok",
+          "tool": "read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 9,
+      "project": "yan-mo",
+      "responseBytes": 34791,
+      "toolCalls": {
+        "grep": 1,
+        "orient": 1,
+        "read_file": 2
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 4787,
+          "path": "docs/vertical-slice-spec.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 3388,
+          "path": "docs/dev-workflow.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 487,
+          "path": "CLAUDE.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 486,
+          "path": "README.md",
+          "repository": "yan-mo-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 119296,
+        "input_tokens": 147066,
+        "output_tokens": 702,
+        "reasoning_output_tokens": 90
+      }
+    },
+    {
+      "arm": "candidate",
+      "calls": 4,
+      "case": "Y8",
+      "categories": {
+        "keyedAnchorBodyBytes": 1634,
+        "nonKeyedBodyBytesInKeyedFiles": 5935,
+        "otherSourceFileBodyBytes": 486,
+        "responseMetadataAndErrorsBytes": 24028
+      },
+      "deliveryChannels": {
+        "fallback": {
+          "calls": 2,
+          "metadataAndErrorBytes": 7847,
+          "responseBytes": 15902,
+          "sourceBodyBytes": 8055
+        },
+        "other": {
+          "calls": 1,
+          "metadataAndErrorBytes": 16124,
+          "responseBytes": 16124,
+          "sourceBodyBytes": 0
+        },
+        "production": {
+          "calls": 1,
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sourceBodyBytes": 0
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 16124,
+          "responseBytes": 16124,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 2,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 6457,
+          "responseBytes": 8280,
+          "sequence": 3,
+          "sourceBodyBytes": 1823,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 1390,
+          "responseBytes": 7622,
+          "sequence": 4,
+          "sourceBodyBytes": 6232,
+          "status": "ok",
+          "tool": "fallback_read_file"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 10,
+      "project": "yan-mo",
+      "responseBytes": 32083,
+      "toolCalls": {
+        "fallback_grep": 1,
+        "fallback_read_file": 1,
+        "locate": 1,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 4884,
+          "path": "docs/vertical-slice-spec.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 2198,
+          "path": "docs/dev-workflow.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 487,
+          "path": "CLAUDE.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 486,
+          "path": "README.md",
+          "repository": "yan-mo-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 115200,
+        "input_tokens": 142234,
+        "output_tokens": 1063,
+        "reasoning_output_tokens": 481
+      }
+    },
+    {
+      "arm": "candidate",
+      "calls": 4,
+      "case": "Y9",
+      "categories": {
+        "keyedAnchorBodyBytes": 3244,
+        "nonKeyedBodyBytesInKeyedFiles": 947,
+        "otherSourceFileBodyBytes": 179,
+        "responseMetadataAndErrorsBytes": 19872
+      },
+      "deliveryChannels": {
+        "fallback": {
+          "calls": 2,
+          "metadataAndErrorBytes": 3645,
+          "responseBytes": 8015,
+          "sourceBodyBytes": 4370
+        },
+        "other": {
+          "calls": 1,
+          "metadataAndErrorBytes": 16170,
+          "responseBytes": 16170,
+          "sourceBodyBytes": 0
+        },
+        "production": {
+          "calls": 1,
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sourceBodyBytes": 0
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 16170,
+          "responseBytes": 16170,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 57,
+          "responseBytes": 57,
+          "sequence": 2,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "locate"
+        },
+        {
+          "metadataAndErrorBytes": 804,
+          "responseBytes": 1454,
+          "sequence": 3,
+          "sourceBodyBytes": 650,
+          "status": "ok",
+          "tool": "fallback_grep"
+        },
+        {
+          "metadataAndErrorBytes": 2841,
+          "responseBytes": 6561,
+          "sequence": 4,
+          "sourceBodyBytes": 3720,
+          "status": "ok",
+          "tool": "fallback_grep"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 11,
+      "project": "yan-mo",
+      "responseBytes": 24242,
+      "toolCalls": {
+        "fallback_grep": 2,
+        "locate": 1,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 2774,
+          "path": "CLAUDE.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 1215,
+          "path": "docs/dev-workflow.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 202,
+          "path": "docs/vertical-slice-spec.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 179,
+          "path": "README.md",
+          "repository": "yan-mo-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 121088,
+        "input_tokens": 161990,
+        "output_tokens": 888,
+        "reasoning_output_tokens": 339
+      }
+    },
+    {
+      "arm": "baseline",
+      "calls": 3,
+      "case": "Y9",
+      "categories": {
+        "keyedAnchorBodyBytes": 2744,
+        "nonKeyedBodyBytesInKeyedFiles": 1314,
+        "otherSourceFileBodyBytes": 406,
+        "responseMetadataAndErrorsBytes": 21818
+      },
+      "deliveryChannels": {
+        "baseline": {
+          "calls": 3,
+          "metadataAndErrorBytes": 21818,
+          "responseBytes": 26282,
+          "sourceBodyBytes": 4464
+        }
+      },
+      "events": [
+        {
+          "metadataAndErrorBytes": 16170,
+          "responseBytes": 16170,
+          "sequence": 1,
+          "sourceBodyBytes": 0,
+          "status": "ok",
+          "tool": "orient"
+        },
+        {
+          "metadataAndErrorBytes": 1208,
+          "responseBytes": 1995,
+          "sequence": 2,
+          "sourceBodyBytes": 787,
+          "status": "ok",
+          "tool": "grep"
+        },
+        {
+          "metadataAndErrorBytes": 4440,
+          "responseBytes": 8117,
+          "sequence": 3,
+          "sourceBodyBytes": 3677,
+          "status": "ok",
+          "tool": "grep"
+        }
+      ],
+      "mappingFailures": [],
+      "ordinal": 12,
+      "project": "yan-mo",
+      "responseBytes": 26282,
+      "toolCalls": {
+        "grep": 2,
+        "orient": 1
+      },
+      "topSourceFiles": [
+        {
+          "bodyBytes": 2288,
+          "path": "CLAUDE.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 1459,
+          "path": "docs/dev-workflow.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 406,
+          "path": "README.md",
+          "repository": "yan-mo-main"
+        },
+        {
+          "bodyBytes": 311,
+          "path": "docs/vertical-slice-spec.md",
+          "repository": "yan-mo-main"
+        }
+      ],
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 89856,
+        "input_tokens": 111022,
+        "output_tokens": 501,
+        "reasoning_output_tokens": 158
+      }
+    }
+  ],
+  "sources": {
+    "answerKey": "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/answer-key.json",
+    "runRoot": "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/run-v1-2026-09-29",
+    "runs": 12
+  },
+  "version": 1
+}

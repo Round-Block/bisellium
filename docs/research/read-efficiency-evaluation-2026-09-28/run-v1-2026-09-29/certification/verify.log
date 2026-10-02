@@ -1,0 +1,3 @@
+tests: passed  ci/W-107-tests-0e4c3f0d.log
+lint: passed  ci/W-107-lint-0e4c3f0d.log
+types: passed  ci/W-107-types-0e4c3f0d.log

@@ -1,0 +1,28 @@
+# behaviour: 1
+# command: node --import tsx docs/research/read-efficiency/W-109-public-canary.test.mjs b1 .
+# exit: 1
+# at: 2026-09-29T04:16:27.779Z
+# sella: builder-sol
+# tree: dirty:ceffdf2b12cf5dd67983b9ff44695e75ac1b889e
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'INTERNAL'
+- 'DRIFT'
+
+    at behaviour1 (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:84:10)
+    at async file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:89:25 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'INTERNAL',
+  expected: 'DRIFT',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0

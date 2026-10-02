@@ -1,0 +1,164 @@
+# behaviour: 1
+# command: node --test --test-isolation=none --test-name-pattern=behaviour 1 docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-26T15:22:20.143Z
+# sella: builder-sol
+# tree: dirty:91dcef9ef0a15b49e4aecbfcdd0a3e71db41d14d
+
+▶ behaviour 1 scoped identity and retrieval
+  ✖ retains same task ID in different projects and binding-supplied repository IDs, including root aliases (9.183357ms)
+  ✖ searches every project repository in code-unit order and merges adjacent line hits (3.679845ms)
+  ✖ tokenizes unique lowercase ASCII alphanumerics of length three or more (2.166455ms)
+  ✖ route reads only explicitly mapped current files and never falls back to search (2.902315ms)
+  ✖ rejects missing, duplicate, cross-project, non-integer, and out-of-range route bindings up front (2.105115ms)
+  ✖ enforces structural maxima and executes exactly fifteen cases in both modes (2.497235ms)
+✖ behaviour 1 scoped identity and retrieval (24.851466ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 0
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 47.29083
+
+✖ failing tests:
+
+test at docs/research/bisellium-maps-harness.test.mjs:110:11
+✖ retains same task ID in different projects and binding-supplied repository IDs, including root aliases (9.183357ms)
+  AssertionError [ERR_ASSERTION]: project scoping and supplied repository IDs must survive duplicate task IDs and canonical-root aliases
+  + actual - expected
+  
+    [
+      [
+        'TASK-1',
+        'alpha',
+        [
+  +       'z-real',
+          'a-alias',
+  -       'z-real'
+        ]
+      ],
+      [
+        'TASK-1',
+        'beta',
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:128:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:110:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:135:11
+✖ searches every project repository in code-unit order and merges adjacent line hits (3.679845ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'z',
+      'a',
+  -   'z'
+    ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:145:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:135:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:152:11
+✖ tokenizes unique lowercase ASCII alphanumerics of length three or more (2.166455ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   [
+  -     [
+  -       2,
+  -       3
+  -     ]
+  -   ]
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:159:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:152:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:162:11
+✖ route reads only explicitly mapped current files and never falls back to search (2.902315ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'r.md'
+  - ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:174:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:162:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:179:11
+✖ rejects missing, duplicate, cross-project, non-integer, and out-of-range route bindings up front (2.105115ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:186:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:179:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /unmapped.*TASK-1.*0/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:194:11
+✖ enforces structural maxima and executes exactly fifteen cases in both modes (2.497235ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:205:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:194:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /15.*cases|cases.*15/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }

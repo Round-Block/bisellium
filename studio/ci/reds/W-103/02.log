@@ -1,0 +1,153 @@
+# behaviour: 2
+# command: node --test --test-isolation=none --test-name-pattern=behaviour 2 docs/research/bisellium-maps-harness.test.mjs
+# exit: 1
+# at: 2026-09-26T15:22:21.074Z
+# sella: builder-sol
+# tree: dirty:91dcef9ef0a15b49e4aecbfcdd0a3e71db41d14d
+
+▶ behaviour 2 honest degradation
+  ✖ keeps two healthy repositories usable while reporting a missing repository (8.608606ms)
+  ✖ reports missing route files, non-Git roots, and unsupported bindings explicitly (11.16382ms)
+  ✖ uses only the Git allowlist, literal selected paths, scrubbed environment, timeout, and independent output caps (2.928214ms)
+  ✖ counts actual attempted calls, omits empty status, and never tries fallback Git commands (2.067281ms)
+  ✖ discards partial identity independently on timeout, stdout overflow, and stderr overflow (1.73571ms)
+✖ behaviour 2 honest degradation (28.390261ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 0
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49.360034
+
+✖ failing tests:
+
+test at docs/research/bisellium-maps-harness.test.mjs:221:11
+✖ keeps two healthy repositories usable while reporting a missing repository (8.608606ms)
+  AssertionError [ERR_ASSERTION]: a missing repository must be explicit without suppressing either healthy repository
+  + actual - expected
+  
+    [
+      [
+  +     'one',
+  +     'unimplemented',
+  -     'missing',
+  -     'unavailable',
+        0
+      ],
+      [
+  +     'missing',
+  +     'unimplemented',
+  +     0
+  -     'one',
+  -     'complete',
+  -     1
+      ],
+      [
+        'two',
+  +     'unimplemented',
+  +     0
+  -     'complete',
+  -     1
+      ]
+    ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:233:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:221:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:240:11
+✖ reports missing route files, non-Git roots, and unsupported bindings explicitly (11.16382ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(repo.failures.some(failure => failure.path === "moved.md" && /unavailable|missing|ENOENT/i.test(failure.reason)))
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:251:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:240:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:257:11
+✖ uses only the Git allowlist, literal selected paths, scrubbed environment, timeout, and independent output caps (2.928214ms)
+  AssertionError [ERR_ASSERTION]: the counter must equal the three calls actually attempted
+  
+  0 !== 3
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:268:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:257:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 3,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:290:11
+✖ counts actual attempted calls, omits empty status, and never tries fallback Git commands (2.067281ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:300:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:290:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/bisellium-maps-harness.test.mjs:311:11
+✖ discards partial identity independently on timeout, stdout overflow, and stderr overflow (1.73571ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'timeout',
+      'unknown',
+      'unknown',
+      'unknown',
+  +   0,
+  +   0
+  -   1,
+  -   1
+    ]
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:325:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:311:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Array],
+    expected: [Array],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

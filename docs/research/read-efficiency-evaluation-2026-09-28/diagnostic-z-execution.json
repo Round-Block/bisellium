@@ -1,0 +1,29 @@
+{
+  "runnerSha256": "a95ebaa61c584e81cc13130f57eb5f490e842046bde3e81f0626fe49504fff3a",
+  "originalPreparedAt": "2026-09-28T14:18:29.124410+00:00",
+  "fieldType": "string",
+  "onlyDiagnosticChange": "preparedAt trailing +00:00 to Z (identical UTC instant)",
+  "authoritativeInputsUnchanged": true,
+  "command": [
+    "node",
+    "--import",
+    "tsx",
+    "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/targeted-read-eval.mjs",
+    "freeze-validate",
+    "--data-root",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28",
+    "--registry",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/registry.json",
+    "--cases",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/cases.json",
+    "--key",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/answer-key.json",
+    "--manifest",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/diagnostic-z-manifest.json",
+    "--output",
+    "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/validation-diagnostic-z.json"
+  ],
+  "exitCode": 0,
+  "stdout": "{\"version\":1,\"status\":\"VALID\",\"errorCodes\":[],\"hashes\":{\"registry\":\"593ea5f324e2663bf31068782eed7698450f9885a622481e3955ee5fbaa4cd04\",\"cases\":\"ac27f57723e992a0755577a63f60dbc2be0e342af44af15630312d335ce0eb49\",\"keyCommitment\":\"a678f298d91e2b97292dba7760eb922bf39da21ac799dac25709f542b12054ea\",\"manifest\":\"231805569fc82688d18f0eb407468fffedec34c79ef392d7066e71e2f301b218\"}}\n",
+  "stderr": ""
+}

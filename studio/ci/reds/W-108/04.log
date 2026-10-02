@@ -1,0 +1,17 @@
+# behaviour: 4
+# command: node --import tsx docs/research/read-efficiency/source-adapter-preflight.test.mjs . 4
+# exit: 1
+# at: 2026-09-29T03:08:25.517Z
+# sella: builder-sol
+# tree: dirty:0e4c3f0d931539b3c6096f34cedbabd7763b98d1
+
+FAIL b4 live runner gates every frozen predicate before one spawn
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'REFUSED'
+- 'SPAWNED'
+
+    at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:416:10
+    at async test (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:33:5)
+    at async file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:352:1

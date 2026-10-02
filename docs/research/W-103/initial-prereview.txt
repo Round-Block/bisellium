@@ -1,0 +1,16 @@
+Advisory pre-review — concrete acceptance gaps (no verdict):
+
+1. **Excluded oracle artifacts can re-enter through an in-root symlink.**  
+   [bisellium-maps-harness.mjs:40](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:40) applies exclusions only to the lexical manifest path; [line 44](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:44) resolves it but never applies exclusions to the canonical target. Failing input: manifest `["safe.md"]`, exclusion inventory `["research/oracle.md"]`, and `safe.md -> research/oracle.md`. The target remains contained, is read, and can match search tokens—contrary to canonical-path exclusion and anti-alias requirements.
+
+2. **Malformed route bindings can crash rather than reject explicitly.**  
+   [lines 22 and 60](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:22) use coerced string keys for validation but strict numeric equality for lookup. A route with `reference: "0"` satisfies `seen` for reference `0`, then `.find()` returns `undefined` and `x.route.repository` throws `TypeError`. This is neither an upfront invalid-binding rejection nor the required explicit unmapped route result. The same validation also permits more than 128 references per case; a case with 129 references and matching routes is accepted.
+
+3. **Git accounting and stderr bound are not as specified.**  
+   [lines 27–31](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:27) sets one combined 64 KiB `maxBuffer`, allowing up to 64 KiB stderr instead of the 16 KiB cap. [Line 28](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:28) reports planned calls, not actual calls: for any selected file in a non-Git temporary fixture, `rev-parse` is the sole attempted call, yet output reports `gitCalls: 3`. That contradicts required actual counters.
+
+4. **The supplied tests do not genuinely cover the signed containment/budget cases.**  
+   In [test line 51](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.test.mjs:51), `files: 1` means sorted `beta.ts` consumes the only candidate before `escape.md` is reached; the assertion at line 53 can pass solely from the earlier `../one/alpha.md` traversal rejection. Thus it does not exercise the escaping symlink. No test covers parent-symlink escape, binary input, oversized input, each scan budget independently, canonical exclusion aliases, Git stderr/output limits, or actual Git-call counts. All tests use one synthetic case, not the required 15-case execution.
+
+5. **Recorded-red acceptance evidence is absent on the stated facts.**  
+   The brief requires one assertion-level red per behaviour. The reported initial logs containing only headers plus exit 1 contain no assertion payload, so they cannot substantiate those five required reds.

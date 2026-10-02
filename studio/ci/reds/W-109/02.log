@@ -1,0 +1,26 @@
+# behaviour: 2
+# command: node --import tsx docs/research/read-efficiency/W-109-public-canary.test.mjs b2 .
+# exit: 1
+# at: 2026-09-29T04:19:40.498Z
+# sella: builder-sol
+# tree: dirty:ceffdf2b12cf5dd67983b9ff44695e75ac1b889e
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+null !== 0
+
+    at behaviour2 (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:117:10)
+    at async file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs:134:30 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: null,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v25.9.0

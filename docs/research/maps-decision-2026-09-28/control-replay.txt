@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+python3 - <<'PY'
+import copy,hashlib,json
+from pathlib import Path
+B=Path("docs/research/maps-sufficiency-2026-09-28");D=Path("docs/research/maps-decision-2026-09-28")
+L=lambda p:json.loads(p.read_text()); H=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+K=L(D/"development-key.json");R=L(B/"route-results.json");P=L(B/"packet-A.json");O=L(B/"answer-key.json")
+assert H(B/"packet-A.json")==K["inputs"]["curatedPacket"]["sha256"]
+def lines(d,k):
+ z={}
+ for c in d.get(k,[]):
+  for r in c.get("repositories",[]):
+   for f in r.get("files",[]):
+    for g,e in zip(f.get("ranges",[]),f.get("excerpts",[])):
+     for n,s in enumerate(e.splitlines(),g[0]):z[c["id"],r["repository"],f["path"],f["sha256"],n]=s
+ return z
+RL=lines(R,"results")
+def sh(d,a,cid):
+ s=lines(d,"cases").get((cid,a["repository"],a["path"],a["fileSha256"],a["startLine"]))
+ return s is not None and s[a["startCharacter"]-1:a["endCharacterExclusive"]-1]==a["exactText"]
+def rh(a,cid):
+ s=RL.get((cid,a["repository"],a["path"],a["fileSha256"],a["startLine"]))
+ return s is not None and s[a["startCharacter"]-1:a["endCharacterExclusive"]-1]==a["exactText"]
+def mh(d,a):
+ c=next((x for x in d.get("cases",[]) if x.get("id")==a["caseId"]),None);badkeys={"liveArtifacts","deploymentLedger","startupEvidence","schemaMigrationsRows"}
+ def bad(x):return (isinstance(x,dict) and (bool(badkeys&set(x)) or any(bad(v) for v in x.values()))) or (isinstance(x,list) and any(bad(v) for v in x))
+ return c is not None and bool(c.get("repositories")) and all(r.get("files") for r in c["repositories"]) and not bad(c)
+def ah(d,a,c):return sh(d,a,c) if a["type"]=="sourceText" else mh(d,a)
+def req(d,c,r):return bool(r["evidenceAnchors"]) and all(ah(d,a,c) for a in r["evidenceAnchors"])
+def mask(d,cid,a):
+ m=copy.deepcopy(d)
+ if a["type"]=="metadataCriterion":
+  next(x for x in m["cases"] if x["id"]==a["caseId"])["repositories"]=[];return m,1
+ n=0
+ for c in m["cases"]:
+  if c["id"]!=cid:continue
+  for r in c["repositories"]:
+   if r["repository"]!=a["repository"]:continue
+   for f in r["files"]:
+    if f["path"]!=a["path"] or f["sha256"]!=a["fileSha256"]:continue
+    for i,(g,e) in enumerate(zip(f["ranges"],f["excerpts"])):
+     if g[0]<=a["startLine"]<=g[1]:
+      ls=e.splitlines();j=a["startLine"]-g[0]
+      if a["exactText"] in ls[j]:
+       ls[j]=ls[j].replace(a["exactText"],"¤"*len(a["exactText"]),1);f["excerpts"][i]="\n".join(ls);n+=1
+ return m,n
+OB={x["id"]:x for x in O["cases"]};sc=[];pos=[];emp=[];mut=[];E={"cases":[]}
+for c in K["cases"]:
+ labels={(s["repository"],s["path"],s["fileSha256"]) for s in OB[c["id"]]["authoritativeSources"]}
+ for r in c["requiredEvidence"]:
+  ac=[]
+  for a in r["evidenceAnchors"]:
+   ac.append(rh(a,c["id"]) and sh(P,a,c["id"]) and (a["repository"],a["path"],a["fileSha256"]) in labels if a["type"]=="sourceText" else mh(P,a) and a["artifactSha256"]==H(B/"packet-A.json"))
+  sc.append(r["questionClause"] in c["question"] and all(ac));pos.append(req(P,c["id"],r));emp.append(req(E,c["id"],r))
+  for a in r["evidenceAnchors"]:
+   m,n=mask(P,c["id"],a);after=req(m,c["id"],r);mut.append({"caseId":c["id"],"requirementId":r["id"],"maskedAnchorId":a["id"],"actualMaskCount":n,"requirementPassAfterMask":after,"detected":n==1 and not after})
+res={"sourceAndQuestionChecksPassed":all(sc),"curatedPacketPassedAllRequirements":all(pos),"emptyPacketFailedAllRequirements":all(not x for x in emp),"everyActualAnchorMaskFailedItsRequirement":all(x["detected"] for x in mut),"caseCount":len(K["cases"]),"requirementCount":len(pos),"anchorMutationCount":len(mut)}
+res["overallPass"]=all(res[x] for x in ["sourceAndQuestionChecksPassed","curatedPacketPassedAllRequirements","emptyPacketFailedAllRequirements","everyActualAnchorMaskFailedItsRequirement"])
+assert res["overallPass"] and res["requirementCount"]==17 and res["anchorMutationCount"]==39
+C=L(D/"measurement-controls.json");C["version"]=2;C["correction"]={"date":"2026-09-28","reason":"Initial retained command asserted stored booleans and deletion rows were constructed, not packet mutations.","action":"Replay derives source/question matches, evaluates an empty packet, and masks each actual text or metadata anchor in a packet copy.","keyOrAnchorChange":False};C["replayEvidence"]={"command":"bash docs/research/maps-decision-2026-09-28/control-replay.txt","result":res,"mutants":mut};(D/"measurement-controls.json").write_text(json.dumps(C,indent=2,ensure_ascii=False)+"\n")
+N=D/"measurement-notes.md";t=N.read_text();mark="## Control replay correction"
+if mark not in t:
+ t+="\n"+mark+"\n\nThe initial retained command only asserted prewritten summary booleans, and its deletion rows were constructed rather than produced by packet mutation. control-replay.txt corrects this: it rechecks frozen excerpts and labels, evaluates a synthetic empty packet, then masks each exact source fragment or removes E7 static-corpus metadata in an independent packet copy. Replay passed 17 requirements and detected all 39 mutations. Key and anchors did not change.\n";N.write_text(t)
+print(json.dumps({"result":res,"mutantsDetected":sum(x["detected"] for x in mut),"mutants":mut},indent=2))
+PY

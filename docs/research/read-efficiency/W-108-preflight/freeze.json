@@ -1,0 +1,368 @@
+{
+  "version": 1,
+  "kind": "w108-source-adapter-freeze",
+  "createdAt": "2026-09-29T03:18:07.647Z",
+  "protocolVersion": "2025-06-18",
+  "objective": "Find the public synthetic fact and cite its exact source.md line.",
+  "prompt": "Use only the w108_source tools. Call orient first, then locate and read to find the requested public synthetic fact. Reply with the fact and its exact source.md:<line> citation. Do not guess or use any other tool.",
+  "expectedFact": "cobalt-orchid-731",
+  "citationPredicate": {
+    "path": "source.md",
+    "line": 3,
+    "exact": "source.md:3"
+  },
+  "limits": {
+    "callAttempts": 4,
+    "totalResultBytes": 32768,
+    "resultReservationBytes": 8192,
+    "inboundLineBytes": 16384,
+    "protocolMessages": 64,
+    "modelEventLines": 256,
+    "modelEventBytes": 1048576,
+    "stderrBytes": 65536,
+    "canaryDeadlineMs": 120000,
+    "startupDeadlineMs": 10000,
+    "productionDeadlineMs": 10000
+  },
+  "schemas": [
+    {
+      "name": "orient",
+      "description": "Bind this session to the frozen public synthetic source fixture.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {}
+      }
+    },
+    {
+      "name": "locate",
+      "description": "Locate a bounded query in the bound fixture.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "query"
+        ],
+        "properties": {
+          "query": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^(?!.*[\\u0000-\\u001f\\u007f])[\\s\\S]+$"
+          },
+          "maxResults": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 4
+          }
+        }
+      }
+    },
+    {
+      "name": "read",
+      "description": "Read exact locations returned by the preceding locate call.",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "locations"
+        ],
+        "properties": {
+          "locations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repository",
+                "path",
+                "startLine",
+                "endLine"
+              ],
+              "properties": {
+                "repository": {
+                  "type": "string",
+                  "enum": [
+                    "w108-fixture"
+                  ]
+                },
+                "path": {
+                  "type": "string",
+                  "enum": [
+                    "AGENTS.md",
+                    "source.md"
+                  ]
+                },
+                "startLine": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                },
+                "endLine": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                }
+              }
+            }
+          },
+          "maxSectionChars": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1024,
+            "default": 1024
+          }
+        }
+      }
+    }
+  ],
+  "eventSchema": {
+    "allowedEvents": [
+      "thread.started",
+      "turn.started",
+      "item.started",
+      "item.updated",
+      "item.completed",
+      "turn.completed"
+    ],
+    "allowedItems": [
+      "reasoning",
+      "agent_message",
+      "mcp_tool_call"
+    ],
+    "server": "w108_source"
+  },
+  "hashes": {
+    "driver": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.mjs",
+      "bytes": 54785,
+      "sha256": "a1a04ddf2ee37545ae1c691aabac551edda80be8ee8a0e9afa1025fb6cbcc2e1"
+    },
+    "test": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs",
+      "bytes": 19816,
+      "sha256": "9d8188d74f6f72acb7cbd9eafcfc8f3983fb4ae35685320bd026fd0761fe132c"
+    },
+    "productionSource": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/packages/commands/src/source.ts",
+      "bytes": 33966,
+      "sha256": "5c094ca69e67bfefc85ac029bf1e8d7cc548725497aedcdb629fc8c2ecdd35e1"
+    },
+    "registry": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json",
+      "bytes": 438,
+      "sha256": "8b41927615fd30ae43059a1c0c30cdcd15109597fe40c28678c8741f580cd599"
+    },
+    "fixtures": {
+      "AGENTS.md": {
+        "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project/AGENTS.md",
+        "bytes": 98,
+        "sha256": "7a4a63ce80fd4dd9386c711315abd2b4c593019792ce5e4f5a722cba6da3f3f5"
+      },
+      "source.md": {
+        "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project/source.md",
+        "bytes": 71,
+        "sha256": "12a1e83fd32ce73c2bdf80054228a09aede061b67c1a9d4099fde5f5dc3e358c"
+      }
+    }
+  },
+  "fixtureIdentity": {
+    "checkoutRoot": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment",
+    "registryPath": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json",
+    "registryBytes": 438,
+    "registrySha256": "8b41927615fd30ae43059a1c0c30cdcd15109597fe40c28678c8741f580cd599",
+    "registry": {
+      "version": 1,
+      "projects": [
+        {
+          "id": "w108-canary",
+          "repositories": [
+            {
+              "id": "w108-fixture",
+              "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+              "corpusFiles": [
+                "AGENTS.md",
+                "source.md"
+              ],
+              "instructionFiles": [
+                "AGENTS.md"
+              ],
+              "state": "public-synthetic"
+            }
+          ]
+        }
+      ]
+    },
+    "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+    "rootIdentity": "62fd5b6c3d65d51b4e4b9c1b3dc072a7ad4045c5b03d5e38edc387adc971b9f9",
+    "gitHead": "e60b1e517c047e338f30ac17704f4df75da5fc4b",
+    "gitBranch": "codex/source-adapter-canary",
+    "files": {
+      "AGENTS.md": {
+        "bytes": 98,
+        "sha256": "7a4a63ce80fd4dd9386c711315abd2b4c593019792ce5e4f5a722cba6da3f3f5",
+        "lines": 3
+      },
+      "source.md": {
+        "bytes": 71,
+        "sha256": "12a1e83fd32ce73c2bdf80054228a09aede061b67c1a9d4099fde5f5dc3e358c",
+        "lines": 3
+      }
+    }
+  },
+  "deterministic": {
+    "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-108-preflight/deterministic-result.json",
+    "sha256": "309e78917ca9e6c9b0f0b465012310fa2992b9f7e28306fec20e419779ef610c",
+    "outcome": "PASS",
+    "behaviours": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "executable": {
+    "path": "/home/linuxbrew/.linuxbrew/lib/node_modules/@openai/codex/bin/codex.js",
+    "bytes": 8790,
+    "sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+    "version": "codex-cli 0.153.4"
+  },
+  "node": {
+    "path": "/home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin/node",
+    "bytes": 36472,
+    "sha256": "446ae94fa7a47882d568a4923d1b3a42c40e0cfaadec7f7873d514f18408ce83",
+    "version": "v25.9.0"
+  },
+  "argv": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "--ignore-user-config",
+    "--ignore-rules",
+    "--strict-config",
+    "--skip-git-repo-check",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"low\"",
+    "-c",
+    "mcp_servers.w108_source.command=\"/home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin/node\"",
+    "-c",
+    "mcp_servers.w108_source.args=[\"/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.mjs\",\"mcp-server\",\"--registry\",\"/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json\",\"--transcript\",\"/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-108-preflight/server-transcript.jsonl\",\"--freeze\",\"/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-108-preflight/freeze.json\"]",
+    "-c",
+    "mcp_servers.w108_source.env={}",
+    "--disable",
+    "apps",
+    "--disable",
+    "artifact",
+    "--disable",
+    "browser_use",
+    "--disable",
+    "browser_use_external",
+    "--disable",
+    "browser_use_full_cdp_access",
+    "--disable",
+    "code_mode_host",
+    "--disable",
+    "computer_use",
+    "--disable",
+    "goals",
+    "--disable",
+    "hooks",
+    "--disable",
+    "image_generation",
+    "--disable",
+    "in_app_browser",
+    "--disable",
+    "multi_agent",
+    "--disable",
+    "plugin_sharing",
+    "--disable",
+    "plugins",
+    "--disable",
+    "shell_snapshot",
+    "--disable",
+    "shell_snapshot_v2",
+    "--disable",
+    "shell_tool",
+    "--disable",
+    "skill_env_var_dependency_prompt",
+    "--disable",
+    "skill_mcp_dependency_install",
+    "--disable",
+    "skill_search",
+    "--disable",
+    "sleep_tool",
+    "--disable",
+    "standalone_web_search",
+    "--disable",
+    "tool_call_mcp_elicitation",
+    "--disable",
+    "tool_suggest",
+    "--disable",
+    "unified_exec",
+    "--disable",
+    "view_image",
+    "--disable",
+    "workspace_dependencies",
+    "--sandbox",
+    "read-only",
+    "-C",
+    "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-108-preflight/empty-cwd",
+    "-"
+  ],
+  "model": "gpt-5.6-luna",
+  "effort": "low",
+  "effectiveConfiguration": {
+    "ignoreUserConfig": true,
+    "ignoreRules": true,
+    "strictConfig": true,
+    "sandbox": "read-only",
+    "disabledFeatures": [
+      "apps",
+      "artifact",
+      "browser_use",
+      "browser_use_external",
+      "browser_use_full_cdp_access",
+      "code_mode_host",
+      "computer_use",
+      "goals",
+      "hooks",
+      "image_generation",
+      "in_app_browser",
+      "multi_agent",
+      "plugin_sharing",
+      "plugins",
+      "shell_snapshot",
+      "shell_snapshot_v2",
+      "shell_tool",
+      "skill_env_var_dependency_prompt",
+      "skill_mcp_dependency_install",
+      "skill_search",
+      "sleep_tool",
+      "standalone_web_search",
+      "tool_call_mcp_elicitation",
+      "tool_suggest",
+      "unified_exec",
+      "view_image",
+      "workspace_dependencies"
+    ],
+    "mcpServers": [
+      "w108_source"
+    ]
+  },
+  "configPreflight": {
+    "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-108-preflight/config-preflight.json",
+    "sha256": "801eb76cdffb21d46b2e357dbeade83f29ede61e1ea3c4690b5595fb8dcbe2ad",
+    "outcome": "REFUSED",
+    "reason": "EFFECTIVE_TOOL_INVENTORY_UNPROVEN",
+    "explicitToolInventoryFound": false,
+    "modelSpawns": 0
+  }
+}

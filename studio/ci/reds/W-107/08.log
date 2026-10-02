@@ -1,0 +1,26 @@
+# behaviour: 8
+# command: node docs/research/read-efficiency/targeted-read-eval-a1.test.mjs .
+# exit: 1
+# at: 2026-09-28T15:53:26.915Z
+# sella: builder-sol
+# tree: dirty:d5f96a6135d00feba89f00acb42aa778023d4ad3
+
+PASS  b8/A1 nonempty scalar preparation validates                                          {"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"1f4e8b38cd89f18c5f2892b6a97502fcbd03a70841656a326a7a030650001b5f"}}
+
+PASS  b8/A1 empty/object/array/null/omitted preparation fail closed                        1,1,1,1,1
+PASS  b8/A1 duplicate anchor identity is rejected                                          {"version":1,"status":"INVALID","errorCodes":["ANCHOR"],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"d1b7a93055195efdf70133f78ec5aeb07f88d44884b9f5455057bdc234816049","manifest":"55362c3311236623b404cd0029f1ec6b4023397cad01395e8c23e1fd65072348"}}
+
+PASS  b8/A1 anchor must belong to its owning case project                                  {"version":1,"status":"INVALID","errorCodes":["ANCHOR"],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"431b2914b180739165cb16e769c9607d0a573090f51eabf56410a8b01f8ff52d","manifest":"a6d2b86586757e6a3ddb3ed996287807897b19857872ee47b94e93eb7d7244dc"}}
+
+PASS  b8/A1 oversized coverage requires a cited file over 4096 code points                 {"version":1,"status":"INVALID","errorCodes":["COVERAGE"],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"68578fec614f4c717d15a230d5bda78f4a5eea0f79b517f494bf2c341299678e","manifest":"aa160126f61cf2864ed12ca83534aec21a21649fd507971f488464ccc7bd694e"}}
+
+PASS  b8/A1 registry requires the three named evaluation projects                          {"version":1,"status":"INVALID","errorCodes":["REGISTRY"],"hashes":{"registry":"b2521bb87e911dc68e1313d7958ac8cd47425f3f629631a06a64d64c057a50fc","cases":"3dddba6ec254cd246c56a298df7d4d282d90709c69c06b90627ca7cbd1a372e7","keyCommitment":"3845144700021560b7d2db169eb9444aaafd1d9ee56c9fbe1c76ba94464818c8","manifest":"f9cf0457f1d8a3e9b260f8f0b935da769126af3fe189e4cfce131fe4ff9e7a92"}}
+
+FAIL  b8/A1 preparedAt accepts equivalent Z and +00:00 UTC forms                           {"version":1,"status":"INVALID","errorCodes":["MANIFEST"],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"5e555faba0fd340d6a429192bd9058b277a1a50007610536a96fef4ca7c1c24e"}}
+{"version":1,"status":"VALID","errorCodes":[],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"b7783762b9813d79993a29ef1a23847744e093b7c9fac09ac03b7f8e871eec6b"}}
+
+FAIL  b8/A1 preparedAt rejects nonzero offsets, missing zones, invalid dates and non-strings 1,1,1,0,1
+PASS  b8/A1 lexically traversing snapshotPath is rejected                                  {"version":1,"status":"INVALID","errorCodes":["CONFINEMENT"],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"93d166043eaa5190168be5ce4d009ebd07ea50339e23947b2a52a4e10adc11d2"}}
+
+PASS  b8/A1 symlink snapshotPath is rejected even when target is in root                   {"version":1,"status":"INVALID","errorCodes":["CONFINEMENT"],"hashes":{"registry":"547448687340f4720f3e8d6c28e9357fe248dfc138d0812702fdfa775de6264a","cases":"58545a27561d2b7cf439327a8b8671317a25409eed655d59f0c5ff638affb903","keyCommitment":"bf4e073f44ce958876eea9e0dbd3965a5ba6e8dcb472089f880cb42962b2c849","manifest":"1bc4240ab32c4d729c0739fde2a5b1b2f118bbbce02cecd3881c8e88d3a31290"}}
+

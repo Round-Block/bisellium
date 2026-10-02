@@ -1,0 +1,53 @@
+# opus: W-108
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: FAIL
+# at: 2026-09-29T03:46:28.584Z
+# tree: tree:ceffdf2b12cf5dd67983b9ff44695e75ac1b889e
+
+# W-108 sole-censor review
+
+Verdict: **FAIL**  
+Live usability: **UNPROVEN**  
+Adoption or larger evaluation: **NOT AUTHORIZED**
+
+## Findings
+
+1. **BLOCKING — The signed live-canary path is not implemented.**
+
+   The brief requires a runnable `live-canary` subcommand. The driver exposes only `record-refusal`, `config-preflight`, and `mcp-server`. Reproduction:
+
+   ```text
+   node --import tsx docs/research/read-efficiency/source-adapter-preflight.mjs live-canary
+   exit 1
+   usage: source-adapter-preflight.mjs mcp-server ...
+   ```
+
+   `runLiveCanary` only invokes injected `createMarker` and `spawnModel` functions and returns `SPAWNED`. No production path creates the attempt marker, launches the frozen command, captures bounded events and stderr, enforces the whole-canary deadline, invokes `verifyCanary`, or persists the result. Behaviours 4 and 5 therefore test disconnected synthetic seams rather than an executable live flow.
+
+2. **BLOCKING — The signed process-timeout guarantee is not enforced or tested.**
+
+   The amendment requires a 10-second production deadline and termination of the server process for a synchronous library hang. At `source-adapter-preflight.mjs:498`, `runSourceImpl(...)` is evaluated synchronously before its result enters `within(...)`; a synchronous hang therefore prevents the timer at lines 348–360 from running. The MCP server has no post-initialization whole-canary deadline, and finding 1 leaves no parent process-group controller.
+
+   Behaviour 3 covers failed results, retries, byte limits, and extra calls, but does not cover the required synchronous-hang/process-termination case.
+
+3. **ADVISORY — Retained README text contains two U+0014 control characters.**
+
+   They appear where punctuation should separate the outcome and deterministic-result clauses. This does not alter the refusal result but makes the retained human evidence malformed.
+
+## Confirmed evidence
+
+- The configuration preflight correctly retained `REFUSED: EFFECTIVE_TOOL_INVENTORY_UNPROVEN`.
+- Model spawns, tool calls, result bytes, usage, server transcript, and model events are all zero or empty.
+- Frozen driver, test, production-source, registry, and fixture hashes match the current files.
+- All five recorded reds are ordered assertion-level failures and predate the retained freeze.
+- Focused behaviours 1–5 reproduce with exit 0.
+- Current certificates report tests, lint, and types passing for source tree `ceffdf2b12cf5dd67983b9ff44695e75ac1b889e`.
+- `bisellium check` reports `PASS — 0 blocking, 171 advisory`.
+- The worktree is clean.
+
+The preflight refusal was correct and avoided unnecessary model usage. It does not cure the two missing signed implementation requirements, and no live canary ran.
+
+No model trial, repair, evidence edit, mutation campaign, or lifecycle write was performed by the Censor. The producer must persist this verdict verbatim through the owning verdict and review commands under D-021.

@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "id": "bisellium",
+      "repositories": [
+        {
+          "id": "bisellium-main",
+          "root": "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/snapshots/bisellium",
+          "corpusFiles": [
+            "AGENTS.md",
+            "README.md",
+            "docs/ADOPTION.md",
+            "studio/leges/qa.md",
+            "studio/decisions/D-014.md"
+          ],
+          "instructionFiles": [
+            "AGENTS.md"
+          ],
+          "state": "Frozen read-only documentation snapshot captured 2026-09-28; claims concern this corpus, not a live deployment or live worktree."
+        }
+      ]
+    },
+    {
+      "id": "epoch0",
+      "repositories": [
+        {
+          "id": "epoch0-main",
+          "root": "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/snapshots/epoch0",
+          "corpusFiles": [
+            "AGENTS.md",
+            "README.md",
+            "docs/program/PROGRAM.md",
+            "docs/program/BOARD.md",
+            "docs/program/PRODUCT.md"
+          ],
+          "instructionFiles": [
+            "AGENTS.md"
+          ],
+          "state": "Frozen read-only documentation snapshot captured 2026-09-28; claims concern this corpus, not a live deployment or live worktree."
+        }
+      ]
+    },
+    {
+      "id": "yan-mo",
+      "repositories": [
+        {
+          "id": "yan-mo-main",
+          "root": "/home/edckt/projects/bisellium/docs/research/read-efficiency-evaluation-2026-09-28/snapshots/yan-mo",
+          "corpusFiles": [
+            "CLAUDE.md",
+            "README.md",
+            "docs/dev-workflow.md",
+            "docs/vertical-slice-spec.md"
+          ],
+          "instructionFiles": [
+            "CLAUDE.md",
+            "README.md"
+          ],
+          "state": "Frozen read-only documentation snapshot captured 2026-09-28; claims concern this corpus, not a live deployment or live worktree."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "pilot": "/home/edckt/projects/bisellium/docs/research/maps-sufficiency-2026-09-28",
+  "hashes": {
+    "route-dataset.json": "dc013b89360bfa0429057ae059695361f35c5798c8960675d1e61f4a6729bfbf",
+    "bindings.json": "1db1a587e1befe0e76174e14cf647dbab49191ea0471d7c6686c94d2290c74f6",
+    "answer-key.json": "3aa6b52306ad95b511bf9b06ab2f9099e64e06e043d81a58e616f5a4d9585083",
+    "route-results.json": "8b063b433c67c433e4cce83a13cf6299d2d4bff4d762ccb6e6124dac7f984a68",
+    "search-results.json": "028d2e66b363005b2569568c00c1e10986344f33a7f36256a5c2cd2638abc9fc"
+  }
+}

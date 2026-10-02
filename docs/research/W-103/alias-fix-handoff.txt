@@ -1,0 +1,14 @@
+Fixed W-103’s reverse alias exclusion in [bisellium-maps-harness.mjs](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/bisellium-maps-harness.mjs:156).
+
+- Canonicalizes valid exclusion inventory paths within each repository.
+- Rejects corpus paths resolving to the same canonical file.
+- Preserves signed scan, directory, open, and byte counters.
+- Leaves production, target projects, reports, and recorded red evidence untouched.
+- No result metrics changed, so the 15-case captures/report were not regenerated.
+
+Verification:
+
+- Targeted harness: 33/33 tests pass.
+- Prettier applied to both harness files.
+- `git diff --check` passes.
+- No direct CLI capture attempted; root may proxy the sandbox CLI case if required.

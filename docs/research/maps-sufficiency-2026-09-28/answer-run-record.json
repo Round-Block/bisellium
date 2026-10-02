@@ -1,0 +1,19 @@
+{
+  "model": "gpt-5.6-luna",
+  "reasoning": "low",
+  "freshContexts": true,
+  "replicatesPerCondition": 1,
+  "conditionA": "curated route",
+  "conditionB": "lexical search",
+  "answersFrozenBeforeAssessment": true,
+  "answersHashes": {
+    "answers-A.json": "9ceaa204af2712aa31a4aa333e8f3dedb85f9e96048f0ca1741b56edf6f782c3",
+    "answers-B.json": "fc5849ea059a85527b88179a629ac4071a42b7b3f59712cd479771e5521b8cfe"
+  },
+  "inputInstructionFile": "answer-instructions.txt",
+  "notes": [
+    "Root saved exact returned JSON content; no answer retry or editing.",
+    "Packet ranges list includes only ranges corresponding to supplied excerpts, in original order; last excerpt may be truncated.",
+    "Both answer agents were allowed to read only their packet and identical answer instructions."
+  ]
+}

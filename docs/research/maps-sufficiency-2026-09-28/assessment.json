@@ -1,0 +1,126 @@
+{
+  "assessor": "independent Sol-high",
+  "producerAction": "Exact assessor text saved; rows mechanically transcribed from supplied table, no rescoring.",
+  "rows": [
+    {
+      "condition": "A",
+      "case": "B6",
+      "facts": "complete",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "All workflow facts correct; missing keyed caveat that contract does not establish a particular execution. Answer omission; curated packet complete."
+    },
+    {
+      "condition": "A",
+      "case": "B7",
+      "facts": "complete",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Algorithm, exclusions, excluded-change result and distinct dirty check correct; missing current-certificate caveat. Answer omission; packet complete."
+    },
+    {
+      "condition": "A",
+      "case": "E6",
+      "facts": "complete",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Scoped artifact, no implementation and no merge authority correct; missing particular-design status caveat. Answer omission; packet complete."
+    },
+    {
+      "condition": "A",
+      "case": "E7",
+      "facts": "partial",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "satisfied",
+      "sufficient": "no",
+      "finding": "Correct addition, immutable history, restart/hash behavior and live-state abstention; omits filename order and `schema_migrations`. Both were in packet: answer error."
+    },
+    {
+      "condition": "A",
+      "case": "Y6",
+      "facts": "partial",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Correct branch/worktree, journal-on-branch, push, completion/PR and Edene merge; omits docs applicability, `main` role, close-out note, and status caveat. Answer error."
+    },
+    {
+      "condition": "A",
+      "case": "Y7",
+      "facts": "complete",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Grey-box art/animation and legible-not-polished tell exception conveyed; missing observed-build caveat. Answer error."
+    },
+    {
+      "condition": "B",
+      "case": "B6",
+      "facts": "none",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Correct packet-gap abstention but none of evidence-file, no-record-mutation or `review --evidence` facts; missing execution caveat. Retrieval cap/order omitted ADOPTION.md; 421 excerpts omitted."
+    },
+    {
+      "condition": "B",
+      "case": "B7",
+      "facts": "partial",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "High-level source/not-bookkeeping and excluded-path stability only; missing exact algorithm, raw-tree distinction, explicit standard exclusions, status caveat. Retrieval cap/order omitted ADOPTION.md; 410 omitted."
+    },
+    {
+      "condition": "B",
+      "case": "E6",
+      "facts": "complete",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "All role/merge facts correct; valid format limitation does not supply keyed particular-design status caveat. Answer error; decisive AGENTS excerpts present."
+    },
+    {
+      "condition": "B",
+      "case": "E7",
+      "facts": "partial",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "satisfied",
+      "sufficient": "no",
+      "finding": "Correct addition/history/hash/live-state points; omits explicit startup, filename order, `schema_migrations` name. Mixed: startup/ledger present but model omitted; capped line ended at `filename` before `order`."
+    },
+    {
+      "condition": "B",
+      "case": "Y6",
+      "facts": "none",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Precise packet-gap abstention but none of journal branch/worktree, close-out/PR or merger facts; missing current-task caveat. Cap/order selected only CLAUDE.md at 5,999 chars; 81 omitted."
+    },
+    {
+      "condition": "B",
+      "case": "Y7",
+      "facts": "none",
+      "citations": "supported",
+      "unsupportedMaterialClaim": "no",
+      "requiredUncertainty": "missed",
+      "sufficient": "no",
+      "finding": "Correct packet-gap abstention but none of grey-box/tell-exception facts; missing observed-build caveat. Cap/order selected only CLAUDE.md at 6,000 chars; 49 omitted."
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# behaviour: 1
+# command: node --import tsx docs/research/read-efficiency/source-adapter-preflight.test.mjs . 1
+# exit: 1
+# at: 2026-09-29T02:59:28.715Z
+# sella: builder-sol
+# tree: dirty:0e4c3f0d931539b3c6096f34cedbabd7763b98d1
+
+FAIL b1 closed concrete schemas and strict argument validation
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
++ []
+- [
+-   'orient',
+-   'locate',
+-   'read'
+- ]
+
+    at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:23:10
+    at test (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:14:11)
+    at file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.test.mjs:22:7
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:639:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)

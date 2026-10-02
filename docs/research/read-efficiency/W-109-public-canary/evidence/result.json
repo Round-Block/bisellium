@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "outcome": "FAIL",
+  "reason": "TRANSCRIPT_MISSING",
+  "modelSpawns": 1,
+  "freezeSha256": "5af241974d0d3089badae1df1a89a296e38fe1f0911af787c46fdb5fd0d93993",
+  "stderrBytes": 317,
+  "stdoutBytes": 719
+}

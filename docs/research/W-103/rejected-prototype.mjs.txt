@@ -1,0 +1,65 @@
+#!/usr/bin/env node
+import { createHash } from "node:crypto";
+import { readFile, lstat, realpath } from "node:fs/promises";
+import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+const MAX_INPUT = 1024 * 1024;
+const MAX = { directories: 128, files: 512, opens: 128, bytes: 8388608, fileBytes: 262144, excerptFiles: 16, excerptCharacters: 16384 };
+const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs", ".cjs", ".json", ".md", ".toml", ".yaml", ".yml", ".txt", ".py", ".rs", ".go", ".cs", ".gd", ".sh", ".css", ".html", ".svelte", ".vue"]);
+const BLOCKED = new Set([".git", "node_modules", "vendor", "assets", ".worktrees", "worktrees", "dist", "build", "coverage", "research", "briefs", "reports", "test", "tests", "__tests__"]);
+const fail = message => { throw new Error(message); };
+const lexical = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+function validRelative(value) { if (typeof value !== "string" || !value || value.length > 1024 || value.includes("\\") || path.posix.isAbsolute(value) || /^[A-Za-z]:/.test(value)) return false; const parts = value.split("/"); return parts.length <= 32 && parts.every(p => p && p !== "." && p !== "..") && EXTENSIONS.has(path.posix.extname(value).toLowerCase()); }
+function exclusionReason(value, inventory) { if (!validRelative(value)) return "invalid or traversal path"; const parts = value.split("/"); if (parts.some(p => BLOCKED.has(p)) || /\.(?:test|spec)\./.test(parts.at(-1))) return "excluded path"; if (inventory.has(value)) return "excluded inventory path"; return null; }
+function limits(input = {}) { const out = {}; for (const [key, max] of Object.entries(MAX)) { const value = input[key] ?? max; if (!Number.isInteger(value) || value < 0 || value > max) fail(`invalid budget ${key}`); out[key] = value; } return out; }
+function validate(dataset, binding, mode) {
+  if (!dataset || !Array.isArray(dataset.cases) || dataset.cases.length > 15) fail("unsupported dataset");
+  if (!binding?.projects || Object.keys(binding.projects).length > 16 || !["search", "route"].includes(mode)) fail("unsupported binding");
+  for (const [project, p] of Object.entries(binding.projects)) { if (!Array.isArray(p.repositories) || p.repositories.length > 8) fail(`unsupported repositories for ${project}`); const ids = new Set(); for (const r of p.repositories) { if (!r?.id || ids.has(r.id) || typeof r.root !== "string" || !Array.isArray(r.corpusFiles) || r.corpusFiles.length > 512) fail(`duplicate or unsupported repository in ${project}`); ids.add(r.id); } }
+  if (mode === "route") { const seen = new Set(); for (const route of binding.routes ?? []) { const key = `${route.project}\0${route.case}\0${route.reference}`; if (seen.has(key)) fail(`ambiguous route ${route.project}/${route.case}/${route.reference}`); seen.add(key); if (!binding.projects[route.project]?.repositories.some(r => r.id === route.repository)) fail(`unmapped route repository ${route.repository}`); } for (const c of dataset.cases) for (let i = 0; i < (c.references ?? []).length; i++) if (!seen.has(`${c.project}\0${c.id}\0${i}`)) fail(`unmapped route ${c.project}/${c.id}/${i}`); }
+}
+async function gitIdentity(root, selected) {
+  const base = ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null", "-c", "core.untrackedCache=false"];
+  const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_"))); Object.assign(env, { GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null" });
+  const call = async args => (await execFileAsync("git", [...base, ...args], { cwd: root, env, timeout: 2000, maxBuffer: 65536 })).stdout.trim();
+  const identity = { head: "unknown", branch: "unknown", dirty: "unknown", dirtyScope: "selected-paths", gitCalls: selected.length ? 3 : 2 };
+  try { identity.head = await call(["rev-parse", "--verify", "HEAD"]); } catch { return identity; }
+  try { identity.branch = (await call(["symbolic-ref", "--short", "-q", "HEAD"])) || "detached"; } catch { identity.branch = "detached"; }
+  if (selected.length) try { identity.dirty = (await call(["status", "--porcelain=v1", "-z", "--untracked-files=no", "--ignore-submodules=all", "--", ...selected.map(p => `:(literal)${p}`)])) !== ""; } catch { identity.dirty = "unknown"; }
+  return identity;
+}
+async function repositoryResult(repo, candidates, mode, tokens, capturedByPath, budget, inventory) {
+  const result = { repository: repo.id, root: repo.root, coverage: "complete", limit: null, limits: budget, metrics: { directories: 0, candidates: 0, opens: 0, bytes: 0, omittedExcerpts: 0, rejections: 0 }, failures: [], files: [], identity: { head: "unknown", branch: "unknown", dirty: "unknown", dirtyScope: "selected-paths", gitCalls: 0 } };
+  const sample = (file, reason) => { result.metrics.rejections++; if (result.failures.length < 32) result.failures.push({ path: file, reason }); };
+  let root; try { if (budget.directories < 1) throw new Error("directory budget"); result.metrics.directories++; root = await realpath(repo.root); } catch (e) { result.coverage = e.message === "directory budget" ? "incomplete" : "unavailable"; result.limit = e.message === "directory budget" ? "directories" : null; sample(".", e.message); return result; }
+  const rootPrefix = root.endsWith(path.sep) ? root : root + path.sep; const dirs = new Set(["."]);
+  for (const rel of candidates) {
+    const reason = exclusionReason(rel, inventory); if (reason) { sample(rel, reason); continue; }
+    if (result.metrics.candidates >= budget.files) { result.coverage = "incomplete"; result.limit = "files"; break; } result.metrics.candidates++;
+    const parents = []; let parent = path.posix.dirname(rel); while (parent !== "." && !dirs.has(parent)) { parents.push(parent); parent = path.posix.dirname(parent); }
+    let rejected = false; for (const dir of parents.reverse()) { if (result.metrics.directories >= budget.directories) { result.coverage = "incomplete"; result.limit = "directories"; rejected = true; break; } result.metrics.directories++; dirs.add(dir); try { const canonical = await realpath(path.join(root, dir)); if (canonical !== root && !canonical.startsWith(rootPrefix)) { sample(rel, "parent symlink escape"); rejected = true; break; } } catch (e) { sample(rel, `parent unavailable: ${e.code ?? e.message}`); rejected = true; break; } } if (rejected) { if (result.limit) break; continue; }
+    let canonical, stat; try { canonical = await realpath(path.join(root, rel)); if (canonical !== root && !canonical.startsWith(rootPrefix)) { sample(rel, "symlink escape"); continue; } stat = await lstat(canonical); } catch (e) { sample(rel, `unavailable: ${e.code ?? e.message}`); continue; }
+    if (!stat.isFile()) { sample(rel, "not a regular file"); continue; } if (stat.size > budget.fileBytes) { sample(rel, "oversized file"); continue; }
+    if (result.metrics.opens >= budget.opens) { result.coverage = "incomplete"; result.limit = "opens"; break; } if (result.metrics.bytes + stat.size > budget.bytes) { result.coverage = "incomplete"; result.limit = "bytes"; break; }
+    result.metrics.opens++; result.metrics.bytes += stat.size; let bytes; try { bytes = await readFile(canonical); } catch (e) { sample(rel, `read failed: ${e.code ?? e.message}`); continue; }
+    let text; try { if (bytes.includes(0)) throw new Error(); text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { sample(rel, "binary or invalid UTF-8"); continue; }
+    const lines = text.split(/\r?\n/); let ranges = []; const captured = capturedByPath.get(rel) ?? [];
+    if (mode === "route") ranges = captured.map(x => [Math.max(1, x.start ?? 1), Math.min(lines.length, x.end ?? x.start ?? 1)]); else { const hits = lines.map((line, i) => tokens.some(t => line.toLowerCase().includes(t)) ? i + 1 : 0).filter(Boolean); for (const n of hits) { const last = ranges.at(-1); if (last && n === last[1] + 1) last[1] = n; else ranges.push([n, n]); } }
+    if (!ranges.length) continue; const excerpts = []; let chars = result.files.reduce((n, f) => n + f.excerpts.join("").length, 0);
+    if (result.files.length < budget.excerptFiles) for (const [start, end] of ranges) { const excerpt = lines.slice(start - 1, end).join("\n"); const available = Math.max(0, budget.excerptCharacters - chars); if (!available) { result.metrics.omittedExcerpts++; continue; } excerpts.push(excerpt.slice(0, available)); chars += Math.min(excerpt.length, available); if (excerpt.length > available) result.metrics.omittedExcerpts++; } else result.metrics.omittedExcerpts += ranges.length;
+    const sha256 = createHash("sha256").update(bytes).digest("hex"); result.files.push({ path: rel, ranges, excerpts, sha256, ...(mode === "route" ? { capturedHashMatches: captured.every(x => x.fileSha256 === sha256) } : {}) });
+  }
+  result.identity = await gitIdentity(root, result.files.map(f => f.path)); return result;
+}
+export async function runExperiment(dataset, binding, mode, inputLimits = {}) {
+  const budget = limits(inputLimits); validate(dataset, binding, mode); const inventory = new Set(binding.exclusions ?? []); const results = [];
+  for (const c of dataset.cases) { const project = binding.projects[c.project]; if (!project) fail(`unsupported project ${c.project}`); const repositories = []; const tokens = [...new Set((c.question.match(/[A-Za-z0-9]+/g) ?? []).map(x => x.toLowerCase()).filter(x => x.length >= 3))];
+    for (const repo of [...project.repositories].sort((a, b) => lexical(a.id, b.id))) { let candidates; const capturedByPath = new Map(); if (mode === "search") candidates = [...new Set(repo.corpusFiles)].sort(lexical); else { const refs = (c.references ?? []).map((ref, i) => ({ ref, route: binding.routes.find(x => x.project === c.project && x.case === c.id && x.reference === i) })).filter(x => x.route.repository === repo.id); candidates = [...new Set(refs.map(x => x.ref.path))].sort(lexical); for (const x of refs) capturedByPath.set(x.ref.path, [...(capturedByPath.get(x.ref.path) ?? []), x.ref]); } repositories.push(await repositoryResult(repo, candidates, mode, tokens, capturedByPath, budget, inventory)); }
+    results.push({ id: c.id, project: c.project, question: c.question, repositories }); }
+  return { version: 1, mode, limits: budget, results };
+}
+async function readJson(file) { const bytes = await readFile(file); if (bytes.length > MAX_INPUT) fail(`JSON input exceeds 1 MiB: ${file}`); return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+if (import.meta.url === `file://${process.argv[1]}`) { const args = Object.fromEntries(process.argv.slice(2).map(x => { const i = x.indexOf("="); if (i < 0) fail("arguments must use --name=value"); return [x.slice(2, i), x.slice(i + 1)]; })); if (!args.dataset || !args.binding || !args.mode) fail("required: --dataset= --binding= --mode="); process.stdout.write(JSON.stringify(await runExperiment(await readJson(args.dataset), await readJson(args.binding), args.mode, args.limits ? JSON.parse(args.limits) : {})) + "\n"); }

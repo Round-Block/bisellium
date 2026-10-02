@@ -1,0 +1,23 @@
+path: docs/ADOPTION.md
+11:## Vocabulary
+81:## bisellium verdict
+101:## decisions/D-nnn.md and lessons/L-nnn.md
+164:## bisellium retro
+214:## bisellium.yml
+357:## Lifecycle (fixed)
+400:## bisellium amend
+442:## opera/<id>.md
+476:## petitiones/<id>.md
+505:## acta/<date>-<slug>.md
+521:## aerarium/<period>.yml and usage.yml
+556:## Running check
+579:## The SOURCE tree hash
+620:## Running run and verify
+672:## Running ci
+714:## Writing to a studio (handoff, emit, answer, greenlight, budget)
+783:## The `.bisellium/` directory
+821:## Running serve
+941:## Running tick, pause and resume
+995:## Running talk
+1175:## Running probe
+1210:## Harness hooks (Claude Code)

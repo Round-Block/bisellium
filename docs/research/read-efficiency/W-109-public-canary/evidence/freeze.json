@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "kind": "w109-public-canary",
+  "protocolVersion": "2025-06-18",
+  "objective": "Find the public synthetic fact and cite its exact source.md line.",
+  "fixtureIdentity": {
+    "checkoutRoot": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment",
+    "registryPath": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json",
+    "registryBytes": 438,
+    "registrySha256": "8b41927615fd30ae43059a1c0c30cdcd15109597fe40c28678c8741f580cd599",
+    "registry": {
+      "version": 1,
+      "projects": [
+        {
+          "id": "w108-canary",
+          "repositories": [
+            {
+              "id": "w108-fixture",
+              "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+              "corpusFiles": [
+                "AGENTS.md",
+                "source.md"
+              ],
+              "instructionFiles": [
+                "AGENTS.md"
+              ],
+              "state": "public-synthetic"
+            }
+          ]
+        }
+      ]
+    },
+    "root": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/project",
+    "rootIdentity": "62fd5b6c3d65d51b4e4b9c1b3dc072a7ad4045c5b03d5e38edc387adc971b9f9",
+    "gitHead": "3ae90ef2c611ec638cd235851c3c07bba54075e7",
+    "gitBranch": "codex/public-source-canary",
+    "files": {
+      "AGENTS.md": {
+        "bytes": 98,
+        "sha256": "7a4a63ce80fd4dd9386c711315abd2b4c593019792ce5e4f5a722cba6da3f3f5",
+        "lines": 3
+      },
+      "source.md": {
+        "bytes": 71,
+        "sha256": "12a1e83fd32ce73c2bdf80054228a09aede061b67c1a9d4099fde5f5dc3e358c",
+        "lines": 3
+      }
+    }
+  },
+  "executable": {
+    "path": "/home/linuxbrew/.linuxbrew/lib/node_modules/@openai/codex/bin/codex.js",
+    "bytes": 8790,
+    "sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+    "version": "codex-cli 0.153.4"
+  },
+  "node": {
+    "path": "/home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin/node",
+    "bytes": 36472,
+    "sha256": "446ae94fa7a47882d568a4923d1b3a42c40e0cfaadec7f7873d514f18408ce83",
+    "version": "v25.9.0"
+  },
+  "files": {
+    "runner": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.mjs",
+      "bytes": 23506,
+      "sha256": "5cc63ea94f4d6d909920905f81250b29cd2d90fdb067cda7422b46d263787001"
+    },
+    "test": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/W-109-public-canary.test.mjs",
+      "bytes": 13974,
+      "sha256": "c8b3dae6ef386d2c724b55ae3ac1b3201f78df21c8a4cf66aa21a94f034a7258"
+    },
+    "adapter": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.mjs",
+      "bytes": 54785,
+      "sha256": "a1a04ddf2ee37545ae1c691aabac551edda80be8ee8a0e9afa1025fb6cbcc2e1"
+    },
+    "productionSource": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/packages/commands/src/source.ts",
+      "bytes": 33966,
+      "sha256": "5c094ca69e67bfefc85ac029bf1e8d7cc548725497aedcdb629fc8c2ecdd35e1"
+    },
+    "registry": {
+      "path": "/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json",
+      "bytes": 438,
+      "sha256": "8b41927615fd30ae43059a1c0c30cdcd15109597fe40c28678c8741f580cd599"
+    }
+  },
+  "model": "gpt-5.6-luna",
+  "effort": "low",
+  "prompt": "Use only the w108_source tools. Call orient first, then locate and read to find the requested public synthetic fact. Reply with the fact and its exact source.md:<line> citation. Do not guess or use any other tool.",
+  "argv": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "--ignore-user-config",
+    "--ignore-rules",
+    "--strict-config",
+    "--skip-git-repo-check",
+    "--model",
+    "gpt-5.6-luna",
+    "-c",
+    "model_reasoning_effort=\"low\"",
+    "-c",
+    "mcp_servers.w108_source.command=\"/home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin/node\"",
+    "-c",
+    "mcp_servers.w108_source.args=[\"/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/source-adapter-preflight.mjs\",\"mcp-server\",\"--registry\",\"/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/read-efficiency/fixtures/W-108/registry.json\",\"--transcript\",\"/tmp/bisellium-w109-private.qKyOoR/attempt-7osCRx/server-transcript.jsonl\",\"--freeze\",\"/tmp/bisellium-w109-private.qKyOoR/attempt-7osCRx/freeze.json\"]",
+    "-c",
+    "mcp_servers.w108_source.env={}",
+    "--disable",
+    "apps",
+    "--disable",
+    "artifact",
+    "--disable",
+    "browser_use",
+    "--disable",
+    "browser_use_external",
+    "--disable",
+    "browser_use_full_cdp_access",
+    "--disable",
+    "code_mode_host",
+    "--disable",
+    "computer_use",
+    "--disable",
+    "goals",
+    "--disable",
+    "hooks",
+    "--disable",
+    "image_generation",
+    "--disable",
+    "in_app_browser",
+    "--disable",
+    "multi_agent",
+    "--disable",
+    "plugin_sharing",
+    "--disable",
+    "plugins",
+    "--disable",
+    "shell_snapshot",
+    "--disable",
+    "shell_snapshot_v2",
+    "--disable",
+    "shell_tool",
+    "--disable",
+    "skill_env_var_dependency_prompt",
+    "--disable",
+    "skill_mcp_dependency_install",
+    "--disable",
+    "skill_search",
+    "--disable",
+    "sleep_tool",
+    "--disable",
+    "standalone_web_search",
+    "--disable",
+    "tool_call_mcp_elicitation",
+    "--disable",
+    "tool_suggest",
+    "--disable",
+    "unified_exec",
+    "--disable",
+    "view_image",
+    "--disable",
+    "workspace_dependencies",
+    "--sandbox",
+    "read-only",
+    "-C",
+    "/tmp/bisellium-w109-cwd.1PPHjC",
+    "-"
+  ],
+  "cwd": "/tmp/bisellium-w109-cwd.1PPHjC",
+  "environment": {
+    "CODEX_HOME": "/tmp/bisellium-w109-private.qKyOoR/attempt-7osCRx/codex-home",
+    "HOME": "/tmp/bisellium-w109-private.qKyOoR/attempt-7osCRx",
+    "PATH": "/home/linuxbrew/.linuxbrew/lib/node_modules/@openai/codex/bin:/home/linuxbrew/.linuxbrew/Cellar/node/25.9.0_2/bin:/usr/bin:/bin",
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8"
+  },
+  "limits": {
+    "stdoutBytes": 1048576,
+    "stdoutRecords": 256,
+    "stderrBytes": 65536,
+    "transcriptBytes": 1048576,
+    "deadlineMs": 120000,
+    "termGraceMs": 1000
+  }
+}

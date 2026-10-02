@@ -1,0 +1,9 @@
+Amended [W-103 brief](/home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/studio/briefs/W-103.md) to address all five security findings. It retains two stdlib implementation files, report outputs, and five grouped behaviours.
+
+**Signing blocked by lifecycle state.** The owning CLI rejected:
+
+`ready W-103 --spec briefs/W-103.md --sella architect --studio studio`
+
+Exact blocker: `W-103 is not greenlit or halted (state: backlog)`
+
+The specification is satisfactory, but no signature was recorded. W-103 needs greenlighting before the architect can sign. No implementation, code review, delegation, or policy changes were performed.

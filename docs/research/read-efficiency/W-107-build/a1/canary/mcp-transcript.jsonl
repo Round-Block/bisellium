@@ -1,0 +1,2 @@
+{"sequence":1,"callId":"2","tool":"echo","status":"ok","text":"{\"version\":1,\"ok\":true,\"text\":\"W107 Ω漢😀 \\\"quoted\\\" line\\nsecond\",\"unicode\":\"Ω漢😀\",\"empty\":\"\"}","bytes":104}
+{"sequence":2,"callId":"3","tool":"fail","status":"error","text":"{\"version\":1,\"ok\":false,\"error\":{\"code\":\"CANARY_ERROR\"},\"unicode\":\"é😀\"}","bytes":75}

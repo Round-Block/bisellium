@@ -1,0 +1,88 @@
+{
+  "cases": [
+    {
+      "id": "B6",
+      "project": "bisellium",
+      "question": "What workflow records does `bisellium verdict` change, and how may a captured build-phase verdict be used afterward?",
+      "references": [
+        {
+          "path": "docs/ADOPTION.md",
+          "start": 87,
+          "end": 99,
+          "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321"
+        }
+      ]
+    },
+    {
+      "id": "B7",
+      "project": "bisellium",
+      "question": "What does a Bisellium `tree:<hash>` certificate cover, and when does a changed file leave that certificate unchanged?",
+      "references": [
+        {
+          "path": "docs/ADOPTION.md",
+          "start": 581,
+          "end": 610,
+          "fileSha256": "d57ca2debbf9d0fa25c44b8e24d277b4d1bc60c4eaff7e18d1d584d84a7d4321"
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "project": "epoch0",
+      "question": "When assigned as Epoch0's design pre-reviewer, what may a Codex agent produce or change, and does that role authorize a merge?",
+      "references": [
+        {
+          "path": "AGENTS.md",
+          "start": 29,
+          "end": 31,
+          "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad"
+        },
+        {
+          "path": "AGENTS.md",
+          "start": 51,
+          "end": 65,
+          "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad"
+        }
+      ]
+    },
+    {
+      "id": "E7",
+      "project": "epoch0",
+      "question": "How must an Epoch0 database schema change be added without rewriting migration history, and can this corpus establish which migrations a running deployment has applied?",
+      "references": [
+        {
+          "path": "README.md",
+          "start": 33,
+          "end": 49,
+          "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03"
+        }
+      ]
+    },
+    {
+      "id": "Y6",
+      "project": "yan-mo",
+      "question": "What repository workflow applies to a Yan Mo task that has a journal entry, and who performs the merge?",
+      "references": [
+        {
+          "path": "docs/dev-workflow.md",
+          "start": 69,
+          "end": 89,
+          "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af"
+        }
+      ]
+    },
+    {
+      "id": "Y7",
+      "project": "yan-mo",
+      "question": "In Yan Mo's E1 vertical slice, which presentation elements may remain deliberately fake, and what exception still requires real attention?",
+      "references": [
+        {
+          "path": "docs/vertical-slice-spec.md",
+          "start": 36,
+          "end": 47,
+          "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74"
+        }
+      ]
+    }
+  ]
+}

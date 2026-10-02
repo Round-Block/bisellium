@@ -1,0 +1,111 @@
+# behaviour: 7
+# command: node --test docs/research/maps-repair-driver.test.mjs
+# exit: 1
+# at: 2026-09-28T09:12:47.194Z
+# sella: builder-sol
+# tree: dirty:66e49a4471d1f3389fa7a9e6c151086e4332cd43
+
+✖ Behaviour 7 A1 comparator bounds only finite score leaves (3.470422ms)
+✖ Behaviour 7 candidate B semantic replay (35.983975ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 136.428763
+
+✖ failing tests:
+
+test at docs/research/maps-repair-driver.test.mjs:16:14
+✖ Behaviour 7 A1 comparator bounds only finite score leaves (3.470422ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     actual: 18.000000000000004,
+  +     expected: 18,
+  +     path: '$.cases[0].omissions.rankedNotSelected[0].totalScore'
+  +   },
+  +   {
+  +     actual: 10.000000000000004,
+  +     expected: 10,
+  +     path: '$.cases[0].selected[0].bodyScore'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:16:474)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { path: '$.cases[0].omissions.rankedNotSelected[0].totalScore', expected: 18, actual: 18.000000000000004 }, { path: '$.cases[0].selected[0].bodyScore', expected: 10, actual: 10.000000000000004 } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at docs/research/maps-repair-driver.test.mjs:17:14
+✖ Behaviour 7 candidate B semantic replay (35.983975ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     actual: 10.35986060852367,
+  +     expected: 10.359860608523668,
+  +     path: '$.cases[0].omissions.rankedNotSelected[7].bodyScore'
+  +   },
+  +   {
+  +     actual: 10.35986060852367,
+  +     expected: 10.359860608523668,
+  +     path: '$.cases[0].omissions.rankedNotSelected[7].totalScore'
+  +   },
+  +   {
+  +     actual: 15.77649767817147,
+  +     expected: 15.776497678171468,
+  +     path: '$.cases[0].selected[1].bodyScore'
+  +   },
+  +   {
+  +     actual: 13.21385419127598,
+  +     expected: 13.213854191275978,
+  +     path: '$.cases[2].selected[2].bodyScore'
+  +   },
+  +   {
+  +     actual: 12.591148422417449,
+  +     expected: 12.591148422417447,
+  +     path: '$.cases[3].selected[0].bodyScore'
+  +   },
+  +   {
+  +     actual: 17.672038504311747,
+  +     expected: 17.672038504311743,
+  +     path: '$.cases[3].selected[0].totalScore'
+  +   },
+  +   {
+  +     actual: 14.14837600238953,
+  +     expected: 14.148376002389528,
+  +     path: '$.cases[4].selected[2].bodyScore'
+  +   },
+  +   {
+  +     actual: 14.14837600238953,
+  +     expected: 14.148376002389528,
+  +     path: '$.cases[4].selected[2].totalScore'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/maps-lookup-experiment/docs/research/maps-repair-driver.test.mjs:17:441)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { path: '$.cases[0].omissions.rankedNotSelected[7].bodyScore', expected: 10.359860608523668, actual: 10.35986060852367 }, { path: '$.cases[0].omissions.rankedNotSelected[7].totalScore', expected: 10.359860608523668, actual: 10.35986060852367 }, { path: '$.cases[0].selected[1].bodyScore', expected: 15.776497678171468, actual: 15.77649767817147 }, { path: '$.cases[2].selected[2].bodyScore', expected: 13.213854191275978, actual: 13.21385419127598 }, { path: '$.cases[3].selected[0].bodyScore', expected: 12.591148422417447, actual: 12.591148422417449 }, { path: '$.cases[3].selected[0].totalScore', expected: 17.672038504311743, actual: 17.672038504311747 }, { path: '$.cases[4].selected[2].bodyScore', expected: 14.148376002389528, actual: 14.14837600238953 }, { path: '$.cases[4].selected[2].totalScore', expected: 14.148376002389528, actual: 14.14837600238953 } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,909 @@
+{
+  "version": 2,
+  "state": "blind_correction_before_reanalysis",
+  "inputs": {
+    "questions": {
+      "path": "/home/edckt/projects/bisellium/docs/research/maps-fresh-2026-09-28/preparation/questions.json",
+      "sha256": "3cfa3289eb0ceae3d31ad452f5ad47e3e7da0ed24eadbd386467d6550e42ca1d"
+    }
+  },
+  "cases": [
+    {
+      "id": "B8",
+      "project": "bisellium",
+      "question": "What does the current epoch0 snapshot adapter actually return, and what does its send operation report?",
+      "requiredEvidence": [
+        {
+          "id": "B8-R1",
+          "essentialRequestedFact": "Snapshot is empty.",
+          "questionClause": "What does the current epoch0 snapshot adapter actually return",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B8-R1-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "adapters/epoch0/src/index.ts",
+              "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
+              "startLine": 28,
+              "startCharacter": 7,
+              "endLine": 28,
+              "endCharacterExclusive": 40,
+              "exactText": "return { sellae: [], opera: [] };"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "B8-R2",
+          "essentialRequestedFact": "Send is undelivered and unimplemented.",
+          "questionClause": "what does its send operation report",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B8-R2-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "adapters/epoch0/src/index.ts",
+              "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
+              "startLine": 37,
+              "startCharacter": 16,
+              "endLine": 37,
+              "endCharacterExclusive": 32,
+              "exactText": "delivered: false"
+            },
+            {
+              "id": "B8-R2-A2",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "adapters/epoch0/src/index.ts",
+              "fileSha256": "f85da33f831cef853aad867ee8dfe4b63e925be1ad036d716b8e0e084bcfe54d",
+              "startLine": 37,
+              "startCharacter": 41,
+              "endLine": 37,
+              "endCharacterExclusive": 56,
+              "exactText": "not implemented"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "B9",
+      "project": "bisellium",
+      "question": "What evidence must every done engineering item carry, and what posture follows when the weekly allowance is exceeded?",
+      "requiredEvidence": [
+        {
+          "id": "B9-R1",
+          "essentialRequestedFact": "Done items carry test, review, and red evidence.",
+          "questionClause": "What evidence must every done engineering item carry",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B9-R1-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/leges/engineering.md",
+              "fileSha256": "8cb5877402303e859175ce6f1f251f0c41178c30822b0ac6b071d59e95c2690f",
+              "startLine": 60,
+              "startCharacter": 1,
+              "endLine": 61,
+              "endCharacterExclusive": 66,
+              "exactText": "Every `done` item carries: test log path, review note path, and the recorded\nred for every behaviour its spec listed (check: lesson.evidence)."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "B9-R2",
+          "essentialRequestedFact": "Over-budget means conserve and no new items.",
+          "questionClause": "what posture follows when the weekly allowance is exceeded",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B9-R2-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/leges/engineering.md",
+              "fileSha256": "8cb5877402303e859175ce6f1f251f0c41178c30822b0ac6b071d59e95c2690f",
+              "startLine": 51,
+              "startCharacter": 3,
+              "endLine": 51,
+              "endCharacterExclusive": 74,
+              "exactText": "Over-budget: posture → conserve, digest the cause, no new items started"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "B10",
+      "project": "bisellium",
+      "question": "Which model and effort does the corrected active censor assignment use, and what independence constraints remain explicit?",
+      "requiredEvidence": [
+        {
+          "id": "B10-R1",
+          "essentialRequestedFact": "Censor is gpt-5.6-sol at high effort.",
+          "questionClause": "Which model and effort does the corrected active censor assignment use",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B10-R1-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/decisions/D-014.md",
+              "fileSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+              "startLine": 84,
+              "startCharacter": 41,
+              "endLine": 85,
+              "endCharacterExclusive": 76,
+              "exactText": "the active censor assignment in the\npreceding amendment is corrected to `gpt-5.6-sol` at high reasoning effort."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "B10-R2",
+          "essentialRequestedFact": "Censor is read-only, sole gate, historical records preserved.",
+          "questionClause": "what independence constraints remain explicit",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B10-R2-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/decisions/D-014.md",
+              "fileSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+              "startLine": 88,
+              "startCharacter": 30,
+              "endLine": 89,
+              "endCharacterExclusive": 18,
+              "exactText": "The censor remains independent, read-only and the\nsole review gate."
+            },
+            {
+              "id": "B10-R2-A2",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/decisions/D-014.md",
+              "fileSha256": "6876caaf56694319cd8eb8766002d1d68c98a9b1596d31785649b0728b9f3600",
+              "startLine": 89,
+              "startCharacter": 19,
+              "endLine": 90,
+              "endCharacterExclusive": 63,
+              "exactText": "Historical Astra and Opus review records remain accepted;\nthis prospective correction rewrites or re-signs none of them."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "B11",
+      "project": "bisellium",
+      "question": "What are the recorded states of W-089 and W-102, and what does each file identify about its work?",
+      "requiredEvidence": [
+        {
+          "id": "B11-R1",
+          "essentialRequestedFact": "W-089 is greenlit.",
+          "questionClause": "recorded states of W-089 and W-102",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B11-R1-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-089.md",
+              "fileSha256": "da68764daa89d8605efa9c70f61fcee723e49d9c2071a5c860c4f7ab4d743cfa",
+              "startLine": 6,
+              "startCharacter": 1,
+              "endLine": 6,
+              "endCharacterExclusive": 16,
+              "exactText": "state: greenlit"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "B11-R2",
+          "essentialRequestedFact": "W-102 is done with passed gates.",
+          "questionClause": "recorded states of W-089 and W-102",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "B11-R2-A1",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-102.md",
+              "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+              "startLine": 6,
+              "startCharacter": 1,
+              "endLine": 6,
+              "endCharacterExclusive": 12,
+              "exactText": "state: done"
+            },
+            {
+              "id": "B11-R2-A2",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-102.md",
+              "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+              "startLine": 8,
+              "startCharacter": 16,
+              "endLine": 8,
+              "endCharacterExclusive": 56,
+              "exactText": "spec: { sella: architect, status: passed"
+            },
+            {
+              "id": "B11-R2-A3",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-102.md",
+              "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+              "startLine": 8,
+              "startCharacter": 117,
+              "endLine": 8,
+              "endCharacterExclusive": 140,
+              "exactText": "tests: { status: passed"
+            },
+            {
+              "id": "B11-R2-A4",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-102.md",
+              "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+              "startLine": 8,
+              "startCharacter": 241,
+              "endLine": 8,
+              "endCharacterExclusive": 263,
+              "exactText": "lint: { status: passed"
+            },
+            {
+              "id": "B11-R2-A5",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-102.md",
+              "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+              "startLine": 8,
+              "startCharacter": 363,
+              "endLine": 8,
+              "endCharacterExclusive": 386,
+              "exactText": "types: { status: passed"
+            },
+            {
+              "id": "B11-R2-A6",
+              "type": "sourceText",
+              "repository": "bisellium-main",
+              "path": "studio/opera/W-102.md",
+              "fileSha256": "19f4d2aa252e7ebdaa456063c9c59fb9b89d6a4898f910dc10cf462a14515718",
+              "startLine": 8,
+              "startCharacter": 487,
+              "endLine": 8,
+              "endCharacterExclusive": 527,
+              "exactText": "review: { sella: qa-lead, status: passed"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "E8",
+      "project": "epoch0",
+      "question": "Which source surfaces are authoritative for project task state, and what rule prevents editing an applied migration?",
+      "requiredEvidence": [
+        {
+          "id": "E8-R1",
+          "essentialRequestedFact": "Backend then migrations then tests then docs.",
+          "questionClause": "Which source surfaces are authoritative for project task state",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E8-R1-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 118,
+              "startCharacter": 1,
+              "endLine": 121,
+              "endCharacterExclusive": 71,
+              "exactText": "1. Backend implementation (`backend/app/services/combat/*`, `battle.py`)\n2. DB migrations (what is actually seeded)\n3. Tests (`backend/tests/`)\n4. `docs/game/GAME_MECHANICS.md`, then `docs/game/CHARACTER_ROSTER.md`"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "E8-R2",
+          "essentialRequestedFact": "Never edit applied migration; use next sequential file.",
+          "questionClause": "what rule prevents editing an applied migration",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E8-R2-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 43,
+              "startCharacter": 4,
+              "endLine": 43,
+              "endCharacterExclusive": 81,
+              "exactText": "Create `db/migrations/NNN_description.sql` — next sequential number, no gaps."
+            },
+            {
+              "id": "E8-R2-A2",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "README.md",
+              "fileSha256": "4251164fed2700b08cb77a6d8a78b9c15389e4d2ba5afeb2f9bf88be64a23c03",
+              "startLine": 47,
+              "startCharacter": 1,
+              "endLine": 47,
+              "endCharacterExclusive": 54,
+              "exactText": "**Never edit a migration after it has been applied.**"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "E9",
+      "project": "epoch0",
+      "question": "Which two battle-state constructors must stay mirrored, what test guards them, and how are registry ability values interpreted?",
+      "requiredEvidence": [
+        {
+          "id": "E9-R1",
+          "essentialRequestedFact": "Production and sim constructors must mirror; differential test guards.",
+          "questionClause": "Which two battle-state constructors must stay mirrored, what test guards them",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E9-R1-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 124,
+              "startCharacter": 3,
+              "endLine": 128,
+              "endCharacterExclusive": 29,
+              "exactText": "**Parallel battle-state paths**: `battle.py:start_session` (production)\n  and `backend/sim/progression/combat_adapter.py:build_battle_state`\n  (sim) construct state independently. A change to one MUST be mirrored\n  in the other; `backend/tests/combat/test_combat_adapter_mechanics.py`\n  is the differential guard."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "E9-R2",
+          "essentialRequestedFact": "Registry values are maxed; subtract upgrade rungs.",
+          "questionClause": "how are registry ability values interpreted",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E9-R2-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "AGENTS.md",
+              "fileSha256": "be5a39c9683999e69e630250132e198b07d122a671fd51f3b8d3b1e09f3675ad",
+              "startLine": 130,
+              "startCharacter": 3,
+              "endLine": 132,
+              "endCharacterExclusive": 10,
+              "exactText": "**Registry = maxed end-state**: character ability values in the combat\n  registries are the MAXED values; fresh values = maxed − Σ(upgrade\n  rungs)."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "project": "epoch0",
+      "question": "What is the current status of M2 and M3, and which ladder now controls work ordering?",
+      "requiredEvidence": [
+        {
+          "id": "E10-R1",
+          "essentialRequestedFact": "M2 done, M3 live.",
+          "questionClause": "What is the current status of M2 and M3",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E10-R1-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/PROGRAM.md",
+              "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+              "startLine": 11,
+              "startCharacter": 3,
+              "endLine": 11,
+              "endCharacterExclusive": 28,
+              "exactText": "M2 — World & Story | DONE"
+            },
+            {
+              "id": "E10-R1-A2",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/PROGRAM.md",
+              "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+              "startLine": 12,
+              "startCharacter": 1,
+              "endLine": 12,
+              "endCharacterExclusive": 44,
+              "exactText": "| M3 — Art at Scale | live, not \"pending\" |"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "E10-R2",
+          "essentialRequestedFact": "P ladder controls order; M ladder maps scope.",
+          "questionClause": "which ladder now controls work ordering",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E10-R2-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/PROGRAM.md",
+              "fileSha256": "73718b46b38c5d63361441f25a545d2febcec104a34bda57c9031250caac250b",
+              "startLine": 20,
+              "startCharacter": 1,
+              "endLine": 24,
+              "endCharacterExclusive": 25,
+              "exactText": "The M-ladder above stays as the phase map (it still correctly describes\neach milestone's SCOPE), but the ORDER work happens in is the P1-P5\nPlayable Ladder: P1 \"It feels like a game\" → P2 \"It looks like our\nworld\" → P3 \"Characters at scale\" → P4 \"It's a live game\" → P5 \"It's\nin your hands anywhere.\""
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "E11",
+      "project": "epoch0",
+      "question": "Which durable board states exist around scheduled and done, and how is in-train status determined?",
+      "requiredEvidence": [
+        {
+          "id": "E11-R1",
+          "essentialRequestedFact": "Board durable states include scheduled and done.",
+          "questionClause": "Which durable board states exist around scheduled and done",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E11-R1-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/BOARD.md",
+              "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+              "startLine": 12,
+              "startCharacter": 1,
+              "endLine": 12,
+              "endCharacterExclusive": 37,
+              "exactText": "BOARD.md stores DURABLE states only:"
+            },
+            {
+              "id": "E11-R1-A2",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/BOARD.md",
+              "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+              "startLine": 16,
+              "startCharacter": 9,
+              "endLine": 16,
+              "endCharacterExclusive": 22,
+              "exactText": "→ `scheduled`"
+            },
+            {
+              "id": "E11-R1-A3",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/BOARD.md",
+              "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+              "startLine": 17,
+              "startCharacter": 55,
+              "endLine": 17,
+              "endCharacterExclusive": 63,
+              "exactText": "→ `done`"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "E11-R2",
+          "essentialRequestedFact": "In-train is derived and picked-up rows stay scheduled.",
+          "questionClause": "how is in-train status determined",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "E11-R2-A1",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/BOARD.md",
+              "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+              "startLine": 22,
+              "startCharacter": 1,
+              "endLine": 24,
+              "endCharacterExclusive": 13,
+              "exactText": "**\"in-train\" is NEVER a stored state.** It is DERIVED live from\n`git worktree list` + `gh pr list` — `scripts/train_status.sh` computes\nit on demand"
+            },
+            {
+              "id": "E11-R2-A2",
+              "type": "sourceText",
+              "repository": "epoch0-main",
+              "path": "docs/program/BOARD.md",
+              "fileSha256": "21944fba6afdf3f83b3433aedfd739a5aac65a2cb7b790264cd79df99abcb6a6",
+              "startLine": 26,
+              "startCharacter": 28,
+              "endLine": 28,
+              "endCharacterExclusive": 66,
+              "exactText": "A row a train has picked up stays\n`scheduled` in storage; `start_train.sh --board-id <ID>` annotates it\n(\"started `<date>`, see worktree\") rather than changing its state"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "Y8",
+      "project": "yan-mo",
+      "question": "What are Yan Mo’s rules for randomness, managed resources, and deliberate mercy?",
+      "requiredEvidence": [
+        {
+          "id": "Y8-R1",
+          "essentialRequestedFact": "No RNG; state functions and seeded variety only.",
+          "questionClause": "What are Yan Mo’s rules for randomness",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y8-R1-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "CLAUDE.md",
+              "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+              "startLine": 20,
+              "startCharacter": 4,
+              "endLine": 20,
+              "endCharacterExclusive": 240,
+              "exactText": "**No RNG in anything read or answered.** Required by the perfect-reading fantasy. No crit/dodge/damage variance; enemy behavior, tells, and outcomes are **pure functions of state**; difficulty scales the *read-window*, never randomness."
+            },
+            {
+              "id": "Y8-R1-A2",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "CLAUDE.md",
+              "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+              "startLine": 20,
+              "startCharacter": 241,
+              "endLine": 20,
+              "endCharacterExclusive": 458,
+              "exactText": "**Configurational variety** — selection among *challenge-equivalent* options (e.g., which arena fixture activates) — may draw from a **seeded deterministic stream** in sim state (same seed → same fight; goldens hold)."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "Y8-R2",
+          "essentialRequestedFact": "Resources are HP, Poise, heals, qi.",
+          "questionClause": "managed resources",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y8-R2-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "CLAUDE.md",
+              "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+              "startLine": 22,
+              "startCharacter": 38,
+              "endLine": 22,
+              "endCharacterExclusive": 131,
+              "exactText": "Keep the managed-resource count low — **HP · enemy Poise (势) · heal charges · one qi meter.**"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "Y8-R3",
+          "essentialRequestedFact": "Kills are explicit tap/hold; ink and blood record mercy.",
+          "questionClause": "deliberate mercy",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y8-R3-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "CLAUDE.md",
+              "fileSha256": "ee450886d0b670955ffa2998e333b049c78896a2997d1e55a8ff2a16b1dfe27e",
+              "startLine": 23,
+              "startCharacter": 4,
+              "endLine": 23,
+              "endCharacterExclusive": 248,
+              "exactText": "**Mercy is deliberate.** Standard enemies have **no HP** — every kill is a held 击 (tap = subdue / hold = kill). No accidental kills. **Ink = witness/mercy, blood = force; the ratio on the page is the record** (and the Mercy axis of the ending)."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "Y9",
+      "project": "yan-mo",
+      "question": "What build gates precede content expansion, and what is the required per-feature implementation and verification loop?",
+      "requiredEvidence": [
+        {
+          "id": "Y9-R1",
+          "essentialRequestedFact": "E0/E1/fun/tone/E2-E3/E5-cost precede content.",
+          "questionClause": "What build gates precede content expansion",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y9-R1-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 10,
+              "startCharacter": 1,
+              "endLine": 17,
+              "endCharacterExclusive": 68,
+              "exactText": "E0 tech foundation\nE1 combat vertical slice ─────────► [ GATE: VALIDATE FUN ]   is the reading-combat fun?  (you + 2–3 fresh players)\n                                    only pass this before spending on anything below\n[ TONE PROBE ]  a thin E6 slice ──► does the melancholy reading-descent land emotionally?\nE2 enemies · E3 progression\nE5 Biome 1 end-to-end ────────────► [ GATE: MEASURE COST ]   what does ONE full biome actually cost to build?\n                                    → informed go/no-go on the other ten\nthen: E10 content · E7 Avici · E8 meta · E9 art/audio (in parallel)"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "Y9-R2",
+          "essentialRequestedFact": "Ground/spec/plan/implement/test/verify/review/commit.",
+          "questionClause": "what is the required per-feature implementation and verification loop",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y9-R2-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 26,
+              "startCharacter": 1,
+              "endLine": 26,
+              "endCharacterExclusive": 131,
+              "exactText": "0. **Ground** *(added 2026-07-27, from a real miss)* — **before authoring content in a domain that has a reference doc, read it.**"
+            },
+            {
+              "id": "Y9-R2-A2",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 27,
+              "startCharacter": 1,
+              "endLine": 27,
+              "endCharacterExclusive": 87,
+              "exactText": "1. **Spec** — if it isn't already specced, `superpowers:brainstorming` → a design doc."
+            },
+            {
+              "id": "Y9-R2-A3",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 28,
+              "startCharacter": 1,
+              "endLine": 28,
+              "endCharacterExclusive": 77,
+              "exactText": "2. **Plan** — `superpowers:writing-plans` → an ordered, reviewable task list"
+            },
+            {
+              "id": "Y9-R2-A4",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 29,
+              "startCharacter": 1,
+              "endLine": 29,
+              "endCharacterExclusive": 93,
+              "exactText": "3. **Implement** — `superpowers:executing-plans` + `superpowers:subagent-driven-development`"
+            },
+            {
+              "id": "Y9-R2-A5",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 29,
+              "startCharacter": 393,
+              "endLine": 29,
+              "endCharacterExclusive": 493,
+              "exactText": "Inside each unit: `superpowers:test-driven-development` — the golden test first, then the code (§3)."
+            },
+            {
+              "id": "Y9-R2-A6",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 30,
+              "startCharacter": 1,
+              "endLine": 30,
+              "endCharacterExclusive": 99,
+              "exactText": "4. **Verify** — `superpowers:verification-before-completion`: actually run it and observe behavior"
+            },
+            {
+              "id": "Y9-R2-A7",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 32,
+              "startCharacter": 1,
+              "endLine": 32,
+              "endCharacterExclusive": 159,
+              "exactText": "5. **Review** — two lenses, both before merge: `superpowers:requesting-code-review` (correctness) **+ `ponytail-review` (over-engineering — what to delete)**."
+            },
+            {
+              "id": "Y9-R2-A8",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/dev-workflow.md",
+              "fileSha256": "81a7395e5e4060f799fce5cf4f3b305d1a70c1b9b35e22b7aeeb5e08fd5718af",
+              "startLine": 33,
+              "startCharacter": 1,
+              "endLine": 33,
+              "endCharacterExclusive": 89,
+              "exactText": "6. **Commit** — small, focused commits on a feature branch; PR for anything non-trivial."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "Y10",
+      "project": "yan-mo",
+      "question": "What does the E1 slice include, and which major systems are explicitly out of scope?",
+      "requiredEvidence": [
+        {
+          "id": "Y10-R1",
+          "essentialRequestedFact": "E1 includes arena, kit, enemies, deterministic systems.",
+          "questionClause": "What does the E1 slice include",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y10-R1-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 16,
+              "startCharacter": 1,
+              "endLine": 16,
+              "endCharacterExclusive": 55,
+              "exactText": "ARENA       one grey-box plate (pure grey-box, no art)"
+            },
+            {
+              "id": "Y10-R1-A2",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 18,
+              "startCharacter": 1,
+              "endLine": 20,
+              "endCharacterExclusive": 256,
+              "exactText": "PLAYER KIT  jiàn verbs 点 / 刺 / 格 / 截  ·  dodge-read (the perfect-read flurry)  ·  击 (tap / hold)\n            HP + 1 heal charge  ·  qi meter (earned-by-reading)  ·  2 abilities: Shout (space) + Displacement (an opener)\n            ONE soul-sight, PASSIVE — surface-penetration possessed from spawn (canon correction 2026-07-25: sights are never toggled; the fairness floor — is the raw feint fair without it? — is validated via sim-state config + tests, not a player toggle)"
+            },
+            {
+              "id": "Y10-R1-A3",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 22,
+              "startCharacter": 1,
+              "endLine": 23,
+              "endCharacterExclusive": 188,
+              "exactText": "ENEMIES     3 archetypes — REGULAR (base timing/direction) · FEINTER (the read-that-lies) · CONSCRIPT (fearful → mercy)\n            + 1 Sergeant boss (a Poise + HP duel; renamed from \"Captain\" at A8 — it is a BossTemplate, not the CAPTAIN archetype).  All fought individually — no guard crowds in the slice."
+            },
+            {
+              "id": "Y10-R1-A4",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 25,
+              "startCharacter": 1,
+              "endLine": 27,
+              "endCharacterExclusive": 54,
+              "exactText": "SYSTEMS     Tell/read  ·  deterministic BehaviorPolicy  ·  Poise (势, poise-only for standard enemies)\n            击 gate (tap/hold) + mercy tally  ·  fearful gesture-resolution (the Conscript)  ·\n            qi earn/spend  ·  perceive() (one filter)"
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "Y10-R2",
+          "essentialRequestedFact": "Traversal and other major systems are out of scope.",
+          "questionClause": "which major systems are explicitly out of scope",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y10-R2-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 38,
+              "startCharacter": 1,
+              "endLine": 38,
+              "endCharacterExclusive": 277,
+              "exactText": "traversal / platforming · puzzles · soul-encounter narrative · other biomes · animation & art polish · cutscenes · save/load · menus · the full 9 abilities · difficulty tiers · Assist Mode · **阵势 guard-crowds / crowd-击 (→ E2)** · progression / leveling · the ending-matrix UI."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    },
+    {
+      "id": "Y11",
+      "project": "yan-mo",
+      "question": "What are the E1 success criteria for the read, mercy, and determinism loop, and what evidence defines completion?",
+      "requiredEvidence": [
+        {
+          "id": "Y11-R1",
+          "essentialRequestedFact": "Eight criteria cover read, mercy, qi, fairness, hesitation, determinism.",
+          "questionClause": "What are the E1 success criteria for the read, mercy, and determinism loop",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y11-R1-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 53,
+              "startCharacter": 1,
+              "endLine": 60,
+              "endCharacterExclusive": 147,
+              "exactText": "1. A new player learns to **deflect (格) on the tell**, and it feels satisfying, not twitchy.\n2. The **perfect-read dodge** (flurry) reads as *clarity*, not reflex — the time-slow lands, the opening feels *earned*.\n3. Breaking **Poise → 击** is a clear, weighty beat; **tap vs. hold** (subdue vs. kill) feels like a real choice.\n4. The **Feinter** teaches \"don't react to the surface\" without feeling *unfair*.\n5. The **Conscript** makes not-killing feel like the natural, low-friction path.\n6. **Qi-earned-by-reading** is *felt* — playing well visibly funds your abilities.\n7. Determinism is invisible-but-trusted — the same attack always reads the same way; nothing feels random.\n8. **Hesitation feels like a choice** — letting the 击 window pass (enemy recovers partial Poise) reads as a real, weighted decision, not a punish."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        },
+        {
+          "id": "Y11-R2",
+          "essentialRequestedFact": "Done requires playable build, fresh players, deterministic evidence, tuning record.",
+          "questionClause": "what evidence defines completion",
+          "satisfactionRule": "all minimal anchors",
+          "evidenceAnchors": [
+            {
+              "id": "Y11-R2-A1",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 66,
+              "startCharacter": 1,
+              "endLine": 66,
+              "endCharacterExclusive": 198,
+              "exactText": "All eight criteria demonstrably true in a playable Normal build (judged by you + 2–3 fresh players), with the debug harness confirming **deterministic behavior** (same inputs → same enemy actions)."
+            },
+            {
+              "id": "Y11-R2-A2",
+              "type": "sourceText",
+              "repository": "yan-mo-main",
+              "path": "docs/vertical-slice-spec.md",
+              "fileSha256": "e4bf0aa0e7aafd0d296b677ba209fffed8322007de25a02a9cce75951ef34e74",
+              "startLine": 70,
+              "startCharacter": 1,
+              "endLine": 70,
+              "endCharacterExclusive": 116,
+              "exactText": "Then capture the tuning numbers the slice revealed (Poise / qi / HP / window values) back into `open-questions.md`."
+            }
+          ],
+          "alternativeEquivalentAnchors": []
+        }
+      ]
+    }
+  ]
+}

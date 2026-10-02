@@ -1,0 +1,6 @@
+{"type":"thread.started","thread_id":"01a0e8cd-d000-7902-907b-4f861673885e"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"/usr/bin/zsh -lc pwd","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"/usr/bin/zsh -lc pwd","aggregated_output":"/tmp/w107-bypass-cwd-zY5THe\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_1","type":"agent_message","text":"BYPASS CANARY COMPLETE"}}
+{"type":"turn.completed","usage":{"input_tokens":22421,"cached_input_tokens":19968,"cache_write_input_tokens":0,"output_tokens":103,"reasoning_output_tokens":36}}
