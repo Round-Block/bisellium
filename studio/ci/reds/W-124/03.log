@@ -1,17 +1,17 @@
 # behaviour: 3
 # command: node --test-reporter=tap --import tsx packages/cli/src/next.test.ts --behaviour 3
 # exit: 1
-# at: 2026-10-02T01:48:25.549Z
+# at: 2026-10-02T02:41:26.130Z
 # sella: builder.W-124
-# tree: tree:cfcaafc990d4bb5b16572cf8dfb49f2975f17a9e
+# tree: tree:5c5c150f15fa0b6652604126fb65575da5598b47
 
 TAP version 13
 # Subtest: W-124 behaviour 3: pr, merge and cleanup do what the scripts do, in order, and fail closed on gh
 not ok 1 - W-124 behaviour 3: pr, merge and cleanup do what the scripts do, in order, and fail closed on gh
   ---
-  duration_ms: 1385.860223
+  duration_ms: 1192.224545
   type: 'test'
-  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:19580'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:19748'
   failureType: 'testCodeFailure'
   error: |-
     a performed merge prints the script's state=MERGE_FAILED
@@ -33,7 +33,7 @@ not ok 1 - W-124 behaviour 3: pr, merge and cleanup do what the scripts do, in o
   actual: ''
   operator: 'match'
   stack: |-
-    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1247:12)
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1248:12)
     Test.runInAsyncScope (node:async_hooks:226:14)
     Test.run (node:internal/test_runner/test:1201:25)
     Test.start (node:internal/test_runner/test:1096:17)
@@ -47,4 +47,4 @@ not ok 1 - W-124 behaviour 3: pr, merge and cleanup do what the scripts do, in o
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 1403.39141
+# duration_ms 1209.101949
