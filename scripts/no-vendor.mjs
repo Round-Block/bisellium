@@ -421,7 +421,15 @@ export function runOnce(opts) {
     }
     return { exitCode: suiteExit, log: snapshot };
   } finally {
-    if (lockHeld) releaseLock(lockPath);
+    if (lockHeld) {
+      // W-121: a test-only seam, called once, immediately before the guarded
+      // release. A throwing hook propagates, but only after the release.
+      try {
+        if (typeof opts.beforeRelease === "function") opts.beforeRelease();
+      } finally {
+        releaseLock(lockPath);
+      }
+    }
   }
 }
 

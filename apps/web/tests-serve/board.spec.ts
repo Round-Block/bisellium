@@ -76,6 +76,7 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
     child = spawn(process.execPath, ["--import", "tsx", MAIN_TS, "serve", "--studio", studioDir, "--port", String(fixedPort)], { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     await new Promise<void>((resolvePromise, reject) => {
+      // sleep-waiver: guard -- a fifteen second startup deadline that fails the spec; correctness waits on the printed port and token
       const timer = setTimeout(() => reject(new Error(`bisellium serve never printed its port/token within 15s:\n${stdout}`)), 15_000);
       child.stdout.on("data", (chunk: Buffer) => {
         stdout += chunk.toString("utf8");
@@ -107,6 +108,7 @@ async function startRestartable(tag: string): Promise<RestartableServed> {
       } catch {
         // not up yet
       }
+      // sleep-seam: /api/officina -- poll cadence only; the loop exits when GET /api/officina answers 200 or the deadline passes
       await new Promise((r) => setTimeout(r, 100));
     }
     throw new Error(`served instance never became ready at ${base}`);
@@ -287,6 +289,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     // route above keeps every reconnect attempt blocked from here on.
     r.kill();
     await r.restart();
+    // sleep-waiver: no-observable -- nothing client-visible marks the EventSource having tried and failed to reconnect before the next step
     await page.waitForTimeout(500);
 
     const before = opusRequests;
@@ -299,6 +302,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     // appears within the same window"). A shorter window here would pass
     // for the wrong reason against e.g. a client setInterval(5000) refetch,
     // whose next tick simply hasn't fired yet at 2s.
+    // sleep-waiver: no-observable -- an absence window: no event marks two poll intervals having passed without the card appearing
     await page.waitForTimeout(11_000);
     await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')).toHaveCount(0);
     expect(opusRequests).toBe(before);
@@ -360,6 +364,7 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     await forcePoll(served);
 
     await expect(page.locator('.board__column[data-column-id="verifying"] .board__card[data-card-id="W-002"]')).toBeVisible({ timeout: 11_000 });
+    // sleep-waiver: no-observable -- no observable marks the trailing refetch timer having fired or been cancelled, only an absence of requests
     await page.waitForTimeout(300); // let the trailing timer settle fully
     expect(opusRequests).toBe(1);
 

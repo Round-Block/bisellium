@@ -690,6 +690,48 @@ fires on a log that was hand-edited or came from elsewhere).
 `done` item whose gates certify different trees from each other. `npm test`
 runs the sample and every fixture.
 
+## Sleeps in tests
+
+`check --repo <dir>` runs `test.sleep` (block): a wall-clock wait in a tracked
+test file needs a named seam or an annotated waiver. Scanned: tracked
+`.ts .tsx .mts .cts .js .mjs .cjs` files that are test files by name
+(`*.test.*`, `*.spec.*`), sit under a `test`, `tests`, `tests-serve`,
+`__tests__` or `e2e` directory, or are named by a root `package.json` `test*`
+script. Flagged, in code (comments are skipped, string and template contents
+are not): `setTimeout` and `setInterval` however spelled (a member call is
+flagged unless its receiver is `test`, `sock`, `socket`, `req`, `res` or
+`server`), any `sleep(`, `waitForTimeout`, `Atomics.wait`/`waitAsync`, an
+import of `timers/promises`, and computed forms. An unreadable tree (no
+`git ls-files`, an unparseable `package.json`, a symlinked or over-1-MiB test
+file) is itself a block finding, because a rule that cannot observe would pass
+every sleep.
+
+A site is covered by a `//` comment on its own line or on the comment-only line
+directly above it (a `//` line inside a multi-line template-literal fixture
+counts; a block comment or `//` text inside a string never does):
+
+```text
+// sleep-seam: <name> -- <what the wait exits on>
+// sleep-waiver: <kind> -- <why no seam can exist here>
+```
+
+- `sleep-seam`: the wait polls a named observable (a barrier, marker, event or
+  predicate) and the sleep is only the cadence. `<name>` is at least three
+  characters, not a primitive's own name, and must occur as a whole word in the
+  code within 40 lines of the site.
+- `sleep-waiver`: `<kind>` is exactly one of `guard` (a deadline that fails the
+  test or kills a fixture), `subject` (the elapsed time is the property under
+  test), `fixture` (a keep-alive or injected-latency fixture) or
+  `no-observable` (an ordering or absence window with no observable; the reason
+  names what is missing). **`settle` is not a kind**: "let it settle" is the
+  class the rule exists to stop.
+- The reason after ` -- ` has at least 15 non-whitespace characters in at least
+  three words. The rule checks that a declaration is present and well formed;
+  whether it is honest is the reviewer's judgement.
+
+`packages/cli/src/rules/tests.test.ts` pins waiver caps over the rule's own
+parsed output; raising a cap needs an architect ruling.
+
 ## The SOURCE tree hash
 
 W-096 has an additional, opus-scoped preservation boundary. Its producer-run

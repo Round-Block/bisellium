@@ -165,12 +165,24 @@ function rawPostJson(port: number, path: string, payload: unknown, headers: Reco
 /** A minimal SSE client for /api/live: parses "data: <json>\n\n" frames off
  *  the raw response stream (node:http, not fetch — we want the connection
  *  to stay open and keep pushing). */
-function connectSSE(port: number): { events: Record<string, unknown>[]; res: IncomingMessage | undefined; close: () => void } {
+function connectSSE(port: number): { events: Record<string, unknown>[]; res: IncomingMessage | undefined; close: () => void; ready: Promise<void> } {
   const events: Record<string, unknown>[] = [];
   let buffer = "";
   let response: IncomingMessage | undefined;
+  // W-121: `ready` resolves when the response callback fires. handleLive
+  // (http.ts) writes the headers and `: connected` and adds the client to the
+  // hub in one synchronous run, so a response implies the client is
+  // registered. A refused or reset connection rejects it with that error.
+  let markReady!: () => void;
+  let failReady!: (err: Error) => void;
+  const ready = new Promise<void>((resolve, reject) => {
+    markReady = resolve;
+    failReady = reject;
+  });
+  ready.catch(() => {}); // a test that never awaits it raises no unhandled rejection
   const req = httpRequest({ host: "127.0.0.1", port, path: "/api/live", method: "GET" }, (res: IncomingMessage) => {
     response = res;
+    markReady();
     res.setEncoding("utf8");
     res.on("data", (chunk: string) => {
       buffer += chunk;
@@ -189,11 +201,11 @@ function connectSSE(port: number): { events: Record<string, unknown>[]; res: Inc
       }
     });
   });
-  req.on("error", () => {
-    /* connection torn down by close() below; nothing to report */
+  req.on("error", (err) => {
+    failReady(err); // a no-op once ready has resolved (close() below tears the connection down)
   });
   req.end();
-  return { events, get res() { return response; }, close: () => req.destroy() };
+  return { events, get res() { return response; }, close: () => req.destroy(), ready };
 }
 
 function timelineLines(dir: string): Record<string, unknown>[] {
@@ -210,6 +222,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<bool
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (predicate()) return true;
+    // sleep-seam: predicate -- poll cadence only; the loop exits when predicate() turns true or the deadline passes
     await new Promise((r) => setTimeout(r, 25));
   }
   return predicate();
@@ -234,15 +247,16 @@ const throwingCheckStudio: StartServerOptions["checkStudio"] = () => {
  *  so lifecycle.test.ts's `console.error`-swapping `withStderr` can't
  *  observe them; this is the same shape, generalised to the stream this
  *  module actually uses. */
-async function withServerStderr<T>(fn: () => Promise<T> | T): Promise<{ result: T; stderr: string }> {
+async function withServerStderr<T>(fn: (live: { readonly text: string }) => Promise<T> | T): Promise<{ result: T; stderr: string }> {
   const orig = process.stderr.write.bind(process.stderr);
   let stderr = "";
+  const live = { get text(): string { return stderr; } }; // W-121: the running buffer, for waitFor()
   process.stderr.write = ((chunk: unknown) => {
     stderr += typeof chunk === "string" ? chunk : Buffer.from(chunk as Uint8Array).toString("utf8");
     return true;
   }) as typeof process.stderr.write;
   try {
-    const result = await fn();
+    const result = await fn(live);
     return { result, stderr };
   } finally {
     process.stderr.write = orig;
@@ -264,6 +278,7 @@ function induceRequestStreamError(port: number, path: string, token: string): Pr
       const headers = [`POST ${path} HTTP/1.1`, "Host: 127.0.0.1", "Content-Type: application/json", `X-Bisellium-Token: ${token}`, "Content-Length: 1000", "", ""].join("\r\n");
       sock.write(headers);
       sock.write('{"opus":"W-002"'); // far short of the declared 1000 bytes
+      // sleep-waiver: fixture -- induced mid-request abort: the half-sent body must stay open briefly before the hard destroy
       setTimeout(() => {
         sock.destroy();
         resolvePromise();
@@ -612,7 +627,7 @@ async function main(): Promise<void> {
       const beforeCount = Array.isArray(before.body) ? before.body.length : 0;
 
       const sse = connectSSE(started.port);
-      await new Promise((r) => setTimeout(r, 100));
+      await sse.ready;
 
       const opusPath = join(dir, "opera", "W-002.md");
       const raw = readFileSync(opusPath, "utf8");
@@ -715,13 +730,14 @@ async function main(): Promise<void> {
     const dirSse = freshStudio("close-live");
     const sSse = await startServer(baseOpts(dirSse, { port: 0, once: true, now: NOW }));
     const sse = connectSSE(sSse.port);
-    await new Promise((r) => setTimeout(r, 100));
+    await sse.ready;
 
     const t0 = Date.now();
     let timedOut = false;
     await Promise.race([
       sSse.close(),
       new Promise<void>((r) =>
+        // sleep-waiver: guard -- the 3s race deadline against close(); it fails the test, correctness does not wait on it
         setTimeout(() => {
           timedOut = true;
           r();
@@ -738,8 +754,9 @@ async function main(): Promise<void> {
     const dirSse2 = freshStudio("close-live-aborted");
     const sSse2 = await startServer(baseOpts(dirSse2, { port: 0, once: true, now: NOW }));
     const sse2 = connectSSE(sSse2.port);
-    await new Promise((r) => setTimeout(r, 100));
+    await sse2.ready;
     sse2.close(); // client aborts first
+    // sleep-waiver: no-observable -- the hub's client set is not exposed, so nothing shows when the server has noticed the abort
     await new Promise((r) => setTimeout(r, 100)); // let the server notice
 
     const t0 = Date.now();
@@ -747,6 +764,7 @@ async function main(): Promise<void> {
     await Promise.race([
       sSse2.close(),
       new Promise<void>((r) =>
+        // sleep-waiver: guard -- the 3s race deadline against close(); it fails the test, correctness does not wait on it
         setTimeout(() => {
           timedOut = true;
           r();
@@ -764,7 +782,7 @@ async function main(): Promise<void> {
     const sSse3 = await startServer(baseOpts(dirSse3, { port: 0, once: true, now: NOW }));
     try {
       const clients = [connectSSE(sSse3.port), connectSSE(sSse3.port), connectSSE(sSse3.port)];
-      await new Promise((r) => setTimeout(r, 150));
+      await Promise.all(clients.map((c) => c.ready));
       check("sse: exactly one store 'event' listener with three clients connected", sSse3.store.listenerCount("event") === 1, String(sSse3.store.listenerCount("event")));
 
       // Force a diff so all three clients get a frame.
@@ -780,8 +798,9 @@ async function main(): Promise<void> {
       // affect anything else — simulate by connecting, then forcing the
       // underlying response into an error state via destroy() with an error.
       const errClient = connectSSE(sSse3.port);
-      await new Promise((r) => setTimeout(r, 100));
+      await errClient.ready;
       errClient.res?.destroy(new Error("simulated client socket error"));
+      // sleep-waiver: no-observable -- the hub's client set is not exposed, so nothing shows when the server has dropped the errored client
       await new Promise((r) => setTimeout(r, 100));
       const health = await getJson(base3, "/api/officina");
       check("sse: an errored client is dropped without taking the server down", health.status === 200, String(health.status));
@@ -798,7 +817,7 @@ async function main(): Promise<void> {
     try {
       // MAX_SSE_CLIENTS is 50 (apps/server/src/http.ts) — open one past it.
       for (let i = 0; i < 51; i++) opened.push(connectSSE(sCap.port));
-      await new Promise((r) => setTimeout(r, 300));
+      await Promise.all(opened.map((c) => c.ready)); // the 51st gets its 503 response, which also fires the callback
       const res = await fetch(`http://127.0.0.1:${sCap.port}/api/live`);
       check("sse: a client past MAX_SSE_CLIENTS gets 503", res.status === 503, String(res.status));
       await res.text().catch(() => undefined);
@@ -848,7 +867,6 @@ async function main(): Promise<void> {
     const originalError = console.error;
     try {
       const pA = postJson(talkBase, "/api/talk", { sella: "builder.W-500", message: "one", harness: "fake" });
-      await new Promise((r) => setTimeout(r, 25));
       const pB = postJson(talkBase, "/api/talk", { sella: "eng-lead", message: "two", harness: "fake" });
       const [a, b] = await Promise.all([pA, pB]);
       const aOut = String((a.body as { output?: string })?.output ?? "");
@@ -988,6 +1006,7 @@ async function main(): Promise<void> {
       // the window actually refreshes — a listing cached forever satisfied
       // it just as well. Wait past the (injected, short) TTL and confirm a
       // second call.
+      // sleep-waiver: subject -- the elapsed time past the injected 50 ms TTL is the property under test
       await new Promise((r) => setTimeout(r, 80));
       await getJson(base, "/api/models");
       check("models: a call AFTER the TTL refreshes the listing", calls === 2, String(calls));
@@ -1246,9 +1265,9 @@ async function main(): Promise<void> {
     const dir = freshStudio("w057-b6");
     const s = await startServer(baseOpts(dir, { port: 0, once: true, now: NOW }));
     try {
-      const { stderr } = await withServerStderr(async () => {
+      const { stderr } = await withServerStderr(async (live) => {
         await induceRequestStreamError(s.port, "/api/greenlight", TEST_TOKEN);
-        await new Promise((r) => setTimeout(r, 200)); // let the error handler + log land
+        await waitFor(() => live.text.includes("aborted")); // the error handler + log landing
       });
       // Honest per the brief: the client destroyed its own socket, so no
       // response is observable at all here — the assertion is on the log
@@ -1321,7 +1340,7 @@ async function main(): Promise<void> {
       // :499 too many /api/live clients — needs its own client burst.
       {
         for (let i = 0; i < 51; i++) opened.push(connectSSE(s.port));
-        await new Promise((r) => setTimeout(r, 300));
+        await Promise.all(opened.map((c) => c.ready)); // the 51st gets its 503 response, which also fires the callback
         const r = await getJson(base, "/api/live");
         check("b7 :499 too many /api/live clients: status 503", r.status === 503, String(r.status));
         check("b7 :499 too many /api/live clients: raw body byte-identical to today's", r.text === '{"error":"too many /api/live clients"}', JSON.stringify(r.text));
