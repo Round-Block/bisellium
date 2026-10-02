@@ -1,0 +1,15 @@
+# opus: W-125
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: FAIL — one new blocker: the broker's scratch-index probe writes via GIT_INDEX_FILE under the builder-writable /control bind, a symlink-redirectable host write (run-builder-host.mjs:540–546, brief:211–215/223–233). All six round-1 blockers and sec-lead's four closed; runner proven live, 20/20 focused.
+# at: 2026-10-02T00:02:06.853Z
+# tree: tree:7aea63bd48e018762a7c908ee50fbc380c87a63c
+
+W-125 round 2 censor review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 3e6b507, tree 7aea63bd.
+VERDICT: FAIL — the Git broker's scratch-index probe writes through a builder-controlled path, which is a host-write channel out of the sandbox; everything else holds.
+ROUND-1 FINDINGS: all six closed (runner launches live, usr-merged mounts; 15 live rows run the real runner under bwrap with no fixture seam; per-verb exact-regex allowlist with default deny; replay and gate confined with the result over a private file, forged BISELLIUM_HOST_RESULT inert; package.json inside revision 5's grant; every-behaviour red required in runner and admission). Sec-lead's rename/ownership/symlink and signal/lease items closed (live rows 14–19). Red identity attested by replay at ce68778 per brief revision 5.
+BLOCKING 1 (brief:211–215, 223–233; run-builder-host.mjs:540–546, /control bind :610–612): the broker probe runs host git with GIT_INDEX_FILE=controlDir/probe-index-<runner pid>; controlDir is bind-mounted writable as /control, so the builder can plant a symlink at that name and git follows it, overwriting a host path with index data (confirmed in a throwaway repo; file began with DIRC). Only instance of a host-side write into a builder-writable bind (checked every host write against the writable binds). Fix: probe index in a runtime dir never bound into the sandbox (or a pre-created private probe dir); bind /control so the builder reaches only the socket; add a live row planting the symlink and asserting the host target unchanged.
+ADVISORY: the whole non-/usr Node tree is bound ro, making a brew git reachable by absolute path (bind only node + libs, or assert nothing else reachable); producer: "producer" still hard-coded; a future rebased opus hits the replay tree check in the runner — note it in SESSION-HANDOFF.
+Evidence run: focused suite live 20/20 (w125-r2-censor-focused.log); certificates at 7aea63bd relied on.
