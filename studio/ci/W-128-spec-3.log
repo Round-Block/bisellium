@@ -1,0 +1,37 @@
+# opus: W-128
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T11:19:05.467Z
+# tree: tree:f5792a043c4f5b48fca18776b2efd88e6d585d31
+
+W-128 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 3. PREREVIEW: READY-TO-SIGN, 0 MUST, 0 SHOULD.
+Brief commit 1a1a574 on spec/W-128; read-only; diffed against revision 2 (2bebbcb) and probed.
+
+Closed from round 2
+1. MUST (b2 row (d) `exec(` vs integrate.ts:305): CLOSED. Applied the brief's regex `(?<![.\w])exec\(` plus `shell:`, `"bash"`,
+   `execSync` to the current integrate.ts: no match for any, exactly one `spawnSync(` (:44). Sanity: a bare `exec(a)` matches, the
+   RegExp `re.exec(a)` does not, so the :305 call is exempt and the row can go green within Files owned.
+2. SHOULD (b5 row f green-today): CLOSED. The no-target/behind row is now (c); (a),(b),(c) pass in full today (probed round 2:
+   today's hold already says "checked out at <clone> ... git -C <clone> pull --ff-only origin master"); (d) `uncommitted` is the
+   first red; the "what is red today" sentence is now true for (d)-(l).
+3. SHOULD (gitCalls strips -c): CLOSED. b4-checked-out cites raw `calls()` and says why; "call immediately before the merge is
+   `symbolic-ref -q HEAD`" matches contract step 9.3 -> 9.4 (no other git call between them), in both 4(d) and the next.test.ts row.
+4. SHOULD (phase-1 typecheck): CLOSED. `fetchTrunk as (repo: string, target?: string) => ReturnType<typeof fetchTrunk>` compiles
+   against both the one-parameter and the two-parameter declaration (tsc --strict on a scratch file: no diagnostics from it; the
+   only errors were unrelated node_modules typings under my ad hoc flags).
+
+Renumbering check (behaviour 5)
+- Letters a..l contiguous; every internal reference resolves: (k) "fixture of (d)" is the tracked-file-modified fixture (correct;
+  the old "(c)" is gone), second half "fixture of (g)"; (l) "same assertions as (g)"; "rows (e) to (l) follow" ok; residual 5's
+  "Behaviour 5(j)" is still the index.lock row (j unchanged). No remaining reference to the old lettering anywhere (grepped
+  `row(s) (`, `fixture of (`, `5(`, `(x) to`).
+- New row (l): constructible (pushing clone needs `git add -f gen/out/x.txt`); the added path exists on disk so the 9.2 lstat
+  guard holds; remove gen/ and retry gives ok:true; red today (reason substring).
+- countBehaviours(rev 3)=8, headings 1..8 contiguous.
+- Residuals 2 and 6 additions consistent with 9.2/9.3 (no testable claim added).
+
+Nit (not counted): line 319 "both (a) and (b) pass in full today" is now a superseded stale sentence before the (c) update on line 321;
+true but redundant, harmless.
