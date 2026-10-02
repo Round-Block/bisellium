@@ -1,0 +1,54 @@
+# behaviour: 16
+# command: node --test-reporter=tap scripts/backlog-planned.test.mjs --behaviour 16
+# exit: 1
+# at: 2026-10-02T18:45:26.176Z
+# sella: builder.W-129
+# tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
+
+TAP version 13
+# Subtest: W-129 behaviour 16: the dossier backlog page shows greenlit as Planned, not In flight
+not ok 1 - W-129 behaviour 16: the dossier backlog page shows greenlit as Planned, not In flight
+  ---
+  duration_ms: 7.617716
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-129/scripts/backlog-planned.test.mjs:28:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    16(b): In flight holds W-2, W-3, W-4 and not the greenlit W-1
+    + actual - expected
+    
+      [
+    +   'W-1',
+        'W-2',
+        'W-3',
+        'W-4'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'W-2'
+    1: 'W-3'
+    2: 'W-4'
+  actual:
+    0: 'W-1'
+    1: 'W-2'
+    2: 'W-3'
+    3: 'W-4'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/W-129/scripts/backlog-planned.test.mjs:62:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.172491

@@ -133,6 +133,18 @@ export interface OfficinaResponse {
   /** W-064: the served adapter's own state→phase mapping, so the Board never
    *  hand-copies lifecycle state ids (CLAUDE.md: "never by hand"). */
   lifecycle: LifecycleResponse;
+  /** W-129: how well serve read the opus-branch records (absent from an older server). */
+  branchRecords?: BranchRecordsStatus;
+}
+
+/** `GET /api/officina`'s `branchRecords` (apps/server/src/branchRecords.ts). Reason codes are fixed words, never text. */
+export interface BranchRecordsStatus {
+  status: "ok" | "partial" | "stale" | "unavailable" | "off";
+  failures?: number;
+  reason?: string;
+  capped?: number;
+  liveRejected?: number;
+  dropped: { id: string; reason: string }[];
 }
 
 export interface HealthResponse {

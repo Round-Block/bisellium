@@ -1,0 +1,35 @@
+# opus: W-129
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T23:36:24.741Z
+# tree: tree:f8a2d0dc6aad6b611730c8320f4cfce9ae7bbc7f
+
+W-129 censor review round 2 — Claude substitute (claude-sonnet-5-5), 2026-10-03, HEAD 79b2dbc. REVIEW: PASS (0 blocking, 1 advisory).
+Delta: git diff b58ac49 79b2dbc = 6 files, all in Files owned or bookkeeping: adapters/native/src/index.ts (validateOpusFront: sella/kind/collegium and gate evidence/certifies must be strings), apps/server/src/store.ts (computeDueSummary reads the overlay), packages/commands/src/opus-model.ts (predicate fails closed on a non-string record id), the two test files (5(g) rows, 13(o)), studio/opera/W-129.md (handoff + receipt pointer). No other path touched; no package.json change.
+Executed at HEAD 79b2dbc: behaviours 3, 5, 11, 13 via their recorded --behaviour commands: exit 0, 1/1 pass each. typecheck 0; prettier clean on adapters, apps/server, packages/cli/src, packages/commands/src; check studio --repo . PASS 0 blocking (233 advisory); next.test.ts, containment.test.ts, server.test.ts green.
+Mutations on a copy of HEAD (tests from HEAD): delete the new string checks in validateOpusFront -> 5(g) "committed an object sella" fails; delete the non-string-id guard in the predicate -> 13(o) fails. Both new rows bite.
+Round-1 verdict stands: nothing in the delta widens the live allowlist, the overlay, the own-tree rule or any verb behaviour.
+ADVISORY
+A1: the health-due overlay change (computeDueSummary) has no test pinning it; the brief does not require one. Round-1 advisories A2-A4 unchanged.
+W-129 sec-lead code review — Claude substitute (claude-sonnet-5-5), 2026-10-03, HEAD 79b2dbc. SEC: CLEAR (0 findings).
+
+Diff b58ac49..79b2dbc read in full: validateOpusFront (adapters/native/src/index.ts), reviewFailedAtCertifiedTree (opus-model.ts), store.ts computeDueSummary overlay.
+Probes replayed from the W-129 worktree (node --import tsx, scratchpad/p/probe1-8.ts).
+
+B1 replay (real git repo, sample-studio copy, committed on opus/W-002):
+  object sella       -> dropped invalid-shape; /api/opera serves the trunk sella "builder-1"; React render ok
+  object evidence    -> dropped invalid-shape; trunk gate served; render ok
+  object certifies   -> dropped invalid-shape
+  object kind        -> dropped invalid-shape
+  array collegium    -> dropped invalid-shape
+  numeric sella      -> dropped invalid-shape
+  store.api.opera() and store.api.officina() return normally for each; branchRecords shows partial with the enumerated code only.
+  The three instances (sella, evidence, certifies) and the kind/collegium siblings are all closed in the one validator.
+N1 replay: record with no string id and a log with no opus header -> true (fails closed). The 25-input F3 replay is unchanged (all as before).
+A1: computeDueSummary reads the overlay record only when the disk id is a string, keeps the collegium-string and active-collegium guards, and falls back to the disk record.
+No regression: readBoundedRegular (FIFO record 8 ms, FIFO .git 7 ms, swap-to-FIFO, swap-to-symlink, directory symlink, oversize), .git fakery (other admin dir, fake admin dir),
+  live allowlist (forged title/probationes ignored; done/halted/backlog/greenlit/constructor/id-mismatch rejected), reason codes (no secret text in status or stderr).
+Not run: /api/health over HTTP (needs an injected checker; the computeDueSummary change was read, not exercised); own-tree rule not run end to end (unchanged since pass 1).

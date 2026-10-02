@@ -32,8 +32,8 @@ const abs = join(repoRoot, TARGET);
 const MUTATIONS = {
   "m2-caption": {
     behaviour: 1,
-    label: "B1(c): the D-021 in-flight caption is deleted",
-    from: '<p class="mock-caption">State as recorded in this checkout&rsquo;s officina. On the trunk, per D-021, an opus being built still reads <code>greenlit</code> &mdash; its live state is on <code>opus/&lt;id&gt;</code>.</p>\n',
+    label: "B1(c): the D-021 planned caption is deleted",
+    from: '<p class="mock-caption">Greenlit by the Patron and not started. On the trunk, per D-021, an opus being built still reads <code>greenlit</code> &mdash; its live state is on <code>opus/&lt;id&gt;</code> and on the console board.</p>\n',
     to: "",
   },
   "m4-footnote": {

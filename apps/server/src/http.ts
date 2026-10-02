@@ -82,6 +82,9 @@ export interface StartServerOptions {
    *  short one so "a call AFTER the TTL refreshes the listing" doesn't need
    *  a real 5.2s sleep. */
   listingTtlMs?: number;
+  /** W-129: the wall-clock bound on every read-only git call (and file open) of the per-poll branch-record
+   *  refresh. Default 5000. */
+  branchGitTimeoutMs?: number;
 }
 
 export interface StartServerResult {
@@ -886,7 +889,7 @@ export async function startServer(opts: StartServerOptions): Promise<StartServer
   }
 
   const token = opts.token ?? randomBytes(24).toString("hex");
-  const store = new Store({ studioDir, now: opts.now, live: opts.live });
+  const store = new Store({ studioDir, now: opts.now, live: opts.live, branchGitTimeoutMs: opts.branchGitTimeoutMs });
   await store.ingestOnce();
 
   const once = opts.once ?? false;

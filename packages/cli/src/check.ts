@@ -29,7 +29,7 @@ import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
 import { checkTests } from "./rules/tests.js";
 import { diagnosticLabel } from "./reporting.js";
-import { effectiveProbationes, readContainedRegularFile, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
+import { effectiveProbationes, readContainedRegularFile, reviewFailedAtCertifiedTree, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
 import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
 
 // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
@@ -70,6 +70,8 @@ export interface CheckResult {
 }
 
 const ACTIVE = new Set(["building", "verifying", "review"]);
+/** The active states in the order the verbs move an opus through them (W-129). */
+const STAGE_RANK = new Map([["building", 0], ["verifying", 1], ["review", 2]]);
 /** WIP = items a sella is actively working: building + verifying. Review waits on someone else. */
 const WIP_STATES = new Set(["building", "verifying"]);
 const TRADITIO_KEYS = ["sella", "stage", "next", "blocked_on", "at"];
@@ -446,7 +448,13 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     const sella = str(h["sella"]);
     if (sella && !resolveSeat(seatRoster, sella)) add("traditio.sella", "block", where, `handoff sella "${sella}" not declared`);
     const stage = str(h["stage"]);
-    if (stage && stage !== state) add("traditio.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
+    // W-129: the verbs move the state forward past the stage the handoff was written at, so a stage that trails the
+    // state (rank at most the state's, within building < verifying < review) is honest; a stage ahead of it, a stage
+    // against a non-active state and any unknown stage still advise.
+    const stageRank = STAGE_RANK.get(stage ?? "");
+    const stateRank = STAGE_RANK.get(state);
+    if (stage && stage !== state && !(stageRank !== undefined && stateRank !== undefined && stageRank <= stateRank))
+      add("traditio.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
     if (h["at"] !== undefined) {
       const at = isoDate(h["at"]);
       if (!at) add("traditio.at", "block", where, "handoff.at must be an ISO date");
@@ -577,7 +585,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       if (a.length) add("state.review.automated", "block", where, `state "review" but automated gates not passed: ${a.join(", ")}`);
       const q = notPassed(itemAgentGates.filter((x) => x !== reviewProbatioId));
       if (q.length) add("state.review.agent", "block", where, `state "review" but agent gates not passed: ${q.join(", ")}`);
-      if (status.get(reviewProbatioId) === "failed") add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
+      if (status.get(reviewProbatioId) === "failed" && reviewFailedAtCertifiedTree(root, d, { reviewId: reviewProbatioId, automatedIds: itemAutomated }))
+        add("state.review.failed", "block", where, `state "review" with a failed review — item belongs back in building`);
     }
     if (state === "done") {
       const missing = [

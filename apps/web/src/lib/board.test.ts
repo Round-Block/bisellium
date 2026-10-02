@@ -9,7 +9,6 @@ import {
   cardRow,
   drawerDetail,
   drawerNeedsRefetch,
-  EXCLUDED_PHASES,
   formatBoardTimestamp,
   gateRow,
   humanGateIds,
@@ -77,7 +76,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
     JSON.stringify(ids) === JSON.stringify([NEEDS_YOU_COLUMN, "planned", "in_progress", "verifying", "awaiting_review", "done", "halted"]),
     JSON.stringify(ids),
   );
-  check(1, "boardModel: EXCLUDED_PHASES names backlog", EXCLUDED_PHASES.includes("backlog"));
+  check(1, "boardModel: no extra backlog column", !ids.includes("backlog"));
 }
 
 // A fixture lifecycle declaring an EXTRA phase yields an extra column
@@ -118,14 +117,13 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   check(1, "boardModel: a different opus lands in a different phase column", awaitingReview?.cards.some((c) => c.id === "W-2") === true, JSON.stringify(awaitingReview));
 }
 
-// A backlog opus lands in NO column and is counted in Planned's backlogCount.
+// W-129: a backlog opus is a card in Planned (after the greenlit ones), not a count, and never unplaced.
 {
   const opera = [opus({ id: "W-1", state: "backlog" }), opus({ id: "W-2", state: "backlog" })];
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, opera);
-  const inAnyColumn = model.columns.some((c) => c.cards.some((card) => card.id === "W-1" || card.id === "W-2"));
   const planned = model.columns.find((c) => c.id === "planned");
-  check(1, "boardModel: a backlog opus lands in no column", !inAnyColumn);
-  check(1, "boardModel: Planned's backlogCount counts the backlog opera", planned?.backlogCount === 2, JSON.stringify(planned));
+  check(1, "boardModel: backlog opera are cards in Planned", JSON.stringify(planned?.cards.map((c) => c.id)) === JSON.stringify(["W-1", "W-2"]), JSON.stringify(planned));
+  check(1, "boardModel: Planned carries no backlogCount", planned !== undefined && !("backlogCount" in planned), JSON.stringify(planned));
   check(1, "boardModel: unplaced does not include backlog opera", !model.unplaced.includes("W-1") && !model.unplaced.includes("W-2"));
 }
 
@@ -174,7 +172,7 @@ function opus(overrides: Partial<OpusEntry> = {}): OpusEntry {
   const model = boardModel({ lifecycle: STANDARD_LIFECYCLE, probationes: [] }, [opus({ id: "W-1", state: "backlog" })]);
   check(1, "boardModel: Object.keys(model) is exactly [columns, unplaced]", JSON.stringify(Object.keys(model).sort()) === JSON.stringify(["columns", "unplaced"]), JSON.stringify(Object.keys(model)));
   const planned = model.columns.find((c) => c.id === "planned");
-  check(1, "boardModel: Planned's own keys are exactly its declared set", planned !== undefined && JSON.stringify(Object.keys(planned).sort()) === JSON.stringify(["atCap", "backlogCount", "cards", "id", "membership", "name", "pinned"].sort()), JSON.stringify(planned));
+  check(1, "boardModel: Planned's own keys are exactly its declared set", planned !== undefined && JSON.stringify(Object.keys(planned).sort()) === JSON.stringify(["atCap", "cards", "id", "membership", "name", "pinned"].sort()), JSON.stringify(planned));
   const done = model.columns.find((c) => c.id === "done");
   check(1, "boardModel: a plain phase column (no cap, no backlogCount) has exactly its base keys", done !== undefined && JSON.stringify(Object.keys(done).sort()) === JSON.stringify(["atCap", "cards", "id", "membership", "name", "pinned"].sort()), JSON.stringify(done));
 }

@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
+import { PROBATIO_STATUSES } from "@bisellium/schema";
 import type {
   ActorKind,
   Actum,
@@ -354,7 +355,41 @@ export function describeLifecycle(manifest: Manifest): Lifecycle {
   return { id: NATIVE_LIFECYCLE_ID, states: STATES, transitions, gates, wipLimit: manifest.wip_limit };
 }
 
-export function snapshotDir(root: string, projectId: string, now: Date = new Date()): Snapshot {
+/** A record that replaces an opus's disk file for one snapshot (W-129): already parsed and validated by its caller. */
+export type OpusOverlay = (opusId: string) => { data: object; body: string } | undefined;
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * W-129: the shape a record must have before `snapshotDir` may map it on behalf of someone else's file (a branch's
+ * record, read by `apps/server`). A reason, or `undefined` when valid. It accepts exactly what `check` accepts for
+ * these fields, so no valid record is rejected; it exists so one malformed record can never take a snapshot down.
+ */
+export function validateOpusFront(data: unknown): string | undefined {
+  if (!isPlainObject(data)) return "record is not a mapping";
+  if (typeof data["id"] !== "string") return "id is not a string";
+  // Every string the board renders from a record must be a string (React throws on an object child).
+  for (const key of ["sella", "kind", "collegium"])
+    if (data[key] !== undefined && typeof data[key] !== "string") return `${key} is not a string`;
+  if (typeof data["state"] !== "string" || !STATES.some((s) => s.id === data["state"])) return "state is not a declared state";
+  const gates = data["probationes"];
+  if (gates !== undefined) {
+    if (!isPlainObject(gates)) return "probationes is not a mapping";
+    for (const gate of Object.values(gates)) {
+      if (!isPlainObject(gate)) return "a gate is not a mapping";
+      if (typeof gate["status"] !== "string" || !(PROBATIO_STATUSES as readonly string[]).includes(gate["status"])) return "a gate status is not valid";
+      for (const key of ["evidence", "certifies"])
+        if (gate[key] !== undefined && typeof gate[key] !== "string") return `a gate ${key} is not a string`;
+    }
+  }
+  const tokens = data["tokens"];
+  if (tokens !== undefined && !(typeof tokens === "number" && Number.isFinite(tokens))) return "tokens is not a finite number";
+  if (data["traditio"] !== undefined && !isPlainObject(data["traditio"])) return "traditio is not a mapping";
+  if (data["title"] !== undefined && typeof data["title"] !== "string") return "title is not a string";
+  return undefined;
+}
+
+export function snapshotDir(root: string, projectId: string, now: Date = new Date(), overlay?: OpusOverlay): Snapshot {
   const manifest = readManifest(root);
   const currentPeriod = isoWeek(now);
 
@@ -396,8 +431,7 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
     traditio?: Record<string, string>;
     resume_when?: string;
   }
-  const opera: Opus[] = listMd(join(root, "opera")).map((p) => {
-    const { data, body } = readFront<OpusFront>(p);
+  const toOpus = (data: OpusFront, body: string): Opus => {
     const probationes: Record<string, ProbatioResult> = {};
     for (const [id, g] of Object.entries(data.probationes ?? {})) {
       probationes[id] = {
@@ -424,6 +458,19 @@ export function snapshotDir(root: string, projectId: string, now: Date = new Dat
         notes: body,
       },
     };
+  };
+  const opera: Opus[] = listMd(join(root, "opera")).map((p) => {
+    const { data, body } = readFront<OpusFront>(p);
+    // W-129: a supplied (already validated) record replaces the disk file; if mapping it throws, the disk file stands.
+    const replacement = overlay?.(data.id);
+    if (replacement !== undefined) {
+      try {
+        return toOpus(replacement.data as OpusFront, replacement.body);
+      } catch {
+        // fall through to the disk record
+      }
+    }
+    return toOpus(data, body);
   });
 
   interface PetitioFront { id: string; opus: string; from: string; to: string; state: PetitioState; opened?: string; subject?: unknown }
@@ -573,6 +620,8 @@ export interface CreateBiselliumAdapterOpts {
   /** providerStatus() runs quota-axi (a live subprocess) only when true.
    *  Default false so snapshot tests stay hermetic. */
   live?: boolean;
+  /** W-129: records that replace the disk file for an opus in every snapshot. */
+  overlay?: OpusOverlay;
 }
 
 export function createBiselliumAdapter(root: string, projectId?: string, opts: CreateBiselliumAdapterOpts = {}): SnapshotAdapter {
@@ -584,7 +633,7 @@ export function createBiselliumAdapter(root: string, projectId?: string, opts: C
     projectId: id,
     intervalMs: 5_000,
     describeLifecycles: () => [describeLifecycle(manifest)],
-    snapshot: async () => snapshotDir(root, id),
+    snapshot: async () => snapshotDir(root, id, undefined, opts.overlay),
     providerStatus: async () => {
       if (!live) return readUsageProviders(root).providers;
       // Dynamic import, deferred to first call — not at module-evaluation

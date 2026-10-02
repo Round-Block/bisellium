@@ -36,6 +36,7 @@ import { StringDecoder } from "node:string_decoder";
 import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
 import { EVENTS_LOG_REL, readLog, Store as CoreStore } from "@bisellium/core";
 import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
+import { BranchRecordReader, type BranchRecordsStatus, type Overlay } from "./branchRecords.js";
 
 /** This server's own ingestion source id, stamped as `workflow.source` on
  *  every event it appends — distinct from "cli" (packages/commands/writes.ts's
@@ -50,6 +51,8 @@ export interface StoreOptions {
   now?: Date;
   /** providerStatus() runs quota-axi (a live subprocess) only when true. */
   live?: boolean;
+  /** W-129: the wall-clock bound on every read-only git call (and file open) of the branch-record refresh. */
+  branchGitTimeoutMs?: number;
 }
 
 interface OpusFrontMatter {
@@ -153,6 +156,13 @@ function readOpusBody(studioDir: string, id: string): string {
   }
 }
 
+/** An overlay body with `readOpusBody`'s 64 KiB cap and truncation marker. */
+function capBody(body: string): string {
+  const bytes = Buffer.from(body, "utf8");
+  if (bytes.length <= OPUS_BODY_LIMIT_BYTES) return body;
+  return new StringDecoder("utf8").write(bytes.subarray(0, OPUS_BODY_LIMIT_BYTES)) + OPUS_BODY_TRUNCATION_MARKER;
+}
+
 export type CheckStudioFn = (root: string, now?: Date) => { ok: boolean; blocks: number; advisories: number; findings: unknown[] };
 
 /** `<studio>/PAUSED` — same shape packages/commands/pause.ts's
@@ -181,7 +191,7 @@ function readPausedAt(studioDir: string): { paused: boolean; at?: string; reason
 // this brief tests /api/health's `due` contents; upgrade to the real
 // computation (shared from somewhere apps/server may depend on) if that
 // ever changes.
-function computeDueSummary(studioDir: string, manifest: Manifest, now: Date): { kind: string; id: string }[] {
+function computeDueSummary(studioDir: string, manifest: Manifest, now: Date, overlay?: Overlay): { kind: string; id: string }[] {
   const due: { kind: string; id: string }[] = [];
   const activeCollegia = manifest.collegia.filter((c) => (c.autonomy ?? "L1") !== "L0");
   if (activeCollegia.length === 0) return due;
@@ -192,7 +202,9 @@ function computeDueSummary(studioDir: string, manifest: Manifest, now: Date): { 
   const activeCollegiumIds = new Set(activeCollegia.map((c) => c.id));
   for (const p of listMd(join(studioDir, "opera"))) {
     try {
-      const { data } = readFront<{ id?: unknown; collegium?: unknown; traditio?: unknown }>(p);
+      const disk = readFront<{ id?: unknown; collegium?: unknown; traditio?: unknown }>(p).data;
+      // W-129: a branch-owned record's handoff is the live one, not the trunk's frozen copy.
+      const data = (typeof disk.id === "string" ? overlay?.get(disk.id)?.data : undefined) ?? disk;
       if (typeof data.id !== "string" || typeof data.collegium !== "string" || !activeCollegiumIds.has(data.collegium)) continue;
       const traditio = data.traditio;
       const at = typeof traditio === "object" && traditio !== null ? (traditio as Record<string, unknown>)["at"] : undefined;
@@ -255,13 +267,24 @@ export class Store extends CoreStore {
   private readonly live: boolean;
   private readonly fixedNow?: Date;
   private readonly adapter: SnapshotAdapter;
+  /** W-129: opus-branch records read once per poll (a Map, so an id such as `constructor` is harmless) and replaced
+   *  atomically; requests only read it. */
+  private overlay: Overlay = new Map();
+  private branchRecords: BranchRecordsStatus = { status: "ok", dropped: [] };
+  private readonly branchReader: BranchRecordReader;
 
   constructor(opts: StoreOptions) {
     super({ studioDir: opts.studioDir });
     this.live = opts.live ?? false;
     this.fixedNow = opts.now;
-    this.adapter = createBiselliumAdapter(this.studioDir, undefined, { live: this.live });
+    this.branchReader = new BranchRecordReader(this.studioDir, opts.branchGitTimeoutMs);
+    this.adapter = createBiselliumAdapter(this.studioDir, undefined, { live: this.live, overlay: (id) => this.overlay.get(id) });
     this.projectId = this.adapter.projectId;
+  }
+
+  /** The one place a request-side snapshot is built, so every route sees the same branch-owned records. */
+  private snap(now: Date = this.now()) {
+    return snapshotDir(this.studioDir, this.projectId, now, (id) => this.overlay.get(id));
   }
 
   private now(): Date {
@@ -292,6 +315,9 @@ export class Store extends CoreStore {
    *  HTTP layer's SSE route) under this server's own source id. Returns the
    *  events just appended (empty when nothing changed). */
   async ingestOnce(): Promise<GantryEvent[]> {
+    const refreshed = await this.branchReader.refresh();
+    this.overlay = refreshed.overlay;
+    this.branchRecords = refreshed.status;
     const now = this.now();
     const manifest = this.manifest();
     const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
@@ -313,6 +339,7 @@ export class Store extends CoreStore {
       munera?: Manifest["munera"];
       models?: ModelRecordEntry[];
       lifecycle: { id: string; states: { id: string; name: string; phase: string }[] };
+      branchRecords: BranchRecordsStatus;
     } => {
       const m = this.manifest();
       // From this.adapter.describeLifecycles()[0] — id and states only.
@@ -336,18 +363,19 @@ export class Store extends CoreStore {
         munera: m.munera,
         models: this.modelsRecord(),
         lifecycle: { id: lc?.id ?? "", states: (lc?.states ?? []).map((s) => ({ id: s.id, name: s.name, phase: s.phase })) },
+        branchRecords: this.branchRecords,
       };
     },
 
     opera: (filters: { state?: string; collegium?: string } = {}) => {
-      const snap = snapshotDir(this.studioDir, this.projectId, this.now());
+      const snap = this.snap();
       return snap.opera
         .filter((w) => (filters.state ? w.state === filters.state : true))
         .filter((w) => (filters.collegium ? w.meta["collegium"] === filters.collegium : true))
         .map((w) => ({
           id: w.id,
           title: w.meta["title"],
-          body: readOpusBody(this.studioDir, w.id),
+          body: this.overlay.has(w.id) ? capBody(this.overlay.get(w.id)!.body) : readOpusBody(this.studioDir, w.id),
           kind: w.kind,
           collegium: w.meta["collegium"],
           sella: w.meta["sella"],
@@ -363,6 +391,11 @@ export class Store extends CoreStore {
      *  or unsafe id, which the HTTP layer turns into 404 {error}. */
     opus: (id: string): { id: string; frontMatter: OpusFrontMatter; body: string; probationes: Record<string, unknown>; traditio: unknown } | undefined => {
       if (!safeId(id)) return undefined;
+      const owned = this.overlay.get(id);
+      if (owned !== undefined) {
+        const front = owned.data as OpusFrontMatter;
+        return { id: front.id, frontMatter: front, body: owned.body, probationes: front.probationes ?? {}, traditio: front.traditio };
+      }
       const path = join(this.studioDir, "opera", `${id}.md`);
       if (!existsSync(path)) return undefined;
       try {
@@ -384,7 +417,7 @@ export class Store extends CoreStore {
       const now = this.now();
       const manifest = this.manifest();
       const humanGates = new Set(manifest.probationes.filter((g) => g.kind === "human").map((g) => g.id));
-      const snap = snapshotDir(this.studioDir, this.projectId, now);
+      const snap = this.snap(now);
       const opera = snap.opera
         .filter((w) => Object.entries(w.probationes).some(([gid, g]) => humanGates.has(gid) && g.status === "pending"))
         .map((w) => ({ id: w.id, title: w.meta["title"], collegium: w.meta["collegium"], sella: w.meta["sella"], traditio: w.meta["traditio"] }));
@@ -396,7 +429,7 @@ export class Store extends CoreStore {
 
     acta: (days = 7) => {
       const now = this.now();
-      const snap = snapshotDir(this.studioDir, this.projectId, now);
+      const snap = this.snap(now);
       const cutoffMs = Math.max(0, days) * 86_400_000;
       return (snap.acta ?? [])
         .filter((a) => {
@@ -411,7 +444,7 @@ export class Store extends CoreStore {
      *  mirrored). */
     aerarium: (period?: string) => {
       const now = this.now();
-      const snap = snapshotDir(this.studioDir, this.projectId, now);
+      const snap = this.snap(now);
       const target = period ?? isoWeek(now);
       return (snap.stipendia ?? [])
         .filter((s) => s.period === target)
@@ -442,7 +475,7 @@ export class Store extends CoreStore {
       const findingsByRule: Record<string, number> = {};
       for (const f of result.findings as { rule: string }[]) findingsByRule[f.rule] = (findingsByRule[f.rule] ?? 0) + 1;
       const pause = readPausedAt(this.studioDir);
-      const due = computeDueSummary(this.studioDir, manifest, now);
+      const due = computeDueSummary(this.studioDir, manifest, now, this.overlay);
       const autonomy: { paused: boolean; since?: string; reason?: string } = { paused: pause.paused };
       if (pause.paused && pause.at) autonomy.since = pause.at;
       if (pause.paused && pause.reason) autonomy.reason = pause.reason;

@@ -3,20 +3,30 @@
  * (packages/pipeline) against the current tree and writes the outcome back
  * into that opus's front matter. This is the first tool-written change to
  * an opus: it may write ONLY the automated probationes' status/evidence/
- * certifies, preserving every other key (order included) and the body
- * byte-for-byte. Kept out of main.ts on purpose — wired in by the
- * integrator alongside the other builders' commands.
+ * certifies — and, since W-129, `state` (see below) — preserving every other
+ * key (order included) and the body byte-for-byte. Kept out of main.ts on
+ * purpose — wired in by the integrator alongside the other builders'
+ * commands.
+ *
+ * W-129: `verify` is the verb that records the verifying and review stages.
+ * Under the OWN-TREE rule only (the run certifies this checkout's HEAD and
+ * `--repo` is this checkout's top level) it writes `verifying` before the
+ * pipeline runs (from `building`/`review`), and when it ends `building` (an
+ * automated gate failed) or `review` (this run's evidence is all green and
+ * `check` would accept `review`), each by compare-and-set against the fresh
+ * record. Anywhere else it writes gates exactly as before and never state.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, relative, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
 import { readManifest, snapshotDir } from "@bisellium/adapter-native";
+import { WF } from "@bisellium/schema";
 import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline } from "@bisellium/pipeline";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
-import { recordOwnerRefusal, safeItemPath } from "./writes.js";
-import { effectiveProbationes, readContainedRegularFile, utcTimestampProblem, validateProtectedRecords } from "./opus-model.js";
+import { emitEvent, recordOwnerRefusal, safeItemPath } from "./writes.js";
+import { effectiveProbationes, readContainedRegularFile, reviewFailedAtCertifiedTree, utcTimestampProblem, validateProtectedRecords } from "./opus-model.js";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -32,6 +42,10 @@ export interface RunVerifyOptions {
    *  `relative(repo, studioDir)`, which is correct whenever `--studio`
    *  really is nested under `--repo` (every direct, non-`--ref` call). */
   studioRepoRelative?: string;
+  /** Test-only seam (W-129 behaviour 10(h)): called once between the read of the
+   *  record and the start state write, so a test can change the state in that
+   *  window. Not a flag: it appears in no argv and `main.ts`/`ci.ts` never set it. */
+  afterRead?: () => void;
 }
 
 export interface RunVerifyResult {
@@ -93,6 +107,28 @@ function isGitRepo(dir: string): boolean {
       timeout: GIT_TIMEOUT_MS,
     });
     return true;
+  } catch {
+    return false;
+  }
+}
+
+function gitText(cwd: string, args: string[]): string | undefined {
+  try {
+    return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: GIT_TIMEOUT_MS }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+/** The own-tree rule's third clause: `repo` is the top level of the checkout `studioDir` lives in (a second clone,
+ *  or a subdirectory of this checkout whose `git ls-tree -r HEAD` lists only that subtree, is not). Fails closed. */
+function isStudioToplevel(repo: string, studioDir: string): boolean {
+  const top = gitText(repo, ["rev-parse", "--show-toplevel"]);
+  const prefix = gitText(repo, ["rev-parse", "--show-prefix"]);
+  const studioTop = gitText(studioDir, ["rev-parse", "--show-toplevel"]);
+  if (top === undefined || prefix !== "" || studioTop === undefined) return false;
+  try {
+    return realpathSync(top) === realpathSync(studioTop);
   } catch {
     return false;
   }
@@ -235,6 +271,27 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     else runCommands[gateId] = command;
   }
 
+  // The own-tree rule: only a run that certifies THIS checkout's HEAD, not a `ci --ref` scratch tree, and aimed at
+  // this checkout's top level writes state. Anything else writes gates as it always did.
+  const ownTree = commit === "HEAD" && opts.studioRepoRelative === undefined && isStudioToplevel(repo, studioDir);
+  const reviewId = (manifest as unknown as { review_probatio?: string }).review_probatio ?? "review";
+
+  const stateEvent = (from: string, to: string): void =>
+    emitEvent(studioDir, manifest, "workflow.state_changed", now, { [WF.ITEM_ID]: opusId, [WF.STATE_FROM]: from, [WF.STATE_TO]: to });
+
+  const readState = doc.get("state");
+  opts.afterRead?.();
+  if (ownTree && (readState === "building" || readState === "review")) {
+    let started = false;
+    editOpusFrontMatter(opusPath, (freshDoc) => {
+      if (freshDoc.get("state") !== readState) return undefined; // compare-and-set: someone moved the opus meanwhile
+      freshDoc.set("state", "verifying");
+      started = true;
+      return undefined;
+    });
+    if (started) stateEvent(readState, "verifying");
+  }
+
   const logDir = join(studioDir, "ci");
   const runOpts = { opus, repo, commands: runCommands, treeHash, logDir, now, studioDir, dirty };
   const pipeline = opts.pipeline ?? selectPipeline();
@@ -253,6 +310,10 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   // touches opusPath between the read above and this write, so re-parsing
   // it here (via the shared editOpusFrontMatter seam every write command
   // uses — see frontmatter.ts) is equivalent to mutating `doc` in place.
+  const automatedIds = effective.probationes.filter((g) => g.kind === "automated").map((g) => g.id);
+  const agentIds = effective.probationes.filter((g) => g.kind === "agent" && g.id !== reviewId).map((g) => g.id);
+  const certificate = `${dirty ? "dirty" : "tree"}:${treeHash}`;
+  let ended: "building" | "review" | undefined;
   editOpusFrontMatter(opusPath, (freshDoc) => {
     for (const [gateId, r] of Object.entries(results)) {
       freshDoc.setIn(["probationes", gateId, "status"], r.status);
@@ -260,8 +321,23 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
       freshDoc.setIn(["probationes", gateId, "certifies"], r.certifies);
       if (gateId === "served-e2e") freshDoc.setIn(["probationes", gateId, "at"], now.toISOString());
     }
+    // W-129 end rule, inside the same compare-and-set write and on the document as it will be written (this run's
+    // results merged in), never the pre-write record. If the record is no longer `verifying` (a halt, done or
+    // review --fail ran meanwhile) the gates stand and no state is written.
+    if (ownTree && freshDoc.get("state") === "verifying") {
+      if (Object.values(results).some((r) => r.status === "failed")) ended = "building";
+      else if (
+        freshDoc.get("kind") !== "ui" &&
+        automatedIds.every((id) => results[id]?.status === "passed" && results[id]?.certifies === certificate) &&
+        agentIds.every((id) => freshDoc.getIn(["probationes", id, "status"]) === "passed") &&
+        !reviewFailedAtCertifiedTree(studioDir, freshDoc.toJS() as Record<string, unknown>, { reviewId, automatedIds })
+      )
+        ended = "review";
+      if (ended !== undefined) freshDoc.set("state", ended);
+    }
     return undefined;
   });
+  if (ended !== undefined) stateEvent("verifying", ended);
 
   let anyFailed = false;
   for (const id of waivedIds) console.log(`${id}: waived (untouched)`);

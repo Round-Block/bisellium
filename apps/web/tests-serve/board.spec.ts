@@ -254,23 +254,24 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     const counter = await installWriteCounter(page);
     await openBoard(page, served);
 
-    // W-007 (the only backlog opus in the fixture) starts uncounted in
-    // Planned (backlog is a count, not a column) — not "zero cards in
-    // Planned": W-006 is already greenlit there.
-    await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')).toHaveCount(0);
+    // W-007 (the only backlog opus in the fixture) is a card in Planned from
+    // the start (W-129, D-034): its native state reads `backlog` until the
+    // greenlight, then `greenlit`.
+    const w007 = page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]');
+    await expect(w007).toBeVisible();
+    await expect(w007.locator(".board__card-state")).toHaveText("backlog");
 
     const result = runGreenlight(["W-007", "--studio", served.studioDir]);
     expect(result.exitCode).toBe(0);
     await forcePoll(served);
 
-    await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')).toBeVisible({ timeout: 11_000 });
-    await expect(page.locator('.board__column[data-column-id="planned"] .board__backlog-footer')).toBeHidden();
+    await expect(w007.locator(".board__card-state")).toHaveText("greenlit", { timeout: 11_000 });
 
     await page.goto(`${served.baseURL}/#/inbox`);
     expect(counter.count()).toBe(0);
   });
 
-  test("negative: with /api/live blocked after the initial connection, the card never appears and no further /api/opera requests are issued", async ({ page }) => {
+  test("negative: with /api/live blocked after the initial connection, the card's state never changes and no further /api/opera requests are issued", async ({ page }) => {
     const r = await startRestartable("board-negative");
     served = r;
     const counter = await installWriteCounter(page);
@@ -304,7 +305,8 @@ test.describe("W-064 behaviour 7: transport dependence, reconnect reconciliation
     // whose next tick simply hasn't fired yet at 2s.
     // sleep-waiver: no-observable -- an absence window: no event marks two poll intervals having passed without the card appearing
     await page.waitForTimeout(11_000);
-    await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"]')).toHaveCount(0);
+    // The card is already in Planned (backlog opera are cards, W-129); what never happens is its state moving.
+    await expect(page.locator('.board__column[data-column-id="planned"] .board__card[data-card-id="W-007"] .board__card-state')).toHaveText("backlog");
     expect(opusRequests).toBe(before);
 
     await page.unroute("**/api/live");
