@@ -377,7 +377,9 @@ export interface Derived {
   extra: [string, string][];
 }
 
-const SCRIPTS_LAND = (title: string): string => `scripts/open-pr.sh ${JSON.stringify(title)} <body-file>, then scripts/merge-gate.sh <pr-number>`;
+/** The plain gh and git landing for a head the `pr` rung does not open; it ends on master so the pull can fast-forward after the squash. */
+const landing = (head: string, title: string): string =>
+  `git push origin ${head}, then gh pr create --base master --head ${head} --title ${JSON.stringify(title)} --body-file <body-file>, then gh pr merge <pr-number> --squash --auto once its checks pass, then git switch master && git pull --ff-only origin master`;
 
 /** The one legal next step, from facts alone (the only I/O is the lazy `pr()` read). */
 export function deriveNext(f: Facts): Derived {
@@ -400,7 +402,7 @@ export function deriveNext(f: Facts): Derived {
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design);
-    if (!spec.ok && onBranch.ok) return named("spec", "producer", `spec signed on spec/${id}, not on master`, SCRIPTS_LAND(`spec(${id}): signed`));
+    if (!spec.ok && onBranch.ok) return named("spec", "producer", `spec signed on spec/${id}, not on master`, landing(`spec/${id}`, `spec(${id}): signed`));
     return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
 
@@ -491,13 +493,13 @@ export function deriveNext(f: Facts): Derived {
 
   // 10 cleanup, 11 done
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
-  if (f.choreDone) return named("done", "producer", `done committed on chore/done-${id}, not on master`, `git switch chore/done-${id} && ${SCRIPTS_LAND(`chore(studio): mark ${id} done`)}`);
+  if (f.choreDone) return named("done", "producer", `done committed on chore/done-${id}, not on master`, `git switch chore/done-${id} && ${landing(`chore/done-${id}`, `chore(studio): mark ${id} done`)}`);
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
 
 function afterDone(f: Facts): Derived {
   const { id } = f;
-  const m = f.handoff === undefined ? null : /^(#{1,6})[ \t]+Where things stand[ \t]*$/m.exec(f.handoff);
+  const m = f.handoff === undefined ? null : /^(#{1,6})[ \t]+Where things stand(?:[ \t]+\([^\n)]*\))?[ \t]*$/m.exec(f.handoff);
   let section = "";
   if (f.handoff !== undefined && m !== null) {
     const rest = f.handoff.slice(m.index + m[0].length);

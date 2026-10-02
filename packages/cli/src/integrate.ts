@@ -1,7 +1,6 @@
 /**
  * packages/cli/src/integrate.ts — W-124: the `pr`, `merge` and `cleanup` rungs
- * of `bisellium next`, absorbing `scripts/open-pr.sh` and `scripts/merge-gate.sh`
- * (which stay byte-identical until a producer chore retires them).
+ * of `bisellium next`, which replaced the retired PR scripts.
  *
  * `gh` and `git` are spawned by bare name through PATH with argument arrays,
  * never a shell. Every `gh` read asks for a fixed `--json` field list (never a
@@ -18,7 +17,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
 
-/** Parity with `merge-gate.sh`'s `-ge 5`; only checks in bucket `pass` count. */
+/** The fewest passing checks a merge needs; only checks in bucket `pass` count. */
 export const MIN_CHECKS = 5;
 const GH_MAX_BYTES = 1_048_576;
 const SLUG_RE = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
@@ -107,13 +106,113 @@ export const localTip = (repo: string, id: string): string | undefined => {
   return r.status === 0 && OID_RE.test(r.stdout.trim()) ? r.stdout.trim() : undefined;
 };
 
-/** `git fetch origin master:master`, or a hold naming the worktree that has master checked out. */
-export function fetchTrunk(repo: string): { ok: true } | { ok: false; reason: string } {
+const REMOTE_MASTER = "refs/remotes/origin/master";
+type Trunk = { ok: true } | { ok: false; reason: string };
+const commitOf = (repo: string, ref: string): string | undefined => {
+  const r = git(repo, ["rev-parse", "--verify", "-q", `${ref}^{commit}`]);
+  return r.status === 0 && wellFormedOid(r.stdout.trim()) ? r.stdout.trim() : undefined;
+};
+/** `merge-base --is-ancestor`: true, false, or undefined for any other outcome (fail closed). */
+const isAncestor = (repo: string, a: string, b: string): boolean | undefined => {
+  const r = git(repo, ["merge-base", "--is-ancestor", a, b]);
+  return r.error === undefined && r.status === 0 ? true : r.error === undefined && r.status === 1 ? false : undefined;
+};
+const onDisk = (path: string): "none" | "dir" | "other" | "error" => {
+  try {
+    return lstatSync(path).isDirectory() ? "dir" : "other";
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code;
+    return code === "ENOENT" || code === "ENOTDIR" ? "none" : "error";
+  }
+};
+
+/**
+ * The first incoming path (added between `from` and `to`) that would overwrite an untracked or
+ * ignored entry of the checkout: present on disk, under a non-directory, or a directory holding an
+ * ignored entry. `undefined` means none; a string starting with "?" is an unreadable state (hold).
+ */
+function overwritten(repo: string, from: string, to: string): string | undefined {
+  const added = git(repo, ["diff", "--no-renames", "--ignore-submodules=none", "--name-only", "-z", "--diff-filter=A", from, to]);
+  if (added.status !== 0 || added.error !== undefined) return `?git diff failed: ${why(added)}`;
+  const ignored = git(repo, ["ls-files", "-o", "-i", "--exclude-standard", "-z"]);
+  if (ignored.status !== 0 || ignored.error !== undefined) return `?git ls-files failed: ${why(ignored)}`;
+  const dirs = new Set<string>();
+  for (const e of ignored.stdout.split("\0").filter(Boolean)) for (let i = e.indexOf("/"); i !== -1; i = e.indexOf("/", i + 1)) dirs.add(e.slice(0, i));
+  for (const p of added.stdout.split("\0").filter(Boolean)) {
+    if (dirs.has(p)) return p;
+    const parts = p.split("/");
+    for (let i = 1; i <= parts.length; i++) {
+      const here = onDisk(join(repo, ...parts.slice(0, i)));
+      if (here === "error") return `?cannot inspect ${p}`;
+      if (here === "none") break;
+      if (i === parts.length || here === "other") return p;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * The trunk fetch. `git fetch origin master:master` when no worktree holds `master`. Otherwise the
+ * remote-tracking ref is fetched and `target` (the reviewed merge commit, the `merge` rung only) is the
+ * only thing a clean checked-out `master` of `repo` is ever fast-forwarded to; with no target (the `pr`
+ * rung) nothing is moved. Every read fails closed into a hold with nothing mutated.
+ */
+export function fetchTrunk(repo: string, target?: string): Trunk {
+  // the tail (advice naming a path) is clipped on its own so a long head can never cut it off
+  const hold = (reason: string, tail = ""): Trunk => ({ ok: false, reason: clean(reason, 400) + clean(tail, 600) });
+  if (target !== undefined && !wellFormedOid(target)) return hold("the reviewed merge commit is not a well formed commit id");
   const r = git(repo, ["fetch", "-q", "origin", "master:master"]);
   if (r.status === 0) return { ok: true };
   const holder = listWorktrees(repo)?.find((e) => e.branch === TRUNK_REF);
-  if (holder !== undefined) return { ok: false, reason: `master is checked out at ${holder.path}, so it cannot be fetched into; run there: git -C ${holder.path} pull --ff-only origin master` };
-  return { ok: false, reason: `git fetch origin master:master failed: ${why(r)}` };
+  if (holder === undefined) return hold(`git fetch origin master:master failed: ${why(r)}`);
+  const held = `master is checked out at ${holder.path}, so it cannot be fetched into; run there: git -C ${holder.path} pull --ff-only origin master`;
+  const tracking = git(repo, ["fetch", "-q", "origin", `+${TRUNK_REF}:${REMOTE_MASTER}`]);
+  if (tracking.status !== 0) return hold(`git fetch origin master failed: ${why(tracking)}`);
+  const local = commitOf(repo, TRUNK_REF);
+  const origin = commitOf(repo, REMOTE_MASTER);
+  const reviewed = target === undefined ? undefined : commitOf(repo, target);
+  if (local === undefined || origin === undefined || (target !== undefined && reviewed === undefined)) return hold("could not read master, origin/master or the reviewed merge commit");
+  // a tag or other object that merely peels to a commit is not the reviewed commit
+  if (reviewed !== target && target !== undefined) return hold("the reviewed merge commit id is not itself a commit");
+  if (reviewed !== undefined) {
+    const contained = isAncestor(repo, reviewed, local);
+    if (contained === true) return { ok: true };
+    if (contained === undefined) return hold("could not compare the reviewed merge commit with master");
+  } else if (local === origin) return { ok: true };
+  let same: boolean;
+  try {
+    same = realpathSync(holder.path) === realpathSync(repo);
+  } catch {
+    return hold(`${held} (could not resolve ${holder.path})`);
+  }
+  if (!same) return hold(held);
+  const behind = isAncestor(repo, local, origin);
+  if (reviewed === undefined) {
+    const ahead = isAncestor(repo, origin, local);
+    if (behind === undefined || ahead === undefined) return hold("could not compare master with origin/master");
+    if (behind) return hold(held);
+    return hold(ahead ? "local master is ahead of origin/master; nothing to fetch, push it or leave it" : "local master has diverged from origin/master");
+  }
+  const onOrigin = isAncestor(repo, reviewed, origin);
+  if (onOrigin === undefined) return hold("could not compare the reviewed merge commit with origin/master");
+  if (!onOrigin) return hold(`the reviewed merge commit ${reviewed.slice(0, 12)} is not on origin/master`);
+  const fastForward = isAncestor(repo, local, reviewed);
+  if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
+  if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
+  const status = git(repo, ["status", "--porcelain", "--untracked-files=no", "--ignore-submodules=none"]);
+  if (status.status !== 0 || status.error !== undefined) return hold(`git status failed: ${why(status)}`);
+  if (status.stdout.trim() !== "") return hold(`${repo} has uncommitted tracked changes; commit or restore them, then re-run`);
+  const clash = overwritten(repo, local, reviewed);
+  if (clash?.startsWith("?")) return hold(clash.slice(1));
+  if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry (or swaps a tracked file and directory, which a manual pull handles): ${clean(clash, 120)}; move it aside, then re-run`);
+  // the merge acts on the branch that was checked, not on whatever was switched to meanwhile
+  const head = git(repo, ["symbolic-ref", "-q", "HEAD"]);
+  if (head.stdout.trim() !== TRUNK_REF) return hold(`HEAD of ${repo} is ${clean(head.stdout.trim()) || "detached"}, not master; switch back and re-run`);
+  const partly = `; the working tree may be partly updated: git -C ${repo} status`;
+  const merged = git(repo, ["-c", "submodule.recurse=false", "merge", "-q", "--ff-only", reviewed]);
+  if (merged.status !== 0 || merged.error !== undefined) return hold(`git merge --ff-only failed: ${why(merged)}`, partly);
+  if (commitOf(repo, TRUNK_REF) !== reviewed) return hold("master did not move to the reviewed merge commit", partly);
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -270,7 +369,7 @@ export interface Ctx {
 const held = (reason: string, ...more: string[]): StepResult => ({ ok: false, lines: [`why: ${reason}`, ...more] });
 
 // ---------------------------------------------------------------------------
-// pr — absorbs scripts/open-pr.sh
+// pr
 // ---------------------------------------------------------------------------
 
 export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undefined, bodyFile: string | undefined): StepResult {
@@ -311,7 +410,7 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
 }
 
 // ---------------------------------------------------------------------------
-// merge — absorbs scripts/merge-gate.sh
+// merge
 // ---------------------------------------------------------------------------
 
 type Check = { name: string; bucket: string };
@@ -329,7 +428,7 @@ function readChecks(repo: string, pr: Pr): { ok: true; checks: Check[] } | { ok:
 
 /** The tail shared by a freshly merged PR and an already-MERGED one: fetch the trunk, re-check containment. */
 function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
-  const fetched = fetchTrunk(ctx.repo);
+  const fetched = fetchTrunk(ctx.repo, pr.mergeOid);
   if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...extra] };
   const tip = localTip(ctx.repo, ctx.id);
   if (tip !== undefined) git(ctx.repo, ["fetch", "-q", "origin", `+refs/heads/opus/${ctx.id}:refs/remotes/origin/opus/${ctx.id}`]);

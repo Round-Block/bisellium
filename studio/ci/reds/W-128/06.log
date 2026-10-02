@@ -1,0 +1,43 @@
+# behaviour: 6
+# command: node --test-reporter=tap --import tsx packages/cli/src/ladder-followon.test.ts --behaviour 6
+# exit: 1
+# at: 2026-10-02T13:43:01.017Z
+# sella: builder.W-128
+# tree: tree:d3ac62afc69cf7c3f7c5b2fe16ea829a1ee6839f
+
+TAP version 13
+# Subtest: W-128 behaviour 6: the checkpoint rung reads a dated heading
+not ok 1 - W-128 behaviour 6: the checkpoint rung reads a dated heading
+  ---
+  duration_ms: 4.003825
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:7:8563'
+  failureType: 'testCodeFailure'
+  error: |-
+    6d: a dated heading followed by a bullet naming W-900 is complete
+    + actual - expected
+    
+    + 'named'
+    - 'complete'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'complete'
+  actual: 'named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:433:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.457569

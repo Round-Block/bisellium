@@ -873,6 +873,8 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   writeFileSync(logPath, `${header}\n\n${output}`);
 
   console.log(`${opusId}: red recorded for behaviour ${behaviour} -> ci/reds/${opusId}/${nn}.log`);
+  if (treeHeader.startsWith("dirty:"))
+    console.error("red: warning: the working tree is dirty, so this red records a dirty: tree identity that the producer replay refuses; commit the tests first, then re-record");
   return { exitCode: 0 };
 }
 

@@ -74,7 +74,6 @@ const T = {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MAIN = join(HERE, "main.ts");
 const REPO_ROOT = join(HERE, "..", "..", "..");
-const SCRIPTS = join(REPO_ROOT, "scripts");
 const TSX = import.meta.resolve("tsx");
 const REAL_GIT = execFileSync("sh", ["-c", "command -v git"], { encoding: "utf8" }).trim();
 const FAST = ["--poll-ms", "1", "--max-polls", "3"];
@@ -653,10 +652,6 @@ function nextAsync(w: World, args: string[], o: RunOpts = {}): { child: ChildPro
   const done = new Promise<Out>((ok) => child.on("close", (code) => ok(parse(code, out, err))));
   return { child, done };
 }
-function script(w: World, name: string, args: string[], cwd: string): Out {
-  const r = spawnSync("bash", [join(SCRIPTS, name), ...args], { cwd, env: envFor(w, { clock: false }), encoding: "utf8", timeout: 120_000 });
-  return parse(r.status, r.stdout ?? "", r.stderr ?? "");
-}
 const ran = (label: string, o: Out): string => `${label}\n--- exit ${o.status}\n--- stdout\n${o.out}\n--- stderr\n${o.err.slice(0, 600)}`;
 
 function calls(w: World): string[][] {
@@ -671,10 +666,10 @@ function gitArgs(a: string[]): string[] {
   }
   return out;
 }
-/** Every git call the verb or a script made, with -C/-c stripped. */
+/** Every git call the verb made, with -C/-c stripped. */
 const gitCalls = (w: World): string[][] => calls(w).filter((c) => c[0] === "git").map((c) => gitArgs(c.slice(1)));
 const ghCalls = (w: World): string[][] => calls(w).filter((c) => c[0] === "gh").map((c) => c.slice(1));
-/** The ordered mutating calls, normalised so the scripts and the verb compare. */
+/** The ordered mutating calls the verb made, normalised to a short label. */
 function mutating(w: World): string[] {
   const out: string[] = [];
   for (const c of calls(w)) {
@@ -686,6 +681,7 @@ function mutating(w: World): string[] {
     } else if (c[0] === "git") {
       const a = gitArgs(c.slice(1));
       if (a[0] === "fetch" && a.includes("master:master")) out.push("git fetch master:master");
+      else if (a[0] === "merge" && a.includes("--ff-only")) out.push("git merge --ff-only");
       else if (a[0] === "rebase") out.push(a.includes("--abort") ? "git rebase --abort" : "git rebase");
       else if (a[0] === "push" && a.some((x) => x.startsWith("--force-with-lease")) && !a.includes("--delete")) out.push("git push --force-with-lease");
     }
@@ -919,8 +915,9 @@ if (runs(1)) {
     rung(specBranch, "brief and passing spec log only on spec/<id> still names spec", "spec", "named", (o) => {
       actor(o, /producer/i, "spec on branch");
       assert.match(o.out, /spec signed on spec\/W-900, not on master/, ran("spec-branch why", o));
-      assert.match(o.out, /scripts\/open-pr\.sh/, ran("names the existing open-pr script", o));
-      assert.match(o.out, /scripts\/merge-gate\.sh/, ran("names the existing merge-gate script", o));
+      assert.match(o.out, /git push origin spec\/W-900, then gh pr create --base master --head spec\/W-900 --title "spec\(W-900\): signed"/, ran("names the gh landing for spec/<id>", o));
+      assert.match(o.out, /git switch master && git pull --ff-only origin master/, ran("switches to master before it pulls", o));
+      assert.doesNotMatch(o.out, /scripts\//, ran("names no script", o));
     });
 
     // 3 branch
@@ -1003,6 +1000,9 @@ if (runs(1)) {
     scenario(chore, { list: mergedList(chore) });
     rung(chore, "done committed only on chore/done-<id> still names done", "done", "named", (o) => {
       assert.match(o.out, /done committed on chore\/done-W-900, not on master/, ran("chore why", o));
+      assert.match(o.out, /git switch chore\/done-W-900 && git push origin chore\/done-W-900, then gh pr create --base master --head chore\/done-W-900 --title "chore\(studio\): mark W-900 done"/, ran("names the gh landing for chore/done-<id>", o));
+      assert.match(o.out, /git switch master && git pull --ff-only origin master/, ran("chore: switches to master before it pulls", o));
+      assert.doesNotMatch(o.out, /scripts\//, ran("chore: names no script", o));
     });
 
     // 12 checkpoint: the committed trunk record `done` settles everything before it without any gh call
@@ -1155,8 +1155,8 @@ if (runs(2)) {
 }
 
 // ---------------------------------------------------------------------------
-// behaviour 3: pr, merge and cleanup do what the scripts do, in order, with the
-// refusals the scripts only document, and fail closed on gh
+// behaviour 3: pr, merge and cleanup run in order, with the refusals the ladder
+// documents, and fail closed on gh
 // ---------------------------------------------------------------------------
 const TITLE = "feat(W-900): fixture";
 const BODY = join(scratch("body"), "body.md");
@@ -1166,7 +1166,7 @@ const prArgs = ["--title", TITLE, "--body-file", BODY];
 const performPr = (w: World, extra: string[] = prArgs): Out => next(w, [OPUS, "--perform", "--expect", "pr", ...extra, ...FAST]);
 const performMerge = (w: World, extra: string[] = []): Out => next(w, [OPUS, "--perform", "--expect", "merge", ...FAST, ...extra]);
 const performCleanup = (w: World): Out => next(w, [OPUS, "--perform", "--expect", "cleanup"]);
-/** The script and the verb must land on the same terminal state. */
+/** The terminal state a performed rung reports. */
 function terminal(o: Out): string {
   const text = o.out + o.err;
   const states = [...text.matchAll(/state=([A-Z_]+)/g)];
@@ -1178,8 +1178,8 @@ function terminal(o: Out): string {
 const ghMerges = (w: World): string[][] => ghCalls(w).filter((a) => a[0] === "pr" && a[1] === "merge");
 const callIndex = (w: World, pred: (a: string[]) => boolean): number => gitCalls(w).findIndex(pred);
 
-type ParityName = "CHECKS_FAILED" | "GHAS_STOP" | "MERGE_FAILED" | "MERGED" | "QUEUE_REJECTED" | "CONFLICT" | "dirty tree" | "on master" | "CREATED";
-const PARITY: { name: ParityName; kind: "merge" | "pr"; terminal: string; calls: string[] }[] = [
+type TerminalName = "CHECKS_FAILED" | "GHAS_STOP" | "MERGE_FAILED" | "MERGED" | "QUEUE_REJECTED" | "CONFLICT" | "dirty tree" | "on master" | "CREATED";
+const TERMINALS: { name: TerminalName; kind: "merge" | "pr"; terminal: string; calls: string[] }[] = [
   { name: "CHECKS_FAILED", kind: "merge", terminal: "CHECKS_FAILED", calls: [] },
   { name: "GHAS_STOP", kind: "merge", terminal: "GHAS_STOP", calls: [] },
   { name: "MERGE_FAILED", kind: "merge", terminal: "MERGE_FAILED", calls: ["gh pr merge --squash --auto"] },
@@ -1190,9 +1190,9 @@ const PARITY: { name: ParityName; kind: "merge" | "pr"; terminal: string; calls:
   { name: "on master", kind: "pr", terminal: "REFUSED", calls: [] },
   { name: "CREATED", kind: "pr", terminal: "CREATED", calls: ["git fetch master:master", "git rebase", "git push --force-with-lease", "gh pr create"] },
 ];
-/** A fresh world for one parity scenario; the same builder serves the script run and the verb run. */
-function parityWorld(name: ParityName): World {
-  const tag = `b3-parity-${name.replace(/\W+/g, "-")}`;
+/** A fresh world for one terminal-state scenario. */
+function terminalWorld(name: TerminalName): World {
+  const tag = `b3-terminal-${name.replace(/\W+/g, "-")}`;
   switch (name) {
     case "CHECKS_FAILED": {
       const w = pushed(tag);
@@ -1245,12 +1245,12 @@ function parityWorld(name: ParityName): World {
 }
 
 if (runs(3)) {
-  test("W-124 behaviour 3: pr, merge and cleanup do what the scripts do, in order, and fail closed on gh", { timeout: 3_600_000 }, () => {
+  test("W-124 behaviour 3: pr, merge and cleanup run in order and fail closed on gh", { timeout: 3_600_000 }, () => {
     // the verb's own terminal line, from a scenario that never sleeps
     const first = pushed("b3-first");
     scenario(first, { list: openList(first), merge: { exit: 1, stderr: "merge refused" } });
     const firstOut = performMerge(first);
-    assert.match(firstOut.out, /state=MERGE_FAILED/, ran("a performed merge prints the script's state=MERGE_FAILED", firstOut));
+    assert.match(firstOut.out, /state=MERGE_FAILED/, ran("a performed merge prints state=MERGE_FAILED", firstOut));
     assert.equal(firstOut.status, 1, ran("MERGE_FAILED exits 1", firstOut));
 
     // reads: fixed --json field lists, never -q or text greps; -R <slug> and --match-head-commit are the declared divergences
@@ -1273,21 +1273,17 @@ if (runs(3)) {
     assert.deepEqual(mutating(reads), ["gh pr merge --squash --auto", "git fetch master:master"], "MERGED is reported only after the merge and the trunk fetch");
     assert.equal(gitOk(reads.repo, ["merge-base", "--is-ancestor", reads.mergeOid!, "refs/heads/master"]), true, "the local trunk contains the merge commit");
 
-    // parity: the script and the verb reach the same terminal state through the same ordered mutating calls
-    for (const p of PARITY) {
-      const a = parityWorld(p.name);
-      const s = p.kind === "merge" ? script(a, "merge-gate.sh", [String(PR_NUMBER)], a.wt) : script(a, "open-pr.sh", [TITLE, BODY], a.wt);
-      const b = parityWorld(p.name);
+    // terminal states: the verb reaches each one through its ordered mutating calls and no unexpected gh call
+    for (const p of TERMINALS) {
+      const b = terminalWorld(p.name);
       const v = p.kind === "merge" ? performMerge(b) : performPr(b);
-      assert.equal(terminal(s), p.terminal, ran(`parity ${p.name}: script terminal state`, s));
-      assert.equal(terminal(v), p.terminal, ran(`parity ${p.name}: verb terminal state`, v));
-      assert.deepEqual(mutating(a), p.calls, `parity ${p.name}: the script's ordered mutating calls`);
-      assert.deepEqual(mutating(b), p.calls, `parity ${p.name}: the verb's ordered mutating calls`);
-      assert.deepEqual(unmatched(b), [], `parity ${p.name}: the verb made no unexpected gh call`);
+      assert.equal(terminal(v), p.terminal, ran(`terminal ${p.name}: verb terminal state`, v));
+      assert.deepEqual(mutating(b), p.calls, `terminal ${p.name}: the verb's ordered mutating calls`);
+      assert.deepEqual(unmatched(b), [], `terminal ${p.name}: the verb made no unexpected gh call`);
     }
 
     // pr: what the verb creates and how
-    const created = parityWorld("CREATED");
+    const created = terminalWorld("CREATED");
     performPr(created);
     const createCall = ghCalls(created).find((a) => a[0] === "pr" && a[1] === "create") ?? [];
     assert.ok(createCall.includes("-R"), "gh pr create is pinned to -R <slug>");
@@ -1297,7 +1293,7 @@ if (runs(3)) {
     assert.equal(createCall[createCall.indexOf("--body-file") + 1], BODY);
     const push = gitCalls(created).find((a) => a[0] === "push" && a.some((x) => x.startsWith("--force-with-lease"))) ?? [];
     assert.ok(push.includes(BRANCH), "the branch is pushed with --force-with-lease");
-    const namedOnly = parityWorld("CREATED");
+    const namedOnly = terminalWorld("CREATED");
     const named = performPr(namedOnly, []);
     expectStep(named, "pr", "named", "without --title and --body-file pr only names the command");
     assert.equal(named.status, 0, ran("named pr exit", named));
@@ -1370,7 +1366,7 @@ if (runs(3)) {
     const blocked = pushed("b3-blocked");
     scenario(blocked, { list: openList(blocked), view: { stdout: viewOf(cand(blocked, { state: "OPEN", mss: "BLOCKED" })) } });
     const blockedOut = performMerge(blocked);
-    assert.match(blockedOut.out, /state=QUEUE_TIMEOUT/, ran("a BLOCKED green PR waits and ends QUEUE_TIMEOUT (divergence from merge-gate.sh:37)", blockedOut));
+    assert.match(blockedOut.out, /state=QUEUE_TIMEOUT/, ran("a BLOCKED green PR waits and ends QUEUE_TIMEOUT (a BLOCKED PR is never merged directly)", blockedOut));
     assert.deepEqual(mutating(blocked), ["gh pr merge --squash --auto"], "BLOCKED is never merged directly");
 
     const movedHead = pushed("b3-head-moved");
@@ -1400,13 +1396,13 @@ if (runs(3)) {
       checks: { stdout: [...greens(MIN_CHECKS - 1), check("s1", "skipping"), check("s2", "skipping"), check("c1", "cancel")] },
     });
 
-    // divergence: a passed check named pending-review is not pending (merge-gate.sh:16-17 greps the text)
+    // a passed check named pending-review is not pending (the bucket decides, never the name)
     const pendingName = pushed("b3-pending-name");
     landing(pendingName, { checks: { stdout: [...greens(MIN_CHECKS), check("pending-review", "pass")] } });
     const pendingOut = performMerge(pendingName);
     assert.match(pendingOut.out, /state=MERGED/, ran("a check NAMED pending-review that passed does not block the merge", pendingOut));
 
-    // an untracked file does not refuse pr (open-pr.sh:13 counts untracked files)
+    // an untracked file does not refuse pr (only tracked changes count as dirty)
     const untracked = reviewed("b3-untracked", { mainOnMaster: false });
     writeFileSync(join(untracked.wt, "scratch.txt"), "untracked\n");
     performPr(untracked);
@@ -1611,15 +1607,39 @@ if (runs(4)) {
       assert.ok(!gitCalls(malformed).some((a) => a.some((x) => x.includes("merge-base") || x === "null")), `mergeCommit.oid ${row}: no merge-base call at all`);
     }
 
-    // master checked out in the main checkout: the fetch is refused, so the step holds naming the worktree and the pull to run there
+    // master checked out in the main checkout (clean, behind): the verb fast-forwards it to the reviewed merge commit and nothing else
     const checkedOut = world("b4-checked-out", "pr");
     const m = landMerge(checkedOut, false);
     scenario(checkedOut, { list: mergedList(checkedOut, { merge: m }) });
-    const refusedFetch = performMerge(checkedOut);
-    expectHeld(refusedFetch, "git fetch origin master:master refused because master is checked out");
-    assert.ok(refusedFetch.out.includes(checkedOut.repo), ran("held names the worktree that has master checked out", refusedFetch));
-    assert.match(refusedFetch.out, /pull --ff-only/, ran("and the pull --ff-only to run there", refusedFetch));
+    assert.equal(m, checkedOut.mergeOid, "the world's mergeOid is the merge commit the PR names");
+    const ffOut = performMerge(checkedOut);
+    assert.match(ffOut.out, /state=MERGED/, ran("a clean checked-out master that is behind is fast-forwarded and the merge reports MERGED", ffOut));
+    assert.equal(gitq(checkedOut.repo, ["rev-parse", "refs/heads/master"]), m, "refs/heads/master equals the merge commit");
+    assert.equal(gitq(checkedOut.repo, ["symbolic-ref", "-q", "HEAD"]), "refs/heads/master", "HEAD is still master");
+    const raw = calls(checkedOut).filter((c) => c[0] === "git").map((c) => c.slice(1));
+    const mergeCalls = raw.filter((a) => gitArgs(a)[0] === "merge");
+    assert.equal(mergeCalls.length, 1, "exactly one merge call");
+    assert.deepEqual(mergeCalls[0], ["-c", "submodule.recurse=false", "merge", "-q", "--ff-only", m], "the merge is --ff-only to the literal reviewed oid, never origin/master");
+    assert.deepEqual(raw[raw.indexOf(mergeCalls[0]!) - 1], ["symbolic-ref", "-q", "HEAD"], "the call immediately before the merge is symbolic-ref -q HEAD");
+    for (const a of raw) {
+      assert.ok(!["reset", "pull", "stash", "checkout", "switch", "restore", "clean"].includes(gitArgs(a)[0] ?? ""), `no ${gitArgs(a)[0]} call`);
+      assert.ok(!a.includes("--force") && !a.includes("-f") && !a.includes("--update-head-ok"), `no force flag in git ${a.join(" ")}`);
+    }
     assert.ok(gitCalls(checkedOut).every((a) => !a.includes("-u") && !a.includes("--set-upstream")), "-u is never used");
+
+    // master checked out in another worktree: the verb never writes there, so the step holds naming it and the pull to run there
+    const elsewhere = world("b4-held-elsewhere", "pr");
+    const m2 = landMerge(elsewhere, false);
+    scenario(elsewhere, { list: mergedList(elsewhere, { merge: m2 }) });
+    git(elsewhere.repo, ["switch", "-q", "-c", "side"]);
+    const holder = join(elsewhere.root, "master-wt");
+    git(elsewhere.repo, ["worktree", "add", "-q", holder, "master"]);
+    const refusedFetch = performMerge(elsewhere);
+    expectHeld(refusedFetch, "git fetch origin master:master refused because master is checked out in another worktree");
+    assert.ok(refusedFetch.out.includes(holder), ran("held names the worktree that has master checked out", refusedFetch));
+    assert.match(refusedFetch.out, /pull --ff-only/, ran("and the pull --ff-only to run there", refusedFetch));
+    assert.equal(gitCalls(elsewhere).filter((a) => a[0] === "merge").length, 0, "no merge call");
+    assert.ok(gitCalls(elsewhere).every((a) => !a.includes("-u") && !a.includes("--set-upstream")), "-u is never used");
 
     // performed done, end to end, from the main checkout on master
     const lifecycle = world("b4-done", "cleanup");

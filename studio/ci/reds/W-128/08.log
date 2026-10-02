@@ -1,0 +1,41 @@
+# behaviour: 8
+# command: node --test-reporter=tap --import tsx packages/cli/src/ladder-followon.test.ts --behaviour 8
+# exit: 1
+# at: 2026-10-02T13:43:01.823Z
+# sella: builder.W-128
+# tree: tree:d3ac62afc69cf7c3f7c5b2fe16ea829a1ee6839f
+
+TAP version 13
+# Subtest: W-128 behaviour 8: red says so when it records a dirty-tree identity
+not ok 1 - W-128 behaviour 8: red says so when it records a dirty-tree identity
+  ---
+  duration_ms: 811.822804
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:10:3468'
+  failureType: 'testCodeFailure'
+  error: |-
+    8d: exactly one stderr line begins red: warning:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:546:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 821.573925
