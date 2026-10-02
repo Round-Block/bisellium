@@ -43,5 +43,5 @@ for _ in $(seq 1 60); do
   sleep 20
 done
 [ "$state" != "MERGED" ] && { echo "state=QUEUE_TIMEOUT"; exit 1; }
-git fetch -q origin master:master 2>/dev/null && echo "local master -> $(git rev-parse --short master)"
+git fetch -q origin master 2>/dev/null && echo "origin/master -> $(git rev-parse --short origin/master)"
 echo "state=MERGED"

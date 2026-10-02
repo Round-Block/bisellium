@@ -11,11 +11,11 @@ BODY=${2:?usage: scripts/open-pr.sh <title> <body-file>}
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [ "$BRANCH" = "master" ] && { echo "refusing: on master"; exit 2; }
 [ -z "$(git status --porcelain)" ] || { echo "refusing: working tree dirty"; git status --short | head; exit 2; }
-git fetch -q origin master:master || { echo "fetch failed"; exit 1; }
-if ! git -c submodule.recurse=false rebase -q master; then
+git fetch -q origin master || { echo "fetch failed"; exit 1; }
+if ! git -c submodule.recurse=false rebase -q origin/master; then
   echo "state=CONFLICT — resolve, then re-run"; git status --short | head; git rebase --abort; exit 1
 fi
 git push -q --force-with-lease -u origin "$BRANCH" || { echo "push failed"; exit 1; }
 PR=$(gh pr create --base master --head "$BRANCH" --title "$TITLE" --body-file "$BODY" 2>&1 | grep -o '[0-9]*$')
 [ -n "$PR" ] || { echo "pr create failed"; exit 1; }
-echo "base=$(git rev-parse --short master) head=$(git rev-parse --short HEAD) PR=$PR"
+echo "base=$(git rev-parse --short origin/master) head=$(git rev-parse --short HEAD) PR=$PR"
