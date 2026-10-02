@@ -402,6 +402,8 @@ flowchart LR
 <p>merge-blocking pipeline is a drop-in for the local runner.</p>
 <li><code>WorktreeProvider</code> / <code>HarnessProfile</code> (<code>@bisellium/shim</code>) — where a builder</li>
 <p>runs, and what drives it. Builder-class execution uses the stricter private <code>builder-run</code>/host-runner seam instead of this generic provider.</p>
+<li><code>bisellium next</code> (<code>packages/cli/src/next.ts</code>, <code>integrate.ts</code>) — the cascade</li>
+<p>ladder derived from evidence (W-124). <code>integrate.ts</code> owns the <code>gh</code>/<code>git</code> PR rungs (<code>pr</code>, <code>merge</code>, <code>cleanup</code>) that absorb <code>scripts/open-pr.sh</code> and <code>merge-gate.sh</code>; <code>trunkContainsMerge</code> (<code>@bisellium/commands/trunk.js</code>) is the one "is this merge in the local trunk" predicate, in <code>commands</code> so a <code>done</code> refusal can import it without a cli-to-commands cycle. No workspace edge is added (§1 is unchanged).</p>
 <li><code>admitCurrentRunReceipt</code> (<code>@bisellium/commands/builder-run</code>) — the shared</li>
 <p>current-SOURCE host-completion predicate used before either review outcome.</p>
 <li><code>SnapshotAdapter</code> (<code>adapters/native</code>, <code>adapters/epoch0</code>) — the only thing that</li>
