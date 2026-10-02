@@ -653,7 +653,11 @@ if (runs(9) && requireBuilt(9)) {
       ].join("\n"),
     );
 
-    const aChild = spawn(process.execPath, [aScript], { stdio: ["pipe", "pipe", "inherit"], timeout: 30_000, killSignal: "SIGKILL" });
+    const aChild = spawn(process.execPath, [aScript], {
+      stdio: ["pipe", "pipe", "inherit"],
+      timeout: 30_000,
+      killSignal: "SIGKILL",
+    });
     aChild.stdin.on("error", () => {}); // A already gone: EPIPE on the closing end() is not a failure
     const aExit = new Promise((resolve) => {
       aChild.on("error", (err) => resolve({ code: null, signal: null, err }));
