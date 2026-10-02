@@ -118,13 +118,13 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-02 night)
+## Where things stand (2026-10-02 late night)
 
-W-121 merged PR 159 and done — the blocking test.sleep rule (tokenizer scan, hardened annotation grammar, parser-counted waiver caps: 6 seams, 18 waivers) plus the repairs: the no-vendor lock-race root-caused (the result signal was ordered after the lock release it guarded) and fixed through a beforeRelease seam with a kernel deadline, 50/50 under CPU load — the flake had cost three PR round-trips; 12 sleeps repaired, 24 annotated; censor PASS on ROUND 1 (first all week) and sec CLEAR with a 50-vector fuzz, Claude substitutes. W-125's receipt gate caught a real Prettier miss before granting the receipt; the verb walked cleanup and done (PR 160). LADDER NOTES to record: two tensions queued into W-128's scope — the checkpoint rung's bare-heading regex, and the spec-log bootstrap (D-021 blocks writing the spec verdict off the opus branch once it exists, so the verdict MUST ride the spec PR; the scripts-retirement live proof via next --perform pr moves to W-114, whose close-out will be ordered correctly). Codex resets Oct 4 09:01.
+W-114 merged PR 163 and done — the reply carry-through e2e (6 behaviours, each recorded red at a committed source identity) plus the bounded resolved-petitio carry fix in context.ts (patron-counterparty rule, anchored ISO-Z [stated] stamp <= now within 2 days, newest-3 cap, 1000-char trim; pending asks always first); censor PASS on round 1 (second R1 pass in a row), sec-lead code CLEAR; advisories kept as brief residuals. THE HEADLINE: the scripts-retirement live proof is DONE — the pr and merge rungs ran through `bisellium next --perform` (PR 163 opened, polled and merged by the verb; cleanup and done rungs too). Spec rode its own PR 162 with the verdicts persisted on the spec branch — the corrected close-out order worked first try. LADDER NOTES for W-128's scope (append to the two already recorded): (a) integrate.ts fetchTrunk runs `git fetch origin master:master`, which git refuses whenever master is checked out in the main checkout even when already current — pr rung permanently held there; worked around by detaching HEAD for the verb run; (b) the done rung's remedy text still names the frozen scripts/open-pr.sh and merge-gate.sh; (c) the red verb records a `dirty:` identity when reds are recorded before the tests commit — the producer replay rightly refused it, but the ordering trap cost a round-trip; consider a verb hint or check rule. Codex resets Oct 4 09:01.
 
 ## Queue
 
-Next is W-114 (reply carry-through e2e; its spec PR carries verdict --phase spec from the start and its pr/merge rungs run through bisellium next as the retirement proof), then W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127. W-113 needs the Patron's UI/UX ruling at spec time.
+Next is the scripts-retirement chore (delete scripts/open-pr.sh and merge-gate.sh plus the W-124 parity pins that freeze them — needs its own small opus or ride W-128, producer decides at dispatch), then W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time.
 
 ## Research lane (on the side)
 
