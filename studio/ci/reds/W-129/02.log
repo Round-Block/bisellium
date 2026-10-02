@@ -1,7 +1,7 @@
 # behaviour: 2
-# command: node --test-reporter=tap --import ./test/support/register-css-stub.mjs --import tsx test/board-truth.test.ts --behaviour 2
+# command: env TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --test-reporter=tap --import ./apps/web/test/support/register-css-stub.mjs --import tsx apps/web/test/board-truth.test.ts --behaviour 2
 # exit: 1
-# at: 2026-10-02T18:45:17.097Z
+# at: 2026-10-02T22:36:39.239Z
 # sella: builder.W-129
 # tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
 
@@ -9,9 +9,9 @@ TAP version 13
 # Subtest: W-129 behaviour 2: the board view draws the backlog cards, escapes their text, and says when branch records are degraded
 not ok 1 - W-129 behaviour 2: the board view draws the backlog cards, escapes their text, and says when branch records are degraded
   ---
-  duration_ms: 9.903197
+  duration_ms: 9.565536
   type: 'test'
-  location: '/home/edckt/projects/bisellium/.worktrees/W-129/apps/web/test/board-truth.test.ts:1:4266'
+  location: '/tmp/claude-1000/redw/apps/web/test/board-truth.test.ts:1:4266'
   failureType: 'testCodeFailure'
   error: |-
     2(a): the Planned column head count is 4
@@ -24,7 +24,7 @@ not ok 1 - W-129 behaviour 2: the board view draws the backlog cards, escapes th
   actual: '2'
   operator: 'strictEqual'
   stack: |-
-    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/apps/web/test/board-truth.test.ts:152:12)
+    TestContext.<anonymous> (/tmp/claude-1000/redw/apps/web/test/board-truth.test.ts:152:12)
     Test.runInAsyncScope (node:async_hooks:226:14)
     Test.run (node:internal/test_runner/test:1201:25)
     Test.start (node:internal/test_runner/test:1096:17)
@@ -38,4 +38,4 @@ not ok 1 - W-129 behaviour 2: the board view draws the backlog cards, escapes th
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 19.581366
+# duration_ms 19.332116

@@ -1,7 +1,7 @@
 # behaviour: 1
-# command: node --test-reporter=tap --import ./test/support/register-css-stub.mjs --import tsx test/board-truth.test.ts --behaviour 1
+# command: env TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --test-reporter=tap --import ./apps/web/test/support/register-css-stub.mjs --import tsx apps/web/test/board-truth.test.ts --behaviour 1
 # exit: 1
-# at: 2026-10-02T18:45:03.893Z
+# at: 2026-10-02T22:36:38.691Z
 # sella: builder.W-129
 # tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
 
@@ -9,9 +9,9 @@ TAP version 13
 # Subtest: W-129 behaviour 1: backlog opera are cards in Planned, after the greenlit ones
 not ok 1 - W-129 behaviour 1: backlog opera are cards in Planned, after the greenlit ones
   ---
-  duration_ms: 3.970495
+  duration_ms: 6.368532
   type: 'test'
-  location: '/home/edckt/projects/bisellium/.worktrees/W-129/apps/web/test/board-truth.test.ts:1:1916'
+  location: '/tmp/claude-1000/redw/apps/web/test/board-truth.test.ts:1:1916'
   failureType: 'testCodeFailure'
   error: |-
     1(b): Planned holds the greenlit cards, then the backlog cards
@@ -36,7 +36,7 @@ not ok 1 - W-129 behaviour 1: backlog opera are cards in Planned, after the gree
     1: 'W-5'
   operator: 'deepStrictEqual'
   stack: |-
-    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/apps/web/test/board-truth.test.ts:93:12)
+    TestContext.<anonymous> (/tmp/claude-1000/redw/apps/web/test/board-truth.test.ts:93:12)
     Test.runInAsyncScope (node:async_hooks:226:14)
     Test.run (node:internal/test_runner/test:1201:25)
     Test.start (node:internal/test_runner/test:1096:17)
@@ -50,4 +50,4 @@ not ok 1 - W-129 behaviour 1: backlog opera are cards in Planned, after the gree
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 13.396026
+# duration_ms 34.935076
