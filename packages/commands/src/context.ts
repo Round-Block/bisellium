@@ -35,22 +35,6 @@ function toDate(v: unknown): Date | undefined {
  *  `days()`: a future `a` reads as fresh, never stale via an absolute value. */
 const daysBetween = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 86_400_000);
 
-const STAMP_LINE = /^\[stated\] (\S+) /gm;
-const ISO_Z = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/;
-const CARRY_MAX = 3;
-const CARRY_TAIL_CHARS = 1000;
-
-/** W-114: epoch ms of a resolved petitio's last line-start `[stated]` stamp, or
- *  undefined unless it is an ISO-Z date that is not in the future and is within
- *  the decisions window. `daysBetween` clamps the future to 0, so `<= now` is its own test. */
-function carryStamp(body: string, now: Date): number | undefined {
-  const token = [...body.matchAll(STAMP_LINE)].at(-1)?.[1];
-  if (token === undefined || !ISO_Z.test(token)) return undefined;
-  const at = Date.parse(token);
-  if (Number.isNaN(at) || at > now.getTime() || daysBetween(new Date(at), now) > DECISION_WINDOW_DAYS) return undefined;
-  return at;
-}
-
 function readPetitioFront(path: string): { data: Record<string, unknown>; body: string } | undefined {
   try {
     const fm = readFront<Record<string, unknown>>(path);
@@ -179,10 +163,6 @@ function buildContextFor(
 
   // 5. petitiones addressed to the sella, and the sella's own awaiting replies -------
   const petitioLines: string[] = [];
-  // W-114: a recently resolved petitio whose counterparty is the patron is also shown
-  // to its from/to sella (never the patron), newest CARRY_MAX, tail-trimmed.
-  const patron = manifest.patron ?? "patron";
-  const carried: { at: number; id: string; text: string }[] = [];
   for (const p of listMd(join(root, "petitiones"))) {
     const petitio = readPetitioFront(p);
     if (!petitio) continue;
@@ -194,19 +174,10 @@ function buildContextFor(
     if (!id) continue;
     const addressedToMe = to === sella && state !== "resolved";
     const myAwaitingReply = from === sella && state === "awaiting_reply";
-    const pending = addressedToMe || myAwaitingReply;
-    const patronParty = (from === sella && to === patron) || (to === sella && from === patron);
-    const at = !pending && state === "resolved" && sella !== patron && patronParty ? carryStamp(body, now) : undefined;
-    if (!pending && at === undefined) continue;
+    if (!addressedToMe && !myAwaitingReply) continue;
     const relPath = p.startsWith(root) ? p.slice(root.length + 1).replace(/\\/g, "/") : p;
-    const trimmed = body.trim();
-    const shown = pending || trimmed.length <= CARRY_TAIL_CHARS ? trimmed : `…${trimmed.slice(-CARRY_TAIL_CHARS)}`;
-    const text = `${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(relPath, shown)}`;
-    if (pending) petitioLines.push(text);
-    else carried.push({ at: at!, id, text });
+    petitioLines.push(`${id} · ${state ?? ""} · from ${from ?? "?"} to ${to ?? "?"}\n${dataBlock(relPath, body.trim())}`);
   }
-  carried.sort((a, b) => b.at - a.at || (a.id < b.id ? 1 : -1));
-  petitioLines.push(...carried.slice(0, CARRY_MAX).reverse().map((c) => c.text));
   if (petitioLines.length) sections.push({ name: "petitiones", priority: 5, text: `## Petitiones\n${petitioLines.join("\n")}` });
 
   // 6. one-line index of the sella's collegium --------------------------------

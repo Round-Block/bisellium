@@ -1,15 +1,15 @@
 # behaviour: 5
 # command: node --test-reporter=tap --import tsx packages/cli/src/answer-carry.test.ts --behaviour 5
 # exit: 1
-# at: 2026-10-02T09:01:09.378Z
+# at: 2026-10-02T09:29:16.947Z
 # sella: builder.W-114
-# tree: dirty:4616aa446de728e13da75b8eb2c4114717924ef1
+# tree: dirty:57aa9a24b96b481bd9db640ce33358157cf6812a
 
 TAP version 13
 # Subtest: W-114 behaviour 5: hostile and malformed petitiones do not reach a boot context, and a flood cannot push out the pending ask
 not ok 1 - W-114 behaviour 5: hostile and malformed petitiones do not reach a boot context, and a flood cannot push out the pending ask
   ---
-  duration_ms: 505.226761
+  duration_ms: 469.112456
   type: 'test'
   location: '/home/edckt/projects/bisellium/.worktrees/W-114/packages/cli/src/answer-carry.test.ts:13:5523'
   failureType: 'testCodeFailure'
@@ -34,4 +34,4 @@ not ok 1 - W-114 behaviour 5: hostile and malformed petitiones do not reach a bo
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 517.025978
+# duration_ms 483.475353

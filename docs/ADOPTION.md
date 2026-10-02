@@ -1044,9 +1044,7 @@ with `BISELLIUM_ROLE=patron`, and each one appends a line to
 `<studio>/timeline/patron.jsonl` (also gitignored) recording what the Patron
 just did. `answer --petitio <id> <reply…>` appends
 `\n\n[stated] <now> <patron>: <reply>` to the petitio's body and resolves it
-(`state: resolved`; W-114: that `[stated]` reply is then shown in the boot
-context of the petitio's `from`/`to` sella for two days when the other party is
-the patron, newest three only); `--ask-back` instead flips `from`/`to` so the Patron
+(`state: resolved`); `--ask-back` instead flips `from`/`to` so the Patron
 becomes the asker and sets `state: awaiting_reply` (matching `check`'s
 `petitio.direction` rule) — allowed only when the petitio is currently
 `needs_you` (exit 2 otherwise, file untouched), so a second `--ask-back`
