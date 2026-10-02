@@ -1,0 +1,37 @@
+# behaviour: 5
+# command: node --test-reporter=tap --import tsx packages/cli/src/answer-carry.test.ts --behaviour 5
+# exit: 1
+# at: 2026-10-02T09:01:09.378Z
+# sella: builder.W-114
+# tree: dirty:4616aa446de728e13da75b8eb2c4114717924ef1
+
+TAP version 13
+# Subtest: W-114 behaviour 5: hostile and malformed petitiones do not reach a boot context, and a flood cannot push out the pending ask
+not ok 1 - W-114 behaviour 5: hostile and malformed petitiones do not reach a boot context, and a flood cannot push out the pending ask
+  ---
+  duration_ms: 505.226761
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-114/packages/cli/src/answer-carry.test.ts:13:5523'
+  failureType: 'testCodeFailure'
+  error: '5a: a real reply is carried'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-114/packages/cli/src/answer-carry.test.ts:240:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 517.025978
