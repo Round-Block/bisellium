@@ -118,13 +118,13 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-02 evening)
+## Where things stand (2026-10-02 night)
 
-W-124 merged PR 153 and is done. `bisellium next <opus>` derives the one legal next step of the twelve-rung ladder, performs it with `--perform`, refuses to skip, absorbs the two kept scripts behind a hardened gh contract, and mechanizes the three standing rules: step health from `/proc`, 500k budget refusal, done only when MERGED and the fetched trunk contains the merge. Two censor rounds (FAIL then PASS with an independent mutation check) and sec BLOCKS then CLEAR, all Claude substitutes. W-125's marked-opus admission gated each review round behind a host run receipt—its first live enforcement. The verb then walked its own tail live: cleanup (idempotent skips), done (its own chore/done-W-124 branch, PR 155), and named this checkpoint. **Operating changes to record:** the main checkout now sits on master (codex research branch keeps its state in a WIP commit); every opus close-out now needs `verdict --phase spec` (spec rung reads `ci/<id>-spec-<n>.log` on committed trunk—W-124's persisted retroactively, PR 154); kept scripts frozen byte-identical (W-124 behaviour 3 pins them)—chore-head PRs use the session helper until chore-head rung follow-on lands. Codex resets Oct 4 09:01; Claude-substitute mapping continues until the Patron rules.
+W-121 merged PR 159 and done — the blocking test.sleep rule (tokenizer scan, hardened annotation grammar, parser-counted waiver caps: 6 seams, 18 waivers) plus the repairs: the no-vendor lock-race root-caused (the result signal was ordered after the lock release it guarded) and fixed through a beforeRelease seam with a kernel deadline, 50/50 under CPU load — the flake had cost three PR round-trips; 12 sleeps repaired, 24 annotated; censor PASS on ROUND 1 (first all week) and sec CLEAR with a 50-vector fuzz, Claude substitutes. W-125's receipt gate caught a real Prettier miss before granting the receipt; the verb walked cleanup and done (PR 160). LADDER NOTES to record: two tensions queued into W-128's scope — the checkpoint rung's bare-heading regex, and the spec-log bootstrap (D-021 blocks writing the spec verdict off the opus branch once it exists, so the verdict MUST ride the spec PR; the scripts-retirement live proof via next --perform pr moves to W-114, whose close-out will be ordered correctly). Codex resets Oct 4 09:01.
 
 ## Queue
 
-Next is W-121 (the no-vendor lock-race flake—it has now cost three PR round-trips), then W-114, W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127. W-113 needs the Patron's UI/UX ruling at spec time.
+Next is W-114 (reply carry-through e2e; its spec PR carries verdict --phase spec from the start and its pr/merge rungs run through bisellium next as the retirement proof), then W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127. W-113 needs the Patron's UI/UX ruling at spec time.
 
 ## Research lane (on the side)
 
