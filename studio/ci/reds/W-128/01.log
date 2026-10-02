@@ -1,15 +1,15 @@
 # behaviour: 1
 # command: node --test-reporter=tap --import tsx packages/cli/src/ladder-followon.test.ts --behaviour 1
 # exit: 1
-# at: 2026-10-02T11:33:10.475Z
+# at: 2026-10-02T13:42:58.640Z
 # sella: builder.W-128
-# tree: tree:da60f7a7d456c6c318586cc890fccc3fc035c463
+# tree: tree:d3ac62afc69cf7c3f7c5b2fe16ea829a1ee6839f
 
 TAP version 13
 # Subtest: W-128 behaviour 1: the retired scripts are gone, and nothing live names them
 not ok 1 - W-128 behaviour 1: the retired scripts are gone, and nothing live names them
   ---
-  duration_ms: 5.966214
+  duration_ms: 3.452553
   type: 'test'
   location: '/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:6:4209'
   failureType: 'testCodeFailure'
@@ -38,4 +38,4 @@ not ok 1 - W-128 behaviour 1: the retired scripts are gone, and nothing live nam
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 14.182599
+# duration_ms 10.69304
