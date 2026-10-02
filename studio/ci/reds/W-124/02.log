@@ -1,95 +1,86 @@
 # behaviour: 2
 # command: node --test-reporter=tap --import tsx packages/cli/src/next.test.ts --behaviour 2
 # exit: 1
-# at: 2026-10-02T01:48:24.159Z
+# at: 2026-10-02T03:40:30.304Z
 # sella: builder.W-124
-# tree: tree:cfcaafc990d4bb5b16572cf8dfb49f2975f17a9e
+# tree: tree:7d5bfb05d9ecc7389341bd45575c0c99789dea4e
 
 TAP version 13
 # Subtest: W-124 behaviour 2: next refuses to skip, and every refusal is bounded
 not ok 1 - W-124 behaviour 2: next refuses to skip, and every refusal is bounded
   ---
-  duration_ms: 876.200625
+  duration_ms: 18784.586932
   type: 'test'
-  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:9460'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:9628'
   failureType: 'testCodeFailure'
   error: |-
-    an OPEN PR with no passing review names review, not merge: refusal text
-    --- exit 2
+    a MERGED PR whose headRefOid this clone cannot resolve is unverifiable: it stays at merge, never pr
+    --- exit 0
     --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: a MERGED PR settles nothing: merged head 999999999999 is not known locally and cannot be tied to the local branch
+    head: opus/W-900 268ca2cd542f
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>
+    health: no step recorded
     
     --- stderr
-    flag --expect not allowed for "next"
-    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
-           bisellium init [dir] [--now <iso>] [--timezone <iana>]
-           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
-           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
-           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
-           bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
-          
+    
+    + actual - expected
+    
+    + 'next: W-900 pr named'
+    - 'next: W-900 merge named'
+                   ^
+    
   code: 'ERR_ASSERTION'
   name: 'AssertionError'
-  expected:
-  actual: |-
-    flag --expect not allowed for "next"
-    usage: bisellium check [dir] [--json] [--level block|advise] [--now <iso>] [--repo <dir>]
-           bisellium init [dir] [--now <iso>] [--timezone <iana>]
-           bisellium new --kind <kind> --collegium <collegium> --title <title> [--arc <id>] [--parent <id>] [--spec <path>] [--brief] [dir]
-           bisellium instructions [--studio <dir>] [--repo <dir>] [--write] [--now <iso>]
-           bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
-           bisellium context [--sella <sella>] [dir | --studio <dir>] [--now <iso>] [--max-tokens <n>]
-           bisellium query <question> [dir] [--now <iso>] [--from-index]
-           bisellium providers [dir] [--source auto|usage|quota-axi] [--json] [--now <iso>]
-           bisellium run --sella <sella> [--studio <dir>] [--repo <dir>] [--no-worktree] [--base <ref>] [--opus <id>] [--keep] -- <cmd…>
-           bisellium run --reclaim [--studio <dir>] [--repo <dir>]
-           bisellium verify <opus-id> [--studio <dir>] [--repo <dir>] [--commit <ref>] [--now <iso>] [--allow-dirty]
-           bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
-           bisellium talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
-           bisellium tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
-           bisellium pause [--studio <dir>] [--reason <text>]
-           bisellium resume [--studio <dir>]
-           bisellium handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
-           bisellium emit <json> [--studio <dir>] [--now <iso>]
-           bisellium emit --usage <tokens> --opus <id> --sella <sella> --model <model> [--studio <dir>] [--now <iso>]
-           bisellium answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
-           bisellium greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
-           bisellium budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
-           bisellium delegate --sella <id> --model <model> [--from <current>] [--studio <dir>] [--now <iso>]
-           bisellium delegate --munus <id> --tier <tier>   [--from <current>] [--studio <dir>] [--now <iso>]
-           bisellium probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
-           bisellium ready <opus> [--spec <path>] [--sella <id>] [--studio <dir>] [--now <iso>]
-           bisellium halt <opus> --reason <text> --resume-when <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-           bisellium waive <opus> --gate <id> --reason <text> --decision <id> [--sella <id>] [--studio <dir>] [--now <iso>]
-           bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
-           bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
-           bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]
-           bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]
-           bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>
-           bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
-           bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]
-           bisellium hooks check --harness claude-code [--studio <dir>]
-           bisellium hook-event <start|stop|tool|compact|context> --sella <id> [--studio <dir>]
-           bisellium branch <opus-id> --studio <dir> [--repo <dir>]
-           bisellium merge <opus-id> --studio <dir> --repo <dir>
-           bisellium close <opus-id> --studio <dir> [--repo <dir>]
-           bisellium prune --studio <dir> [--repo <dir>]
-           bisellium docs registry [--repo <dir>] [--now <iso>]
-    
-  operator: 'match'
+  expected: 'next: W-900 merge named'
+  actual: 'next: W-900 pr named'
+  operator: 'strictEqual'
   stack: |-
-    refusal (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1032:14)
-    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1040:5)
+    expectStep (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:729:10)
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1149:5)
     Test.runInAsyncScope (node:async_hooks:226:14)
     Test.run (node:internal/test_runner/test:1201:25)
     Test.start (node:internal/test_runner/test:1096:17)
     startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
   ...
-1..1
-# tests 1
+# Subtest: W-124 behaviour 2 (round-1 fix A): performing an unverifiable merged head fetches, then holds naming the oid, never pr
+not ok 2 - W-124 behaviour 2 (round-1 fix A): performing an unverifiable merged head fetches, then holds naming the oid, never pr
+  ---
+  duration_ms: 1581.393642
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:14298'
+  failureType: 'testCodeFailure'
+  error: |-
+    it is the merge step that holds
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    why: refusing: next step for W-900 is pr, not merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 pr held'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2057:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..2
+# tests 2
 # suites 0
 # pass 0
-# fail 1
+# fail 2
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 893.489571
+# duration_ms 20485.871165
