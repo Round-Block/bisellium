@@ -305,6 +305,49 @@ export function effectiveProbationes(kind: unknown, declared: readonly Effective
   return { probationes, problems };
 }
 
+/**
+ * W-129: is the review gate's failure still current? Fails closed: `true` (the
+ * failure blocks) whenever the review gate is `failed`, unless the failure is
+ * PROVEN to be of an older tree. `record` is the raw front matter as it is on
+ * disk (check) or as it will be after this run's write (verify). The proof
+ * needs all of: a non-empty `automatedIds`, a review log read through the
+ * containment helper whose verdict header names this opus once and carries one
+ * well-formed `tree:` value, every automated gate certifying a well-formed
+ * `tree:` of its own, and none of those equal to the log's. `false` for a gate
+ * that is not `failed`.
+ */
+export function reviewFailedAtCertifiedTree(
+  root: string,
+  record: Record<string, unknown>,
+  ctx: { reviewId: string; automatedIds: readonly string[] },
+): boolean {
+  const gates = record["probationes"];
+  if (typeof gates !== "object" || gates === null || Array.isArray(gates)) return false;
+  const gate = (gates as Record<string, unknown>)[ctx.reviewId];
+  if (typeof gate !== "object" || gate === null || (gate as Record<string, unknown>)["status"] !== "failed") return false;
+  if (ctx.automatedIds.length === 0) return true;
+  const evidence = (gate as Record<string, unknown>)["evidence"];
+  if (typeof evidence !== "string") return true;
+  const log = readContainedRegularFile(root, evidence, "ci");
+  if ("error" in log) return true;
+  const text = log.bytes.toString("utf8");
+  const header = parseVerdictHeader(text);
+  if (header.duplicates.includes("tree") || header.duplicates.includes("opus")) return true;
+  if (header.values.get("opus") !== record["id"]) return true;
+  const logged = header.values.get("tree");
+  if (logged === undefined || !TREE_CERTIFICATE.test(logged)) return true;
+  // The ladder (next.ts) reads the header with a looser parser. A line the strict header stopped at that the loose
+  // one would still read could carry a later `tree`: not a proof, so the failure stands.
+  const stoppedAt = text.split(/\r?\n/)[header.values.size + header.duplicates.length];
+  if (stoppedAt !== undefined && /^#\s*[A-Za-z_]+:/.test(stoppedAt)) return true;
+  for (const id of ctx.automatedIds) {
+    const own = (gates as Record<string, unknown>)[id];
+    const certifies = typeof own === "object" && own !== null ? (own as Record<string, unknown>)["certifies"] : undefined;
+    if (typeof certifies !== "string" || !TREE_CERTIFICATE.test(certifies) || certifies === logged) return true;
+  }
+  return false;
+}
+
 export function designDigest(title: string, briefBytes: Buffer): string {
   const domain = Buffer.from("W-096/ui-design/v1\0", "ascii");
   const titleBytes = Buffer.from(title, "utf8");

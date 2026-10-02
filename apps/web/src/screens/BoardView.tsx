@@ -100,7 +100,6 @@ function Column({
           <Card key={card.id} card={card} columnId={column.id} selected={card.id === selectedId} focused={card.id === focusedId} onSelect={onSelectCard} />
         ))}
       </div>
-      {column.backlogCount !== undefined && column.backlogCount > 0 && <div className="board__backlog-footer">{column.backlogCount} backlogged</div>}
     </div>
   );
 }

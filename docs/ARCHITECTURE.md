@@ -79,29 +79,41 @@ stateDiagram-v2
   [*] --> backlog
   backlog --> greenlit: greenlight (Patron)
   greenlit --> building: ready --spec
-  building --> verifying: orchestrator
-  verifying --> review: orchestrator
+  building --> verifying: verify (starts)
+  review --> verifying: verify (starts)
+  verifying --> review: verify (all green)
+  verifying --> building: verify (a gate failed)
   review --> done: done
   building --> done: done
   verifying --> done: done
+  verifying --> building: review --fail
   review --> building: review --fail
   done --> building: review --fail
   greenlit --> halted: production
   halted --> building: ready --spec
 ```
 
-Five transition commands are implemented — `greenlight` (backlog only),
-`ready` (from `greenlit` or `halted`, and it refuses without a spec), `done`
-(from `building`, `verifying` or `review`), `review --fail`'s reopen edge back
-to `building` from `review` or `done`, and `halt` from every non-done state.
-`ready` records the first `start`; `done` records `end`; reopening clears
-`end` but retains `start`. The same timestamp is emitted with the transition.
-`verify` writes gate records and never touches `state`.
+Six commands write a state id — `greenlight` (backlog only), `ready` (from
+`greenlit` or `halted`, and it refuses without a spec), `verify` (below),
+`done` (from `building`, `verifying` or `review`), `review --fail`'s reopen edge
+back to `building` from `verifying`, `review` or `done` (it emits its own
+`workflow.state_changed`), and `halt` from every non-done state. `ready`
+records the first `start`; `done` records `end`; reopening clears `end` but
+retains `start`. The same timestamp is emitted with the transition.
 
-The middle of the lifecycle is orchestrator-driven: nothing in the CLI moves an
-opus into `verifying` or `review`. `adapters/native` names production's
-magister as halt's actor, and every state but `done` may halt (drawn once, from
-`greenlit`, rather than six times).
+`verify` records the verifying and review stages as they run (W-129, D-034),
+but only for the checkout's own tree: the run certifies this checkout's `HEAD`
+(no `--commit`, no `ci --ref`) and `--repo` is this checkout's top level. It
+writes `verifying` before the pipeline runs (from `building` or `review`), and
+when it ends `building` (an automated gate failed) or `review` (this run's
+automated results all passed and certify the tree it computed, every other
+agent gate is passed, the opus is not `kind: ui`, and no failed review is
+provably of the same tree). Each write is a compare-and-set against the fresh
+record and emits `workflow.state_changed`. Anywhere else, `verify` writes gate
+records exactly as before and never touches `state`. A killed `verify` leaves
+`verifying`; the next one simply continues. `adapters/native` names
+production's magister as halt's actor, and every state but `done` may halt
+(drawn once, from `greenlit`, rather than six times).
 
 Before the readiness/completion writers mutate a native opus they call the
 shared `packages/commands/src/opus-model.ts` policy. It narrows native kinds,

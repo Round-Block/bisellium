@@ -60,7 +60,7 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   const model: BoardModel = {
     columns: [
       column({ id: "needs_you", name: "Needs you", pinned: true, membership: true, cards: [] }),
-      column({ id: "planned", name: "Planned", cards: [card({ id: "W-1" }), card({ id: "W-2" })], backlogCount: 3 }),
+      column({ id: "planned", name: "Planned", cards: [card({ id: "W-1" }), card({ id: "W-2" })] }),
       column({ id: "in_progress", name: "In progress", cards: [card({ id: "W-3" })], cap: 2 }),
     ],
     unplaced: [],
@@ -120,12 +120,11 @@ function baseProps(overrides: Partial<BoardViewProps> = {}): BoardViewProps {
   check(5, "BoardView: neither -> no state class", !cardHtml("W-4").includes("board__card--amber") && !cardHtml("W-4").includes("board__card--bad"), cardHtml("W-4"));
 }
 
-// Planned's backlog footer present with its count, absent at zero.
+// W-129: the backlog footer is gone (backlog opera are cards in Planned), so no count is rendered.
 {
-  const withBacklog = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", name: "Planned", backlogCount: 5 })], unplaced: [] } })));
-  const noBacklog = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", name: "Planned", backlogCount: 0 })], unplaced: [] } })));
-  check(5, "BoardView: Planned's backlog footer shows the count", withBacklog.includes("5 backlogged"), withBacklog);
-  check(5, "BoardView: Planned's backlog footer absent at zero", !noBacklog.includes("backlogged"), noBacklog);
+  const html = renderToStaticMarkup(BoardView(baseProps({ model: { columns: [column({ id: "planned", name: "Planned", cards: [card({ id: "W-9", state: "backlog" })] })], unplaced: [] } })));
+  check(5, "BoardView: Planned renders no backlog footer or count", !html.includes("backlogged") && !html.includes("board__backlog-footer"), html);
+  check(5, "BoardView: a backlog card shows its native state", html.includes(">backlog<"), html);
 }
 
 // Empty officina renders every column plus the colophon.

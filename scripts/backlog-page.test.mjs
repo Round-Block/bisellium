@@ -153,30 +153,36 @@ function runCli(args) {
     check(1, "done opus never appears", !html.includes('data-id="W-005"'));
 
     const inFlightSection = html.indexOf(">In flight<");
+    const plannedSection = html.indexOf(">Planned<");
     const backlogSection = html.indexOf(">Backlog<");
     const w002 = html.indexOf('data-id="W-002"');
     const w003 = html.indexOf('data-id="W-003"');
     const w001 = html.indexOf('data-id="W-001"');
     const w004 = html.indexOf('data-id="W-004"');
+    // W-129: greenlit is planned, not in flight. In flight holds building, Planned holds greenlit, Backlog holds
+    // backlog + halted.
     check(
       1,
-      "greenlit + building render under In flight, backlog + halted render under Backlog",
-      inFlightSection < w002 &&
+      "building renders under In flight, greenlit under Planned, backlog + halted under Backlog",
+      inFlightSection < w003 &&
+        w003 < plannedSection &&
+        plannedSection < w002 &&
         w002 < backlogSection &&
-        inFlightSection < w003 &&
-        w003 < backlogSection &&
         w001 > backlogSection &&
         w004 > backlogSection,
     );
 
-    // D-021: the In-flight table must state it shows this checkout's trunk
-    // view, verbatim, not silently pass off `greenlit` as live state.
+    // D-021: the trunk-view caption moved to Planned, where the stale `greenlit` actually lives; In flight says
+    // only that its state is as recorded in this checkout's officina.
     check(
       1,
-      "the In-flight table carries the D-021 trunk-view caption",
-      html.includes(
-        "State as recorded in this checkout&rsquo;s officina. On the trunk, per D-021, an opus being built still reads",
-      ),
+      "the Planned table carries the D-021 trunk-view caption",
+      html.includes("Greenlit by the Patron and not started. On the trunk, per D-021, an opus being built still reads"),
+    );
+    check(
+      1,
+      "the In-flight table says its state is as recorded in this checkout",
+      html.includes("State as recorded in this checkout&rsquo;s officina.</p>"),
     );
 
     // The revisit-trigger footnote is the whole reason `rank:` stays out of

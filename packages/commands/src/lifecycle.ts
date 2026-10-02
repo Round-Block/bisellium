@@ -616,9 +616,11 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     typeof currentFront.probationes === "object" && currentFront.probationes !== null && !Array.isArray(currentFront.probationes)
       ? (currentFront.probationes as Record<string, unknown>)
       : {};
+  // W-129: `verifying` joins `review`/`done` as a state a failed review reopens (verify now writes `verifying`).
+  const reopens = fail && (currentState === "verifying" || currentState === "review" || currentState === "done");
   const proposedReview: NativeRecord = {
     ...currentFront,
-    state: fail && (currentState === "review" || currentState === "done") ? "building" : currentState,
+    state: reopens ? "building" : currentState,
     ...(fail && currentState === "done" ? { end: undefined } : {}),
     probationes: {
       ...currentGates,
@@ -647,14 +649,14 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     // previous round attached to its own verdict.
     if (model !== undefined) doc.setIn(["probationes", reviewProbatioId, "model"], model);
     else doc.deleteIn(["probationes", reviewProbatioId, "model"]);
-    // The decree's own return edge: a failed review on an opus in `review`
-    // OR `done` sends it back to `building` — no other command can move it
-    // there, and without this a `done` opus with a failed gate is stuck
-    // forever (state.done.probationes fires and nothing reopens it — the
-    // gap cascade 6's round-2 review exposed, F5). An opus already in
+    // The decree's own return edge: a failed review on an opus in
+    // `verifying`, `review` OR `done` sends it back to `building` — no other
+    // command can move it there, and without this a `done` opus with a failed
+    // gate is stuck forever (state.done.probationes fires and nothing reopens
+    // it — the gap cascade 6's round-2 review exposed, F5). An opus already in
     // `building` (or anywhere else) keeps its state; `review` performs no
     // forward transition, that's `done`'s job.
-    if (fail && (currentState === "review" || currentState === "done")) {
+    if (reopens) {
       doc.setIn(["state"], "building");
       doc.delete("end");
     }
@@ -670,6 +672,14 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
   };
   if (round !== undefined) attrs[WF.REVIEW_ROUND] = round;
   emitEvent(root, manifest, "workflow.gate_evaluated", now, attrs);
+  if (reopens) {
+    emitEvent(root, manifest, "workflow.state_changed", now, {
+      [WF.ITEM_ID]: opusId,
+      [WF.STATE_FROM]: currentState,
+      [WF.STATE_TO]: "building",
+      [WF.ACTOR_ROLE]: sella,
+    });
+  }
 
   console.log(`${opusId}: review ${status} (${evidence})`);
   return { exitCode: 0 };

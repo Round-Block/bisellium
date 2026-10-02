@@ -462,7 +462,7 @@ if (runs(5)) {
         ["over 64 KiB", (t) => withBody(t, "x".repeat(70 * 1024))],
       ];
       for (const [label, edit] of variants) {
-        commitIn(wt6, "W-006", edit);
+        commitIn(wt6, "W-006", () => edit(goodText));
         await poll(run);
         assert.equal(await stateOf(run, "W-006"), "greenlit", `5(b): committed W-006 with ${label} reads the trunk's greenlit`);
         assert.equal(await stateOf(run, "W-002"), "verifying", `5(b): W-002 still reads verifying after ${label}`);
@@ -823,6 +823,7 @@ if (runs(8)) {
     let announced: Promise<unknown> | undefined;
     try {
       await serving(repo.studio, async (run) => {
+        const startupGit = verbCount(calls(shim), "for-each-ref");
         writeFileSync(join(shim.ctl, "hold-for-each-ref"), `${join(shim.ctl, "announce.fifo")}\n${join(shim.ctl, "block.fifo")}\n`);
         let settled = false;
         const pending = poll(run).then((r) => {
@@ -841,7 +842,7 @@ if (runs(8)) {
         // (c) a second concurrent poll starts no git
         const second = await poll(run);
         assert.equal(second.ingested, 0, "8(c): a second concurrent poll ingests nothing");
-        assert.equal(verbCount(calls(shim), "for-each-ref"), 1, "8(c): and starts no second for-each-ref");
+        assert.equal(verbCount(calls(shim), "for-each-ref"), startupGit + 1, "8(c): and starts no second for-each-ref");
 
         rmSync(join(shim.ctl, "hold-for-each-ref"));
         await blk.fh.write("go\n");

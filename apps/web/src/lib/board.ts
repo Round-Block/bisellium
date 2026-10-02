@@ -7,10 +7,10 @@ import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../ap
 import type { Gate, GateStatus } from "./gateLadder.js";
 
 export const NEEDS_YOU_COLUMN = "needs_you";
-/** Board policy, not the lifecycle's: backlog is a count, not a column
- *  (Main.dc.html's own Planned footer). Everything else about the column set
- *  comes from the served lifecycle. */
-export const EXCLUDED_PHASES: readonly string[] = ["backlog"];
+/** Board policy, not the lifecycle's: the `backlog` phase is not a column. Its
+ *  opera are cards in Planned, after the greenlit ones (W-129, D-034). Everything
+ *  else about the column set comes from the served lifecycle. */
+const BACKLOG_PHASE = "backlog";
 
 /** Only the phases this brief actually names get a friendlier head; anything
  *  else (a fixture's own extra phase) is humanized from its id rather than
@@ -49,8 +49,6 @@ export interface BoardColumn {
   /** Present on the in-progress column only. */
   cap?: number;
   atCap: boolean;
-  /** Planned only: the canvas's "N backlogged" footer. */
-  backlogCount?: number;
   /** True on needs_you: its count is an ATTENTION MEMBERSHIP, never summed
    *  into an officina total (ruling 16). */
   membership: boolean;
@@ -108,7 +106,7 @@ export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes"
   // Unique phases, in the lifecycle's own declared order, backlog excluded.
   const phases: string[] = [];
   for (const s of o.lifecycle.states) {
-    if (EXCLUDED_PHASES.includes(s.phase) || phases.includes(s.phase)) continue;
+    if (s.phase === BACKLOG_PHASE || phases.includes(s.phase)) continue;
     phases.push(s.phase);
   }
   const stateToPhase = new Map(o.lifecycle.states.map((s) => [s.id, s.phase] as const));
@@ -118,11 +116,11 @@ export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes"
   for (const phase of phases) {
     const col: BoardColumn = { id: phase, name: humanizePhase(phase), pinned: false, cards: [], atCap: false, membership: false };
     if (phase === "in_progress" && o.wip_limit !== undefined) col.cap = o.wip_limit;
-    if (phase === "planned") col.backlogCount = 0;
     columns.set(phase, col);
   }
 
   const unplaced: string[] = [];
+  const backlog: CardRow[] = [];
   for (const opus of opera) {
     const phase = stateToPhase.get(opus.state);
     const card = cardRow(opus, human);
@@ -133,9 +131,8 @@ export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes"
       if (needsYouColumn) needsYouColumn.cards.push({ ...card });
     }
 
-    if (phase !== undefined && EXCLUDED_PHASES.includes(phase)) {
-      const planned = columns.get("planned");
-      if (planned) planned.backlogCount = (planned.backlogCount ?? 0) + 1;
+    if (phase === BACKLOG_PHASE) {
+      backlog.push(card);
       continue;
     }
 
@@ -146,6 +143,12 @@ export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes"
     }
     column.cards.push(card);
   }
+
+  // Backlog cards come after every other card of Planned, so the head of the column is what is next; with no
+  // planned phase declared they are named in `unplaced`, never dropped.
+  const planned = columns.get("planned");
+  if (planned) planned.cards.push(...backlog);
+  else unplaced.push(...backlog.map((card) => card.id));
 
   for (const col of columns.values()) {
     if (col.cap !== undefined) col.atCap = col.cards.length >= col.cap;

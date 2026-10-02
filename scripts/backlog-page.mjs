@@ -4,8 +4,9 @@
  * never from prose. Reads studio/opera/*.md, studio/petitiones/*.md and
  * studio/decisions/*.md (front matter only — never brief prose, never
  * `reason`/`resume_when` for meaning) and renders three tables into
- * docs/design/dossier/backlog-body.html: in-flight opera, backlog
- * (including halted), and standing constraints (decisions). It links the
+ * docs/design/dossier/backlog-body.html: in-flight opera, planned
+ * (greenlit) opera, backlog (including halted), and standing constraints
+ * (decisions). It links the
  * latest ranking acta as the source of record for order; it never ranks
  * and never writes one. See studio/briefs/W-041.md.
  *
@@ -26,7 +27,7 @@ import { parse as parseYaml } from "yaml";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
 
-const IN_FLIGHT_STATES = new Set(["greenlit", "building", "verifying", "review"]);
+const IN_FLIGHT_STATES = new Set(["building", "verifying", "review"]);
 
 export function parseArgs(argv) {
   const values = {
@@ -159,6 +160,7 @@ function decisionRow(d) {
 
 export function renderBacklogPage({ opera, declaredGates, openPetitionsByOpus, decisions, rankingActa, outPath }) {
   const inFlight = opera.filter((o) => IN_FLIGHT_STATES.has(o.state)).sort(byIdDesc);
+  const planned = opera.filter((o) => o.state === "greenlit").sort(byIdDesc);
   const backlog = opera.filter((o) => o.state === "backlog").sort(byIdDesc);
   const halted = opera.filter((o) => o.state === "halted").sort(byIdDesc);
   const backlogGroup = [...backlog, ...halted];
@@ -179,12 +181,25 @@ export function renderBacklogPage({ opera, declaredGates, openPetitionsByOpus, d
 
 ${rankingLink}<section>
 <h2>In flight</h2>
-<p class="mock-caption">State as recorded in this checkout&rsquo;s officina. On the trunk, per D-021, an opus being built still reads <code>greenlit</code> &mdash; its live state is on <code>opus/&lt;id&gt;</code>.</p>
+<p class="mock-caption">State as recorded in this checkout&rsquo;s officina.</p>
 <div class="table-scroll">
     <table>
       <thead><tr><th>Id</th><th>Title</th><th>Collegium</th><th>State</th><th>Blocked on</th><th>Gates</th></tr></thead>
       <tbody>
 ${inFlight.map((o) => opusRow(o, declaredGates, openPetitionsByOpus)).join("\n")}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+<h2>Planned</h2>
+<p class="mock-caption">Greenlit by the Patron and not started. On the trunk, per D-021, an opus being built still reads <code>greenlit</code> &mdash; its live state is on <code>opus/&lt;id&gt;</code> and on the console board.</p>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Id</th><th>Title</th><th>Collegium</th><th>State</th><th>Blocked on</th><th>Gates</th></tr></thead>
+      <tbody>
+${planned.map((o) => opusRow(o, declaredGates, openPetitionsByOpus)).join("\n")}
       </tbody>
     </table>
   </div>

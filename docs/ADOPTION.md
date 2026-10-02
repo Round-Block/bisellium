@@ -478,6 +478,16 @@ never allowed on an automated or agent gate (`probatio.waived.automated`,
 `probatio.waived.agent`). WIP counts `building` + `verifying`;
 `review` waits on someone else.
 
+The two middle states are written by verbs, never by hand (W-129, D-034):
+`bisellium verify` moves an opus on its own branch to `verifying` before the
+pipeline runs, then to `building` (an automated gate failed) or `review` (this
+run's evidence is all green and `check` would accept `review`); `review --fail`
+returns `verifying`, `review` or `done` to `building`. A `review` whose failed
+review gate is of an older tree than the automated gates now certify is the
+honest "awaiting a new round", not a defect (`state.review.failed` blocks only
+a failure it cannot prove stale), and a handoff `stage` that trails the state
+(`building` against `review`) is not advised.
+
 Only a `kind: human` gate is waivable, and only `bisellium waive` writes
 `status: waived` (W-034): it merges five keys into the gate's existing node —
 `status: waived`, `reason`, `waived_by` (a decision id), `sella` and `at` —
@@ -1125,10 +1135,18 @@ only, ingests one snapshot at start, and (unless `--once`) polls again every
 `@bisellium/core`'s `Store` so the two read/append the exact same
 `.bisellium/` files, though `apps/server` keeps its own small per-source
 (`"server"`) ingest bookkeeping rather than depending on `Store`'s class
-directly (see the file header comment on `apps/server/src/store.ts`). Reads:
+directly (see the file header comment on `apps/server/src/store.ts`).
+While `opus/<id>` exists the branch owns the record (D-021), so once per poll
+(never on a request) serve reads the `opus/*` branches of the checkout it
+serves, read-only through bounded `git`, and overlays them on the trunk's
+`opera/`: the committed tip supplies the record, and a worktree's uncommitted
+file may change only `state` (to `building`, `verifying` or `review`),
+`traditio` and `heartbeat`. It can replace a trunk record, never create one,
+never writes, and reports a degraded read as `branchRecords` in
+`GET /api/officina`. Reads:
 
 ```
-GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?, lifecycle
+GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?, lifecycle, branchRecords
 GET  /api/models                   D-023's model rows: the models.json record, merged with a live vendor listing (W-065)
 GET  /api/opera?state=&collegium=  every opus, filterable
 GET  /api/opus/:id                 one opus's front matter + body + probationes + traditio
