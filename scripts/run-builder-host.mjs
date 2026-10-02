@@ -316,7 +316,7 @@ const REV = String.raw`(?:HEAD|[0-9a-f]{4,40}|opus/W-[0-9]+)(?:[~^][0-9]*)*`;
 const REV_ONLY = new RegExp(`^${REV}$`);
 const REV_RANGE = new RegExp(`^${REV}(?:\\.{2,3}${REV})?$`);
 const re = (...alternatives) => new RegExp(`^(?:${alternatives.join("|")})$`);
-const FORMAT = /^--(?:format|pretty)=(?!.*%G)[^\0]*$/;
+const FORMAT = /^--(?:format|pretty)=(?![\s\S]*%G)[^\0]*$/;
 const DIFF_OPTS = [
   re(
     "--cached|--staged|--stat|--numstat|--shortstat|--name-only|--name-status|--summary|--raw|-p|--patch|--no-patch|-s",
@@ -465,7 +465,7 @@ try {
   runtime = mkdtempSync(join(tmpdir(), `bisellium-${request.opus}-`));
   result.runtime = runtime;
   flush(); // from here a SIGKILLed runner still tells its parent what to delete
-  for (const name of ["home", "tmp", "cache", "control", "tools", "git-core-mask"])
+  for (const name of ["home", "tmp", "cache", "control", "probe", "tools", "git-core-mask"])
     mkdirSync(join(runtime, name), { mode: 0o700 });
   writeFileSync(join(runtime, "home", ".npmrc"), "ignore-scripts=true\naudit=false\nfund=false\n");
   writeFileSync(join(runtime, "home", ".npmrc-global"), "ignore-scripts=true\n");
@@ -538,7 +538,8 @@ try {
         const args =
           Array.isArray(parsed.args) && parsed.args.every((arg) => typeof arg === "string") ? parsed.args : [];
         if (args[0] === "bisellium-probe-index" && args.length === 1) {
-          const index = join(controlDir, `probe-index-${process.pid}`);
+          // `probe/` is never bound into the sandbox: host git must not write through a name the builder can plant.
+          const index = join(runtime, "probe", "index");
           const env = { ...GIT_ENV, GIT_INDEX_FILE: index };
           const read = git(clone, ["read-tree", "HEAD"], { env });
           const wrote =
@@ -608,7 +609,6 @@ try {
     sandboxArgs({
       binds: [
         [clone, "/workspace"],
-        [controlDir, "/control"],
         [join(runtime, "home"), "/home/builder"],
         [join(runtime, "tmp"), "/tmp"],
         [join(runtime, "cache"), "/cache"],
@@ -616,6 +616,7 @@ try {
       roBinds: [
         [join(clone, ".git"), "/workspace/.git"],
         [tools, "/tools"],
+        [controlDir, "/control"], // socket only; read-only so the builder cannot replace or litter it
         ["/dev/null", "/usr/bin/git"],
         [join(runtime, "git-core-mask"), "/usr/lib/git-core"],
         ...etcFor(runtime),
