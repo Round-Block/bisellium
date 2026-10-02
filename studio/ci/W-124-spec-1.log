@@ -1,0 +1,14 @@
+# opus: W-124
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: passed — prereview READY-TO-SIGN at revision 2 (9 MUST closed); sec red-team CLEAR at revision 3 (9 blocking closed, 3 pre-cleared edits); signed by ready on revision 3, merged PR 152
+# at: 2026-10-02T04:53:06.774Z
+# tree: dirty:8b4ea5d3f4b2893ea8a408d187d5e4a8a11129b7
+
+W-124 spec review attestation — persisted retroactively through the verb the opus itself introduced (its spec rung requires this log; the review predates the verb).
+Prereviewer (claude-sonnet-5-5): revision 1 REVISE (9 MUST, 8 SHOULD); revision 2 READY-TO-SIGN, all closed, zero new findings.
+Sec-lead (claude-sonnet-5-5): revision 1 REVISE (9 blocking); revisions 2–3 closed all nine incl. three pre-cleared edits (merged-not-contained, idempotent cleanup, /proc unknown-vs-dead); CLEAR, including the BISELLIUM_TEST_PROC seam.
+Signed by ready --sella architect on brief revision 3 at opus-branch commit 540ada8; merged as PR 152.
+Full reports: scratchpad w124-prereview-1.log, w124-sec-spec-1.log and the session record of 2026-10-02.
