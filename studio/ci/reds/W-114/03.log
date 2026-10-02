@@ -1,15 +1,15 @@
 # behaviour: 3
 # command: node --test-reporter=tap --import tsx packages/cli/src/answer-carry.test.ts --behaviour 3
 # exit: 1
-# at: 2026-10-02T09:29:13.359Z
+# at: 2026-10-02T09:29:54.028Z
 # sella: builder.W-114
-# tree: dirty:57aa9a24b96b481bd9db640ce33358157cf6812a
+# tree: tree:678b7d8f0ea0731ffe1df8695e436d753d32cfa9
 
 TAP version 13
 # Subtest: W-114 behaviour 3: an ask-back round trip carries both turns to the sella
 not ok 1 - W-114 behaviour 3: an ask-back round trip carries both turns to the sella
   ---
-  duration_ms: 1170.627621
+  duration_ms: 1175.347601
   type: 'test'
   location: '/home/edckt/projects/bisellium/.worktrees/W-114/packages/cli/src/answer-carry.test.ts:13:1616'
   failureType: 'testCodeFailure'
@@ -34,4 +34,4 @@ not ok 1 - W-114 behaviour 3: an ask-back round trip carries both turns to the s
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 1181.859501
+# duration_ms 1186.56779
