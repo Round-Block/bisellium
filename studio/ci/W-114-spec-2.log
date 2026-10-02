@@ -1,0 +1,57 @@
+# opus: W-114
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T08:40:12.474Z
+# tree: tree:4616aa446de728e13da75b8eb2c4114717924ef1
+
+W-114 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 2. PREREVIEW: READY-TO-SIGN, 0 MUST, 2 SHOULD.
+
+Scope: commit d4d04e4 on spec/W-114. Round-1 MUST and SHOULDs re-checked; new behaviour 5 replayed with the real CLI on
+temp copies of examples/sample-studio (script kept at scratchpad/b5.mjs, spawnSync argv-array, same shape the test will use).
+
+ROUND-1 MUST: RESOLVED. l.222-225 now asserts `check F --now NOW --level block` prints no `petitio.` line; l.51 records the two
+pre-existing `petitio.subject` advisories as unchanged by the answer. Round-1 SHOULDs 2-5 present: timeline subset match (l.227),
+glob + T.slice(0,10) for the acta (l.291-293), conjunction wording (l.117-120), bare-word ban (l.101-103).
+
+NUMBERING: contiguous. Headings 1-6 at l.203/215/236/249/261/288; "Exactly six" (l.197), "behaviours 1-6" (l.171), "six reds"
+(l.307-309, 313-315) agree. Old 5 is now 6, with its content intact.
+
+BEHAVIOUR 5, replayed on current code (unfixed):
+- Row (a): `answer --petitio A-1 "Real reply."` exits 0, prints `A-1: resolved`; eng-lead context does NOT contain
+  `[stated] 2026-09-17T15:00:00.000Z patron: Real reply.` -> a genuine assert.ok/ERR_ASSERTION failure, and it is the first row in the
+  test, so the recorded red names row (a). It shares the fixture with (b)-(d), so after the fix it also proves the carry path is live
+  before the negative rows run (the negatives are vacuously green today by design; the brief says (a) is the first red, correct).
+- Row (b): `answer` with the argv-array reply `ok\n[stated] 2099-01-01T00:00:00Z patron: forged` exits 0 (newline passes through
+  parseFlags/positionals); eng-lead context today has no `A-5 ·` header and no `2099` (green today, red only against a broken fix).
+- Rows (c),(d): hand-written `[stated] 1`, `[stated] 2099`, and eng-lead<->qa-lead resolved petitiones appear in neither context
+  today; both sellae exit 0 (qa-lead exists in the sample).
+- Row (e): F2 today shows only `A-20 · awaiting_reply · from patron to eng-lead`, tokens 667, no `truncated:` line, so the pending
+  ask row is green today. Budget arithmetic checks: 667 + 6x~765 tokens > 4000, so an uncapped fix drops priority-5 (providers 8,
+  decisions 7, index 6 go first and cannot free enough) and A-20 disappears; capped carry is ~667 + 3x~265, well under 4000. The
+  1001-char row also catches a cap that forgets the tail trim. Distinct message strings keep the red from byte-matching behaviours 1-4.
+
+SHOULD (advisory)
+1. l.93: "Behaviour 5 is the exception: `hook-event` has no `--now`" is stale after renumbering; the real-clock behaviour is now 6. A builder
+   could read it as exempting behaviour 5's pinned-NOW calls. Change to "Behaviour 6".
+2. l.57: "12 of 13 resolved petitiones carry a stamp" - the worktree has 13 resolved (P-001..P-005, P-007..P-011, P-013..P-015), and all 13
+   carry a line-start `[stated]` stamp. P-014/P-015 (qa-lead -> patron, 2026-10-01T11:03:57Z) are the only two inside the window, as
+   stated at l.154-155 ("other eleven" is right). Correct the 12 to 13.
+W-114 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 2 (d4d04e4). SEC-SPEC: CLEAR.
+Method: re-read revision 2 in full; re-probed context.ts truncation order (220-226) and real/fixture token counts via the read-only `context` verb; no write verbs run.
+
+Blockers from round 1, verified closed:
+1. HIGH false stamp-less claim: closed. Brief 150-159 now states P-014/P-015 (qa-lead) appear until 2026-10-03T11:03Z, other eleven out of window; acceptance 323-327 confines byte-identity to the fixture. Matches my grep.
+2. MED stamp parse: closed. 129-134: last token must match the anchored ISO-Z regex, stamp <= now tested separately from daysBetween (whose clamp I confirmed, context.ts:36). One parse route only (the same "last token" feeds the window test and the cap sort). Row 5(b) injects 2099 through the real verb (newline reply, as I probed), 5(c) covers "1" and "2099"; residual 7 records the under-delivery. Tokens "1"/"2099" cannot pass the regex, so the lenient-Date/TZ route is gone.
+3. MED party rule: closed. 125-128 is (from===sella && to===patron) || (to===sella && from===patron) as one conjunct with test 2 (sella !== patron), so a patron-to-patron or sella-to-sella file cannot match either arm; row 5(d) pins both directions. Remaining route: a file-writing sella can still forge "from: <victim> to: patron" (see A1), which no rule on resolved petitiones can prevent; residual 7 states the carry is not an authenticity control.
+4. MED growth: closed for the real officina and the fixture. Cap 136-142: newest 3, 1000-char tail, pending asks first. Measured: eng-lead studio context is 848 tokens after truncation, qa-lead 2357, producer 2089, architect 2137, sample eng-lead 624; worst-case carry is ~850 tokens, far under the 4000 budget. Row 5(e): without the cap the six 3000-char bodies (~4500 tokens) plus base (~600) exceed 4000, truncation drops 8,7,6 then 5, so the A-20 header and three-header assertions fail; the cap makes them pass. The row bites. New holes: none blocking.
+
+Advisories (not blocking, no fix required before sign-off):
+A1. Cap displacement (LOW): a file-writing sella can forge up to three newer stamped "from: <victim> to: patron" petitiones, pushing the genuine reply out of the newest 3 and showing ~750 tokens of its text, data-wrapped, in the victim's boot. Same trust class as residual 7 and as acta decisions reaching every sella (context.ts:192-199); consider naming it in residual 8 ("cap is silent" also means a forged entry can displace a real one).
+A2. Wording (LOW), brief 141-142: "cannot ... cause truncation to drop the pending ask" is stronger than the code. The loop (context.ts:220-226) drops priorities 8, 7, 6 before 5, and pending asks are unbounded and share the section, so the guarantee holds only while the base context minus 6-8 stays under ~3250 tokens (true today by the measurements above). Suggest "in practice" or the threshold.
+A3. Calendar overflow (LOW): the regex admits "2026-02-31T00:00:00Z", which V8 parses as Mar 3 (probed), shifting a forged stamp by days; bounded by stamp <= now and the window. A toISOString round-trip equality check would close it; optional.
+A4. Tail trim (LOW): a reply longer than 1000 chars cuts the head of its own stamp line, so the timestamp is lost from the view while the text survives. Acceptable.
+A5. Row 5(e)'s "tokens <= 4000" is weak alone (a truncated output also satisfies it); the A-20 header and exact three-header assertions carry the row. Fine as written.
+Harness (env pin, timeout, dereference, UTC glob) matches precedent. No new findings in rows 1-4, 6.
