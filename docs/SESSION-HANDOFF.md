@@ -120,11 +120,11 @@ lex, a decision, or a check rule and delete it here.
 
 ## Where things stand (2026-10-02)
 
-W-096 merged as PR 145 and is done after a ten-revision brief: prereviewer READY at 2; six sec-lead spec passes; and architect rulings in rounds 3–10, including the one-time bootstrap pin, the closed 48-row regression contract, and CI full-history plus PR-head checkout. Five censor rounds followed: rounds 1–2 found defects, round 3 found contract conflicts, round 4 found three closed-list rows, and round 5 PASSed; sec-lead code review was CLEAR at pass 5. D-030–D-032 were recorded with W-122 as the read-efficiency instrument; P-014/P-015 were answered with W-120/W-121; W-123 (PR hygiene in the verbs), W-124 (cascade order as a verb), and W-125 (review rounds bounded by mechanism) were filed on the Patron's rulings. `scripts/merge-gate.sh` and `scripts/open-pr.sh` remain in the repo: complete means PR MERGED plus master fetched, and every PR is rebased first.
+W-125 merged PR 150 and is done. Builders now execute in a bwrap-confined disposable clone with mediated git, credential-free environment, confined recomputation, fail-closed export and mandatory teardown; the entire review cycle ran on Claude substitutes per the Patron while Codex sits at its usage limit (resets Oct 4 09:01): censor rounds 1–3 (two FAILs closed, runner proven live; round 3 PASS) and sec-lead twice CLEAR with an 80-vector broker fuzz. Brief revisions 3–5 applied census ownership, a package.json line grant, and red-identity attestation by replay after a rebase. The substituted-review model worked well at Sonnet cost.
 
 ## Queue
 
-W-125 spec in flight (architect draft; it must apply its own split rule), then W-124, then W-114, W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-121. W-113 needs the Patron's UI/UX ruling at spec time.
+Next is W-124 (cascade order as a verb — bisellium next; its brief must also absorb the stale-task health check and the ≤500k context caps as behaviours), then W-114, W-110, W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-121, W-126, W-127. W-113 needs the Patron's UI/UX ruling at spec time.
 
 ## Research lane (on the side)
 
