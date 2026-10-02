@@ -2,8 +2,8 @@ certifies: tree:da3deff127f759d521f7d3c351a8d9e51b521ddd
 command: npm test -s
 exit code: 0
 
-GET /api/events?item=W-002 200 0ms
-GET /api/events?item=W-002&limit=2 200 0ms
+GET /api/events?item=W-002 200 1ms
+GET /api/events?item=W-002&limit=2 200 1ms
 GET /api/events?item=W-002 200 1ms
 GET /api/events?item=NOPE-NOT-REAL 200 0ms
 GET /api/events?item=..%2F..%2Fetc%2Fpasswd 200 0ms
@@ -46,9 +46,9 @@ warning: Git ref-wide allocation unavailable; using local records only
 warning: Git ref-wide allocation unavailable; using local records only
 warning: Git ref-wide allocation unavailable; using local records only
 warning: Git ref-wide allocation unavailable; using local records only
-GET /api/health 200 34ms
+GET /api/health 200 42ms
 POST /api/greenlight 401 0ms
-POST /api/greenlight 200 8ms
+POST /api/greenlight 200 11ms
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
   line 3: slate-heading: ### Backlog
 backlog-page: /********.md still carries hand-written slate state; refusing to write /********.html:
@@ -107,7 +107,7 @@ W-002: --decision "D-does-not-exist" not found under decisions/
 W-002: --decision "../../etc/passwd" not found under decisions/
 W-002: --decision "../leges/qa" not found under decisions/
 unknown opus: ../petitiones/A-1
-Preparing worktree (detached HEAD b0d8372)
+Preparing worktree (detached HEAD b00fb0d)
 Preparing worktree (checking out 'opus/W-140')
 W-140: opera/W-140.md is owned by opus/W-140 while that branch exists (D-021); this checkout is on master — run it in the worktree that has opus/W-140 checked out (git worktree list), or delete opus/W-140 if it has already merged
 W-501: gates not passed: qa
