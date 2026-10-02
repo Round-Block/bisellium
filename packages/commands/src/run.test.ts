@@ -526,6 +526,8 @@ if (runs(1)) {
         dotGitPath: ['add', '.git/config'],
         pathspecMagic: ['add', ':(top)../x'],
         logSignatureFormat: ['log', '--format=%GG'],
+        logSignatureFormatNewline: ['log', '--format=x\\n%GG'],
+        logSignatureFormatNewlineTrail: ['log', '--pretty=%H\\n\\n%G?\\n'],
         push: ['push', 'origin', 'HEAD'],
         fetch: ['fetch', 'origin'],
         config: ['config', 'user.name', 'x'],
@@ -585,6 +587,38 @@ if (runs(1)) {
     assert.equal(evidence.controls["lsFiles"], true);
     assert.equal(evidence.controls["branch"], `opus/${OPUS}`);
     assert.equal(git(f.repo, ["for-each-ref", "--format=%(refname)"]).split("\n").sort().join(","), `refs/heads/master,refs/heads/opus/${OPUS}`);
+    assert.deepEqual(leftovers(f), []);
+  });
+}
+
+if (runs(1)) {
+  live("W-125 behaviour 1 live: the broker's scratch-index probe never writes through a builder-plantable path", async () => {
+    const f = liveFixture("b1-live-probe-symlink");
+    const target = join(scratch("host-probe-target"), "host-file.txt");
+    const ORIGINAL = "HOST-FILE-UNTOUCHED-4c1e\n";
+    writeFileSync(target, ORIGINAL);
+    const body = `(async()=>{
+      const target = process.argv[1];
+      const attempt = (fn) => { try { fn(); return 'ok'; } catch (e) { return e.code; } };
+      // Redirect every probe-index-* name the broker left in /control (plus a fixed guess) at the host file,
+      // then trigger the probe again: host git must not write its index through the link.
+      const names = fs.readdirSync('/control').filter((n) => n.startsWith('probe-index-')).concat('probe-index-1');
+      const planted = names.map((n) => ({ rm: attempt(() => fs.rmSync('/control/' + n, { force: true })), link: attempt(() => fs.symlinkSync(target, '/control/' + n)) }));
+      const probe = git('bisellium-probe-index');
+      fs.writeFileSync('evidence.json', JSON.stringify({ planted, probe: probe.status, control: fs.readdirSync('/control').sort() }));
+      ${FIX_AND_COMMIT}
+    })();`;
+    const res = runnerRun(f, builder(body, target));
+    assert.equal(res.status, 0, `${res.stderr}\n${res.stdout}`.slice(-2000));
+    assert.equal(readFileSync(target, "utf8"), ORIGINAL, "a symlink planted at the probe's index name must not redirect a host write");
+    const evidence = JSON.parse(git(f.repo, ["show", `refs/heads/opus/${OPUS}:evidence.json`])) as {
+      planted: { link: string }[];
+      probe: number | null;
+      control: string[];
+    };
+    assert.equal(evidence.probe, 0, "the probe still works");
+    for (const row of evidence.planted) assert.notEqual(row.link, "ok", "the builder cannot plant anything in /control");
+    assert.deepEqual(evidence.control, ["git.sock"], "the builder reaches only the broker socket");
     assert.deepEqual(leftovers(f), []);
   });
 }
