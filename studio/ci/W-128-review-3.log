@@ -1,0 +1,17 @@
+# opus: W-128
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T14:32:57.422Z
+# tree: tree:da3deff127f759d521f7d3c351a8d9e51b521ddd
+
+W-128 censor review round 3 — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD d8ce144. REVIEW: PASS (0 blocking, 2 advisory).
+
+Worktree HEAD is actually c309527 (one commit above d8ce144: studio/opera/W-128.md only, verified by diff). All checks below were run at the working tree, whose source equals d8ce144.
+1. Code identity: `git diff 6b8a6f3 d8ce144 -- packages apps adapters scripts package.json` is EMPTY. The whole 6b8a6f3..d8ce144 delta outside docs/research/ (456 files, the codex-lane closure) is studio/ bookkeeping only (briefs, ci logs, reds, opera, bisellium.yml); `grep -vE '^(docs/research/|studio/)'` over the delta name list prints nothing. The code I passed in rounds 1-2 is byte-identical. W-128's own change set against master 044bc88 (`git diff 044bc88 d8ce144 --name-only | grep -v ^studio/`): ADOPTION.md, ARCHITECTURE.md, package.json, integrate.ts, ladder-followon.test.ts, next.test.ts, next.ts, lifecycle.ts, trunk.ts and the two script deletions — exactly Files owned.
+2. Reds: all eight studio/ci/reds/W-128/0N.log carry `# tree: tree:d3ac62afc69cf7c3f7c5b2fe16ea829a1ee6839f`, TAP `not ok 1`, ERR_ASSERTION, 1..1. First failing row per log is the brief's: 1a, 2b, 3b, 4b, 5d, 6d, 7c, 8d. My recomputation (sourceTreeHash, excludes studio, .bisellium, examples/, as the manifest's source_excludes) gives 40907bb -> d3ac62afc69cf7c3f7c5b2fe16ea829a1ee6839f (match) and d8ce144 -> da3deff127f759d521f7d3c351a8d9e51b521ddd (matches the stated new source tree).
+3. Green: ladder-followon behaviours 1-8 each `ok`; next.test.ts 16 pass / 0 fail; typecheck exit 0. Full npm test and checks not re-run (code byte-identical to the round-1 full run, which passed; docs/research additions are not executed by the suite).
+4. Advisories carried unchanged from round 2: (a) a tracked file-to-directory swap in the incoming change still holds (fail-closed, text now names it); (b) the held-with-two-paths text shares one 400 clip.
+Verdict: PASS stands at d8ce144 (as round 3).
