@@ -75,8 +75,9 @@ parent process's secrets out of its own environment.
 Planned, not yet built: `memoria/sellae/`, `archive/`, and the docs registry.
 
 `ci/` evidence has three command-owned writers. `verify` records automated
-gate runs, `red` records a failing command per behaviour, and `verdict`
-records a review transcript without evaluating or changing any gate.
+gate runs, `red` records a failing command per behaviour (and warns on stderr
+when it records a `dirty:` tree identity), and `verdict` records a review
+transcript without evaluating or changing any gate.
 
 ## bisellium verdict
 

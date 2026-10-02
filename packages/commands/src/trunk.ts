@@ -13,7 +13,7 @@
  */
 import { spawnSync } from "node:child_process";
 
-/** Trunk is the literal `master`, as in `scripts/open-pr.sh` and `merge-gate.sh`. */
+/** Trunk is the literal `master`. */
 export const TRUNK_REF = "refs/heads/master";
 
 export type TrunkContains = { ok: true } | { ok: false; reason: string };

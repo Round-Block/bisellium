@@ -217,8 +217,12 @@ files the next poll picks up.
   `builder-run`/host-runner seam instead of this generic provider.
 - `bisellium next` (`packages/cli/src/next.ts`, `integrate.ts`) — the cascade
   ladder derived from evidence (W-124). `integrate.ts` owns the `gh`/`git` PR
-  rungs (`pr`, `merge`, `cleanup`) that absorb `scripts/open-pr.sh` and
-  `merge-gate.sh`; `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the
+  rungs (`pr`, `merge`, `cleanup`), which replaced the retired PR scripts;
+  `fetchTrunk` fast-forwards a clean checked-out `master` to the reviewed merge
+  commit only (never the origin tip, and never from the `pr` rung). The
+  architect's spec verdict is written on `spec/<id>` before `opus/<id>` exists
+  and rides the spec PR; until that PR merges the `spec` rung names the landing.
+  `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the
   one "is this merge in the local trunk" predicate, in `commands` so a `done`
   refusal can import it without a cli-to-commands cycle. No workspace edge is
   added (§1 is unchanged).
