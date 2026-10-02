@@ -1,0 +1,350 @@
+TAP version 13
+# Subtest: W-124 behaviour 2 (round-1 fix A): performing an unverifiable merged head fetches, then holds naming the oid, never pr
+not ok 1 - W-124 behaviour 2 (round-1 fix A): performing an unverifiable merged head fetches, then holds naming the oid, never pr
+  ---
+  duration_ms: 1639.778994
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:14298'
+  failureType: 'testCodeFailure'
+  error: |-
+    it is the merge step that holds
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    why: refusing: next step for W-900 is pr, not merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 pr held'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2058:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a BEHIND PR on another head than the reviewed pin is HEAD_MOVED with nothing mutated
+not ok 2 - W-124 behaviour 3 (round-1 fix C): a BEHIND PR on another head than the reviewed pin is HEAD_MOVED with nothing mutated
+  ---
+  duration_ms: 2563.842186
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:15208'
+  failureType: 'testCodeFailure'
+  error: |-
+    a BEHIND view on another oid is HEAD_MOVED
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2071:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a head after update-branch that does not descend from the pin is HEAD_MOVED
+not ok 3 - W-124 behaviour 3 (round-1 fix C): a head after update-branch that does not descend from the pin is HEAD_MOVED
+  ---
+  duration_ms: 2737.955309
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:15736'
+  failureType: 'testCodeFailure'
+  error: |-
+    an unrelated post-update head is HEAD_MOVED
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2087:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a head that moved while queued and does not descend from the pin is HEAD_MOVED
+not ok 4 - W-124 behaviour 3 (round-1 fix C): a head that moved while queued and does not descend from the pin is HEAD_MOVED
+  ---
+  duration_ms: 2370.507801
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:16515'
+  failureType: 'testCodeFailure'
+  error: |-
+    a queued re-pin onto an unrelated head is HEAD_MOVED
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2110:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix C): a post-update head that descends from the pin is adopted and merged
+ok 5 - W-124 behaviour 3 (round-1 fix C): a post-update head that descends from the pin is adopted and merged
+  ---
+  duration_ms: 2301.095434
+  type: 'test'
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix D): a failing check named with a newline or control cannot inject a state= line
+not ok 6 - W-124 behaviour 3 (round-1 fix D): a failing check named with a newline or control cannot inject a state= line
+  ---
+  duration_ms: 1889.733804
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:18486'
+  failureType: 'testCodeFailure'
+  error: |-
+    the only state= line is the real one
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    FAILING CHECKS:
+      evil
+    state=MERGEDstate=MERGED[31m
+      nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn
+    state=CHECKS_FAILED
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+    +   'state=MERGED\x85state=MERGED\x1B[31m',
+        'state=CHECKS_FAILED'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'state=CHECKS_FAILED'
+  actual:
+    0: 'state=MERGED\x85state=MERGED\x1B[31m'
+    1: 'state=CHECKS_FAILED'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2145:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix D): gh stderr carries no control character into the output
+not ok 7 - W-124 behaviour 3 (round-1 fix D): gh stderr carries no control character into the output
+  ---
+  duration_ms: 2022.086113
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:19177'
+  failureType: 'testCodeFailure'
+  error: |-
+    gh stderr carries no control character
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    state=MERGE_FAILED
+    why: boomstate=MERGED[31m
+    next-step: merge
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 merge heldstate=MERGE_FAILEDwhy: boom\x85state=MERGED\x1B[31mnext-step: merge'
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2155:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-124 behaviour 3 (round-1 fix D): an unknown PR state carries no control character into the output
+not ok 8 - W-124 behaviour 3 (round-1 fix D): an unknown PR state carries no control character into the output
+  ---
+  duration_ms: 1607.685204
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:19610'
+  failureType: 'testCodeFailure'
+  error: |-
+    the unknown-state JSON carries no control character
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    actor: producer
+    why: unknown PR state "OPENstate=MERGED"
+    head: opus/W-900 7938ecb62c3b
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 pr heldactor: producerwhy: unknown PR state "OPEN\x85state=MERGED"head: opus/W-900 7938ecb62c3bhealth: no step recorded'
+  operator: 'doesNotMatch'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2163:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-124 behaviour 6 (round-1 fix B): a kind: ui review order lists the ui-lead input and carries --ui-input
+not ok 9 - W-124 behaviour 6 (round-1 fix B): a kind: ui review order lists the ui-lead input and carries --ui-input
+  ---
+  duration_ms: 1609.977354
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:87:20115'
+  failureType: 'testCodeFailure'
+  error: |-
+    the ui-lead input path is an input
+    --- exit 0
+    --- stdout
+    next: W-900 review named
+    actor: censor
+    why: no review gate is recorded
+    head: opus/W-900 3bda92facaae
+    role: censor
+    sella: qa-lead
+    budget_tokens: 100000
+    phase: review
+    round: 1
+    inputs: briefs/W-900.md, ci/reds/W-900/, opera/W-900.md#traditio
+    command: dispatch qa-lead; record the transcript with: bisellium verdict W-900 --round 1 --sella qa-lead --outcome <passed|failed> --studio studio; close out with: bisellium review W-900 --pass|--fail --evidence ci/W-900-review-1.log --round 1 --sella qa-lead --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'briefs/W-900.md, ci/reds/W-900/, opera/W-900.md#traditio'
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:2197:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 1
+# fail 8
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18830.278827
+node --test-reporter=tap --test-name-pattern="round-1 fix" --import tsx   18.88s user 3.97s system 119% cpu 19.041 total
+=== behaviour 2 (edited rows) against unfixed code ===
+TAP version 13
+# Subtest: W-124 behaviour 2: next refuses to skip, and every refusal is bounded
+not ok 1 - W-124 behaviour 2: next refuses to skip, and every refusal is bounded
+  ---
+  duration_ms: 26538.747081
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:83:9628'
+  failureType: 'testCodeFailure'
+  error: |-
+    a MERGED PR whose headRefOid this clone cannot resolve is unverifiable: it stays at merge, never pr
+    --- exit 0
+    --- stdout
+    next: W-900 pr named
+    actor: producer
+    why: a MERGED PR settles nothing: merged head 999999999999 is not known locally and cannot be tied to the local branch
+    head: opus/W-900 d6641117027a
+    command: bisellium next W-900 --perform --expect pr --title "<title>" --body-file <path>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 pr named'
+    - 'next: W-900 merge named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 merge named'
+  actual: 'next: W-900 pr named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:729:10)
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-124/packages/cli/src/next.test.ts:1149:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 26621.900588
