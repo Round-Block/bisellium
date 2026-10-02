@@ -1,0 +1,45 @@
+# behaviour: 10
+# command: node --test-reporter=tap --import tsx packages/cli/src/stage-states.test.ts --behaviour 10
+# exit: 1
+# at: 2026-10-02T18:45:21.740Z
+# sella: builder.W-129
+# tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
+
+TAP version 13
+# Subtest: W-129 behaviour 10: verify writes verifying before the pipeline runs, and only for the checkout's own tree
+not ok 1 - W-129 behaviour 10: verify writes verifying before the pipeline runs, and only for the checkout's own tree
+  ---
+  duration_ms: 521.83585
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-129/packages/cli/src/stage-states.test.ts:7:1758'
+  failureType: 'testCodeFailure'
+  error: |-
+    10(e): a building record reads verifying inside run
+    + actual - expected
+    
+      [
+    +   'building'
+    -   'verifying'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'verifying'
+  actual:
+    0: 'building'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/packages/cli/src/stage-states.test.ts:357:14)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 563.111812

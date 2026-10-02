@@ -1,0 +1,37 @@
+# behaviour: 14
+# command: node --test-reporter=tap --import tsx packages/cli/src/stage-states.test.ts --behaviour 14
+# exit: 1
+# at: 2026-10-02T18:45:24.771Z
+# sella: builder.W-129
+# tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
+
+TAP version 13
+# Subtest: W-129 behaviour 14: the handoff's stage may trail the state, never lead it
+not ok 1 - W-129 behaviour 14: the handoff's stage may trail the state, never lead it
+  ---
+  duration_ms: 314.04671
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-129/packages/cli/src/stage-states.test.ts:9:3110'
+  failureType: 'testCodeFailure'
+  error: '14(g): verifying with stage building does not advise'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/packages/cli/src/stage-states.test.ts:771:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 323.019374

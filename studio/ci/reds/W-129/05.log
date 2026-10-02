@@ -1,0 +1,45 @@
+# behaviour: 5
+# command: node --test-reporter=tap --import tsx apps/server/test/branch-records.test.ts --behaviour 5
+# exit: 1
+# at: 2026-10-02T18:45:18.796Z
+# sella: builder.W-129
+# tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
+
+TAP version 13
+GET /api/opera 200 9ms
+# Subtest: W-129 behaviour 5: a record that is unreadable, hostile or malformed is dropped on its own, and the board keeps working
+not ok 1 - W-129 behaviour 5: a record that is unreadable, hostile or malformed is dropped on its own, and the board keeps working
+  ---
+  duration_ms: 161.743561
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:14:7443'
+  failureType: 'testCodeFailure'
+  error: |-
+    5(a): W-006 overlay shows building
+    + actual - expected
+    
+    + 'greenlit'
+    - 'building'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'building'
+  actual: 'greenlit'
+  operator: 'strictEqual'
+  stack: |-
+    <anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:454:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async serving (/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:309:12)
+    async TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:453:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 172.100008

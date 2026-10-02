@@ -1,0 +1,49 @@
+# behaviour: 6
+# command: node --test-reporter=tap --import tsx apps/server/test/branch-records.test.ts --behaviour 6
+# exit: 1
+# at: 2026-10-02T18:45:19.374Z
+# sella: builder.W-129
+# tree: tree:0d733130fc68f9bf0719fba2a1b2ebc3680e7c45
+
+TAP version 13
+GET /api/opera 200 9ms
+GET /api/aerarium 200 5ms
+GET /api/inbox 200 7ms
+POST /api/_poll 200 6ms
+GET /api/opera 200 4ms
+# Subtest: W-129 behaviour 6: a live, uncommitted read can change only the state, the handoff and the heartbeat
+not ok 1 - W-129 behaviour 6: a live, uncommitted read can change only the state, the handoff and the heartbeat
+  ---
+  duration_ms: 177.733917
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:16:2798'
+  failureType: 'testCodeFailure'
+  error: |-
+    6(b): a live state done shows the committed building
+    + actual - expected
+    
+    + 'greenlit'
+    - 'building'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'building'
+  actual: 'greenlit'
+  operator: 'strictEqual'
+  stack: |-
+    <anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:687:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    async serving (/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:309:12)
+    async TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-129/apps/server/test/branch-records.test.ts:676:5)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 188.889766
