@@ -48,4 +48,6 @@ export const USAGE =
   "       bisellium merge <opus-id> --studio <dir> --repo <dir>\n" +
   "       bisellium close <opus-id> --studio <dir> [--repo <dir>]\n" +
   "       bisellium prune --studio <dir> [--repo <dir>]\n" +
+  "       bisellium next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
+  "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium docs registry [--repo <dir>] [--now <iso>]";

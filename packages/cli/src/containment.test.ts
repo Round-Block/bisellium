@@ -218,6 +218,7 @@ function collectInventoryB(root: string, rel: string): string[] {
 // ---------------------------------------------------------------------------
 
 const PINNED_A: string[] = [
+  "packages/cli/src/next.ts:runNext:opera#1",
   "packages/cli/src/retro.ts:classifyAddressedTarget:opera#1",
   "packages/cli/src/retro.ts:classifyAddressedTarget:decisions#1",
   "packages/commands/src/lifecycle.ts:runReady:opera#1",
@@ -295,6 +296,16 @@ const PINNED_B: PinnedB[] = [
   },
   { key: "packages/cli/src/new.ts:runNew#1", disposition: "derived", why: "W-### from createNextRecord, front-matter spec: value" },
   { key: "packages/cli/src/new.ts:runNew#2", disposition: "derived", why: "same allocated id, briefs/ companion write" },
+  {
+    key: "packages/cli/src/next.ts:recordRel#1",
+    disposition: "guarded",
+    why: "W-124: opus matches ID_RE and passes safeItemPath in runNext before any call; the value only reaches a git pathspec (`git show <ref>:<studio>/opera/<id>.md`) or readContainedRegularFile, never a write",
+  },
+  {
+    key: "packages/cli/src/next.ts:briefRel#1",
+    disposition: "guarded",
+    why: "W-124: same guarded opus as recordRel#1; read-only (git pathspec or readContainedRegularFile), never a write",
+  },
   { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
   { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from createNextRecord" },
   { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from createNextRecord" },

@@ -215,6 +215,13 @@ files the next poll picks up.
 - `WorktreeProvider` / `HarnessProfile` (`@bisellium/shim`) — where a builder
   runs, and what drives it. Builder-class execution uses the stricter private
   `builder-run`/host-runner seam instead of this generic provider.
+- `bisellium next` (`packages/cli/src/next.ts`, `integrate.ts`) — the cascade
+  ladder derived from evidence (W-124). `integrate.ts` owns the `gh`/`git` PR
+  rungs (`pr`, `merge`, `cleanup`) that absorb `scripts/open-pr.sh` and
+  `merge-gate.sh`; `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the
+  one "is this merge in the local trunk" predicate, in `commands` so a `done`
+  refusal can import it without a cli-to-commands cycle. No workspace edge is
+  added (§1 is unchanged).
 - `admitCurrentRunReceipt` (`@bisellium/commands/builder-run`) — the shared
   current-SOURCE host-completion predicate used before either review outcome.
 - `SnapshotAdapter` (`adapters/native`, `adapters/epoch0`) — the only thing that

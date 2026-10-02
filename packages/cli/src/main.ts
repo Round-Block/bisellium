@@ -32,6 +32,7 @@ import { runDocs } from "./docs.js";
 import { runBranch, runMerge } from "./branch.js";
 import { runClose } from "./close.js";
 import { runPrune } from "./prune.js";
+import { runNext } from "./next.js";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
@@ -117,6 +118,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "merge") return runMerge(rest).exitCode;
   if (cmd === "close") return runClose(rest).exitCode;
   if (cmd === "prune") return runPrune(rest).exitCode;
+  if (cmd === "next") return (await runNext(rest)).exitCode;
   if (cmd === "new") return runNew(rest).exitCode;
   if (cmd === "instructions") return runInstructions(rest).exitCode;
   if (cmd === "retro") return runRetro(rest).exitCode;
