@@ -23,6 +23,8 @@ export interface BoardViewProps {
   /** Connection state and last successful refresh, already formatted by
    *  `lib/board.ts`'s `liveLabel` — separate from the colophon (ruling 10). */
   liveness?: string;
+  /** W-129: one plain sentence when serve could not read every branch record (`branchNote`). */
+  branchNote?: string;
   generatedAt?: string;
 }
 
@@ -115,7 +117,7 @@ function scrollColumnIntoView(columnId: string): void {
   el?.scrollIntoView({ inline: "start", block: "nearest" });
 }
 
-export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, generatedAt }: BoardViewProps): JSX.Element {
+export function BoardView({ studio, model, inert, selectedId, focusedByColumn, onSelectCard, liveness, branchNote, generatedAt }: BoardViewProps): JSX.Element {
   return (
     <div className="board" inert={inert || undefined}>
       <div className="board__header">
@@ -127,6 +129,7 @@ export function BoardView({ studio, model, inert, selectedId, focusedByColumn, o
           <span className="board__project-select-reason">{UNAVAILABLE_REASON}</span>
         </div>
       </div>
+      {branchNote !== undefined && <p className="board__branch-note">{branchNote}</p>}
       <div className="board__strip">
         {model.columns.map((column) => (
           <button key={column.id} type="button" className="board__strip-item" onClick={() => scrollColumnIntoView(column.id)}>

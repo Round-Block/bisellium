@@ -734,6 +734,17 @@ if (runs(13)) {
       reviewRecord(censor, verdictLog(censor, "W-120-review-1.log", { tree: [`tree:${H1}`] }), "censor");
       assert.equal(blocks(censor), 0, "13(m): the same holds with censor as the review gate");
     }
+
+    // (n) the ladder's loose parser would read past a line the strict header stopped at: not a proof of an older tree
+    {
+      const loose = fixture("b13n");
+      writeFileSync(
+        join(loose.studio, "ci", "W-120-review-1.log"),
+        ["# opus: W-120", "# phase: build", "# round: 1", `# tree: tree:${H1}`, "#  x: y", `# tree: tree:${H2}`, "", "findings", ""].join("\n"),
+      );
+      reviewRecord(loose, "ci/W-120-review-1.log");
+      assert.equal(blocks(loose), 1, "13(n): an older-tree header followed by a loose header line and a later tree line blocks");
+    }
   });
 }
 

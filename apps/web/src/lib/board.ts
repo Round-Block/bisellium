@@ -3,7 +3,7 @@
  * fetch — records in, records out, so behaviours 1-4 are testable under
  * plain node. `Board.tsx` is the only caller that touches `fetch`/SSE.
  */
-import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
+import type { BranchRecordsStatus, EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import type { Gate, GateStatus } from "./gateLadder.js";
 
 export const NEEDS_YOU_COLUMN = "needs_you";
@@ -155,6 +155,29 @@ export function boardModel(o: Pick<OfficinaResponse, "lifecycle" | "probationes"
   }
 
   return { columns: [...columns.values()], unplaced };
+}
+
+/** W-129: one plain sentence when serve could not read every branch record, else `undefined`. Never a reason code and
+ *  never raw record text: only the first three dropped ids (regex-bound branch names) and the cap count. */
+export function branchNote(status: BranchRecordsStatus | undefined): string | undefined {
+  if (status === undefined) return undefined;
+  switch (status.status) {
+    case "partial": {
+      const parts: string[] = [];
+      if (status.dropped.length > 0) {
+        const shown = status.dropped.slice(0, 3).map((d) => d.id).join(", ");
+        parts.push(`${status.dropped.length} not shown (${shown}${status.dropped.length > 3 ? ", ..." : ""})`);
+      }
+      if (status.capped !== undefined && status.capped > 0) parts.push(`${status.capped} over the cap`);
+      return `Branch records partial: ${parts.join("; ")}`;
+    }
+    case "stale":
+      return "Branch records stale: showing the last good read";
+    case "unavailable":
+      return "Branch records unavailable: showing the trunk copies";
+    default:
+      return undefined;
+  }
 }
 
 const REFETCH_NAMES = new Set([

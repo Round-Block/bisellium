@@ -17,7 +17,7 @@ import { fetchEvents, fetchInbox, fetchOfficina, fetchOpera, subscribeLive } fro
 import type { EventRow, InboxResponse, OfficinaResponse, OpusEntry } from "../api.js";
 import { BoardView } from "./BoardView.js";
 import { BoardDrawer } from "./BoardDrawer.js";
-import { boardModel, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
+import { boardModel, branchNote, drawerDetail, boardNeedsRefetch, drawerNeedsRefetch, formatBoardTimestamp, liveLabel, reconcileReason, reconcileTargets } from "../lib/board.js";
 
 const EMPTY_OFFICINA: Pick<OfficinaResponse, "lifecycle" | "probationes" | "wip_limit" | "studio"> = {
   studio: "",
@@ -317,6 +317,7 @@ export function Board(): JSX.Element {
         focusedByColumn={focusedByColumn}
         onSelectCard={(id, columnId) => openDrawer(id, columnId)}
         liveness={liveLabel({ connected, lastRefreshAt, now: new Date() })}
+        branchNote={branchNote("branchRecords" in officina ? officina.branchRecords : undefined)}
         generatedAt={generatedAt}
       />
       <BoardDrawer detail={detail} onClose={closeDrawer} />
