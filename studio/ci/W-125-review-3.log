@@ -1,0 +1,15 @@
+# opus: W-125
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: PASS — the probe-index host-write channel is closed (private probe dir in no bind; /control read-only, socket only; live symlink row verified by the censor), the %G lookahead spans newlines, the bind change introduced nothing new. Advisories only.
+# at: 2026-10-02T00:16:35.953Z
+# tree: tree:6a2d89c00f726890a4183c404e65b9b4d224c6c9
+
+W-125 round 3 censor review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 25f4807.
+VERDICT: PASS
+(1) The round-2 probe-index blocker is closed as directed: the probe index lives at runtime/probe/index (0700, in no bind); /control is read-only and holds only git.sock; the live symlink row run by the censor itself passes (2/2 live, 0 skipped — host file unchanged, probe 0, every plant fails, /control == ["git.sock"], no leftovers); the red log reproduces the DIRC overwrite on the unfixed code. The %G lookahead now spans newlines (probed with \n, \r and U+2028 vectors); no sibling pattern instance.
+(2) The bind/mount change introduced nothing new: runtime/probe host-only; .git/objects read-only blocks hash-object pre-planting; teardown removes probe/; no other consumer of the old name.
+(3) No new blocking defects.
+ADVISORY: the symlink row's readdir filter is vacuous post-fix (the guessed-name plant plus the directory-listing assertions carry the proof; comment it); carried advisories from round 2 (broad Node-tree bind, hard-coded producer sella, rebased-red note for the handoff); 4 pre-existing lint warnings not from this opus.
