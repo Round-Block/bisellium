@@ -1,0 +1,73 @@
+# opus: W-129
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: failed — censor PASS, sec BLOCKS-MERGE (validator strings)
+# at: 2026-10-02T23:36:24.103Z
+# tree: tree:f8a2d0dc6aad6b611730c8320f4cfce9ae7bbc7f
+
+W-129 censor review round 1 — Claude substitute (claude-sonnet-5-5), 2026-10-03, HEAD b58ac49. REVIEW: PASS (0 blocking, 4 advisory).
+Scope: git diff 2ff8d4b..HEAD (42 files). Every non-studio path is in the brief's Files owned; package.json is exactly the four test:suite entries; next.ts, containment.test.ts, next.test.ts, D-021 untouched.
+Worktree had one uncommitted line (studio/opera/W-129.md run_receipt, harness bookkeeping); no source dirty.
+
+EXECUTED
+- Reds: all 16 replayed from the recorded commands against a git-archive of 9360d12 (tests only, workspace links re-pointed at that tree so no fixed code leaked in; the first attempt leaked and was discarded). Each: exit 1, ERR_ASSERTION, 1 test / 0 pass / 1 fail, first failing assertion byte-identical to the log AND equal to the brief's Genuine-red row (1b 2a 3b 4a 5a 6b 7b 8a 9a 10e 11a 12e 13m 14g 15a 16b). So every "passes today" row before it passes today. All 16 logs carry tree:0d733130fc68, none dirty:, no module-load or TypeError red. 1 and 2 replay in the new root form (env TSX_TSCONFIG_PATH + apps/web paths).
+- All 16 behaviours green at HEAD, each with its own --behaviour N command from the logs (exit 0, 1/1 pass). 5(j) and 8 end on their own.
+- npm test (once, full): exit 0. typecheck 0. lint 0 errors (6 old warnings, none in W-129 files). format:check clean. check studio --repo . PASS 0 blocking (232 advisory; trunk 229). check examples/sample-studio PASS 0 blocking. typecheck also clean on the phase-1 commit 9360d12 (module-absent dynamic import form works); the 4 new tests are prettier-clean.
+- web-e2e: build + test:serve board.spec.ts, 21 passed (chromium present), including the two edited W-007 tests.
+- Mutations (copy of HEAD, each caught by the named row): drop O_NONBLOCK -> 5(j); live tokens -> 6(d); live probationes -> 6(f); gate status unchecked -> 5(g); drop GIT_OPTIONAL_LOCKS -> 7(c); empty automatedIds proof -> 13(i); drop opus binding -> 13(e); drop show-prefix clause -> 10(d) and 11(j); drop end compare-and-set -> 11(i); evaluate predicate on the pre-write record -> 11(h). The brief's call-level pins therefore bite.
+- Overlay probe (real `bisellium serve --poll-ms 300` on a git fixture with worktree): uncommitted live edit to state: verifying shows on /api/opera within a poll; live state: done is refused (committed building shown, liveRejected 1); live probationes `review: ~` and a FIFO in place of the record: all 6 routes 200, committed tip served; committed record with state: bogus on a 2nd branch: that opus drops to the trunk copy, status partial, dropped [{W-002, invalid-shape}], the other opus intact, exactly one stderr line, fixed prefix + JSON, no record text.
+- State cycle with the real CLI on a tmp checkout of opus/W-120: verify -> review with exactly two state_changed events; check PASS; test 15 walks the full six-transition cycle with real verbs/verdict/check and is green. Own-tree rule: `verify --repo <subdir>` and `--commit HEAD~1` exit 0, write gates, state stays building, zero events, nothing written outside the record and ci/.
+
+BLOCKING
+none.
+
+ADVISORY
+A1 (class, one instance found): record readers that bypass the overlay. Searched apps/server for snapshotDir/readFront/listMd/readOpusBody/opera path reads: every request route goes through snap()/overlay except computeDueSummary (store.ts:203, /api/health `due`), which reads the trunk's traditio.at, so a branch-owned opus with a fresh branch handoff can still read as traditio-stale there. Brief lists the snapshot routes only, so not a violation; worth a follow-on line.
+A2: a worktree whose .git is a directory (the serving checkout itself on an opus branch) always counts as liveRejected (lstat not-regular); status stays ok. Read from the code, not executed.
+A3: the brief's red command for 1-2 still says `--cwd apps/web`; the logs use the Patron-ratified root form. Brief text not amended, so the record is the only place the form lives.
+A4: 11(l)/(m) and 13(l) never ran alone under a mutation (an earlier row in the same test fails first); they exist and are structurally sound, but their individual bite is inferred, not observed.
+
+Not done: second `npm test` run (asked for once), no browser check of the live branch-note line (covered only by behaviour 2(e) markup).
+W-129 sec-lead code review — Claude substitute (claude-sonnet-5-5), 2026-10-03, HEAD b58ac49. SEC: BLOCKS-MERGE (1 finding, a class of 3 instances).
+
+Probes: scratch scripts under .../scratchpad/p/probe1-7.ts, run with `node --import tsx` from the W-129 worktree. Real git repos in $TMPDIR.
+
+## BLOCKING B1 — validateOpusFront under-validates; a branch-committed record crashes the board client
+Code: adapters/native/src/index.ts:368-385 (validateOpusFront). It checks id, state, gate status, tokens, traditio and title only. Its docstring says it
+"accepts exactly what check accepts"; check (check.ts:495-498) requires opus.sella to be a declared string, so that claim is false.
+Reproduced (probe6/7): sample-studio copy in a git repo, branch opus/W-002 whose COMMITTED record has `sella: { a: 1 }`.
+  readCandidate accepts it (branchRecords status ok, dropped []), store.api.opera() serves sella as {"a":1}, and a React render of it throws
+  "Objects are not valid as a React child". Board.tsx has no error boundary, so one builder-committed field blanks the Patron's board on every poll.
+Class — every unvalidated record field that reaches a React child. Enumerated by grepping apps/web/src for `{...sella|collegium|evidence}` children:
+  1. `sella`: BoardView.tsx:66 (Card, whole board) and BoardDrawer.tsx:26. Probe: object sella -> served as object -> throws.
+  2. gate `evidence` (toOpus maps `{href: g.evidence}`): BoardDrawer.tsx:60, `{g.evidence}` as a child. Probe7: `evidence: { a: 1 }` -> served
+     as {"href":{"a":1}} -> throws when that card's drawer opens.
+  3. gate `certifies` (same shape, adapters/native/src/index.ts toOpus): not rendered today, but it is typed string and unchecked. Same fix.
+  Checked and safe: title (validated string), traditio values (board.ts:352 filters to strings), collegium (template-literal use only),
+  tokens (finite number), heartbeat (not rendered anywhere), body (plain text child).
+Fix is one place: validateOpusFront rejects a non-string sella/collegium/kind and a non-string gate evidence/certifies (when present), so the record
+  drops as `invalid-shape`. Optionally also coerce in board.ts cardRow. Add rows for sella, evidence and certifies as objects to the shape-validation behaviour.
+Trunk records with the same defect were already a board crash (check blocks them); the new thing is that a branch tip is builder-controlled and unreviewed.
+
+## Verified clean (probes run)
+- readBoundedRegular order AS CODED (branchRecords.ts:76-95): lstat -> afterLstat -> open(RDONLY|NOFOLLOW|NONBLOCK) -> fstat isFile + dev/ino -> realpath(/proc/self/fd)
+  containment -> bounded read (max+1) -> fd closed in finally; wall-clock race. Live: FIFO at record path 10 ms, FIFO at .git 8 ms (both fall back to the tip,
+  liveRejected 1); swap to FIFO between lstat and open -> not-regular in 3 ms; swap to symlink -> changed; intermediate dir symlink -> escapes; 70 KB file -> too-large.
+- .git fakery: .git pointing at another worktree's admin dir -> rejected; fake admin dir outside commonDir with a matching back-pointer -> rejected (isInside adminRoot).
+- Live allowlist: forged title, probationes and an unlisted key in the worktree file never reach the entry; live state done/halted/backlog/greenlit/constructor -> rejected;
+  id mismatch -> rejected; only state(building|verifying|review), traditio, heartbeat apply. Needs-you membership comes from the tip's probationes only (brief residual 2).
+- Reason codes (probe5): five hostile tip records (YAML error, bad state, bad gate status, wrong title type, no front matter) with secret strings in them produce only
+  parse-error / invalid-shape / no-front-matter; no secret in the status JSON or the stderr line. Ids are bound by OPUS_ID before they are echoed.
+- reviewFailedAtCertifiedTree (probe2, 25 inputs): empty automatedIds, same tree, dirty: cert, duplicated tree, `# Tree:` / `#tree:` / `#  tree:` at the stop line, other opus,
+  missing opus header, trailing space, uppercase hex, blank line, missing log, traversal, symlink log, non-string evidence, opera/ dir, missing automated cert -> all true (blocks).
+  Older-tree proof and CRLF proof -> false. The stoppedAt guard matches the loose parser (rules/evidence.ts:132-140) exactly: both stop at the same line.
+- Own-tree rule (verify.ts isStudioToplevel): subdir (--show-prefix non-empty), second clone and linked worktree (toplevel differs), non-git or missing path (gitText undefined) all
+  return false by reading; `ci --ref` is excluded by studioRepoRelative. Not run end to end.
+- Escaping: no dangerouslySetInnerHTML or innerHTML in apps/web/src; branchNote shows only regex-bound ids; backlog-page.mjs esc() covers & < > " '. I could not render
+  BoardView under node (the CSS import fails), so hostile-title escaping rests on React's own and on the grep, not on a run.
+
+## Non-blocking
+N1. opus-model.ts:331-340: a record with no string `id` and a log with no `# opus:` header gives `undefined !== undefined` = false, so the failure is treated as proven
+    older (probe3 -> false). Not reachable by check/verify with a valid record; add `typeof record["id"] !== "string" -> true` for a fail-closed predicate.
