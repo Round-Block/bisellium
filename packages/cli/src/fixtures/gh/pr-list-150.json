@@ -1,0 +1,23 @@
+[
+  {
+    "baseRefName": "master",
+    "headRefName": "opus/W-125",
+    "headRefOid": "3c22b7227fb1f1581877f92e2be196e351a7ca48",
+    "headRepository": {
+      "id": "R_kgDOUgF3PQ",
+      "name": "bisellium",
+      "nameWithOwner": "Round-Block/bisellium"
+    },
+    "headRepositoryOwner": {
+      "id": "O_kgDOE8JEag",
+      "login": "Round-Block"
+    },
+    "isCrossRepository": false,
+    "mergeCommit": {
+      "oid": "c3a1fc6040d614396bde86d0c1b92465d50ada97"
+    },
+    "mergeStateStatus": "UNKNOWN",
+    "number": 150,
+    "state": "MERGED"
+  }
+]
