@@ -1143,9 +1143,14 @@ if (runs(2)) {
     pr("a fractional number is not a PR", [cand(id, { state: "OPEN", number: 1.5 })], "pr", "named");
     pr("two OPEN candidates are held (ambiguous)", [cand(id, { state: "OPEN" }), cand(id, { state: "OPEN", number: 902 })], "pr", "held");
     pr("an old MERGED PR whose merge commit is not in the trunk settles nothing", [cand(id, { state: "MERGED", merge: OID_UNFETCHED })], "merge", "named");
+    // unverifiable (this clone cannot resolve the head: merge-base exit 128) is not unrelated (exit 1)
+    const unverifiable = world("b2-unverifiable", "merge");
+    scenario(unverifiable, { list: mergedList(unverifiable, { oid: "9".repeat(40) }) });
+    expectStep(next(unverifiable, [OPUS]), "merge", "named", "a MERGED PR whose headRefOid this clone cannot resolve is unverifiable: it stays at merge, never pr");
     const unrelated = world("b2-unrelated", "merge");
-    scenario(unrelated, { list: mergedList(unrelated, { oid: "9".repeat(40) }) });
-    expectStep(next(unrelated, [OPUS]), "pr", "named", "a MERGED PR whose headRefOid is unrelated to the present local branch settles nothing");
+    const stranger = git(unrelated.repo, ["commit-tree", git(unrelated.repo, ["rev-parse", `${tipOf(unrelated)}^{tree}`]), "-m", "a root commit unrelated to the opus branch"]);
+    scenario(unrelated, { list: mergedList(unrelated, { oid: stranger }) });
+    expectStep(next(unrelated, [OPUS]), "pr", "named", "a MERGED PR whose locally known headRefOid does not contain the local branch tip settles nothing");
   });
 }
 
@@ -2024,5 +2029,174 @@ if (runs(6)) {
       expectStep(ok, d.step, "named", `${d.step}: a resume from a fresh handover artifact is named`);
       assert.equal(ok.status, 0, ran(`${d.step}: fresh resume exit`, ok));
     }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// round-1 fix pass (censor findings 1-2, sec-lead findings 1-3): each row is its
+// own test so every red shows by itself
+// ---------------------------------------------------------------------------
+const lines = (o: Out): string[] => o.out.split("\n");
+const CONTROLS = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/;
+/** A parentless commit with the opus tree: known locally, never a descendant of the reviewed head. */
+const strangerCommit = (w: World): string => git(w.repo, ["commit-tree", git(w.repo, ["rev-parse", `${tipOf(w)}^{tree}`]), "-m", "not descended from the reviewed head"]);
+/** A commit on top of the opus tip, pushed over the origin's opus branch (what `update-branch` would produce). */
+function pushChild(w: World): string {
+  const child = git(w.repo, ["commit-tree", git(w.repo, ["rev-parse", `${tipOf(w)}^{tree}`]), "-p", tipOf(w), "-m", "update-branch merge"]);
+  git(w.repo, ["push", "-q", "origin", `${child}:refs/heads/${BRANCH}`]);
+  return child;
+}
+
+if (runs(2)) {
+  test("W-124 behaviour 2 (round-1 fix A): performing an unverifiable merged head fetches, then holds naming the oid, never pr", { timeout: 1_800_000 }, () => {
+    const w = world("r1-a-perform", "merge", { mainOnMaster: false });
+    const unknown = "9".repeat(40);
+    scenario(w, { list: mergedList(w, { oid: unknown }) });
+    const o = performMerge(w);
+    expectHeld(o, "an unverifiable head is held after the fetch");
+    assert.match(o.first, /^next: W-900 merge held$/, ran("it is the merge step that holds", o));
+    assert.ok(o.out.includes(unknown.slice(0, 12)), ran("the hold names the unresolvable oid", o));
+    assert.doesNotMatch(o.out, /next-step: pr/, ran("and it never walks back to pr", o));
+    assert.deepEqual(mutating(w), ["git fetch master:master"], "no rebase, push, PR or update-branch");
+    assert.equal(gitCalls(w).some((a) => a[0] === "fetch" && a.some((x) => x.includes(`refs/remotes/origin/${BRANCH}`))), true, "the opus remote-tracking ref was fetched and re-checked");
+  });
+}
+
+if (runs(3)) {
+  test("W-124 behaviour 3 (round-1 fix C): a BEHIND PR on another head than the reviewed pin is HEAD_MOVED with nothing mutated", { timeout: 1_800_000 }, () => {
+    const w = pushed("r1-c-different");
+    scenario(w, { list: openList(w), view: { stdout: viewOf(cand(w, { state: "OPEN", mss: "BEHIND", oid: "7".repeat(40) })) } });
+    const o = performMerge(w);
+    assert.match(o.out, /state=HEAD_MOVED/, ran("a BEHIND view on another oid is HEAD_MOVED", o));
+    assert.equal(o.status, 1, ran("HEAD_MOVED exits 1", o));
+    assert.deepEqual(mutating(w), [], "no update-branch and no merge call");
+  });
+
+  test("W-124 behaviour 3 (round-1 fix C): a head after update-branch that does not descend from the pin is HEAD_MOVED", { timeout: 1_800_000 }, () => {
+    const w = pushed("r1-c-diverged");
+    const stranger = strangerCommit(w);
+    git(w.repo, ["push", "-q", "--force", "origin", `${stranger}:refs/heads/${BRANCH}`]);
+    const updated = join(w.root, "updated.flag");
+    scenario(w, {
+      list: openList(w),
+      view: { replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "BEHIND" })) }], alts: [{ ifExists: updated, replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN", oid: stranger })) }] }] },
+      update: { stdout: "", touch: updated },
+    });
+    const o = performMerge(w);
+    assert.match(o.out, /state=HEAD_MOVED/, ran("an unrelated post-update head is HEAD_MOVED", o));
+    assert.deepEqual(mutating(w), ["gh pr update-branch"], "the new head is never adopted: no merge call");
+  });
+
+  test("W-124 behaviour 3 (round-1 fix C): a head that moved while queued and does not descend from the pin is HEAD_MOVED", { timeout: 1_800_000 }, () => {
+    const w = pushed("r1-c-queued");
+    const stranger = strangerCommit(w);
+    git(w.repo, ["push", "-q", "--force", "origin", `${stranger}:refs/heads/${BRANCH}`]);
+    const merged = join(w.root, "merged.flag");
+    const updated = join(w.root, "updated.flag");
+    scenario(w, {
+      list: openList(w),
+      view: {
+        replies: [{ stdout: viewOf(cand(w, { state: "OPEN" })) }],
+        alts: [
+          { ifExists: updated, replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN", oid: stranger })) }] },
+          { ifExists: merged, replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "BEHIND" })) }] },
+        ],
+      },
+      update: { stdout: "", touch: updated },
+      merge: { replies: [{ stdout: "", touch: merged }] },
+    });
+    const o = performMerge(w);
+    assert.match(o.out, /state=HEAD_MOVED/, ran("a queued re-pin onto an unrelated head is HEAD_MOVED", o));
+    assert.deepEqual(mutating(w), ["gh pr merge --squash --auto", "gh pr update-branch"], "no direct merge on the unreviewed head");
+  });
+
+  test("W-124 behaviour 3 (round-1 fix C): a post-update head that descends from the pin is adopted and merged", { timeout: 1_800_000 }, () => {
+    const w = pushed("r1-c-descends");
+    const child = pushChild(w);
+    const m = landMerge(w, false);
+    const updated = join(w.root, "updated.flag");
+    const merged = join(w.root, "merged.flag");
+    scenario(w, {
+      list: openList(w),
+      view: {
+        replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "BEHIND" })) }],
+        alts: [
+          { ifExists: merged, replies: [{ stdout: viewOf(cand(w, { state: "MERGED", merge: m, oid: child })) }] },
+          { ifExists: updated, replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN", oid: child })) }] },
+        ],
+      },
+      update: { stdout: "", touch: updated },
+      merge: { replies: [{ stdout: "", touch: merged }] },
+    });
+    const o = performMerge(w);
+    assert.match(o.out, /state=MERGED/, ran("a descendant head is adopted", o));
+    assert.deepEqual(mutating(w), ["gh pr update-branch", "gh pr merge --squash --auto", "git fetch master:master"]);
+    const call = ghMerges(w)[0] ?? [];
+    assert.equal(call[call.indexOf("--match-head-commit") + 1], child, "the merge is pinned to the descendant head");
+  });
+
+  test("W-124 behaviour 3 (round-1 fix D): a failing check named with a newline or control cannot inject a state= line", { timeout: 1_800_000 }, () => {
+    const w = pushed("r1-d-check");
+    const evil = "evil\nstate=MERGED\u0085state=MERGED\u001b[31m";
+    const long = "n".repeat(600);
+    scenario(w, { list: openList(w), checks: { stdout: [...greens(MIN_CHECKS), check(evil, "fail"), check(long, "fail")] } });
+    const o = performMerge(w);
+    assert.deepEqual(lines(o).filter((l) => /^\s*state=/.test(l)), ["state=CHECKS_FAILED"], ran("the only state= line is the real one", o));
+    assert.doesNotMatch(o.out.replace(/\n/g, ""), CONTROLS, ran("no control character reaches the output", o));
+    assert.ok(lines(o).every((l) => l.length < 260), ran("an element is clipped", o));
+  });
+
+  test("W-124 behaviour 3 (round-1 fix D): gh stderr carries no control character into the output", { timeout: 1_800_000 }, () => {
+    const w = pushed("r1-d-stderr");
+    scenario(w, { list: openList(w), merge: { exit: 1, stderr: "boom\u0085state=MERGED\u001b[31m" } });
+    const o = performMerge(w);
+    assert.match(o.out, /state=MERGE_FAILED/, ran("the real terminal state", o));
+    assert.doesNotMatch(o.out.replace(/\n/g, ""), CONTROLS, ran("gh stderr carries no control character", o));
+  });
+
+  test("W-124 behaviour 3 (round-1 fix D): an unknown PR state carries no control character into the output", { timeout: 1_800_000 }, () => {
+    const odd = reviewed("r1-d-state", { mainOnMaster: false });
+    scenario(odd, { list: { stdout: [{ ...cand(odd, { state: "OPEN" }), state: "OPEN\u0085state=MERGED" }] } });
+    const held = next(odd, [OPUS]);
+    assert.match(held.first, /held$/, ran("an unknown state is held", held));
+    assert.doesNotMatch(held.out.replace(/\n/g, ""), CONTROLS, ran("the unknown-state JSON carries no control character", held));
+  });
+}
+
+if (runs(6)) {
+  test("W-124 behaviour 6 (round-1 fix B): a kind: ui review order lists the ui-lead input and carries --ui-input", { timeout: 1_800_000 }, () => {
+    const w = world("r1-b-ui", "build");
+    const prompt = "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n";
+    const transcript = [
+      "## Findings",
+      "No findings",
+      "The navigation relationships remain legible across the complete narrow viewport arrangement.",
+      "## Recommendation",
+      "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.",
+      "Additional original observations cover focus movement responsive density and stable content grouping throughout.",
+      "Verdict: passed",
+      "",
+    ].join("\n");
+    for (const dir of ["repo", "wt"] as const)
+      editRecord(w, dir, (doc) => {
+        doc.setIn(["kind"], "ui");
+        doc.setIn(["spec"], `briefs/${OPUS}.md`);
+      });
+    put(w.wtStudio, "ci/dispatch.md", prompt);
+    const from = join(w.root, "ui-spec.md");
+    writeFileSync(from, transcript);
+    verb(w.wt, ["verdict", OPUS, "--round", "2", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--dispatch-prompt", "ci/dispatch.md", "--from", from, "--studio", w.wtStudio, "--now", T.spec]);
+    commit(w.wt, `studio(${OPUS}): ui-lead input`);
+    put(w.studio, "ci/dispatch.md", prompt);
+    put(w.studio, `ci/${OPUS}-spec-2.log`, readFileSync(join(w.wtStudio, "ci", `${OPUS}-spec-2.log`), "utf8"));
+    commit(w.repo, `studio(${OPUS}): ui-lead input on the trunk`);
+
+    const o = next(w, [OPUS, "--budget", "100000"]);
+    expectStep(o, "review", "named", "a kind: ui record with a met build gate names the review dispatch");
+    assert.match(o.kv.get("inputs") ?? "", new RegExp(`ci/${OPUS}-spec-2\\.log`), ran("the ui-lead input path is an input", o));
+    assert.match(o.kv.get("command") ?? "", new RegExp(`--ui-input ci/${OPUS}-spec-2\\.log`), ran("the verdict command carries --ui-input", o));
+    const plain = next(world("r1-b-plain", "build"), [OPUS, "--budget", "100000"]);
+    expectStep(plain, "review", "named", "a plain opus review order");
+    assert.doesNotMatch(plain.kv.get("command") ?? "", /--ui-input/, ran("a non-ui order carries no --ui-input", plain));
   });
 }
