@@ -32,6 +32,8 @@ inside Latin-named files.
 | Aerarium | Budget |
 | Stipendium | Allowance |
 
+Agent studio — the category Bisellium occupies: not where you build an agent, the organization that employs them; models and harnesses plug in, the studio runs the work.
+
 A Bisellium studio is a directory (usually a repo, or a folder in one) with the
 files below. Agents and humans write these; the console reads them; `bisellium
 check` validates them — every rule here is one `check` can fail. See
