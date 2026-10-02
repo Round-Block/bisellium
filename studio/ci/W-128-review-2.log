@@ -1,0 +1,26 @@
+# opus: W-128
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-02T13:33:09.902Z
+# tree: tree:d91a4c3470a7a65822370f6f669239747d0426f2
+
+W-128 censor review round 2 — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 6b8a6f3. REVIEW: PASS (0 blocking, 2 advisory).
+
+Delta reviewed: git diff 207bfd0 6b8a6f3 (3 files: integrate.ts, ladder-followon.test.ts, studio/opera/W-128.md).
+1. Scope: integrate.ts and the new test are both in Files owned; opera/W-128.md is CLI bookkeeping (run_receipt line). No other path touched. No sleep-seam/sleep-waiver/setTimeout/setInterval added (grep over the delta: none).
+2. Delta content: --ignore-submodules=none on the overwritten() diff and the status read; annotated-tag rejection (reviewed !== target -> "not itself a commit"; pr.mergeOid is a commit oid so landed() is unaffected); hold(reason, tail) clips the head at 400 and the tail at 600 separately; the clash text now also names the tracked file/dir swap; seed .gitignore gains ign-sub; rows 5m and 5n added. No change to the merge argv, the symbolic-ref ordering, or the pr-rung no-move rule.
+3. Executed at 6b8a6f3: behaviours 1-8 each ok (fail 0); next.test.ts 16 pass / 0 fail; typecheck exit 0. Not re-run: full npm test and checks (delta touches only integrate.ts and the focused test; the round-1 full run covers the rest).
+4. Row 5m red-ness reproduced: the 6b8a6f3 test file against 207bfd0's integrate.ts (byte-identical, cmp) fails behaviour 5.
+5. Round-1 advisories: A1 improved (fixed recovery tail now clipped separately, so a long head cannot cut "git -C <repo> status"; the held text with two paths still shares one 400 clip, minor residual). A2 text improved (hold now says it may be a tracked file/dir swap) but the false hold itself is unchanged: a tracked file-to-directory swap still holds, fail-closed. A3 unchanged (no checkout-vs-ref read class).
+Advisories remaining: (a) the A2 false hold persists with better wording; (b) held-with-two-paths text still single-clipped at 400.
+Verdict at 207bfd0 stands at 6b8a6f3. No regression found.
+W-128 sec-lead code review — Claude substitute (claude-sonnet-5-5), 2026-10-02, HEAD 6b8a6f3. SEC: CLEAR (0 findings).
+Scope: `git diff 207bfd0 6b8a6f3` (integrate.ts, ladder-followon.test.ts); all pass-1 probes replayed against the new head.
+1. Pass-1 blocker CLOSED. `--ignore-submodules=none` is on the added-path diff (overwritten()) and on the status read. Replayed the gitlink-over-ignored-file repro with `diff.ignoreSubmodules=all` set: held ("would overwrite an untracked or ignored entry: ign-sub"), ignored file bytes "LOCAL\n" intact; default-config run also held. Test row 5m asserts the bytes and a retry; `--behaviour 5` passes (1 test, 0 fail).
+2. Tag-peel advisory CLOSED. A tag-object oid as target now holds ("the reviewed merge commit id is not itself a commit"), master unmoved (probe H; row 5n). The check sits before the ancestry reads, so a peeled oid never reaches merge.
+3. hold() head/tail clipping: head clipped at 400 and tail (the "partly updated" advice) at 600, both through clean(); nothing unsanitised added. File/dir-swap text now names the case; still a hold, no new path.
+4. No regression in the cleared paths (all re-run): rename-onto-ignored, untracked and ignored symlink parents (nothing written outside), newline and quote paths, ignored dir/empty dir replaced, plain untracked, assume-unchanged/skip-worktree (git refuses, edit survives), subdir --repo (holds at the realpath step), garbage targets (""/--force/HEAD/origin/master/uppercase/all-zero/leading-dash: master unmoved). Positive controls: a clean ff with and without an unrelated ignored file moves master to T.
+Advisories carried (unchanged, non-blocking): the "may be partly updated" suffix on git's own clean refusals; first dated heading wins in afterDone; landing() leaves id unquoted (pre-existing). Tracked file/dir swaps still hold forever, but the text no longer misleads.
