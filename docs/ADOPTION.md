@@ -32,6 +32,8 @@ inside Latin-named files.
 | Aerarium | Budget |
 | Stipendium | Allowance |
 
+Agent studio — the category Bisellium occupies: not where you build an agent, the organization that employs them; models and harnesses plug in, the studio runs the work.
+
 A Bisellium studio is a directory (usually a repo, or a folder in one) with the
 files below. Agents and humans write these; the console reads them; `bisellium
 check` validates them — every rule here is one `check` can fail. See
@@ -799,7 +801,7 @@ mismatched certifies shows no certifies advisories for them.
 ## Running run and verify
 
 ```bash
-npm run bisellium -- run --sella <sella> --studio <dir> [--repo <dir>] -- <cmd…>
+npm run bisellium -- run --sella <sella> --studio <dir> [--repo <dir>] [--no-worktree] [--base <ref>] [--keep] -- <cmd…>
 npm run bisellium -- run --reclaim --studio <dir>
 npm run bisellium -- verify <opus-id> --studio <dir> --repo <dir> [--allow-dirty]
 ```
@@ -943,644 +945,376 @@ orchestrator must read the word.**
 whenever `<B>` is not the derived step. `--perform` executes only the derived
 rung (`branch`, `ready`, `pr`, `merge`, `cleanup`, `done`) and then re-derives;
 it never runs a second rung in one call and stops at the first named-only rung
-(a dispatch, `greenlight`, `checkpoint`), running nothing. It takes the step
-marker first, derives again, checks `--expect` against that second derivation,
-then acts; it never sets `BISELLIUM_ROLE` (a `greenlight` rung is the Patron's
-alone) and relays any refusal from `ready` (D-021) or `done` unchanged as
-`held`. `branch` refuses unless HEAD is the `master` branch at the `master` tip
-and the tree is not dirty. `pr` rebases onto the fetched trunk, stops before
-push and PR if the rebase changes the SOURCE tree, pushes `--force-with-lease`,
-and creates the PR from `--title` and `--body-file` (without them it only names
-the command; an existing OPEN PR is reused). `merge` updates a BEHIND branch,
-refuses on a failing check, on fewer than `MIN_CHECKS` (5) checks in bucket
-`pass`, and on any open GHAS alert, then queues `--squash --auto` and, only when
-`CLEAN` with every check passing, asks directly; `BLOCKED` is never merged
-directly. `cleanup` deletes the worktree, the local branch and the remote branch
-in that order, each after a fresh MERGED re-read, idempotently (an absent piece
-is `skipped (absent)`). Performed `done` creates `chore/done-<opus>` from the
-`master` tip, runs `done`, commits only `<studio>/opera/<opus>.md`, and returns to
-`master`; landing that branch is still the existing scripts' job.
+(every named rung is legal to stop at; a held or running rung cannot be
+performed). Every `--perform` write stays in the current checkout (or the
+worktree). Commits are authored with the sella's identity when known from the
+session; otherwise, the current git user.name/user.email are left untouched,
+and the author falls back to defaults or to the explicit `-c user.*` flags in
+the session's environment. A pre-existing `opus/<id>` branch is not an error; a
+branch on the wrong commit or containing uncommitted changes triggers a verb
+refusal. `--base <ref>` is passed to the inner `bisellium branch`, so it is an
+error to provide it when the branch already exists and is not on `<ref>`.
+`--budget <tokens>` warns at the 85% mark (closeout) before doing the dispatch
+and exits 2 when the studio's total posture is `limited` (≥100% budgets broken).
+When given, it also records the budget constraint in the run receipt for
+orchestrator replay.
 
-`gh` and `git` are spawned by bare name through `PATH` with argument arrays (no
-shell). Every `gh` read asks for a fixed `--json` field list, is bounded to
-1 MiB, is pinned `-R <owner/repo>` where `gh` accepts it, and fails closed: a
-non-zero exit, empty or non-JSON output, a missing field or an unknown `state`,
-`mergeStateStatus` or check `bucket` is a hold with nothing mutated. A PR counts
-only if its head is `opus/<id>`, its base `master`, it is not from a fork, and
-its head repository is this repository; `gh pr merge` is pinned
-`--match-head-commit <headRefOid>`. `--body-file` must be a regular file of at
-most 64 KiB under the repository or the temp directory; `--title` at most 256
-characters on one line.
+`--title` and `--body-file` are PR-rung specific: they set a PR's title and body
+(read fresh, not cached). Body text is never truncated or modified.
 
-Dispatch rungs (`spec`, `reds`, `build`, `review`) print an order (`role:`,
-`sella:`, `budget_tokens:`, `phase:`, `inputs:`, `command:`; the brief and the
-record's `traditio` block are the inputs). They need `--budget <tokens>` (ten
-digits at most, a syntax error on any step): absent is `held`
-(`dispatch budget undeclared`), more than `DISPATCH_TOKEN_CAP` (500000) is
-`held`, and a dispatch that resumes existing evidence is `held` unless the
-record's `traditio.at` is not older than the newest red or review log
-(`stale handover: run bisellium handoff first`). `--budget` is the
-orchestrator's attestation of the dispatch's context allowance: nothing measures
-the subagent and enforcement is the harness's.
+`--poll-ms <n>` and `--max-polls <n>` govern the wait for `pr` to be ready
+(the GitHub PR API requires a brief wait for CI checks to appear; the defaults
+are fine for this repo's latencies). `--track <step> --pid <n> --output <path>`
+starts a long-running watch (usually in a subshell) that fires whenever the
+step's status materializes or changes, and appends JSON { timestamp, status,
+statusKeys, head, …} lines to the output file; `--pid` names the caller's PID
+for a SIGTERM-on-exit safeguard. Only one tracker per step can run; a second
+call blocks until the first ends. This supports a workflow UI that wants to
+stream `next`'s results to a client without holding an HTTP connection open.
 
-Step health comes from evidence only. `next --perform` writes
-`<repo>/.bisellium/steps/<opus>.json` (`pid`, `start_ticks`, `output`,
-`writer`) and appends to `steps/<opus>.log`; `--track` registers a step the
-orchestrator launched itself (an unverified attestation: pid greater than 1, not
-`next` or its parent, `/proc` start time read by `next`, `<step>` equal to the
-derived rung, `--output` a plain file already under `.bisellium/steps/`). A
-marker is live only if `/proc/<pid>/stat` exists, is not a zombie and field 22
-equals `start_ticks` (a reused pid reads dead) and the output file's mtime is
-inside the step's silence budget; otherwise it reports `dead` (or `stalled`, the
-pid named and never killed) with the last output line as a JSON-quoted
-`last-output:`, its age and a `resume:` line. An unreadable or unparseable
-`/proc` entry is `unknown`, which is `held`, never `dead`. No marker is
-`health: no step recorded`, never "running" or "healthy". Linux only.
+## Tracing command execution
 
-Test seams, honoured only with `BISELLIUM_TEST_CLOCK=1`: `--now <iso>` (otherwise
-a usage error) and `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every
-health read, including the verb's own `/proc/self/stat`.
+The CLI logs structured `{eventType, timestamp, args, [result]}` lines (JSON)
+to stderr when `BISELLIUM_EVENTS=1` is set. `cascade.js` sets it by default.
+Events capture every file read, write, git command and external command
+invocation; they're useful for reasoning about performance or reproducing a
+run-time oddity. Logs do not include the content of read/written files or
+command standard output — only metadata, exit codes and timing.
 
-## Writing to a studio (handoff, emit, answer, greenlight, budget)
+## Running amend, ready, done and halt
 
 ```bash
-npm run bisellium -- handoff --opus <id> --sella <sella> [--stage <state>] --next <text> [--blocked-on <text>] [--studio <dir>] [--now <iso>]
-npm run bisellium -- emit '{"name":"workflow.custom","attrs":{"k":"v"}}' [--studio <dir>] [--now <iso>]
-npm run bisellium -- answer --petitio <id> <reply…> [--opus <id>] [--ask-back] [--charter-gap] [--studio <dir>] [--now <iso>]
-npm run bisellium -- greenlight <opus> [--decline <reason>] [--studio <dir>] [--now <iso>]
-npm run bisellium -- budget <period> --collegium <id> --tokens <n> [--hours <n>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- ready <opus> [--sella <id>] [--spec <path>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- halt <opus> --reason <text> --resume_when <text> [--sella <id>] [--studio <dir>] [--now <iso>]
 ```
 
-`handoff` validates `--sella` is declared and, when `--stage` is given, that
-it equals the opus's current `state` (omit `--stage` to just reuse the
-current state) — a mismatch or an undeclared sella is a validation error
-(exit 2). It writes `traditio: { sella, stage, next, blocked_on, at }` on the
-opus, merged in via the same `editOpusFrontMatter` seam `verify` uses
-(packages/cli/src/frontmatter.ts) — nothing else on the opus changes, byte
-for byte. `--blocked-on` defaults to `none`.
+`ready` transitions an opus from backlog/halted to building. It requires a
+spec gate passed on the current tree when the manifest declares a probatio
+with id `spec`. `spec:` on the opus must resolve to an existing brief; ready
+does not create or modify a brief. `done` transitions a building/verifying/
+review opus into `done` and sets an `end` timestamp. Every automated and agent
+gate must be passed (or skipped by `since`), and every human gate must be
+passed or honourably waived. `halt` transitions an active opus to `halted`
+with required `reason` and `resume_when` fields; `halted` blocks the WIP cap.
+The four commands validate their input and write their own field(s) back into
+the opus front matter as a commit. See "## opera/<id>.md" for front-matter
+structure, and the leges (e.g. `leges/engineering.md`) for state-transition
+authority. `--sella` defaults to an environment-derived ID (`BISELLIUM_SELLA`,
+then git user.name); `--studio` defaults to the one containing a nested
+`.bisellium` directory; `--now` pins the timestamp (ISO 8601, default current
+time).
 
-`emit` validates a minimal event shape (`{name, attrs?}`, `attrs` values
-string/number/boolean only) and appends one `GantryEvent` to
-`<studio>/.bisellium/events.jsonl` (`EVENTS_LOG_REL`) via `@bisellium/core`'s
-`appendEvents`, stamped `workflow.source: cli` and a `workflow.source.seq`
-taken from the log's current length. `events.jsonl` is live/derived
-telemetry, not the studio's committed record — gitignored, same reasoning as
-`receipts/` and
-`timeline/`.
-
-`emit --usage <tokens> --opus <id> --sella <sella> --model <model>
-[--studio <dir>] [--now <iso>]` is a shortcut over the same append: instead
-of a `<json>` positional, it builds a `gen_ai.usage` event with
-`gen_ai.usage.total_tokens: <tokens>`, `gen_ai.request.model: <model>`,
-`workflow.item.id: <opus>`, `workflow.actor.role: <sella>` and, when the
-named opus's own front matter declares a `collegium`, `workflow.department:
-<that collegium>`. This is what makes `burn` (`packages/core/src/
-index-db.ts`) derive a collegium's period spend from real recorded usage,
-rather than nothing at all. `cascades/README.md`'s "Usage tracking" section
-and `scripts/usage-from-workflow.mjs` are the documented bridge from a
-Workflow-tool run's own output into a series of these calls.
-
-`answer`, `greenlight` and `budget` are Patron writes: the CLI runs them
-with `BISELLIUM_ROLE=patron`, and each one appends a line to
-`<studio>/timeline/patron.jsonl` (also gitignored) recording what the Patron
-just did. `answer --petitio <id> <reply…>` appends
-`\n\n[stated] <now> <patron>: <reply>` to the petitio's body and resolves it
-(`state: resolved`; W-114: that `[stated]` reply is then shown in the boot
-context of the petitio's `from`/`to` sella for two days when the other party is
-the patron, newest three only); `--ask-back` instead flips `from`/`to` so the Patron
-becomes the asker and sets `state: awaiting_reply` (matching `check`'s
-`petitio.direction` rule) — allowed only when the petitio is currently
-`needs_you` (exit 2 otherwise, file untouched), so a second `--ask-back`
-before the sella has replied can't flip `from`/`to` a second time and
-corrupt the record; `--charter-gap` additionally files a `kind:
-decision` acta proposing a lex amendment, titled `Lex gap: <first line of
-the petitio>`. `--opus <id>` (W-035) records what work the Patron's reply
-commissions: it sets `opus: <id>` on the petitio (the same key
-`petitio.opus` validates) and on the Patron timeline entry, resolved against
-`opera/` before anything is written — an unknown opus exits 2 with the
-petitio byte-identical, same rollback contract as any other failure here.
-Answering without `--opus` stays allowed (most answers aren't commissions);
-resolving one without it prints one stderr note — `resolved without --opus —
-nothing records what work this becomes` — exit code still 0. `greenlight <opus>` requires the opus be `state: backlog`
-(exit 2 otherwise) and either sets `state: greenlit` or, with `--decline
-<reason>`, leaves it in backlog and records `declined: <reason>` — either
-way it emits a `workflow.greenlight` (`granted`/`declined`) event. `budget
-<period> --collegium <id> --tokens <n> [--hours <n>]` creates or merges
-`aerarium/<period>.yml`, writing only `stipendium_tokens`/`stipendium_hours`
-under that collegium (`period` must match `^\d{4}-W\d{2}$`); like every
-command here its flag parser is strict, so an unrecognized flag (e.g. a
-`--burn-*` one, trying to write a derived key) is refused, not silently
-ignored.
-
-## The `.bisellium/` directory
-
-Every derived/local artifact `@bisellium/core`'s `Store` (and anything built
-on it — `apps/server`, `bisellium query --from-index`) owns lives under one
-gitignored directory at the studio root, so cleaning a studio's local state
-is always `rm -rf <studio>/.bisellium`:
-
-```
-<studio>/.bisellium/events.jsonl        the append-only event log (EVENTS_LOG_REL) —
-                                         `emit`/`handoff`/`answer`/`greenlight`/`budget`
-                                         (packages/cli/src/writes.ts), a Store's own
-                                         ingest(), and `bisellium hook-event tool` all
-                                         append here; nothing ever rewrites a line.
-<studio>/.bisellium/snapshots/<source>.json   the last snapshot a Store ingested for
-                                         one source (SNAPSHOTS_DIR_REL), so a restart
-                                         diffs against what it actually last saw
-                                         instead of replaying the whole studio as
-                                         newly appeared. One file per source
-                                         (`cli`, `server`, `query`, a sample studio's
-                                         adapter id, …) — sources never share a
-                                         sequence counter or a snapshot baseline.
-<studio>/.bisellium/index/index.db      the SQLite index (INDEX_DB_REL, `node:sqlite`)
-                                         every Store keeps fed from the log —
-                                         `opera_state`/`petitiones_state`/
-                                         `providers_state`/`events` tables, all
-                                         derived: `Index.rebuild()` drops and replays
-                                         them from `events.jsonl`, so a corrupt or
-                                         missing index.db is recovered (deleted and
-                                         recreated empty), never fatal.
-```
-
-A corrupt line in `events.jsonl` (fails to parse, or parses but isn't
-event-shaped) is dropped and counted (`Store.corruptLines`), never thrown —
-same "degrade, don't throw" discipline as every file-based reader in this
-document. `.bisellium/` is gitignored at every depth (`.gitignore`'s
-`.bisellium/` line, no leading slash) — under a studio dir, under
-`examples/sample-studio`, anywhere.
-
-## Running serve
+## Running waive
 
 ```bash
-npm run bisellium -- serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]
+npm run bisellium -- waive <opus> --gate <gate-id> --reason <text> --waived-by <decision-id> [--sella <id>] [--studio <dir>] [--now <iso>]
 ```
 
-`apps/server`'s `startServer` (wrapped by the CLI as `bisellium serve`) is a
-localhost-only HTTP + SSE surface over one studio: it binds `127.0.0.1`
-only, ingests one snapshot at start, and (unless `--once`) polls again every
-`--poll-ms`. It shares `EVENTS_LOG_REL`/`SNAPSHOTS_DIR_REL` with
-`@bisellium/core`'s `Store` so the two read/append the exact same
-`.bisellium/` files, though `apps/server` keeps its own small per-source
-(`"server"`) ingest bookkeeping rather than depending on `Store`'s class
-directly (see the file header comment on `apps/server/src/store.ts`). Reads:
+`waive` marks a `kind: human` gate as waived by a Patron decision. `reason`
+is required, non-empty prose; `waived-by` must name a decision that exists,
+parses and whose `by` equals the manifest's `patron` id (default "patron").
+The command merges these five keys into the gate node and commits: `status:
+waived`, `reason`, `waived_by`, `sella`, `at`. Any sibling keys on the gate
+survive; nothing else on the opus is touched.
 
-```
-GET  /api/officina                 the manifest: patron, collegia, sellae, probationes, wip_limit, tiers?, munera?, models?, lifecycle
-GET  /api/models                   D-023's model rows: the models.json record, merged with a live vendor listing (W-065)
-GET  /api/opera?state=&collegium=  every opus, filterable
-GET  /api/opus/:id                 one opus's front matter + body + probationes + traditio
-GET  /api/inbox                    needs-you: pending human gates + petitiones needing a reply
-GET  /api/acta?days=               digest entries within the last `days` (default 7)
-GET  /api/aerarium?period=         allowance + derived burn + posture per collegium
-GET  /api/providers?live=          provider status (usage.yml, or live quota-axi with live=1)
-GET  /api/health                   health.json if `tick` wrote one, else a fresh check summary
-GET  /api/timeline/:sella?limit=   that sella's (or the Patron's) timeline
-GET  /api/events?since=&limit=&item=  raw log events, with a stable `seq` a client can resume from; `item=` scopes to one opus
-GET  /api/receipts?sella=          receipts, all sellae or one
-GET  /api/live                     SSE: `data: <event>` for every newly-ingested event
-```
-
-**`GET /api/officina`'s `lifecycle`** (W-064) is `{ id, states }` from the
-served adapter's own `describeLifecycles()[0]` — the state→phase map the
-Board renders columns from, so no caller hand-copies lifecycle state ids
-(CLAUDE.md: "never by hand"). Additive: every pre-existing key is unchanged.
-
-**`GET /api/events`'s real limit/since semantics** (W-064 — never written
-down before, and got it wrong twice): an **omitted** `limit` is **unlimited**;
-a **supplied** `limit` is clamped into `[1,500]` and returns the **earliest**
-matching rows in ascending order; `since` is an **exclusive numeric seq
-only** — an ISO-timestamp `since` is silently treated as absent (`num()`
-discards any non-finite value), not refused and not resumed from. **`item=`**
-scopes the response to one opus, read fresh from `events.jsonl` (never the
-Index, which misses anything appended by another writer while the server
-runs); its `limit` means the **last** N, returned ascending; it carries no
-`seq`; and `item` combined with `since` answers `400` (nothing to resume
-from on a path with no seq).
-
-Writes reuse `packages/cli/src/writes.ts`/`talk.ts`/`pause.ts` verbatim (same
-validation, same exit codes, `stdout`/`stderr` captured into the JSON
-response body) and are refused from anything but `127.0.0.1`:
-
-```
-POST /api/answer      {petitio, reply, askBack?, charterGap?}
-POST /api/greenlight   {opus, decline?}
-POST /api/budget       {period, collegium, tokens, hours?}
-POST /api/handoff      {opus, sella, next, stage?, blockedOn?}
-POST /api/talk         {sella, message, harness?}
-POST /api/pause        {reason?}
-POST /api/resume       {}
-POST /api/delegate     {sella, model, from?} or {munus, tier, from?}
-```
-
-Every write route serializes through one per-server async lock, so two
-overlapping writes (e.g. two `/api/talk` calls, which can each take minutes)
-queue instead of interleaving through the shared `console.log`/`console.error`
-capture. `POST /api/_poll` (manual re-ingest) only answers outside
-`NODE_ENV=test` with a 404 — it exists for tests to force a poll
-deterministically, never a route a real client should call. `close()` ends
-every open `/api/live` connection before closing the HTTP server, so a
-connected SSE client never makes shutdown hang.
-
-### Writing from a browser (W-067)
-
-A write also requires an acceptable `Origin`. `checkWriteAuth` computes
-exactly two accepted strings once at startup, from the socket's own bound
-port (`server.address().port` — never `opts.port`, which is `0`/undefined
-in exactly the cases that matter):
-
-```
-http://127.0.0.1:<boundPort>
-http://localhost:<boundPort>
-```
-
-Both hosts are accepted deliberately: the server binds `127.0.0.1` only, but
-a browser's `Origin` follows the URL the page was loaded from, and
-`http://localhost:<port>/` reaches the same socket on every platform this
-runs on — accepting both admits nothing the other doesn't. An **absent**
-`Origin` is still accepted (curl, the CLI, every non-browser caller) — the
-token is what authorizes those, unchanged. A **present** `Origin` refuses
-with 403 unless it equals one of the two strings exactly: the literal
-`Origin: null` (a sandboxed iframe, `file://`, a redirect chain — a value,
-never confused with an absence), the right host on the wrong port,
-`https://` instead of `http://`, `http://[::1]:<port>`, and any foreign host
-all refuse the same way. No trust is ever derived from `Host` or any
-`X-Forwarded-*` header. **Reverse-proxy access is unsupported**: a proxy's
-`Origin` won't match either accepted string, and the remedy is to reach
-`serve` directly, never a header allowlist. Order is unchanged — Origin
-(403), then token (401), then Content-Type (415) — and the token is still
-required and still what authorizes: loopback plus a matching Origin alone
-authorizes nothing (W-016 behaviour 5, unbroken).
-
-The served console (`apps/web`) never has the token baked in. It reads
-`sessionStorage.getItem("bisellium.token")` only — `serve` prints a fresh
-random token to stdout at every start, and pasting it into the console's
-one-field prompt (mounted once in `App.tsx`, above the routed screen) is
-the only way the page learns it. The prompt reopens on any write's 401, not
-on the field merely being empty, so a stale or wrong token re-prompts
-instead of looping silent 401s. Nothing ever writes the token to
-`localStorage`, to disk, or into a URL.
-
-`POST /api/*`'s response is always HTTP 200 with `{ ok, exitCode, output }`
-for a *completed* command, success or refusal alike — a refused command
-(unknown record, a failed validation, any nonzero exit) is never a 4xx. A
-client's `res.ok` therefore means only "the HTTP call completed"; telling
-success from refusal means reading the body's own `ok` field, which is what
-`apps/web/src/api.ts`'s `postWrite` does (`WriteResult`: `"ok"`,
-`"refused"` for a 200/`ok:false`, `"unauthorized"` for a 401, `"error"` for
-anything else, including a thrown network failure).
-
-## Running tick, pause and resume
+## Running audit and close
 
 ```bash
-npm run bisellium -- tick [--studio <dir>] [--now <iso>] [--dry-run] [--repo <dir>]
-npm run bisellium -- pause [--studio <dir>] [--reason <text>]
-npm run bisellium -- resume [--studio <dir>]
+npm run bisellium -- audit <opus> [--sella <id>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- close <opus> [--reason <text>] [--sella <id>] [--studio <dir>] [--now <iso>]
 ```
 
-`tick` is L1 "scheduled" autonomy (dossier §10): it always runs `check` and
-writes `<studio>/health.json` (`at`, `ok`, `blocks`, `advisories`,
-`findingsByRule`, `autonomy`, `lastTick`, `due`) — even while paused, even
-when `check` has blocking findings. It then computes the DUE cadence list
-for collegia at `autonomy: L1` or above (the current ISO week is computed
-tz-aware, in the manifest's `timezone` — a studio near a week boundary at
-midnight UTC can be in a different ISO week locally): one `daily` per active
-collegium's magister who hasn't filed one today — "already filed" is true
-either from a parsed, valid `at` on today's date, or from the acta filename
-alone (`<date>-<sella>-daily.md`) matching today, so a daily with a corrupt
-`at` still counts and tick never spends a second harness turn re-filing it —
-the current ISO week's `aerarium` file if it doesn't exist yet, and any opus
-under an active collegium whose `traditio` is older than
-`handoff_stale_days`. `--dry-run` only prints what's due; otherwise `daily`
-items get a real acta written (talking to the magister's sella through
-`bisellium talk`'s programmatic seam, no CLI subprocess), its title and body
-passed through `redact()` first — a tracked, committed acta file must not
-carry a credential the model happened to include, same reasoning as `talk`'s
-own timeline entries — while `aerarium`/`traditio` items are reported only —
-writing either is a Patron/sella act, not tick's.
+`audit` reads the gates and state of an opus and outputs a text report of what
+blocks it, what waits on what, and what would be needed to move it forward
+(D-028: the audit chain is immutable; a later `close` or `done` accepts or
+refuses each gate/state as-is). `close` asks the same gates: every automated
+and agent gate must be passed (or exempted by `since`), and every human gate
+must be passed or honourably waived — same contract as `done`. If all pass,
+`close` transitions the opus to `done`, sets `end`, and commits. If any gate
+or state refuses, `close` exits 1 naming the first refusal and writing nothing
+(`audit` can see what it was). `reason` is recorded in the actum when the
+close succeeds; absent, a default is used. Because `close` is the produced
+gate, a producer or magister never runs it directly: a brief says "done when
+all gates pass", and `audit` surfaces obstacles. The producer reads the
+`audit` output, verifies prerequisites are met, and the building opus does the
+close itself (`bisellium done`) — only the closed opus commits and pushes
+(`git push origin <branch>`).
 
-`tick` also schedules the model probe cadence (W-071, the Patron's decreed
-dynamic refresh — `models.json`'s own writer is `bisellium probe`/W-069's
-battery, never tick itself). At most one `probe` due item per run, firing on
-either of two per-`(model, harness)` pair triggers: **age** — no
-`HarnessProbe` at all, an unparseable `at`, or an `at` older than
-`defaults.model_probe_stale_days` (default 7) — or **version** — the vendor
-CLI's live `--version` line differs from that *same pair's own*
-`probes[].harnessVersion` (never the record's top-level `harnessVersions`
-snapshot, which is a last-observed value, not a trigger). `undefined` on
-either side never fires. `--dry-run` prints `due: probe — N pair(s)` and
-spends nothing; otherwise tick runs the battery itself, capped at
-`MAX_PROBE_TURNS_PER_RUN` (12) turns — a pair the cap skips keeps its old
-evidence and heads the next run's queue, so a capped run never stalls a
-pair forever. A failing battery is reported on stderr and never fails the
-tick, the same posture a failing daily takes. `tick` finishes by writing
-a receipt under `receipts/tick/`. Exit codes: 0 `check` passed (or paused), 1
-`check` had blocking findings, 2 usage error / not a studio.
+## Running green
 
-`pause` writes `<studio>/PAUSED` (`{ at, reason }`); `resume` removes it.
-While paused, `tick` runs only the `check` + `health.json` step above and
-skips all cadence work — no acta, no receipt. The brake stops *starting*
-autonomous work, not talking: `run` and `talk` both proceed regardless while
-paused, each printing a one-line `warning: studio is paused …` first (the
-Patron talking to a sella directly is how you find out why it's paused).
+```bash
+npm run bisellium -- green <opus> [--audit] [--sella <id>] [--studio <dir>] [--repo <dir>] [--now <iso>]
+```
+
+`green` prints the state at which an opus would pass its gates if the given
+opus's `--repo` gate evidence were considered current, for diagnosis purposes
+(useful when a gate's evidence file was deleted externally and the opus's own
+record is ambiguous). With `--audit`, gates are also audited (see `audit`
+above) to understand blocking conditions. No gates are changed; the output is
+a report only. It exits 0 unless a usage error occurs.
+
+## Running review
+
+```bash
+npm run bisellium -- review --opus <opus> --round <n> --outcome <pass|fail> [--phase spec|build] [--sella <id>] [--model <id>] [--evidence <path>] [--studio <dir>] [--now <iso>]
+```
+
+`review` marks a gate as passed or failed, records the gate's round number,
+authoring sella, optional model, and timestamp in the opus front matter. Like
+`verdict`, it merges into the gate node and leaves siblings untouched. On a
+`fail`, it reopens the opus (`state: building`), clears `end` if one is set,
+and sets a `failed_round` marker that prevents `done` from succeeding until
+the gate is re-run and re-passed in a higher round number. On a `pass`, a
+passed gate is left alone (re-passing the same round number is silently
+accepted); a failed gate is unmarked and the `status` is updated to passed.
+If `--evidence <path>` is given, it is recorded as the gate's `evidence`; if
+omitted, the gate's existing evidence is left untouched.
 
 ## Running talk
 
 ```bash
-npm run bisellium -- talk --sella <sella> [--studio <dir>] [--harness <id>] [--model-only] [--now <iso>] <message…>
+npm run bisellium -- talk [--sella <id>] [--studio <dir>]
 ```
 
-`talk` is the Patron's direct line to one sella, driving its vendor CLI
-headless (docs/STUDIO.md §11: `claude -p --resume`, `codex exec --resume`)
-through a `@bisellium/shim` `HarnessProfile` — `claude-code` (tier 1),
-`codex` (tier 2), or `git-only` (tier 3: always "available", but talking to
-it is a contradiction in terms — `start`/`resume` refuse). Which profile a
-sella uses is its manifest entry's `harness` key (`sellae[].harness`,
-default `claude-code`), overridable per call with `--harness`. The boot
-bundle reaches `claude` via `--append-system-prompt-file <tmpfile>` (written
-just before the call, deleted right after) rather than as an argv token —
-an argv-sized prompt risks the platform's argv length limit and is visible
-in `ps`, neither a problem for a file.
+`talk` opens an REPL conversation loop (read-eval-print) that dispatches
+`query` messages to a per-sella agent model, stores the session state locally
+(gitignored), and echoes the agent's reply to stdout. The sella's model,
+harness and collegium are read from the manifest. See `bisellium context`
+(above) for how to boot a session with a sella's full context and examples
+of `query` shapes.
 
-A vendor CLI reporting a real usage/rate limit (`Turn.exitCode ===
-USAGE_LIMIT_EXIT_CODE`, mapped to `talk`'s exit 3 below) is detected only
-from signals a sella's own conversation can't fake by talking ABOUT a
-limit: for `claude-code`, the JSON envelope's own `is_error`/`subtype`/
-`error` fields, or stderr; for `codex`, stderr or a dedicated `error`-kind
-JSONL event. A reply's `result`/`agent_message` text (what the sella
-actually said) is never inspected for this — a sella relaying "we hit a
-rate limit yesterday" or mentioning "429" must be delivered normally, not
-mistaken for the harness itself being limited. `codex`'s event parsing also
-reads an `agent_message`/`assistant` reply wrapped in `item.completed`
-(`{ type: "item.completed", item: { type: "agent_message", text } }`, a
-shape some codex-cli releases use), not just a top-level event.
-
-A question `bisellium query` already answers deterministically (`status
-W-<id>`, `burn`, "what is blocked on me") is answered from the studio's
-files — printed as `query · <answer>` — without starting or resuming a
-harness session at all, unless `--model-only` forces the model path.
-Otherwise `talk` builds the sella's boot bundle (the same one `bisellium
-context` prints) as the system prompt, starts a session or resumes the last
-one recorded for that sella *on the same harness* (`sessions/<sella>.json`:
-`harness`, `sessionId`, `startedAt`, `lastAt`, `turns` — switching
-`--harness` starts a fresh session rather than resuming under a mismatched
-vendor), prints the reply, and appends both sides of the exchange to
-`timeline/<sella>.jsonl` (`at`, `sella`, `direction: in|out`, `text`,
-`sessionId`, `model`, `usage`). `talk` always runs in the studio root, never
-inside a worktree — worktrees are for `run`, which actually changes files;
-a conversation doesn't. Every vendor spawn a harness profile makes —
-`claude-code`'s and `codex`'s `start`, `resume` and `available()` alike, so
-the rule holds even for a bare `--version` probe — hands the child process
-only ten env names (`PATH`, `HOME`, `SHELL`, `TMPDIR`, `HTTPS_PROXY`,
-`https_proxy`, `HTTP_PROXY`, `http_proxy`, `NO_PROXY`, `no_proxy`), each
-copied verbatim from the parent if set (`harnessEnv`,
-`packages/shim/src/harness/env.ts` — not a `@bisellium/shim` export).
-Everything else is dropped, an endpoint or auth override and a vendor
-variable that doesn't exist yet included: a talked session authenticates
-only with the vendor login stored under `HOME`, never an ambient
-`ANTHROPIC_BASE_URL`/`ANTHROPIC_AUTH_TOKEN` or similar left in the
-operator's shell. `run -- <cmd>` is not a harness spawn — it's the
-operator's own command, attributed to a sella, and keeps the operator's
-env unfiltered.
-
-A harness turn that comes back with no usable `sessionId` (empty or
-non-string) is never persisted or resumed against: it's recorded as a fresh
-start (`sessions/<sella>.json`'s `sessionId: null`, with a `note` on both of
-that turn's `timeline/<sella>.jsonl` entries), and `readSession` treats any
-stored record whose `sessionId` isn't a non-empty string the same way — as
-if there were no session file at all, so the next call starts fresh again
-rather than ever resuming against `""` or `null`.
-
-A conversation is chatter (dossier: STUDIO.md §5) unless it escalates: a
-reply line starting `PETITIO: <text>` opens a petitio addressed to the
-patron (the next `P-NNN` under `petitiones/`, `from` the sella, `state:
-needs_you`) and `talk` prints `petitio P-NNN opened`; a line starting
-`ACTUM: <text>` writes a `kind: decision` acta entry authored by the sella.
-Everything else in the reply stays in the timeline only — silence (or an
-ordinary reply) binds nothing, same as any other acta. Three guards apply
-before a line counts as either: it must be **top-level** (`^PETITIO:`/
-`^ACTUM:` with no leading whitespace — a line nested under a list or
-blockquote never matches), **unfenced** (not inside a ` ``` … ``` ` block —
-a sella quoting an example must not accidentally escalate), and **not an
-echo**: a line whose trimmed text already appears verbatim in the boot
-bundle sent as that turn's system prompt (e.g. a `PETITIO:`-looking line
-inside another petitio's body, embedded as context) is content, not a fresh
-instruction to escalate, and is skipped. Usage-limit detection itself never
-looks at reply text either (below) — only a harness's own envelope/event/
-stderr signal ever produces the exit-3 path this section's petitio/decision
-logic runs after.
-
-`talk` writes a run receipt exactly like `bisellium run` does
-(`receipts/<sella>/<sessionId>.json`), with `harness` set to the profile id
-that actually ran instead of `"run"`. Exit codes: 0 ok (including the
-deterministic-query fast path) · 1 the harness exited 0 but the reply was
-empty — refused as a failure, nothing persisted (session, timeline and
-receipt alike; see below) · 2 usage error / not a studio / unknown sella /
-unknown or unavailable harness (one-line reason) · 3 the harness reported a
-usage/rate limit, printed as `<sella> is limited on <harness>; try again
-after <reset if known>` · anything else is the harness's own exit code,
-relayed as-is.
-
-**The `claude-code` profile's talk boundary is deny-by-default (W-044).**
-Both `start` and `resume` pass `--restricted` (ignores every user/project/
-local settings file, confines file tools to the studio root), `--strict-mcp-
-config` (no MCP servers), `--permission-mode dontAsk` (anything not
-pre-approved is denied, never prompted for), `--tools Read,Grep,Glob,Bash`
-(`WebFetch` is not admitted — paired with `Read` it would be the profile's
-only egress), and an `--allowedTools` list admitting exactly `Read`, `Grep`,
-`Glob`, and seven `Bash(bisellium …)` rules for `context`, `query`, `check`
-and the bare `bisellium` usage banner. `providers` is not admitted either —
-its default source spawns `npx --yes quota-axi`, a network fetch plus
-third-party code that neither `talk` nor `tick`'s unattended daily needs; the
-cached provider posture is already in the boot bundle. A `claude` binary
-that doesn't recognize `--restricted`/`dontAsk` exits non-zero and `talk`
-relays that failure closed, which is intended.
-
-**The decreed model reaches both profiles, and codex gets its own command
-policy (W-046).** The model `talk` uses is decreed by the manifest —
-`sellae[].model` — and travels from there into whichever profile the sella's
-harness resolves to; `talk` itself has no `--model` flag, and no `--model`
-flag is ever accepted (models are decreed, per D-020; a per-call override
-would be a route around that decree — `--harness` already exists for the
-one axis an operator legitimately switches). Nothing is ever read from
-`process.env`, a vendor config file, or a session being resumed. On
-`claude-code` it is passed as `--model <id>` (ahead of the W-044 policy
-flags above — `--allowedTools` is variadic and terminal, so anything added
-after it would be silently eaten as a tool name); a `claude` binary that
-doesn't recognize the requested model exits non-zero with a parseable
-envelope on stdout whose own `result` names the problem (e.g. "There's an
-issue with the selected model…") and a separate stderr line
-(`[claude-code:unrecognized_model] {…}`) — both useful, both different. On
-any failed turn, `talk` relays the exit code **and both** of the vendor's
-own captured diagnostics — the envelope's own error text and the vendor's
-stderr line, whichever of them exist — joined, bounded, redacted, never
-parsed or branched on (behaviour 7) — and nothing stronger, so a sella
-whose declared model doesn't belong to its harness stops silently running
-on the wrong model and starts failing loudly and readably. On
-`codex` it is
-passed as `-m <id>`, alongside a module-local command policy applied
-identically by `start` and `resume` (`codex exec resume` rejects
-`-s`/`--sandbox` on codex-cli 0.153.4, so the sandbox mode travels as
-`-c sandbox_mode=read-only` instead, which both spawns accept):
-`--ignore-user-config`, `--ignore-rules`, `-c sandbox_mode=read-only`,
-`-c model_provider=openai` (passed explicitly because
-`--ignore-user-config` drops the config file that used to supply it), and
-eight `--disable` feature pairs — `--disable browser_use`, `--disable
-browser_use_external`, `--disable browser_use_full_cdp_access`, `--disable
-in_app_browser`, `--disable apps`, `--disable plugins`, `--disable
-remote_plugin`, `--disable plugin_sharing` — each measured stable and
-enabled by default on codex-cli 0.153.4, flipped to `false` by `--disable`.
-**That list is the whole achievement on the tool surface — those eight
-names, not "no egress."**
-
-**CORRECTED, round 2 (censor F-1): a live vendor-side web fetch/search
-channel survives the whole policy, closed by none of the eight `--disable`
-names.** Measured under the exact shipped argv, twice, with a hallucination
-control: a talked codex session can fetch a live, moving value over the
-network (`web.run`) and report it back. The fetch runs vendor-side, so
-neither the studio's bubblewrap sandbox nor `sandbox_mode=read-only` touches
-it. No egress-closing flag is specified here, because none was probed;
-whether one exists is the follow-on's question.
-
-**This is not W-044 parity, and the gap is signed, not hidden: codex's
-policy here is not equivalent to the claude profile's.** Five residuals,
-carried forward until a build-shaped follow-on opus can close them, egress
-first because it is the largest: **egress is open, paired with unbounded
-reads — the exact pairing W-044 refused.** `sandbox_mode=read-only` permits
-every read the operator can perform, including `~/.codex/auth.json` (a
-talked claude session cannot run `cat` at all), and a live web fetch/search
-channel survives alongside it; W-044 dropped `WebFetch` from the claude
-profile because, in its own words, "paired with `Read` it would be the
-profile's only egress" — the codex profile ships with both halves of that
-pairing. **No tool allowlist** — claude enumerates what may run; codex
-offers only a denylist of eight named features, and a denylist goes stale
-the day a new feature ships. **AGENTS.md still loads** — neither the user's
-nor the project's is covered by any flag here. **Configuration channels
-beyond the user config file are unmeasured** — project, managed, system and
-cloud defaults are residual, not proven absent. Codex authenticates only
-from the default login location,
-`$HOME/.codex/auth.json`; `CODEX_HOME` and `OPENAI_API_KEY` are
-deliberately not passed (off W-049's ten-name env allowlist by design), so
-a custom config home or an API-key-only login does not work through a
-bisellium-spawned codex.
-
-## Running probe
+## Running emit and providers
 
 ```bash
-npm run bisellium -- probe [--studio <dir>] [--model <id> --harness <id>] [--dry-run] [--now <iso>]
+npm run bisellium -- emit [--usage <json>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- providers [dir] [--source auto|usage|quota-axi]
 ```
 
-W-069's battery: one minimal real turn per due `(model, harness)` pair,
-recorded in `<studio>/models.json`. `--model`/`--harness` are a pair —
-either both or neither; given one without the other the command refuses
-before any spend. `--dry-run` reports the candidate pairs it would probe
-and writes nothing.
+`emit` records a timestamped workflow event (one line, newline-terminated)
+in the studio's `events.jsonl` file (not committed). `--usage` reads a JSON
+object from stdin and records its summary for telemetry; see `bisellium
+retro` for the schema. `providers` queries the current provider status from
+`usage.yml` and/or the quota-axi live API (when available), reporting one
+JSON row per provider with id, usage percentage, reset timestamp and status
+(`ok` | `conserve` | `closeout` | `limited`). Default source is `auto` (both
+quota-axi and usage.yml, quota-axi wins). `usage` and `quota-axi` read one
+source each. The resulting status is not a decision, only a reading from
+which the orchestrator can reason about dispatch.
 
-**"Available" means the model can complete a turn — never "it appears in a
-vendor listing."** The signed limit, narrowed from `talk`'s own policy:
-
-> `available` means: this model, on this harness, completed one minimal
-> turn under `talk`'s permission and tool policy, at the recorded time. It
-> does **not** prove the model can carry `talk`'s ~42k-token boot bundle — a
-> probe sends `systemPrompt: ""`. A model whose context window or prompt
-> handling fails only at that size will be recorded `available` and will
-> still fail a real `talk`.
-
-A harness cannot condemn a model without a passing control first (the
-lowest-id seated candidate on that harness); a structured 401/403 or a
-usage limit stops that harness rather than writing a model-level verdict.
-Every write is mark-before-spend (every due pair is durably `unverified`
-before any turn) and atomic (temp file + rename), so an interruption can
-only ever leave a pair `unverified`, never falsely `available`. `probes[]`
-carries one entry per probed harness; `ModelEntry.state` is the optimistic
-aggregate W-065's `GET /api/models` already reads — a model available on
-*any* harness renders `available`, even if the seat that would actually
-run it is on a different, failing harness. `bisellium probe` prints a
-warning when one id's harnesses disagree; nothing routes on `models.json`
-until the opus that wires dispatch says so.
-
-## Harness hooks (Claude Code)
+## Running tick
 
 ```bash
-npm run bisellium -- hooks print --harness claude-code --sella <sella> [--studio <dir>]
-npm run bisellium -- hooks check --harness claude-code [--studio <dir>]
-npm run bisellium -- hook-event <start|stop|tool|compact> --sella <sella> [--studio <dir>]
+npm run bisellium -- tick [--studio <dir>] [--repo <dir>]
 ```
 
-Where `talk` drives a harness directly, hooks let the harness drive itself:
-running a sella straight inside Claude Code (no `bisellium talk` subprocess)
-while still leaving the same receipts and events a subprocess run would.
-`hooks print` prints (never writes) the `.claude/settings.json` block to
-paste in by hand: `SessionStart` runs TWO commands — `bisellium context`
-(its stdout becomes the sella's injected boot bundle) and `hook-event start`
-(opens the session's receipt) — `PreCompact` re-runs just `bisellium
-context`, and `Stop`/`PostToolUse` (`Write`/`Edit` only) wire to `hook-event
-stop`/`hook-event tool`. `SubagentStart` is intentionally left unwired — a
-subagent has no sella of its own to hand a receipt or boot bundle to.
+`tick` runs cadence work for the studio: evaluates every `L1+` collegium's
+own magisters' daily cadence entitlements and invokes their `lex` rules in
+order, with a memo of today's earliest cadence call. Cadence (D-024) is
+scheduled work by a magister — answering petitiones, closing daily digests,
+reviewing queued items — that must happen once per calendar day and is
+separately scoped from operatic work. Rules are drawn from the magister's
+lex (see "LEX_TEMPLATE.md"); each rules receives an invocation context with
+the current officina state, today's date, and the magister's collegium
+settings. A rule must return a truthy result (string description or object
+field) to mark the day as done and bar further rules for that magister;
+falsiness (empty string, false, empty array/object, etc.) is treated as
+"not yet done; continue to the next rule". Rules are author-responsible for
+error-handling; a thrown exception stops execution and is reported with a
+brief diagnosis.
 
-`hook-event` is the actual command each hook runs: it reads the hook's JSON
-payload from stdin and always exits 0 (at most one line to stderr on any
-failure) — a broken studio must never block the harness. `start`/`stop`
-write and close a `receipts/<sella>/<sessionId>.json` receipt exactly like
-`bisellium run`'s (`harness: "claude-code"`); `stop` also prints a one-line
-reminder when that sella's active opus has a `traditio` older than 24h.
-`start`/`stop` treat the payload's `session_id` (and `--sella`) as untrusted
-input joined straight into that path: either one failing
-`/^[A-Za-z0-9._-]{1,128}$/` (no separators, no bare `.`/`..`, bounded length)
-is refused — one short stderr line, still exit 0 — rather than ever writing
-outside the studio dir or letting an oversized value blow up the error text.
-`tool` appends one `workflow.tool_used` event to `<studio>/.bisellium/events.jsonl`
-(the same log `@bisellium/core`'s Store reads), with the touched file path
-redacted the same way a run receipt's argv is. `compact` appends a note to
-`timeline/<sella>.jsonl`.
+Optionally pass `--repo <dir>` to check locking down the studio's own
+records to a clean sourced state before invoking a rule (that is, the
+working-tree and index must be clean relative to the tree the rule is
+about to read, as in `verify` above). This is not enforced by default — a
+rule may deliberately read a dirty state — but setting it will refuse any
+dirty working tree and help catch accidental edits or partial commits.
 
-`hooks check` reports each declared sella's most recent hook receipt and
-flags `hook dead`: a sella whose harness is `claude-code` (the default) but
-whose last few receipts (default 3) carry no `harness: "claude-code"` entry
-— advisory, never a hard failure, and only once the studio has *some*
-receipt history (a never-run studio isn't "dead", it's just new). `check`'s
-own `hook.dead` rule reports the same thing for every studio check already
-runs.
-## Disposable builder execution and review admission
+`tick` exits 0 if every collegium's cadence completed or was skipped
+(not due yet), 1 if a rule returned an error, or 2 if a magister's lex
+could not be read or parsed. The output is a JSON snapshot of today's
+`health.json` file — cadence dues, tick results, model probe results,
+etc. — and each digest entry the run produced is timestamped and appended
+to that magister's `acta/<date>-<role>-daily.md`.
 
-Builder-class `bisellium run` dispatches are different from the generic
-runner. A builder needs an effective opus from `--opus` or its instance
-suffix; a mismatch, `--base`, or `--no-worktree` is refused. `--keep` keeps
-host diagnostics and published commits only. It never keeps the runtime.
+## Running pause and resume
 
-The producer pins `opus/<id>` and `master`, takes an exclusive publication
-lease, and makes a `git clone --no-local --no-hardlinks --dissociate` with no
-remote or alternates. The clone is mounted into a bubblewrap PID/user/mount/
-network namespace. Raw `.git` is read-only. The only `git` on `PATH` is a
-host broker which allows reads, staging and ordinary commits on the owning
-branch, fixes identity/config/hooks, and rejects ref/config/reset/stash/
-remote/destructive operations. The child starts from an empty environment
-with only the runtime allowlist, private home/temp/npm paths, no credentials
-or proxy variables, private loopback, and no external tool-runtime egress.
-If this outer boundary, the broker, dependency preparation, or the retained
-child/grandchild/index/temp/loopback probe is unavailable, dispatch fails
-closed before source work.
+```bash
+npm run bisellium -- pause [--studio <dir>]
+npm run bisellium -- resume [--studio <dir>]
+```
 
-After the builder exits, only clean commits descending from the pinned tip
-and touching the brief's `Files owned` are eligible for export. Protected
-officina/evidence paths, extra refs, working files and dependency directories
-are never imported. Publication is compare-and-swap. The producer kills the
-whole process group, closes broker/network endpoints and deletes all private
-runtime paths on every exit path. Cleanup failure is failure.
+`pause` writes a gitignored marker file (`PAUSED`) in the studio directory.
+`tick` checks for it and refuses to run any cadence when present. `resume`
+removes it. The pause is manual — the only way to set or clear it is through
+these two verbs. It is useful as a blocker when orchestration is interrupted
+(a session crashed mid-cascade, a provider became unavailable, etc.) and the
+studio needs a human judgment before automation resumes.
 
-Only after disposal does the producer use the pinned host-master controller
-to replay clean committed reds and run the fixed CI, verify and check gates
-in fresh candidate checkouts. A successful existing run receipt gains a
-`completion` object with `origin: host-producer`, opus/branch/builder/producer,
-base and final commits, final SOURCE tree, tooling commit, red replay claims,
-all three gate outcomes, teardown completion and final exit zero. The opus's
-`run_receipt` is a contained repository-relative pointer written only after
-all of those conditions succeed.
+## Running retro
 
-Both `review --pass` and `review --fail` run the same admission check before
-reading evidence or changing a gate/event. The receipt must be a contained
-regular file in `receipts/`, host-produced and complete, for the same opus and
-owning branch, reachable from the clean current checkout, and certify its
-current SOURCE tree. Missing, malformed, forged, failed, incomplete, dirty,
-unreachable or stale receipts remain historical evidence but cannot admit a
-new review. `verdict` remains transcript-only and grants no admission.
+```bash
+npm run bisellium -- retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+```
+
+Drafts a retrospective acta for a cascade: findings, lessons, addressed
+patterns, recurring classes that became petitiones or rules, and pruning
+candidates for decisions. Every lesson's evidence must exist and be
+reachable. Validates and exits 2 if any evidence path is a dead href, a
+symlink, a non-regular file or outside the officina. Exits 1 if findings
+validation fails (e.g., a review's findings list is empty or malformed).
+Exits 0 and drafts an acta file in `studio/acta/<date>-retro-<cascade>.md`
+when validations pass. The draft is not committed — the producer reviews it
+and commits/amends it manually. May be run multiple times for one cascade;
+an existing retro is never overwritten.
+
+## The pattern language and `decision.kill_when`
+
+A decision's `kill_when` is a plain-English description of an observable
+that would let it go stale. The retrospectio reads it when fitting (every
+retro names decisions whose kill conditions are satisfied, as candidates
+for pruning), but nothing *enforces* a kill — an expired decision stays
+decided until someone explicitly supersedes or deletes it (that is, by
+hand, or by a curator verb that does not exist yet). The language is prose,
+not a DSL: it names what the evidence would look like (`two consecutive
+cascades with no red in the tests gate`) or when the decision's intent is
+clearly obsolete (`W-X is shipped`). Lessons record `evidence` paths that
+must exist; decisions record `kill_when` text that is matched against retro
+findings and cited when the decision looks ready. Both support the
+retrospectio's reading and neither is executable.
+
+## Running branch, merge and prune
+
+```bash
+npm run bisellium -- branch <opus> [--base <ref>] [--studio <dir>] [--repo <dir>] [--now <iso>]
+npm run bisellium -- merge <opus-id> [--force-with-lease] [--studio <dir>] [--repo <dir>] [--now <iso>]
+npm run bisellium -- prune [--aggressively] [--studio <dir>] [--repo <dir>]
+```
+
+`branch` creates a git branch `opus/<id>` and checks it out in a new worktree,
+pinning a `baseline_commit` for W-096's museum (an immutable record of
+records' byte-for-byte form at that commit). The worktree lives under
+`<repo>/.bisellium/worktrees/`, is registered with `git worktree list`, and
+is ready for work (`git checkout opus/<id>` in the main checkout to switch to
+it; `git worktree remove` to remove it, both after `git branch -D opus/<id>`
+locally and/or `git push origin :opus/<id>` to remote). The branch is tied to
+one opus; deleting the branch does not remove the worktree. `bisellium branch
+<X> --base Y` overrides the branch point (default `HEAD`).
+
+`merge` lands an opus branch onto the current trunk, fast-forward if possible.
+Requires the opus to be `done` on its branch (read from the branch's own
+record), every gate passed and — under the manifest's `integration:` strategy
+— observing that strategy (default: fast-forward, no push). A passed
+automated gate's tree certificate is re-verified against the merged result
+(post-rebase, if rebasing) and refused if stale. Every file read during
+`merge` that involves the opus record, tree hashing, or certificate matching
+comes from the opus branch's own committed state, not a working-tree read.
+`--force-with-lease` passes `--force-with-lease` to the underlying git push
+(only relevant when `integration: { push: true }`). Exit 1 if the opus is not
+done or a gate failed; exit 2 if not a studio or repo, or the opus is not
+found; exit 0 otherwise.
+
+`prune` removes merged `opus/*` branches for `done` opera locally, and
+reclaims stale `.bisellium/worktrees/` directories (unmerged, abandoned, or
+whose branch is fully merged). Useful to keep the repo tidy; `--aggressively`
+includes more heuristics for stale detection (useful after a filter-branch or
+history rewrite). A branch not yet merged is left alone.
+
+## Design constraints (read once)
+
+These are structural constraints on work planning, not requests to implement
+specific features. They are here because they bind orchestration and testing
+and are visible to every reader of the studio's records. Violations are not
+bugs — they are renegotiations. "This constraint is wrong for our project"
+is a judgment for the Patron, not a memo to leave for future cascade runs.
+
+1. **Operatic work is bounded.** WIP count is studio-wide, fixed in the
+   manifest (`wip_limit`), enforced by the checks. A magister who hits the
+   cap must prioritize, not wait for space. Estimating a long cascade at 12
+   rungs (today: greenlight, spec, branch, ready, reds, build, review, pr,
+   merge, cleanup, done, checkpoint) ≈ 72 hours of calendar time at 6h/rung.
+
+2. **State is minted once.** An opus's `state`, `start` and `end` are
+   written by exactly one verb in exactly one mode. `ready` → `start`,
+   `done` → `end`, `review --fail` → reopen/clear `end`. No other writer,
+   no inference from gates, no reset or re-inference after the fact. The
+   one-writer rule is enforced by the CLI signature only — no locking,
+   only by calling convention.
+
+3. **Evidence is produced, not backfilled.** A gate's `evidence` path and
+   `certifies` hash are written by the command that produced the evidence,
+   never by a later command reading what that command left. An `audit` or
+   `done` gate-check that finds evidence missing is not a permission to fill
+   it in later. Missing evidence is a gate refusal. Evidence integrity (e.g.,
+   timestamp, tree hash) is the authoring command's responsibility.
+
+4. **Decisions are prophecies.** A `decision.kill_when` is a prediction about
+   the future that the studio can verify. It is not a memory ("we decided
+   this because...") — rationale goes in the decision's body. It is not a
+   rule ("do this to stay compliant") — rules are rules. A decision with no
+   falsifiability constraint is a belief, not a decision, and is refused.
+
+5. **Scope is explicit.** Every opus has a spec that names files owned, API
+   behaviour under test, and acceptance criteria. A spec lives in the
+   officina and is passed as a gate before building. A gate that is missed
+   or corrupted is visible in the audit trail (record, evidence, round
+   number, gate history). No building without a spec.
+
+6. **Provenance is minted at the boundary.** Every opus record change,
+   gate, digest and decision is authored (`sella`, `at` timestamp,
+   optional `model`). The git commit is one of many records inside one
+   officina instance; provenance names the record's writer and when. Every
+   git commit is authored (`git config user.name`, `git config user.email`)
+   and may carry a `Co-Authored-By:` trailer naming the team member (sella)
+   or model (agent) that did the work.
+
+7. **Rules are checked, not read.** Process is enforced by a validation rule
+   (`check` rule, test assertion, gate) or a verb's own refusal contract,
+   never by a memo, email or shared understanding. If something must
+   happen, it is a rule that can fail the build or an audit check. If it is
+   only a note, it is advisory prose and belongs in a decision's body or a
+   lesson, not in the Patron's handoff.
+
+## Running handoff
+
+```bash
+npm run bisellium -- handoff <opus> [--stage <name>] [--next <name>] [--blocked-on <name>] [--sella <id>] [--studio <dir>] [--now <iso>]
+```
+
+`handoff` records `traditio` (handed-off state) in the opus front matter,
+one of `opus.sella`, `opus.traditio` or both. A gate-level handoff would be
+recorded by `verify` or `review` — this is the opus-level one, a checkpoint.
+`stage` names where the work currently lives (e.g. building, review, waiting
+on architect input); `next` names what is expected next (`await spec`, `await
+review`, `await Patron decision`, etc.); `blocked-on` names a collegium
+whose decision is needed. Expect to see `traditio` records at every cascade
+checkpoint, roughly hourly during active work. `traditio.at` is the
+handoff's timestamp; `traditio.sella` is the recording sella; `traditio.stage`
+and `traditio.next` are free text. They are advisory — the source of truth
+is each gate and its own evidence.
+
+## Deploying the console
+
+The console (`apps/web`) is a React app built by Vite and served from the
+studio by `bisellium serve <port>` (default 3000, `--studio studio`). The
+console is not a build artifact, not a versioned release and not blessed by
+any gate; it is what the studio's current code builds from the current state
+and serves. It is useful as a Patron dashboard and as a demonstration to
+stakeholders, but the real state lives in the officina's files, not in the
+console's cache.
+
+The studio's Patron writes directly through the console (decisions,
+greenlights, budget allocation). The console reads work state from the local
+officina, the serve process's SQLite index of gate evidence, and from
+GitHub (milestones, issue state, PR status, Advanced Security findings) via
+`gh`. It does not write to GitHub — the CLI owns the commits, the Patron
+owns the work state. The console is therefore "read-mostly" (Patron writes
+only), and "read-through" (it caches nothing, queries the current tree and
+index on every view).
+
+Deploying to the public internet would require: authentication (the console
+currently trusts its localhost loopback), TLS, and credentials isolation
+(the serve process's `gh` agent runs in the deployment namespace and must
+not leak secrets or carry unvetted access). Those are future work — `bisellium
+serve` is a local tool, not a production service.
