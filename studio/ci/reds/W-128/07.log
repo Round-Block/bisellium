@@ -1,0 +1,37 @@
+# behaviour: 7
+# command: node --test-reporter=tap --import tsx packages/cli/src/ladder-followon.test.ts --behaviour 7
+# exit: 1
+# at: 2026-10-02T11:33:13.278Z
+# sella: builder.W-128
+# tree: tree:da60f7a7d456c6c318586cc890fccc3fc035c463
+
+TAP version 13
+# Subtest: W-128 behaviour 7: a spec or done that must still land names the gh path, not the scripts, and switches to master before it pulls
+not ok 1 - W-128 behaviour 7: a spec or done that must still land names the gh path, not the scripts, and switches to master before it pulls
+  ---
+  duration_ms: 4.141254
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:10:1221'
+  failureType: 'testCodeFailure'
+  error: '7c: the spec command does not name scripts/ (scripts/open-pr.sh "spec(W-900): signed" <body-file>, then scripts/merge-gate.sh <pr-number>)'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-128/packages/cli/src/ladder-followon.test.ts:485:14)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14.036716
