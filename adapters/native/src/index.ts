@@ -368,6 +368,9 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> => typeof v ===
 export function validateOpusFront(data: unknown): string | undefined {
   if (!isPlainObject(data)) return "record is not a mapping";
   if (typeof data["id"] !== "string") return "id is not a string";
+  // Every string the board renders from a record must be a string (React throws on an object child).
+  for (const key of ["sella", "kind", "collegium"])
+    if (data[key] !== undefined && typeof data[key] !== "string") return `${key} is not a string`;
   if (typeof data["state"] !== "string" || !STATES.some((s) => s.id === data["state"])) return "state is not a declared state";
   const gates = data["probationes"];
   if (gates !== undefined) {
@@ -375,6 +378,8 @@ export function validateOpusFront(data: unknown): string | undefined {
     for (const gate of Object.values(gates)) {
       if (!isPlainObject(gate)) return "a gate is not a mapping";
       if (typeof gate["status"] !== "string" || !(PROBATIO_STATUSES as readonly string[]).includes(gate["status"])) return "a gate status is not valid";
+      for (const key of ["evidence", "certifies"])
+        if (gate[key] !== undefined && typeof gate[key] !== "string") return `a gate ${key} is not a string`;
     }
   }
   const tokens = data["tokens"];

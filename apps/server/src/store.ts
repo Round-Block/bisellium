@@ -191,7 +191,7 @@ function readPausedAt(studioDir: string): { paused: boolean; at?: string; reason
 // this brief tests /api/health's `due` contents; upgrade to the real
 // computation (shared from somewhere apps/server may depend on) if that
 // ever changes.
-function computeDueSummary(studioDir: string, manifest: Manifest, now: Date): { kind: string; id: string }[] {
+function computeDueSummary(studioDir: string, manifest: Manifest, now: Date, overlay?: Overlay): { kind: string; id: string }[] {
   const due: { kind: string; id: string }[] = [];
   const activeCollegia = manifest.collegia.filter((c) => (c.autonomy ?? "L1") !== "L0");
   if (activeCollegia.length === 0) return due;
@@ -202,7 +202,9 @@ function computeDueSummary(studioDir: string, manifest: Manifest, now: Date): { 
   const activeCollegiumIds = new Set(activeCollegia.map((c) => c.id));
   for (const p of listMd(join(studioDir, "opera"))) {
     try {
-      const { data } = readFront<{ id?: unknown; collegium?: unknown; traditio?: unknown }>(p);
+      const disk = readFront<{ id?: unknown; collegium?: unknown; traditio?: unknown }>(p).data;
+      // W-129: a branch-owned record's handoff is the live one, not the trunk's frozen copy.
+      const data = (typeof disk.id === "string" ? overlay?.get(disk.id)?.data : undefined) ?? disk;
       if (typeof data.id !== "string" || typeof data.collegium !== "string" || !activeCollegiumIds.has(data.collegium)) continue;
       const traditio = data.traditio;
       const at = typeof traditio === "object" && traditio !== null ? (traditio as Record<string, unknown>)["at"] : undefined;
@@ -473,7 +475,7 @@ export class Store extends CoreStore {
       const findingsByRule: Record<string, number> = {};
       for (const f of result.findings as { rule: string }[]) findingsByRule[f.rule] = (findingsByRule[f.rule] ?? 0) + 1;
       const pause = readPausedAt(this.studioDir);
-      const due = computeDueSummary(this.studioDir, manifest, now);
+      const due = computeDueSummary(this.studioDir, manifest, now, this.overlay);
       const autonomy: { paused: boolean; since?: string; reason?: string } = { paused: pause.paused };
       if (pause.paused && pause.at) autonomy.since = pause.at;
       if (pause.paused && pause.reason) autonomy.reason = pause.reason;

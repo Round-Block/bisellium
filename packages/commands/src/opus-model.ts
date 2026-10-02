@@ -325,7 +325,7 @@ export function reviewFailedAtCertifiedTree(
   if (typeof gates !== "object" || gates === null || Array.isArray(gates)) return false;
   const gate = (gates as Record<string, unknown>)[ctx.reviewId];
   if (typeof gate !== "object" || gate === null || (gate as Record<string, unknown>)["status"] !== "failed") return false;
-  if (ctx.automatedIds.length === 0) return true;
+  if (ctx.automatedIds.length === 0 || typeof record["id"] !== "string") return true;
   const evidence = (gate as Record<string, unknown>)["evidence"];
   if (typeof evidence !== "string") return true;
   const log = readContainedRegularFile(root, evidence, "ci");

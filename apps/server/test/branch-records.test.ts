@@ -530,6 +530,11 @@ if (runs(5)) {
         ["tokens a string", (t) => fmSet(t, "tokens", '"x"')],
         ["probationes a list", (t) => fmSet(t, "probationes", "[ a, b ]")],
         ["a bogus gate status", (t) => fmSet(t, "probationes", "{ tests: { status: bogus } }")],
+        ["an object sella", (t) => fmSet(t, "sella", "{ a: 1 }")],
+        [
+          "an object gate evidence and certifies",
+          (t) => fmSet(t, "probationes", "{ tests: { status: passed, evidence: { a: 1 }, certifies: { b: 2 } } }"),
+        ],
       ];
       await serving(r.studio, async (run) => {
         const alive = async (label: string): Promise<void> => {

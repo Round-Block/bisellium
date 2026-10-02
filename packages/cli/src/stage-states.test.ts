@@ -745,6 +745,15 @@ if (runs(13)) {
       reviewRecord(loose, "ci/W-120-review-1.log");
       assert.equal(blocks(loose), 1, "13(n): an older-tree header followed by a loose header line and a later tree line blocks");
     }
+
+    // (o) a record with no string id and a log with no opus header must not count as a proven older tree
+    {
+      const anon = fixture("b13o");
+      writeFileSync(join(anon.studio, "ci", "W-120-review-1.log"), ["# phase: build", "# round: 1", `# tree: tree:${H1}`, "", "findings", ""].join("\n"));
+      reviewRecord(anon, "ci/W-120-review-1.log");
+      writeFileSync(anon.record, readFileSync(anon.record, "utf8").replace("id: W-120\n", ""));
+      assert.equal(blocks(anon), 1, "13(o): a record with no id and a log with no opus line blocks");
+    }
   });
 }
 
