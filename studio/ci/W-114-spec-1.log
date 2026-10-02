@@ -1,0 +1,98 @@
+# opus: W-114
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: revise — prereview 1 MUST, sec 1 HIGH + 3 MED
+# at: 2026-10-02T08:40:12.155Z
+# tree: tree:4616aa446de728e13da75b8eb2c4114717924ef1
+
+W-114 spec prereview — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 1. PREREVIEW: REVISE, 1 MUST, 4 SHOULD.
+
+Method: read context.ts, writes.ts (runAnswer), hooks.ts (handleContext), check.ts; replayed every behaviour's CLI rows
+against temp copies of examples/sample-studio (node --import tsx packages/cli/src/main.ts, cwd = the spec worktree).
+
+MUST
+1. Behaviour 2 contains a row that cannot pass after the fix, and a Measured-state claim that current code falsifies.
+   Brief l.50 ("`check` on the answered officina: Exit 0, no `petitio.*` finding") and Behaviour 2 (l.183-184, "`check F --now NOW`
+   exits 0 and prints no `petitio.` line") are false. Replay on a pristine copy, before AND after the answer, exit 0 but prints
+   `petitio.subject  petitiones/A-1.md  no subject (falls back to the derived legacy subject)` and the same for A-2 (check.ts:681,
+   level "advise"). So that row fails today, fails after the fix, and fails before the l.222-style "Genuine red" row is reached:
+   the recorded red for behaviour 2 would name the wrong row, and green is unreachable. Fix: assert exit 0 and no `block`-level
+   finding (`check --level block` prints no `petitio.` line, or `--json` findings filtered to level block), and say in l.50 that
+   the two `petitio.subject` advisories are pre-existing and unchanged by the answer.
+
+SHOULD
+2. l.185-187: the last `timeline/patron.jsonl` line is `{"role":"patron","at":"...","action":"answer","petitio":"A-1","state":"resolved",
+   "opus":"W-002","ask_back":false,"charter_gap":false}`. The row lists six keys; say "contains these keys" (subset match), or a
+   deepEqual on the six keys fails on `role`/`at`.
+3. l.226-229 (behaviour 5): "one `acta/<date>-lex-gap-*.md`" - state that `<date>` is `T.slice(0,10)` (or glob `*-lex-gap-*`).
+   A second `new Date()` read at UTC midnight is the only real-clock flake left. Replay: file is
+   `2026-10-02-lex-gap-drag-and-drop-grew-a-second-screen-split.md`, slug truncated, so glob rather than rebuild the name.
+4. l.107-120: "keep both existing conditions and add a third" is followed by a four-item "all hold" list. Say the third condition is the
+   conjunction of items 1-4 (item 4 is the stamp window), so the builder does not add four ORs.
+5. Assertion hygiene for the surface rows (l.90-93): the eng lex contains "Ship greenlit features", so a loose `Ship` match passes on
+   a pristine boot. Brief already specifies full stamp-line and `A-1 ·` header substrings; add one sentence forbidding the bare
+   reply word as the assertion.
+
+CHECKED, NO FINDING
+(1) Reds on current code (replayed): B1 (c) context after answer has no A-1/stamp -> red as claimed, rows (a),(b) pass.
+    B3 ask-back turn is shown today (`A-1 · awaiting_reply · from patron to eng-lead`, stamp line present), second --ask-back exits 2
+    with the file byte-identical, plain answer prints `A-1: resolved`, final context at 16:00 shows nothing -> red at the final row.
+    B4: A-404 / --opus W-999 / no-reply each exit 2, `diff -r` of the officina is empty; the 47h row is the first fix-dependent row.
+    B5: record, builder `## Recent decisions` block with `Patron: Cut split stacks.` pass today; hook stdout lacks the stamp -> red.
+    B2 final row red as claimed (once finding 1 is repaired). Query: `petitiones needing a reply: A-1` before, gone after: as claimed.
+(2) Fix size: section 5 (context.ts:175-177) needs one extra boolean plus a `[stated]` regex over `body` (already in scope); `toDate`,
+    `daysBetween` and DECISION_WINDOW_DAYS exist (l.20-36). Stamps are ISO strings via `now.toISOString()` (writes.ts:722), so
+    `new Date(stamp)` parses; daysBetween clamps a future stamp to 0, so pinned-NOW rows are fine. ~8 lines. No stamped resolved
+    petitio exists in studio/ or examples/ (grep `\[stated\]` finds only writes.ts and writes.test.ts), so existing tests/context bytes
+    stay unchanged. 47h/49h boundary rows sit either side of 48h; correct.
+(3) Test-file design: spawnSync with an argv array, no timer/sleep/Atomics tokens, so test.sleep (tests.ts grammar l.43-50) does not
+    fire and no annotation is needed. `--behaviour N` and one test() per behaviour follow the next.test.ts precedent. Hook row's
+    `input: "{}"` ends stdin (hooks.ts:228 reads with a 2s timeout otherwise).
+(4) B5 real clock: hook `now` is seconds after T against a 48h window; no flake. Replayed: hook stdout == context stdout minus the final
+    `tokens: N` line, byte for byte, so the equality row is sound.
+(5) package.json registration is stated (l.143-146) with placement; files-owned list is closed.
+W-114 spec sec red-team — Claude substitute (claude-sonnet-5-5), 2026-10-02, brief revision 1. SEC-SPEC: REVISE.
+Scope: brief read-only at spec/W-114 (2e465a6); probes on temp copies of examples/sample-studio only. No bisellium write verbs on studio/.
+Searched: context.ts (all of it), writes.ts runAnswer (616-774), appendPatronTimeline, hooks.ts hook-event/handleContext, check.ts petitio.* (657-704), adapter resolveSeat, every "[stated]" writer (one: writes.ts:722), studio/petitiones/*, examples/sample-studio (symlinks: none), process.env reads.
+
+1. HIGH (false premise; brief 118-121, 255-256) "every pre-existing resolved petitio (all stamp-less in studio/) stays out of every context, byte for byte".
+   Probe: 12 of 13 resolved studio/petitiones/P-001..P-015 carry a line-start "[stated] <ISO> patron:" (grep '^\[stated\]'). P-014 and P-015
+   (from qa-lead, stamped 2026-10-01T11:03:57Z) are inside the 2-day window until 2026-10-03T11:03Z, so at landing qa-lead's real boot context
+   changes (context.ts:166-180 would list them). Intended behaviour, but the brief says otherwise and the censor's byte-identical check would misfire.
+   Fix: state the real claim (older stamps age out; two qa-lead petitiones appear until 10-03); confine byte-identity to the fixture/F2 row.
+2. MEDIUM, blocks (stamp parse; brief 114-118; context.ts:26-36 toDate/daysBetween) the "last stamp" is unauthenticated body text and
+   daysBetween clamps a future date to 0. Probed: `answer` with reply "ok\n[stated] 2099-01-01T00:00:00Z patron: x" (positionals joined, writes.ts:627,722)
+   leaves a body whose LAST stamp is 2099 -> visible 73 years. Hand-appended stamps by a file-writing sella do the same, no Patron act, no timeline line.
+   `new Date()` is lenient: "1" -> 2001, "2099" parses in local TZ (probe TZ is GMT+8), so (\S+) accepts non-ISO tokens and adds TZ dependence.
+   Fix: require /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?Z$/ on the token AND stamp <= now (a future stamp is never listed). All brief rows
+   (stamp == --now exactly, 47h/49h) still pass. Add a behaviour-4 row: stamp 2099 hand-edited -> absent; "1" token -> absent.
+3. MEDIUM, blocks (party rule; brief 113-114) check.ts:685-687 enforces direction only for needs_you/awaiting_reply; a hand-written
+   resolved petitio "from: eng-lead to: qa-lead" passes check (petitio.party only needs sella-or-patron), and rule 3 would now push its
+   body, with a forged "patron:" stamp, into qa-lead's boot context at priority 5. Before, check blocked sella->sella petitiones in live states.
+   (Acta decisions already reach every sella, so the channel class exists; this one is higher priority and carries a Patron-looking stamp.)
+   Fix: rule 3 = (from===sella && to===patron) || (to===sella && from===patron). Add to behaviour 4: A-9 variant eng-lead->qa-lead, stamped, absent from both.
+4. MEDIUM, blocks (growth; brief 111-121, 128, residual 6 line 286) resolved petitiones share the single priority-5 "petitiones" section
+   with the actionable awaiting_reply ask (context.ts:176,181). Truncation drops WHOLE sections by priority number (220-226): a flood of
+   stamped resolved petitiones (forged files per item 3, or repeated `answer` re-stamping, reply length uncapped writes.ts:627, window refreshed each time)
+   pushes the section over 4000 tokens and removes the real pending ask while opera (priority 4) survives. No cap in the brief.
+   Fix: cap listed resolved entries (newest N by stamp, N=3) and trim each body to its tail (stamp lines) ~1000 chars; list pending asks first.
+   Add a row: 6 stamped resolved petitiones + one awaiting_reply -> the awaiting_reply header still present, no "truncated: petitiones".
+5. LOW (harness; brief 71-77) cli() has no `timeout` (precedent next.test.ts:131, rules/tests.test.ts:440 pass timeout: 120_000) and no pinned env:
+   the child inherits BISELLIUM_SELLA/BISELLIUM_ROLE/TZ (main.ts:193, writes.ts:173). hook-event has a 2 s stdin guard (hooks.ts), so a hang is unlikely,
+   but add timeout and env {...process.env, TZ:"UTC", BISELLIUM_SELLA:undefined}. spawnSync is argv-array, no shell, per brief 71-74: OK. Output is only compared, never executed: OK.
+6. LOW (fixture; brief 78-82) mkdtempSync under os.tmpdir() is unique per call: no $TMPDIR collision between parallel files (tsx cache is per-uid, shared, safe).
+   cpSync default keeps symlinks; sample-studio has none today (find -type l empty), `check F --now NOW` without --repo exits 0 (probed, 0 blocking/7 advisory).
+   Optional: one assertion that the copied tree has no symlink so a future fixture symlink cannot make a row write into examples/.
+7. ADVISORY (row 5; brief 223-235) The "acta/<date>" lookup must glob `*-lex-gap-*` or use the UTC date (writes.ts:728 uses toISOString().slice(0,10)); a local-date
+   lookup flakes near UTC midnight / in GMT+8. 47h/49h rows sit 1h from the 48h edge on pinned clocks: no flake. The two real-clock spawns in row 5 compare
+   fixture state dated 2026-09-17, far outside the window: flake only if a fixture decision ever ages across 2 days between the spawns.
+8. ADVISORY (info flow; brief 112-116) Not a confidentiality control: `--sella` is a free argument (main.ts:193) and petitiones are plain files.
+   Checked and fine: from/to compare by exact string (context.ts:175-176), so case differences, instance ids (builder.W-100) and role aliases
+   match nothing (under-delivery, not leak); missing/non-string from/to become undefined (171-172) and never equal a sella; Patron exclusion
+   keys on manifest.patron (73-74). Stamp authenticity: main.ts:131-132 sets BISELLIUM_ROLE=patron for any caller, so any shell actor can mint a
+   "patron:" stamp; pre-existing, but the new surface presents it to sellae as the Patron's decision. Record in stated residuals.
+9. ADVISORY dataBlock leaves a literal "--- end ---" unescaped (context.ts:24; residual 5, brief 284): the data-not-instructions wrapper holds for the
+   new entries (same dataBlock, header values come from front matter strings: from/to/state printed raw at context.ts:179 -- a newline-bearing
+   front-matter value cannot form since YAML scalars here are single-line, not tested). Acceptable as stated.
