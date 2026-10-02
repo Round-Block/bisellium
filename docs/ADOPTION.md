@@ -880,7 +880,17 @@ then `key: value` lines (`actor:`, `why:`, `command:`, `head:`, `health:`;
 `attributed:` for `ready`, which `next` runs with the sella of the passed spec
 log; `state=<X>` lines for performed PR steps, using the scripts' vocabulary
 `CONFLICT`, `CHECKS_FAILED`, `GHAS_STOP`, `MERGE_FAILED`, `QUEUE_REJECTED`,
-`QUEUE_TIMEOUT`, `HEAD_MOVED`, `MERGED`). Exit 0: a step named or performed, a
+`QUEUE_TIMEOUT`, `HEAD_MOVED`, `MERGED`, plus `WAITING` when the checks never
+turned green and `MERGED_NOT_FETCHED` when the merge landed but the trunk could
+not be fetched or does not yet contain it; after a performed step `next-step:`
+names the re-derived rung and `next-why:` says why when it is held). Every
+printed line is stripped of control characters (C0 and C1, newline included) and
+each element clipped, so a check name or a `gh` reply cannot start a `state=`
+line. A MERGED PR whose head this clone cannot resolve stays at `merge`; its
+perform fetches `refs/remotes/origin/opus/<id>` and holds, naming the oid, if
+the head is still unknown. A BEHIND PR is updated only while its head is the
+reviewed one, and a head that appears afterwards is adopted only if it descends
+from it (else `HEAD_MOVED`). Exit 0: a step named or performed, a
 live step reported running, or the ladder complete. Exit 1: refused, held, dead,
 or a performed step failed. Exit 2: usage, unknown opus, not a studio, not the
 main checkout. **`running` is a header word at exit 0, not an exit code: an

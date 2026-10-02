@@ -29,7 +29,7 @@ import { censorSella, inspectUiDesignInput, readContainedRegularFile, type Nativ
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { cleanup, git, identifyPr, localTip, MIN_CHECKS, mergeGate, openPr, opusWorktree, settleMerged, type Ctx, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, git, identifyPr, localTip, MIN_CHECKS, mergeGate, openPr, opusWorktree, settleMerged, type Ctx, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -193,6 +193,8 @@ export interface Facts {
   redFindings(): string[];
   uiSpecProblems(): string[];
   uiReviewProblems(): string[];
+  /** the authoritative ui-lead input (`ci/<id>-spec-<n>.log`) of a kind: ui opus whose branch carries a valid one */
+  uiReviewInput(): string | undefined;
   pr(): PrClass;
   /** newest `# at:` among the opus's reds and review logs, in ms */
   evidenceAt(): number;
@@ -273,6 +275,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     }),
     uiSpecProblems: memo(() => uiProblems(branchRecord ?? trunkRecord, studioAbs)),
     uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
+    uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
     pr: memo((): PrClass => classify(repo, tip, identifyPr(repo, id))),
     evidenceAt: memo(() => {
       const times: number[] = [];
@@ -313,6 +316,15 @@ function uiProblems(rec: Dict | undefined, root: string): string[] {
   }
 }
 
+function uiInput(rec: Dict | undefined, root: string): string | undefined {
+  if (rec?.["kind"] !== "ui") return undefined;
+  try {
+    return inspectUiDesignInput(root, rec as NativeRecord).input?.relative;
+  } catch {
+    return undefined;
+  }
+}
+
 function reviewLogs(src: Src | undefined, id: string): { n: number; name: string }[] {
   return (src?.list("ci") ?? []).flatMap((name) => {
     const m = new RegExp(`^${esc(id)}-review-([1-9][0-9]*)\\.log$`).exec(name);
@@ -335,7 +347,8 @@ function classify(repo: string, tip: string | undefined, read: PrRead): PrClass 
   if (pr.state === "OPEN") return tip !== undefined && pr.headRefOid === tip ? { kind: "open", pr } : { kind: "open-stale", pr };
   if (pr.state !== "MERGED") return { kind: "none" };
   const s = settleMerged(repo, pr, tip);
-  return s.kind === "settled" ? { kind: "settled", pr } : { kind: s.kind, pr, reason: s.reason };
+  // an unverifiable head is left at `merge`: its perform fetches the opus ref and re-checks (or holds naming the oid)
+  return s.kind === "settled" ? { kind: "settled", pr } : { kind: s.kind === "unverifiable" ? "behind" : s.kind, pr, reason: s.reason };
 }
 
 // ---------------------------------------------------------------------------
@@ -450,11 +463,13 @@ export function deriveNext(f: Facts): Derived {
     const uiBranch = f.uiReviewProblems();
     if (!(gate !== undefined && gate.status === "passed" && cur !== undefined && gate.tree === cur) || uiBranch.length > 0) {
       const rounds = reviewRounds(f);
+      const uiIn = f.uiReviewInput();
       return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
-        inputs: [briefRel(id), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
+        inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
+        ...(uiIn === undefined ? {} : { uiInput: uiIn }),
       });
     }
 
@@ -521,7 +536,7 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][] }): Derived {
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string }): Derived {
   const { id, studioRel, manifest } = f;
   const builder = (() => {
     const resolved = resolveSeat(manifest, "builder");
@@ -548,7 +563,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else {
     role = "censor";
     sella = censor;
-    command = `dispatch ${sella}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed> --studio ${studioRel}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}`;
+    command = `dispatch ${sella}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? "architect" : "builder";
   return {
@@ -871,7 +886,7 @@ function performBranch(f: Facts): StepResult {
   if (head !== "refs/heads/master") return heldResult(`refusing: HEAD is ${head === "" ? "detached" : head}, not the master branch`);
   if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
   const dirty = trackedDirty(repo);
-  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${l}`));
+  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
   try {
     lstatSync(wt.dir);
     return heldResult(`refusing: ${wt.dir} already exists and is not a registered worktree for opus/${id}`);
@@ -900,7 +915,7 @@ function performDone(f: Facts): StepResult {
   const chore = `chore/done-${id}`;
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
   const dirty = trackedDirty(repo);
-  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${l}`));
+  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
   const read = identifyPr(repo, id);
   if (read.kind === "held") return heldResult(read.reason);
   if (read.kind === "none" || read.pr.state !== "MERGED") return heldResult(`refusing: a fresh read finds no MERGED PR for opus/${id}`);
@@ -944,7 +959,7 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
     out.push(`role: ${o.role}`, `sella: ${o.sella}`, `budget_tokens: ${o.budget ?? ""}`, `phase: ${o.phase}`);
     if (o.round !== undefined) out.push(`round: ${o.round}`);
     for (const [k, v] of o.extra) out.push(`${k}: ${one(v)}`);
-    out.push(`inputs: ${o.inputs.join(", ")}`, `command: ${one(o.command)}`);
+    out.push(`inputs: ${o.inputs.map((x) => clean(x)).join(", ")}`, `command: ${one(o.command)}`);
   } else if (d.command !== undefined && d.status === "named") out.push(`command: ${one(d.command)}`);
   return out;
 }
@@ -975,7 +990,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
-    console.log(lines.join("\n"));
+    // the one choke point: every printed line loses its controls (a newline included) and is bounded
+    console.log(lines.map((l) => clean(l, 1000)).join("\n"));
     return { exitCode: code };
   };
   const refusal = (d: Derived): { exitCode: number } =>
@@ -1097,7 +1113,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       }
     }
   } catch (e) {
-    console.error(`next: ${id} failed: ${(e as Error).message}`);
+    console.error(`next: ${id} failed: ${clean((e as Error).message)}`);
     return { exitCode: 1 };
   }
 }

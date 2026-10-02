@@ -45,8 +45,14 @@ export function sh(cmd: "git" | "gh", args: string[], cwd: string, maxBuffer = 1
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "", ...(r.error === undefined ? {} : { error: r.error }) };
 }
 export const git = (cwd: string, args: string[]): Run => sh("git", args, cwd);
-const firstLine = (text: string): string => text.trim().split("\n")[0]?.slice(0, 300) ?? "";
-const why = (r: Run): string => (r.error?.message ?? firstLine(r.stderr)) || `exit ${r.status}`;
+/**
+ * Everything the verb prints about a PR, a check, a gh reply or a path is data from outside: control
+ * characters (C0 and C1, newline included) become a space and each element is clipped, so none of it
+ * can start a `state=` line or drive a terminal.
+ */
+export const clean = (text: string, max = 200): string => text.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ").slice(0, max);
+const firstLine = (text: string): string => clean(text.trim().split("\n")[0] ?? "");
+const why = (r: Run): string => (r.error !== undefined ? clean(r.error.message) : firstLine(r.stderr)) || `exit ${r.status}`;
 
 type Json = Record<string, unknown>;
 const isObj = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -54,7 +60,7 @@ const isObj = (v: unknown): v is Json => typeof v === "object" && v !== null && 
 function ghJson(cwd: string, args: string[]): { ok: true; value: unknown } | { ok: false; reason: string } {
   const r = sh("gh", args, cwd, GH_MAX_BYTES);
   const label = `gh ${args.slice(0, 2).join(" ")}`;
-  if (r.error !== undefined) return { ok: false, reason: `${label} failed: ${r.error.message}` };
+  if (r.error !== undefined) return { ok: false, reason: `${label} failed: ${clean(r.error.message)}` };
   if (r.status !== 0) return { ok: false, reason: `${label} exited ${r.status}: ${firstLine(r.stderr)}` };
   if (r.stdout.length > GH_MAX_BYTES) return { ok: false, reason: `${label} output is over 1 MiB` };
   if (r.stdout.trim() === "") return { ok: false, reason: `${label} returned no output` };
@@ -143,8 +149,8 @@ export function repoSlug(repo: string): { ok: true; slug: string } | { ok: false
 function checkShape(o: unknown, keys: string[]): string | undefined {
   if (!isObj(o)) return "a PR entry is not an object";
   for (const k of keys) if (!(k in o)) return `a PR entry has no ${k}`;
-  if (typeof o["state"] !== "string" || !PR_STATES.has(o["state"])) return `unknown PR state ${JSON.stringify(o["state"])}`;
-  if (typeof o["mergeStateStatus"] !== "string" || !MERGE_STATES.has(o["mergeStateStatus"])) return `unknown mergeStateStatus ${JSON.stringify(o["mergeStateStatus"])}`;
+  if (typeof o["state"] !== "string" || !PR_STATES.has(o["state"])) return `unknown PR state ${clean(JSON.stringify(o["state"]))}`;
+  if (typeof o["mergeStateStatus"] !== "string" || !MERGE_STATES.has(o["mergeStateStatus"])) return `unknown mergeStateStatus ${clean(JSON.stringify(o["mergeStateStatus"]))}`;
   for (const k of ["headRefName", "baseRefName"]) if (typeof o[k] !== "string") return `${k} is not a string`;
   if (typeof o["headRefOid"] !== "string" || !OID_RE.test(o["headRefOid"])) return "headRefOid is not a 40-hex commit id";
   return undefined;
@@ -215,15 +221,17 @@ export function identifyPr(repo: string, id: string): PrRead {
   return chosen.pr === undefined ? { kind: "held", reason: chosen.bad ?? "malformed PR" } : { kind: "pr", pr: chosen.pr };
 }
 
-export type Settlement = { kind: "settled" } | { kind: "behind"; reason: string } | { kind: "unrelated"; reason: string };
+export type Settlement = { kind: "settled" } | { kind: "behind"; reason: string } | { kind: "unverifiable"; reason: string } | { kind: "unrelated"; reason: string };
 
 /**
  * A MERGED PR settles the rungs up to `merge` only by reachability: its merge
  * commit is in the local trunk AND, when the local branch still exists, the
- * local tip is the PR's head or an ancestor of it. An head the local object
- * store does not know is "unverifiable"; with the merge commit still missing
- * from trunk that is `behind` (the merge step fetches and re-checks), with the
- * merge commit already in trunk it settles nothing (name match alone never does).
+ * local tip is the PR's head or an ancestor of it. A head the local object
+ * store does not know (`merge-base` exit 128) is "unverifiable", not unrelated:
+ * the merge step fetches the opus remote-tracking ref and re-checks, so both
+ * `behind` and `unverifiable` are named `merge`. Only a locally known head the
+ * tip is not part of (exit 1) is "unrelated" and settles nothing; a name match
+ * alone never settles.
  */
 export function settleMerged(repo: string, pr: Pr, tip: string | undefined): Settlement {
   const contained = trunkContainsMerge(repo, pr.mergeOid);
@@ -234,7 +242,7 @@ export function settleMerged(repo: string, pr: Pr, tip: string | undefined): Set
   }
   if (relation === "unrelated") return { kind: "unrelated", reason: `local opus branch tip ${tip?.slice(0, 12)} is not part of the merged head ${pr.headRefOid.slice(0, 12)}` };
   if (!contained.ok) return { kind: "behind", reason: `merge commit ${pr.mergeOid?.slice(0, 12)} is not contained in the local trunk (${contained.reason})` };
-  if (relation === "unverifiable") return { kind: "unrelated", reason: `merged head ${pr.headRefOid.slice(0, 12)} is not known locally and cannot be tied to the local branch` };
+  if (relation === "unverifiable") return { kind: "unverifiable", reason: `merged head ${pr.headRefOid.slice(0, 12)} is not known locally and cannot be tied to the local branch` };
   return { kind: "settled" };
 }
 
@@ -272,16 +280,16 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
   if (onBranch.stdout.trim() !== `refs/heads/${branch}`) return held(`refusing: ${wt} is not on ${branch} (HEAD ${onBranch.stdout.trim() || "detached"}); pr opens only from the opus branch`);
   // "dirty" is tracked changes only (staged or unstaged); untracked files never block.
   const dirty = git(wt, ["status", "--porcelain", "--untracked-files=no"]).stdout.trim();
-  if (dirty !== "") return held("refusing: working tree dirty", ...dirty.split("\n").slice(0, 10).map((l) => `dirty: ${l}`));
+  if (dirty !== "") return held("refusing: working tree dirty", ...dirty.split("\n").slice(0, 10).map((l) => `dirty: ${clean(l)}`));
   const fetched = fetchTrunk(repo);
   if (!fetched.ok) return held(fetched.reason);
   const before = sourceTreeHash(wt, ctx.excludes, "HEAD");
   ctx.log("rebase onto the fetched trunk");
-  const rebase = git(wt, ["-c", "submodule.recurse=false", "rebase", "-q", "master"]);
+  const rebase = git(wt, ["-c", "submodule.recurse=false", "rebase", "-q", TRUNK_REF]);
   if (rebase.status !== 0) {
     const status = git(wt, ["status", "--short"]).stdout.trim().split("\n").slice(0, 10);
     git(wt, ["rebase", "--abort"]);
-    return { ok: false, lines: ["state=CONFLICT", "why: rebase onto master conflicted; resolve on the branch, then re-run", ...status.map((l) => `conflict: ${l}`)] };
+    return { ok: false, lines: ["state=CONFLICT", "why: rebase onto master conflicted; resolve on the branch, then re-run", ...status.map((l) => `conflict: ${clean(l)}`)] };
   }
   if (sourceTreeHash(wt, ctx.excludes, "HEAD") !== before)
     return held("the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree");
@@ -327,6 +335,8 @@ function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
   if (tip !== undefined) git(ctx.repo, ["fetch", "-q", "origin", `+refs/heads/opus/${ctx.id}:refs/remotes/origin/opus/${ctx.id}`]);
   const contained = trunkContainsMerge(ctx.repo, pr.mergeOid);
   if (!contained.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: merge commit ${pr.mergeOid?.slice(0, 12) ?? "(unknown)"} is not in the local master after the fetch (${contained.reason})`, ...extra] };
+  // the merged head must be resolvable here now that the opus ref was fetched; otherwise it can never be tied to the local branch
+  if (settleMerged(ctx.repo, pr, tip).kind === "unverifiable") return held(`merged head ${pr.headRefOid.slice(0, 12)} is still not known locally after fetching refs/remotes/origin/opus/${ctx.id}; nothing more is done, resolve it by hand`, ...extra);
   return { ok: true, lines: [`local master -> ${git(ctx.repo, ["rev-parse", "--short", TRUNK_REF]).stdout.trim()}`, "state=MERGED", ...extra] };
 }
 
@@ -336,6 +346,13 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   if (pr.state !== "OPEN") return held(`PR #${pr.number} is ${pr.state}`);
   const n = String(pr.number);
   let pinned = pr.headRefOid;
+  const headMoved = (now: string): StepResult => ({ ok: false, lines: [`state=HEAD_MOVED pinned=${pinned.slice(0, 12)} now=${now.slice(0, 12)}`] });
+  /** A head other than the reviewed pin is adopted only if it descends from the pin (fetched first); anything unprovable is not. */
+  const descends = (head: string): boolean => {
+    if (head === pinned) return true;
+    git(repo, ["fetch", "-q", "origin", `+refs/heads/opus/${ctx.id}:refs/remotes/origin/opus/${ctx.id}`]);
+    return git(repo, ["merge-base", "--is-ancestor", pinned, head]).status === 0;
+  };
   const sameIdentity = (v: Pr): boolean => v.number === pr.number && v.headRefName === pr.headRefName && v.baseRefName === pr.baseRefName;
 
   // A PR that falls behind while its checks run stalls forever (PRs 139, 147): update it first.
@@ -343,12 +360,14 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   if (!first.ok) return held(first.reason);
   if (first.view.mss === "BEHIND") {
     if (!sameIdentity(first.view)) return held(`PR #${pr.number} changed identity under the read`);
+    if (first.view.headRefOid !== pinned) return headMoved(first.view.headRefOid);
     ctx.log("update-branch (BEHIND)");
     if (sh("gh", ["pr", "update-branch", n, "-R", pr.repo], repo).status !== 0) return held("gh pr update-branch failed");
     await ctx.sleep(ctx.pollMs);
     const again = readView(repo, pr);
     if (!again.ok) return held(again.reason);
     if (!sameIdentity(again.view)) return held(`PR #${pr.number} changed identity after update-branch`);
+    if (!descends(again.view.headRefOid)) return headMoved(again.view.headRefOid);
     pinned = again.view.headRefOid;
   }
 
@@ -361,7 +380,7 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
     seen = { pass: 0, pending: 0, fail: 0, total: c.checks.length };
     for (const k of c.checks) if (k.bucket === "pass" || k.bucket === "pending" || k.bucket === "fail") seen[k.bucket]++;
     ctx.log(`checks poll ${poll}: pass=${seen.pass} pending=${seen.pending} fail=${seen.fail} total=${seen.total}`);
-    if (seen.fail > 0) return { ok: false, lines: ["FAILING CHECKS:", ...c.checks.filter((k) => k.bucket === "fail").map((k) => `  ${k.name}`), "state=CHECKS_FAILED"] };
+    if (seen.fail > 0) return { ok: false, lines: ["FAILING CHECKS:", ...c.checks.filter((k) => k.bucket === "fail").map((k) => `  ${clean(k.name)}`), "state=CHECKS_FAILED"] };
     if (seen.pending === 0 && seen.pass >= MIN_CHECKS) green = true;
     else if (poll < ctx.maxPolls) await ctx.sleep(ctx.pollMs);
   }
@@ -386,9 +405,10 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
     if (v.state === "MERGED") return landed(ctx, v, []);
     if (v.state === "CLOSED") return { ok: false, lines: ["state=QUEUE_REJECTED"] };
     if (moved) {
+      if (!descends(v.headRefOid)) return headMoved(v.headRefOid);
       pinned = v.headRefOid;
       moved = false;
-    } else if (v.headRefOid !== pinned) return { ok: false, lines: [`state=HEAD_MOVED pinned=${pinned.slice(0, 12)} now=${v.headRefOid.slice(0, 12)}`] };
+    } else if (v.headRefOid !== pinned) return headMoved(v.headRefOid);
     if (v.mss === "BEHIND") {
       ctx.log("update-branch (BEHIND while queued)");
       if (sh("gh", ["pr", "update-branch", n, "-R", pr.repo], repo).status === 0) moved = true;
