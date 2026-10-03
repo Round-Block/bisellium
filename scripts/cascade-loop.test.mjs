@@ -7,9 +7,11 @@
  * records its cwd, argv and whether the status file already existed, then
  * writes the next status from a scripted list (NONE writes nothing, FAIL
  * writes CONTINUE and exits nonzero, HANG blocks on a FIFO nobody writes, LINK
- * swaps a directory for a symlink, SYMLINK makes the status a symlink, and
- * RAW:<text> writes <text> through printf %b). No real claude, no network, no
- * sleeps; the one deadline row waits out a 1s timeout.
+ * swaps a directory for a symlink, STUBBORN blocks on the FIFO with TERM
+ * ignored, SYMLINK makes the status a symlink, and RAW:<text> writes <text>
+ * through printf %b). No real claude, no network, no sleeps; the deadline rows
+ * wait out a short timeout. world() gives each run the Patron's one-time
+ * ~/.cascade-loop/settings.json (0600) the loop insists on.
  * Every test checks the run count before anything else, so while the script
  * is absent each one fails on its own assertion, not on a missing file.
  */
@@ -17,6 +19,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
 import {
+  chmodSync,
   closeSync,
   constants,
   existsSync,
@@ -28,6 +31,7 @@ import {
   realpathSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
   writeSync,
 } from "node:fs";
@@ -52,6 +56,7 @@ case $w in
   NONE | "") ;;
   FAIL) echo CONTINUE > "$CASCADE_STATUS"; exit 3 ;;
   HANG) read -r _ < "$d/fifo" ;;
+  STUBBORN) trap '' TERM; read -r _ < "$d/fifo" ;;
   LINK) rm -rf "$SWAP_DIR"; ln -s "$SWAP_TARGET" "$SWAP_DIR"; echo CONTINUE > "$CASCADE_STATUS" ;;
   SYMLINK) echo CONTINUE > "$d/real-status"; ln -s "$d/real-status" "$CASCADE_STATUS" ;;
   RAW:*) printf '%b' "\${w#RAW:}" > "$CASCADE_STATUS" ;;
@@ -77,7 +82,16 @@ const world = (statuses, env = {}) => {
   writeFileSync(join(stubDir, "script"), statuses.join("\n") + "\n");
   const status = join(root, "status");
   const base = { ...process.env, HOME: home, AGENT_CLONE: clone, CASCADE_STATUS: status };
-  for (const k of ["CASCADE_MAX_RUNS", "CASCADE_RUN_TIMEOUT", "CASCADE_MAX_USD"]) delete base[k];
+  for (const k of [
+    "CASCADE_MAX_RUNS",
+    "CASCADE_RUN_TIMEOUT",
+    "CASCADE_MAX_USD",
+    "CASCADE_KILL_AFTER",
+    "CASCADE_LOG_STAMP",
+    "CASCADE_SETTINGS",
+  ]) {
+    delete base[k];
+  }
   // Every run inherits umask 022, the usual shell default, so the script must narrow it itself.
   const run = ({ env: extra = {}, deadline } = {}) =>
     spawnSync("bash", ["-c", 'umask 022; exec "$0"', SCRIPT], {
@@ -89,7 +103,10 @@ const world = (statuses, env = {}) => {
   const runs = () => (existsSync(join(stubDir, "count")) ? read("count").trim().split("\n").length : 0);
   const stateDir = join(home, ".cascade-loop");
   const logDir = join(stateDir, "logs");
-  return { clone, home, stubDir, status, run, read, runs, stateDir, logDir };
+  const settings = join(stateDir, "settings.json");
+  mkdirSync(stateDir, { mode: 0o700 });
+  writeFileSync(settings, '{"sandbox":{"enabled":true}}\n', { mode: 0o600 });
+  return { clone, home, stubDir, status, run, read, runs, stateDir, logDir, settings };
 };
 
 const said = (r) => `${r.stdout}${r.stderr}`;
@@ -156,14 +173,27 @@ test("6c. the prompt carries the status path", () => {
   assert.ok(argv[argv.indexOf("-p") + 1]?.includes(w.status), argv.join(" | "));
 });
 
-test("6d. headless flags: --permission-mode auto, and stream-json with the --verbose it requires", () => {
+test("6d. the exact claude argv: user settings only, the Patron's settings file, strict MCP", () => {
   const w = world(["QUEUE_EMPTY"]);
   w.run();
   assert.equal(w.runs(), 1);
-  const argv = w.read("argv.1").split("\0");
-  assert.equal(argv[argv.indexOf("--permission-mode") + 1], "auto", argv.join(" | "));
-  assert.equal(argv[argv.indexOf("--output-format") + 1], "stream-json", argv.join(" | "));
-  assert.ok(argv.includes("--verbose"), argv.join(" | "));
+  const argv = w.read("argv.1").split("\0").slice(0, -1);
+  assert.equal(argv[0], "-p");
+  assert.ok(argv[1]?.includes(w.status), "the prompt carries the status path");
+  assert.deepEqual(argv.slice(2), [
+    "--permission-mode",
+    "auto",
+    "--setting-sources",
+    "user",
+    "--settings",
+    w.settings,
+    "--strict-mcp-config",
+    "--max-budget-usd",
+    "20",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+  ]);
 });
 
 test("7. a stale status is deleted before each run, so a silent run cannot inherit CONTINUE", () => {
@@ -262,7 +292,6 @@ test("14. under an inherited umask 022 the state and log dirs are 0700 and each 
   w.run();
   assert.equal(w.runs(), 2);
   assert.ok(existsSync(w.logDir), `no log dir at ${w.logDir}`);
-  const mode = (p) => (statSync(p).mode & 0o777).toString(8);
   assert.equal(mode(w.stateDir), "700");
   assert.equal(mode(w.logDir), "700");
   const logs = readdirSync(w.logDir);
@@ -319,3 +348,131 @@ test("17. CONTINUE with no trailing newline is still a valid status", () => {
 test("18. the script runs under /bin/bash, not whatever env finds", () => {
   assert.equal(readFileSync(SCRIPT, "utf8").split("\n")[0], "#!/bin/bash");
 });
+
+const mode = (p) => (statSync(p).mode & 0o777).toString(8);
+
+test("19. state and log dirs pre-created 0777 are narrowed to 0700 before claude runs", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  mkdirSync(w.logDir);
+  for (const d of [w.stateDir, w.logDir]) chmodSync(d, 0o777);
+  const r = w.run();
+  assert.equal(r.status, 0, said(r));
+  assert.equal(w.runs(), 1);
+  assert.equal(mode(w.stateDir), "700");
+  assert.equal(mode(w.logDir), "700");
+});
+
+test("20a. a settings file that is missing means zero runs and a clear message", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  rmSync(w.settings);
+  const r = w.run();
+  assert.equal(w.runs(), 0);
+  assert.notEqual(r.status, 0);
+  assert.match(said(r), /settings.*missing/i);
+});
+
+test("20b. a symlinked settings file means zero runs and names the symlink", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  const real = join(w.stubDir, "real-settings.json");
+  writeFileSync(real, "{}\n", { mode: 0o600 });
+  rmSync(w.settings);
+  symlinkSync(real, w.settings);
+  const r = w.run();
+  assert.equal(w.runs(), 0);
+  assert.notEqual(r.status, 0);
+  assert.match(said(r), /symlink/i);
+});
+
+for (const [name, perm] of [
+  ["20c. a world-writable settings file", 0o666],
+  ["20d. a group-writable settings file", 0o660],
+]) {
+  test(`${name} means zero runs and says writable`, () => {
+    const w = world(["QUEUE_EMPTY"]);
+    chmodSync(w.settings, perm);
+    const r = w.run();
+    assert.equal(w.runs(), 0);
+    assert.notEqual(r.status, 0);
+    assert.match(said(r), /writable/i);
+  });
+}
+
+test("20e. CASCADE_SETTINGS outside ~/.cascade-loop means zero runs", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  const elsewhere = join(w.stubDir, "settings.json");
+  writeFileSync(elsewhere, "{}\n", { mode: 0o600 });
+  const r = w.run({ env: { CASCADE_SETTINGS: elsewhere } });
+  assert.equal(w.runs(), 0);
+  assert.notEqual(r.status, 0);
+  assert.match(said(r), /CASCADE_SETTINGS/);
+});
+
+test("21. a TERM-ignoring session is killed after CASCADE_KILL_AFTER: one run, nonzero, timed out", () => {
+  const w = world(["STUBBORN", "CONTINUE"]);
+  const fifo = join(w.stubDir, "fifo");
+  execFileSync("mkfifo", [fifo]);
+  try {
+    // the harness deadline only bounds the red run, where TERM alone never stops the stub
+    const r = w.run({ env: { CASCADE_RUN_TIMEOUT: "0.3s", CASCADE_KILL_AFTER: "0.3s" }, deadline: 8000 });
+    assert.equal(r.error, undefined, "the loop outlived the harness deadline");
+    assert.equal(w.runs(), 1);
+    assert.notEqual(r.status, 0);
+    assert.match(said(r), /timed out/i);
+  } finally {
+    try {
+      const fd = openSync(fifo, constants.O_WRONLY | constants.O_NONBLOCK);
+      writeSync(fd, "\n");
+      closeSync(fd);
+    } catch {} // nobody is blocked on the FIFO: nothing to release
+  }
+});
+
+const STAMP = "20260101T000000";
+
+test("22a. a log already at the next name is neither truncated nor reused: zero runs", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  mkdirSync(w.logDir, { mode: 0o700 });
+  const log = join(w.logDir, `${STAMP}-1.log`);
+  writeFileSync(log, "precious\n", { mode: 0o600 });
+  const r = w.run({ env: { CASCADE_LOG_STAMP: STAMP } });
+  assert.equal(w.runs(), 0);
+  assert.notEqual(r.status, 0);
+  assert.equal(readFileSync(log, "utf8"), "precious\n");
+});
+
+for (const [name, present] of [
+  ["22b. a symlink to an existing file at the next log name", true],
+  ["22c. a dangling symlink at the next log name", false],
+]) {
+  test(`${name}: zero runs and the target is untouched`, () => {
+    const w = world(["QUEUE_EMPTY"]);
+    mkdirSync(w.logDir, { mode: 0o700 });
+    const target = join(w.stubDir, "victim");
+    if (present) writeFileSync(target, "precious\n");
+    symlinkSync(target, join(w.logDir, `${STAMP}-1.log`));
+    const r = w.run({ env: { CASCADE_LOG_STAMP: STAMP } });
+    assert.equal(w.runs(), 0);
+    assert.notEqual(r.status, 0);
+    assert.equal(existsSync(target) ? readFileSync(target, "utf8") : null, present ? "precious\n" : null);
+  });
+}
+
+for (const [name, dir] of [
+  ["23a. a symlinked ~/.cascade-loop present before launch", (w) => w.stateDir],
+  ["23b. a symlinked log dir present before launch", (w) => w.logDir],
+]) {
+  test(`${name}: zero runs, names the symlink, creates nothing at the target`, () => {
+    const w = world(["QUEUE_EMPTY"]);
+    const target = swapTarget(w);
+    if (dir(w) === w.stateDir) {
+      writeFileSync(join(target, "settings.json"), "{}\n", { mode: 0o600 });
+      rmSync(w.stateDir, { recursive: true });
+    }
+    symlinkSync(target, dir(w));
+    const r = w.run();
+    assert.equal(w.runs(), 0);
+    assert.notEqual(r.status, 0);
+    assert.match(said(r), /symlink/i);
+    assert.deepEqual(readdirSync(target).filter((f) => f !== "settings.json"), []);
+  });
+}
