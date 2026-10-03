@@ -1,0 +1,102 @@
+# opus: W-132
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T09:57:14.168Z
+# tree: tree:d83156c4df6b9db5eb615fcc584caec249988419
+
+Passed. `studio/briefs/W-132.md` revision 2 closes one gap the phase-1 builder
+found, and nothing else moves: no new behaviour, no new owned file, no new red
+log, no change to the four reds already recorded on `opus/W-132`.
+
+## The gap
+
+Revision 1 said the host opens `git-reply` `O_RDWR` and writes
+`{ id, status, stdout, stderr }\n` per request. It never said *how*. The cell
+is untrusted and may never drain that pipe. Once it fills, a synchronous host
+write stops the runner's event loop, so its deadlines and teardown can never
+fire; an asynchronous stream write queues replies in host memory without
+bound. A cell that spams small requests, each earning an error frame, reaches
+one or the other. Revision 1's hazard list named the symmetric read hazard —
+a blocking `openSync(fifo, "r")` — and missed the write. That is a spec
+defect at a trust boundary, and it is mine.
+
+## The measurement
+
+Run 2026-10-03 in this session's sandbox, retained in
+`~/.bisellium-evidence/W-132-spec/`:
+
+```
+m11-reply-writes.mjs     FIFO capacity                                65536 bytes
+                         writeSync on O_RDWR|O_NONBLOCK when full     throws EAGAIN
+                         writeSync on blocking O_RDWR, 1 MiB, full    never returns (killed at 4s)
+m11b-shortwrite.mjs      256 KiB non-blocking write, 8192 free        returns 8192
+                         256 KiB non-blocking write, 16384 free       returns 16384
+m11d-held-remainder.mjs  1 MiB frame, reader drains                   delivered intact, 58 retries
+                         1 MiB frame, never drained                   65536 written, one frame held
+                         close() after either                         exit {code: 0, signal: null}
+```
+
+Two of these decide the rule. The refusal is `EAGAIN`, not a partial-success
+illusion, so a non-blocking fd gives the host a clean "later". And a short
+write is real — 256 KiB into 16384 free bytes returns exactly 16384 — so a
+reply cannot be dropped on a short write without tearing the stream, and a
+legitimate reply can be far larger than the pipe, since the broker already
+caps a `git` stdout at 4 MiB (`run-builder-host.mjs:298`). Dropping would
+have been the smaller rule and would have broken honest large replies.
+
+## The rule
+
+`git-reply` opens `O_RDWR | O_NONBLOCK`; `git-request` is unchanged. A reply
+is written with `writeSync` from an offset while the call makes progress. On
+`EAGAIN` or a zero write, the remainder is kept and the host **pauses the
+request stream** until it is delivered, retrying from an `unref`ed
+`setTimeout` — never a blocking write, and never an asynchronous `fs.write`,
+whose pending threadpool request is itself a live handle that would keep the
+runner from exiting.
+
+The bound is **one reply frame**, at most the existing 4 MiB stdout cap:
+because no request is read while a remainder is pending, a second can never
+exist. A flooding cell fills `git-request`, a kernel buffer, and is blocked or
+refused there — the correct backpressure, and its own problem. Nothing is
+dropped, no run is ended, no new deadline is added. The stall reaches the cell
+as its own client deadline, exactly as a crashed client already does.
+`close()` discards the remainder, clears the timer and closes both handles;
+measured on both the drained and the never-drained path, the host exits 0.
+
+## The row
+
+Behaviour 4 gains sub-row 4a, not a fifth behaviour: the red for behaviour 4
+is the absent `scripts/git-broker.mjs`, and that is 4a's red too, so
+`studio/ci/reds/W-132/04.log` stands as recorded. 4a is prescribed against the
+harness that already exists in `packages/commands/src/run.test.ts` — the host
+in a child process under `--expose-gc`, `host.command("sample")` for retained
+memory, `host.served()`, and the `close()` exit assertion. The new cell
+scenario is `deaf`: it holds `git-reply` open and never reads it, writes
+well-formed frames to a non-blocking `git-request` until `EAGAIN` or a 5000
+cap, and exits. Non-blocking is what makes the scenario terminate, and the
+refusal is itself the backpressure the rule claims.
+
+Five assertions follow, in order: the host still answers `sample`, which is
+the one that fails if a reply write blocks; `host.served()` is below the
+frames admitted and unchanged across two samples, which separates "stopped
+reading" from "queued"; retained growth stays under the 8 MiB bound the row
+already uses, so no new bound is introduced; after the test drains
+`git-reply`, a fresh sentinel is answered and `served` grows again, proving a
+pause and not a death; and a second `deaf` run leaves a remainder pending so
+the row's existing `close()` assertion runs under the hostile condition.
+Fixed messages only, and no cell output in any message — the replay filter
+rules of revision 1 are unchanged.
+
+## Scope
+
+Revision 2 touches the Measurement table (M11–M13), the hazard list, the
+transport module's interface section and behaviour 4. Files owned, interfaces,
+acceptance, out of scope, the cell client, the containment census and the
+four recorded reds are untouched. D-035 applies: this is a change to a trust
+boundary, and D-014's censor supplies the single independent review, judging
+it against W-125's confinement obligations.
+
+No implementation, test or evidence is produced by this signing.

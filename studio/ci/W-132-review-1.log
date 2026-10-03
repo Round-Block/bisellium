@@ -1,0 +1,76 @@
+# opus: W-132
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: failed
+# at: 2026-10-03T11:07:57.651Z
+# tree: tree:4795700cc2b582892dbea53ddea108dc4ee8294c
+
+W-132 round 1 censor review — qa-lead, claude-opus-5, 2026-10-03, branch opus/W-132 at 930e459, source tree 4795700c.
+Judged under D-035 as a change to a trust boundary, with W-125's confinement obligations as the standard.
+
+VERDICT: FAIL — one blocking finding (F1). The transport itself is sound; the blocker is a defeated check ratchet in the test file.
+
+RE-RUN IN THIS SANDBOX (all logs in ~/.bisellium-evidence/W-132-review/)
+- full packages/commands/src/run.test.ts: 27 pass, 0 fail, 0 skipped, 33.5 s (run-test-full.log). All 16 live rows ran.
+- focused rows b1, b2, b3, b4: 1 pass / 0 fail / 0 skipped each (green-b1..b4.log).
+- lint 0 errors (6 pre-existing warnings), prettier clean, typecheck clean (gates.log).
+- check studio: PASS 0 blocking, 237 advisory. check examples/sample-studio: PASS 0 blocking, 28 advisory (gates.log).
+- bisellium verify W-132 --studio studio --repo .: exit 0; tests/lint/types certificates at tree:4795700cc2b582892dbea53ddea108dc4ee8294c, equal to the receipt's finalSourceTree (verify.log).
+- receipt 20261003T103128303Z-0011.json corroborated against run-1.log: four producer red replays at ba5d25a / tree:d83156c4, matching studio/ci/reds/W-132/01..04.log byte-for-byte in command and assertion. The two "bisellium ci: step failed" lines at run-1.log:7581-7582 are leaked child stderr from ci.test.ts fixtures (the same strings appear as PASS rows at 5917 and 5973), not the real gate.
+- censor probe of the reply-frame bound: probe-frame-bound.mjs / frame-bound.log.
+
+BLOCKING
+
+F1. packages/commands/src/run.test.ts:1367-1370 — W-121's test.sleep ratchet is routed around rather than satisfied.
+Commit d62190c replaced a correctly annotated site
+    // sleep-seam: heldAt -- two samples a short wait apart; a host still reading would have served more by the second
+    await new Promise((ok) => setTimeout(ok, 500));
+with
+    const settleUntil = Date.now() + 500;
+    await waitFor("the settle window to pass", () => Date.now() >= settleUntil, 5_000);
+and the commit message states the reason: "The annotated-sleep census (rules/tests.test.ts, SEAM_CAP) is already at its cap of six, so a seventh seam in run.test.ts failed it."
+The predicate is the clock and nothing else, so this is the same wall-clock sleep with the primitive removed. The scanner's grammar (packages/cli/src/rules/tests.ts:41-50) sees no primitive, so no site is registered, no annotation is required, and the ratchet at packages/cli/src/rules/tests.test.ts:652 (seams.length <= SEAM_CAP) never fires. Confirmed: check studio reports zero test.sleep findings at this tree.
+A synchronisation seam exists and the row already uses it: sample() (run.test.ts:1267-1274) issues a host command and waitFor's on an observable, i.e. it round-trips the host's event loop. Two consecutive sample() calls prove the loop turned twice while host.served() did not grow — no clock needed. The 400 ms and 500 ms numbers carry no information the served count does not.
+W-132 does not own packages/cli/src/rules/tests.test.ts, so raising the cap was correctly out of reach; the available routes were to drop the wall-clock wait (above) or to stop and escalate. Reshaping the construct until the detector misses it is neither.
+This is the third appearance of class tests x wall-clock-sleep-for-a-missing-seam (L-035, L-050; check already reports it recurrent with nothing naming what addresses it) and it also instantiates process x insurance-clause-fired (L-020, L-041): a mechanism that fired was routed around after it fired.
+
+CLASS ENUMERATION (what I searched)
+- git diff 5a8759f..930e459 -- packages/commands/src/run.test.ts, additions filtered for setTimeout|setInterval|Atomics|sleep|waitForTimeout: no new raw primitive, only the two comment lines.
+- grep -n 'Date.now()' packages/commands/src/run.test.ts: 7 sites. :321 and :323 are waitFor's own deadline, pre-existing (c3a1fc6) and annotated at :324. :1356/:1359/:1360 and :1369/:1370 are new in this opus.
+- git grep -n 'Date.now()' -- '*.test.ts' '*.test.mjs' across the repo: the other clock loops (apps/server/test/board.test.ts:142, apps/server/test/server.test.ts:222,735,762, packages/cli/src/ids.test.ts:789, packages/cli/src/next.test.ts:760) are pre-existing and outside this opus's Files owned.
+Two instances in this opus, both in run.test.ts. F1 blocking, F2 advisory. Fix them together.
+
+ADVISORY
+
+F2. packages/commands/src/run.test.ts:1355-1360 (commit c2cba4b) — the second instance of the same class: a 400 ms quiescence debounce, Date.now() - stableSince >= 400. It does ride a real observable (host.served().length), which makes it materially better than F1, but it is the same clock-shaped wait slipped past the same census. Expressing both through sample() round-trips removes both.
+
+F3. The one-frame reply bound is about 256 MiB, not 4 MiB; the brief is wrong and the builder's report is right.
+studio/briefs/W-132.md:134 and :142 claim the held frame is "at most the 4 MiB stdout cap (run-builder-host.mjs:298)". Line 298-299 caps only launch()'s capture; the broker's serve path goes through git() at scripts/run-builder-host.mjs:99 with maxBuffer: 256 * 1024 * 1024. scripts/git-broker.mjs:91-95 (reply()) builds Buffer.from(JSON.stringify(frame)) with no size check.
+Measured (frame-bound.log): a 64 MiB reply to a deaf cell leaves ~126 MiB retained and 181 MiB RSS, held indefinitely while the request stream stays paused. Reachable from the allowlist (diff -p / log -p over cell-authored content).
+Not blocking. The exposure is W-125's and is unchanged by this opus: the socket path queued the same reply in net.Socket's write buffer. Every obligation D-035 names still holds — policy stays host-owned (run-builder-host.mjs:528-546), no raw .git write, the host parses only the pipes it created, teardown closes and deletes. The frame is never queued, the host stays live, recovers and exits, and 4a tests all three. Recommend a follow-on that caps the reply frame in git-broker.mjs (or lowers git()'s maxBuffer) and corrects those two sentences of the brief.
+
+F4. Deviation 1 (non-blocking readSync polled at 5 ms instead of a stream) is sound, and the brief is now stale. studio/briefs/W-132.md:127-128 prescribes git-request as "O_RDWR, read through a stream"; scripts/git-broker.mjs:65 and :126-166 use O_RDWR | O_NONBLOCK with polled readSync from the unref'd timer. The builder's reason holds: an fs ReadStream on a FIFO leaves an uncancellable threadpool read pending, which is exactly the non-exit hazard the brief itself names at lines 67-68. The code is right; the brief text should be amended at the next architect touch. Cost is bounded (<=5 ms per call, WORK=16 per tick).
+
+F5. Deviation 4 (mkfifo shell-out) accepted. scripts/git-broker.mjs:57-60 spawns mkfifo -m 600 with env: { PATH: "/usr/bin:/bin" }. Node has no mkfifo binding; the environment is fully replaced (no LD_PRELOAD), shell is false, both paths are host-derived from runtime/, -m sets the mode exactly without umask, and no cell input reaches the call. It is a new undeclared host-binary dependency (coreutils), alongside the existing bwrap and git ones; worth a line in the brief's runtime assumptions.
+
+F6. Deviation 5 (no new red for 4a) accepted, and the gap is covered by mutation. studio/ci/reds/W-132/04.log is the absent-module assertion and does not exercise 4a, so 4a's assertions have never run red; the architect ruled this at revision 2. Mitigated by two mutants against the final module, each killed by a 4a assertion specifically: replyFd opened blocking kills "b4a: the host answers a sample after the flood" (mutant1-b4-final.log), and dropping the request-pause kills "b4a: the host served fewer frames than the cell got in" (mutant2-b4-final.log). QA lex 2: one mutation per opus suffices.
+
+F7. Deviation 6 confirmed, and the guard is two short. The brief says eleven W-125 live rows (studio/briefs/W-132.md:17-18, :180, :222, :229); the file has 14 — 11 direct live() call sites plus 5 from the refusal helper at run.test.ts:800-835, minus the 2 W-132 rows — and 16 in total. run.test.ts:1121 guards liveRows.length >= 14, which with 16 registered rows tolerates two W-125 rows being dropped. Tighten to the exact count. The acceptance criterion is met more strongly than written: 27 tests, 0 skipped.
+
+F8. studio/opera/W-132.md:3 — the title says the broker "talks to the cell over inherited pipes". M8 ruled inherited fds out and the implementation uses host-created named pipes reached by path. Pre-existing from new; amend --title at the next touch.
+
+NOT FOUND / CHECKED CLEAN
+- Files owned respected: only the 8 declared paths plus studio bookkeeping changed. packages/cli/src/containment.test.ts untouched, the census not weakened.
+- No socket primitive remains in the three owned scripts (b2, verified by re-run); no node:net, createServer, createConnection or .sock name.
+- Framing bound holds: inbox is CAP + CHUNK = 192 KiB, compacted on every pass; an oversize frame is answered once and discarded to its newline (git-broker.mjs:140-166).
+- reply() cannot clobber a pending remainder: every path that can set `held` returns to the retry timer before another frame is handled (git-broker.mjs:133, :155, :166).
+- No frame can reach serve unvalidated: handle() enforces object/string id/array-of-strings before calling serve, and serve still runs validateGitArgs unchanged (run-builder-host.mjs:539).
+- The cell's mutex and reply ids are cell-side only and are documented as such (git-cell-client.mjs:16-20); the host never reads git-reply.
+- Teardown: broker.close() is called at run-builder-host.mjs:618 and from teardownAll() at :251 inside a try, so the signal paths are covered; the pipes live under runtime/ and go with rmSync.
+- /control tamper resistance proven live, in-cell (L2): unlink, rename, chmod and symlink all refused, directory contents unchanged, broker still answering.
+- The module graph is package-level; two new scripts do not move it, so docs/ARCHITECTURE.md needed no regeneration (arch-graph.mjs re-run, no drift).
+- BISELLIUM_GIT_CONTROL is client-side only and never set in the cell; the probe's environment allowlist is unchanged.
+
+WHAT A PASS NEEDS: F1 alone. Replace the clock waits at run.test.ts:1355-1360 and :1367-1370 with sample() round-trips (or another observable), leaving the census untouched and the assertions intact. F2 rides along. F3-F8 are advisory and need no change in this opus.

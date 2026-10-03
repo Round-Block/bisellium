@@ -3,17 +3,22 @@
  * `--behaviour N`; omitting the selector runs all four plus the pre-existing
  * run regressions for test:suite.
  *
+ * W-132 rows (the Git broker's transport is a pair of host-created named
+ * pipes) sit at the end of the file. They are selected by name, never by
+ * `--behaviour`: `--test-name-pattern=W-132-b1` through `W-132-b4`, one row
+ * each. They register only when no `--behaviour` is given.
+ *
  * Every row owns a fresh temporary repository and officina. Nothing here
  * reads from or writes to studio/ or examples/sample-studio.
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, closeSync, constants, copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { after, test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { WorktreeProvider } from "@bisellium/shim";
 import { readFront } from "@bisellium/adapter-native";
 
@@ -155,11 +160,11 @@ function builderRuntime(studio: string): unknown {
 const RUNNER = fileURLToPath(new URL("../../../scripts/run-builder-host.mjs", import.meta.url));
 const bwrapUsable =
   spawnSync("bwrap", ["--unshare-all", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--", "true"], { timeout: 10_000 }).status === 0;
-// The Git broker is a Unix socket; a host sandbox that forbids binding one cannot run the production runner.
-const socketUsable =
-  spawnSync(process.execPath, ["-e", "require('net').createServer().on('error',()=>process.exit(1)).listen(process.argv[1],()=>process.exit(0))", join(tmpdir(), `w125-sock-${process.pid}`)], { timeout: 10_000 }).status === 0;
-const liveSkip = !bwrapUsable ? "bwrap is unusable on this host" : !socketUsable ? "this host's sandbox forbids binding a Unix socket (the Git broker needs one)" : false;
+const liveSkip = !bwrapUsable ? "bwrap is unusable on this host" : false;
+// Every live row is recorded here so W-132 behaviour 1 can count the ones the gate skips.
+const liveRows: { skipped: boolean }[] = [];
 const live = (name: string, fn: () => Promise<void>): void => {
+  liveRows.push({ skipped: liveSkip !== false });
   test(name, { skip: liveSkip, timeout: 240_000 }, fn);
 };
 
@@ -178,7 +183,7 @@ function sourceTreeOf(repo: string, commit: string): string {
 // producer gate; it executes the candidate's gate.mjs the way `npm test` would.
 const FAKE_TOOLING = [
   'import { spawnSync } from "node:child_process";',
-  'import { join } from "node:path";',
+  'import { basename, dirname, join } from "node:path";',
   'const at = process.argv.indexOf("--repo");',
   "const repo = at < 0 ? process.cwd() : process.argv[at + 1];",
   'const run = spawnSync(process.execPath, [join(repo, "gate.mjs")], { cwd: repo, stdio: "inherit" });',
@@ -619,7 +624,7 @@ if (runs(1)) {
     };
     assert.equal(evidence.probe, 0, "the probe still works");
     for (const row of evidence.planted) assert.notEqual(row.link, "ok", "the builder cannot plant anything in /control");
-    assert.deepEqual(evidence.control, ["git.sock"], "the builder reaches only the broker socket");
+    assert.deepEqual(evidence.control, ["git-reply", "git-request"], "the builder reaches only the two host-created pipes");
     assert.deepEqual(leftovers(f), []);
   });
 }
@@ -885,6 +890,548 @@ if (runs(4)) {
     assert.equal(acquireProducerLease(repo, OPUS), undefined, "a lease held by a live process is refused");
     writeFileSync(join(first!, "pid"), `${spawnSync("true").pid}\n`);
     assert.ok(acquireProducerLease(repo, OPUS), "a lease whose owner is dead is reclaimed");
+  });
+}
+
+// ---------------------------------------------------------------------------
+// W-132: the Git broker's transport is a pair of host-created named pipes
+// (`git-request`, `git-reply`) in the read-only /control mount; no socket. Rows
+// are selected by name, one per behaviour: --test-name-pattern=W-132-b1 .. b4.
+// The new modules are loaded dynamically, so their absence is one assertion
+// failure and never a module-load error. Titles and messages are fixed text:
+// no child output is ever interpolated into a red row's message.
+// ---------------------------------------------------------------------------
+if (only === undefined) {
+  const SCRIPTS = fileURLToPath(new URL("../../../scripts/", import.meta.url));
+  const BROKER = join(SCRIPTS, "git-broker.mjs");
+  const CELL_CLIENT = join(SCRIPTS, "git-cell-client.mjs");
+  const OWNED_SCRIPTS = [RUNNER, BROKER, CELL_CLIENT];
+  const PIPES = ["git-reply", "git-request"];
+
+  interface Frame {
+    id?: string | null;
+    status?: number;
+    stdout?: string;
+    stderr?: string;
+  }
+  interface HostLine {
+    t: string;
+    head?: string;
+    n?: number;
+    len?: number;
+    heap?: number;
+    buffers?: number;
+  }
+
+  // The host side: `openCellChannel` in a process of its own, with a `serve`
+  // that is a stand-in policy (status verbs served, everything else denied).
+  // A separate process lets the row prove close() leaves nothing alive, and
+  // gc() makes the buffer bound a retained-memory measurement, not a guess.
+  const HOST_SCRIPT = `
+const { openCellChannel } = await import(process.argv[1]);
+const emit = (line) => process.stdout.write(JSON.stringify(line) + '\\n');
+const channel = await openCellChannel(process.argv[2], (args) => {
+  emit({ t: 'served', head: args.map((a) => a.slice(0, 8)).join(' '), n: args.length, len: args.reduce((sum, a) => sum + a.length, 0) });
+  if (args[0] === 'status') return { status: 0, stdout: 'served:' + args.map((a) => a.slice(0, 16)).join(' ') + '\\n', stderr: '' };
+  return { status: 2, stdout: '', stderr: 'git broker: Git command denied: ' + args[0] + '\\n' };
+});
+process.stdin.setEncoding('utf8');
+let buffered = '';
+process.stdin.on('data', (part) => {
+  buffered += part;
+  for (let at = buffered.indexOf('\\n'); at >= 0; at = buffered.indexOf('\\n')) {
+    const command = buffered.slice(0, at);
+    buffered = buffered.slice(at + 1);
+    if (command === 'sample') {
+      gc();
+      const m = process.memoryUsage();
+      emit({ t: 'mem', heap: m.heapUsed, buffers: m.arrayBuffers });
+    }
+    if (command === 'close') {
+      channel.close();
+      process.stdin.destroy();
+    }
+  }
+});
+emit({ t: 'ready' });
+`;
+
+  // The hostile cell: blocking synchronous I/O on the two pipes, like the real
+  // client. Each scenario ends by reading replies until a sentinel's own reply
+  // arrives, so every earlier reply is in hand and nothing here sleeps.
+  const CELL_SCRIPT = `
+const fs = require('node:fs');
+const [dir, scenario, canary] = process.argv.slice(1);
+const reply = fs.openSync(dir + '/git-reply', fs.constants.O_RDWR);
+const open = () => fs.openSync(dir + '/git-request', fs.constants.O_WRONLY);
+const sendAll = (fd, text) => {
+  const bytes = Buffer.from(text);
+  let at = 0;
+  while (at < bytes.length) at += fs.writeSync(fd, bytes, at);
+};
+let pending = '';
+const readUntil = (done) => {
+  const frames = [];
+  const chunk = Buffer.alloc(65536);
+  for (;;) {
+    const n = fs.readSync(reply, chunk, 0, chunk.length, null);
+    pending += chunk.toString('utf8', 0, n);
+    for (let at = pending.indexOf('\\n'); at >= 0; at = pending.indexOf('\\n')) {
+      const line = pending.slice(0, at);
+      pending = pending.slice(at + 1);
+      let frame;
+      try { frame = JSON.parse(line); } catch { frame = { unparsable: true }; }
+      frames.push(frame);
+      if (done(frames)) return frames;
+    }
+  }
+};
+const frame = (id, ...args) => JSON.stringify({ id, args }) + '\\n';
+const a = open();
+const sentinel = (id) => { sendAll(a, frame(id, 'status')); return readUntil((all) => all.some((x) => x.id === id)); };
+const out = {};
+if (scenario === 'malformed') {
+  const pad = (n) => 'a'.repeat(n);
+  sendAll(a, JSON.stringify({ id: 'big', args: ['status', pad(200 * 1024)] }) + '\\n');
+  sendAll(a, 'this is not json\\n');
+  sendAll(a, '{"id":"a1","args":"status"}\\n');
+  sendAll(a, '{"id":"a2","args":["status",1]}\\n');
+  sendAll(a, '{"id":"a3","args":[["status"]]}\\n');
+  sendAll(a, '{"id":"a4"}\\n');
+  sendAll(a, '{"args":["status"]}\\n');
+  sendAll(a, frame('mid', 'status', pad(100 * 1024)));
+  sendAll(a, frame('d1', 'push', 'origin', 'HEAD'));
+  out.frames = sentinel('s1');
+}
+if (scenario === 'interleave') {
+  const b = open();
+  for (let i = 0; i < 20; i++) {
+    sendAll(a, frame('A' + i, 'status', 'A' + i));
+    sendAll(b, frame('B' + i, 'status', 'B' + i));
+  }
+  out.frames = sentinel('s3');
+}
+if (scenario === 'torn') {
+  const b = open();
+  sendAll(a, '{"id":"T1","ar');
+  sendAll(b, '{"id":"T2","args":["status"]}\\n');
+  sendAll(a, 'gs":["status"]}\\n');
+  out.frames = sentinel('s4');
+}
+if (scenario === 'forged') {
+  sendAll(reply, JSON.stringify({ id: 'forged', status: 0, stdout: 'forged\\n', stderr: '' }) + '\\n');
+  sendAll(a, JSON.stringify({ id: 'f1', args: ['status', 'x'], reply: canary, pipe: canary, path: canary }) + '\\n');
+  out.frames = readUntil((all) => all.some((x) => x.id === 'f1'));
+}
+if (scenario === 'flood') {
+  const piece = Buffer.alloc(1024 * 1024, 120);
+  for (let i = 0; i < 32; i++) {
+    let at = 0;
+    while (at < piece.length) at += fs.writeSync(a, piece, at);
+  }
+}
+if (scenario === 'resume') {
+  sendAll(a, '\\n');
+  out.frames = sentinel('u1');
+}
+if (scenario === 'sentinel') {
+  out.frames = sentinel('z1');
+}
+if (scenario === 'deaf') {
+  // Never reads a reply. Non-blocking: the flood ends when the pipe refuses it, not when the host stops caring.
+  const w = fs.openSync(dir + '/git-request', fs.constants.O_WRONLY | fs.constants.O_NONBLOCK);
+  let count = 0;
+  for (; count < 5000; count++) {
+    try { fs.writeSync(w, frame('d' + count, 'status')); } catch (e) { if (e.code === 'EAGAIN') break; throw e; }
+  }
+  out.count = count;
+}
+process.stdout.write(JSON.stringify(out));
+`;
+
+  function startHost(control: string) {
+    const lines: HostLine[] = [];
+    let exit: { code: number | null; signal: NodeJS.Signals | null } | undefined;
+    let stderr = "";
+    const child = spawn(
+      process.execPath,
+      ["--expose-gc", "--input-type=module", "-e", HOST_SCRIPT, pathToFileURL(BROKER).href, control],
+      { stdio: ["pipe", "pipe", "pipe"], timeout: 180_000, killSignal: "SIGKILL" },
+    );
+    let buffered = "";
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (part: string) => {
+      buffered += part;
+      for (let at = buffered.indexOf("\n"); at >= 0; at = buffered.indexOf("\n")) {
+        try {
+          lines.push(JSON.parse(buffered.slice(0, at)) as HostLine);
+        } catch {
+          lines.push({ t: "garbled" });
+        }
+        buffered = buffered.slice(at + 1);
+      }
+    });
+    child.stderr.on("data", (part: Buffer) => (stderr += part.toString("utf8")));
+    child.once("exit", (code, signal) => {
+      exit = { code, signal };
+    });
+    return {
+      child,
+      lines,
+      exit: () => exit,
+      stderr: () => stderr.slice(-1500),
+      served: () => lines.filter((line) => line.t === "served"),
+      command: (text: string) => child.stdin.write(`${text}\n`),
+    };
+  }
+  type Host = ReturnType<typeof startHost>;
+
+  async function hostReady(host: Host): Promise<void> {
+    await waitFor("the host channel to open", () => host.lines.some((line) => line.t === "ready") || host.exit() !== undefined);
+    assert.equal(host.lines.some((line) => line.t === "ready"), true, `the host channel opened: ${host.stderr()}`);
+  }
+
+  function runCell(control: string, scenario: string, canary = ""): Promise<{ code: number | null; signal: NodeJS.Signals | null; out: string }> {
+    return new Promise((done) => {
+      const child = spawn(process.execPath, ["-e", CELL_SCRIPT, control, scenario, canary], {
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: 90_000,
+        killSignal: "SIGKILL",
+      });
+      let out = "";
+      child.stdout.on("data", (part: Buffer) => (out += part.toString("utf8")));
+      child.once("close", (code, signal) => done({ code, signal, out }));
+    });
+  }
+  async function cellFrames(control: string, scenario: string, canary = ""): Promise<Frame[]> {
+    const cell = await runCell(control, scenario, canary);
+    assert.equal(cell.signal, null, `b4: the cell got every reply it waited on (${scenario})`);
+    assert.equal(cell.code, 0, `b4: the cell scenario finished (${scenario})`);
+    return (JSON.parse(cell.out) as { frames?: Frame[] }).frames ?? [];
+  }
+  const answered = (frames: Frame[], status: number): (string | null | undefined)[] =>
+    frames.filter((frame) => frame.status === status).map((frame) => frame.id).sort();
+
+  test("W-132-b1 behaviour 1: the live rows are not gated on a socket", () => {
+    // Tokens only: the raw gate text holds a word the red replay's output filter rejects.
+    const gate = liveSkip === false ? "ungated" : /socket/i.test(liveSkip) ? "socket-gated" : "bwrap-gated";
+    assert.notEqual(gate, "socket-gated", "b1: liveSkip is a socket refusal");
+    assert.equal(gate, bwrapUsable ? "ungated" : "bwrap-gated", "b1: liveSkip is false exactly when bwrap is usable");
+    assert.equal(liveRows.filter((row) => row.skipped).length, bwrapUsable ? 0 : liveRows.length, "b1: a usable bwrap leaves no live row skipped");
+    // 14 W-125 live rows plus the 2 W-132 live rows (L2, L3).
+    assert.equal(liveRows.length, 16, "b1: every live row is registered, none dropped or added unrecorded");
+    // Assembled, so this assertion is not itself the text it forbids.
+    const probe = ["socket", "Usable"].join("");
+    assert.equal(readFileSync(fileURLToPath(import.meta.url), "utf8").includes(probe), false, "b1: the live gate still consults a socket probe");
+  });
+
+  test("W-132-b2 behaviour 2: no socket primitive survives in the owned scripts", () => {
+    const tokens: [string, RegExp][] = [
+      ["node:net", /node:net/],
+      ["createServer", /createServer/],
+      ["createConnection", /createConnection/],
+      [".sock", /\.sock(?![A-Za-z])/],
+    ];
+    const hits: Record<string, string[]> = {};
+    const missing: string[] = [];
+    for (const path of OWNED_SCRIPTS) {
+      if (!existsSync(path)) {
+        missing.push(basename(path));
+        continue;
+      }
+      const text = readFileSync(path, "utf8");
+      const found = tokens.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+      if (found.length > 0) hits[basename(path)] = found; // token names only, never the matching lines
+    }
+    assert.deepEqual(hits, {}, "b2: socket primitives remain in the owned scripts");
+    assert.deepEqual(missing, [], "b2: all three owned scripts exist");
+  });
+
+  live("W-132-L2 behaviour 2 live: /control holds exactly the host-created pipes and the cell cannot tamper with them", async () => {
+    const f = liveFixture("b2-live-pipes");
+    const body = `(async()=>{
+      const attempt = (fn) => { try { fn(); return 'ok'; } catch (e) { return e.code; } };
+      const names = fs.readdirSync('/control').sort();
+      const fifo = Object.fromEntries(names.map((n) => [n, fs.lstatSync('/control/' + n).isFIFO()]));
+      const tamper = {
+        unlink: attempt(() => fs.unlinkSync('/control/git-request')),
+        rename: attempt(() => fs.renameSync('/control/git-reply', '/control/git-reply-moved')),
+        chmod: attempt(() => fs.chmodSync('/control/git-request', 0o666)),
+        symlink: attempt(() => fs.symlinkSync('/etc/passwd', '/control/planted')),
+      };
+      const after = { names: fs.readdirSync('/control').sort(), status: git('status', '--short').status };
+      fs.writeFileSync('evidence.json', JSON.stringify({ names, fifo, tamper, after }));
+      ${FIX_AND_COMMIT}
+    })();`;
+    const res = runnerRun(f, builder(body));
+    assert.equal(res.status, 0, `${res.stderr}\n${res.stdout}`.slice(-2000));
+    const evidence = JSON.parse(git(f.repo, ["show", `refs/heads/opus/${OPUS}:evidence.json`])) as {
+      names: string[];
+      fifo: Record<string, boolean>;
+      tamper: Record<string, string>;
+      after: { names: string[]; status: number | null };
+    };
+    assert.deepEqual(evidence.names, PIPES, "/control lists exactly the host-created names");
+    assert.deepEqual(evidence.fifo, { "git-reply": true, "git-request": true }, "each name in /control is a FIFO");
+    for (const [action, code] of Object.entries(evidence.tamper)) assert.notEqual(code, "ok", `${action} in /control must fail`);
+    assert.deepEqual(evidence.after.names, PIPES, "a failed tamper leaves /control as the host made it");
+    assert.equal(evidence.after.status, 0, "the broker still answers after the tamper attempts");
+    assert.deepEqual(leftovers(f), []);
+  });
+
+  test("W-132-b3 behaviour 3: a git call reaches the host broker from any process depth", async () => {
+    assert.equal(existsSync(CELL_CLIENT), true, "b3: scripts/git-cell-client.mjs exists as a standalone cell client");
+    assert.equal(readFileSync(RUNNER, "utf8").includes("git-cell-client.mjs"), true, "b3: the runner installs the standalone cell client");
+    assert.equal(existsSync(BROKER), true, "b3: scripts/git-broker.mjs exists as the transport module");
+
+    const control = scratch("b3-control");
+    const tools = scratch("b3-tools");
+    // Installed the way the runner installs it: copied to /tools/git, mode 0555.
+    copyFileSync(CELL_CLIENT, join(tools, "git"));
+    chmodSync(join(tools, "git"), 0o555);
+    const host = startHost(control);
+    try {
+      await hostReady(host);
+      // node -> sh -> client: the client is a grandchild of a process that was
+      // given no descriptor beyond stdio, as when an agent shells out. The
+      // client's mutex lives under TMPDIR, the cell's private /tmp.
+      const chain = `
+const { spawn } = require('node:child_process');
+const sh = (script) => new Promise((done) => {
+  const c = spawn('sh', ['-c', script], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '';
+  let err = '';
+  c.stdout.on('data', (d) => (out += d));
+  c.stderr.on('data', (d) => (err += d));
+  c.on('close', (code) => done({ code, out, err }));
+});
+(async () => {
+  const served = await sh('git status --short');
+  const denied = await sh('git push origin HEAD');
+  const parallel = await Promise.all([1, 2, 3].map((i) => sh('git status p' + i)));
+  process.stdout.write(JSON.stringify({ served, denied, parallel }));
+})();
+`;
+      const env = { PATH: `${tools}:${dirname(process.execPath)}:/usr/bin:/bin`, BISELLIUM_GIT_CONTROL: control, TMPDIR: scratch("b3-tmp"), HOME: tools };
+      const ran = await new Promise<{ code: number | null; signal: NodeJS.Signals | null; out: string }>((done) => {
+        const child = spawn(process.execPath, ["-e", chain], { env, stdio: ["ignore", "pipe", "ignore"], timeout: 90_000, killSignal: "SIGKILL" });
+        let out = "";
+        child.stdout.on("data", (part: Buffer) => (out += part.toString("utf8")));
+        child.once("close", (code, signal) => done({ code, signal, out }));
+      });
+      assert.equal(ran.signal, null, "b3: every call from a grandchild got a reply");
+      assert.equal(ran.code, 0, "b3: the process chain finished");
+      const result = JSON.parse(ran.out) as {
+        served: { code: number; out: string; err: string };
+        denied: { code: number; out: string; err: string };
+        parallel: { code: number; out: string; err: string }[];
+      };
+      assert.deepEqual(result.served, { code: 0, out: "served:status --short\n", err: "" }, "b3: an allowlisted verb is served from a grandchild");
+      assert.deepEqual(
+        result.denied,
+        { code: 2, out: "", err: "git broker: Git command denied: push\n" },
+        "b3: a denied verb is refused with the broker's message",
+      );
+      assert.deepEqual(
+        result.parallel.map((run) => `${run.code}:${run.out}`).sort(),
+        [1, 2, 3].map((i) => `0:served:status p${i}\n`),
+        "b3: concurrent callers each get their own reply",
+      );
+      assert.equal(host.served().length, 5, "b3: serve saw exactly the five calls");
+    } finally {
+      host.child.kill("SIGKILL");
+    }
+  });
+
+  live("W-132-L3 behaviour 3 live: a commit made from a shell inside the builder command reaches the host broker", async () => {
+    const f = liveFixture("b3-live-depth");
+    // node (the builder command) -> sh -> git: two levels below the process the runtime started.
+    const body = `(async()=>{
+      fs.writeFileSync('source.txt','fixed\\n');
+      require('node:child_process').execFileSync('sh',['-c','git add -A && git commit -m deep'],{stdio:'inherit'});
+    })();`;
+    const res = runnerRun(f, builder(body));
+    assert.equal(res.status, 0, `${res.stderr}\n${res.stdout}`.slice(-2000));
+    assert.notEqual(tip(f), f.base, "the exported commit must advance the owning branch");
+    assert.equal(git(f.repo, ["show", `refs/heads/opus/${OPUS}:source.txt`]), "fixed");
+    assert.equal(git(f.repo, ["log", "-1", "--format=%s", `refs/heads/opus/${OPUS}`]), "deep");
+    assert.deepEqual(leftovers(f), []);
+  });
+
+  test("W-132-b4 behaviour 4: a hostile cell cannot make the host misbehave through the request pipe", async () => {
+    assert.equal(existsSync(BROKER), true, "b4: scripts/git-broker.mjs exists as the transport module");
+    const transport = (await import(pathToFileURL(BROKER).href)) as { openCellChannel?: unknown };
+    assert.equal(typeof transport.openCellChannel, "function", "b4: git-broker.mjs exports openCellChannel");
+
+    const control = scratch("b4-control");
+    const canary = join(scratch("b4-canary"), "reply-target");
+    const host = startHost(control);
+    const sample = async (ms = 40_000): Promise<number> => {
+      const seen = host.lines.filter((line) => line.t === "mem").length;
+      host.command("sample");
+      await waitFor("a memory sample", () => host.lines.filter((line) => line.t === "mem").length > seen, ms);
+      const latest = host.lines.filter((line) => line.t === "mem").at(-1);
+      return (latest?.heap ?? 0) + (latest?.buffers ?? 0);
+    };
+    try {
+      await hostReady(host);
+      // The host made exactly the two pipes, owner-only.
+      assert.deepEqual(readdirSync(control).sort(), PIPES, "b4: the channel is exactly the two host-created names");
+      for (const name of PIPES) {
+        const info = statSync(join(control, name));
+        assert.equal(info.isFIFO(), true, `b4: ${name} is a named pipe`);
+        assert.equal(info.mode & 0o777, 0o600, `b4: ${name} is mode 0600`);
+      }
+
+      // Malformed frames: each is answered with an error frame and never reaches serve.
+      const malformed = await cellFrames(control, "malformed");
+      for (const id of ["a1", "a2", "a3", "a4"]) {
+        assert.equal(malformed.filter((frame) => frame.id === id && frame.status === 2).length, 1, `b4: ${id} is answered with one error frame`);
+      }
+      assert.equal(
+        malformed.filter((frame) => frame.status === 2 && frame.id !== "d1").length >= 7,
+        true,
+        "b4: the oversize, non-JSON, bad-args and id-less frames each get an error frame",
+      );
+      assert.deepEqual(answered(malformed, 0), ["mid", "s1"], "b4: only the well-formed frames are served");
+      const denied = malformed.find((frame) => frame.id === "d1");
+      assert.equal(denied?.status === 2 && denied.stderr === "git broker: Git command denied: push\n", true, "b4: a denied verb carries the broker's message");
+      assert.deepEqual(
+        host.served().map((line) => [line.head, line.n, line.len]),
+        [
+          ["status aaaaaaaa", 2, 6 + 100 * 1024],
+          ["push origin HEAD", 3, 14],
+          ["status", 1, 6],
+        ],
+        "b4: serve is called once per well-formed frame, with the frame intact",
+      );
+
+      // Two writers interleaving whole frames: one answer each, none lost or doubled.
+      const mixed = await cellFrames(control, "interleave");
+      const expected = [...Array.from({ length: 20 }, (_, i) => `A${i}`), ...Array.from({ length: 20 }, (_, i) => `B${i}`), "s3"].sort();
+      assert.deepEqual(mixed.map((frame) => frame.id).sort(), expected, "b4: interleaved writers get exactly one answer per frame");
+      assert.equal(
+        mixed.every((frame) => frame.status === 0 && (frame.id === "s3" || frame.stdout === `served:status ${frame.id}\n`)),
+        true,
+        "b4: every interleaved frame is answered with its own reply",
+      );
+
+      // A frame torn between two writers is garbage to the host, never a request.
+      const servedBefore = host.served().length;
+      const torn = await cellFrames(control, "torn");
+      assert.equal(torn.some((frame) => frame.status === 2), true, "b4: a torn frame is answered with an error frame");
+      assert.deepEqual(answered(torn, 0), ["s4"], "b4: nothing but the sentinel is served after a torn frame");
+      assert.equal(host.served().length - servedBefore, 1, "b4: a torn frame never reaches serve");
+
+      // A forged reply is the cell talking to itself; the extra fields name nothing the host writes.
+      const forged = await cellFrames(control, "forged", canary);
+      const planted = forged.filter((frame) => frame.id === "forged");
+      assert.equal(planted.length, 1, "b4: the host neither consumes nor repeats a forged reply");
+      assert.equal(planted[0]?.stdout, "forged\n", "b4: a forged reply is left as the cell wrote it");
+      assert.equal(forged.filter((frame) => frame.id === "f1" && frame.status === 0).length, 1, "b4: the real request is still answered");
+      assert.equal(existsSync(canary), false, "b4: the host writes only into the pipe it created");
+      assert.equal(host.served().at(-1)?.head, "status x", "b4: the forged reply never reaches serve");
+
+      // An unterminated request is discarded at the 128 KiB cap, not buffered.
+      const baseline = await sample();
+      const flood = await runCell(control, "flood");
+      assert.equal(flood.signal === null && flood.code === 0, true, "b4: the host keeps draining an unterminated request");
+      const grown = (await sample()) - baseline;
+      assert.equal(grown < 8 * 1024 * 1024, true, "b4: an unterminated request does not grow the host's buffer");
+      const servedAfterForged = host.served().length;
+      const resumed = await cellFrames(control, "resume");
+      assert.deepEqual(answered(resumed, 0), ["u1"], "b4: the host serves the next well-formed frame after a discard");
+      assert.equal(resumed.every((frame) => frame.status === 2 || frame.id === "u1"), true, "b4: a discarded request is never answered as success");
+      assert.equal(host.served().length - servedAfterForged, 1, "b4: a discarded request never reaches serve");
+
+      // 4a: a deaf, flooding cell. It never reads git-reply and refuses to wait on git-request.
+      const deafBaseline = await sample();
+      const deafServedFrom = host.served().length;
+      const deaf = await runCell(control, "deaf");
+      assert.equal(deaf.signal === null && deaf.code === 0, true, "b4a: the deaf cell was refused, not parked");
+      const got = (JSON.parse(deaf.out) as { count?: number }).count ?? 0;
+      assert.equal(got > 0, true, "b4a: the deaf cell got frames in");
+      // The host is alive and its event loop is free: a blocked reply write would never answer a sample. A sample
+      // round-trips the host's event loop, and its mem line follows every served line on the same stream, so the
+      // served count it leaves is complete. Sample until two in a row leave the same count: a host still reading
+      // serves at least one frame per turn, so it cannot sit through one, and each sample that sees growth
+      // consumed a frame, so there are at most `got` of them. No clock.
+      let seen: number;
+      let deafAfter: number | undefined;
+      let probes = 0;
+      do {
+        seen = host.served().length;
+        deafAfter = await sample(15_000).catch(() => undefined);
+      } while (deafAfter !== undefined && host.served().length !== seen && ++probes <= got);
+      assert.equal(deafAfter !== undefined, true, "b4a: the host answers a sample after the flood");
+      // The host stopped reading requests rather than queueing replies.
+      const heldAt = host.served().length - deafServedFrom;
+      assert.equal(heldAt < got, true, "b4a: the host served fewer frames than the cell got in");
+      // One more sample: a host still reading would have served more by it.
+      const settled = await sample(15_000).catch(() => undefined);
+      assert.equal(host.served().length - deafServedFrom, heldAt, "b4a: the host stays paused while no reply is read");
+      // Memory is bounded: one reply frame at most, never a queued flood.
+      assert.equal((settled ?? Infinity) - deafBaseline < 8 * 1024 * 1024, true, "b4a: a deaf flood does not grow the host's memory");
+
+      // The stall is a pause, not a death: the test reads git-reply, the held replies arrive intact and the host serves on.
+      const sink = openSync(join(control, "git-reply"), constants.O_RDWR | constants.O_NONBLOCK);
+      let drained = "";
+      const drain = (): void => {
+        const chunk = Buffer.alloc(65536);
+        for (;;) {
+          try {
+            const n = readSync(sink, chunk, 0, chunk.length, null);
+            if (n === 0) return;
+            drained += chunk.toString("utf8", 0, n);
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "EAGAIN") return;
+            throw error;
+          }
+        }
+      };
+      const replies = (): string[] => drained.split("\n").slice(0, -1);
+      try {
+        await waitFor("the host to deliver every held reply", () => {
+          drain();
+          return host.served().length - deafServedFrom >= got && replies().length >= got;
+        });
+        drain();
+      } finally {
+        closeSync(sink);
+      }
+      assert.equal(host.served().length - deafServedFrom, got, "b4a: every frame the cell got in is served once the replies are read");
+      assert.equal(
+        replies().every((line) => {
+          try {
+            return (JSON.parse(line) as Frame).status === 0;
+          } catch {
+            return false;
+          }
+        }),
+        true,
+        "b4a: every held reply arrives whole",
+      );
+      assert.equal(replies().length, got, "b4a: one reply per frame, none dropped or repeated");
+      const servedBeforeSentinel = host.served().length;
+      const fresh = await cellFrames(control, "sentinel");
+      assert.deepEqual(answered(fresh, 0), ["z1"], "b4a: a fresh request is answered with its own id");
+      assert.equal(host.served().length > servedBeforeSentinel, true, "b4a: the host serves again after the stall");
+
+      // Teardown with a remainder pending: the host is holding an undelivered frame when close() runs below.
+      const pendingFrom = host.served().length;
+      const again = await runCell(control, "deaf");
+      assert.equal(again.signal === null && again.code === 0, true, "b4a: a second deaf cell was refused, not parked");
+      const alive = await sample(15_000).catch(() => undefined);
+      assert.equal(alive !== undefined, true, "b4a: the host still answers with a reply held");
+      assert.equal(host.served().length > pendingFrom, true, "b4a: the second flood reached serve before the stall");
+
+      assert.deepEqual(readdirSync(control).sort(), PIPES, "b4: the host created nothing else");
+      host.command("close");
+      await waitFor("the host to exit", () => host.exit() !== undefined, 20_000).catch(() => undefined);
+      assert.deepEqual(host.exit(), { code: 0, signal: null }, "b4: close() lets the process exit");
+    } finally {
+      host.child.kill("SIGKILL");
+    }
   });
 }
 

@@ -28,12 +28,12 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { createServer } from "node:net";
 import { createHash } from "node:crypto";
 import { constants as osConstants, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
+import { openCellChannel } from "./git-broker.mjs";
 
 const argv = process.argv.slice(2);
 const requestAt = argv.indexOf("--request");
@@ -516,7 +516,6 @@ try {
   copyModules(clone);
 
   const controlDir = join(runtime, "control");
-  const priorCwd = process.cwd();
   const brokerEnv = {
     ...GIT_ENV,
     GIT_AUTHOR_NAME: request.sella,
@@ -524,57 +523,34 @@ try {
     GIT_COMMITTER_NAME: request.sella,
     GIT_COMMITTER_EMAIL: `${request.sella}@${request.slug}.bisellium`,
   };
-  broker = createServer((connection) => {
-    let raw = "";
-    connection.setEncoding("utf8");
-    connection.on("data", (part) => {
-      raw += part;
-      if (raw.length > 128 * 1024) connection.destroy();
-    });
-    connection.on("end", () => {
-      let response = { status: 2, stdout: "", stderr: "git broker: invalid request\n" };
-      try {
-        const parsed = JSON.parse(raw);
-        const args =
-          Array.isArray(parsed.args) && parsed.args.every((arg) => typeof arg === "string") ? parsed.args : [];
-        if (args[0] === "bisellium-probe-index" && args.length === 1) {
-          // `probe/` is never bound into the sandbox: host git must not write through a name the builder can plant.
-          const index = join(runtime, "probe", "index");
-          const env = { ...GIT_ENV, GIT_INDEX_FILE: index };
-          const read = git(clone, ["read-tree", "HEAD"], { env });
-          const wrote =
-            read.status === 0 ? git(clone, ["hash-object", "-w", "--stdin"], { env, input: "builder probe\n" }) : read;
-          response = { status: wrote.status ?? 1, stdout: wrote.stdout ?? "", stderr: wrote.stderr ?? "" };
-        } else {
-          validateGitArgs(args);
-          const run = git(clone, args, { env: brokerEnv });
-          // The sandbox sees its clone as /workspace; never leak the host path.
-          const mask = (text) => (text ?? "").replaceAll(clone, "/workspace");
-          response = {
-            status: run.status ?? 1,
-            stdout: mask(run.stdout),
-            stderr: mask(run.stderr || run.error?.message),
-          };
-        }
-      } catch (error) {
-        response = { status: 2, stdout: "", stderr: `git broker: ${error.message}\n` };
+  // Policy lives here, in the host runner; scripts/git-broker.mjs is the transport (named pipes in
+  // /control) and only calls this with a validated array of strings.
+  const serve = (args) => {
+    try {
+      if (args[0] === "bisellium-probe-index" && args.length === 1) {
+        // `probe/` is never bound into the sandbox: host git must not write through a name the builder can plant.
+        const index = join(runtime, "probe", "index");
+        const env = { ...GIT_ENV, GIT_INDEX_FILE: index };
+        const read = git(clone, ["read-tree", "HEAD"], { env });
+        const wrote =
+          read.status === 0 ? git(clone, ["hash-object", "-w", "--stdin"], { env, input: "builder probe\n" }) : read;
+        return { status: wrote.status ?? 1, stdout: wrote.stdout ?? "", stderr: wrote.stderr ?? "" };
       }
-      connection.end(JSON.stringify(response));
-    });
-  });
-  await new Promise((ok, fail) => {
-    broker.once("error", fail);
-    // Unix socket paths top out near 108 bytes and a temp root can be long: bind relative.
-    process.chdir(controlDir);
-    broker.listen("git.sock", ok);
-  });
-  process.chdir(priorCwd);
-  chmodSync(join(controlDir, "git.sock"), 0o600);
+      validateGitArgs(args);
+      const run = git(clone, args, { env: brokerEnv });
+      // The sandbox sees its clone as /workspace; never leak the host path.
+      const mask = (text) => (text ?? "").replaceAll(clone, "/workspace");
+      return { status: run.status ?? 1, stdout: mask(run.stdout), stderr: mask(run.stderr || run.error?.message) };
+    } catch (error) {
+      return { status: 2, stdout: "", stderr: `git broker: ${error.message}\n` };
+    }
+  };
+  broker = openCellChannel(controlDir, serve);
 
-  // Host-owned read-only tools: the broker as `git`, the host's Node, the probe.
-  const brokerClient = `#!/usr/bin/env node\nimport net from 'node:net';\nconst s=net.createConnection('/control/git.sock');let r='';s.on('connect',()=>s.end(JSON.stringify({args:process.argv.slice(2)})));s.on('data',x=>r+=x);s.on('end',()=>{let v;try{v=JSON.parse(r)}catch{v={status:2,stdout:'',stderr:'git broker: bad reply\\n'}}process.stdout.write(v.stdout);process.stderr.write(v.stderr);process.exitCode=v.status??1});s.on('error',e=>{console.error('git broker:',e.message);process.exitCode=2});\n`;
+  // Host-owned read-only tools: the cell's `git` (the broker's client), the host's Node, the probe.
   const tools = join(runtime, "tools");
-  writeFileSync(join(tools, "git"), brokerClient, { mode: 0o555 });
+  copyFileSync(fileURLToPath(new URL("./git-cell-client.mjs", import.meta.url)), join(tools, "git"));
+  chmodSync(join(tools, "git"), 0o555);
   for (const name of ["node", "npm", "npx"])
     if (existsSync(join(NODE_BIN, name))) symlinkSync(join(NODE_BIN, name), join(tools, name));
   copyFileSync(
@@ -616,7 +592,7 @@ try {
       roBinds: [
         [join(clone, ".git"), "/workspace/.git"],
         [tools, "/tools"],
-        [controlDir, "/control"], // socket only; read-only so the builder cannot replace or litter it
+        [controlDir, "/control"], // the two named pipes only; read-only so the builder cannot replace or litter them
         ["/dev/null", "/usr/bin/git"],
         [join(runtime, "git-core-mask"), "/usr/lib/git-core"],
         ...etcFor(runtime),
@@ -639,7 +615,7 @@ try {
   if (childExit !== 0) throw new Error(`confined builder/probe exited ${childExit}`);
   // Revoke the builder before inspecting anything it produced. The PID
   // namespace plus process-group kill covers setsid/double-fork attempts.
-  await new Promise((ok) => broker.close(ok));
+  broker.close();
   broker = undefined;
 
   finalCommit = mustGit(clone, ["rev-parse", "HEAD"]);

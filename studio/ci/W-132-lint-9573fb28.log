@@ -1,0 +1,24 @@
+certifies: tree:9573fb28ebd6abca1ac023d642e23c54def9c0df
+command: npm run -s lint
+exit code: 0
+
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+✖ 6 problems (0 errors, 6 warnings)
+
+

@@ -1572,7 +1572,10 @@ The producer pins `opus/<id>` and `master`, takes an exclusive publication
 lease, and makes a `git clone --no-local --no-hardlinks --dissociate` with no
 remote or alternates. The clone is mounted into a bubblewrap PID/user/mount/
 network namespace. Raw `.git` is read-only. The only `git` on `PATH` is a
-host broker which allows reads, staging and ordinary commits on the owning
+client for a host broker, reached over two named pipes (`git-request`,
+`git-reply`) the producer creates in the read-only `/control` mount; there is
+no socket, so a `git` run from any depth of the builder's process tree reaches
+it. The broker allows reads, staging and ordinary commits on the owning
 branch, fixes identity/config/hooks, and rejects ref/config/reset/stash/
 remote/destructive operations. The child starts from an empty environment
 with only the runtime allowlist, private home/temp/npm paths, no credentials
@@ -1585,8 +1588,8 @@ After the builder exits, only clean commits descending from the pinned tip
 and touching the brief's `Files owned` are eligible for export. Protected
 officina/evidence paths, extra refs, working files and dependency directories
 are never imported. Publication is compare-and-swap. The producer kills the
-whole process group, closes broker/network endpoints and deletes all private
-runtime paths on every exit path. Cleanup failure is failure.
+whole process group, closes the broker's pipe channel and deletes all private
+runtime paths, the pipes included, on every exit path. Cleanup failure is failure.
 
 Only after disposal does the producer use the pinned host-master controller
 to replay clean committed reds and run the fixed CI, verify and check gates
