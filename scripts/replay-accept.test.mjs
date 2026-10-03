@@ -44,7 +44,8 @@ const PW_ONE = `${BANNER_1}\n${MATCHER_LOCATOR}\n  1 failed\n    [chromium] > wa
 const PW_GREATER = `${BANNER_1}\n${MATCHER_GREATER}\n  1 failed\n    [chromium] > walk.spec.ts:20:1 > the count\n`;
 const PW_THREE = `${BANNER_3}\n${MATCHER_LOCATOR}\n  3 failed\n    [chromium] > walk.spec.ts:10:1 > one\n    [chromium] > walk.spec.ts:20:1 > two\n    [chromium] > walk.spec.ts:30:1 > three\n`;
 const TAP_ONE = "TAP version 13\nnot ok 1 - a behaviour\n  ---\n  duration_ms: 3\n  ...\n1..1\n# fail 1\n";
-const TAP_ERR = "TAP version 13\nnot ok 1 - a behaviour\n  ---\n  error: 'AssertionError [ERR_ASSERTION]: nope'\n  ...\n# fail 1\n";
+const TAP_ERR =
+  "TAP version 13\nnot ok 1 - a behaviour\n  ---\n  error: 'AssertionError [ERR_ASSERTION]: nope'\n  ...\n# fail 1\n";
 const MISSING_BROWSER =
   "Running 1 test using 1 worker\n\n  Error: browserType.launch: Executable doesn't exist at /a/b/c\n\n  1 failed\n";
 const GOTO_REFUSED =
@@ -106,7 +107,10 @@ test("W-130 behaviour 4: the classifier accepts a playwright assertion failure a
   );
 
   // (j) the LAST summary is read, as a retry prints it.
-  accepted(classify(`${BANNER_1}\n${MATCHER_LOCATOR}\n  2 failed\n\n${MATCHER_LOCATOR}\n  1 failed\n`), "4(j) retry summaries");
+  accepted(
+    classify(`${BANNER_1}\n${MATCHER_LOCATOR}\n  2 failed\n\n${MATCHER_LOCATOR}\n  1 failed\n`),
+    "4(j) retry summaries",
+  );
 
   // (k) the routing clause: no token can skip the count.
   refused(classify(`${PW_THREE}\nnot ok 1 - setup\n`), /3 failed tests/, "4(k) three failures plus an echoed not ok");
@@ -115,15 +119,29 @@ test("W-130 behaviour 4: the classifier accepts a playwright assertion failure a
     /3 failed tests/,
     "4(k) three failures plus an AssertionError",
   );
-  accepted(classify(`${PW_ONE}\nAssertionError [ERR_ASSERTION]: spawned server\n`), "4(k) one failure plus a server AssertionError");
+  accepted(
+    classify(`${PW_ONE}\nAssertionError [ERR_ASSERTION]: spawned server\n`),
+    "4(k) one failure plus a server AssertionError",
+  );
 
   // (l) a playwright run that never summarised a failure is not a red.
   refused(classify(BANNER_1), /playwright printed no failure summary/, "4(l) banner only");
-  refused(classify(`${BANNER_1}\n  1 passed (2s)\n`), /playwright printed no failure summary/, "4(l) passing run at a nonzero status");
+  refused(
+    classify(`${BANNER_1}\n  1 passed (2s)\n`),
+    /playwright printed no failure summary/,
+    "4(l) passing run at a nonzero status",
+  );
 
   // (m) TAP keeps today's path; a line-start `1 failed` is the one verdict moved.
-  accepted(classify(TAP_ERR.replace("'AssertionError [ERR_ASSERTION]: nope'", "1 failed")), "4(m) TAP with an indented non-line-start 1 failed");
-  refused(classify(`${TAP_ONE}1 failed\n`), /not an expect\(\.\.\.\) assertion/, "4(m) TAP printing 1 failed at line start");
+  accepted(
+    classify(TAP_ERR.replace("'AssertionError [ERR_ASSERTION]: nope'", "1 failed")),
+    "4(m) TAP with an indented non-line-start 1 failed",
+  );
+  refused(
+    classify(`${TAP_ONE}1 failed\n`),
+    /not an expect\(\.\.\.\) assertion/,
+    "4(m) TAP printing 1 failed at line start",
+  );
 
   // (n) pure: no mutation, and no lastIndex leak from the global summary regex.
   const frozen = Object.freeze({ status: 1, output: PW_ONE });
@@ -132,9 +150,17 @@ test("W-130 behaviour 4: the classifier accepts a playwright assertion failure a
   assert.equal(second.reason, first.reason, "4(n): the same frozen input answers the same reason");
   assert.equal(Object.isFrozen(frozen), true, "4(n): the input is still frozen after the call");
   const table = [
-    TAP_ONE, PW_ONE, PW_GREATER, PW_THREE, MISSING_BROWSER, GOTO_REFUSED, BANNER_1,
-    `${PW_THREE}\nnot ok 1 - setup\n`, `${PW_ONE}\nAssertionError [ERR_ASSERTION]: spawned server\n`,
-    `${BANNER_1}\n${MATCHER_LOCATOR}\n  2 failed\n\n${MATCHER_LOCATOR}\n  1 failed\n`, "Error: No tests found.\n",
+    TAP_ONE,
+    PW_ONE,
+    PW_GREATER,
+    PW_THREE,
+    MISSING_BROWSER,
+    GOTO_REFUSED,
+    BANNER_1,
+    `${PW_THREE}\nnot ok 1 - setup\n`,
+    `${PW_ONE}\nAssertionError [ERR_ASSERTION]: spawned server\n`,
+    `${BANNER_1}\n${MATCHER_LOCATOR}\n  2 failed\n\n${MATCHER_LOCATOR}\n  1 failed\n`,
+    "Error: No tests found.\n",
   ];
   const verdicts = () => table.map((output) => JSON.stringify(classify(output)));
   assert.deepEqual(verdicts(), verdicts(), "4(n): every verdict is identical on a second pass over the table");
