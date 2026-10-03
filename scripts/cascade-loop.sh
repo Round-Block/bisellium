@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # scripts/cascade-loop.sh — restart a fresh headless orchestrator session until
 # one says stop.
 #
@@ -21,18 +21,31 @@
 # Run it from the Patron's reviewed folder (~/projects/bisellium/scripts/
 # cascade-loop.sh), never from the agent clone, and never point a hook at it
 # (hooks run unsandboxed). It touches nothing outside $AGENT_CLONE except the
-# status file and the logs under ~/.bisellium-evidence.
+# status file and the logs under ~/.cascade-loop.
 set -euo pipefail
+umask 077
+set -C # noclobber: each log is created exclusively; the logs are the only `>` below
 
 AGENT_CLONE=${AGENT_CLONE:-$HOME/agents/bisellium}
 CASCADE_STATUS=${CASCADE_STATUS:-$HOME/.bisellium-evidence/cascade-status}
 CASCADE_MAX_RUNS=${CASCADE_MAX_RUNS:-5}
 CLAUDE_BIN=${CLAUDE_BIN:-claude}
-LOG_DIR=$HOME/.bisellium-evidence/cascade-runs
+STATE_DIR=$HOME/.cascade-loop
+LOG_DIR=$STATE_DIR/logs
 
 stop() {
   if [ "$1" -eq 0 ]; then echo "cascade-loop: $2"; else echo "cascade-loop: $2" >&2; fi
   exit "$1"
+}
+
+# Agents can write ~/.bisellium-evidence, so the logs live in a Patron-only dir.
+# Refuse a symlink at $1 or at any ancestor below $HOME.
+no_symlinks() {
+  local p=$1
+  while [ "$p" != "$HOME" ] && [ "$p" != / ]; do
+    if [ -L "$p" ]; then stop 1 "refusing symlinked path $p"; fi
+    p=$(dirname -- "$p")
+  done
 }
 
 BOOT_PROMPT=$(
@@ -64,15 +77,18 @@ EOF
 )
 
 [[ $CASCADE_MAX_RUNS =~ ^[1-9][0-9]*$ ]] || stop 1 "CASCADE_MAX_RUNS must be a positive integer, got '$CASCADE_MAX_RUNS'"
+no_symlinks "$LOG_DIR"
 mkdir -p "$LOG_DIR" "$(dirname "$CASCADE_STATUS")"
 
 for ((run = 1; run <= CASCADE_MAX_RUNS; run++)); do
   rm -f "$CASCADE_STATUS"
   cd "$AGENT_CLONE" || stop 1 "cannot enter AGENT_CLONE $AGENT_CLONE"
+  no_symlinks "$LOG_DIR"
   log=$LOG_DIR/$(date +%Y%m%dT%H%M%S)-$run.log
+  (: >"$log") || stop 1 "cannot create log $log exclusively"
   rc=0
   # stream-json under -p needs --verbose (claude refuses it otherwise)
-  "$CLAUDE_BIN" -p "$BOOT_PROMPT" --permission-mode auto --output-format stream-json --verbose >"$log" 2>&1 || rc=$?
+  "$CLAUDE_BIN" -p "$BOOT_PROMPT" --permission-mode auto --output-format stream-json --verbose >>"$log" 2>&1 || rc=$?
   [ "$rc" -eq 0 ] || stop 1 "claude exited $rc on run $run. Log: $log"
 
   word=
