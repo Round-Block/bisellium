@@ -173,6 +173,12 @@ const live = (name: string, fn: () => Promise<void>): void => {
   test(name, { skip: liveSkip, timeout: 240_000 }, fn);
 };
 
+// W-130: one host directory pinned as the playwright browsers path for EVERY live row, so the builder cell's
+// environment-name count (W-125's 18 plus PLAYWRIGHT_BROWSERS_PATH) is 19 on a CI runner that has no browsers too.
+const BROWSERS = scratch("browsers-sentinel");
+const SENTINEL_TEXT = "W-130 browser cache sentinel\n";
+writeFileSync(join(BROWSERS, "sentinel.txt"), SENTINEL_TEXT);
+
 /** Same algorithm as the runner's `sourceTree`, for an officina at `studio/`. */
 function sourceTreeOf(repo: string, commit: string): string {
   const hash = createHash("sha1");
@@ -220,6 +226,8 @@ interface LiveOptions {
    * the log records (the replay still prints REBASED_TITLE).
    */
   rebase?: { logs: RebaseLogs; title?: string };
+  /** W-130: adds an apps/web workspace (@bisellium/web) whose `build` script runs this node source. */
+  web?: string;
 }
 type RebaseLogs = "once" | "never" | "twice" | "with-source" | "decoy" | "after-implementation";
 interface Live extends Fixture {
@@ -234,7 +242,13 @@ function liveFixture(tag: string, o: LiveOptions = {}): Live {
   const owned = o.owned === undefined ? OWNED : o.owned;
   const behaviours = o.behaviours ?? 1;
   const f = fixture(tag, (repo, studio) => {
-    writeFileSync(join(repo, ".gitignore"), "node_modules/\n.bisellium/\n");
+    writeFileSync(join(repo, ".gitignore"), `node_modules/\n.bisellium/\n${o.web === undefined ? "" : "apps/web/dist/\n"}`);
+    if (o.web !== undefined) {
+      writeFileSync(join(repo, "package.json"), '{"name":"w130-fixture","private":true,"workspaces":["apps/web"]}\n');
+      mkdirSync(join(repo, "apps", "web"), { recursive: true });
+      writeFileSync(join(repo, "apps", "web", "package.json"), '{"name":"@bisellium/web","version":"0.0.0","private":true,"type":"module","scripts":{"build":"node build.mjs"}}\n');
+      writeFileSync(join(repo, "apps", "web", "build.mjs"), o.web);
+    }
     writeFileSync(join(repo, "red.mjs"), o.red ?? DEFAULT_RED);
     writeFileSync(join(repo, "gate.mjs"), o.gate ?? "console.log('gate ok');\n");
     mkdirSync(join(repo, "packages", "cli", "src"), { recursive: true });
@@ -358,12 +372,16 @@ function rebasedBranch(f: Fixture, o: { logs: RebaseLogs; title?: string }, beha
 /** Run `fn` with the producer's temp root pinned to the row's private directory. */
 async function withTmp<T>(f: Live, fn: () => Promise<T>): Promise<T> {
   const old = process.env["TMPDIR"];
+  const oldBrowsers = process.env["PLAYWRIGHT_BROWSERS_PATH"];
   process.env["TMPDIR"] = f.tmp;
+  process.env["PLAYWRIGHT_BROWSERS_PATH"] = BROWSERS;
   try {
     return await fn();
   } finally {
     if (old === undefined) delete process.env["TMPDIR"];
     else process.env["TMPDIR"] = old;
+    if (oldBrowsers === undefined) delete process.env["PLAYWRIGHT_BROWSERS_PATH"];
+    else process.env["PLAYWRIGHT_BROWSERS_PATH"] = oldBrowsers;
   }
 }
 const leftovers = (f: Live): string[] => readdirSync(f.tmp).filter((name) => name.startsWith("bisellium-"));
@@ -402,6 +420,7 @@ function readResult(file: string): Record<string, unknown> | undefined {
 const RUNNER_ENV = (f: Live): NodeJS.ProcessEnv => ({
   PATH: process.env["PATH"] ?? "/usr/bin",
   TMPDIR: f.tmp,
+  PLAYWRIGHT_BROWSERS_PATH: BROWSERS,
   // Hostile ambient environment: none of it may reach the tool runtime or the gates.
   GITHUB_TOKEN: "ghp_HOST_SECRET", NPM_TOKEN: "npm_HOST_SECRET", SSH_AUTH_SOCK: "/host/agent.sock",
   NODE_OPTIONS: "--no-warnings", HTTPS_PROXY: "http://proxy.invalid:3128", AWS_ACCESS_KEY_ID: "AKIAHOSTSECRET",
@@ -768,7 +787,7 @@ if (runs(2)) {
     // Everything below was observed from INSIDE the sandbox and exported as a commit.
     const ev = JSON.parse(git(f.repo, ["show", `refs/heads/opus/${OPUS}:evidence.json`])) as Record<string, unknown>;
     assert.deepEqual(ev["leaks"], [], "no credential or proxy variable may reach the tool runtime");
-    assert.equal((ev["env"] as string[]).length, 18, `exact allowlist, got ${String(ev["env"])}`);
+    assert.equal((ev["env"] as string[]).length, 19, `exact allowlist, got ${String(ev["env"])}`);
     assert.equal(ev["hostCanaryVisible"], false, "host paths are not mounted");
     assert.ok((ev["homeEntries"] as string[]).includes("builder"), "the private home exists");
     // Only the private home and, if Node lives under /home, its toolchain tree: never a user's home.
@@ -1214,8 +1233,8 @@ process.stdout.write(JSON.stringify(out));
     assert.notEqual(gate, "socket-gated", "b1: liveSkip is a socket refusal");
     assert.equal(gate, bwrapUsable ? "ungated" : "bwrap-gated", "b1: liveSkip is false exactly when bwrap is usable");
     assert.equal(liveRows.filter((row) => row.skipped).length, bwrapUsable ? 0 : liveRows.length, "b1: a usable bwrap leaves no live row skipped");
-    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3) and the 3 W-134 live rows (b1-b3).
-    assert.equal(liveRows.length, 19, "b1: every live row is registered, none dropped or added unrecorded");
+    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3), the 3 W-134 live rows (b1-b3) and the 7 W-130 acceptance rows.
+    assert.equal(liveRows.length, 26, "b1: every live row is registered, none dropped or added unrecorded");
     // Assembled, so this assertion is not itself the text it forbids.
     const probe = ["socket", "Usable"].join("");
     assert.equal(readFileSync(fileURLToPath(import.meta.url), "utf8").includes(probe), false, "b1: the live gate still consults a socket probe");
@@ -1695,6 +1714,181 @@ if (only === undefined) {
     const stale = admit({ commit: anchor, sourceTree: f.claimed });
     assert.equal(refusedAs(stale, /unreachable or mismatched red identity/), true, "b4: no replayedTree, a sourceTree no commit has: today's rule refuses");
   });
+}
+
+// ---------------------------------------------------------------------------
+// W-130 acceptance rows. NOT behaviours and NOT reds: a skipped live row exits 0,
+// so none of this can be a recorded red (the five W-130 reds are the unit rows in
+// scripts/host-cells.test.mjs and scripts/replay-accept.test.mjs). These carry the
+// confined demonstrations, run through the real runner, and are required to RUN
+// (not skip) where the socket works. Outside every runs(n) gate; a selected
+// W-125 behaviour never runs them.
+// ---------------------------------------------------------------------------
+if (only === undefined) {
+  const W125_ENV = [
+    "BISELLIUM_SELLA", "BISELLIUM_SESSION", "BISELLIUM_STUDIO", "CI", "GIT_AUTHOR_EMAIL", "GIT_AUTHOR_NAME",
+    "GIT_COMMITTER_EMAIL", "GIT_COMMITTER_NAME", "HOME", "LANG", "LC_ALL", "PATH", "TMPDIR", "TZ",
+    "npm_config_cache", "npm_config_globalconfig", "npm_config_registry", "npm_config_userconfig",
+  ];
+  const hexLine = <T>(stdout: string, tag: string): T => {
+    const line = stdout.split("\n").find((l) => l.startsWith(`${tag} `));
+    assert.ok(line, `${tag} must be printed by the confined run`);
+    return JSON.parse(Buffer.from(line.slice(tag.length + 1), "hex").toString("utf8")) as T;
+  };
+  const completion = (res: Direct): { completed?: boolean; redReplays?: { behaviour: number; assertionFailed: boolean }[] } | undefined =>
+    res.result?.["completion"] as { completed?: boolean; redReplays?: { behaviour: number; assertionFailed: boolean }[] } | undefined;
+  const leaseHeld = (f: Live): boolean => existsSync(join(f.repo, ".bisellium", "leases", OPUS));
+  const WRITE = "const w = (p) => { try { fs.writeFileSync(p, 'x'); return 'allowed'; } catch (e) { return e.code; } };";
+
+  live("W-130 acceptance: the browser cache is bound read-only into the builder cell and the replay cell", async () => {
+    const builderBody = `${WRITE}
+      fs.writeFileSync('evidence.json', JSON.stringify({
+        env: Object.keys(process.env).sort(),
+        browsersPath: process.env.PLAYWRIGHT_BROWSERS_PATH,
+        sentinel: fs.readFileSync('/browsers/sentinel.txt', 'utf8'),
+        entries: fs.readdirSync('/browsers'),
+        write: w('/browsers/escape'),
+      }));
+      ${FIX_AND_COMMIT}`;
+    const replayRed = [
+      "import fs from 'node:fs';",
+      "import assert from 'node:assert/strict';",
+      WRITE,
+      "const o = { browsersPath: process.env.PLAYWRIGHT_BROWSERS_PATH, sentinel: fs.readFileSync('/browsers/sentinel.txt', 'utf8'), write: w('/browsers/escape') };",
+      // Hex: the replay's failure classifier scans raw output for errno names.
+      "console.log('REPLAY-BROWSERS ' + Buffer.from(JSON.stringify(o)).toString('hex'));",
+      "assert.equal(1, 2);",
+      "",
+    ].join("\n");
+    const f = liveFixture("w130-browsers", { red: replayRed });
+    const res = runnerRun(f, builder(builderBody));
+    assert.equal(res.status, 0, `${res.stderr}\n${res.stdout}`.slice(-2500));
+    assert.match(res.stderr, /browser cache bound read-only at \/browsers from /, "the runner names the bind it made");
+    assert.equal(/no playwright browser cache found/.test(res.stderr), false, "exactly one of the two resolution lines is logged");
+
+    const ev = JSON.parse(git(f.repo, ["show", `refs/heads/opus/${OPUS}:evidence.json`])) as { env: string[]; browsersPath: string; sentinel: string; entries: string[]; write: string };
+    assert.equal(ev.browsersPath, "/browsers", "builder cell: the fixed cell path is the browsers path");
+    assert.equal(ev.sentinel, SENTINEL_TEXT, "builder cell: the host cache is readable at /browsers");
+    assert.deepEqual(ev.entries, ["sentinel.txt"], "builder cell: /browsers holds exactly the host cache");
+    assert.equal(ev.write, "EROFS", "builder cell: /browsers is read-only");
+    assert.equal(ev.env.length, 19, `builder cell: exactly 19 environment names, got ${ev.env.join(",")}`);
+    assert.deepEqual(ev.env.filter((name) => !W125_ENV.includes(name)), ["PLAYWRIGHT_BROWSERS_PATH"], "builder cell: W-125's 18 plus the one new name");
+    assert.deepEqual(W125_ENV.filter((name) => !ev.env.includes(name)), [], "builder cell: all of W-125's 18 are present");
+
+    const o = hexLine<{ browsersPath: string; sentinel: string; write: string }>(res.stdout, "REPLAY-BROWSERS");
+    assert.equal(o.browsersPath, "/browsers", "replay cell: the fixed cell path is the browsers path");
+    assert.equal(o.sentinel, SENTINEL_TEXT, "replay cell: the host cache is readable at /browsers");
+    assert.equal(o.write, "EROFS", "replay cell: /browsers is read-only");
+
+    assert.deepEqual(readdirSync(BROWSERS), ["sentinel.txt"], "the host cache gained no file from either cell");
+    assert.equal(readFileSync(join(BROWSERS, "sentinel.txt"), "utf8"), SENTINEL_TEXT, "the host cache bytes are unchanged");
+    assert.deepEqual(leftovers(f), []);
+    assert.equal(leaseHeld(f), false, "lease released");
+  });
+
+  const buildProbe = (canary: string, hostWrite: string): string => `
+    import fs from 'node:fs';
+    import net from 'node:net';
+    ${WRITE}
+    const o = {
+      lifecycle: process.env.npm_lifecycle_event,
+      pkg: process.env.npm_package_name,
+      leaks: ['GITHUB_TOKEN', 'SSH_AUTH_SOCK', 'NPM_TOKEN', 'HTTPS_PROXY', 'NODE_OPTIONS', 'AWS_ACCESS_KEY_ID'].filter((k) => k in process.env),
+      canaryVisible: fs.existsSync(${JSON.stringify(canary)}),
+      hostWrite: w(${JSON.stringify(hostWrite)}),
+      usrWrite: w('/usr/escape'),
+    };
+    // No timer: with no network namespace interface the connect fails at once, and a hung one ends at the row's own deadline.
+    o.net = await new Promise((res) => {
+      const s = net.connect({ host: '1.1.1.1', port: 443 });
+      s.once('error', (e) => res(e.code));
+      s.once('connect', () => { s.destroy(); res('connected'); });
+    });
+    fs.mkdirSync('dist', { recursive: true });
+    fs.writeFileSync('dist/index.html', '<!doctype html>\\n');
+    fs.writeFileSync('dist/observations.json', JSON.stringify(o));
+  `;
+
+  live("W-130 acceptance: replay preparation builds the web bundle with the fixed host command, confined", async () => {
+    const area = scratch("w130-host-area");
+    const canary = join(area, "canary.txt");
+    const hostWrite = join(area, "escaped.txt");
+    writeFileSync(canary, "host-only\n");
+    const red = [
+      "import fs from 'node:fs';",
+      "import assert from 'node:assert/strict';",
+      "const bundle = fs.existsSync('apps/web/dist/index.html');",
+      "const o = bundle ? JSON.parse(fs.readFileSync('apps/web/dist/observations.json', 'utf8')) : {};",
+      "console.log('BUILD-OBSERVATIONS ' + Buffer.from(JSON.stringify({ bundle, ...o })).toString('hex'));",
+      "assert.equal(1, 2);",
+      "",
+    ].join("\n");
+    const f = liveFixture("w130-bundle", { web: buildProbe(canary, hostWrite), red });
+    const res = runnerRun(f, builder(""));
+    assert.equal(res.status, 0, `${res.stderr}\n${res.stdout}`.slice(-2500));
+    const o = hexLine<{ bundle: boolean; lifecycle: string; pkg: string; leaks: string[]; canaryVisible: boolean; hostWrite: string; usrWrite: string; net: string }>(res.stdout, "BUILD-OBSERVATIONS");
+    assert.equal(o.bundle, true, "the bundle exists before the recorded command runs");
+    assert.equal(o.lifecycle, "build", "the fixed host command ran the web workspace's build script");
+    assert.equal(o.pkg, "@bisellium/web", "the fixed host command selected the web workspace");
+    assert.deepEqual(o.leaks, [], "the build saw no credential or proxy variable");
+    assert.equal(o.canaryVisible, false, "the build saw no host file");
+    assert.notEqual(o.hostWrite, "allowed", "the build could not write a host path");
+    assert.notEqual(o.usrWrite, "allowed", "the build could not write the system tree");
+    assert.match(o.net, /^ENET/, "the build had no egress");
+    assert.equal(existsSync(hostWrite), false, "no build code reached the host filesystem");
+    assert.equal(completion(res)?.completed, true, "the run completed");
+    assert.deepEqual(completion(res)?.redReplays?.map((r) => [r.behaviour, r.assertionFailed]), [[1, true]], "the replay was accepted after the build");
+    assert.deepEqual(leftovers(f), []);
+  });
+
+  for (const [name, web, pattern] of [
+    ["a build that exits nonzero", "process.exit(3);\n", /red 1 replay preparation failed: web bundle build exited 3/],
+    ["a build that exits 0 and leaves no bundle", "\n", /red 1 replay preparation failed: the web bundle build left no apps\/web\/dist\/index\.html/],
+  ] as const)
+    live(`W-130 acceptance: ${name} refuses the replay with a preparation message`, async () => {
+      const f = liveFixture(`w130-prep-${name.replace(/\W+/g, "-")}`, { web });
+      const res = runnerRun(f, builder(""));
+      assert.notEqual(res.status, 0, "the run must fail");
+      assert.match(res.stderr, pattern, "the preparation message is named");
+      assert.equal(/did not reproduce its assertion failure/.test(res.stderr), false, "a preparation failure is never read as a refused red");
+      assert.equal(completion(res), undefined, "no completion is recorded");
+      assert.equal(tip(f), f.base, "the owning branch is unmoved");
+      assert.equal(leaseHeld(f), false, "lease released");
+      assert.deepEqual(leftovers(f), [], "no bisellium-* directory behind");
+    });
+
+  const PW_MATCHER = "  1) [chromium] > walk.spec.ts:10:1 > the walk\n\n    Error: expect(locator).toHaveCount(expected) failed\n\n";
+  const PW_ONE = `Running 1 test using 1 worker\n\n${PW_MATCHER}  1 failed\n`;
+  const PW_MISSING_BROWSER = "Running 1 test using 1 worker\n\n  Error: browserType.launch: Executable doesn't exist at /a/b/c\n\n  1 failed\n";
+  const PW_THREE_AND_NOT_OK = `Running 3 tests using 1 worker\nnot ok 1 - setup\n\n${PW_MATCHER}  3 failed\n`;
+  const canned = (transcript: string): string => `process.stdout.write(${JSON.stringify(transcript)});\nprocess.exit(1);\n`;
+
+  live("W-130 acceptance: a canned playwright transcript completes a run through the classifier", async () => {
+    const f = liveFixture("w130-pw-accepted", { red: canned(PW_ONE) });
+    const res = runnerRun(f, builder(""));
+    assert.equal(res.status, 0, `${res.stderr}\n${res.stdout}`.slice(-2500));
+    assert.equal(completion(res)?.completed, true, "the run completed");
+    assert.deepEqual(completion(res)?.redReplays?.map((r) => [r.behaviour, r.assertionFailed]), [[1, true]], "the playwright red was accepted");
+    assert.equal(leaseHeld(f), false, "lease released");
+    assert.deepEqual(leftovers(f), []);
+  });
+
+  for (const [name, transcript, pattern] of [
+    ["a canned missing-browser transcript", PW_MISSING_BROWSER, /did not reproduce its assertion failure at [0-9a-f]{40}: the output names an environment failure \(browserType\.launch\)/],
+    ["a canned three-failure transcript carrying an echoed not ok line", PW_THREE_AND_NOT_OK, /did not reproduce its assertion failure at [0-9a-f]{40}: playwright reported 3 failed tests/],
+  ] as const)
+    live(`W-130 acceptance: ${name} refuses the run before the gate cell`, async () => {
+      const f = liveFixture(`w130-pw-${name.replace(/\W+/g, "-")}`, { red: canned(transcript) });
+      const res = runnerRun(f, builder(""));
+      assert.notEqual(res.status, 0, "the run must fail");
+      assert.match(res.stderr, pattern, "the refusal names its reason");
+      assert.equal(/replay preparation failed/.test(res.stderr), false, "a refused red is never read as a preparation failure");
+      assert.equal(res.stdout.includes("gate ok"), false, "the gate cell never ran");
+      assert.equal(completion(res), undefined, "no completion is recorded");
+      assert.equal(tip(f), f.base, "the owning branch is unmoved");
+      assert.equal(leaseHeld(f), false, "lease released");
+      assert.deepEqual(leftovers(f), [], "no bisellium-* directory behind");
+    });
 }
 
 // The W-026/W-089 coverage that occupied this file before W-125 remains in
