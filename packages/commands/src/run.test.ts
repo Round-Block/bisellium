@@ -1798,12 +1798,11 @@ if (only === undefined) {
       hostWrite: w(${JSON.stringify(hostWrite)}),
       usrWrite: w('/usr/escape'),
     };
+    // No timer: with no network namespace interface the connect fails at once, and a hung one ends at the row's own deadline.
     o.net = await new Promise((res) => {
       const s = net.connect({ host: '1.1.1.1', port: 443 });
       s.once('error', (e) => res(e.code));
       s.once('connect', () => { s.destroy(); res('connected'); });
-      // sleep-waiver: guard -- the embedded script gives the socket probe five seconds, a deadline and not what correctness waits on
-      setTimeout(() => { s.destroy(); res('timeout'); }, 5000);
     });
     fs.mkdirSync('dist', { recursive: true });
     fs.writeFileSync('dist/index.html', '<!doctype html>\\n');
