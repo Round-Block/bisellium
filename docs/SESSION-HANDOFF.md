@@ -20,6 +20,9 @@ lex, a decision, or a check rule and delete it here.
   `~/projects/bisellium/scripts/cascade-loop.sh` to automate the fresh
   sessions; each session then ends by writing one status word (CONTINUE,
   NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
+  Logs and the lock live in `~/.cascade-loop` (agent sessions cannot write
+  it); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
+  `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions.
   Small reversible decisions ship as veto-able defaults reported at the
   checkpoint; only irreversible or ruling-contradicting calls wait for the
   Patron.
