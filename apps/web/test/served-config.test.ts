@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { lex } from "../../../packages/cli/src/rules/tests.js";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -100,8 +101,8 @@ if (only === undefined || only === 8) {
     assert.match(harness, /process\.execPath/, "(f) harness.ts spawns process.execPath");
     assert.match(harness, /["']--import["'],\s*["']tsx["']/, "(f) harness.ts passes --import tsx");
     assert.match(harness, /packages["'],\s*["']cli["'],\s*["']src["'],\s*["']main\.ts/, "(f) harness.ts runs packages/cli/src/main.ts");
-    // The harness's own doc comment says "never npx tsx"; the property is that no code runs it.
-    const code = harness.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/.*$/gm, "");
-    assert.doesNotMatch(code, /\bnpx\b/, "(f) harness.ts code (comments stripped) contains no npx");
+    // The doc comment says "never npx tsx"; the property is that no line of code runs npx (L-043: the repo's own lexer).
+    const npxLines = lex(harness).filter((l) => /\bnpx\b/.test(l.code));
+    assert.deepEqual(npxLines, [], "(f) no line of harness.ts code matches npx");
   });
 }

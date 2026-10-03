@@ -14,9 +14,13 @@ import { defineConfig, devices } from "@playwright/test";
  * so nothing here needs to coordinate a shared one. Every spec's studio is
  * always a fresh temp copy of examples/sample-studio; nothing ever points
  * these at studio/.
+ *
+ * `globalSetup` builds the bundle first (W-110): nothing else in the served
+ * path ever builds it, so a bare run drove whatever dist an earlier commit left.
  */
 export default defineConfig({
   testDir: "./tests-serve",
+  globalSetup: "./tests-serve/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env["CI"],
   retries: process.env["CI"] ? 2 : 0,
