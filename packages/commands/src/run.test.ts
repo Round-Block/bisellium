@@ -8,6 +8,11 @@
  * `--behaviour`: `--test-name-pattern=W-132-b1` through `W-132-b4`, one row
  * each. They register only when no `--behaviour` is given.
  *
+ * W-134 rows (a red's identity survives a rebase) follow the W-132 rows, also
+ * selected by name: `--test-name-pattern=W-134-b1` through `W-134-b4`. Rows
+ * b1-b3 are live (the real runner, bwrap and a rebased branch); b4 is the
+ * receipt gate's own seam. They register only when no `--behaviour` is given.
+ *
  * Every row owns a fresh temporary repository and officina. Nothing here
  * reads from or writes to studio/ or examples/sample-studio.
  */
@@ -208,10 +213,21 @@ interface LiveOptions {
   red?: string;
   /** Adds node_modules/leak -> this host path, an absolute link out of the tree. */
   escapingLink?: string;
+  /**
+   * W-134: the owning branch is rebased onto a master that moved with a source
+   * change, so no commit's source tree equals a log's `# tree:` header. `logs`
+   * says how the red logs reach the branch; `title` overrides the `not ok` title
+   * the log records (the replay still prints REBASED_TITLE).
+   */
+  rebase?: { logs: RebaseLogs; title?: string };
 }
+type RebaseLogs = "once" | "never" | "twice" | "with-source" | "decoy" | "after-implementation";
 interface Live extends Fixture {
   tmp: string;
   base: string;
+  /** W-134: the rebased commit that introduced the log bytes, and the header every log claims. */
+  anchor?: string;
+  claimed?: string;
 }
 
 function liveFixture(tag: string, o: LiveOptions = {}): Live {
@@ -248,6 +264,7 @@ function liveFixture(tag: string, o: LiveOptions = {}): Live {
   symlinkSync("../tsx/index.mjs", join(f.repo, "node_modules", ".bin", "tool"));
   if (o.escapingLink !== undefined) symlinkSync(o.escapingLink, join(f.repo, "node_modules", "leak"));
   const base = git(f.repo, ["rev-parse", "HEAD"]);
+  if (o.rebase !== undefined) return { ...rebasedBranch(f, o.rebase, behaviours), tmp: scratch(`${tag}-tmp`) };
   const redDir = join(f.studio, "ci", "reds", OPUS);
   mkdirSync(redDir, { recursive: true });
   for (const n of o.reds ?? Array.from({ length: behaviours }, (_, i) => i + 1)) {
@@ -257,6 +274,85 @@ function liveFixture(tag: string, o: LiveOptions = {}): Live {
     );
   }
   return { ...f, tmp: scratch(`${tag}-tmp`), base };
+}
+
+// W-134: a builder's own test-only commit, then the host's red logs, on opus/<id>; then master
+// moves with a source change and the branch is rebased onto it. Everything the red logs name is
+// then unreachable by source tree, exactly as after the ladder's `pr` step.
+const REBASED_TITLE = "W-134 fixture red";
+const REBASED_RED = [
+  "import test from 'node:test';",
+  "import assert from 'node:assert/strict';",
+  "import { readFileSync } from 'node:fs';",
+  `test('${REBASED_TITLE}', () => {`,
+  "  assert.equal(readFileSync('source.txt', 'utf8'), 'fixed\\n');",
+  "});",
+  "",
+].join("\n");
+
+function rebasedBranch(f: Fixture, o: { logs: RebaseLogs; title?: string }, behaviours: number): Omit<Live, "tmp"> {
+  const { repo, studio } = f;
+  const branch = `opus/${OPUS}`;
+  const redDir = join(studio, "ci", "reds", OPUS);
+  const logPath = (n: number): string => join(redDir, `${String(n).padStart(2, "0")}.log`);
+  const commitAll = (message: string): void => {
+    git(repo, ["add", "-A"]);
+    git(repo, ["commit", "-q", "-m", message]);
+  };
+  git(repo, ["checkout", "-q", branch]);
+  // The builder's committed test-only state: the pre-change commit every log names.
+  writeFileSync(join(repo, "red.mjs"), REBASED_RED);
+  commitAll("test: builder test-only state");
+  const claimed = sourceTreeOf(repo, "HEAD");
+  const logText = (n: number): string =>
+    [
+      `# behaviour: ${n}`,
+      "# command: node --test-reporter=tap red.mjs",
+      "# exit: 1",
+      `# tree: ${claimed}`,
+      "",
+      "TAP version 13",
+      `# Subtest: ${o.title ?? REBASED_TITLE}`,
+      `not ok 1 - ${o.title ?? REBASED_TITLE}`,
+      "  ---",
+      "  code: 'ERR_ASSERTION'",
+      "  ...",
+      "1..1",
+      "",
+    ].join("\n");
+  const writeLogs = (): void => {
+    mkdirSync(redDir, { recursive: true });
+    for (let n = 1; n <= behaviours; n++) writeFileSync(logPath(n), logText(n));
+  };
+  if (o.logs === "after-implementation") {
+    writeFileSync(join(repo, "source.txt"), "fixed\n");
+    commitAll("feat: implementation already present");
+  }
+  if (o.logs !== "never") {
+    writeLogs();
+    if (o.logs === "with-source") writeFileSync(join(repo, "smuggled.txt"), "source beside the log\n");
+    commitAll("chore(studio): record reds");
+  }
+  if (o.logs === "twice") {
+    writeFileSync(logPath(1), `${logText(1)}# rewritten\n`);
+    commitAll("chore(studio): rewrite red");
+    writeLogs();
+    commitAll("chore(studio): restore reds");
+  }
+  if (o.logs === "decoy") {
+    writeFileSync(logPath(1), `${logText(1)}# decoy\n`);
+    commitAll("chore(studio): decoy log");
+  }
+  git(repo, ["checkout", "-q", "master"]);
+  writeFileSync(join(repo, "master-moved.txt"), "master moved with a source change\n");
+  git(repo, ["add", "master-moved.txt"]);
+  git(repo, ["commit", "-q", "-m", "feat: master moves"]);
+  git(repo, ["checkout", "-q", branch]);
+  git(repo, ["rebase", "-q", "master"]);
+  git(repo, ["checkout", "-q", "master"]);
+  writeLogs(); // the host's copy: the checkout above removed what only the branch tracks
+  const anchor = git(repo, ["log", branch, "--format=%H", "--fixed-strings", "--grep=chore(studio): record reds"]).split("\n")[0];
+  return { ...f, base: git(repo, ["rev-parse", `refs/heads/${branch}`]), claimed, ...(anchor ? { anchor } : {}) };
 }
 
 /** Run `fn` with the producer's temp root pinned to the row's private directory. */
@@ -1118,8 +1214,8 @@ process.stdout.write(JSON.stringify(out));
     assert.notEqual(gate, "socket-gated", "b1: liveSkip is a socket refusal");
     assert.equal(gate, bwrapUsable ? "ungated" : "bwrap-gated", "b1: liveSkip is false exactly when bwrap is usable");
     assert.equal(liveRows.filter((row) => row.skipped).length, bwrapUsable ? 0 : liveRows.length, "b1: a usable bwrap leaves no live row skipped");
-    // 14 W-125 live rows plus the 2 W-132 live rows (L2, L3).
-    assert.equal(liveRows.length, 16, "b1: every live row is registered, none dropped or added unrecorded");
+    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3) and the 3 W-134 live rows (b1-b3).
+    assert.equal(liveRows.length, 19, "b1: every live row is registered, none dropped or added unrecorded");
     // Assembled, so this assertion is not itself the text it forbids.
     const probe = ["socket", "Usable"].join("");
     assert.equal(readFileSync(fileURLToPath(import.meta.url), "utf8").includes(probe), false, "b1: the live gate still consults a socket probe");
@@ -1432,6 +1528,172 @@ const sh = (script) => new Promise((done) => {
     } finally {
       host.child.kill("SIGKILL");
     }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// W-134: a recorded red's identity survives a rebase. The runner finds the red
+// log's own commit (the unique commit that introduced its bytes, source-free),
+// replays there, and the receipt binds both the claim and the replayed commit.
+// Rows are selected by name, one per behaviour: --test-name-pattern=W-134-b1 ..
+// b4. Messages are fixed text: no child output is ever interpolated into one,
+// so a refusal is asserted as a boolean about the captured stderr.
+// ---------------------------------------------------------------------------
+if (only === undefined) {
+  const hostLogs = (f: Live): Record<string, string> => {
+    const dir = join(f.studio, "ci", "reds", OPUS);
+    return Object.fromEntries(readdirSync(dir).map((name) => [name, readFileSync(join(dir, name), "utf8")]));
+  };
+  const frontOf = (f: Live): Record<string, unknown> => readFront<Record<string, unknown>>(join(f.studio, "opera", `${OPUS}.md`)).data;
+  interface Verdict {
+    exitCode: number;
+    said: (pattern: RegExp) => boolean;
+    minted: boolean;
+    untouched: boolean;
+    clean: boolean;
+  }
+  /** One run of the real runner on `f`; what it printed, whether it minted, and whether the logs moved. */
+  async function attempt(f: Live, cmd: string[]): Promise<Verdict> {
+    const before = hostLogs(f);
+    const result = await withTmp(f, () => run(builderArgs(f, [], cmd)));
+    const receipt = oneReceipt(f.studio) as { exitCode: number; completion?: unknown };
+    const errors = result.errors.join("\n");
+    return {
+      exitCode: result.exitCode,
+      said: (pattern) => pattern.test(errors),
+      minted: frontOf(f)["run_receipt"] !== undefined || receipt.completion !== undefined,
+      untouched: JSON.stringify(hostLogs(f)) === JSON.stringify(before),
+      clean: leftovers(f).length === 0,
+    };
+  }
+  const redOf = (f: Live): Record<string, unknown> => {
+    const receipt = oneReceipt(f.studio) as { completion?: { redReplays?: Record<string, unknown>[] } };
+    return receipt.completion?.redReplays?.[0] ?? {};
+  };
+
+  live("W-134-b1 behaviour 1: a rebased branch mints a receipt that names the replayed commit", async () => {
+    const f = liveFixture("w134-b1", { rebase: { logs: "once" } });
+    const anchor = f.anchor ?? "";
+    const before = hostLogs(f);
+    const result = await withTmp(f, () => run(builderArgs(f, [], builder(FIX_AND_COMMIT))));
+    assert.equal(result.exitCode, 0, "b1: the runner completes on a rebased branch");
+    const red = redOf(f);
+    assert.equal(red["sourceTree"], f.claimed, "b1: sourceTree keeps the identity the log claims");
+    assert.equal(red["commit"], anchor, "b1: commit is the rebased red-log commit");
+    assert.equal(red["replayedTree"], sourceTreeOf(f.repo, anchor), "b1: replayedTree is that commit's recomputed source tree");
+    assert.notEqual(red["replayedTree"], red["sourceTree"], "b1: the rebase moved the tree the log claims");
+    assert.equal(red["assertionFailed"], true, "b1: the replay failed at the assertion");
+    assert.equal(typeof frontOf(f)["run_receipt"], "string", "b1: the receipt is attached to the record");
+    assert.equal(JSON.stringify(hostLogs(f)), JSON.stringify(before), "b1: the runner only reads the log");
+    assert.equal(leftovers(f).length, 0, "b1: runtime and clones are gone");
+  });
+
+  live("W-134-b2 behaviour 2: identification is unique and source-free, or it refuses", async () => {
+    const refused = (v: Verdict, tag: string): void => {
+      assert.notEqual(v.exitCode, 0, `b2${tag}: the run is refused`);
+      assert.equal(v.minted, false, `b2${tag}: no receipt is written`);
+      assert.equal(v.untouched, true, `b2${tag}: the log is untouched`);
+      assert.equal(v.clean, true, `b2${tag}: nothing is left behind`);
+    };
+
+    const a = await attempt(liveFixture("w134-b2a", { rebase: { logs: "never" } }), ["true"]);
+    refused(a, "a");
+    assert.equal(a.said(/producer red replay refused 01\.log: behaviour 1: no commit on the branch introduced its recorded bytes/), true, "b2a: names behaviour 1, the file, and that no commit introduced the bytes");
+
+    const b = await attempt(liveFixture("w134-b2b", { rebase: { logs: "twice" } }), ["true"]);
+    refused(b, "b");
+    assert.equal(b.said(/producer red replay refused 01\.log: behaviour 1: 2 commits introduced its recorded bytes/), true, "b2b: names behaviour 1, the file, and that two commits introduced the bytes");
+
+    const cFixture = liveFixture("w134-b2c", { rebase: { logs: "with-source" } });
+    const c = await attempt(cFixture, ["true"]);
+    refused(c, "c");
+    assert.equal(
+      c.said(new RegExp(`producer red replay refused 01\\.log: behaviour 1: identifying commit ${cFixture.anchor ?? "none"} carries source`)),
+      true,
+      "b2c: names behaviour 1, the file and the commit that carries source",
+    );
+
+    const d = liveFixture("w134-b2d", { rebase: { logs: "decoy" } });
+    const decoy = git(d.repo, ["log", `opus/${OPUS}`, "--format=%H", "--fixed-strings", "--grep=chore(studio): decoy log"]);
+    const dv = await attempt(d, builder(FIX_AND_COMMIT));
+    assert.equal(dv.exitCode, 0, "b2d: a decoy later commit does not stop the run");
+    assert.equal(dv.untouched, true, "b2d: the log is untouched");
+    assert.equal(redOf(d)["commit"], d.anchor, "b2d: the commit carrying the replayed bytes is selected");
+    assert.notEqual(redOf(d)["commit"], decoy, "b2d: the decoy is not selected");
+  });
+
+  live("W-134-b3 behaviour 3: a replay that does not reproduce voids the red", async () => {
+    const present = liveFixture("w134-b3a", { rebase: { logs: "after-implementation" } });
+    const a = await attempt(present, ["true"]);
+    assert.notEqual(a.exitCode, 0, "b3a: the run is refused when the implementation is present");
+    assert.equal(a.minted, false, "b3a: no receipt is written");
+    assert.equal(a.untouched, true, "b3a: the log is byte-identical on disk");
+    assert.equal(
+      a.said(new RegExp(`red 1 did not reproduce its assertion failure at ${present.anchor ?? "none"}`)),
+      true,
+      "b3a: names the behaviour and the commit tried",
+    );
+
+    const other = liveFixture("w134-b3b", { rebase: { logs: "once", title: "W-134 recorded failure" } });
+    const b = await attempt(other, ["true"]);
+    assert.notEqual(b.exitCode, 0, "b3b: the run is refused when a recorded title is absent");
+    assert.equal(b.minted, false, "b3b: no receipt is written");
+    assert.equal(b.untouched, true, "b3b: the log is byte-identical on disk");
+    assert.equal(
+      b.said(new RegExp(`red 1 did not reproduce its recorded failure at ${other.anchor ?? "none"}`)),
+      true,
+      "b3b: names the behaviour and the commit tried",
+    );
+  });
+
+  test("W-134-b4 behaviour 4: the gate admits the rebased identity and re-derives it", async () => {
+    const { admitCurrentRunReceipt } = await import("./builder-run.js");
+    const { editOpusFrontMatter, markIsolatedBuilderRuntime } = await import("./frontmatter.js");
+    const f = liveFixture("w134-b4", { rebase: { logs: "once" } });
+    rmSync(join(f.studio, "ci", "reds"), { recursive: true, force: true }); // the branch tracks these logs now
+    git(f.repo, ["checkout", "-q", `opus/${OPUS}`]);
+    const opusPath = join(f.studio, "opera", `${OPUS}.md`);
+    markIsolatedBuilderRuntime(opusPath);
+    const finalCommit = git(f.repo, ["rev-parse", "HEAD"]);
+    const anchor = f.anchor ?? "";
+    const wrong = git(f.repo, ["rev-parse", `${anchor}^`]); // same source tree as the anchor, not the anchor
+    let serial = 0;
+    const admit = (red: Record<string, unknown>) => {
+      serial += 1;
+      const rel = `receipts/builder.${OPUS}/b4-${serial}.json`;
+      mkdirSync(join(f.studio, "receipts", `builder.${OPUS}`), { recursive: true });
+      writeFileSync(
+        join(f.studio, rel),
+        JSON.stringify({
+          schema: 1, harness: "run", sella: `builder.${OPUS}`, sessionId: `b4-${serial}`, startedAt: NOW.toISOString(), cwd: "/disposed",
+          cmd: ["builder"], endedAt: NOW.toISOString(), exitCode: 0, durationMs: 1,
+          completion: {
+            schema: 1, origin: "host-producer", opus: OPUS, branch: `opus/${OPUS}`, builder: `builder.${OPUS}`, producer: "producer",
+            baseCommit: finalCommit, finalCommit, finalSourceTree: sourceTreeOf(f.repo, finalCommit), toolingCommit: finalCommit,
+            redReplays: [{ behaviour: 1, command: "node --test-reporter=tap red.mjs", assertionFailed: true, ...red }],
+            gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true,
+          },
+        }),
+      );
+      editOpusFrontMatter(opusPath, (doc) => { doc.set("run_receipt", rel); return undefined; });
+      return admitCurrentRunReceipt(f.studio, OPUS);
+    };
+    const refusedAs = (verdict: ReturnType<typeof admit>, pattern: RegExp): boolean => !verdict.ok && pattern.test(verdict.error);
+
+    const rebased = admit({ commit: anchor, sourceTree: f.claimed, replayedTree: sourceTreeOf(f.repo, anchor) });
+    assert.equal(rebased.ok, true, "b4: a rebased identity whose replayedTree matches the named commit is admitted");
+
+    const elsewhere = admit({ commit: wrong, sourceTree: f.claimed, replayedTree: sourceTreeOf(f.repo, wrong) });
+    assert.equal(refusedAs(elsewhere, /not the rebased pre-change commit/), true, "b4: a receipt naming another commit for a rebased entry is refused");
+
+    const forged = admit({ commit: anchor, sourceTree: f.claimed, replayedTree: `tree:${"b".repeat(40)}` });
+    assert.equal(refusedAs(forged, /unreachable or mismatched red identity/), true, "b4: a replayedTree that is not the commit's recomputed tree is refused");
+
+    const direct = admit({ commit: anchor, sourceTree: sourceTreeOf(f.repo, anchor) });
+    assert.equal(direct.ok, true, "b4: no replayedTree, a matching sourceTree: today's rule admits");
+
+    const stale = admit({ commit: anchor, sourceTree: f.claimed });
+    assert.equal(refusedAs(stale, /unreachable or mismatched red identity/), true, "b4: no replayedTree, a sourceTree no commit has: today's rule refuses");
   });
 }
 

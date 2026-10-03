@@ -168,7 +168,11 @@ The child runtime has an exact credential-free
 environment and no external egress. Clean owned commits cross back through a
 quarantined, compare-and-swap export; the runtime and descendants are gone
 before immutable host tooling recomputes reds and gates. A host completion
-receipt binds those results to the final SOURCE tree.
+receipt binds those results to the final SOURCE tree. Each red entry binds
+both the SOURCE tree its log claims and the commit actually replayed
+(`replayedTree`); after a rebase moved the claim, that commit is the unique
+source-free commit that introduced the log's own bytes (W-134), which the
+review gate re-derives from the branch rather than trusting.
 
 The lifecycle review edge is now guarded by that receipt. Both pass and fail
 call the same read-only admission seam before evidence parsing or mutation;

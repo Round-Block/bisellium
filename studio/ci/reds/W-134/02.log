@@ -1,0 +1,39 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-134-b2 packages/commands/src/run.test.ts
+# exit: 1
+# at: 2026-10-03T14:14:29.395Z
+# sella: builder.W-134
+# tree: tree:4bd2cbac2adac4a4ce4fd07958ec54f2d3c1632f
+
+TAP version 13
+# Subtest: W-134-b2 behaviour 2: identification is unique and source-free, or it refuses
+not ok 1 - W-134-b2 behaviour 2: identification is unique and source-free, or it refuses
+  ---
+  duration_ms: 626.318994
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-134/packages/commands/src/run.test.ts:1:4650'
+  failureType: 'testCodeFailure'
+  error: |-
+    b2a: names behaviour 1, the file, and that no commit introduced the bytes
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-134/packages/commands/src/run.test.ts:1601:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 648.91797
