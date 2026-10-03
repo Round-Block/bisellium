@@ -161,7 +161,10 @@ W-125 makes that boundary executable: builder-class `run` bypasses the
 generic `WorktreeProvider` and invokes the host-owned runner. The producer
 leases the owning branch, creates an independent disposable clone, mounts it
 inside outer PID/user/mount/network isolation, and exposes Git only through a
-branch/index broker. The child runtime has an exact credential-free
+branch/index broker. The broker's transport is a pair of host-created named
+pipes in the read-only `/control` mount (W-132, `scripts/git-broker.mjs`; no
+socket), and the cell's `git` is the committed `scripts/git-cell-client.mjs`.
+The child runtime has an exact credential-free
 environment and no external egress. Clean owned commits cross back through a
 quarantined, compare-and-swap export; the runtime and descendants are gone
 before immutable host tooling recomputes reds and gates. A host completion
