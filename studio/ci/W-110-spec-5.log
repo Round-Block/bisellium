@@ -1,0 +1,102 @@
+# opus: W-110
+# phase: spec
+# round: 5
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T02:02:06.366Z
+# tree: dirty:66bfec1c0b315074a4648eec320baeec5322c9b7
+
+## Verdict
+
+Passed. `studio/briefs/W-110.md` revision 3 clears all three MUST from the
+round-4 prereview (`studio/ci/W-110-spec-4.log`) and takes all four SHOULD.
+Nothing is rebutted. Two of the three MUST were introduced by revision 2 and
+are my defects, not inherited ones: revision 2's S8 fix derived a column set
+that is not in the data, and its ladder interpolated an error string that
+carries an absolute path. Both are corrected at the source rather than
+papered over in the assertion.
+
+## MUST
+
+A — no finding message interpolates the containment helper's `error` any more.
+I re-measured the helper before changing anything: a missing file answers
+`{ code: "ENOENT", error: "ENOENT: ... lstat '/tmp/claude-1000/w110-err-.../ci/shots/W-110/board.png'" }`
+and its own refusals answer `{ error: "path reaches its target through a
+symlink" }` with `code` absent. So the two new sites switch on `code`:
+`"ENOENT"` gives a fixed wording, `undefined` passes through one of seven fixed
+refusal strings, any other code reports the bare code and nothing else. The
+`ENOENT` wordings are chosen to carry none of
+`/unsafe|unreadable|symlink|regular file/i` — "carries no screenshot manifest",
+"is missing" — so a deleted file is one finding and a containment refusal is
+deliberately two. 7(k) is rewritten as three writable assertions (an ASCII
+range with a 160-character bound, no `/tmp` and no test-root substring, no
+absolute path) and now holds against its own Genuine red, which it could not in
+revision 2. The Interfaces paragraph names the contradiction that forced the
+change. The nine-site class is enumerated in *Measured present state*, the two
+adds are owned, and the remaining eight are filed as a follow-on with the
+`code`-switch shape to apply and a warning that each one's wording is probably
+pinned by a test.
+
+B — 3(b) returns to revision 1's seven measured literal column ids, with the
+coupling **stated**, which is what the original S8 asked for. Verified why the
+derivation cannot work: `board.ts:9-13` makes `needs_you` a column with no
+phase and `backlog` a phase that is deliberately not a column, while
+`adapters/native/src/index.ts:40` declares `backlog` as a phase — the two sets
+differ in both directions, so revision 2's row would have failed today on a row
+marked "passes today", which Acceptance makes a builder stop. A correct
+derivation would need `board.ts`'s `NEEDS_YOU_COLUMN` and its module-private
+`BACKLOG_PHASE`, i.e. an export added to a file this brief lists as un-owned,
+so the literal is the right rung. The row now names its own dependency (a
+backlog opus gets a card in Planned; W-007, Planned head count 2) and *Stop
+conditions* says a later opus that changes which states render owns this row
+and that the walk must not import `board.ts` to paper over it.
+
+C — behaviour 7 states **one** counting convention once, at its head: a count
+is of `Finding`s as `checkStudio` reports them, so a message matching
+`/unsafe|unreadable|symlink|regular file/i` counts two (`opus.ui.e2e` plus the
+`opus.reference` `addPolicyProblem` raises at `:784-787`) and every other
+message counts one, with the two-finding rows named — (d), (i)'s second half,
+(j). 7(i)'s over-cap PNG and 7(j)'s over-cap manifest are corrected to two.
+7(b) is one, and now says why: the `ENOENT` wording avoids the double-raise
+substring by design, not by luck. Behaviour 6 points at the same convention and
+records that none of its messages carries the substring, so its three "exactly
+one"s are unambiguous.
+
+## SHOULD
+
+D — `validateServed`'s own gate-log read at `:675` takes `LOG_MAX_BYTES`
+(1 MiB). Taken for the reason given: same function, same always-on path, and
+a 2 GiB `ci/served.log` is the hazard just closed for PNGs. `:696` and the
+other seven are left to the follow-on. The cap is added **without** touching
+`:675`'s existing message, stated explicitly in *Files owned* as a deliberate
+choice — an assertion may pin that wording, and the cap is additive on its own.
+
+E — `code === "ENOENT"` is the literal, and `code === undefined` is named as
+the helper's own-refusal branch that the switch must tolerate. The whole shape
+is in a measured table in Interfaces rather than in prose.
+
+F — residual 6 gains the tree-keying paragraph: every gate log is
+`<opus>-<probatio>-<tree8>.log` (`pipeline/src/index.ts:99`) while
+`ci/shots/<opus>/` is a fixed path step 2 clears, so a re-verify or a rebase
+silently replaces committed evidence and nothing on disk says which tree a PNG
+belongs to — which matters precisely because residual 16 has the operator
+committing the directory. Filed as a follow-on with the reason it is not solved
+here: keying by tree needs a retention rule.
+
+G — both corrected: `http.ts:508-512` (verified: `serveStatic` begins at
+`:508`), and the callers row now names `verify.ts:300` and the catch-fallback
+at `:304` as the only `pipeline.run` sites, with `ci` reaching the pipeline
+only through `runVerify` at `ci.ts:217`, and records that both `verify` sites
+share one `runOpts` so the fallback neither loses the entry nor widens it.
+
+## Grounding
+
+Each MUST was re-measured, not taken on the prereview's word: the helper's two
+failure shapes were probed directly against the real `readContainedRegularFile`
+(ENOENT with an absolute path, symlink refusal with `code` absent);
+`board.ts:9-13` and `index.ts:40` were read; `addPolicyProblem`'s double-raise
+regex and the nine interpolating sites were grepped; `serveStatic`'s line and
+the two `pipeline.run` sites were located. `countBehaviours` reads 8, the
+sixteen residuals are contiguous, and `bisellium check -- studio --repo .` is
+0 block with no finding against the brief. Eight behaviours, unchanged; rows
+changed inside 3, 6 and 7 and none added.

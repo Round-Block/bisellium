@@ -1,0 +1,286 @@
+# opus: W-110
+# phase: spec
+# round: 4
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: revise
+# at: 2026-10-03T01:56:32.547Z
+# tree: dirty:66bfec1c0b315074a4648eec320baeec5322c9b7
+
+## Verdict
+
+Revise. Spec prereview round 2 of `studio/briefs/W-110.md` revision 2
+(1010 lines), advisory. **3 MUST, 4 SHOULD** — down from 4 MUST, 8 SHOULD.
+
+Eleven of my twelve round-1 findings are properly closed, and three of them
+(M1's clause ladder, M2's bounds, M4's five line-anchored call sites) are
+closed better than I asked. M3 is the right call and I checked the thing the
+coordinator flagged: the move out of the gate log does **not** weaken the
+binding, and residual 6 states the remaining limitation honestly. What is
+left is three defects, two of them introduced *by* the revision: 3(b)'s new
+column derivation reads a field whose values are not the column set, and
+7(k)'s no-absolute-path assertion is contradicted by its own Genuine red
+because the containment helper's read error carries the path. The third is a
+residue of round-1 M1 — two rows still miscount against the new ladder.
+
+## Environment
+
+Probed at `7e019ed`, repo root, `node --import tsx` throughout. Tree still
+reads dirty from untracked `.worktrees/` (PR #179, which the brief now names
+as a phase-1 prerequisite — taken). Probes under
+`~/.bisellium-evidence/W-110-spec/` (`probe-err.mts` is new this round).
+
+## MUST
+
+**A — 7(k) and 7(b) contradict each other: the containment helper's read error
+carries an absolute path.** Brief `:743-745` (7(k)): "every message produced
+across rows (b)–(j) is ASCII, at most 200 characters, contains no `/` outside
+the `ci/shots/<id>` form". Brief `:327-328` (ladder step 4) and `:301-302`
+(step 1) both interpolate the helper's own error string:
+`served-e2e screenshot <name> is unsafe or unreadable: <error>`.
+Measured against the real `readContainedRegularFile` (`probe-err.mts`):
+
+```
+missing PNG (behaviour 7b):
+  code="ENOENT"
+  error="ENOENT: no such file or directory, lstat '/tmp/claude-1000/w110-probe-vO4zwO/ci/shots/W-110/board.png'"
+  len(wrapped)=159
+```
+
+So 7(b) — the Genuine red for behaviour 7, a deleted PNG — produces a finding
+carrying an absolute path and six `/` outside the `ci/shots/<id>` form. 7(b)
+and 7(k) cannot both pass. The same string also breaks the Interfaces claim at
+`:343-345` ("no screenshot byte, no absolute path and no raw manifest text
+ever reaches a finding"). And the 200-character bound goes too: 159 characters
+in `/tmp/claude-1000/…`; at the brief's own 22-character caps a real
+`mkdtempSync(join(tmpdir(), …))` path plus a 22-character id and a
+22-character name reaches roughly 209.
+
+Fix: in steps 1 and 4, switch on the helper's `code` rather than
+interpolating its message — `ENOENT` → a fixed "is missing" wording — and pass
+through only the helper's own regex-bound refusals, which are clean (measured:
+the symlink case returns `code: undefined`,
+`error: "path reaches its target through a symlink"`, and the new `maxBytes`
+refusal is `target exceeds <n> bytes`). Then 7(k) holds as written.
+
+*Class, with the search.* `is unsafe or unreadable: ${…error}` is already the
+house pattern: `packages/commands/src/opus-model.ts:583, 598, 621, 637, 675,
+696, 727, 890, 939` — nine existing sites, all of which can emit an absolute
+path today, including `validateServed`'s own gate-log read at `:675`. W-110
+owns only the two it adds; take those, and file the other nine as a follow-on
+rather than widening. The brief's step-1 note ("exactly as the existing log
+path does", `:303-304`) leans on that precedent — worth saying that the
+precedent is itself leaky, so the two new sites are a deliberate improvement
+on it rather than a deviation.
+
+**B — 3(b)'s new derivation reads a field whose value set is not the column
+set, so the row cannot pass today.** Brief `:598-601`: "Board renders a column
+for **every phase the served lifecycle declares**: the spec reads
+`GET /api/officina`'s `lifecycle.states`, takes the set of `phase` values, and
+asserts a `[data-column-id]` exists for each." The served shape is right —
+`apps/server/src/store.ts:341` does return
+`lifecycle: { states: { id, name, phase }[] }` — but the two sets differ in
+**both** directions, and `apps/web/src/lib/board.ts:9-13` says so in a comment:
+
+```
+export const NEEDS_YOU_COLUMN = "needs_you";
+/** Board policy, not the lifecycle's: the `backlog` phase is not a column. Its
+ *  opera are cards in Planned, after the greenlit ones (W-129, D-034). Everything
+ *  else about the column set comes from the served lifecycle. */
+const BACKLOG_PHASE = "backlog";
+```
+
+`adapters/native/src/index.ts:40` declares
+`{ id: "backlog", name: "Backlog", phase: "backlog" }`, so `backlog` **is** in
+`lifecycle.states`' phase set and has **no** `[data-column-id]`; and
+`needs_you` is a column with **no** phase behind it. The row is listed as
+"passes today" and will fail today, which Acceptance `:803-804` makes a
+builder stop ("if a row the brief says passes today fails, the brief is wrong
+for it and the builder stops"). Behaviour 3 dies before reaching its Genuine
+red.
+
+Revision 1 was right here and the S8 fix overshot: the honest derivation is
+`[NEEDS_YOU_COLUMN, ...phases.filter((p) => p !== BACKLOG_PHASE)]`, which
+needs `board.ts`'s own two constants — a legitimate import, but then say so,
+because it makes the row depend on a module the brief puts out of scope
+(`:375` lists `board.ts` among the un-owned files). Otherwise keep revision
+1's measured seven literal ids; S8 asked for the coupling to be *stated*, not
+for a derivation that does not exist in the data. The row's second clause (the
+card-id set equals `/api/opera`'s id set) is unaffected and correct — a
+`backlog` opus still gets a card, in Planned.
+
+**C — two rows still miscount against the ladder.** Brief `:741-743` (7(j)):
+a `manifest.txt` of 8 KiB + 1 "is refused by the helper's cap at step 1 with
+**exactly one** finding". Step 1 (`:301-304`) routes any non-"no such file"
+read error to `served-e2e screenshot manifest is unsafe or unreadable:
+<error>`, and the brief itself says that message "matching
+`/unsafe|unreadable|symlink|regular file/i`, `addPolicyProblem` also raises as
+`opus.reference`" — confirmed at `packages/commands/src/opus-model.ts:784-787`.
+So it is **two** findings, which is exactly what 7(d) correctly states for its
+own symlink case. 7(i)'s over-cap PNG has the same shape: "exactly one `is
+unsafe or unreadable:` carrying the helper's 'exceeds' wording" is one
+*message* under two *rules*.
+
+Four rows now use three different conventions: 7(b) counts
+`opus.ui.e2e` only, 7(d) counts both rules, 7(i) counts messages, 7(j) counts
+"findings". Pick one and say it once at the head of behaviour 7, the way the
+ladder is now stated once at `:293-295`. This is the residue of round-1 M1 —
+reduced from three instances to two, and purely a counting-convention problem
+rather than a ladder problem.
+
+*I re-derived every other count against the ladder and they are right:* 7(c)'s
+five name mutations each give exactly one `has a malformed entry`, because
+sub-order (i) before (ii) catches the loose/strict mismatch first and stops —
+and I checked all five mutations (`a/b.png`, `board..png`, `Board.png`,
+`.board.png`, `board.jpg`) genuinely fail the strict regex while the loose
+`^shot: ` counter still counts them. 7(h)'s three sub-cases land at (ii),
+(ii) and (iv) respectively, one each, with no entry read. 7(i)'s 65-entry case
+stops at (iii) before any read, and the "all 65 files absent" negative control
+is a good way to prove the ceiling fired. 6(c)'s `carries no screenshot
+manifest` and 6(f)'s `names another opus's directory` and 6(g)'s id-limit
+message carry no `unsafe|unreadable|symlink|regular file` substring, so each is
+exactly one finding as asserted. 6(g) is testable: `packages/cli/src/rules/ids.ts`
+has only `opus.id.duplicate` and `opus.id.filename`, no length or format rule,
+so a 23-character record id loads.
+
+## SHOULD
+
+**D — `validateServed`'s own existing read is left unbounded in the same
+function the brief is editing.** `:284-287`: "`validateServed` runs inside
+`checkStudio` — on every `check`, `tick`, `verify` and `/api/health` — so it is
+the one caller that must not read an unbounded file". Agreed, and that is
+exactly why the gate-log read at `opus-model.ts:675`
+(`readContainedRegularFile(root, evidence, "ci")`) should also take a cap: it
+is in `validateServed`, on the same always-on path, and a 2 GiB `ci/served.log`
+is the same hazard the brief just closed for PNGs. Passing a `LOG_MAX_BYTES`
+there is one argument in a file the brief already owns, and existing fixtures
+are a few hundred bytes. Class enumerated — nine uncapped sites at
+`opus-model.ts:583, 598, 621, 637, 675, 696, 727, 890, 939`; take `:675`
+(yours), optionally `:696` (`reviewIdentity`, same `checkStudio` path), file the
+rest.
+
+**E — step 1 should name the code literal.** `:300`: "A read error whose code
+is `no such file`". The helper's `code` comes from the thrown exception's own
+`.code`, which is `"ENOENT"` (measured); `"no such file"` is a fragment of the
+*message*. And `code` is `undefined` for the helper's own non-fs refusals
+(measured on the symlink case), so the branch must tolerate that. Say
+`code === "ENOENT"` — the brief is exact about every other regex and constant.
+
+**F — the shots directory is the only `ci/` artifact that is not tree-keyed.**
+Every gate log is `<opus>-<probatio>-<tree8>.log`
+(`packages/pipeline/src/index.ts:99`), so two verifies on two trees leave two
+files and the record's `evidence:` points at the right one.
+`ci/shots/<opus>/` is a fixed path that step 2 clears on every run, so a
+re-verify or a rebase silently replaces committed evidence and nothing on disk
+says which tree the PNGs belong to. Residual 6 (`:922-928`) is otherwise
+accurate and I agree with its trust argument in full — add this sentence to
+it, because residual 16 has the operator committing the directory.
+
+**G — two stale cross-references.** The compatibility contract's last row
+cites `apps/web/dist` consumers at `apps/server/src/http.ts:454`, while the
+brief's own measured row at `:95` cites `:510-512`; measured, `serveStatic`'s
+`index.html` branch is `http.ts:508-512`. And the `localPipeline` callers row
+lists `ci` as a caller — `ci` reaches it only through `runVerify`
+(`packages/commands/src/ci.ts:217`); the only `pipeline.run` sites are
+`verify.ts:300` and the fallback at `:304`. Both are harmless, but a brief this
+precise should not carry a line number that disagrees with its own table.
+
+## Dispositions I verified as properly closed
+
+**M1 — the clause ladder (`:293-341`).** Verified by re-deriving every count
+in behaviours 6 and 7 (see C). The ladder is well built: fail-fast per step,
+step 4 the one exception, and the sub-order note at `:322-324` names exactly
+why (i) must precede (ii). The statement that the gate log's existing clauses
+are evaluated before step 1 and are not short-circuited by it (`:339-341`),
+pinned by 6(b), closes the question of whether the new ladder could mask the
+old checks. Taken.
+
+**M2 — the bounds (`:280-291`).** `maxBytes` is checked against the `fstat`
+the helper already performs on the open fd — confirmed, `opus-model.ts:228` is
+`const opened = fstatSync(fd);`, and it sits after the `O_NOFOLLOW` open and
+before `readFileSync(fd)`, so "post-open, so it cannot be raced" is right.
+Additive and optional, so the other nine callers are untouched.
+`SHOT_MAX_ENTRIES` 64 × `SHOT_MAX_BYTES` 4 MiB bounds peak memory at 4 MiB
+(the Buffer is dropped per iteration) and total I/O at 256 MiB per ui record.
+The 8 KiB manifest cap cannot be exceeded by 64 legal entries (~2.6 KiB at the
+22-character caps). 7(i) and 7(j) fire both bounds, and 7(i)'s negative
+control distinguishes "the ceiling fired" from "65 unreadable entries". Taken.
+
+**M3 — the manifest becomes a file (`:207-269`, `:245-258`).** The coordinator
+asked whether the file-based manifest keeps the binding my security pass
+wanted. It does, and I checked rather than assumed:
+
+- The reasoning at `:248-249` now states the pipeline mechanism correctly
+  (`${r.stdout}${r.stderr}`, stderr last, then tailed) — matching my round-1
+  measurement, and the dependency is deleted rather than restated, which is
+  what I asked for.
+- The per-run cleared directory is real: step 2 `rmSync` + `mkdirSync`
+  (`:219-221`), and 5(d) pins it by planting both a `stale.png` and a
+  `manifest.txt` and requiring both gone. 5(e) and 5(j) make a green walk that
+  produced nothing, or produced an illegal name, write no manifest at all —
+  so the script cannot leave a half-truth behind.
+- The gate record side is unchanged and still validated: `status: passed`, a
+  `tree:` certificate, an exact `at`, and a log corroborating `certifies:`,
+  `command: node scripts/served-e2e.mjs` and `exit code: 0`
+  (`opus-model.ts:660-684`).
+- **No binding was lost.** Revision 1's manifest-in-log was equally forgeable:
+  `validateServed` only requires the log to *contain* those three lines, all
+  of which a hand-written log can carry. Residual 6 (`:922-928`) says exactly
+  this, names the cost of closing it (a third environment variable carrying
+  the certificate into the script), and does not overclaim. That is the right
+  trade and the right way to record it. My only addition is F above.
+- The stdout echo is explicitly non-load-bearing (`:257-258`, residual 9), and
+  the Acceptance bullet now feeds the **file** to the rule, not stdout
+  (`:813-818`), and runs the whole path through `localPipeline`. That is the
+  end-to-end check the design needs.
+
+**S3 — `commandEnv` scoping (`:153-205`). No leak found.** `base =
+filterEnv(process.env)` stays outside the loop and the per-command spread is
+`extra === undefined ? base : { ...base, ...extra }`, so a gate not named in
+`commandEnv` gets the identical object it gets today. I traced every path a
+leak could take: `pipeline.run` has exactly two call sites, `verify.ts:300`
+and the catch-fallback at `:304`, and **both pass the same `runOpts`** — so the
+fallback neither loses the entry nor widens it. `bisellium ci` does not call
+the pipeline; it calls `runVerify` in process (`ci.ts:217`). There is no second
+live pipeline to leak through: `selectPipeline()` unconditionally returns
+`localPipeline` and `noMistakesPipeline.run` unconditionally throws
+(`packages/pipeline/src/index.ts:138-151`), so the "an implementation that
+ignores `commandEnv`" row is moot in practice. `SERVED_E2E_PROBATIO`'s claimed
+home checks out: the `"served-e2e"` literal is at `opus-model.ts:298`, inside
+`effectiveProbationes`, so the const belongs there and `@bisellium/pipeline`
+still learns no gate id. 4(c) and 4(d) pin both halves — scoped to the one id,
+and `tests` still sees today's env. Taken.
+
+**M4 — the fixture helpers (`:99`, `:494-497`).** All five call sites and
+their record ids verified against `packages/cli/src/opus-model.test.ts`:
+`:1187` → W-024, `:1209` → W-022, `:1411` → W-017, `:1527` → W-018,
+`:1595` → W-023. Exactly right. `writeServedLog(root, tree, id)` with a shared
+1280×900 PNG constant is the correct shape, and keeping `servedLines(tree)`
+unchanged (the gate's `evidence: ci/served.log` does not move) is the smaller
+diff. Taken.
+
+**S1** — `:95` restates the stale bundle as the mechanism ("nothing in the
+served path ever builds") with `apps/server/src/http.ts:510-512` as the
+fallback behaviour; verified (`serveStatic` sends `ROUTE_INDEX_HTML` when
+`dist/index.html` is absent). The timestamp is gone. Taken.
+**S2** — the 22-character cap, with 5(g) asserting at the limit plus a
+23-character negative control. My round-1 measurements agree exactly: 22 is
+untouched by `redact`, 23 gives `shots: 2 ********`. The derivation at
+`:260-266` (`ci/shots/` is 9, so the longest legal run is 31) is correct. Taken.
+**S4** — `:408-413` justifies `nav-source.test.ts` as a separate file and
+records that `nav.test.ts` itself needs no edit. Taken.
+**S5** — 1(d) is now three named regexes plus an explicit note that nothing is
+asserted about `#/` elsewhere (`:554-562`). All three are writable against the
+real `route.ts`. Taken.
+**S6** — five, not four. Taken.
+**S7** — PR #179 named as a phase-1 prerequisite with a worktree fallback
+(`:769-779`). The fallback path is right: `bisellium run` creates worktrees
+under `<repo>/.bisellium/worktrees/` (`packages/commands/src/run.ts:8,60,142`),
+and `.bisellium` is in `sourceTreeHash`'s exclude set, so a red recorded there
+reads `tree:`. Worth knowing that `packages/cli/src/integrate.ts:100` and
+`next.ts:426,452` use a *different*, unignored `.worktrees/` — which is the
+directory PR #179 ignores; the brief cites the right one. Taken.
+**S8** — the intent is taken but the mechanism is wrong; see MUST B.
+
+`countBehaviours` on revision 2 is still exactly 8, so the `next` reds rung is
+unaffected by the added rows.
