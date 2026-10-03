@@ -1,0 +1,43 @@
+# opus: W-110
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T01:21:50.761Z
+# tree: dirty:66bfec1c0b315074a4648eec320baeec5322c9b7
+
+## Verdict
+
+Passed. `studio/briefs/W-110.md` carries all six design-lex sections (Intent,
+Files owned, Interfaces, Behaviours to test, Acceptance, Out of scope) plus
+Measured present state, Compatibility contract, Migration, Stop conditions,
+Stated residuals and Follow-on filings, and is ready for a builder.
+
+## Grounding
+
+Nothing in the spec is recalled. Every claim in *Measured present state* was
+probed on this checkout: the served console was built, started against a
+throwaway copy of `examples/sample-studio`, and walked in the repo's own
+chromium. The probes established, among others, that `aria-current` is absent
+from every nav-rail link; that `Officina.tsx` never calls `fetchActa`, so
+`/api/acta` is never requested and the fasti strip is permanently hollow; that
+`/api/aerarium` answers `[]` for a period with no allowance file, leaving the
+System status panel empty; that every served-origin response is 200 while the
+page's Google-Fonts request answers 407 behind a proxy; that `apps/web/dist`
+is three weeks older than the source it serves because `test:serve` does not
+build; that `redact` masks any 32-character run, so a digest cannot survive a
+gate log; and that playwright's `--grep` cannot be anchored with `^` because
+the matched string is prefixed by the spec file path.
+
+## Scope
+
+Eight behaviours, each individually red-able from the repo root with no
+`--cwd`. Two are served-dist playwright tests, six are node TAP tests. One
+seam changes: `localPipeline` names the opus and the officina to a gate
+command's environment, because a gate command otherwise cannot write per-opus
+artifacts; `docs/ADOPTION.md` and `docs/ARCHITECTURE.md` record it in the same
+cascade. The screenshot requirement reuses the existing `opus.ui.e2e` rule id
+rather than adding one, and no record anywhere is `kind: ui`, so no migration
+is needed. Two source fixes touch screens: an ARIA attribute and one missing
+fetch call. Neither adds, removes or restyles a visible element; anything that
+would is a stop condition, because UI/UX is the Patron's.

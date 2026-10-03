@@ -1,0 +1,189 @@
+# opus: W-110
+# phase: spec
+# round: 6
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T02:05:59.585Z
+# tree: dirty:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+**Passed.** Spec prereview round 3 of `studio/briefs/W-110.md` revision 3
+(1117 lines), advisory. **0 MUST, 1 SHOULD** — and the SHOULD is a tightening
+of one test assertion, not a defect in any mechanism.
+
+All three round-2 MUSTs and all four SHOULDs are closed, and two of them are
+closed better than I asked: A is fixed at the root (no finding message
+interpolates the helper's error string at all, rather than narrowing the
+assertion that caught it), and B is fixed by reverting to the measured literal
+*with the coupling written down*, which is what S8 was asking for in the first
+place. The brief is ready for a builder.
+
+Trajectory: 4 MUST / 8 SHOULD → 3 MUST / 4 SHOULD → 0 MUST / 1 SHOULD.
+
+## Environment
+
+Probed at `7e019ed`, repo root, `node --import tsx`. Tree still reads dirty
+from untracked `.worktrees/`; I reviewed PR #179 separately and passed it, and
+the brief already names it as the phase-1 precondition. New probe this round:
+`~/.bisellium-evidence/W-110-spec/probe-7k.mts`.
+
+## A — closed, and closed at the root
+
+`:303-320` replaces interpolation with a measured three-row `code` table, and
+steps 1 (`:329-338`) and 4 (`:361-369`) switch on `code`, never on `error`.
+I re-measured every wording the two new sites can produce against 7(k)'s three
+assertions (`probe-7k.mts`):
+
+```
+len= 42 a1=true a3-clean=true  served-e2e screenshot board.png is missing
+len= 98 a1=true a3-clean=true  …is unsafe or unreadable: path reaches its target through a symlink
+len= 85 a1=true a3-clean=true  …is unsafe or unreadable: target exceeds 4194304 bytes
+len= 81 a1=true a3-clean=true  …manifest is unsafe or unreadable: target exceeds 8192 bytes
+len= 72 a1=true a3-clean=true  …manifest needs an opus id of at most 22 characters
+len=122 a1=true a3-clean=true  …is unsafe or unreadable: path must be a nonempty officina-relative string
+```
+
+The worst case is **122** characters against a 160 cap, all printable ASCII,
+none carrying a path. 7(b)'s Genuine red now produces
+`served-e2e screenshot board.png is missing` — 42 characters, and deliberately
+free of `/unsafe|unreadable|symlink|regular file/i`, so it is one finding and
+7(b) and 7(k) no longer contradict. The reasoning at `:363-365` ("a deleted
+file is a gate problem and not a containment event") is the right distinction
+to draw, and it is the one that makes the count fall out rather than being
+asserted.
+
+The double-raise set is now exactly right, and I checked it against the real
+`addPolicyProblem` (`opus-model.ts:784-787`) rather than the brief's summary:
+of the helper's seven fixed refusals, only `path reaches its target through a
+symlink` and `target is not a regular file` carry a matching substring on
+their own — but because the `code === undefined` branch wraps all of them in
+`is unsafe or unreadable:`, every refusal double-raises uniformly. That is why
+7(d) (symlink, both cases), 7(i)'s second half (`target exceeds`) and 7(j)
+(`target exceeds` at step 1) are the three two-finding rows and nothing else
+is. I traced both of 7(d)'s cases through the helper's component loop
+(`opus-model.ts:218-222`): a symlinked parent directory is caught at the parent
+component and yields the same symlink refusal, not an escape refusal, so both
+halves of (d) are two findings as stated.
+
+The nine leaky precedent sites are enumerated at `:316-317`
+(`opus-model.ts:583, 598, 621, 637, 675, 696, 727, 890, 939` — matching my own
+search exactly), two owned, the rest filed, and `:315-318` says plainly that
+the precedent is leaky and these two are a deliberate improvement on it. That
+is the right scope: W-110 takes its own, and does not widen.
+
+## B — closed, and the right way round
+
+`:648-662` restores revision 1's seven measured literal ids (`needs_you`,
+`planned`, `in_progress`, `verifying`, `awaiting_review`, `done`, `halted`) and
+then *states* the coupling instead of deriving it. Both anchors are the ones I
+measured: `apps/web/src/lib/board.ts:9-13` (`NEEDS_YOU_COLUMN` a column with no
+phase; `BACKLOG_PHASE` a phase deliberately not a column, W-129/D-034) and
+`adapters/native/src/index.ts:40` (`{ id: "backlog", name: "Backlog", phase:
+"backlog" }`). The measured row at `:104` carries the same facts. `:660-661`
+names the real obstacle — a correct derivation needs `board.ts`'s
+module-private `BACKLOG_PHASE` exported from a file the brief lists as
+un-owned — and `:970` makes reaching for it a stop condition. The second
+clause (card-id set equals `/api/opera`'s id set) is unchanged and was always
+correct; a `backlog` opus still gets a card, in Planned, which is why 7 ids
+cover 8 card elements.
+
+This is the disposition I would have written. S8 asked for the dependency to
+be visible, not for it to be computed, and revision 2 read it as the latter.
+
+## C — closed
+
+`:774-779` states one convention once: a count is of `Finding`s as
+`checkStudio` reports them, a matching message counts two, everything else
+one, and rows (d), (i)-second-half and (j) are named as the two-finding cases.
+7(i) and 7(j) now read two. I re-derived every count in behaviours 6 and 7
+against the ladder a third time and they all hold: 6(c) one (step 1 `ENOENT`,
+clean wording), 6(f) one (step 2 stops before any entry is read), 6(g) one
+(the id clause runs before the path is built, so no file is read), 7(b) one,
+7(c)'s five mutations one each via sub-order (i) before (ii), 7(e)-(h) one
+each, 7(i) one then two, 7(j) two.
+
+## D, E, F, G — closed
+
+- **D**: `:292` caps `validateServed`'s own gate-log read at `opus-model.ts:675`
+  with `LOG_MAX_BYTES` 1 MiB, and `:319-320` gives the reason for leaving its
+  message alone (an assertion may pin the wording; the cap is additive on its
+  own). Correct call — I asked for the cap, not the rewording.
+- **E**: `ENOENT` is the literal, in the `code` table (`:308`) and at both
+  ladder sites.
+- **F**: residual 6 now carries the tree-keying paragraph in full — gate logs
+  are `<opus>-<probatio>-<tree8>.log` (`pipeline/src/index.ts:99`) while
+  `ci/shots/<opus>/` is a fixed path, so a re-verify or rebase silently
+  replaces committed evidence and the screenshots in a merge commit are the
+  last run's, not necessarily the run whose log sits beside them. It says why
+  keying by `tree8` is not done (a retention rule this opus does not want to
+  invent). That is exactly the honest form I asked for.
+- **G**: the contract row at `:928` now states the call sites precisely —
+  `verify.ts:300` plus the catch-fallback at `:304`, both sharing one
+  `runOpts`, and `bisellium ci` explicitly *not* a caller because it reaches
+  the pipeline through `runVerify` (`ci.ts:217`). Matches my measurement. The
+  `dist` consumers row now reads `serveStatic`, `apps/server/src/http.ts:508-512`,
+  which is where `serveStatic`'s `index.html` branch actually is; `:96` keeps
+  `:510-512` for the `existsSync`/`sendFile`/`sendText` lines. Both correct and
+  mutually consistent.
+
+`countBehaviours` on revision 3 is still exactly 8, so the `next` reds rung is
+unaffected by the rewritten rows.
+
+## SHOULD (1, non-blocking)
+
+**7(k)'s third assertion is a near-no-op against the leak shape it names.**
+`:813` writes "contains no absolute path (no message matches `/(?:^|\s)\//`)".
+Measured against the exact string revision 2 would have produced:
+
+```
+revision-2 leak string, length: 157
+  assertion 1 (ASCII<=160) catches it? false
+  assertion 2 (/tmp substring) catches it? true
+  assertion 3 (no absolute path) catches it? false   <-- the / follows a quote, not whitespace
+```
+
+Node renders the path quoted — `… directory, lstat '/tmp/claude-1000/…'` — so
+the `/` is preceded by `'`, not by whitespace or start-of-string, and the
+assertion named "no absolute path" does not fire. The 157-character length
+also slips under the 160 cap, so assertion 1 does not fire either. **The row is
+still a sound guard**, because assertion 2's first clause (the test's own
+temp-directory path, which is the officina root and therefore a prefix of any
+leaked path) catches it on every platform — so nothing fails and this is not a
+MUST. But the clause advertised as the absolute-path guard should actually be
+one: `/\/[\w.-]+\//` (two separators with a segment between) catches
+`/tmp/claude-1000` and macOS's `/var/folders/…` while still allowing the
+closed-set refusals `path must remain under ci/` and `real parent escapes ci/`
+— I verified all seven refusal strings pass that form. Either tighten it or
+drop it and let assertion 2 carry the row, but do not leave a clause that
+reads like a guarantee it does not give.
+
+## Residual note (not a finding)
+
+`:312-314` treats `code === undefined` as equivalent to "one of the helper's
+own fixed refusals". That holds today for a good reason — the helper's own
+refusals `return { error }` with no `code`, and every throw inside its `try`
+comes from `realpathSync`/`lstatSync`/`openSync`/`fstatSync`/`readFileSync`,
+all of which carry `.code` (`opus-model.ts:239-241` only attaches `code` when
+the thrown value has one). A non-errno throw would land in that branch and have
+its message interpolated. It is practically unreachable, and no row in
+behaviours 6 or 7 can reach it, so it does not change the verdict — but since
+Interfaces already enumerates the closed set of seven, asserting membership and
+falling back to the bare-code branch otherwise would make the property
+structural rather than inferred, which is the same move the 22-character cap
+made for `redact` in revision 2.
+
+## Everything re-confirmed this round
+
+Nothing I verified in earlier rounds regressed. The revision log's claim
+"rows changed inside 3, 6 and 7, none added" matches what I found, and the
+sections the earlier rounds cleared are unchanged in substance: the `maxBytes`
+parameter is still post-`fstat` at `opus-model.ts:228` and additive; the bounds
+are still `SHOT_MAX_ENTRIES` 64, `SHOT_MAX_BYTES` 4 MiB, `MANIFEST_MAX_BYTES`
+8 KiB (which 64 legal entries cannot reach at ~2.6 KiB); the manifest is still a
+file read through the containment helper with the stdout echo explicitly
+non-load-bearing; `commandEnv` is still keyed per probatio id with both
+`pipeline.run` sites sharing one `runOpts`; and `writeServedLog(root, tree, id)`
+still names the five call sites with their five record ids (W-024, W-022,
+W-017, W-018, W-023 — verified).

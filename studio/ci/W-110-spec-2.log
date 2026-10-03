@@ -1,0 +1,316 @@
+# opus: W-110
+# phase: spec
+# round: 2
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: revise
+# at: 2026-10-03T01:37:29.478Z
+# tree: dirty:66bfec1c0b315074a4648eec320baeec5322c9b7
+
+## Verdict
+
+Revise. Spec prereview of `studio/briefs/W-110.md` revision 1, advisory (the
+spec gate is the architect's; this is the Censor's first hour, QA lex §1).
+4 MUST, 8 SHOULD. The brief is unusually well grounded — twenty-odd measured
+rows reproduce verbatim, and the three design choices the Patron's charter
+would otherwise own (no digest in the manifest, no `^` anchor on a playwright
+grep, seeding rather than changing a route) are each supported by a probe I
+re-ran. What blocks it is narrower: the manifest validator's clause ordering
+is unspecified while three behaviour rows assert exact finding counts that
+depend on it, the rule's read loop is unbounded, one stated pipeline
+guarantee is about the wrong stream, and the forced edit to the existing ui
+fixtures is specified against a helper signature that cannot carry what the
+new header needs.
+
+## Environment
+
+Probed at `7e019ed` on 2026-10-03, repo root, WSL, `node --import tsx`
+throughout (never `npx tsx`). The working tree reads dirty: `.worktrees/`,
+`studio/acta/2026-09-25-qa-lead-daily.md`, `studio/briefs/W-110.md` and
+`studio/ci/W-110-spec-1.log` are untracked. `.worktrees/` is the ignore gap
+PR 179 fixes; it is not fought here, and finding S7 records what it costs the
+brief's Acceptance precondition. My own probe scripts live under
+`~/.bisellium-evidence/W-110-spec/` (`probe-count.mts`, `probe-tail.mts`,
+`build.out`, `build.err`); nothing was written into the repo except
+`apps/web/dist`, which is gitignored and which I rebuilt once (see S1).
+
+## Claims I re-measured myself
+
+Each of these gates a design choice in the brief, so none is taken on the
+architect's word.
+
+- `redact` masks 32+-char runs: `packages/shim/src/redact.ts:13`
+  `LONG_RUN = /\b[A-Za-z0-9+/_-]{32,}\b/g`. Measured on real manifest lines —
+  `"shots: 2 ci/shots/W-110"` and `"shot: board.png 1280x900 123456"` pass
+  through untouched. The no-digest decision (residual 5) is sound.
+- playwright `--grep` cannot be anchored: `--grep "^computed layout"` →
+  `Error: No tests found` / `Total: 0 tests in 0 files`; `--grep "computed
+  layout"` → 5 tests in `layout.spec.ts`. Conclusion reproduces; the count in
+  the brief does not (S6).
+- Chromium is present and is the repo's own:
+  `~/.cache/ms-playwright/chromium-1243` (plus `chromium_headless_shell-1243`,
+  `ffmpeg-1011`). Reds 2 and 3 will not die on a missing executable.
+- `countBehaviours(brief)` is exactly 8 — run against the real
+  `packages/cli/src/rules/evidence.ts` export, so the `next` reds rung
+  (`packages/cli/src/next.ts:433-444`) will look for behaviours 1..8 and no
+  more.
+- The screenshot store's containment: `readContainedRegularFile`
+  (`packages/commands/src/opus-model.ts:209-242`) refuses a symlink at any
+  path component, refuses a non-regular file, and re-checks the real parent
+  and real target against `expectedDir`. `ci/shots/<id>/<name>.png` satisfies
+  `expectedDir === "ci"`. The two regexes in the brief (`:213`, `:218`) both
+  force a leading `[A-Za-z0-9]`/`[a-z]`, so neither `..` nor an absolute path
+  can reach the helper. Behaviour 7(d)'s "both an `opus.ui.e2e` and an
+  `opus.reference`" is correct: `addPolicyProblem`
+  (`opus-model.ts:784-787`) tests `/unsafe|unreadable|symlink|regular file/i`
+  and the brief's message string at `:225` contains "unsafe".
+- The walk's throwaway seeded studio is sound. `/api/health`'s `due` carries
+  `{ kind: "aerarium", id: <isoWeek(now)> }` (`apps/server/src/store.ts:200`);
+  `examples/sample-studio/health.json` does **not** exist, so the route's
+  `health.json` shortcut cannot shadow the live computation; and
+  `snap()` (`store.ts:286`) builds a fresh `snapshotDir` per call with no
+  memo, so "every route re-reads the studio dir per request, so no `_poll` is
+  needed" holds. The fixture's only allowance file is `aerarium/2026-W38.yml`
+  and it declares exactly `production`, `engineering`, `art`, `qa` — matching
+  behaviour 3(d). The fixture's acta are all `kind: daily`/`consultation`
+  dated 2026-09-17, so "exactly 1 filled tick" after seeding is not
+  contaminated.
+- `localPipeline`'s gate-command env seam: `packages/pipeline/src/index.ts:75`
+  `const env = filterEnv(process.env)` sits **outside** the `for` loop at
+  `:77`, so the brief's shape at `:141-148` hands both variables to every
+  automated probatio, not only `served-e2e` (S3). `filterEnv`
+  (`redact.ts:42-58`) drops `/TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL/i` and
+  neither new name matches, so "setting them after the filter is the
+  guarantee, not a workaround" is accurate.
+- `apps/web/playwright.serve.config.ts` has `testDir: "./tests-serve"`,
+  `fullyParallel: true`, `reporter: "list"`, one `chromium` project and **no**
+  `globalSetup` — behaviour 8(a) passes today and 8(b) is genuinely red.
+- `fetchActa` exists and is exported (`apps/web/src/api.ts:264`), so the
+  one-line Officina fix needs nothing from the un-owned `api.ts`.
+  `Officina.tsx:59-69` calls `fetchOfficina`/`fetchAerarium`/`fetchHealth`
+  only; `acta` state is `:55` and `FastiStrip` renders at `:77`. Red is real.
+- `Sidebar.tsx` carries no `aria-current` anywhere, and the `disabled`
+  branch at `:33-34` is unreachable (`ENTRIES` at `:14-19` sets it nowhere).
+  `route.ts:8-13` is a second hash table and `apps/web/test/sidebar.test.ts:19-20`
+  a third. `nav.ts` is nine lines, `needsYouVisible` only.
+- No record anywhere is `kind: ui` (grep over `studio/opera/` and
+  `examples/sample-studio/opera/`), so "no migration" holds.
+- `dist/` and `apps/web/test-results/` are both in `.gitignore`, so the new
+  `globalSetup` build and a bare walk's shots dirty nothing.
+- `--behaviour N` is the house argv convention
+  (`packages/cli/src/ladder-followon.test.ts:26`,
+  `answer-carry.test.ts:28`, `stage-states.test.ts:35`). The
+  `(cd apps/web && …)` group in root `test:suite` **closes** before the
+  `apps/web/src/lib/*.test.ts` entries, so "after the `board.test.ts` entry"
+  is the repo root as the brief claims.
+- `apps/web/src/lib/nav.test.ts` imports only `needsYouVisible`, so adding
+  `NAV_ENTRIES` cannot break it (S4 is about saying so, not about a break).
+- Behaviour 3(b)'s card set: `W-007` is `state: backlog` yet the brief's
+  measured head counts put Planned at 2 (greenlit + backlog), so all seven
+  fixture opera do get cards and 8 elements over 7 ids reproduces.
+
+## MUST
+
+**M1 — class: the manifest validator's clause ordering is unspecified, and
+three behaviour rows assert exact finding counts that depend on it.**
+I searched every row under "Behaviours to test" that asserts a finding count
+(6(c), 6(f), 7(b) through 7(h)); three of them conflict, and they conflict
+with each other, not just with the Interfaces section. All three are one
+fix: `:211-231` must state, per clause, whether validation stops.
+
+- Brief `:542` (behaviour 7(c)) — "six separate mutations, one finding
+  each". It lists **five** mutation kinds (a path separator, `..`, an
+  upper-case letter, a leading dot, a suffix other than `.png`), so the count
+  is wrong on its face. Worse, each of those mutations raises **two**
+  findings under `:217-221`: the loose-vs-strict mismatch gives
+  `served-e2e screenshot manifest has a malformed entry`, and the now-short
+  strict count disagrees with the header's `\d+`, giving
+  `served-e2e screenshot manifest count disagrees with its entries`. The row
+  even acknowledges the second ("and the count mismatch it causes is
+  reported") while demanding "one finding each".
+- Brief `:530-533` (behaviour 6(f)) — "a manifest whose header is present but
+  whose `ci/shots/<id>` names another opus produces **exactly one**
+  `opus.ui.e2e`". `:213-231` specifies no stop after the directory-mismatch
+  finding, so the per-entry loop at `:223` still calls
+  `readContainedRegularFile(root, "<other-opus-dir>/<name>", "ci")`. In
+  behaviour 6's temp officina those paths do not exist, so every entry adds
+  `served-e2e screenshot <name> is unsafe or unreadable: …` — and, because
+  that string matches `/unsafe|unreadable/i`, an `opus.reference` finding
+  too. Not one finding; five.
+- Brief `:549-551` (behaviour 7(h)) — "a header count of 3 with two `shot:`
+  lines … each give **exactly one** finding" requires the per-entry loop to
+  run to completion on a count mismatch. So 7(h) needs no short-circuit at
+  exactly the clause where 6(f) and 7(c) need one.
+
+**M2 — security: the rule's entry loop is unbounded and reads whole files
+with no size cap.** Brief `:218-223` bounds nothing: the header's count must
+equal the strict count and be at least 1, with no ceiling, and each entry is
+read through `readContainedRegularFile`, which the brief itself records at
+`:89` as having "no size cap" (confirmed —
+`packages/commands/src/opus-model.ts:235` `readFileSync(fd)` into a `Buffer`).
+`validateServed` runs inside `checkStudio`, i.e. on every `bisellium check`,
+`tick`, `verify` and `/api/health` computation, for every `kind: ui` record at
+`review`/`done`. The brief already names the right bound — "the manifest is
+at most 64 lines" (`:193`) — but puts it only in `scripts/served-e2e.mjs`,
+which is the half the rule deliberately does not trust (`:236-237`). This is
+in-repo data, so it is robustness rather than privilege escalation, but it is
+the one new always-on read loop the opus adds and nothing in behaviours 6 or 7
+pins a ceiling. Give the rule `SHOT_MAX_ENTRIES` (64) and a per-file byte
+ceiling beside `SHOT_MIN_WIDTH`/`SHOT_MIN_HEIGHT`, and a row that fires them.
+
+**M3 — the stated guarantee that the manifest survives the pipeline's tail is
+about the wrong stream.** Brief `:185-193`: "print, as the **last** lines of
+the run … Nothing is printed after the manifest, and the manifest is at most
+64 lines — so the pipeline's 200-line tail always keeps it whole." The
+pipeline does not tail the run. `packages/pipeline/src/index.ts:89` builds
+`const output = \`${r.stdout ?? ""}${r.stderr ?? ""}\`` and `:97` logs
+`redact(tail(output, LOG_TAIL_LINES))` — stdout and stderr **concatenated**,
+stderr last. Measured (`probe-tail.mts`): a child that writes two stderr lines
+and then the manifest to stdout produces
+`"shots: 1 ci/shots/W-110\nshot: board.png 1280x900 55\nnpm WARN line1\nnpm WARN line2\n"`
+— the log's last line is the stderr line, and 200+ lines of stderr would evict
+the manifest entirely. `served-e2e.mjs` spawns npm with `stdio: "inherit"`
+(`:176`), so the whole subtree's stderr lands in that buffer.
+Behaviour 5(c) (`:500-504`) pins only "stdout's last three lines", and the
+Acceptance bullet at `:611-613` feeds the script's own printed manifest to the
+rule rather than the pipeline's log, so nothing in the opus exercises the
+concatenated tail. Measured headroom today is comfortable
+(`npm --workspace @bisellium/web run build` = 14 stdout lines, **0** stderr),
+so this is a mis-stated mechanism rather than an observed break — but the
+sentence is load-bearing for the whole evidence chain and should either be
+corrected or backed by a row that runs a manifest through
+`tail(stdout ++ stderr, 200)` with stderr present.
+
+**M4 — the forced edit to the existing ui fixtures is specified against a
+helper signature that cannot carry the new header.** Brief `:358-360` tells
+the builder that `servedLines`/`writeServedLog` "must emit the manifest and
+write matching PNGs". `writeServedLog(root, tree)`
+(`packages/cli/src/opus-model.test.ts:161`) takes **no record id**, and
+`servedLines(tree)` (`:151-159`) hardcodes `evidence: ci/served.log` — one
+shared log path per officina. The new header must equal `ci/shots/<record.id>`
+(`:215`). The five call sites (`:1187`, `:1209`, `:1411`, `:1527`, `:1595`)
+cover at least W-019 and W-023 plus three more ids, so a manifest emitted by
+an id-less helper can only ever name one of them; the rest get
+`served-e2e screenshot manifest names another opus's directory` and the whole
+W-096 ui suite goes red for a reason the brief did not predict. Say that both
+helpers gain the record id, that each root writes its own
+`ci/shots/<id>/*.png`, and that the PNG fixture bytes are a shared constant —
+otherwise this is a guaranteed fix round.
+
+## SHOULD
+
+**S1 — a measured row that no longer reproduces.** Brief `:85` (and the
+Intent at `:20-22`, the fourth-thing paragraph at `:56-59`):
+"`apps/web/dist/index.html` on this checkout is dated 2026-09-25". Measured
+before I touched anything: `2026-10-03 08:59`. The architect's own probe
+("the served console was built", verdict-1 Grounding) is what moved it. The
+*mechanism* is verified and the conclusion stands — `apps/web/package.json:11`
+is `playwright test --config=playwright.serve.config.ts` with no build, and
+the config declares no `globalSetup` — so restate the row as the mechanism
+(nothing in the served path ever builds) rather than as a timestamp that the
+next probe invalidates. L-047's lesson is about the missing build step, not
+about a date.
+
+**S2 — the redact-proof invariant is incidental, not structural.** Brief
+`:195-200`, residual 5 at `:691`, behaviour 5(g) at `:512`. `redact`'s
+`LONG_RUN` masks runs of 32 or more `[A-Za-z0-9+/_-]`, and the brief's own
+grammars admit exactly those lengths: the shot-name regex at `:218` is
+`[a-z][a-z0-9-]{0,31}` — up to 32 characters, all inside the class — and the
+opus-id regex at `:169`/`:213` is `[A-Za-z0-9][A-Za-z0-9._-]{0,63}`, so
+`ci/shots/` plus a 23-character id already reaches 32. Measured:
+`"shot: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png 1280x900 10"` →
+`"shot: ********.png 1280x900 10"`, and
+`"shots: 2 ci/shots/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"` → `"shots: 2 ********"`.
+A masked manifest is a permanently refused gate with no diagnostic. Cap the
+name at 22 characters and the id at 22 in both the script and the rule so the
+property is structural, and make 5(g) assert the boundary instead of the two
+short names the stub happens to write.
+
+**S3 — residual 6's "no new exposure" rests on an unstated assumption, and the
+variables reach more commands than the residual implies.** Brief `:693-695`:
+"It already ran with the repo as its cwd and could find `studio/` by itself;
+no new exposure." Two gaps. (a) `localPipeline` computes `env` once above the
+loop (`index.ts:75` vs `:77`), so the brief's shape at `:141-148` hands
+`BISELLIUM_STUDIO_DIR` to **every** automated probatio command a manifest
+declares — `tests`, `lint`, `types` and anything an adopter adds — not only
+the reserved `served-e2e`. (b) "could find `studio/` by itself" is only true
+while the officina lives inside the repo. `--studio <dir>` takes any path, and
+the codebase treats an out-of-repo officina as a supported shape
+(`packages/commands/src/lifecycle.ts:838-841` branches on `rootInside`
+precisely for that case). For such an adopter the change discloses an absolute
+path outside the repo to every gate command. Either scope the two variables to
+the `served-e2e` gate, or state the assumption and say what happens when it
+does not hold.
+
+**S4 — the existing test for the module being changed is unmentioned.** Brief
+`:324` edits `apps/web/src/lib/nav.ts`; `:369` goes out of its way to say
+`apps/web/src/lib/route.test.ts` needs no edit and why. `apps/web/src/lib/nav.test.ts`
+exists, is registered in root `test:suite`, and covers the same module — and
+the brief adds a second nav test file, `nav-source.test.ts`, beside it without
+saying so. I read it: it imports only `needsYouVisible`, so no edit is in fact
+needed. Say that the way route.test.ts is said, and justify the near-duplicate
+file name.
+
+**S5 — behaviour 1(d) carries an assertion that cannot be written.** Brief
+`:414`: "the file's only `#/` occurrences are inside no string literal at
+all". `route.ts`'s surviving doc comment (`:2-4`) contains `/#/inbox`,
+`/#/board`, `/#/seats`, `/#/officina`, and the derived map the brief specifies
+at `:118-119` uses `e.href.replace(/^#/, "")`. Whatever property is intended,
+name it as a concrete regex the way (d)'s first two clauses do.
+
+**S6 — an off-by-one in a measured row.** Brief `:95`: "`--grep "computed
+layout"` finds four tests". Measured at `7e019ed`: five
+(`layout.spec.ts:23`, `:32`, `:44`, `:55`, `:69`). The design conclusion is
+unaffected — `^` genuinely cannot anchor a playwright grep — but a measured
+row should be the measurement.
+
+**S7 — the Acceptance precondition is unsatisfiable in the main checkout and
+the brief does not say so.** Brief `:577-580`: "`git status --porcelain` empty
+first, so every header reads `tree:` and never `dirty:`". `.worktrees/` is
+untracked and is in neither `.gitignore` (which holds `.claude/worktrees/`,
+not `.worktrees/`) nor the studio's `source_excludes: [ examples/ ]`.
+`isDirtyOutside` (`packages/shim/src/sourceTree.ts`) reads `git status
+--porcelain` verbatim, `red` stamps `# tree: dirty:…` from it
+(`packages/commands/src/lifecycle.ts:838-845`), and `next` counts a
+dirty-tree red as missing (`packages/cli/src/next.ts:437-444`). The
+architect's own spec log already reads `# tree: dirty:66bfec1c…`. PR 179 is
+the fix. Either name it as a prerequisite, or say the reds are recorded inside
+the builder's own worktree, where the main checkout's untracked directory does
+not appear — but say which, because the builder will otherwise stop on red 1.
+
+**S8 — behaviour 3(b) couples a content check to the board's state mapping,
+which the brief lists as out of scope.** Brief `:451-453` asserts the set of
+`[data-card-id]` values equals the id set the spec reads from `GET /api/opera`.
+That holds only because every fixture state happens to map to a column:
+`examples/sample-studio/opera/W-007.md` is `state: backlog`, and the brief's
+own head counts put Planned at 2 (greenlit + backlog). W-129 (#174, "the board
+tells the whole truth") just moved that mapping, and the brief puts the board
+out of scope (`:731-732`) while `.board__backlog-footer` appears in its
+"Out of scope" list. Assert the column-mapped set, or the measured literal.
+
+## What I did not find
+
+No vacuous "passes today" row: I traced 2(a)-(d), 3(a)-(d), 4(a), 5(a)-(b),
+6(a)-(b), 7(a) and 8(a) against the sources above and each asserts something
+the current tree actually does. Behaviour 3(e) does fail on the missing
+`fetchActa` and not on the seeding — the seeding writes an allowance file and a
+`kind: cascade` actum, neither of which touches whether `/api/acta` is
+requested, and the row asserts that request independently. Behaviour 7 would
+indeed fail a rule that trusted the manifest's own numbers (rows (e) and (g)
+re-derive both from disk). Behaviour 5(g) would indeed fail a manifest
+carrying a digest — measured. Behaviour 8(d) would indeed fail a `globalSetup`
+that does not build (it asserts an `index.html` and a referenced `/assets/…`
+under a temp outDir). And nothing in the opus adds, removes or restyles a
+visible element: the rail gains `aria-current` and loses an unreachable
+`aria-disabled`, and `Officina.tsx` gains one fetch feeding an
+already-rendered `FastiStrip` — no class name, column, card or copy string
+moves. The Patron's UI/UX boundary is respected.
+
+## Round numbering
+
+Recorded as spec round 2. The spec phase's rounds share one log sequence
+(`ci/<opus>-spec-<round>.log`, `packages/commands/src/verdict.ts:264-268`,
+never overwritten), and the architect's signature already holds round 1
+(`studio/ci/W-110-spec-1.log`). This is the first Censor prereview of the
+brief; it is advisory and writes no gate — `verdict` writes only its own log,
+so the architect's `spec` gate is untouched.
