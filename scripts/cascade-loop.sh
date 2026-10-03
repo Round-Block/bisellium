@@ -14,14 +14,20 @@
 #   LOW_CREDIT    credits look short for another item: stop
 #   QUEUE_EMPTY   nothing left: stop, exit 0
 #
-# A missing or unknown status, or a nonzero claude exit, also stops the loop,
-# and CASCADE_MAX_RUNS caps the spend. The status file is deleted before every
-# run, so a session that writes nothing cannot inherit the last CONTINUE.
+# The status counts only as a plain file (not a symlink) holding exactly one of
+# those words and an optional newline. A missing or invalid status, a nonzero
+# claude exit or a timeout also stops the loop. Limits: CASCADE_MAX_RUNS (5)
+# sessions, CASCADE_RUN_TIMEOUT (4h) and CASCADE_MAX_USD (20, --max-budget-usd)
+# per session. The status file is deleted before every run, so a session that
+# writes nothing cannot inherit the last CONTINUE.
 #
 # Run it from the Patron's reviewed folder (~/projects/bisellium/scripts/
 # cascade-loop.sh), never from the agent clone, and never point a hook at it
-# (hooks run unsandboxed). It touches nothing outside $AGENT_CLONE except the
-# status file and the logs under ~/.cascade-loop.
+# (hooks run unsandboxed). Agents can write ~/.bisellium-evidence, so the status
+# file is the only thing read from there; the logs (0600), the lock that keeps
+# a second loop out and nothing else go in ~/.cascade-loop (0700, refused if it
+# or an ancestor below $HOME is a symlink). Beyond the status file, it touches
+# nothing outside $AGENT_CLONE and ~/.cascade-loop.
 set -euo pipefail
 umask 077
 set -C # noclobber: each log is created exclusively; the logs are the only `>` below
