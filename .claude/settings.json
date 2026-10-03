@@ -35,6 +35,10 @@
     ]
   },
   "permissions": {
-    "allow": ["Workflow"]
+    "allow": [
+      "Workflow",
+      "Bash(gh pr merge*)",
+      "Bash(npm run -s bisellium -- next*)"
+    ]
   }
 }
