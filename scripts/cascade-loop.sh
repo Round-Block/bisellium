@@ -48,6 +48,24 @@ no_symlinks() {
   done
 }
 
+# Print MISSING, INVALID, or the allowed word the status file holds. The file
+# must be a plain file, not a symlink, whose whole content is exactly one word
+# and an optional newline: a byte-for-byte match against each word, so any
+# other size, extra line, control byte or NUL is INVALID. Raw contents are never printed.
+status_word() {
+  if [ ! -e "$CASCADE_STATUS" ] && [ ! -L "$CASCADE_STATUS" ]; then echo MISSING; return; fi
+  if [ -f "$CASCADE_STATUS" ] && [ ! -L "$CASCADE_STATUS" ]; then
+    local w
+    for w in CONTINUE NEEDS_PATRON LOW_CREDIT QUEUE_EMPTY; do
+      if printf '%s\n' "$w" | cmp -s - "$CASCADE_STATUS" || printf '%s' "$w" | cmp -s - "$CASCADE_STATUS"; then
+        echo "$w"
+        return
+      fi
+    done
+  fi
+  echo INVALID
+}
+
 BOOT_PROMPT=$(
   cat <<EOF
 You are the orchestrating session (producer). Read CLAUDE.md, then
@@ -91,15 +109,13 @@ for ((run = 1; run <= CASCADE_MAX_RUNS; run++)); do
   "$CLAUDE_BIN" -p "$BOOT_PROMPT" --permission-mode auto --output-format stream-json --verbose >>"$log" 2>&1 || rc=$?
   [ "$rc" -eq 0 ] || stop 1 "claude exited $rc on run $run. Log: $log"
 
-  word=
-  [ -f "$CASCADE_STATUS" ] && read -r word _ <"$CASCADE_STATUS" || true
-  case $word in
+  case $(status_word) in
     CONTINUE) ;;
     QUEUE_EMPTY) stop 0 "QUEUE_EMPTY, the queue is done after $run run(s). Log: $log" ;;
     NEEDS_PATRON) stop 1 "NEEDS_PATRON after run $run: a Patron decision is waiting (see the handoff). Log: $log" ;;
     LOW_CREDIT) stop 1 "LOW_CREDIT after run $run: credits look short for another item. Log: $log" ;;
-    "") stop 1 "status file missing ($CASCADE_STATUS) after run $run: the session wrote no status. Log: $log" ;;
-    *) stop 1 "unknown status '$word' after run $run. Log: $log" ;;
+    MISSING) stop 1 "status file missing ($CASCADE_STATUS) after run $run: the session wrote no status. Log: $log" ;;
+    *) stop 1 "invalid status after run $run: not one allowed word alone in a plain file (contents not shown). Log: $log" ;;
   esac
 done
 stop 1 "reached CASCADE_MAX_RUNS=$CASCADE_MAX_RUNS runs with work still queued. Last log: $log"
