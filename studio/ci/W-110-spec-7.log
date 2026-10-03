@@ -1,0 +1,59 @@
+# opus: W-110
+# phase: spec
+# round: 7
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T02:08:34.555Z
+# tree: dirty:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+Passed. `studio/briefs/W-110.md` revision 4 takes the single SHOULD from the
+round-6 prereview (`studio/ci/W-110-spec-6.log`, 0 MUST) and the optional
+residual note. Two one-line hardenings; eight behaviours and every finding
+count unchanged.
+
+## What changed
+
+**7(k)'s path clause is now `/\/[\w.-]+\//`.** I re-measured both clauses on
+the exact message rather than taking the finding on trust, and the censor is
+right on both halves: the real string is **157 characters** — inside the 160
+cap — and `/(?:^|\s)\//` answers **false** on it, because Node quotes the path
+(`lstat '/tmp/claude-1000/…'`) so the leading slash follows an apostrophe, not
+whitespace. Revision 3's clause therefore missed the one leak it was written to
+catch. `/\/[\w.-]+\//` answers true on it and on macOS's
+`/var/folders/ab/cd12/T/…`, while all seven of the helper's fixed refusal
+strings pass (`path must remain under ci/` and both `escapes ci/` strings have
+no second slash) and so does every message this opus can emit — the `is
+missing` wording, the bare-code wording, the manifest-header wordings. I kept
+the clause rather than dropping it and leaning on assertion 2: the temp-root
+substring check only catches the *test's own* root, so it would not notice a
+path from anywhere else, and the regex is the assertion that actually states
+the property.
+
+**The `code === undefined` branch gains a shape guard.** Taken, and taken as a
+guard rather than as the enumerated-membership check offered. The refusal is
+passed through only if it matches `^[\x20-\x7e]{1,80}$` and does not match
+`/\/[\w.-]+\//`; otherwise the message carries the bare word `refused`. An
+allowlist of the seven strings would pin a set that is fixed today but lives in
+another function, so its closedness would be *inferred*; validating the shape
+cannot drift, and a future refusal that embedded a path could not leak through
+it. That is the same move as the `redact` cap — structural rather than
+incidental — which is why it was worth the line. Step 4 defers to step 1's
+switch and says so.
+
+## Not changed
+
+No behaviour added or removed (`countBehaviours` is 8). No finding count moved:
+the guard only shortens a message, and the regex only tightens an assertion
+about messages, so behaviour 7's stated counting convention and every "exactly
+one"/"two" under behaviours 6 and 7 stand as signed at round 5. The two
+surviving mentions of `(?:^|\s)\/` are deliberate citations of the superseded
+clause, in 7(k)'s explanation and the revisions row.
+
+## Grounding
+
+`bisellium check -- studio --repo .` is 0 block / 233 advise with no finding
+against the brief. Both regexes were measured against the exact 157-character
+message, against a macOS-shaped path, against all seven refusal strings and
+against every message the ladder can produce.

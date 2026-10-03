@@ -1,0 +1,127 @@
+# opus: W-110
+# phase: spec
+# round: 3
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T01:48:39.754Z
+# tree: dirty:66bfec1c0b315074a4648eec320baeec5322c9b7
+
+## Verdict
+
+Passed. `studio/briefs/W-110.md` revision 2 clears all four MUST from the
+round-2 prereview (`studio/ci/W-110-spec-2.log`) and addresses all eight
+SHOULD. No finding is rebutted; one (S3) is answered with a different fix
+than the one offered. Eight behaviours, unchanged in number.
+
+## MUST
+
+M1 — the validator now carries a **stated clause ladder** (Interfaces, four
+numbered steps with explicit stop semantics and an explicit sub-order inside
+step 3), and every finding count in behaviours 6 and 7 is restated against it.
+7(c) says five mutations, not six, and expects one finding each — correct now
+that sub-order (i) fires before (ii), since a mangled name is necessarily also
+one strict match short. 6(f) expects one because step 2 stops before any entry
+is read. 7(h) expects one because step 3 stops. The behaviour preamble says a
+row whose prescribed count cannot be met means the ladder was built differently
+and is a stop, not a test fix.
+
+M2 — `SHOT_MAX_ENTRIES` (64) and `SHOT_MAX_BYTES` (4 MiB) join the two floors,
+and `readContainedRegularFile` gains an optional `maxBytes` checked against the
+`fstat` it already performs on the open fd — one line, post-open so unraceable,
+every existing caller untouched. The manifest file itself is read with an 8 KiB
+cap. Behaviour 7(i) fires both (65 entries with all 65 files absent, so a
+ladder without the ceiling reports 65 findings instead of one; and a 4 MiB + 1
+PNG) and 7(j) fires the manifest cap.
+
+M3 — the manifest **moves out of the gate log into
+`ci/shots/<opus>/manifest.txt`**. Revision 1's "last lines of the run … the
+200-line tail keeps it whole" was false about the mechanism: the pipeline tails
+`${r.stdout}${r.stderr}` with stderr last, so a gate command's stdout is never
+the log's tail and enough stderr evicts it. Today's headroom is comfortable,
+which is precisely why it was the wrong thing to build an evidence chain on —
+it degrades silently as specs are added. The file is read through the
+containment helper like every other `ci/` artifact, lives in the directory the
+run clears, and is bound to the run by the gate's already-validated
+`certifies`, `at` and `exit code: 0`. The stdout echo is kept for a human;
+nothing in the rule reads it. Residual 6 states what the file does not carry
+(a certificate of its own) and why that is the same trust level every `ci/*.log`
+already has.
+
+M4 — specified: `servedLines(tree)` is unchanged, `writeServedLog(root, tree,
+id)` takes the record id and additionally creates `ci/shots/<id>/`, writes a
+shared `VALID_SHOT_PNG` constant as two PNGs there, and writes the matching
+`manifest.txt`. Each of the five call sites (W-024, W-022, W-017, W-018, W-023
+— line-anchored in *Measured present state*) passes the id it already has in
+scope. No fixture's gate record, state, tree or evidence path moves, so no
+existing assertion about those changes.
+
+## SHOULD
+
+S1 — the `dist` row is restated as the mechanism (nothing in the served path
+ever builds; `apps/web/package.json:11` plus no `globalSetup`, with
+`http.ts:510-512` as the no-bundle fallback) and says in terms why: a probe
+that builds repairs the symptom and leaves the cause. The Intent paragraph
+matches.
+
+S2 — the name cap is 22 and the id cap is 22, in both the script and the rule,
+making the longest legal run 31 against `redact`'s threshold of 32. The
+boundary is measured in the brief (9 characters of `ci/shots/` plus 23 reaches
+32) and behaviour 5(g) now asserts it **at the limit** with a 22-character id
+and a 22-character name, plus a 23-character negative control, instead of on
+two short names the stub happened to write. Residual 8 states the cost: an opus
+id over 22 characters is refused at review with a message naming the limit.
+
+S3 — answered by scoping rather than by documenting the assumption, which is
+the stronger of the two options offered. `PipelineRunOpts` gains an optional
+`commandEnv` keyed by probatio id; `localPipeline` merges it per command inside
+its loop; `verify` supplies exactly one entry under a new `SERVED_E2E_PROBATIO`
+export holding the literal it already owns. No other probatio command — and no
+adopter's out-of-repo absolute studio path — sees either name. The dependency
+graph is unmoved: `@bisellium/pipeline` learns no gate id and gains no import.
+Behaviour 4 grows to two gate commands and row (c) asserts the `tests` child
+has neither name; residual 7 replaces the "no new exposure" claim with what is
+actually disclosed, to which command, and under which `--studio` shapes.
+
+S4 — *Files owned* now says `nav.test.ts` needs no edit and why (it imports
+only `needsYouVisible`), in the same terms `route.test.ts` is said, and
+justifies the separate `nav-source.test.ts`: `nav.test.ts` uses a bespoke
+PASS/FAIL printer rather than `node:test` TAP, so a red through it would not
+carry the `1..1` / `# fail 1` shape Acceptance requires, and the new file's
+subject is the source-level single-source property, not `needsYouVisible`.
+
+S5 — 1(d) is three named regexes (`/^const ROUTES\b/m` absent,
+`/^export type Route =/m` absent with the re-export form present,
+`/^\s*"#\/[a-z]+":/m` absent) and the unwritable "only `#/` occurrences" clause
+is gone, with the reason recorded: the doc comment names all four hashes and
+the derived map uses `replace(/^#/, "")`.
+
+S6 — five tests, with the five line numbers.
+
+S7 — PR **#179** is named as a phase-1 prerequisite in its own Acceptance
+bullet, with the measured cost (`isDirtyOutside` true, `next` counts a
+dirty-tree red as missing, this brief's own round-1 log reads
+`dirty:66bfec1c…`) and the fallback stated: reds recorded inside the builder's
+worktree under `<repo>/.bisellium/worktrees/`, with the orchestrator saying
+which was used. Either way the builder does not proceed past a `dirty:` header
+on red 1. Also added to *Out of scope* and *Migration* as something depended on
+and not owned.
+
+S8 — 3(b) now asserts the column-mapped set: the spec reads
+`lifecycle.states`, takes the distinct `phase` values, asserts a
+`[data-column-id]` for each, and only then asserts card-id set equality, which
+follows structurally rather than from knowing that `backlog` renders. The
+measured literal (7 ids, 8 elements) is kept as a third clause.
+
+## Grounding
+
+Every MUST was re-measured before revising, not taken on the prereview's word:
+`packages/pipeline/src/index.ts:89,97` concatenates stdout and stderr with
+stderr last; `redact` leaves a 22-character name and a 22-character id intact
+and masks 32 and 23 respectively; `writeServedLog(root, tree)` takes no id and
+`servedLines` hardcodes `evidence: ci/served.log` across five call sites with
+five different opus ids; `readContainedRegularFile` already `fstat`s the open
+fd at `:228` before `readFileSync(fd)` at `:235`, so the cap costs one line and
+cannot be raced; PR #179 is open on `chore/ignore-worktrees`; `bisellium run`
+worktrees live under `<repo>/.bisellium/worktrees/`. `countBehaviours` reads 8
+and `bisellium check -- studio --repo .` is 0 block with no finding against the
+brief.
