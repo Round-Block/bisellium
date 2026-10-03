@@ -132,9 +132,9 @@ lex, a decision, or a check rule and delete it here.
 ## Where things stand (2026-10-03, cascade 43 PAUSED for the security track)
 
 **Security first (Patron: sorted before any new work).** In order:
-1. This PR (agent workspace script + rules) merges.
-2. The Patron creates the agent token and runs `scripts/agent-workspace.sh setup` from their own folder, then opens sessions in `~/agents/bisellium`.
-3. The fresh session runs `verify --inside` (all ok), then files and builds the **socket-free runner** opus: the W-125 Git broker talks to the cell over inherited pipes, not a unix socket, so `bisellium run`, its live rows and every replay work inside the sandbox. Architecture call — the Patron's nod on the greenlight. Its receipt comes from its own runner, in the sandbox.
+1. Done: agent workspace script + rules merged (#187).
+2. Done: the Patron created the agent token and ran `scripts/agent-workspace.sh setup`; sessions open in `~/agents/bisellium`.
+3. `verify --inside` all ok (2026-10-03). **W-132, the socket-free runner, is filed and greenlit (Patron's nod given); build it next:** the W-125 Git broker talks to the cell over inherited pipes, not a unix socket, so `bisellium run`, its live rows and every replay work inside the sandbox. Its receipt comes from its own runner, in the sandbox.
 
 **W-130: code complete, blocked on (3).** `origin/opus/W-130` @ 3a56d40. Brief rev 5 (round 8: the probe admits `PLAYWRIGHT_BROWSERS_PATH=/browsers` as the 19th name, rows 2(g)/2(h); prettier-only reformat of the red-04 file permitted). Reds 01–05 recorded assertion-level; full suite, lint, format, typecheck, both checks green; measurement 22/0 against the module (`~/.bisellium-evidence/W-130-spec/*against-implementation*`). Still owed: the receipt (`bisellium run` refused the worktree's symlinked node_modules — W-125's escaping-link rule; use a real `npm ci`), the 7 acceptance live rows run (not skipped), then censor (trust-boundary standard, D-035), merge.
 
