@@ -232,7 +232,7 @@ export async function runBuilderCommand(request: BuilderRunRequest): Promise<Bui
     const encoded = Buffer.from(JSON.stringify({ ...request, now: request.now.toISOString(), sessionId, leaseOwned: true, resultFile })).toString("base64url");
     const child = spawnSync(process.execPath, [HOST_RUNNER, "--request", encoded], {
       cwd: request.repo,
-      env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC", ...(process.env["TMPDIR"] ? { TMPDIR: process.env["TMPDIR"] } : {}) },
+      env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC", ...(process.env["TMPDIR"] ? { TMPDIR: process.env["TMPDIR"] } : {}), ...(isAbsolute(process.env["PLAYWRIGHT_BROWSERS_PATH"] ?? "") ? { PLAYWRIGHT_BROWSERS_PATH: process.env["PLAYWRIGHT_BROWSERS_PATH"] } : {}) },
       encoding: "utf8", timeout: 60 * 60_000, maxBuffer: 512 * 1024 * 1024,
     });
     if (child.stdout) console.log(child.stdout.trimEnd());
