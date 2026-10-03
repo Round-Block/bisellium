@@ -1,0 +1,99 @@
+# opus: W-132
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T09:22:40.854Z
+# tree: tree:a513ec51a5e4a570fb4ed6fbd13db20fbc67bae3
+
+## Verdict
+
+Passed. `studio/briefs/W-132.md` revision 1 signs one decree family: the
+transport under W-125's Git broker. Four numbered behaviours, eight owned
+paths, no new runtime dependency, no CLI surface.
+
+## Measurement before design
+
+Ten measurements were run inside this session's Claude Code bwrap sandbox
+before any design, and the commands and outputs are retained in
+`~/.bisellium-evidence/W-132-spec/` (`m1-sockets.log`, `m2-bwrap.log`,
+`m3-fds.log`, `m4-inner.log`, `m5-git.log`, `m6-misc.log`, `m7-duplex.log`,
+`m8-depth.log`, `m9-fifo.log`, `m10-tamper.log`).
+
+The socket `listen()` is the only blocker on the runner's path. Nested
+bubblewrap with the runner's exact `--unshare-all` shape exits 0, as does
+every namespace alone; `clone --no-local`, in-clone `config`, `commit`,
+`bundle create`, `bundle unbundle`, `update-ref` and `fsck --full` all work;
+the lease directory, the dependency copy and the cell's loopback bind work.
+The host repo's `.git/config` is unwritable, but the runner never writes it.
+The unix-socket denial is inherited into the cell as well as the host.
+
+## Why the design is not inherited stdio fds alone
+
+M8 is the finding that shaped the brief. An inherited fd reaches only a child
+whose parent explicitly maps it: `direct-mapped: REACHED`,
+`node-mapped-then-bash: REACHED`, `node-unmapped-then-bash: UNREACHABLE
+EINVAL`. The builder command is an arbitrary agent, and every `git` it runs
+is spawned by a process it created without mapping fd 3, so an inherited-fd
+channel is severed before `git` ever sees it. A duplex inherited fd does work
+through the nested cell (M7) and is admitted as an addition, never as the
+only path.
+
+The brief therefore specifies a host-created named-pipe pair inside the
+existing read-only `/control` bind: reached by path exactly as the socket
+was, proved from a node to shell to node chain with no fd inheritance (M9),
+and with the cell unable to unlink, rename, chmod or plant in `/control`
+(M10, all EROFS). It is a pipe; it needs no `listen()`. This is a deviation
+from the opus title's literal "inherited pipes", taken on the measurement
+and recorded here for the Patron's veto.
+
+## Trust map
+
+W-125's map is carried over whole and is the standard the censor judges
+against under D-035. Policy stays in `run-builder-host.mjs`: the new
+`scripts/git-broker.mjs` is transport only and takes `serve` as an argument,
+so `validateGitArgs`, `GIT_LOCKDOWN`, `brokerEnv`, the probe-index branch and
+the `/workspace` mask stay in one file with one allowlist. Raw `.git` stays
+read-only; `/control` and `/tools` stay read-only; the probe's scratch index
+stays out of the cell; export, publication, replay, the producer gate, the
+receipt and review admission are untouched. The request pipe is the new
+untrusted input and is bounded at the 128 KiB cap the socket path already
+used, with malformed frames answered and never passed to `serve`. The
+cell-side mutex and request id are named in the brief as correctness, not
+security: a builder that breaks them confuses only itself.
+
+## Replayability
+
+Each behaviour's red is assertion-level at a clean committed pre-change
+identity, one log per behaviour, selected by a whitespace-free token with
+`--grep` and no `^` anchor. Because the producer replay rejects output
+matching `not permitted|permission denied|sandbox|ENOENT|command not found`,
+the brief forbids a red row from interpolating a child's stderr into an
+assertion message, forbids the word `sandbox` in any title or message on a
+red, and requires behaviours 3 and 4 to assert a declared module's absence
+explicitly rather than let a load error stand in for it. The acceptance
+makes a skipped live row a failure, and binds W-132's own receipt to a
+`bisellium run` executed from a checkout that already carries the fix,
+because the pre-fix runner cannot start inside the cell.
+
+## Two hazards handed to the builder
+
+Both were measured, not predicted. A blocking `openSync(fifo, "r")` on the
+event loop deadlocks the runner before it spawns the cell, so both pipes open
+`O_RDWR` and are read through a stream. An open pipe handle keeps the event
+loop alive, so the channel's `close()` joins teardown and the signal handlers
+or the runner never exits and every live row times out.
+
+## Scope
+
+Out of scope is explicit about what must not move: the Git allowlist, the
+environment allowlist, clone/export/publication, red semantics, the producer
+gate, the receipt schema, the `builder_runtime` marker, review admission,
+and any socket including TCP loopback as the control channel. W-132 lands
+before W-130 and W-110, which are both blocked on a receipt no runner can
+currently mint; W-130 rebases onto it and re-attests its reds by replay as
+W-125 revision 5 prescribes.
+
+No implementation, test or evidence is produced by this signing. D-014's
+censor supplies the single independent review.
