@@ -1,0 +1,130 @@
+# opus: W-130
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T06:27:03.261Z
+# tree: tree:6bab52556685055936b39677c1dd4f8c3b8b2f01
+
+## Verdict
+
+Passed. `studio/briefs/W-130.md` revision 5 rules on the phase-2 builder stop.
+The stop was correct on all four points and three of them are defects in this
+brief, not in the implementation. Revision 4 is not restated anywhere; the
+amendment is confined to what these four need.
+
+## 1. BLOCKING — the probe is owned, with a narrow rule
+
+`scripts/probe-builder-runtime.mjs:8-33` compares the builder cell's whole
+environment against a hard-coded copy of W-125's 18 names, and it runs **first**
+in that cell, before the builder command. Behaviour 2 adds a 19th name whenever a
+browser cache resolves, so with revision 4's text the probe throws
+`environment allowlist mismatch` and every real `bisellium run` with a cache dies
+as `confined builder/probe exited 1` — the producer's own unsandboxed acceptance
+run included, since the sentinel makes the cache always resolve there.
+
+Reproduced here before ruling, `env -i` with the exact name sets:
+
+```
+18 names                                        -> clears the check, dies later at "unexpected cwd"
+18 + PLAYWRIGHT_BROWSERS_PATH=/browsers          -> environment allowlist mismatch
+18 + PLAYWRIGHT_BROWSERS_PATH=<host cache path>   -> environment allowlist mismatch
+probe `expected` list  ==  builderCell(...).env's 18 names   -> true, as a set
+```
+
+**Ruling: the probe joins *Files owned*, for that comparison alone.** The reason
+in one paragraph: W-130 already owns the 19-name contract — *Interfaces* calls it
+"W-130's one deliberate extension of that contract", behaviour 2(d) asserts it on
+the descriptor, and `run.test.ts:670` reads it from inside the cell — and the
+probe is that contract's *enforcer*, compiled into the cell as a second hard-coded
+copy of the same list. An opus that owns a contract and not its enforcer does not
+have a scope boundary, it has a contradiction, and `filesOwned` (`:428-431`) is
+what actually authorizes an export, so the ruling has to be in the list rather
+than in prose. The builder's second option — keep the name out of the cell
+environment and inject it only for the post-probe command — is rejected on two
+grounds: the probe spawns that command with `env: process.env`, so it needs the
+same edit anyway and nothing is saved; and the cell would then assert a 19-name
+contract it does not carry, which contradicts behaviour 2(d), `run.test.ts:670`
+and the entire sentinel apparatus MUST B installed in revision 2. The edit is
+bounded by a rule, not by trust: exactly W-125's 18, plus
+`PLAYWRIGHT_BROWSERS_PATH` **only when its value is exactly `/browsers`**, so the
+19th name cannot carry a host path into the cell and the probe stays fail-closed
+against every other name. *Files owned*, *Interfaces* (the 19-name paragraph),
+behaviour 2 and *Out of scope* now agree, and *Out of scope* keeps `requireBrowser`
+and the `--require-browser` browser hunt excluded by name so the narrowing cannot
+be read as the whole file.
+
+**Tests that pin the new rule: behaviour 2(g) and 2(h).** 2(g) spawns the probe as
+a child with a constructed environment and reads its output for the mismatch
+message: absent for the 18, absent for the 18 plus `/browsers`, **present** for any
+other value of that name and for an unrelated 19th name — four assertions, four
+messages, so the rule cannot be half-built into "any 19th name passes". 2(h)
+asserts the probe's `expected` literal and `builderCell`'s env agree as a set,
+because two hand-maintained copies of one allowlist is precisely what produced this
+stop. Both rows are socket-free, bwrap-free and browser-free, like every other red
+in this brief.
+
+**No new red, and none is authorized.** These are lettered rows inside behaviour 2,
+whose red is already recorded assertion-level at its own committed tree; they add
+no behaviour, the count stays at five, and `# behaviour: 2` still names a test
+whose first failing assertion is 2(a). Re-recording it so the log mentions the
+probe would be backfilling evidence for a fix-forward of my own contradiction —
+the same reasoning that left behaviour 4's red untouched in revision 4. The rows
+must still be written and seen failing before the probe is edited; the discipline
+holds even where the recorded artefact does not move.
+
+## 2. `node:os` was a text error in *Files owned*
+
+`host-cells.mjs` imports `node:path` and `node:fs` — `statSync`/`realpathSync`,
+read-only, which *Interfaces* specifies and the implementation does. `node:os` is
+not imported at all: `homedir()` is the runner's call, which is what the module's
+freedom from ambient state rests on, and *Interfaces* says so. The builder
+followed the correct half. *Files owned* is corrected to name `node:fs` and to
+state that `node:os` is deliberately absent.
+
+## 3. A prettier-only reformat after the red is permitted
+
+Yes, under two conditions. A red replays at the tree its own log names —
+behaviour 4's is pinned to `tree:b4ed23db65198744a5f7d3fc0be85a93b92121b0` — so no
+later commit can reach the bytes the replay executes, and `format:check` is
+required green at the final source tree. The conditions: `npx prettier --write` on
+that path alone, in its own commit, with `git diff -w` empty against the
+pre-reformat tree, which is the mechanical proof that no token, assertion, message
+or canned transcript moved. A substantive edit under cover of formatting is a
+stop, and the red is not re-recorded. "Unchanged, and already red" in this brief
+means the behaviour's number, file, selector and assertions — not its whitespace;
+the brief now says so where it makes the claim.
+
+## 4. The derived harness is what satisfies the measurement bullet
+
+The builder is right that `measure-replay-acceptance-2.mjs` cannot meet the bullet
+alone: it carries its own embedded ladder and never loads
+`scripts/replay-accept.mjs`, so it can report `22 transcripts, 0 disagreements`
+while the module disagrees with it. Revision 4's wording implied one run where two
+are needed, and that is my defect.
+
+`~/.bisellium-evidence/w130-measure-impl.mjs` satisfies it, and better than a
+hand-written harness would: it was **mechanically derived** from the retained kit
+by `w130-measure-impl-derive.mjs`, three `once()` substitutions that throw unless
+each pattern is unique, so the kit's ladder survives as `scriptClassify` verbatim
+and the comparison is `accepted` **and** `reason` equal, per transcript, across all
+twenty-two. Both logs show `22 transcripts, 0 disagreements`, with the kit's own
+unmodified run retained beside them. *Acceptance* is amended to require both runs,
+to name the derivation requirement (derived, never hand-copied), and to retain the
+derivation script, the derived harness and both outputs together under
+`~/.bisellium-evidence/W-130-spec/`. A disagreement remains a stop; neither the kit
+nor the derivation may be edited to produce agreement.
+
+## Checked after amending
+
+`filesOwned` reads nine paths including `scripts/probe-builder-runtime.mjs`;
+`countBehaviours` reads 5; all six ladder section names present and exact.
+Markdown is prettier-ignored, so the brief owes no format pass.
+
+Signed as ready for the builder to resume phase 2. The authorized further edits
+are exactly: the probe's allowlist comparison, behaviour 2's rows (g) and (h), the
+`prettier --write` commit on `scripts/replay-accept.test.mjs`, and moving the two
+measurement scripts and their logs into `~/.bisellium-evidence/W-130-spec/`.
+Nothing else in the implementation is re-opened, and no implementation, evidence
+or review verdict is claimed by this signature.
