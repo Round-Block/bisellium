@@ -1,0 +1,39 @@
+# behaviour: 3
+# command: node node_modules/@playwright/test/cli.js test --config=apps/web/playwright.serve.config.ts walk.spec.ts --grep behaviour.3: --reporter=line
+# exit: 1
+# at: 2026-10-03T04:29:06.234Z
+# sella: builder.W-110
+# tree: tree:cee059e333ab551c5c407883bfd1d592932c2d54
+
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › apps/web/tests-serve/walk.spec.ts:123:1 › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen
+  1) [chromium] › apps/web/tests-serve/walk.spec.ts:123:1 › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen 
+
+    Error: GET /api/acta was requested while the Officina screen loaded
+
+    GET /api/acta was requested while the Officina screen loaded
+
+    expect(received).toBeGreaterThan(expected)
+
+    Expected: > 0
+    Received:   0
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      184 |
+      185 |   // (e) Genuine red: the seeded cascade actum fills exactly one recent tick, and /api/acta was requested.
+    > 186 |   await expect.poll(() => actaRequests, "GET /api/acta was requested while the Officina screen loaded").toBeGreaterThan(0);
+          |                                                                                                         ^
+      187 |   await expect(page.locator(".fasti-strip__column"), "the fasti strip has 14 day columns").toHaveCount(14);
+      188 |   await expect(page.locator(".fasti-strip__tick--filled"), "exactly one tick is filled").toHaveCount(1);
+      189 |   const filledAt = await page.locator(".fasti-strip__column").evaluateAll((els) => els.findIndex((e) => e.querySelector(".fasti-strip__tick--filled") !== null));
+        at /home/edckt/projects/bisellium/.worktrees/W-110-rered/apps/web/tests-serve/walk.spec.ts:186:105
+
+    Error Context: apps/web/test-results/walk-W-110-behaviour-3-eve-fe715-s-one-screenshot-per-screen-chromium/error-context.md
+
+
+  1 failed
+    [chromium] › apps/web/tests-serve/walk.spec.ts:123:1 › W-110 behaviour 3: every screen shows the served officina's own content, and the walk leaves one screenshot per screen 

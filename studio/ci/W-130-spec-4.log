@@ -1,0 +1,172 @@
+# opus: W-130
+# phase: spec
+# round: 4
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T04:47:49.701Z
+# tree: tree:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+**Passed.** Spec prereview round 2 of `studio/briefs/W-130.md` revision 2
+(756 lines, 5 behaviours, measured at `7e019ed`), advisory. **0 MUST,
+2 SHOULD** — neither breaks a row or a mechanism.
+
+Both round-1 MUSTs are closed, and I verified each by re-running the
+architect's kit and by re-deriving the fix against the real code rather than
+the brief's summary. Judged again as D-035 directs — a change to the W-125
+trust boundary — the revision is sound, and the one new seam it opens
+(`builder-run.ts:229`) is read-only, invoker-controlled and guarded. It needs
+one sentence and one stderr line, not a redesign. The brief is ready for a
+builder.
+
+## MUST A — closed, and the routing union is the right shape
+
+The ladder now asks "is this a playwright run?" at clause 3 and routes a yes
+**unconditionally** into the count and matcher clauses, with the token clause
+demoted to 7. I re-ran the new kit:
+
+```
+   ADV B 3-failed + 'not ok 1 - setup'  refuse  want=refuse  playwright reported 3 failed tests; a behaviour's red is exactly one
+   ADV C 3-failed + AssertionError      refuse  want=refuse  playwright reported 3 failed tests; a behaviour's red is exactly one
+   NEW F real red 02 + server AssertionError ACCEPT  want=ACCEPT
+…
+22 transcripts, 0 disagreements
+```
+
+My two round-1 acceptances now refuse with the count reason, and the converse
+holds: case F takes the **real** body of `studio/ci/reds/W-110/02.log` and
+appends a server `AssertionError`, and it is still accepted. That is the
+assertion that proves the routing refuses the near miss without breaking the
+red it exists to admit, and 4(k) carries it in the same row rather than in a
+separate one. Good.
+
+I checked the kit implements the brief's ladder faithfully rather than a
+different one that happens to agree: clause order, all four constants and
+`[...output.matchAll(PW_SUMMARY)].at(-1)` are identical to `:306` onward.
+
+**The union's two anchors both hold against real reporter output**, measured
+by me on the actual red bodies rather than taken from the brief:
+
+```
+=== red 02 ===        === red 03 ===
+3:Running 1 test using 1 worker          3:Running 1 test using 1 worker
+10:    expect(locator).toHaveCount(expected) failed   12:    expect(received).toBeGreaterThan(expected)
+36:  1 failed                            32:  1 failed
+```
+
+So W-110's two blocked reds carry **both** anchors and a matching banner, and
+they reach acceptance through the playwright branch — not through the token
+clause, which is the unsafe direction the brief names. Note the real text is
+singular on both counts (`1 test`, `1 worker`): `tests?`/`workers?` handles it,
+and had the regex been written plural-only the routing would have fallen
+through to clause 7 on exactly the transcripts this opus exists for. The
+`launch` 4-MiB-per-stream justification for the union is sound and the brief
+states which direction each anchor covers.
+
+**The declared cost checks out independently.** Case J — a TAP transcript
+printing `1 failed` at line start — is routed to the playwright branch and
+refused. I verified the premise myself rather than accepting "measured,
+nothing in the repo does it": a real failing `node --test-reporter=tap` run
+produces no line-start `N failed` (its summary is `# fail 1`), and none of
+W-110's six TAP reds matches the anchor. Fail-closed, recoverable, pinned in
+both directions by 4(m), and *Out of scope* forbids narrowing the anchor to
+get it back. The right way to accept a cost.
+
+## MUST B — closed, and the fix surfaced a real seam
+
+The sentinel-everywhere option is taken, and the brief found the thing my
+finding implied but did not name: `builder-run.ts:229` hands the runner a
+**closed** environment, so a sentinel in the test file alone could not reach
+`browserCache()` through the `run(...)` path. Verified against the real line:
+
+```
+229:      env: { PATH: process.env["PATH"] ?? TOOL_PATH, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC", ...(process.env["TMPDIR"] ? { TMPDIR: process.env["TMPDIR"] } : {}) },
+```
+
+The proposed addition is the same conditional-spread shape the line already
+uses for `TMPDIR`, `isAbsolute` is already imported (`builder-run.ts:5`), and
+the `:227-231` block reference is accurate. `withTmp` (`:258-267`) is indeed
+the file's established save-and-restore pattern, so pinning the sentinel there
+and in `RUNNER_ENV` covers both dispatch paths. Behaviour 2(f) is the row that
+makes this worth having: it asserts the cell's `/browsers` holds the
+**sentinel's** file and nothing from the developer's real cache, so the test
+cannot silently pass by reading `~/.cache/ms-playwright`. The Acceptance
+addition — "green here and red on CI is not acceptance" — is the right standing
+rule to have written down.
+
+The brief also corrected me: I named the `npm test` job `officina`; it is
+`gates` (`ci.yml:15`, `npm test` at `:29`), with `npx playwright install` only
+in `web-e2e` at `:69`. Verified — the brief is right and I was wrong.
+
+## C, D, E — closed
+
+- **C**: the gate-cell exclusion now rests on the durable ground, with the two
+  references checked — `copyModules(candidate)` at `:817` and the gate cell's
+  `PATH` at `:835`, plus writable `/candidate` and `/tmp`, so a candidate build
+  there is self-sufficient. W-110's own 8(d) is named as the second trigger
+  beside `kind: ui` and both are carried to the follow-on.
+- **D**: clause 6 is now described as "a discriminator against accidental
+  misclassification, not a guarantee against an authored transcript", the
+  code-frame case is separated from the deliberate `console.log` case with the
+  reason each behaves as it does, and the forgery is conceded citing W-125's
+  model. Case E's `want=ACCEPT` in the kit makes the concession explicit in the
+  measurement rather than only in prose — the honest way to record it.
+- **E**: `matchAll` is specified and matched once, and 4(n) loops the whole
+  table twice so an `.exec()` substitution is caught by a test rather than by a
+  later round. That is better than what I asked for.
+
+## SHOULD (2, non-blocking)
+
+**S1 — the permitted-edits enumeration undercounts by one, and the same bullet
+contradicts itself.** `:221-231` authorises "the `LiveOptions` additions they
+need (a web workspace and a canned-transcript red)", which forces edits to
+`LiveOptions` (`run.test.ts:196`) and `liveFixture` (`:212`) — both pre-existing
+helpers. Then `:232-234` says "the two helpers above and the `--behaviour`
+selector's upper bound at `:23` … are the only other edits", and `:629-634`
+says "the permitted pre-existing edits are exactly three … Anything else is a
+stop". `liveFixture`/`LiveOptions` is a fourth. The additions are purely
+additive — an optional field with a default preserves every existing row — so
+the *intent* is clear, but a builder reading "anything else is a stop" against
+"the only other edits" stops when it reaches `liveFixture`. Either name it as
+the fourth, or phrase the count as pre-existing **assertion and behaviour**
+edits with additive helper extensions governed by *Files owned*.
+
+**S2 — the new forwarding line makes the `/browsers` bind source
+invoker-selectable in production, and nothing logs what got mounted.**
+`:217` says "This is a host-to-host environment, not a cell environment; no
+cell gains a name from it." True about names, and it understates the change.
+Before the line, the closed env at `:229` meant `BROWSERS` was *always*
+`homedir()/.cache/ms-playwright` on the production path; after it, any absolute
+`PLAYWRIGHT_BROWSERS_PATH` in the invoker's environment selects which host
+directory is ro-bound at `/browsers` in **both** the builder and the replay
+cell — i.e. which host directory becomes readable to candidate code. That is
+not a breach: the invoker is the producer, the bind is read-only (1(c)/2(d)
+assert `EROFS` and that the host bytes are unchanged), and the value passes
+`isAbsolute` in `builder-run.ts` and `isAbsolute` + `statSync(…).isDirectory()`
++ `realpathSync` in `browserCache()`. `:213-214` even names the operator
+capability deliberately. But it is a footgun that is currently **invisible**:
+the runner writes a line only when the cache is *absent* (`:297`), so a stray
+or inherited `PLAYWRIGHT_BROWSERS_PATH` in a producer's shell mounts a
+directory into two confined cells with nothing in the run log naming it. Two
+cheap additions: say in `:217` that the forwarded value selects a host
+directory which becomes readable to candidate code, and have the runner print
+the resolved `BROWSERS` to its own stderr when it *is* defined, so the mount
+appears in the run's output the way the absent case already does.
+
+## Re-confirmed this round
+
+`countBehaviours` is 5. The kit is read-only, re-runnable, and builds its
+positive cases from the real recorded red bodies rather than synthetic text.
+`builder-run.ts:229` is closed exactly as claimed. `ci.yml` job names and
+install placement verified. `run.test.ts:670`'s baseline is still `18`.
+Nothing I cleared in round 1 regressed: the gate cell is untouched, the replay
+cell still runs candidate argv verbatim at `:779`, `browserCache()` is still
+host-env-only and absent-safe, and the preparation-failure prefix is still
+disjoint from the accepted path's.
+
+The brief is measured at `7e019ed`, which is the tree I probed — the
+round-1 note is closed. Both verdict logs this cascade carry `dirty:` headers
+for the untracked `.worktrees/` that PR #179 fixes; the brief names that PR as
+a phase-1 prerequisite in its own Acceptance, which is where it belongs.

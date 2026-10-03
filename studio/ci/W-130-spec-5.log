@@ -1,0 +1,88 @@
+# opus: W-130
+# phase: spec
+# round: 5
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T04:50:15.970Z
+# tree: tree:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+Passed. `studio/briefs/W-130.md` revision 3 folds in the round-2 prereview's two
+SHOULD, in the shapes the censor pre-endorsed. Five behaviours and every count
+unchanged; one row added inside behaviour 1. No MUST was outstanding and the
+round-2 prereview passed the brief, so no mechanism, interface, acceptance
+criterion or scope call moves in this revision — both changes make something the
+brief already authorized legible to the builder and to a reviewer reading the
+run's log.
+
+## S1 — the permitted-edits enumeration stopped undercounting
+
+Accepted; the finding is exactly right and the contradiction was mine. Revision 2
+authorized the additive `LiveOptions`/`liveFixture` extensions in *Files owned*
+and then, in two other passages, called the enumerated pre-existing edits "the
+only other edits" and "exactly three … anything else is a stop". A builder
+reaching `liveFixture` would have halted on the brief's own instruction — the
+worst kind of spec defect, because it stops correct work and looks like
+discipline while doing it.
+
+Taken in the censor's second form rather than by naming a fourth item, because
+the two classes are genuinely different and counting them together is what went
+wrong: **pre-existing assertion and behaviour edits are enumerated exactly, and
+there are three** (`run.test.ts:670`'s `18` → `19`, the sentinel name in
+`RUNNER_ENV` and `withTmp`, the `--behaviour` upper bound at `:23` with its
+header comment); **behaviour-preserving additive extensions of a helper named in
+Files owned are governed there**, not by that enumeration. Both passages now say
+so — the *Files owned* entry and the counting rule under *Behaviours to test* —
+with the in-scope test made explicit: a default-valued addition that leaves
+every present `liveFixture(...)` call site answering exactly as it does today is
+in scope by construction. The stop condition is restated to match: an edit that
+is neither an enumerated pre-existing change nor a behaviour-preserving additive
+extension of a named helper is a stop.
+
+## S2 — the bind's selection consequence is stated, and now logged
+
+Accepted on both counts, and the finding sharpened my own reading of the line I
+added in revision 2. The `builder-run.ts` forwarding line does make the
+`/browsers` bind source invoker-selectable: any absolute
+`PLAYWRIGHT_BROWSERS_PATH` chooses which host directory becomes candidate-
+readable in both cells. The brief now states that consequence where the line is
+declared, in the same breath as "no cell gains a name from it", rather than
+leaving the reader to infer it, and bounds it on every side it is actually
+bounded on: absolute-only, `statSync`-as-directory, `realpathSync`ed before the
+bind; **read-only** in both cells with `EROFS` asserted by 1(c) and 2(d) and the
+host bytes re-checked unchanged after the run; nothing else about either cell
+moving; and no *candidate* input able to reach the choice, since neither the
+request, the red log nor the brief can set it. The honest framing, which the
+brief now carries: the invoker is already the host — it supplies the repo, the
+officina and the opus — so a host directory it names is not a new capability,
+only a newly visible one.
+
+Which is the second half. Revision 2 logged only the **absent** case, so the
+present case — the one where a host directory becomes candidate-readable, and
+where somebody chose which — was the silent branch of the pair. The runner now
+prints `run-builder-host: browser cache bound read-only at /browsers from
+<resolved path>` when the cache resolves, beside the existing
+`no playwright browser cache found` line, and the brief says why: a read-only
+bind the run does not name is a bind nobody reviewing the log can see. New row
+**1(g)** asserts the line and the sentinel's realpath in it, and pairs with 1(e)
+to assert that exactly one of the two lines appears in any run — never both,
+never neither. The resolved path is a host path on host stderr, not into a cell
+and not into a gate finding, so clause 2's token-only discipline does not reach
+it; the brief notes this is the same deliberate asymmetry already granted to the
+build-output dump, for the same reason.
+
+## Unchanged from revision 2
+
+The trust-boundary reconciliation, the clause ladder and its routing fix, the
+fixed host build command and its preparation messages, the environment
+allowlist's single new name, all five behaviours and their genuine reds, the
+acceptance criteria, every scope call, and both follow-on filings. The retained
+kits are re-run and unchanged: `measure-replay-acceptance-2.mjs` reports
+`22 transcripts, 0 disagreements` and revision 1's kit reports
+`13 transcripts, 0 disagreements`.
+
+Signed as ready for a builder. No implementation, evidence or review verdict is
+claimed by this signature; D-014's censor supplies the single independent
+implementation review, judging this as a change to the W-125 trust boundary
+(D-035).

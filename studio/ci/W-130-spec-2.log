@@ -1,0 +1,268 @@
+# opus: W-130
+# phase: spec
+# round: 2
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: revise
+# at: 2026-10-03T04:35:07.593Z
+# tree: tree:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+Revise. Spec prereview round 1 of `studio/briefs/W-130.md` revision 1
+(602 lines, 5 behaviours), advisory. **2 MUST, 3 SHOULD.**
+
+Judged as D-035 directs: a change to the W-125 trust boundary, against the
+W-125 brief's confinement obligations. On that question the brief is sound,
+and I say so before the findings. The two MUSTs are not confinement breaches
+— one is a stated guarantee the specified clause ladder does not deliver, and
+one is an authorised test edit that is green on the architect's machine and
+red on CI.
+
+## Environment
+
+Probed at `7e019ed` (the brief measures `4b6736b`; the host script and every
+line it cites are unchanged between them — I verified each reference
+individually). `node --import tsx` / bare `node`. Tree reads dirty from
+untracked `.worktrees/` (PR #179, which I reviewed and passed separately) plus
+this cascade's own bookkeeping. My probes: `probe-clause3.mjs`,
+`probe-homedir.mjs`, `adversarial/` — all in
+`~/.bisellium-evidence/W-130-spec/` beside the architect's kit.
+
+## The trust-boundary question, answered first
+
+**The "fixed host commands, not candidate package scripts" reconciliation
+holds, and I checked it against the runner as it stands rather than against
+the brief's summary.**
+
+- The clause belongs to the gate cell, and the gate cell is untouched. I read
+  `run-builder-host.mjs:798-859`: it clones the exported tip, re-clones
+  `master` at `toolingCommit` into `/tooling` **read-only**, and runs
+  `[NODE, "--import", "tsx", "/tooling/packages/cli/src/main.ts", "ci", …]` —
+  a fixed host argv out of an immutable host checkout, with
+  `NODE_PATH=/tooling/node_modules`. Nothing in W-130 reaches it.
+- The replay cell has executed a candidate-authored command verbatim since
+  W-125. Confirmed at `:779`: `cmd: commandText.trim().split(/\s+/)`, straight
+  out of the red log. So the brief's central claim — that running the
+  candidate's build tooling in that same cell adds no capability — is correct
+  on the code: the build would use the **same** `sandboxArgs` descriptor, the
+  same `[checkout, /candidate]` / `[home, /home/builder]` / `[tmp, /tmp]`
+  binds, the same `roBinds: etcFor(replayRoot)`, the same seven-name env, the
+  same `--unshare-all`. No host repo, no `/tooling`, no `/control` socket, no
+  credentials. The host reads back only the exit status and the output text,
+  which `:779` already lets the candidate shape.
+- The stricter shape really is imposed where it is free: `WEB_BUILD` is a
+  hardcoded five-element argv, gated on a fixed host path
+  (`existsSync(join(checkout, "apps", "web", "package.json"))`), so no
+  candidate *selection* occurs; the `const cell` hoist (`:262-264`) is the
+  right mechanism for "preparation and replay cannot drift"; and the
+  `red <n> replay preparation failed:` prefix is disjoint from the accepted
+  path's `did not reproduce its assertion failure`, so a preparation failure
+  can never be misread as a red. Behaviour 3(e) proves confinement from inside
+  the cell (env names, canary, host write, egress) and 3(f) proves the argv is
+  the host's, via `npm_lifecycle_event`. That is the right pair of assertions.
+- The `existsSync` gate matches the established discipline: `copyModules`
+  (`:145-153`) already skips absent `node_modules`, which is why every
+  `liveFixture` row is unaffected, and behaviour 3(a) pins that.
+- The read-only browser bind is well built. `browserCache()` (`:216-224`)
+  reads **only** the host's own environment, requires an absolute value,
+  `statSync`-guards it and `realpathSync`es it; a relative value is ignored
+  rather than resolved against a cwd. `/browsers` is a fixed cell path, so no
+  host-shaped path enters the cell and the variable is an assertable fact.
+  When the cache is absent the runner binds nothing, sets nothing, emits one
+  stderr line and **does not fail** (`:246-250`) — the right default, and
+  behaviour 1(e) pins it. Behaviours 1(c) and 2(d) assert `EROFS` from inside
+  both cells, and 1(c) also checks the host bytes are unchanged afterwards,
+  which is the assertion that actually closes the write question.
+- The `--no-sandbox` residual (`:136-140`) is stated rather than buried, and
+  it is the honest framing: bwrap's namespaces were already the whole trusted
+  computing base, and this puts a larger third-party binary inside it.
+
+I found no capability the brief adds and does not account for. The findings
+below are elsewhere.
+
+## Measurements I re-ran myself
+
+- **The architect's kit reproduces exactly.** `node measure-replay-acceptance.mjs
+  /home/edckt/projects/bisellium cases` → `13 transcripts, 0 disagreements`,
+  with `today=refuse → w130=ACCEPT` for W-110 reds 02 and 03 only and
+  byte-identical verdicts for 01 and 04-08. The five negatives refuse under
+  both, each with a distinct reason. The script is genuinely read-only and
+  re-runnable, its `cases/HOW.md` names the capture commands, and
+  `three-failed.txt` is real playwright 1.63.0 output, not a hand-written
+  transcript. This is the standard of measurement I want to see.
+- **`CI_STEPS` really has no browser gap today.** `packages/commands/src/ci.ts:51-58`
+  is the six entries the brief names. Measured on the real `package.json`:
+  `/playwright|test:serve|tests-serve/.test(test:suite)` is `false` and
+  `/vite|run build/.test(test:suite)` is `false`. `.github/workflows/ci.yml:69`
+  confirms `npx playwright install` lives only in the separate `web-e2e` job.
+  `effectiveProbationes` (`opus-model.ts:294-306`) adds `served-e2e` only for
+  `kind: "ui"`, and no record anywhere is `kind: ui`. The conclusion is right —
+  but see SHOULD 3 for the ground it rests on.
+- **`requireBrowser` is the latent defect the brief says it is.** `:606` is
+  `/^kind:\s*ui\s*$/m.test(opusText)`, which cannot match the quoted
+  `kind: "ui"` every record writes. Correctly scoped out with a named
+  follow-on, and correctly flagged as a path no present record reaches.
+- **The env-allowlist baseline is 18.** `run.test.ts:670` asserts
+  `(ev["env"] as string[]).length, 18`. Behaviour 2(c)'s "sorted set
+  difference, not a count alone, so a swap cannot hide inside the count" is the
+  right assertion shape for a trust-boundary contract.
+- **`countBehaviours`** on the brief is exactly 5, matching the counting rule,
+  so the `next` reds rung will look for 1..5.
+- Message hygiene: clause 2 carries **the matched token only** and behaviour
+  4(e) asserts the reason contains no `/`. Measured — the reason is
+  `the output names an environment failure (browserType.launch)`. That is the
+  same discipline W-110 arrived at after three rounds, applied here in round 1.
+
+## MUST
+
+**A — clause 3's precedence defeats the brief's headline guarantee, and makes
+clause 5 skippable by the candidate's own output.** The brief claims at
+`:41-45` that "a playwright run is accepted as a red **only when** it reports
+exactly one failed test *and* its failure is an `expect(…)` assertion", and at
+`:346-352` that "nothing is widened except by the conjunction of 5 and 6".
+Neither holds. Clause 3 (`:323`) accepts on `ASSERTION.test(output)` —
+`/(?:not ok|AssertionError|ERR_ASSERTION)/`, unanchored, anywhere in the
+concatenated stdout+stderr — and **stops the function**, so clauses 4-6 never
+run for any transcript carrying one of those three tokens.
+
+I implemented the ladder exactly as `:306-344` specifies it and ran the
+architect's own real `three-failed.txt` through it (`probe-clause3.mjs`):
+
+```
+refuse  A. real 3-failed playwright transcript (the brief's own case)
+        reason: playwright reported 3 failed tests; a behaviour's red is exactly one
+ACCEPT  B. same transcript + one echoed line 'not ok 1 - setup'
+        reason: assertion-level failure
+ACCEPT  C. same transcript + an AssertionError anywhere (e.g. a server stack trace)
+        reason: assertion-level failure
+```
+
+So a three-failure playwright run is accepted as one behaviour's red the
+moment the transcript also contains `not ok` or `AssertionError`. This is not
+hypothetical: clause 5 is the clause the brief ties to W-110's argv-quoting
+hazard (`:333-334`, and behaviour 5(d) calls it "the clause that refuses a
+replay whose selection broadened"), and W-110's `walk.spec.ts` harness spawns
+a real `bisellium serve` whose output playwright echoes into the transcript.
+Any `AssertionError` in that server's stderr skips the count check. The
+candidate authors the spec, so it also controls whether the token appears.
+
+The brief's *intent* is explicit and correct — *Out of scope* says "the
+acceptance of a non-playwright red … TAP reds are not newly required to report
+exactly one failure". The defect is the mechanism: it uses "contains an
+ASSERTION token" as a proxy for "is not a playwright run", and a playwright
+transcript can contain one. The fix preserves the intent exactly: discriminate
+on **whether this is a playwright run** before clause 3 — `PW_SUMMARY` matches,
+or the output carries playwright's own `Running N test` banner — and route
+those transcripts through clauses 5 and 6 unconditionally, leaving clause 3 as
+the TAP/node-assert path it is meant to be.
+
+Behaviour 4's near-miss table is otherwise thorough, and this is the one shape
+it misses: it has `not ok` acceptance (b) and `3 failed` refusal (g) as
+separate rows, but no row combining them. Add it, and 5(d) should assert the
+same transcript through the runner.
+
+**B — the one authorised existing-assertion edit is environment-dependent, and
+it is jointly unsatisfiable with the brief's own "no other row changes".**
+`:181-185` authorises exactly one pre-existing edit: `run.test.ts:670`'s `18`
+becomes `19`. `:504-505` then says "Keep every existing row … the only
+permitted change to a pre-existing assertion is `:670`'s `18` → `19`". But the
+19th name exists **only when `BROWSERS` is defined** (`:233-239`,
+`:246-250`), and `:670` lives in the pre-existing `W-125 behaviour 2 live:
+contained smoke` row, which sets no sentinel. Measured (`probe-homedir.mjs`),
+including under `RUNNER_ENV`'s exact shape (`run.test.ts:301-307` — a closed
+env with `PATH`, `TMPDIR` and six hostile sentinels, and **no `HOME`**):
+
+```
+--- under RUNNER_ENV's exact shape (no HOME, no PLAYWRIGHT_BROWSERS_PATH) ---
+{"HOME":null,…,"homedir":"/home/edckt","cacheDir":"/home/edckt/.cache/ms-playwright","BROWSERS_defined":true}
+--- simulating a bare CI runner (HOME set, no cache there) ---
+{"HOME":"/tmp/claude-1000/fakehome",…,"BROWSERS_defined":false}
+```
+
+`os.homedir()` falls back to the passwd entry when `HOME` is unset, so on this
+machine the cache resolves and the allowlist is 19 — the edit is green here.
+On a bare `ubuntu-latest` runner it is 18, because the `officina` job that runs
+`npm test` never installs browsers: `npx playwright install` appears only in
+the separate `web-e2e` job (`.github/workflows/ci.yml:69`). So the edited
+assertion **fails on CI**, which breaks the Acceptance bullet requiring
+`npm test` green and leaves the repo red for everyone.
+
+Behaviours 1 and 2 are fine — both configure a sentinel
+`PLAYWRIGHT_BROWSERS_PATH` for their own fixtures, and 1(e) covers the
+undefined case properly. The problem is only the untouched smoke row. The
+brief must pick one and declare it: either the base `RUNNER_ENV` sets a
+sentinel browsers directory unconditionally for every live row — one line,
+after which 19 is deterministic everywhere and behaviours 1(b)/2(b) get
+simpler — or that row gets a sentinel too, which contradicts `:504-505` as
+written. As it stands the two sentences cannot both be satisfied off the
+architect's machine, and the builder discovers it in CI rather than locally.
+
+## SHOULD
+
+**C — the gate cell's out-of-scope ground is transient, and expires on the
+very merge W-130 exists to enable.** `:542-551` rests the exclusion on a grep:
+"`CI_STEPS` is six entries with no playwright and no build; `test:suite`
+registers no playwright". Both measured true today, by me as well. But W-110's
+behaviour 8(d) runs `webBuildCommand(<tmp>)` **to completion** from
+`apps/web/test/served-config.test.ts`, which W-110 registers in `test:suite` —
+so the day W-110 lands, `npm test` spawns `npm --workspace @bisellium/web run
+build` inside the gate cell and `/vite|run build/` matches. The *conclusion*
+survives, and for a better reason than the one given: the gate cell already
+carries what a build needs — `copyModules(candidate)` at `:818`, `npm` on
+`NODE_BIN` at the head of its `PATH`, and writable `/candidate` and `/tmp` —
+so a candidate build there is self-sufficient, while the replay cell is the one
+that needed help. State that structural reason and name W-110's own 8(d) as a
+second trigger beside `kind: ui`, so the next reader who re-greps does not find
+the row false and conclude the exclusion was never measured.
+
+**D — clause 6's forgery claim is narrower than the prose reads.** `:342-343`
+and behaviour 4(i) say "an echoed assertion cannot forge it". True of a
+**code-frame** echo, and I verified why: the `^[ \t]*(?:Error: )?` anchor plus
+playwright's `>  4 | ` gutter defeats it, and `expect(page.locator('…` fails
+`expect\([a-z]+\)\)\.` on the `)` anyway. But a deliberate line-start
+`console.log("expect(received).toBe(expected)")` forges it outright —
+measured:
+
+```
+refuse  D. 1 failed, page.goto only (brief's row 4h)
+ACCEPT  E. same + an echoed line 'expect(received).toBe(expected)'
+```
+
+The W-125 trust model already concedes this — §Reconciling says the host reads
+"the cell's exit status and output text, which the candidate could already
+shape" — so this is a wording fix, not a mechanism fix, and I am **not** asking
+for an unforgeable banner. But clause 6 should be described as what it is: a
+discriminator against *accidental* misclassification (a browser that would not
+launch, a server that would not answer), not a guarantee against an authored
+transcript. Say which of the two 4(i) closes.
+
+**E — `PW_SUMMARY` is a module-level `/gm` regex in a function the brief
+declares pure.** `:309` puts `const PW_SUMMARY = /^[ \t]*(\d+) failed\b/gm` at
+module scope, and `:327`/`:328` phrase the clauses as "no `PW_SUMMARY` match"
+and "the last `PW_SUMMARY` match". `.test()` or `.exec()` on a global regex
+mutates `lastIndex`, so consecutive `classifyReplay` calls in one process
+would see a stale start offset — behaviour 4 is a table of transcripts in one
+process, so it bites immediately. The architect's own measurement script got
+this right (`[...output.matchAll(PW_SUMMARY)].at(-1)`, which does not mutate
+the original), so the brief should say `matchAll` rather than leave it to the
+builder to find. The failure mode is fail-closed (a missed match falls to
+clause 4's refusal), and 4(k)'s "called twice with the same frozen input" would
+catch it — but a round later than naming it would.
+
+## Notes, not findings
+
+- The 4 KiB build-output dump to the runner's stderr (`:276-277`) is in tension
+  with clause 2's token-only discipline, and is right anyway: it is cell-internal
+  output from a cell with no credentials and no host paths, and L-051 wants a
+  failure a human can act on. Worth one clause saying the asymmetry is deliberate.
+- *Out of scope*'s "quote-safe red commands" is the correct call — the
+  information is destroyed at recording time by `lifecycle.ts:877`'s
+  `cmd.join(" ")`, so no host-side change can recover it — and the measured
+  no-code remedy for W-110 (`--grep behaviour.2:`, the regex dot matching the
+  space) is a good find. Note it only works while no two test titles differ by
+  exactly that character; W-110's eight titles are safe.
+- The brief measures `4b6736b` while the tree is at `7e019ed`. Every line
+  reference I checked is identical at both, but say which commit the next
+  revision is measured at, since the reds this opus will replay are
+  commit-pinned.

@@ -1,0 +1,131 @@
+# opus: W-130
+# phase: spec
+# round: 3
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T04:43:33.425Z
+# tree: dirty:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+Passed. `studio/briefs/W-130.md` revision 2 closes the round-1 prereview's
+2 MUST and 3 SHOULD. Five behaviours, unchanged; rows added inside 2, 4 and 5;
+one file added to *Files owned*. The trust-boundary reconciliation the prereview
+verified sound against the runner is unchanged, and nothing in this revision
+touches the gate cell, the broker, the export validation or the receipt.
+
+Measured at `7e019ed`, now stated in the brief: revision 1 measured `4b6736b`,
+the prereview re-verified every line reference as identical at both, and the
+commit is named because the reds this opus replays are commit-pinned.
+
+## MUST A — the ladder routes a playwright run before the TAP clause
+
+Accepted in full; the prereview's diagnosis was right and its fix shape is the
+one adopted. Revision 1 put the unanchored token clause third, so it stopped the
+ladder: a real three-failure transcript plus one echoed `not ok 1 - setup` line,
+or an `AssertionError` out of the `bisellium serve` the W-110 harness spawns, was
+accepted as one behaviour's red with its count and matcher unchecked. I
+reproduced both acceptances from `probe-clause3.mjs` before changing anything.
+
+The ladder now asks **"is this a playwright run?"** at clause 3 — the last
+`PW_SUMMARY` match, or a new `PW_BANNER`
+`/^[ \t]*Running \d+ tests? using \d+ workers?\b/m` — and a yes routes
+unconditionally through the count and matcher clauses, never reaching the token
+clause, which moves to 7 and keeps today's semantics for a non-playwright run
+exactly. The union of summary and banner rather than either alone, for a reason
+I measured: `launch` keeps only the **last** 4 MiB of each stream, so a long run
+can lose its banner off the head while keeping its summary at the tail, and a run
+that died before summarising still printed its banner. The union fails closed in
+both directions; banner-only routing would fall back to the token clause, which
+is the unsafe direction.
+
+The banner regex is measured, not assumed: `Running N test(s) using M worker(s)`
+is the first non-blank line under `list`, `line` **and** `dot`.
+
+Retained revision-2 kit, `measure-replay-acceptance-2.mjs` with
+`measurement-2.txt`: **22 transcripts, 0 disagreements** — revision 1's thirteen,
+the prereview's three adversarial cases, and six I constructed for the routing
+clause. Cases B and C now refuse with `playwright reported 3 failed tests`; the
+converse is pinned too (case F: a genuine one-failure transcript with an
+`AssertionError` appended from a spawned server is still accepted, so the routing
+refuses the near miss without breaking the real red). Revision 1's kit still
+reports `0 disagreements` and is kept as the round-1 record.
+
+One verdict moves in the refusing direction, and the brief states it rather than
+discovering it in review: a **non**-playwright transcript that prints `N failed`
+at line start is routed to the playwright branch and refused (case J). Measured,
+nothing in this repo does it — `node --test-reporter=tap` summarises as
+`# fail N`, and none of W-110's six TAP reds matches the anchor, which is why all
+six keep their verdict. The failure is fail-closed, the reason names it, and a
+refusal is recoverable by re-recording where a false acceptance would be
+permanent. *Out of scope* now forbids narrowing the routing to close it.
+
+New rows: 4(k) is the combined not-ok-echo plus playwright-summary case the
+prereview asked for, with its converse; 4(l) covers banner-without-summary and a
+passing transcript at nonzero status; 4(m) pins both sides of the line-start
+hazard; 4(n) loops the whole table twice, which is the assertion that catches a
+`lastIndex` leak. 5(d) asserts the same transcript through the real runner.
+
+## MUST B — the 19th environment name is deterministic
+
+Accepted, and the prereview's preferred shape taken: one sentinel browsers
+directory pinned for **every** live row. Implementing it exposed one thing the
+finding did not name, which is why *Files owned* grows by a file:
+`builder-run.ts:227-231` hands the host runner a **closed** environment —
+`PATH`, `LANG`, `LC_ALL`, `TZ`, and `TMPDIR` when set — with no `HOME` and no
+`PLAYWRIGHT_BROWSERS_PATH`. So a sentinel in `RUNNER_ENV` alone reaches only the
+`runnerRun` path; the smoke row at `:628` goes through `run(...)`, where nothing
+a test sets in `process.env` arrives at all. The sentinel is therefore pinned in
+**both** places — `RUNNER_ENV` and `withTmp`, which is already the file's own
+save/set/restore pattern for `TMPDIR` — and `builder-run.ts` gains one
+conditional-spread line in the same shape that line already uses for `TMPDIR`,
+forwarding an **absolute** `PLAYWRIGHT_BROWSERS_PATH`. That line is also the
+production seam an operator needs in order to say where the browsers are; it is a
+host-to-host environment, not a cell environment, and no cell gains a name from
+it. Stated as such in *Files owned*, with the measurement behind it.
+
+The brief's own contradiction is resolved rather than restated: the
+"keep every existing row" clause now names exactly three permitted pre-existing
+edits — `:670`'s count, the sentinel in the two helpers, and the `--behaviour`
+bound — and says no pre-existing *row* changes its logic, fixture or any other
+assertion. Behaviour 2(f) asserts that the runner resolved the **sentinel** and
+not `~/.cache/ms-playwright`, so the count holds on a runner with no browsers
+installed, and Acceptance now carries a bullet saying a row green here and red on
+CI is not acceptance.
+
+## SHOULD C, D, E
+
+**C — gate cell.** Restated on the durable ground the prereview supplied: that
+cell is already self-sufficient for a build (`copyModules` at `:817`, `npm` at
+the head of its `PATH` at `:835`, writable `/candidate` and `/tmp`), which is
+exactly what the replay cell lacked; the only thing it would still lack is a
+browser, and nothing it runs today needs one. **Two named triggers** now put it
+in scope — the first `kind: ui` record, and W-110's own 8(d), which makes
+`/vite|run build/` match `test:suite` the day W-110 lands — so the next reader
+who re-greps finds the trigger recorded instead of concluding the exclusion was
+never measured. Both are carried in the second follow-on filing.
+
+**D — the matcher clause.** Reworded to what it is: a discriminator against
+*accidental* misclassification — a browser that would not launch, a server that
+would not answer — and not a guarantee against an authored transcript. The brief
+now says which case 4(i) closes (the code-frame echo, defeated by playwright's
+`>  4 | ` gutter and by `expect(page.locator('…` failing the `)`), and concedes
+the deliberate line-start `console.log` outright, citing W-125's own model: the
+host reads output the candidate shapes. No unforgeable banner is claimed.
+
+**E — `matchAll`.** Specified, with the reason: `PW_SUMMARY` is the one `/g`
+regex, it is read only through `[...output.matchAll(PW_SUMMARY)]`, never
+`.test()` or `.exec()`, and the match is taken once at the top of the playwright
+branch and reused rather than re-matched per clause. 4(n)'s double pass over the
+table is the check that fails if a builder substitutes `.exec()`.
+
+**Prereview note on the 4 KiB build dump.** Taken: the brief now states the
+asymmetry with the token-only discipline deliberately — clause 2's reason is
+quoted into review logs so it carries no path, while the build dump is
+cell-internal output from a cell with no credentials and no host paths, and L-051
+wants a preparation failure a human can act on.
+
+Signed as ready for a builder. No implementation, evidence or review verdict is
+claimed by this signature; D-014's censor supplies the single independent
+implementation review, judging this as a change to the W-125 trust boundary
+(D-035).
