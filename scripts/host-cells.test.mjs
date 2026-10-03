@@ -22,9 +22,11 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -47,6 +49,7 @@ after(() => {
 
 const RUNNER = new URL("../scripts/run-builder-host.mjs", import.meta.url);
 const ACCEPT = new URL("../scripts/replay-accept.mjs", import.meta.url);
+const PROBE = new URL("../scripts/probe-builder-runtime.mjs", import.meta.url);
 const BROWSER_ENV = "PLAYWRIGHT_BROWSERS_PATH";
 
 // W-125's own cell shapes, as literals: the browser entry is the only thing
@@ -346,6 +349,46 @@ if (runs(2)) {
       /browser cache bound read-only/.test(none),
       false,
       "2(f): the absent case never carries the resolved line",
+    );
+
+    // (g) the cell's enforcer admits the 19th name, and only it. The probe runs first in the builder cell and
+    // compares its environment to a hard-coded list; it is spawned with a constructed environment and fails
+    // further on at `unexpected cwd` (outside /workspace), which proves the comparison was reached and cleared.
+    const probe = (extra) => {
+      const run = spawnSync(process.execPath, [fileURLToPath(PROBE), "--", "true"], {
+        cwd: scratch("b2-probe"),
+        env: { ...builderEnv(), ...extra },
+        encoding: "utf8",
+        timeout: 20_000,
+      });
+      return `${run.stdout}\n${run.stderr}`;
+    };
+    const MISMATCH = /environment allowlist mismatch/;
+    const base18 = probe({});
+    assert.ok(/unexpected cwd/.test(base18), "2(g): W-125's 18 alone reach the probe's cwd check");
+    assert.equal(MISMATCH.test(base18), false, "2(g): W-125's 18 alone clear the probe's allowlist comparison");
+    const withBrowsers = probe({ [BROWSER_ENV]: "/browsers" });
+    assert.equal(
+      MISMATCH.test(withBrowsers),
+      false,
+      "2(g): the 18 plus the browsers path /browsers clear the comparison",
+    );
+    assert.ok(/unexpected cwd/.test(withBrowsers), "2(g): the 18 plus /browsers reach the probe's cwd check");
+    assert.ok(
+      MISMATCH.test(probe({ [BROWSER_ENV]: "/home/someone/.cache/ms-playwright" })),
+      "2(g): the browsers path carrying a host-shaped value is a mismatch",
+    );
+    assert.ok(MISMATCH.test(probe({ W130_UNRELATED: "1" })), "2(g): an unrelated 19th name is a mismatch");
+
+    // (h) the two hard-coded lists cannot drift: the probe's `expected` literal is builderCell's 18, as a set.
+    const literal = readFileSync(PROBE, "utf8").match(/const expected = \[([^\]]*)\]/)?.[1];
+    assert.ok(literal, "2(h): the probe declares its expected list as a literal");
+    const probeNames = [...literal.matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+    assert.equal(new Set(probeNames).size, probeNames.length, "2(h): the probe's list repeats no name");
+    assert.deepEqual(
+      [...new Set(probeNames)].sort(),
+      Object.keys(mod.builderCell(builderPaths(undefined)).env).sort(),
+      "2(h): the probe's expected list equals builderCell's environment names as a set",
     );
   });
 }
