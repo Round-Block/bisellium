@@ -1,0 +1,204 @@
+certifies: tree:7cc17762f4b3707556cedc4a40d582072f01db85
+command: npm test -s
+exit code: 0
+
+GET /api/opera 200 2ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 20ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 1ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 18ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 21ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 18ms
+GET /api/opera 200 3ms
+GET /api/opera 200 2ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 2ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 21ms
+GET /api/opera 200 4ms
+GET /api/opera 200 4ms
+GET /api/opus/W-006 200 1ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 2ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 18ms
+GET /api/opera 200 2ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 1ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 21ms
+GET /api/opera 200 5ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 4ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 24ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 1ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 19ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 17ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+POST /api/_poll 200 19ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 13ms
+GET /api/opera 200 2ms
+POST /api/_poll 200 20ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 19ms
+GET /api/opera 200 3ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 21ms
+GET /api/opera 200 2ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+GET /api/aerarium 200 3ms
+GET /api/inbox 200 4ms
+POST /api/_poll 200 12ms
+GET /api/opera 200 3ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 12ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 17ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 17ms
+GET /api/opera 200 2ms
+POST /api/_poll 200 69ms
+GET /api/opera 200 2ms
+GET /api/aerarium 200 2ms
+POST /api/_poll 200 12ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 12ms
+GET /api/inbox 200 6ms
+POST /api/_poll 200 13ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 17ms
+GET /api/inbox 200 3ms
+POST /api/_poll 200 11ms
+GET /api/opus/W-006 200 0ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+POST /api/_poll 200 14ms
+POST /api/_poll 200 3ms
+POST /api/_poll 200 3ms
+POST /api/_poll 200 4ms
+GET /api/opera 200 3ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 0ms
+POST /api/_poll 200 13ms
+bisellium serve: branch records {"status":"stale","reason":"git-timeout","failures":1,"dropped":[]}
+POST /api/_poll 200 207ms
+GET /api/opera 200 3ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 6ms
+GET /api/officina 200 1ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 11ms
+POST /api/_poll 200 10ms
+POST /api/_poll 200 9ms
+GET /api/officina 200 1ms
+bisellium serve: branch records {"status":"partial","capped":1,"liveRejected":0,"dropped":[]}
+POST /api/_poll 200 57ms
+GET /api/officina 200 1ms
+bisellium serve: branch records {"status":"stale","reason":"git-error","failures":1,"dropped":[]}
+POST /api/_poll 200 8ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+bisellium serve: branch records {"status":"ok","liveRejected":0,"dropped":[]}
+POST /api/_poll 200 10ms
+GET /api/officina 200 1ms
+bisellium serve: branch records {"status":"stale","reason":"git-error","failures":1,"dropped":[]}
+POST /api/_poll 200 8ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+POST /api/_poll 200 7ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 8ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 8ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 7ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"unavailable","reason":"git-error","failures":6,"dropped":[]}
+POST /api/_poll 200 19ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"unavailable","reason":"git-error","failures":1,"dropped":[]}
+GET /api/officina 200 2ms
+bisellium serve: branch records {"status":"ok","liveRejected":0,"dropped":[]}
+POST /api/_poll 200 18ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+GET /api/officina 200 1ms
+GET /api/officina 200 2ms
+bisellium ci: step failed (exit 1): npm run -s typecheck
+bisellium ci: step failed (exit 1): npm test
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+warning: Git ref-wide allocation unavailable; using local records only
+Use the `defaultValue` or `value` props on <select> instead of setting `selected` on <option>.
+vendor-sentinel: 1 vendor-spend violation(s) detected:
+  row3-violation
+
