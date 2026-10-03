@@ -1,0 +1,50 @@
+# opus: W-134
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T13:55:56.648Z
+# tree: tree:1895e3e0b2fd3ec8c366b88cee886a0a48969666
+
+W-134 spec, round 1 — signed by the architect.
+
+Brief: studio/briefs/W-134.md, revision 1, six design-lex sections.
+
+Decree: the runner, not the censor by hand, re-identifies a recorded red whose
+source tree a rebase moved. When a well-formed `# tree:` header matches no
+commit on the branch, the rebased pre-change commit is the unique commit that
+introduced the exact bytes of the log being replayed at
+`<studioRelative>/ci/reds/<opus>/<NN>.log`; it must be source-free (its SOURCE
+tree equal to its first parent's), and the replay must reproduce every
+recorded `not ok` title with an assertion-level failure. Otherwise the red is
+void and no receipt is written. Red logs are never edited or re-recorded. The
+receipt records both the claimed tree and the commit and tree actually
+replayed; the gate re-derives the identification rather than trusting it.
+
+Measured first, against the real `opus/W-130` in a detached scratch worktree,
+with the real branch never moved and nothing pushed. Evidence retained in
+~/.bisellium-evidence/W-134-spec/ (measure.mjs, measure-1.log,
+m4-faithful-rebase.log, replay-anchor-b1.log, replay-implementation-present.log):
+
+- M2: after rebasing onto master, all five W-130 reds are unreachable; the
+  runner refuses all five and mints nothing.
+- M3: each red log is touched by exactly one commit, pre- and post-rebase;
+  pre-rebase that commit's source tree equals the claimed header for all five;
+  pre- and post-rebase its source tree equals its parent's.
+- M4: the faithful rebase (no -X) applies both red-log commits and both
+  test-only parents before conflicting at the implementation commit 5ebb93e.
+- M5: behaviour 1's recorded command at the rebased anchor 448f6ac reproduces
+  `not ok 1 - W-130 behaviour 1: …` with `code: 'ERR_ASSERTION'`.
+- M6: the same command at the rebased implementation commit 3e52824 passes,
+  so an implementation-present tree is refused by the existing filter alone.
+- M7: export validation refuses any builder commit touching the `studio/`
+  prefix, so the anchor is always a host commit a cell cannot plant.
+
+Scope: four numbered behaviours, each with one replayable red; five owned
+files; no new dependency, verb, flag, lifecycle id or wire attribute; schema
+unchanged and old receipts admitted under today's rule. Judged as a change to
+the W-125 trust boundary (D-035), with W-125's confinement obligations as the
+standard.
+
+Outcome: passed. Ready to hand to a builder.
