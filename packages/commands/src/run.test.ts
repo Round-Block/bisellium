@@ -1233,8 +1233,8 @@ process.stdout.write(JSON.stringify(out));
     assert.notEqual(gate, "socket-gated", "b1: liveSkip is a socket refusal");
     assert.equal(gate, bwrapUsable ? "ungated" : "bwrap-gated", "b1: liveSkip is false exactly when bwrap is usable");
     assert.equal(liveRows.filter((row) => row.skipped).length, bwrapUsable ? 0 : liveRows.length, "b1: a usable bwrap leaves no live row skipped");
-    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3) and the 3 W-134 live rows (b1-b3).
-    assert.equal(liveRows.length, 19, "b1: every live row is registered, none dropped or added unrecorded");
+    // 14 W-125 live rows, the 2 W-132 live rows (L2, L3), the 3 W-134 live rows (b1-b3) and the 7 W-130 acceptance rows.
+    assert.equal(liveRows.length, 26, "b1: every live row is registered, none dropped or added unrecorded");
     // Assembled, so this assertion is not itself the text it forbids.
     const probe = ["socket", "Usable"].join("");
     assert.equal(readFileSync(fileURLToPath(import.meta.url), "utf8").includes(probe), false, "b1: the live gate still consults a socket probe");
