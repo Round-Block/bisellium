@@ -29,6 +29,8 @@ set -C # noclobber: each log is created exclusively; the logs are the only `>` b
 AGENT_CLONE=${AGENT_CLONE:-$HOME/agents/bisellium}
 CASCADE_STATUS=${CASCADE_STATUS:-$HOME/.bisellium-evidence/cascade-status}
 CASCADE_MAX_RUNS=${CASCADE_MAX_RUNS:-5}
+CASCADE_RUN_TIMEOUT=${CASCADE_RUN_TIMEOUT:-4h}
+CASCADE_MAX_USD=${CASCADE_MAX_USD:-20}
 CLAUDE_BIN=${CLAUDE_BIN:-claude}
 STATE_DIR=$HOME/.cascade-loop
 LOG_DIR=$STATE_DIR/logs
@@ -105,8 +107,13 @@ for ((run = 1; run <= CASCADE_MAX_RUNS; run++)); do
   log=$LOG_DIR/$(date +%Y%m%dT%H%M%S)-$run.log
   (: >"$log") || stop 1 "cannot create log $log exclusively"
   rc=0
-  # stream-json under -p needs --verbose (claude refuses it otherwise)
-  "$CLAUDE_BIN" -p "$BOOT_PROMPT" --permission-mode auto --output-format stream-json --verbose >>"$log" 2>&1 || rc=$?
+  # stream-json under -p needs --verbose (claude refuses it otherwise).
+  # </dev/null: timeout puts claude in a background process group, which a read
+  # of the Patron's terminal would stop.
+  timeout "$CASCADE_RUN_TIMEOUT" "$CLAUDE_BIN" -p "$BOOT_PROMPT" --permission-mode auto \
+    --max-budget-usd "$CASCADE_MAX_USD" --output-format stream-json --verbose \
+    </dev/null >>"$log" 2>&1 || rc=$?
+  [ "$rc" -ne 124 ] || stop 1 "claude timed out after $CASCADE_RUN_TIMEOUT on run $run. Log: $log"
   [ "$rc" -eq 0 ] || stop 1 "claude exited $rc on run $run. Log: $log"
 
   case $(status_word) in
