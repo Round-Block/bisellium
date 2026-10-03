@@ -1118,7 +1118,8 @@ process.stdout.write(JSON.stringify(out));
     assert.notEqual(gate, "socket-gated", "b1: liveSkip is a socket refusal");
     assert.equal(gate, bwrapUsable ? "ungated" : "bwrap-gated", "b1: liveSkip is false exactly when bwrap is usable");
     assert.equal(liveRows.filter((row) => row.skipped).length, bwrapUsable ? 0 : liveRows.length, "b1: a usable bwrap leaves no live row skipped");
-    assert.equal(liveRows.length >= 14, true, "b1: no pre-existing live row was dropped");
+    // 14 W-125 live rows plus the 2 W-132 live rows (L2, L3).
+    assert.equal(liveRows.length, 16, "b1: every live row is registered, none dropped or added unrecorded");
     // Assembled, so this assertion is not itself the text it forbids.
     const probe = ["socket", "Usable"].join("");
     assert.equal(readFileSync(fileURLToPath(import.meta.url), "utf8").includes(probe), false, "b1: the live gate still consults a socket probe");
@@ -1350,24 +1351,23 @@ const sh = (script) => new Promise((done) => {
       assert.equal(deaf.signal === null && deaf.code === 0, true, "b4a: the deaf cell was refused, not parked");
       const got = (JSON.parse(deaf.out) as { count?: number }).count ?? 0;
       assert.equal(got > 0, true, "b4a: the deaf cell got frames in");
-      // The host is alive and its event loop is free: a blocked reply write would never answer this. Probe only
-      // once serving has stopped, or the sample can slip in ahead of the stall and a blocked host would pass.
-      let lastServed = -1;
-      let stableSince = Date.now();
-      await waitFor("the host to stop serving", () => {
-        const now = host.served().length;
-        if (now !== lastServed) [lastServed, stableSince] = [now, Date.now()];
-        return Date.now() - stableSince >= 400;
-      });
-      const deafAfter = await sample(15_000).catch(() => undefined);
+      // The host is alive and its event loop is free: a blocked reply write would never answer a sample. A sample
+      // round-trips the host's event loop, and its mem line follows every served line on the same stream, so the
+      // served count it leaves is complete. Sample until two in a row leave the same count: a host still reading
+      // serves at least one frame per turn, so it cannot sit through one, and each sample that sees growth
+      // consumed a frame, so there are at most `got` of them. No clock.
+      let seen: number;
+      let deafAfter: number | undefined;
+      let probes = 0;
+      do {
+        seen = host.served().length;
+        deafAfter = await sample(15_000).catch(() => undefined);
+      } while (deafAfter !== undefined && host.served().length !== seen && ++probes <= got);
       assert.equal(deafAfter !== undefined, true, "b4a: the host answers a sample after the flood");
       // The host stopped reading requests rather than queueing replies.
       const heldAt = host.served().length - deafServedFrom;
       assert.equal(heldAt < got, true, "b4a: the host served fewer frames than the cell got in");
-      // Two samples a short wait apart: a host still reading would have served more by the second. The wait rides
-      // waitFor, so the file keeps its one annotated sleep site.
-      const settleUntil = Date.now() + 500;
-      await waitFor("the settle window to pass", () => Date.now() >= settleUntil, 5_000);
+      // One more sample: a host still reading would have served more by it.
       const settled = await sample(15_000).catch(() => undefined);
       assert.equal(host.served().length - deafServedFrom, heldAt, "b4a: the host stays paused while no reply is read");
       // Memory is bounded: one reply frame at most, never a queued flood.
