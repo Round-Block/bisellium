@@ -134,7 +134,7 @@ lex, a decision, or a check rule and delete it here.
 **Security first (Patron: sorted before any new work).** In order:
 1. Done: agent workspace script + rules merged (#187).
 2. Done: the Patron created the agent token and ran `scripts/agent-workspace.sh setup`; sessions open in `~/agents/bisellium`.
-3. Done: **W-132** merged (#191). The broker talks over named pipes in `/control`; `bisellium run`, red replays and all 16 live rows work inside the sandbox. Gotchas: the ladder's `pr` step rebases onto master, which makes the receipt's final commit unreachable — re-mint (`bisellium run --sella builder --opus <id> --studio studio --repo . -- true` from the opus worktree, ~12 min) and push again; so merge nothing else to master while an opus PR is open. The `merge` step reads code-scanning alerts: the agent token needs "Code scanning alerts: read" (granted 2026-10-03). Follow-on **W-133** (backlog): cap the broker's reply frame (git maxBuffer 256 MiB) and correct W-132's brief.
+3. Done: **W-132** merged (#191). The broker talks over named pipes in `/control`; `bisellium run`, red replays and all 16 live rows work inside the sandbox. Gotchas: the ladder's `pr` step rebases onto master, which makes the receipt's final commit unreachable — re-mint (`bisellium run --sella builder --opus <id> --studio studio --repo . -- true` from the opus worktree, ~12 min) and push again; so merge nothing else to master while an opus PR is open. The `merge` step reads code-scanning alerts: the agent token needs "Code scanning alerts: read" (granted 2026-10-03). Follow-on **W-133** (backlog): cap the broker's reply frame (git maxBuffer 256 MiB) and correct W-132's brief. **W-134** merged (#194): a red whose tree left the branch after a rebase is replayed at the commit that introduced its log bytes, so rebases no longer void reds (a rebase still needs a receipt re-mint). W-134 follow-on: its `titles.length === 0` guard has no row (censor F1a). Done-step gotcha: if `done` holds on missing tests/lint/types, run `bisellium verify <id>` on master (same tree) and commit the certificates with the done record.
 
 **W-130: code complete, unblocked by W-132; rebase onto master first.** `origin/opus/W-130` @ 3a56d40. Brief rev 5 (round 8: the probe admits `PLAYWRIGHT_BROWSERS_PATH=/browsers` as the 19th name, rows 2(g)/2(h); prettier-only reformat of the red-04 file permitted). Reds 01–05 recorded assertion-level; full suite, lint, format, typecheck, both checks green; measurement 22/0 against the module (`~/.bisellium-evidence/W-130-spec/*against-implementation*`). Still owed: the receipt (`bisellium run` refused the worktree's symlinked node_modules — W-125's escaping-link rule; use a real `npm ci`), the 7 acceptance live rows run (not skipped), then censor (trust-boundary standard, D-035), merge.
 
@@ -146,7 +146,7 @@ lex, a decision, or a check rule and delete it here.
 
 ## Queue
 
-Security track (above) → W-130 → W-110 → close cascade 43 → **W-131** → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+W-130 → **W-131** (Patron, 2026-10-03: ahead of W-110, to cut log/record overhead) → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
