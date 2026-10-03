@@ -146,7 +146,7 @@ lex, a decision, or a check rule and delete it here.
 
 ## Queue
 
-**W-131** (next, fresh session) (Patron, 2026-10-03: ahead of W-110, to cut log/record overhead) → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+**Finish `origin/chore/cascade-loop` first** (the restart loop the Patron asked for; Codex Sol round 3 FAIL: one blocking B1 — `--setting-sources user` still loads `~/.claude/settings.json`, whose hooks/apiKeyHelper/plugins could target clone-writable paths; fix by a customization-free launch mode (check `claude --help`: `--safe-mode`/`--bare`/`--restricted`) or a startup refusal when user settings reference the clone, plus Sol's advisory rows; reviews in `~/.bisellium-evidence/cascade-loop/sol-review-{1,2,3}.log`; then Sol round 4, merge, and the Patron creates `~/.cascade-loop/settings.json` once) → **W-131** (Patron, 2026-10-03: ahead of W-110, to cut log/record overhead) → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
