@@ -1874,8 +1874,8 @@ if (only === undefined) {
   });
 
   for (const [name, transcript, pattern] of [
-    ["a canned missing-browser transcript", PW_MISSING_BROWSER, /did not reproduce its assertion failure: the output names an environment failure \(browserType\.launch\)/],
-    ["a canned three-failure transcript carrying an echoed not ok line", PW_THREE_AND_NOT_OK, /did not reproduce its assertion failure: playwright reported 3 failed tests/],
+    ["a canned missing-browser transcript", PW_MISSING_BROWSER, /did not reproduce its assertion failure at [0-9a-f]{40}: the output names an environment failure \(browserType\.launch\)/],
+    ["a canned three-failure transcript carrying an echoed not ok line", PW_THREE_AND_NOT_OK, /did not reproduce its assertion failure at [0-9a-f]{40}: playwright reported 3 failed tests/],
   ] as const)
     live(`W-130 acceptance: ${name} refuses the run before the gate cell`, async () => {
       const f = liveFixture(`w130-pw-${name.replace(/\W+/g, "-")}`, { red: canned(transcript) });

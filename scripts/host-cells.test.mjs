@@ -543,8 +543,8 @@ if (runs(5)) {
     );
     sourceHas(
       runner,
-      /did not reproduce its assertion failure: \$\{verdict\.reason\}/,
-      "5(c): the thrown message interpolates verdict.reason",
+      /did not reproduce its assertion failure at \$\{commit\}: \$\{verdict\.reason\}/,
+      "5(c): the thrown message carries the commit and interpolates verdict.reason",
     );
 
     // (d) the cell helpers come from host-cells.mjs; the runner keeps no second copy.
