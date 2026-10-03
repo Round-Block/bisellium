@@ -30,10 +30,20 @@ import {
 } from "node:fs";
 import { createServer } from "node:net";
 import { createHash } from "node:crypto";
-import { constants as osConstants, tmpdir } from "node:os";
+import { constants as osConstants, homedir, tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
+import {
+  WEB_BUILD,
+  WEB_BUNDLE,
+  browserCache,
+  browserMounts,
+  builderCell,
+  prepFailure,
+  replayCell,
+} from "./host-cells.mjs";
+import { classifyReplay } from "./replay-accept.mjs";
 
 const argv = process.argv.slice(2);
 const requestAt = argv.indexOf("--request");
@@ -158,6 +168,9 @@ const assertSelfContained = (checkout) => {
 // ---------------------------------------------------------------------------
 const NODE = realpathSync(process.execPath);
 const NODE_BIN = dirname(NODE);
+// Host-owned: resolved from the host's own environment, never from the request, the red log or the candidate.
+const BROWSERS = browserCache(process.env, homedir());
+process.stderr.write(`run-builder-host: ${browserMounts(BROWSERS).log}\n`);
 /** The tree the host's Node and its shared libraries live in, when outside /usr (brew, nvm, /opt). */
 const nodeRoot = () => {
   if (NODE.startsWith("/usr/")) return undefined;
@@ -582,47 +595,20 @@ try {
     join(tools, "probe-builder-runtime.mjs"),
   );
 
-  const childEnv = {
-    PATH: "/tools:/usr/local/bin:/usr/bin:/bin",
-    HOME: "/home/builder",
-    TMPDIR: "/tmp",
-    LANG: "C.UTF-8",
-    LC_ALL: "C.UTF-8",
-    TZ: "UTC",
-    CI: "1",
-    GIT_AUTHOR_NAME: request.sella,
-    GIT_AUTHOR_EMAIL: `${request.sella}@${request.slug}.bisellium`,
-    GIT_COMMITTER_NAME: request.sella,
-    GIT_COMMITTER_EMAIL: `${request.sella}@${request.slug}.bisellium`,
-    BISELLIUM_SELLA: request.sella,
-    BISELLIUM_STUDIO: request.slug,
-    BISELLIUM_SESSION: request.sessionId,
-    npm_config_cache: "/cache/npm",
-    npm_config_userconfig: "/home/builder/.npmrc",
-    npm_config_globalconfig: "/home/builder/.npmrc-global",
-    npm_config_registry: "https://registry.npmjs.org",
-  };
   const opusText = readFileSync(join(studio, "opera", `${request.opus}.md`), "utf8");
   const requireBrowser = /^kind:\s*ui\s*$/m.test(opusText);
   const built = await launch(
     "bwrap",
     sandboxArgs({
-      binds: [
-        [clone, "/workspace"],
-        [join(runtime, "home"), "/home/builder"],
-        [join(runtime, "tmp"), "/tmp"],
-        [join(runtime, "cache"), "/cache"],
-      ],
-      roBinds: [
-        [join(clone, ".git"), "/workspace/.git"],
-        [tools, "/tools"],
-        [controlDir, "/control"], // socket only; read-only so the builder cannot replace or litter it
-        ["/dev/null", "/usr/bin/git"],
-        [join(runtime, "git-core-mask"), "/usr/lib/git-core"],
-        ...etcFor(runtime),
-      ],
-      chdir: "/workspace",
-      env: childEnv,
+      ...builderCell({
+        clone,
+        runtime,
+        etc: etcFor(runtime),
+        sella: request.sella,
+        slug: request.slug,
+        session: request.sessionId,
+        browsers: BROWSERS,
+      }),
       cmd: [
         NODE,
         "/tools/probe-builder-runtime.mjs",
@@ -757,38 +743,35 @@ try {
         throw new Error(`red ${behaviour} checkout failed`);
       copyModules(checkout);
       for (const dir of ["home", "tmp"]) mkdirSync(join(replayRoot, dir), { mode: 0o700 });
-      const replay = await launch(
-        "bwrap",
-        sandboxArgs({
-          binds: [
-            [checkout, "/candidate"],
-            [join(replayRoot, "home"), "/home/builder"],
-            [join(replayRoot, "tmp"), "/tmp"],
-          ],
-          roBinds: etcFor(replayRoot),
-          chdir: "/candidate",
-          env: {
-            PATH: `${NODE_BIN}:/usr/local/bin:/usr/bin:/bin`,
-            HOME: "/home/builder",
-            TMPDIR: "/tmp",
-            CI: "1",
-            LANG: "C.UTF-8",
-            LC_ALL: "C.UTF-8",
-            TZ: "UTC",
-          },
-          cmd: commandText.trim().split(/\s+/),
-        }),
-        { capture: true, timeout: 10 * 60_000, env: { PATH: GIT_ENV.PATH } },
-      );
+      const cell = replayCell({
+        checkout,
+        root: replayRoot,
+        etc: etcFor(replayRoot),
+        nodeBin: NODE_BIN,
+        browsers: BROWSERS,
+      });
+      // The web bundle is built here, in the replay's own cell, only when the checkout carries the web workspace.
+      if (existsSync(join(checkout, "apps", "web", "package.json"))) {
+        const build = await launch("bwrap", sandboxArgs({ ...cell, cmd: WEB_BUILD }), {
+          capture: true,
+          timeout: 10 * 60_000,
+          env: { PATH: GIT_ENV.PATH },
+        });
+        if (build.error || build.status !== 0) {
+          process.stderr.write(`${(build.stdout + "\n" + build.stderr).slice(-4096)}\n`);
+          throw new Error(prepFailure(behaviour, build.error ? "spawn" : "exit", build.status));
+        }
+        if (!existsSync(join(checkout, ...WEB_BUNDLE))) throw new Error(prepFailure(behaviour, "bundle"));
+      }
+      const replay = await launch("bwrap", sandboxArgs({ ...cell, cmd: commandText.trim().split(/\s+/) }), {
+        capture: true,
+        timeout: 10 * 60_000,
+        env: { PATH: GIT_ENV.PATH },
+      });
       const output = `${replay.stdout}\n${replay.stderr}`;
-      if (
-        replay.status === 0 ||
-        !/(?:not ok|AssertionError|ERR_ASSERTION)/.test(output) ||
-        /ERR_MODULE_NOT_FOUND|SyntaxError:|command not found|ENOENT|not permitted|permission denied|sandbox/i.test(
-          output,
-        )
-      )
-        throw new Error(`red ${behaviour} did not reproduce its assertion failure`);
+      const verdict = classifyReplay({ status: replay.status, output });
+      if (!verdict.accepted)
+        throw new Error(`red ${behaviour} did not reproduce its assertion failure: ${verdict.reason}`);
       process.stdout.write(`producer red ${behaviour} @ ${commit}\n${output}`);
       redReplays.push({ behaviour, commit, sourceTree: claimedTree, command: commandText, assertionFailed: true });
     } finally {
