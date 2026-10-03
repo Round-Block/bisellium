@@ -1,0 +1,122 @@
+# opus: W-130
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T04:26:59.747Z
+# tree: dirty:2b6278d8fa37d7aa89bc8af01992d171bd6ef440
+
+## Verdict
+
+Passed. `studio/briefs/W-130.md` revision 1 carries all six design-lex sections
+(Intent, Files owned, Interfaces, Behaviours to test, Acceptance, Out of scope)
+plus Measured present state, a W-125 obligation reconciliation and Follow-on
+filings, and is ready for a builder. Five behaviours; five owned files; the
+brief's own `countBehaviours` and `filesOwned` were run against it and answer
+`5` and the exact five paths the host runner's export validation will enforce.
+
+## What was measured before it was specified
+
+Nothing in this brief is recalled. The retained script is
+`~/.bisellium-evidence/W-130-spec/measure-replay-acceptance.mjs`, read-only,
+with its captured transcripts in `cases/` and its output in
+`measurement.txt`. It classifies thirteen real transcripts with the predicate
+`scripts/run-builder-host.mjs:784-790` uses today and with the one this brief
+specifies, and reports **0 disagreements** with the wanted verdict:
+
+- W-110's eight recorded reds: `02` and `03` flip from refused to accepted;
+  `01`, `04`, `05`, `06`, `07`, `08` keep today's verdict byte for byte. That
+  is the exact scope the dispatch required and it is demonstrated, not claimed.
+- Five negatives from a real `@playwright/test` 1.63.0: a passing run, a
+  missing browser, a module-load error, an empty selection and a three-failure
+  run are each refused, with a distinct reason.
+
+Three measurements corrected the premises the brief was dispatched with, and
+the brief records all three:
+
+1. **The missing-browser error carries no `ENOENT`.** Measured text:
+   `Error: browserType.launch: Executable doesn't exist at …`, with a
+   `  1 failed` summary. Today's poison regex does **not** reject it. So the
+   hazard is the opposite of the one assumed: widening acceptance on the
+   summary line alone would have let a browserless cell pass a missing browser
+   off as a genuine red. The specified predicate therefore requires both
+   exactly one failed test and an `expect(…)` matcher banner, and adds
+   `browserType.launch` and `Executable doesn't exist` to the poison list so
+   the refusal is named rather than incidental.
+2. **The gate cell has no gap to close.** `CI_STEPS` is six entries with no
+   playwright and no build; `test:suite` registers no playwright; the
+   `web-e2e` workflow job is deliberately not a CI step; W-110 is
+   `kind: "opus"`, so `effectiveProbationes` adds no `served-e2e` for it, and
+   no record anywhere is `kind: ui`. Scoped **out**, stated as a decision with
+   its measurement, and filed as a follow-on that becomes live the day a
+   record is `kind: ui`.
+3. **A fourth defect blocks W-110's reds 2 and 3 independently.**
+   `packages/commands/src/lifecycle.ts:877` records `cmd.join(" ")` and the
+   replay splits on whitespace, so the quoted `--grep "W-110 behaviour 2: "`
+   arrives as five argv words; measured on `layout.spec.ts`, that broadens a
+   selection. The information is already lost in the recorded log, so no
+   host-side change recovers it. Scoped out with the root cause named, a
+   follow-on filed for quote-safe recording, and the zero-code remedy measured
+   for W-110: record with a whitespace-free `--grep behaviour.2:`, which
+   selects exactly the one test. The predicate's "exactly one failed test"
+   clause refuses a broadened replay, so this is enforced rather than trusted.
+
+The design itself was proved in a real cell, not inferred: `bwrap
+--unshare-all` with a **read-only** browsers path launched chromium and ran
+three specs, and loopback bound and round-tripped in the same cell. A
+read-only bind is sufficient; playwright writes nothing into the cache.
+`npm --workspace @bisellium/web run build` was timed at 0.66s wall, which is
+why the build needs no per-red classifier to be affordable, and `npm` was
+confirmed reachable on the replay cell's own PATH.
+
+## The W-125 trust boundary
+
+The brief reconciles explicitly, in its own section, because D-035 obliges the
+censor to judge this as a trust-boundary change. In short: W-125's "fixed host
+commands, not candidate package scripts selected at runtime" governs the
+producer **gate** cell, whose point is that a candidate cannot replace the
+host's required suite — and that cell is untouched, still running pinned
+`master` tooling from a separate read-only checkout. The **replay** cell has
+always executed a candidate-authored command verbatim out of the red log under
+confinement, so building there adds no capability: same `sandboxArgs`
+descriptor (hoisted to one object so the two cannot drift), same private
+`HOME`/`/tmp`, same `--unshare-all`, same read-only system tree, no host repo,
+no credentials, and the host reads nothing out of the build but an exit status
+and output text the candidate could already shape.
+
+The stricter shape is imposed anyway where it is free: one hardcoded host
+argv, gated on a fixed host path so no candidate selection occurs; a
+preparation failure that is a distinct message prefix and a hard run failure,
+never an accepted red; a required `apps/web/dist/index.html` so a build that
+exits 0 without a bundle is caught; and behaviour 3(e) proving from inside the
+cell that the build saw no credential, no host file and no egress. The browser
+bind grants read and nothing else — behaviours 1 and 2 assert `EROFS` from
+inside both cells, and the cache is `npx playwright install` output with no
+secret in it. One residual is stated rather than hidden: playwright launches
+chromium with `--no-sandbox`, so bwrap's namespaces are the only boundary
+around it — W-125's already-accepted trusted computing base with a larger
+third-party binary inside it.
+
+## Scope
+
+Three named changes, five behaviours, five files, one existing assertion edited
+(`run.test.ts:670`, `18` → `19`, forced by the one new environment name and
+named in the behaviour that forces it). The one addition beyond the three
+changes is `scripts/replay-accept.mjs`: a pure classifier extracted so its
+table of near-miss transcripts is a millisecond test instead of five full
+confined runs, with the wiring pinned separately so the mechanism cannot go
+untested (L-040). Two latent defects found on the `kind: ui` path — a regex
+that cannot match the quoted kind every record writes, and a probe hunting a
+system `chromium` the tool PATH does not carry — are left alone with their
+reason: fixing the regex alone would make every ui builder fail its probe.
+Both are in the second follow-on filing.
+
+No new dependency, verb, flag, wire attribute, lifecycle id, receipt field or
+doc edit is authorized. `docs/ADOPTION.md` and `docs/ARCHITECTURE.md` are a
+measured deliberate non-change: neither documents the cells' binds or
+environment allowlist, and no package edge, seam, lifecycle transition or
+serve route moves.
+
+Signed as ready for a builder. No implementation, evidence or review verdict is
+claimed by this signature; D-014's censor supplies the single independent
+implementation review.

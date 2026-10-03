@@ -1,0 +1,36 @@
+# behaviour: 5
+# command: node --test-reporter=tap scripts/served-e2e.test.mjs --behaviour 5
+# exit: 1
+# at: 2026-10-03T02:28:56.089Z
+# sella: builder.W-110
+# tree: tree:cee059e333ab551c5c407883bfd1d592932c2d54
+
+TAP version 13
+# Subtest: W-110 behaviour 5: served-e2e.mjs runs the walk once, in a cleared shots directory, and writes the manifest file
+not ok 1 - W-110 behaviour 5: served-e2e.mjs runs the walk once, in a cleared shots directory, and writes the manifest file
+  ---
+  duration_ms: 354.148819
+  type: 'test'
+  location: '/home/edckt/projects/bisellium/.worktrees/W-110/scripts/served-e2e.test.mjs:120:3'
+  failureType: 'testCodeFailure'
+  error: '(c) <studio>/ci/shots/W-X/manifest.txt exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/projects/bisellium/.worktrees/W-110/scripts/served-e2e.test.mjs:149:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 360.14714
