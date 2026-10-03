@@ -1,0 +1,189 @@
+# opus: W-134
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T15:18:47.166Z
+# tree: tree:7cc17762f4b3707556cedc4a40d582072f01db85
+
+W-134 censor round 1 — qa-lead (claude-opus-5), 2026-10-03
+Single review and QA gate (D-014). Standard: D-035, a change to the W-125
+trust boundary, judged with W-125's confinement obligations.
+Branch opus/W-134 @ ad2fe4b01c426951ffe90e66ae80cb33e5619da5, worktree
+/home/edckt/agents/bisellium/.worktrees/W-134, everything inside the sandbox.
+Raw logs: ~/.bisellium-evidence/W-134-review/
+
+OUTCOME: PASSED. Two minor findings, both coverage of new refusal guards;
+neither weakens the boundary as shipped.
+
+== 1. Reds are genuine ==
+git worktree add --detach $TMPDIR/w134red 9a0f414   (the recorded pre-change commit)
+  node --test-reporter=tap --import tsx --test-name-pattern=W-134-b1 packages/commands/src/run.test.ts
+    exit 1  not ok 1 - W-134-b1 behaviour 1: a rebased branch mints a receipt that names the replayed commit
+            "b1: the runner completes on a rebased branch / 1 !== 0"
+  ... b2 exit 1  not ok 1 - W-134-b2 ...  "b2a: names behaviour 1, the file, and that no commit introduced the bytes"
+  ... b3 exit 1  not ok 1 - W-134-b3 ...  "b3a: names the behaviour and the commit tried"
+  ... b4 exit 1  not ok 1 - W-134-b4 ...  "b4: a rebased identity whose replayedTree matches the named commit is admitted"
+  (red-b1.log .. red-b4.log) Every `not ok` title is byte-identical to the one
+  in studio/ci/reds/W-134/0N.log; all four are ERR_ASSERTION.
+Structure: 232e422 ("chore(studio): W-134 reds for behaviours 1-4") touches only
+studio/ci/reds/W-134/*.log and sits directly on 9a0f414 — this brief's own
+replay-safe rule applied to itself.
+
+== 2. Green at the reviewed tree ==
+  node --test-reporter=tap --import tsx --test-name-pattern=W-134-b{1,2,3,4}  -> exit 0 each (green-b*.log)
+  node --test-reporter=tap --import tsx packages/commands/src/run.test.ts
+    -> 1..31, pass 31, fail 0, skipped 0  (run-test-full.log)  -- no live row skipped
+  npm test                      -> exit 0 (npm-test.log, full suite through no-vendor.mjs)
+  npm run -s typecheck          -> 0
+  npm run -s lint               -> 0 (6 pre-existing warnings, none in the changed files)
+  npm run -s format:check       -> 0
+  npm run -s check -- studio --repo .                  -> PASS, 0 blocking, 239 advisory
+  npm run -s check -- examples/sample-studio --repo .  -> PASS, 0 blocking, 28 advisory
+  npm run -s bisellium -- verify W-134 --studio studio --repo .
+    -> tests: passed / lint: passed / types: passed, all certifying
+       tree:7cc17762f4b3707556cedc4a40d582072f01db85 (verify.log, W-134-*-7cc17762.log)
+    (first attempt reported tests: failed — the vendor sentinel lock from my own
+     concurrent `npm test`, not a suite failure; rerun clean. Worktree restored
+     to ad2fe4b, git status clean, certificates kept as review evidence only.)
+
+== 3. The receipt ==
+studio/receipts/builder.W-134/20261003T143811376Z-0011.json, exitCode 0,
+origin host-producer, toolingCommit 2ee36e2 (current master), finalCommit
+5c21c24, finalSourceTree tree:7cc17762 (= what verify recomputed above),
+gates ci/verify/check true, teardownComplete true. Four red entries, each
+assertionFailed true, each replayed at 232e422 with replayedTree == sourceTree
+== tree:4bd2cbac — the DIRECT path, because opus/W-134 was never rebased.
+~/.bisellium-evidence/W-134-receipt/run-1.log confirms the real replays:
+  producer red 1 @ 232e422de2c6a85411fd56f38b86761f7242d2f9
+  producer red 2 @ 232e422de2c6a85411fd56f38b86761f7242d2f9
+  producer red 3 @ 232e422de2c6a85411fd56f38b86761f7242d2f9
+  producer red 4 @ 232e422de2c6a85411fd56f38b86761f7242d2f9
+master is already an ancestor of opus/W-134, so the ladder's `pr` rebase is a
+no-op here and the receipt cannot go stale before merge.
+
+== 4. Trust boundary (D-035) ==
+
+Q1. Can a cell-side builder steer which commit the runner replays a red at? NO.
+    Four independent locks, read in the code and exercised:
+    a) scripts/run-builder-host.mjs:643 protectedPrefixes = ["studio/",
+       "examples/", ".bisellium/", `${studioRelative}/`], enforced per commit at
+       :670-671 over `diff-tree -r -m --root --raw -z --no-renames --no-abbrev`,
+       and the path must also be in the HOST brief's Files owned. Rowed at
+       packages/commands/src/run.test.ts:910-922
+       (/unowned\/protected path: studio\/ci\/forged\.log/).
+    b) scripts/run-builder-host.mjs:625 `merge-base --is-ancestor baseCommit
+       finalCommit`: the export is append-only, so the host's red-log commit
+       cannot be dropped, reordered or rewritten by the cell.
+    c) The selector is content-addressed to bytes the host recorded, at a
+       host-owned path (run-builder-host.mjs:733). Unique or refuse — no
+       nearest/newest/best tiebreak (:734-735, rowed b2a/b2b, mutants
+       m2a/m2c/m2d killed).
+    d) Source-free guard (:737-739): the anchor's SOURCE tree must equal its
+       first parent's, so the identifying commit contributes no source; the tree
+       replayed is the builder's own earlier committed state (rowed b2c, m2b).
+
+Q2. Can an implementation-present tree pass as a red's pre-change state? NO.
+    The existing assertion-level filter refuses a passing replay — rowed b3a
+    ("red 1 did not reproduce its assertion failure at <commit>"), mutant m3a
+    killed. A different failure is refused by the new title check — rowed b3b,
+    m3b killed. A squash that fuses a red log with source is refused by (d).
+
+Q3. Does admitCurrentRunReceipt re-derive the anchor rather than trust the
+    receipt? YES, for every entry whose replayedTree differs from sourceTree:
+    packages/commands/src/builder-run.ts:331-337 re-runs the same identification
+    from the branch (rebasedRedCommit, :269-284) and refuses any other commit.
+    Mutant m4a ("gate trusts the named commit") killed by b4. The gate's and the
+    runner's exclusion sets are identical ([studioRelative, ".bisellium",
+    ...source_excludes]; builder-run.ts:317 vs run-builder-host.mjs:697-701).
+
+    Independent probe (gate-probe.log, a disposable repo outside the tree,
+    driving admitCurrentRunReceipt directly):
+      P1 honest rebased receipt                         -> admitted
+      P2 on-disk red log tampered after the run         -> REFUSED
+         "run_receipt red for behaviour 1 is not the rebased pre-change commit of its log"
+      P3 on-disk red log deleted                        -> REFUSED (same)
+      P4 receipt claiming replayedTree == sourceTree on a non-anchor commit
+                                                        -> admitted (today's unchanged tree rule)
+      P5 same with replayedTree omitted                 -> admitted (today's unchanged tree rule)
+      P6 replayedTree not the commit's recomputed tree  -> REFUSED
+         "run_receipt has an unreachable or mismatched red identity"
+    Tampering can only make the gate refuse, never admit. P4/P5 are the
+    pre-W-134 rule, which the brief's Receipt section preserves verbatim.
+
+== 5. Mutation ==
+All 9 builder mutants re-run independently in a scratch worktree at ad2fe4b
+(node ~/.bisellium-evidence/W-134-build/mutants.mjs; mutants-rerun.log):
+  m1 m2a m2b m2c m2d m3a m3b m4a m4b -> ALL MUTANTS KILLED, each restored
+  byte-identical. The review worktree was never mutated.
+Two mutants of my own (extra-mutants.log) — see finding F1.
+
+== 6. Findings ==
+F1  minor, a class of 2 (new refusal guards with no row and no mutant).
+    Searched: every refusal branch introduced by `git diff master...HEAD` in
+    scripts/run-builder-host.mjs and packages/commands/src/builder-run.ts,
+    cross-referenced against rows b1-b4 and the nine builder mutants. These two
+    are the complete set; the remaining uncovered branch is the I/O path
+    "the branch's history could not be read" (:730), which has no deterministic
+    trigger.
+    F1a scripts/run-builder-host.mjs:741
+          if (titles.length === 0) throw refuse("its recorded log has no not-ok title to re-attest");
+        Mutated away, all four W-134 rows stay green (x1 SURVIVED). Deleting it
+        is a real behaviour change: with titles = [], `titles.every(...)` at :805
+        is vacuously true, so the rebased path would silently lose the "same
+        failure" check that stands in for the destroyed tree equality.
+        The builder declared this (deviation 3) and the reasoning holds: the
+        brief fixes four numbered behaviours and the runner enforces that count
+        (run-builder-host.mjs:708-709, builder-run.ts:171-182), so a fifth red is
+        impossible without amending the spec, and an extra assertion added to
+        b2/b3 after the reds were recorded would be implementation-first.
+        Remedy belongs in a follow-on: amend the brief with the sub-row, record
+        its own red. Not a blocker — the guard is present and correct today.
+    F1b packages/commands/src/builder-run.ts:310
+          (red.replayedTree !== undefined && !/^tree:[0-9a-f]{40}$/.test(red.replayedTree))
+        Also survives mutation (x2 SURVIVED), but behaviourally inert: a
+        malformed value can never equal a recomputed `tree:<40 hex>`, so :329
+        refuses anyway. Informational, no action.
+
+F2  informational. scripts/run-builder-host.mjs:800 — the direct path's refusal
+    message gained " at <commit>". No test in this repo pins the old text
+    (searched *.ts/*.mjs/*.md). studio/briefs/W-130.md:483 and :654 plan to
+    extend the SAME throw with ": <reason>". Flag for W-130's builder so the two
+    edits do not collide.
+
+F3  informational. The gate skips re-derivation whenever replayedTree equals or
+    omits sourceTree (probe P4/P5). This is the brief's Receipt section word for
+    word and the pre-W-134 rule; forging it requires host-side write, outside
+    D-035's cell-side threat model. No action.
+
+F4  informational. The blob id is computed from worktree bytes
+    (run-builder-host.mjs:720, builder-run.ts:270) while git's committed blob is
+    post-filter. GIT_LOCKDOWN (:82-92) pins filter.lfs.* but not core.autocrlf or
+    .gitattributes text filters. Any divergence causes a refusal, never an
+    admission. No action on Linux.
+
+== 7. Declared deviations, judged ==
+ 1. W-132-b1 exact live-row count 16 -> 19. ACCEPTED. The row's contract is
+    "none dropped or added unrecorded"; updating the constant is the row doing
+    its job, not a weakening. Confirmed: 31 tests, 0 skipped, b1-b3 register
+    through live() and all three ran here.
+ 2. Identification helper as a closure in the red-replay block; " at <commit>"
+    on the direct path too. ACCEPTED. The closure is inside the block the brief
+    names; the suffix is message text only. See F2.
+ 3. The "no `not ok` line is refused" guard has no row. ACCEPTED with F1a
+    recorded as a follow-on.
+ 4. liveFixture gained a `rebase` option with a builder test-only commit.
+    ACCEPTED. Files owned names "the live fixture's rebase option", and the
+    test-only commit is what makes the rebased pre-change state differ from
+    master in source — without it there would be nothing for the rule to find.
+
+== 8. Containment ==
+git diff --stat master...HEAD touches exactly the five paths in Files owned
+(docs/ARCHITECTURE.md, docs/SESSION-HANDOFF.md,
+packages/commands/src/builder-run.ts, packages/commands/src/run.test.ts,
+scripts/run-builder-host.mjs) plus studio/ci/reds/W-134/0{1..4}.log and
+studio/opera/W-134.md, which are host bookkeeping. No package.json change, no
+new dependency, no new CLI verb or flag, no environment name, no lifecycle id,
+no wire attribute. schema stays 1. The containment census is not weakened
+(containment.test.ts green in the full suite).
