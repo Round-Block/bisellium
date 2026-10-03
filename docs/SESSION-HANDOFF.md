@@ -129,14 +129,14 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-03, cascade 43 PAUSED for the security track)
+## Where things stand (2026-10-03, security track done; cascade 43 resumes at W-130)
 
 **Security first (Patron: sorted before any new work).** In order:
 1. Done: agent workspace script + rules merged (#187).
 2. Done: the Patron created the agent token and ran `scripts/agent-workspace.sh setup`; sessions open in `~/agents/bisellium`.
-3. `verify --inside` all ok (2026-10-03). **W-132, the socket-free runner, is filed and greenlit (Patron's nod given); build it next:** the W-125 Git broker talks to the cell over inherited pipes, not a unix socket, so `bisellium run`, its live rows and every replay work inside the sandbox. Its receipt comes from its own runner, in the sandbox.
+3. Done: **W-132** merged (#191). The broker talks over named pipes in `/control`; `bisellium run`, red replays and all 16 live rows work inside the sandbox. Gotchas: the ladder's `pr` step rebases onto master, which makes the receipt's final commit unreachable — re-mint (`bisellium run --sella builder --opus <id> --studio studio --repo . -- true` from the opus worktree, ~12 min) and push again; so merge nothing else to master while an opus PR is open. The `merge` step reads code-scanning alerts: the agent token needs "Code scanning alerts: read" (granted 2026-10-03). Follow-on **W-133** (backlog): cap the broker's reply frame (git maxBuffer 256 MiB) and correct W-132's brief.
 
-**W-130: code complete, blocked on (3).** `origin/opus/W-130` @ 3a56d40. Brief rev 5 (round 8: the probe admits `PLAYWRIGHT_BROWSERS_PATH=/browsers` as the 19th name, rows 2(g)/2(h); prettier-only reformat of the red-04 file permitted). Reds 01–05 recorded assertion-level; full suite, lint, format, typecheck, both checks green; measurement 22/0 against the module (`~/.bisellium-evidence/W-130-spec/*against-implementation*`). Still owed: the receipt (`bisellium run` refused the worktree's symlinked node_modules — W-125's escaping-link rule; use a real `npm ci`), the 7 acceptance live rows run (not skipped), then censor (trust-boundary standard, D-035), merge.
+**W-130: code complete, unblocked by W-132; rebase onto master first.** `origin/opus/W-130` @ 3a56d40. Brief rev 5 (round 8: the probe admits `PLAYWRIGHT_BROWSERS_PATH=/browsers` as the 19th name, rows 2(g)/2(h); prettier-only reformat of the red-04 file permitted). Reds 01–05 recorded assertion-level; full suite, lint, format, typecheck, both checks green; measurement 22/0 against the module (`~/.bisellium-evidence/W-130-spec/*against-implementation*`). Still owed: the receipt (`bisellium run` refused the worktree's symlinked node_modules — W-125's escaping-link rule; use a real `npm ci`), the 7 acceptance live rows run (not skipped), then censor (trust-boundary standard, D-035), merge.
 
 **W-110: code complete, blocked on W-130** (`origin/opus/W-110` @ d5631f1). Then its receipt, censor, merge, done.
 
