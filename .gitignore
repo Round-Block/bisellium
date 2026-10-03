@@ -43,6 +43,10 @@ studio/events.jsonl
 # not studio content; an untracked worktree here made `verify` see a dirty
 # tree and mint `dirty:` certificates for byte-identical tracked source.
 .claude/worktrees/
+# Repo-root worktrees `bisellium run` and `serve` create (W-125 builder
+# clones, the serve-master checkout) — same failure class: local checkout
+# state whose presence made every red and verdict header read `dirty:`.
+.worktrees/
 # Claude Code's Bash sandbox (bubblewrap) masks these cwd paths with
 # /dev/null device nodes so a command cannot plant shell/tool config in the
 # working tree. From inside the sandbox they read as untracked files, which
