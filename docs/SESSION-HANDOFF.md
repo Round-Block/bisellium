@@ -14,6 +14,13 @@ lex, a decision, or a check rule and delete it here.
 
 ## The Patron's standing instructions
 
+- **Session hygiene.** One cascade per orchestrator context: after the
+  checkpoint merges, `/clear` (or end the session) and boot fresh from this
+  file. Never park a fat context across an idle gap. Small reversible
+  decisions ship as veto-able defaults reported at the checkpoint; only
+  irreversible or ruling-contradicting calls wait for the Patron.
+- **Plain words to the Patron.** Status lines translate the vocabulary;
+  jargon stays in commits and records.
 - **Fewer words.** Lead with the proposal or the outcome; drop rationale that
   does not change a decision.
 - **Not epoch0-centric.** epoch0 (`~/projects/epoch0`, WSL) is a reference
