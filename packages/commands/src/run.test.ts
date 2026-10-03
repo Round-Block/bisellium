@@ -1364,8 +1364,10 @@ const sh = (script) => new Promise((done) => {
       // The host stopped reading requests rather than queueing replies.
       const heldAt = host.served().length - deafServedFrom;
       assert.equal(heldAt < got, true, "b4a: the host served fewer frames than the cell got in");
-      // sleep-seam: heldAt -- two samples a short wait apart; a host still reading would have served more by the second
-      await new Promise((ok) => setTimeout(ok, 500));
+      // Two samples a short wait apart: a host still reading would have served more by the second. The wait rides
+      // waitFor, so the file keeps its one annotated sleep site.
+      const settleUntil = Date.now() + 500;
+      await waitFor("the settle window to pass", () => Date.now() >= settleUntil, 5_000);
       const settled = await sample(15_000).catch(() => undefined);
       assert.equal(host.served().length - deafServedFrom, heldAt, "b4a: the host stays paused while no reply is read");
       // Memory is bounded: one reply frame at most, never a queued flood.
