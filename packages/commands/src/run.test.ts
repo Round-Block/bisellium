@@ -14,7 +14,7 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { chmodSync, copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, closeSync, constants, copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { after, test } from "node:test";
@@ -1037,6 +1037,18 @@ if (scenario === 'resume') {
   sendAll(a, '\\n');
   out.frames = sentinel('u1');
 }
+if (scenario === 'sentinel') {
+  out.frames = sentinel('z1');
+}
+if (scenario === 'deaf') {
+  // Never reads a reply. Non-blocking: the flood ends when the pipe refuses it, not when the host stops caring.
+  const w = fs.openSync(dir + '/git-request', fs.constants.O_WRONLY | fs.constants.O_NONBLOCK);
+  let count = 0;
+  for (; count < 5000; count++) {
+    try { fs.writeSync(w, frame('d' + count, 'status')); } catch (e) { if (e.code === 'EAGAIN') break; throw e; }
+  }
+  out.count = count;
+}
 process.stdout.write(JSON.stringify(out));
 `;
 
@@ -1256,10 +1268,10 @@ const sh = (script) => new Promise((done) => {
     const control = scratch("b4-control");
     const canary = join(scratch("b4-canary"), "reply-target");
     const host = startHost(control);
-    const sample = async (): Promise<number> => {
+    const sample = async (ms = 40_000): Promise<number> => {
       const seen = host.lines.filter((line) => line.t === "mem").length;
       host.command("sample");
-      await waitFor("a memory sample", () => host.lines.filter((line) => line.t === "mem").length > seen);
+      await waitFor("a memory sample", () => host.lines.filter((line) => line.t === "mem").length > seen, ms);
       const latest = host.lines.filter((line) => line.t === "mem").at(-1);
       return (latest?.heap ?? 0) + (latest?.buffers ?? 0);
     };
@@ -1333,6 +1345,78 @@ const sh = (script) => new Promise((done) => {
       assert.deepEqual(answered(resumed, 0), ["u1"], "b4: the host serves the next well-formed frame after a discard");
       assert.equal(resumed.every((frame) => frame.status === 2 || frame.id === "u1"), true, "b4: a discarded request is never answered as success");
       assert.equal(host.served().length - servedAfterForged, 1, "b4: a discarded request never reaches serve");
+
+      // 4a: a deaf, flooding cell. It never reads git-reply and refuses to wait on git-request.
+      const deafBaseline = await sample();
+      const deafServedFrom = host.served().length;
+      const deaf = await runCell(control, "deaf");
+      assert.equal(deaf.signal === null && deaf.code === 0, true, "b4a: the deaf cell was refused, not parked");
+      const got = (JSON.parse(deaf.out) as { count?: number }).count ?? 0;
+      assert.equal(got > 0, true, "b4a: the deaf cell got frames in");
+      // The host is alive and its event loop is free: a blocked reply write would never answer this.
+      const deafAfter = await sample(15_000).catch(() => undefined);
+      assert.equal(deafAfter !== undefined, true, "b4a: the host answers a sample after the flood");
+      // The host stopped reading requests rather than queueing replies.
+      const heldAt = host.served().length - deafServedFrom;
+      assert.equal(heldAt < got, true, "b4a: the host served fewer frames than the cell got in");
+      // sleep-seam: heldAt -- two samples a short wait apart; a host still reading would have served more by the second
+      await new Promise((ok) => setTimeout(ok, 500));
+      const settled = await sample(15_000).catch(() => undefined);
+      assert.equal(host.served().length - deafServedFrom, heldAt, "b4a: the host stays paused while no reply is read");
+      // Memory is bounded: one reply frame at most, never a queued flood.
+      assert.equal((settled ?? Infinity) - deafBaseline < 8 * 1024 * 1024, true, "b4a: a deaf flood does not grow the host's memory");
+
+      // The stall is a pause, not a death: the test reads git-reply, the held replies arrive intact and the host serves on.
+      const sink = openSync(join(control, "git-reply"), constants.O_RDWR | constants.O_NONBLOCK);
+      let drained = "";
+      const drain = (): void => {
+        const chunk = Buffer.alloc(65536);
+        for (;;) {
+          try {
+            const n = readSync(sink, chunk, 0, chunk.length, null);
+            if (n === 0) return;
+            drained += chunk.toString("utf8", 0, n);
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "EAGAIN") return;
+            throw error;
+          }
+        }
+      };
+      const replies = (): string[] => drained.split("\n").slice(0, -1);
+      try {
+        await waitFor("the host to deliver every held reply", () => {
+          drain();
+          return host.served().length - deafServedFrom >= got && replies().length >= got;
+        });
+        drain();
+      } finally {
+        closeSync(sink);
+      }
+      assert.equal(host.served().length - deafServedFrom, got, "b4a: every frame the cell got in is served once the replies are read");
+      assert.equal(
+        replies().every((line) => {
+          try {
+            return (JSON.parse(line) as Frame).status === 0;
+          } catch {
+            return false;
+          }
+        }),
+        true,
+        "b4a: every held reply arrives whole",
+      );
+      assert.equal(replies().length, got, "b4a: one reply per frame, none dropped or repeated");
+      const servedBeforeSentinel = host.served().length;
+      const fresh = await cellFrames(control, "sentinel");
+      assert.deepEqual(answered(fresh, 0), ["z1"], "b4a: a fresh request is answered with its own id");
+      assert.equal(host.served().length > servedBeforeSentinel, true, "b4a: the host serves again after the stall");
+
+      // Teardown with a remainder pending: the host is holding an undelivered frame when close() runs below.
+      const pendingFrom = host.served().length;
+      const again = await runCell(control, "deaf");
+      assert.equal(again.signal === null && again.code === 0, true, "b4a: a second deaf cell was refused, not parked");
+      const alive = await sample(15_000).catch(() => undefined);
+      assert.equal(alive !== undefined, true, "b4a: the host still answers with a reply held");
+      assert.equal(host.served().length > pendingFrom, true, "b4a: the second flood reached serve before the stall");
 
       assert.deepEqual(readdirSync(control).sort(), PIPES, "b4: the host created nothing else");
       host.command("close");
