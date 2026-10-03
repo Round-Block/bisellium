@@ -107,7 +107,10 @@ lex, a decision, or a check rule and delete it here.
 - Write logs to `~/.bisellium-evidence/`, not `$TMPDIR` (it differs per call). Run multi-step git/red sequences as bash scripts (zsh word-splitting).
 - Codex: `< /dev/null`, `--skip-git-repo-check` outside its trust list; sandboxes can't run git, node servers or Chromium, so the orchestrator commits verbatim with the builder's trailer.
 - Reds: `--grep` without a `^` anchor; confirm "N failed" with an assertion error, not "No tests found".
-- The orchestrator model is now Claude Fable 5.1; use the commit trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- The orchestrator trailer names the model that actually ran the session (Fable usage caps may force Opus 5.5): `Co-Authored-By: Claude <model> <noreply@anthropic.com>`.
+- Permissions (cascade 43, Patron-set, in `.claude/settings.local.json`): allow `Bash(gh pr merge*)` and `Bash(npm run -s bisellium*)`; `sandbox.excludedCommands` carries `npm run -s bisellium -- run*` because the host runner's broker socket cannot LISTEN inside the Bash sandbox (EPERM) — that exclusion is the only unsandboxed path, and the auto-mode classifier hard-blocks the orchestrator editing sandbox config or merging unreviewed/self-granted changes (correct; route those to the Patron).
+- Record-only commits: branch protection forces PR+CI per commit (use `gh pr merge --auto`); `opus.red_evidence` blocks `state: building` on master — `ready`/handoff happen on the opus branch after the branch rung (D-021). The ladder's six-section check exact-matches `## <Section>` headings (next.ts:62).
+- Replay-safe reds (W-130 brief + measured): record so the logs land in the HOST studio (or `git restore --source opus/<id>` them across); no whitespace inside any single command argument (the replay cell splits on whitespace — `--grep behaviour.2:` not `--grep "… behaviour 2: "`); live rows needing a socket LISTEN cannot record or replay under confinement.
 
 - The Codex builder sandbox cannot spawn git or child Node processes, so the
   pre-existing amend, close, review, census, W-089 and W-101-row suites run
@@ -125,13 +128,19 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-03 afternoon)
+## Where things stand (2026-10-03, cascade 43 IN FLIGHT — handover mid-cascade on Fable usage caps)
 
-Cascade 42 shipped W-129, merged PR 174 and done (PR 175) — the board tells the whole truth per D-034+addendum: backlog cards in Planned, serve reads branch-owned records through a hardened snapshot-on-poll overlay (FIFO-safe bounded opener, live-read allowlist of state/traditio/heartbeat, enumerated degradation codes surfaced as the Patron-ratified board note), and the verbs now write verifying/review states (compare-and-set, own-tree rule, fail-closed predicate with the architect-ruled parser guard); dossier backlog page regrouped. Spec took 4 revisions (prereview 8→3→0 MUST, sec 3 HIGH→F1-F8→CLEAR); build: 16 behaviours red at committed identities; censor PASS r1 and r2, sec one blocker (validator rejects non-string fields — a hostile record could blank the board) fixed and CLEAR. FIRSTS: W-128's fetchTrunk fix ran live (pr rung from checked-out master, guarded ff of the working tree at merge); the receipt replay caught web reds recorded with --cwd (re-recorded root-runnable — future rule: every red must run from the repo root; retro candidate). Provider spend line (first under the monitoring mandate): all of cascade 42 ran on Claude (Sonnet reviews+build, Haiku clerk) — Codex rejoins for censor+sec at its reset 2026-10-04 09:01 per the mixed mapping. Queue: next W-110 (every-screen e2e), then W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time.
+**W-110 (every-screen e2e): code DONE, receipt blocked.** Spec rev 4 cleared prereview (logs W-110-spec-1..8; rev 5 amendments live on the opus branch at bf5dc63). Phase 1: 8 reds; phase 2: full implementation, suite green 40 passed, all on `opus/W-110` (tip d9d83aa + red re-records d5631f1). The first live W-125 receipt run then failed: the replay cell has no browser/dist, and the acceptance regex rejects playwright text. Patron authorized a waiver; **the machinery refused it** (waive = human gates only, W-125 closed all bypasses for marked opera; W-110 is marked). D-035 records the chain and jumps **W-130** ahead as the fix.
+
+**W-130 (replay box learns browser evidence): spec signed rev 3 (+trunk heading conformance fix), prereview 2 MUST/3 SHOULD → 0/2 → folded (logs W-130-spec-1..5).** Branch `opus/W-130`, state building on the branch, red 04 banked (classifier table vs absent `scripts/replay-accept.mjs`). **STOPPED at reds 1/2/3/5:** they were specced as live runner rows needing a unix-socket LISTEN — EPERM in the sandbox AND probably inside the replay cell itself (nested, no broker), so they could neither record nor replay. Architect amendment in flight (expected: unit-level reds, live rows move to producer-run Acceptance via the excluded `bisellium run`; plus the builder's selector-collision and placement ambiguities — its report is in the cascade transcript, three ambiguities verbatim). Resume there: receive the amendment (re-sign next free spec round, on the branch — record is branch-owned), rerun builder phase 1 for 1/2/3/5, then phases 2-3, censor review (trust-boundary standard per D-035), merge; then rerun `npm run -s bisellium -- run --sella builder --opus W-110 --studio studio -- node --version` (receipt mints), censor reviews W-110, merge, done.
+
+**Patron rulings this cascade (standing):** more effort on code, less on tracking logs — `ci/` transcript volume and record-only PR round-trips are the named costs; **W-131** (evidence slims down: findings-only verdict logs, ci/ retention, cheaper record commits) is filed, greenlit, and **prioritized before the queue resumes**. Four record-only CI round-trips this cascade are its evidence.
+
+**Spend:** all of cascade 43 on Claude (Fable 5 orchestrator — caps forced this handover; Opus-5 censor+architect verdicts, Sonnet builder). Codex rejoins 2026-10-04 09:01.
 
 ## Queue
 
-Next W-110 (every-screen e2e), then W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time.
+In flight: W-130 → W-110 (blocked on it) → close cascade 43. Then **W-131 (Patron-prioritized)**, then W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131 insertions (D-035 + Patron instruction 2026-10-03).
 
 ## Research lane (on the side)
 
