@@ -52,7 +52,16 @@ wipe_agent_gh() {
 }
 
 token_reads_repo() { agent_gh api "repos/$REPO" --jq .full_name; }
-token_refused_hooks() { ! agent_gh api "repos/$REPO/hooks"; }
+# Refused = gh failed AND the server said 403/404; any other failure (network, auth) proves nothing.
+refused() {
+  local err
+  if err=$(agent_gh api "$1" 2>&1 >/dev/null); then return 1; fi
+  [[ $err == *"HTTP 403"* || $err == *"HTTP 404"* ]]
+}
+# No admin or webhook rights: needs a working token first, so no vacuous pass.
+token_refused_admin() {
+  token_reads_repo >/dev/null && refused "repos/$REPO/hooks" && refused "repos/$REPO/actions/permissions"
+}
 
 set_helper() {
   git -C "$AGENT_DIR" config --local --replace-all credential.helper ''
@@ -78,9 +87,9 @@ setup() {
     wipe_agent_gh
     die "The token cannot read $REPO. Give it Contents and Metadata access to that repo."
   }
-  token_refused_hooks >/dev/null 2>&1 || {
+  token_refused_admin >/dev/null 2>&1 || {
     wipe_agent_gh
-    die "The token can administer $REPO (its hooks answered). Use a token without admin rights."
+    die "The token has admin or webhook rights on $REPO. Use a token with only Contents, Pull requests, Actions (read), Checks (read), Commit statuses (read) and Metadata."
   }
 
   # b. the agent clone, with git using only the agent token.
@@ -169,7 +178,7 @@ verify() {
   check "agent clone origin is $URL" origin_is_https
   check "agent clone uses the agent credential helper" helper_is_set
   check "agent token reads $REPO" token_reads_repo
-  check "agent token is refused on $REPO hooks" token_refused_hooks
+  check "agent token has no admin or webhook rights on $REPO" token_refused_admin
   if ((inside)); then
     check "Patron folder $PATRON_DIR is not writable" patron_unwritable
     check "~/.git-credentials is not readable" unreadable "$HOME/.git-credentials"
