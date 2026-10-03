@@ -1,0 +1,43 @@
+# behaviour: 2
+# command: node node_modules/@playwright/test/cli.js test --config=apps/web/playwright.serve.config.ts walk.spec.ts --grep W-110 behaviour 2:  --reporter=line
+# exit: 1
+# at: 2026-10-03T02:28:41.194Z
+# sella: builder.W-110
+# tree: tree:cee059e333ab551c5c407883bfd1d592932c2d54
+
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › apps/web/tests-serve/walk.spec.ts:55:1 › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload
+  1) [chromium] › apps/web/tests-serve/walk.spec.ts:55:1 › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload 
+
+    Error: inbox: exactly one link has aria-current="page"
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.sidebar__link[aria-current="page"]')
+    Expected: 1
+    Received: 0
+    Timeout:  5000ms
+
+    Call log:
+      - inbox: exactly one link has aria-current="page" locator('.sidebar__link[aria-current="page"]') with timeout 5000ms
+      - waiting for locator('.sidebar__link[aria-current="page"]')
+        14 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      108 |     await page.locator(`.sidebar__link[href="#/${route}"]`).click();
+      109 |     await expectOnlyScreen(page, route);
+    > 110 |     await expect(page.locator('.sidebar__link[aria-current="page"]'), `${route}: exactly one link has aria-current="page"`).toHaveCount(1);
+          |                                                                                                                             ^
+      111 |     await expect(page.locator('.sidebar__link[aria-current="page"]'), `${route}: the current link is the route's own`).toHaveAttribute("href", `#/${route}`);
+      112 |     await expect(page.locator(".sidebar__link[aria-current]"), `${route}: no other link carries aria-current at all`).toHaveCount(1);
+      113 |   }
+        at /home/edckt/projects/bisellium/.worktrees/W-110/apps/web/tests-serve/walk.spec.ts:110:125
+
+    Error Context: apps/web/test-results/walk-W-110-behaviour-2-the-4e42e-s-Back-Forward-and-a-reload-chromium/error-context.md
+
+
+  1 failed
+    [chromium] › apps/web/tests-serve/walk.spec.ts:55:1 › W-110 behaviour 2: the rail reaches every screen it lists, says which one is current, and survives Back, Forward and a reload 
