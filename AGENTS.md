@@ -26,6 +26,14 @@ Read this before anything else in this repo.
 ## Environment
 
 - node/npm/git run in WSL only.
+- Agents work only in the agent clone `~/agents/bisellium` (HTTPS remote, a
+  repo-scoped non-admin token via `GH_CONFIG_DIR`). `~/projects/bisellium` is
+  the Patron's folder: every session is denied writing it and reading
+  `~/.ssh`, `~/.git-credentials`, `~/.config/gh`. Set up once by the Patron
+  with `scripts/agent-workspace.sh setup`; a session checks itself with
+  `scripts/agent-workspace.sh verify --inside`.
+- Nothing runs outside the Bash sandbox. Never point a hook at a script in the
+  agent clone: hooks run unsandboxed.
 - Two officinae live here: `studio/` is real, `examples/sample-studio` is a fixture.
 - `source_excludes` keeps one officina's churn from moving the other's certificates.
 
