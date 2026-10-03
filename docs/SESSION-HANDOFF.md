@@ -83,7 +83,7 @@ lex, a decision, or a check rule and delete it here.
   script use `node --import tsx` instead; agents should too, never `npx tsx`.
   The sandbox also masks shell/tool config paths in the repo root as /dev/null
   devices; both ignore files carry the block so verify stays clean-tree. Repo backup: bundle at
-  C:\Users\edene\bisellium-backups\; private remote github.com/edckt/bisellium (origin). Sandbox deps
+  C:\Users\edene\bisellium-backups\; remote github.com/Round-Block/bisellium, **public by Patron choice** (free Actions) — everything pushed is world-readable. Sandbox deps
   (bubblewrap, socat) installed 2026-09-19.
 
 - Node, npm, git, `claude`, `codex`, Go, treehouse, no-mistakes exist only inside
@@ -108,7 +108,8 @@ lex, a decision, or a check rule and delete it here.
 - Codex: `< /dev/null`, `--skip-git-repo-check` outside its trust list; sandboxes can't run git, node servers or Chromium, so the orchestrator commits verbatim with the builder's trailer.
 - Reds: `--grep` without a `^` anchor; confirm "N failed" with an assertion error, not "No tests found".
 - The orchestrator trailer names the model that actually ran the session (Fable usage caps may force Opus 5.5): `Co-Authored-By: Claude <model> <noreply@anthropic.com>`.
-- Permissions (cascade 43, Patron-set, in `.claude/settings.local.json`): allow `Bash(gh pr merge*)` and `Bash(npm run -s bisellium*)`; `sandbox.excludedCommands` carries `npm run -s bisellium -- run*` because the host runner's broker socket cannot LISTEN inside the Bash sandbox (EPERM) — that exclusion is the only unsandboxed path, and the auto-mode classifier hard-blocks the orchestrator editing sandbox config or merging unreviewed/self-granted changes (correct; route those to the Patron).
+- Permissions (cascade 43, Patron-set, in `.claude/settings.local.json`): allow `Bash(gh pr merge*)` and `Bash(npm run -s bisellium*)`. **No unsandboxed path exists** (the `bisellium -- run` exclusion was removed 2026-10-03, Patron: "all inside the sandbox"). The orchestrator merges on the Patron's behalf. The auto-mode classifier blocks the orchestrator editing sandbox config (correct; route to the Patron).
+- **Agent workspace (2026-10-03, Patron: "as secure as possible"):** agents work in `~/agents/bisellium` only; `~/projects/bisellium` is the Patron's and write-denied to every session; personal credentials (`~/.ssh`, `~/.git-credentials`, `~/.config/gh`) are read-denied; GitHub goes through a fine-grained, non-admin, repo-only token (`GH_CONFIG_DIR=~/.config/agent-gh`) over HTTPS. Boot check: `bash scripts/agent-workspace.sh verify --inside`. Hooks run unsandboxed — never point one at agent-clone code. The repo's `bisellium` hooks are currently inert (`bisellium` is not on PATH); if ever installed, link it to the Patron's folder (reviewed master), never the agent clone.
 - Record-only commits: branch protection forces PR+CI per commit (use `gh pr merge --auto`); `opus.red_evidence` blocks `state: building` on master — `ready`/handoff happen on the opus branch after the branch rung (D-021). The ladder's six-section check exact-matches `## <Section>` headings (next.ts:62).
 - Replay-safe reds (W-130 brief + measured): record so the logs land in the HOST studio (or `git restore --source opus/<id>` them across); no whitespace inside any single command argument (the replay cell splits on whitespace — `--grep behaviour.2:` not `--grep "… behaviour 2: "`); live rows needing a socket LISTEN cannot record or replay under confinement.
 
@@ -128,19 +129,24 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-03, cascade 43 IN FLIGHT — handover mid-cascade on Fable usage caps)
+## Where things stand (2026-10-03, cascade 43 PAUSED for the security track)
 
-**W-110 (every-screen e2e): code DONE, receipt blocked.** Spec rev 4 cleared prereview (logs W-110-spec-1..8; rev 5 amendments live on the opus branch at bf5dc63). Phase 1: 8 reds; phase 2: full implementation, suite green 40 passed, all on `opus/W-110` (tip d9d83aa + red re-records d5631f1). The first live W-125 receipt run then failed: the replay cell has no browser/dist, and the acceptance regex rejects playwright text. Patron authorized a waiver; **the machinery refused it** (waive = human gates only, W-125 closed all bypasses for marked opera; W-110 is marked). D-035 records the chain and jumps **W-130** ahead as the fix.
+**Security first (Patron: sorted before any new work).** In order:
+1. This PR (agent workspace script + rules) merges.
+2. The Patron creates the agent token and runs `scripts/agent-workspace.sh setup` from their own folder, then opens sessions in `~/agents/bisellium`.
+3. The fresh session runs `verify --inside` (all ok), then files and builds the **socket-free runner** opus: the W-125 Git broker talks to the cell over inherited pipes, not a unix socket, so `bisellium run`, its live rows and every replay work inside the sandbox. Architecture call — the Patron's nod on the greenlight. Its receipt comes from its own runner, in the sandbox.
 
-**W-130 (replay box learns browser evidence): spec signed rev 3 (+trunk heading conformance fix), prereview 2 MUST/3 SHOULD → 0/2 → folded (logs W-130-spec-1..5).** Branch `opus/W-130`, state building on the branch, red 04 banked (classifier table vs absent `scripts/replay-accept.mjs`). **STOPPED at reds 1/2/3/5:** they were specced as live runner rows needing a unix-socket LISTEN — EPERM in the sandbox AND probably inside the replay cell itself (nested, no broker), so they could neither record nor replay. Architect amendment in flight (expected: unit-level reds, live rows move to producer-run Acceptance via the excluded `bisellium run`; plus the builder's selector-collision and placement ambiguities — its report is in the cascade transcript, three ambiguities verbatim). Resume there: receive the amendment (re-sign next free spec round, on the branch — record is branch-owned), rerun builder phase 1 for 1/2/3/5, then phases 2-3, censor review (trust-boundary standard per D-035), merge; then rerun `npm run -s bisellium -- run --sella builder --opus W-110 --studio studio -- node --version` (receipt mints), censor reviews W-110, merge, done.
+**W-130: code complete, blocked on (3).** `origin/opus/W-130` @ 3a56d40. Brief rev 5 (round 8: the probe admits `PLAYWRIGHT_BROWSERS_PATH=/browsers` as the 19th name, rows 2(g)/2(h); prettier-only reformat of the red-04 file permitted). Reds 01–05 recorded assertion-level; full suite, lint, format, typecheck, both checks green; measurement 22/0 against the module (`~/.bisellium-evidence/W-130-spec/*against-implementation*`). Still owed: the receipt (`bisellium run` refused the worktree's symlinked node_modules — W-125's escaping-link rule; use a real `npm ci`), the 7 acceptance live rows run (not skipped), then censor (trust-boundary standard, D-035), merge.
 
-**Patron rulings this cascade (standing):** more effort on code, less on tracking logs — `ci/` transcript volume and record-only PR round-trips are the named costs; **W-131** (evidence slims down: findings-only verdict logs, ci/ retention, cheaper record commits) is filed, greenlit, and **prioritized before the queue resumes**. Four record-only CI round-trips this cascade are its evidence.
+**W-110: code complete, blocked on W-130** (`origin/opus/W-110` @ d5631f1). Then its receipt, censor, merge, done.
 
-**Spend:** all of cascade 43 on Claude (Fable 5 orchestrator — caps forced this handover; Opus-5 censor+architect verdicts, Sonnet builder). Codex rejoins 2026-10-04 09:01.
+**Patron rulings this cascade (standing):** more code, less tracking — **W-131** (findings-only verdict logs, ci/ retention, cheaper record commits) is greenlit and runs right after W-110. Public repo is intended.
+
+**Spend:** cascade 43 all on Claude (Fable 5, then Opus 5.5 orchestrator; Opus censor/architect; Sonnet builder). Codex rejoins 2026-10-04 09:01.
 
 ## Queue
 
-In flight: W-130 → W-110 (blocked on it) → close cascade 43. Then **W-131 (Patron-prioritized)**, then W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131 insertions (D-035 + Patron instruction 2026-10-03).
+Security track (above) → W-130 → W-110 → close cascade 43 → **W-131** → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
