@@ -28,7 +28,10 @@ const expected = [
 // bwrap --chdir exports PWD into the cleared environment; it is not one of the
 // 18 producer-set names, and the cwd itself is asserted below.
 delete process.env.PWD;
-const actual = Object.keys(process.env).sort();
+// W-130: the one optional 19th name, admitted only at the fixed cell path, so a host path cannot enter the cell through it.
+const actual = Object.keys(process.env)
+  .filter((name) => !(name === "PLAYWRIGHT_BROWSERS_PATH" && process.env[name] === "/browsers"))
+  .sort();
 if (JSON.stringify(actual) !== JSON.stringify(expected))
   throw new Error(`environment allowlist mismatch: ${actual.join(",")}`);
 if (process.cwd() !== "/workspace") throw new Error(`unexpected cwd: ${process.cwd()}`);
