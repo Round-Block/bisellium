@@ -140,6 +140,16 @@ test("6c. the prompt carries the status path", () => {
   assert.ok(argv[argv.indexOf("-p") + 1]?.includes(w.status), argv.join(" | "));
 });
 
+test("6d. headless flags: --permission-mode auto, and stream-json with the --verbose it requires", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  w.run();
+  assert.equal(w.runs(), 1);
+  const argv = w.read("argv.1").split("\0");
+  assert.equal(argv[argv.indexOf("--permission-mode") + 1], "auto", argv.join(" | "));
+  assert.equal(argv[argv.indexOf("--output-format") + 1], "stream-json", argv.join(" | "));
+  assert.ok(argv.includes("--verbose"), argv.join(" | "));
+});
+
 test("7. a stale status is deleted before each run, so a silent run cannot inherit CONTINUE", () => {
   const w = world(["CONTINUE", "NONE"]);
   writeFileSync(w.status, "CONTINUE\n");
