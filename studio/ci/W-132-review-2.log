@@ -1,0 +1,106 @@
+# opus: W-132
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T12:08:12.874Z
+# tree: tree:9573fb28ebd6abca1ac023d642e23c54def9c0df
+
+W-132 round 2 censor review — qa-lead, claude-opus-5, 2026-10-03, branch opus/W-132 at 7989c8c, source tree 9573fb28.
+Judged under D-035 as a change to a trust boundary, with W-125's confinement obligations as the standard.
+
+VERDICT: PASS. Round 1's single blocking finding (F1) is fixed at its root, and its sibling instance with it.
+Scope of this round: the delta 930e459..7989c8c only. Outside studio/ bookkeeping that delta is exactly one file,
+packages/commands/src/run.test.ts (git diff 930e459..7989c8c -- . ':(exclude)packages/commands/src/run.test.ts'
+':(exclude)studio' is empty). The three transport files are byte-identical to the tree I reviewed in round 1, so
+round 1's transport findings stand unchanged and are not re-litigated here.
+
+F1 — CLEARED (6caf744)
+Both clock waits are gone, not reshaped. run.test.ts:1358-1365 now samples in a loop that exits when two consecutive
+sample() round-trips leave host.served() unchanged, bounded by `got`; the old 500 ms settle wait is one more sample().
+Checked, not taken on trust:
+- grep -n 'Date.now()' packages/commands/src/run.test.ts: 2 sites, both waitFor's own deadline (:321, :323),
+  pre-existing and annotated at :324. The 5 sites round 1 named at :1356/:1359/:1360 and :1369/:1370 are gone.
+- The census was satisfied, not routed around: git diff 5a8759f..7989c8c -- packages/cli/src/rules/ is empty,
+  SEAM_CAP is still 6 at packages/cli/src/rules/tests.test.ts:46, packages/cli/src/containment.test.ts is untouched.
+- The builder's reading that the census governs test code only is correct, not convenient: rules/tests.ts:213-214
+  selects a file by TEST_NAME, a TEST_DIRS segment or package.json registration, so scripts/*.mjs is out of scope by
+  construction. The broker's unref'd poll timer and the client's deadline and Atomics.wait nap are production
+  synchronisation in a FIFO transport, correctly left alone.
+
+F2 — CLEARED by the same commit (the 400 ms quiescence debounce is the loop above).
+F7 — CLEARED: run.test.ts:1121 is now assert.equal(liveRows.length, 16, ...), exact, and it passes with 16 registered rows.
+F8 — CLEARED: 944b750 amends the title to "host-created named pipes"; studio/opera/W-132.md:3 and the amendments
+     block both read correctly, and the superseded wording is recorded.
+
+CLASS ENUMERATION (what I searched this round)
+The class is tests x wall-clock-sleep-for-a-missing-seam. I did not take the two known sites on trust; I swept the
+whole opus, not the fix:
+- git diff 5a8759f..7989c8c -- packages/commands/src/run.test.ts, additions filtered for
+  setTimeout|setInterval|Atomics|sleep|Date.now|waitForTimeout|busy|spin|hrtime: one comment line, no primitive.
+- The same filter over the additions to scripts/run-builder-host.mjs: nothing.
+- grep over the whole current run.test.ts for the same primitives: :324-325 (the annotated waitFor cadence),
+  :654 and :732 (setTimeout inside W-125's embedded socket-probe fixtures), :840 and :861 (setInterval inside a
+  builder fixture that must not exit). All four pre-existing, none added here.
+Two instances existed in this opus; both are fixed. No third. The pre-existing clock loops round 1 named outside
+this opus (apps/server/test/board.test.ts:142, apps/server/test/server.test.ts:222/735/762, packages/cli/src/ids.test.ts:789,
+packages/cli/src/next.test.ts:760) are unchanged and remain outside its Files owned; they stay a live class for the retro.
+I also swept the opus's added assertions for the loose-guard class behind F7: the remaining inequalities are
+liveness (> 0, >) or deliberate memory tolerances (< 8 MiB), plus the >= 7 error-frame count at :1294 whose exact
+value genuinely depends on how an oversize frame splits. Only :1121 was a determinate count, and it is now exact.
+
+RE-RUN IN THIS SANDBOX (logs in ~/.bisellium-evidence/W-132-review/round2/)
+- Focused W-132-b4, five consecutive runs: 1 pass / 0 fail / 0 skipped each, ~4.4 s (b4-1.log .. b4-5.log). No flake.
+  The row runs in 4.38 s against round 1's 5.17 s (green-b4.log), which is the 0.9 s of clock waits it no longer pays for.
+- Full suite, npm run -s test:suite: exit 0 (suite.log). packages/commands/src/run.test.ts: 27 tests, 27 pass,
+  0 fail, 0 skipped, 33.0 s; all 16 live rows ran, including W-132-L2 and W-132-L3. The one "not ok" in the log
+  (existing-suite.test.mjs:3, 'broken' !== 'green') is a W-125 producer-gates fixture's own deliberately red child
+  suite under /tmp/claude-1000/w125-run-b3-producer-gates-*, not a suite failure.
+- Mutation, built and run by me against the final module rather than read from the builder's logs, restoring the
+  file byte-for-byte after each (git diff --quiet clean both times):
+  * replyFd opened blocking (drop O_NONBLOCK at scripts/git-broker.mjs:64) — killed at run.test.ts:1366,
+    "b4a: the host answers a sample after the flood" (mutant1-b4.log).
+  * no request pause while a reply is held (drop the three `return arm(RETRY_MS)` guards at git-broker.mjs:133,
+    :141, :164) — killed at run.test.ts:1369, "b4a: the host served fewer frames than the cell got in" (mutant2-b4.log).
+  This is the check that matters for a fix to a test: the new sample loop is new test logic that never ran red
+  (studio/ci/reds/W-132/04.log is the absent-module assertion, as round 1's F6 records), so its bite is demonstrated
+  by mutation, which QA lex 2 accepts.
+- prettier --check .: clean (format.log). check studio: PASS 0 blocking, 238 advisory. check examples/sample-studio:
+  PASS 0 blocking, 28 advisory (check-studio.log, check-sample.log). Zero test.sleep findings at this tree.
+- bisellium verify W-132 --studio studio --repo .: exit 0, tests/lint/types all passed and re-certified at
+  tree:9573fb28ebd6abca1ac023d642e23c54def9c0df (verify.log). The certificates arrived at HEAD still naming
+  tree:4795700c, the round-1 tree, because 6caf744 changed source after b3f5d91 stamped them; this run re-ran the
+  gates and re-stamped them at the current tree. The gates were run, not re-labelled.
+- Receipt 20261003T112337312Z-0020.json: finalCommit 944b750, finalSourceTree tree:9573fb28, which is the same hash
+  verify independently computed here from HEAD's source tree — so the receipt names the tree now under review, and
+  the studio-only traditio commit 7989c8c does not move it. Four red replays at ba5d25a / tree:d83156c4, all
+  assertionFailed, the same historical reds round 1 corroborated byte-for-byte against studio/ci/reds/W-132/01..04.log;
+  gates ci/verify/check true, teardownComplete true, exitCode 0. The two "bisellium ci: step failed" lines at the tail
+  of run-2.log and of the tests certificate are leaked child stderr from ci.test.ts fixtures, as round 1 established.
+
+THE DEFERRALS — ACCEPTABLE, WITH ONE CARRY-FORWARD THAT IS NOT YET A RECORD
+F3 (the one-frame reply bound is ~256 MiB, not the 4 MiB studio/briefs/W-132.md:134 and :142 claim) and F4 (the brief
+at :127-128 prescribes a stream where scripts/git-broker.mjs:65,126-166 polls readSync) are both advisory, and round 1
+said a pass needs F1 alone. Leaving them to a follow-on is acceptable on the merits: the 256 MiB retention is W-125's
+and unchanged by this opus — the socket path queued the identical reply in net.Socket's write buffer — and the polled
+readSync is the right call for the non-exit hazard the brief itself names at :67-68. The divergence is not undocumented
+either: studio/ci/W-132-review-1.log is in the officina and names both with file:line, so the as-built is on the record
+even while the signed brief is stale.
+What is NOT on the record: the follow-on itself. No opus mentions W-132 but W-132 (grep over studio/opera/), and none
+names a reply-frame cap. "It goes to a follow-on" is a plan, not a filing, and this pass does not create one. The
+producer should file it — cap the reply frame in git-broker.mjs or lower git()'s maxBuffer at
+scripts/run-builder-host.mjs:99, and correct the four sentences at studio/briefs/W-132.md:127-128, :134, :142 —
+before the cascade closes. I am recording it here rather than holding the gate for it.
+F5 (mkfifo shell-out) and F6 (no new red for 4a) stand as accepted in round 1; the coreutils dependency is still worth
+a line in the brief's runtime assumptions when the brief is next touched.
+
+NOT FOUND / CHECKED CLEAN THIS ROUND
+- Files owned respected: the delta touches one declared path plus studio bookkeeping. Nothing outside the brief's list.
+- The census is not weakened: rules/ and containment.test.ts byte-identical to master.
+- The fix does not blunt the row: both round-1 mutants still die, reproduced here from scratch.
+- The new loop cannot pass vacuously. It exits only on a sample that leaves host.served() unchanged, and the very next
+  sample must leave it unchanged too (:1372). A host that kept serving fails one or the other — which is exactly what
+  mutant 2 demonstrates.
+- Everything round 1 checked clean about the transport is untouched by this delta and is not re-asserted on its own
+  authority; see studio/ci/W-132-review-1.log for that list.
