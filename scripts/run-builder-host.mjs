@@ -690,8 +690,9 @@ try {
 
   // Recompute every retained red at the clean committed SOURCE identity it
   // names. The log is a claim: only a reachable commit with the same SOURCE
-  // hash and a fresh assertion-level failure satisfies it. Every numbered
-  // behaviour must have one.
+  // hash and a fresh assertion-level failure satisfies it. A rebase moves that
+  // hash, so a well-formed claim that matches no commit is re-identified by the
+  // log's own commit (W-134, below). Every numbered behaviour must have one.
   const manifestData = parseYaml(readFileSync(join(studio, "bisellium.yml"), "utf8"));
   const sourceExcludes = [
     request.studioRelative,
@@ -709,12 +710,43 @@ try {
   const history = mustGit(repo, ["rev-list", "--reverse", finalCommit]).split("\n").filter(Boolean);
   const sourceCommits = new Map(history.map((commit) => [`tree:${sourceTree(repo, commit, sourceExcludes)}`, commit]));
   const seen = new Set();
+  // W-134: the rebased pre-change commit is the unique commit on the branch that
+  // introduced the exact bytes of this log at its own path, and it carries no
+  // source of its own (its source tree is its first parent's). Zero, several or a
+  // source-carrying commit refuses; there is no nearest or newest tiebreak.
+  const identifyRebased = (name, behaviour, text) => {
+    const refuse = (why) => new Error(`producer red replay refused ${name}: behaviour ${behaviour}: ${why}`);
+    const log = readFileSync(join(redDir, name));
+    const blob = createHash("sha1").update(`blob ${log.length}\0`).update(log).digest("hex");
+    const parentOf = new Map(
+      mustGit(repo, ["rev-list", "--parents", finalCommit])
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => line.split(" ")),
+    );
+    const logRel = `${request.studioRelative}/ci/reds/${request.opus}/${name}`;
+    const commits = [...parentOf.keys()];
+    const shown = git(repo, ["cat-file", "--batch-check"], { input: commits.map((c) => `${c}:${logRel}\n`).join("") });
+    if (shown.status !== 0) throw refuse("the branch's history could not be read");
+    const answers = shown.stdout.split("\n");
+    const blobAt = new Map(commits.map((c, i) => [c, answers[i].split(" ")[0]]));
+    const introduced = commits.filter((c) => blobAt.get(c) === blob && blobAt.get(parentOf.get(c)) !== blob);
+    if (introduced.length === 0) throw refuse("no commit on the branch introduced its recorded bytes");
+    if (introduced.length > 1) throw refuse(`${introduced.length} commits introduced its recorded bytes`);
+    const [commit] = introduced;
+    const parent = parentOf.get(commit);
+    if (parent === undefined || sourceTree(repo, commit, sourceExcludes) !== sourceTree(repo, parent, sourceExcludes))
+      throw refuse(`identifying commit ${commit} carries source`);
+    const titles = [...text.matchAll(/^not ok \d+ - (.*)$/gm)].map((m) => m[1].replace(/\r$/, ""));
+    if (titles.length === 0) throw refuse("its recorded log has no not-ok title to re-attest");
+    return { commit, titles };
+  };
   for (const name of redFiles) {
     const text = readFileSync(join(redDir, name), "utf8");
     const behaviour = Number(text.match(/^# behaviour:\s*(\d+)$/m)?.[1]);
     const commandText = text.match(/^# command:\s*(.+)$/m)?.[1];
     const claimedTree = text.match(/^# tree:\s*(tree:[0-9a-f]{40})$/m)?.[1];
-    const commit = claimedTree ? sourceCommits.get(claimedTree) : undefined;
+    let commit = claimedTree ? sourceCommits.get(claimedTree) : undefined;
     if (
       !Number.isInteger(behaviour) ||
       behaviour !== Number(name.slice(0, 2)) ||
@@ -723,8 +755,9 @@ try {
     )
       throw new Error(`producer red replay refused ${name}: behaviour header does not match a declared behaviour`);
     seen.add(behaviour);
-    if (!commandText || !claimedTree || !commit)
-      throw new Error(`producer red replay refused malformed/unreachable ${name}`);
+    if (!commandText || !claimedTree) throw new Error(`producer red replay refused malformed/unreachable ${name}`);
+    let titles;
+    if (commit === undefined) ({ commit, titles } = identifyRebased(name, behaviour, text));
     const replayRoot = scratch(`bisellium-red-${request.opus}-${behaviour}-`);
     try {
       const checkout = join(replayRoot, "candidate");
@@ -764,9 +797,22 @@ try {
           output,
         )
       )
-        throw new Error(`red ${behaviour} did not reproduce its assertion failure`);
+        throw new Error(`red ${behaviour} did not reproduce its assertion failure at ${commit}`);
+      // After a rebase the tree no longer vouches for identity: the replay must show every recorded failure.
+      const printed = new Set(
+        output.split("\n").map((line) => /^not ok \d+ - (.*)$/.exec(line.replace(/\r$/, ""))?.[1]),
+      );
+      if (titles !== undefined && !titles.every((title) => printed.has(title)))
+        throw new Error(`red ${behaviour} did not reproduce its recorded failure at ${commit}`);
       process.stdout.write(`producer red ${behaviour} @ ${commit}\n${output}`);
-      redReplays.push({ behaviour, commit, sourceTree: claimedTree, command: commandText, assertionFailed: true });
+      redReplays.push({
+        behaviour,
+        commit,
+        sourceTree: claimedTree,
+        replayedTree: `tree:${sourceTree(repo, commit, sourceExcludes)}`,
+        command: commandText,
+        assertionFailed: true,
+      });
     } finally {
       removeScratch(replayRoot);
     }

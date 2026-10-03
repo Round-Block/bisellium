@@ -1,5 +1,6 @@
 /** Private W-125 builder runtime and current-tree review admission seam. */
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, realpathSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -14,7 +15,8 @@ import { builderRuntimeObligation, editOpusFrontMatter, markIsolatedBuilderRunti
 interface BuilderRunCompletion {
   schema: 1; origin: "host-producer"; opus: string; branch: string; builder: string; producer: string;
   baseCommit: string; finalCommit: string; finalSourceTree: `tree:${string}`; toolingCommit: string;
-  redReplays: Array<{ behaviour: number; commit: string; sourceTree: `tree:${string}`; command: string; assertionFailed: true }>;
+  /** `sourceTree` is the identity the log claims; `commit`/`replayedTree` are what was replayed (equal unless a rebase moved it). */
+  redReplays: Array<{ behaviour: number; commit: string; sourceTree: `tree:${string}`; replayedTree?: `tree:${string}`; command: string; assertionFailed: true }>;
   gates: { ci: true; verify: true; check: true }; teardownComplete: true; completed: true;
 }
 
@@ -142,6 +144,10 @@ function readOptional(path: string): string | undefined {
   try { return readFileSync(path, "utf8"); } catch { return undefined; }
 }
 
+function readOptionalBytes(path: string): Buffer | undefined {
+  try { return readFileSync(path); } catch { return undefined; }
+}
+
 function ownerAlive(pid: number): boolean {
   try { process.kill(pid, 0); return true; }
   catch (error) { return (error as NodeJS.ErrnoException).code === "EPERM"; }
@@ -254,6 +260,29 @@ export async function runBuilderCommand(request: BuilderRunRequest): Promise<Bui
   }
 }
 
+/**
+ * W-134: the rebased pre-change commit of one red log: the unique commit
+ * reachable from `tip` that introduced the exact bytes of `log` at `logRel`
+ * and carries no source of its own. Zero, several or a source-carrying
+ * commit is `undefined`. The host runner derives the same commit the same way.
+ */
+function rebasedRedCommit(repo: string, tip: string, logRel: string, log: Buffer, exclusions: string[]): string | undefined {
+  const blob = createHash("sha1").update(`blob ${log.length}\0`).update(log).digest("hex");
+  const walk = spawnSync("git", ["rev-list", "--parents", tip], { cwd: repo, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+  if (walk.status !== 0) return undefined;
+  const parentOf = new Map(walk.stdout.split("\n").filter(Boolean).map((line) => { const [commit, parent] = line.split(" "); return [commit!, parent] as const; }));
+  const commits = [...parentOf.keys()];
+  const shown = spawnSync("git", ["cat-file", "--batch-check"], { cwd: repo, input: commits.map((c) => `${c}:${logRel}\n`).join(""), encoding: "utf8", timeout: GIT_TIMEOUT_MS });
+  if (shown.status !== 0) return undefined;
+  const answers = shown.stdout.split("\n");
+  const blobAt = new Map(commits.map((c, i) => [c, answers[i]?.split(" ")[0]] as const));
+  const introduced = commits.filter((c) => blobAt.get(c) === blob && blobAt.get(parentOf.get(c) ?? "") !== blob);
+  const commit = introduced[0];
+  const parent = commit === undefined ? undefined : parentOf.get(commit);
+  if (introduced.length !== 1 || commit === undefined || parent === undefined) return undefined;
+  return sourceTreeHash(repo, exclusions, commit) === sourceTreeHash(repo, exclusions, parent) ? commit : undefined;
+}
+
 export type RunReceiptAdmission = { ok: true; receipt: string } | { ok: false; error: string };
 
 /** Shared by producer dispatch and direct/manual review. No verdict bypass. */
@@ -277,7 +306,8 @@ export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunRec
         typeof c.builder !== "string" || receipt.sella !== c.builder || receipt.harness !== "run" || typeof c.producer !== "string" ||
         !Array.isArray(c.redReplays) || c.redReplays.length === 0 || !oid.test(c.baseCommit ?? "") || !oid.test(c.finalCommit ?? "") || !oid.test(c.toolingCommit ?? "") ||
         !/^tree:[0-9a-f]{40}$/.test(c.finalSourceTree ?? "") || c.redReplays.some((red) => !Number.isInteger(red.behaviour) || red.behaviour < 1 ||
-          !oid.test(red.commit) || !/^tree:[0-9a-f]{40}$/.test(red.sourceTree) || red.assertionFailed !== true))
+          !oid.test(red.commit) || !/^tree:[0-9a-f]{40}$/.test(red.sourceTree) || red.assertionFailed !== true ||
+          (red.replayedTree !== undefined && !/^tree:[0-9a-f]{40}$/.test(red.replayedTree))))
       return { ok: false, error: `${opus}: run_receipt is failed, malformed, incomplete or not host-produced` };
     const rootResult = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: studioRoot, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
     if (rootResult.status !== 0) return { ok: false, error: `${opus}: current source tree is unavailable` };
@@ -295,8 +325,16 @@ export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunRec
       if (behaviours.has(red.behaviour)) return { ok: false, error: `${opus}: run_receipt has duplicate red behaviour ${red.behaviour}` };
       behaviours.add(red.behaviour);
       const redReachable = spawnSync("git", ["merge-base", "--is-ancestor", red.commit, c.finalCommit!], { cwd: repo, timeout: GIT_TIMEOUT_MS });
-      if (redReachable.status !== 0 || `tree:${sourceTreeHash(repo, exclusions, red.commit)}` !== red.sourceTree)
+      // A rebase moves the tree a log claims: such an entry binds the commit actually replayed, and the gate re-derives it.
+      if (redReachable.status !== 0 || `tree:${sourceTreeHash(repo, exclusions, red.commit)}` !== (red.replayedTree ?? red.sourceTree))
         return { ok: false, error: `${opus}: run_receipt has an unreachable or mismatched red identity` };
+      if (red.replayedTree !== undefined && red.replayedTree !== red.sourceTree) {
+        const logName = `${String(red.behaviour).padStart(2, "0")}.log`;
+        const log = readOptionalBytes(join(studioRoot, "ci", "reds", opus, logName));
+        const identified = log === undefined ? undefined : rebasedRedCommit(repo, c.finalCommit!, `${studioRel}/ci/reds/${opus}/${logName}`, log, exclusions);
+        if (identified !== red.commit)
+          return { ok: false, error: `${opus}: run_receipt red for behaviour ${red.behaviour} is not the rebased pre-change commit of its log` };
+      }
     }
     // One red does not suffice: every numbered behaviour in the brief needs its replayed red.
     const declared = declaredBehaviours(readFileSync(join(studioRoot, "briefs", `${opus}.md`), "utf8"));
