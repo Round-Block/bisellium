@@ -12,6 +12,7 @@ import { createHash } from "node:crypto";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { deflateSync } from "node:zlib";
 import { after, test } from "node:test";
 import { parseFrontMatter, readFront } from "@bisellium/adapter-native";
 import { checkStudio } from "./check.js";
@@ -158,8 +159,46 @@ function servedLines(tree: string): string[] {
   ];
 }
 
-function writeServedLog(root: string, tree: string): void {
+// W-110: the served-e2e gate also carries a screenshot manifest, so every passing fixture needs real shots.
+// One real 1280x900 grayscale PNG, built once (not per call).
+const VALID_SHOT_PNG = ((): Buffer => {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (buf: Buffer): number => {
+    let c = 0xffffffff;
+    for (const b of buf) c = (crcTable[(c ^ b) & 0xff] as number) ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type: string, data: Buffer): Buffer => {
+    const head = Buffer.alloc(8);
+    head.writeUInt32BE(data.length, 0);
+    head.write(type, 4, "latin1");
+    const tail = Buffer.alloc(4);
+    tail.writeUInt32BE(crc(Buffer.concat([head.subarray(4), data])), 0);
+    return Buffer.concat([head, data, tail]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(1280, 0);
+  ihdr.writeUInt32BE(900, 4);
+  ihdr[8] = 8;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", ihdr),
+    chunk("IDAT", deflateSync(Buffer.alloc(900 * 1281))),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
+})();
+
+function writeServedLog(root: string, tree: string, id: string): void {
   writeFileSync(join(root, "ci", "served.log"), [`certifies: ${tree}`, "command: node scripts/served-e2e.mjs", "exit code: 0", ""].join("\n"));
+  const dir = join(root, "ci", "shots", id);
+  mkdirSync(dir, { recursive: true });
+  for (const name of ["board.png", "inbox.png"]) writeFileSync(join(dir, name), VALID_SHOT_PNG);
+  const shot = (name: string): string => `shot: ${name} 1280x900 ${VALID_SHOT_PNG.length}`;
+  writeFileSync(join(dir, "manifest.txt"), [`shots: 2 ci/shots/${id}`, shot("board.png"), shot("inbox.png"), ""].join("\n"));
 }
 
 function front(root: string, id: string): Record<string, unknown> {
@@ -1184,7 +1223,7 @@ if (runs(2)) {
     ]);
     commitAll(passRepo, "test: establish UI review source");
     const passTree = sourceCertificate(passRepo, "studio");
-    writeServedLog(passRoot, passTree);
+    writeServedLog(passRoot, passTree, "W-024");
     const passPath = join(passRoot, "opera", "W-024.md");
     writeFileSync(passPath, readFileSync(passPath, "utf8").replace("probationes: {}", ["probationes:", ...servedLines(passTree)].join("\n")));
     const passInput = writeUiInput(passRoot, "W-024");
@@ -1206,7 +1245,7 @@ if (runs(2)) {
       writeManifest(citationRoot);
       writeFileSync(join(citationRoot, "briefs", "W-022.md"), "# W-022\n\nCitation identity fixture.\n");
       const tree = "tree:2222222222222222222222222222222222222222";
-      writeServedLog(citationRoot, tree);
+      writeServedLog(citationRoot, tree, "W-022");
       writeOpus(citationRoot, "W-022", [
         'title: "citation identities must both name the censor"',
         "kind: ui",
@@ -1408,7 +1447,7 @@ if (runs(3)) {
     writeManifest(staleRoot);
     writeFileSync(join(staleRoot, "briefs", "W-017.md"), "# W-017\n\nSource binding fixture.\n");
     const staleTree = "tree:1111111111111111111111111111111111111111";
-    writeServedLog(staleRoot, staleTree);
+    writeServedLog(staleRoot, staleTree, "W-017");
     writeOpus(staleRoot, "W-017", [
       'title: "review pass requires current source binding"',
       "kind: ui",
@@ -1455,16 +1494,18 @@ if (runs(3)) {
         encoding: "utf8",
         env: {
           ...process.env,
+          // W-110: the no-evidence branch, whatever environment the suite runs in.
+          BISELLIUM_OPUS: undefined,
+          BISELLIUM_STUDIO_DIR: undefined,
           PATH: `${spy}:${process.env["PATH"] ?? ""}`,
           SPY_FAIL_AT: String(failAt ?? 0),
-          SPY_FAIL_CODE: failAt === 2 ? "9" : "7",
+          SPY_FAIL_CODE: "7",
         },
       });
       return { status: result.status, calls: existsSync(calls) ? readFileSync(calls, "utf8").trim().split("\n") : [] };
     };
     const servedSuccess = runServedSpy("success");
-    const servedBuildFailure = runServedSpy("build-failure", 1);
-    const servedTestFailure = runServedSpy("test-failure", 2);
+    const servedSuiteFailure = runServedSpy("suite-failure", 1);
 
     assert.deepEqual(
       {
@@ -1477,8 +1518,7 @@ if (runs(3)) {
         staleServedBindingRefused:
           staleReview.exitCode !== 0 && readFileSync(join(staleRoot, "opera", "W-017.md"), "utf8") === staleBefore,
         servedSuccess,
-        servedBuildFailure,
-        servedTestFailure,
+        servedSuiteFailure,
       },
       {
         exitCode: 1,
@@ -1487,15 +1527,8 @@ if (runs(3)) {
         e2eRule: true,
         reviewWithoutServedRefused: true,
         staleServedBindingRefused: true,
-        servedSuccess: {
-          status: 0,
-          calls: ["--workspace @bisellium/web run build", "--workspace @bisellium/web run test:serve"],
-        },
-        servedBuildFailure: { status: 7, calls: ["--workspace @bisellium/web run build"] },
-        servedTestFailure: {
-          status: 9,
-          calls: ["--workspace @bisellium/web run build", "--workspace @bisellium/web run test:serve"],
-        },
+        servedSuccess: { status: 0, calls: ["--workspace @bisellium/web run test:serve"] },
+        servedSuiteFailure: { status: 7, calls: ["--workspace @bisellium/web run test:serve"] },
       },
     );
   });
@@ -1524,7 +1557,7 @@ if (runs(4)) {
     writeManifest(reviewRoot, ['- { id: served-e2e, name: Served e2e, kind: automated, command: "node scripts/served-e2e.mjs" }']);
     writeFileSync(join(reviewRoot, "briefs", "W-018.md"), "# W-018\n\nDone refusal fixture.\n");
     const tree = "tree:2222222222222222222222222222222222222222";
-    writeServedLog(reviewRoot, tree);
+    writeServedLog(reviewRoot, tree, "W-018");
     writeOpus(reviewRoot, "W-018", [
       'title: "review state still refuses done without rulings"',
       "kind: ui",
@@ -1592,7 +1625,7 @@ if (runs(4)) {
       mkdirSync(join(caseRoot, "decisions"), { recursive: true });
       writeFileSync(join(caseRoot, "briefs", "W-023.md"), "# W-023\n\nComplete ruling grammar fixture.\n");
       const caseTree = "tree:3333333333333333333333333333333333333333";
-      writeServedLog(caseRoot, caseTree);
+      writeServedLog(caseRoot, caseTree, "W-023");
       writeOpus(caseRoot, "W-023", [
         'title: "complete ruling grammar is enforced"',
         "kind: ui",

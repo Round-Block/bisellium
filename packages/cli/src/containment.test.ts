@@ -282,6 +282,11 @@ const PINNED_B: PinnedB[] = [
     disposition: "bypass",
     why: "same function family as setOpusState#1 above — a literal id, a throwaway temp studio",
   },
+  {
+    key: "apps/web/tests-serve/walk.spec.ts:<module>#1",
+    disposition: "bypass",
+    why: "W-110 behaviour 3 seeding, test-only: the period id is read back from the served instance's own /api/health `due` answer and joined against the mkdtemp scratch studio this same test creates and deletes — same shape as answer.spec.ts's own bypass above, never studio/ or examples/sample-studio itself",
+  },
   { key: "packages/cli/src/branch.ts:readOpusRecord#1", disposition: "bypass", why: "positional <opus-id>, into a git pathspec" },
   { key: "packages/cli/src/branch.ts:readOpusRecord#2", disposition: "bypass", why: "same value, same pathspec, error path" },
   { key: "packages/cli/src/branch.ts:readOpusRecord#3", disposition: "bypass", why: "same value, filesystem read fallback" },

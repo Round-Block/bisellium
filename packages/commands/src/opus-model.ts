@@ -58,6 +58,17 @@ const OPUS_ID = /^W-[0-9]+$/;
 const DECISION_ID = /^D-[0-9]{3,}$/;
 const TREE_CERTIFICATE = /^tree:[0-9a-f]{40}$/;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
+/** The reserved gate id (and its command, below): `verify` scopes the gate's environment by it (W-110). */
+export const SERVED_E2E_PROBATIO = "served-e2e";
+// W-110 screenshot-manifest bounds. validateServed runs inside every checkStudio, so every read it makes is capped.
+const SHOT_MIN_WIDTH = 800;
+const SHOT_MIN_HEIGHT = 600;
+const SHOT_MAX_ENTRIES = 64;
+const SHOT_MAX_BYTES = 4 * 1024 * 1024;
+const MANIFEST_MAX_BYTES = 8 * 1024;
+const LOG_MAX_BYTES = 1024 * 1024;
+const SHOT_OPUS_ID_MAX = 22;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const UTC_PROFILE = /^([0-9]{4})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])(?:\.([0-9]{3}))?Z$/;
 
 export const PROMPT_SHINGLE_WORDS = 4;
@@ -206,7 +217,7 @@ export interface ContainedFile {
  * Resolve a studio-relative regular file without following a symlink in any
  * path component. `expectedDir` is the required first component.
  */
-export function readContainedRegularFile(root: string, relPath: string, expectedDir: string): ContainedFile | { error: string; code?: string } {
+export function readContainedRegularFile(root: string, relPath: string, expectedDir: string, maxBytes?: number): ContainedFile | { error: string; code?: string } {
   if (typeof relPath !== "string" || relPath.length === 0 || isAbsolute(relPath)) return { error: "path must be a nonempty officina-relative string" };
   try {
     const rootReal = realpathSync(resolve(root));
@@ -227,6 +238,7 @@ export function readContainedRegularFile(root: string, relPath: string, expected
     try {
       const opened = fstatSync(fd);
       if (!opened.isFile()) return { error: "target is not a regular file" };
+      if (maxBytes !== undefined && opened.size > maxBytes) return { error: `target exceeds ${maxBytes} bytes` };
       const real = realpathSync(lexical);
       const realRel = relative(rootReal, real);
       if (isAbsolute(realRel) || realRel.split(sep)[0] === ".." || realRel.split(sep)[0] !== expectedDir)
@@ -295,12 +307,12 @@ export function effectiveProbationes(kind: unknown, declared: readonly Effective
   const probationes = declared.map((gate) => ({ ...gate }));
   const problems: OpusModelProblem[] = [];
   if (kind !== "ui") return { probationes, problems };
-  const existing = probationes.find((gate) => gate.id === "served-e2e");
+  const existing = probationes.find((gate) => gate.id === SERVED_E2E_PROBATIO);
   if (existing) {
     if (existing.kind !== "automated" || existing.command !== "node scripts/served-e2e.mjs")
       problems.push({ rule: "opus.ui.e2e", message: 'manifest gate "served-e2e" must be automated with command "node scripts/served-e2e.mjs"' });
   } else {
-    probationes.push({ id: "served-e2e", name: "Served e2e", kind: "automated", command: "node scripts/served-e2e.mjs" });
+    probationes.push({ id: SERVED_E2E_PROBATIO, name: "Served e2e", kind: "automated", command: "node scripts/served-e2e.mjs" });
   }
   return { probationes, problems };
 }
@@ -671,7 +683,7 @@ function validateServed(root: string, record: NativeRecord): { at?: string; tree
   const evidence = typeof gate["evidence"] === "string" ? gate["evidence"] : undefined;
   if (!evidence) problems.push("served-e2e needs an evidence log");
   else {
-    const log = readContainedRegularFile(root, evidence, "ci");
+    const log = readContainedRegularFile(root, evidence, "ci", LOG_MAX_BYTES);
     if ("error" in log) problems.push(`served-e2e evidence is unsafe or unreadable: ${log.error}`);
     else {
       const text = log.bytes.toString("utf8");
@@ -680,7 +692,54 @@ function validateServed(root: string, record: NativeRecord): { at?: string; tree
       if (!/^exit code: 0\s*$/m.test(text)) problems.push("served-e2e evidence does not record a successful run");
     }
   }
+  if (typeof record.id === "string") problems.push(...shotManifestProblems(root, record.id)); // a non-string id is the record validator's finding
   return { at, tree: certifies, problems };
+}
+
+/** A message tail that names why a containment read failed, never carrying a path: the helper's own
+ *  refusal under a shape guard, or the bare errno code (the helper's `error` for a real fs failure
+ *  is the exception message, which can hold an absolute path). */
+function refusalTail(failure: { error: string; code?: string }): string {
+  if (failure.code !== undefined) return failure.code;
+  return /^[\x20-\x7e]{1,80}$/.test(failure.error) && !/\/[\w.-]+\//.test(failure.error) ? failure.error : "refused";
+}
+
+/**
+ * W-110: the served-e2e gate's screenshot manifest, `ci/shots/<id>/manifest.txt`, and every PNG it names, all
+ * re-read from disk (the manifest's own numbers are never trusted). A fail-fast clause ladder: each of steps 1-3
+ * stops the whole clause at its first problem; step 4 visits every entry and each contributes at most one problem.
+ */
+function shotManifestProblems(root: string, id: string): string[] {
+  if (id.length > SHOT_OPUS_ID_MAX) return [`served-e2e screenshot manifest needs an opus id of at most ${SHOT_OPUS_ID_MAX} characters`];
+  const dir = `ci/shots/${id}`;
+  const manifest = readContainedRegularFile(root, `${dir}/manifest.txt`, "ci", MANIFEST_MAX_BYTES);
+  if ("error" in manifest)
+    return [manifest.code === "ENOENT" ? "served-e2e evidence carries no screenshot manifest" : `served-e2e screenshot manifest is unsafe or unreadable: ${refusalTail(manifest)}`];
+  const text = manifest.bytes.toString("utf8");
+  const header = /^shots: (\d+) (ci\/shots\/[A-Za-z0-9][A-Za-z0-9._-]{0,21})$/m.exec(text);
+  if (!header) return ["served-e2e screenshot manifest has no header"];
+  if (header[2] !== dir) return ["served-e2e screenshot manifest names another opus's directory"];
+  const entries = [...text.matchAll(/^shot: ([a-z][a-z0-9-]{0,21}\.png) (\d+)x(\d+) (\d+)$/gm)];
+  if ((text.match(/^shot: /gm) ?? []).length !== entries.length) return ["served-e2e screenshot manifest has a malformed entry"];
+  if (entries.length === 0 || entries.length !== Number(header[1])) return ["served-e2e screenshot manifest count disagrees with its entries"];
+  if (entries.length > SHOT_MAX_ENTRIES) return [`served-e2e screenshot manifest declares more than ${SHOT_MAX_ENTRIES} screenshots`];
+  if (new Set(entries.map((entry) => entry[1])).size !== entries.length) return ["served-e2e screenshot manifest repeats a file name"];
+  const problems: string[] = [];
+  for (const entry of [...entries].sort((a, b) => (a[1]! < b[1]! ? -1 : 1))) {
+    const name = entry[1]!;
+    const shot = readContainedRegularFile(root, `${dir}/${name}`, "ci", SHOT_MAX_BYTES);
+    if ("error" in shot) {
+      problems.push(shot.code === "ENOENT" ? `served-e2e screenshot ${name} is missing` : `served-e2e screenshot ${name} is unsafe or unreadable: ${refusalTail(shot)}`);
+      continue;
+    }
+    const bytes = shot.bytes;
+    if (bytes.length < 24 || !bytes.subarray(0, 8).equals(PNG_SIGNATURE)) problems.push(`served-e2e screenshot ${name} is not a PNG`);
+    else if (bytes.readUInt32BE(16) !== Number(entry[2]) || bytes.readUInt32BE(20) !== Number(entry[3]) || bytes.length !== Number(entry[4]))
+      problems.push(`served-e2e screenshot ${name} does not match its recorded size`);
+    else if (bytes.readUInt32BE(16) < SHOT_MIN_WIDTH || bytes.readUInt32BE(20) < SHOT_MIN_HEIGHT)
+      problems.push(`served-e2e screenshot ${name} is smaller than ${SHOT_MIN_WIDTH}x${SHOT_MIN_HEIGHT}`);
+  }
+  return problems;
 }
 
 function reviewIdentity(

@@ -1,17 +1,16 @@
 /**
- * apps/web/src/lib/route.ts — pure hash-routing map behind App.tsx.
- * `/#/inbox` -> Inbox, `/#/board` -> Board (W-064, disabled), `/#/seats` ->
- * Seats (W-065), `/#/officina` -> Officina, default -> Inbox.
+ * apps/web/src/lib/route.ts — pure hash-routing map behind App.tsx. The map
+ * is derived from nav.ts's NAV_ENTRIES (W-110): `/#/inbox` -> Inbox,
+ * `/#/board` -> Board, `/#/seats` -> Seats, `/#/officina` -> Officina,
+ * default -> Inbox.
  */
-export type Route = "inbox" | "board" | "seats" | "officina";
+import { NAV_ENTRIES } from "./nav.js";
+import type { Route } from "./nav.js";
 
-const ROUTES: Record<string, Route> = {
-  "/inbox": "inbox",
-  "/board": "board",
-  "/seats": "seats",
-  "/officina": "officina",
-};
+export type { Route } from "./nav.js";
+
+const BY_PATH = new Map<string, Route>(NAV_ENTRIES.map((e) => [e.href.replace(/^#/, ""), e.route]));
 
 export function parseRoute(hash: string): Route {
-  return ROUTES[hash.replace(/^#/, "")] ?? "inbox";
+  return BY_PATH.get(hash.replace(/^#/, "")) ?? "inbox";
 }

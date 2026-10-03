@@ -26,7 +26,7 @@ import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline }
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "./writes.js";
-import { effectiveProbationes, readContainedRegularFile, reviewFailedAtCertifiedTree, utcTimestampProblem, validateProtectedRecords } from "./opus-model.js";
+import { effectiveProbationes, SERVED_E2E_PROBATIO, readContainedRegularFile, reviewFailedAtCertifiedTree, utcTimestampProblem, validateProtectedRecords } from "./opus-model.js";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -293,7 +293,10 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   }
 
   const logDir = join(studioDir, "ci");
-  const runOpts = { opus, repo, commands: runCommands, treeHash, logDir, now, studioDir, dirty };
+  // The reserved served-e2e gate learns which opus and officina it runs for, so it can write per-opus
+  // artifacts (its screenshots); no other probatio command is handed either name (W-110).
+  const commandEnv = { [SERVED_E2E_PROBATIO]: { BISELLIUM_OPUS: opus.id, BISELLIUM_STUDIO_DIR: resolve(studioDir) } };
+  const runOpts = { opus, repo, commands: runCommands, treeHash, logDir, now, studioDir, dirty, commandEnv };
   const pipeline = opts.pipeline ?? selectPipeline();
   let results: Record<string, GateRunResult>;
   try {

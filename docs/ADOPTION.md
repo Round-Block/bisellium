@@ -72,14 +72,25 @@ an allowlist (`PATH`, `HOME`, `NODE_*`, `LANG`, `TZ`) plus anything that
 doesn't look like a credential — any variable name matching
 `TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL` (case-insensitive) is dropped unless
 it's on that allowlist, so an untrusted probatio `command` can't read the
-parent process's secrets out of its own environment.
+parent process's secrets out of its own environment. Two names are added
+after that filter, for one gate only: `BISELLIUM_OPUS` (the opus id) and
+`BISELLIUM_STUDIO_DIR` (the absolute studio path) reach the reserved
+`served-e2e` command and no other probatio, so it can name the opus whose
+screenshots it writes; a parent value of either name never wins, and no
+other gate's command (nor an out-of-repo adopter's studio path) is handed
+them. A gate log holds the last 200 lines of the command's `stdout` and
+`stderr` concatenated, stderr last, so a gate must not rely on where in that
+tail its own output lands; the screenshot manifest below is a file for that
+reason.
 
 Planned, not yet built: `memoria/sellae/`, `archive/`, and the docs registry.
 
-`ci/` evidence has three command-owned writers. `verify` records automated
+`ci/` evidence has four command-owned writers. `verify` records automated
 gate runs, `red` records a failing command per behaviour (and warns on stderr
-when it records a `dirty:` tree identity), and `verdict` records a review
-transcript without evaluating or changing any gate.
+when it records a `dirty:` tree identity), `verdict` records a review
+transcript without evaluating or changing any gate, and the reserved
+`served-e2e` gate command (`scripts/served-e2e.mjs`) clears and rewrites
+`ci/shots/<opus>/` on every run: the walk's screenshots and `manifest.txt`.
 
 ## bisellium verdict
 
@@ -452,8 +463,18 @@ mechanical minima, not a judgment of the recommendation.
 UI's effective probationes always include reserved automated gate
 `served-e2e`, command `node scripts/served-e2e.mjs`, even when the manifest
 does not declare it. A same-id declaration must have exactly that automated
-shape. `verify` builds the web application and then runs its served-browser
-suite, recording a timestamp, log and SOURCE certificate. A passed review and
+shape. `verify` runs the served-browser suite (whose Playwright `globalSetup`
+builds the web application first), recording a timestamp, log and SOURCE
+certificate. The same run leaves one screenshot per console screen in
+`ci/shots/<opus>/` and a `manifest.txt` beside them (`shots: <n>
+ci/shots/<opus>`, then one `shot: <name>.png <width>x<height> <bytes>` line
+per file). `check` re-reads the manifest and every PNG it names through the
+containment helper and refuses a `review` or `done` UI opus when the manifest
+is missing, malformed or disagrees with the files on disk (a PNG that is
+absent, not a PNG, of a different size, or under 800x600; more than 64
+entries; a PNG over 4 MiB; a manifest over 8 KiB), under `opus.ui.e2e`. An
+opus id longer than 22 characters cannot carry screenshots (the manifest echo
+would be masked by `redact`). A passed review and
 done both require a corroborating successful result bound to the current clean
 SOURCE tree. Non-UI opera retain the manifest's ordinary gate list.
 
