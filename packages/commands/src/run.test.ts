@@ -160,10 +160,7 @@ function builderRuntime(studio: string): unknown {
 const RUNNER = fileURLToPath(new URL("../../../scripts/run-builder-host.mjs", import.meta.url));
 const bwrapUsable =
   spawnSync("bwrap", ["--unshare-all", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--", "true"], { timeout: 10_000 }).status === 0;
-// The Git broker is a Unix socket; a host sandbox that forbids binding one cannot run the production runner.
-const socketUsable =
-  spawnSync(process.execPath, ["-e", "require('net').createServer().on('error',()=>process.exit(1)).listen(process.argv[1],()=>process.exit(0))", join(tmpdir(), `w125-sock-${process.pid}`)], { timeout: 10_000 }).status === 0;
-const liveSkip = !bwrapUsable ? "bwrap is unusable on this host" : !socketUsable ? "this host's sandbox forbids binding a Unix socket (the Git broker needs one)" : false;
+const liveSkip = !bwrapUsable ? "bwrap is unusable on this host" : false;
 // Every live row is recorded here so W-132 behaviour 1 can count the ones the gate skips.
 const liveRows: { skipped: boolean }[] = [];
 const live = (name: string, fn: () => Promise<void>): void => {
