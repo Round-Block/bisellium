@@ -1,0 +1,133 @@
+# opus: W-130
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: claude-opus-5
+# outcome: passed
+# at: 2026-10-03T16:35:48.953Z
+# tree: tree:c9dadc6a2776bb7f6d88fbc7dd59f3b5c723d80e
+
+W-130 round 1 censor review — qa-lead, claude-opus-5, 2026-10-04, branch opus/W-130 at 3ed495f, source tree c9dadc6a.
+Judged under D-035 as a change to the W-125 trust boundary, with W-125's confinement obligations as the standard.
+D-014: this is the single independent review and QA gate.
+
+VERDICT: PASS — 0 blocking, 2 advisory, 1 declared deviation accepted.
+
+RE-RUN IN THIS SANDBOX (all logs in ~/.bisellium-evidence/W-130-review/)
+- scripts/host-cells.test.mjs: 4 pass / 0 fail / 0 skipped (host-cells.log). Behaviours 1, 2, 3, 5.
+- scripts/replay-accept.test.mjs: 1 pass / 0 fail / 0 skipped (replay-accept.log). Behaviour 4.
+- packages/commands/src/run.test.ts: 38 pass / 0 fail / 0 skipped, 43.8 s (run-test.log). All 26 live rows RAN,
+  including the seven W-130 acceptance rows 31-37; none skipped.
+- typecheck 0, lint 0 errors / 6 pre-existing warnings, prettier clean (typecheck.log, lint.log, format.log).
+- check studio: PASS 0 blocking, 242 advisory. check examples/sample-studio: PASS 0 blocking, 28 advisory
+  (check-studio.log, check-sample.log). probatio.declared clean: no write outside Files owned.
+- bisellium verify W-130 --studio studio --repo .: exit 0, certificates at tree:c9dadc6a2776bb7f6d88fbc7dd59f3b5c723d80e,
+  equal to the receipt's finalSourceTree (verify.log). The tests certificate is a full `npm test -s`, exit 0.
+- the 22-transcript measurement, both halves of the Acceptance bullet, re-run against the implemented module:
+  (a) the retained kit alone -> "22 transcripts, 0 disagreements" (measurement-kit-rerun.log);
+  (b) a harness re-derived here by the retained derivation script, loading scripts/replay-accept.mjs and
+  requiring accepted AND reason to equal the kit's ladder for each -> "22 transcripts, 0 disagreements"
+  (derived-measure.mjs, measurement-rerun.log). W-110 reds 01 and 04-08 keep today's verdict, 02 and 03 flip to
+  ACCEPT, the three round-1 adversarial transcripts are refused by name.
+- receipt 20261003T160324112Z-0011.json corroborated against ~/.bisellium-evidence/W-130-receipt/run-1.log:
+  five producer red replays, behaviours 1/2/3/5 at dcee4f0 and behaviour 4 at 6e99ae0 — W-134's rebased path,
+  each "# fail 1" on its own single assertion (run-1.log:2-145), each assertionFailed:true. The gate cell's own
+  run.test.ts reports 38 pass / 0 fail / 0 skipped with rows 31-37 ok (run-1.log:4898-4953), so the acceptance
+  bullet's "run, not skipped, through the producer's dispatch path" is met by the receipt and not only locally.
+  The two "bisellium ci: step failed" lines at run-1.log:7679-7680 are leaked child stderr from ci.test.ts
+  fixtures, not the real gate: the identical pair appears at lines 194-195 of my own green tests certificate.
+- replay-home probe, kept and re-runnable: probe-replay-home-pollution.sh / npm-home-probe.log (finding A2).
+
+THE CONFLICT RESOLUTION: W-132's transport and W-130's replay-cell semantics both stand, nothing weakened.
+- W-132's named-pipe control bind survives verbatim, source, target and comment: host-cells.mjs:65
+  [join(runtime, "control"), "/control"] // the two named pipes only; read-only so the builder cannot replace
+  or litter them. openCellChannel still takes run-builder-host.mjs:531's controlDir, which is the same path.
+  Live rows W-132-L2 and W-132-L3 (/control holds exactly the host pipes and cannot be tampered with; a commit
+  from a shell inside the builder command reaches the host broker) both ran and passed in my re-run.
+- W-134's two post-verdict clauses survive: " at ${commit}" in the refusal and the recorded-failure
+  re-attestation block are context, not changed lines, in the diff of run-builder-host.mjs. The merged text is
+  `red <n> did not reproduce its assertion failure at <commit>: <reason>` and all three W-130 pins were moved to
+  it in 4cccad7 by a script that fails closed on a non-unique substitution.
+- sandboxArgs is untouched (0 diff hunks): --unshare-all (default-deny egress), --clearenv, --new-session,
+  --die-with-parent, --remount-ro / all stand, and roBinds still follow binds.
+- The read-only binds are read-only on both sides. Structurally: behaviour 2(c) asserts /browsers appears in
+  each descriptor's roBinds exactly once and never in binds, for both cells, and roBinds is what becomes
+  --ro-bind. Behaviourally: acceptance row 31 reads EROFS from inside the builder cell and the replay cell and
+  re-checks the host bytes unchanged after the run. 2(e) pins every other bind, chdir and env value of both
+  cells to W-125's literals, and 2(e)'s cache-absent case pins them to exactly W-125's roBinds.
+- The build command is fixed host argv, not candidate selection: WEB_BUILD is a module literal (3(b)), the
+  runner reads no script name from a candidate package.json (3(f) asserts /\.scripts\b|\["scripts"\]/ is absent
+  from the runner), it is gated on the fixed path apps/web/package.json, and acceptance row 32 proves from
+  inside the cell that npm_lifecycle_event is "build" and npm_package_name is "@bisellium/web". The same row
+  proves the build saw no credential or proxy name, no host canary, no host write, no /usr write and egress
+  /^ENET/. 3(e) pins the build and the replay to one `const cell = replayCell(...)` spread exactly twice, so
+  preparation and replay cannot drift apart.
+- The classifier refuses an echoed `not ok` on a multi-failure playwright run (4(k), and end to end at
+  acceptance row 37: stderr names "playwright reported 3 failed tests", never "assertion-level failure") and
+  refuses a missing browser by named token with no path in the reason (4(e), end to end at row 36). Clause
+  order matches the brief exactly; PW_SUMMARY is global and read only through matchAll, pinned by 5(f) over
+  both files and by 4(n)'s double pass over the table.
+- The gate cell is untouched: no diff hunk reaches run-builder-host.mjs:801-859, and no cell but the builder
+  and the replay gains /browsers.
+- No candidate input reaches the browser-cache choice: browserCache reads the runner's own process.env and
+  homedir only (1(f) proves process.env is never read inside the module), builder-run.ts:235 forwards only an
+  absolute PLAYWRIGHT_BROWSERS_PATH from the producer's own environment, and the value is statSync'd as a
+  directory and realpathSync'd before it is bound. The probe that enforces the cell allowlist admits the 19th
+  name only at the literal /browsers (probe-builder-runtime.mjs:31-34), so no host path can enter through it;
+  2(g) measures a host-shaped value and an unrelated 19th name as mismatches, and 2(h) pins the probe's
+  hard-coded list equal to builderCell's own as a set, so the contract and its enforcer cannot drift.
+
+FILES OWNED: inside. The nine changed source and test paths — package.json, packages/commands/src/builder-run.ts,
+packages/commands/src/run.test.ts, scripts/host-cells.mjs, scripts/host-cells.test.mjs,
+scripts/probe-builder-runtime.mjs, scripts/replay-accept.mjs, scripts/replay-accept.test.mjs,
+scripts/run-builder-host.mjs — are each declared in revision 5's Files owned, probe-builder-runtime.mjs by the
+revision-5 amendment that put the allowlist's enforcer in scope. Everything else in the diff is studio
+bookkeeping. Each of the 29 lettered rows the brief specifies (1a-f, 2a-h, 3a-f, 4a-n, 5a-f) is present and
+green; 2(c) and 5(a) use template-literal messages, which is why a quote-anchored grep misses them.
+
+ADVISORY
+
+A1. scripts/host-cells.mjs:64-65 — the builder cell re-derives two bind sources instead of being handed them.
+builderCell computes join(runtime, "tools") and join(runtime, "control") itself, while the runner's own
+`tools` (run-builder-host.mjs:564) and `controlDir` (:531) are the paths it actually copies the probe into and
+hands to openCellChannel. The two spellings are equal today, so nothing is weakened and W-132's pipes are
+bound correctly; the cost is that they are now independent and no source-level row pins them equal — behaviour
+5 pins the imports, the call shape and the absence of the old inline code, not the arguments. A rename on
+either side is caught only by the live rows, which skip where bwrap or the broker is unusable. Passing
+controlDir and tools in the paths object, as `clone`, `runtime` and `etc` already are, removes the class.
+Class enumeration, and what I searched: every `join(runtime,` in host-cells.mjs and every bind source in the
+runner's three cells — exactly two instances, both at this call site; the replay cell and the gate cell
+re-derive nothing.
+
+A2. scripts/run-builder-host.mjs:764 — replay preparation leaves npm state in the private HOME the replay then
+runs in. The runner creates /home/builder empty at :754 and the brief's reconciliation says the build runs in
+"the same private HOME/tmp"; it does, but it runs first. Measured here on a clean HOME with the fixed argv
+(probe-replay-home-pollution.sh, npm-home-probe.log): `npm --workspace @bisellium/web run build` leaves
+~/.npm/_logs/<ts>-debug-0.log. So for any checkout carrying apps/web/package.json — which is every commit of
+this repo, i.e. all five of W-130's own reds — the recorded command no longer starts against the pristine home
+W-125 gave it. No confinement consequence: the home is private, unreadable from the host and torn down with
+the cell, and the receipt shows all five reds still reproduce. The gap is that the replay's starting state
+changed without being stated or asserted in either direction, so a future red that counts or asserts on HOME
+would be decided by whether its checkout happens to carry a web workspace. One instance: the build is the only
+command newly introduced into a cell by this opus (the runner's other cell launches are unchanged).
+
+DECLARED DEVIATION — accepted.
+packages/commands/src/run.test.ts:1237, the W-132-b1 live-row census, 19 -> 26. The assertion postdates the
+brief, and the brief's catch-all in Files owned authorises edits to rows that pin "the runner's cell shape,
+environment count or step list", which does not literally name a row census. Accepted on three grounds: it is
+the class that clause exists for — an assertion that fails only because of this opus's change; the arithmetic
+is exact and visible, 14 W-125 + 2 W-132 + 3 W-134 + 7 W-130, with the comment above it naming the seven; and
+the row's purpose, that every live row is registered and none is dropped or added unrecorded, is preserved
+rather than relaxed. I confirmed the seven are the acceptance rows and not a re-count of existing ones: rows
+31-37 of run.test.ts, all new in this opus, all ran unskipped both here and in the receipt's gate cell.
+
+NOT FINDINGS, recorded so the next round does not re-derive them.
+- The 4 KiB build-output dump at run-builder-host.mjs:770 is candidate-shaped text on host stderr. It is
+  declared in the brief as a deliberate asymmetry with clause 2's token-only discipline, it is bounded, it only
+  fires on a run that has already failed, and L-051 wants it. Accepted as specified.
+- classifyReplay treats a null status (signal, timeout) as not-zero and can then accept on output alone. That
+  is master's behaviour byte for byte; W-130 adds required conditions on the playwright path and never relaxes
+  this one.
+- A caller-named PLAYWRIGHT_BROWSERS_PATH makes the invoker choose which host directory becomes
+  candidate-readable at /browsers. Stated in Files owned, bounded (absolute, directory, realpath, read-only,
+  no candidate input), and the invoker is already the host that supplies the repo, the officina and the opus.
