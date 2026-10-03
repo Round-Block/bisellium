@@ -1,0 +1,125 @@
+# opus: W-130
+# phase: spec
+# round: 7
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T05:38:12.616Z
+# tree: tree:b4ed23db65198744a5f7d3fc0be85a93b92121b0
+
+## Verdict
+
+Passed. `studio/briefs/W-130.md` revision 4 closes the phase-1 builder stop and
+answers all three of the builder's ambiguities. The stop was correct and the
+builder's second ambiguity is the one that matters: revision 3 specified reds
+that the receipt citing them may be unable to re-verify. That is a spec defect,
+not a builder problem, and it is mine.
+
+## The measurement that forces the ruling
+
+Probed 2026-10-03, on this host and inside a real cell:
+
+```
+net.createServer().listen("probe.sock")   $TMPDIR            EPERM
+                                          ~/.bisellium-evidence EPERM
+                                          /dev/shm           EPERM
+                                          .worktrees/W-130   EPERM
+same probe inside bwrap --die-with-parent --new-session --unshare-all   EPERM
+bwrap, and bwrap nested inside bwrap                                   both work
+npm --workspace @bisellium/web run build  inside a replay-shaped cell   lifecycle=build, dist/index.html written
+node --test-reporter=tap <unit test>      inside the same cell          not ok 1 + ERR_ASSERTION + # fail 1
+```
+
+The decisive row is the second: **bwrap does not restore the capability**, so the
+replay cell inherits the outer denial. The builder's worry was therefore not
+hypothetical and not local to its own session — a `live()` red could not be
+replayed by the producer either, and the brief has no way to measure the
+producer's sandbox posture. `live()` skips, a skipped `node:test` row exits 0,
+and clause 1 of this brief's own classifier refuses an exit 0. So a live-row red
+is not weak evidence, it is unusable evidence.
+
+The last two rows are why the redesign is cheap: the fixed build argv works in
+the cell (`npm_lifecycle_event=build`, bundle written), and a plain unit test
+reproduces as `ERR_ASSERTION` in the same cell with no `node_modules` at all.
+What fails is only the live-runner wrapper, never the mechanisms.
+
+## The ruling
+
+**The five reds are unit-level and socket-free; every confined demonstration
+moves to Acceptance.** Behaviours 1, 2, 3 and 5 are reshaped against a new pure
+host module, `scripts/host-cells.mjs` — the same device already justified for
+`scripts/replay-accept.mjs`, and here necessary rather than merely cheaper. It
+exports `browserCache(env, home)`, `browserMounts(resolved)`, `WEB_BUILD`,
+`WEB_BUNDLE`, `prepFailure(...)`, `builderCell(paths)` and `replayCell(paths)`,
+and nothing else; no I/O, no spawn, no bwrap and no `fs` call beyond the
+read-only `statSync`/`realpathSync` in the resolver moves into it. The
+descriptors move out of the runner deliberately: that is what makes the
+confinement **directly assertable** instead of only observable from inside a
+cell.
+
+**Nothing is dropped.** The in-cell `EROFS`, the host bytes unchanged after the
+run, the 19-name count read from inside the builder cell, the build's own proof
+that it saw no credential, no host file and no egress, the canned-transcript
+runs through the real runner — all keep their exact content. They become
+`live("W-130 acceptance: …")` rows and Acceptance now requires them **run, not
+skipped**, through the producer's dispatch path where the socket works, with the
+output and the `liveSkip` value retained. A run reporting them skipped has not
+met the bullet. Only the evidence class changed, from red to acceptance
+evidence, because a red must be reproducible by the receipt that cites it.
+
+**Behaviour 4 is untouched.** Its red is recorded on `opus/W-130` at
+`tree:b4ed23db65198744a5f7d3fc0be85a93b92121b0` with command
+`node --test-reporter=tap scripts/replay-accept.test.mjs --behaviour 4` and an
+`ERR_ASSERTION` on the absent module. Renumbering or relocating it would orphan
+that log, and evidence is produced, never backfilled. The brief says so in two
+places so no later revision does it by accident. The builder validating its
+table against a throwaway reference ladder before recording was exactly right.
+
+## Ambiguity 1 — selector collision
+
+**No W-130 behaviour number lives in `packages/commands/src/run.test.ts`.** That
+file's `--behaviour 1..4` belongs to W-125, and a W-130 red sharing it would both
+select W-125's slow live rows and leave the number ambiguous in the red log.
+W-130's numbered rows are in `scripts/host-cells.test.mjs` (1, 2, 3, 5) and
+`scripts/replay-accept.test.mjs` (4); the gap at 4 is deliberate and stated. So
+the `:23` bound is **no longer edited**, and the permitted pre-existing edits in
+that file drop from three to two: `:670`'s `18` → `19` and the sentinel name in
+`RUNNER_ENV` and `withTmp`. Both now exist for the acceptance rows, which is
+also a narrowing of MUST B's justification that the brief now states: behaviour
+2's count is machine-independent by construction, while `:670`'s in-cell count
+still needs the sentinel and the `builder-run.ts` forwarding line to read the
+same on CI as here.
+
+## Ambiguity 3 — where the rows live and under what gate
+
+Both red files are registered in `test:suite` (two entries, not one), so
+`npm test` runs all five reds everywhere, with no socket, no bwrap, no browser,
+no network and no `node_modules`. The acceptance rows sit in `run.test.ts`
+outside every `runs(n)` gate; they run under `npm test` on CI, where bwrap and
+the socket work, and skip where either is denied — which Acceptance explicitly
+refuses to accept as a pass.
+
+## Stated residual
+
+Behaviour 5 pins the runner's wiring to the two modules at **source level**: the
+runner cannot be imported (top-level `await`, process-wide effects) and cannot be
+launched without the socket. Its rows are text assertions — the import present,
+the three replaced regex literals gone, the call shape exact, `PLAYWRIGHT_BROWSERS_PATH`
+appearing zero times in the runner, and no surviving `.exec()`/`.test()` on the
+global summary regex. The behavioural proof is the acceptance bullet and nothing
+else. That is weaker than a live row and the brief says so plainly; the
+alternative was measured and is not evidence at all.
+
+## Housekeeping
+
+The `## Out of scope / what must not change` heading was conformed to
+`## Out of scope` on trunk (#185) because `next.ts:62`'s `SECTIONS` exact-matches
+the six names; the revision log records it. All six sections are present and
+`countBehaviours` reads 5. *Out of scope* now forbids two things it did not
+name: a red whose reproduction needs a socket, bwrap, a browser or the network,
+and a W-130 behaviour number in `run.test.ts`. The classifier, its clause
+ladder, the twenty-two-transcript measurement, the trust-boundary reconciliation
+and every scope call are unchanged from revision 3.
+
+This revision is amended and signed on `opus/W-130`, where the record and the
+brief now live. Signed as ready for the builder to resume phase 1. No
+implementation, evidence or review verdict is claimed by this signature.
