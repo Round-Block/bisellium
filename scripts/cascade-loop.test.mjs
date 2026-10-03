@@ -299,7 +299,7 @@ test("14. under an inherited umask 022 the state and log dirs are 0700 and each 
   for (const l of logs) assert.equal(mode(join(w.logDir, l)), "600", l);
 });
 
-const swapTarget = (w) => {
+const swapTarget = () => {
   const target = realpathSync(mkdtempSync(join(tmpdir(), "cascade-loop-target-")));
   roots.push(target);
   return target;
@@ -311,7 +311,7 @@ for (const [name, dir] of [
 ]) {
   test(`${name}: the next run stops and creates nothing at the target`, () => {
     const w = world(["LINK", "QUEUE_EMPTY"]);
-    const target = swapTarget(w);
+    const target = swapTarget();
     const r = w.run({ env: { SWAP_DIR: dir(w), SWAP_TARGET: target } });
     assert.equal(w.runs(), 1);
     assert.notEqual(r.status, 0);
@@ -463,7 +463,8 @@ for (const [name, dir] of [
 ]) {
   test(`${name}: zero runs, names the symlink, creates nothing at the target`, () => {
     const w = world(["QUEUE_EMPTY"]);
-    const target = swapTarget(w);
+    const target = swapTarget();
+    chmodSync(target, 0o755); // a chmod that follows the symlink would narrow it
     if (dir(w) === w.stateDir) {
       writeFileSync(join(target, "settings.json"), "{}\n", { mode: 0o600 });
       rmSync(w.stateDir, { recursive: true });
@@ -473,6 +474,10 @@ for (const [name, dir] of [
     assert.equal(w.runs(), 0);
     assert.notEqual(r.status, 0);
     assert.match(said(r), /symlink/i);
-    assert.deepEqual(readdirSync(target).filter((f) => f !== "settings.json"), []);
+    assert.deepEqual(
+      readdirSync(target).filter((f) => f !== "settings.json"),
+      [],
+    );
+    assert.equal(mode(target), "755");
   });
 }
