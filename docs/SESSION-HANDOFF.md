@@ -22,7 +22,11 @@ lex, a decision, or a check rule and delete it here.
   NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
   Logs and the lock live in `~/.cascade-loop` (agent sessions cannot write
   it); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
-  `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions.
+  `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions. One-time
+  Patron step: the loop loads only user settings plus
+  `~/.cascade-loop/settings.json` (sandbox and permissions blocks copied from
+  your own settings, never `hooks`; recipe in the script header) and refuses
+  to run without it.
   Small reversible decisions ship as veto-able defaults reported at the
   checkpoint; only irreversible or ruling-contradicting calls wait for the
   Patron.

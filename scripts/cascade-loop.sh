@@ -17,17 +17,40 @@
 # The status counts only as a plain file (not a symlink) holding exactly one of
 # those words and an optional newline. A missing or invalid status, a nonzero
 # claude exit or a timeout also stops the loop. Limits: CASCADE_MAX_RUNS (5)
-# sessions, CASCADE_RUN_TIMEOUT (4h) and CASCADE_MAX_USD (20, --max-budget-usd)
-# per session. The status file is deleted before every run, so a session that
-# writes nothing cannot inherit the last CONTINUE.
+# sessions, CASCADE_RUN_TIMEOUT (4h, then SIGKILL 60s later) and CASCADE_MAX_USD
+# (20, --max-budget-usd) per session. The status file is deleted before every
+# run, so a session that writes nothing cannot inherit the last CONTINUE.
+#
+# Agent-writable configuration is never loaded. A session could plant hooks or
+# MCP servers in the clone's .claude/ and write CONTINUE, and the next automatic
+# `claude -p` would run them before any sandbox. So claude gets --setting-sources
+# user (never project or local), --strict-mcp-config, and the Patron's own
+# $CASCADE_SETTINGS (default ~/.cascade-loop/settings.json) through --settings.
+# That file must sit inside ~/.cascade-loop and be a regular, non-symlink file
+# you own that nobody else can write, or the loop refuses to run claude at all.
+#
+# ONE-TIME PATRON STEP, run by hand in your own shell, never generated from the
+# agent clone and never with `hooks` (hooks run unsandboxed): copy only the
+# sandbox and permissions blocks of your own settings into that file.
+#
+#   mkdir -p -m 700 ~/.cascade-loop
+#   jq -s '{sandbox: (map(.sandbox // {}) | add), permissions: (map(.permissions // {}) | add)}' \
+#     ~/projects/bisellium/.claude/settings.json \
+#     ~/projects/bisellium/.claude/settings.local.json > ~/.cascade-loop/settings.json
+#   chmod 600 ~/.cascade-loop/settings.json
+#
+# (add is a shallow merge, the later file wins per key: read the result and
+# check the allow and deny lists. `jq 'del(.hooks)'` on one file works too.)
 #
 # Run it from the Patron's reviewed folder (~/projects/bisellium/scripts/
 # cascade-loop.sh), never from the agent clone, and never point a hook at it
 # (hooks run unsandboxed). Agents can write ~/.bisellium-evidence, so the status
 # file is the only thing read from there; the logs (0600), the lock that keeps
-# a second loop out and nothing else go in ~/.cascade-loop (0700, refused if it
-# or an ancestor below $HOME is a symlink). Beyond the status file, it touches
-# nothing outside $AGENT_CLONE and ~/.cascade-loop.
+# a second loop out and nothing else go in ~/.cascade-loop (refused if it or an
+# ancestor below $HOME is a symlink or not owned by you; narrowed to 0700 with
+# chmod). Beyond the status file, it touches nothing outside $AGENT_CLONE and
+# ~/.cascade-loop. Test hooks, not knobs: CASCADE_KILL_AFTER (60s) and
+# CASCADE_LOG_STAMP (the timestamp in log names).
 set -euo pipefail
 umask 077
 set -C # noclobber: each log is created exclusively; the logs are the only `>` below
@@ -37,9 +60,11 @@ CASCADE_STATUS=${CASCADE_STATUS:-$HOME/.bisellium-evidence/cascade-status}
 CASCADE_MAX_RUNS=${CASCADE_MAX_RUNS:-5}
 CASCADE_RUN_TIMEOUT=${CASCADE_RUN_TIMEOUT:-4h}
 CASCADE_MAX_USD=${CASCADE_MAX_USD:-20}
+CASCADE_KILL_AFTER=${CASCADE_KILL_AFTER:-60s}
 CLAUDE_BIN=${CLAUDE_BIN:-claude}
 STATE_DIR=$HOME/.cascade-loop
 LOG_DIR=$STATE_DIR/logs
+CASCADE_SETTINGS=${CASCADE_SETTINGS:-$STATE_DIR/settings.json}
 
 stop() {
   if [ "$1" -eq 0 ]; then echo "cascade-loop: $2"; else echo "cascade-loop: $2" >&2; fi
@@ -54,6 +79,22 @@ no_symlinks() {
     if [ -L "$p" ]; then stop 1 "refusing symlinked path $p"; fi
     p=$(dirname -- "$p")
   done
+}
+
+# Refuse unless the Patron's settings file is inside $STATE_DIR and is a regular,
+# non-symlink file owned by the current user that no one else can write.
+check_settings() {
+  case $CASCADE_SETTINGS in
+    "$STATE_DIR"/*) ;;
+    *) stop 1 "CASCADE_SETTINGS must be inside $STATE_DIR, got $CASCADE_SETTINGS" ;;
+  esac
+  case /$CASCADE_SETTINGS/ in
+    */../*) stop 1 "CASCADE_SETTINGS must not contain .., got $CASCADE_SETTINGS" ;;
+  esac
+  no_symlinks "$CASCADE_SETTINGS"
+  [ -f "$CASCADE_SETTINGS" ] || stop 1 "settings file $CASCADE_SETTINGS is missing or not a regular file: the Patron creates it once (see the script header)"
+  [ -O "$CASCADE_SETTINGS" ] || stop 1 "refusing settings file $CASCADE_SETTINGS: not owned by the current user"
+  [ $((8#$(stat -c %a -- "$CASCADE_SETTINGS") & 8#022)) -eq 0 ] || stop 1 "refusing settings file $CASCADE_SETTINGS: group- or world-writable"
 }
 
 # Print MISSING, INVALID, or the allowed word the status file holds. The file
@@ -112,6 +153,11 @@ EOF
 [[ $CASCADE_MAX_RUNS =~ ^[1-9][0-9]*$ ]] || stop 1 "CASCADE_MAX_RUNS must be a positive integer, got '$CASCADE_MAX_RUNS'"
 no_symlinks "$LOG_DIR"
 mkdir -p "$LOG_DIR" "$(dirname "$CASCADE_STATUS")"
+# The umask only shapes new directories: an existing one keeps its mode. Own it, then narrow it.
+for d in "$STATE_DIR" "$LOG_DIR"; do
+  [ -O "$d" ] || stop 1 "refusing $d: not owned by the current user"
+  chmod 700 "$d"
+done
 # One loop at a time: a second launch would double the run cap and share the status file.
 exec 9>>"$STATE_DIR/lock"
 flock -n 9 || stop 1 "another cascade-loop holds the lock $STATE_DIR/lock"
@@ -120,16 +166,19 @@ for ((run = 1; run <= CASCADE_MAX_RUNS; run++)); do
   rm -f "$CASCADE_STATUS"
   cd "$AGENT_CLONE" || stop 1 "cannot enter AGENT_CLONE $AGENT_CLONE"
   no_symlinks "$LOG_DIR"
-  log=$LOG_DIR/$(date +%Y%m%dT%H%M%S)-$run.log
+  check_settings
+  log=$LOG_DIR/${CASCADE_LOG_STAMP:-$(date +%Y%m%dT%H%M%S)}-$run.log
   (: >"$log") || stop 1 "cannot create log $log exclusively"
   rc=0
   # stream-json under -p needs --verbose (claude refuses it otherwise).
   # </dev/null: timeout puts claude in a background process group, which a read
   # of the Patron's terminal would stop. 9>&-: the session does not inherit the lock.
-  timeout "$CASCADE_RUN_TIMEOUT" "$CLAUDE_BIN" -p "$BOOT_PROMPT" --permission-mode auto \
+  # --kill-after: a session that ignores TERM is killed (exit 137), not waited on.
+  timeout --kill-after="$CASCADE_KILL_AFTER" "$CASCADE_RUN_TIMEOUT" "$CLAUDE_BIN" -p "$BOOT_PROMPT" \
+    --permission-mode auto --setting-sources user --settings "$CASCADE_SETTINGS" --strict-mcp-config \
     --max-budget-usd "$CASCADE_MAX_USD" --output-format stream-json --verbose \
     </dev/null >>"$log" 2>&1 9>&- || rc=$?
-  [ "$rc" -ne 124 ] || stop 1 "claude timed out after $CASCADE_RUN_TIMEOUT on run $run. Log: $log"
+  [ "$rc" -ne 124 ] && [ "$rc" -ne 137 ] || stop 1 "claude timed out after $CASCADE_RUN_TIMEOUT on run $run. Log: $log"
   [ "$rc" -eq 0 ] || stop 1 "claude exited $rc on run $run. Log: $log"
 
   case $(status_word) in
