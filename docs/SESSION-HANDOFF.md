@@ -16,9 +16,13 @@ lex, a decision, or a check rule and delete it here.
 
 - **Session hygiene.** One cascade per orchestrator context: after the
   checkpoint merges, `/clear` (or end the session) and boot fresh from this
-  file. Never park a fat context across an idle gap. Small reversible
-  decisions ship as veto-able defaults reported at the checkpoint; only
-  irreversible or ruling-contradicting calls wait for the Patron.
+  file. Never park a fat context across an idle gap. The Patron may run
+  `~/projects/bisellium/scripts/cascade-loop.sh` to automate the fresh
+  sessions; each session then ends by writing one status word (CONTINUE,
+  NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
+  Small reversible decisions ship as veto-able defaults reported at the
+  checkpoint; only irreversible or ruling-contradicting calls wait for the
+  Patron.
 - **Plain words to the Patron.** Status lines translate the vocabulary;
   jargon stays in commits and records.
 - **Fewer words.** Lead with the proposal or the outcome; drop rationale that
