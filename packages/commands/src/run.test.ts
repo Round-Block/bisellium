@@ -1353,7 +1353,15 @@ const sh = (script) => new Promise((done) => {
       assert.equal(deaf.signal === null && deaf.code === 0, true, "b4a: the deaf cell was refused, not parked");
       const got = (JSON.parse(deaf.out) as { count?: number }).count ?? 0;
       assert.equal(got > 0, true, "b4a: the deaf cell got frames in");
-      // The host is alive and its event loop is free: a blocked reply write would never answer this.
+      // The host is alive and its event loop is free: a blocked reply write would never answer this. Probe only
+      // once serving has stopped, or the sample can slip in ahead of the stall and a blocked host would pass.
+      let lastServed = -1;
+      let stableSince = Date.now();
+      await waitFor("the host to stop serving", () => {
+        const now = host.served().length;
+        if (now !== lastServed) [lastServed, stableSince] = [now, Date.now()];
+        return Date.now() - stableSince >= 400;
+      });
       const deafAfter = await sample(15_000).catch(() => undefined);
       assert.equal(deafAfter !== undefined, true, "b4a: the host answers a sample after the flood");
       // The host stopped reading requests rather than queueing replies.
