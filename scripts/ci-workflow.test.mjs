@@ -125,11 +125,17 @@ check(
   Object.keys(doc?.jobs ?? {}).join(",") === "gates,officina,web-e2e",
 );
 
+// W-131: gates also carries steps that are not CI_STEPS entries. Each is named
+// here, not matched loosely: the scope step (found by its id), the record-only
+// studio check (found by its exact `if`), and the full-path prerequisites below.
+const RECORD_ONLY_IF = "steps.scope.outputs.record_only == 'true'";
+const PREREQUISITE_RUNS = new Set([]);
 const jobRunSteps = (jobId) =>
   (doc?.jobs?.[jobId]?.steps ?? [])
+    .filter((step) => step.id !== "scope" && step.if !== RECORD_ONLY_IF)
     .map((step) => step.run)
     .filter((run) => typeof run === "string")
-    .filter((line) => !line.startsWith("npm ci"));
+    .filter((line) => !line.startsWith("npm ci") && !PREREQUISITE_RUNS.has(line));
 
 const gatesSteps = jobRunSteps("gates");
 const officinaSteps = jobRunSteps("officina");
