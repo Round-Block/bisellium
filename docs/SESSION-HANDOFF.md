@@ -164,7 +164,7 @@ lex, a decision, or a check rule and delete it here.
 
 ## Queue
 
-**W-131: PAUSED (Patron, 2026-10-04).** Do not start it or skip past it: a session that reaches it stops and writes NEEDS_PATRON. (Was: Patron, 2026-10-03, ahead of W-110, to cut log/record overhead.) → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+**W-131 next** (Patron, 2026-10-04: its pause was only about the restart loop, which is not in use; carry on building) → W-110. **W-135** (containment setup becomes part of init/adopt) is filed in backlog for the Patron's architecture ruling later, not before the building work. → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
