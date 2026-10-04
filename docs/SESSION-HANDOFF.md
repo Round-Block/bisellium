@@ -154,7 +154,7 @@ lex, a decision, or a check rule and delete it here.
 
 **W-130: done (#196).** Rebased over W-132/W-134; its receipt was the first real W-134 rebased replay (5/5). Censor advisories, minor: `host-cells.mjs:64-65` re-derives tools/control paths (pass the runner's own); replay prep leaves `~/.npm/_logs` in the private HOME.
 
-**W-110: code complete** (`origin/opus/W-110` @ d5631f1). Next up (W-131 paused). Make a local branch from the remote (`git branch --no-track opus/W-110 origin/opus/W-110` + `git worktree add .worktrees/W-110 opus/W-110`; the ladder's branch step would cut a fresh one from master), builder rebases onto master and resolves, mint the receipt from its worktree (W-134 re-identifies its reds), censor, merge.
+**W-110: code complete** (`origin/opus/W-110` @ d5631f1). Runs after W-131. Make a local branch from the remote (`git branch --no-track opus/W-110 origin/opus/W-110` + `git worktree add .worktrees/W-110 opus/W-110`; the ladder's branch step would cut a fresh one from master), builder rebases onto master and resolves, mint the receipt from its worktree (W-134 re-identifies its reds), censor, merge.
 
 **Patron rulings this cascade (standing):** more code, less tracking — **W-131** (findings-only verdict logs, ci/ retention, cheaper record commits) is greenlit and runs right after W-110. Public repo is intended.
 
@@ -164,7 +164,7 @@ lex, a decision, or a check rule and delete it here.
 
 ## Queue
 
-**W-110 next** (Patron, 2026-10-04: "continue with building bisellium itself"; see the W-110 paragraph above). **W-131: PAUSED (Patron, 2026-10-04)**: do not start it; it resumes only on the Patron's word. **W-135** (containment setup becomes part of init/adopt) is filed in backlog for the Patron's architecture ruling later, not before the building work. → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+**W-131 next** (Patron, 2026-10-04: its pause was only about the restart loop, which is not in use; carry on building) → W-110. **W-135** (containment setup becomes part of init/adopt) is filed in backlog for the Patron's architecture ruling later, not before the building work. → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
