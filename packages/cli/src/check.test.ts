@@ -608,7 +608,7 @@ try {
       .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
       .map((entry) => entry.name.slice(0, -".md".length));
     const r = checkStudio(realStudio, new Date("2026-09-25T12:00:00Z"));
-    const petitioScoped = r.findings.filter((f) => f.where.startsWith("petitiones/"));
+    const petitioScoped = r.findings.filter((f) => REAL_IDS.some((id) => f.where === `petitiones/${id}.md`)); // per-file only: aggregate `petitiones/#<collegium>` rows (petitio.cap) are not per-petitio
     checkB(5, "petitiones-scoped findings are exactly one per real petitio", petitioScoped.length === REAL_IDS.length, JSON.stringify(petitioScoped));
     checkB(5, "...and every one is petitio.subject (no other petitio rule's set altered)", petitioScoped.every((f) => f.rule === "petitio.subject"), JSON.stringify(petitioScoped));
     checkB(5, "...and every one is advisory (zero new blocking findings)", petitioScoped.every((f) => f.level === "advise"), JSON.stringify(petitioScoped));
