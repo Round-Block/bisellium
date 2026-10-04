@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: env TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --test-reporter=tap --import ./apps/web/test/support/register-css-stub.mjs --import tsx apps/web/test/officina-truth.test.ts --behaviour 1
+# exit: 1
+# at: 2026-10-04T22:17:39.936Z
+# sella: builder.W-077
+# tree: tree:529323221c70d8f0f351b9d2d2b10acb03466d5d
+
+TAP version 13
+# Subtest: W-077 behaviour 1: health carries its as-of stamp
+not ok 1 - W-077 behaviour 1: health carries its as-of stamp
+  ---
+  duration_ms: 2.526573
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-077/apps/web/test/officina-truth.test.ts:1:2125'
+  failureType: 'testCodeFailure'
+  error: |-
+    officinaTruth exports healthStamp
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-077/apps/web/test/officina-truth.test.ts:93:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 40.50658
