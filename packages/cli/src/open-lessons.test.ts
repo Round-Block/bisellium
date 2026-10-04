@@ -311,3 +311,46 @@ test("W-085 behaviour 7: check knows the context_open_lessons default", () => {
   assert.equal(bad[0]!.level, "block");
   assert.match(bad[0]!.message, /context_open_lessons.*must be a number/);
 });
+
+test("W-085 behaviour 8: next's dispatch order names the boot bundle", () => {
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-w085-next-"));
+  made.push(repo);
+  const git = (...a: string[]): void => void spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: repo });
+  git("init", "-q", "-b", "master");
+  mkdirSync(join(repo, "studio", "opera"), { recursive: true });
+  writeFileSync(
+    join(repo, "studio", "bisellium.yml"),
+    [
+      "bisellium: 1",
+      "studio: W-085 fixture",
+      "patron: patron",
+      "collegia:",
+      "  - { id: production, name: Production, magister: producer }",
+      "  - { id: design, name: Design, magister: architect }",
+      "  - { id: engineering, name: Engineering, magister: eng-lead }",
+      "  - { id: qa, name: QA, magister: qa-lead }",
+      "sellae:",
+      "  - { id: producer, collegium: production, kind: orchestrator }",
+      "  - { id: architect, collegium: design, kind: agent }",
+      "  - { id: eng-lead, collegium: engineering, kind: agent }",
+      "  - { id: builder, collegium: engineering, kind: agent }",
+      "  - { id: qa-lead, collegium: qa, kind: agent }",
+      "probationes:",
+      "  - { id: spec, name: Spec, kind: agent }",
+      "  - { id: review, name: Lead review, kind: agent }",
+      "source_excludes: []",
+      "",
+    ].join("\n"),
+  );
+  put(repo, "studio/opera/W-900.md", ['id: W-900', 'title: "fixture"', 'kind: "opus"', 'collegium: "engineering"', 'state: "greenlit"']);
+  git("add", "-A");
+  git("commit", "-q", "-m", "init");
+
+  const r = spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), join(import.meta.dirname, "main.ts"), "next", "W-900", "--studio", "studio", "--repo", repo, "--budget", "100000"], { cwd: repo, encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+  const lines = r.stdout.split("\n");
+  const at = lines.findIndex((l) => l.startsWith("sella: "));
+  assert.ok(at >= 0, r.stdout);
+  assert.equal(lines[at], "sella: architect");
+  assert.equal(lines[at + 1], "boot: bisellium context --sella architect --studio studio");
+});
