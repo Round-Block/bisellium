@@ -76,3 +76,16 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
   assert.equal(short[0].run, "npm run -s check -- studio --repo .", "and it is the studio check");
   assert.equal(doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length, 0, "web-e2e has no record-only step");
 });
+
+test("W-131 behaviour 7: gates installs bubblewrap and lifts the userns restriction before npm test, with the live-row guard on", () => {
+  const steps = workflow().jobs.gates.steps;
+  const runs = steps.map((step) => step.run);
+  const npmTest = runs.indexOf("npm test");
+  assert.notEqual(npmTest, -1, "gates runs npm test");
+  const bwrap = runs.findIndex((run) => typeof run === "string" && run.includes("apt-get install") && run.includes("bubblewrap"));
+  assert.notEqual(bwrap, -1, "gates installs bubblewrap");
+  const sysctl = runs.indexOf("sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0");
+  assert.notEqual(sysctl, -1, "gates lifts the AppArmor userns restriction");
+  assert.ok(bwrap < npmTest && sysctl < npmTest, "both run before npm test");
+  assert.equal(steps[npmTest].env?.BISELLIUM_REQUIRE_LIVE_ROWS, "1", "npm test requires the live rows");
+});
