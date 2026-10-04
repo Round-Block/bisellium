@@ -1,0 +1,39 @@
+# behaviour: 4
+# command: node --import tsx --test --test-reporter=tap --test-name-pattern=W-131.behaviour.4: packages/cli/src/prune.test.ts
+# exit: 1
+# at: 2026-10-04T05:52:38.727Z
+# sella: builder.W-131
+# tree: tree:a4e2177b4ddce7b431ea4052202a9215e828c416
+
+TAP version 13
+# Subtest: W-131 behaviour 4: prune removes exactly the gate logs of a done opus that nothing cites
+not ok 1 - W-131 behaviour 4: prune removes exactly the gate logs of a done opus that nothing cites
+  ---
+  duration_ms: 17.176317
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-131/packages/cli/src/prune.test.ts:10:3672'
+  failureType: 'testCodeFailure'
+  error: |-
+    W-401-tests-0123abcd.log is reported removed: nothing to prune
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-131/packages/cli/src/prune.test.ts:188:14)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 188.158586

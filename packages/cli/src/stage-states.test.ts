@@ -811,7 +811,7 @@ if (runs(15)) {
     const verify15 = (fx: Fx): number => cli(fx, ["verify", "W-120", "--repo", fx.dir]);
     const verdict = (fx: Fx, round: number, outcome: string): string => {
       const findings = join(outside, `findings-${round}.md`);
-      writeFileSync(findings, `Round ${round} findings.\n`);
+      writeFileSync(findings, `## Findings\nNo findings\nRound ${round}.\n`);
       assert.equal(cli(fx, ["verdict", "W-120", "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", findings]), 0, `15: verdict round ${round} writes the evidence log`);
       return `ci/W-120-review-${round}.log`;
     };

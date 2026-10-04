@@ -454,7 +454,7 @@ export function parseVerdictHeader(text: string): ParsedHeader {
 
 const PLACEHOLDERS = new Set(["tbd", "todo", "pending", "placeholder", "n/a", "...", "insert findings", "insert recommendation"]);
 
-function contentLines(markdown: string): { headings: { level: number; name: string; line: number }[]; lines: { text: string; section?: string }[] } {
+export function contentLines(markdown: string): { headings: { level: number; name: string; line: number }[]; lines: { text: string; section?: string }[] } {
   const headings: { level: number; name: string; line: number }[] = [];
   const lines: { text: string; section?: string }[] = [];
   let fence: string | undefined;

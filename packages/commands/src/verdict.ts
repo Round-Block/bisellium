@@ -6,6 +6,7 @@ import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, t
 import { readFront } from "@bisellium/adapter-native";
 import {
   censorSella,
+  contentLines,
   designDigest,
   inspectUiDesignInput,
   readContainedRegularFile,
@@ -22,6 +23,7 @@ export interface VerdictOptions extends WriteOptions {
 }
 
 const GIT_TIMEOUT_MS = 30_000;
+const BODY_CAP = 8192;
 
 function gitRoot(dir: string): string | undefined {
   try {
@@ -48,6 +50,20 @@ function treeAtCapture(studioRoot: string, sourceExcludes: string[]): string {
   } catch {
     return "unknown";
   }
+}
+
+/** The findings shape every non-UI verdict body must have, or the first refusal message. */
+function findingsProblem(body: string): string | undefined {
+  const parsed = contentLines(body);
+  const lines = parsed.lines.filter((line) => line.section === "Findings");
+  const numbered = lines.filter((line) => /^[1-9]\d*\. \S/.test(line.text));
+  const headings = parsed.headings.filter((heading) => heading.level === 2 && heading.name === "Findings");
+  if (headings.length !== 1 || (numbered.length === 0 && !lines.some((line) => line.text === "No findings")))
+    return 'verdict body needs exactly one "## Findings" section holding numbered findings or the exact line "No findings"';
+  const unchecked = numbered.findIndex((line) => !/\bcheck: \S/.test(line.text));
+  if (unchecked !== -1)
+    return `finding ${/^\d+/.exec(numbered[unchecked]!.text)![0]} names no check — end it with "check: <rule id | test path | none: <missing check>>"`;
+  return undefined;
 }
 
 function hasHeaderBreak(value: string): boolean {
@@ -191,6 +207,11 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     return { exitCode: 2 };
   }
 
+  if (transcript.length > BODY_CAP) {
+    console.error(`verdict body is ${transcript.length} bytes; the cap is ${BODY_CAP} — record findings, not a transcript`);
+    return { exitCode: 2 };
+  }
+
   let uiDigest: string | undefined;
   let promptHeader: string | undefined;
   let inputHeader: string | undefined;
@@ -228,6 +249,13 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       return { exitCode: 2 };
     }
     promptHeader = prompt.relative;
+  }
+  if (!isUi) {
+    const problem = findingsProblem(transcript.toString("utf8"));
+    if (problem !== undefined) {
+      console.error(problem);
+      return { exitCode: 2 };
+    }
   }
   if (isUi && phase === "build") {
     const censor = censorSella(manifest);

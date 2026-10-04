@@ -1,0 +1,37 @@
+# behaviour: 7
+# command: node --test --test-reporter=tap --test-name-pattern=W-131.behaviour.7: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-04T05:55:22.880Z
+# sella: builder.W-131
+# tree: tree:3b63a3de4319231a01c6fde4b1aa34aded779c6a
+
+TAP version 13
+# Subtest: W-131 behaviour 7: gates installs bubblewrap and lifts the userns restriction before npm test, with the live-row guard on
+not ok 1 - W-131 behaviour 7: gates installs bubblewrap and lifts the userns restriction before npm test, with the live-row guard on
+  ---
+  duration_ms: 9.489499
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-131/scripts/ci-scope.test.mjs:80:1'
+  failureType: 'testCodeFailure'
+  error: 'gates installs bubblewrap'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: -1
+  actual: -1
+  operator: 'notStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-131/scripts/ci-scope.test.mjs:86:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 123.435722

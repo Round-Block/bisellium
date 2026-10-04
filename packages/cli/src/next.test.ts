@@ -377,7 +377,7 @@ const sourceTree = (dir: string): string => `tree:${sourceTreeHash(dir, ["studio
 
 function writeTranscript(w: World, name: string): string {
   const path = join(w.root, name);
-  writeFileSync(path, `# transcript ${name}\n\nFixture transcript.\n`);
+  writeFileSync(path, `## Findings\nNo findings\n`);
   return path;
 }
 function signSpec(w: World, dir: string): void {

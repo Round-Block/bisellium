@@ -1107,7 +1107,7 @@ if (runs(2)) {
     const legacyReviewFailGate = (front(legacyReviewRoot, "W-021")["probationes"] as Record<string, Record<string, unknown>>)["review"];
     const legacyBuildVerdict = captureErrors(() => runVerdict(
       ["W-021", "--phase", "build", "--round", "1", "--sella", "ui-lead", "--outcome", "failed", "--studio", legacyReviewRoot],
-      { now: NOW, stdin: Buffer.from("Legacy non-UI build verdict.\n") },
+      { now: NOW, stdin: Buffer.from("## Findings\nNo findings\n") },
     ));
 
     const uiReviewPath = join(censorRoot, "opera", "W-020.md");

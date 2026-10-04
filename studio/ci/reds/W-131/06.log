@@ -1,0 +1,45 @@
+# behaviour: 6
+# command: node --test --test-reporter=tap --test-name-pattern=W-131.behaviour.6: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-04T05:54:41.480Z
+# sella: builder.W-131
+# tree: tree:ce8aa044fc4ef4ec0ff7e5f2da396e3204e9efed
+
+TAP version 13
+# Subtest: W-131 behaviour 6: ci.yml pushes only master and gates every full-path step on the scope
+not ok 1 - W-131 behaviour 6: ci.yml pushes only master and gates every full-path step on the scope
+  ---
+  duration_ms: 7.779285
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-131/scripts/ci-scope.test.mjs:61:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    push names only master
+    + actual - expected
+    
+    + undefined
+    - [
+    -   'master'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'master'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-131/scripts/ci-scope.test.mjs:63:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 115.743994

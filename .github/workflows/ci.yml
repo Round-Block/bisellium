@@ -1,7 +1,12 @@
 name: CI
 
+# W-131: `push` runs on master only, so a branch commit runs once (as a pull
+# request) instead of twice. The post-merge master push always runs the full
+# suite, which is what catches a record-only change that breaks a real-studio
+# test.
 on:
   push:
+    branches: [master]
   pull_request:
 
 permissions:
@@ -23,11 +28,31 @@ jobs:
         with:
           node-version: 25
       - run: npm ci
-      - run: npm run -s typecheck
-      - run: npm run -s lint
-      - run: npm run -s format:check
-      - run: npm test
-      - run: npm run -s check -- examples/sample-studio --repo .
+      - id: scope
+        if: github.event_name == 'pull_request'
+        run: node scripts/ci-scope.mjs "${{ github.event.pull_request.base.sha }}" HEAD >> "$GITHUB_OUTPUT"
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s typecheck
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s lint
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s format:check
+      # W-131: the live run.test.ts rows need bubblewrap and unprivileged user
+      # namespaces; ubuntu-latest has neither out of the box, and the guard row
+      # fails if one still skips under BISELLIUM_REQUIRE_LIVE_ROWS=1.
+      - if: steps.scope.outputs.record_only != 'true'
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - if: steps.scope.outputs.record_only != 'true'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm test
+        env:
+          BISELLIUM_REQUIRE_LIVE_ROWS: "1"
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s check -- examples/sample-studio --repo .
+      # Record-only pull request: the studio officina check is the whole gate.
+      - if: steps.scope.outputs.record_only == 'true'
+        run: npm run -s check -- studio --repo .
 
   # Deliberately NOT required (W-028's ruling): `check -- studio` fails on
   # known officina debt, so this job stays honestly red until that debt
@@ -64,7 +89,14 @@ jobs:
         with:
           node-version: 25
       - run: npm ci
-      - run: rm -rf apps/web/dist
-      - run: npm run -s build --workspace @bisellium/web
-      - run: npx playwright install --with-deps chromium
-      - run: npm run -s test:serve --workspace @bisellium/web
+      - id: scope
+        if: github.event_name == 'pull_request'
+        run: node scripts/ci-scope.mjs "${{ github.event.pull_request.base.sha }}" HEAD >> "$GITHUB_OUTPUT"
+      - if: steps.scope.outputs.record_only != 'true'
+        run: rm -rf apps/web/dist
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s build --workspace @bisellium/web
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s test:serve --workspace @bisellium/web
