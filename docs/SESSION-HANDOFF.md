@@ -145,7 +145,7 @@ lex, a decision, or a check rule and delete it here.
   Neither `review --pass` nor `review --fail` may be dispatched until that
   receipt exists and remains current.
 
-## Where things stand (2026-10-03, security track done; cascade 43 resumes at W-130)
+## Where things stand (2026-10-04, restart loop merged; cascade 43 resumes at W-131)
 
 **Security first (Patron: sorted before any new work).** In order:
 1. Done: agent workspace script + rules merged (#187).
@@ -158,11 +158,13 @@ lex, a decision, or a check rule and delete it here.
 
 **Patron rulings this cascade (standing):** more code, less tracking — **W-131** (findings-only verdict logs, ci/ retention, cheaper record commits) is greenlit and runs right after W-110. Public repo is intended.
 
-**Spend:** cascade 43 through W-130 all on Claude (Opus 5.5 orchestrator, Opus 5 architect/censor, Sonnet 5.5 builder). **Model mapping from W-131 (Patron, 2026-10-04, "pivot back to codex"):** censor + security review = Codex `gpt-5.6-sol` high (`codex exec`, verdict recorded via `bisellium verdict --from`); builds = Claude Sonnet; clerk = Claude Haiku; spec = Claude Opus architect; ui-lead = `gpt-6-astra` medium (D-022). Sol also owns improving the automated checks: each review names the check that would have caught each finding; Sol specs check-improvement opera, Sonnet builds, Claude Opus censor reviews those. D-014/D-022 still say "Opus-tier censor" — the Patron amends them (agent-written Patron decisions are classifier-blocked). Spend line per provider at every checkpoint.
+**Spend:** cascade 43 through W-130 all on Claude (Opus 5.5 orchestrator, Opus 5 architect/censor, Sonnet 5.5 builder). **Model mapping from W-131 (Patron, 2026-10-04, "pivot back to codex"):** censor + security review = Codex `gpt-5.6-sol` high (`codex exec`, verdict recorded via `bisellium verdict --from`); builds = Claude Sonnet; clerk = Claude Haiku; spec = Claude Opus architect; ui-lead = `gpt-6-astra` medium (D-022). Sol also owns improving the automated checks: each review names the check that would have caught each finding; Sol specs check-improvement opera, Sonnet builds, Claude Opus censor reviews those. D-014/D-022 still say "Opus-tier censor": the Patron confirmed Codex as reviewer (2026-10-04) and amends both by hand; the classifier blocks agents even reading toward that edit ("Self-Modification"), so do not retry. Spend line per provider at every checkpoint.
+
+**Restart loop: merged (#199, 2026-10-04).** `scripts/cascade-loop.sh` runs `claude --restricted` with only the Patron's `~/.cascade-loop/settings.json` and the reviewed folder's agents (details in its header). Six Codex rounds; the last, narrow one PASSed. Waiting on the Patron's one-time settings step; the first launch is the live test. Accepted scope-outs: wrong-owner rows, live smoke test. The agent clone's Stop hook now points (Patron's instruction) at `~/projects/bisellium/scripts/concise-stop.mjs` (2026-10-04); hooks must never run clone code. Review stop rule (Patron-visible default): at most five full rounds, then fix and merge after green; the merge classifier still needs a PASS on the final delta, which a narrow Codex check of that delta supplies. Spend: Opus 5.5 orchestrator; Sonnet 5.5 builder ~630k over 4 dispatches; Codex Sol ~280k over rounds 4–6.
 
 ## Queue
 
-**Finish `origin/chore/cascade-loop` first** (the restart loop the Patron asked for; Codex Sol round 3 FAIL: one blocking B1 — `--setting-sources user` still loads `~/.claude/settings.json`, whose hooks/apiKeyHelper/plugins could target clone-writable paths; fix by a customization-free launch mode (check `claude --help`: `--safe-mode`/`--bare`/`--restricted`) or a startup refusal when user settings reference the clone, plus Sol's advisory rows; reviews in `~/.bisellium-evidence/cascade-loop/sol-review-{1,2,3}.log`; then Sol round 4, merge, and the Patron creates `~/.cascade-loop/settings.json` once) → **W-131** (Patron, 2026-10-03: ahead of W-110, to cut log/record overhead) → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+**W-131: PAUSED (Patron, 2026-10-04).** Do not start it or skip past it: a session that reaches it stops and writes NEEDS_PATRON. (Was: Patron, 2026-10-03, ahead of W-110, to cut log/record overhead.) → W-110 → close cascade 43 → W-115, W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; W-113 needs the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
