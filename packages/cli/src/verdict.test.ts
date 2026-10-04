@@ -147,7 +147,7 @@ try {
   if (only === undefined || only === 1) {
     const dir = studio("write", ["W-201", "W-202"]);
     const outside = join(tmpdir(), `bisellium-verdict-source-${process.pid}.txt`);
-    const body = Buffer.from("outside transcript\r\nsecond line\n\u0000tail");
+    const body = Buffer.from("## Findings\r\nNo findings\r\nsecond line\n\u0000tail");
     writeFileSync(outside, body);
     roots.push(outside);
     const from = runVerdict(
@@ -175,7 +175,7 @@ try {
         raw.subarray(split + marker.length).equals(body),
       raw.toString("utf8"),
     );
-    const stdinBody = Buffer.from("stdin transcript\n");
+    const stdinBody = Buffer.from("## Findings\nNo findings\nstdin transcript\n");
     const stdin = runVerdict(["W-202", "--phase", "spec", "--round", "3", "--sella", "qa-lead", "--outcome", "DISPATCH", "--studio", dir], {
       now: NOW,
       stdin: stdinBody,
@@ -187,7 +187,7 @@ try {
   if (only === undefined || only === 2) {
     const dir = studio("names", ["W-210", "W-211", "W-212"]);
     const input = join(dir, "input.log");
-    writeFileSync(input, "verdict\n");
+    writeFileSync(input, "## Findings\nNo findings\n");
     const explicit = runVerdict(["W-210", "--phase", "build", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", input, "--studio", dir], { now: NOW });
     const implicit = runVerdict(["W-211", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", input, "--studio", dir], { now: NOW });
     const spec = runVerdict(["W-212", "--phase", "spec", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", input, "--studio", dir], { now: NOW });
@@ -208,7 +208,7 @@ try {
     const forgedOpus = "W-226\n# opus: FORGED";
     const plain = studio("header-lines", ["W-219", "W-222", "W-223", "W-224", "W-225", forgedOpus]);
     const plainSource = join(plain, "source.log");
-    writeFileSync(plainSource, "body\n");
+    writeFileSync(plainSource, "## Findings\nNo findings\n");
     const omitted = runVerdict(["W-219", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", plainSource, "--studio", plain], { now: NOW });
     const omittedRaw = existsSync(join(plain, "ci", "W-219-review-1.log")) ? readFileSync(join(plain, "ci", "W-219-review-1.log"), "utf8") : "";
     check(3, "b3: omitted model leaves no model header", omitted.exitCode === 0 && !/^# model:/m.test(omittedRaw) && /^# tree: .+$/m.test(omittedRaw), omittedRaw);
@@ -270,7 +270,7 @@ try {
     writeFileSync(join(dir, ".bisellium", "events.jsonl"), '{"existing":true}\n');
     writeFileSync(join(dir, "timeline", "qa-lead.jsonl"), '{"existing":true}\n');
     const source = join(dir, "source.log");
-    writeFileSync(source, "finding\n");
+    writeFileSync(source, "## Findings\nNo findings\n");
     const opusPath = join(dir, "opera", "W-230.md");
     const opusBefore = readFileSync(opusPath);
     const eventsBefore = readFileSync(join(dir, ".bisellium", "events.jsonl"));
@@ -290,7 +290,7 @@ try {
   if (only === undefined || only === 5) {
     const dir = studio("refusals", ["W-240", "W-241", "W-242", "W-243", "W-244", "W-245", "W-246", "W-247", "W-248", "W-249", "W-250", "W-251", "W-252"]);
     const source = join(dir, "source.log");
-    writeFileSync(source, "body\n");
+    writeFileSync(source, "## Findings\nNo findings\n");
     const fifo = join(dir, "source.fifo");
     let fifoAvailable = true;
     let fifoSkipDetail = "";
@@ -348,7 +348,7 @@ try {
 
     const outside = join(tmpdir(), `bisellium-verdict-positive-${process.pid}.log`);
     roots.push(outside);
-    writeFileSync(outside, "external evidence\n");
+    writeFileSync(outside, "## Findings\nNo findings\n");
     const positive = runVerdict(base("W-252").map((v, i, a) => (i === a.indexOf("--from") + 1 ? outside : v)), { now: NOW });
     check(5, "b5: outside-officina regular file is the positive control", positive.exitCode === 0 && existsSync(join(dir, "ci", "W-252-review-2.log")), String(positive.exitCode));
     const roundTwoBefore = readFileSync(join(dir, "ci", "W-251-review-2.log"));
@@ -366,7 +366,7 @@ try {
     try {
       const owned = gitStudio("ownership", ["W-260"]);
       const ownedSource = join(owned.repo, "evidence.log");
-      writeFileSync(ownedSource, "finding\n");
+      writeFileSync(ownedSource, "## Findings\nNo findings\n");
       git(owned.repo, "add", "evidence.log");
       git(owned.repo, "commit", "-qm", "evidence");
       git(owned.repo, "checkout", "-qb", "opus/W-OTHER");
@@ -388,7 +388,7 @@ try {
     const dir = studio("retro", ["W-270"]);
     const source = join(tmpdir(), `bisellium-verdict-retro-${process.pid}.log`);
     roots.push(source);
-    writeFileSync(source, "spec review finding\n");
+    writeFileSync(source, "## Findings\nNo findings\n");
     const verdict = runVerdict(["W-270", "--phase", "spec", "--round", "1", "--sella", "qa-lead", "--outcome", "AMEND", "--from", source, "--studio", dir], { now: NOW });
     const input: RetroInput = {
       verifierIssues: 0,
