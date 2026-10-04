@@ -8,10 +8,11 @@
  * row's own failed assertion, never a module-load error.
  */
 import assert from "node:assert/strict";
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
+import { buildContext } from "./context.js";
 
 interface OpenLessonClass {
   class: string;
@@ -160,4 +161,69 @@ test("W-085 behaviour 3: openLessons attributes collegia", async () => {
   assert.deepEqual(collegia("no-opus"), every);
   assert.deepEqual(collegia("missing-opus"), every);
   assert.deepEqual(collegia("union"), ["design", "production", "qa"]);
+});
+
+const NOW = new Date("2026-10-04T12:00:00Z");
+/** The `## Open lessons` chunk of a bundle, or undefined. */
+const section = (text: string): string | undefined => text.split("\n\n").find((c) => c.startsWith("## Open lessons"));
+const INTRO =
+  "## Open lessons\nClasses your collegium keeps paying for, most recurrent first. A class leaves this list when a lesson of it names a rule, a decision or a done opus in addressed_by.\n--- data: lessons/ ---";
+
+/** 13 engineering classes (evidence names the done engineering opus W-001), 1 design-only. */
+function lessonFixture(): string {
+  const dir = fixture();
+  opus(dir, "W-801", { collegium: "engineering", state: "building" });
+  opus(dir, "W-802", { collegium: "design", state: "done" });
+  lesson(dir, 1, { cls: "top", cascade: 41, at: "2026-10-03T00:00:00.000Z" });
+  lesson(dir, 2, { cls: "top", cascade: 43, at: "2026-10-04T00:00:00.000Z" });
+  for (let i = 1; i <= 12; i++)
+    lesson(dir, i + 2, {
+      cls: `eng-${pad(i).slice(1)}`,
+      cascade: 42,
+      at: `2026-09-${30 - i}T00:00:00.000Z`,
+      ...(i === 5 ? { addressed_by: "W-801" } : {}),
+    });
+  for (const n of [20, 21]) {
+    lesson(dir, n, { cls: "design-only", cascade: n, evidence: ["opera/W-802.md"] });
+  }
+  return dir;
+}
+const engLines = [
+  "- top · 2× over 2 cascades · latest L-002",
+  "- eng-01 · 1× over 1 cascade · latest L-003",
+  "- eng-02 · 1× over 1 cascade · latest L-004",
+  "- eng-03 · 1× over 1 cascade · latest L-005",
+  "- eng-04 · 1× over 1 cascade · latest L-006",
+  "- eng-05 · 1× over 1 cascade · latest L-007 · fix in flight: W-801 (building)",
+  "- eng-06 · 1× over 1 cascade · latest L-008",
+  "- eng-07 · 1× over 1 cascade · latest L-009",
+  "- eng-08 · 1× over 1 cascade · latest L-010",
+  "- eng-09 · 1× over 1 cascade · latest L-011",
+];
+
+test("W-085 behaviour 4: the context section shows the collegium's classes, capped", () => {
+  const dir = lessonFixture();
+  const eng = buildContext(dir, "eng-lead", { now: NOW, maxTokens: 100000 });
+  assert.equal(section(eng.text), `${INTRO}\n${engLines.join("\n")}\n--- end ---\n… and 3 more open classes under lessons/`);
+  assert.equal(eng.text.includes("design-only"), false);
+
+  const patron = buildContext(dir, "patron", { now: NOW, maxTokens: 100000 });
+  const p = section(patron.text) ?? "";
+  assert.equal(p.split("\n").filter((l) => l.startsWith("- ")).length, 10);
+  assert.match(p, /\n… and 4 more open classes under lessons\/$/);
+
+  appendFileSync(join(dir, "bisellium.yml"), "defaults:\n  context_open_lessons: 2\n");
+  const two = section(buildContext(dir, "eng-lead", { now: NOW, maxTokens: 100000 }).text);
+  assert.equal(two, `${INTRO}\n${engLines.slice(0, 2).join("\n")}\n--- end ---\n… and 11 more open classes under lessons/`);
+
+  const all = fixture();
+  writeFileSync(join(all, "lessons", "L-001.md"), "---\nid: L-001\nat: 2026-10-01T00:00:00.000Z\nclass: solo\nevidence: [opera/W-001.md]\n---\n");
+  const fits = section(buildContext(all, "eng-lead", { now: NOW, maxTokens: 100000 }).text);
+  assert.equal(fits, `${INTRO}\n- solo · 1× over 0 cascades · latest L-001\n--- end ---`);
+  assert.equal(section(buildContext(all, "qa-lead", { now: NOW, maxTokens: 100000 }).text), undefined, "a collegium with no open class gets no section");
+
+  const zero = fixture();
+  cpSync(join(dir, "lessons"), join(zero, "lessons"), { recursive: true });
+  appendFileSync(join(zero, "bisellium.yml"), "defaults:\n  context_open_lessons: 0\n");
+  assert.equal(section(buildContext(zero, "eng-lead", { now: NOW, maxTokens: 100000 }).text), undefined, "0 turns the section off");
 });
