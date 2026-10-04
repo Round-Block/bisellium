@@ -18,6 +18,7 @@ import {
   realpathSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -265,6 +266,43 @@ if (only === undefined || only === 5) {
         existsSync(join(jStudio, "ci", "shots", "W-X", "manifest.txt")),
         false,
         `(j) ${label}: no manifest.txt is written`,
+      );
+    }
+
+    // (k) a symlink on the path from the studio to the shots directory is refused before anything is
+    // cleared, created or written: the external target is untouched and the walk never starts.
+    for (const [label, linkAt] of [
+      ["ci", ["ci"]],
+      ["ci/shots", ["ci", "shots"]],
+      ["ci/shots/W-X", ["ci", "shots", "W-X"]],
+    ]) {
+      const kStudio = scratch("k-studio");
+      const outside = scratch("k-outside");
+      const rel = linkAt.join("/");
+      // The external tree mirrors what the script would clear: <outside>/<rest>/keep.png (+ W-X for a shorter link).
+      const rest = ["ci", "shots", "W-X"].slice(linkAt.length);
+      const victim = join(outside, ...rest);
+      mkdirSync(victim, { recursive: true });
+      writeFileSync(join(victim, "keep.png"), "keep");
+      const before = readdirSync(outside, { recursive: true }).sort();
+      const k = runScript(
+        "k",
+        { BISELLIUM_OPUS: "W-X", BISELLIUM_STUDIO_DIR: kStudio },
+        {
+          pngs: [["board.png", 1280, 900]],
+          plant: () => {
+            mkdirSync(join(kStudio, ...linkAt.slice(0, -1)), { recursive: true });
+            symlinkSync(outside, join(kStudio, rel));
+          },
+        },
+      );
+      assert.notEqual(k.status, 0, `(k) a symlinked ${label} makes the script exit nonzero`);
+      assert.equal(k.invocations.length, 0, `(k) a symlinked ${label}: the walk is never started`);
+      assert.equal(existsSync(join(victim, "keep.png")), true, `(k) a symlinked ${label}: the external file survives`);
+      assert.deepEqual(
+        readdirSync(outside, { recursive: true }).sort(),
+        before,
+        `(k) a symlinked ${label}: nothing is added to or removed from the external tree`,
       );
     }
   });
