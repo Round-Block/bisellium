@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { fetchActa, fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
 import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
 import { formatPosture } from "../lib/posture.js";
-import { healthStamp, integritySummary } from "../lib/officinaTruth.js";
 import { FastiStrip } from "../components/FastiStrip.js";
 import type { ActaEntry } from "../lib/fasti.js";
 
@@ -49,24 +48,10 @@ const DEV_HEALTH: HealthResponse = {
   ],
 };
 
-export interface OfficinaViewProps {
-  aerarium: AerariumEntry[] | "failed" | undefined; // undefined = not loaded yet
-  health: HealthResponse | "failed" | undefined;
-  acta: ActaEntry[];
-  now: Date;
-}
-
-/** The two health panels share one loading/failed copy; a loaded health gets the as-of stamp. */
-function healthState(health: OfficinaViewProps["health"]): React.ReactNode {
-  if (health === undefined) return <p className="officina__loading">Loading health…</p>;
-  if (health === "failed") return <p className="officina__empty">Could not load health.</p>;
-  return undefined;
-}
-
 export function Officina() {
   const [, setOfficina] = useState<OfficinaResponse>();
-  const [aerarium, setAerarium] = useState<OfficinaViewProps["aerarium"]>();
-  const [health, setHealth] = useState<OfficinaViewProps["health"]>();
+  const [aerarium, setAerarium] = useState<AerariumEntry[]>([]);
+  const [health, setHealth] = useState<HealthResponse>();
   const [acta, setActa] = useState<ActaEntry[]>([]);
 
   const demo = location.search.includes("demo");
@@ -79,102 +64,96 @@ export function Officina() {
       return;
     }
     fetchOfficina().then(setOfficina).catch(() => undefined);
-    fetchAerarium().then(setAerarium).catch(() => setAerarium("failed"));
-    fetchHealth().then(setHealth).catch(() => setHealth("failed"));
+    fetchAerarium().then(setAerarium).catch(() => setAerarium(DEV_AERARIUM));
+    fetchHealth().then(setHealth).catch(() => setHealth(DEV_HEALTH));
     fetchActa().then(setActa).catch(() => undefined);
   }, [demo]);
 
-  return <OfficinaView aerarium={aerarium} health={health} acta={acta} now={new Date()} />;
-}
-
-export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps) {
-  const loaded = typeof health === "object" ? health : undefined;
-  const summary = loaded ? integritySummary(loaded) : undefined;
-  const asOf = loaded && <p className="officina__as-of">{healthStamp(loaded.at, now)}</p>;
   return (
     <div className="officina">
       <div className="officina__header">
         <h1 className="officina__title">Officina</h1>
       </div>
 
-      <FastiStrip acta={acta} today={now} />
+      <FastiStrip acta={acta} today={new Date()} />
 
       {/* Top row: Status (full width) */}
       <section className="officina__panel panel--status-wide">
-        <h2 className="officina__panel-heading">Posture and burn</h2>
-        {aerarium === undefined && <p className="officina__loading">Loading budget allocations…</p>}
-        {aerarium === "failed" && <p className="officina__empty">Could not load budget allocations.</p>}
-        {Array.isArray(aerarium) && aerarium.length === 0 && (
-          <>
-            <p className="officina__empty">No budget allocation is recorded for this week. Burn and posture are unavailable.</p>
-            <p className="officina__empty">Set one with bisellium budget.</p>
-          </>
-        )}
-        {Array.isArray(aerarium) && aerarium.length > 0 && (
-          <div className="officina__grid-3col">
-            {aerarium.map((entry) => {
-              const { word, reason } = formatPosture(entry);
-              return (
-                <div key={entry.collegium} className="officina__metric-card">
-                  <span className="officina__collegium-name">{entry.collegium}</span>
-                  <div className="officina__posture-row">
-                    <div className="officina__pie" style={pieStyle(entry.burn.tokens, entry.allowance.tokens)} />
-                    <div className="officina__posture-text">
-                      <span className="officina__posture-word">{word}</span>
-                      <span className="officina__posture-reason">{reason}</span>
-                    </div>
+        <h2 className="officina__panel-heading">System status</h2>
+        <div className="officina__grid-3col">
+          {aerarium.map((entry) => {
+            const { word, reason } = formatPosture(entry);
+            return (
+              <div key={entry.collegium} className="officina__metric-card">
+                <span className="officina__collegium-name">{entry.collegium}</span>
+                <div className="officina__posture-row">
+                  <div className="officina__pie" style={pieStyle(entry.burn.tokens, entry.allowance.tokens)} />
+                  <div className="officina__posture-text">
+                    <span className="officina__posture-word">{word}</span>
+                    <span className="officina__posture-reason">{reason}</span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })}
+        </div>
       </section>
 
-      {/* Bottom row: Pending actions (span 6) + Integrity (span 6) */}
+      {/* Bottom row: Engine (span 6) + Integrity (span 6) */}
       <section className="officina__panel panel--engine">
-        <div className="officina__panel-header">
-          <h2 className="officina__panel-heading">Pending actions</h2>
-          {loaded && <span className="officina__count">{loaded.due.length}</span>}
-        </div>
-        {healthState(health)}
-        {loaded && (
+        <h2 className="officina__panel-heading">Process engine</h2>
+        {health && (
           <>
-            {asOf}
-            {loaded.due.length === 0 && <p className="officina__empty">Nothing pending.</p>}
-            <div className="officina__table officina__table--zebra">
-              {loaded.due.map((d, i) => (
-                <div key={`${d.kind}:${d.id}:${i}`} className="officina__row">
-                  <span className="officina__value-mono">{d.id}</span>
-                  <span className="officina__label-secondary">{d.kind}</span>
-                </div>
-              ))}
+            <div className="officina__metric-card">
+              <span className="officina__metric-label">Engine state</span>
+              <span className="officina__value-status">
+                {health.autonomy.paused ? "Paused" : "Autonomous"}
+              </span>
             </div>
+            {health.due.length > 0 && (
+              <>
+                <div className="officina__panel-header" style={{ marginTop: 12 }}>
+                  <span className="officina__label">Pending actions</span>
+                  <span className="officina__count">{health.due.length}</span>
+                </div>
+                <div className="officina__table officina__table--zebra">
+                  {health.due.map((d) => (
+                    <div key={`${d.kind}:${d.id}`} className="officina__row">
+                      <span className="officina__value-mono">{d.id}</span>
+                      <span className="officina__label-secondary">{d.kind}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </section>
 
       <section className="officina__panel panel--integrity">
         <h2 className="officina__panel-heading">Contract integrity</h2>
-        {healthState(health)}
-        {summary && (
+        {health && (
           <>
-            {asOf}
-            <p className="officina__integrity-summary">
-              {summary.stops} {summary.warns}
-            </p>
-            <p className="officina__label">All findings by area</p>
-            <div className="officina__table officina__table--zebra">
-              {summary.rows.map((r) => (
-                <details key={r.family} className="officina__row" title={r.rules.join(", ")}>
-                  <summary>
-                    <span className="officina__label">{r.label}</span>
-                    <span className="officina__value-mono">{fmt(r.count)}</span>
-                  </summary>
-                  <p className="officina__rule-ids">{r.rules.join(", ")}</p>
-                </details>
-              ))}
+            <div className="officina__grid-2col">
+              <div className="officina__metric-card">
+                <span className="officina__metric-label">Blocking issues</span>
+                <span className="officina__metric-value">{fmt(health.blocks)}</span>
+              </div>
+              <div className="officina__metric-card">
+                <span className="officina__metric-label">Advisory alerts</span>
+                <span className="officina__metric-value">{fmt(health.advisories)}</span>
+              </div>
             </div>
+            {Object.keys(health.findingsByRule).length > 0 && (
+              <div className="officina__table officina__table--zebra">
+                {Object.entries(health.findingsByRule).map(([rule, count]) => (
+                  <div key={rule} className="officina__row">
+                    <span className="officina__label">{rule}</span>
+                    <span className="officina__value-mono">{fmt(count)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </>
         )}
       </section>
