@@ -1,0 +1,55 @@
+# behaviour: 7
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-085.behaviour.7: packages/cli/src/open-lessons.test.ts
+# exit: 1
+# at: 2026-10-04T14:28:41.658Z
+# sella: builder.W-085
+# tree: tree:d96507e295089671a1090024297d222676569d81
+
+TAP version 13
+# Subtest: W-085 behaviour 7: check knows the context_open_lessons default
+not ok 1 - W-085 behaviour 7: check knows the context_open_lessons default
+  ---
+  duration_ms: 56.179688
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-085/packages/cli/src/open-lessons.test.ts:13:3212'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + [
+    +   {
+    +     level: 'advise',
+    +     message: 'unknown default "context_open_lessons"',
+    +     rule: 'manifest.defaults',
+    +     where: 'bisellium.yml#defaults'
+    +   }
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0:
+      rule: 'manifest.defaults'
+      level: 'advise'
+      where: 'bisellium.yml#defaults'
+      message: 'unknown default "context_open_lessons"'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-085/packages/cli/src/open-lessons.test.ts:308:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 104.892827

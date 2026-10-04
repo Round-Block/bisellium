@@ -1,0 +1,16 @@
+# opus: W-085
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-04T15:19:07.203Z
+# tree: tree:2b8e195b610e46838fb4b8cc9c719acb81554d21
+
+## Findings
+1. blocking — packages/commands/src/context.ts:172 Security class: multiline file-derived values can inject `--- end ---` and escape the lessons data fence. I searched every interpolation in the class line; `class`, `latest`, `fixInFlight.id`, and `fixInFlight.state` are all unescaped. — check: none: add adversarial multiline fence-escape cases to packages/cli/src/open-lessons.test.ts
+2. blocking — studio/briefs/W-085.md:237 The required post-implementation real-studio measurement is absent: the packet contains no rerun covering `openLessons`, all four sella contexts, counts, or token bound; the available `W-085-spec/measure.out` is the pre-implementation baseline. — check: none: attach the required post-implementation measurement outputs
+
+## Verdict
+The Interfaces ranking binds, so `process×insurance-clause-fired` correctly wins the final class-ascending tie; reds 05/06 are genuine pre-implementation runs under D-036. The security gap and missing required measurement fail this round.
+VERDICT: FAIL

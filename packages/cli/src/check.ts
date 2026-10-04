@@ -31,6 +31,7 @@ import { checkTests } from "./rules/tests.js";
 import { diagnosticLabel } from "./reporting.js";
 import { effectiveProbationes, readContainedRegularFile, reviewFailedAtCertifiedTree, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
 import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
+import { DEFAULT_OPEN_LESSONS } from "@bisellium/commands/context.js";
 
 // An id is used verbatim to build filenames (acta/<date>-<id>-daily.md, and
 // every id here can end up as a path component elsewhere) — reject anything
@@ -88,6 +89,7 @@ const DEFAULTS = {
   hot_doc_chars: 8000,
   sella_stale_minutes: 30,
   model_probe_stale_days: 7,
+  context_open_lessons: DEFAULT_OPEN_LESSONS,
 };
 
 type Dict = Record<string, unknown>;

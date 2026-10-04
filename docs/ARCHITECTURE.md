@@ -226,6 +226,10 @@ files the next poll picks up.
   every local and remote-tracking ref, then reserves the rendered record by
   exclusive create. Git failure warns and degrades to local records; it never
   fetches.
+- `openLessons` (`@bisellium/commands/lessons.js`) — the one reader of "open"
+  lesson classes (W-085): ranked, attributed to collegia, never throws.
+  `buildContext` carries them as `## Open lessons`; `check` knows the
+  `context_open_lessons` default. `commands` already depends on adapter-native.
 - `opus-model` (`@bisellium/commands/opus-model.js`) — the read-only native
   work-model seam shared by `check`, lifecycle/verdict writers and `verify`:
   containment, hierarchy/dates, UI policy/effective gates, design digests and
@@ -245,6 +249,8 @@ files the next poll picks up.
   commit only (never the origin tip, and never from the `pr` rung). The
   architect's spec verdict is written on `spec/<id>` before `opus/<id>` exists
   and rides the spec PR; until that PR merges the `spec` rung names the landing.
+  Every dispatch order also carries a `boot:` line (the sella's `bisellium
+  context` command, W-085) for a harness that cannot run it.
   `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the
   one "is this merge in the local trunk" predicate, in `commands` so a `done`
   refusal can import it without a cli-to-commands cycle. No workspace edge is
