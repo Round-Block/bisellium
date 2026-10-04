@@ -1,58 +1,42 @@
-certifies: tree:4795700cc2b582892dbea53ddea108dc4ee8294c
+certifies: tree:1c7a3d38baa33606620716cb8f2ce73345fe00f8
 command: npm test -s
 exit code: 0
 
-GET /api/opera 200 2ms
-GET /api/opus/W-006 200 0ms
-GET /api/inbox 200 5ms
-GET /api/officina 200 1ms
-GET /api/opera 200 3ms
-bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
-POST /api/_poll 200 19ms
-GET /api/opera 200 3ms
 GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
 GET /api/inbox 200 4ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
-bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
 POST /api/_poll 200 20ms
 GET /api/opera 200 3ms
-GET /api/opera 200 2ms
+GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
 GET /api/inbox 200 4ms
 GET /api/officina 200 1ms
-GET /api/opera 200 3ms
-bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
-POST /api/_poll 200 18ms
-GET /api/opera 200 2ms
-GET /api/opera 200 2ms
-GET /api/opus/W-006 200 0ms
-GET /api/inbox 200 4ms
-GET /api/officina 200 2ms
-GET /api/opera 200 2ms
+GET /api/opera 200 4ms
 bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
-POST /api/_poll 200 18ms
-GET /api/opera 200 3ms
-GET /api/opera 200 3ms
-GET /api/opus/W-006 200 0ms
-GET /api/inbox 200 4ms
-GET /api/officina 200 2ms
-GET /api/opera 200 3ms
-bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
-POST /api/_poll 200 19ms
-GET /api/opera 200 3ms
-GET /api/opera 200 3ms
-GET /api/opus/W-006 200 1ms
-GET /api/inbox 200 4ms
-GET /api/officina 200 1ms
-GET /api/opera 200 3ms
-bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
-POST /api/_poll 200 18ms
+POST /api/_poll 200 17ms
 GET /api/opera 200 3ms
 GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
 GET /api/inbox 200 3ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 19ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 17ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 4ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
@@ -65,14 +49,14 @@ GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
 POST /api/_poll 200 17ms
-GET /api/opera 200 2ms
+GET /api/opera 200 3ms
 GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
 GET /api/inbox 200 4ms
 GET /api/officina 200 1ms
-GET /api/opera 200 2ms
+GET /api/opera 200 3ms
 bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
-POST /api/_poll 200 19ms
+POST /api/_poll 200 18ms
 GET /api/opera 200 3ms
 GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
@@ -87,107 +71,123 @@ GET /api/opus/W-006 200 0ms
 GET /api/inbox 200 4ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
-POST /api/_poll 200 19ms
+bisellium serve: branch records {"status":"ok","liveRejected":1,"dropped":[]}
+POST /api/_poll 200 20ms
+GET /api/opera 200 3ms
+GET /api/opera 200 3ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 3ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
+bisellium serve: branch records {"status":"partial","liveRejected":0,"dropped":[{"id":"W-006","reason":"invalid-shape"}]}
+POST /api/_poll 200 16ms
 GET /api/opera 200 4ms
+GET /api/opera 200 2ms
+GET /api/opus/W-006 200 0ms
+GET /api/inbox 200 3ms
+GET /api/officina 200 1ms
+GET /api/opera 200 2ms
+POST /api/_poll 200 18ms
+GET /api/opera 200 3ms
 POST /api/_poll 200 13ms
 GET /api/opera 200 3ms
+POST /api/_poll 200 19ms
+GET /api/opera 200 2ms
 POST /api/_poll 200 18ms
 GET /api/opera 200 3ms
-POST /api/_poll 200 19ms
-GET /api/opera 200 3ms
-GET /api/officina 200 2ms
-POST /api/_poll 200 21ms
-GET /api/opera 200 3ms
 GET /api/officina 200 1ms
-GET /api/opera 200 3ms
-GET /api/aerarium 200 2ms
-GET /api/inbox 200 4ms
-POST /api/_poll 200 11ms
-GET /api/opera 200 3ms
-GET /api/officina 200 1ms
-POST /api/_poll 200 12ms
-GET /api/opera 200 3ms
 POST /api/_poll 200 17ms
 GET /api/opera 200 3ms
-POST /api/_poll 200 18ms
-GET /api/opera 200 3ms
-POST /api/_poll 200 18ms
+GET /api/officina 200 1ms
 GET /api/opera 200 2ms
 GET /api/aerarium 200 3ms
+GET /api/inbox 200 4ms
 POST /api/_poll 200 12ms
 GET /api/opera 200 3ms
-POST /api/_poll 200 11ms
-GET /api/inbox 200 3ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 12ms
+GET /api/opera 200 4ms
+POST /api/_poll 200 16ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 18ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 16ms
+GET /api/opera 200 3ms
+GET /api/aerarium 200 3ms
 POST /api/_poll 200 11ms
 GET /api/opera 200 3ms
-POST /api/_poll 200 17ms
-GET /api/inbox 200 3ms
+POST /api/_poll 200 11ms
+GET /api/inbox 200 4ms
+POST /api/_poll 200 12ms
+GET /api/opera 200 3ms
+POST /api/_poll 200 16ms
+GET /api/inbox 200 4ms
 POST /api/_poll 200 11ms
 GET /api/opus/W-006 200 0ms
 GET /api/opera 200 4ms
-GET /api/opus/W-006 200 0ms
-GET /api/inbox 200 4ms
+GET /api/opus/W-006 200 1ms
+GET /api/inbox 200 6ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
-GET /api/inbox 200 6ms
-GET /api/officina 200 2ms
-GET /api/opera 200 4ms
+GET /api/inbox 200 3ms
+GET /api/officina 200 1ms
+GET /api/opera 200 3ms
 GET /api/opus/W-006 200 0ms
-POST /api/_poll 200 13ms
+POST /api/_poll 200 16ms
+POST /api/_poll 200 5ms
 POST /api/_poll 200 6ms
-POST /api/_poll 200 7ms
-POST /api/_poll 200 4ms
+POST /api/_poll 200 6ms
 GET /api/opera 200 3ms
 GET /api/officina 200 1ms
 POST /api/_poll 200 0ms
 POST /api/_poll 200 14ms
 bisellium serve: branch records {"status":"stale","reason":"git-timeout","failures":1,"dropped":[]}
-POST /api/_poll 200 206ms
-GET /api/opera 200 2ms
+POST /api/_poll 200 207ms
+GET /api/opera 200 3ms
 GET /api/officina 200 1ms
 POST /api/_poll 200 4ms
-GET /api/officina 200 1ms
 GET /api/officina 200 2ms
-POST /api/_poll 200 11ms
-POST /api/_poll 200 9ms
+GET /api/officina 200 1ms
+POST /api/_poll 200 10ms
+POST /api/_poll 200 10ms
 POST /api/_poll 200 10ms
 GET /api/officina 200 1ms
 bisellium serve: branch records {"status":"partial","capped":1,"liveRejected":0,"dropped":[]}
-POST /api/_poll 200 56ms
+POST /api/_poll 200 55ms
 GET /api/officina 200 1ms
 bisellium serve: branch records {"status":"stale","reason":"git-error","failures":1,"dropped":[]}
-POST /api/_poll 200 9ms
+POST /api/_poll 200 10ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 bisellium serve: branch records {"status":"ok","liveRejected":0,"dropped":[]}
 POST /api/_poll 200 12ms
 GET /api/officina 200 1ms
 bisellium serve: branch records {"status":"stale","reason":"git-error","failures":1,"dropped":[]}
-POST /api/_poll 200 7ms
+POST /api/_poll 200 9ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
-POST /api/_poll 200 7ms
+POST /api/_poll 200 8ms
 GET /api/officina 200 1ms
-GET /api/opera 200 3ms
-POST /api/_poll 200 7ms
+GET /api/opera 200 4ms
+POST /api/_poll 200 8ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 POST /api/_poll 200 8ms
 GET /api/officina 200 1ms
 GET /api/opera 200 2ms
-POST /api/_poll 200 7ms
+POST /api/_poll 200 8ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 bisellium serve: branch records {"status":"unavailable","reason":"git-error","failures":6,"dropped":[]}
-POST /api/_poll 200 15ms
+POST /api/_poll 200 13ms
 GET /api/officina 200 1ms
 GET /api/opera 200 3ms
 bisellium serve: branch records {"status":"unavailable","reason":"git-error","failures":1,"dropped":[]}
 GET /api/officina 200 1ms
 bisellium serve: branch records {"status":"ok","liveRejected":0,"dropped":[]}
-POST /api/_poll 200 20ms
-GET /api/officina 200 1ms
+POST /api/_poll 200 21ms
+GET /api/officina 200 2ms
 GET /api/opera 200 3ms
 GET /api/officina 200 1ms
 GET /api/officina 200 1ms
