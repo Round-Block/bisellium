@@ -100,7 +100,7 @@ export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps)
 
       {/* Top row: Status (full width) */}
       <section className="officina__panel panel--status-wide">
-        <h2 className="officina__panel-heading">System status</h2>
+        <h2 className="officina__panel-heading">Posture and burn</h2>
         <div className="officina__grid-3col">
           {Array.isArray(aerarium) && aerarium.map((entry) => {
             const { word, reason } = formatPosture(entry);
@@ -120,35 +120,25 @@ export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps)
         </div>
       </section>
 
-      {/* Bottom row: Engine (span 6) + Integrity (span 6) */}
+      {/* Bottom row: Pending actions (span 6) + Integrity (span 6) */}
       <section className="officina__panel panel--engine">
-        <h2 className="officina__panel-heading">Process engine</h2>
+        <div className="officina__panel-header">
+          <h2 className="officina__panel-heading">Pending actions</h2>
+          {loaded && <span className="officina__count">{loaded.due.length}</span>}
+        </div>
         {healthState(health)}
         {loaded && (
           <>
             {asOf}
-            <div className="officina__metric-card">
-              <span className="officina__metric-label">Engine state</span>
-              <span className="officina__value-status">
-                {loaded.autonomy.paused ? "Paused" : "Autonomous"}
-              </span>
+            {loaded.due.length === 0 && <p className="officina__empty">Nothing pending.</p>}
+            <div className="officina__table officina__table--zebra">
+              {loaded.due.map((d, i) => (
+                <div key={`${d.kind}:${d.id}:${i}`} className="officina__row">
+                  <span className="officina__value-mono">{d.id}</span>
+                  <span className="officina__label-secondary">{d.kind}</span>
+                </div>
+              ))}
             </div>
-            {loaded.due.length > 0 && (
-              <>
-                <div className="officina__panel-header" style={{ marginTop: 12 }}>
-                  <span className="officina__label">Pending actions</span>
-                  <span className="officina__count">{loaded.due.length}</span>
-                </div>
-                <div className="officina__table officina__table--zebra">
-                  {loaded.due.map((d) => (
-                    <div key={`${d.kind}:${d.id}`} className="officina__row">
-                      <span className="officina__value-mono">{d.id}</span>
-                      <span className="officina__label-secondary">{d.kind}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
           </>
         )}
       </section>
