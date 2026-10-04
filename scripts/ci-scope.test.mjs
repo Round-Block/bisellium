@@ -141,3 +141,34 @@ test("W-131 round 2 finding 2: a rename across the record-only boundary is not r
     rmSync(repo, { recursive: true, force: true });
   }
 });
+
+test("W-131 round 3 finding 2: a deleted source copied into studio/ and the handoff is not record-only", () => {
+  const repo = mkdtempSync(join(tmpdir(), "w131-scope-copy-"));
+  try {
+    git(repo, "init", "-q", "-b", "main");
+    git(repo, "config", "user.email", "fixture@example.invalid");
+    git(repo, "config", "user.name", "Fixture");
+    mkdirSync(join(repo, "src"));
+    writeFileSync(join(repo, "src", "c.ts"), "the same line\n".repeat(20));
+    git(repo, "add", ".");
+    git(repo, "commit", "-qm", "base");
+    const base = git(repo, "rev-parse", "HEAD");
+    const moved = readFileSync(join(repo, "src", "c.ts"), "utf8");
+    git(repo, "rm", "-q", "src/c.ts");
+    mkdirSync(join(repo, "studio"));
+    mkdirSync(join(repo, "docs"));
+    writeFileSync(join(repo, "studio", "c.ts"), moved);
+    writeFileSync(join(repo, "docs", "SESSION-HANDOFF.md"), moved);
+    git(repo, "add", ".");
+    git(repo, "commit", "-qm", "source deleted, content materialized into both allowed places");
+    const result = scope(repo, base, "HEAD");
+    assert.equal(
+      result.stdout,
+      "record_only=false\n",
+      "the deleted source path counts, so the diff is not record-only",
+    );
+    assert.equal(result.status, 0);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});

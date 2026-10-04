@@ -135,6 +135,7 @@ const MANIFEST = [
   "probationes:",
   "  - { id: tests, name: Tests, kind: automated, command: x }",
   "  - { id: lint, name: Lint, kind: automated, command: x }",
+  "  - { id: spec, name: Spec, kind: agent }",
   "  - { id: review, name: Review, kind: agent }",
   "wip_limit: 10",
   "",
