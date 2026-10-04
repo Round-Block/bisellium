@@ -227,3 +227,34 @@ test("W-085 behaviour 4: the context section shows the collegium's classes, capp
   appendFileSync(join(zero, "bisellium.yml"), "defaults:\n  context_open_lessons: 0\n");
   assert.equal(section(buildContext(zero, "eng-lead", { now: NOW, maxTokens: 100000 }).text), undefined, "0 turns the section off");
 });
+
+test("W-085 behaviour 5: the section is priority 2, dropped only after everything but the lex", () => {
+  const dir = lessonFixture();
+  writeFileSync(join(dir, "opera", "W-803.md"), "---\nid: W-803\ntitle: mine\nkind: feature\ncollegium: engineering\nstate: building\nsella: eng-lead\n---\nFixture.\n");
+  writeFileSync(join(dir, "petitiones", "A-9.md"), "---\nid: A-9\nfrom: patron\nto: eng-lead\nstate: needs_you\nopened: 2026-10-04T09:00:00Z\n---\nA question.\n");
+  writeFileSync(join(dir, "acta", "2026-10-04-ruling.md"), "---\nauthor: patron\nkind: decision\ntitle: A ruling\nat: 2026-10-04T10:00:00Z\n---\nRuled.\n");
+
+  const at = (maxTokens: number) => buildContext(dir, "eng-lead", { now: NOW, maxTokens });
+  const full = at(100000);
+  assert.deepEqual(full.truncated, []);
+  for (const h of ["## Your active work", "## Petitiones", "## Engineering index", "## Recent decisions", "## Standing rules"]) assert.ok(full.text.includes(h), h);
+
+  // smallest budget that still carries the section
+  let [lo, hi] = [0, full.tokens];
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (section(at(mid).text)) hi = mid;
+    else lo = mid;
+  }
+  const tight = at(hi);
+  assert.ok(section(tight.text), "present at the smallest carrying budget");
+  for (const name of ["collegium index", "decisions", "petitiones", "opera", "standing rules"]) assert.ok(tight.truncated.includes(name), `${name} dropped before the section`);
+  assert.equal(tight.truncated.includes("open lessons"), false);
+  assert.ok(tight.text.includes("## Engineering lex"));
+
+  const under = at(lo);
+  assert.equal(section(under.text), undefined);
+  assert.ok(under.truncated.includes("open lessons"), "truncated names it `open lessons`");
+  assert.equal(under.truncated.includes("lex"), false, "dropped before the lex");
+  assert.ok(under.text.includes("## Engineering lex"));
+});
