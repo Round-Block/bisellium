@@ -1,0 +1,53 @@
+# behaviour: 6
+# command: node node_modules/@playwright/test/cli.js test --config=apps/web/playwright.serve.config.ts walk.spec.ts --grep W-077.behaviour.6: --reporter=line
+# exit: 1
+# at: 2026-10-04T22:22:20.033Z
+# sella: builder.W-077
+# tree: tree:07e7a211086695c3afa8a53d460a7943ae24058e
+
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 39 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.74 kB │ gzip:  0.40 kB
+dist/assets/index-ST6tjov7.css   18.64 kB │ gzip:  3.74 kB
+dist/assets/index-DG0a8Mdx.js   257.20 kB │ gzip: 79.86 kB
+
+✓ built in 146ms
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › apps/web/tests-serve/walk.spec.ts:218:1 › W-077 behaviour 6: the Officina tells the truth about a stale tick snapshot and an empty aerarium
+  1) [chromium] › apps/web/tests-serve/walk.spec.ts:218:1 › W-077 behaviour 6: the Officina tells the truth about a stale tick snapshot and an empty aerarium 
+
+    Error: one as-of line in each health panel
+
+    expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.officina__as-of')
+    Expected: 2
+    Received: 0
+    Timeout:  5000ms
+
+    Call log:
+      - one as-of line in each health panel locator('.officina__as-of') with timeout 5000ms
+      - waiting for locator('.officina__as-of')
+        14 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      246 |
+      247 |   // (a) the Genuine red: both health panels carry the stamp of the file, not of the screen.
+    > 248 |   await expect(page.locator(".officina__as-of"), "one as-of line in each health panel").toHaveCount(2);
+          |                                                                                         ^
+      249 |   for (const stamp of await page.locator(".officina__as-of").all()) await expect(stamp).toHaveText(/^as of 2026-09-25 09:35 UTC,/);
+      250 |
+      251 |   // (b) the empty aerarium is named, and nothing is drawn as a card.
+        at /home/edckt/agents/bisellium/.worktrees/W-077/apps/web/tests-serve/walk.spec.ts:248:89
+
+    Error Context: apps/web/test-results/walk-W-077-behaviour-6-the-42664-pshot-and-an-empty-aerarium-chromium/error-context.md
+
+
+  1 failed
+    [chromium] › apps/web/tests-serve/walk.spec.ts:218:1 › W-077 behaviour 6: the Officina tells the truth about a stale tick snapshot and an empty aerarium 
