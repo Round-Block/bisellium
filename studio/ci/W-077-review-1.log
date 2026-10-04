@@ -1,0 +1,17 @@
+# opus: W-077
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-04T23:00:26.917Z
+# tree: tree:f79c55ebe9559171ef003848f115d242ee9278ff
+
+## Findings
+1. blocking — apps/web/src/components/w025.css:1357 `display: flex` on `<summary>` suppresses Chromium’s native disclosure marker, leaving no visible affordance that integrity rows expand; the attached screenshot and `accept/notes.md:19` confirm the defect. — check: apps/web/tests-serve/walk.spec.ts
+2. blocking — receipt.json:82 The required final full served-suite run is not evidenced: the receipt records only `ci`, `verify`, and `check`, while `receipt-mint.log` contains only the intentionally failing served red runs; the screenshot exercise does not prove behaviour 7 or every W-110 row. — check: none: receipt gate for `node node_modules/@playwright/test/cli.js test --config=apps/web/playwright.serve.config.ts`
+3. advisory — apps/server/test/health-due.test.ts:38 The behaviour-3 regression row is incomplete as a class: across this test, `officina-truth.test.ts`, and the served rows, there are no cases for non-string mapped names or null/primitive due items, nor huge, multiline, or HTML names carried through to escaped text rendering. — check: apps/server/test/health-due.test.ts
+
+## Verdict
+The source otherwise satisfies the core truthfulness behavior, and the served reds have valid pre-change builds with an exact, unsmuggled re-apply. The explicit disclosure-marker defect and missing required green served-suite evidence block this round.
+VERDICT: FAIL
