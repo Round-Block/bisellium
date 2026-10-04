@@ -1,0 +1,20 @@
+# opus: W-131
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-04T05:10:21.098Z
+# tree: tree:7690ce6f7e264df8607995abe7922651f990dc76
+
+W-131 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-131.md (229 lines, 8 behaviours, six sections).
+Measurements: ~/.bisellium-evidence/W-131-spec/measure-ci.mjs -> measure-ci.out; measure-ci-runs.sh -> measure-ci-runs.out.
+
+## Findings
+1. advisory — the 13 historic verdict logs holding raw Codex transcripts (3281 KiB) stay as they are; deleting them is a Patron ruling, not this opus's — check: none: a size cap at verdict write (added by W-131 behaviour 1)
+2. advisory — record-only PRs no longer run npm test, so a record that breaks a real-studio test (check.test.ts pins petitio subjects) surfaces on the post-merge master run, not on the PR — check: the full suite on push to master (ci.yml, W-131 behaviour 6)
+3. advisory — verdict.test.ts and ci-workflow.test.mjs print FAIL lines, which the replay classifier refuses, so W-131's reds live in two new node:test files — check: scripts/replay-accept.mjs ASSERTION clause
+4. advisory — the guard red (behaviour 8) depends on bwrap being unreachable through PATH in the replay cell; the builder confirms it replays — check: the receipt's producer red replay
+
+## Recommendation
+Verdict: passed. All four scope items fit in eight behaviours with small diffs, so there is no split.
