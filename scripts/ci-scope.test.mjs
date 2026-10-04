@@ -20,7 +20,8 @@ const workflow = () => parseYaml(readFileSync(CI_YML, "utf8"));
 const FULL = "steps.scope.outputs.record_only != 'true'";
 const SHORT = "steps.scope.outputs.record_only == 'true'";
 
-const git = (cwd, ...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+const git = (cwd, ...args) =>
+  execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 const scope = (cwd, ...args) => spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: "utf8" });
 
 test("W-131 behaviour 5: recordOnly is true only for studio/ and the handoff, and the CLI fails closed", async () => {
@@ -66,15 +67,29 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
     const steps = doc.jobs[job].steps;
     const scopeSteps = steps.filter((step) => step.id === "scope");
     assert.equal(scopeSteps.length, 1, `${job} has one id: scope step`);
-    assert.match(scopeSteps[0].run, /^node scripts\/ci-scope\.mjs .*>> "?\$GITHUB_OUTPUT"?$/, `${job}'s scope step appends to $GITHUB_OUTPUT`);
-    assert.equal(scopeSteps[0].if, "github.event_name == 'pull_request'", `${job}'s scope step runs only on a pull request`);
-    for (const step of steps.filter((s) => typeof s.run === "string" && s.id !== "scope" && s.run !== "npm ci" && s.if !== SHORT))
+    assert.match(
+      scopeSteps[0].run,
+      /^node scripts\/ci-scope\.mjs .*>> "?\$GITHUB_OUTPUT"?$/,
+      `${job}'s scope step appends to $GITHUB_OUTPUT`,
+    );
+    assert.equal(
+      scopeSteps[0].if,
+      "github.event_name == 'pull_request'",
+      `${job}'s scope step runs only on a pull request`,
+    );
+    for (const step of steps.filter(
+      (s) => typeof s.run === "string" && s.id !== "scope" && s.run !== "npm ci" && s.if !== SHORT,
+    ))
       assert.equal(step.if, FULL, `${job}: "${step.run}" carries the full-path guard`);
   }
   const short = doc.jobs.gates.steps.filter((step) => step.if === SHORT);
   assert.equal(short.length, 1, "gates has exactly one record-only step");
   assert.equal(short[0].run, "npm run -s check -- studio --repo .", "and it is the studio check");
-  assert.equal(doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length, 0, "web-e2e has no record-only step");
+  assert.equal(
+    doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
+    0,
+    "web-e2e has no record-only step",
+  );
 });
 
 test("W-131 behaviour 7: gates installs bubblewrap and lifts the userns restriction before npm test, with the live-row guard on", () => {
@@ -82,7 +97,9 @@ test("W-131 behaviour 7: gates installs bubblewrap and lifts the userns restrict
   const runs = steps.map((step) => step.run);
   const npmTest = runs.indexOf("npm test");
   assert.notEqual(npmTest, -1, "gates runs npm test");
-  const bwrap = runs.findIndex((run) => typeof run === "string" && run.includes("apt-get install") && run.includes("bubblewrap"));
+  const bwrap = runs.findIndex(
+    (run) => typeof run === "string" && run.includes("apt-get install") && run.includes("bubblewrap"),
+  );
   assert.notEqual(bwrap, -1, "gates installs bubblewrap");
   const sysctl = runs.indexOf("sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0");
   assert.notEqual(sysctl, -1, "gates lifts the AppArmor userns restriction");

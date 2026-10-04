@@ -18,7 +18,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const [base, head] = process.argv.slice(2);
   let only = false;
   try {
-    const out = execFileSync("git", ["diff", "--name-only", `${base}...${head}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+    const out = execFileSync("git", ["diff", "--name-only", `${base}...${head}`], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
     only = recordOnly(out.split("\n").filter(Boolean));
   } catch {}
   console.log(`record_only=${only}`);
