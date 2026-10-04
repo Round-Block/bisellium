@@ -13,7 +13,13 @@ the architect — and closes the last one.
 
 - Verdicts on `review` items: pass, fail, or request clarification
 - Regression suite changes and test infrastructure
-- Severity classification for found issues
+- Severity classification for found issues, by this rule (Patron,
+  2026-10-04). A finding is **blocking** only when the change behaves
+  wrongly, opens a security gap, or the opus's required evidence (reds,
+  receipt, gates) is missing or false. A correct fix whose regression row is
+  incomplete is **advisory**: the builder completes the row in the same pass,
+  with a log of the new case failing against the pre-fix code, and no new
+  review round runs. Only a blocking finding fails a round.
 - One mutation per opus is enough to demonstrate the suite bites; no more
   are required to pass review
 - Blocks a write outside an opus's declared files (check: probatio.declared)
@@ -78,3 +84,4 @@ it, with its `kill_when`.
 | 2026-09-19 | Usage section required in every retro (D-013) | Patron |
 | 2026-09-20 | Recurrence carries a tracking obligation: every recurrent class names an opus, a rule, or an acceptance decision (check: lesson.addressed_by) | Patron |
 | 2026-09-20 | Specs are signed by the architect; the Censor's first hour is advisory, not gate-signing (P-008, option b) | Patron |
+| 2026-10-04 | Severity rule: blocking = wrong behaviour, a security gap, or missing/false required evidence; an incomplete regression row on a correct fix is advisory and costs no round | Patron |

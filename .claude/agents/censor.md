@@ -32,4 +32,9 @@ instance of a three-instance class costs three review rounds — W-026's
 rounds 5, 6 and 7 were one bug (a read pointing at the checkout instead of
 the branch ref) found serially in three places.
 
+Classify every finding by the severity rule in your charter (§2). Blocking
+means wrong behaviour, a security gap, or missing or false required evidence.
+A correct fix with an incomplete regression row is advisory, and only a
+blocking finding fails a round.
+
 Judge evidence as it stands; never wave through a gate that wasn't actually run.
