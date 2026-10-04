@@ -285,3 +285,18 @@ test("W-077 behaviour 6: the Officina tells the truth about a stale tick snapsho
   await expect(rows.nth(0).locator(".officina__rule-ids")).toBeVisible();
   await expect(rows.nth(0).locator(".officina__rule-ids")).toHaveText("traditio.stage, traditio.stale");
 });
+
+test("W-077 behaviour 7: a failed read never shows demo data", async ({ page }) => {
+  served = await startServed("w077-7");
+  const s = served;
+  await page.setViewportSize({ width: 1280, height: 900 });
+  for (const glob of ["**/api/aerarium**", "**/api/health**"]) await page.route(glob, (route) => route.fulfill({ status: 500, body: "{}" }));
+  await signIn(page, s, "officina");
+  const officina = page.locator(".officina");
+
+  await expect(officina, "the budget failure is named").toContainText("Could not load budget allocations.");
+  await expect(officina, "the health failure is named").toContainText("Could not load health.");
+  await expect(page.locator(".officina__collegium-name"), "no posture card").toHaveCount(0);
+  await expect(page.locator(".officina__as-of"), "no stamp").toHaveCount(0);
+  for (const demo of ["47,200", "1,880,000", "312,000", "acta.daily", "cascade-8"]) await expect(officina, `${demo} is demo data`).not.toContainText(demo);
+});
