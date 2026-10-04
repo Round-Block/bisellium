@@ -24,6 +24,9 @@ const DECISION_WINDOW_DAYS = 2;
 const ACTIVE_STATES = new Set(["building", "verifying", "review"]);
 
 const tokensOf = (s: string): number => Math.ceil(s.length / 4);
+/** W-085 fix round 1: a file-derived value on a fenced line must stay on that line — a line break or
+ *  control character becomes a space, so no value can start a `--- end ---` or `--- data:` fence line. */
+const oneLine = (s: string): string => s.replace(/[\p{Cc}\u2028\u2029]/gu, " ");
 const dataBlock = (path: string, body: string): string => `--- data: ${path} ---\n${body}\n--- end ---`;
 
 function toDate(v: unknown): Date | undefined {
@@ -169,8 +172,8 @@ function buildContextFor(
   if (classes.length) {
     const lines = classes.slice(0, cap).map(
       (c) =>
-        `- ${c.class} · ${c.lessons.length}× over ${c.cascades.length} cascade${c.cascades.length === 1 ? "" : "s"} · latest ${c.latest}` +
-        (c.fixInFlight ? ` · fix in flight: ${c.fixInFlight.id} (${c.fixInFlight.state})` : ""),
+        oneLine(`- ${c.class} · ${c.lessons.length}× over ${c.cascades.length} cascade${c.cascades.length === 1 ? "" : "s"} · latest ${c.latest}`) +
+        (c.fixInFlight ? oneLine(` · fix in flight: ${c.fixInFlight.id} (${c.fixInFlight.state})`) : ""),
     );
     const more = classes.length > cap ? `\n… and ${classes.length - cap} more open classes under lessons/` : "";
     sections.push({
