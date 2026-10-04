@@ -14,8 +14,7 @@
  * deadline rows wait out a short timeout. world() gives each run the Patron's
  * one-time ~/.cascade-loop/settings.json (0600) the loop insists on, and runs a
  * copy of the script from a temp "Patron folder" whose .claude/agents/ holds
- * fixture agent definitions (the loop reads them from beside itself). The one
- * real-claude call is `claude --help` in the drift row, which starts no session.
+ * fixture agent definitions (the loop reads them from beside itself).
  * Wrong-owner rows are absent: another UID needs root, which this harness cannot get.
  * Every test checks the run count before anything else, so while the script
  * is absent each one fails on its own assertion, not on a missing file.
@@ -577,7 +576,9 @@ test("24e. agent frontmatter keeps description, tools, model and the body as pro
   assert.deepEqual(Object.keys(agents.censor).sort(), ["description", "model", "prompt", "tools"]);
   assert.equal(agents.censor.prompt, "Judge it.\n\n---\n\nNo hooks: evil.sh here.");
   assert.deepEqual(agents.bare, { description: "Only a description.", prompt: "Bare prompt." });
-  assert.doesNotMatch(JSON.stringify(agents).replace(agents.censor.prompt, ""), /evil|hooks|mcpServers|permissionMode/);
+  // the prompt text itself says "hooks" and "evil.sh": look at everything but it
+  const rest = { ...agents, censor: { ...agents.censor, prompt: "" } };
+  assert.doesNotMatch(JSON.stringify(rest), /evil|hooks|mcpServers|permissionMode/);
 });
 
 test("24f. the repo's real .claude/agents folder builds: its four agents, only the four allowed keys", () => {
@@ -664,7 +665,8 @@ test("28. a symlinked directory between ~/.cascade-loop and the settings file me
 });
 
 test("29. pins argv: with user hook and apiKeyHelper planted in HOME and the clone, claude gets --restricted and no --setting-sources, and the planted script never runs", () => {
-  // The stub is not claude: this proves the flags, and row 30 proves what claude does with them.
+  // The stub is not claude: this pins the flags only. What claude does with --restricted is not
+  // tested here, because the vendor sentinel (scripts/no-vendor.mjs, W-072) keeps claude out of the suite.
   const w = world(["QUEUE_EMPTY"]);
   const planted = join(w.clone, "planted.sh");
   const marker = join(w.stubDir, "planted-ran");
@@ -683,17 +685,4 @@ test("29. pins argv: with user hook and apiKeyHelper planted in HOME and the clo
   assert.ok(argv.includes("--restricted"), argv.join(" | "));
   assert.ok(!argv.includes("--setting-sources"), argv.join(" | "));
   assert.equal(existsSync(marker), false);
-});
-
-test("30. drift: claude --help still says --restricted ignores user, project and local settings files, --settings still applies, and --permission-prompts exists", (t) => {
-  const r = spawnSync("claude", ["--help"], { encoding: "utf8", timeout: 30000 });
-  if (r.error?.code === "ENOENT") return t.skip("claude is not on PATH");
-  assert.equal(r.status, 0, `claude --help exited ${r.status}: ${r.error ?? r.stderr}`);
-  const help = r.stdout.replace(/\s+/g, " ");
-  assert.ok(help.includes("--restricted"), "no --restricted");
-  assert.ok(
-    help.includes("and ignores user, project and local settings files (managed settings and --settings still apply;"),
-    "--restricted no longer ignores user, project and local settings files or --settings no longer applies",
-  );
-  assert.ok(/--permission-prompts <target>/.test(help), "no --permission-prompts");
 });

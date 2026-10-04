@@ -23,10 +23,12 @@ lex, a decision, or a check rule and delete it here.
   Logs and the lock live in `~/.cascade-loop` (agent sessions cannot write
   it); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
   `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions. One-time
-  Patron step: the loop loads only user settings plus
-  `~/.cascade-loop/settings.json` (sandbox and permissions blocks copied from
-  your own settings, never `hooks`; recipe in the script header) and refuses
-  to run without it.
+  Patron step: the loop runs `claude --restricted`, which loads no user,
+  project or local settings, hooks, plugins or MCP servers. It gets only
+  `~/.cascade-loop/settings.json` (an object with just `sandbox`, enabled, and
+  `permissions`, copied from your own settings; recipe in the script header;
+  checked before every run) and the agent definitions in the `.claude/agents`
+  beside the script, and refuses to run without either.
   Small reversible decisions ship as veto-able defaults reported at the
   checkpoint; only irreversible or ruling-contradicting calls wait for the
   Patron.

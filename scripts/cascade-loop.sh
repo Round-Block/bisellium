@@ -21,13 +21,28 @@
 # (20, --max-budget-usd) per session. The status file is deleted before every
 # run, so a session that writes nothing cannot inherit the last CONTINUE.
 #
-# Agent-writable configuration is never loaded. A session could plant hooks or
-# MCP servers in the clone's .claude/ and write CONTINUE, and the next automatic
-# `claude -p` would run them before any sandbox. So claude gets --setting-sources
-# user (never project or local), --strict-mcp-config, and the Patron's own
-# $CASCADE_SETTINGS (default ~/.cascade-loop/settings.json) through --settings.
-# That file must sit inside ~/.cascade-loop and be a regular, non-symlink file
-# you own that nobody else can write, or the loop refuses to run claude at all.
+# No customization file is loaded. A session could plant hooks, MCP servers or
+# plugins in the clone's .claude/ and write CONTINUE, and the next automatic
+# `claude -p` would run them before any sandbox; ~/.claude/settings.json is no
+# safer, because its hooks, apiKeyHelper and plugins also run unsandboxed and can
+# point at clone-writable files. So claude runs --restricted: it ignores user,
+# project and local settings files (managed settings and --settings still apply)
+# and drops Bash and WebFetch unless --tools names them. Dropped: every hook,
+# apiKeyHelper, plugin and project agent; --strict-mcp-config drops MCP servers
+# and --permission-prompts none denies anything that would need a human. Loaded,
+# and nothing else:
+#   --tools    the fixed list in CASCADE_TOOLS below, Bash among them
+#   --settings the Patron's $CASCADE_SETTINGS (default ~/.cascade-loop/settings.json)
+#   --agents   built here, on every launch, from the .md files of the .claude/agents
+#              folder beside this script's own folder (so the Patron's reviewed
+#              checkout, never $AGENT_CLONE): of each file's `key: value`
+#              frontmatter only description, tools (a list), model, plus the body
+#              as the prompt, under name. hooks, mcpServers, permissionMode and
+#              every other key are dropped. No folder or no .md file: no run.
+# The settings file must sit inside ~/.cascade-loop, be a regular, non-symlink
+# file you own that nobody else can write, and hold one JSON object whose only
+# top-level keys are sandbox (with enabled: true) and permissions, or the loop
+# refuses to run claude at all. It is re-checked before every run.
 #
 # ONE-TIME PATRON STEP, run by hand in your own shell, never generated from the
 # agent clone and never with `hooks` (hooks run unsandboxed): copy only the
@@ -55,6 +70,10 @@ set -euo pipefail
 umask 077
 set -C # noclobber: each log is created exclusively; the logs are the only `>` below
 
+SCRIPT_DIR=$(dirname -- "$(readlink -f -- "${BASH_SOURCE[0]}")")
+AGENTS_DIR=$SCRIPT_DIR/../.claude/agents
+# --restricted drops Bash and WebFetch unless named here; Task dispatches subagents.
+CASCADE_TOOLS=Bash,Read,Write,Edit,Glob,Grep,Task,Monitor,TaskStop,ToolSearch,WebSearch,WebFetch
 AGENT_CLONE=${AGENT_CLONE:-$HOME/agents/bisellium}
 CASCADE_STATUS=${CASCADE_STATUS:-$HOME/.bisellium-evidence/cascade-status}
 CASCADE_MAX_RUNS=${CASCADE_MAX_RUNS:-5}
@@ -95,6 +114,40 @@ check_settings() {
   [ -f "$CASCADE_SETTINGS" ] || stop 1 "settings file $CASCADE_SETTINGS is missing or not a regular file: the Patron creates it once (see the script header)"
   [ -O "$CASCADE_SETTINGS" ] || stop 1 "refusing settings file $CASCADE_SETTINGS: not owned by the current user"
   [ $((8#$(stat -c %a -- "$CASCADE_SETTINGS") & 8#022)) -eq 0 ] || stop 1 "refusing settings file $CASCADE_SETTINGS: group- or world-writable"
+  # Only sandbox (on) and permissions: hooks, apiKeyHelper, env and the rest run or steer claude outside the sandbox.
+  # The reason is named, the content never shown. -s makes two JSON values in one file fail the first test.
+  jq -es 'length == 1 and (.[0] | type == "object")' "$CASCADE_SETTINGS" >/dev/null 2>&1 || stop 1 "refusing settings file $CASCADE_SETTINGS: not a JSON object"
+  jq -e '(keys - ["sandbox", "permissions"]) | length == 0' "$CASCADE_SETTINGS" >/dev/null 2>&1 || stop 1 "refusing settings file $CASCADE_SETTINGS: a top-level key other than sandbox and permissions"
+  jq -e '.sandbox.enabled == true' "$CASCADE_SETTINGS" >/dev/null 2>&1 || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.enabled must be true"
+}
+
+# One agent file on stdin -> {name: {description, tools?, model?, prompt}}. Frontmatter is simple
+# `key: value` lines between --- fences; nested or indented lines match nothing. Fails without
+# frontmatter, a name (letters, digits, - _) or a description.
+AGENT_JQ='
+  split("\n") as $l
+  | ($l | indices("---")) as $f
+  | if $l[0] != "---" or ($f | length) < 2 then error("no frontmatter") else . end
+  | ($l[1:$f[1]] | map(capture("^(?<k>[A-Za-z_-]+):[ \t]*(?<v>.*)$") | {(.k): (.v | sub("\\s+$"; ""))}) | add // {}) as $fm
+  | if ($fm.name // "" | test("^[A-Za-z0-9_-]+$") | not) or ($fm.description // "") == "" then error("no name or description") else . end
+  | {($fm.name): (
+      {description: $fm.description}
+      + (if $fm.tools then {tools: ($fm.tools | split(",") | map(sub("^\\s+"; "") | sub("\\s+$"; "")) | map(select(. != "")))} else {} end)
+      + (if $fm.model then {model: $fm.model} else {} end)
+      + {prompt: ($l[$f[1] + 1:] | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; ""))}
+    )}
+'
+
+# Print the --agents JSON for every .md in $AGENTS_DIR, or stop.
+agents_json() {
+  [ -d "$AGENTS_DIR" ] || stop 1 "agent definitions folder $AGENTS_DIR is missing: run the loop from the Patron's reviewed checkout"
+  local files=("$AGENTS_DIR"/*.md) f one parts=()
+  [ -f "${files[0]}" ] || stop 1 "no agent definitions (*.md) in $AGENTS_DIR"
+  for f in "${files[@]}"; do
+    one=$(jq -Rs "$AGENT_JQ" <"$f" 2>/dev/null) || stop 1 "agent definition $f is invalid: it needs --- frontmatter with a name and a description"
+    parts+=("$one")
+  done
+  printf '%s\n' "${parts[@]}" | jq -sc add
 }
 
 # Print MISSING, INVALID, or the allowed word the status file holds. The file
@@ -151,6 +204,8 @@ EOF
 )
 
 [[ $CASCADE_MAX_RUNS =~ ^[1-9][0-9]*$ ]] || stop 1 "CASCADE_MAX_RUNS must be a positive integer, got '$CASCADE_MAX_RUNS'"
+command -v jq >/dev/null || stop 1 "jq is required (agent definitions and the settings check)"
+AGENTS=$(agents_json) || exit 1
 no_symlinks "$LOG_DIR"
 mkdir -p "$LOG_DIR" "$(dirname "$CASCADE_STATUS")"
 # The umask only shapes new directories: an existing one keeps its mode. Own it, then narrow it.
@@ -175,7 +230,8 @@ for ((run = 1; run <= CASCADE_MAX_RUNS; run++)); do
   # of the Patron's terminal would stop. 9>&-: the session does not inherit the lock.
   # --kill-after: a session that ignores TERM is killed (exit 137), not waited on.
   timeout --kill-after="$CASCADE_KILL_AFTER" "$CASCADE_RUN_TIMEOUT" "$CLAUDE_BIN" -p "$BOOT_PROMPT" \
-    --permission-mode auto --setting-sources user --settings "$CASCADE_SETTINGS" --strict-mcp-config \
+    --restricted --permission-prompts none --permission-mode auto \
+    --settings "$CASCADE_SETTINGS" --strict-mcp-config --tools "$CASCADE_TOOLS" --agents "$AGENTS" \
     --max-budget-usd "$CASCADE_MAX_USD" --output-format stream-json --verbose \
     </dev/null >>"$log" 2>&1 9>&- || rc=$?
   [ "$rc" -ne 124 ] && [ "$rc" -ne 137 ] || stop 1 "claude timed out after $CASCADE_RUN_TIMEOUT on run $run. Log: $log"
