@@ -101,3 +101,22 @@ test("W-131 behaviour 2: verdict needs exactly one non-empty ## Findings section
   assert.equal(clean.exitCode, 0, clean.stderr);
   assert.equal(clean.written, true);
 });
+
+test("W-131 behaviour 3: every numbered finding names check: <text>", () => {
+  for (const [name, body, number] of [
+    ["a finding with no check", "## Findings\n1. blocking - prune deletes a cited log\n", "1"],
+    ["a second finding with a blank check", `## Findings\n${CHECKED}\n2. advisory - usage omits the cap - check:   \n`, "2"],
+  ] as const) {
+    const refused = record(body);
+    assert.equal(refused.exitCode, 2, `${name} is refused`);
+    assert.equal(refused.written, false, `${name} writes no log`);
+    assert.match(
+      refused.stderr,
+      new RegExp(`finding ${number} names no check — end it with "check: <rule id \\| test path \\| none: <missing check>>"`),
+      name,
+    );
+  }
+  const accepted = record(`## Findings\n${CHECKED}\n2. advisory - usage omits the cap - check: none: a usage-string pin in verdict.test.ts\n`);
+  assert.equal(accepted.exitCode, 0, accepted.stderr);
+  assert.equal(accepted.written, true);
+});
