@@ -1,0 +1,15 @@
+# opus: W-077
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-04T23:45:12.020Z
+# tree: tree:6b22ed47249222959ad9dd2501868a733e20c0ae
+
+## Findings
+No findings
+
+## Verdict
+Decoding `&amp;` last prevents double-unescaping, while the helper’s sole assertion retains the same strength.
+VERDICT: PASS

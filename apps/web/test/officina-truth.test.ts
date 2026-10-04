@@ -1,0 +1,223 @@
+/**
+ * W-077 behaviours 1, 2, 4 and 5: the Officina tells the truth and only what the
+ * Patron needs. Select exactly one behaviour with `--behaviour N` (1, 2, 4 or 5);
+ * omitting the selector runs all four. node:test TAP, one test() per behaviour.
+ *
+ * Run from the repo root (W-129's recorded shape):
+ *   env TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --test-reporter=tap --import ./apps/web/test/support/register-css-stub.mjs --import tsx apps/web/test/officina-truth.test.ts --behaviour 1
+ *
+ * `OfficinaView` and the officinaTruth helpers do not exist before the fix, so both
+ * modules are NAMESPACE imports and every use is through a guard that fails an
+ * assertion, never module load. No timers, sleeps or wall-clock waits: the age is
+ * computed from an injected `now`.
+ */
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { RULE_IDS } from "../../../packages/cli/src/rules/ids.js";
+import type { AerariumEntry, HealthResponse } from "../src/api.js";
+import * as truth from "../src/lib/officinaTruth.js";
+import * as screen from "../src/screens/Officina.js";
+
+const argv = process.argv.slice(2);
+const behaviourAt = argv.indexOf("--behaviour");
+const only = behaviourAt === -1 ? undefined : Number(argv[behaviourAt + 1]);
+if (behaviourAt !== -1 && ![1, 2, 4, 5].includes(only as number)) {
+  console.error("officina-truth.test.ts: --behaviour must be one of 1, 2, 4, 5");
+  process.exit(2);
+}
+const runs = (behaviour: number): boolean => only === undefined || only === behaviour;
+
+interface Row { family: string; label: string; rules: string[]; count: number }
+interface Summary { stops: string; warns: string; rows: Row[] }
+interface Helpers {
+  healthStamp?: (at: string, now: Date) => string;
+  integritySummary?: (h: Pick<HealthResponse, "blocks" | "advisories" | "findingsByRule">) => Summary;
+  RULE_FAMILY_LABELS?: Readonly<Record<string, string>>;
+}
+const helpers = truth as unknown as Helpers;
+
+interface ViewProps {
+  aerarium: AerariumEntry[] | "failed" | undefined;
+  health: HealthResponse | "failed" | undefined;
+  acta: never[];
+  now: Date;
+}
+const viewFn = (screen as unknown as { OfficinaView?: (p: ViewProps) => unknown }).OfficinaView;
+
+const AT = "2026-09-25T09:35:43.947Z";
+const NOW = new Date("2026-10-04T22:05:54Z");
+
+function health(over: Partial<HealthResponse> = {}): HealthResponse {
+  return {
+    at: AT,
+    ok: false,
+    blocks: 1,
+    advisories: 3,
+    findingsByRule: { "traditio.stale": 2, "traditio.stage": 1, "state.done.probationes": 1 },
+    autonomy: { paused: false },
+    lastTick: AT,
+    due: [
+      { kind: "daily", id: "producer" },
+      { kind: "traditio", id: "W-002" },
+    ],
+    ...over,
+  };
+}
+const ENTRY: AerariumEntry = { collegium: "engineering", period: "2026-W40", allowance: { tokens: 3_000_000 }, burn: { tokens: 1_000_000 }, posture: "ok" };
+
+function render(over: Partial<ViewProps> = {}): string {
+  assert.equal(typeof viewFn, "function", "Officina.tsx exports OfficinaView");
+  return renderToStaticMarkup(createElement(viewFn as never, { aerarium: [ENTRY], health: health(), acta: [], now: NOW, ...over } as never));
+}
+
+const text = (html: string): string => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const tag = (s: string): string => s.replace(/&quot;/g, "\"").replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
+/** inner HTML of every non-nested element of the tag whose class attribute holds the class. */
+function byClass(html: string, cls: string, el = "[a-z0-9]+"): string[] {
+  const re = new RegExp(`<(${el})\\b[^>]*class="[^"]*\\b${cls}\\b[^"]*"[^>]*>([\\s\\S]*?)</\\1>`, "g");
+  return [...html.matchAll(re)].map((m) => m[2] ?? "");
+}
+/** the markup of one panel: from its `<section` to the next. */
+const panels = (html: string): string[] => html.split("<section").slice(1);
+const panelOf = (html: string, heading: string): string => {
+  const p = panels(html).find((s) => s.includes(`>${heading}</h2>`));
+  assert.ok(p, `a panel headed ${heading} exists`);
+  return p;
+};
+
+if (runs(1)) {
+  test("W-077 behaviour 1: health carries its as-of stamp", () => {
+    const stamp = helpers.healthStamp;
+    assert.equal(typeof stamp, "function", "officinaTruth exports healthStamp");
+    const at = new Date(AT).getTime();
+    const ago = (ms: number): string => stamp!(AT, new Date(at + ms));
+    const MIN = 60_000;
+    const HOUR = 60 * MIN;
+    const head = "as of 2026-09-25 09:35 UTC";
+    assert.equal(ago(10_000), `${head}, just now`);
+    assert.equal(ago(MIN), `${head}, 1 minute ago`);
+    assert.equal(ago(5 * MIN), `${head}, 5 minutes ago`);
+    assert.equal(ago(HOUR), `${head}, 1 hour ago`);
+    assert.equal(ago(23 * HOUR), `${head}, 23 hours ago`);
+    assert.equal(ago(24 * HOUR), `${head}, 1 day ago`);
+    assert.equal(stamp!(AT, NOW), `${head}, 9 days ago`);
+    assert.equal(ago(-HOUR), head, "a future at drops the age");
+    assert.equal(stamp!("garbage", NOW), "as of an unknown time");
+
+    const loaded = render();
+    const stamps = byClass(loaded, "officina__as-of");
+    assert.equal(stamps.length, 2, "a loaded health renders one stamp in each health panel");
+    for (const s of stamps) assert.equal(text(s), `${head}, 9 days ago`);
+
+    const loading = render({ health: undefined });
+    assert.equal(byClass(loading, "officina__as-of").length, 0, "no stamp while loading");
+    assert.equal(text(loading).split("Loading health…").length - 1, 2, "Loading health… appears twice");
+
+    const failed = render({ health: "failed" });
+    assert.equal(byClass(failed, "officina__as-of").length, 0, "no stamp on a failed health");
+    assert.equal(text(failed).split("Could not load health.").length - 1, 2, "Could not load health. appears twice");
+  });
+}
+
+if (runs(2)) {
+  test("W-077 behaviour 2: Engine State is gone, and an empty due list is named", () => {
+    for (const autonomy of [{ paused: true, since: "2026-09-24T00:00:00Z", reason: "walk" }, { paused: false }]) {
+      const t = text(render({ health: health({ autonomy }) }));
+      for (const gone of ["Engine state", "Paused", "Autonomous", "Process engine", "System status"]) {
+        assert.ok(!t.includes(gone), `${gone} is not rendered (paused=${String(autonomy.paused)})`);
+      }
+    }
+    const html = render();
+    assert.deepEqual(byClass(html, "officina__panel-heading", "h2").map(text), ["Posture and burn", "Pending actions", "Contract integrity"]);
+
+    const pending = (h: HealthResponse): string => panelOf(render({ health: h }), "Pending actions");
+    assert.deepEqual(byClass(pending(health()), "officina__count").map(text), ["2"], "the count beside the heading reads 2");
+    assert.deepEqual(byClass(pending(health({ due: [] })), "officina__count").map(text), ["0"], "the count reads 0");
+    assert.ok(text(pending(health({ due: [] }))).includes("Nothing pending."), "an empty due list is named");
+    assert.deepEqual(byClass(pending(health()), "officina__value-mono").map(text), ["producer", "W-002"]);
+
+    const twins = pending(health({ due: [{ kind: "traditio", id: "W-1" }, { kind: "traditio", id: "W-1" }] }));
+    assert.equal(byClass(twins, "officina__value-mono").length, 2, "two due items of the same kind render two rows");
+  });
+}
+
+if (runs(4)) {
+  test("W-077 behaviour 4: the aerarium panel names its state, and a failure is never dressed as data", () => {
+    const burn = (over: Partial<ViewProps>): string => panelOf(render(over), "Posture and burn");
+    const empty = burn({ aerarium: [] });
+    const t = text(empty);
+    assert.ok(t.includes("No budget allocation is recorded for this week. Burn and posture are unavailable."), "the empty state names the missing allocation");
+    assert.ok(t.includes("Set one with bisellium budget."), "the empty state names the action");
+    assert.equal(byClass(empty, "officina__collegium-name").length, 0, "no card for an empty aerarium");
+
+    const loading = burn({ aerarium: undefined });
+    assert.ok(text(loading).includes("Loading budget allocations…"));
+    assert.ok(!text(loading).includes("No budget allocation"), "loading is not the empty state");
+    assert.equal(byClass(loading, "officina__collegium-name").length, 0);
+
+    const failed = burn({ aerarium: "failed" });
+    assert.ok(text(failed).includes("Could not load budget allocations."));
+    assert.equal(byClass(failed, "officina__collegium-name").length, 0);
+
+    const one = burn({ aerarium: [ENTRY] });
+    assert.deepEqual(byClass(one, "officina__collegium-name").map(text), ["engineering"]);
+    assert.equal(byClass(one, "officina__posture-word").length, 1, "the posture card still renders");
+    assert.ok(byClass(one, "officina__posture-reason").length === 1, "with its reason");
+
+    const cases: Partial<ViewProps>[] = [{ aerarium: [] }, { aerarium: undefined }, { aerarium: "failed" }, { health: "failed" }, { health: undefined }, {}];
+    for (const c of cases) {
+      const all = text(render(c));
+      for (const demo of ["47,200", "1,880,000", "312,000"]) assert.ok(!all.includes(demo), `${demo} never appears (${JSON.stringify(Object.keys(c))})`);
+    }
+  });
+}
+
+if (runs(5)) {
+  test("W-077 behaviour 5: Contract integrity speaks plain language", () => {
+    const summary = helpers.integritySummary;
+    assert.equal(typeof summary, "function", "officinaTruth exports integritySummary");
+    const of = (blocks: number, advisories: number): Summary => summary!({ blocks, advisories, findingsByRule: {} });
+    assert.equal(of(0, 0).stops, "This check found no blocking problems.");
+    assert.equal(of(1, 1).stops, "This check found 1 blocking problem.");
+    assert.equal(of(7, 7).stops, "This check found 7 blocking problems.");
+    assert.equal(of(0, 0).warns, "No warnings.");
+    assert.equal(of(1, 1).warns, "1 warning; it does not stop work.");
+    assert.equal(of(7, 7).warns, "7 warnings; they do not stop work.");
+
+    const findings = { "traditio.stale": 2, "traditio.stage": 1, "state.done.probationes": 1, "zz.new": 4 };
+    assert.deepEqual(
+      summary!({ blocks: 1, advisories: 3, findingsByRule: findings }).rows.map((r) => [r.family, r.label, r.count]),
+      [["zz", "zz", 4], ["traditio", "Handoff notes", 3], ["state", "Work item states", 1]],
+      "grouped by family, summed, the unlabelled family keeps its id",
+    );
+    assert.deepEqual(summary!({ blocks: 1, advisories: 3, findingsByRule: findings }).rows[1]?.rules, ["traditio.stage", "traditio.stale"]);
+
+    const labels = helpers.RULE_FAMILY_LABELS;
+    assert.ok(labels, "officinaTruth exports RULE_FAMILY_LABELS");
+    const families = [...new Set([...RULE_IDS].map((id) => id.split(".")[0]!))].sort();
+    assert.deepEqual(Object.keys(labels).sort(), families, "every rule family has exactly one label (drift guard)");
+
+    const html = render({ health: health({ findingsByRule: findings }) });
+    const panel = panelOf(html, "Contract integrity");
+    const t = text(panel);
+    assert.ok(t.includes("This check found 1 blocking problem.") && t.includes("3 warnings; they do not stop work."));
+    assert.ok(t.includes("All findings by area"));
+    for (const gone of ["Blocking issues", "Advisory alerts"]) assert.ok(!html.includes(gone), `${gone} is removed`);
+
+    const rows = [...panel.matchAll(/<details\b([^>]*)>([\s\S]*?)<\/details>/g)];
+    assert.equal(rows.length, 3, "one details row per family");
+    for (const r of rows) assert.ok(!/\bopen\b/.test(r[1] ?? ""), "rows are collapsed by default");
+    const handoff = rows.find((r) => text(r[2] ?? "").startsWith("Handoff notes"));
+    assert.ok(handoff, "a Handoff notes row exists");
+    assert.ok(/<summary\b[^>]*>[\s\S]*Handoff notes[\s\S]*3[\s\S]*<\/summary>/.test(handoff[2] ?? ""), "the summary holds the label and count");
+    assert.deepEqual(byClass(handoff[2] ?? "", "officina__rule-ids").map(text), ["traditio.stage, traditio.stale"]);
+    assert.ok(tag(handoff[1] ?? "").includes('title="traditio.stage, traditio.stale"'), "the title holds the rule ids");
+
+    const bare = html
+      .replace(/<(p|span)\b[^>]*class="[^"]*\bofficina__rule-ids\b[^"]*"[^>]*>[\s\S]*?<\/\1>/g, " ")
+      .replace(/<[^>]*>/g, " ");
+    assert.ok(!/\b[a-z]+\.[a-z_.]+\b/.test(bare), `no rule id is visible outside the disclosures: ${/\b[a-z]+\.[a-z_.]+\b/.exec(bare)?.[0] ?? ""}`);
+  });
+}

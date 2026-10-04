@@ -1,0 +1,109 @@
+# behaviour: 3
+# command: node --test-reporter=tap --import tsx apps/server/test/health-due.test.ts --behaviour 3
+# exit: 1
+# at: 2026-10-04T22:18:46.412Z
+# sella: builder.W-077
+# tree: tree:5d423a323cfdc5aee60f85b3da9226580d2ce6e7
+
+TAP version 13
+# Subtest: W-077 behaviour 3: /api/health names every due item
+not ok 1 - W-077 behaviour 3: /api/health names every due item
+  ---
+  duration_ms: 80.957421
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-077/apps/server/test/health-due.test.ts:1:875'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+      [
+        {
+    -     id: 'producer',
+          kind: 'daily',
+    +     sella: 'producer'
+        },
+        {
+    -     id: '2026-W39',
+          kind: 'aerarium',
+    +     period: '2026-W39'
+        },
+        {
+    -     id: 'W-002',
+          kind: 'traditio',
+    +     opus: 'W-002'
+        },
+        {
+    -     id: '2 pair(s)',
+          kind: 'probe',
+    +     models: [
+    +       {},
+    +       {}
+    +     ]
+        },
+        {
+    -     id: 'unknown',
+          kind: 'x'
+        },
+        {
+          id: 'W-003',
+          kind: 'traditio'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      kind: 'daily'
+      id: 'producer'
+    1:
+      kind: 'aerarium'
+      id: '2026-W39'
+    2:
+      kind: 'traditio'
+      id: 'W-002'
+    3:
+      kind: 'probe'
+      id: '2 pair(s)'
+    4:
+      kind: 'x'
+      id: 'unknown'
+    5:
+      kind: 'traditio'
+      id: 'W-003'
+  actual:
+    0:
+      kind: 'daily'
+      sella: 'producer'
+    1:
+      kind: 'aerarium'
+      period: '2026-W39'
+    2:
+      kind: 'traditio'
+      opus: 'W-002'
+    3:
+      kind: 'probe'
+      models:
+        0:
+        1:
+    4:
+      kind: 'x'
+    5:
+      kind: 'traditio'
+      id: 'W-003'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-077/apps/server/test/health-due.test.ts:66:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 92.724509

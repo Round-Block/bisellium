@@ -1,0 +1,53 @@
+# behaviour: 7
+# command: node node_modules/@playwright/test/cli.js test --config=apps/web/playwright.serve.config.ts walk.spec.ts --grep W-077.behaviour.7: --reporter=line
+# exit: 1
+# at: 2026-10-04T22:22:33.217Z
+# sella: builder.W-077
+# tree: tree:752b79ed01286c3d9bdc31fb1b09f3b9a0264c17
+
+vite v8.3.0 building client environment for production...
+transforming...
+✓ 39 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.74 kB │ gzip:  0.40 kB
+dist/assets/index-ST6tjov7.css   18.64 kB │ gzip:  3.74 kB
+dist/assets/index-DG0a8Mdx.js   257.20 kB │ gzip: 79.86 kB
+
+✓ built in 113ms
+
+Running 1 test using 1 worker
+
+[1/1] [chromium] › apps/web/tests-serve/walk.spec.ts:289:1 › W-077 behaviour 7: a failed read never shows demo data
+  1) [chromium] › apps/web/tests-serve/walk.spec.ts:289:1 › W-077 behaviour 7: a failed read never shows demo data 
+
+    Error: the budget failure is named
+
+    expect(locator).toContainText(expected) failed
+
+    Locator: locator('.officina')
+    Expected substring: "Could not load budget allocations."
+    Received string:    "OfficinaMTWTFSSMTWTFSSSystem statusproductionok47,200 / 200,000 tokens this 2026-W38engineeringconserve1,880,000 / 3,000,000 tokens this 2026-W38qaok312,000 / 500,000 tokens this 2026-W38Process engineEngine stateAutonomousPending actions2cascade-8retrodailytickContract integrityBlocking issues0Advisory alerts4acta.daily2opus.untracked1link.dead1"
+    Timeout: 5000ms
+
+    Call log:
+      - the budget failure is named locator('.officina') with timeout 5000ms
+      - waiting for locator('.officina')
+        14 × locator resolved to <div class="officina">…</div>
+           - unexpected value "OfficinaMTWTFSSMTWTFSSSystem statusproductionok47,200 / 200,000 tokens this 2026-W38engineeringconserve1,880,000 / 3,000,000 tokens this 2026-W38qaok312,000 / 500,000 tokens this 2026-W38Process engineEngine stateAutonomousPending actions2cascade-8retrodailytickContract integrityBlocking issues0Advisory alerts4acta.daily2opus.untracked1link.dead1"
+
+
+      295 |   const officina = page.locator(".officina");
+      296 |
+    > 297 |   await expect(officina, "the budget failure is named").toContainText("Could not load budget allocations.");
+          |                                                         ^
+      298 |   await expect(officina, "the health failure is named").toContainText("Could not load health.");
+      299 |   await expect(page.locator(".officina__collegium-name"), "no posture card").toHaveCount(0);
+      300 |   await expect(page.locator(".officina__as-of"), "no stamp").toHaveCount(0);
+        at /home/edckt/agents/bisellium/.worktrees/W-077/apps/web/tests-serve/walk.spec.ts:297:57
+
+    Error Context: apps/web/test-results/walk-W-077-behaviour-7-a-failed-read-never-shows-demo-data-chromium/error-context.md
+
+
+  1 failed
+    [chromium] › apps/web/tests-serve/walk.spec.ts:289:1 › W-077 behaviour 7: a failed read never shows demo data 

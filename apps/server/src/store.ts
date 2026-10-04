@@ -262,6 +262,21 @@ function readModelsRecord(studioDir: string): ModelRecordEntry[] | undefined {
   }
 }
 
+/** W-077: `tick` writes `due` as `{kind, sella|period|opus|models}`; the declared shape is `{kind, id}`. */
+function namedDue(due: unknown): { kind: string; id: string }[] {
+  if (!Array.isArray(due)) return [];
+  const field: Record<string, string> = Object.assign(Object.create(null), { daily: "sella", aerarium: "period", traditio: "opus" });
+  return due.map((raw: unknown) => {
+    const item = typeof raw === "object" && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+    const kind = typeof item["kind"] === "string" ? item["kind"] : "unknown";
+    const named = field[kind] === undefined ? undefined : item[field[kind]!];
+    if (typeof item["id"] === "string") return { kind, id: item["id"] };
+    if (typeof named === "string") return { kind, id: named };
+    if (kind === "probe" && Array.isArray(item["models"])) return { kind, id: `${item["models"].length} pair(s)` };
+    return { kind, id: "unknown" };
+  });
+}
+
 export class Store extends CoreStore {
   readonly projectId: string;
   private readonly live: boolean;
@@ -464,7 +479,8 @@ export class Store extends CoreStore {
       const healthPath = join(this.studioDir, "health.json");
       if (existsSync(healthPath)) {
         try {
-          return JSON.parse(readFileSync(healthPath, "utf8"));
+          const file = JSON.parse(readFileSync(healthPath, "utf8")) as Record<string, unknown>;
+          return { ...file, due: namedDue(file["due"]) };
         } catch {
           // corrupt health.json: fall through to a fresh summary below
         }
