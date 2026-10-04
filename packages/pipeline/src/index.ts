@@ -38,6 +38,9 @@ export interface PipelineRunOpts {
    *  certifies is then `dirty:<hash>`, never `tree:<hash>` (a `tree:`
    *  certificate is a claim that `treeHash` is exactly what ran). */
   dirty?: boolean;
+  /** Extra environment per probatio id, merged over the filtered env for that
+   *  command only. A gate that is not named here sees exactly today's env. */
+  commandEnv?: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
 export interface MergePipeline {
@@ -72,9 +75,11 @@ export const localPipeline: MergePipeline = {
     // probatio command ever sees it (docs/ADOPTION.md: allowlist is
     // PATH/HOME/NODE_*/LANG/TZ; everything else matching
     // TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL is dropped).
-    const env = filterEnv(process.env);
+    const base = filterEnv(process.env);
 
     for (const [probatioId, command] of Object.entries(opts.commands)) {
+      const extra = opts.commandEnv?.[probatioId];
+      const env = extra === undefined ? base : { ...base, ...extra };
       const r = spawnSync(command, {
         cwd: opts.repo,
         shell: true,

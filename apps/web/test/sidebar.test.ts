@@ -6,6 +6,7 @@
  */
 import { renderToStaticMarkup } from "react-dom/server";
 import { Sidebar } from "../src/components/Sidebar.js";
+import { NAV_ENTRIES } from "../src/lib/nav.js";
 
 const only = process.argv[2] ? Number(process.argv[2]) : undefined;
 
@@ -16,8 +17,8 @@ const check = (behaviour: number, name: string, ok: boolean, detail = "") => {
   if (!ok) failed++;
 };
 
-const ROUTES = ["inbox", "board", "seats", "officina"] as const;
-const HREFS = ["#/inbox", "#/board", "#/seats", "#/officina"];
+const ROUTES = NAV_ENTRIES.map((e) => e.route);
+const HREFS: string[] = NAV_ENTRIES.map((e) => e.href);
 
 // behaviour 2: the four entries, in D-023 §1's order.
 {

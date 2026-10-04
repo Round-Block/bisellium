@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
+import { fetchActa, fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
 import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
 import { formatPosture } from "../lib/posture.js";
 import { FastiStrip } from "../components/FastiStrip.js";
@@ -66,6 +66,7 @@ export function Officina() {
     fetchOfficina().then(setOfficina).catch(() => undefined);
     fetchAerarium().then(setAerarium).catch(() => setAerarium(DEV_AERARIUM));
     fetchHealth().then(setHealth).catch(() => setHealth(DEV_HEALTH));
+    fetchActa().then(setActa).catch(() => undefined);
   }, [demo]);
 
   return (

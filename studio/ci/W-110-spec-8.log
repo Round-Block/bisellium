@@ -1,0 +1,92 @@
+# opus: W-110
+# phase: spec
+# round: 8
+# sella: architect
+# outcome: passed
+# at: 2026-10-03T02:33:05.952Z
+# tree: tree:cee059e333ab551c5c407883bfd1d592932c2d54
+
+## Verdict
+
+Passed. `studio/briefs/W-110.md` revision 5 answers the builder's two rulings
+and corrects one of its three FYIs that revision 4 had wrong. Eight
+behaviours; no genuine-red row touched, so the phase-1 reds already recorded
+on `opus/W-110` stand.
+
+## Ruling 1 — behaviour 8(f): the builder's reading is confirmed, and the
+## mechanism is named
+
+The row was false as literally written and the builder is right to have
+noticed. `apps/web/tests-serve/harness.ts:49-50` carries "node --import tsx,
+never npx tsx" in its doc comment, so "its source contains no `npx`" can never
+pass. The property wanted is that **no code path invokes `npx`**.
+
+Confirmed with one correction to the method: do not hand-roll a comment
+stripper. The repo already exports one — `lex` from
+`packages/cli/src/rules/tests.ts`, written for the `test.sleep` rule and
+exported for its own test — and L-043 ("containment-helper-duplicated") is the
+lesson against writing a second. Measured: `lex(harness)` reports **zero** code
+lines matching `/\bnpx\b/` and zero `//` comment lines matching, because the one
+occurrence lives in a `/** */` span that `lex` blanks out of `.code` entirely.
+So the assertion reads 0 today and reads nonzero the moment a spawn uses `npx`.
+8(f) now says exactly that.
+
+## Ruling 2 — `runServedSpy`'s `deepEqual` is in scope, with this shape
+
+In scope. It is the same class as every other edit in *Files owned* — an
+existing assertion that pins precisely what this opus changes — and revision 4
+under-listed `opus-model.test.ts` by naming only the two served helpers.
+Behaviour 8(e) is the row that forces it.
+
+I read the spy (`:1431-1500`) before ruling, because the shape is not simply
+"drop the build line": `SPY_FAIL_AT` counts `npm` invocations, so dropping one
+invocation moves two of the three cases.
+
+- `servedSuccess` → `{ status: 0, calls: ["--workspace @bisellium/web run test:serve"] }`.
+- the `failAt: 1` case, **renamed `servedSuiteFailure`** (there is no build to
+  fail) → `{ status: 7, calls: ["--workspace @bisellium/web run test:serve"] }`.
+  The spy's first call is now `test:serve`, so this is where a nonzero from the
+  suite propagates.
+- the `failAt: 2` case is **deleted**. There is no second `npm` call for it to
+  fail at, so it would assert nothing the success case does not already assert.
+  Deleting a case that has become vacuous is better than keeping a green row
+  that proves nothing.
+- one hardening while in there: the spy spreads `process.env` wholesale, so
+  these rows would inherit `BISELLIUM_OPUS`/`BISELLIUM_STUDIO_DIR` if the suite
+  ever ran under a `verify`. The child env clears both, so the rows take the
+  script's no-evidence branch deterministically.
+
+Nothing else in that assertion moves: `exitCode`, `unchanged`, `state`,
+`e2eRule`, `reviewWithoutServedRefused` and `staleServedBindingRefused` are
+untouched.
+
+## The three FYIs
+
+Two taken as reported. Behaviour 3 seeding before the first load is equivalent
+— every route rebuilds its snapshot per request (`store.ts` `snap()`), so there
+is nothing to invalidate. 7(d)'s symlinked-parent case landing on the step-1
+manifest refusal for two findings is right and is what the stated convention
+predicts.
+
+The third I checked and the builder is right where **revision 4 was wrong**, so
+it is not merely an FYI: 5(g) cannot import `redact` from `@bisellium/shim`.
+Measured under bare `node` v25.9.0 — `scripts/served-e2e.test.mjs` runs without
+tsx — the package specifier answers `ERR_MODULE_NOT_FOUND` (the barrel's ESM
+`.js` specifiers do not exist on disk) while `packages/shim/src/redact.ts` by
+path loads through Node 25's own type stripping. The brief said the wrong one.
+This is worth more than a wording fix: `ERR_MODULE_NOT_FOUND` in a red log is a
+module-load failure, which `packages/cli/src/rules/evidence.ts:154-158` reports
+as `opus.red_content` — so the brief as written would have cost the builder a
+finding on its own red. Corrected, with the reason recorded in the row.
+
+## Why the recorded reds survive
+
+I verified rather than assumed. `opus/W-110`'s `studio/ci/reds/W-110/05.log`
+fails at `error: '(c) <studio>/ci/shots/W-X/manifest.txt exists'` and `08.log`
+at `error: "(b) the config's globalSetup is ./tests-serve/global-setup.ts"` —
+the two rows the brief names as those behaviours' genuine reds. Revision 5
+changes only 8(f), 5(g)'s import mechanism and a *Files owned* entry; it touches
+neither row. Both headers read `tree:cee059e3…`, not `dirty:` — the builder used
+the worktree fallback this brief's Acceptance names, and it worked.
+`countBehaviours` is still 8, so the `next` reds rung still looks for 1..8 and
+finds eight valid logs.
