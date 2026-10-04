@@ -133,3 +133,31 @@ test("W-085 behaviour 2: openLessons ranks by cascades, count, newest at, class"
   assert.equal(out[1]!.latest, "L-032");
   assert.deepEqual(out[1]!.cascades, [42]);
 });
+
+test("W-085 behaviour 3: openLessons attributes collegia", async () => {
+  const openLessons = await load();
+  const dir = fixture();
+  opus(dir, "W-801", { collegium: "design", state: "done" });
+  opus(dir, "W-802", { collegium: "production", state: "done", gates: { review: "builder.W-131" } });
+  opus(dir, "W-803", { collegium: "design", state: "done", gates: { tests: "builder-1" } });
+  opus(dir, "W-804", { collegium: "production", state: "done", gates: { qa: "qa-lead" } });
+  lesson(dir, 1, { cls: "own", evidence: ["ci/W-801-review-1.log"] });
+  lesson(dir, 2, { cls: "via-instance", evidence: ["ci/W-802-review-1.log"] });
+  lesson(dir, 3, { cls: "via-retired", evidence: ["opera/W-803.md"] });
+  lesson(dir, 4, { cls: "via-gate", evidence: ["ci/W-804-qa.log"] });
+  lesson(dir, 5, { cls: "no-opus", evidence: ["ci/791.log"] });
+  lesson(dir, 6, { cls: "missing-opus", evidence: ["ci/W-999-review-1.log"] });
+  lesson(dir, 7, { cls: "union", evidence: ["ci/W-801-review-1.log"] });
+  lesson(dir, 8, { cls: "union", evidence: ["ci/W-804-qa.log"] });
+
+  const out = openLessons(dir);
+  const collegia = (c: string): string[] | undefined => out.find((x) => x.class === c)?.collegia;
+  const every = ["art", "design", "engineering", "production", "qa"];
+  assert.deepEqual(collegia("own"), ["design"]);
+  assert.deepEqual(collegia("via-instance"), ["engineering", "production"]);
+  assert.deepEqual(collegia("via-retired"), ["design", "engineering"]);
+  assert.deepEqual(collegia("via-gate"), ["production", "qa"]);
+  assert.deepEqual(collegia("no-opus"), every);
+  assert.deepEqual(collegia("missing-opus"), every);
+  assert.deepEqual(collegia("union"), ["design", "production", "qa"]);
+});
