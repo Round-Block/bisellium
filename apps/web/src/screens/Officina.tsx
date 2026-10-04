@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchActa, fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
 import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
 import { formatPosture } from "../lib/posture.js";
+import { healthStamp } from "../lib/officinaTruth.js";
 import { FastiStrip } from "../components/FastiStrip.js";
 import type { ActaEntry } from "../lib/fasti.js";
 
@@ -48,10 +49,24 @@ const DEV_HEALTH: HealthResponse = {
   ],
 };
 
+export interface OfficinaViewProps {
+  aerarium: AerariumEntry[] | "failed" | undefined; // undefined = not loaded yet
+  health: HealthResponse | "failed" | undefined;
+  acta: ActaEntry[];
+  now: Date;
+}
+
+/** The two health panels share one loading/failed copy; a loaded health gets the as-of stamp. */
+function healthState(health: OfficinaViewProps["health"]): React.ReactNode {
+  if (health === undefined) return <p className="officina__loading">Loading health…</p>;
+  if (health === "failed") return <p className="officina__empty">Could not load health.</p>;
+  return undefined;
+}
+
 export function Officina() {
   const [, setOfficina] = useState<OfficinaResponse>();
-  const [aerarium, setAerarium] = useState<AerariumEntry[]>([]);
-  const [health, setHealth] = useState<HealthResponse>();
+  const [aerarium, setAerarium] = useState<OfficinaViewProps["aerarium"]>();
+  const [health, setHealth] = useState<OfficinaViewProps["health"]>();
   const [acta, setActa] = useState<ActaEntry[]>([]);
 
   const demo = location.search.includes("demo");
@@ -64,24 +79,30 @@ export function Officina() {
       return;
     }
     fetchOfficina().then(setOfficina).catch(() => undefined);
-    fetchAerarium().then(setAerarium).catch(() => setAerarium(DEV_AERARIUM));
-    fetchHealth().then(setHealth).catch(() => setHealth(DEV_HEALTH));
+    fetchAerarium().then(setAerarium).catch(() => setAerarium("failed"));
+    fetchHealth().then(setHealth).catch(() => setHealth("failed"));
     fetchActa().then(setActa).catch(() => undefined);
   }, [demo]);
 
+  return <OfficinaView aerarium={aerarium} health={health} acta={acta} now={new Date()} />;
+}
+
+export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps) {
+  const loaded = typeof health === "object" ? health : undefined;
+  const asOf = loaded && <p className="officina__as-of">{healthStamp(loaded.at, now)}</p>;
   return (
     <div className="officina">
       <div className="officina__header">
         <h1 className="officina__title">Officina</h1>
       </div>
 
-      <FastiStrip acta={acta} today={new Date()} />
+      <FastiStrip acta={acta} today={now} />
 
       {/* Top row: Status (full width) */}
       <section className="officina__panel panel--status-wide">
         <h2 className="officina__panel-heading">System status</h2>
         <div className="officina__grid-3col">
-          {aerarium.map((entry) => {
+          {Array.isArray(aerarium) && aerarium.map((entry) => {
             const { word, reason } = formatPosture(entry);
             return (
               <div key={entry.collegium} className="officina__metric-card">
@@ -102,22 +123,24 @@ export function Officina() {
       {/* Bottom row: Engine (span 6) + Integrity (span 6) */}
       <section className="officina__panel panel--engine">
         <h2 className="officina__panel-heading">Process engine</h2>
-        {health && (
+        {healthState(health)}
+        {loaded && (
           <>
+            {asOf}
             <div className="officina__metric-card">
               <span className="officina__metric-label">Engine state</span>
               <span className="officina__value-status">
-                {health.autonomy.paused ? "Paused" : "Autonomous"}
+                {loaded.autonomy.paused ? "Paused" : "Autonomous"}
               </span>
             </div>
-            {health.due.length > 0 && (
+            {loaded.due.length > 0 && (
               <>
                 <div className="officina__panel-header" style={{ marginTop: 12 }}>
                   <span className="officina__label">Pending actions</span>
-                  <span className="officina__count">{health.due.length}</span>
+                  <span className="officina__count">{loaded.due.length}</span>
                 </div>
                 <div className="officina__table officina__table--zebra">
-                  {health.due.map((d) => (
+                  {loaded.due.map((d) => (
                     <div key={`${d.kind}:${d.id}`} className="officina__row">
                       <span className="officina__value-mono">{d.id}</span>
                       <span className="officina__label-secondary">{d.kind}</span>
@@ -132,21 +155,23 @@ export function Officina() {
 
       <section className="officina__panel panel--integrity">
         <h2 className="officina__panel-heading">Contract integrity</h2>
-        {health && (
+        {healthState(health)}
+        {loaded && (
           <>
+            {asOf}
             <div className="officina__grid-2col">
               <div className="officina__metric-card">
                 <span className="officina__metric-label">Blocking issues</span>
-                <span className="officina__metric-value">{fmt(health.blocks)}</span>
+                <span className="officina__metric-value">{fmt(loaded.blocks)}</span>
               </div>
               <div className="officina__metric-card">
                 <span className="officina__metric-label">Advisory alerts</span>
-                <span className="officina__metric-value">{fmt(health.advisories)}</span>
+                <span className="officina__metric-value">{fmt(loaded.advisories)}</span>
               </div>
             </div>
-            {Object.keys(health.findingsByRule).length > 0 && (
+            {Object.keys(loaded.findingsByRule).length > 0 && (
               <div className="officina__table officina__table--zebra">
-                {Object.entries(health.findingsByRule).map(([rule, count]) => (
+                {Object.entries(loaded.findingsByRule).map(([rule, count]) => (
                   <div key={rule} className="officina__row">
                     <span className="officina__label">{rule}</span>
                     <span className="officina__value-mono">{fmt(count)}</span>
