@@ -101,23 +101,33 @@ export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps)
       {/* Top row: Status (full width) */}
       <section className="officina__panel panel--status-wide">
         <h2 className="officina__panel-heading">Posture and burn</h2>
-        <div className="officina__grid-3col">
-          {Array.isArray(aerarium) && aerarium.map((entry) => {
-            const { word, reason } = formatPosture(entry);
-            return (
-              <div key={entry.collegium} className="officina__metric-card">
-                <span className="officina__collegium-name">{entry.collegium}</span>
-                <div className="officina__posture-row">
-                  <div className="officina__pie" style={pieStyle(entry.burn.tokens, entry.allowance.tokens)} />
-                  <div className="officina__posture-text">
-                    <span className="officina__posture-word">{word}</span>
-                    <span className="officina__posture-reason">{reason}</span>
+        {aerarium === undefined && <p className="officina__loading">Loading budget allocations…</p>}
+        {aerarium === "failed" && <p className="officina__empty">Could not load budget allocations.</p>}
+        {Array.isArray(aerarium) && aerarium.length === 0 && (
+          <>
+            <p className="officina__empty">No budget allocation is recorded for this week. Burn and posture are unavailable.</p>
+            <p className="officina__empty">Set one with bisellium budget.</p>
+          </>
+        )}
+        {Array.isArray(aerarium) && aerarium.length > 0 && (
+          <div className="officina__grid-3col">
+            {aerarium.map((entry) => {
+              const { word, reason } = formatPosture(entry);
+              return (
+                <div key={entry.collegium} className="officina__metric-card">
+                  <span className="officina__collegium-name">{entry.collegium}</span>
+                  <div className="officina__posture-row">
+                    <div className="officina__pie" style={pieStyle(entry.burn.tokens, entry.allowance.tokens)} />
+                    <div className="officina__posture-text">
+                      <span className="officina__posture-word">{word}</span>
+                      <span className="officina__posture-reason">{reason}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Bottom row: Pending actions (span 6) + Integrity (span 6) */}
