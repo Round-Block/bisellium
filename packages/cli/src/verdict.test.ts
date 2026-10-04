@@ -240,7 +240,7 @@ try {
     try {
       const { repo, studio: dir } = gitStudio("headers", ["W-220", "W-221"]);
       const outside = join(repo, "outside.log");
-      writeFileSync(outside, "body\n");
+      writeFileSync(outside, "## Findings\nNo findings\n");
       git(repo, "add", "outside.log");
       git(repo, "commit", "-qm", "input");
       const expectedClean = `tree:${sourceTreeHash(repo, ["studio", ".bisellium"], "HEAD")}`;
