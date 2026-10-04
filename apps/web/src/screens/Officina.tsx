@@ -161,7 +161,7 @@ export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps)
           <>
             {asOf}
             <p className="officina__integrity-summary">
-              {summary.stops} {summary.warns}
+              <span>{summary.stops}</span> <span>{summary.warns}</span>
             </p>
             <p className="officina__label">All findings by area</p>
             <div className="officina__table officina__table--zebra">

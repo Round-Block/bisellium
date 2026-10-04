@@ -265,12 +265,14 @@ function readModelsRecord(studioDir: string): ModelRecordEntry[] | undefined {
 /** W-077: `tick` writes `due` as `{kind, sella|period|opus|models}`; the declared shape is `{kind, id}`. */
 function namedDue(due: unknown): { kind: string; id: string }[] {
   if (!Array.isArray(due)) return [];
-  return due.map((raw: Record<string, unknown>) => {
-    const kind = String(raw?.["kind"]);
-    const field = { daily: "sella", aerarium: "period", traditio: "opus" }[kind];
-    if (typeof raw?.["id"] === "string") return { kind, id: raw["id"] };
-    if (field && typeof raw?.[field] === "string") return { kind, id: raw[field] as string };
-    if (kind === "probe" && Array.isArray(raw?.["models"])) return { kind, id: `${raw["models"].length} pair(s)` };
+  const field: Record<string, string> = Object.assign(Object.create(null), { daily: "sella", aerarium: "period", traditio: "opus" });
+  return due.map((raw: unknown) => {
+    const item = typeof raw === "object" && raw !== null && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+    const kind = typeof item["kind"] === "string" ? item["kind"] : "unknown";
+    const named = field[kind] === undefined ? undefined : item[field[kind]!];
+    if (typeof item["id"] === "string") return { kind, id: item["id"] };
+    if (typeof named === "string") return { kind, id: named };
+    if (kind === "probe" && Array.isArray(item["models"])) return { kind, id: `${item["models"].length} pair(s)` };
     return { kind, id: "unknown" };
   });
 }
