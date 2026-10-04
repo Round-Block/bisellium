@@ -1,17 +1,17 @@
 # behaviour: 7
 # command: node --test-reporter=tap --import tsx packages/cli/src/ui-shots.test.ts --behaviour 7
 # exit: 1
-# at: 2026-10-03T02:28:57.446Z
+# at: 2026-10-04T10:43:36.440Z
 # sella: builder.W-110
-# tree: tree:cee059e333ab551c5c407883bfd1d592932c2d54
+# tree: tree:1eed87a0be83f2032f183a05232d62967824d73d
 
 TAP version 13
 # Subtest: W-110 behaviour 7: a screenshot manifest that disagrees with the files on disk is refused and cannot reach outside ci/shots/<id>/
 not ok 1 - W-110 behaviour 7: a screenshot manifest that disagrees with the files on disk is refused and cannot reach outside ci/shots/<id>/
   ---
-  duration_ms: 29.454427
+  duration_ms: 33.453655
   type: 'test'
-  location: '/home/edckt/projects/bisellium/.worktrees/W-110/packages/cli/src/ui-shots.test.ts:4:3988'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-110/packages/cli/src/ui-shots.test.ts:4:3988'
   failureType: 'testCodeFailure'
   error: |-
     (b) a deleted PNG gives exactly one 'is missing' finding
@@ -29,7 +29,7 @@ not ok 1 - W-110 behaviour 7: a screenshot manifest that disagrees with the file
   actual:
   operator: 'deepStrictEqual'
   stack: |-
-    TestContext.<anonymous> (/home/edckt/projects/bisellium/.worktrees/W-110/packages/cli/src/ui-shots.test.ts:287:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-110/packages/cli/src/ui-shots.test.ts:287:12)
     Test.runInAsyncScope (node:async_hooks:226:14)
     Test.run (node:internal/test_runner/test:1201:25)
     Test.start (node:internal/test_runner/test:1096:17)
@@ -43,4 +43,4 @@ not ok 1 - W-110 behaviour 7: a screenshot manifest that disagrees with the file
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 36.020849
+# duration_ms 41.226917

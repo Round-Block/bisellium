@@ -118,7 +118,11 @@ production's magister as halt's actor, and every state but `done` may halt
 Before the readiness/completion writers mutate a native opus they call the
 shared `packages/commands/src/opus-model.ts` policy. It narrows native kinds,
 titles, hierarchy and dates and, for UI work, establishes design-seat input,
-the effective `served-e2e` gate, sole-censor citation and Patron rulings.
+the effective `served-e2e` gate (which also carries a screenshot manifest
+file the policy re-verifies against the PNGs on disk), sole-censor citation
+and Patron rulings. The pipeline seam carries per-gate environment
+(`PipelineRunOpts.commandEnv`), supplied by `verify`, which owns the reserved
+gate id, so only that gate learns the opus and officina it runs for.
 `check` translates the same structured problems to rule findings; `verify`
 uses the same effective-gate and protected-record predicates. The seam is
 read-only, keeping command writers and validation from becoming competing

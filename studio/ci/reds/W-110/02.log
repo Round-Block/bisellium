@@ -1,9 +1,9 @@
 # behaviour: 2
 # command: node node_modules/@playwright/test/cli.js test --config=apps/web/playwright.serve.config.ts walk.spec.ts --grep behaviour.2: --reporter=line
 # exit: 1
-# at: 2026-10-03T04:28:54.369Z
+# at: 2026-10-04T11:19:05.759Z
 # sella: builder.W-110
-# tree: tree:cee059e333ab551c5c407883bfd1d592932c2d54
+# tree: tree:1eed87a0be83f2032f183a05232d62967824d73d
 
 
 Running 1 test using 1 worker
@@ -34,7 +34,7 @@ Running 1 test using 1 worker
       111 |     await expect(page.locator('.sidebar__link[aria-current="page"]'), `${route}: the current link is the route's own`).toHaveAttribute("href", `#/${route}`);
       112 |     await expect(page.locator(".sidebar__link[aria-current]"), `${route}: no other link carries aria-current at all`).toHaveCount(1);
       113 |   }
-        at /home/edckt/projects/bisellium/.worktrees/W-110-rered/apps/web/tests-serve/walk.spec.ts:110:125
+        at /home/edckt/agents/bisellium/.worktrees/W-110/apps/web/tests-serve/walk.spec.ts:110:125
 
     Error Context: apps/web/test-results/walk-W-110-behaviour-2-the-4e42e-s-Back-Forward-and-a-reload-chromium/error-context.md
 
