@@ -120,3 +120,25 @@ if (runs(1)) {
     assert.equal(text(failed).split("Could not load health.").length - 1, 2, "Could not load health. appears twice");
   });
 }
+
+if (runs(2)) {
+  test("W-077 behaviour 2: Engine State is gone, and an empty due list is named", () => {
+    for (const autonomy of [{ paused: true, since: "2026-09-24T00:00:00Z", reason: "walk" }, { paused: false }]) {
+      const t = text(render({ health: health({ autonomy }) }));
+      for (const gone of ["Engine state", "Paused", "Autonomous", "Process engine", "System status"]) {
+        assert.ok(!t.includes(gone), `${gone} is not rendered (paused=${String(autonomy.paused)})`);
+      }
+    }
+    const html = render();
+    assert.deepEqual(byClass(html, "officina__panel-heading", "h2").map(text), ["Posture and burn", "Pending actions", "Contract integrity"]);
+
+    const pending = (h: HealthResponse): string => panelOf(render({ health: h }), "Pending actions");
+    assert.deepEqual(byClass(pending(health()), "officina__count").map(text), ["2"], "the count beside the heading reads 2");
+    assert.deepEqual(byClass(pending(health({ due: [] })), "officina__count").map(text), ["0"], "the count reads 0");
+    assert.ok(text(pending(health({ due: [] }))).includes("Nothing pending."), "an empty due list is named");
+    assert.deepEqual(byClass(pending(health()), "officina__value-mono").map(text), ["producer", "W-002"]);
+
+    const twins = pending(health({ due: [{ kind: "traditio", id: "W-1" }, { kind: "traditio", id: "W-1" }] }));
+    assert.equal(byClass(twins, "officina__value-mono").length, 2, "two due items of the same kind render two rows");
+  });
+}
