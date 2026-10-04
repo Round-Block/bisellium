@@ -1,0 +1,23 @@
+# opus: W-077
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-04T22:10:02.676Z
+# tree: tree:f156d393bd6cdaad1544396af3a114a87d4d6914
+
+W-077 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-077.md (7 behaviours, six sections; countBehaviours = 7).
+Measurements: ~/.bisellium-evidence/W-077-spec/measure.mts -> measure.out at master f449cbc (current period 2026-W40; both officinae hold only aerarium/2026-W38.yml so /api/aerarium answers []; the Patron's live health.json is stamped 2026-09-25T09:35:43.947Z, 33 due items, 0 with an id, 29 colliding React keys; 145 rule ids in 31 families).
+
+## Findings
+1. advisory — a tick-written health.json is served verbatim with due items shaped {kind, sella|period|opus|models}, while HealthResponse declares {kind, id}; every Pending actions name cell on the Patron's live screen is empty. Fixed here by mapping on the server's read path (behaviour 3) — check: none: a served-contract test that feeds tick's own writeHealthFile output through /api/health and asserts HealthResponse's shape
+2. advisory — Officina.tsx loads DEV_AERARIUM/DEV_HEALTH when a live fetch fails, so a failed read shows invented figures as data; fixed here (behaviours 4 and 7) — check: none: a served row that fails each Officina fetch and asserts no ?demo fixture value renders (behaviour 7 becomes that check)
+3. advisory — the served fresh health calls checkStudio without --repo, so studio/ reports 1 block (opus.records_unchanged, "repository context (--repo) is absent") that check --repo . does not; the new plain sentence will truthfully report an artifact of the call. Left out of scope as a CLI-side follow-on — check: none: a server row asserting /api/health's blocks equals check --repo's for the served officina
+4. advisory — health's findingsByRule merges levels in both producers (tick.ts, store.ts), so the screen can say how many problems stop work but not which family; plain language a Patron can fully act on needs per-rule levels, a seam widening left to open item 7 — check: none: a health-contract field naming blocking rules
+5. advisory — W-077 is kind "opus" though it is screen work; the W-096 ui gates (served e2e, ui-lead review, Patron look-and-feel rulings) do not attach to it, so the ui-lead blessing the orchestrator plans is by convention, not enforced — check: none: an opus.kind advisory when a brief's Files owned lists only apps/web screens under a non-ui kind
+6. advisory — the canvas has no Officina artboard; DIRECTION §6 is the only design source, and it already calls the conic pie a donut to delete; left out of scope, not silently fixed — check: design.screen-map (touchpoints only; nothing checks the canvas covers every routed screen)
+7. advisory — served reds are only honest if the bundle is built from the pre-change tree; the serve config's globalSetup rebuilds from the working tree, and the brief requires the reds commit carry tests plus an empty stub only, with the build visible in the red log — check: none: an opus.red_content clause requiring a served red log to show the build step (L-057, L-059; petitiones P-017, P-018)
+
+## Recommendation
+Verdict: passed. Seven behaviours over one screen, one new pure lib, one server read-path mapping and two served rows; no split needed. The seven open items carry stated defaults (six layout items for ui-lead under D-022, one architecture item for the Patron) and do not block building.
