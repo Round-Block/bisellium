@@ -60,6 +60,9 @@ function findingsProblem(body: string): string | undefined {
   const headings = parsed.headings.filter((heading) => heading.level === 2 && heading.name === "Findings");
   if (headings.length !== 1 || (numbered.length === 0 && !lines.some((line) => line.text === "No findings")))
     return 'verdict body needs exactly one "## Findings" section holding numbered findings or the exact line "No findings"';
+  const unchecked = numbered.findIndex((line) => !/\bcheck: \S/.test(line.text));
+  if (unchecked !== -1)
+    return `finding ${/^\d+/.exec(numbered[unchecked]!.text)![0]} names no check — end it with "check: <rule id | test path | none: <missing check>>"`;
   return undefined;
 }
 
