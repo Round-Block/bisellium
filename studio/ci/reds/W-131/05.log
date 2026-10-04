@@ -1,0 +1,41 @@
+# behaviour: 5
+# command: node --test --test-reporter=tap --test-name-pattern=W-131.behaviour.5: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-04T05:54:16.547Z
+# sella: builder.W-131
+# tree: tree:662f3bc1907234bbc4828286b67da5bc30468307
+
+TAP version 13
+# Subtest: W-131 behaviour 5: recordOnly is true only for studio/ and the handoff, and the CLI fails closed
+not ok 1 - W-131 behaviour 5: recordOnly is true only for studio/ and the handoff, and the CLI fails closed
+  ---
+  duration_ms: 2.451648
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-131/scripts/ci-scope.test.mjs:21:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    scripts/ci-scope.mjs exports recordOnly
+    + actual - expected
+    
+    + 'undefined'
+    - 'function'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'function'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-131/scripts/ci-scope.test.mjs:23:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 95.174237
