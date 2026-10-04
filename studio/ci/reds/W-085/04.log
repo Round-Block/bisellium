@@ -1,0 +1,71 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-085.behaviour.4: packages/cli/src/open-lessons.test.ts
+# exit: 1
+# at: 2026-10-04T14:26:31.391Z
+# sella: builder.W-085
+# tree: tree:05ca067278a099ce535db126095256ace8c71ba9
+
+TAP version 13
+# Subtest: W-085 behaviour 4: the context section shows the collegium's classes, capped
+not ok 1 - W-085 behaviour 4: the context section shows the collegium's classes, capped
+  ---
+  duration_ms: 26.862694
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-085/packages/cli/src/open-lessons.test.ts:5:6391'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - '## Open lessons\n' +
+    -   'Classes your collegium keeps paying for, most recurrent first. A class leaves this list when a lesson of it names a rule, a decision or a done opus in addressed_by.\n' +
+    -   '--- data: lessons/ ---\n' +
+    -   '- top · 2× over 2 cascades · latest L-002\n' +
+    -   '- eng-01 · 1× over 1 cascade · latest L-003\n' +
+    -   '- eng-02 · 1× over 1 cascade · latest L-004\n' +
+    -   '- eng-03 · 1× over 1 cascade · latest L-005\n' +
+    -   '- eng-04 · 1× over 1 cascade · latest L-006\n' +
+    -   '- eng-05 · 1× over 1 cascade · latest L-007 · fix in flight: W-801 (building)\n' +
+    -   '- eng-06 · 1× over 1 cascade · latest L-008\n' +
+    -   '- eng-07 · 1× over 1 cascade · latest L-009\n' +
+    -   '- eng-08 · 1× over 1 cascade · latest L-010\n' +
+    -   '- eng-09 · 1× over 1 cascade · latest L-011\n' +
+    -   '--- end ---\n' +
+    -   '… and 3 more open classes under lessons/'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    ## Open lessons
+    Classes your collegium keeps paying for, most recurrent first. A class leaves this list when a lesson of it names a rule, a decision or a done opus in addressed_by.
+    --- data: lessons/ ---
+    - top · 2× over 2 cascades · latest L-002
+    - eng-01 · 1× over 1 cascade · latest L-003
+    - eng-02 · 1× over 1 cascade · latest L-004
+    - eng-03 · 1× over 1 cascade · latest L-005
+    - eng-04 · 1× over 1 cascade · latest L-006
+    - eng-05 · 1× over 1 cascade · latest L-007 · fix in flight: W-801 (building)
+    - eng-06 · 1× over 1 cascade · latest L-008
+    - eng-07 · 1× over 1 cascade · latest L-009
+    - eng-08 · 1× over 1 cascade · latest L-010
+    - eng-09 · 1× over 1 cascade · latest L-011
+    --- end ---
+    … and 3 more open classes under lessons/
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-085/packages/cli/src/open-lessons.test.ts:207:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 69.395468
