@@ -37,8 +37,17 @@ jobs:
         run: npm run -s lint
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s format:check
+      # W-131: the live run.test.ts rows need bubblewrap and unprivileged user
+      # namespaces; ubuntu-latest has neither out of the box, and the guard row
+      # fails if one still skips under BISELLIUM_REQUIRE_LIVE_ROWS=1.
+      - if: steps.scope.outputs.record_only != 'true'
+        run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - if: steps.scope.outputs.record_only != 'true'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - if: steps.scope.outputs.record_only != 'true'
         run: npm test
+        env:
+          BISELLIUM_REQUIRE_LIVE_ROWS: "1"
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s check -- examples/sample-studio --repo .
       # Record-only pull request: the studio officina check is the whole gate.

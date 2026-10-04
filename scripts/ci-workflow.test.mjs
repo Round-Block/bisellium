@@ -129,7 +129,10 @@ check(
 // here, not matched loosely: the scope step (found by its id), the record-only
 // studio check (found by its exact `if`), and the full-path prerequisites below.
 const RECORD_ONLY_IF = "steps.scope.outputs.record_only == 'true'";
-const PREREQUISITE_RUNS = new Set([]);
+const PREREQUISITE_RUNS = new Set([
+  "sudo apt-get update && sudo apt-get install -y bubblewrap",
+  "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0",
+]);
 const jobRunSteps = (jobId) =>
   (doc?.jobs?.[jobId]?.steps ?? [])
     .filter((step) => step.id !== "scope" && step.if !== RECORD_ONLY_IF)
