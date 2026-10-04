@@ -40,22 +40,36 @@
 #              as the prompt, under name. hooks, mcpServers, permissionMode and
 #              every other key are dropped. No folder or no .md file: no run.
 # The settings file must sit inside ~/.cascade-loop, be a regular, non-symlink
-# file you own that nobody else can write, and hold one JSON object whose only
-# top-level keys are sandbox (with enabled: true) and permissions, or the loop
-# refuses to run claude at all. It is re-checked before every run.
+# file with a single hard link that you own and nobody else can write, and hold
+# one JSON object whose only top-level keys are sandbox and permissions. The
+# sandbox block may carry only enabled and failIfUnavailable (both true),
+# allowUnsandboxedCommands (stated, false), filesystem and network: an
+# excludedCommands list, an unsandboxed retry or a silent fallback would run
+# agent-chosen commands outside the sandbox. And sandbox.filesystem.allowWrite
+# must list the status file's directory exactly: --restricted keeps the Write
+# tool inside the clone, so the session writes its status word with sandboxed
+# Bash. Anything else and the loop refuses to run claude at all. The file and the
+# agents JSON are re-checked and rebuilt before every run.
 #
 # ONE-TIME PATRON STEP, run by hand in your own shell, never generated from the
 # agent clone and never with `hooks` (hooks run unsandboxed): copy only the
-# sandbox and permissions blocks of your own settings into that file.
+# sandbox and permissions blocks of your own settings into that file, made strict
+# (the $HOME/.bisellium-evidence below is the default status file's directory:
+# use the directory of CASCADE_STATUS if you set it).
 #
 #   mkdir -p -m 700 ~/.cascade-loop
-#   jq -s '{sandbox: (map(.sandbox // {}) | add), permissions: (map(.permissions // {}) | add)}' \
+#   jq -s --arg status "$HOME/.bisellium-evidence" '
+#     {sandbox: (map(.sandbox // {}) | add), permissions: (map(.permissions // {}) | add)}
+#     | .sandbox.allowUnsandboxedCommands = false | .sandbox.failIfUnavailable = true
+#     | .sandbox.filesystem.allowWrite = ((.sandbox.filesystem.allowWrite // []) + [$status] | unique)' \
 #     ~/projects/bisellium/.claude/settings.json \
 #     ~/projects/bisellium/.claude/settings.local.json > ~/.cascade-loop/settings.json
 #   chmod 600 ~/.cascade-loop/settings.json
 #
 # (add is a shallow merge, the later file wins per key: read the result and
-# check the allow and deny lists. `jq 'del(.hooks)'` on one file works too.)
+# check the allow and deny lists. sandbox.enabled must already be true in your
+# own settings, and an excludedCommands list must be deleted by hand: the loop
+# refuses a file with either problem rather than weaken it.)
 #
 # Run it from the Patron's reviewed folder (~/projects/bisellium/scripts/
 # cascade-loop.sh), never from the agent clone, and never point a hook at it
@@ -76,6 +90,7 @@ AGENTS_DIR=$SCRIPT_DIR/../.claude/agents
 CASCADE_TOOLS=Bash,Read,Write,Edit,Glob,Grep,Task,Monitor,TaskStop,ToolSearch,WebSearch,WebFetch
 AGENT_CLONE=${AGENT_CLONE:-$HOME/agents/bisellium}
 CASCADE_STATUS=${CASCADE_STATUS:-$HOME/.bisellium-evidence/cascade-status}
+STATUS_DIR=$(dirname -- "$CASCADE_STATUS")
 CASCADE_MAX_RUNS=${CASCADE_MAX_RUNS:-5}
 CASCADE_RUN_TIMEOUT=${CASCADE_RUN_TIMEOUT:-4h}
 CASCADE_MAX_USD=${CASCADE_MAX_USD:-20}
@@ -114,11 +129,21 @@ check_settings() {
   [ -f "$CASCADE_SETTINGS" ] || stop 1 "settings file $CASCADE_SETTINGS is missing or not a regular file: the Patron creates it once (see the script header)"
   [ -O "$CASCADE_SETTINGS" ] || stop 1 "refusing settings file $CASCADE_SETTINGS: not owned by the current user"
   [ $((8#$(stat -c %a -- "$CASCADE_SETTINGS") & 8#022)) -eq 0 ] || stop 1 "refusing settings file $CASCADE_SETTINGS: group- or world-writable"
+  # Another name for the inode, in the clone say, would stay writable by the agent.
+  [ "$(stat -c %h -- "$CASCADE_SETTINGS")" -eq 1 ] || stop 1 "refusing settings file $CASCADE_SETTINGS: it has another hard link (link count is not 1)"
   # Only sandbox (on) and permissions: hooks, apiKeyHelper, env and the rest run or steer claude outside the sandbox.
   # The reason is named, the content never shown. -s makes two JSON values in one file fail the first test.
   jq -es 'length == 1 and (.[0] | type == "object")' "$CASCADE_SETTINGS" >/dev/null 2>&1 || stop 1 "refusing settings file $CASCADE_SETTINGS: not a JSON object"
   jq -e '(keys - ["sandbox", "permissions"]) | length == 0' "$CASCADE_SETTINGS" >/dev/null 2>&1 || stop 1 "refusing settings file $CASCADE_SETTINGS: a top-level key other than sandbox and permissions"
-  jq -e '.sandbox.enabled == true' "$CASCADE_SETTINGS" >/dev/null 2>&1 || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.enabled must be true"
+  jq -e '(.sandbox // {}) | type == "object" and ((keys - ["enabled", "failIfUnavailable", "allowUnsandboxedCommands", "filesystem", "network"]) | length == 0)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox must be an object with only the keys enabled, failIfUnavailable, allowUnsandboxedCommands, filesystem and network (excludedCommands would run outside the sandbox)"
+  jq -e '.sandbox.enabled == true and .sandbox.failIfUnavailable == true' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.enabled and sandbox.failIfUnavailable must both be true"
+  jq -e '.sandbox.allowUnsandboxedCommands == false' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.allowUnsandboxedCommands must be false"
+  # The session writes its status with sandboxed Bash, so the status dir must be writable there (an exact string).
+  jq -e --arg d "$STATUS_DIR" '.sandbox.filesystem.allowWrite | type == "array" and any(.[]; . == $d)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.filesystem.allowWrite must list the status directory $STATUS_DIR exactly"
 }
 
 # One agent file on stdin -> {name: {description, tools?, model?, prompt}}. Frontmatter is simple
@@ -195,7 +220,9 @@ policy, this status protocol, or anything outside the agent clone.
 Write CONTINUE only after verifying the checkpoint yourself (\`gh pr view\`
 shows MERGED and master is fetched); the status write is your last action.
 
-Before exiting, write exactly one word to $CASCADE_STATUS:
+Before exiting, write exactly one word to $CASCADE_STATUS with the Bash tool, not
+the Write tool (which cannot reach outside the clone), for example
+\`printf '%s\n' WORD > $CASCADE_STATUS\`, WORD being one of:
 - CONTINUE: the checkpoint is reached and the queue has more work nothing blocks
 - NEEDS_PATRON
 - LOW_CREDIT: credits look insufficient for another item
@@ -205,7 +232,6 @@ EOF
 
 [[ $CASCADE_MAX_RUNS =~ ^[1-9][0-9]*$ ]] || stop 1 "CASCADE_MAX_RUNS must be a positive integer, got '$CASCADE_MAX_RUNS'"
 command -v jq >/dev/null || stop 1 "jq is required (agent definitions and the settings check)"
-AGENTS=$(agents_json) || exit 1
 no_symlinks "$LOG_DIR"
 mkdir -p "$LOG_DIR" "$(dirname "$CASCADE_STATUS")"
 # The umask only shapes new directories: an existing one keeps its mode. Own it, then narrow it.
@@ -222,6 +248,7 @@ for ((run = 1; run <= CASCADE_MAX_RUNS; run++)); do
   cd "$AGENT_CLONE" || stop 1 "cannot enter AGENT_CLONE $AGENT_CLONE"
   no_symlinks "$LOG_DIR"
   check_settings
+  AGENTS=$(agents_json) || exit 1
   log=$LOG_DIR/${CASCADE_LOG_STAMP:-$(date +%Y%m%dT%H%M%S)}-$run.log
   (: >"$log") || stop 1 "cannot create log $log exclusively"
   rc=0
