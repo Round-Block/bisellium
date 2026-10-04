@@ -14,6 +14,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { after, test } from "node:test";
 import type { HarnessProfile } from "@bisellium/shim";
+import { checkStudio } from "./check.js";
 import { buildContext } from "./context.js";
 import { runTalk } from "./talk.js";
 
@@ -296,4 +297,17 @@ test("W-085 behaviour 6: every boot path carries the same section", async () => 
   assert.ok(viaContext?.startsWith(INTRO), "context carries the section");
   assert.equal(viaHook, viaContext);
   assert.equal(viaTalk, viaContext);
+});
+
+test("W-085 behaviour 7: check knows the context_open_lessons default", () => {
+  const findingsFor = (value: string): { rule: string; level: string; message: string }[] => {
+    const dir = fixture();
+    appendFileSync(join(dir, "bisellium.yml"), `defaults:\n  context_open_lessons: ${value}\n`);
+    return checkStudio(dir, NOW).findings.filter((f) => f.rule === "manifest.defaults");
+  };
+  assert.deepEqual(findingsFor("5"), []);
+  const bad = findingsFor('"ten"');
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0]!.level, "block");
+  assert.match(bad[0]!.message, /context_open_lessons.*must be a number/);
 });
