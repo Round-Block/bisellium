@@ -16,9 +16,25 @@ lex, a decision, or a check rule and delete it here.
 
 - **Session hygiene.** One cascade per orchestrator context: after the
   checkpoint merges, `/clear` (or end the session) and boot fresh from this
-  file. Never park a fat context across an idle gap. Small reversible
-  decisions ship as veto-able defaults reported at the checkpoint; only
-  irreversible or ruling-contradicting calls wait for the Patron.
+  file. Never park a fat context across an idle gap. The Patron may run
+  `~/projects/bisellium/scripts/cascade-loop.sh` to automate the fresh
+  sessions; each session then ends by writing one status word (CONTINUE,
+  NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
+  Logs and the lock live in `~/.cascade-loop` (agent sessions cannot write
+  it); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
+  `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions. One-time
+  Patron step: the loop runs `claude --restricted`, which loads no user,
+  project or local settings, hooks, plugins or MCP servers. It gets only
+  `~/.cascade-loop/settings.json` (just `sandbox` and `permissions`, copied from
+  your own settings and made strict: sandbox on with `failIfUnavailable` true,
+  `allowUnsandboxedCommands` false, no `excludedCommands`, the status file's
+  directory in `filesystem.allowWrite`, only the known nested keys, no `Edit`/`Write` allow rule; recipe in the script header; checked
+  before every run) and the agent definitions in the `.claude/agents` beside the
+  script (rebuilt before every run), and refuses to run without either. The
+  session writes its status word with Bash, not the Write tool.
+  Small reversible decisions ship as veto-able defaults reported at the
+  checkpoint; only irreversible or ruling-contradicting calls wait for the
+  Patron.
 - **Plain words to the Patron.** Status lines translate the vocabulary;
   jargon stays in commits and records.
 - **Fewer words.** Lead with the proposal or the outcome; drop rationale that
