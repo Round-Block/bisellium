@@ -7,7 +7,7 @@
  * and an unreadable lesson is skipped.
  */
 import { basename, join } from "node:path";
-import { listMd, readFront, readManifest } from "@bisellium/adapter-native";
+import { listMd, readFront, readManifest, resolveSeat } from "@bisellium/adapter-native";
 
 export interface OpenLessonClass {
   class: string;
@@ -46,17 +46,34 @@ function front(path: string): Front | undefined {
 
 export function openLessons(root: string): OpenLessonClass[] {
   try {
-    readManifest(root);
+    const manifest = readManifest(root);
+    const declared = (manifest.collegia ?? []).map((c) => c.id);
     const opera = new Map<string, string | undefined>();
+    // opus id -> its own collegium plus the collegium of every gate sella
+    const paid = new Map<string, Set<string>>();
     for (const p of listMd(join(root, "opera"))) {
       const d = front(p);
-      if (d) opera.set(basename(p, ".md"), str(d["state"]));
+      if (!d) continue;
+      const id = basename(p, ".md");
+      opera.set(id, str(d["state"]));
+      const set = new Set<string>();
+      const own = str(d["collegium"]);
+      if (own) set.add(own);
+      const gates = d["probationes"];
+      if (typeof gates === "object" && gates !== null)
+        for (const g of Object.values(gates)) {
+          const sella = typeof g === "object" && g !== null ? str((g as Front)["sella"]) : undefined;
+          const c = sella && resolveSeat(manifest, sella)?.seat.collegium;
+          if (c) set.add(c);
+        }
+      paid.set(id, set);
     }
     const decisions = new Set(listMd(join(root, "decisions")).map((p) => basename(p, ".md")));
 
     interface Acc {
       lessons: string[];
       cascades: Set<number>;
+      collegia: Set<string>;
       latest: { id: string; at: string };
       closed: boolean;
       inFlight?: { id: string; state: string };
@@ -68,12 +85,17 @@ export function openLessons(root: string): OpenLessonClass[] {
       if (!d || !cls) continue;
       const id = basename(p, ".md");
       const at = iso(d["at"]);
-      const acc = classes.get(cls) ?? { lessons: [], cascades: new Set<number>(), latest: { id, at }, closed: false };
+      const acc = classes.get(cls) ?? { lessons: [], cascades: new Set<number>(), collegia: new Set<string>(), latest: { id, at }, closed: false };
       classes.set(cls, acc);
       acc.lessons.push(id);
       if (typeof d["cascade"] === "number" && Number.isFinite(d["cascade"])) acc.cascades.add(d["cascade"]);
       // newest `at` wins; a tie goes to the higher id
       if (at > acc.latest.at || (at === acc.latest.at && id > acc.latest.id)) acc.latest = { id, at };
+      const named = (Array.isArray(d["evidence"]) ? d["evidence"] : [])
+        .flatMap((h) => (typeof h === "string" ? (h.match(/\bW-\d+\b/g) ?? []) : []))
+        .filter((w) => paid.has(w));
+      // evidence that names no existing opus counts for every collegium
+      for (const c of named.length ? named.flatMap((w) => [...paid.get(w)!]) : declared) acc.collegia.add(c);
       const v = str(d["addressed_by"]);
       if (v === undefined) continue;
       if (opera.has(v)) {
@@ -90,8 +112,7 @@ export function openLessons(root: string): OpenLessonClass[] {
         cascades: [...a.cascades].sort((x, y) => x - y),
         latest: a.latest.id,
         latestAt: a.latest.at,
-        // ponytail: filled by behaviour 3
-        collegia: [],
+        collegia: [...a.collegia].sort(),
         ...(a.inFlight === undefined ? {} : { fixInFlight: a.inFlight }),
       }))
       .sort(
