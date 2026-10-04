@@ -1,0 +1,16 @@
+# opus: W-131
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-04T06:59:55.747Z
+# tree: tree:f56ac880bfbe433d077f181586e09e8c022f955f
+
+## Findings
+1. blocking — packages/cli/src/prune.test.ts:127 The fixture manifest declares `review` but not `spec`, so the eight-digit spec log was never a candidate before the fix; the red proves only the review phase, not both verdict phases. — check: packages/cli/src/prune.test.ts
+2. blocking — scripts/ci-scope.test.mjs:110 The row covers independent renames into both allowlisted destinations but no rename-plus-copy case, leaving the required copy path without a biting regression. — check: none: add a source deletion materialized into both `studio/**` and `docs/SESSION-HANDOFF.md`
+
+## Verdict
+Finding 3 is closed and finding 4 is mechanically enforced at merge time, but findings 1–2 lack the required full-class regression evidence. The delta otherwise introduces no observed regression.
+VERDICT: FAIL
