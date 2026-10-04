@@ -1,0 +1,18 @@
+# opus: W-131
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-04T06:29:21.637Z
+# tree: tree:31f37ae9db6553510d57562b7de4ae792f405c07
+
+## Findings
+1. blocking — packages/cli/src/prune.ts:101 The candidate regex also matches eight-digit decimal verdict rounds because `spec` and `review` are manifest probatio IDs. This class includes both `W-<n>-spec-12345678.log` and `W-<n>-review-12345678.log`; I checked both filename phases emitted by `runVerdict`, while the test covers only `review-1`. — check: none: add eight-digit spec and review verdict fixtures to packages/cli/src/prune.test.ts
+2. blocking — scripts/ci-scope.mjs:21 `git diff --name-only` reports post-image paths, so a rename from source into either allowed destination—`studio/**` or `docs/SESSION-HANDOFF.md`—can produce `record_only=true` and skip the full tests despite deleting source. I checked both allowlist branches and found no rename fixture; [Git documents `--name-only` as showing post-image names](https://git-scm.com/docs/git-diff). — check: none: add cross-boundary rename cases to scripts/ci-scope.test.mjs
+3. advisory — packages/commands/src/verdict.ts:193 The body cap runs before the existing UI-only and phase-specific flag checks at lines 202–213, contrary to the interface’s required validation order; an oversized body therefore masks those established flag errors. — check: none: add an oversized-body/invalid-flag precedence row to packages/cli/src/verdict-findings.test.ts
+4. blocking — studio/briefs/W-131.md:198 The packet contains no W-131 pull-request gates log proving 26 live rows and the guard ran with zero skips on `ubuntu-latest`, nor the required run listing showing branch pushes produced pull-request runs only; the local and confinement logs do not establish these GitHub-runner acceptance conditions. I searched every supplied packet file and the W-131 studio records. — check: none: attach a host-produced receipt field or artifact recording the GitHub run IDs and live-row summary
+
+## Verdict
+The implementation can delete verdict evidence and can wrongly take the short CI path for a source rename, while required runner evidence is absent.
+VERDICT: FAIL
