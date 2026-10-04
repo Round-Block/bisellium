@@ -20,12 +20,12 @@ lex, a decision, or a check rule and delete it here.
   `~/projects/bisellium/scripts/cascade-loop.sh` to automate the fresh
   sessions; each session then ends by writing one status word (CONTINUE,
   NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
-  Logs and the lock live in `~/.cascade-loop` (agent sessions cannot write
-  it); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
+  Logs and the lock live in `~/projects/bisellium/.cascade-loop` (agent sessions cannot write
+  it; the loop refuses to run from inside the agent clone); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
   `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions. One-time
   Patron step: the loop runs `claude --restricted`, which loads no user,
   project or local settings, hooks, plugins or MCP servers. It gets only
-  `~/.cascade-loop/settings.json` (just `sandbox` and `permissions`, copied from
+  `~/projects/bisellium/.cascade-loop/settings.json` (just `sandbox` and `permissions`, copied from
   your own settings and made strict: sandbox on with `failIfUnavailable` true,
   `allowUnsandboxedCommands` false, no `excludedCommands`, the status file's
   directory in `filesystem.allowWrite`, only the known nested keys, no `Edit`/`Write` allow rule; recipe in the script header; checked
@@ -160,7 +160,7 @@ lex, a decision, or a check rule and delete it here.
 
 **Spend:** cascade 43 through W-130 all on Claude (Opus 5.5 orchestrator, Opus 5 architect/censor, Sonnet 5.5 builder). **Model mapping from W-131 (Patron, 2026-10-04, "pivot back to codex"):** censor + security review = Codex `gpt-5.6-sol` high (`codex exec`, verdict recorded via `bisellium verdict --from`); builds = Claude Sonnet; clerk = Claude Haiku; spec = Claude Opus architect; ui-lead = `gpt-6-astra` medium (D-022). Sol also owns improving the automated checks: each review names the check that would have caught each finding; Sol specs check-improvement opera, Sonnet builds, Claude Opus censor reviews those. D-014/D-022 still say "Opus-tier censor": the Patron confirmed Codex as reviewer (2026-10-04) and amends both by hand; the classifier blocks agents even reading toward that edit ("Self-Modification"), so do not retry. Spend line per provider at every checkpoint.
 
-**Restart loop: merged (#199, 2026-10-04).** `scripts/cascade-loop.sh` runs `claude --restricted` with only the Patron's `~/.cascade-loop/settings.json` and the reviewed folder's agents (details in its header). Six Codex rounds; the last, narrow one PASSed. Waiting on the Patron's one-time settings step; the first launch is the live test. Accepted scope-outs: wrong-owner rows, live smoke test. The agent clone's Stop hook now points (Patron's instruction) at `~/projects/bisellium/scripts/concise-stop.mjs` (2026-10-04); hooks must never run clone code. Review stop rule (Patron-visible default): at most five full rounds, then fix and merge after green; the merge classifier still needs a PASS on the final delta, which a narrow Codex check of that delta supplies. Spend: Opus 5.5 orchestrator; Sonnet 5.5 builder ~630k over 4 dispatches; Codex Sol ~280k over rounds 4–6.
+**Restart loop: merged (#199, 2026-10-04).** `scripts/cascade-loop.sh` runs `claude --restricted` with only the Patron's `~/projects/bisellium/.cascade-loop/settings.json` and the reviewed folder's agents (details in its header). Six Codex rounds; the last, narrow one PASSed. Waiting on the Patron's one-time settings step; the first launch is the live test. Accepted scope-outs: wrong-owner rows, live smoke test. The agent clone's Stop hook now points (Patron's instruction) at `~/projects/bisellium/scripts/concise-stop.mjs` (2026-10-04); hooks must never run clone code. Review stop rule (Patron-visible default): at most five full rounds, then fix and merge after green; the merge classifier still needs a PASS on the final delta, which a narrow Codex check of that delta supplies. Spend: Opus 5.5 orchestrator; Sonnet 5.5 builder ~630k over 4 dispatches; Codex Sol ~280k over rounds 4–6.
 
 ## Queue
 
