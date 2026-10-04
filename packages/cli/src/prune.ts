@@ -102,7 +102,8 @@ export function pruneCiLogs(studio: string): { removed: string[] } {
   let cited: string | undefined;
   for (const name of readdirSync(ciDir)) {
     const opus = shape.exec(name)?.[1];
-    if (opus === undefined) continue;
+    // A verdict log (`<opus>-spec|review-<round>.log`) is evidence, never a gate log, even when the round is eight digits.
+    if (opus === undefined || /-(?:spec|review)-\d+\.log$/.test(name)) continue;
     const opusFile = readContainedRegularFile(root, `opera/${opus}.md`, "opera");
     if ("error" in opusFile || readFront<Record<string, unknown>>(opusFile.absolute).data["state"] !== "done") continue;
     cited ??= officinaTextOutsideCi(root);

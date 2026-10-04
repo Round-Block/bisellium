@@ -190,11 +190,6 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
   }
 
-  if (transcript.length > BODY_CAP) {
-    console.error(`verdict body is ${transcript.length} bytes; the cap is ${BODY_CAP} — record findings, not a transcript`);
-    return { exitCode: 2 };
-  }
-
   const record = readFront<NativeRecord>(opusPath).data;
   const isUi = record.kind === "ui";
   const dispatchPrompt = values.get("--dispatch-prompt");
@@ -209,6 +204,11 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
   if (phase === "build" && dispatchPrompt !== undefined) {
     console.error("--dispatch-prompt is valid only for a spec-phase UI verdict");
+    return { exitCode: 2 };
+  }
+
+  if (transcript.length > BODY_CAP) {
+    console.error(`verdict body is ${transcript.length} bytes; the cap is ${BODY_CAP} — record findings, not a transcript`);
     return { exitCode: 2 };
   }
 

@@ -18,7 +18,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const [base, head] = process.argv.slice(2);
   let only = false;
   try {
-    const out = execFileSync("git", ["diff", "--name-only", `${base}...${head}`], {
+    const out = execFileSync("git", ["diff", "--name-only", "--no-renames", `${base}...${head}`], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     });
