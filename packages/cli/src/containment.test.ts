@@ -307,6 +307,11 @@ const PINNED_B: PinnedB[] = [
     why: "W-124: same guarded opus as recordRel#1; read-only (git pathspec or readContainedRegularFile), never a write",
   },
   { key: "packages/cli/src/prune.ts:pruneStaleOpusBranches#1", disposition: "derived", why: 'id is branch.replace(/^opus\\//, ""); git refuses ".." in a ref name' },
+  {
+    key: "packages/cli/src/prune.ts:pruneCiLogs#1",
+    disposition: "guarded",
+    why: "W-131: the opus id is captured by /^([A-Za-z]+-\\d+)-…/ from a ci/ directory entry and goes only to readContainedRegularFile, which refuses symlinks and escapes before the state read; the deleted ci/<name> is checked by the same helper before unlinkSync",
+  },
   { key: "packages/cli/src/retro.ts:draftRetro#1", disposition: "derived", why: "L-### from createNextRecord" },
   { key: "packages/cli/src/retro.ts:draftRetro#2", disposition: "derived", why: "P-### from createNextRecord" },
   {

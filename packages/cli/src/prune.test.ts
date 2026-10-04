@@ -196,6 +196,7 @@ test("W-131 behaviour 4: prune removes exactly the gate logs of a done opus that
     const cited = fixture({ "W-402": "done" }, { "W-402-tests-aaaaaaaa.log": "log\n" }, { "lessons/L-001.md": "see ci/W-402-tests-aaaaaaaa.log\n" });
     const building = fixture({ "W-403": "building" }, { "W-403-tests-bbbbbbbb.log": "log\n" });
     const linked = fixture({ "W-404": "done" }, {});
+    mkdirSync(join(linked.studio, "ci"), { recursive: true });
     writeFileSync(join(linked.repo, "outside.log"), "outside\n");
     symlinkSync(join(linked.repo, "outside.log"), join(linked.studio, "ci", "W-404-tests-cccccccc.log"));
     for (const [what, fx, name] of [

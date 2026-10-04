@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { readFront } from "@bisellium/adapter-native";
+import { readFront, readManifest } from "@bisellium/adapter-native";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { reclaimWorktrees } from "@bisellium/shim";
 
 interface PruneEntry {
@@ -74,6 +75,46 @@ export function pruneStaleOpusBranches(repo: string, studio: string): PruneResul
   return { removed, kept };
 }
 
+/** Every regular file under `dir` outside `ci/` (symlinks are never followed), as one string. */
+function officinaTextOutsideCi(root: string): string {
+  const parts: string[] = [];
+  const walk = (dir: string, rel: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const entryRel = rel === "" ? entry.name : `${rel}/${entry.name}`;
+      if (entryRel === "ci") continue;
+      if (entry.isDirectory()) walk(join(dir, entry.name), entryRel);
+      else if (entry.isFile()) parts.push(readFileSync(join(dir, entry.name), "utf8"));
+    }
+  };
+  walk(root, "");
+  return parts.join("\n");
+}
+
+/** W-131: removes the gate logs (`<opus>-<probatio>-<tree8>.log`) of a `done` opus that nothing outside `ci/` cites. */
+export function pruneCiLogs(studio: string): { removed: string[] } {
+  const root = resolve(studio);
+  const removed: string[] = [];
+  const ciDir = join(root, "ci");
+  if (!existsSync(ciDir)) return { removed };
+  const probationes = readManifest(root).probationes.map((p) => p.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (probationes.length === 0) return { removed };
+  const shape = new RegExp(`^([A-Za-z]+-\\d+)-(?:${probationes.join("|")})-[0-9a-f]{8}\\.log$`);
+  let cited: string | undefined;
+  for (const name of readdirSync(ciDir)) {
+    const opus = shape.exec(name)?.[1];
+    if (opus === undefined) continue;
+    const opusFile = readContainedRegularFile(root, `opera/${opus}.md`, "opera");
+    if ("error" in opusFile || readFront<Record<string, unknown>>(opusFile.absolute).data["state"] !== "done") continue;
+    cited ??= officinaTextOutsideCi(root);
+    if (cited.includes(`ci/${name}`)) continue;
+    const log = readContainedRegularFile(root, `ci/${name}`, "ci");
+    if ("error" in log) continue;
+    unlinkSync(log.absolute);
+    removed.push(`ci/${name}`);
+  }
+  return { removed };
+}
+
 const PRUNE_USAGE = "usage: bisellium prune --studio <dir> [--repo <dir>]";
 
 const PRUNE_FLAGS = new Set(["--studio", "--repo"]);
@@ -104,6 +145,7 @@ export function runPrune(args: string[]): { exitCode: number } {
 
   const worktreeResult = reclaimWorktrees(repo);
   const branchResult = pruneStaleOpusBranches(repo, studio);
+  const logResult = pruneCiLogs(studio);
 
   if (worktreeResult.removed.length > 0) {
     for (const w of worktreeResult.removed) console.log(`worktree removed: ${w.path} (${w.reason})`);
@@ -111,7 +153,8 @@ export function runPrune(args: string[]): { exitCode: number } {
   if (branchResult.removed.length > 0) {
     for (const b of branchResult.removed) console.log(`branch removed: ${b.branch} (${b.reason})`);
   }
-  if (worktreeResult.removed.length === 0 && branchResult.removed.length === 0) {
+  for (const name of logResult.removed) console.log(`ci log removed: ${name}`);
+  if (worktreeResult.removed.length === 0 && branchResult.removed.length === 0 && logResult.removed.length === 0) {
     console.log("nothing to prune");
   }
 
