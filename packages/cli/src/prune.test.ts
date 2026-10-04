@@ -178,7 +178,7 @@ test("W-131 behaviour 4: prune removes exactly the gate logs of a done opus that
   };
   try {
     const gone = ["W-401-tests-0123abcd.log", "W-401-lint-89abcdef.log"];
-    const stays = ["W-401-review-1.log", "W-401.log", "W-401-bogus-0123abcd.log", "W-401-tests-0123abc.log", "reds/W-401/01.log"];
+    const stays = ["W-401-review-1.log", "W-401.log", "W-401-bogus-0123abcd.log", "W-401-tests-0123abc.log", "reds/W-401/01.log", "W-401-spec-12345678.log", "W-401-review-12345678.log"];
     const main = fixture(
       { "W-401": "done" },
       Object.fromEntries([...gone, ...stays].map((name) => [name, `log ${name}\n`])),

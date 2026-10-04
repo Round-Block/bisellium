@@ -44,7 +44,7 @@ function studio(): string {
 }
 
 /** Runs `verdict` on a fresh officina; returns exit code, stderr and whether the log exists. */
-function record(body: string): { exitCode: number; stderr: string; written: boolean } {
+function record(body: string, extra: string[] = []): { exitCode: number; stderr: string; written: boolean } {
   const dir = studio();
   const input = join(dir, "input.md");
   writeFileSync(input, body);
@@ -57,7 +57,7 @@ function record(body: string): { exitCode: number; stderr: string; written: bool
   console.log = () => {};
   try {
     const result = runVerdict(
-      ["W-300", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", input, "--studio", dir],
+      ["W-300", "--round", "1", "--sella", "qa-lead", "--outcome", "PASS", "--from", input, "--studio", dir, ...extra],
       { now: NOW },
     );
     return { exitCode: result.exitCode, stderr, written: existsSync(join(dir, "ci", "W-300-review-1.log")) };
@@ -119,4 +119,11 @@ test("W-131 behaviour 3: every numbered finding names check: <text>", () => {
   const accepted = record(`## Findings\n${CHECKED}\n2. advisory - usage omits the cap - check: none: a usage-string pin in verdict.test.ts\n`);
   assert.equal(accepted.exitCode, 0, accepted.stderr);
   assert.equal(accepted.written, true);
+});
+
+test("W-131 round 2 finding 3: the existing flag checks run before the body cap", () => {
+  const refused = record(findingsBody(8193), ["--dispatch-prompt", "ci/dispatch.md"]);
+  assert.equal(refused.exitCode, 2);
+  assert.match(refused.stderr, /--dispatch-prompt and --ui-input are UI-only flags/, "the flag error wins over the cap");
+  assert.doesNotMatch(refused.stderr, /the cap is 8192/);
 });

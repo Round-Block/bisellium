@@ -106,3 +106,38 @@ test("W-131 behaviour 7: gates installs bubblewrap and lifts the userns restrict
   assert.ok(bwrap < npmTest && sysctl < npmTest, "both run before npm test");
   assert.equal(steps[npmTest].env?.BISELLIUM_REQUIRE_LIVE_ROWS, "1", "npm test requires the live rows");
 });
+
+test("W-131 round 2 finding 2: a rename across the record-only boundary is not record-only", () => {
+  const repo = mkdtempSync(join(tmpdir(), "w131-scope-rename-"));
+  try {
+    git(repo, "init", "-q", "-b", "main");
+    git(repo, "config", "user.email", "fixture@example.invalid");
+    git(repo, "config", "user.name", "Fixture");
+    mkdirSync(join(repo, "src"));
+    mkdirSync(join(repo, "docs"));
+    const body = "the same line\n".repeat(20);
+    writeFileSync(join(repo, "src", "a.ts"), body);
+    writeFileSync(join(repo, "docs", "b.md"), body + "other\n");
+    git(repo, "add", ".");
+    git(repo, "commit", "-qm", "base");
+    const base = git(repo, "rev-parse", "HEAD");
+    mkdirSync(join(repo, "studio"));
+    git(repo, "mv", "src/a.ts", "studio/a.ts");
+    git(repo, "commit", "-qm", "source into studio");
+    assert.equal(
+      scope(repo, base, "HEAD").stdout,
+      "record_only=false\n",
+      "source renamed into studio/ is not record-only",
+    );
+    const second = git(repo, "rev-parse", "HEAD");
+    git(repo, "mv", "docs/b.md", "docs/SESSION-HANDOFF.md");
+    git(repo, "commit", "-qm", "doc onto the handoff");
+    assert.equal(
+      scope(repo, second, "HEAD").stdout,
+      "record_only=false\n",
+      "a doc renamed onto the handoff is not record-only",
+    );
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
