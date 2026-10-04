@@ -73,7 +73,7 @@ function render(over: Partial<ViewProps> = {}): string {
 }
 
 const text = (html: string): string => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-const tag = (s: string): string => s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#x27;/g, "'");
+const tag = (s: string): string => s.replace(/&quot;/g, "\"").replace(/&#x27;/g, "'").replace(/&amp;/g, "&");
 /** inner HTML of every non-nested element of the tag whose class attribute holds the class. */
 function byClass(html: string, cls: string, el = "[a-z0-9]+"): string[] {
   const re = new RegExp(`<(${el})\\b[^>]*class="[^"]*\\b${cls}\\b[^"]*"[^>]*>([\\s\\S]*?)</\\1>`, "g");
