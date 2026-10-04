@@ -358,6 +358,8 @@ function classify(repo: string, tip: string | undefined, read: PrRead): PrClass 
 interface Order {
   role: string;
   sella: string;
+  /** W-085: the command that prints this sella's boot bundle, for a harness that cannot run it. */
+  boot: string;
   phase: string;
   inputs: string[];
   command: string;
@@ -574,7 +576,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     actor,
     why,
     extra: [],
-    order: { role, sella, phase: o.phase, inputs, command, ...(o.round === undefined ? {} : { round: o.round }), resume: o.resume, extra: o.extra ?? [] },
+    order: { role, sella, boot: `bisellium context --sella ${sella} --studio ${studioRel}`, phase: o.phase, inputs, command, ...(o.round === undefined ? {} : { round: o.round }), resume: o.resume, extra: o.extra ?? [] },
   };
 }
 
@@ -958,7 +960,7 @@ function render(id: string, d: Derived, f: Facts, status: string): string[] {
   for (const [k, v] of d.extra) out.push(`${k}: ${one(v)}`);
   if (d.order !== undefined && d.status === "named") {
     const o = d.order;
-    out.push(`role: ${o.role}`, `sella: ${o.sella}`, `budget_tokens: ${o.budget ?? ""}`, `phase: ${o.phase}`);
+    out.push(`role: ${o.role}`, `sella: ${o.sella}`, `boot: ${o.boot}`, `budget_tokens: ${o.budget ?? ""}`, `phase: ${o.phase}`);
     if (o.round !== undefined) out.push(`round: ${o.round}`);
     for (const [k, v] of o.extra) out.push(`${k}: ${one(v)}`);
     out.push(`inputs: ${o.inputs.map((x) => clean(x)).join(", ")}`, `command: ${one(o.command)}`);
