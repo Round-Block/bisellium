@@ -8,6 +8,9 @@
  * playwright --grep selects exactly one. No wall-clock sleep: every wait is an
  * expect(locator) or an expect.poll.
  *
+ * W-077 behaviours 6 and 7 follow the same shape: the Officina over a stale tick
+ * snapshot and an empty aerarium (6), and over failed reads (7).
+ *
  * `NAV_ENTRIES` is read through a namespace import, after each behaviour's
  * Genuine red row, so a missing export is an assertion failure and not a
  * module-load one.
@@ -169,18 +172,20 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
   await expect(page.locator('select[aria-label^="model for seat "]'), "one model select per declared seat").toHaveCount(officina.sellae.length);
   await expect(page.locator('select[aria-label="model for seat builder"]'), "the builder seat's model is the manifest's").toHaveValue("claude-sonnet-5");
 
-  // (d) Officina: headings, a posture card per seeded collegium, the integrity count from /api/health.
+  // (d) Officina: headings, a posture card per seeded collegium, the Handoff notes count from /api/health.
   await page.locator('.sidebar__link[href="#/officina"]').click();
-  await expect(page.locator(".officina__panel-heading"), "officina panel headings").toHaveText(["System status", "Process engine", "Contract integrity"]);
+  await expect(page.locator(".officina__panel-heading"), "officina panel headings").toHaveText(["Posture and burn", "Pending actions", "Contract integrity"]);
   await expect
     .poll(() => page.locator(".officina__collegium-name").allTextContents().then((t) => [...t].sort()), "posture cards name exactly the seeded collegia")
     .toEqual(["art", "engineering", "production", "qa"]);
   const health = await getJSON<{ findingsByRule: Record<string, number> }>(s, "/api/health");
-  const stale = health.findingsByRule["traditio.stale"];
-  expect(stale, "the fixture has traditio.stale findings").toBeGreaterThan(0);
-  const staleRow = page.locator(".panel--integrity .officina__row").filter({ hasText: "traditio.stale" });
-  await expect(staleRow, "the integrity table has a traditio.stale row").toHaveCount(1);
-  await expect(staleRow.locator(".officina__value-mono"), "its value is /api/health's own count").toHaveText(new RegExp(`^${String(stale)}$`));
+  const handoff = Object.entries(health.findingsByRule)
+    .filter(([rule]) => rule.startsWith("traditio."))
+    .reduce((sum, [, count]) => sum + count, 0);
+  expect(handoff, "the fixture has traditio findings").toBeGreaterThan(0);
+  const handoffRow = page.locator(".panel--integrity details.officina__row").filter({ has: page.locator("summary .officina__label", { hasText: "Handoff notes" }) });
+  await expect(handoffRow, "the integrity list has a Handoff notes row").toHaveCount(1);
+  await expect(handoffRow.locator("summary .officina__value-mono"), "its value is the sum of /api/health's traditio.* counts").toHaveText(new RegExp(`^${String(handoff)}$`));
 
   // (e) Genuine red: the seeded cascade actum fills exactly one recent tick, and /api/acta was requested.
   await expect.poll(() => actaRequests, "GET /api/acta was requested while the Officina screen loaded").toBeGreaterThan(0);
@@ -208,4 +213,75 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
     expect(bytes.readUInt32BE(16), `${entry.route}.png is 1280 wide`).toBe(1280);
     expect(bytes.readUInt32BE(20), `${entry.route}.png is at least 900 tall`).toBeGreaterThanOrEqual(900);
   }
+});
+
+test("W-077 behaviour 6: the Officina tells the truth about a stale tick snapshot and an empty aerarium", async ({ page }) => {
+  served = await startServed("w077-6");
+  const s = served;
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  // Precondition: the fixture holds no allowance for the current period.
+  expect(await getJSON<unknown[]>(s, "/api/aerarium"), "/api/aerarium answers []").toEqual([]);
+  const at = "2026-09-25T09:35:43.947Z";
+  writeFileSync(
+    join(s.studioDir, "health.json"),
+    JSON.stringify({
+      at,
+      ok: false,
+      blocks: 1,
+      advisories: 3,
+      findingsByRule: { "state.done.probationes": 1, "traditio.stale": 2, "traditio.stage": 1 },
+      autonomy: { paused: true, since: "2026-09-24T00:00:00Z", reason: "walk" },
+      lastTick: at,
+      due: [
+        { kind: "daily", sella: "producer" },
+        { kind: "aerarium", period: "2026-W39" },
+        { kind: "traditio", opus: "W-002" },
+      ],
+    }),
+  );
+  await signIn(page, s, "inbox");
+  await page.locator('.sidebar__link[href="#/officina"]').click();
+  const officina = page.locator(".officina");
+
+  // (a) the Genuine red: both health panels carry the stamp of the file, not of the screen.
+  await expect(page.locator(".officina__as-of"), "one as-of line in each health panel").toHaveCount(2);
+  for (const stamp of await page.locator(".officina__as-of").all()) await expect(stamp).toHaveText(/^as of 2026-09-25 09:35 UTC,/);
+
+  // (b) the empty aerarium is named, and nothing is drawn as a card.
+  const burn = page.locator(".panel--status-wide");
+  await expect(burn, "the empty state says nothing is recorded").toContainText("No budget allocation is recorded for this week. Burn and posture are unavailable.");
+  await expect(burn, "and names the action").toContainText("Set one with bisellium budget.");
+  await expect(page.locator(".officina__collegium-name"), "no posture card").toHaveCount(0);
+
+  // (c) no Engine state, whatever the file says about a pause.
+  await expect(officina).not.toContainText(/Engine state|Paused|Autonomous/);
+
+  // (d) the pending actions are named, from the tick-shaped file.
+  const pending = page.locator(".panel--engine");
+  await expect(pending.locator(".officina__value-mono"), "pending rows are named").toHaveText(["producer", "2026-W39", "W-002"]);
+  await expect(pending.locator(".officina__count"), "the count beside the heading").toHaveText("3");
+
+  // (e) the integrity panel speaks in sentences and groups by area.
+  const integrity = page.locator(".panel--integrity");
+  await expect(integrity).toContainText("This check found 1 blocking problem.");
+  await expect(integrity).toContainText("3 warnings; they do not stop work.");
+  await expect(integrity).toContainText("All findings by area");
+  const rows = integrity.locator("details.officina__row");
+  await expect(rows, "one row per area").toHaveCount(2);
+  await expect(rows.nth(0).locator("summary .officina__label")).toHaveText("Handoff notes");
+  await expect(rows.nth(0).locator("summary .officina__value-mono")).toHaveText("3");
+  await expect(rows.nth(0)).toHaveAttribute("title", "traditio.stage, traditio.stale");
+  await expect(rows.nth(1).locator("summary .officina__label")).toHaveText("Work item states");
+  await expect(rows.nth(1).locator("summary .officina__value-mono")).toHaveText("1");
+  await expect(rows.nth(1)).toHaveAttribute("title", "state.done.probationes");
+
+  // (f) rule ids are behind the disclosure until it is opened from the keyboard.
+  const ids = integrity.locator(".officina__rule-ids");
+  await expect(ids, "one rule-id list per row").toHaveCount(2);
+  for (const id of await ids.all()) await expect(id).toBeHidden();
+  await rows.nth(0).locator("summary").focus();
+  await page.keyboard.press("Enter");
+  await expect(rows.nth(0).locator(".officina__rule-ids")).toBeVisible();
+  await expect(rows.nth(0).locator(".officina__rule-ids")).toHaveText("traditio.stage, traditio.stale");
 });
