@@ -1,0 +1,21 @@
+# opus: W-085
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-04T14:17:53.903Z
+# tree: tree:c956f277e59eaa3a4e2e1f15bffd5489623cf667
+
+W-085 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-085.md (294 lines, 8 behaviours, six sections).
+Measurements: ~/.bisellium-evidence/W-085-spec/measure.mts -> measure.out; lesson-recurrent.out (check's lesson.recurrent at cfcfff4, 8 classes, matching openLessons' recurring set).
+
+## Findings
+1. advisory — the Codex censor receives the open lessons only if the orchestrator runs the order's boot: line and puts boot.md in the packet; nothing refuses a packet without it — check: none: a censor-dispatch verb that renders the prompt with the boot bundle (docs/CENSOR-PROMPT.md's own kill condition)
+2. advisory — .claude/agents/builder.md boots with no --sella, so a Claude builder boots as guest (production) and gets production's 9 classes, not engineering's 38; left to the Patron (open question 1) because agent-file changes need a reset of the main checkout — check: none: a hooks check that every .claude/agents boot line names a declared live sella
+3. advisory — the engineering collegium index (~4264 tokens) alone overflows the 4000-token default budget, so engineering sellae boot without the index or recent decisions; this opus sidesteps that with priority 2 and does not fix it — check: none: a context row asserting the real studio's largest collegium boots with its index inside the default budget
+4. advisory — openLessons cannot import RULE_IDS (cli to commands would be a cycle), so a dotted addressed_by that names no rule would read as closed in context; lesson.addressed_by blocks exactly that value first — check: lesson.addressed_by
+5. advisory — lesson.recurrent and retro's Addressed section keep their own addressed_by readers until W-137 migrates them along with the fix field; the acceptance row pins today's parity (8 recurring = 8 advised) — check: none: W-137's behaviour moving lesson.recurrent onto openLessons
+
+## Recommendation
+Verdict: passed. The scope fits in eight behaviours over one new module and small edits to context, check and next, so there is no split. The two Patron questions (the builder agent file's boot line, and lessons in the instruction files) ship with the stated defaults and do not block.
