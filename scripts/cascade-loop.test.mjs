@@ -623,6 +623,10 @@ const settingsWith = (w, edit) => {
 };
 
 const OTHER = /other than sandbox and permissions/;
+const FS_KEYS = /sandbox\.filesystem must be an object with only the keys/;
+const NET_KEYS = /sandbox\.network must be an object with only the keys/;
+const PERM_KEYS = /permissions must be an object with only the keys/;
+const PERM_RULES = /permissions\.allow must be a list with no Edit or Write rule/;
 const SANDBOX_KEYS = /sandbox must be an object with only the keys/;
 const REFUSED = [
   ["25a. a hooks key", (o) => (o.hooks = {}), OTHER],
@@ -647,6 +651,26 @@ const REFUSED = [
   ["25h6. failIfUnavailable missing", (o) => delete o.sandbox.failIfUnavailable, /sandbox\.failIfUnavailable/],
   ["25h7. failIfUnavailable false", (o) => (o.sandbox.failIfUnavailable = false), /sandbox\.failIfUnavailable/],
   ["25h8. enabled the string true", (o) => (o.sandbox.enabled = "true"), /sandbox\.enabled/],
+  ["25i1. filesystem.disabled", (o) => (o.sandbox.filesystem.disabled = true), FS_KEYS],
+  ["25i2. an unlisted filesystem key", (o) => (o.sandbox.filesystem.CANARY = []), FS_KEYS],
+  ["25i3. filesystem is not an object", (o) => (o.sandbox.filesystem = ["CANARY"]), FS_KEYS],
+  ["25i4. network.allowAllUnixSockets", (o) => (o.sandbox.network = { allowAllUnixSockets: true }), NET_KEYS],
+  [
+    "25i5. a network.allowUnixSockets entry",
+    (o) => (o.sandbox.network = { allowedDomains: [], allowUnixSockets: ["/var/run/docker.sock"] }),
+    NET_KEYS,
+  ],
+  ["25i6. a network proxy port", (o) => (o.sandbox.network = { httpProxyPort: 8080 }), NET_KEYS],
+  ["25i7. network is not an object", (o) => (o.sandbox.network = "CANARY"), NET_KEYS],
+  ["25i8. permissions.additionalDirectories", (o) => (o.permissions.additionalDirectories = ["/"]), PERM_KEYS],
+  ["25i9. permissions.defaultMode", (o) => (o.permissions.defaultMode = "bypassPermissions"), PERM_KEYS],
+  ["25i10. permissions is not an object", (o) => (o.permissions = ["CANARY"]), PERM_KEYS],
+  ["25i11. an Edit(/**) allow rule", (o) => o.permissions.allow.push("Edit(/**)"), PERM_RULES],
+  ["25i12. a bare Edit allow rule", (o) => o.permissions.allow.push("Edit"), PERM_RULES],
+  ["25i13. a bare Write allow rule", (o) => o.permissions.allow.push("Write"), PERM_RULES],
+  ["25i14. a Write(...) allow rule", (o) => o.permissions.allow.push("Write(//home/**)"), PERM_RULES],
+  ["25i15. an allow list that is a string", (o) => (o.permissions.allow = "CANARY"), PERM_RULES],
+  ["25i16. an allow entry that is not a string", (o) => o.permissions.allow.push({ CANARY: 1 }), PERM_RULES],
   ["30b1. no filesystem block (the status dir is not writable)", (o) => delete o.sandbox.filesystem, /allowWrite/],
   ["30b2. an empty allowWrite", (o) => (o.sandbox.filesystem.allowWrite = []), /allowWrite/],
   [
@@ -688,8 +712,14 @@ test("25g. a strict settings file with extra filesystem and network entries runs
   settingsWith(w, (o) => {
     o.sandbox.filesystem.allowWrite.push("/somewhere/else");
     o.sandbox.filesystem.denyWrite = ["/mnt/c"];
+    o.sandbox.filesystem.denyRead = ["/home/x/.ssh"];
     o.sandbox.network = { allowedDomains: ["api.anthropic.com"], strictAllowlist: false };
-    o.permissions = { allow: ["Read", "Bash(gh pr merge*)"] };
+    // deny and ask narrow access, so an Edit or Write rule there is fine
+    o.permissions = {
+      allow: ["Read", "Workflow", "Bash(gh pr merge*)"],
+      deny: ["Edit(/etc/**)", "Write"],
+      ask: ["Edit"],
+    };
   });
   const r = w.run();
   assert.equal(w.runs(), 1, said(r));
