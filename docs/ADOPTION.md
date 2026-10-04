@@ -186,6 +186,22 @@ no petitio (re-filing one for work already open, accepted or ruled-on is the
 duplication this closes) and is instead listed, with its target and — for an
 opus — its current state, under the retro's "## Addressed" section.
 
+**Open lessons (W-085).** A class is *open* until some lesson of it carries an
+`addressed_by` that names a rule id, a decision on disk, or an opus whose
+`state` is `done`. A value naming a not-done opus leaves it open, marked
+fix-in-flight; a value naming nothing on disk leaves it open too, so a typo
+cannot quiet a class. `openLessons` (`@bisellium/commands/lessons.js`) is the
+one reader of that rule. It ranks classes by distinct cascades, then lesson
+count, then newest `at`, and attributes each to the collegia that pay for it:
+the collegium of every opus its evidence cites, plus the collegium of each gate
+sella recorded on that opus (every collegium when the evidence cites no
+existing opus). `bisellium context` carries them as `## Open lessons`, the
+classes of the sella's collegium (the Patron sees all), at priority 2. The
+`context_open_lessons` default (10) caps how many are shown; `0` turns the
+section off. `bisellium next` names the boot command on every dispatch order
+(`boot: bisellium context --sella <sella> --studio <studio>`), so the
+orchestrator can hand the bundle to a harness that cannot run it.
+
 ## bisellium retro
 
 ```bash
@@ -271,6 +287,7 @@ wip_limit: 3                      # items in building + verifying, studio-wide
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
   model_probe_stale_days: 7       # optional; code default 7 — tick's probe-cadence age trigger (W-071)
+  context_open_lessons: 10        # optional; code default 10 — classes in context's "## Open lessons" (0 = off, W-085)
 source_excludes: [examples/]      # optional; repo-root-relative paths also excluded from the SOURCE tree hash
 integration:                      # optional (D-015); how an opus branch reaches the trunk — `bisellium merge` reads this
   strategy: rebase                # fast_forward (default) | rebase | merge_commit (declared, refused — not built)
