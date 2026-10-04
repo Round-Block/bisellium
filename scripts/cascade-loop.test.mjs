@@ -11,10 +11,11 @@
  * ignored, SYMLINK makes the status a symlink, ACT evals $ACT_CMD (a run-one
  * edit of the Patron's files) then writes CONTINUE, and RAW:<text> writes
  * <text> through printf %b). No real claude session, no network, no sleeps; the
- * deadline rows wait out a short timeout. world() gives each run the Patron's
- * one-time ~/.cascade-loop/settings.json (0600) the loop insists on, and runs a
- * copy of the script from a temp "Patron folder" whose .claude/agents/ holds
- * fixture agent definitions (the loop reads them from beside itself).
+ * deadline rows wait out a short timeout. world() runs a copy of the script from
+ * a temp "Patron folder" whose .claude/agents/ holds fixture agent definitions
+ * (the loop reads them from beside itself) and gives each run the Patron's
+ * one-time settings.json (0600) the loop insists on, in that folder's
+ * .cascade-loop/ (the state dir is beside the script too, never under $HOME).
  * Wrong-owner rows are absent: another UID needs root, which this harness cannot get.
  * Every test checks the run count before anything else, so while the script
  * is absent each one fails on its own assertion, not on a missing file.
@@ -27,6 +28,7 @@ import {
   closeSync,
   constants,
   copyFileSync,
+  cpSync,
   existsSync,
   linkSync,
   mkdirSync,
@@ -47,6 +49,7 @@ import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "cascade-loop.sh");
+const REAL_AGENTS = join(dirname(fileURLToPath(import.meta.url)), "..", ".claude", "agents");
 
 const STUB = `#!/usr/bin/env bash
 d=$STUB_DIR
@@ -90,8 +93,11 @@ after(() => {
   for (const r of roots) rmSync(r, { recursive: true, force: true });
 });
 
-/** A temp world: HOME, AGENT_CLONE, status path and a stub fed `statuses`. */
-const world = (statuses, env = {}) => {
+/**
+ * A temp world: HOME, AGENT_CLONE, status path and a stub fed `statuses`. `patronAt(root, clone)`
+ * says where the Patron's folder (script, .claude/agents, .cascade-loop) goes: a sibling of the clone by default.
+ */
+const world = (statuses, env = {}, patronAt = (root) => join(root, "patron")) => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "cascade-loop-")));
   roots.push(root);
   const home = join(root, "home");
@@ -101,7 +107,7 @@ const world = (statuses, env = {}) => {
   const stub = join(stubDir, "claude");
   writeFileSync(stub, STUB, { mode: 0o755 });
   // The Patron's folder: a copy of the script with .claude/agents/ beside it.
-  const patron = join(root, "patron");
+  const patron = patronAt(root, clone);
   const scriptDir = join(patron, "scripts");
   const agentsDir = join(patron, ".claude", "agents");
   mkdirSync(scriptDir, { recursive: true });
@@ -124,20 +130,20 @@ const world = (statuses, env = {}) => {
     delete base[k];
   }
   // Every run inherits umask 022, the usual shell default, so the script must narrow it itself.
-  const run = ({ env: extra = {}, deadline, script: entry = script } = {}) =>
+  const run = ({ env: extra = {}, deadline } = {}) =>
     spawnSync("bash", ["-c", 'umask 022; exec "$CASCADE_TEST_ENTRY"'], {
       encoding: "utf8",
       timeout: deadline,
-      env: { ...base, CLAUDE_BIN: stub, STUB_DIR: stubDir, ...env, ...extra, CASCADE_TEST_ENTRY: entry },
+      env: { ...base, CLAUDE_BIN: stub, STUB_DIR: stubDir, ...env, ...extra, CASCADE_TEST_ENTRY: script },
     });
   const read = (name) => readFileSync(join(stubDir, name), "utf8");
   const runs = () => (existsSync(join(stubDir, "count")) ? read("count").trim().split("\n").length : 0);
-  const stateDir = join(home, ".cascade-loop");
+  const stateDir = join(patron, ".cascade-loop");
   const logDir = join(stateDir, "logs");
   const settings = join(stateDir, "settings.json");
   mkdirSync(stateDir, { mode: 0o700 });
   writeFileSync(settings, JSON.stringify(strictSettings(status)) + "\n", { mode: 0o600 });
-  return { clone, home, stubDir, status, run, read, runs, stateDir, logDir, settings, agentsDir };
+  return { clone, home, patron, stubDir, status, run, read, runs, stateDir, logDir, settings, agentsDir };
 };
 
 const said = (r) => `${r.stdout}${r.stderr}`;
@@ -460,7 +466,7 @@ for (const [name, perm] of [
   });
 }
 
-test("20e. CASCADE_SETTINGS outside ~/.cascade-loop means zero runs", () => {
+test("20e. CASCADE_SETTINGS outside the state dir means zero runs", () => {
   const w = world(["QUEUE_EMPTY"]);
   const elsewhere = join(w.stubDir, "settings.json");
   writeFileSync(elsewhere, "{}\n", { mode: 0o600 });
@@ -521,7 +527,7 @@ for (const [name, present] of [
 }
 
 for (const [name, dir] of [
-  ["23a. a symlinked ~/.cascade-loop present before launch", (w) => w.stateDir],
+  ["23a. a symlinked state dir present before launch", (w) => w.stateDir],
   ["23b. a symlinked log dir present before launch", (w) => w.logDir],
 ]) {
   test(`${name}: zero runs, names the symlink, creates nothing at the target`, () => {
@@ -605,7 +611,9 @@ test("24e. agent frontmatter keeps description, tools, model and the body as pro
 
 test("24f. the repo's real .claude/agents folder builds: its four agents, only the four allowed keys", () => {
   const w = world(["QUEUE_EMPTY"]);
-  const r = w.run({ script: SCRIPT });
+  rmSync(w.agentsDir, { recursive: true });
+  cpSync(REAL_AGENTS, w.agentsDir, { recursive: true });
+  const r = w.run();
   assert.equal(w.runs(), 1, said(r));
   const { agents } = splitAgents(w);
   assert.deepEqual(Object.keys(agents).sort(), ["architect", "builder", "censor", "clerk"]);
@@ -739,9 +747,9 @@ test("30c. the writable dir that counts is the parent of CASCADE_STATUS, not a f
   assert.equal(ok.status, 0, said(ok));
 });
 
-test("26. CASCADE_SETTINGS reaching out of ~/.cascade-loop through .. means zero runs", () => {
+test("26. CASCADE_SETTINGS reaching out of the state dir through .. means zero runs", () => {
   const w = world(["QUEUE_EMPTY"]);
-  writeFileSync(join(w.home, "elsewhere.json"), readFileSync(w.settings), { mode: 0o600 });
+  writeFileSync(join(w.patron, "elsewhere.json"), readFileSync(w.settings), { mode: 0o600 });
   const r = w.run({ env: { CASCADE_SETTINGS: `${w.stateDir}/../elsewhere.json` } });
   assert.equal(w.runs(), 0);
   assert.notEqual(r.status, 0);
@@ -771,7 +779,7 @@ for (const [name, cmd, reason] of [
   });
 }
 
-test("28. a symlinked directory between ~/.cascade-loop and the settings file means zero runs", () => {
+test("28. a symlinked directory between the state dir and the settings file means zero runs", () => {
   const w = world(["QUEUE_EMPTY"]);
   const real = swapTarget();
   writeFileSync(join(real, "settings.json"), readFileSync(w.settings), { mode: 0o600 });
@@ -830,4 +838,61 @@ test("29. pins argv: with user hook and apiKeyHelper planted in HOME and the clo
   assert.ok(argv.includes("--restricted"), argv.join(" | "));
   assert.ok(!argv.includes("--setting-sources"), argv.join(" | "));
   assert.equal(existsSync(marker), false);
+});
+
+test("33a. the state dir is the script's ../.cascade-loop: the logs and the lock live there, nothing at $HOME/.cascade-loop", () => {
+  const w = world(["CONTINUE", "QUEUE_EMPTY"]);
+  const r = w.run();
+  assert.equal(w.runs(), 2, said(r));
+  assert.equal(w.stateDir, join(w.patron, ".cascade-loop"));
+  assert.equal(readdirSync(w.logDir).length, 2);
+  assert.ok(existsSync(join(w.stateDir, "lock")), "no lock in the state dir");
+  assert.ok(said(r).includes(w.logDir), said(r)); // a plain path, no scripts/../ in it
+  assert.equal(existsSync(join(w.home, ".cascade-loop")), false, "something was created at $HOME/.cascade-loop");
+});
+
+test("33b. a settings file left in $HOME/.cascade-loop is not used: zero runs, and the message names the script's state dir", () => {
+  const w = world(["QUEUE_EMPTY"]);
+  rmSync(w.settings);
+  mkdirSync(join(w.home, ".cascade-loop"), { mode: 0o700 });
+  writeFileSync(join(w.home, ".cascade-loop", "settings.json"), JSON.stringify(strictSettings(w.status)) + "\n", {
+    mode: 0o600,
+  });
+  const r = w.run();
+  assert.equal(w.runs(), 0);
+  assert.notEqual(r.status, 0);
+  assert.match(said(r), /settings.*missing/i);
+  assert.ok(said(r).includes(w.settings), said(r));
+});
+
+for (const [name, patronAt, cloneOf] of [
+  ["the script in the clone's own folder", (_root, clone) => clone, (_root, clone) => clone],
+  ["the script deeper inside the clone", (_root, clone) => join(clone, "deep", "er"), (_root, clone) => clone],
+  [
+    "AGENT_CLONE a symlink to the folder holding the script",
+    (_root, clone) => clone,
+    (root, clone) => {
+      const link = join(root, "clone-link");
+      symlinkSync(clone, link);
+      return link;
+    },
+  ],
+]) {
+  test(`33c. ${name}: zero runs, names AGENT_CLONE, creates no logs`, () => {
+    const w = world(["QUEUE_EMPTY"], {}, patronAt);
+    const root = dirname(w.clone);
+    const r = w.run({ env: { AGENT_CLONE: cloneOf(root, w.clone) } });
+    assert.equal(w.runs(), 0);
+    assert.notEqual(r.status, 0);
+    assert.match(said(r), /AGENT_CLONE/);
+    assert.match(said(r), /inside/i);
+    assert.equal(existsSync(w.logDir), false, "the loop made its log dir in the agent clone");
+  });
+}
+
+test("33d. a Patron folder whose name merely starts with the clone's path (clone2) is not refused", () => {
+  const w = world(["QUEUE_EMPTY"], {}, (root) => join(root, "clone2"));
+  const r = w.run();
+  assert.equal(w.runs(), 1, said(r));
+  assert.equal(r.status, 0, said(r));
 });

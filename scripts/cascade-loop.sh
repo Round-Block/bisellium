@@ -32,14 +32,15 @@
 # and --permission-prompts none denies anything that would need a human. Loaded,
 # and nothing else:
 #   --tools    the fixed list in CASCADE_TOOLS below, Bash among them
-#   --settings the Patron's $CASCADE_SETTINGS (default ~/.cascade-loop/settings.json)
+#   --settings the Patron's $CASCADE_SETTINGS (default $STATE_DIR/settings.json, where
+#              $STATE_DIR is the .cascade-loop folder beside this script's own folder)
 #   --agents   built here, on every launch, from the .md files of the .claude/agents
 #              folder beside this script's own folder (so the Patron's reviewed
 #              checkout, never $AGENT_CLONE): of each file's `key: value`
 #              frontmatter only description, tools (a list), model, plus the body
 #              as the prompt, under name. hooks, mcpServers, permissionMode and
 #              every other key are dropped. No folder or no .md file: no run.
-# The settings file must sit inside ~/.cascade-loop, be a regular, non-symlink
+# The settings file must sit inside $STATE_DIR, be a regular, non-symlink
 # file with a single hard link that you own and nobody else can write, and hold
 # one JSON object whose only top-level keys are sandbox and permissions. The
 # sandbox block may carry only enabled and failIfUnavailable (both true),
@@ -61,14 +62,14 @@
 # (the $HOME/.bisellium-evidence below is the default status file's directory:
 # use the directory of CASCADE_STATUS if you set it).
 #
-#   mkdir -p -m 700 ~/.cascade-loop
+#   mkdir -p -m 700 ~/projects/bisellium/.cascade-loop
 #   jq -s --arg status "$HOME/.bisellium-evidence" '
 #     {sandbox: (map(.sandbox // {}) | add), permissions: (map(.permissions // {}) | add)}
 #     | .sandbox.allowUnsandboxedCommands = false | .sandbox.failIfUnavailable = true
 #     | .sandbox.filesystem.allowWrite = ((.sandbox.filesystem.allowWrite // []) + [$status] | unique)' \
 #     ~/projects/bisellium/.claude/settings.json \
-#     ~/projects/bisellium/.claude/settings.local.json > ~/.cascade-loop/settings.json
-#   chmod 600 ~/.cascade-loop/settings.json
+#     ~/projects/bisellium/.claude/settings.local.json > ~/projects/bisellium/.cascade-loop/settings.json
+#   chmod 600 ~/projects/bisellium/.cascade-loop/settings.json
 #
 # (add is a shallow merge, the later file wins per key: read the result and
 # check the allow and deny lists. sandbox.enabled must already be true in your
@@ -77,13 +78,17 @@
 #
 # Run it from the Patron's reviewed folder (~/projects/bisellium/scripts/
 # cascade-loop.sh), never from the agent clone, and never point a hook at it
-# (hooks run unsandboxed). Agents can write ~/.bisellium-evidence, so the status
-# file is the only thing read from there; the logs (0600), the lock that keeps
-# a second loop out and nothing else go in ~/.cascade-loop (refused if it or an
-# ancestor below $HOME is a symlink or not owned by you; narrowed to 0700 with
-# chmod). Beyond the status file, it touches nothing outside $AGENT_CLONE and
-# ~/.cascade-loop. Test hooks, not knobs: CASCADE_KILL_AFTER (60s) and
-# CASCADE_LOG_STAMP (the timestamp in log names).
+# (hooks run unsandboxed). From the clone both the agents folder and $STATE_DIR
+# would be agent-writable, so a script folder that resolves to $AGENT_CLONE or
+# anywhere inside it is refused before any run. Agents can write
+# ~/.bisellium-evidence, so the status file is the only thing read from there;
+# the logs (0600), the lock that keeps a second loop out and nothing else go in
+# $STATE_DIR, ~/projects/bisellium/.cascade-loop when run from there (refused if
+# it or an ancestor below $HOME is a symlink or not owned by you; narrowed to
+# 0700 with chmod). A sync that runs `git clean -x` in the Patron's folder would
+# delete that dir (it is gitignored). Beyond the status file, it touches nothing
+# outside $AGENT_CLONE and $STATE_DIR. Test hooks, not knobs: CASCADE_KILL_AFTER
+# (60s) and CASCADE_LOG_STAMP (the timestamp in log names).
 set -euo pipefail
 umask 077
 set -C # noclobber: each log is created exclusively; the logs are the only `>` below
@@ -100,7 +105,9 @@ CASCADE_RUN_TIMEOUT=${CASCADE_RUN_TIMEOUT:-4h}
 CASCADE_MAX_USD=${CASCADE_MAX_USD:-20}
 CASCADE_KILL_AFTER=${CASCADE_KILL_AFTER:-60s}
 CLAUDE_BIN=${CLAUDE_BIN:-claude}
-STATE_DIR=$HOME/.cascade-loop
+# Beside the agents folder, not under $HOME. dirname, not ../, so the path has no ..
+# and CASCADE_SETTINGS can sit inside it past the no-.. check below.
+STATE_DIR=$(dirname -- "$SCRIPT_DIR")/.cascade-loop
 LOG_DIR=$STATE_DIR/logs
 CASCADE_SETTINGS=${CASCADE_SETTINGS:-$STATE_DIR/settings.json}
 
@@ -110,7 +117,7 @@ stop() {
 }
 
 # Agents can write ~/.bisellium-evidence, so the logs live in a Patron-only dir.
-# Refuse a symlink at $1 or at any ancestor below $HOME.
+# Refuse a symlink at $1 or at any ancestor below $HOME (up to / when $1 is not under $HOME).
 no_symlinks() {
   local p=$1
   while [ "$p" != "$HOME" ] && [ "$p" != / ]; do
@@ -246,6 +253,11 @@ EOF
 
 [[ $CASCADE_MAX_RUNS =~ ^[1-9][0-9]*$ ]] || stop 1 "CASCADE_MAX_RUNS must be a positive integer, got '$CASCADE_MAX_RUNS'"
 command -v jq >/dev/null || stop 1 "jq is required (agent definitions and the settings check)"
+# Both resolved, each with a trailing /, so /a/b/scripts is inside /a/b but /a/bc/scripts is not.
+CLONE_PREFIX=$(realpath -m -- "$AGENT_CLONE")
+case $SCRIPT_DIR/ in
+  "${CLONE_PREFIX%/}"/*) stop 1 "refusing to run from inside AGENT_CLONE: this script's folder $SCRIPT_DIR resolves into $CLONE_PREFIX, where the agent folder and $STATE_DIR would be agent-writable. Run the Patron's own copy (~/projects/bisellium/scripts/cascade-loop.sh)" ;;
+esac
 no_symlinks "$LOG_DIR"
 mkdir -p "$LOG_DIR" "$(dirname "$CASCADE_STATUS")"
 # The umask only shapes new directories: an existing one keeps its mode. Own it, then narrow it.

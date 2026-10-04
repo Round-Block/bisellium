@@ -72,3 +72,6 @@ studio/events.jsonl
 .claude/skills
 .claude/workflows
 .claude/.claude/
+# scripts/cascade-loop.sh's state (logs, lock, the Patron's settings.json): the
+# Patron makes it by hand in their own folder, never committed.
+.cascade-loop/
