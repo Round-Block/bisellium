@@ -125,10 +125,10 @@ const world = (statuses, env = {}) => {
   }
   // Every run inherits umask 022, the usual shell default, so the script must narrow it itself.
   const run = ({ env: extra = {}, deadline, script: entry = script } = {}) =>
-    spawnSync("bash", ["-c", 'umask 022; exec "$0"', entry], {
+    spawnSync("bash", ["-c", 'umask 022; exec "$CASCADE_TEST_ENTRY"'], {
       encoding: "utf8",
       timeout: deadline,
-      env: { ...base, CLAUDE_BIN: stub, STUB_DIR: stubDir, ...env, ...extra },
+      env: { ...base, CLAUDE_BIN: stub, STUB_DIR: stubDir, ...env, ...extra, CASCADE_TEST_ENTRY: entry },
     });
   const read = (name) => readFileSync(join(stubDir, name), "utf8");
   const runs = () => (existsSync(join(stubDir, "count")) ? read("count").trim().split("\n").length : 0);
