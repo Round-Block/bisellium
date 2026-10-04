@@ -82,3 +82,22 @@ test("W-131 behaviour 1: verdict caps the body at 8192 bytes", () => {
   assert.equal(at.exitCode, 0, at.stderr);
   assert.equal(at.written, true);
 });
+
+const CHECKED = "1. blocking - prune deletes a cited log - check: packages/cli/src/prune.test.ts";
+const SECTION_REFUSAL = /verdict body needs exactly one "## Findings" section holding numbered findings or the exact line "No findings"/;
+
+test("W-131 behaviour 2: verdict needs exactly one non-empty ## Findings section", () => {
+  for (const [name, body] of [
+    ["no Findings heading", "Everything looked fine.\n"],
+    ["two Findings sections", `## Findings\n${CHECKED}\n\n## Findings\n${CHECKED}\n`],
+    ["an empty Findings section", "## Findings\n\n## Notes\nnothing here\n"],
+  ] as const) {
+    const refused = record(body);
+    assert.equal(refused.exitCode, 2, `${name} is refused`);
+    assert.equal(refused.written, false, `${name} writes no log`);
+    assert.match(refused.stderr, SECTION_REFUSAL, name);
+  }
+  const clean = record("## Findings\nNo findings\n");
+  assert.equal(clean.exitCode, 0, clean.stderr);
+  assert.equal(clean.written, true);
+});
