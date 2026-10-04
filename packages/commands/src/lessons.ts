@@ -29,6 +29,12 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 /** A rule id is dotted `noun.attribute`; a path ("../opera/W-001") is not one. */
 const RULE_SHAPE = /^[A-Za-z][\w-]*(\.[\w-]+)+$/;
 
+/** `at` reads as a Date when unquoted in YAML, a string when quoted. */
+function iso(v: unknown): string {
+  const d = v instanceof Date ? v : new Date(typeof v === "string" ? v : Number.NaN);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
 function front(path: string): Front | undefined {
   try {
     const d = readFront<Front>(path).data;
@@ -48,15 +54,26 @@ export function openLessons(root: string): OpenLessonClass[] {
     }
     const decisions = new Set(listMd(join(root, "decisions")).map((p) => basename(p, ".md")));
 
-    interface Acc { lessons: string[]; closed: boolean; inFlight?: { id: string; state: string } }
+    interface Acc {
+      lessons: string[];
+      cascades: Set<number>;
+      latest: { id: string; at: string };
+      closed: boolean;
+      inFlight?: { id: string; state: string };
+    }
     const classes = new Map<string, Acc>();
     for (const p of listMd(join(root, "lessons"))) {
       const d = front(p);
       const cls = d && str(d["class"]);
       if (!d || !cls) continue;
-      const acc = classes.get(cls) ?? { lessons: [], closed: false };
+      const id = basename(p, ".md");
+      const at = iso(d["at"]);
+      const acc = classes.get(cls) ?? { lessons: [], cascades: new Set<number>(), latest: { id, at }, closed: false };
       classes.set(cls, acc);
-      acc.lessons.push(basename(p, ".md"));
+      acc.lessons.push(id);
+      if (typeof d["cascade"] === "number" && Number.isFinite(d["cascade"])) acc.cascades.add(d["cascade"]);
+      // newest `at` wins; a tie goes to the higher id
+      if (at > acc.latest.at || (at === acc.latest.at && id > acc.latest.id)) acc.latest = { id, at };
       const v = str(d["addressed_by"]);
       if (v === undefined) continue;
       if (opera.has(v)) {
@@ -70,13 +87,20 @@ export function openLessons(root: string): OpenLessonClass[] {
       .map(([cls, a]) => ({
         class: cls,
         lessons: a.lessons.sort(),
-        // ponytail: filled by behaviours 2 and 3
-        cascades: [],
-        latest: "",
-        latestAt: "",
+        cascades: [...a.cascades].sort((x, y) => x - y),
+        latest: a.latest.id,
+        latestAt: a.latest.at,
+        // ponytail: filled by behaviour 3
         collegia: [],
         ...(a.inFlight === undefined ? {} : { fixInFlight: a.inFlight }),
-      }));
+      }))
+      .sort(
+        (a, b) =>
+          b.cascades.length - a.cascades.length ||
+          b.lessons.length - a.lessons.length ||
+          (a.latestAt < b.latestAt ? 1 : a.latestAt > b.latestAt ? -1 : 0) ||
+          (a.class < b.class ? -1 : a.class > b.class ? 1 : 0),
+      );
   } catch {
     return [];
   }
