@@ -107,3 +107,29 @@ test("W-085 behaviour 1: openLessons closes and keeps classes correctly", async 
   assert.deepEqual(by("in-flight").fixInFlight, { id: "W-801", state: "building" });
   for (const c of ["typo-opus", "typo-decision", "traversal", "unaddressed"]) assert.equal(by(c).fixInFlight, undefined, c);
 });
+
+test("W-085 behaviour 2: openLessons ranks by cascades, count, newest at, class", async () => {
+  const openLessons = await load();
+  const dir = fixture();
+  // "recurs": two cascades; its newest lesson is not its highest id
+  lesson(dir, 20, { cls: "recurs", cascade: 43, at: "2026-10-01T00:00:00.000Z" });
+  lesson(dir, 21, { cls: "recurs", cascade: 41, at: "2026-09-20T00:00:00.000Z" });
+  lesson(dir, 22, { cls: "recurs", cascade: 43, at: "2026-09-25T00:00:00.000Z" });
+  // "many": one cascade, three lessons, all at the same instant
+  for (const n of [30, 31, 32]) lesson(dir, n, { cls: "many", cascade: 42, at: "2026-10-02T00:00:00.000Z" });
+  // one lesson each, ranked by newest `at`, then class
+  lesson(dir, 40, { cls: "newest", cascade: 42, at: "2026-10-04T00:00:00.000Z" });
+  lesson(dir, 41, { cls: "beta", cascade: 42, at: "2026-10-03T00:00:00.000Z" });
+  lesson(dir, 42, { cls: "alpha", cascade: 42, at: "2026-10-03T00:00:00.000Z" });
+  lesson(dir, 43, { cls: "oldest", cascade: 42, at: "2026-10-01T00:00:00.000Z" });
+
+  const out = openLessons(dir);
+  assert.deepEqual(out.map((c) => c.class), ["recurs", "many", "newest", "alpha", "beta", "oldest"]);
+  const recurs = out[0]!;
+  assert.deepEqual(recurs.lessons, ["L-020", "L-021", "L-022"]);
+  assert.deepEqual(recurs.cascades, [41, 43]);
+  assert.equal(recurs.latest, "L-020");
+  assert.equal(recurs.latestAt, "2026-10-01T00:00:00.000Z");
+  assert.equal(out[1]!.latest, "L-032");
+  assert.deepEqual(out[1]!.cascades, [42]);
+});
