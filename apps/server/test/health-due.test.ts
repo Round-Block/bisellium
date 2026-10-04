@@ -79,4 +79,52 @@ if (only === undefined || only === 3) {
     assert.deepEqual((store.api.health(stub) as { due: unknown }).due, [], "a non-array due becomes []");
     assert.equal(checked, 0);
   });
+
+  test("W-077 behaviour 3: odd due items are named safely, never thrown on, and carried verbatim", () => {
+    const studioDir = mkdtempSync(join(tmpdir(), "bisellium-w077-3b-"));
+    dirs.push(studioDir);
+    cpSync(SAMPLE, studioDir, { recursive: true });
+    const at = "2026-09-25T09:35:43.947Z";
+    const huge = "x".repeat(100_000);
+    const html = "<img src=x onerror=alert(1)>";
+    const multi = "line one\nline two\r\nline three";
+    const path = join(studioDir, "health.json");
+    const stub = (): { ok: boolean; blocks: number; advisories: number; findings: unknown[] } => {
+      throw new Error("checkStudio must not run while health.json parses");
+    };
+    const store = new Store({ studioDir, now: new Date("2026-10-04T22:05:54Z") });
+    const served = (due: unknown): unknown => {
+      writeFileSync(path, JSON.stringify({ at, ok: true, blocks: 0, advisories: 0, findingsByRule: {}, autonomy: { paused: false }, lastTick: at, due }));
+      return (store.api.health(stub) as { due: unknown }).due;
+    };
+    assert.deepEqual(
+      served([null, 7, "text", [], true, { kind: 5 }, { kind: "daily", sella: 5 }, { kind: "aerarium", period: null }, { kind: "traditio", opus: { a: 1 } }, { kind: "probe", models: "no" }, { kind: "traditio", id: 9, opus: "W-9" }]),
+      [
+        { kind: "unknown", id: "unknown" },
+        { kind: "unknown", id: "unknown" },
+        { kind: "unknown", id: "unknown" },
+        { kind: "unknown", id: "unknown" },
+        { kind: "unknown", id: "unknown" },
+        { kind: "unknown", id: "unknown" },
+        { kind: "daily", id: "unknown" },
+        { kind: "aerarium", id: "unknown" },
+        { kind: "traditio", id: "unknown" },
+        { kind: "probe", id: "unknown" },
+        { kind: "traditio", id: "W-9" },
+      ],
+      "non-object items, non-string kinds and non-string names all become named unknowns",
+    );
+    assert.deepEqual(
+      served([{ kind: "constructor" }, { kind: "__proto__", sella: "s" }, { kind: "toString", id: "t" }]),
+      [{ kind: "constructor", id: "unknown" }, { kind: "__proto__", id: "unknown" }, { kind: "toString", id: "t" }],
+      "a kind that names an Object.prototype member maps nothing",
+    );
+    assert.deepEqual(
+      served([{ kind: "daily", sella: html }, { kind: "traditio", opus: multi }, { kind: "daily", sella: huge }, { kind: "x", id: html }]),
+      [{ kind: "daily", id: html }, { kind: "traditio", id: multi }, { kind: "daily", id: huge }, { kind: "x", id: html }],
+      "HTML, multiline and huge names are carried verbatim, not rewritten here",
+    );
+    assert.deepEqual(served({ kind: "daily", sella: "a" }), [], "an object due is not a list");
+    assert.deepEqual(served(null), [], "a null due is not a list");
+  });
 }

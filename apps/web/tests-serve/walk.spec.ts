@@ -300,3 +300,61 @@ test("W-077 behaviour 7: a failed read never shows demo data", async ({ page }) 
   await expect(page.locator(".officina__as-of"), "no stamp").toHaveCount(0);
   for (const demo of ["47,200", "1,880,000", "312,000", "acta.daily", "cascade-8"]) await expect(officina, `${demo} is demo data`).not.toContainText(demo);
 });
+
+/** The Officina over a throwaway studio whose health.json is tick-shaped; returns once the integrity rows are drawn. */
+async function officinaWith(page: Page, tag: string, health: Record<string, unknown>): Promise<ServedInstance> {
+  served = await startServed(tag);
+  const s = served;
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const at = "2026-09-25T09:35:43.947Z";
+  writeFileSync(join(s.studioDir, "health.json"), JSON.stringify({ at, ok: false, blocks: 1, advisories: 3, findingsByRule: { "state.done.probationes": 1, "traditio.stale": 2, "traditio.stage": 1 }, autonomy: { paused: false }, lastTick: at, due: [], ...health }));
+  await signIn(page, s, "inbox");
+  await page.locator('.sidebar__link[href="#/officina"]').click();
+  await expect(page.locator(".panel--integrity details.officina__row")).toHaveCount(2);
+  return s;
+}
+
+test("W-077 behaviour 6 round 2: the integrity rows look openable and the panel reads as two sentences over a tight list", async ({ page }) => {
+  await officinaWith(page, "w077-r2", {});
+  const integrity = page.locator(".panel--integrity");
+  const summary = integrity.locator("details.officina__row").first().locator("summary");
+
+  // (a) a visible affordance: a ::before indicator that changes when the row opens (the native marker is suppressed by display:flex).
+  const marker = (): Promise<string> => summary.evaluate((el) => getComputedStyle(el, "::before").content);
+  const closed = await marker();
+  expect(closed, "a closed row has an indicator").not.toMatch(/^(none|normal|""|)$/);
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(integrity.locator("details.officina__row").first()).toHaveAttribute("open", "");
+  expect(await marker(), "an open row's indicator differs from a closed one's").not.toBe(closed);
+
+  // (b) the two sentences are two blocks, one above the other.
+  const lines = integrity.locator(".officina__integrity-summary > *");
+  await expect(lines, "stops and warns are two elements").toHaveCount(2);
+  const [first, second] = [await lines.nth(0).boundingBox(), await lines.nth(1).boundingBox()];
+  expect(second!.y, "the warning sentence sits below the blocking sentence").toBeGreaterThanOrEqual(first!.y + first!.height - 1);
+
+  // (c) the list sits close under its label.
+  const label = await integrity.locator("p.officina__label").boundingBox();
+  const row = await integrity.locator("details.officina__row").first().boundingBox();
+  expect(row!.y - (label!.y + label!.height), "gap between 'All findings by area' and the first row, in px").toBeLessThanOrEqual(12);
+});
+
+test("W-077 behaviour 3 round 2: a hostile, multiline or huge due name renders as escaped text and does not break the layout", async ({ page }) => {
+  const html = "<img src=x onerror=window.__pwn=1>";
+  const multi = "line one\nline two";
+  const huge = "h".repeat(5000);
+  await officinaWith(page, "w077-r2-names", { due: [{ kind: "daily", sella: html }, { kind: "traditio", opus: multi }, { kind: "daily", sella: huge }] });
+  const names = page.locator(".panel--engine .officina__value-mono");
+  await expect(names).toHaveCount(3);
+  expect(await names.nth(0).textContent(), "HTML is text").toBe(html);
+  expect(await names.nth(1).textContent(), "a newline survives as text").toBe(multi);
+  expect(await names.nth(2).textContent(), "a huge name is complete").toBe(huge);
+  await expect(page.locator(".officina img"), "no element was injected").toHaveCount(0);
+  expect(await page.evaluate(() => (window as unknown as { __pwn?: number }).__pwn), "no handler ran").toBeUndefined();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow, "a huge name does not widen the page").toBeLessThanOrEqual(0);
+  const panel = await page.locator(".panel--engine").boundingBox();
+  const cell = await names.nth(2).boundingBox();
+  expect(cell!.x + cell!.width, "nor spill out of its panel").toBeLessThanOrEqual(panel!.x + panel!.width + 1);
+});
