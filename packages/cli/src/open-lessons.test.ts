@@ -11,8 +11,11 @@ import assert from "node:assert/strict";
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { after, test } from "node:test";
+import type { HarnessProfile } from "@bisellium/shim";
 import { buildContext } from "./context.js";
+import { runTalk } from "./talk.js";
 
 interface OpenLessonClass {
   class: string;
@@ -257,4 +260,40 @@ test("W-085 behaviour 5: the section is priority 2, dropped only after everythin
   assert.ok(under.truncated.includes("open lessons"), "truncated names it `open lessons`");
   assert.equal(under.truncated.includes("lex"), false, "dropped before the lex");
   assert.ok(under.text.includes("## Engineering lex"));
+});
+
+test("W-085 behaviour 6: every boot path carries the same section", async () => {
+  const dir = lessonFixture();
+  const MAIN = join(import.meta.dirname, "main.ts");
+  const spawn = (args: string[]): string => {
+    const r = spawnSync(process.execPath, ["--import", "tsx", MAIN, ...args], { encoding: "utf8", input: "{}" });
+    assert.equal(r.status, 0, r.stderr);
+    return r.stdout;
+  };
+  const viaContext = section(spawn(["context", "--sella", "eng-lead", "--studio", dir]));
+  const viaHook = section(spawn(["hook-event", "context", "--sella", "eng-lead", "--studio", dir]));
+
+  let systemPrompt = "";
+  const codex: HarnessProfile = {
+    id: "codex",
+    tier: 1,
+    available: async () => true,
+    start: async (o) => {
+      systemPrompt = o.systemPrompt;
+      return { sessionId: "s1", reply: "ok", exitCode: 0 };
+    },
+    resume: async () => ({ sessionId: "s1", reply: "ok", exitCode: 0 }),
+  };
+  const log = console.log;
+  console.log = () => {};
+  try {
+    await runTalk(["--sella", "eng-lead", "--studio", dir, "--harness", "codex", "hello"], { harnesses: { codex } });
+  } finally {
+    console.log = log;
+  }
+  const viaTalk = section(systemPrompt);
+
+  assert.ok(viaContext?.startsWith(INTRO), "context carries the section");
+  assert.equal(viaHook, viaContext);
+  assert.equal(viaTalk, viaContext);
 });
