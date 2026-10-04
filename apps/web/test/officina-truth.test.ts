@@ -142,3 +142,34 @@ if (runs(2)) {
     assert.equal(byClass(twins, "officina__value-mono").length, 2, "two due items of the same kind render two rows");
   });
 }
+
+if (runs(4)) {
+  test("W-077 behaviour 4: the aerarium panel names its state, and a failure is never dressed as data", () => {
+    const burn = (over: Partial<ViewProps>): string => panelOf(render(over), "Posture and burn");
+    const empty = burn({ aerarium: [] });
+    const t = text(empty);
+    assert.ok(t.includes("No budget allocation is recorded for this week. Burn and posture are unavailable."), "the empty state names the missing allocation");
+    assert.ok(t.includes("Set one with bisellium budget."), "the empty state names the action");
+    assert.equal(byClass(empty, "officina__collegium-name").length, 0, "no card for an empty aerarium");
+
+    const loading = burn({ aerarium: undefined });
+    assert.ok(text(loading).includes("Loading budget allocations…"));
+    assert.ok(!text(loading).includes("No budget allocation"), "loading is not the empty state");
+    assert.equal(byClass(loading, "officina__collegium-name").length, 0);
+
+    const failed = burn({ aerarium: "failed" });
+    assert.ok(text(failed).includes("Could not load budget allocations."));
+    assert.equal(byClass(failed, "officina__collegium-name").length, 0);
+
+    const one = burn({ aerarium: [ENTRY] });
+    assert.deepEqual(byClass(one, "officina__collegium-name").map(text), ["engineering"]);
+    assert.equal(byClass(one, "officina__posture-word").length, 1, "the posture card still renders");
+    assert.ok(byClass(one, "officina__posture-reason").length === 1, "with its reason");
+
+    const cases: Partial<ViewProps>[] = [{ aerarium: [] }, { aerarium: undefined }, { aerarium: "failed" }, { health: "failed" }, { health: undefined }, {}];
+    for (const c of cases) {
+      const all = text(render(c));
+      for (const demo of ["47,200", "1,880,000", "312,000"]) assert.ok(!all.includes(demo), `${demo} never appears (${JSON.stringify(Object.keys(c))})`);
+    }
+  });
+}
