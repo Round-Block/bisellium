@@ -1951,3 +1951,11 @@ if (only === undefined) {
     assert.equal(minted.exitCode, 2);
   });
 }
+
+// W-131: CI installs bubblewrap and sets BISELLIUM_REQUIRE_LIVE_ROWS=1 on the full path, so a live row that
+// skips there is a failure, not a quiet pass. A plain test(), never live(): the 26-row count W-132 pins is unchanged.
+test("W-131 behaviour 8: live rows: none skip where BISELLIUM_REQUIRE_LIVE_ROWS=1", () => {
+  if (process.env["BISELLIUM_REQUIRE_LIVE_ROWS"] !== "1") return;
+  const skipped = liveRows.filter((row) => row.skipped).length;
+  assert.equal(skipped, 0, `${skipped} of ${liveRows.length} live rows skipped (liveSkip: ${String(liveSkip)})`);
+});
