@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchActa, fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
 import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
 import { formatPosture } from "../lib/posture.js";
-import { healthStamp } from "../lib/officinaTruth.js";
+import { healthStamp, integritySummary } from "../lib/officinaTruth.js";
 import { FastiStrip } from "../components/FastiStrip.js";
 import type { ActaEntry } from "../lib/fasti.js";
 
@@ -89,6 +89,7 @@ export function Officina() {
 
 export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps) {
   const loaded = typeof health === "object" ? health : undefined;
+  const summary = loaded ? integritySummary(loaded) : undefined;
   const asOf = loaded && <p className="officina__as-of">{healthStamp(loaded.at, now)}</p>;
   return (
     <div className="officina">
@@ -156,29 +157,24 @@ export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps)
       <section className="officina__panel panel--integrity">
         <h2 className="officina__panel-heading">Contract integrity</h2>
         {healthState(health)}
-        {loaded && (
+        {summary && (
           <>
             {asOf}
-            <div className="officina__grid-2col">
-              <div className="officina__metric-card">
-                <span className="officina__metric-label">Blocking issues</span>
-                <span className="officina__metric-value">{fmt(loaded.blocks)}</span>
-              </div>
-              <div className="officina__metric-card">
-                <span className="officina__metric-label">Advisory alerts</span>
-                <span className="officina__metric-value">{fmt(loaded.advisories)}</span>
-              </div>
+            <p className="officina__integrity-summary">
+              {summary.stops} {summary.warns}
+            </p>
+            <p className="officina__label">All findings by area</p>
+            <div className="officina__table officina__table--zebra">
+              {summary.rows.map((r) => (
+                <details key={r.family} className="officina__row" title={r.rules.join(", ")}>
+                  <summary>
+                    <span className="officina__label">{r.label}</span>
+                    <span className="officina__value-mono">{fmt(r.count)}</span>
+                  </summary>
+                  <p className="officina__rule-ids">{r.rules.join(", ")}</p>
+                </details>
+              ))}
             </div>
-            {Object.keys(loaded.findingsByRule).length > 0 && (
-              <div className="officina__table officina__table--zebra">
-                {Object.entries(loaded.findingsByRule).map(([rule, count]) => (
-                  <div key={rule} className="officina__row">
-                    <span className="officina__label">{rule}</span>
-                    <span className="officina__value-mono">{fmt(count)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
           </>
         )}
       </section>

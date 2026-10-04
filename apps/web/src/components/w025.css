@@ -358,13 +358,6 @@
 }
 
 /* Metric grids */
-.officina__grid-2col {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
 .officina__grid-3col {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -373,9 +366,6 @@
 
 @media (max-width: 899px) {
   .officina__grid-3col {
-    grid-template-columns: 1fr;
-  }
-  .officina__grid-2col {
     grid-template-columns: 1fr;
   }
 }
@@ -389,21 +379,6 @@
   gap: 4px;
 }
 
-.officina__metric-label {
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--ink-2);
-}
-
-.officina__metric-value {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 18px;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
 
 .officina__metric-value-mono {
   font-family: var(--font-mono);
@@ -459,13 +434,6 @@
   font-size: 12px;
   line-height: 18px;
   font-variant-numeric: tabular-nums;
-  color: var(--ink);
-}
-
-.officina__value-status {
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 18px;
   color: var(--ink);
 }
 
@@ -1352,4 +1320,52 @@
   .board-workspace:has(.board-drawer) {
     grid-template-columns: minmax(0, 1fr) 100vw;
   }
+}
+
+/* W-077: the as-of stamp, named states, and the plain-language integrity rows. */
+.officina__as-of {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-3);
+  margin: 4px 0 8px;
+}
+
+.officina__empty,
+.officina__loading {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-3);
+  margin: 4px 0;
+}
+
+.officina__integrity-summary {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+details.officina__row {
+  display: block;
+  height: auto;
+  min-height: 32px;
+}
+
+details.officina__row > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.officina__rule-ids {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--ink-3);
+  margin: 0 0 8px;
 }
