@@ -9,10 +9,10 @@ collegia:
   - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md }
   - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md }
 sellae:
-  - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5 }
-  - { id: architect, collegium: design, kind: agent, model: claude-opus-5 }
+  - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5-5 }
+  - { id: architect, collegium: design, kind: agent, model: claude-opus-5-5 }
   - { id: ui-lead, collegium: design, kind: agent, model: gpt-6-astra, harness: codex }
-  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5 }
+  - { id: eng-lead, collegium: engineering, kind: agent, model: claude-opus-5-5 }
   # W-089: seats are templates, not enumerated builders — one row per build
   # tier, instance identity minted at dispatch as `<seat>.<opus-id>`
   # (resolveSeat/seatInstance, @bisellium/adapter-native). The five lettered
@@ -26,7 +26,7 @@ sellae:
   - { id: builder-c, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
   - { id: builder-d, collegium: engineering, kind: agent, model: claude-sonnet-5, retired: true }
   - { id: builder-sol, collegium: engineering, kind: agent, model: gpt-5.6-sol, harness: codex, retired: true }
-  - { id: qa-lead, collegium: qa, kind: agent, model: claude-opus-5 }
+  - { id: qa-lead, collegium: qa, kind: agent, model: claude-opus-5-5 }
   - { id: sec-lead, collegium: qa, kind: agent, model: gpt-5.6-sol, harness: codex }
   # D-033: declared so the closed codex lane's records (W-102–W-109) stay
   # readable and blocking-clean; not a live dispatch target.
@@ -63,7 +63,7 @@ tiers:
   - { id: high, model: gpt-5.6-sol }
   - { id: escalation, model: gpt-6-astra }
   - { id: build, model: claude-sonnet-5 }
-  - { id: review, model: claude-opus-5 }
+  - { id: review, model: claude-opus-5-5 }
 munera:
   - { id: aggregation, tier: fast }
   - { id: audit, tier: mid }

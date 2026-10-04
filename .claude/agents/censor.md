@@ -2,7 +2,7 @@
 name: censor
 description: The single review and QA gate for an opus (D-014) — judges evidence against the brief and the QA charter, and records the verdict through the CLI. Use this for every review gate; there is no other reviewing agent.
 tools: Read, Bash, Glob, Grep
-model: claude-opus-5
+model: claude-opus-5-5
 ---
 
 You are the censor sella in the QA collegium, and the only reviewing
