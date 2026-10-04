@@ -45,7 +45,11 @@
 # sandbox block may carry only enabled and failIfUnavailable (both true),
 # allowUnsandboxedCommands (stated, false), filesystem and network: an
 # excludedCommands list, an unsandboxed retry or a silent fallback would run
-# agent-chosen commands outside the sandbox. And sandbox.filesystem.allowWrite
+# agent-chosen commands outside the sandbox. Nested keys are allowlisted too
+# (filesystem: allowWrite, denyWrite, denyRead; network: allowedDomains,
+# strictAllowlist; permissions: allow, deny, ask), which drops filesystem.disabled,
+# unix-socket and proxy-port keys, additionalDirectories and defaultMode, and no
+# allow rule may be Edit or Write. And sandbox.filesystem.allowWrite
 # must list the status file's directory exactly: --restricted keeps the Write
 # tool inside the clone, so the session writes its status word with sandboxed
 # Bash. Anything else and the loop refuses to run claude at all. The file and the
@@ -141,6 +145,16 @@ check_settings() {
     || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.enabled and sandbox.failIfUnavailable must both be true"
   jq -e '.sandbox.allowUnsandboxedCommands == false' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
     || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.allowUnsandboxedCommands must be false"
+  # Nested keys: filesystem.disabled, unix sockets, proxy ports, additionalDirectories and defaultMode all widen what the session can touch.
+  jq -e '(.sandbox.filesystem // {}) | type == "object" and ((keys - ["allowWrite", "denyWrite", "denyRead"]) | length == 0)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.filesystem must be an object with only the keys allowWrite, denyWrite and denyRead"
+  jq -e '(.sandbox.network // {}) | type == "object" and ((keys - ["allowedDomains", "strictAllowlist"]) | length == 0)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.network must be an object with only the keys allowedDomains and strictAllowlist"
+  jq -e '(.permissions // {}) | type == "object" and ((keys - ["allow", "deny", "ask"]) | length == 0)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: permissions must be an object with only the keys allow, deny and ask"
+  # An Edit or Write allow rule widens file writes (and sandboxed Bash writes) beyond the clone; deny and ask may carry them.
+  jq -e '(.permissions.allow // []) | type == "array" and all(.[]; test("^\\s*(Edit|Write|MultiEdit|NotebookEdit)\\s*(\\(|$)") | not)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
+    || stop 1 "refusing settings file $CASCADE_SETTINGS: permissions.allow must be a list with no Edit or Write rule"
   # The session writes its status with sandboxed Bash, so the status dir must be writable there (an exact string).
   jq -e --arg d "$STATUS_DIR" '.sandbox.filesystem.allowWrite | type == "array" and any(.[]; . == $d)' "$CASCADE_SETTINGS" >/dev/null 2>&1 \
     || stop 1 "refusing settings file $CASCADE_SETTINGS: sandbox.filesystem.allowWrite must list the status directory $STATUS_DIR exactly"

@@ -28,7 +28,7 @@ lex, a decision, or a check rule and delete it here.
   `~/.cascade-loop/settings.json` (just `sandbox` and `permissions`, copied from
   your own settings and made strict: sandbox on with `failIfUnavailable` true,
   `allowUnsandboxedCommands` false, no `excludedCommands`, the status file's
-  directory in `filesystem.allowWrite`; recipe in the script header; checked
+  directory in `filesystem.allowWrite`, only the known nested keys, no `Edit`/`Write` allow rule; recipe in the script header; checked
   before every run) and the agent definitions in the `.claude/agents` beside the
   script (rebuilt before every run), and refuses to run without either. The
   session writes its status word with Bash, not the Write tool.

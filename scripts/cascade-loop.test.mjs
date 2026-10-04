@@ -670,6 +670,7 @@ const REFUSED = [
   ["25i13. a bare Write allow rule", (o) => o.permissions.allow.push("Write"), PERM_RULES],
   ["25i14. a Write(...) allow rule", (o) => o.permissions.allow.push("Write(//home/**)"), PERM_RULES],
   ["25i15. an allow list that is a string", (o) => (o.permissions.allow = "CANARY"), PERM_RULES],
+  ["25i15b. an allow list that is an object", (o) => (o.permissions.allow = { CANARY: "Read" }), PERM_RULES],
   ["25i16. an allow entry that is not a string", (o) => o.permissions.allow.push({ CANARY: 1 }), PERM_RULES],
   ["30b1. no filesystem block (the status dir is not writable)", (o) => delete o.sandbox.filesystem, /allowWrite/],
   ["30b2. an empty allowWrite", (o) => (o.sandbox.filesystem.allowWrite = []), /allowWrite/],
