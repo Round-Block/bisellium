@@ -9,6 +9,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { listMd, readFront, readManifest, resolveSeat, snapshotDir } from "@bisellium/adapter-native";
+import { openLessons } from "./lessons.js";
 
 export interface ContextBundle {
   text: string;
@@ -17,6 +18,8 @@ export interface ContextBundle {
 }
 
 const DEFAULT_MAX_TOKENS = 4000;
+/** W-085: classes shown in `## Open lessons`; `manifest.defaults.context_open_lessons` overrides, 0 turns it off. */
+export const DEFAULT_OPEN_LESSONS = 10;
 const DECISION_WINDOW_DAYS = 2;
 const ACTIVE_STATES = new Set(["building", "verifying", "review"]);
 
@@ -157,6 +160,25 @@ function buildContextFor(
     priority: 0,
     text: "## CLI usage\nRun `bisellium` with no arguments for the exact flag shapes before any CLI call, and before writing one into a subagent brief. The allowlists are strict; a recalled invocation is usually wrong, and a wrong one can write real bookkeeping before it fails.",
   });
+
+  // 2b. open lesson classes of the sella's collegium (the Patron sees all) —
+  // priority 2, so it outlives every section but the lex and the CLI pointer.
+  const configured = manifest.defaults?.["context_open_lessons"];
+  const cap = typeof configured === "number" && Number.isFinite(configured) ? Math.max(0, Math.floor(configured)) : DEFAULT_OPEN_LESSONS;
+  const classes = cap === 0 ? [] : openLessons(root).filter((c) => collegium === undefined || c.collegia.includes(collegium.id));
+  if (classes.length) {
+    const lines = classes.slice(0, cap).map(
+      (c) =>
+        `- ${c.class} · ${c.lessons.length}× over ${c.cascades.length} cascade${c.cascades.length === 1 ? "" : "s"} · latest ${c.latest}` +
+        (c.fixInFlight ? ` · fix in flight: ${c.fixInFlight.id} (${c.fixInFlight.state})` : ""),
+    );
+    const more = classes.length > cap ? `\n… and ${classes.length - cap} more open classes under lessons/` : "";
+    sections.push({
+      name: "open lessons",
+      priority: 2,
+      text: `## Open lessons\nClasses your collegium keeps paying for, most recurrent first. A class leaves this list when a lesson of it names a rule, a decision or a done opus in addressed_by.\n${dataBlock("lessons/", lines.join("\n"))}${more}`,
+    });
+  }
 
   // 3. standing process rules (cross-cutting, all sellae) ----------------
   if (manifest.standing_rules?.length) {
