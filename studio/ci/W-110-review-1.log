@@ -1,0 +1,16 @@
+# opus: W-110
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-04T11:17:37.911Z
+# tree: tree:4d93e3036e69a43efe6806f8702d1b6428ec3fa9
+
+## Findings
+1. blocking — reds/02.log:14, reds/03.log:14 False-red class; after searching all eight red logs, only 02 and 03 pass their prescribed Genuine-red assertions and fail later row (f) on missing `NAV_ENTRIES`, evidently against a stale implemented bundle. The host replay proves replayability but does not make the required committed red artifacts true. — check: none: red validation must pin the prescribed Genuine-red assertion message and location
+2. blocking — scripts/served-e2e.mjs:21 Uncontained shots-path class; every `shotsDir` use was searched: deletion (21), creation (22), child screenshot writes (29), listing (34), PNG reads (53), and manifest writing (57) all follow an intervening `ci`/`shots` symlink. A crafted officina can therefore redirect the recursive clear and subsequent writes outside `<studio>/ci/shots/<opus>/` before validation refuses the evidence. — check: scripts/served-e2e.test.mjs: add a symlink-parent escape case proving the external target is untouched
+
+## Verdict
+The false required reds and the destructive symlink escape are both blocking under QA Lex §2. The assertion-only receipt flag is insufficient to cure the recorded-red defect.
+VERDICT: FAIL
