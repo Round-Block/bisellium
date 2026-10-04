@@ -173,3 +173,51 @@ if (runs(4)) {
     }
   });
 }
+
+if (runs(5)) {
+  test("W-077 behaviour 5: Contract integrity speaks plain language", () => {
+    const summary = helpers.integritySummary;
+    assert.equal(typeof summary, "function", "officinaTruth exports integritySummary");
+    const of = (blocks: number, advisories: number): Summary => summary!({ blocks, advisories, findingsByRule: {} });
+    assert.equal(of(0, 0).stops, "This check found no blocking problems.");
+    assert.equal(of(1, 1).stops, "This check found 1 blocking problem.");
+    assert.equal(of(7, 7).stops, "This check found 7 blocking problems.");
+    assert.equal(of(0, 0).warns, "No warnings.");
+    assert.equal(of(1, 1).warns, "1 warning; it does not stop work.");
+    assert.equal(of(7, 7).warns, "7 warnings; they do not stop work.");
+
+    const findings = { "traditio.stale": 2, "traditio.stage": 1, "state.done.probationes": 1, "zz.new": 4 };
+    assert.deepEqual(
+      summary!({ blocks: 1, advisories: 3, findingsByRule: findings }).rows.map((r) => [r.family, r.label, r.count]),
+      [["zz", "zz", 4], ["traditio", "Handoff notes", 3], ["state", "Work item states", 1]],
+      "grouped by family, summed, the unlabelled family keeps its id",
+    );
+    assert.deepEqual(summary!({ blocks: 1, advisories: 3, findingsByRule: findings }).rows[1]?.rules, ["traditio.stage", "traditio.stale"]);
+
+    const labels = helpers.RULE_FAMILY_LABELS;
+    assert.ok(labels, "officinaTruth exports RULE_FAMILY_LABELS");
+    const families = [...new Set([...RULE_IDS].map((id) => id.split(".")[0]!))].sort();
+    assert.deepEqual(Object.keys(labels).sort(), families, "every rule family has exactly one label (drift guard)");
+
+    const html = render({ health: health({ findingsByRule: findings }) });
+    const panel = panelOf(html, "Contract integrity");
+    const t = text(panel);
+    assert.ok(t.includes("This check found 1 blocking problem.") && t.includes("3 warnings; they do not stop work."));
+    assert.ok(t.includes("All findings by area"));
+    for (const gone of ["Blocking issues", "Advisory alerts"]) assert.ok(!html.includes(gone), `${gone} is removed`);
+
+    const rows = [...panel.matchAll(/<details\b([^>]*)>([\s\S]*?)<\/details>/g)];
+    assert.equal(rows.length, 3, "one details row per family");
+    for (const r of rows) assert.ok(!/\bopen\b/.test(r[1] ?? ""), "rows are collapsed by default");
+    const handoff = rows.find((r) => text(r[2] ?? "").startsWith("Handoff notes"));
+    assert.ok(handoff, "a Handoff notes row exists");
+    assert.ok(/<summary\b[^>]*>[\s\S]*Handoff notes[\s\S]*3[\s\S]*<\/summary>/.test(handoff[2] ?? ""), "the summary holds the label and count");
+    assert.deepEqual(byClass(handoff[2] ?? "", "officina__rule-ids").map(text), ["traditio.stage, traditio.stale"]);
+    assert.ok(tag(handoff[1] ?? "").includes('title="traditio.stage, traditio.stale"'), "the title holds the rule ids");
+
+    const bare = html
+      .replace(/<(p|span)\b[^>]*class="[^"]*\bofficina__rule-ids\b[^"]*"[^>]*>[\s\S]*?<\/\1>/g, " ")
+      .replace(/<[^>]*>/g, " ");
+    assert.ok(!/\b[a-z]+\.[a-z_.]+\b/.test(bare), `no rule id is visible outside the disclosures: ${/\b[a-z]+\.[a-z_.]+\b/.exec(bare)?.[0] ?? ""}`);
+  });
+}
