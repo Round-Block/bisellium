@@ -262,6 +262,19 @@ function readModelsRecord(studioDir: string): ModelRecordEntry[] | undefined {
   }
 }
 
+/** W-077: `tick` writes `due` as `{kind, sella|period|opus|models}`; the declared shape is `{kind, id}`. */
+function namedDue(due: unknown): { kind: string; id: string }[] {
+  if (!Array.isArray(due)) return [];
+  return due.map((raw: Record<string, unknown>) => {
+    const kind = String(raw?.["kind"]);
+    const field = { daily: "sella", aerarium: "period", traditio: "opus" }[kind];
+    if (typeof raw?.["id"] === "string") return { kind, id: raw["id"] };
+    if (field && typeof raw?.[field] === "string") return { kind, id: raw[field] as string };
+    if (kind === "probe" && Array.isArray(raw?.["models"])) return { kind, id: `${raw["models"].length} pair(s)` };
+    return { kind, id: "unknown" };
+  });
+}
+
 export class Store extends CoreStore {
   readonly projectId: string;
   private readonly live: boolean;
@@ -464,7 +477,8 @@ export class Store extends CoreStore {
       const healthPath = join(this.studioDir, "health.json");
       if (existsSync(healthPath)) {
         try {
-          return JSON.parse(readFileSync(healthPath, "utf8"));
+          const file = JSON.parse(readFileSync(healthPath, "utf8")) as Record<string, unknown>;
+          return { ...file, due: namedDue(file["due"]) };
         } catch {
           // corrupt health.json: fall through to a fresh summary below
         }
