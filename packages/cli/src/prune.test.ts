@@ -1,10 +1,11 @@
-import { describe, it, before, after } from "node:test";
+import { describe, it, before, after, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, lstatSync, mkdtempSync, mkdirSync, symlinkSync, writeFileSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { pruneStaleOpusBranches, runPrune } from "./prune.js";
+import * as pruneModule from "./prune.js";
 
 function git(args: string[], cwd: string): void {
   const r = spawnSync("git", args, { cwd, encoding: "utf8", timeout: 10_000 });
@@ -117,4 +118,96 @@ describe("runPrune flag validation", () => {
     assert.equal(exitCode, 2);
     assert.match(stderr, /unknown flag "--help"/);
   });
+});
+
+// ---------------------------------------------------------------------------
+// W-131 behaviour 4: prune removes the gate logs of a `done` opus that nothing
+// outside ci/ cites, and nothing else.
+// ---------------------------------------------------------------------------
+const MANIFEST = [
+  "bisellium: 1",
+  "studio: W-131 prune",
+  "patron: patron",
+  "collegia:",
+  "  - { id: engineering, name: Engineering, magister: eng-lead }",
+  "sellae:",
+  "  - { id: builder-sol, collegium: engineering, kind: agent }",
+  "probationes:",
+  "  - { id: tests, name: Tests, kind: automated, command: x }",
+  "  - { id: lint, name: Lint, kind: automated, command: x }",
+  "  - { id: review, name: Review, kind: agent }",
+  "wip_limit: 10",
+  "",
+].join("\n");
+
+/** A repo whose studio/ holds opera, ci/ files (name -> text) and other officina files. */
+function w131Fixture(opera: Record<string, string>, ci: Record<string, string>, extra: Record<string, string> = {}): { repo: string; studio: string } {
+  const repo = makeRepo();
+  const studio = makeStudio(repo);
+  writeFileSync(join(studio, "bisellium.yml"), MANIFEST);
+  for (const [id, state] of Object.entries(opera)) writeOpus(studio, id, state);
+  for (const [name, text] of Object.entries(ci)) {
+    mkdirSync(dirname(join(studio, "ci", name)), { recursive: true });
+    writeFileSync(join(studio, "ci", name), text);
+  }
+  for (const [rel, text] of Object.entries(extra)) {
+    mkdirSync(dirname(join(studio, rel)), { recursive: true });
+    writeFileSync(join(studio, rel), text);
+  }
+  return { repo, studio };
+}
+
+function pruneOutput(fx: { repo: string; studio: string }): string {
+  const orig = console.log;
+  let out = "";
+  console.log = (...parts: unknown[]) => { out += parts.join(" ") + "\n"; };
+  try {
+    runPrune(["--studio", fx.studio, "--repo", fx.repo]);
+  } finally {
+    console.log = orig;
+  }
+  return out;
+}
+
+test("W-131 behaviour 4: prune removes exactly the gate logs of a done opus that nothing cites", () => {
+  const fixtures: { repo: string }[] = [];
+  const fixture = (...args: Parameters<typeof w131Fixture>) => {
+    const fx = w131Fixture(...args);
+    fixtures.push(fx);
+    return fx;
+  };
+  try {
+    const gone = ["W-401-tests-0123abcd.log", "W-401-lint-89abcdef.log"];
+    const stays = ["W-401-review-1.log", "W-401.log", "W-401-bogus-0123abcd.log", "W-401-tests-0123abc.log", "reds/W-401/01.log"];
+    const main = fixture(
+      { "W-401": "done" },
+      Object.fromEntries([...gone, ...stays].map((name) => [name, `log ${name}\n`])),
+    );
+    const first = pruneOutput(main);
+    for (const name of gone) {
+      assert.ok(first.includes(`ci log removed: ci/${name}\n`), `${name} is reported removed: ${first}`);
+      assert.equal(existsSync(join(main.studio, "ci", name)), false, `${name} is deleted`);
+    }
+    for (const name of stays) assert.equal(existsSync(join(main.studio, "ci", name)), true, `${name} is kept`);
+    assert.equal(pruneOutput(main), "nothing to prune\n", "a second run finds nothing");
+    assert.deepEqual(pruneModule.pruneCiLogs(main.studio), { removed: [] });
+
+    // Each keeper gets a fixture of its own, so no other rule can be what saves it.
+    const cited = fixture({ "W-402": "done" }, { "W-402-tests-aaaaaaaa.log": "log\n" }, { "lessons/L-001.md": "see ci/W-402-tests-aaaaaaaa.log\n" });
+    const building = fixture({ "W-403": "building" }, { "W-403-tests-bbbbbbbb.log": "log\n" });
+    const linked = fixture({ "W-404": "done" }, {});
+    writeFileSync(join(linked.repo, "outside.log"), "outside\n");
+    symlinkSync(join(linked.repo, "outside.log"), join(linked.studio, "ci", "W-404-tests-cccccccc.log"));
+    for (const [what, fx, name] of [
+      ["a log cited from lessons/", cited, "W-402-tests-aaaaaaaa.log"],
+      ["a log of a building opus", building, "W-403-tests-bbbbbbbb.log"],
+      ["a symlinked candidate", linked, "W-404-tests-cccccccc.log"],
+    ] as const) {
+      assert.equal(pruneOutput(fx), "nothing to prune\n", `${what}: nothing is removed`);
+      assert.ok(lstatSync(join(fx.studio, "ci", name)), `${what} stays`);
+    }
+    assert.equal(existsSync(join(linked.repo, "outside.log")), true, "a symlink's target is never touched");
+  } finally {
+    for (const fx of fixtures) rmSync(fx.repo, { recursive: true, force: true });
+  }
 });
