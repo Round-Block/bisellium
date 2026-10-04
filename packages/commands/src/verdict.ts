@@ -22,6 +22,7 @@ export interface VerdictOptions extends WriteOptions {
 }
 
 const GIT_TIMEOUT_MS = 30_000;
+const BODY_CAP = 8192;
 
 function gitRoot(dir: string): string | undefined {
   try {
@@ -172,6 +173,11 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       console.error("verdict: --from is absent and stdin is empty");
       return { exitCode: 2 };
     }
+  }
+
+  if (transcript.length > BODY_CAP) {
+    console.error(`verdict body is ${transcript.length} bytes; the cap is ${BODY_CAP} — record findings, not a transcript`);
+    return { exitCode: 2 };
   }
 
   const record = readFront<NativeRecord>(opusPath).data;
