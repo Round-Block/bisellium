@@ -465,3 +465,21 @@ test("W-140-b2 behaviour 2: admission's parser is the only behaviour counter in 
   assert.equal(run.stdout.trim(), "1", "b2: the comment row counts 1");
   assert.equal(run.stderr, "", "b2: nothing on stderr");
 });
+
+test("W-140-b3 behaviour 3: readBriefAdmission's export is the signed two-argument signature, and exception problems keep their place", () => {
+  assert.equal(readBriefAdmission.length, 2, "b3: two parameters");
+  const neverCalled = (): void => {
+    // @ts-expect-error W-140: the signed signature has no third parameter
+    readBriefAdmission("", 6, () => undefined);
+  };
+  void neverCalled;
+  const EXC = 'behaviour limit exception: decision "D-404" not found';
+  const noFamily = ready(brief({ families: [], reds: SEVEN, exceptions: ["D-404"] }));
+  assert.deepEqual(noFamily.stderr, [NO_FAMILY, EXC].map(line), "b3: family problem, then the exception problem");
+  const twice = ready(brief({ reds: SEVEN, exceptions: ["D-404"], inside: ["## Behaviours to test"] }));
+  assert.deepEqual(
+    twice.stderr,
+    [EXC, 'has 2 "## Behaviours to test" headings; one section only'].map(line),
+    "b3: the exception problem, then the heading problem",
+  );
+});
