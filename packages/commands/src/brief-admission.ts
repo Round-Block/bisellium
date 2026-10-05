@@ -44,6 +44,29 @@ function unfenced(briefText: string): string[] {
   return out;
 }
 
+/** Genuine-red markers per numbered behaviour (and before item 1), bounded like `countBehaviours`. */
+function redMarkers(briefText: string): { before: number; per: number[] } {
+  const lines = briefText.split(/\r?\n/);
+  const start = lines.findIndex((l) => l.trim() === "## Behaviours to test");
+  const per: number[] = [];
+  let before = 0;
+  let inFence = false;
+  for (let i = start + 1; start !== -1 && i < lines.length; i++) {
+    const line = lines[i]!;
+    if (/^\s{0,3}```/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    if (/^## /.test(line)) break;
+    if (/^\s{0,3}\d+\.\s/.test(line)) per.push(0);
+    const k = (line.match(/(?<!`)\*\*Genuine red:\*\*/g) ?? []).length;
+    if (per.length === 0) before += k;
+    else per[per.length - 1]! += k;
+  }
+  return { before, per };
+}
+
 const captured = (lines: string[], re: RegExp): string[] =>
   lines.flatMap((l) => {
     const m = re.exec(l);
@@ -63,5 +86,15 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
     problems.push(
       `numbers ${n} behaviours; the limit is ${limit} (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line`,
     );
+  if (n > 0) {
+    const { before, per } = redMarkers(briefText);
+    if (before > 0) problems.push('has a "**Genuine red:**" outside any numbered behaviour');
+    per.forEach((k, i) => {
+      if (k !== 1)
+        problems.push(
+          `behaviour ${i + 1} names ${k} genuine reds; each numbered behaviour names exactly one, so number every independent behaviour`,
+        );
+    });
+  }
   return { problems };
 }
