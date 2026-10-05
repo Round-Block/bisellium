@@ -1,0 +1,54 @@
+# behaviour: 3
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-141-b3 packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-05T17:29:38.140Z
+# sella: builder.W-141
+# tree: tree:319dac1410c9ff80cf9558c81623acf89226b784
+
+TAP version 13
+# Subtest: W-141-b3 behaviour 3: the checkpoint rides the done commit
+not ok 1 - W-141-b3 behaviour 3: the checkpoint rides the done commit
+  ---
+  duration_ms: 2863.761341
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:92:5678'
+  failureType: 'testCodeFailure'
+  error: |-
+    the done commit carried the handoff: complete, with no heading
+    --- exit 0
+    --- stdout
+    next: W-900 checkpoint named
+    actor: producer
+    why: W-900 is done on the trunk; docs/SESSION-HANDOFF.md "Where things stand" does not name it
+    command: update docs/SESSION-HANDOFF.md (Where things stand), the progress row and the masthead for W-900, then republish
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 checkpoint named'
+    - 'next: W-900 checkpoint complete'
+                              ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 checkpoint complete'
+  actual: 'next: W-900 checkpoint named'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:2518:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2880.192767

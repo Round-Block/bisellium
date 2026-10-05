@@ -1,0 +1,20 @@
+# opus: W-141
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-05T19:09:54.801Z
+# tree: tree:0f35dbe8a26c848c203251c82919d6ef5e26fbe7
+# brief: briefs/W-141.md blob:3d2675a03475c077d00b4014951d3ef78ccc9009
+
+## Findings
+1. blocking — packages/cli/src/integrate.ts:231 The Patron preflight runs `git fetch origin <oid>` without suppressing `FETCH_HEAD` or automatic tag following, so it can mutate repository state and refs before issuing the required mutation-free refusal; its non-commit and indeterminate ancestry exits also fall through to the later ref-moving fetch. This is the preflight-order class; I searched every `patronStop` exit and all three `fetchTrunk` fetches; brief:164 — check: packages/cli/src/next.test.ts (W-141-b1 with an absent target, a remote tag, `FETCH_HEAD`, and all refs asserted unchanged)
+2. blocking — packages/cli/src/next.ts:287 Certificate readiness accepts `has(trunkRecord) || has(workingRecord)`, so an exact trunk certificate masks a stale/dirty working certificate—or a working `kind: ui` changed to `opus`—and `performDone` commits that invalid working record. This leaves both `automatedGates` consumers bypassable; brief:174 — check: packages/cli/src/next.test.ts (W-141-b2 with valid trunk evidence and stale working evidence, plus UI kind drift)
+3. blocking — packages/cli/src/next.ts:1044 Readiness never validates an automated gate’s recorded evidence file, and staging silently omits a missing/malformed/unreadable file or any result lost through a failed `ls-files` call, allowing `done` to commit without the exact certificate log. These are all omission paths found in the new exact-evidence staging block; brief:182 — check: packages/cli/src/next.test.ts (W-141-b2 with missing recorded evidence and injected `ls-files` failure)
+4. blocking — packages/cli/src/next.ts:970 Transactional restoration still ignores both staging-restoration results here and at line 1018; after a commit failure, a failed restore followed by a successful switch carries staged spec/done files onto master and may delete the recovery branch. These are the two rollback instances found across every `switchBack` call; brief:186, brief:210 — check: packages/cli/src/next.test.ts (W-141-b2/b4 injected commit-plus-restore failures)
+5. blocking — packages/cli/src/integrate.ts:96 Rename/copy handling tests only `from ?? path` for Patron ownership, so every rename or copy from a non-Patron source into `.claude/` is destination-blind and prints no Patron command. This is the remaining rename/copy-side class; I searched both R/C parser positions and every `touched` consumer; brief:166 — check: packages/cli/src/next.test.ts (W-141-b1 staged rename and copy into `.claude/`)
+
+## Verdict
+The supplied reds, receipt, and gates are present, but preflight mutation, certificate/evidence provenance, rollback, and rename/copy handling remain behaviorally open.
+VERDICT: FAIL

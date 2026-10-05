@@ -425,40 +425,24 @@ if (runs(5)) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. the checkpoint rung reads a dated heading
+// 6. the checkpoint rung reads the done commit, not a heading (W-141)
 // ---------------------------------------------------------------------------
-const checkpoint = (handoff: string): ReturnType<typeof deriveNext> =>
-  deriveNext({ id: "W-900", trunkRecord: { state: "done" }, handoff } as unknown as Facts);
+const checkpoint = (handoff: string | undefined, checkpointed: boolean): ReturnType<typeof deriveNext> =>
+  deriveNext({ id: "W-900", trunkRecord: { state: "done" }, handoff, checkpointed: () => checkpointed } as unknown as Facts);
 
 if (runs(6)) {
-  test("W-128 behaviour 6: the checkpoint rung reads a dated heading", () => {
-    const control = checkpoint("# Handoff\n\n## Where things stand\n\n- W-900 is done.\n");
+  test("W-128 behaviour 6: the checkpoint rung reads whether the done commit changed the handoff", () => {
+    const control = checkpoint("# Handoff\n\n- W-900 is done.\n", true);
     assert.equal(control.step, "checkpoint", "6a: the done opus lands on the checkpoint rung");
-    assert.equal(control.status, "complete", "6a: a plain heading naming W-900 is complete");
-
-    const elsewhere = checkpoint("## Where things stand (2026-10-02 late night)\n\n- nothing here\n\n## Queue\n\n- W-900 next.\n");
-    assert.equal(elsewhere.status, "named", "6b: a dated heading whose section lacks W-900 stays named");
-
-    const notHeadings = [
-      "## Where things stand now",
-      "## Where things stand (2026-10-02) trailing",
-      "## Where things stand (",
-      "## Where things stand (a (b))",
-      "## Not Where things stand (2026)",
-      "Where things stand (2026-10-02)",
-    ];
-    for (const heading of notHeadings) assert.equal(checkpoint(`${heading}\n\n- W-900 is done.\n`).status, "named", `6c: "${heading}" is not a heading match`);
-
-    const dated = checkpoint("## Where things stand (2026-10-02 late night)\n\n- W-900 is done.\n");
-    assert.equal(dated.status, "complete", "6d: a dated heading followed by a bullet naming W-900 is complete");
-
-    const nested = checkpoint("## Where things stand (2026-10-02 late night)\n\n- earlier\n\n### note\n\n- W-900 is done.\n\n## Queue\n\n- later\n");
-    assert.equal(nested.status, "complete", "6e: a subsection under the dated heading counts toward the section");
+    assert.equal(control.status, "complete", "6a: a done commit that changed the handoff is complete, heading or not");
+    const named = checkpoint("## Where things stand\n\n- W-900 is done.\n", false);
+    assert.equal(named.status, "named", "6b: a heading naming W-900 does not complete a done commit that left the handoff unchanged");
+    assert.equal(checkpoint(undefined, false).status, "complete", "6c: no handoff on master: complete once the record is done");
   });
 }
 
 // ---------------------------------------------------------------------------
-// 7. a spec or done that must still land names the gh path, not the scripts, and switches to master first
+// 7. a spec or done that must still land names next's own landing, never the scripts (W-141)
 // ---------------------------------------------------------------------------
 const mem = (files: Record<string, string>): { read(rel: string): string | undefined; list(dir: string): string[] } => ({
   read: (rel) => files[rel],
@@ -467,18 +451,9 @@ const mem = (files: Record<string, string>): { read(rel: string): string | undef
 const BRIEF = ["# W-900", "", ...["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"].flatMap((s) => [`## ${s}`, "", "text", ""])].join("\n");
 const SPEC_LOG = "# phase: spec\n# opus: W-900\n# sella: architect\n# outcome: passed\n";
 const evidence = (): Record<string, string> => ({ "briefs/W-900.md": BRIEF, "ci/W-900-spec-1.log": SPEC_LOG });
-const orderedIn = (text: string, parts: string[]): boolean => {
-  let from = 0;
-  for (const p of parts) {
-    const i = text.indexOf(p, from);
-    if (i === -1) return false;
-    from = i + p.length;
-  }
-  return true;
-};
 
 if (runs(7)) {
-  test("W-128 behaviour 7: a spec or done that must still land names the gh path, not the scripts, and switches to master before it pulls", () => {
+  test("W-128 behaviour 7: a spec or done that must still land is landed by next, never by the scripts", () => {
     const base = { id: "W-900", design: "architect", trunkRecord: { state: "greenlit" }, uiSpecProblems: () => [] as string[] };
     const spec = deriveNext({ ...base, trunk: undefined, specBranch: mem(evidence()) } as unknown as Facts);
     const done = deriveNext({
@@ -490,6 +465,7 @@ if (runs(7)) {
       pr: () => ({ kind: "settled", pr: {} }),
       residue: false,
       choreDone: true,
+      certified: () => true,
     } as unknown as Facts);
 
     assert.equal(spec.step, "spec", "7a: the spec fixture names the spec rung");
@@ -507,17 +483,11 @@ if (runs(7)) {
       assert.ok(!command.includes("merge-gate"), `7c: the ${label} command does not name merge-gate`);
     }
 
-    const specCommand = spec.command ?? "";
-    assert.ok(
-      orderedIn(specCommand, ["git push origin spec/W-900", "gh pr create --base master --head spec/W-900", '--title "spec(W-900): signed"', "gh pr merge <pr-number> --squash --auto", "git switch master && git pull --ff-only origin master"]),
-      `7d: the spec command is the gh path in order (${specCommand})`,
-    );
-    const doneCommand = done.command ?? "";
-    assert.ok(doneCommand.startsWith("git switch chore/done-W-900 &&"), `7e: the done command starts with the switch to the chore branch (${doneCommand})`);
-    assert.ok(
-      orderedIn(doneCommand, ["git push origin chore/done-W-900", "--head chore/done-W-900", '--title "chore(studio): mark W-900 done"', "gh pr merge", "git switch master && git pull --ff-only origin master"]),
-      `7e: the done command is the gh path in order (${doneCommand})`,
-    );
+    // W-141: the landing is the verb's own rung, not a hand script
+    assert.equal(spec.command, "bisellium next W-900 --perform --expect spec", "7d: the spec landing is performed by next");
+    assert.equal(spec.act, "land", "7d: the spec rung's act is the landing");
+    assert.equal(done.command, "bisellium next W-900 --perform --expect done", "7e: the done landing is performed by next");
+    assert.equal(done.act, "land", "7e: the done rung's act is the landing");
   });
 }
 

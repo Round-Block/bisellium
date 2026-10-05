@@ -408,10 +408,10 @@ can be written in the first place. An unrecognised
 outright (defensive reading, not a second validator — `bisellium check`
 already blocks a typo'd `strategy` at `manifest.shape`, so this fallback is
 merge's own defensive posture, never the only guard against one).
-`pr.required: true` stops `merge` after the rebase/push, leaving the branch
-for a PR to carry to the trunk (PR creation is W-028's territory); with
-`pr.required: true`, `pull_after_push` never runs, since it lives only on the
-landing path merge takes when no PR is required.
+`pr.required: true` makes `merge` refuse before it runs any git command and
+name `bisellium next <opus>`, which walks the PR road (push, PR, merge, fetch)
+(W-141); `pull_after_push` lives only on the landing path `merge` takes when no
+PR is required.
 
 `command` (a shell command) is optional on a `kind: automated` probatio; it is
 what `bisellium verify <opus-id>` runs to fill that gate's `status`/
@@ -1035,9 +1035,22 @@ refuses on a failing check, on fewer than `MIN_CHECKS` (5) checks in bucket
 `CLEAN` with every check passing, asks directly; `BLOCKED` is never merged
 directly. `cleanup` deletes the worktree, the local branch and the remote branch
 in that order, each after a fresh MERGED re-read, idempotently (an absent piece
-is `skipped (absent)`). Performed `done` creates `chore/done-<opus>` from the
-`master` tip, runs `done`, commits only `<studio>/opera/<opus>.md`, and returns to
-`master`; landing that branch is still the existing scripts' job.
+is `skipped (absent)`). The `spec` rung commits a spec signed in the main checkout
+onto `spec/<opus>` (only the brief and the spec log), and lands `spec/<opus>` and
+`chore/done-<opus>` the way it lands an opus: push `--force-with-lease`, reuse or
+create the PR (title and body from the head commit), the `merge` rules, a trunk
+fetch, then delete the head locally and on origin. A head that changes anything
+outside the officina and `docs/` is refused before the push. The `done` rung names
+`bisellium verify <opus> --studio <dir> --repo .` while an automated probatio has
+no `tree:` certificate; performed `done` then creates `chore/done-<opus>` from the
+`master` tip, runs `done`, and commits the record, verify's
+`ci/<opus>-<probatio>-<hash>.log` files and the tracked `docs/` changes together
+(it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
+rides the done commit, and the checkpoint rung reads complete once the commit that
+made the record `done` also changed the handoff), and returns to `master`. A path
+under `.claude/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
+stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
+dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.
 
 `gh` and `git` are spawned by bare name through `PATH` with argument arrays (no
 shell). Every `gh` read asks for a fixed `--json` field list, is bounded to

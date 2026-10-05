@@ -6,9 +6,11 @@
  * packages/commands/src/run.test.ts since it lives in run.ts). Numbers
  * outside 1-7 (0, 8, 9) are extra regression coverage, not brief behaviours.
  */
+import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { test } from "node:test";
 import { join, relative, resolve, sep } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { createOpusBranch, createW096Branch, mergeOpusBranch, opusBranchName } from "./branch.js";
@@ -483,11 +485,10 @@ function originMasterRev(bare: string): string {
     execSync("git checkout master", { cwd: dir, stdio: "pipe" });
 
     const result = mergeOpusBranch(dir, "W-083", studio);
-    check(14, "pr.required still reports success (merge did its half)", result.ok === true, String(result.error));
-    check(14, "pr.required does not land the change on the trunk", result.landed === false, String(result.landed));
+    check(14, "pr.required refuses: merge does not walk the PR road (W-141)", result.ok === false, String(result.error));
+    check(14, "the refusal names next", (result.error ?? "").includes("bisellium next W-083"), String(result.error));
     check(14, "master is untouched", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
     check(14, "opus branch survives for a PR to carry", branches(dir).includes("opus/W-083"), branches(dir).join(","));
-    check(14, "note names the reviewer", (result.note ?? "").includes("qa-lead"), String(result.note));
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
@@ -670,16 +671,16 @@ function originMasterRev(bare: string): string {
     // The branch is pushed to origin BEFORE trunk diverges — the PR-already-
     // open case: origin now holds the pre-rebase commit.
     execSync("git push origin opus/W-093", { cwd: dir, stdio: "pipe" });
+    const pushedRev = execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim();
     execSync("git checkout master", { cwd: dir, stdio: "pipe" });
     writeFileSync(join(dir, "other.ts"), "master work");
     execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
 
     const result = mergeOpusBranch(dir, "W-093", studio);
-    check(21, "rebase-then-push succeeds even though the branch was already on origin", result.ok === true, String(result.error));
-    check(21, "pr.required still stops merge from landing locally", result.landed === false, String(result.landed));
-    const localBranchRev = execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim();
     const originBranchRev = execSync(`git --git-dir="${bare}" rev-parse opus/W-093`, { encoding: "utf8" }).trim();
-    check(21, "origin's branch was force-with-lease-pushed to the rebased tip, not left diverged", originBranchRev === localBranchRev, `local ${localBranchRev} origin ${originBranchRev}`);
+    check(21, "pr.required refuses even with the branch already on origin (W-141)", result.ok === false && (result.error ?? "").includes("bisellium next W-093"), String(result.error));
+    check(21, "nothing is rebased or pushed: origin's branch is still the pre-rebase commit", originBranchRev === pushedRev, `origin ${originBranchRev} pushed ${pushedRev}`);
+    check(21, "the local branch is not rebased either", execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim() === pushedRev);
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
@@ -1210,4 +1211,68 @@ function originMasterRev(bare: string): string {
     rmSync(dir, { recursive: true, force: true });
   }
 }
-process.exit(failed ? 1 : 0);
+
+// W-141 behaviour 6: `merge` refuses under integration.pr.required before any git command, and names `next`. The row is a
+// node:test row (`--test-name-pattern=W-141-b6`), so the script ends by setting the exit code instead of exiting.
+test("W-141-b6 behaviour 6: bisellium merge refuses under integration.pr.required before any git command, and names next", () => {
+  const dir = tmpRepo();
+  const studio = tmpStudio();
+  let bare: string | undefined;
+  try {
+    writeIntegrationManifest(studio, "integration:\n  push: true\n  pr:\n    required: true\n");
+    writeOpusFile(studio, "W-141", "done");
+    bare = addLocalOrigin(dir);
+    createOpusBranch(dir, "W-141");
+    execSync("git checkout opus/W-141", { cwd: dir, stdio: "pipe" });
+    writeFileSync(join(dir, "feature.ts"), "done");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir, stdio: "pipe" });
+    const masterBefore = execSync("git rev-parse master", { cwd: dir, encoding: "utf8" }).trim();
+    const tipBefore = execSync("git rev-parse opus/W-141", { cwd: dir, encoding: "utf8" }).trim();
+
+    // a git shim on PATH logs every invocation: the refusal comes before any of them
+    const shimDir = mkdtempSync(join(tmpdir(), "w141-b6-shim-"));
+    const gitLog = join(shimDir, "calls.log");
+    const realGit = execSync("command -v git", { encoding: "utf8" }).trim();
+    writeFileSync(join(shimDir, "git"), `#!/bin/sh\necho "$*" >> "${gitLog}"\nexec "${realGit}" "$@"\n`, { mode: 0o755 });
+    const pathBefore = process.env["PATH"];
+    process.env["PATH"] = `${shimDir}:${pathBefore ?? ""}`;
+    let result: ReturnType<typeof mergeOpusBranch>;
+    try {
+      result = mergeOpusBranch(dir, "W-141", studio);
+    } finally {
+      process.env["PATH"] = pathBefore;
+    }
+    const invoked = existsSync(gitLog) ? readFileSync(gitLog, "utf8") : "";
+    rmSync(shimDir, { recursive: true, force: true });
+    assert.equal(invoked, "", `no git command ran before the refusal (${invoked})`);
+    assert.equal(result.ok, false, `merge refuses under pr.required (${JSON.stringify(result)})`);
+    assert.match(result.error ?? "", /bisellium next W-141/, "the error names next");
+    assert.equal(execSync(`git --git-dir="${bare}" for-each-ref refs/heads`, { encoding: "utf8" }).trim(), "", "nothing was pushed: the bare origin has no opus/W-141");
+    assert.equal(execSync("git rev-parse master", { cwd: dir, encoding: "utf8" }).trim(), masterBefore, "master is unchanged");
+    assert.equal(execSync("git rev-parse opus/W-141", { cwd: dir, encoding: "utf8" }).trim(), tipBefore, "the branch tip is unchanged");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(studio, { recursive: true, force: true });
+    if (bare) rmSync(bare, { recursive: true, force: true });
+  }
+
+  // without pr.required, merge lands as before
+  const dir2 = tmpRepo();
+  const studio2 = tmpStudio();
+  try {
+    writeOpusFile(studio2, "W-141", "done");
+    createOpusBranch(dir2, "W-141");
+    execSync("git checkout opus/W-141", { cwd: dir2, stdio: "pipe" });
+    writeFileSync(join(dir2, "feature.ts"), "done");
+    execSync("git add . && git commit -m 'feat: add feature'", { cwd: dir2, stdio: "pipe" });
+    execSync("git checkout master", { cwd: dir2, stdio: "pipe" });
+    const landed = mergeOpusBranch(dir2, "W-141", studio2);
+    assert.equal(landed.ok, true, `merge lands without pr.required (${landed.error ?? ""})`);
+    assert.equal(landed.landed, true, "and reports it landed");
+  } finally {
+    rmSync(dir2, { recursive: true, force: true });
+    rmSync(studio2, { recursive: true, force: true });
+  }
+});
+if (failed) process.exitCode = 1;

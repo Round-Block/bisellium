@@ -1,0 +1,117 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-141-b1 packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-05T17:15:32.433Z
+# sella: builder.W-141
+# tree: tree:58637eb9653fe3fdb8a17165dc3e37d169c6743d
+
+TAP version 13
+# Subtest: W-141-b1 behaviour 1: a Patron path stops next before the main checkout moves, and names the Patron's one command
+not ok 1 - W-141-b1 behaviour 1: a Patron path stops next before the main checkout moves, and names the Patron's one command
+  ---
+  duration_ms: 3350.679663
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:92:733'
+  failureType: 'testCodeFailure'
+  error: |-
+    merge: nothing is mutated (master unmoved, index, status, censor.md bytes)
+    --- exit 0
+    --- stdout
+    next: W-900 merge performed
+    local master -> 25267e1
+    state=MERGED
+    next-step: cleanup
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + '25267e1ed2c79df1be8231f6a3ef60d8deb4b54a\n' +
+    +   '25267e1ed2c79df1be8231f6a3ef60d8deb4b54a\n' +
+    - '3eee940e4f6a8b98d07f338b48450aee82452811\n' +
+    -   '3eee940e4f6a8b98d07f338b48450aee82452811\n' +
+        '--\n' +
+    +   '100644 ad17954eb7c644c4ba7762e07356cea6d7fa95ff 0\t.claude/agents/censor.md\n' +
+    -   '100644 8d82450e8b4be778f039c1037ca7b78f0c97487b 0\t.claude/agents/censor.md\n' +
+        '100644 7edb01a5d8cf4c06e4362fc3bb341a2410f7cf4e 0\t.claude/my notes.md\n' +
+        '100644 27c84a49fe99799779a5b208429638e6d8ab4c25 0\t.gitignore\n' +
+        '100644 ee8c1ee49b4799bbd170233915a897c19e3b55e1 0\tREADME.md\n' +
+        '100644 a82b702f98333c7a79ad31e011567a0a6503e43b 0\tdocs/SESSION-HANDOFF.md\n' +
+        '100644 2c499a2f9b13fa5a57cd41d547f9deb2b72d045e 0\tsource.txt\n' +
+        '100644 8eee26263ad55147d4b16da2d85228b43d09ae14 0\tstudio/bisellium.yml\n' +
+        '100644 db2e112f8be86c753661c832adf46e4e2cba229c 0\tstudio/briefs/W-900.md\n' +
+    +   '100644 28e645bcbb9d43ab45fbef4e2d772f9c370097e0 0\tstudio/ci/W-900-review-1.log\n' +
+        '100644 c844e66de8ac8d24192b7bfa3266df918cd476c7 0\tstudio/ci/W-900-spec-1.log\n' +
+    +   '100644 0c2f9ddbaf7395a351ff025c040f08e2253a9e61 0\tstudio/ci/reds/W-900/01.log\n' +
+    +   '100644 ea59c799bd85cd14599608d3565cf51dcf503e5d 0\tstudio/ci/reds/W-900/02.log\n' +
+        '100644 d2a099c6b69c9af8c0283ccde72f26a854360d01 0\tstudio/notes.md\n' +
+    +   '100644 d78030913580e7d1e9a5c98bbba50448057c3f2e 0\tstudio/opera/W-900.md\n' +
+    -   '100644 2ae93e2642f0ea3830bf40a7d0d1026572add298 0\tstudio/opera/W-900.md\n' +
+        '--\n' +
+        '?? .worktrees/\n' +
+        '--\n' +
+    +   'censor v2\n'
+    -   'censor v1\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    3eee940e4f6a8b98d07f338b48450aee82452811
+    3eee940e4f6a8b98d07f338b48450aee82452811
+    --
+    100644 8d82450e8b4be778f039c1037ca7b78f0c97487b 0	.claude/agents/censor.md
+    100644 7edb01a5d8cf4c06e4362fc3bb341a2410f7cf4e 0	.claude/my notes.md
+    100644 27c84a49fe99799779a5b208429638e6d8ab4c25 0	.gitignore
+    100644 ee8c1ee49b4799bbd170233915a897c19e3b55e1 0	README.md
+    100644 a82b702f98333c7a79ad31e011567a0a6503e43b 0	docs/SESSION-HANDOFF.md
+    100644 2c499a2f9b13fa5a57cd41d547f9deb2b72d045e 0	source.txt
+    100644 8eee26263ad55147d4b16da2d85228b43d09ae14 0	studio/bisellium.yml
+    100644 db2e112f8be86c753661c832adf46e4e2cba229c 0	studio/briefs/W-900.md
+    100644 c844e66de8ac8d24192b7bfa3266df918cd476c7 0	studio/ci/W-900-spec-1.log
+    100644 d2a099c6b69c9af8c0283ccde72f26a854360d01 0	studio/notes.md
+    100644 2ae93e2642f0ea3830bf40a7d0d1026572add298 0	studio/opera/W-900.md
+    --
+    ?? .worktrees/
+    --
+    censor v1
+    
+  actual: |-
+    25267e1ed2c79df1be8231f6a3ef60d8deb4b54a
+    25267e1ed2c79df1be8231f6a3ef60d8deb4b54a
+    --
+    100644 ad17954eb7c644c4ba7762e07356cea6d7fa95ff 0	.claude/agents/censor.md
+    100644 7edb01a5d8cf4c06e4362fc3bb341a2410f7cf4e 0	.claude/my notes.md
+    100644 27c84a49fe99799779a5b208429638e6d8ab4c25 0	.gitignore
+    100644 ee8c1ee49b4799bbd170233915a897c19e3b55e1 0	README.md
+    100644 a82b702f98333c7a79ad31e011567a0a6503e43b 0	docs/SESSION-HANDOFF.md
+    100644 2c499a2f9b13fa5a57cd41d547f9deb2b72d045e 0	source.txt
+    100644 8eee26263ad55147d4b16da2d85228b43d09ae14 0	studio/bisellium.yml
+    100644 db2e112f8be86c753661c832adf46e4e2cba229c 0	studio/briefs/W-900.md
+    100644 28e645bcbb9d43ab45fbef4e2d772f9c370097e0 0	studio/ci/W-900-review-1.log
+    100644 c844e66de8ac8d24192b7bfa3266df918cd476c7 0	studio/ci/W-900-spec-1.log
+    100644 0c2f9ddbaf7395a351ff025c040f08e2253a9e61 0	studio/ci/reds/W-900/01.log
+    100644 ea59c799bd85cd14599608d3565cf51dcf503e5d 0	studio/ci/reds/W-900/02.log
+    100644 d2a099c6b69c9af8c0283ccde72f26a854360d01 0	studio/notes.md
+    100644 d78030913580e7d1e9a5c98bbba50448057c3f2e 0	studio/opera/W-900.md
+    --
+    ?? .worktrees/
+    --
+    censor v2
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:2419:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3368.096372

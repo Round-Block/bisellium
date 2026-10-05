@@ -246,9 +246,12 @@ files the next poll picks up.
   ladder derived from evidence (W-124). `integrate.ts` owns the `gh`/`git` PR
   rungs (`pr`, `merge`, `cleanup`), which replaced the retired PR scripts;
   `fetchTrunk` fast-forwards a clean checked-out `master` to the reviewed merge
-  commit only (never the origin tip, and never from the `pr` rung). The
-  architect's spec verdict is written on `spec/<id>` before `opus/<id>` exists
-  and rides the spec PR; until that PR merges the `spec` rung names the landing.
+  commit only (never the origin tip, and never from the `pr` rung), and stops
+  before the tree on a Patron path (`.claude/`). The architect's spec verdict
+  is written in the main checkout before `opus/<id>` exists: the `spec` rung
+  commits it onto `spec/<id>` and lands that head through a PR; the `done` rung
+  names `verify`, then commits the record, the certificates and the checkpoint
+  docs onto `chore/done-<id>` and lands that head the same way (W-141).
   Every dispatch order also carries a `boot:` line (the sella's `bisellium
   context` command, W-085) for a harness that cannot run it.
   `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the

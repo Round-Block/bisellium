@@ -25,11 +25,11 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
-import { censorSella, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -58,7 +58,9 @@ const NEXT_USAGE =
   "usage: bisellium next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]";
 
-const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done"]);
+const TRUNK = "refs/heads/master";
+const HANDOFF = "docs/SESSION-HANDOFF.md";
+const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec"]);
 const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
 
@@ -181,6 +183,10 @@ export interface Facts {
   wt: { dir: string; studio: string; usable: boolean };
   trunk: Src | undefined;
   trunkRecord: Dict | undefined;
+  /** the oldest master commit that reads the record `done` also changed docs/SESSION-HANDOFF.md */
+  checkpointed(): boolean;
+  /** every automated probatio has a `tree:` certificate on the trunk record or the main checkout's record */
+  certified(): boolean;
   branch: Src | undefined;
   branchRecord: Dict | undefined;
   specBranch: Src | undefined;
@@ -212,6 +218,52 @@ function memo<T>(fn: () => T): () => T {
     }
     return value;
   };
+}
+/** The automated gates an opus must certify: the manifest's, plus a UI opus's implicit `served-e2e` (W-096), as `verify` and `check` count them. */
+const automatedGates = (manifest: Manifest, rec: Dict | undefined): string[] =>
+  effectiveProbationes(rec?.["kind"], manifest.probationes)
+    .probationes.filter((p) => p.kind === "automated")
+    .map((p) => p.id);
+type Certificate = { ok: true; stage: string[] } | { ok: false; why: string };
+/**
+ * The certificates a done commit carries. The WORKING record is the one committed, so it alone is judged; the
+ * gates are those of the stricter of its kind and the trunk's (a `ui` -> `opus` drift keeps `served-e2e`). Each
+ * gate must be `passed` at the merged trunk's own source tree, and its recorded evidence must be a readable
+ * regular file named `ci/<id>-<gate>-<hex>.log` that git tracks or can stage. `stage` lists the untracked ones.
+ * Anything missing, unreadable or unlistable is a refusal, never an omission.
+ */
+function certificate(repo: string, studioRel: string, studioAbs: string, excludes: string[], manifest: Manifest, trunkRecord: Dict | undefined, id: string): Certificate {
+  let want: string;
+  try {
+    want = `tree:${sourceTreeHash(repo, excludes, TRUNK)}`;
+  } catch {
+    return { ok: false, why: "could not hash the trunk's source tree" };
+  }
+  const rec = recordOf(fsSrc(studioAbs), id);
+  const gates = [...new Set([...automatedGates(manifest, rec), ...automatedGates(manifest, trunkRecord)])];
+  const stage: string[] = [];
+  for (const gate of gates) {
+    const g = isDict(rec?.["probationes"]) ? rec["probationes"][gate] : undefined;
+    if (!isDict(g) || g["status"] !== "passed" || g["certifies"] !== want) return { ok: false, why: `${gate} is not passed at the trunk's source tree` };
+    const evidence = str(g["evidence"]);
+    if (evidence === undefined || !new RegExp(`^ci/${esc(id)}-${esc(gate)}-[0-9a-f]+\\.log$`).test(evidence)) return { ok: false, why: `${gate} records no evidence of the form ci/${id}-${gate}-<hex>.log` };
+    const abs = join(studioAbs, evidence);
+    try {
+      if (!lstatSync(abs).isFile()) throw new Error("not a regular file");
+      readFileSync(abs);
+    } catch {
+      return { ok: false, why: `${gate}'s evidence ${evidence} is not a readable regular file` };
+    }
+    const rel = `${studioRel}/${evidence}`;
+    const tracked = git(repo, ["ls-files", "-z", "--", rel]);
+    if (tracked.status !== 0) return { ok: false, why: `could not list ${rel}` };
+    if (tracked.stdout !== "") continue;
+    const fresh = git(repo, ["ls-files", "--others", "--exclude-standard", "-z", "--", rel]);
+    if (fresh.status !== 0) return { ok: false, why: `could not list ${rel}` };
+    if (fresh.stdout === "") return { ok: false, why: `${gate}'s evidence ${rel} is neither tracked nor stageable` };
+    stage.push(rel);
+  }
+  return { ok: true, stage };
 }
 const refExists = (repo: string, ref: string): boolean => git(repo, ["show-ref", "--verify", "-q", ref]).status === 0;
 
@@ -252,6 +304,15 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     trunkRecord,
     branch,
     branchRecord,
+    checkpointed: memo(() => {
+      const log = git(repo, ["log", "--reverse", "--format=%H", TRUNK, "--", `${studioRel}/${recordRel(id)}`]);
+      for (const c of log.stdout.split("\n").filter(Boolean)) {
+        if (recordOf(gitSrc(repo, c, studioRel), id)?.["state"] !== "done") continue;
+        return git(repo, ["show", "--first-parent", "--format=", "--name-only", c, "--", HANDOFF]).stdout.trim() !== "";
+      }
+      return false;
+    }),
+    certified: memo(() => certificate(repo, studioRel, studioAbs, excludes, manifest, trunkRecord, id).ok),
     specBranch: refExists(repo, `refs/heads/spec/${id}`) ? gitSrc(repo, `refs/heads/spec/${id}`, studioRel) : undefined,
     choreDone,
     handoff,
@@ -280,7 +341,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiSpecProblems: memo(() => uiProblems(branchRecord ?? trunkRecord, studioAbs)),
     uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
-    pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, id))),
+    pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(Date.parse(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at") ?? ""));
@@ -381,12 +442,10 @@ export interface Derived {
   command?: string;
   order?: Order;
   pr?: Pr;
+  /** what `--perform` does at this rung, where the rung has more than one reading */
+  act?: "verify" | "commit" | "land";
   extra: [string, string][];
 }
-
-/** The plain gh and git landing for a head the `pr` rung does not open; it ends on master so the pull can fast-forward after the squash. */
-const landing = (head: string, title: string): string =>
-  `git push origin ${head}, then gh pr create --base master --head ${head} --title ${JSON.stringify(title)} --body-file <body-file>, then gh pr merge <pr-number> --squash --auto once its checks pass, then git switch master && git pull --ff-only origin master`;
 
 /** The one legal next step, from facts alone (the only I/O is the lazy `pr()` read). */
 export function deriveNext(f: Facts): Derived {
@@ -410,7 +469,10 @@ export function deriveNext(f: Facts): Derived {
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design);
-    if (!spec.ok && onBranch.ok) return named("spec", "producer", `spec signed on spec/${id}, not on master`, landing(`spec/${id}`, `spec(${id}): signed`));
+    if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
+    // no spec/<id> at all: the architect may have left the signed spec uncommitted in the main checkout
+    if (!spec.ok && f.specBranch === undefined && specEvidence(fsSrc(f.studioAbs), id, f.design).ok)
+      return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
     return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
 
@@ -501,26 +563,22 @@ export function deriveNext(f: Facts): Derived {
 
   // 10 cleanup, 11 done
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
-  if (f.choreDone) return named("done", "producer", `done committed on chore/done-${id}, not on master`, `git switch chore/done-${id} && ${landing(`chore/done-${id}`, `chore(studio): mark ${id} done`)}`);
+  if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`), act: "land" };
+  if (!f.certified()) return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded`, `bisellium verify ${id} --studio ${f.studioRel} --repo .`), act: "verify" };
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
 
+/** The checkpoint rides the done commit: complete once the commit that made the record `done` also changed the handoff. */
 function afterDone(f: Facts): Derived {
   const { id } = f;
-  const m = f.handoff === undefined ? null : /^(#{1,6})[ \t]+Where things stand(?:[ \t]+\([^\n)]*\))?[ \t]*$/m.exec(f.handoff);
-  let section = "";
-  if (f.handoff !== undefined && m !== null) {
-    const rest = f.handoff.slice(m.index + m[0].length);
-    const stop = new RegExp(`^#{1,${m[1]!.length}}[ \\t]`, "m").exec(rest);
-    section = stop === null ? rest : rest.slice(0, stop.index);
-  }
-  if (section.includes(id)) return { step: "checkpoint", status: "complete", actor: "producer", why: `the trunk record is done and the handoff names ${id}`, extra: [] };
+  if (f.handoff === undefined) return { step: "checkpoint", status: "complete", actor: "producer", why: "the trunk record is done and master has no handoff", extra: [] };
+  if (f.checkpointed()) return { step: "checkpoint", status: "complete", actor: "producer", why: `the trunk record is done and its done commit changed ${HANDOFF}`, extra: [] };
   return {
     step: "checkpoint",
     status: "named",
     actor: "producer",
-    why: `${id} is done on the trunk; docs/SESSION-HANDOFF.md "Where things stand" does not name it`,
-    command: `update docs/SESSION-HANDOFF.md (Where things stand), the progress row and the masthead for ${id}, then republish`,
+    why: `${id} is done on the trunk; the commit that made it done did not change ${HANDOFF}`,
+    command: `update ${HANDOFF}, the progress row and the masthead for ${id}, then republish`,
     extra: [],
   };
 }
@@ -888,15 +946,14 @@ function capture(fn: () => { exitCode: number }): { exit: number; out: string[];
   }
 }
 const heldResult = (why: string, ...lines: string[]): StepResult => ({ ok: false, lines: [`why: ${why}`, ...lines] });
-const trackedDirty = (cwd: string): string[] => git(cwd, ["status", "--porcelain", "--untracked-files=no"]).stdout.split("\n").filter(Boolean);
 
 function performBranch(f: Facts): StepResult {
   const { repo, id, wt } = f;
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
   if (head !== "refs/heads/master") return heldResult(`refusing: HEAD is ${head === "" ? "detached" : head}, not the master branch`);
   if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
-  const dirty = trackedDirty(repo);
-  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
+  const dirty = dirtyHold(repo);
+  if (dirty !== undefined) return dirty;
   try {
     lstatSync(wt.dir);
     return heldResult(`refusing: ${wt.dir} already exists and is not a registered worktree for opus/${id}`);
@@ -913,6 +970,63 @@ function performBranch(f: Facts): StepResult {
   return { ok: true, lines: [`branch: opus/${id}`, `worktree: ${wt.dir}`] };
 }
 
+/** Switch the main checkout back to master: the reason it could not, or `undefined` once HEAD is master. */
+function switchBack(repo: string): string | undefined {
+  const r = git(repo, ["switch", "-q", "master"]);
+  if (r.status !== 0) return one(r.stderr) || `exit ${r.status}`;
+  return git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() === "refs/heads/master" ? undefined : "HEAD is not master after the switch";
+}
+
+/**
+ * Roll the main checkout back to master after a failed commit on `branch`. The staged paths are unstaged first, and
+ * only a fully restored checkout switches and drops the branch: a failed restore stays on the branch, keeps it and
+ * returns the recovery text. `undefined` means master is restored.
+ */
+function rollback(repo: string, branch: string, base: string, staged: string[], drop: boolean): string | undefined {
+  if (staged.length > 0) {
+    const r = git(repo, ["restore", "-q", "--staged", "--", ...staged]);
+    if (r.status !== 0) return `could not unstage (${one(r.stderr) || `exit ${r.status}`}); HEAD stays on ${branch}, which is kept; run: git -C ${quoted(repo)} restore --staged -- ${staged.map(quoted).join(" ")} && git -C ${quoted(repo)} switch master`;
+  }
+  const back = switchBack(repo);
+  if (back !== undefined) return `could not switch back to master (${back}); HEAD is ${branch}: git -C ${quoted(repo)} switch master`;
+  if (drop) git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]);
+  return undefined;
+}
+
+/** The spec signed in the main checkout, committed onto `spec/<id>`: only the brief and the spec log, nothing else moves. */
+function performSpecCommit(f: Facts): StepResult {
+  const { repo, id } = f;
+  const head = `spec/${id}`;
+  const symbolic = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
+  if (symbolic !== "refs/heads/master") return heldResult(`refusing: HEAD is ${symbolic === "" ? "detached" : symbolic}, not the master branch`);
+  if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", TRUNK]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
+  if (refExists(repo, `refs/heads/${head}`)) return heldResult(`refusing: ${head} already exists`);
+  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design);
+  if (!spec.ok || spec.log === undefined) return heldResult(`refusing: ${spec.why}`);
+  const paths = [`${f.studioRel}/${briefRel(id)}`, `${f.studioRel}/${spec.log}`];
+  const base = git(repo, ["rev-parse", TRUNK]).stdout.trim();
+  const switched = git(repo, ["switch", "-q", "-c", head]);
+  if (switched.status !== 0) return heldResult(`could not create ${head}: ${one(switched.stderr)}`);
+  const staged = git(repo, ["add", "--", ...paths]);
+  const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `spec(${id}): signed`, "-m", `Co-Authored-By: ${spec.sella ?? f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+  if (committed.status !== 0) {
+    const stuck = rollback(repo, head, base, paths, true);
+    return heldResult(`could not commit the spec: ${one(committed.stderr)}${stuck === undefined ? "" : `; ${stuck}`}`);
+  }
+  const back = switchBack(repo);
+  if (back !== undefined) return heldResult(`the spec is committed on ${head}, but the main checkout could not switch back to master (${back}); run: git -C ${repo} switch master`);
+  return { ok: true, lines: [`branch: ${head}`, `commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${head}`]).stdout.trim()}`] };
+}
+
+/** A landing head may change the officina and `docs/` only: anything else is refused before the push. */
+async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
+  const diff = git(f.repo, ["diff", "--name-only", "-z", `${TRUNK}...refs/heads/${head}`]);
+  if (diff.status !== 0) return heldResult(`refusing: could not read what ${head} changes: ${one(diff.stderr)}`);
+  const outside = diff.stdout.split("\0").filter((p) => p !== "" && !p.startsWith(`${f.studioRel}/`) && !p.startsWith("docs/"));
+  if (outside.length > 0) return heldResult(`refusing: ${head} changes ${outside.slice(0, 5).map((p) => clean(p)).join(", ")}, outside the officina and docs/; nothing pushed`);
+  return landHead({ ...ctx, head });
+}
+
 function performReady(f: Facts, d: Derived): StepResult {
   const sella = d.extra.find(([k]) => k === "attributed")?.[1]?.split(" ")[0] ?? f.design;
   const cap = capture(() => runReady([f.id, "--sella", sella, "--studio", f.wt.usable ? f.wt.studio : f.studioAbs]));
@@ -920,36 +1034,53 @@ function performReady(f: Facts, d: Derived): StepResult {
   return cap.exit === 0 ? { ok: true, lines: cap.out.map((l) => `ready: ${one(l)}`) } : heldResult(text[0] ?? `ready exited ${cap.exit}`, ...text.slice(1, 6).map((l) => `ready: ${l}`));
 }
 
-function performDone(f: Facts): StepResult {
+function performDone(f: Facts, d: Derived): StepResult {
   const { repo, id } = f;
   const chore = `chore/done-${id}`;
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
-  const dirty = trackedDirty(repo);
-  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
+  // the record, tracked `docs/` changes and verify's certificates may ride along; any other tracked change refuses
+  const only = `${f.studioRel}/${recordRel(id)}`;
+  const rides = (path: string): boolean => path === only || path.startsWith("docs/");
+  const dirty = dirtyHold(repo, rides);
+  if (dirty !== undefined) return dirty;
+  if (d.act === "verify") return heldResult(`refusing: no automated certificate is recorded; run: ${d.command ?? ""}`);
+  if (f.handoff !== undefined) {
+    const changes = trackedChanges(repo);
+    if (typeof changes === "string" || !changes.some((c) => c.path === HANDOFF)) return heldResult(`refusing: the checkpoint rides the done commit, and ${HANDOFF} has no tracked change; edit it, then re-run`);
+  }
   const why = mergeRefusal(repo, id);
   if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);
   const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", chore]);
   if (switched.status !== 0) return heldResult(`could not create ${chore}: ${one(switched.stderr)}`);
-  const back = (): void => {
-    git(repo, ["switch", "-q", "master"]);
-    git(repo, ["update-ref", "-d", `refs/heads/${chore}`, base]);
+  /** Every failure after the branch was cut ends the same way: see `rollback`; the branch is dropped unless it is kept for inspection. */
+  const unwind = (reason: string, staged: string[] = [], drop = true): StepResult => {
+    const stuck = rollback(repo, chore, base, staged, drop);
+    return heldResult(stuck === undefined ? reason : `${reason}; ${stuck}`);
   };
   const cap = capture(() => runDone([id, "--sella", "producer", "--studio", f.studioAbs], { mergeRefusal }));
   if (cap.exit !== 0) {
-    back();
     const text = [...cap.err, ...cap.out].map(one).filter(Boolean);
-    return heldResult(text[0] ?? `done exited ${cap.exit}`, ...text.slice(1, 6).map((l) => `done: ${l}`));
+    const r = unwind(text[0] ?? `done exited ${cap.exit}`);
+    return { ok: false, lines: [...r.lines, ...text.slice(1, 6).map((l) => `done: ${l}`)] };
   }
-  const only = `${f.studioRel}/${recordRel(id)}`;
-  const changed = trackedDirty(repo).map((l) => l.slice(3));
-  if (changed.length !== 1 || changed[0] !== only) return heldResult(`done changed tracked paths other than ${only}; nothing committed, ${chore} left for inspection`, ...changed.map((p) => `changed: ${p}`));
-  const staged = git(repo, ["add", "--", only]);
+  const changes = trackedChanges(repo);
+  const changed = typeof changes === "string" ? [] : changes.flatMap(touched);
+  if (typeof changes === "string" || changed.some((p) => !rides(p))) {
+    const r = unwind(`done changed tracked paths other than ${only} and docs/; nothing committed, ${chore} left for inspection`, [], false);
+    return { ok: false, lines: [...r.lines, ...changed.map((p) => `changed: ${p}`)] };
+  }
+  // verify's certificates are new files: exactly the evidence each automated gate recorded, validated again on the record to be committed
+  const cert = certificate(repo, f.studioRel, f.studioAbs, f.excludes, f.manifest, f.trunkRecord, id);
+  if (!cert.ok) return unwind(`refusing: the certificate is not committable: ${cert.why}`);
+  const stage = [...new Set([only, ...changed, ...cert.stage])];
+  const staged = git(repo, ["add", "--", ...stage]);
   const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `chore(studio): mark ${id} done`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>"]) : staged;
-  if (committed.status !== 0) return heldResult(`could not commit the done record: ${one(committed.stderr)}; ${chore} left for inspection`);
+  if (committed.status !== 0) return unwind(`could not commit the done record: ${one(committed.stderr)}`, stage);
   const sha = git(repo, ["rev-parse", "--short", "HEAD"]).stdout.trim();
-  git(repo, ["switch", "-q", "master"]);
+  const back = switchBack(repo);
+  if (back !== undefined) return heldResult(`the done record is committed on ${chore} (${sha}), but the main checkout could not switch back to master (${back}); run: git -C ${repo} switch master`);
   return { ok: true, lines: [`branch: ${chore}`, `commit: ${sha}`, ...cap.out.map((l) => `done: ${one(l)}`)] };
 }
 
@@ -1030,7 +1161,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       return say(0, [`next: ${id} ${t.step} running`, `health: tracked pid ${pid} (writer track, an unverified attestation)`, `output: ${t.output}`]);
     }
 
-    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step);
+    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (d.step !== "spec" || d.act !== undefined);
     // a `pr` that must be created needs --title and --body-file; without them it only names the command
     const needsText = (d: Derived): boolean => d.step === "pr" && d.pr === undefined && (a.title === undefined || a.bodyFile === undefined);
 
@@ -1086,7 +1217,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       if (a.expect !== undefined && a.expect !== d2.step) return refusal(d2);
       if (!performable(d2) || needsText(d2)) return say(d2.status === "held" ? 1 : 0, render(id, d2, f, d2.status));
       const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
-      const ctx: Ctx = { repo, id, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
+      const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
       let result: StepResult;
       switch (d2.step) {
         case "branch":
@@ -1094,6 +1225,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           break;
         case "ready":
           result = performReady(f, d2);
+          break;
+        case "spec":
+          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : performSpecCommit(f);
           break;
         case "pr":
           result = openPr(ctx, d2.pr, a.title, a.bodyFile);
@@ -1105,7 +1239,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = cleanup(ctx);
           break;
         default:
-          result = performDone(f);
+          result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : performDone(f, d2);
       }
       log(`${d2.step} ${result.ok ? "performed" : "held"}`);
       f = gather(repo, opened.root, id);

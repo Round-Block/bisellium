@@ -1,0 +1,53 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-141-b2 packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-05T17:25:03.710Z
+# sella: builder.W-141
+# tree: tree:89cafc93959fb0150b05f56efc9aed7c2311310d
+
+TAP version 13
+# Subtest: W-141-b2 behaviour 2: done composes with verify: the rung names verify first, then commits the record and verify's certificates
+not ok 1 - W-141-b2 behaviour 2: done composes with verify: the rung names verify first, then commits the record and verify's certificates
+  ---
+  duration_ms: 2519.062662
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:92:3430'
+  failureType: 'testCodeFailure'
+  error: |-
+    the command is verify
+    --- exit 0
+    --- stdout
+    next: W-900 done named
+    actor: producer
+    why: W-900 is MERGED, fetched and cleaned up; the trunk record is not done
+    command: bisellium next W-900 --perform --expect done
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'bisellium next W-900 --perform --expect done'
+    - 'bisellium verify W-900 --studio studio --repo .'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'bisellium verify W-900 --studio studio --repo .'
+  actual: 'bisellium next W-900 --perform --expect done'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:2476:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2534.972262

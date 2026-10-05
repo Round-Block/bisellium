@@ -1,0 +1,54 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-141-b4 packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-05T17:33:35.832Z
+# sella: builder.W-141
+# tree: tree:f1e1b501954c253d674ce5338f5c88a6f9a6beb6
+
+TAP version 13
+# Subtest: W-141-b4 behaviour 4: a spec signed in the main checkout is committed onto spec/<id>, and nothing else moves
+not ok 1 - W-141-b4 behaviour 4: a spec signed in the main checkout is committed onto spec/<id>, and nothing else moves
+  ---
+  duration_ms: 956.267418
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:92:7830'
+  failureType: 'testCodeFailure'
+  error: |-
+    a spec signed in the working tree is named
+    --- exit 1
+    --- stdout
+    next: W-900 spec held
+    actor: architect
+    why: dispatch budget undeclared
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 spec held'
+    - 'next: W-900 spec named'
+                        ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 spec named'
+  actual: 'next: W-900 spec held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:737:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/next.test.ts:2567:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 971.05563

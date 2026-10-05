@@ -1,0 +1,16 @@
+# opus: W-141
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-05T19:48:53.006Z
+# tree: tree:e0d5495b033eb1e784a235202a90c5bcfb7ab1a5
+# brief: briefs/W-141.md blob:3d2675a03475c077d00b4014951d3ef78ccc9009
+
+## Findings
+1. advisory — packages/cli/src/next.test.ts:2869 The implementation closes the five round-2 classes, but aggregated tests stop before independently exercising several cases against pre-fix code. Searching all five rows and `rows-red.log` found no separate red for absent/peeled-tag/tree targets, copy-into-Patron, kind drift, malformed/unreadable evidence and listing failure paths, or spec rollback after failed unstage. — check: packages/cli/src/next.test.ts (split these cases into independent tests and record their pre-fix failures)
+
+## Verdict
+All behavioral blockers are closed, the round-1 fixes remain closed, and the receipt and gates are valid; only regression-row completeness remains advisory.
+VERDICT: PASS
