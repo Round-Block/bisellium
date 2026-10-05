@@ -1,0 +1,21 @@
+# opus: W-141
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-05T18:25:35.724Z
+# tree: tree:386a3c74b4b8fadf8a0ccc21817ee7cce9dce80c
+# brief: briefs/W-141.md blob:3d2675a03475c077d00b4014951d3ef78ccc9009
+
+## Findings
+1. blocking — packages/cli/src/integrate.ts:216 Patron-path inspection occurs only after fetching: with `master` unchecked out, `master:master` succeeds and returns before inspection; with it checked out, `origin/master` moves first. These are both instances of the preflight-order class and can move refs despite the required no-mutation refusal; brief:160 — check: packages/cli/src/next.test.ts (W-141-b1 with master unchecked out, asserting every ref unchanged)
+2. blocking — packages/cli/src/next.ts:270 Certificate readiness and log collection at line 1009 enumerate `manifest.probationes`, not `effectiveProbationes`; for UI opera the implicit `served-e2e` gate is therefore omitted both when deciding to name verify and when committing its evidence log. These are the two instances found in the W-141 certificate paths; brief:174 — check: packages/cli/src/next.test.ts (W-141-b2 with a UI opus and implicit served-e2e)
+3. blocking — packages/cli/src/next.ts:274 A passed value merely starting with `tree:` is accepted without matching the merged trunk’s source hash, while lines 1010–1012 stage every filename-shaped untracked log rather than each gate’s exact recorded evidence. This certificate-provenance class permits stale certification and backfills unrelated matching logs; brief:184 — check: packages/cli/src/next.test.ts (W-141-b2 stale certificate and extra matching-log cases)
+4. blocking — packages/cli/src/next.ts:951 Checkout restoration is not transactional: the spec switch-back here and done switch-backs at lines 996 and 1016 ignore failure, while a failed done commit returns at line 1014 without restoring master. A failed spec commit can also carry its staged files back onto master, so these paths leave the main checkout half-moved or even report success off master; brief:210 — check: packages/cli/src/next.test.ts (W-141-b2/b4 injected commit and switch failures)
+5. blocking — packages/cli/src/integrate.ts:68 `trackedChanges` records only a rename/copy destination and discards its original path, so moving a tracked Patron file out of `.claude/` produces no Patron checkout command. This is the rename/copy instance of the dirty protected-path class; brief:166 — check: packages/cli/src/next.test.ts (W-141-b1 staged rename from `.claude/`)
+6. advisory — packages/cli/src/branch.test.ts:1233 W-141-b6 asserts unchanged tips and no pushed ref, but does not observe git invocations, so it does not prove the named “before any git command” invariant; the implementation itself places the refusal correctly. — check: packages/cli/src/branch.test.ts (git-shim call log asserted empty around `mergeOpusBranch`)
+
+## Verdict
+The supplied receipt, gates, and six red logs are valid, but protected-path preflight, certificate provenance, and checkout restoration still have blocking behavioral gaps.
+VERDICT: FAIL
