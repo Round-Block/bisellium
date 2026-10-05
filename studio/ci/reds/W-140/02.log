@@ -1,0 +1,48 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-140-b2 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T15:28:52.756Z
+# sella: builder.W-140
+# tree: tree:b7638a07e40b4c88459077b8c19888bb450e4e45
+
+TAP version 13
+# Subtest: W-140-b2 behaviour 2: admission's parser is the only behaviour counter in the tree, and the plain-node host loads it
+not ok 1 - W-140-b2 behaviour 2: admission's parser is the only behaviour counter in the tree, and the plain-node host loads it
+  ---
+  duration_ms: 12.553054
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-140/packages/cli/src/brief-admission.test.ts:16:11766'
+  failureType: 'testCodeFailure'
+  error: |-
+    b2: the one source holding the section heading
+    + actual - expected
+    
+      [
+        'packages/commands/src/brief-admission.ts',
+    +   'scripts/run-builder-host.mjs'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'packages/commands/src/brief-admission.ts'
+  actual:
+    0: 'packages/commands/src/brief-admission.ts'
+    1: 'scripts/run-builder-host.mjs'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-140/packages/cli/src/brief-admission.test.ts:452:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.230825
