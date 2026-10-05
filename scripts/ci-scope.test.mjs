@@ -84,9 +84,6 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
     ))
       assert.equal(step.if, FULL, `${job}: "${step.run}" carries the full-path guard`);
   }
-  const short = doc.jobs.gates.steps.filter((step) => step.if === SHORT);
-  assert.equal(short.length, 1, "gates has exactly one record-only step");
-  assert.equal(short[0].run, "npm run -s check -- studio --repo .", "and it is the studio check");
   assert.equal(
     doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
     0,
@@ -190,4 +187,18 @@ test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test
     assert.doesNotMatch(command, /\bcd\b|[()]/, `"${command}" has no cd and no parenthesis`);
   }
   assert.equal(new Set(record).size, record.length, "test:record has no duplicates");
+});
+
+test("W-139 behaviour 2: gates' record-only steps are the studio check then test:record, and web-e2e has none", () => {
+  const doc = workflow();
+  assert.deepEqual(
+    doc.jobs.gates.steps.filter((step) => step.if === SHORT).map((step) => step.run),
+    ["npm run -s check -- studio --repo .", "npm run -s test:record"],
+    "gates' record-only steps, in order",
+  );
+  assert.equal(
+    doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
+    0,
+    "web-e2e has no record-only step",
+  );
 });
