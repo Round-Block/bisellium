@@ -2546,3 +2546,42 @@ test("W-141-b3 behaviour 3: the checkpoint rides the done commit", { timeout: 1_
   touchHandoff(r);
   expectStep(next(r, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "with a handoff change the perform commits");
 });
+
+// ---------------------------------------------------------------------------
+// W-141 behaviour 4: a spec signed in the main checkout is committed onto spec/<id>
+// ---------------------------------------------------------------------------
+/** The signed spec of a world, left uncommitted in `dir` (the way the architect leaves it). */
+function signSpecUncommitted(w: World, dir: string): void {
+  put(dir, "studio/briefs/W-900.md", briefText(w.behaviours));
+  verb(dir, ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, "spec.md"), "--studio", join(dir, "studio"), "--now", T.spec]);
+}
+test("W-141-b4 behaviour 4: a spec signed in the main checkout is committed onto spec/<id>, and nothing else moves", { timeout: 1_800_000 }, () => {
+  const w = world("w141-b4", "greenlight");
+  signSpecUncommitted(w, w.repo);
+  appendFileSync(join(w.repo, "README.md"), "an unrelated edit\n");
+  const brief = "studio/briefs/W-900.md";
+  const log = "studio/ci/W-900-spec-1.log";
+  assert.match(git(w.repo, ["status", "--porcelain", "-uall"]), /\?\? studio\/briefs\/W-900\.md/, "the brief is untracked");
+
+  const named = next(w, [OPUS]);
+  expectStep(named, "spec", "named", "a spec signed in the working tree is named");
+  assert.match(named.out, /why: spec signed in the working tree, not committed/, ran("the why", named));
+
+  const master = git(w.repo, ["rev-parse", "master"]);
+  const done = next(w, [OPUS, "--perform", "--expect", "spec"]);
+  assert.equal(done.status, 0, ran("perform exits 0", done));
+  expectStep(done, "spec", "performed", "the spec is committed");
+  assert.equal(git(w.repo, ["rev-parse", "master"]), master, "master is unmoved");
+  assert.equal(git(w.repo, ["rev-parse", `spec/${OPUS}^`]), master, "spec/<id> is master plus one commit");
+  assert.equal(git(w.repo, ["rev-list", "--count", `master..spec/${OPUS}`]), "1");
+  assert.deepEqual(git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `spec/${OPUS}`]).split("\n").sort(), [brief, log], "exactly the brief and the spec log");
+  assert.match(git(w.repo, ["log", "-1", "--format=%B", `spec/${OPUS}`]), /Co-Authored-By: architect \(bisellium next\)/, "the trailer names the spec log's sella");
+  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is master");
+  assert.equal(existsSync(join(w.repo, brief)), false, "the brief is gone from the working tree");
+  assert.equal(existsSync(join(w.repo, log)), false, "the log is gone from the working tree");
+  assert.match(readFileSync(join(w.repo, "README.md"), "utf8"), /an unrelated edit/, "the README edit is still there");
+  assert.match(git(w.repo, ["status", "--porcelain"]), /^ ?M README\.md$/m, "and still unstaged");
+  const landing = next(w, [OPUS]);
+  expectStep(landing, "spec", "named", "next names the landing of spec/<id>");
+  assert.match(landing.out, /why: spec signed on spec\/W-900, not on master/, ran("the landing why", landing));
+});
