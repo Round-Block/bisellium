@@ -14,9 +14,9 @@ lex, a decision, or a check rule and delete it here.
 
 ## The Patron's standing instructions
 
-- **Session hygiene.** One cascade per orchestrator context: after the
-  checkpoint merges, `/clear` (or end the session) and boot fresh from this
-  file. Never park a fat context across an idle gap. The Patron may run
+- **Session hygiene** (Patron, 2026-10-05). Chain cascades in one
+  orchestrator session; refresh (`/clear`, boot fresh from this file) only when
+  its context nears 500k. Never park a fat context across an idle gap. The Patron may run
   `~/projects/bisellium/scripts/cascade-loop.sh` to automate the fresh
   sessions; each session then ends by writing one status word (CONTINUE,
   NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
@@ -153,7 +153,7 @@ lex, a decision, or a check rule and delete it here.
 - Any rebase (including the ladder's `pr` step) needs a re-mint, so merge nothing else to master while an opus PR is open. Reds that already landed on master are dropped by a rebase and the replay then picks master's testless commit: re-record them at the rebased test commit. Playwright reds must run against a bundle built from the pre-change tree.
 - Review: Codex `gpt-5.6-sol` with `docs/CENSOR-PROMPT.md`; record with `bisellium verdict <id> --round <n> --sella qa-lead --outcome passed|failed --model gpt-5.6-sol --from <verdict.md>` then `bisellium review <id> --pass|--fail --evidence ci/<id>-review-<n>.log`. At most five full rounds, then fix and merge after green with a narrow Codex check of the final delta.
 - `next` runs from the main checkout only; `--body-file` must lie under the repo or `$TMPDIR`; `cleanup` may hold on "Device or resource busy" — rerun it. If `done` holds on missing tests/lint/types, run `bisellium verify <id>` on master and commit the certificates with the done record (on a `--no-track` branch, auto-merged PR).
-- Record-only PRs skip `npm test` in CI (W-139): run `node --import tsx packages/cli/src/check.test.ts` locally before pushing one. Two PRs racing: the faster one leaves the other BEHIND — `gh pr update-branch <n>`.
+- Record-only PRs run `test:record` (W-139: the 8 tests that read the officina); full runs trace reads and fail on drift. Two PRs racing: the faster one leaves the other BEHIND — `gh pr update-branch <n>`.
 - The `merge` step reads code-scanning alerts (agent token: Code scanning read, Workflows write). `gh run view --log` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. The main checkout cannot fast-forward over `.claude/agents/*` changes; the Patron runs `git -C ~/agents/bisellium reset --hard origin/master`.
 
 ## Model mapping (Patron, 2026-10-04)
@@ -162,6 +162,7 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Open with the Patron
 
+- Full GitHub CI on an unmerged opus tree: push it to `ci-probe/<id>`, open a draft PR, attach the `gates` job log, close the PR with `--delete-branch` (W-139 rounds 2–3).
 - W-077 follow-ons (Patron): per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
 - Receipt mint can fail with "no recorded red for behaviour 1" while the log exists; a plain retry passed (W-077).
 - D-036's kill condition (spec check flags a behaviour an earlier one already satisfies) has no opus yet; no tool waives a missing red, so a pre-empted red means a branch rebuild.
@@ -171,7 +172,7 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Queue
 
-**W-077 done (PR 228).** Order of record: `studio/acta/2026-10-05-ranking.md` (Patron ruling 2026-10-05: rank by type of work). Greenlit 2026-10-05: group 1 process gates W-139, W-123, W-127, W-126, W-120; group 2 security W-133, W-115. Next: W-139. Groups 3–6 (W-137, W-138, W-122, W-116, W-117, W-136, W-135, W-118) wait for the Patron's greenlight; W-136's UI and W-135's architecture need rulings at spec time; W-113 needs a UI ruling. Open questions in the ranking acta: W-123 narrowed to the `done` refusal?; W-138 depends on W-136; W-122 self-reported usage vs W-138's harness-log rule.
+**W-077 done (PR 228).** Order of record: `studio/acta/2026-10-05-ranking.md` (Patron ruling 2026-10-05: rank by type of work). Greenlit 2026-10-05: group 1 process gates W-139, W-123, W-127, W-126, W-120; group 2 security W-133, W-115. W-139 done (PR 234). Next: W-123. Groups 3–6 (W-137, W-138, W-122, W-116, W-117, W-136, W-135, W-118) wait for the Patron's greenlight; W-136's UI and W-135's architecture need rulings at spec time; W-113 needs a UI ruling. Open questions in the ranking acta: W-123 narrowed to the `done` refusal?; W-138 depends on W-136; W-122 self-reported usage vs W-138's harness-log rule.
 
 ## Research lane (on the side)
 
