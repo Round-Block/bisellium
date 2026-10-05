@@ -13,14 +13,20 @@
  * properties (`realpathSync.native` and friends), so a traced test behaves
  * like an untraced one.
  *
- * The log fails closed. The first process of a run (no inherited
- * BISELLIUM_RECORD_ROOT) is the root: it logs `#start\t<id>\troot` and, as its
- * last act, `#end\t<id>`; every other process logs `#start\t<id>` and `#end\t<id>`
- * when its exit handler runs (a child killed by a signal never does). The guard
- * rejects a log with no root, a root that never ended (a truncated tail) or a
- * final line without its newline. A write the process cannot make is loud, never
- * swallowed: it says so on stderr, logs `#fail\t<id>` if it can, writes no end
- * marker, and exits non-zero (70) unless it already failed.
+ * The log fails closed, by one invariant: record, then read. A trace row is
+ * written synchronously BEFORE the wrapped call runs; if that write fails the
+ * process creates a sibling `<log>.fail` marker (a different open, on a
+ * different path), says so on stderr and `process.abort()`s, so no untraced
+ * read can ever happen and a status swallowed by a parent cannot hide one. The
+ * guard fails on `<log>.fail`.
+ *
+ * The first process of a run (no inherited BISELLIUM_RECORD_ROOT) is the root:
+ * it logs `#start\t<id>\troot` and, last, `#end\t<id>`; every other process
+ * logs `#start\t<id>` and `#end\t<id>` when its exit handler runs (a child
+ * killed by a signal never does, which is safe: what it read was recorded
+ * first). The guard rejects a log with no root, a root that never ended (a
+ * truncated tail) or a final line without its newline. A failed start or end
+ * marker is loud too: `#fail\t<id>`, stderr, and exit 70.
  */
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -74,23 +80,30 @@ if (process.env.BISELLIUM_RECORD_READS) {
     if (!failed) emit(`#end\t${id}\n`);
     if (failed && !code) process.exitCode = 70;
   });
-  const note = (path) => {
+  const pathText = (path) => {
     try {
-      const text =
-        typeof path === "string"
-          ? path
-          : path instanceof URL
-            ? fileURLToPath(path)
-            : Buffer.isBuffer(path)
-              ? path.toString()
-              : null;
-      if (text === null) return;
-      const rel = relative(repo, resolve(text)).split("\\").join("/");
-      if ((rel !== "studio" && !recordOnly([rel])) || seen.has(rel)) return;
-      seen.add(rel);
-      emit(`${owner}\t${rel}\n`);
+      if (typeof path === "string") return path;
+      if (path instanceof URL) return fileURLToPath(path);
+      if (Buffer.isBuffer(path)) return path.toString();
+    } catch {} // not a path the original call can read either; it reports its own error
+    return null;
+  };
+  const note = (path) => {
+    const text = pathText(path);
+    if (text === null) return;
+    const rel = relative(repo, resolve(text)).split("\\").join("/");
+    if ((rel !== "studio" && !recordOnly([rel])) || seen.has(rel)) return;
+    seen.add(rel);
+    try {
+      append(log, `${owner}\t${rel}\n`);
     } catch (error) {
-      fail(error);
+      try {
+        append(`${log}.fail`, `${id}\t${rel}\n`);
+      } catch {}
+      try {
+        process.stderr.write(`record-reads: cannot record a read of ${rel}: ${error?.message ?? error}\n`);
+      } catch {}
+      process.abort(); // never reach the untraced read
     }
   };
   const wrap = (target, name) => {

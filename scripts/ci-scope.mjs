@@ -13,7 +13,7 @@
  * absent log is a failure, the opposite of the scope mode.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -78,6 +78,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href && process.arg
             .map((command) => command.trim())
             .filter(Boolean),
         );
+  if (existsSync(`${path}.fail`)) problems.push(`failed: ${path}.fail exists`);
   for (const problem of problems) console.log(problem);
   if (problems.length > 0) process.exit(1);
   console.log("record_reads=ok");
