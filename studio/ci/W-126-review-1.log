@@ -1,0 +1,17 @@
+# opus: W-126
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-05T13:20:07.196Z
+# tree: tree:66615fce0affd1963f16e69b5cf9372659eced9b
+# brief: briefs/W-126.md blob:e3c8cdfdd4b3ac2c15263bc82afd6a8c6101fae5
+
+## Findings
+1. blocking — packages/commands/src/verdict.ts:362 One instance: when the officina is itself the repository root, `where.rel` is empty and `repoSpec` becomes `/briefs/W-300.md`; that absolute-path citation is therefore accepted and wrongly keeps a blocker’s severity. I searched all `repoSpec` construction and comparison sites; this is the sole instance. brief:209 — check: packages/cli/src/verdict-citation.test.ts: add a git-root officina row proving `/briefs/W-300.md:<n>` is converted
+2. blocking — packages/commands/src/verdict.ts:363 Header-value injection class: a readable `record.spec` containing a newline can inject `# submitted_outcome:` through `briefHeader`, so `review --fail` refuses a correctly cited failed blocker; a newline can also terminate the header early and violate body exactness. The other instance is spec/read-error text entering conversion reasons at lines 107–117 and `convertedHeader` at line 369; I searched all three new header values, and only `submitted_outcome` is already protected by the outcome line-break check. brief:66 — check: packages/cli/src/verdict-citation.test.ts: add newline-bearing readable and missing spec paths, asserting header integrity, body exactness, and acceptance of `review --fail` for a valid blocker
+
+## Verdict
+The normal rows and required evidence are sound, but the citation path construction admits an absolute citation and unescaped spec-derived header values can overturn a valid blocker’s gate result.
+VERDICT: FAIL

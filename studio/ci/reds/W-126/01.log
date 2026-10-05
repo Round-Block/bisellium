@@ -1,0 +1,93 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.1 packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-05T12:39:39.833Z
+# sella: builder.W-126
+# tree: tree:78644f8d55cecc0c6ab9db343014e51898a80da4
+
+TAP version 13
+# Subtest: behaviour 1
+    # Subtest: a blocking finding that cites no brief line is recorded as advisory, with its reason
+    not ok 1 - a blocking finding that cites no brief line is recorded as advisory, with its reason
+      ---
+      duration_ms: 14.682832
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:172'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - 'briefs/W-300.md blob:34ef54ec0d69f539b5d30387682cb5dad52dba9d'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'briefs/W-300.md blob:34ef54ec0d69f539b5d30387682cb5dad52dba9d'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:135:12)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: a body with only advisory findings gets \# brief: and no \# converted:
+    not ok 2 - a body with only advisory findings gets \# brief: and no \# converted:
+      ---
+      duration_ms: 5.826016
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:1048'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - 'briefs/W-300.md blob:34ef54ec0d69f539b5d30387682cb5dad52dba9d'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'briefs/W-300.md blob:34ef54ec0d69f539b5d30387682cb5dad52dba9d'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:147:12)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: the same four-finding body in the spec phase gets neither line
+    ok 3 - the same four-finding body in the spec phase gets neither line
+      ---
+      duration_ms: 5.140381
+      type: 'test'
+      ...
+    1..3
+not ok 1 - behaviour 1
+  ---
+  duration_ms: 26.444238
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:144'
+  failureType: 'subtestsFailed'
+  error: '2 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 3
+# suites 1
+# pass 1
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 38.260328

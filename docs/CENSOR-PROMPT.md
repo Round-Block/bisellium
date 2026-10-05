@@ -26,10 +26,12 @@ Packet (this directory): <list: boot.md (the output of the order's boot: command
 
 Severity (charter §2): blocking only for wrong behaviour, a security gap, or missing or false required evidence (reds, receipt, gates). A correct fix whose regression row is incomplete is advisory. Only a blocking finding fails the round. When you find a defect, say whether it is one instance or a class; for a class, list every instance and what you searched.
 
+Citation (W-126): a blocking finding cites a non-blank line of the declared brief as `brief:<line>` (or `studio/briefs/<ID>.md:<line>`), the line that states the behaviour it breaks. The verdict writer records a blocking finding that cites no such line as advisory, and a failed round whose blockers were all converted as passed.
+
 Output: your final message is recorded verbatim as the verdict log. Keep it under 8000 bytes, with no transcript or process narration, in exactly this shape:
 
 ## Findings
-1. <blocking|advisory> — <file:line> <the defect, one or two sentences> — check: <rule id | test path | none: <the automated check that should exist>>
+1. <blocking|advisory> — <file:line> <the defect, one or two sentences; a blocking finding also cites brief:<line>> — check: <rule id | test path | none: <the automated check that should exist>>
 (or the exact line `No findings`)
 
 ## Verdict

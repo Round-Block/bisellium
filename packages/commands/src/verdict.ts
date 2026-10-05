@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
@@ -38,15 +39,22 @@ function gitRoot(dir: string): string | undefined {
   }
 }
 
-function treeAtCapture(studioRoot: string, sourceExcludes: string[]): string {
+/** The officina's path relative to the git root it sits in ("/"-joined), or undefined when it is in no repository. */
+function officinaInRepo(studioRoot: string): { repo: string; rel: string } | undefined {
   const repo = gitRoot(studioRoot);
-  if (repo === undefined) return "unknown";
+  if (repo === undefined) return undefined;
+  const rel = relative(repo, studioRoot);
+  if (isAbsolute(rel) || rel.split(sep)[0] === "..") return undefined;
+  return { repo, rel: rel.split(sep).join("/") };
+}
+
+function treeAtCapture(studioRoot: string, sourceExcludes: string[]): string {
+  const where = officinaInRepo(studioRoot);
+  if (where === undefined) return "unknown";
   try {
-    const studioRel = relative(repo, studioRoot);
-    if (isAbsolute(studioRel) || studioRel.split(sep)[0] === "..") return "unknown";
-    const exclusions = [studioRel.split(sep).join("/"), ".bisellium", ...sourceExcludes];
-    const hash = sourceTreeHash(repo, exclusions, "HEAD");
-    return `${isDirtyOutside(repo, exclusions) ? "dirty" : "tree"}:${hash}`;
+    const exclusions = [where.rel, ".bisellium", ...sourceExcludes];
+    const hash = sourceTreeHash(where.repo, exclusions, "HEAD");
+    return `${isDirtyOutside(where.repo, exclusions) ? "dirty" : "tree"}:${hash}`;
   } catch {
     return "unknown";
   }
@@ -64,6 +72,60 @@ function findingsProblem(body: string): string | undefined {
   if (unchecked !== -1)
     return `finding ${/^\d+/.exec(numbered[unchecked]!.text)![0]} names no check — end it with "check: <rule id | test path | none: <missing check>>"`;
   return undefined;
+}
+
+export interface Conversion {
+  /** The finding's number as written. */
+  finding: string;
+  reason: string;
+}
+
+/** A header value is one line: CR and LF in spec- or error-derived text are written as the two characters `\r` and `\n`. */
+const oneLine = (text: string): string => text.replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+
+/** The ways a citation can name the declared brief: a bare `brief`, or any path ending in `briefs/<name>.md`. */
+const CITATION = /(?<![\w./-])(brief|\/?(?:[\w.-]+\/)*briefs\/[\w.-]+\.md):([1-9]\d*)(?!\d)/g;
+
+/**
+ * W-126: a blocking finding keeps its severity only when it cites a line of the opus's declared brief; the rest are
+ * recorded as advisory. Grammar only — it never judges, promotes, adds or drops a finding, nor edits the body.
+ */
+export function reconcileFindings(
+  body: string,
+  outcome: string,
+  brief: { spec: string; repoSpec?: string; text: string } | { error: string },
+): { converted: Conversion[]; outcome: string; submittedOutcome?: string } {
+  const converted: Conversion[] = [];
+  const blocking = contentLines(body).lines.filter(
+    (line) => line.section === "Findings" && /^[1-9]\d*\. \S/.test(line.text) && /^[1-9]\d*\. \**blocking\b/i.test(line.text),
+  );
+  const text = "error" in brief ? "" : brief.text;
+  const lines = text.split(/\r?\n/);
+  if (text.endsWith("\n")) lines.pop();
+  for (const line of blocking) {
+    const finding = /^\d+/.exec(line.text)![0];
+    const citations = [...line.text.matchAll(CITATION)].map((m) => ({ path: m[1]!, n: Number(m[2]) }));
+    // The first reason that applies: no brief read, no citation, then the first citation's own defect.
+    let reason: string | undefined;
+    if ("error" in brief) reason = `the opus declares no readable brief: ${oneLine(brief.error)}`;
+    else {
+      const valid = (c: { path: string; n: number }): boolean =>
+        (c.path === "brief" || c.path === brief.spec || c.path === brief.repoSpec) && c.n <= lines.length && (lines[c.n - 1] ?? "").trim() !== "";
+      const first = citations[0];
+      if (first === undefined) reason = `cites no line of ${oneLine(brief.spec)}`;
+      else if (!citations.some(valid)) {
+        if (first.path !== "brief" && first.path !== brief.spec && first.path !== brief.repoSpec)
+          reason = `cites ${first.path}, not the declared brief ${oneLine(brief.spec)}`;
+        else if (first.n > lines.length) reason = `${oneLine(brief.spec)} has ${lines.length} lines, no line ${first.n}`;
+        else reason = `${oneLine(brief.spec)}:${first.n} is blank`;
+      }
+    }
+    if (reason !== undefined) converted.push({ finding, reason });
+  }
+  // A failure stands exactly when the censor cites a brief line for a blocker: reconcile only when every submitted blocker converted.
+  if (blocking.length > 0 && converted.length === blocking.length && /^(?:verdict:\s*)?fail(?:ed)?\b/i.test(outcome.trim()))
+    return { converted, outcome: "passed", submittedOutcome: outcome };
+  return { converted, outcome };
 }
 
 function hasHeaderBreak(value: string): boolean {
@@ -289,6 +351,27 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     inputHeader = inspected.input.relative;
   }
 
+  let briefHeader: string | undefined;
+  let convertedHeader: string | undefined;
+  let conversions: Conversion[] = [];
+  let recorded = outcome;
+  let submitted: string | undefined;
+  if (!isUi && phase === "build") {
+    const read = typeof record.spec === "string" ? readContainedRegularFile(root, record.spec, "briefs") : { error: "no spec" };
+    let brief: Parameters<typeof reconcileFindings>[2] = { error: "no spec" };
+    if ("error" in read) brief = { error: read.error };
+    else if (typeof record.spec === "string") {
+      const where = officinaInRepo(root);
+      brief = { spec: record.spec, ...(where === undefined ? {} : { repoSpec: where.rel === "" ? record.spec : `${where.rel}/${record.spec}` }), text: read.bytes.toString("utf8") };
+      briefHeader = `${oneLine(record.spec)} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
+    }
+    const reconciled = reconcileFindings(transcript.toString("utf8"), outcome, brief);
+    conversions = reconciled.converted;
+    recorded = reconciled.outcome;
+    submitted = reconciled.submittedOutcome;
+    if (conversions.length > 0) convertedHeader = conversions.map((c) => `${c.finding} (${c.reason})`).join("; ");
+  }
+
   const filenamePhase = phase === "build" ? "review" : "spec";
   const target = join(root, "ci", `${opusId}-${filenamePhase}-${round}.log`);
   if (existsSync(target)) {
@@ -302,9 +385,12 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     `# round: ${round}`,
     `# sella: ${sella}`,
     ...(model === undefined ? [] : [`# model: ${model}`]),
-    `# outcome: ${outcome}`,
+    `# outcome: ${recorded}`,
+    ...(submitted === undefined ? [] : [`# submitted_outcome: ${submitted}`]),
     `# at: ${now.toISOString()}`,
     `# tree: ${treeAtCapture(root, manifest.source_excludes ?? [])}`,
+    ...(briefHeader === undefined ? [] : [`# brief: ${briefHeader}`]),
+    ...(convertedHeader === undefined ? [] : [`# converted: ${convertedHeader}`]),
     ...(promptHeader === undefined ? [] : [`# dispatch_prompt: ${promptHeader}`]),
     ...(inputHeader === undefined ? [] : [`# ui_input: ${inputHeader}`]),
     ...(uiDigest === undefined ? [] : [`# design_digest: ${uiDigest}`]),
@@ -321,5 +407,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
 
   console.log(`${opusId}: ${phase} verdict round ${round} -> ${relative(root, target).split(sep).join("/")}`);
+  for (const c of conversions) console.log(`${opusId}: finding ${c.finding} recorded as advisory: ${c.reason}`);
+  if (submitted !== undefined) console.log(`${opusId}: outcome "${submitted}" recorded as passed: no blocking finding cites a line of the brief`);
   return { exitCode: 0 };
 }

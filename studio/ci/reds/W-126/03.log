@@ -1,0 +1,137 @@
+# behaviour: 3
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.3 packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-05T12:42:13.413Z
+# sella: builder.W-126
+# tree: tree:815ccef62c8e6a0713533fd2750b13d680981c02
+
+TAP version 13
+# Subtest: behaviour 3
+    # Subtest: failed with every blocking finding converted is recorded as passed
+    not ok 1 - failed with every blocking finding converted is recorded as passed
+      ---
+      duration_ms: 17.360037
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:4232'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        'failed' !== 'passed'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'passed'
+      actual: 'failed'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:218:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: FAIL with every blocking finding converted is recorded as passed
+    not ok 2 - FAIL with every blocking finding converted is recorded as passed
+      ---
+      duration_ms: 6.996047
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:4232'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        'FAIL' !== 'passed'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'passed'
+      actual: 'FAIL'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:218:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: VERDICT: FAIL — x with every blocking finding converted is recorded as passed
+    not ok 3 - VERDICT: FAIL — x with every blocking finding converted is recorded as passed
+      ---
+      duration_ms: 6.951499
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:4232'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + 'VERDICT: FAIL — x'
+        - 'passed'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 'passed'
+      actual: 'VERDICT: FAIL — x'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:218:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: failed with one uncited and one valid blocker stays failed
+    ok 4 - failed with one uncited and one valid blocker stays failed
+      ---
+      duration_ms: 6.78422
+      type: 'test'
+      ...
+    # Subtest: failed with only advisory findings stays failed
+    ok 5 - failed with only advisory findings stays failed
+      ---
+      duration_ms: 6.861347
+      type: 'test'
+      ...
+    # Subtest: passed with a valid blocker stays passed
+    ok 6 - passed with a valid blocker stays passed
+      ---
+      duration_ms: 8.058269
+      type: 'test'
+      ...
+    # Subtest: a spec-phase failed outcome with an uncited blocker is untouched
+    ok 7 - a spec-phase failed outcome with an uncited blocker is untouched
+      ---
+      duration_ms: 5.064512
+      type: 'test'
+      ...
+    1..7
+not ok 1 - behaviour 3
+  ---
+  duration_ms: 60.74272
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:3948'
+  failureType: 'subtestsFailed'
+  error: '3 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 7
+# suites 1
+# pass 4
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 70.465851

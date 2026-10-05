@@ -118,6 +118,19 @@ of the exact title plus raw current brief. A UI build verdict instead requires
 references reject symlinks, non-regular files, traversal and stale design
 bytes. Non-UI verdict behavior is unchanged.
 
+For a build-phase, non-`ui` verdict (W-126) the writer reconciles each
+`blocking` finding with the opus's declared brief. A blocking finding stays
+blocking only when it cites a non-blank line of that brief, as `brief:<n>`,
+`<spec>:<n>` or `<officina path from the git root>/<spec>:<n>`; any other
+blocking finding is recorded as advisory, with its reason, in
+`# converted: <finding> (<reason>); …`. A failed `--outcome` (`fail`/`failed`,
+optionally after `VERDICT:`) whose every submitted blocker was converted is
+recorded as `# outcome: passed`, with the raw text in `# submitted_outcome:`;
+`# brief: <spec> blob:<git blob id>` pins the brief bytes the citations were
+checked against. The body is never edited, a passed outcome is never turned
+into a failure, and each conversion is also printed. `review --fail` refuses a
+log carrying `# submitted_outcome:` (exit 2, nothing written).
+
 The command writes evidence only: it does not update `probationes`, state,
 events, or timelines. A build orchestrator can follow it with
 `review --evidence <path>`; spec verdicts are citable evidence for `retro`, not a second

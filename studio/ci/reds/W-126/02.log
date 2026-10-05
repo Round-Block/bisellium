@@ -1,0 +1,245 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.2 packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-05T12:41:28.174Z
+# sella: builder.W-126
+# tree: tree:f7a70a9f68e37ec28b8160f8ff061ab1ba722c2f
+
+TAP version 13
+# Subtest: behaviour 2
+    # Subtest: a brief that is not the declared one is converted
+    not ok 1 - a brief that is not the declared one is converted
+      ---
+      duration_ms: 17.245396
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2394'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - '1 (cites briefs/W-301.md, not the declared brief briefs/W-300.md)'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '1 (cites briefs/W-301.md, not the declared brief briefs/W-300.md)'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:172:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: an absolute path is converted
+    not ok 2 - an absolute path is converted
+      ---
+      duration_ms: 9.490828
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2394'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - '1 (cites /home/x/studio/briefs/W-300.md, not the declared brief briefs/W-300.md)'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '1 (cites /home/x/studio/briefs/W-300.md, not the declared brief briefs/W-300.md)'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:172:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: a line past the end is converted
+    not ok 3 - a line past the end is converted
+      ---
+      duration_ms: 7.170114
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2394'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - '1 (briefs/W-300.md has 10 lines, no line 11)'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '1 (briefs/W-300.md has 10 lines, no line 11)'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:172:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a blank line is converted
+    not ok 4 - a blank line is converted
+      ---
+      duration_ms: 7.197077
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2394'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - '1 (briefs/W-300.md:4 is blank)'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '1 (briefs/W-300.md:4 is blank)'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:172:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: the first citation's reason when a later one is also bad is converted
+    not ok 5 - the first citation's reason when a later one is also bad is converted
+      ---
+      duration_ms: 6.664445
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2394'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - '1 (briefs/W-300.md has 10 lines, no line 11)'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '1 (briefs/W-300.md has 10 lines, no line 11)'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:172:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: no spec: the finding is converted and no \# brief: is written
+    not ok 6 - no spec: the finding is converted and no \# brief: is written
+      ---
+      duration_ms: 4.981272
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2593'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        + actual - expected
+        
+        + undefined
+        - '1 (the opus declares no readable brief: no spec)'
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: '1 (the opus declares no readable brief: no spec)'
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:178:12)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a spec naming a missing file: the finding is converted and no \# brief: is written
+    not ok 7 - a spec naming a missing file: the finding is converted and no \# brief: is written
+      ---
+      duration_ms: 5.094475
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:2933'
+      failureType: 'testCodeFailure'
+      error: |-
+        The input did not match the regular expression /^1 \(the opus declares no readable brief: \S/. Input:
+        
+        ''
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+      actual: ''
+      operator: 'match'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:185:12)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: the last line keeps the finding blocking
+    ok 8 - the last line keeps the finding blocking
+      ---
+      duration_ms: 6.644697
+      type: 'test'
+      ...
+    # Subtest: the first line keeps the finding blocking
+    ok 9 - the first line keeps the finding blocking
+      ---
+      duration_ms: 6.628813
+      type: 'test'
+      ...
+    # Subtest: a bad citation then a good one keeps the finding blocking
+    ok 10 - a bad citation then a good one keeps the finding blocking
+      ---
+      duration_ms: 7.138471
+      type: 'test'
+      ...
+    # Subtest: the officina's repo-relative path keeps the finding blocking
+    ok 11 - the officina's repo-relative path keeps the finding blocking
+      ---
+      duration_ms: 28.504467
+      type: 'test'
+      ...
+    1..11
+not ok 1 - behaviour 2
+  ---
+  duration_ms: 108.027041
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:1786'
+  failureType: 'subtestsFailed'
+  error: '7 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 11
+# suites 1
+# pass 4
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 122.292514
