@@ -28,6 +28,9 @@ after(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 });
 
+/** `limit` standing for a manifest with no `brief_behaviour_limit` key (undefined would take the default). */
+const ABSENT = Symbol("absent");
+
 /** A copy of the sample officina with `brief_behaviour_limit` set (or absent). */
 function studio(limit: unknown = 6): string {
   const dir = mkdtempSync(join(tmpdir(), "w127-"));
@@ -35,7 +38,7 @@ function studio(limit: unknown = 6): string {
   cpSync(SAMPLE, dir, { recursive: true });
   const path = join(dir, "bisellium.yml");
   const doc = parseDocument(readFileSync(path, "utf8"));
-  if (limit !== undefined) doc.setIn(["brief_behaviour_limit"], limit);
+  if (limit !== ABSENT) doc.setIn(["brief_behaviour_limit"], limit);
   writeFileSync(path, doc.toString({ lineWidth: 0 }));
   return dir;
 }
@@ -174,7 +177,7 @@ describe("behaviour 1", () => {
     accepted(ready(brief()), "admitted");
   });
   test("control: the no-family brief is accepted when the officina declares no limit", () => {
-    accepted(ready(brief({ families: [] }), undefined), "no key");
+    accepted(ready(brief({ families: [] }), ABSENT), "no key");
   });
 });
 
@@ -313,7 +316,7 @@ describe("behaviour 5", () => {
     });
   }
   test("no key means no finding", () => {
-    assert.equal(admission("building", undefined).admission.length, 0);
+    assert.equal(admission("building", ABSENT).admission.length, 0);
   });
   test("a limit of 0 is a manifest.shape block and no brief.admission", () => {
     const { admission: found, shape } = admission("building", 0);

@@ -22,6 +22,7 @@ import { isSeq } from "yaml";
 import { readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
+import { readBriefAdmission } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
@@ -296,6 +297,15 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     builder_runtime: ISOLATED_BUILDER_RUNTIME,
   };
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
+
+  // W-127: brief admission, only where the officina declares a limit.
+  if (manifest.brief_behaviour_limit !== undefined) {
+    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), manifest.brief_behaviour_limit);
+    if (admission.length > 0) {
+      console.error(admission.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
+      return { exitCode: 1 };
+    }
+  }
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.set("builder_runtime", ISOLATED_BUILDER_RUNTIME);
@@ -1026,6 +1036,22 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
 
   console.log(`${opusId}: state=halted by=${decisionId}`);
   return { exitCode: 0 };
+}
+
+/** W-127: every problem that keeps this brief from admission under `limit`
+ *  (`brief_behaviour_limit`), in order; empty when it is admitted. The one
+ *  predicate `ready` and `check` share. */
+export function briefAdmissionProblems(
+  root: string,
+  manifest: Pick<Manifest, "patron">,
+  opusId: string,
+  briefText: string,
+  limit: number,
+): string[] {
+  void root;
+  void manifest;
+  void opusId;
+  return readBriefAdmission(briefText, limit).problems;
 }
 
 /**

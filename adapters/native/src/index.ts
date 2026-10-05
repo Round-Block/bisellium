@@ -52,6 +52,9 @@ export interface Manifest {
   studio: string;
   patron?: string;
   timezone?: string;
+  /** W-127: the most numbered behaviours a brief may carry (`ready` and `check` enforce it);
+   *  absent means no admission rule. */
+  brief_behaviour_limit?: number;
   /** `autonomy` (L0–L3, dossier §10) defaults to "L1" when absent; an
    *  invalid value is `check`'s job to block (collegium.autonomy), not
    *  this reader's — it's passed through as-is. */
