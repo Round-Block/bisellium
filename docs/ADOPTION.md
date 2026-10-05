@@ -753,7 +753,8 @@ names the opus. `ready` refuses a brief
 that fails (`<id>: brief.admission: <spec> <problem>`, exit 1, nothing
 written), and `check` blocks `brief.admission` on an active opus
 (`building`, `verifying`, `review`) whose brief fails, through one shared
-predicate. Done briefs are never re-read, so history needs no migration.
+predicate. Fenced blocks and HTML comments are ignored, and `## Behaviours to test`
+appears once. Done briefs are never re-read, so history needs no migration.
 
 ## Sleeps in tests
 

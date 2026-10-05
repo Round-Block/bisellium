@@ -19,7 +19,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq } from "yaml";
-import { readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
 import { readBriefAdmission } from "./brief-admission.js";
@@ -1053,16 +1053,24 @@ export function briefAdmissionProblems(
   briefText: string,
   limit: number,
 ): string[] {
-  const { problems, exception, exceptionAt } = readBriefAdmission(briefText, limit);
-  if (exception === undefined) return problems;
   // The Patron ruled (2026-10-05) that the design collegium's magister grants exceptions.
-  const magister = manifest.collegia.find((c) => c.id === "design")?.magister;
-  const p = magister
-    ? patronDecisionProblem(root, manifest, exception, { by: magister, mustName: opusId })
-    : "no design collegium declares a magister";
-  if (p !== undefined) problems.splice(exceptionAt ?? 0, 0, `behaviour limit exception: ${p}`);
+  // `collegia` is the caller's to validate, but a malformed one yields a problem, never a throw.
+  const rows: unknown[] = Array.isArray(manifest.collegia) ? manifest.collegia : [];
+  const design = rows.find((c) => typeof c === "object" && c !== null && (c as { id?: unknown }).id === "design") as
+    | { magister?: unknown }
+    | undefined;
+  const magister = typeof design?.magister === "string" && design.magister.length > 0 ? design.magister : undefined;
+  const { problems } = readBriefAdmission(briefText, limit, (decisionId) => {
+    const p = magister
+      ? patronDecisionProblem(root, manifest, decisionId, { by: magister, mustName: opusId })
+      : "no design collegium declares a magister";
+    return p === undefined ? undefined : `behaviour limit exception: ${p}`;
+  });
   return problems;
 }
+
+const namesToken = (text: string, token: string): boolean =>
+  new RegExp(`(?<![A-Za-z0-9_-])${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9_-])`).test(text);
 
 /**
  * Whether `decisionId` names an honourable Patron decision: a non-empty
@@ -1085,9 +1093,11 @@ export function patronDecisionProblem(
   if (typeof decisionPath !== "string" || !existsSync(decisionPath)) return `decision "${decisionId}" not found`;
   const contained = readContainedRegularFile(root, `decisions/${decisionId}.md`, "decisions");
   if ("error" in contained) return `decision "${decisionId}" is unsafe: ${contained.error}`;
+  // One read: the contained bytes are the only thing parsed, so the path is never reopened after the check.
+  const text = contained.bytes.toString("utf8");
   let data: Record<string, unknown>;
   try {
-    data = readFront<Record<string, unknown>>(decisionPath).data;
+    data = parseFrontMatter<Record<string, unknown>>(text, decisionPath).data;
   } catch {
     return `decision "${decisionId}" could not be read`;
   }
@@ -1101,7 +1111,8 @@ export function patronDecisionProblem(
     if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
   }
   // `opts.mustName`: an exception must name the opus it lifts the limit for (the one contained read above).
-  if (opts?.mustName !== undefined && !contained.bytes.toString("utf8").includes(opts.mustName))
+  // as a whole token: W-12 is not named by a decision that only names W-127.
+  if (opts?.mustName !== undefined && !namesToken(text, opts.mustName))
     return `decision "${decisionId}" does not name ${opts.mustName}`;
   return undefined;
 }
