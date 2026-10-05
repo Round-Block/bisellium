@@ -235,11 +235,7 @@ test("W-139 behaviour 3: the preload records reads of the record-only set, nothi
     const lines = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean).sort() : [];
     assert.deepEqual(
       lines,
-      [
-        `${owner}\tdocs/SESSION-HANDOFF.md`,
-        `${owner}\tstudio/w139-child`,
-        `${owner}\tstudio/w139-probe-absent`,
-      ],
+      [`${owner}\tdocs/SESSION-HANDOFF.md`, `${owner}\tstudio/w139-child`, `${owner}\tstudio/w139-probe-absent`],
       "exactly the three in-set reads, each owned by the probe",
     );
     assert.equal(printed.stdout.trim(), "function", "realpathSync.native survives the wrappers");
@@ -248,5 +244,40 @@ test("W-139 behaviour 3: the preload records reads of the record-only set, nothi
     assert.equal(existsSync(log), false, "without BISELLIUM_RECORD_READS the preload writes no log");
   } finally {
     rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("W-139 behaviour 4: checkReads names unattributed, unlisted and unread, and the CLI fails closed", async () => {
+  const mod = await import("./ci-scope.mjs").catch(() => ({}));
+  assert.equal(typeof mod.checkReads, "function", "scripts/ci-scope.mjs exports checkReads");
+  const commands = ["node a.test.mjs .", "node --import tsx b/c.test.ts"];
+  const line = (owner, rel) => `${owner}\t${rel}\n`;
+  const exact = line("a.test.mjs", "studio/x") + line("b/c.test.ts", "docs/SESSION-HANDOFF.md");
+  assert.deepEqual(mod.checkReads(exact, commands), [], "an exact log has no problems");
+  assert.deepEqual(mod.checkReads(exact + line("?", "studio/y"), commands), ["unattributed: studio/y"]);
+  assert.deepEqual(mod.checkReads(exact + line("d.test.mjs", "studio/z") + line("d.test.mjs", "studio/w"), commands), [
+    "unlisted: d.test.mjs (read studio/z)",
+  ]);
+  assert.deepEqual(mod.checkReads(line("a.test.mjs", "studio/x"), commands), ["unread: node --import tsx b/c.test.ts"]);
+
+  const record = andSplit(pkgScripts()["test:record"] ?? "");
+  const owners = record.map((command) => command.split(/\s+/).find((token) => /\.test\.[cm]?[jt]s$/.test(token)));
+  const dir = mkdtempSync(join(tmpdir(), "w139-check-"));
+  try {
+    const log = join(dir, "reads.log");
+    const run = (path) => scope(dir, "--check-reads", path);
+    const absent = run(log);
+    assert.equal(absent.stdout, `missing: ${log}\n`, "an absent log is named");
+    assert.equal(absent.status, 1, "and fails closed");
+    writeFileSync(log, owners.map((owner) => line(owner, "studio/x")).join(""));
+    const ok = run(log);
+    assert.equal(ok.stdout, "record_reads=ok\n");
+    assert.equal(ok.status, 0);
+    writeFileSync(log, owners.map((owner) => line(owner, "studio/x")).join("") + line("?", "studio/y"));
+    const bad = run(log);
+    assert.equal(bad.stdout, "unattributed: studio/y\n");
+    assert.equal(bad.status, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
