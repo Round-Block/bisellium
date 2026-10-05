@@ -313,6 +313,8 @@ interface WorldOpts {
   sec?: boolean;
   /** W-123: the manifest declares integration.pr.required: true (the guard in `done` applies). */
   prRequired?: boolean;
+  /** W-141: the base commit tracks a Patron path (`.claude/agents/censor.md`) and one whose name needs quoting. */
+  patron?: boolean;
 }
 
 const MANIFEST = [
@@ -514,6 +516,10 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   put(w.repo, "README.md", "fixture\n");
   put(w.repo, "source.txt", "candidate source\n");
   put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Where things stand\n\n- (nothing recorded)\n");
+  if (o.patron) {
+    put(w.repo, ".claude/agents/censor.md", "censor v1\n");
+    put(w.repo, ".claude/my notes.md", "notes v1\n");
+  }
   put(w.studio, "bisellium.yml", o.prRequired ? `${MANIFEST}integration:\n  pr:\n    required: true\n` : MANIFEST);
   put(w.studio, "notes.md", "bookkeeping line\n");
   put(w.studio, `opera/${OPUS}.md`, recordText({ state: upTo === "backlog" ? "backlog" : "greenlit", probationes: {} }));
@@ -2382,4 +2388,72 @@ test("W-123 round-1 fix 2a: an unreadable local branch ref is an error, never an
 test("W-123 round-1 fix 2b: an all-zero headRefOid is refused outright", { timeout: 1_800_000 }, () => {
   const w = mergedWorld("w123-r1-zero", (x) => mergedList(x, { oid: "0".repeat(40) }));
   expectRefused(w, () => doneFrom(w), { startsWith: "headRefOid is not a 40-hex commit id" }, "an all-zero headRefOid", w.studio);
+});
+
+// ---------------------------------------------------------------------------
+// W-141 behaviour 1: a Patron path stops `next` before the main checkout moves
+// ---------------------------------------------------------------------------
+const CENSOR = ".claude/agents/censor.md";
+/** The four things a refusal must leave byte-identical: HEAD and master, the index, the status and the Patron file. */
+const frozen = (w: World): string =>
+  [git(w.repo, ["rev-parse", "HEAD", "master"]), git(w.repo, ["ls-files", "-s"]), git(w.repo, ["status", "--porcelain"]), readFileSync(join(w.repo, CENSOR), "utf8")].join("\n--\n");
+const outLines = (o: Out): string[] => o.out.split("\n");
+
+test("W-141-b1 behaviour 1: a Patron path stops next before the main checkout moves, and names the Patron's one command", { timeout: 1_800_000 }, () => {
+  // merge: the reviewed merge commit changes a Patron path
+  const w = reviewed(
+    "w141-b1-merge",
+    { patron: true },
+    (x) => {
+      put(x.wt, CENSOR, "censor v2\n");
+      commit(x.wt, `feat(${OPUS}): censor change`);
+      writeReceipt(x, "current");
+    },
+    true,
+  );
+  const m = landMerge(w, false);
+  scenario(w, { list: mergedList(w, { merge: m }) });
+  expectStep(next(w, [OPUS]), "merge", "named", "the world sits at merge");
+  const before = frozen(w);
+  const held = performMerge(w);
+  assert.equal(frozen(w), before, ran("merge: nothing is mutated (master unmoved, index, status, censor.md bytes)", held));
+  expectHeld(held, "merge: held");
+  assert.equal(held.status, 1, ran("merge: exit 1", held));
+  const lines = outLines(held);
+  const why = lines.findIndex((l) => l === `why: refusing: incoming paths belong to the Patron (${CENSOR}); the main checkout is untouched`);
+  assert.notEqual(why, -1, ran("merge: the why line names the Patron path", held));
+  assert.equal(lines[why + 1], `patron: git -C ${w.repo} merge --ff-only ${m}`, ran("merge: the patron line follows the why line", held));
+  assert.equal(gitCalls(w).filter((a) => a[0] === "merge").length, 0, "merge: no git merge call");
+  // the Patron runs that exact line, and next moves on
+  const [bin, ...args] = lines[why + 1]!.slice("patron: ".length).split(" ");
+  assert.equal(bin, "git");
+  git(w.root, args);
+  expectStep(next(w, [OPUS]), "cleanup", "named", "after the Patron's command next derives cleanup");
+
+  // dirty: a tracked edit to a Patron path holds the branch rung and the done rung, and prints the Patron's checkout line
+  const dirtyRow = (row: string, o: Out, w2: World, was: string, file = CENSOR, quoted = file): void => {
+    expectHeld(o, row);
+    assert.equal(frozen(w2), was, ran(`${row}: nothing is mutated`, o));
+    const ls = outLines(o);
+    const at = ls.indexOf("why: refusing: the working tree has tracked changes");
+    assert.notEqual(at, -1, ran(`${row}: the why line`, o));
+    assert.ok(ls.indexOf(`dirty: M ${file}`) > at, ran(`${row}: the dirty line follows the why line`, o));
+    assert.ok(ls.indexOf(`patron: git -C ${w2.repo} checkout -- ${quoted}`) > at, ran(`${row}: the patron checkout line`, o));
+  };
+  const b = world("w141-b1-branch", "spec", { patron: true });
+  appendFileSync(join(b.repo, CENSOR), "edit\n");
+  const bBefore = frozen(b);
+  dirtyRow("branch", next(b, [OPUS, "--perform", "--expect", "branch"]), b, bBefore);
+  assert.equal(branchExists(b), false, "branch: no branch was cut");
+  const d = world("w141-b1-done", "cleanup", { patron: true });
+  scenario(d, { list: mergedList(d) });
+  appendFileSync(join(d.repo, CENSOR), "edit\n");
+  const dBefore = frozen(d);
+  dirtyRow("done", next(d, [OPUS, "--perform", "--expect", "done"]), d, dBefore);
+  assert.equal(branchExists(d, `chore/done-${OPUS}`), false, "done: no chore branch was made");
+
+  // a path with a character outside [A-Za-z0-9/._-] is single-quoted
+  const q = world("w141-b1-quote", "spec", { patron: true });
+  appendFileSync(join(q.repo, ".claude/my notes.md"), "edit\n");
+  dirtyRow("quoted", next(q, [OPUS, "--perform", "--expect", "branch"]), q, frozen(q), ".claude/my notes.md", "'.claude/my notes.md'");
 });
