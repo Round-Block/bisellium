@@ -1,0 +1,22 @@
+# opus: W-123
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-05T06:48:19.815Z
+# tree: tree:3c2cd07fd58c50d48b3612d18824403b6429918b
+
+W-123 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-123.md (314 lines, 2 behaviours, six sections). Scope narrowed to the done refusal (Patron-vetoable default; title not amended).
+Measurements at master 659ec5a: ~/.bisellium-evidence/W-123-spec/pr-paths.sh -> pr-paths.out (one gh pr create, in openPr, after fetchTrunk and rebase); ruleset.sh -> ruleset.out (strict=true); live-done.sh -> live-done.out (13/13 ladder-era done opera: merge contained, done after merge); fallout.sh + probe-write.py -> fallout-write.out (29 assertions in lifecycle.test.ts and W-129 b15 copy sample-studio's pr.required: true) and fallout-cli.out (a guard placed first also masks W-033 A5 and waive b8).
+
+## Findings
+1. advisory — in a pr.required officina, done now needs a live gh read; offline it is refused, never passed (fail closed by design) — check: packages/cli/src/next.test.ts (W-123 behaviour 1, gh list exits 1)
+2. advisory — next's performDone reads the PR twice (its pre-check, then runDone's guard); accepted so the refusal still precedes the chore branch and one reader serves all three verbs — check: none: accepted cost, one extra gh read per done
+3. advisory — bisellium merge's pr.required path needs done on the opus branch first, which this opus refuses before the merge, so that path becomes unreachable; left to the producer (open question 3) — check: none: a chore retiring merge's PR path
+4. advisory — next's printed landings for spec/<id> and chore/done-<id> push without a rebase; master's strict status-check rule blocks merging a stale head, and W-124's recommended follow-on is not yet filed (open question 2) — check: none: the unfiled W-124 follow-on (next drives spec/ and chore/done- heads)
+5. advisory — any future test that copies examples/sample-studio and expects done to succeed must set integration.pr.required false or pass a reader; it otherwise fails loudly with "no merge reader was supplied" — check: packages/cli/src/next.test.ts (W-123 behaviour 2)
+6. advisory — the opus title still names the PR half; the narrowing is recorded in the brief's Intent only — check: none: the Patron's amend of W-123's title
+
+## Recommendation
+Verdict: passed. The PR half is already met by the only verb path that opens a PR, so the opus is one guard at runDone's write point, an injected reader built on W-124's identifyPr and settleMerged, and wiring in done, close and next. Two behaviours, each with an assertion-level red at the current tree. The four Patron questions ship with stated defaults and do not block.
