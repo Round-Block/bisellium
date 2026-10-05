@@ -84,7 +84,7 @@ lex, a decision, or a check rule and delete it here.
   `bisellium-backlog.html` by the same `build.sh`):
   https://claude.ai/artifact/BaVL3xfRg2gbERoLukDLqV — republish at every
   checkpoint. The page links, and never writes, the current ranking:
-  `studio/acta/2026-09-24-ranking.md` is the source of record for order.
+  `studio/acta/2026-10-05-ranking.md` is the source of record for order.
 
 ## Environment facts
 
@@ -171,7 +171,7 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Queue
 
-**W-077 done (PR 228).** Next: W-115 (needs the Patron's greenlight; still backlog), then W-116–W-119, W-122, W-123, W-120, W-126, W-127; backlog W-133, W-135 (Patron's architecture ruling), W-136, W-137, W-138, W-139; W-113 and W-136's UI need the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+**W-077 done (PR 228).** Order of record: `studio/acta/2026-10-05-ranking.md` (Patron ruling 2026-10-05: rank by type of work). Greenlit 2026-10-05: group 1 process gates W-139, W-123, W-127, W-126, W-120; group 2 security W-133, W-115. Next: W-139. Groups 3–6 (W-137, W-138, W-122, W-116, W-117, W-136, W-135, W-118) wait for the Patron's greenlight; W-136's UI and W-135's architecture need rulings at spec time; W-113 needs a UI ruling. Open questions in the ranking acta: W-123 narrowed to the `done` refusal?; W-138 depends on W-136; W-122 self-reported usage vs W-138's harness-log rule.
 
 ## Research lane (on the side)
 
