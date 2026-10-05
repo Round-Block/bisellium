@@ -59,31 +59,48 @@ const isPatronPath = (path: string): boolean => PATRON_PATHS.some((prefix) => pa
 /** A path outside `[A-Za-z0-9/._-]` is single-quoted so a printed command can be pasted. */
 const quoted = (path: string): string => (/^[A-Za-z0-9/._-]+$/.test(path) ? path : `'${path.replace(/'/g, "'\\''")}'`);
 
+/** One tracked change: `from` is the original path of a rename or copy (both sides count), `staged` that the index holds it. */
+export interface Change {
+  code: string;
+  path: string;
+  from?: string;
+  staged: boolean;
+}
+
 /** Tracked changes of a checkout (staged or not), or the reason git could not say. */
-export function trackedChanges(cwd: string): { code: string; path: string }[] | string {
+export function trackedChanges(cwd: string): Change[] | string {
   const r = git(cwd, ["status", "--porcelain", "-z", "--untracked-files=no", "--ignore-submodules=none"]);
   if (r.status !== 0 || r.error !== undefined) return `git status failed: ${why(r)}`;
-  const changes: { code: string; path: string }[] = [];
+  const changes: Change[] = [];
   const parts = r.stdout.split("\0");
   for (let i = 0; i < parts.length; i++) {
     const entry = parts[i]!;
     if (entry.length < 4) continue;
-    changes.push({ code: entry.slice(0, 2).trim(), path: entry.slice(3) });
-    if (entry[0] === "R" || entry[0] === "C") i++; // the original path follows
+    const change: Change = { code: entry.slice(0, 2).trim(), path: entry.slice(3), staged: entry[0] !== " " };
+    if (entry[0] === "R" || entry[0] === "C" || entry[1] === "R" || entry[1] === "C") change.from = parts[++i]; // the original path follows
+    changes.push(change);
   }
   return changes;
 }
+/** Every path a change touches: a rename or copy has two. */
+export const touched = (c: Change): string[] => (c.from === undefined ? [c.path] : [c.path, c.from]);
 
 /** The one dirty-tree refusal: tracked changes outside `allow`, as the hold's reason and the lines after it. */
 export function dirtyReport(cwd: string, allow: (path: string) => boolean = () => false): { reason: string; after: string[] } | undefined {
   const changes = trackedChanges(cwd);
   if (typeof changes === "string") return { reason: changes, after: [] };
-  const bad = changes.filter((c) => !allow(c.path));
+  const bad = changes.filter((c) => !touched(c).every(allow));
   if (bad.length === 0) return undefined;
-  const patron = bad.map((c) => c.path).filter(isPatronPath);
+  // a path the index already moved or removed is restored from HEAD; a worktree edit from the index
+  // only a path HEAD has can be restored: a rename's original, never its destination or a plain add
+  const patron = bad.filter((c) => c.code !== "A" && isPatronPath(c.from ?? c.path));
+  const paths = [...new Set(patron.map((c) => c.from ?? c.path))];
   return {
     reason: "the working tree has tracked changes",
-    after: [...bad.slice(0, 10).map((c) => `dirty: ${clean(`${c.code} ${c.path}`)}`), ...(patron.length > 0 ? [`patron: git -C ${quoted(cwd)} checkout -- ${patron.map(quoted).join(" ")}`] : [])],
+    after: [
+      ...bad.slice(0, 10).map((c) => `dirty: ${clean(`${c.code} ${c.from === undefined ? "" : `${c.from} -> `}${c.path}`)}`),
+      ...(paths.length > 0 ? [`patron: git -C ${quoted(cwd)} checkout ${patron.some((c) => c.staged) ? "HEAD " : ""}-- ${paths.map(quoted).join(" ")}`] : []),
+    ],
   };
 }
 
@@ -204,6 +221,40 @@ function overwritten(repo: string, from: string, to: string): string | undefined
 }
 
 /**
+ * A Patron path never moves in the main checkout. This runs before any fetch or ref move: the reviewed commit is
+ * fetched by id (`git fetch origin <oid>` writes no ref), and the paths it brings are read with `diff`. A stop
+ * names the Patron's one command; `undefined` means nothing incoming is the Patron's, or this cannot be judged
+ * here and the checks below hold on it. The oid is the merge commit of a MERGED PR already identified.
+ */
+function patronStop(repo: string, target: string, hold: (reason: string, tail?: string) => Trunk): Trunk | undefined {
+  if (commitOf(repo, target) === undefined) {
+    const got = git(repo, ["fetch", "-q", "origin", target]);
+    if (got.status !== 0) return hold(`git fetch origin ${target.slice(0, 12)} failed: ${why(got)}`);
+  }
+  const local = commitOf(repo, TRUNK_REF);
+  if (commitOf(repo, target) !== target || local === undefined) return undefined;
+  if (isAncestor(repo, target, local) !== false || isAncestor(repo, local, target) !== true) return undefined;
+  const incoming = git(repo, ["diff", "--no-renames", "--name-only", "-z", local, target]);
+  if (incoming.status !== 0 || incoming.error !== undefined) return hold(`git diff failed: ${why(incoming)}`);
+  const patron = incoming.stdout.split("\0").filter((p) => p !== "" && isPatronPath(p));
+  if (patron.length === 0) return undefined;
+  const holder = listWorktrees(repo)?.find((e) => e.branch === TRUNK_REF);
+  const here = (path: string): boolean => {
+    try {
+      return realpathSync(path) === realpathSync(repo);
+    } catch {
+      return false;
+    }
+  };
+  const command = holder === undefined ? `git -C ${quoted(repo)} fetch origin master:master` : `git -C ${quoted(here(holder.path) ? repo : holder.path)} merge --ff-only ${target}`;
+  return {
+    ok: false,
+    reason: clean(`refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`, 600),
+    after: [`patron: ${command}`],
+  };
+}
+
+/**
  * The trunk fetch. `git fetch origin master:master` when no worktree holds `master`. Otherwise the
  * remote-tracking ref is fetched and `target` (the reviewed merge commit, the `merge` rung only) is the
  * only thing a clean checked-out `master` of `repo` is ever fast-forwarded to; with no target (the `pr`
@@ -213,6 +264,10 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   // the tail (advice naming a path) is clipped on its own so a long head can never cut it off
   const hold = (reason: string, tail = ""): Trunk => ({ ok: false, reason: clean(reason, 400) + clean(tail, 600) });
   if (target !== undefined && !wellFormedOid(target)) return hold("the reviewed merge commit is not a well formed commit id");
+  if (target !== undefined) {
+    const stop = patronStop(repo, target, hold);
+    if (stop !== undefined) return stop;
+  }
   const r = git(repo, ["fetch", "-q", "origin", "master:master"]);
   if (r.status === 0) return { ok: true };
   const holder = listWorktrees(repo)?.find((e) => e.branch === TRUNK_REF);
@@ -251,16 +306,6 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   const fastForward = isAncestor(repo, local, reviewed);
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
-  // a Patron path never moves in the main checkout: stop before the tree, name the Patron's one command
-  const incoming = git(repo, ["diff", "--no-renames", "--name-only", "-z", local, reviewed]);
-  if (incoming.status !== 0 || incoming.error !== undefined) return hold(`git diff failed: ${why(incoming)}`);
-  const patron = incoming.stdout.split("\0").filter((p) => p !== "" && isPatronPath(p));
-  if (patron.length > 0)
-    return {
-      ok: false,
-      reason: clean(`refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`, 600),
-      after: [`patron: git -C ${quoted(repo)} merge --ff-only ${reviewed}`],
-    };
   const dirty = dirtyReport(repo);
   if (dirty !== undefined) return { ok: false, reason: clean(dirty.reason.startsWith("git status") ? dirty.reason : `${repo} has uncommitted tracked changes; commit or restore them, then re-run`, 400), after: dirty.after };
   const clash = overwritten(repo, local, reviewed);
