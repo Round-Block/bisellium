@@ -156,3 +156,51 @@ describe("behaviour 1", () => {
     assert.equal(r.header.has("converted"), false);
   });
 });
+
+describe("behaviour 2", () => {
+  const rows: [string, string, string | RegExp][] = [
+    ["a brief that is not the declared one", "briefs/W-301.md:2", "cites briefs/W-301.md, not the declared brief briefs/W-300.md"],
+    ["an absolute path", "/home/x/studio/briefs/W-300.md:2", "cites /home/x/studio/briefs/W-300.md, not the declared brief briefs/W-300.md"],
+    ["a line past the end", "brief:11", "briefs/W-300.md has 10 lines, no line 11"],
+    ["a blank line", "brief:4", "briefs/W-300.md:4 is blank"],
+    ["the first citation's reason when a later one is also bad", "brief:11 then briefs/W-301.md:2", "briefs/W-300.md has 10 lines, no line 11"],
+  ];
+  for (const [name, cite, reason] of rows)
+    test(`${name} is converted`, () => {
+      const r = verdict(studio(), findings(`blocking — a defect, ${cite}`));
+      assert.equal(r.exitCode, 0, r.stderr);
+      assert.equal(r.header.get("converted"), `1 (${reason})`);
+    });
+
+  test("no spec: the finding is converted and no # brief: is written", () => {
+    const r = verdict(studio({ spec: false, brief: false }), findings("blocking — a defect, brief:2"));
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.equal(r.header.get("converted"), "1 (the opus declares no readable brief: no spec)");
+    assert.equal(r.header.has("brief"), false);
+  });
+
+  test("a spec naming a missing file: the finding is converted and no # brief: is written", () => {
+    const r = verdict(studio({ spec: "briefs/missing.md", brief: false }), findings("blocking — a defect, brief:2"));
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.match(r.header.get("converted") ?? "", /^1 \(the opus declares no readable brief: \S/);
+    assert.equal(r.header.has("brief"), false);
+  });
+
+  const stays: [string, string][] = [
+    ["the last line", "brief:10"],
+    ["the first line", "briefs/W-300.md:1"],
+    ["a bad citation then a good one", "briefs/W-301.md:2 then brief:3"],
+  ];
+  for (const [name, cite] of stays)
+    test(`${name} keeps the finding blocking`, () => {
+      const r = verdict(studio(), findings(`blocking — a defect, ${cite}`));
+      assert.equal(r.exitCode, 0, r.stderr);
+      assert.equal(r.header.has("converted"), false);
+    });
+
+  test("the officina's repo-relative path keeps the finding blocking", () => {
+    const r = verdict(studio({ git: true }), findings("blocking — a defect, studio/briefs/W-300.md:3"));
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.equal(r.header.has("converted"), false);
+  });
+});
