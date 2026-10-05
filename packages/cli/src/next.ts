@@ -58,6 +58,8 @@ const NEXT_USAGE =
   "usage: bisellium next <opus> [--perform] [--expect <step>] [--budget <tokens>] [--title <text> --body-file <path>] [--poll-ms <n>] [--max-polls <n>] [--studio <dir>] [--repo <dir>] [--now <iso>]\n" +
   "       bisellium next <opus> --track <step> --pid <n> --output <path> [--studio <dir>] [--repo <dir>] [--now <iso>]";
 
+const TRUNK = "refs/heads/master";
+const HANDOFF = "docs/SESSION-HANDOFF.md";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done"]);
 const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
@@ -181,6 +183,8 @@ export interface Facts {
   wt: { dir: string; studio: string; usable: boolean };
   trunk: Src | undefined;
   trunkRecord: Dict | undefined;
+  /** the oldest master commit that reads the record `done` also changed docs/SESSION-HANDOFF.md */
+  checkpointed(): boolean;
   /** every automated probatio has a `tree:` certificate on the trunk record or the main checkout's record */
   certified(): boolean;
   branch: Src | undefined;
@@ -254,6 +258,14 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     trunkRecord,
     branch,
     branchRecord,
+    checkpointed: memo(() => {
+      const log = git(repo, ["log", "--reverse", "--format=%H", TRUNK, "--", `${studioRel}/${recordRel(id)}`]);
+      for (const c of log.stdout.split("\n").filter(Boolean)) {
+        if (recordOf(gitSrc(repo, c, studioRel), id)?.["state"] !== "done") continue;
+        return git(repo, ["show", "--first-parent", "--format=", "--name-only", c, "--", HANDOFF]).stdout.trim() !== "";
+      }
+      return false;
+    }),
     certified: memo(() => {
       const ids = manifest.probationes.filter((p) => p.kind === "automated").map((p) => p.id);
       const has = (rec: Dict | undefined): boolean =>
@@ -519,22 +531,17 @@ export function deriveNext(f: Facts): Derived {
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
 
+/** The checkpoint rides the done commit: complete once the commit that made the record `done` also changed the handoff. */
 function afterDone(f: Facts): Derived {
   const { id } = f;
-  const m = f.handoff === undefined ? null : /^(#{1,6})[ \t]+Where things stand(?:[ \t]+\([^\n)]*\))?[ \t]*$/m.exec(f.handoff);
-  let section = "";
-  if (f.handoff !== undefined && m !== null) {
-    const rest = f.handoff.slice(m.index + m[0].length);
-    const stop = new RegExp(`^#{1,${m[1]!.length}}[ \\t]`, "m").exec(rest);
-    section = stop === null ? rest : rest.slice(0, stop.index);
-  }
-  if (section.includes(id)) return { step: "checkpoint", status: "complete", actor: "producer", why: `the trunk record is done and the handoff names ${id}`, extra: [] };
+  if (f.handoff === undefined) return { step: "checkpoint", status: "complete", actor: "producer", why: "the trunk record is done and master has no handoff", extra: [] };
+  if (f.checkpointed()) return { step: "checkpoint", status: "complete", actor: "producer", why: `the trunk record is done and its done commit changed ${HANDOFF}`, extra: [] };
   return {
     step: "checkpoint",
     status: "named",
     actor: "producer",
-    why: `${id} is done on the trunk; docs/SESSION-HANDOFF.md "Where things stand" does not name it`,
-    command: `update docs/SESSION-HANDOFF.md (Where things stand), the progress row and the masthead for ${id}, then republish`,
+    why: `${id} is done on the trunk; the commit that made it done did not change ${HANDOFF}`,
+    command: `update ${HANDOFF}, the progress row and the masthead for ${id}, then republish`,
     extra: [],
   };
 }
@@ -943,6 +950,10 @@ function performDone(f: Facts, d: Derived): StepResult {
   const dirty = dirtyHold(repo, rides);
   if (dirty !== undefined) return dirty;
   if (d.act === "verify") return heldResult(`refusing: no automated certificate is recorded; run: ${d.command ?? ""}`);
+  if (f.handoff !== undefined) {
+    const changes = trackedChanges(repo);
+    if (typeof changes === "string" || !changes.some((c) => c.path === HANDOFF)) return heldResult(`refusing: the checkpoint rides the done commit, and ${HANDOFF} has no tracked change; edit it, then re-run`);
+  }
   const why = mergeRefusal(repo, id);
   if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);
