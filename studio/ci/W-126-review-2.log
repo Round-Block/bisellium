@@ -1,0 +1,16 @@
+# opus: W-126
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-05T13:51:21.742Z
+# tree: tree:0280b9d54f69b8c846f78c01c7de63ae68053fa6
+# brief: briefs/W-126.md blob:e3c8cdfdd4b3ac2c15263bc82afd6a8c6101fae5
+
+## Findings
+1. blocking — packages/commands/src/verdict.ts:367 One instance: an existing contained brief whose declared path contains a line break is now treated as unreadable, so a valid `brief:2` blocker is converted and its failed outcome becomes passed; the changed assertion at packages/cli/src/verdict-citation.test.ts:339 expects that wrong result and therefore does not prove the blocker closed. brief:104 — check: packages/cli/src/verdict-citation.test.ts:325 must use a readable newline-bearing brief for the failed case, assert no conversion or `submitted_outcome`, and verify `review --fail` succeeds
+
+## Verdict
+The git-root absolute-citation blocker is closed, but the line-break fix preserves header integrity by violating the declared brief-reading behavior and reconciling a valid failure away.
+VERDICT: FAIL
