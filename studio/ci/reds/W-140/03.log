@@ -1,0 +1,41 @@
+# behaviour: 3
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-140-b3 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T15:29:03.502Z
+# sella: builder.W-140
+# tree: tree:6b0ff85185a99dc2fcb96ea9b574be23b817cfc0
+
+TAP version 13
+# Subtest: W-140-b3 behaviour 3: readBriefAdmission's export is the signed two-argument signature, and exception problems keep their place
+not ok 1 - W-140-b3 behaviour 3: readBriefAdmission's export is the signed two-argument signature, and exception problems keep their place
+  ---
+  duration_ms: 3.248499
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-140/packages/cli/src/brief-admission.test.ts:16:13529'
+  failureType: 'testCodeFailure'
+  error: |-
+    b3: two parameters
+    
+    3 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 3
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-140/packages/cli/src/brief-admission.test.ts:470:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15.422529
