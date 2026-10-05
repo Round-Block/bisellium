@@ -98,7 +98,7 @@ Six commands write a state id — `greenlight` (backlog only), `ready` (from
 `done` (from `building`, `verifying` or `review`), `review --fail`'s reopen edge
 back to `building` from `verifying`, `review` or `done` (it emits its own
 `workflow.state_changed`), and `halt` from every non-done state. `ready`
-records the first `start`; `done` records `end`; reopening clears `end` but
+records the first `start`, and where `bisellium.yml` declares `brief_behaviour_limit` refuses a brief that fails admission (W-127, shared with `check`'s `brief.admission`); `done` records `end`; reopening clears `end` but
 retains `start`. The same timestamp is emitted with the transition.
 
 `verify` records the verifying and review stages as they run (W-129, D-034),

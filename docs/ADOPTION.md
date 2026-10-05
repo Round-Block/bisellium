@@ -284,6 +284,7 @@ probationes:
   - { id: patron, name: Patron call,  kind: human }
 review_probatio: review           # probatio id that gates "review" state (default "review")
 wip_limit: 3                      # items in building + verifying, studio-wide
+brief_behaviour_limit: 6          # optional (W-127); turns on brief admission: most numbered behaviours a brief may carry
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
   model_probe_stale_days: 7       # optional; code default 7 — tick's probe-cadence age trigger (W-071)
@@ -740,6 +741,18 @@ fires on a log that was hand-edited or came from elsewhere).
 `probatio.certifies.mismatch` is a separate, `--repo`-independent check: a
 `done` item whose gates certify different trees from each other. `npm test`
 runs the sample and every fixture.
+
+**Brief admission (W-127).** Only when `bisellium.yml` declares
+`brief_behaviour_limit` (a positive integer, else `manifest.shape` blocks).
+A brief carries `Decree family: <slug>` on exactly one line, at most that many
+numbered behaviours under `## Behaviours to test`, and exactly one
+`**Genuine red:**` per numbered behaviour. A brief over the limit is admitted
+only with one `Behaviour limit exception: <decision-id>` line naming a
+decision `by` the Patron whose text names the opus. `ready` refuses a brief
+that fails (`<id>: brief.admission: <spec> <problem>`, exit 1, nothing
+written), and `check` blocks `brief.admission` on an active opus
+(`building`, `verifying`, `review`) whose brief fails, through one shared
+predicate. Done briefs are never re-read, so history needs no migration.
 
 ## Sleeps in tests
 

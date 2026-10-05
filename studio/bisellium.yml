@@ -39,6 +39,9 @@ probationes:
   - { id: spec, name: Spec, kind: agent, since: 2026-09-18T19:00:00Z }
   - { id: review, name: Lead review, kind: agent }
 wip_limit: 4
+# W-127 (briefs/W-127.md): brief admission — one decree family per brief, at most
+# this many numbered behaviours, one genuine red each; `ready` and `check` enforce it.
+brief_behaviour_limit: 6
 source_excludes: [ examples/ ]
 # D-015: how an opus branch reaches the trunk is a setting, not a fixed
 # flow. This is the Patron's own reference flow — rebase the opus branch
