@@ -29,7 +29,7 @@ import { censorSella, inspectUiDesignInput, readContainedRegularFile, type Nativ
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, dirtyHold, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -895,8 +895,8 @@ function performBranch(f: Facts): StepResult {
   const head = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
   if (head !== "refs/heads/master") return heldResult(`refusing: HEAD is ${head === "" ? "detached" : head}, not the master branch`);
   if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
-  const dirty = trackedDirty(repo);
-  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
+  const dirty = dirtyHold(repo);
+  if (dirty !== undefined) return dirty;
   try {
     lstatSync(wt.dir);
     return heldResult(`refusing: ${wt.dir} already exists and is not a registered worktree for opus/${id}`);
@@ -924,8 +924,8 @@ function performDone(f: Facts): StepResult {
   const { repo, id } = f;
   const chore = `chore/done-${id}`;
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
-  const dirty = trackedDirty(repo);
-  if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
+  const dirty = dirtyHold(repo);
+  if (dirty !== undefined) return dirty;
   const why = mergeRefusal(repo, id);
   if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);

@@ -53,6 +53,33 @@ export const clean = (text: string, max = 200): string => text.replace(/[\u0000-
 const firstLine = (text: string): string => clean(text.trim().split("\n")[0] ?? "");
 const why = (r: Run): string => (r.error !== undefined ? clean(r.error.message) : firstLine(r.stderr)) || `exit ${r.status}`;
 
+/** Repo-relative prefixes the Patron owns: no agent writes them, so the CLI never moves them in the main checkout. */
+export const PATRON_PATHS: readonly string[] = [".claude/"];
+const isPatronPath = (path: string): boolean => PATRON_PATHS.some((prefix) => path.startsWith(prefix));
+/** A path outside `[A-Za-z0-9/._-]` is single-quoted so a printed command can be pasted. */
+const quoted = (path: string): string => (/^[A-Za-z0-9/._-]+$/.test(path) ? path : `'${path.replace(/'/g, "'\\''")}'`);
+
+/** The one dirty-tree refusal: tracked changes (staged or not) outside `allow`, as the hold's reason and the lines after it. */
+export function dirtyReport(cwd: string, allow: (path: string) => boolean = () => false): { reason: string; after: string[] } | undefined {
+  const r = git(cwd, ["status", "--porcelain", "-z", "--untracked-files=no", "--ignore-submodules=none"]);
+  if (r.status !== 0 || r.error !== undefined) return { reason: `git status failed: ${why(r)}`, after: [] };
+  const changes: { code: string; path: string }[] = [];
+  const parts = r.stdout.split("\0");
+  for (let i = 0; i < parts.length; i++) {
+    const entry = parts[i]!;
+    if (entry.length < 4) continue;
+    changes.push({ code: entry.slice(0, 2).trim(), path: entry.slice(3) });
+    if (entry[0] === "R" || entry[0] === "C") i++; // the original path follows
+  }
+  const bad = changes.filter((c) => !allow(c.path));
+  if (bad.length === 0) return undefined;
+  const patron = bad.map((c) => c.path).filter(isPatronPath);
+  return {
+    reason: "the working tree has tracked changes",
+    after: [...bad.slice(0, 10).map((c) => `dirty: ${clean(`${c.code} ${c.path}`)}`), ...(patron.length > 0 ? [`patron: git -C ${quoted(cwd)} checkout -- ${patron.map(quoted).join(" ")}`] : [])],
+  };
+}
+
 type Json = Record<string, unknown>;
 const isObj = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -123,7 +150,8 @@ function remoteTip(repo: string, id: string): TipRead {
 }
 
 const REMOTE_MASTER = "refs/remotes/origin/master";
-type Trunk = { ok: true } | { ok: false; reason: string };
+/** `after` are lines printed after the hold's `why:` line (the Patron's command). */
+type Trunk = { ok: true } | { ok: false; reason: string; after?: string[] };
 const commitOf = (repo: string, ref: string): string | undefined => {
   const r = git(repo, ["rev-parse", "--verify", "-q", `${ref}^{commit}`]);
   return r.status === 0 && wellFormedOid(r.stdout.trim()) ? r.stdout.trim() : undefined;
@@ -215,9 +243,18 @@ export function fetchTrunk(repo: string, target?: string): Trunk {
   const fastForward = isAncestor(repo, local, reviewed);
   if (fastForward === undefined) return hold("could not compare master with the reviewed merge commit");
   if (!fastForward) return hold(`local master has diverged from the reviewed merge commit ${reviewed.slice(0, 12)}`);
-  const status = git(repo, ["status", "--porcelain", "--untracked-files=no", "--ignore-submodules=none"]);
-  if (status.status !== 0 || status.error !== undefined) return hold(`git status failed: ${why(status)}`);
-  if (status.stdout.trim() !== "") return hold(`${repo} has uncommitted tracked changes; commit or restore them, then re-run`);
+  // a Patron path never moves in the main checkout: stop before the tree, name the Patron's one command
+  const incoming = git(repo, ["diff", "--no-renames", "--name-only", "-z", local, reviewed]);
+  if (incoming.status !== 0 || incoming.error !== undefined) return hold(`git diff failed: ${why(incoming)}`);
+  const patron = incoming.stdout.split("\0").filter((p) => p !== "" && isPatronPath(p));
+  if (patron.length > 0)
+    return {
+      ok: false,
+      reason: clean(`refusing: incoming paths belong to the Patron (${patron.slice(0, 10).map(quoted).join(", ")}); the main checkout is untouched`, 600),
+      after: [`patron: git -C ${quoted(repo)} merge --ff-only ${reviewed}`],
+    };
+  const dirty = dirtyReport(repo);
+  if (dirty !== undefined) return { ok: false, reason: clean(dirty.reason.startsWith("git status") ? dirty.reason : `${repo} has uncommitted tracked changes; commit or restore them, then re-run`, 400), after: dirty.after };
   const clash = overwritten(repo, local, reviewed);
   if (clash?.startsWith("?")) return hold(clash.slice(1));
   if (clash !== undefined) return hold(`an incoming path would overwrite an untracked or ignored entry (or swaps a tracked file and directory, which a manual pull handles): ${clean(clash, 120)}; move it aside, then re-run`);
@@ -404,6 +441,11 @@ export interface Ctx {
   sleep(ms: number): Promise<void>;
 }
 const held = (reason: string, ...more: string[]): StepResult => ({ ok: false, lines: [`why: ${reason}`, ...more] });
+/** A hold for tracked changes outside `allow`; undefined when the checkout is clean. */
+export function dirtyHold(cwd: string, allow?: (path: string) => boolean): StepResult | undefined {
+  const d = dirtyReport(cwd, allow);
+  return d === undefined ? undefined : held(`refusing: ${d.reason}`, ...d.after);
+}
 
 // ---------------------------------------------------------------------------
 // pr
@@ -415,10 +457,10 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
   const onBranch = git(wt, ["symbolic-ref", "-q", "HEAD"]);
   if (onBranch.stdout.trim() !== `refs/heads/${branch}`) return held(`refusing: ${wt} is not on ${branch} (HEAD ${onBranch.stdout.trim() || "detached"}); pr opens only from the opus branch`);
   // "dirty" is tracked changes only (staged or unstaged); untracked files never block.
-  const dirty = git(wt, ["status", "--porcelain", "--untracked-files=no"]).stdout.trim();
-  if (dirty !== "") return held("refusing: working tree dirty", ...dirty.split("\n").slice(0, 10).map((l) => `dirty: ${clean(l)}`));
+  const dirty = dirtyHold(wt);
+  if (dirty !== undefined) return dirty;
   const fetched = fetchTrunk(repo);
-  if (!fetched.ok) return held(fetched.reason);
+  if (!fetched.ok) return held(fetched.reason, ...(fetched.after ?? []));
   const before = sourceTreeHash(wt, ctx.excludes, "HEAD");
   ctx.log("rebase onto the fetched trunk");
   const rebase = git(wt, ["-c", "submodule.recurse=false", "rebase", "-q", TRUNK_REF]);
@@ -466,7 +508,7 @@ function readChecks(repo: string, pr: Pr): { ok: true; checks: Check[] } | { ok:
 /** The tail shared by a freshly merged PR and an already-MERGED one: fetch the trunk, re-check containment. */
 function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
   const fetched = fetchTrunk(ctx.repo, pr.mergeOid);
-  if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...extra] };
+  if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...(fetched.after ?? []), ...extra] };
   const tip = readTip(ctx.repo, ctx.id);
   if (tip.kind === "error") return held(tip.reason, ...extra);
   if (tip.kind === "tip") git(ctx.repo, ["fetch", "-q", "origin", `+refs/heads/opus/${ctx.id}:refs/remotes/origin/opus/${ctx.id}`]);
