@@ -2763,28 +2763,41 @@ function certifiedWorld(tag: string, kind: "opus" | "ui", gates: Record<string, 
   const w = world(tag, "cleanup", { automated: true });
   scenario(w, { list: mergedList(w) });
   const tree = sourceTree(w.repo);
+  if (kind === "ui") editRecord(w, "repo", (doc) => doc.setIn(["kind"], "ui"));
   editRecord(w, "repo", (doc) => {
-    if (kind === "ui") doc.setIn(["kind"], "ui");
     for (const [id, g] of Object.entries(gates)) doc.setIn(["probationes", id], { status: "passed", evidence: `ci/${OPUS}-${id}-${g.hex}.log`, certifies: g.certifies(tree) });
   });
   return w;
 }
 const VERIFY = `bisellium verify ${OPUS} --studio studio --repo .`;
 
-test("W-141-b2 round 1: a UI opus's implicit served-e2e gate counts toward certificate readiness and the logs committed", { timeout: 1_800_000 }, () => {
+test("W-141-b2 round 1: a UI opus's implicit served-e2e gate counts toward certificate readiness", { timeout: 1_800_000 }, () => {
   const w = certifiedWorld("w141-r1-b2-ui", "ui", { tests: { certifies: (t) => t, hex: "aaa111" } });
   const tree = sourceTree(w.repo);
   const missing = next(w, [OPUS]);
   expectStep(missing, "done", "named", "ui opus with no served-e2e certificate");
   assert.equal(missing.kv.get("command"), VERIFY, ran("the rung names verify", missing));
-
   editRecord(w, "repo", (doc) => doc.setIn(["probationes", "served-e2e"], { status: "passed", evidence: `ci/${OPUS}-served-e2e-bbb222.log`, certifies: tree }));
+  const ready = next(w, [OPUS]);
+  assert.equal(ready.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("with both certificates the rung is the perform", ready));
+});
+
+test("W-141-b2 round 1: the done commit stages each gate's recorded evidence, never another matching log", { timeout: 1_800_000 }, () => {
+  const w = world("w141-r1-b2-logs", "cleanup", { automated: true });
+  // a second automated gate, declared in the manifest as a UI opus's implicit one would be
+  put(w.studio, "bisellium.yml", readFileSync(join(w.studio, "bisellium.yml"), "utf8").replace("source_excludes:", '  - { id: served-e2e, name: Served e2e, kind: automated, command: "node scripts/served-e2e.mjs" }\nsource_excludes:'));
+  commit(w.repo, "test: a second automated gate");
+  git(w.repo, ["push", "-q", "origin", "master"]);
+  scenario(w, { list: mergedList(w) });
+  const tree = sourceTree(w.repo);
+  editRecord(w, "repo", (doc) => {
+    doc.setIn(["probationes", "tests"], { status: "passed", evidence: `ci/${OPUS}-tests-aaa111.log`, certifies: tree });
+    doc.setIn(["probationes", "served-e2e"], { status: "passed", evidence: `ci/${OPUS}-served-e2e-bbb222.log`, certifies: tree });
+  });
   put(w.repo, `studio/ci/${OPUS}-tests-aaa111.log`, "tests log\n");
   put(w.repo, `studio/ci/${OPUS}-served-e2e-bbb222.log`, "served e2e log\n");
   put(w.repo, `studio/ci/${OPUS}-tests-0badcafe.log`, "an unrelated, filename-shaped log\n");
   touchHandoff(w);
-  const ready = next(w, [OPUS]);
-  assert.equal(ready.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("with both certificates the rung is the perform", ready));
   const done = next(w, [OPUS, "--perform", "--expect", "done"]);
   assert.equal(done.status, 0, ran("perform exits 0", done));
   const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", `refs/heads/chore/done-${OPUS}`]).split("\n").sort();
