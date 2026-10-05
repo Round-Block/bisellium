@@ -119,6 +119,9 @@ export function reconcileFindings(
     }
     if (reason !== undefined) converted.push({ finding, reason });
   }
+  // A failure stands exactly when the censor cites a brief line for a blocker: reconcile only when every submitted blocker converted.
+  if (blocking.length > 0 && converted.length === blocking.length && /^(?:verdict:\s*)?fail(?:ed)?\b/i.test(outcome.trim()))
+    return { converted, outcome: "passed", submittedOutcome: outcome };
   return { converted, outcome };
 }
 
@@ -348,6 +351,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   let briefHeader: string | undefined;
   let convertedHeader: string | undefined;
   let conversions: Conversion[] = [];
+  let recorded = outcome;
+  let submitted: string | undefined;
   if (!isUi && phase === "build") {
     const read = typeof record.spec === "string" ? readContainedRegularFile(root, record.spec, "briefs") : { error: "no spec" };
     let brief: Parameters<typeof reconcileFindings>[2] = { error: "no spec" };
@@ -357,7 +362,10 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
       brief = { spec: record.spec, ...(where === undefined ? {} : { repoSpec: `${where.rel}/${record.spec}` }), text: read.bytes.toString("utf8") };
       briefHeader = `${record.spec} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
     }
-    conversions = reconcileFindings(transcript.toString("utf8"), outcome, brief).converted;
+    const reconciled = reconcileFindings(transcript.toString("utf8"), outcome, brief);
+    conversions = reconciled.converted;
+    recorded = reconciled.outcome;
+    submitted = reconciled.submittedOutcome;
     if (conversions.length > 0) convertedHeader = conversions.map((c) => `${c.finding} (${c.reason})`).join("; ");
   }
 
@@ -374,7 +382,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     `# round: ${round}`,
     `# sella: ${sella}`,
     ...(model === undefined ? [] : [`# model: ${model}`]),
-    `# outcome: ${outcome}`,
+    `# outcome: ${recorded}`,
+    ...(submitted === undefined ? [] : [`# submitted_outcome: ${submitted}`]),
     `# at: ${now.toISOString()}`,
     `# tree: ${treeAtCapture(root, manifest.source_excludes ?? [])}`,
     ...(briefHeader === undefined ? [] : [`# brief: ${briefHeader}`]),
@@ -396,5 +405,6 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
 
   console.log(`${opusId}: ${phase} verdict round ${round} -> ${relative(root, target).split(sep).join("/")}`);
   for (const c of conversions) console.log(`${opusId}: finding ${c.finding} recorded as advisory: ${c.reason}`);
+  if (submitted !== undefined) console.log(`${opusId}: outcome "${submitted}" recorded as passed: no blocking finding cites a line of the brief`);
   return { exitCode: 0 };
 }
