@@ -8,9 +8,9 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
@@ -201,4 +201,52 @@ test("W-139 behaviour 2: gates' record-only steps are the studio check then test
     0,
     "web-e2e has no record-only step",
   );
+});
+
+test("W-139 behaviour 3: the preload records reads of the record-only set, nothing else, and stays invisible", () => {
+  const preload = join(HERE, "record-reads.mjs");
+  const tmp = mkdtempSync(join(tmpdir(), "w139-probe-"));
+  try {
+    const probe = join(tmp, "probe.test.mjs");
+    const child = `require("node:fs").existsSync(${JSON.stringify(join(REPO, "studio", "w139-child"))})`;
+    writeFileSync(
+      probe,
+      [
+        `import { existsSync, readFileSync, realpathSync } from "node:fs";`,
+        `import { readFile } from "node:fs/promises";`,
+        `import { spawnSync } from "node:child_process";`,
+        `existsSync(${JSON.stringify(join(REPO, "studio", "w139-probe-absent"))});`,
+        `await readFile(${JSON.stringify(join(REPO, "docs", "SESSION-HANDOFF.md"))});`,
+        `readFileSync(${JSON.stringify(join(REPO, "docs", "ADOPTION.md"))});`,
+        `existsSync(${JSON.stringify(join(tmp, "studio", "x"))});`,
+        `spawnSync(process.execPath, ["-e", ${JSON.stringify(child)}], { cwd: ${JSON.stringify(tmp)}, stdio: "ignore" });`,
+        `console.log(typeof realpathSync.native);`,
+      ].join("\n"),
+    );
+    const log = join(tmp, "reads.log");
+    const run = (extra) => {
+      const env = { ...process.env, NODE_OPTIONS: `--import ${preload}`, ...extra };
+      delete env.BISELLIUM_RECORD_OWNER;
+      if (!extra.BISELLIUM_RECORD_READS) delete env.BISELLIUM_RECORD_READS;
+      return spawnSync(process.execPath, [probe], { cwd: tmp, env, encoding: "utf8" });
+    };
+    const owner = relative(REPO, probe).split("\\").join("/");
+    const printed = run({ BISELLIUM_RECORD_READS: log });
+    const lines = existsSync(log) ? readFileSync(log, "utf8").split("\n").filter(Boolean).sort() : [];
+    assert.deepEqual(
+      lines,
+      [
+        `${owner}\tdocs/SESSION-HANDOFF.md`,
+        `${owner}\tstudio/w139-child`,
+        `${owner}\tstudio/w139-probe-absent`,
+      ],
+      "exactly the three in-set reads, each owned by the probe",
+    );
+    assert.equal(printed.stdout.trim(), "function", "realpathSync.native survives the wrappers");
+    rmSync(log, { force: true });
+    run({});
+    assert.equal(existsSync(log), false, "without BISELLIUM_RECORD_READS the preload writes no log");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });
