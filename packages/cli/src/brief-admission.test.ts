@@ -5,13 +5,16 @@
  * `checkStudio` on the same copy. Select one behaviour with
  * `--test-name-pattern=behaviour.<n>`. node:test TAP, one describe per
  * behaviour. No timers, no polling.
+ *
+ * W-140 rows: `--test-name-pattern=W-140-b2` and `W-140-b3` (one top-level test each).
  */
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
 import { readBriefAdmission } from "@bisellium/commands/brief-admission.js";
@@ -427,4 +430,56 @@ describe("review round 1", () => {
     const r = readBriefAdmission(brief({ reds: SEVEN, exceptions: ["D-900"] }), 6);
     assert.deepEqual(Object.keys(r).sort(), ["exception", "problems"], FIX);
   });
+});
+
+const ROOT = join(HERE, "..", "..", "..");
+
+test("W-140-b2 behaviour 2: admission's parser is the only behaviour counter in the tree, and the plain-node host loads it", () => {
+  const sources: string[] = [];
+  const walk = (rel: string): void => {
+    for (const entry of readdirSync(join(ROOT, rel), { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name === "dist") continue;
+      const child = `${rel}/${entry.name}`;
+      if (entry.isDirectory()) walk(child);
+      else if (/\.(ts|tsx|mjs|js)$/.test(entry.name) && !entry.name.includes(".test.")) sources.push(child);
+    }
+  };
+  for (const top of ["packages", "adapters", "apps"])
+    for (const pkg of readdirSync(join(ROOT, top), { withFileTypes: true }))
+      if (pkg.isDirectory() && existsSync(join(ROOT, top, pkg.name, "src"))) walk(`${top}/${pkg.name}/src`);
+  walk("scripts");
+  const census = sources.filter((rel) => readFileSync(join(ROOT, rel), "utf8").includes("## Behaviours to test")).sort();
+  assert.deepEqual(census, ["packages/commands/src/brief-admission.ts"], "b2: the one source holding the section heading");
+
+  const host = readFileSync(join(ROOT, "scripts", "run-builder-host.mjs"), "utf8");
+  assert.ok(
+    host.split("\n").includes('import { countBehaviours } from "../packages/commands/src/brief-admission.ts";'),
+    "b2: the host imports the shared counter",
+  );
+
+  const file = pathToFileURL(join(ROOT, "packages", "commands", "src", "brief-admission.ts")).href;
+  const comment = "## Behaviours to test\n1. a\n<!--\n2. b\n-->\n";
+  const src = `import { countBehaviours } from ${JSON.stringify(file)}; console.log(countBehaviours(${JSON.stringify(comment)}));`;
+  const run = spawnSync(process.execPath, ["--input-type=module", "-e", src], { env: { PATH: process.env["PATH"] ?? "" }, encoding: "utf8" });
+  assert.equal(run.status, 0, `b2: plain node exits 0 (${run.stderr})`);
+  assert.equal(run.stdout.trim(), "1", "b2: the comment row counts 1");
+  assert.equal(run.stderr, "", "b2: nothing on stderr");
+});
+
+test("W-140-b3 behaviour 3: readBriefAdmission's export is the signed two-argument signature, and exception problems keep their place", () => {
+  assert.equal(readBriefAdmission.length, 2, "b3: two parameters");
+  const neverCalled = (): void => {
+    // @ts-expect-error W-140: the signed signature has no third parameter
+    readBriefAdmission("", 6, () => undefined);
+  };
+  void neverCalled;
+  const EXC = 'behaviour limit exception: decision "D-404" not found';
+  const noFamily = ready(brief({ families: [], reds: SEVEN, exceptions: ["D-404"] }));
+  assert.deepEqual(noFamily.stderr, [NO_FAMILY, EXC].map(line), "b3: family problem, then the exception problem");
+  const twice = ready(brief({ reds: SEVEN, exceptions: ["D-404"], inside: ["## Behaviours to test"] }));
+  assert.deepEqual(
+    twice.stderr,
+    [EXC, 'has 2 "## Behaviours to test" headings; one section only'].map(line),
+    "b3: the exception problem, then the heading problem",
+  );
 });

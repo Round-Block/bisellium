@@ -75,13 +75,9 @@ const captured = (lines: string[], re: RegExp): string[] =>
     return m ? [m[1]!.trim()] : [];
   });
 
-/** `exception`: the one "Behaviour limit exception:" value on an over-limit brief. `checkException`, when
- *  given, validates it and its problem is placed where clause 2's problem would be. */
-export function readBriefAdmission(
-  briefText: string,
-  limit: number,
-  checkException?: (decisionId: string) => string | undefined,
-): { problems: string[]; exception?: string } {
+/** `exception`: the one "Behaviour limit exception:" value on an over-limit brief. It is not validated here
+ *  (W-140: two parameters, as W-127 signed); `briefAdmissionProblems` checks it and places its problem. */
+export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
   const problems: string[] = [];
   const real = realLines(briefText);
   const families = captured(real, /^Decree family:(.*)$/);
@@ -101,8 +97,6 @@ export function readBriefAdmission(
     else if (exceptions.length > 1) problems.push(`has ${exceptions.length} "Behaviour limit exception:" lines; at most one`);
     else {
       exception = exceptions[0]!;
-      const p = checkException?.(exception);
-      if (p !== undefined) problems.push(p);
     }
   }
   const headings = real.filter((l) => l.trim() === HEADING).length;

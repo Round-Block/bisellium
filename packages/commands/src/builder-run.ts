@@ -10,6 +10,7 @@ import {
   isDirtyOutside, makeSessionId, sourceTreeHash, writeReceiptEnd, writeReceiptStart,
   type WorktreeProvider,
 } from "@bisellium/shim";
+import { countBehaviours } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, markIsolatedBuilderRuntime } from "./frontmatter.js";
 
 interface BuilderRunCompletion {
@@ -167,22 +168,6 @@ export function cleanupAbandonedRuntime(resultFile: string, tmpRoot: string = tm
   rmSync(runtime, { recursive: true, force: true });
 }
 
-/** Same rule as rules/evidence.ts `countBehaviours` (packages/commands cannot import the CLI package). */
-function declaredBehaviours(briefText: string): number {
-  const lines = briefText.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === "## Behaviours to test");
-  if (start === -1) return 0;
-  let count = 0;
-  let inFence = false;
-  for (const line of lines.slice(start + 1)) {
-    if (/^\s{0,3}```/.test(line)) inFence = !inFence;
-    else if (inFence) continue;
-    else if (/^## /.test(line)) break;
-    else if (/^\s{0,3}\d+\.\s/.test(line)) count++;
-  }
-  return count;
-}
-
 export async function runBuilderCommand(request: BuilderRunRequest): Promise<BuilderRunResult> {
   const opusPath = join(request.studioRoot, "opera", `${request.opus}.md`);
   if (request.provider !== undefined) {
@@ -337,7 +322,7 @@ export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunRec
       }
     }
     // One red does not suffice: every numbered behaviour in the brief needs its replayed red.
-    const declared = declaredBehaviours(readFileSync(join(studioRoot, "briefs", `${opus}.md`), "utf8"));
+    const declared = countBehaviours(readFileSync(join(studioRoot, "briefs", `${opus}.md`), "utf8"));
     if (declared === 0) return { ok: false, error: `${opus}: brief declares no numbered behaviours to replay` };
     for (let n = 1; n <= declared; n++)
       if (!behaviours.has(n)) return { ok: false, error: `${opus}: run_receipt lacks a replayed red for behaviour ${n}` };

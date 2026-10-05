@@ -13,6 +13,9 @@
  * b1-b3 are live (the real runner, bwrap and a rebased branch); b4 is the
  * receipt gate's own seam. They register only when no `--behaviour` is given.
  *
+ * W-140 row b1 (the gate counts behaviours with admission's parser) follows, selected by
+ * `--test-name-pattern=W-140-b1`; it is a plain test and registers the same way.
+ *
  * Every row owns a fresh temporary repository and officina. Nothing here
  * reads from or writes to studio/ or examples/sample-studio.
  */
@@ -1713,6 +1716,64 @@ if (only === undefined) {
 
     const stale = admit({ commit: anchor, sourceTree: f.claimed });
     assert.equal(refusedAs(stale, /unreachable or mismatched red identity/), true, "b4: no replayedTree, a sourceTree no commit has: today's rule refuses");
+  });
+
+  // W-140: the receipt gate counts behaviours with brief admission's parser, on every shape of the table.
+  test("W-140-b1 behaviour 1: the receipt gate counts behaviours with admission's parser, on every shape of the table", async () => {
+    const { admitCurrentRunReceipt } = await import("./builder-run.js");
+    const { countBehaviours } = await import("./brief-admission.js");
+    const { editOpusFrontMatter, markIsolatedBuilderRuntime } = await import("./frontmatter.js");
+    const f = liveFixture("w140-b1", { rebase: { logs: "once" } });
+    rmSync(join(f.studio, "ci", "reds"), { recursive: true, force: true });
+    git(f.repo, ["checkout", "-q", `opus/${OPUS}`]);
+    const opusPath = join(f.studio, "opera", `${OPUS}.md`);
+    markIsolatedBuilderRuntime(opusPath);
+    const finalCommit = git(f.repo, ["rev-parse", "HEAD"]);
+    const anchor = f.anchor ?? "";
+    let serial = 0;
+    const admit = (behaviours: number[]) => {
+      serial += 1;
+      const rel = `receipts/builder.${OPUS}/w140-${serial}.json`;
+      mkdirSync(join(f.studio, "receipts", `builder.${OPUS}`), { recursive: true });
+      writeFileSync(
+        join(f.studio, rel),
+        JSON.stringify({
+          schema: 1, harness: "run", sella: `builder.${OPUS}`, sessionId: `w140-${serial}`, startedAt: NOW.toISOString(), cwd: "/disposed",
+          cmd: ["builder"], endedAt: NOW.toISOString(), exitCode: 0, durationMs: 1,
+          completion: {
+            schema: 1, origin: "host-producer", opus: OPUS, branch: `opus/${OPUS}`, builder: `builder.${OPUS}`, producer: "producer",
+            baseCommit: finalCommit, finalCommit, finalSourceTree: sourceTreeOf(f.repo, finalCommit), toolingCommit: finalCommit,
+            redReplays: behaviours.map((behaviour) => ({
+              behaviour, command: "node --test-reporter=tap red.mjs", assertionFailed: true, commit: anchor, sourceTree: sourceTreeOf(f.repo, anchor),
+            })),
+            gates: { ci: true, verify: true, check: true }, teardownComplete: true, completed: true,
+          },
+        }),
+      );
+      editOpusFrontMatter(opusPath, (doc) => { doc.set("run_receipt", rel); return undefined; });
+      return admitCurrentRunReceipt(f.studio, OPUS);
+    };
+    const H = "## Behaviours to test\n";
+    const table: [string, string, number][] = [
+      ["numbered line in a comment", `${H}1. a\n<!--\n2. b\n-->\n`, 1],
+      ["mid-line comment opener", `${H}1. a <!-- x\n2. b\n-->\n`, 1],
+      ["unterminated comment", `${H}1. a\n<!--\n2. b\n`, 1],
+      ["decoy heading in a comment", `<!--\n${H}1. x\n2. y\n3. z\n-->\n${H}1. a\n`, 1],
+      ["unterminated backtick fence", `${H}1. a\n\`\`\`\n2. b\n`, 1],
+      ["~~~ fence", `${H}1. a\n~~~\n2. b\n~~~\n`, 2],
+      ["indented fence", `${H}1. a\n    \`\`\`\n2. b\n    \`\`\`\n`, 2],
+      ["CRLF", "## Behaviours to test\r\n1. a\r\n2. b\r\n", 2],
+      ["repeated heading", `${H}1. a\n${H}1. b\n`, 1],
+    ];
+    for (const [shape, text, expected] of table) {
+      writeFileSync(join(f.studio, "briefs", `${OPUS}.md`), text);
+      assert.equal(countBehaviours(text), expected, `b1 ${shape}: the parser's count`);
+      const all = Array.from({ length: expected }, (_, i) => i + 1);
+      const ok = admit(all);
+      assert.equal(ok.ok, true, `b1 ${shape}: a receipt with reds 1..${expected} is admitted (${ok.ok ? "" : ok.error})`);
+      const short = admit([...all.slice(0, -1), expected + 1]);
+      assert.equal(!short.ok && short.error.includes(`lacks a replayed red for behaviour ${expected}`), true, `b1 ${shape}: reds missing behaviour ${expected} are refused`);
+    }
   });
 }
 

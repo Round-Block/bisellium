@@ -8,6 +8,9 @@
  * namespaces, cleared environment, read-only host tooling, private writable
  * directories). The result the parent trusts is written to a file the parent
  * created in a directory no sandbox can see; nothing on stdout is ever parsed.
+ * Host modules, read from this checkout and never from candidate code:
+ * host-cells.mjs, replay-accept.mjs, git-broker.mjs and
+ * packages/commands/src/brief-admission.ts (the one behaviour counter).
  */
 import { spawn, spawnSync } from "node:child_process";
 import {
@@ -44,6 +47,7 @@ import {
   replayCell,
 } from "./host-cells.mjs";
 import { classifyReplay } from "./replay-accept.mjs";
+import { countBehaviours } from "../packages/commands/src/brief-admission.ts";
 
 const argv = process.argv.slice(2);
 const requestAt = argv.indexOf("--request");
@@ -429,21 +433,6 @@ const validateGitArgs = (args) => {
 const filesOwned = (briefText) => {
   const section = briefText.split(/^## Files owned\s*$/m)[1]?.split(/^## /m)[0] ?? "";
   return new Set([...section.matchAll(/^- `([^`]+)`/gm)].map((match) => match[1]));
-};
-/** Same rule as rules/evidence.ts countBehaviours: the ordered list under "## Behaviours to test". */
-const countBehaviours = (briefText) => {
-  const lines = briefText.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === "## Behaviours to test");
-  if (start === -1) return 0;
-  let count = 0;
-  let inFence = false;
-  for (const line of lines.slice(start + 1)) {
-    if (/^\s{0,3}```/.test(line)) inFence = !inFence;
-    else if (inFence) continue;
-    else if (/^## /.test(line)) break;
-    else if (/^\s{0,3}\d+\.\s/.test(line)) count++;
-  }
-  return count;
 };
 
 const redReplays = [];

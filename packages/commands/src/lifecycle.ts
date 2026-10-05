@@ -1068,12 +1068,14 @@ export function briefAdmissionProblems(
     | { magister?: unknown }
     | undefined;
   const magister = typeof design?.magister === "string" && design.magister.length > 0 ? design.magister : undefined;
-  const { problems } = readBriefAdmission(briefText, limit, (decisionId) => {
-    const p = magister
-      ? patronDecisionProblem(root, manifest, decisionId, { by: magister, mustName: opusId })
-      : "no design collegium declares a magister";
-    return p === undefined ? undefined : `behaviour limit exception: ${p}`;
-  });
+  const { problems, exception } = readBriefAdmission(briefText, limit);
+  if (exception === undefined) return problems;
+  const p = magister
+    ? patronDecisionProblem(root, manifest, exception, { by: magister, mustName: opusId })
+    : "no design collegium declares a magister";
+  // Where clause 2's problem sits: after clause 1's family problem (at most one), before everything else.
+  // ponytail: the index reads clause 1's message prefix; a reworded family message moves it.
+  if (p !== undefined) problems.splice(/^(declares |decree family )/.test(problems[0] ?? "") ? 1 : 0, 0, `behaviour limit exception: ${p}`);
   return problems;
 }
 
