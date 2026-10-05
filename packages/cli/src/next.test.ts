@@ -478,20 +478,20 @@ function removeBranchAndWorktree(w: World): void {
 function ensureMaster(w: World): void {
   if (git(w.repo, ["symbolic-ref", "-q", "HEAD"], false) !== "refs/heads/master") git(w.repo, ["switch", "-q", "master"]);
 }
-function markDone(w: World, onChore: boolean): void {
+/** A handoff that names the opus under the old `Where things stand` heading (the new rule does not read it). */
+const HANDOFF_DONE = `# Handoff\n\n## Where things stand\n\n- ${OPUS} done, merged, fetched (fixture)\n`;
+/** The done record is committed with `handoff` (the checkpoint) when one is given, as `next` commits them together. */
+function markDone(w: World, onChore: boolean, handoff?: string): void {
   ensureMaster(w);
   if (onChore) git(w.repo, ["switch", "-q", "-c", `chore/done-${OPUS}`]);
   verb(w.repo, ["done", OPUS, "--sella", "producer", "--studio", w.studio, "--now", T.done]);
+  if (handoff !== undefined) put(w.repo, "docs/SESSION-HANDOFF.md", handoff);
   commit(w.repo, `chore(studio): mark ${OPUS} done`);
   if (onChore) git(w.repo, ["switch", "-q", "master"]);
   else git(w.repo, ["push", "-q", "origin", "master"]);
 }
-function checkpoint(w: World): void {
-  ensureMaster(w);
-  put(w.repo, "docs/SESSION-HANDOFF.md", `# Handoff\n\n## Where things stand\n\n- ${OPUS} done, merged, fetched (fixture)\n`);
-  commit(w.repo, "chore: checkpoint");
-  git(w.repo, ["push", "-q", "origin", "master"]);
-}
+/** A tracked edit to the handoff: the checkpoint a `done` perform commits with the record. */
+const touchHandoff = (w: World): void => appendFileSync(join(w.repo, "docs/SESSION-HANDOFF.md"), "- checkpoint line\n");
 
 /** Build a fixture officina in which every rung up to and including `upTo` is met. */
 function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
@@ -571,8 +571,7 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   if (reach >= idx("pr")) git(w.wt, ["push", "-q", "-u", "origin", BRANCH]);
   if (reach >= idx("merge")) landMerge(w, o.fetched ?? true);
   if (reach >= idx("cleanup")) removeBranchAndWorktree(w);
-  if (reach >= idx("done")) markDone(w, false);
-  if (reach >= idx("checkpoint")) checkpoint(w);
+  if (reach >= idx("done")) markDone(w, false, reach >= idx("checkpoint") ? HANDOFF_DONE : undefined);
   return w;
 }
 
@@ -1658,6 +1657,7 @@ if (runs(4)) {
     const lifecycle = world("b4-done", "cleanup");
     scenario(lifecycle, { list: mergedList(lifecycle) });
     const masterTip = gitq(lifecycle.repo, ["rev-parse", "refs/heads/master"]);
+    touchHandoff(lifecycle);
     const performed = next(lifecycle, [OPUS, "--perform", "--expect", "done"]);
     expectStep(performed, "done", "performed", "done is performed from a fresh MERGED read and a contained merge commit");
     assert.equal(performed.status, 0, ran("performed done exit", performed));
@@ -1666,7 +1666,7 @@ if (runs(4)) {
     assert.equal(gitq(lifecycle.repo, ["rev-parse", `${choreTip}^`]), masterTip, "chore/done-<id> is created at the master tip");
     assert.equal(gitq(lifecycle.repo, ["log", "-1", "--format=%s", choreTip]), `chore(studio): mark ${OPUS} done`);
     assert.match(gitq(lifecycle.repo, ["log", "-1", "--format=%b", choreTip]), /Co-Authored-By: producer \(bisellium next\) <noreply@anthropic\.com>/, "the trailer");
-    assert.deepEqual(gitq(lifecycle.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", choreTip]).split("\n"), [`studio/opera/${OPUS}.md`], "exactly the one record path");
+    assert.deepEqual(gitq(lifecycle.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", choreTip]).split("\n"), ["docs/SESSION-HANDOFF.md", `studio/opera/${OPUS}.md`], "exactly the record and the handoff");
     assert.equal(gitq(lifecycle.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "and back on master");
     assert.doesNotMatch(gitq(lifecycle.repo, ["show", `refs/heads/master:studio/opera/${OPUS}.md`]), /state: "?done/, "the committed trunk record is not done until the commit lands");
     const landing2 = next(lifecycle, [OPUS]);
@@ -1677,12 +1677,13 @@ if (runs(4)) {
     // a refusing done leaves no branch and no commit
     const refusing = world("b4-done-refused", "cleanup", { sec: false });
     scenario(refusing, { list: mergedList(refusing) });
+    touchHandoff(refusing);
     const refusingTip = git(refusing.repo, ["rev-parse", "refs/heads/master"]);
     const refusingOut = next(refusing, [OPUS, "--perform", "--expect", "done"]);
     assert.equal(refusingOut.status, 1, ran("a refusing done is relayed (exit 1)", refusingOut));
     assert.equal(branchExists(refusing, chore), false, "no chore branch is left");
     assert.equal(git(refusing.repo, ["rev-parse", "refs/heads/master"]), refusingTip, "and no commit");
-    assert.equal(git(refusing.repo, ["status", "--porcelain", "--untracked-files=no"]), "", "and a clean tree");
+    assert.equal(git(refusing.repo, ["status", "--porcelain", "--untracked-files=no"]), "M docs/SESSION-HANDOFF.md", "and only the handoff edit is left");
 
     // a second changed tracked path is held with nothing committed
     const second = world("b4-done-second-path", "cleanup");
@@ -1690,6 +1691,7 @@ if (runs(4)) {
     git(second.repo, ["add", "-f", "studio/.bisellium/events.jsonl"]);
     commit(second.repo, "test: track the event log");
     scenario(second, { list: mergedList(second) });
+    touchHandoff(second);
     const secondTip = git(second.repo, ["rev-parse", "refs/heads/master"]);
     const secondOut = next(second, [OPUS, "--perform", "--expect", "done"]);
     expectHeld(secondOut, "a second changed tracked path");
@@ -2502,4 +2504,45 @@ test("W-141-b2 behaviour 2: done composes with verify: the rung names verify fir
   assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is back on master");
   const status = git(w.repo, ["status", "--porcelain"]);
   for (const p of paths) assert.ok(!status.includes(p), `git status lists none of the three paths (${p}): ${status}`);
+});
+
+// ---------------------------------------------------------------------------
+// W-141 behaviour 3: the checkpoint rides the done commit
+// ---------------------------------------------------------------------------
+test("W-141-b3 behaviour 3: the checkpoint rides the done commit", { timeout: 1_800_000 }, () => {
+  // a done commit that changed a heading-less handoff reads complete
+  const c = world("w141-b3-complete", "cleanup");
+  markDone(c, false, "# Handoff\n\n- the producer's note, under no heading at all\n");
+  scenario(c, { list: mergedList(c) });
+  const complete = next(c, [OPUS]);
+  assert.equal(complete.first, `next: ${OPUS} checkpoint complete`, ran("the done commit carried the handoff: complete, with no heading", complete));
+  assert.equal(complete.status, 0, ran("complete exits 0", complete));
+
+  // a done commit that left the handoff unchanged reads named, even when a later commit names the opus under the old heading
+  const n = world("w141-b3-named", "done");
+  expectStep(next(n, [OPUS]), "checkpoint", "named", "the done commit left the handoff unchanged");
+  put(n.repo, "docs/SESSION-HANDOFF.md", HANDOFF_DONE);
+  commit(n.repo, "chore: a later handoff edit");
+  git(n.repo, ["push", "-q", "origin", "master"]);
+  expectStep(next(n, [OPUS]), "checkpoint", "named", "a later edit that names the opus under the old heading does not complete it");
+
+  // master without a handoff: complete once the record is done
+  const none = world("w141-b3-none", "cleanup");
+  git(none.repo, ["rm", "-q", "docs/SESSION-HANDOFF.md"]);
+  commit(none.repo, "test: no handoff");
+  git(none.repo, ["push", "-q", "origin", "master"]);
+  markDone(none, false);
+  assert.equal(next(none, [OPUS]).first, `next: ${OPUS} checkpoint complete`, "no handoff on master: complete once the record is done");
+
+  // --perform --expect done refuses when the handoff has no tracked change; nothing is mutated
+  const r = world("w141-b3-refuse", "cleanup", { patron: true });
+  scenario(r, { list: mergedList(r) });
+  const was = frozen(r);
+  const refused = next(r, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(refused, "done without a handoff change");
+  assert.ok(outLines(refused).some((l) => /^why: .*checkpoint/.test(l)), ran("the why line names the checkpoint", refused));
+  assert.equal(frozen(r), was, ran("nothing is mutated", refused));
+  assert.equal(branchExists(r, `chore/done-${OPUS}`), false, "no chore branch");
+  touchHandoff(r);
+  expectStep(next(r, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "with a handoff change the perform commits");
 });

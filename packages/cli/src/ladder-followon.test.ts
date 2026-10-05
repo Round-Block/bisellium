@@ -425,35 +425,19 @@ if (runs(5)) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. the checkpoint rung reads a dated heading
+// 6. the checkpoint rung reads the done commit, not a heading (W-141)
 // ---------------------------------------------------------------------------
-const checkpoint = (handoff: string): ReturnType<typeof deriveNext> =>
-  deriveNext({ id: "W-900", trunkRecord: { state: "done" }, handoff } as unknown as Facts);
+const checkpoint = (handoff: string | undefined, checkpointed: boolean): ReturnType<typeof deriveNext> =>
+  deriveNext({ id: "W-900", trunkRecord: { state: "done" }, handoff, checkpointed: () => checkpointed } as unknown as Facts);
 
 if (runs(6)) {
-  test("W-128 behaviour 6: the checkpoint rung reads a dated heading", () => {
-    const control = checkpoint("# Handoff\n\n## Where things stand\n\n- W-900 is done.\n");
+  test("W-128 behaviour 6: the checkpoint rung reads whether the done commit changed the handoff", () => {
+    const control = checkpoint("# Handoff\n\n- W-900 is done.\n", true);
     assert.equal(control.step, "checkpoint", "6a: the done opus lands on the checkpoint rung");
-    assert.equal(control.status, "complete", "6a: a plain heading naming W-900 is complete");
-
-    const elsewhere = checkpoint("## Where things stand (2026-10-02 late night)\n\n- nothing here\n\n## Queue\n\n- W-900 next.\n");
-    assert.equal(elsewhere.status, "named", "6b: a dated heading whose section lacks W-900 stays named");
-
-    const notHeadings = [
-      "## Where things stand now",
-      "## Where things stand (2026-10-02) trailing",
-      "## Where things stand (",
-      "## Where things stand (a (b))",
-      "## Not Where things stand (2026)",
-      "Where things stand (2026-10-02)",
-    ];
-    for (const heading of notHeadings) assert.equal(checkpoint(`${heading}\n\n- W-900 is done.\n`).status, "named", `6c: "${heading}" is not a heading match`);
-
-    const dated = checkpoint("## Where things stand (2026-10-02 late night)\n\n- W-900 is done.\n");
-    assert.equal(dated.status, "complete", "6d: a dated heading followed by a bullet naming W-900 is complete");
-
-    const nested = checkpoint("## Where things stand (2026-10-02 late night)\n\n- earlier\n\n### note\n\n- W-900 is done.\n\n## Queue\n\n- later\n");
-    assert.equal(nested.status, "complete", "6e: a subsection under the dated heading counts toward the section");
+    assert.equal(control.status, "complete", "6a: a done commit that changed the handoff is complete, heading or not");
+    const named = checkpoint("## Where things stand\n\n- W-900 is done.\n", false);
+    assert.equal(named.status, "named", "6b: a heading naming W-900 does not complete a done commit that left the handoff unchanged");
+    assert.equal(checkpoint(undefined, false).status, "complete", "6c: no handoff on master: complete once the record is done");
   });
 }
 
