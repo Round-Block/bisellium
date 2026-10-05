@@ -204,3 +204,48 @@ describe("behaviour 2", () => {
     assert.equal(r.header.has("converted"), false);
   });
 });
+
+describe("behaviour 3", () => {
+  const UNCITED = "blocking — packages/x.ts:3 the writer drops a line";
+  const CITED = "blocking — brief:2 the first behaviour is missing";
+  const ADVISORY = "advisory — the usage line is long";
+
+  for (const raw of ["failed", "FAIL", "VERDICT: FAIL — x"])
+    test(`${raw} with every blocking finding converted is recorded as passed`, () => {
+      const body = findings(UNCITED, ADVISORY);
+      const r = verdict(studio(), body, raw);
+      assert.equal(r.exitCode, 0, r.stderr);
+      assert.equal(r.header.get("outcome"), "passed");
+      assert.equal(r.header.get("submitted_outcome"), raw);
+      assert.deepEqual(r.keys.slice(r.keys.indexOf("outcome"), r.keys.indexOf("outcome") + 2), ["outcome", "submitted_outcome"]);
+      assert.equal(r.body, body, "body exact");
+      assert.match(r.stdout, new RegExp(`^W-300: outcome "${raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}" recorded as passed: no blocking finding cites a line of the brief$`, "m"));
+    });
+
+  test("failed with one uncited and one valid blocker stays failed", () => {
+    const r = verdict(studio(), findings(UNCITED, CITED), "failed");
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.equal(r.header.get("outcome"), "failed");
+    assert.match(r.header.get("converted") ?? "", /^1 \(/);
+    assert.equal(r.header.has("submitted_outcome"), false);
+  });
+
+  test("failed with only advisory findings stays failed", () => {
+    const r = verdict(studio(), findings(ADVISORY), "failed");
+    assert.equal(r.header.get("outcome"), "failed");
+    assert.equal(r.header.has("submitted_outcome"), false);
+  });
+
+  test("passed with a valid blocker stays passed", () => {
+    const r = verdict(studio(), findings(CITED), "passed");
+    assert.equal(r.header.get("outcome"), "passed");
+    assert.equal(r.header.has("submitted_outcome"), false);
+  });
+
+  test("a spec-phase failed outcome with an uncited blocker is untouched", () => {
+    const r = verdict(studio(), findings(UNCITED), "failed", ["--phase", "spec"]);
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.equal(r.header.get("outcome"), "failed");
+    assert.equal(r.header.has("submitted_outcome"), false);
+  });
+});
