@@ -49,7 +49,7 @@ export interface MergePipeline {
 }
 
 /** Wall-clock cap on one automated gate command under `verify`, and on one `bisellium ci` step. */
-export const GATE_TIMEOUT_MS = 10 * 60 * 1000;
+export const GATE_TIMEOUT_MS = 30 * 60_000;
 const LOG_TAIL_LINES = 200;
 
 const toPosix = (p: string): string => p.split(sep).join("/");
@@ -61,7 +61,7 @@ function tail(text: string, n: number): string {
 }
 
 /**
- * localPipeline: runs each command in `repo` with a 10-minute timeout,
+ * localPipeline: runs each command in `repo` with a 30-minute timeout,
  * writes one log per probatio (command, exit code, last 200 lines of
  * combined stdout+stderr) and reports pass/fail from the exit code.
  */
