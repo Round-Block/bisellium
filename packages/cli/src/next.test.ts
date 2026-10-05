@@ -315,6 +315,8 @@ interface WorldOpts {
   prRequired?: boolean;
   /** W-141: the base commit tracks a Patron path (`.claude/agents/censor.md`) and one whose name needs quoting. */
   patron?: boolean;
+  /** W-141: the manifest declares an automated probatio, `tests`, whose command is `node -e 0`. */
+  automated?: boolean;
 }
 
 const MANIFEST = [
@@ -520,7 +522,8 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
     put(w.repo, ".claude/agents/censor.md", "censor v1\n");
     put(w.repo, ".claude/my notes.md", "notes v1\n");
   }
-  put(w.studio, "bisellium.yml", o.prRequired ? `${MANIFEST}integration:\n  pr:\n    required: true\n` : MANIFEST);
+  const manifest = o.automated ? MANIFEST.replace("source_excludes:", '  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes:') : MANIFEST;
+  put(w.studio, "bisellium.yml", o.prRequired ? `${manifest}integration:\n  pr:\n    required: true\n` : manifest);
   put(w.studio, "notes.md", "bookkeeping line\n");
   put(w.studio, `opera/${OPUS}.md`, recordText({ state: upTo === "backlog" ? "backlog" : "greenlit", probationes: {} }));
   commit(w.repo, "test: establish W-124 fixture");
@@ -2456,4 +2459,47 @@ test("W-141-b1 behaviour 1: a Patron path stops next before the main checkout mo
   const q = world("w141-b1-quote", "spec", { patron: true });
   appendFileSync(join(q.repo, ".claude/my notes.md"), "edit\n");
   dirtyRow("quoted", next(q, [OPUS, "--perform", "--expect", "branch"]), q, frozen(q), ".claude/my notes.md", "'.claude/my notes.md'");
+});
+
+// ---------------------------------------------------------------------------
+// W-141 behaviour 2: done composes with verify
+// ---------------------------------------------------------------------------
+test("W-141-b2 behaviour 2: done composes with verify: the rung names verify first, then commits the record and verify's certificates", { timeout: 1_800_000 }, () => {
+  const w = world("w141-b2", "cleanup", { automated: true });
+  scenario(w, { list: mergedList(w) });
+  const chore = `chore/done-${OPUS}`;
+  const verify = `bisellium verify ${OPUS} --studio studio --repo .`;
+
+  // before verify: the rung names the verify command, and a perform holds with it on a why: line
+  const named = next(w, [OPUS]);
+  expectStep(named, "done", "named", "no certificate: done is named");
+  assert.equal(named.kv.get("command"), verify, ran("the command is verify", named));
+  const refused = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(refused, "perform before verify");
+  assert.ok(outLines(refused).some((l) => l.startsWith("why: ") && l.includes(verify)), ran("the why line carries the verify command", refused));
+  assert.equal(branchExists(w, chore), false, "no chore/done-<id> is created");
+
+  // run the named command, then edit the handoff
+  const [bin, ...args] = verify.split(" ");
+  assert.equal(bin, "bisellium");
+  verb(w.repo, args);
+  appendFileSync(join(w.repo, "docs/SESSION-HANDOFF.md"), "- checkpoint line\n");
+  assert.match(git(w.repo, ["status", "--porcelain"]), /studio\/opera\/W-900\.md/, "verify wrote the record");
+  const ready = next(w, [OPUS]);
+  expectStep(ready, "done", "named", "after verify: done is named again");
+  assert.equal(ready.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("the command is the perform", ready));
+
+  const done = next(w, [OPUS, "--perform", "--expect", "done"]);
+  assert.equal(done.status, 0, ran("perform exits 0", done));
+  expectStep(done, "done", "performed", "done is performed over verify's outputs");
+  const tip = git(w.repo, ["rev-parse", `refs/heads/${chore}`]);
+  const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", tip]).split("\n").sort();
+  assert.equal(paths.length, 3, `the commit changes three paths: ${paths.join(", ")}`);
+  assert.equal(paths[0], "docs/SESSION-HANDOFF.md");
+  assert.match(paths[1]!, /^studio\/ci\/W-900-tests-[0-9a-f]+\.log$/);
+  assert.equal(paths[2], `studio/opera/${OPUS}.md`);
+  assert.equal(git(w.repo, ["rev-list", "--count", `master..${chore}`]), "1", "one commit");
+  assert.equal(git(w.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD is back on master");
+  const status = git(w.repo, ["status", "--porcelain"]);
+  for (const p of paths) assert.ok(!status.includes(p), `git status lists none of the three paths (${p}): ${status}`);
 });
