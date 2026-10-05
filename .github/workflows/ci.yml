@@ -50,9 +50,12 @@ jobs:
           BISELLIUM_REQUIRE_LIVE_ROWS: "1"
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s check -- examples/sample-studio --repo .
-      # Record-only pull request: the studio officina check is the whole gate.
+      # Record-only pull request: the studio officina check, then the tests that
+      # read the record-only files (W-139; the full path's guard keeps the list exact).
       - if: steps.scope.outputs.record_only == 'true'
         run: npm run -s check -- studio --repo .
+      - if: steps.scope.outputs.record_only == 'true'
+        run: npm run -s test:record
 
   # Deliberately NOT required (W-028's ruling): `check -- studio` fails on
   # known officina debt, so this job stays honestly red until that debt
