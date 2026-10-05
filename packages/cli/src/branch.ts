@@ -42,9 +42,9 @@ interface BranchResult {
    *  assumed to be "master" (the W-026 adjacent bug: a repo whose trunk is
    *  `main` merged into `main` but reported "master"). */
   trunk?: string;
-  /** True once the change actually reached the trunk locally. False when
-   *  `integration.pr.required` stopped short of that on purpose — never
-   *  reported as "merged" (see `runMerge`). */
+  /** True once the change actually reached the trunk locally; every `ok`
+   *  result carries it (`integration.pr.required` is refused before any
+   *  git command, W-141). */
   landed?: boolean;
 }
 
@@ -56,7 +56,6 @@ interface ResolvedIntegration {
   push: boolean;
   pullAfterPush: boolean;
   prRequired: boolean;
-  prReviewer?: string;
 }
 
 /** Reads `integration:` (D-015) from the officina manifest. An absent
@@ -80,7 +79,6 @@ function resolveIntegration(studio: string): ResolvedIntegration {
     push: cfg.push === true,
     pullAfterPush: cfg.pull_after_push === true,
     prRequired: cfg.pr?.required === true,
-    prReviewer: cfg.pr?.reviewer,
   };
 }
 
@@ -421,6 +419,11 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
   const cwd = resolve(repo);
   const branch = opusBranchName(opusId);
 
+  // W-141: under integration.pr.required the PR is the only road to the trunk and `bisellium next` walks it
+  // (push, PR, merge, fetch); `merge` refuses before it runs any git command.
+  const integration = resolveIntegration(studio);
+  if (integration.prRequired) return { ok: false, error: `integration.pr.required is set: ${branch} reaches the trunk through a PR, not through merge; run "bisellium next ${opusId}"` };
+
   const exists = git(["rev-parse", "--verify", branch], cwd);
   if (exists.status !== 0) return { ok: false, error: `branch ${branch} does not exist` };
 
@@ -448,8 +451,6 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
   const trunk = resolveTrunk(cwd);
   if ("error" in trunk) return { ok: false, error: trunk.error };
   const master = trunk.name;
-
-  const integration = resolveIntegration(studio);
 
   // merge_commit is a real, distinct strategy (a topology-preserving merge,
   // typically driven by a PR's own "merge" button on GitHub) — but nothing
@@ -500,25 +501,6 @@ export function mergeOpusBranch(repo: string, opusId: string, studio: string): B
   // This is purely informational — surfaced on every exit path below so a
   // merge that rewrote the branch's history is never silent about it.
   const staleNote = rebased ? `${branch} was rebased onto ${master} — its source tree changed; run "bisellium verify ${opusId}" again before this ships` : undefined;
-
-  if (integration.prRequired) {
-    // D-015 / this opus's brief: PR creation is W-028's territory. `merge`
-    // stops here having done its half — the branch is rebased (if that's
-    // the strategy) and, if configured, pushed — and leaves the branch in
-    // place for a PR to carry to the trunk, rather than landing it locally.
-    if (integration.push) {
-      // force-with-lease: a rebase may have just rewritten `branch`, and a
-      // PR already open against it (D-015 B2) means origin has the
-      // pre-rebase history — a plain push is rejected non-fast-forward.
-      const pushed = pushRef(cwd, branch, { forceWithLease: true });
-      if (!pushed.ok) return { ok: false, error: pushed.error, trunk: master, note: staleNote };
-    }
-    const reviewerNote = integration.prReviewer ? ` (reviewer: ${integration.prReviewer})` : "";
-    const note = [`integration.pr.required is set — ${branch} was not merged locally; open a PR from ${branch} to ${master}${reviewerNote}`, staleNote]
-      .filter(Boolean)
-      .join("; ");
-    return { ok: true, trunk: master, note, landed: false };
-  }
 
   const current = git(["rev-parse", "--abbrev-ref", "HEAD"], cwd).stdout.trim();
   if (current === master) {
@@ -619,13 +601,7 @@ export function runMerge(args: string[]): { exitCode: number } {
     if (result.note) console.error(result.note);
     return { exitCode: 1 };
   }
-  if (result.landed === false) {
-    // integration.pr.required stopped short of landing this on the trunk —
-    // never reported as "merged" when it wasn't.
-    console.log(result.note ?? `${opusBranchName(opusId)} prepared but not merged (PR required)`);
-  } else {
-    console.log(`merged ${opusBranchName(opusId)} into ${result.trunk ?? "master"}`);
-    if (result.note) console.log(result.note);
-  }
+  console.log(`merged ${opusBranchName(opusId)} into ${result.trunk ?? "master"}`);
+  if (result.note) console.log(result.note);
   return { exitCode: 0 };
 }

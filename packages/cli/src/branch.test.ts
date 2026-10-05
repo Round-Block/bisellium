@@ -485,11 +485,10 @@ function originMasterRev(bare: string): string {
     execSync("git checkout master", { cwd: dir, stdio: "pipe" });
 
     const result = mergeOpusBranch(dir, "W-083", studio);
-    check(14, "pr.required still reports success (merge did its half)", result.ok === true, String(result.error));
-    check(14, "pr.required does not land the change on the trunk", result.landed === false, String(result.landed));
+    check(14, "pr.required refuses: merge does not walk the PR road (W-141)", result.ok === false, String(result.error));
+    check(14, "the refusal names next", (result.error ?? "").includes("bisellium next W-083"), String(result.error));
     check(14, "master is untouched", !masterLog(dir).includes("feat: add feature"), masterLog(dir).trim());
     check(14, "opus branch survives for a PR to carry", branches(dir).includes("opus/W-083"), branches(dir).join(","));
-    check(14, "note names the reviewer", (result.note ?? "").includes("qa-lead"), String(result.note));
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
@@ -672,16 +671,16 @@ function originMasterRev(bare: string): string {
     // The branch is pushed to origin BEFORE trunk diverges — the PR-already-
     // open case: origin now holds the pre-rebase commit.
     execSync("git push origin opus/W-093", { cwd: dir, stdio: "pipe" });
+    const pushedRev = execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim();
     execSync("git checkout master", { cwd: dir, stdio: "pipe" });
     writeFileSync(join(dir, "other.ts"), "master work");
     execSync("git add . && git commit -m 'master work'", { cwd: dir, stdio: "pipe" });
 
     const result = mergeOpusBranch(dir, "W-093", studio);
-    check(21, "rebase-then-push succeeds even though the branch was already on origin", result.ok === true, String(result.error));
-    check(21, "pr.required still stops merge from landing locally", result.landed === false, String(result.landed));
-    const localBranchRev = execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim();
     const originBranchRev = execSync(`git --git-dir="${bare}" rev-parse opus/W-093`, { encoding: "utf8" }).trim();
-    check(21, "origin's branch was force-with-lease-pushed to the rebased tip, not left diverged", originBranchRev === localBranchRev, `local ${localBranchRev} origin ${originBranchRev}`);
+    check(21, "pr.required refuses even with the branch already on origin (W-141)", result.ok === false && (result.error ?? "").includes("bisellium next W-093"), String(result.error));
+    check(21, "nothing is rebased or pushed: origin's branch is still the pre-rebase commit", originBranchRev === pushedRev, `origin ${originBranchRev} pushed ${pushedRev}`);
+    check(21, "the local branch is not rebased either", execSync("git rev-parse opus/W-093", { cwd: dir, encoding: "utf8" }).trim() === pushedRev);
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(studio, { recursive: true, force: true });
