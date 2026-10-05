@@ -1,0 +1,75 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.4 packages/cli/src/verdict-citation.test.ts
+# exit: 1
+# at: 2026-10-05T12:42:44.020Z
+# sella: builder.W-126
+# tree: tree:5d2243ed4a8cd060123df8d7636ffa2b97ef7609
+
+TAP version 13
+# Subtest: behaviour 4
+    # Subtest: --fail refuses a log whose failure was reconciled away
+    not ok 1 - --fail refuses a log whose failure was reconciled away
+      ---
+      duration_ms: 27.200867
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:6782'
+      failureType: 'testCodeFailure'
+      error: |-
+        Expected values to be strictly equal:
+        
+        0 !== 2
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 2
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:280:12)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: --pass with the same log is accepted
+    ok 2 - --pass with the same log is accepted
+      ---
+      duration_ms: 11.688157
+      type: 'test'
+      ...
+    # Subtest: --fail with a log whose failure kept a valid blocker is accepted
+    ok 3 - --fail with a log whose failure kept a valid blocker is accepted
+      ---
+      duration_ms: 11.015185
+      type: 'test'
+      ...
+    # Subtest: --fail with a pre-W-126 log written by hand is accepted
+    ok 4 - --fail with a pre-W-126 log written by hand is accepted
+      ---
+      duration_ms: 4.989255
+      type: 'test'
+      ...
+    1..4
+not ok 1 - behaviour 4
+  ---
+  duration_ms: 55.788141
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-126/packages/cli/src/verdict-citation.test.ts:15:5884'
+  failureType: 'subtestsFailed'
+  error: '1 subtest failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 4
+# suites 1
+# pass 3
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 66.296296
