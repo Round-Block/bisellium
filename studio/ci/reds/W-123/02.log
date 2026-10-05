@@ -1,0 +1,47 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-123.behaviour.2: packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-05T07:00:45.876Z
+# sella: builder.W-123
+# tree: tree:14b74dbbd6bc79f036ae6e7de6ce58a8c1209290
+
+TAP version 13
+# Subtest: W-123 behaviour 2: the guard fails closed, and stays silent where no PR is required
+not ok 1 - W-123 behaviour 2: the guard fails closed, and stays silent where no PR is required
+  ---
+  duration_ms: 1960.457196
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-123/packages/cli/src/next.test.ts:89:26495'
+  failureType: 'testCodeFailure'
+  error: |-
+    no reader: exit
+    --- exit 0
+    --- stdout
+    W-900: done
+    --- stderr
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    expectRefused (/home/edckt/agents/bisellium/.worktrees/W-123/packages/cli/src/next.test.ts:2239:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-123/packages/cli/src/next.test.ts:2320:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1975.266385
