@@ -335,7 +335,8 @@ describe("review round 1 rows", () => {
     assert.equal(r.body, body, "body exact");
     const failed = verdict(studio({ spec: JSON.stringify(spec), brief: false }), findings("blocking — brief:2 a cited defect"), "failed");
     assert.ok(failed.headerLines.every((line) => SHAPE.test(line)), failed.headerLines.join("|"));
-    assert.notEqual(failed.header.get("submitted_outcome"), "failed", "nothing the spec says reaches submitted_outcome");
+    assert.equal(failed.keys.length, failed.headerLines.length, "no header key is written twice");
+    assert.equal(failed.header.get("submitted_outcome"), "failed", "only the writer's own reconciliation records it");
   });
 
   test("a missing spec path with a line break keeps its read error on one line", () => {

@@ -80,6 +80,9 @@ export interface Conversion {
   reason: string;
 }
 
+/** A header value is one line: any line break in spec-derived text becomes a space. */
+const oneLine = (text: string): string => text.replace(/[\r\n]+/g, " ");
+
 /** The ways a citation can name the declared brief: a bare `brief`, or any path ending in `briefs/<name>.md`. */
 const CITATION = /(?<![\w./-])(brief|\/?(?:[\w.-]+\/)*briefs\/[\w.-]+\.md):([1-9]\d*)(?!\d)/g;
 
@@ -93,6 +96,9 @@ export function reconcileFindings(
   brief: { spec: string; repoSpec?: string; text: string } | { error: string },
 ): { converted: Conversion[]; outcome: string; submittedOutcome?: string } {
   const converted: Conversion[] = [];
+  // Every reason ends up in a header line, so spec- and error-derived text is neutralised once, here.
+  if ("error" in brief) brief = { error: oneLine(brief.error) };
+  else brief = { ...brief, spec: oneLine(brief.spec), ...(brief.repoSpec === undefined ? {} : { repoSpec: oneLine(brief.repoSpec) }) };
   const blocking = contentLines(body).lines.filter(
     (line) => line.section === "Findings" && /^[1-9]\d*\. \S/.test(line.text) && /^[1-9]\d*\. \**blocking\b/i.test(line.text),
   );
@@ -354,12 +360,18 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   let recorded = outcome;
   let submitted: string | undefined;
   if (!isUi && phase === "build") {
-    const read = typeof record.spec === "string" ? readContainedRegularFile(root, record.spec, "briefs") : { error: "no spec" };
+    // A spec path with a line break is never read: it would break the `# brief:` header line.
+    const read =
+      typeof record.spec !== "string"
+        ? { error: "no spec" }
+        : hasHeaderBreak(record.spec)
+          ? { error: "spec path contains a line break" }
+          : readContainedRegularFile(root, record.spec, "briefs");
     let brief: Parameters<typeof reconcileFindings>[2] = { error: "no spec" };
-    if ("error" in read) brief = { error: read.error };
+    if ("error" in read) brief = { error: oneLine(read.error) };
     else if (typeof record.spec === "string") {
       const where = officinaInRepo(root);
-      brief = { spec: record.spec, ...(where === undefined ? {} : { repoSpec: `${where.rel}/${record.spec}` }), text: read.bytes.toString("utf8") };
+      brief = { spec: record.spec, ...(where === undefined ? {} : { repoSpec: where.rel === "" ? record.spec : `${where.rel}/${record.spec}` }), text: read.bytes.toString("utf8") };
       briefHeader = `${record.spec} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
     }
     const reconciled = reconcileFindings(transcript.toString("utf8"), outcome, brief);
