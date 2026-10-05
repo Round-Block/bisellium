@@ -57,9 +57,19 @@ const check = (name: string, ok: boolean, detail = "") => {
 };
 
 const dirs: string[] = [];
+/** W-123: the sample officina declares integration.pr.required: true, which makes `done` ask for a merged PR;
+ *  none of these rows is about landing, so each copy turns it off. */
+function copySampleStudio(dest: string): void {
+  cpSync(sampleStudio, dest, { recursive: true });
+  const manifestPath = join(dest, "bisellium.yml");
+  const doc = parseDocument(readFileSync(manifestPath, "utf8"));
+  doc.setIn(["integration", "pr", "required"], false);
+  writeFileSync(manifestPath, doc.toString({ lineWidth: 0 }));
+}
+
 function freshStudio(tag: string): string {
   const dir = mkdtempSync(join(tmpdir(), `bisellium-lifecycle-${tag}-`));
-  cpSync(sampleStudio, dir, { recursive: true });
+  copySampleStudio(dir);
   dirs.push(dir);
   return dir;
 }
@@ -170,7 +180,7 @@ function tmpGitStudioRepo(tag: string): string {
   execFileSync("git", ["init", "-q", "-b", "master"], { cwd: dir });
   execFileSync("git", ["config", "user.name", "test"], { cwd: dir });
   execFileSync("git", ["config", "user.email", "test@test"], { cwd: dir });
-  cpSync(sampleStudio, join(dir, "studio"), { recursive: true });
+  copySampleStudio(join(dir, "studio"));
   dirs.push(dir);
   return dir;
 }
@@ -185,7 +195,7 @@ function tmpGitRepoIgnoredStudio(tag: string): string {
   writeFileSync(join(dir, ".gitignore"), "studio/\n");
   execFileSync("git", ["add", "-A"], { cwd: dir });
   execFileSync("git", ["commit", "-q", "-m", "ignore studio"], { cwd: dir });
-  cpSync(sampleStudio, join(dir, "studio"), { recursive: true });
+  copySampleStudio(join(dir, "studio"));
   dirs.push(dir);
   return dir;
 }
@@ -884,7 +894,7 @@ try {
     const outer = scratchRepo("outer");
     const inner = scratchRepo("inner");
     const studioDir = join(outer, "studio");
-    cpSync(sampleStudio, studioDir, { recursive: true });
+    copySampleStudio(studioDir);
 
     const outerHash = `tree:${sourceTreeHash(outer, ["studio"], "HEAD")}`;
     const innerHash = `tree:${sourceTreeHash(inner, [], "HEAD")}`;

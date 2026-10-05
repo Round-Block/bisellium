@@ -469,7 +469,12 @@ export function runDone(args: string[], opts: RunDoneOptions = {}): WriteResult 
   // wants the opus's merge in the local trunk before `done` writes anything.
   if (manifest.integration?.pr?.required === true) {
     const repoRoot = findGitRoot(root);
-    const why = repoRoot !== undefined && opts.mergeRefusal !== undefined ? opts.mergeRefusal(repoRoot, opusId) : undefined;
+    const why =
+      repoRoot === undefined
+        ? `${root} is not inside a git work tree`
+        : opts.mergeRefusal === undefined
+          ? "no merge reader was supplied"
+          : opts.mergeRefusal(repoRoot, opusId);
     if (why !== undefined) {
       console.error(`${opusId}: done refused: ${why}`);
       console.error(`${opusId}: done needs the PR from opus/${opusId} merged and its merge commit in the local master; run: bisellium next ${opusId}`);
