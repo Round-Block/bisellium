@@ -29,7 +29,7 @@ import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedR
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -224,6 +224,47 @@ const automatedGates = (manifest: Manifest, rec: Dict | undefined): string[] =>
   effectiveProbationes(rec?.["kind"], manifest.probationes)
     .probationes.filter((p) => p.kind === "automated")
     .map((p) => p.id);
+type Certificate = { ok: true; stage: string[] } | { ok: false; why: string };
+/**
+ * The certificates a done commit carries. The WORKING record is the one committed, so it alone is judged; the
+ * gates are those of the stricter of its kind and the trunk's (a `ui` -> `opus` drift keeps `served-e2e`). Each
+ * gate must be `passed` at the merged trunk's own source tree, and its recorded evidence must be a readable
+ * regular file named `ci/<id>-<gate>-<hex>.log` that git tracks or can stage. `stage` lists the untracked ones.
+ * Anything missing, unreadable or unlistable is a refusal, never an omission.
+ */
+function certificate(repo: string, studioRel: string, studioAbs: string, excludes: string[], manifest: Manifest, trunkRecord: Dict | undefined, id: string): Certificate {
+  let want: string;
+  try {
+    want = `tree:${sourceTreeHash(repo, excludes, TRUNK)}`;
+  } catch {
+    return { ok: false, why: "could not hash the trunk's source tree" };
+  }
+  const rec = recordOf(fsSrc(studioAbs), id);
+  const gates = [...new Set([...automatedGates(manifest, rec), ...automatedGates(manifest, trunkRecord)])];
+  const stage: string[] = [];
+  for (const gate of gates) {
+    const g = isDict(rec?.["probationes"]) ? rec["probationes"][gate] : undefined;
+    if (!isDict(g) || g["status"] !== "passed" || g["certifies"] !== want) return { ok: false, why: `${gate} is not passed at the trunk's source tree` };
+    const evidence = str(g["evidence"]);
+    if (evidence === undefined || !new RegExp(`^ci/${esc(id)}-${esc(gate)}-[0-9a-f]+\\.log$`).test(evidence)) return { ok: false, why: `${gate} records no evidence of the form ci/${id}-${gate}-<hex>.log` };
+    const abs = join(studioAbs, evidence);
+    try {
+      if (!lstatSync(abs).isFile()) throw new Error("not a regular file");
+      readFileSync(abs);
+    } catch {
+      return { ok: false, why: `${gate}'s evidence ${evidence} is not a readable regular file` };
+    }
+    const rel = `${studioRel}/${evidence}`;
+    const tracked = git(repo, ["ls-files", "-z", "--", rel]);
+    if (tracked.status !== 0) return { ok: false, why: `could not list ${rel}` };
+    if (tracked.stdout !== "") continue;
+    const fresh = git(repo, ["ls-files", "--others", "--exclude-standard", "-z", "--", rel]);
+    if (fresh.status !== 0) return { ok: false, why: `could not list ${rel}` };
+    if (fresh.stdout === "") return { ok: false, why: `${gate}'s evidence ${rel} is neither tracked nor stageable` };
+    stage.push(rel);
+  }
+  return { ok: true, stage };
+}
 const refExists = (repo: string, ref: string): boolean => git(repo, ["show-ref", "--verify", "-q", ref]).status === 0;
 
 export function gather(repo: string, studioAbs: string, id: string): Facts {
@@ -271,21 +312,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       }
       return false;
     }),
-    certified: memo(() => {
-      // a certificate is the merged trunk's own source tree, exactly: any other tree, and a dirty one, is stale
-      let want: string;
-      try {
-        want = `tree:${sourceTreeHash(repo, excludes, TRUNK)}`;
-      } catch {
-        return false;
-      }
-      const has = (rec: Dict | undefined): boolean =>
-        automatedGates(manifest, rec).every((gate) => {
-          const g = isDict(rec?.["probationes"]) ? rec["probationes"][gate] : undefined;
-          return isDict(g) && g["status"] === "passed" && g["certifies"] === want;
-        });
-      return has(trunkRecord) || has(recordOf(fsSrc(studioAbs), id));
-    }),
+    certified: memo(() => certificate(repo, studioRel, studioAbs, excludes, manifest, trunkRecord, id).ok),
     specBranch: refExists(repo, `refs/heads/spec/${id}`) ? gitSrc(repo, `refs/heads/spec/${id}`, studioRel) : undefined,
     choreDone,
     handoff,
@@ -950,6 +977,22 @@ function switchBack(repo: string): string | undefined {
   return git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() === "refs/heads/master" ? undefined : "HEAD is not master after the switch";
 }
 
+/**
+ * Roll the main checkout back to master after a failed commit on `branch`. The staged paths are unstaged first, and
+ * only a fully restored checkout switches and drops the branch: a failed restore stays on the branch, keeps it and
+ * returns the recovery text. `undefined` means master is restored.
+ */
+function rollback(repo: string, branch: string, base: string, staged: string[], drop: boolean): string | undefined {
+  if (staged.length > 0) {
+    const r = git(repo, ["restore", "-q", "--staged", "--", ...staged]);
+    if (r.status !== 0) return `could not unstage (${one(r.stderr) || `exit ${r.status}`}); HEAD stays on ${branch}, which is kept; run: git -C ${quoted(repo)} restore --staged -- ${staged.map(quoted).join(" ")} && git -C ${quoted(repo)} switch master`;
+  }
+  const back = switchBack(repo);
+  if (back !== undefined) return `could not switch back to master (${back}); HEAD is ${branch}: git -C ${quoted(repo)} switch master`;
+  if (drop) git(repo, ["update-ref", "-d", `refs/heads/${branch}`, base]);
+  return undefined;
+}
+
 /** The spec signed in the main checkout, committed onto `spec/<id>`: only the brief and the spec log, nothing else moves. */
 function performSpecCommit(f: Facts): StepResult {
   const { repo, id } = f;
@@ -967,10 +1010,8 @@ function performSpecCommit(f: Facts): StepResult {
   const staged = git(repo, ["add", "--", ...paths]);
   const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `spec(${id}): signed`, "-m", `Co-Authored-By: ${spec.sella ?? f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
   if (committed.status !== 0) {
-    git(repo, ["restore", "-q", "--staged", "--", ...paths]); // the staged files never ride back onto master
-    const back = switchBack(repo);
-    if (back === undefined) git(repo, ["update-ref", "-d", `refs/heads/${head}`, base]);
-    return heldResult(`could not commit the spec: ${one(committed.stderr)}${back === undefined ? "" : `; and could not switch back to master (${back}); HEAD is ${head}: git -C ${repo} switch master`}`);
+    const stuck = rollback(repo, head, base, paths, true);
+    return heldResult(`could not commit the spec: ${one(committed.stderr)}${stuck === undefined ? "" : `; ${stuck}`}`);
   }
   const back = switchBack(repo);
   if (back !== undefined) return heldResult(`the spec is committed on ${head}, but the main checkout could not switch back to master (${back}); run: git -C ${repo} switch master`);
@@ -1013,12 +1054,10 @@ function performDone(f: Facts, d: Derived): StepResult {
   const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", chore]);
   if (switched.status !== 0) return heldResult(`could not create ${chore}: ${one(switched.stderr)}`);
-  /** Every failure after the branch was cut ends the same way: the paths unstaged, master restored, and the branch dropped unless it is kept for inspection. */
+  /** Every failure after the branch was cut ends the same way: see `rollback`; the branch is dropped unless it is kept for inspection. */
   const unwind = (reason: string, staged: string[] = [], drop = true): StepResult => {
-    if (staged.length > 0) git(repo, ["restore", "-q", "--staged", "--", ...staged]);
-    const back = switchBack(repo);
-    if (back === undefined && drop) git(repo, ["update-ref", "-d", `refs/heads/${chore}`, base]);
-    return heldResult(back === undefined ? reason : `${reason}; and could not switch back to master (${back}); HEAD is ${chore}: git -C ${repo} switch master`);
+    const stuck = rollback(repo, chore, base, staged, drop);
+    return heldResult(stuck === undefined ? reason : `${reason}; ${stuck}`);
   };
   const cap = capture(() => runDone([id, "--sella", "producer", "--studio", f.studioAbs], { mergeRefusal }));
   if (cap.exit !== 0) {
@@ -1032,17 +1071,10 @@ function performDone(f: Facts, d: Derived): StepResult {
     const r = unwind(`done changed tracked paths other than ${only} and docs/; nothing committed, ${chore} left for inspection`, [], false);
     return { ok: false, lines: [...r.lines, ...changed.map((p) => `changed: ${p}`)] };
   }
-  // verify's certificates are new files: exactly the evidence each automated gate recorded, `ci/<id>-<gate>-<hex>.log`, never another matching name
-  const rec = recordOf(fsSrc(f.studioAbs), id);
-  const wanted = new Set(
-    automatedGates(f.manifest, rec).flatMap((gate) => {
-      const g = isDict(rec?.["probationes"]) ? rec["probationes"][gate] : undefined;
-      const evidence = isDict(g) ? str(g["evidence"]) : undefined;
-      return evidence !== undefined && new RegExp(`^ci/${esc(id)}-${esc(gate)}-[0-9a-f]+\\.log$`).test(evidence) ? [`${f.studioRel}/${evidence}`] : [];
-    }),
-  );
-  const fresh = git(repo, ["ls-files", "--others", "--exclude-standard", "-z", "--", `${f.studioRel}/ci`]).stdout.split("\0").filter((p) => wanted.has(p));
-  const stage = [...new Set([only, ...changed, ...fresh])];
+  // verify's certificates are new files: exactly the evidence each automated gate recorded, validated again on the record to be committed
+  const cert = certificate(repo, f.studioRel, f.studioAbs, f.excludes, f.manifest, f.trunkRecord, id);
+  if (!cert.ok) return unwind(`refusing: the certificate is not committable: ${cert.why}`);
+  const stage = [...new Set([only, ...changed, ...cert.stage])];
   const staged = git(repo, ["add", "--", ...stage]);
   const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `chore(studio): mark ${id} done`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>"]) : staged;
   if (committed.status !== 0) return unwind(`could not commit the done record: ${one(committed.stderr)}`, stage);

@@ -57,7 +57,7 @@ const why = (r: Run): string => (r.error !== undefined ? clean(r.error.message) 
 export const PATRON_PATHS: readonly string[] = [".claude/"];
 const isPatronPath = (path: string): boolean => PATRON_PATHS.some((prefix) => path.startsWith(prefix));
 /** A path outside `[A-Za-z0-9/._-]` is single-quoted so a printed command can be pasted. */
-const quoted = (path: string): string => (/^[A-Za-z0-9/._-]+$/.test(path) ? path : `'${path.replace(/'/g, "'\\''")}'`);
+export const quoted = (path: string): string => (/^[A-Za-z0-9/._-]+$/.test(path) ? path : `'${path.replace(/'/g, "'\\''")}'`);
 
 /** One tracked change: `from` is the original path of a rename or copy (both sides count), `staged` that the index holds it. */
 export interface Change {
@@ -91,15 +91,17 @@ export function dirtyReport(cwd: string, allow: (path: string) => boolean = () =
   if (typeof changes === "string") return { reason: changes, after: [] };
   const bad = changes.filter((c) => !touched(c).every(allow));
   if (bad.length === 0) return undefined;
-  // a path the index already moved or removed is restored from HEAD; a worktree edit from the index
-  // only a path HEAD has can be restored: a rename's original, never its destination or a plain add
-  const patron = bad.filter((c) => c.code !== "A" && isPatronPath(c.from ?? c.path));
-  const paths = [...new Set(patron.map((c) => c.from ?? c.path))];
+  // a path HEAD has is restored (a rename's or copy's original, a plain edit); a path HEAD lacks (an add, a rename's
+  // or copy's destination) is taken out of the index. Either side of a rename or copy may be the Patron's.
+  const restore = bad.filter((c) => (c.from !== undefined ? isPatronPath(c.from) : c.code !== "A" && isPatronPath(c.path)));
+  const restorePaths = [...new Set(restore.map((c) => c.from ?? c.path))];
+  const removePaths = [...new Set(bad.filter((c) => (c.from !== undefined || c.code === "A") && isPatronPath(c.path)).map((c) => c.path))];
   return {
     reason: "the working tree has tracked changes",
     after: [
       ...bad.slice(0, 10).map((c) => `dirty: ${clean(`${c.code} ${c.from === undefined ? "" : `${c.from} -> `}${c.path}`)}`),
-      ...(paths.length > 0 ? [`patron: git -C ${quoted(cwd)} checkout ${patron.some((c) => c.staged) ? "HEAD " : ""}-- ${paths.map(quoted).join(" ")}`] : []),
+      ...(restorePaths.length > 0 ? [`patron: git -C ${quoted(cwd)} checkout ${restore.some((c) => c.staged) ? "HEAD " : ""}-- ${restorePaths.map(quoted).join(" ")}`] : []),
+      ...(removePaths.length > 0 ? [`patron: git -C ${quoted(cwd)} rm --cached -q -- ${removePaths.map(quoted).join(" ")}`] : []),
     ],
   };
 }
@@ -227,13 +229,21 @@ function overwritten(repo: string, from: string, to: string): string | undefined
  * here and the checks below hold on it. The oid is the merge commit of a MERGED PR already identified.
  */
 function patronStop(repo: string, target: string, hold: (reason: string, tail?: string) => Trunk): Trunk | undefined {
+  // writes no ref, no tag and no FETCH_HEAD; every answer but "a commit, ahead of master" refuses or needs nothing
   if (commitOf(repo, target) === undefined) {
-    const got = git(repo, ["fetch", "-q", "origin", target]);
+    const got = git(repo, ["fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", target]);
     if (got.status !== 0) return hold(`git fetch origin ${target.slice(0, 12)} failed: ${why(got)}`);
   }
+  // a tag or other object that merely peels to a commit is not the reviewed commit
+  if (commitOf(repo, target) !== target) return hold("the reviewed merge commit id is not itself a commit");
   const local = commitOf(repo, TRUNK_REF);
-  if (commitOf(repo, target) !== target || local === undefined) return undefined;
-  if (isAncestor(repo, target, local) !== false || isAncestor(repo, local, target) !== true) return undefined;
+  if (local === undefined) return hold("could not read master or the reviewed merge commit");
+  const contained = isAncestor(repo, target, local);
+  if (contained === true) return undefined;
+  if (contained === undefined) return hold("could not compare the reviewed merge commit with master");
+  const ahead = isAncestor(repo, local, target);
+  if (ahead === undefined) return hold("could not compare master with the reviewed merge commit");
+  if (!ahead) return hold(`local master has diverged from the reviewed merge commit ${target.slice(0, 12)}`);
   const incoming = git(repo, ["diff", "--no-renames", "--name-only", "-z", local, target]);
   if (incoming.status !== 0 || incoming.error !== undefined) return hold(`git diff failed: ${why(incoming)}`);
   const patron = incoming.stdout.split("\0").filter((p) => p !== "" && isPatronPath(p));
