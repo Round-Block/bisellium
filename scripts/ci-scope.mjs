@@ -23,9 +23,11 @@ export function recordOnly(paths) {
 
 /**
  * The problems with `log` against `commands`, sorted; none means exact. The log
- * is lines `<owner>\t<path>` bracketed per process by `#start\t<id>` and
- * `#end\t<id>\t<count>` (scripts/record-reads.mjs), so an empty, owner-only,
- * truncated or unterminated log is a problem, not a pass.
+ * is lines `<owner>\t<path>` between a root process's `#start\t<id>\troot` and
+ * `#end\t<id>` (scripts/record-reads.mjs), so an empty, owner-only, truncated or
+ * unterminated log is a problem, not a pass. A non-root start with no end is
+ * tolerated: a child killed by a signal never runs its exit handler, and what it
+ * read was logged as it read.
  */
 export function checkReads(log, commands) {
   const problems = [];
@@ -35,25 +37,21 @@ export function checkReads(log, commands) {
   const firstRead = new Map();
   const started = new Set();
   const ended = new Set();
-  let reads = 0;
-  let counted = 0;
+  const roots = [];
   for (const line of log.split("\n").filter(Boolean)) {
     const [owner = "", rel, extra] = line.split("\t");
-    if (owner === "#start" && rel && extra === undefined) started.add(rel);
-    else if (owner === "#end" && rel && /^\d+$/.test(extra ?? "")) {
-      ended.add(rel);
-      counted += Number(extra);
-    } else if (owner.startsWith("#") || !owner || !rel || extra !== undefined) problems.push(`malformed: ${line}`);
-    else {
-      reads++;
-      if (owner === "?") problems.push(`unattributed: ${rel}`);
-      else if (!firstRead.has(owner)) firstRead.set(owner, rel);
-    }
+    if (owner === "#start" && rel && (extra === undefined || extra === "root")) {
+      started.add(rel);
+      if (extra === "root") roots.push(rel);
+    } else if (owner === "#end" && rel && extra === undefined) ended.add(rel);
+    else if (owner === "#fail" && rel && extra === undefined) problems.push(`failed: ${rel}`);
+    else if (owner.startsWith("#") || !owner || !rel || extra !== undefined) problems.push(`malformed: ${line}`);
+    else if (owner === "?") problems.push(`unattributed: ${rel}`);
+    else if (!firstRead.has(owner)) firstRead.set(owner, rel);
   }
-  if (log !== "" && started.size === 0) problems.push("no process started");
-  for (const id of started) if (!ended.has(id)) problems.push(`unterminated: ${id}`);
+  if (log !== "" && roots.length !== 1) problems.push(`${roots.length} root processes, expected 1`);
+  for (const id of roots) if (!ended.has(id)) problems.push(`unterminated root: ${id}`);
   for (const id of ended) if (!started.has(id)) problems.push(`orphan end: ${id}`);
-  if (reads !== counted) problems.push(`count: ${reads} read lines, ${counted} counted`);
   const tokens = new Set(commands.flatMap((command) => command.split(/\s+/)));
   for (const [owner, rel] of firstRead) if (!tokens.has(owner)) problems.push(`unlisted: ${owner} (read ${rel})`);
   for (const command of commands)

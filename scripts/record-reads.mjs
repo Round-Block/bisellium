@@ -13,11 +13,14 @@
  * properties (`realpathSync.native` and friends), so a traced test behaves
  * like an untraced one.
  *
- * The log fails closed. A process brackets its lines with `#start\t<id>` and
- * `#end\t<id>\t<count>`; the guard rejects a log with a start but no end, a
- * count that does not match, or a final line without its newline. A write the
- * process cannot make is loud, never swallowed: it says so on stderr, writes
- * no end marker, and exits non-zero (70) unless it already failed.
+ * The log fails closed. The first process of a run (no inherited
+ * BISELLIUM_RECORD_ROOT) is the root: it logs `#start\t<id>\troot` and, as its
+ * last act, `#end\t<id>`; every other process logs `#start\t<id>` and `#end\t<id>`
+ * when its exit handler runs (a child killed by a signal never does). The guard
+ * rejects a log with no root, a root that never ended (a truncated tail) or a
+ * final line without its newline. A write the process cannot make is loud, never
+ * swallowed: it says so on stderr, logs `#fail\t<id>` if it can, writes no end
+ * marker, and exits non-zero (70) unless it already failed.
  */
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
@@ -45,7 +48,6 @@ if (process.env.BISELLIUM_RECORD_READS) {
   const seen = new Set();
   const id = `${process.pid}.${randomUUID()}`;
   let failed = false;
-  let written = 0;
   const emit = (text) => {
     try {
       append(log, text);
@@ -59,12 +61,17 @@ if (process.env.BISELLIUM_RECORD_READS) {
     if (failed) return;
     failed = true;
     try {
+      append(log, `#fail\t${id}\n`);
+    } catch {}
+    try {
       process.stderr.write(`record-reads: ${error?.message ?? error}\n`);
     } catch {}
   };
-  emit(`#start\t${id}\n`);
+  const root = !process.env.BISELLIUM_RECORD_ROOT;
+  if (root) process.env.BISELLIUM_RECORD_ROOT = id;
+  emit(`#start\t${id}${root ? "\troot" : ""}\n`);
   process.on("exit", (code) => {
-    if (!failed) emit(`#end\t${id}\t${written}\n`);
+    if (!failed) emit(`#end\t${id}\n`);
     if (failed && !code) process.exitCode = 70;
   });
   const note = (path) => {
@@ -81,7 +88,7 @@ if (process.env.BISELLIUM_RECORD_READS) {
       const rel = relative(repo, resolve(text)).split("\\").join("/");
       if ((rel !== "studio" && !recordOnly([rel])) || seen.has(rel)) return;
       seen.add(rel);
-      if (emit(`${owner}\t${rel}\n`)) written++;
+      emit(`${owner}\t${rel}\n`);
     } catch (error) {
       fail(error);
     }
