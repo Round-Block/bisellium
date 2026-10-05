@@ -2778,6 +2778,8 @@ test("W-141-b2 round 1: a UI opus's implicit served-e2e gate counts toward certi
   expectStep(missing, "done", "named", "ui opus with no served-e2e certificate");
   assert.equal(missing.kv.get("command"), VERIFY, ran("the rung names verify", missing));
   editRecord(w, "repo", (doc) => doc.setIn(["probationes", "served-e2e"], { status: "passed", evidence: `ci/${OPUS}-served-e2e-bbb222.log`, certifies: tree }));
+  put(w.repo, `studio/ci/${OPUS}-tests-aaa111.log`, "tests log\n");
+  put(w.repo, `studio/ci/${OPUS}-served-e2e-bbb222.log`, "served e2e log\n");
   const ready = next(w, [OPUS]);
   assert.equal(ready.kv.get("command"), `bisellium next ${OPUS} --perform --expect done`, ran("with both certificates the rung is the perform", ready));
 });
@@ -2960,10 +2962,23 @@ test("W-141-b2 round 2: readiness judges the working record: a valid trunk certi
   const heldPerform = next(w, [OPUS, "--perform", "--expect", "done"]);
   expectHeld(heldPerform, "perform with a stale working record");
 
-  // kind drift: ui on the trunk, opus in the working record
-  const d = certifiedWorld("w141-r2-b2-drift", "ui", { tests: { certifies: (t) => t, hex: "aaa111" } });
+  // kind drift: ui on the trunk (with the ui-lead's input, so the ladder is past spec), opus in the working record
+  const d = certifiedWorld("w141-r2-b2-drift", "opus", {});
+  put(d.studio, "ci/dispatch.md", "Inspect navigation contrast spacing hierarchy responsive behavior keyboard flow and visual rhythm without prescribing a recommendation.\n");
+  const from = join(d.root, "ui-spec.md");
+  writeFileSync(from, ["## Findings", "No findings", "The navigation relationships remain legible across the complete narrow viewport arrangement.", "## Recommendation", "The implementation can proceed while preserving the documented hierarchy and interaction rhythm.", "Additional original observations cover focus movement responsive density and stable content grouping throughout.", "Verdict: passed", ""].join("\n"));
+  editRecord(d, "repo", (doc) => {
+    doc.setIn(["kind"], "ui");
+    doc.setIn(["spec"], `briefs/${OPUS}.md`);
+  });
+  verb(d.repo, ["verdict", OPUS, "--round", "2", "--sella", "ui-lead", "--outcome", "passed", "--phase", "spec", "--dispatch-prompt", "ci/dispatch.md", "--from", from, "--studio", d.studio, "--now", T.spec]);
   commit(d.repo, "test: the record is ui on the trunk");
-  editRecord(d, "repo", (doc) => doc.setIn(["kind"], "opus"));
+  const tree = sourceTree(d.repo);
+  put(d.repo, `studio/ci/${OPUS}-tests-aaa111.log`, "tests log\n");
+  editRecord(d, "repo", (doc) => {
+    doc.setIn(["kind"], "opus");
+    doc.setIn(["probationes", "tests"], { status: "passed", evidence: `ci/${OPUS}-tests-aaa111.log`, certifies: tree });
+  });
   const drift = next(d, [OPUS]);
   expectStep(drift, "done", "named", "kind drift ui -> opus");
   assert.equal(drift.kv.get("command"), VERIFY, ran("the stricter kind's gates are required", drift));
