@@ -1,0 +1,22 @@
+# opus: W-126
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-05T12:27:51.067Z
+# tree: tree:62a072402c8f3e3b65908acdfde45262ea44b336
+
+W-126 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-126.md (4 behaviours, six sections, Decree family: verdict-citation; W-127's real readBriefAdmission at limit 6 reports no problems: ~/.bisellium-evidence/W-126-spec/self-admit.out).
+Measurements at master 2526b8a: ~/.bisellium-evidence/W-126-spec/measure.mjs -> measure.out. 151 review logs; 12 use the writer's one-## Findings grammar and hold 28 blocking findings, of which 2 cite a valid line of the declared brief; 9 of those logs' 11 failed rounds rest only on uncited blockers (W-127 round 1 among them); 11 of 65 blocking-shaped lines across all logs cite the declared brief. grammar-probe.mjs -> grammar-probe.out pins the brief's citation, severity and outcome regexes and the git blob formula. check studio --repo . is identical with and without the brief (check-with.out, check-without.out).
+
+## Findings
+1. advisory — the grammar converts what censors write today: 9 of the last 11 failed rounds would have been recorded as passed, real defects included, until the censor prompt asks for brief:<line>; the brief ships the prompt and agent-file change in the same opus and makes the default a Patron question (open question 1) — check: none: a re-run of ~/.bisellium-evidence/W-126-spec/measure.mjs over the first ten review logs written under W-126, counting converted blockers
+2. advisory — the writer validates that a citation names a real non-blank line of the declared brief, not that the line is relevant to the finding; a censor can satisfy the grammar with any line — check: none: the censor's judgment, disputed by the builder in the next round
+3. advisory — consistency between review --pass|--fail and a verdict log's own outcome is reconciled only for a log the writer reconciled (submitted_outcome); --pass on a log with a valid blocker stays possible, as today — check: none: a review evidence-outcome consistency rule, filed separately if wanted
+4. advisory — spec-phase and kind: ui verdicts are exempt; a UI build verdict's uncited blocker still fails a round — check: packages/cli/src/verdict-citation.test.ts (behaviour 1's and 3's spec-phase rows)
+5. advisory — line citations follow the brief bytes the writer read; a later revision shifts lines, and only the # brief: blob id lets a reader recover the cited text — check: none: a reader that resolves a citation through the blob id
+6. advisory — .claude/agents/censor.md is in Files owned; if a builder sandbox refuses writes under .claude/, the orchestrator applies the one sentence and records it in the commit — check: none
+
+## Recommendation
+Verdict: passed. One decree family, verdict-citation: one predicate, reconcileFindings, with two consumers (the verdict writer records conversions and the reconciled outcome; review --fail refuses a reconciled log), in four behaviours, each red after the previous one's implementation. Raw bodies stay byte-exact, the raw outcome is kept in a header, valid blockers stay blocking, historical logs are never read differently, and the writer never promotes a finding or fails a round. The four Patron questions ship with their stated defaults and do not block.
