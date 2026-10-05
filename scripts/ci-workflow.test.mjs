@@ -133,12 +133,14 @@ const PREREQUISITE_RUNS = new Set([
   "sudo apt-get update && sudo apt-get install -y bubblewrap",
   "sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0",
 ]);
+// W-139: the full-path guard that checks the read log written during npm test.
+const GUARD_RUNS = new Set(["node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log"]);
 const jobRunSteps = (jobId) =>
   (doc?.jobs?.[jobId]?.steps ?? [])
     .filter((step) => step.id !== "scope" && step.if !== RECORD_ONLY_IF)
     .map((step) => step.run)
     .filter((run) => typeof run === "string")
-    .filter((line) => !line.startsWith("npm ci") && !PREREQUISITE_RUNS.has(line));
+    .filter((line) => !line.startsWith("npm ci") && !PREREQUISITE_RUNS.has(line) && !GUARD_RUNS.has(line));
 
 const gatesSteps = jobRunSteps("gates");
 const officinaSteps = jobRunSteps("officina");

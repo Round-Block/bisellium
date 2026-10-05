@@ -48,6 +48,12 @@ jobs:
         run: npm test
         env:
           BISELLIUM_REQUIRE_LIVE_ROWS: "1"
+          NODE_OPTIONS: --import ${{ github.workspace }}/scripts/record-reads.mjs
+          BISELLIUM_RECORD_READS: ${{ runner.temp }}/record-reads.log
+      # W-139: the log above lists every test file that read the record-only
+      # set; fail the run if test:record does not name exactly those.
+      - if: steps.scope.outputs.record_only != 'true'
+        run: node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s check -- examples/sample-studio --repo .
       # Record-only pull request: the studio officina check, then the tests that
