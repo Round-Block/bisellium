@@ -29,7 +29,7 @@ import { censorSella, inspectUiDesignInput, readContainedRegularFile, type Nativ
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, dirtyHold, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, dirtyHold, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -181,6 +181,8 @@ export interface Facts {
   wt: { dir: string; studio: string; usable: boolean };
   trunk: Src | undefined;
   trunkRecord: Dict | undefined;
+  /** every automated probatio has a `tree:` certificate on the trunk record or the main checkout's record */
+  certified(): boolean;
   branch: Src | undefined;
   branchRecord: Dict | undefined;
   specBranch: Src | undefined;
@@ -252,6 +254,15 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     trunkRecord,
     branch,
     branchRecord,
+    certified: memo(() => {
+      const ids = manifest.probationes.filter((p) => p.kind === "automated").map((p) => p.id);
+      const has = (rec: Dict | undefined): boolean =>
+        ids.every((gate) => {
+          const g = isDict(rec?.["probationes"]) ? rec["probationes"][gate] : undefined;
+          return isDict(g) && g["status"] === "passed" && String(g["certifies"] ?? "").startsWith("tree:");
+        });
+      return has(trunkRecord) || has(recordOf(fsSrc(studioAbs), id));
+    }),
     specBranch: refExists(repo, `refs/heads/spec/${id}`) ? gitSrc(repo, `refs/heads/spec/${id}`, studioRel) : undefined,
     choreDone,
     handoff,
@@ -381,6 +392,8 @@ export interface Derived {
   command?: string;
   order?: Order;
   pr?: Pr;
+  /** what `--perform` does at this rung, where the rung has more than one reading */
+  act?: "verify";
   extra: [string, string][];
 }
 
@@ -502,6 +515,7 @@ export function deriveNext(f: Facts): Derived {
   // 10 cleanup, 11 done
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
   if (f.choreDone) return named("done", "producer", `done committed on chore/done-${id}, not on master`, `git switch chore/done-${id} && ${landing(`chore/done-${id}`, `chore(studio): mark ${id} done`)}`);
+  if (!f.certified()) return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded`, `bisellium verify ${id} --studio ${f.studioRel} --repo .`), act: "verify" };
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
 
@@ -888,7 +902,6 @@ function capture(fn: () => { exitCode: number }): { exit: number; out: string[];
   }
 }
 const heldResult = (why: string, ...lines: string[]): StepResult => ({ ok: false, lines: [`why: ${why}`, ...lines] });
-const trackedDirty = (cwd: string): string[] => git(cwd, ["status", "--porcelain", "--untracked-files=no"]).stdout.split("\n").filter(Boolean);
 
 function performBranch(f: Facts): StepResult {
   const { repo, id, wt } = f;
@@ -920,12 +933,16 @@ function performReady(f: Facts, d: Derived): StepResult {
   return cap.exit === 0 ? { ok: true, lines: cap.out.map((l) => `ready: ${one(l)}`) } : heldResult(text[0] ?? `ready exited ${cap.exit}`, ...text.slice(1, 6).map((l) => `ready: ${l}`));
 }
 
-function performDone(f: Facts): StepResult {
+function performDone(f: Facts, d: Derived): StepResult {
   const { repo, id } = f;
   const chore = `chore/done-${id}`;
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
-  const dirty = dirtyHold(repo);
+  // the record, tracked `docs/` changes and verify's certificates may ride along; any other tracked change refuses
+  const only = `${f.studioRel}/${recordRel(id)}`;
+  const rides = (path: string): boolean => path === only || path.startsWith("docs/");
+  const dirty = dirtyHold(repo, rides);
   if (dirty !== undefined) return dirty;
+  if (d.act === "verify") return heldResult(`refusing: no automated certificate is recorded; run: ${d.command ?? ""}`);
   const why = mergeRefusal(repo, id);
   if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);
@@ -942,10 +959,14 @@ function performDone(f: Facts): StepResult {
     const text = [...cap.err, ...cap.out].map(one).filter(Boolean);
     return heldResult(text[0] ?? `done exited ${cap.exit}`, ...text.slice(1, 6).map((l) => `done: ${l}`));
   }
-  const only = `${f.studioRel}/${recordRel(id)}`;
-  const changed = trackedDirty(repo).map((l) => l.slice(3));
-  if (changed.length !== 1 || changed[0] !== only) return heldResult(`done changed tracked paths other than ${only}; nothing committed, ${chore} left for inspection`, ...changed.map((p) => `changed: ${p}`));
-  const staged = git(repo, ["add", "--", only]);
+  const changes = trackedChanges(repo);
+  const changed = typeof changes === "string" ? [] : changes.map((c) => c.path);
+  if (typeof changes === "string" || changed.some((p) => !rides(p))) return heldResult(`done changed tracked paths other than ${only} and docs/; nothing committed, ${chore} left for inspection`, ...changed.map((p) => `changed: ${p}`));
+  // verify's certificates are new files: `ci/<id>-<automated probatio>-<hex>.log`
+  const gates = f.manifest.probationes.filter((p) => p.kind === "automated").map((p) => esc(p.id));
+  const logs = new RegExp(`^${esc(f.studioRel)}/ci/${esc(id)}-(?:${gates.join("|")})-[0-9a-f]+\\.log$`);
+  const fresh = git(repo, ["ls-files", "--others", "--exclude-standard", "-z", "--", `${f.studioRel}/ci`]).stdout.split("\0").filter((p) => gates.length > 0 && logs.test(p));
+  const staged = git(repo, ["add", "--", ...new Set([only, ...changed, ...fresh])]);
   const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `chore(studio): mark ${id} done`, "-m", "Co-Authored-By: producer (bisellium next) <noreply@anthropic.com>"]) : staged;
   if (committed.status !== 0) return heldResult(`could not commit the done record: ${one(committed.stderr)}; ${chore} left for inspection`);
   const sha = git(repo, ["rev-parse", "--short", "HEAD"]).stdout.trim();
@@ -1105,7 +1126,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = cleanup(ctx);
           break;
         default:
-          result = performDone(f);
+          result = performDone(f, d2);
       }
       log(`${d2.step} ${result.ok ? "performed" : "held"}`);
       f = gather(repo, opened.root, id);

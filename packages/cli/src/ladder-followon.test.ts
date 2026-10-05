@@ -490,6 +490,7 @@ if (runs(7)) {
       pr: () => ({ kind: "settled", pr: {} }),
       residue: false,
       choreDone: true,
+      certified: () => true,
     } as unknown as Facts);
 
     assert.equal(spec.step, "spec", "7a: the spec fixture names the spec rung");

@@ -59,10 +59,10 @@ const isPatronPath = (path: string): boolean => PATRON_PATHS.some((prefix) => pa
 /** A path outside `[A-Za-z0-9/._-]` is single-quoted so a printed command can be pasted. */
 const quoted = (path: string): string => (/^[A-Za-z0-9/._-]+$/.test(path) ? path : `'${path.replace(/'/g, "'\\''")}'`);
 
-/** The one dirty-tree refusal: tracked changes (staged or not) outside `allow`, as the hold's reason and the lines after it. */
-export function dirtyReport(cwd: string, allow: (path: string) => boolean = () => false): { reason: string; after: string[] } | undefined {
+/** Tracked changes of a checkout (staged or not), or the reason git could not say. */
+export function trackedChanges(cwd: string): { code: string; path: string }[] | string {
   const r = git(cwd, ["status", "--porcelain", "-z", "--untracked-files=no", "--ignore-submodules=none"]);
-  if (r.status !== 0 || r.error !== undefined) return { reason: `git status failed: ${why(r)}`, after: [] };
+  if (r.status !== 0 || r.error !== undefined) return `git status failed: ${why(r)}`;
   const changes: { code: string; path: string }[] = [];
   const parts = r.stdout.split("\0");
   for (let i = 0; i < parts.length; i++) {
@@ -71,6 +71,13 @@ export function dirtyReport(cwd: string, allow: (path: string) => boolean = () =
     changes.push({ code: entry.slice(0, 2).trim(), path: entry.slice(3) });
     if (entry[0] === "R" || entry[0] === "C") i++; // the original path follows
   }
+  return changes;
+}
+
+/** The one dirty-tree refusal: tracked changes outside `allow`, as the hold's reason and the lines after it. */
+export function dirtyReport(cwd: string, allow: (path: string) => boolean = () => false): { reason: string; after: string[] } | undefined {
+  const changes = trackedChanges(cwd);
+  if (typeof changes === "string") return { reason: changes, after: [] };
   const bad = changes.filter((c) => !allow(c.path));
   if (bad.length === 0) return undefined;
   const patron = bad.map((c) => c.path).filter(isPatronPath);
