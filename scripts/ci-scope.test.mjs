@@ -175,8 +175,8 @@ test("W-131 round 3 finding 2: a deleted source copied into studio/ and the hand
 const REPO = dirname(HERE);
 const pkgScripts = () => JSON.parse(readFileSync(join(REPO, "package.json"), "utf8")).scripts;
 const line = (owner, rel) => `${owner}\t${rel}\n`;
-/** A well-formed log: one process, started, its reads, ended with their count. */
-const complete = (...rows) => `#start\tp1\n${rows.join("")}#end\tp1\t${rows.length}\n`;
+/** A well-formed log: the root process started, its reads, the root ended. */
+const complete = (...rows) => `#start\tp1\troot\n${rows.join("")}#end\tp1\n`;
 const andSplit = (script) => script.split("&&").map((command) => command.trim());
 
 test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite", () => {
@@ -322,14 +322,21 @@ test("W-139 round 1 finding 1: the guard rejects a log with no completion eviden
     ["an empty log", ""],
     ["owner lines with no markers", read],
     ["a log with no final newline", complete(read).slice(0, -1)],
-    ["a process that never ended", `#start\tp1\n${read}`],
-    ["a tail-truncated end marker", `#start\tp1\n${read}#end\tp1\t1`],
-    ["an end that counts a read the log lost", `#start\tp1\n#end\tp1\t1\n`],
-    ["a read the end never counted", `#start\tp1\n${read}#end\tp1\t0\n`],
+    ["a root that never ended", `#start\tp1\troot\n${read}`],
+    ["a tail-truncated end marker", `#start\tp1\troot\n${read}#end\tp1`],
+    ["a run with no root", `#start\tp1\n${read}#end\tp1\n`],
+    ["two roots", `${complete(read)}#start\tp2\troot\n#end\tp2\n`],
+    ["an end with no start", `${complete(read)}#end\tp9\n`],
+    ["a process that failed to write", `${complete(read)}#fail\tp2\n`],
     ["a malformed line", `${complete(read)}garbage\n`],
   ])
     assert.notDeepEqual(mod.checkReads(log, commands), [], `${name} is a problem`);
-  assert.deepEqual(mod.checkReads(complete(read), commands), [], "a started, counted and ended log passes");
+  assert.deepEqual(mod.checkReads(complete(read), commands), [], "a rooted, ended log passes");
+  assert.deepEqual(
+    mod.checkReads(complete(`#start\tp2\n`, read), commands),
+    [],
+    "a non-root process killed before its exit handler ran is not a problem",
+  );
   const dir = mkdtempSync(join(tmpdir(), "w139-integrity-"));
   try {
     const path = join(dir, "reads.log");
@@ -358,22 +365,22 @@ test("W-139 round 1 finding 1: the preload ends its log and is loud when it cann
         `import { chmodSync, existsSync } from "node:fs";`,
         `if (process.env.W139_CHMOD) chmodSync(process.env.BISELLIUM_RECORD_READS, 0o444);`,
         studioRead,
+        `import { spawnSync } from "node:child_process";`,
+        `spawnSync(process.execPath, ["-e", ""], { stdio: "ignore" });`,
       ].join("\n"),
     );
     const run = (log, extra = {}) => {
       const env = { ...process.env, NODE_OPTIONS: `--import ${preload}`, BISELLIUM_RECORD_READS: log, ...extra };
       delete env.BISELLIUM_RECORD_OWNER;
+      delete env.BISELLIUM_RECORD_ROOT;
       return spawnSync(process.execPath, [probe], { cwd: tmp, env, encoding: "utf8" });
     };
     const owner = relative(REPO, probe).split("\\").join("/");
     const good = join(tmp, "good.log");
     assert.equal(run(good).status, 0, "a writable log is silent and exits 0");
     const text = existsSync(good) ? readFileSync(good, "utf8") : "";
-    assert.match(
-      text,
-      /^#start\t([^\t\n]+)\n[^]*#end\t\1\t1\n$/,
-      "the log opens and closes the process, counting its read",
-    );
+    assert.match(text, /^#start\t([^\t\n]+)\troot\n[^]*#end\t\1\n$/, "the log opens and closes the root process");
+    assert.equal(text.split("\troot\n").length - 1, 1, "and a child it spawns is not a second root");
     const { checkReads } = await import("./ci-scope.mjs");
     assert.deepEqual(checkReads(text, [`node ${owner}`]), [], "and the guard accepts it");
 
