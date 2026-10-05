@@ -3,6 +3,8 @@
  * Rows are selected by name (`--test-name-pattern=W-131.behaviour.N:`), one
  * failing row per recorded red. The script is imported inside its row so a
  * missing file is an assertion failure, not a module-load failure.
+ *
+ * W-139 adds the `test:record` rows (`--test-name-pattern=W-139.behaviour.N:`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -171,4 +173,21 @@ test("W-131 round 3 finding 2: a deleted source copied into studio/ and the hand
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }
+});
+
+const REPO = dirname(HERE);
+const pkgScripts = () => JSON.parse(readFileSync(join(REPO, "package.json"), "utf8")).scripts;
+const andSplit = (script) => script.split("&&").map((command) => command.trim());
+
+test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite", () => {
+  const scripts = pkgScripts();
+  assert.equal(typeof scripts["test:record"], "string", "package.json has a test:record script");
+  assert.notEqual(scripts["test:record"].trim(), "", "test:record is non-empty");
+  const suite = andSplit(scripts["test:suite"]);
+  const record = andSplit(scripts["test:record"]);
+  for (const command of record) {
+    assert.ok(suite.includes(command), `"${command}" is a verbatim member of test:suite`);
+    assert.doesNotMatch(command, /\bcd\b|[()]/, `"${command}" has no cd and no parenthesis`);
+  }
+  assert.equal(new Set(record).size, record.length, "test:record has no duplicates");
 });
