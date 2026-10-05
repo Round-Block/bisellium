@@ -1,0 +1,231 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.4 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T09:53:09.267Z
+# sella: builder.W-127
+# tree: tree:0f345b06bc17392e9b1cf60c95d7a74bc511a070
+
+TAP version 13
+# Subtest: behaviour 4
+    # Subtest: a Patron decision naming the opus lifts the limit
+    not ok 1 - a Patron decision naming the opus lifts the limit
+      ---
+      duration_ms: 41.274251
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5401'
+      failureType: 'testCodeFailure'
+      error: |-
+        valid exception: exit (stderr ["W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a \"Behaviour limit exception:\" line"])
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        accepted (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:149:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:258:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+      ...
+    # Subtest: an architect decision is refused
+    not ok 2 - an architect decision is refused
+      ---
+      duration_ms: 16.850505
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5567'
+      failureType: 'testCodeFailure'
+      error: |-
+        architect: stderr
+        + actual - expected
+        
+          [
+        +   'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+        -   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:261:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: a missing decision is refused
+    not ok 3 - a missing decision is refused
+      ---
+      duration_ms: 12.99842
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5799'
+      failureType: 'testCodeFailure'
+      error: |-
+        missing: stderr
+        + actual - expected
+        
+          [
+        +   'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+        -   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-901" not found'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-901" not found'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:268:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a Patron decision that never names the opus is refused
+    not ok 4 - a Patron decision that never names the opus is refused
+      ---
+      duration_ms: 10.489182
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5982'
+      failureType: 'testCodeFailure'
+      error: |-
+        does not name: stderr
+        + actual - expected
+        
+          [
+        +   'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+        -   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" does not name W-900'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" does not name W-900'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:271:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: two exception lines are refused
+    not ok 5 - two exception lines are refused
+      ---
+      duration_ms: 10.370337
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:6225'
+      failureType: 'testCodeFailure'
+      error: |-
+        two exceptions: stderr
+        + actual - expected
+        
+          [
+        +   'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+        -   'W-900: brief.admission: briefs/W-900.md has 2 "Behaviour limit exception:" lines; at most one'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md has 2 "Behaviour limit exception:" lines; at most one'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:278:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a valid exception does not excuse a missing family
+    not ok 6 - a valid exception does not excuse a missing family
+      ---
+      duration_ms: 10.06848
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:6453'
+      failureType: 'testCodeFailure'
+      error: |-
+        exception without family: stderr
+        + actual - expected
+        
+          [
+            'W-900: brief.admission: briefs/W-900.md declares no decree family; add one line "Decree family: <slug>"',
+        +   'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md declares no decree family; add one line "Decree family: <slug>"'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md declares no decree family; add one line "Decree family: <slug>"'
+        1: 'W-900: brief.admission: briefs/W-900.md numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:285:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a bogus exception id on an in-limit brief is not read
+    ok 7 - a bogus exception id on an in-limit brief is not read
+      ---
+      duration_ms: 12.192285
+      type: 'test'
+      ...
+    1..7
+not ok 1 - behaviour 4
+  ---
+  duration_ms: 115.158489
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5309'
+  failureType: 'subtestsFailed'
+  error: '6 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 7
+# suites 1
+# pass 1
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 130.20622
