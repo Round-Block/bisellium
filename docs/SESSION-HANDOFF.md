@@ -162,6 +162,7 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Open with the Patron
 
+- W-127 follow-ons (censor advisories): the receipt's private behaviour counters (`builder-run.ts:171`, `scripts/run-builder-host.mjs:434`) keep the old section rule — give them admission's parser; brief-admission rows for unterminated/`~~~`/indented fences, mid-line comments and CRLF; `readBriefAdmission`'s exported signature is wider than the brief. A relayed instruction to a builder to overwrite a signed brief was blocked by its classifier (correctly); the orchestrator applies Patron-ruled brief revisions itself.
 - W-123 follow-ons (architect defaults): landing text for `spec/<id>` and `chore/done-<id>` PRs prints no rebase step; `bisellium merge`'s PR path is now unreachable and wants a retirement chore. `done` now refuses until the opus's merge is in local master — run it after `git fetch` + ff of master.
 - Full GitHub CI on an unmerged opus tree: push it to `ci-probe/<id>`, open a draft PR, attach the `gates` job log, close the PR with `--delete-branch` (W-139 rounds 2–3).
 - W-077 follow-ons (Patron): per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
@@ -173,7 +174,7 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Queue
 
-**W-077 done (PR 228).** Order of record: `studio/acta/2026-10-05-ranking.md` (Patron ruling 2026-10-05: rank by type of work). Greenlit 2026-10-05: group 1 process gates W-139, W-123, W-127, W-126, W-120; group 2 security W-133, W-115. W-139 done (PR 234). W-123 done (PR 237; narrowed to the done refusal, veto-able by the Patron, title unamended). Next: W-127. Groups 3–6 (W-137, W-138, W-122, W-116, W-117, W-136, W-135, W-118) wait for the Patron's greenlight; W-136's UI and W-135's architecture need rulings at spec time; W-113 needs a UI ruling. Open questions in the ranking acta: W-138 depends on W-136; W-122 self-reported usage vs W-138's harness-log rule.
+**W-077 done (PR 228).** Order of record: `studio/acta/2026-10-05-ranking.md` (Patron ruling 2026-10-05: rank by type of work). Greenlit 2026-10-05: group 1 process gates W-139, W-123, W-127, W-126, W-120; group 2 security W-133, W-115. W-139 done (PR 234). W-123 done (PR 237; narrowed to the done refusal, veto-able by the Patron, title unamended). W-127 done (PR 240): briefs carry one `Decree family:` line and at most 6 numbered behaviours (`brief_behaviour_limit: 6`); over the limit needs `Behaviour limit exception: <D-id>`, an architect decision naming the opus (Patron, 2026-10-05). Next: W-126. Groups 3–6 (W-137, W-138, W-122, W-116, W-117, W-136, W-135, W-118) wait for the Patron's greenlight; W-136's UI and W-135's architecture need rulings at spec time; W-113 needs a UI ruling. Open questions in the ranking acta: W-138 depends on W-136; W-122 self-reported usage vs W-138's harness-log rule.
 
 ## Research lane (on the side)
 
