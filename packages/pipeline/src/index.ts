@@ -48,7 +48,8 @@ export interface MergePipeline {
   run(opts: PipelineRunOpts): Promise<Record<string, GateRunResult>>;
 }
 
-const TIMEOUT_MS = 10 * 60 * 1000;
+/** Wall-clock cap on one automated gate command under `verify`, and on one `bisellium ci` step. */
+export const GATE_TIMEOUT_MS = 30 * 60_000;
 const LOG_TAIL_LINES = 200;
 
 const toPosix = (p: string): string => p.split(sep).join("/");
@@ -60,7 +61,7 @@ function tail(text: string, n: number): string {
 }
 
 /**
- * localPipeline: runs each command in `repo` with a 10-minute timeout,
+ * localPipeline: runs each command in `repo` with a 30-minute timeout,
  * writes one log per probatio (command, exit code, last 200 lines of
  * combined stdout+stderr) and reports pass/fail from the exit code.
  */
@@ -84,7 +85,7 @@ export const localPipeline: MergePipeline = {
         cwd: opts.repo,
         shell: true,
         encoding: "utf8",
-        timeout: TIMEOUT_MS,
+        timeout: GATE_TIMEOUT_MS,
         maxBuffer: 64 * 1024 * 1024,
         env,
       });
@@ -92,7 +93,7 @@ export const localPipeline: MergePipeline = {
       const timedOut = r.error !== undefined && (r.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
       const exitCode = timedOut ? null : r.status;
       const output = `${r.stdout ?? ""}${r.stderr ?? ""}`;
-      const statusLine = timedOut ? `exit code: (timed out after ${TIMEOUT_MS / 60_000}m)` : `exit code: ${exitCode ?? `(signal ${r.signal ?? "unknown"})`}`;
+      const statusLine = timedOut ? `exit code: (timed out after ${GATE_TIMEOUT_MS / 60_000}m)` : `exit code: ${exitCode ?? `(signal ${r.signal ?? "unknown"})`}`;
       // The tree/certifies header is our own metadata, not part of the
       // command's (untrusted) output — check.ts's probatio.evidence.tree
       // rule reads it back to confirm a gate's log actually mentions the
