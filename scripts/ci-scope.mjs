@@ -21,15 +21,39 @@ export function recordOnly(paths) {
   return paths.length > 0 && paths.every((path) => path.startsWith("studio/") || path === "docs/SESSION-HANDOFF.md");
 }
 
-/** The problems with `log` (lines `<owner>\t<path>`) against `commands`, sorted; none means exact. */
+/**
+ * The problems with `log` against `commands`, sorted; none means exact. The log
+ * is lines `<owner>\t<path>` bracketed per process by `#start\t<id>` and
+ * `#end\t<id>\t<count>` (scripts/record-reads.mjs), so an empty, owner-only,
+ * truncated or unterminated log is a problem, not a pass.
+ */
 export function checkReads(log, commands) {
   const problems = [];
+  if (commands.length === 0) problems.push("no commands");
+  if (log === "") problems.push("empty log");
+  else if (!log.endsWith("\n")) problems.push("unterminated log: no final newline");
   const firstRead = new Map();
+  const started = new Set();
+  const ended = new Set();
+  let reads = 0;
+  let counted = 0;
   for (const line of log.split("\n").filter(Boolean)) {
-    const [owner = "?", rel = ""] = line.split("\t");
-    if (owner === "?") problems.push(`unattributed: ${rel}`);
-    else if (!firstRead.has(owner)) firstRead.set(owner, rel);
+    const [owner = "", rel, extra] = line.split("\t");
+    if (owner === "#start" && rel && extra === undefined) started.add(rel);
+    else if (owner === "#end" && rel && /^\d+$/.test(extra ?? "")) {
+      ended.add(rel);
+      counted += Number(extra);
+    } else if (owner.startsWith("#") || !owner || !rel || extra !== undefined) problems.push(`malformed: ${line}`);
+    else {
+      reads++;
+      if (owner === "?") problems.push(`unattributed: ${rel}`);
+      else if (!firstRead.has(owner)) firstRead.set(owner, rel);
+    }
   }
+  if (log !== "" && started.size === 0) problems.push("no process started");
+  for (const id of started) if (!ended.has(id)) problems.push(`unterminated: ${id}`);
+  for (const id of ended) if (!started.has(id)) problems.push(`orphan end: ${id}`);
+  if (reads !== counted) problems.push(`count: ${reads} read lines, ${counted} counted`);
   const tokens = new Set(commands.flatMap((command) => command.split(/\s+/)));
   for (const [owner, rel] of firstRead) if (!tokens.has(owner)) problems.push(`unlisted: ${owner} (read ${rel})`);
   for (const command of commands)
@@ -51,7 +75,10 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href && process.arg
       ? [`missing: ${path}`]
       : checkReads(
           log,
-          record.scripts["test:record"].split("&&").map((command) => command.trim()),
+          (record.scripts?.["test:record"] ?? "")
+            .split("&&")
+            .map((command) => command.trim())
+            .filter(Boolean),
         );
   for (const problem of problems) console.log(problem);
   if (problems.length > 0) process.exit(1);
