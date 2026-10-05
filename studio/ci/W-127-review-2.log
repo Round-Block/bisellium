@@ -1,0 +1,18 @@
+# opus: W-127
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-05T11:19:41.970Z
+# tree: tree:29cb2c2e35f73eafe56c29e6e1ae53ad8a185f66
+
+## Findings
+1. advisory — packages/commands/src/builder-run.ts:171 The private receipt counters still use the old section rule and can disagree with admission on comment/repeated-heading briefs; the complete class found by searching all behaviour counters is this instance plus `scripts/run-builder-host.mjs:434`. W-127’s current receipt agrees at five behaviours, and both counters were explicitly outside the brief, so this is follow-on drift rather than blocking evidence failure. — check: none: add parity rows comparing all three counters on hostile fence/comment briefs
+2. advisory — packages/cli/src/brief-admission.test.ts:369 The corrected parser lacks regression rows for unterminated backtick fences, unterminated comments, `~~~` fences, four-space-indented fences, mid-line comment openers, and CRLF; these are every requested edge shape searched. Static inspection supports the specified behavior, so this is incomplete regression coverage rather than wrong behavior. — check: packages/cli/src/brief-admission.test.ts
+3. advisory — packages/commands/src/brief-admission.ts:80 The exported `readBriefAdmission` signature now adds an optional validation callback beyond the signed two-argument interface; the return shape is correctly narrowed, but the public API remains wider than specified. — check: none: add a compile-time exact-signature assertion for `readBriefAdmission`
+
+## Verdict
+Round-1 blocking findings 1–5 are closed: canonical red 04 now proves revision-2 behavior and was replayed by the fresh receipt, while all eight repair rows fail on the pre-fix code and pass on the final tree.
+
+VERDICT: PASS
