@@ -1,0 +1,22 @@
+# opus: W-127
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-05T09:46:42.948Z
+# tree: tree:5150e869c817f6673c09030d7b117191bb4eba7b
+
+W-127 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-127.md (315 lines, 5 behaviours, six sections, Decree family: brief-admission).
+Measurements at master 5f6d2a9: ~/.bisellium-evidence/W-127-spec/measure.mjs -> measure.out (68 signed briefs: behaviour count median 7, p90 12, max 31; review rounds step up between 6 and 7 in both eras: <=6 mean 1.91 / >6 mean 2.67 over 67 opera, 1.77 / 2.56 over W-061..W-139; unnumbered sublists in 22, no round difference; migration census 0 of 68 pass admission); orphans.out (sublist forms by brief); self-admit.mjs -> self-admit.out (this brief passes its own predicate at limit 6).
+
+## Findings
+1. advisory — whether behaviours share one decree family is semantic and not mechanically tested; the declaration line plus one genuine red per numbered behaviour is a proxy that a brief can evade by writing a second behaviour's assertions with no marker — check: none: W-126's blocking finding citing the brief's Decree family line, judged by the censor
+2. advisory — the limit of 6 rests on a correlation over 67 opera (era and author are confounders); at 6, 16 of 38 recent signed briefs would have needed a split or an exception — check: none: a re-run of ~/.bisellium-evidence/W-127-spec/measure.mjs once ten opera have been admitted under the limit
+3. advisory — next's spec rung and verdict --phase spec do not run admission, so an over-limit brief can be signed and is refused only at ready — check: brief.admission (ready refusal, W-127 behaviours 1-4)
+4. advisory — two private copies of the behaviour counter stay (builder-run.ts declaredBehaviours, scripts/run-builder-host.mjs) and can drift from the moved countBehaviours — check: none: a row asserting the three counters agree over studio/briefs
+5. advisory — halted opera are re-admitted at resume; W-107 numbers 8 behaviours and will need a split or a Patron exception — check: brief.admission
+6. advisory — leges/design.md §1 does not yet mark the definition of ready with (check: brief.admission); amending a lex is the Patron's (open question 3) — check: lex.unchecked
+
+## Recommendation
+Verdict: passed. One decree family, brief-admission: one predicate with two callers (ready refuses, check blocks active opera), in five behaviours, each red on its own after the previous one's implementation. The bound is 6, from the measured step in review rounds. The exception is a Patron decision naming the opus, reusing patronDecisionProblem. Historical briefs are grandfathered by construction, with no rewrite and no list. The four Patron questions ship with their stated defaults and do not block.
