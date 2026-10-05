@@ -1,0 +1,203 @@
+certifies: tree:29cb2c2e35f73eafe56c29e6e1ae53ad8a185f66
+command: npm run -s lint
+exit code: 0
+
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  76:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/home/edckt/agents/bisellium/.********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+/********.test.ts
+  12:26  warning  'resolve' is defined but never used. Allowed unused vars must match /^_/u      @********
+  15:10  warning  'checkStudio' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/********.test.ts
+  5:10  warning  'execSync' is defined but never used. Allowed unused vars must match /^_/u  @********
+
+/********.ts
+  24:7  warning  'OID_RE' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/********.test.ts
+  78:7  warning  'REPO_ROOT' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/********.test.ts
+  141:7  warning  'text' is assigned a value but never used. Allowed unused vars must match /^_/u  @********
+
+/********.test.ts
+  298:31  warning  'opts' is defined but never used. Allowed unused args must match /^_/u  @********
+
+✖ 73 problems (0 errors, 73 warnings)
+
+
