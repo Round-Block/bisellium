@@ -401,3 +401,53 @@ test("W-139 round 1 finding 1: the preload ends its log and is loud when it cann
     rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test("W-139 round 2 finding 1: a process that cannot record a read never makes it, and the guard fails on <log>.fail", () => {
+  const preload = join(HERE, "record-reads.mjs");
+  const tmp = mkdtempSync(join(tmpdir(), "w139-record-first-"));
+  try {
+    const target = join(REPO, "studio", "bisellium.yml");
+    const child = `console.log("read-happened", require("node:fs").existsSync(${JSON.stringify(target)}));`;
+    const probe = join(tmp, "probe.test.mjs");
+    writeFileSync(
+      probe,
+      [
+        `import { chmodSync } from "node:fs";`,
+        `import { spawnSync } from "node:child_process";`,
+        `chmodSync(process.env.BISELLIUM_RECORD_READS, 0o444);`,
+        `const r = spawnSync(process.execPath, ["-e", ${JSON.stringify(child)}], { encoding: "utf8" });`,
+        `console.log(JSON.stringify({ status: r.status, signal: r.signal, out: r.stdout, err: r.stderr }));`,
+      ].join("\n"),
+    );
+    const log = join(tmp, "reads.log");
+    const env = { ...process.env, NODE_OPTIONS: `--import ${preload}`, BISELLIUM_RECORD_READS: log };
+    delete env.BISELLIUM_RECORD_OWNER;
+    delete env.BISELLIUM_RECORD_ROOT;
+    const ran = spawnSync(process.execPath, [probe], { cwd: tmp, env, encoding: "utf8" });
+    const result = JSON.parse(ran.stdout.trim().split("\n").at(-1) ?? "{}");
+    assert.equal(result.out, "", "the child's read never happened: its call did not return");
+    assert.ok(result.signal === "SIGABRT" || result.status !== 0, "the child died before the read");
+    assert.match(result.err, /record-reads/, "and said why on stderr");
+    assert.equal(existsSync(`${log}.fail`), true, "it left the sibling <log>.fail marker");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("W-139 round 2 finding 1: the guard CLI fails when <log>.fail exists beside an otherwise exact log", () => {
+  const dir = mkdtempSync(join(tmpdir(), "w139-failmark-"));
+  try {
+    const path = join(dir, "reads.log");
+    const owners = andSplit(pkgScripts()["test:record"] ?? "").map((command) =>
+      command.split(/\s+/).find((token) => /\.test\.[cm]?[jt]s$/.test(token)),
+    );
+    writeFileSync(path, complete(...owners.map((owner) => line(owner, "studio/x"))));
+    assert.equal(scope(dir, "--check-reads", path).stdout, "record_reads=ok\n", "the exact log passes alone");
+    writeFileSync(`${path}.fail`, "p2\n");
+    const marked = scope(dir, "--check-reads", path);
+    assert.equal(marked.status, 1, "a <log>.fail marker fails the guard");
+    assert.match(marked.stdout, /failed: .*reads\.log\.fail/, "and names it");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
