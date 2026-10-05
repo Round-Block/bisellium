@@ -1,0 +1,179 @@
+# behaviour: 6
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-141-b6 packages/cli/src/branch.test.ts
+# exit: 1
+# at: 2026-10-05T17:48:01.307Z
+# sella: builder.W-141
+# tree: tree:118b02528200af7adb764aece0ce475464f1d145
+
+PASS  opusBranchName('W-026') === 'opus/W-026'                     
+PASS  createOpusBranch succeeds                                    true
+PASS  branch exists after create                                   master,opus/W-026
+PASS  stays on original branch                                     master
+PASS  refuses duplicate branch                                     branch opus/W-026 already exists
+PASS  merge from master succeeds                                   undefined
+PASS  feature commit on master (from master)                       2e4de54 feat: add feature
+af4f3c0 init
+PASS  feature commit on master (from a third branch)               2e4de54 feat: add feature
+af4f3c0 init
+PASS  merge from a third branch leaves it checked out              sidebranch
+PASS  merge from a third branch still reports success              undefined
+PASS  feature commit on master (from the opus branch itself)       2e4de54 feat: add feature
+af4f3c0 init
+PASS  refuses a non-done opus                                      opus W-040 is not done on opus/W-040 (state: building); run "bisellium done W-040" on opus/W-040 and commit it there
+PASS  error names the actual state                                 opus W-040 is not done on opus/W-040 (state: building); run "bisellium done W-040" on opus/W-040 and commit it there
+PASS  master untouched                                             af4f3c0 init
+PASS  opus branch still exists                                     master,opus/W-040
+PASS  refuses conflicting branch                                   branch opus/W-031 conflicts with master
+PASS  error names the conflict, not divergence                     branch opus/W-031 conflicts with master
+PASS  refuses conflicting branch even from a third branch          branch opus/W-032 conflicts with master
+PASS  names the conflict against master, not sidebranch            branch opus/W-032 conflicts with master
+PASS  branch deleted after merge                                   master
+PASS  never a false success when the branch can't be deleted       {"ok":false,"error":"master fast-forwarded to opus/W-032c, but could not delete opus/W-032c: error: cannot delete branch 'opus/W-032c' used by worktree at '/tmp/claude-1000/bisellium-branch-GSClIQ' — switch off it and delete manually","trunk":"master"}
+PASS  branch left in place when deletion fails                     master,opus/W-032c
+PASS  mutation-record: refuses missing branch                      branch opus/W-999 does not exist
+PASS  mutation-record: refuses a clean-but-diverged merge (ff-only) branch opus/W-070 has diverged from master — rebase first
+PASS  mutation-record: names divergence, not a conflict            branch opus/W-070 has diverged from master — rebase first
+PASS  rebase strategy succeeds where ff-only would refuse          undefined
+PASS  feature commit lands on master after rebase                  1fec180 feat: add feature
+db42d10 master work
+af4f3c0 init
+PASS  opus branch deleted after a rebased merge                    master
+PASS  rebase produced a linear history, no merge commit            
+PASS  round-4 (D-015 B1): the rebase note no longer cites probatio.certifies.stale, a rule that never fires for a done opus opus/W-080 was rebased onto master — its source tree changed; run "bisellium verify W-080" again before this ships
+PASS  refuses a real rebase conflict                               branch opus/W-081 could not be rebased onto master — resolve the conflict on opus/W-081 and retry
+PASS  error names the rebase, not the ff-only wording              branch opus/W-081 could not be rebased onto master — resolve the conflict on opus/W-081 and retry
+PASS  no rebase left in progress                                   
+PASS  opus branch survives a failed rebase                         master,opus/W-081
+PASS  merge with integration.push succeeds                         undefined
+PASS  origin's master matches the local trunk after push           c962922f1b6be0e68a2de005c089354bf1b759ff
+PASS  pr.required still reports success (merge did its half)       undefined
+PASS  pr.required does not land the change on the trunk            false
+PASS  master is untouched                                          d6cb902 init
+PASS  opus branch survives for a PR to carry                       master,opus/W-083
+PASS  note names the reviewer                                      integration.pr.required is set — opus/W-083 was not merged locally; open a PR from opus/W-083 to master (reviewer: qa-lead)
+PASS  merge_commit is refused, not silently downgraded             integration.strategy "merge_commit" is declared but not implemented — use "fast_forward" or "rebase"
+PASS  error names the strategy as not implemented                  integration.strategy "merge_commit" is declared but not implemented — use "fast_forward" or "rebase"
+PASS  master is untouched                                          d6cb902 init
+PASS  opus branch is untouched                                     master,opus/W-084
+PASS  merges into main when main is the trunk                      undefined
+PASS  reports the real trunk name (main), not a hardcoded master   main
+PASS  refuses when the recorded certificate no longer matches the rebased tree opus/W-090 was rebased onto master — opus W-090's gate "tests" certifies tree:0000000000000000000000000000000000000000, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); check out opus/W-090, re-run "bisellium verify W-090" there, commit the result on opus/W-090, then switch back to master and retry the merge
+PASS  error names the stale gate and points at re-verify           opus/W-090 was rebased onto master — opus W-090's gate "tests" certifies tree:0000000000000000000000000000000000000000, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); check out opus/W-090, re-run "bisellium verify W-090" there, commit the result on opus/W-090, then switch back to master and retry the merge
+PASS  master is untouched                                          ba88f5c master work
+d6cb902 init
+PASS  the branch is left in place for a retry after verify, not deleted master,opus/W-090
+PASS  a matching certificate does not block the merge              undefined
+PASS  feature commit lands on master                               30b323d feat: add feature
+ba88f5c master work
+d6cb902 init
+PASS  branch-delete failure after a rebase is still reported as a failure master fast-forwarded to opus/W-092, but could not delete opus/W-092: error: cannot delete branch 'opus/W-092' used by worktree at '/tmp/claude-1000/bisellium-branch-vYiZPO' — switch off it and delete manually
+PASS  master genuinely advanced despite the reported failure       30b323d feat: add feature
+ba88f5c master work
+d6cb902 init
+PASS  the failure still carries the rebase note                    opus/W-092 was rebased onto master — its source tree changed; run "bisellium verify W-092" again before this ships
+PASS  rebase-then-push succeeds even though the branch was already on origin undefined
+PASS  pr.required still stops merge from landing locally           false
+PASS  origin's branch was force-with-lease-pushed to the rebased tip, not left diverged local 30b323d0ce2ff89e05f40a450c80086fef04bd68 origin 30b323d0ce2ff89e05f40a450c80086fef04bd68
+PASS  mutation-record (A4.4): a trunk-side studio-only commit does not stale a matching certificate undefined
+PASS  feature commit lands on master                               560e737 bookkeeping: verify on the branch
+3bc1bee feat: add feature
+6862a1b studio bookkeeping: open W-095
+9cf50e7 studio bookkeeping: open W-094
+d6cb902 init
+PASS  first call refuses on the stale certificate                  opus/W-096 was rebased onto master — opus W-096's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); check out opus/W-096, re-run "bisellium verify W-096" there, commit the result on opus/W-096, then switch back to master and retry the merge
+PASS  the retry refuses too — the error's own remedy does not defeat it opus/W-096's tree no longer matches its certificate — opus W-096's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches its current tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); check out opus/W-096, re-run "bisellium verify W-096" there, commit the result on opus/W-096, then switch back to master and retry the merge
+PASS  master is still untouched after the retry                    ba88f5c master work
+d6cb902 init
+PASS  the branch still exists after the retry                      master,opus/W-096
+PASS  refuses a fast-forward-ready branch whose certificate predates its last commit opus/W-097's tree no longer matches its certificate — opus W-097's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches its current tree (tree:0d2fd2de57cd00e1a20f42870bc1f5322d361898); check out opus/W-097, re-run "bisellium verify W-097" there, commit the result on opus/W-097, then switch back to master and retry the merge
+PASS  master is untouched                                          d6cb902 init
+PASS  refuses on the stale certificate                             opus/W-098 was rebased onto master — opus W-098's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); check out opus/W-098, re-run "bisellium verify W-098" there, commit the result on opus/W-098, then switch back to master and retry the merge
+PASS  names an achievable remedy: check out the branch, not a bare re-verify from here opus/W-098 was rebased onto master — opus W-098's gate "tests" certifies tree:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef, which no longer matches the rebased tree (tree:6c9da1879a1b56bffb8eeaf890c0fa215a5daabb); check out opus/W-098, re-run "bisellium verify W-098" there, commit the result on opus/W-098, then switch back to master and retry the merge
+PASS  B5.1(a): does not land a never-certified commit by trusting the trunk's own (uncertified) copy opus/W-099's tree no longer matches its certificate — opus W-099's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches its current tree (tree:19ab8cd483d9bd8fad15481fa0410078bd65d8f1); check out opus/W-099, re-run "bisellium verify W-099" there, commit the result on opus/W-099, then switch back to master and retry the merge
+PASS  master never advances past the trunk-side bookkeeping        ae6e967 studio bookkeeping: open W-099
+d6cb902 init
+PASS  B5.1(b): a correct branch is not refused on a stale certificate that survives only in the trunk's copy undefined
+PASS  feature commit lands on master                               b4dc3ba bookkeeping: verify on the branch, correct certificate
+f4bf1d1 feat: add feature
+27ea6ef studio bookkeeping: open W-100, certifies a stale tree
+d6cb902 init
+PASS  absence rule removed: an automated gate with no recorded tree: certificate does not by itself refuse the merge undefined
+PASS  feature commit lands on master                               3c00acb feat: add feature, never verified
+731d452 studio bookkeeping: open W-101
+d6cb902 init
+PASS  state read from the branch: a done branch merges even though the trunk's disk copy still says building undefined
+PASS  feature commit lands on master                               cf7937c bookkeeping: done on the branch
+147105a feat: add feature
+a95f1c0 studio bookkeeping: open W-102
+216b830 init
+PASS  state read from the branch: a wrongly-edited trunk copy does not fool merge into landing an unfinished branch opus W-103 is not done on opus/W-103 (state: building); run "bisellium done W-103" on opus/W-103 and commit it there
+PASS  the refusal names the branch, not just a bare state          opus W-103 is not done on opus/W-103 (state: building); run "bisellium done W-103" on opus/W-103 and commit it there
+PASS  the refusal names the branch's real state                    opus W-103 is not done on opus/W-103 (state: building); run "bisellium done W-103" on opus/W-103 and commit it there
+PASS  master untouched beyond its own bookkeeping commit           fd36890 bookkeeping: (wrongly) mark done on master only
+ff0f64c studio bookkeeping: open W-103
+216b830 init
+PASS  first attempt refuses on the stale certificate               opus/W-104's tree no longer matches its certificate — opus W-104's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches its current tree (tree:c3704c031309328bc36c0b44153a93b0773fdf48); check out opus/W-104, re-run "bisellium verify W-104" there, commit the result on opus/W-104, then switch back to master and retry the merge
+PASS  the remedy names the missing commit step                     opus/W-104's tree no longer matches its certificate — opus W-104's gate "tests" certifies tree:3d9037783849e963df74f3ece17b115115104d9e, which no longer matches its current tree (tree:c3704c031309328bc36c0b44153a93b0773fdf48); check out opus/W-104, re-run "bisellium verify W-104" there, commit the result on opus/W-104, then switch back to master and retry the merge
+PASS  the remedy, followed literally with the commit step, lands the merge undefined
+PASS  both commits reach master                                    24a4fff bookkeeping: verify on the branch, again
+34b4ebd feat: more work, uncertified
+8eed99a bookkeeping: verify on the branch
+9e574e3 feat: add feature
+d844310 studio bookkeeping: open W-104
+216b830 init
+PASS  the branch is cleaned up                                     master
+PASS  B7.1: a branch that declares its own source_excludes is merged, not refused on a mismatch created by reading the trunk's manifest undefined
+PASS  the vendoring commit lands on master                         b8cf58b bookkeeping: verify on the branch
+f83f940 feat: vendor a dependency, exclude it from the source hash
+0f9204b studio bookkeeping: open W-105
+216b830 init
+PASS  the branch is cleaned up                                     master
+PASS  W-096 bootstrap succeeds from reviewed clean master          undefined
+PASS  W-096 bootstrap checks out the owning branch                 opus/W-096
+PASS  W-096 bootstrap writes the exact branch-point pin            ---
+id: W-096
+title: fixture
+kind: opus
+collegium: engineering
+state: greenlit
+probationes: {}
+baseline_commit: ed2b4a78a8a76291bc6016dad6c555b751dcdf11
+---
+
+PASS  W-096 trunk record remains byte-identical                    
+PASS  W-096 immutable existing branch refuses a second bootstrap   
+PASS  W-096 bootstrap refuses a dirty trusted-trunk checkout       W-096 branch creation requires a clean checkout
+TAP version 13
+# Subtest: W-141-b6 behaviour 6: bisellium merge refuses under integration.pr.required before any git command, and names next
+not ok 1 - W-141-b6 behaviour 6: bisellium merge refuses under integration.pr.required before any git command, and names next
+  ---
+  duration_ms: 57.960268
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/branch.test.ts:38:2719'
+  failureType: 'testCodeFailure'
+  error: |-
+    merge refuses under pr.required ({"ok":true,"trunk":"master","note":"integration.pr.required is set — opus/W-141 was not merged locally; open a PR from opus/W-141 to master","landed":false})
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-141/packages/cli/src/branch.test.ts:1235:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 63.961107
