@@ -1048,14 +1048,18 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
  *  predicate `ready` and `check` share. */
 export function briefAdmissionProblems(
   root: string,
-  manifest: Pick<Manifest, "patron">,
+  manifest: Pick<Manifest, "patron" | "collegia">,
   opusId: string,
   briefText: string,
   limit: number,
 ): string[] {
   const { problems, exception, exceptionAt } = readBriefAdmission(briefText, limit);
   if (exception === undefined) return problems;
-  const p = patronDecisionProblem(root, manifest, exception, opusId);
+  // The Patron ruled (2026-10-05) that the design collegium's magister grants exceptions.
+  const magister = manifest.collegia.find((c) => c.id === "design")?.magister;
+  const p = magister
+    ? patronDecisionProblem(root, manifest, exception, { by: magister, mustName: opusId })
+    : "no design collegium declares a magister";
   if (p !== undefined) problems.splice(exceptionAt ?? 0, 0, `behaviour limit exception: ${p}`);
   return problems;
 }
@@ -1074,7 +1078,7 @@ export function patronDecisionProblem(
   root: string,
   manifest: Pick<Manifest, "patron">,
   decisionId: unknown,
-  mustName?: string,
+  opts?: { by?: string; mustName?: string },
 ): string | undefined {
   if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
@@ -1089,10 +1093,16 @@ export function patronDecisionProblem(
   }
   const by = data["by"];
   if (typeof by !== "string" || by.length === 0) return `decision "${decisionId}" has no "by"`;
-  const patronId = manifest.patron ?? "patron";
-  if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
-  // W-127: an exception must name the opus it lifts the limit for (the one contained read above).
-  if (mustName !== undefined && !contained.bytes.toString("utf8").includes(mustName)) return `decision "${decisionId}" does not name ${mustName}`;
+  // W-127: `opts.by` swaps the expected author (a brief's exception is the architect's); no opts means the Patron.
+  if (opts?.by !== undefined) {
+    if (by !== opts.by) return `decision "${decisionId}" is by "${by}", not "${opts.by}"`;
+  } else {
+    const patronId = manifest.patron ?? "patron";
+    if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
+  }
+  // `opts.mustName`: an exception must name the opus it lifts the limit for (the one contained read above).
+  if (opts?.mustName !== undefined && !contained.bytes.toString("utf8").includes(opts.mustName))
+    return `decision "${decisionId}" does not name ${opts.mustName}`;
   return undefined;
 }
 

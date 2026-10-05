@@ -648,7 +648,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (briefLimit !== undefined && ACTIVE.has(state) && specRel) {
       const brief = readContainedRegularFile(root, specRel, "briefs");
       if (!("error" in brief))
-        for (const problem of briefAdmissionProblems(root, m as Pick<Manifest, "patron">, id ?? basename(p, ".md"), brief.bytes.toString("utf8"), briefLimit))
+        for (const problem of briefAdmissionProblems(root, m as Pick<Manifest, "patron" | "collegia">, id ?? basename(p, ".md"), brief.bytes.toString("utf8"), briefLimit))
           add("brief.admission", "block", where, `${specRel} ${problem}`);
     }
 

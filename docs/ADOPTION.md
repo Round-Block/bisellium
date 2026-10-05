@@ -748,7 +748,8 @@ A brief carries `Decree family: <slug>` on exactly one line, at most that many
 numbered behaviours under `## Behaviours to test`, and exactly one
 `**Genuine red:**` per numbered behaviour. A brief over the limit is admitted
 only with one `Behaviour limit exception: <decision-id>` line naming a
-decision `by` the Patron whose text names the opus. `ready` refuses a brief
+decision `by` the design collegium's magister (the architect) whose text
+names the opus. `ready` refuses a brief
 that fails (`<id>: brief.admission: <spec> <problem>`, exit 1, nothing
 written), and `check` blocks `brief.admission` on an active opus
 (`building`, `verifying`, `review`) whose brief fails, through one shared

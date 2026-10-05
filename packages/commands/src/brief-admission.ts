@@ -93,7 +93,7 @@ export function readBriefAdmission(
     const exceptions = captured(unfenced(briefText), /^Behaviour limit exception:(.*)$/);
     if (exceptions.length === 0)
       problems.push(
-        `numbers ${n} behaviours; the limit is ${limit} (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line`,
+        `numbers ${n} behaviours; the limit is ${limit} (brief_behaviour_limit); split it by decree family, or cite an architect ruling on a "Behaviour limit exception:" line`,
       );
     else if (exceptions.length > 1) problems.push(`has ${exceptions.length} "Behaviour limit exception:" lines; at most one`);
     else {
