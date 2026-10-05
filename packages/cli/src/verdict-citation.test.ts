@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
 import { parseVerdictHeader } from "@bisellium/commands/opus-model.js";
+import { runReview } from "./lifecycle.js";
 import { runVerdict } from "./verdict.js";
 
 const NOW = new Date("2026-10-05T12:00:00.000Z");
@@ -247,5 +248,61 @@ describe("behaviour 3", () => {
     assert.equal(r.exitCode, 0, r.stderr);
     assert.equal(r.header.get("outcome"), "failed");
     assert.equal(r.header.has("submitted_outcome"), false);
+  });
+});
+
+describe("behaviour 4", () => {
+  const FAIL_ARGS = ["W-300", "--fail", "--evidence", "ci/W-300-review-1.log", "--round", "1", "--sella", "qa-lead"];
+  const REFUSAL =
+    "W-300: review --fail: ci/W-300-review-1.log records outcome passed; every blocking finding was recorded as advisory (see its # converted line). Record a new verdict round whose blocking finding cites a brief line.";
+
+  /** An officina with W-300 at review and a verdict log recorded by the writer. */
+  function reviewed(body: string, outcome: string): string {
+    const dir = studio({ state: "review" });
+    const r = verdict(dir, body, outcome);
+    assert.equal(r.exitCode, 0, r.stderr);
+    return dir;
+  }
+
+  function review(dir: string, args: string[]): { exitCode: number; stderr: string } {
+    const { result, stderr } = capture(() => runReview([...args, "--studio", dir], { now: NOW }));
+    return { exitCode: result.exitCode, stderr };
+  }
+
+  const eventsPath = (dir: string): string => join(dir, ".bisellium", "events.jsonl");
+  const eventsOf = (dir: string): string => (existsSync(eventsPath(dir)) ? readFileSync(eventsPath(dir), "utf8") : "");
+
+  test("--fail refuses a log whose failure was reconciled away", () => {
+    const dir = reviewed(findings("blocking — packages/x.ts:3 the writer drops a line", "advisory — a nit"), "failed");
+    const opus = readFileSync(join(dir, "opera", "W-300.md"), "utf8");
+    const events = eventsOf(dir);
+    const r = review(dir, FAIL_ARGS);
+    assert.equal(r.exitCode, 2, r.stderr);
+    assert.equal(r.stderr.trim(), REFUSAL);
+    assert.equal(readFileSync(join(dir, "opera", "W-300.md"), "utf8"), opus, "opus bytes unchanged");
+    assert.equal(eventsOf(dir), events, "no event written");
+  });
+
+  test("--pass with the same log is accepted", () => {
+    const dir = reviewed(findings("blocking — packages/x.ts:3 the writer drops a line"), "failed");
+    const r = review(dir, ["W-300", "--pass", "--evidence", "ci/W-300-review-1.log", "--round", "1", "--sella", "qa-lead"]);
+    assert.equal(r.exitCode, 0, r.stderr);
+  });
+
+  test("--fail with a log whose failure kept a valid blocker is accepted", () => {
+    const dir = reviewed(findings("blocking — brief:2 the first behaviour is missing"), "failed");
+    const r = review(dir, FAIL_ARGS);
+    assert.equal(r.exitCode, 0, r.stderr);
+  });
+
+  test("--fail with a pre-W-126 log written by hand is accepted", () => {
+    const dir = studio({ state: "review" });
+    mkdirSync(join(dir, "ci"));
+    writeFileSync(
+      join(dir, "ci", "W-300-review-1.log"),
+      `# opus: W-300\n# phase: build\n# round: 1\n# sella: qa-lead\n# outcome: FAIL\n# at: 2026-10-01T12:00:00.000Z\n# tree: unknown\n\n${findings("blocking — packages/x.ts:3 the writer drops a line")}`,
+    );
+    const r = review(dir, FAIL_ARGS);
+    assert.equal(r.exitCode, 0, r.stderr);
   });
 });
