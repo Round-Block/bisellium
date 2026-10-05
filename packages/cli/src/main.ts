@@ -24,6 +24,7 @@ import { runPause, runResume } from "./pause.js";
 import { runHandoff, runEmit, runAnswer, runGreenlight, runBudget } from "./writes.js";
 import { runDelegate } from "./delegate.js";
 import { runProbe } from "./probe.js";
+import { mergeRefusal } from "./integrate.js";
 import { runReady, runDone, runReview, runRed, runHalt, runWaive, runAmend } from "./lifecycle.js";
 import { runVerdict } from "./verdict.js";
 import { runServe } from "./serve.js";
@@ -107,7 +108,7 @@ async function main(argv: string[]): Promise<number> {
   if (cmd === "halt") return runHalt(rest).exitCode;
   if (cmd === "waive") return runWaive(rest).exitCode;
   if (cmd === "amend") return runAmend(rest).exitCode;
-  if (cmd === "done") return runDone(rest).exitCode;
+  if (cmd === "done") return runDone(rest, { mergeRefusal }).exitCode;
   if (cmd === "review") return runReview(rest).exitCode;
   if (cmd === "verdict") return runVerdict(rest).exitCode;
   if (cmd === "red") return (await runRed(rest)).exitCode;

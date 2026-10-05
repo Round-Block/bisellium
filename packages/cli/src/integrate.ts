@@ -345,6 +345,16 @@ export function settleMerged(repo: string, pr: Pr, tip: string | undefined): Set
   return { kind: "settled" };
 }
 
+/** W-123: why the opus's merge is not in the local trunk; undefined when its PR is MERGED and settled. */
+export function mergeRefusal(repo: string, id: string): string | undefined {
+  const read = identifyPr(repo, id);
+  if (read.kind === "held") return read.reason;
+  if (read.kind === "none") return `no MERGED PR from opus/${id} to master`;
+  if (read.pr.state !== "MERGED") return `PR #${read.pr.number} from opus/${id} is ${read.pr.state}, not MERGED`;
+  const s = settleMerged(repo, read.pr, localTip(repo, id));
+  return s.kind === "settled" ? undefined : s.reason;
+}
+
 // ---------------------------------------------------------------------------
 // results
 // ---------------------------------------------------------------------------

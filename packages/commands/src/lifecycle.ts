@@ -331,7 +331,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
 const DONE_USAGE = "usage: bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]";
 const DONE_FROM_STATES = new Set(["building", "verifying", "review"]);
 
-export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
+export interface RunDoneOptions extends WriteOptions {
+  /** W-123: the merge reader; the CLI passes integrate.ts's mergeRefusal. */
+  mergeRefusal?: (repo: string, opusId: string) => string | undefined;
+}
+
+export function runDone(args: string[], opts: RunDoneOptions = {}): WriteResult {
   const parsed = parseFlags(args, { valued: ["--sella", "--studio", "--now"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${DONE_USAGE}`);
@@ -459,6 +464,18 @@ export function runDone(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
   const sella = doneSellaResult;
+
+  // W-123: after every other refusal (L-054), an officina that lands through a PR
+  // wants the opus's merge in the local trunk before `done` writes anything.
+  if (manifest.integration?.pr?.required === true) {
+    const repoRoot = findGitRoot(root);
+    const why = repoRoot !== undefined && opts.mergeRefusal !== undefined ? opts.mergeRefusal(repoRoot, opusId) : undefined;
+    if (why !== undefined) {
+      console.error(`${opusId}: done refused: ${why}`);
+      console.error(`${opusId}: done needs the PR from opus/${opusId} merged and its merge commit in the local master; run: bisellium next ${opusId}`);
+      return { exitCode: 1 };
+    }
+  }
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["state"], "done");

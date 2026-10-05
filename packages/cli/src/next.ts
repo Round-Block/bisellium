@@ -29,7 +29,7 @@ import { censorSella, inspectUiDesignInput, readContainedRegularFile, type Nativ
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, git, identifyPr, localTip, MIN_CHECKS, mergeGate, openPr, opusWorktree, settleMerged, type Ctx, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, git, identifyPr, localTip, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, settleMerged, type Ctx, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -920,11 +920,8 @@ function performDone(f: Facts): StepResult {
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
   const dirty = trackedDirty(repo);
   if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
-  const read = identifyPr(repo, id);
-  if (read.kind === "held") return heldResult(read.reason);
-  if (read.kind === "none" || read.pr.state !== "MERGED") return heldResult(`refusing: a fresh read finds no MERGED PR for opus/${id}`);
-  const s = settleMerged(repo, read.pr, localTip(repo, id));
-  if (s.kind !== "settled") return heldResult(`refusing: ${s.reason}`);
+  const why = mergeRefusal(repo, id);
+  if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);
   const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", chore]);
@@ -933,7 +930,7 @@ function performDone(f: Facts): StepResult {
     git(repo, ["switch", "-q", "master"]);
     git(repo, ["update-ref", "-d", `refs/heads/${chore}`, base]);
   };
-  const cap = capture(() => runDone([id, "--sella", "producer", "--studio", f.studioAbs]));
+  const cap = capture(() => runDone([id, "--sella", "producer", "--studio", f.studioAbs], { mergeRefusal }));
   if (cap.exit !== 0) {
     back();
     const text = [...cap.err, ...cap.out].map(one).filter(Boolean);

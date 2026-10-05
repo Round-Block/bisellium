@@ -1683,12 +1683,6 @@ if (runs(4)) {
     const secondOut = next(second, [OPUS, "--perform", "--expect", "done"]);
     expectHeld(secondOut, "a second changed tracked path");
     assert.equal(gitq(second.repo, ["rev-parse", `refs/heads/${chore}`]), secondTip, "nothing was committed on the chore branch (left for inspection)");
-
-    // control: the existing `done` still accepts an unmerged opus. RETIRED BY W-123, which must delete this row in the
-    // same commit that adds its own merged-and-fetched refusal built on trunkContainsMerge (a recorded handoff of this row).
-    const control = world("b4-control", "review");
-    verb(control.wt, ["done", OPUS, "--sella", "producer", "--studio", control.wtStudio, "--now", T.done]);
-    assert.match(recordOf(control, "wt"), /state: "?done/, "done is unchanged: it accepts an unmerged opus");
   });
 }
 
@@ -2249,7 +2243,9 @@ function expectRefused(w: World, run: () => Out, reason: { is: string } | { star
   return o;
 }
 /** The handoff flow: the main checkout on a branch cut from master with no upstream. */
-const onHandoffBranch = (w: World): void => git(w.repo, ["switch", "-q", "--no-track", "-c", "chore/w123-done", "master"]);
+function onHandoffBranch(w: World): void {
+  git(w.repo, ["switch", "-q", "--no-track", "-c", "chore/w123-done", "master"]);
+}
 
 test("W-123 behaviour 1: done and close refuse an opus whose merge is not in the local master, and accept one whose merge is", { timeout: 1_800_000 }, () => {
   const doneArgs = (w: World): string[] => ["done", OPUS, "--sella", "producer", "--studio", w.wtStudio, "--now", T.done];

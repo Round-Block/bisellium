@@ -254,7 +254,9 @@ files the next poll picks up.
   `trunkContainsMerge` (`@bisellium/commands/trunk.js`) is the
   one "is this merge in the local trunk" predicate, in `commands` so a `done`
   refusal can import it without a cli-to-commands cycle. No workspace edge is
-  added (§1 is unchanged).
+  added (§1 is unchanged). `done` (W-123) reaches the same predicate through an
+  injected reader: `integrate.ts`'s `mergeRefusal`, passed by `done`, `close` and
+  `next` to `runDone`, which asks it only when `integration.pr.required` is set.
 - `admitCurrentRunReceipt` (`@bisellium/commands/builder-run`) — the shared
   current-SOURCE host-completion predicate used before either review outcome.
 - `SnapshotAdapter` (`adapters/native`, `adapters/epoch0`) — the only thing that

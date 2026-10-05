@@ -163,6 +163,7 @@ function fixture(tag: string, o: FxOpts = {}): Fx {
   const manifestPath = join(studio, "bisellium.yml");
   const doc = parseDocument(readFileSync(manifestPath, "utf8"));
   doc.setIn(["probationes"], TESTS_LINT_SPEC_REVIEW);
+  doc.setIn(["integration", "pr", "required"], false); // W-123: these rows are not about landing
   o.manifest?.(doc);
   writeFileSync(manifestPath, doc.toString({ lineWidth: 0 }));
   writeFileSync(join(studio, "briefs", "W-120.md"), "brief\n");
