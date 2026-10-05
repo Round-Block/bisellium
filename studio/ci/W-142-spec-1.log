@@ -1,0 +1,20 @@
+# opus: W-142
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-05T21:57:29.847Z
+# tree: tree:bac858e1b20edb1b0d72fbac54bec1c3c2c1561e
+
+W-142 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-142.md (1 behaviour, six sections, Decree family: gate-timeout; W-127's real readBriefAdmission at limit 6 reports no problems: ~/.bisellium-evidence/W-142-spec/self-admit.out).
+Measurements at master d8bf1fb: local npm test -s took 11 min 09 s wall time and exited 0 (~/.bisellium-evidence/W-142-spec/npm-test.time); next.test.ts alone took 480 s, 72% of the run (npm-test.out). On CI, the npm test step took 318-551 s over the last 30 ci.yml runs, and the slowest was W-141's PR, run 37365848625, at 551 s (measure-ci.sh -> measure-ci.out). The two failed runs in that window were 15-minute runner cancellations. verify's localPipeline caps a gate at 10 minutes (packages/pipeline/src/index.ts:51), and bisellium ci keeps its own 10-minute copy (packages/commands/src/ci.ts:89). The host runner's red replays run one test selection, not the suite. check studio --repo . is identical with and without the brief apart from its timestamp line (check-with.out, check-without.out).
+
+## Findings
+1. advisory — the cap is raised to 30 minutes, about 2.7 times the slowest measured run, and stays one constant. A manifest-sourced cap and an injectable timeout on PipelineRunOpts are both left out: one is a schema change and the other a seam change, each for a value nobody has asked to set (open question 2) — check: packages/pipeline/test/gate-timeout.test.ts (W-142-b1)
+2. advisory — bisellium ci runs npm test under the same 10-minute cap, so it would fail in the same way. ci.ts imports GATE_TIMEOUT_MS in place of STEP_TIMEOUT_MS. @bisellium/commands already depends on @bisellium/pipeline, so the module graph does not move and docs/ARCHITECTURE.md stays as it is — check: none: the brief's Acceptance grep on packages/commands/src/ci.ts
+3. advisory — the red must be the headroom assertion, not a missing export. The builder exports the constant at its current 10-minute value first, so the row fails on 600000 < 1338000. The live verify on the opus branch is the end-to-end proof, and it needs no test that waits 11 minutes — check: packages/pipeline/test/gate-timeout.test.ts (W-142-b1)
+4. advisory — next.test.ts (480 s locally) is the real cost and its own decree family. A follow-on is for the producer to file (open question 3) — check: none: the producer files it
+
+## Recommendation
+Verdict: passed. One decree family, gate-timeout: one gate timeout, with headroom over the measured suite, bounds both verify's gate commands and bisellium ci's steps. One behaviour: GATE_TIMEOUT_MS is exported from @bisellium/pipeline at 30 minutes. That is at least twice the slowest measured run (669 s) and at most an hour. ci.ts uses it too. The three Patron questions ship with their stated defaults and do not block.
