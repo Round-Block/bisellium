@@ -1,0 +1,50 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-139.behaviour.5: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-05T03:44:28.071Z
+# sella: builder.W-139
+# tree: tree:2b2197a97900b673a13567f77e40b79e1c7ed43f
+
+TAP version 13
+# Subtest: W-139 behaviour 5: gates' npm test records reads and the guard step right after it checks them
+not ok 1 - W-139 behaviour 5: gates' npm test records reads and the guard step right after it checks them
+  ---
+  duration_ms: 9.641614
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:285:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    npm test's env holds the two recording keys beside the live-row guard
+    + actual - expected
+    
+      {
+    -   BISELLIUM_RECORD_READS: '${{ runner.temp }}/record-reads.log',
+        BISELLIUM_REQUIRE_LIVE_ROWS: '1',
+    -   NODE_OPTIONS: '--import ${{ github.workspace }}/scripts/record-reads.mjs'
+      }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    BISELLIUM_REQUIRE_LIVE_ROWS: '1'
+    NODE_OPTIONS: '--import ${{ github.workspace }}/scripts/record-reads.mjs'
+    BISELLIUM_RECORD_READS: '${{ runner.temp }}/record-reads.log'
+  actual:
+    BISELLIUM_REQUIRE_LIVE_ROWS: '1'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:289:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15.552059
