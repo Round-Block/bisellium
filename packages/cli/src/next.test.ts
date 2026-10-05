@@ -24,6 +24,7 @@ import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_pr
 import { createHash } from "node:crypto";
 import {
   constants,
+  cpSync,
   closeSync,
   existsSync,
   mkdirSync,
@@ -47,6 +48,7 @@ import { fileURLToPath } from "node:url";
 import { sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
+import { runDone } from "@bisellium/commands/lifecycle.js";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -2228,9 +2230,10 @@ function cli(w: World, args: string[], cwd: string): Out {
 }
 const eventsOf = (studio: string): string | null => (existsSync(join(studio, ".bisellium", "events.jsonl")) ? readFileSync(join(studio, ".bisellium", "events.jsonl"), "utf8") : null);
 /** The row is refused: exit 1, the two exact stderr lines, and neither the record nor the event log moved. */
-function expectRefused(w: World, run: () => Out, reason: { is: string } | { startsWith: string }, row: string): Out {
-  const recordBefore = recordOf(w, "wt");
-  const eventsBefore = eventsOf(w.wtStudio);
+function expectRefused(w: World, run: () => Out, reason: { is: string } | { startsWith: string }, row: string, studio = w.wtStudio): Out {
+  const recordIn = (): string => readFileSync(join(studio, "opera", `${OPUS}.md`), "utf8");
+  const recordBefore = recordIn();
+  const eventsBefore = eventsOf(studio);
   const o = run();
   const lines = o.err.split("\n");
   assert.equal(o.status, 1, ran(`${row}: exit`, o));
@@ -2238,8 +2241,8 @@ function expectRefused(w: World, run: () => Out, reason: { is: string } | { star
   if ("is" in reason) assert.equal(first, `${OPUS}: done refused: ${reason.is}`, ran(`${row}: first stderr line`, o));
   else assert.ok(first.startsWith(`${OPUS}: done refused: ${reason.startsWith}`), ran(`${row}: first stderr line`, o));
   assert.equal(lines[1], WHY_LINE, ran(`${row}: second stderr line`, o));
-  assert.equal(recordOf(w, "wt"), recordBefore, `${row}: the record's bytes are unchanged`);
-  assert.equal(eventsOf(w.wtStudio), eventsBefore, `${row}: the event log is unchanged`);
+  assert.equal(recordIn(), recordBefore, `${row}: the record's bytes are unchanged`);
+  assert.equal(eventsOf(studio), eventsBefore, `${row}: the event log is unchanged`);
   return o;
 }
 /** The handoff flow: the main checkout on a branch cut from master with no upstream. */
@@ -2290,4 +2293,50 @@ test("W-123 behaviour 1: done and close refuse an opus whose merge is not in the
   const acceptedClose = cli(closed2, ["close", OPUS, "--studio", closed2.studio, "--repo", closed2.repo], closed2.repo);
   assert.equal(acceptedClose.status, 0, ran("close accepts a merged and fetched opus", acceptedClose));
   assert.match(recordOf(closed2), /state: "?done/, "close leaves the record done");
+});
+
+test("W-123 behaviour 2: the guard fails closed, and stays silent where no PR is required", { timeout: 1_800_000 }, () => {
+  const doneArgs = (studio: string): string[] => [OPUS, "--sella", "producer", "--studio", studio, "--now", T.done];
+  /** In-process runDone with stderr captured, the way lifecycle.test.ts reads it. */
+  const inProcess = (studio: string, opts: Parameters<typeof runDone>[1] = {}): Out => {
+    const errors: string[] = [];
+    const logs: string[] = [];
+    const realError = console.error;
+    const realLog = console.log;
+    console.error = (...a: unknown[]): void => void errors.push(a.join(" "));
+    console.log = (...a: unknown[]): void => void logs.push(a.join(" "));
+    try {
+      const r = runDone(doneArgs(studio), opts);
+      return parse(r.exitCode, logs.join("\n"), errors.join("\n"));
+    } finally {
+      console.error = realError;
+      console.log = realLog;
+    }
+  };
+
+  // no reader supplied: refused, never let through
+  const noReader = world("w123-b2-no-reader", "cleanup", { prRequired: true });
+  scenario(noReader, { list: mergedList(noReader) });
+  expectRefused(noReader, () => inProcess(noReader.studio), { is: "no merge reader was supplied" }, "no reader", noReader.studio);
+
+  // no git work tree: refused, and the reader (gh) is never reached
+  const bare = world("w123-b2-no-git", "cleanup", { prRequired: true });
+  scenario(bare, { list: mergedList(bare) });
+  const outside = join(scratch("w123-b2-outside"), "studio");
+  cpSync(bare.studio, outside, { recursive: true });
+  expectRefused(bare, () => cli(bare, ["done", ...doneArgs(outside)], outside), { is: `${outside} is not inside a git work tree` }, "outside any git work tree", outside);
+  assert.equal(ghCalls(bare).filter((a) => a[0] === "pr" && a[1] === "list").length, 0, "no gh pr list call");
+
+  // control: where no PR is required the reader is never called
+  const control = world("w123-b2-control", "cleanup");
+  let reads = 0;
+  const counted = inProcess(control.studio, {
+    mergeRefusal: () => {
+      reads++;
+      return "always refuses";
+    },
+  });
+  assert.equal(counted.status, 0, ran("no pr.required: done exits 0", counted));
+  assert.equal(reads, 0, "no pr.required: the reader was called 0 times");
+  assert.match(recordOf(control), /state: "?done/, "no pr.required: the record reads done");
 });
