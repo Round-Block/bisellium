@@ -154,7 +154,7 @@ const NO_FAMILY = 'declares no decree family; add one line "Decree family: <slug
 const TAIL = "each numbered behaviour names exactly one, so number every independent behaviour";
 const SEVEN = [1, 1, 1, 1, 1, 1, 1];
 const OVER =
-  'numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line';
+  'numbers 7 behaviours; the limit is 6 (brief_behaviour_limit); split it by decree family, or cite an architect ruling on a "Behaviour limit exception:" line';
 
 describe("behaviour 1", () => {
   test("no Decree family line is refused", () => {
@@ -252,40 +252,72 @@ describe("behaviour 3", () => {
   });
 });
 
+/** Rewrites the copy's manifest through the yaml Document. */
+function editManifest(dir: string, edit: (doc: ReturnType<typeof parseDocument>) => void): void {
+  const path = join(dir, "bisellium.yml");
+  const doc = parseDocument(readFileSync(path, "utf8"));
+  edit(doc);
+  writeFileSync(path, doc.toString({ lineWidth: 0 }));
+}
+
 describe("behaviour 4", () => {
   const exc = (id: string) => brief({ reds: SEVEN, exceptions: [id] });
-  test("a Patron decision naming the opus lifts the limit", () => {
-    accepted(ready(exc("D-900"), 6, (d) => decision(d, "D-900", "patron", "Lifted for W-900.")), "valid exception");
+  const ruling = (d: string) => decision(d, "D-900", "architect", "Lifted for W-900.");
+  test("an architect ruling naming the opus lifts the limit", () => {
+    accepted(ready(exc("D-900"), 6, ruling), "valid exception");
   });
-  test("an architect decision is refused", () => {
+  test("a patron decision is refused", () => {
     refused(
-      ready(exc("D-900"), 6, (d) => decision(d, "D-900", "architect", "Lifted for W-900.")),
-      ['behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'],
-      "architect",
+      ready(exc("D-900"), 6, (d) => decision(d, "D-900", "patron", "Lifted for W-900.")),
+      ['behaviour limit exception: decision "D-900" is by "patron", not "architect"'],
+      "patron",
     );
   });
   test("a missing decision is refused", () => {
-    refused(ready(exc("D-901"), 6, (d) => decision(d, "D-900", "patron", "W-900")), ['behaviour limit exception: decision "D-901" not found'], "missing");
+    refused(ready(exc("D-901"), 6, ruling), ['behaviour limit exception: decision "D-901" not found'], "missing");
   });
-  test("a Patron decision that never names the opus is refused", () => {
+  test("an architect ruling that never names the opus is refused", () => {
     refused(
-      ready(exc("D-900"), 6, (d) => decision(d, "D-900", "patron", "Lifted for another opus.")),
+      ready(exc("D-900"), 6, (d) => decision(d, "D-900", "architect", "Lifted for another opus.")),
       ['behaviour limit exception: decision "D-900" does not name W-900'],
       "does not name",
     );
   });
   test("two exception lines are refused", () => {
     refused(
-      ready(brief({ reds: SEVEN, exceptions: ["D-900", "D-900"] }), 6, (d) => decision(d, "D-900", "patron", "W-900")),
+      ready(brief({ reds: SEVEN, exceptions: ["D-900", "D-900"] }), 6, ruling),
       ['has 2 "Behaviour limit exception:" lines; at most one'],
       "two exceptions",
     );
   });
   test("a valid exception does not excuse a missing family", () => {
+    refused(ready(brief({ families: [], reds: SEVEN, exceptions: ["D-900"] }), 6, ruling), [NO_FAMILY], "exception without family");
+  });
+  test("a copy with no design collegium has nobody to grant exceptions", () => {
     refused(
-      ready(brief({ families: [], reds: SEVEN, exceptions: ["D-900"] }), 6, (d) => decision(d, "D-900", "patron", "W-900")),
-      [NO_FAMILY],
-      "exception without family",
+      ready(exc("D-900"), 6, (d) => {
+        ruling(d);
+        editManifest(d, (doc) => {
+          const rows = doc.getIn(["collegia"]) as { items: { get(k: string): unknown }[] };
+          const at = rows.items.findIndex((row) => row.get("id") === "design");
+          doc.deleteIn(["collegia", at]);
+        });
+      }),
+      ["behaviour limit exception: no design collegium declares a magister"],
+      "no design collegium",
+    );
+  });
+  test("the author is the design magister the manifest names, not a hard-coded one", () => {
+    accepted(
+      ready(exc("D-900"), 6, (d) => {
+        decision(d, "D-900", "chief-architect", "Lifted for W-900.");
+        editManifest(d, (doc) => {
+          const rows = doc.getIn(["collegia"]) as { items: { get(k: string): unknown }[] };
+          const at = rows.items.findIndex((row) => row.get("id") === "design");
+          doc.setIn(["collegia", at, "magister"], "chief-architect");
+        });
+      }),
+      "renamed magister",
     );
   });
   test("a bogus exception id on an in-limit brief is not read", () => {
