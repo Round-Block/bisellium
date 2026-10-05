@@ -2858,3 +2858,167 @@ test("W-141-b4 round 1: a failed spec commit or switch-back never carries staged
   expectHeld(stuck, "spec with a failing switch back");
   assert.match(stuck.out, /why: .*master/, ran("the why names the failed switch", stuck));
 });
+
+// ---------------------------------------------------------------------------
+// W-141 review round 2: the classes the censor named, closed whole
+// ---------------------------------------------------------------------------
+const fetchHead = (w: World): string => (existsSync(join(w.repo, ".git/FETCH_HEAD")) ? readFileSync(join(w.repo, ".git/FETCH_HEAD"), "utf8") : "(absent)");
+
+test("W-141-b1 round 2: the Patron preflight mutates nothing: no ref, no tag, no FETCH_HEAD, and every indeterminate target refuses", { timeout: 1_800_000 }, () => {
+  const build = (tag: string, merge?: (w: World, m: string) => string): { w: World; held: () => Out } => {
+    const w = reviewed(
+      tag,
+      { patron: true, mainOnMaster: false },
+      (x) => {
+        put(x.wt, CENSOR, "censor v2\n");
+        commit(x.wt, `feat(${OPUS}): censor change`);
+        writeReceipt(x, "current");
+      },
+      true,
+    );
+    const m = landMerge(w, false);
+    // a tag on origin that a bare `git fetch origin <oid>` would follow
+    git(w.origin, ["tag", "v-r2", m]);
+    scenario(w, { list: mergedList(w, { merge: merge === undefined ? m : merge(w, m) }) });
+    return { w, held: () => performMerge(w) };
+  };
+  const state = (w: World): string => [refsOf(w), git(w.repo, ["tag"]), fetchHead(w)].join("\n--\n");
+
+  // the Patron stop: nothing is written, not even FETCH_HEAD or the tag
+  const stop = build("w141-r2-b1-stop");
+  const before = state(stop.w);
+  const held = stop.held();
+  expectHeld(held, "Patron stop");
+  assert.match(held.out, /why: refusing: incoming paths belong to the Patron/, ran("the Patron refusal", held));
+  assert.equal(state(stop.w), before, ran("refs, tags and FETCH_HEAD are all unchanged", held));
+
+  // an absent target, a tag object that merely peels to a commit and a tree id each refuse with nothing written
+  const absent = build("w141-r2-b1-absent", () => "1".repeat(40));
+  const absentBefore = state(absent.w);
+  const a = absent.held();
+  expectHeld(a, "an absent target");
+  assert.equal(state(absent.w), absentBefore, ran("an absent target: nothing written", a));
+
+  const peel = build("w141-r2-b1-peel", (w, m) => {
+    const body = `object ${m}\ntype commit\ntag peel\ntagger t <t@example.com> 1700000000 +0000\n\nm\n`;
+    return spawnSync("git", ["hash-object", "-t", "tag", "-w", "--stdin"], { cwd: w.repo, env: SETUP_ENV, encoding: "utf8", input: body }).stdout.trim();
+  });
+  const peelBefore = state(peel.w);
+  const p = peel.held();
+  expectHeld(p, "a tag object");
+  assert.equal(state(peel.w), peelBefore, ran("a tag object that peels to the commit: refs, tags and FETCH_HEAD unchanged", p));
+
+  const tree = build("w141-r2-b1-tree", (w) => git(w.repo, ["rev-parse", "master^{tree}"]));
+  const treeBefore = state(tree.w);
+  const t = tree.held();
+  expectHeld(t, "a tree id");
+  assert.equal(state(tree.w), treeBefore, ran("a tree id: refs, tags and FETCH_HEAD unchanged", t));
+});
+
+test("W-141-b1 round 2: a rename or copy into .claude/ is a Patron change", { timeout: 1_800_000 }, () => {
+  const w = world("w141-r2-b1-into", "spec", { patron: true });
+  git(w.repo, ["mv", "README.md", ".claude/readme.md"]);
+  const held = next(w, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(held, "branch with a staged rename into .claude/");
+  const lines = outLines(held);
+  assert.ok(
+    lines.some((l) => l.startsWith("dirty: R README.md -> .claude/readme.md")),
+    ran("the rename is a dirty line", held),
+  );
+  const patron = lines.filter((l) => l.startsWith("patron: "));
+  assert.ok(
+    patron.some((l) => l.includes(".claude/readme.md")),
+    ran("a patron line names the destination", held),
+  );
+  for (const l of patron) git(w.root, l.slice("patron: ".length).split(" ").slice(1));
+  assert.equal(git(w.repo, ["ls-files", ".claude/readme.md"]), "", "the printed command takes the destination out of the index");
+
+  // a copy: status reports it as C when copy detection is on
+  const c = world("w141-r2-b1-copy", "spec", { patron: true });
+  git(c.repo, ["config", "status.renames", "copies"]);
+  appendFileSync(join(c.repo, "README.md"), "edit\n");
+  put(c.repo, ".claude/copy.md", readFileSync(join(c.repo, "README.md"), "utf8"));
+  git(c.repo, ["add", "README.md", ".claude/copy.md"]);
+  assert.match(git(c.repo, ["status", "--porcelain"]), /^C /m, "the fixture reports a copy");
+  const heldCopy = next(c, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(heldCopy, "branch with a staged copy into .claude/");
+  assert.ok(
+    outLines(heldCopy).some((l) => l.startsWith("patron: ") && l.includes(".claude/copy.md")),
+    ran("a patron line names the copy's destination", heldCopy),
+  );
+});
+
+test("W-141-b2 round 2: readiness judges the working record: a valid trunk certificate never masks a stale or dirty one, and kind drift is judged by the stricter kind", { timeout: 1_800_000 }, () => {
+  // a valid certificate committed on the trunk, a stale one in the working record
+  const w = certifiedWorld("w141-r2-b2-mask", "opus", { tests: { certifies: (t) => t, hex: "aaa111" } });
+  put(w.repo, `studio/ci/${OPUS}-tests-aaa111.log`, "tests log\n");
+  commit(w.repo, "test: the certificate rides the trunk");
+  editRecord(w, "repo", (doc) => doc.setIn(["probationes", "tests", "certifies"], `tree:${"0".repeat(40)}`));
+  const masked = next(w, [OPUS]);
+  expectStep(masked, "done", "named", "stale working certificate");
+  assert.equal(masked.kv.get("command"), VERIFY, ran("the stale working record is not masked by the trunk's", masked));
+  const heldPerform = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(heldPerform, "perform with a stale working record");
+
+  // kind drift: ui on the trunk, opus in the working record
+  const d = certifiedWorld("w141-r2-b2-drift", "ui", { tests: { certifies: (t) => t, hex: "aaa111" } });
+  commit(d.repo, "test: the record is ui on the trunk");
+  editRecord(d, "repo", (doc) => doc.setIn(["kind"], "opus"));
+  const drift = next(d, [OPUS]);
+  expectStep(drift, "done", "named", "kind drift ui -> opus");
+  assert.equal(drift.kv.get("command"), VERIFY, ran("the stricter kind's gates are required", drift));
+});
+
+test("W-141-b2 round 2: readiness validates each gate's recorded evidence file, and refuses any it cannot read or list", { timeout: 1_800_000 }, () => {
+  const certified = (tag: string, evidenceName = "aaa111"): World => {
+    const w = certifiedWorld(tag, "opus", { tests: { certifies: (t) => t, hex: evidenceName } });
+    return w;
+  };
+  // the record cites a log that exists nowhere
+  const missing = certified("w141-r2-b2-missing");
+  const m = next(missing, [OPUS]);
+  expectStep(m, "done", "named", "evidence file missing");
+  assert.equal(m.kv.get("command"), VERIFY, ran("a missing log is not certified", m));
+  touchHandoff(missing);
+  expectHeld(next(missing, [OPUS, "--perform", "--expect", "done"]), "perform with a missing log");
+  assert.equal(branchExists(missing, `chore/done-${OPUS}`), false, "no chore head");
+
+  // the record cites a path that is not `ci/<id>-<gate>-<hex>.log`
+  const odd = certified("w141-r2-b2-odd");
+  editRecord(odd, "repo", (doc) => doc.setIn(["probationes", "tests", "evidence"], "../README.md"));
+  const o = next(odd, [OPUS]);
+  assert.equal(o.kv.get("command"), VERIFY, ran("a malformed evidence path is not certified", o));
+
+  // a good untracked log, but `git ls-files` fails: the omission is a refusal, not a silent skip
+  const fine = certified("w141-r2-b2-lsfiles");
+  put(fine.repo, `studio/ci/${OPUS}-tests-aaa111.log`, "tests log\n");
+  touchHandoff(fine);
+  const failed = next(fine, [OPUS, "--perform", "--expect", "done"], { env: { GIT_STUB_REAL: failingGit("w141-r2-b2-lsfiles", ["ls-files"]) } });
+  expectHeld(failed, "perform with ls-files failing");
+  assert.equal(branchExists(fine, `chore/done-${OPUS}`), false, "no chore head");
+  assert.equal(git(fine.repo, ["symbolic-ref", "HEAD"]), "refs/heads/master", "HEAD stays on master");
+  // and with ls-files working, the same world performs
+  expectStep(next(fine, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the same world performs once git can list");
+});
+
+test("W-141-b2 round 2: a failed unstage keeps the branch and HEAD on it, never carrying staged files onto master", { timeout: 1_800_000 }, () => {
+  const chore = `chore/done-${OPUS}`;
+  const c = world("w141-r2-b2-restore", "cleanup");
+  scenario(c, { list: mergedList(c) });
+  touchHandoff(c);
+  const failed = next(c, [OPUS, "--perform", "--expect", "done"], { env: { GIT_STUB_REAL: failingGit("w141-r2-b2-restore", ["commit -q -m chore(studio): mark", "restore -q --staged"]) } });
+  expectHeld(failed, "done with failing commit and restore");
+  assert.equal(git(c.repo, ["symbolic-ref", "HEAD"]), `refs/heads/${chore}`, ran("HEAD stays on the chore branch", failed));
+  assert.equal(branchExists(c, chore), true, "the recovery branch is kept");
+  assert.match(failed.out, /restore --staged/, ran("the why names the recovery command", failed));
+  assert.match(failed.out, /switch master/, ran("and the switch back", failed));
+
+  const head = `spec/${OPUS}`;
+  const s = world("w141-r2-b4-restore", "greenlight");
+  signSpecUncommitted(s, s.repo);
+  const stuck = next(s, [OPUS, "--perform", "--expect", "spec"], { env: { GIT_STUB_REAL: failingGit("w141-r2-b4-restore", ["commit -q -m spec(W-900)", "restore -q --staged"]) } });
+  expectHeld(stuck, "spec with failing commit and restore");
+  assert.equal(git(s.repo, ["symbolic-ref", "HEAD"]), `refs/heads/${head}`, ran("HEAD stays on the spec branch", stuck));
+  assert.equal(branchExists(s, head), true, "the recovery branch is kept");
+  assert.match(stuck.out, /restore --staged/, ran("the why names the recovery command", stuck));
+});
