@@ -1,0 +1,22 @@
+# opus: W-140
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-05T15:04:01.253Z
+# tree: dirty:f7f53564e66bfe3f006d9334014753181367023d
+
+W-140 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-140.md (3 behaviours, six sections, Decree family: brief-admission; W-127's real readBriefAdmission at limit 6 reports no problems: ~/.bisellium-evidence/W-140-spec/self-admit.out).
+Measurements at master 88035da: ~/.bisellium-evidence/W-140-spec/measure.mjs -> measure.out. The script lifts both private counters verbatim from source. On all 90 briefs (studio and sample-studio) the three counters agree, 0 disagreements. On hostile briefs they differ only through HTML comments: a numbered line in a comment, a mid-line opener, an unterminated comment and a decoy heading in a comment give admission 1 against 2, 2, 2 and 3 from the private counters. ~~~, indented and unterminated fences, CRLF and a repeated heading agree. Plain node 25.9 imports brief-admission.ts with no loader and no stderr. readBriefAdmission.length is 3. check studio --repo . is identical with and without the brief apart from its timestamp line (check-with.out, check-without.out).
+
+## Findings
+1. advisory — items (d) next's spec/ and chore/done- landing text and (e) bisellium merge's pr.required path are one other decree family (landing a branch on master), not brief admission; W-140 keeps (a)-(c) and the brief's Out of scope names (d) and (e) for one separate opus, not filed here (open question 4) — check: none: the producer files the landing opus
+2. advisory — the private counters disagree with admission on no real brief today; the defect is latent and reachable only through comments, so this opus is drift removal plus a class pin, not a live fix — check: packages/commands/src/run.test.ts (W-140-b1 comment rows)
+3. advisory — the host loads a .ts source through Node's native type stripping; brief-admission.ts must stay erasable syntax and the runtime must stay at Node 23.6 or later (open question 1) — check: packages/cli/src/brief-admission.test.ts (W-140-b2 plain-node row)
+4. advisory — narrowing readBriefAdmission moves exception-problem placement to briefAdmissionProblems, which picks its index from clause 1's message prefix; a reworded family message would misplace it (open question 2) — check: packages/cli/src/brief-admission.test.ts (W-140-b3 order rows)
+5. advisory — the census pins the literal "## Behaviours to test" in non-test sources; a counter that builds the heading another way would escape it — check: packages/cli/src/brief-admission.test.ts (W-140-b2 census)
+6. advisory — ~~~ and four-space-indented fences stay non-fences as W-127 specified; the rows pin the rule rather than change it (open question 3) — check: packages/commands/src/run.test.ts (W-140-b1 shape table)
+
+## Recommendation
+Verdict: passed. One decree family, brief-admission: one parser, brief-admission.ts, read by every brief consumer. There are three behaviours, each red after the previous one's implementation. (1) The receipt gate counts with countBehaviours over a nine-shape table; the table also gives W-127's parser the regression rows its review asked for. (2) A census proves one counter in the tree and that the plain-node host loads it. (3) readBriefAdmission's export is the signed two-argument signature, with the exception problem's place preserved. The four Patron questions ship with their stated defaults and do not block.
