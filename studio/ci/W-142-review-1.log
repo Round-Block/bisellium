@@ -1,0 +1,17 @@
+# opus: W-142
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-05T22:54:41.497Z
+# tree: tree:9ed524d923631b73a5faa7725661f91bcf478a77
+# brief: briefs/W-142.md blob:eddcc11db5ee6fb02a523b549cf7a6a7e7291172
+
+## Findings
+1. advisory — packages/pipeline/test/gate-timeout.test.ts:14 Class `mechanism×unpinned-by-test`: W-142-b1 checks only the exported value, so it stays green if consumers regress. Every unpinned instance is `packages/pipeline/src/index.ts:88,96` and `packages/commands/src/ci.ts:102,116`; searches covered `GATE_TIMEOUT_MS`, `STEP_TIMEOUT_MS`, `TIMEOUT_MS`, `10 * 60`, `600000`, `npm test`, and `test:suite` across packages, scripts, workflows, and package.json. — check: packages/pipeline/test/gate-timeout.test.ts: extend W-142-b1 to pin all four consumers
+2. advisory — accept/failed-stale-lock/W-142-tests-9ed524d9.log:5 Class `mechanism×abrupt-kill-leaves-sentinel-lock`, pre-existing and outside W-142: the sole observed instance followed the wrapper killing verify, while `scripts/no-vendor.mjs:73-77` deliberately makes crash locks refuse-only and `scripts/no-vendor.test.mjs:705-718` tests that policy. — check: none: the killing wrapper should prove it reaps the complete suite process tree and then detects and safely removes its own orphaned sentinel lock before retrying
+
+## Verdict
+The shared 30-minute constant correctly bounds verify and both `bisellium ci` execution sites; the only remaining 10-minute caps are the expressly excluded focused red-replay/web-build paths, while the live verify passed in 684 seconds. The recorded red is the prescribed assertion failure (`600000 < 1338000`) on the test-only tree after the old-value export refactor, and the receipt and final gates are credible.
+VERDICT: PASS

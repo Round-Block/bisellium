@@ -1,0 +1,37 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-142-b1 packages/pipeline/test/gate-timeout.test.ts
+# exit: 1
+# at: 2026-10-05T22:00:33.046Z
+# sella: builder.W-142
+# tree: tree:95f25fe385b0681924e1bbc961aefc73290f8511
+
+TAP version 13
+# Subtest: W-142-b1 behaviour 1: the gate timeout has 2x headroom over the slowest suite and stays within an hour
+not ok 1 - W-142-b1 behaviour 1: the gate timeout has 2x headroom over the slowest suite and stays within an hour
+  ---
+  duration_ms: 1.554101
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-142/packages/pipeline/test/gate-timeout.test.ts:1:138'
+  failureType: 'testCodeFailure'
+  error: '600000 < 1338000'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-142/packages/pipeline/test/gate-timeout.test.ts:17:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 47.780603

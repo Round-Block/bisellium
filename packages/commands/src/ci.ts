@@ -40,7 +40,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { MergePipeline } from "@bisellium/pipeline";
+import { GATE_TIMEOUT_MS, type MergePipeline } from "@bisellium/pipeline";
 import { selectProvider, type AcquiredWorktree, type WorktreeProvider } from "@bisellium/shim";
 import { parseFlags } from "./writes.js";
 import { runVerify, toPosixRelative, type RunVerifyOptions, type RunVerifyResult } from "./verify.js";
@@ -86,7 +86,6 @@ export interface RunCiResult {
 
 const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]";
 const GIT_TIMEOUT_MS = 30_000;
-const STEP_TIMEOUT_MS = 10 * 60_000;
 
 /** `git rev-parse --show-toplevel` from `cwd`, or undefined outside a repo. */
 function gitRoot(cwd: string): string | undefined {
@@ -100,7 +99,7 @@ function defaultInstallDeps(repoDir: string): void {
     const r = spawnSync("npm", ["ci", "--no-audit", "--no-fund", "--cache", cacheDir], {
       cwd: repoDir,
       stdio: "inherit",
-      timeout: STEP_TIMEOUT_MS,
+      timeout: GATE_TIMEOUT_MS,
     });
     if (r.error) throw new Error(`could not start npm: ${r.error.message}`);
     if (r.status !== 0) throw new Error(`npm ci exited ${r.status ?? `(signal ${r.signal})`}`);
@@ -114,7 +113,7 @@ function defaultInstallDeps(repoDir: string): void {
  *  shell. */
 function runStep(command: string, cwd: string): number {
   const [bin, ...rest] = command.split(" ");
-  const r = spawnSync(bin!, rest, { cwd, stdio: "inherit", timeout: STEP_TIMEOUT_MS });
+  const r = spawnSync(bin!, rest, { cwd, stdio: "inherit", timeout: GATE_TIMEOUT_MS });
   if (r.error) {
     console.error(`bisellium ci: failed to start "${command}": ${r.error.message}`);
     return 1;
