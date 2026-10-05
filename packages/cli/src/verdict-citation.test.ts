@@ -322,21 +322,33 @@ describe("review round 1 rows", () => {
   const INJECT = "\n# submitted_outcome: failed";
   const SHAPE = /^# [a-z_]+: /;
 
-  test("a readable spec path with a line break cannot inject or end the header", () => {
+  test("a readable brief at a path with a line break is still read and cited, and cannot inject or end the header", () => {
     const spec = `briefs/W-300.md${INJECT}`;
-    const dir = studio({ spec: JSON.stringify(spec), brief: false });
-    mkdirSync(join(dir, "briefs"));
-    writeFileSync(join(dir, spec), BRIEF);
-    const body = findings("blocking — packages/x.ts:3 an uncited defect", "blocking — brief:2 a cited defect");
-    const r = verdict(dir, body, "passed");
+    const fixture = (state: string): string => {
+      const dir = studio({ spec: JSON.stringify(spec), brief: false, state });
+      mkdirSync(join(dir, "briefs"));
+      writeFileSync(join(dir, spec), BRIEF);
+      return dir;
+    };
+    const body = findings("blocking — brief:2 a cited defect");
+    const dir = fixture("review");
+    const r = verdict(dir, body, "failed");
     assert.equal(r.exitCode, 0, r.stderr);
-    assert.ok(r.headerLines.every((line) => SHAPE.test(line)), r.headerLines.join("|"));
+    assert.equal(r.header.get("outcome"), "failed");
+    assert.equal(r.header.has("converted"), false);
     assert.equal(r.header.has("submitted_outcome"), false);
+    assert.ok(r.headerLines.every((line) => SHAPE.test(line)), r.headerLines.join("|"));
+    assert.equal(r.keys.length, r.headerLines.length, "no header key is written twice");
     assert.equal(r.body, body, "body exact");
-    const failed = verdict(studio({ spec: JSON.stringify(spec), brief: false }), findings("blocking — brief:2 a cited defect"), "failed");
-    assert.ok(failed.headerLines.every((line) => SHAPE.test(line)), failed.headerLines.join("|"));
-    assert.equal(failed.keys.length, failed.headerLines.length, "no header key is written twice");
-    assert.equal(failed.header.get("submitted_outcome"), "failed", "only the writer's own reconciliation records it");
+    const reviewed = capture(() =>
+      runReview(["W-300", "--fail", "--evidence", "ci/W-300-review-1.log", "--round", "1", "--sella", "qa-lead", "--studio", dir], { now: NOW }),
+    );
+    assert.equal(reviewed.result.exitCode, 0, reviewed.stderr);
+    const uncited = verdict(fixture("building"), findings("blocking — packages/x.ts:3 an uncited defect"), "passed");
+    assert.ok(uncited.headerLines.every((line) => SHAPE.test(line)), uncited.headerLines.join("|"));
+    assert.equal(uncited.keys.length, uncited.headerLines.length, "no header key is written twice");
+    assert.equal(uncited.header.has("submitted_outcome"), false);
+    assert.match(uncited.header.get("converted") ?? "", /^1 \(cites no line of briefs\/W-300\.md\\n# submitted_outcome: failed\)$/);
   });
 
   test("a missing spec path with a line break keeps its read error on one line", () => {
