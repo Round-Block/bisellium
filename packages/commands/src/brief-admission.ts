@@ -73,19 +73,34 @@ const captured = (lines: string[], re: RegExp): string[] =>
     return m ? [m[1]!.trim()] : [];
   });
 
-export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
+/** `exception`: the one "Behaviour limit exception:" value on an over-limit brief, for the caller to
+ *  validate; `exceptionAt`: where in `problems` that validation's problem belongs (clause 2's slot). */
+export function readBriefAdmission(
+  briefText: string,
+  limit: number,
+): { problems: string[]; exception?: string; exceptionAt?: number } {
   const problems: string[] = [];
   const families = captured(unfenced(briefText), /^Decree family:(.*)$/);
   if (families.length === 0) problems.push('declares no decree family; add one line "Decree family: <slug>"');
   else if (families.length > 1)
     problems.push(`declares ${families.length} decree families (${families.join(", ")}); one per brief, file each other family as its own opus`);
   else if (!/^[a-z][a-z0-9]*(-[a-z0-9]+)*$/.test(families[0]!)) problems.push(`decree family "${families[0]}" is not one slug`);
+  let exception: string | undefined;
+  let exceptionAt: number | undefined;
   const n = countBehaviours(briefText);
   if (n === 0) problems.push('numbers no behaviours under "## Behaviours to test"');
-  else if (n > limit)
-    problems.push(
-      `numbers ${n} behaviours; the limit is ${limit} (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line`,
-    );
+  else if (n > limit) {
+    const exceptions = captured(unfenced(briefText), /^Behaviour limit exception:(.*)$/);
+    if (exceptions.length === 0)
+      problems.push(
+        `numbers ${n} behaviours; the limit is ${limit} (brief_behaviour_limit); split it by decree family, or cite a Patron decision on a "Behaviour limit exception:" line`,
+      );
+    else if (exceptions.length > 1) problems.push(`has ${exceptions.length} "Behaviour limit exception:" lines; at most one`);
+    else {
+      exception = exceptions[0]!;
+      exceptionAt = problems.length;
+    }
+  }
   if (n > 0) {
     const { before, per } = redMarkers(briefText);
     if (before > 0) problems.push('has a "**Genuine red:**" outside any numbered behaviour');
@@ -96,5 +111,5 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
         );
     });
   }
-  return { problems };
+  return exception === undefined ? { problems } : { problems, exception, exceptionAt };
 }

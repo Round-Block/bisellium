@@ -1053,10 +1053,11 @@ export function briefAdmissionProblems(
   briefText: string,
   limit: number,
 ): string[] {
-  void root;
-  void manifest;
-  void opusId;
-  return readBriefAdmission(briefText, limit).problems;
+  const { problems, exception, exceptionAt } = readBriefAdmission(briefText, limit);
+  if (exception === undefined) return problems;
+  const p = patronDecisionProblem(root, manifest, exception, opusId);
+  if (p !== undefined) problems.splice(exceptionAt ?? 0, 0, `behaviour limit exception: ${p}`);
+  return problems;
 }
 
 /**
@@ -1069,7 +1070,12 @@ export function briefAdmissionProblems(
  * human-gate branch both call (studio/briefs/W-034.md, "One predicate, two
  * callers") — never re-derived at either call site.
  */
-function patronDecisionProblem(root: string, manifest: Manifest, decisionId: unknown): string | undefined {
+export function patronDecisionProblem(
+  root: string,
+  manifest: Pick<Manifest, "patron">,
+  decisionId: unknown,
+  mustName?: string,
+): string | undefined {
   if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
   if (typeof decisionPath !== "string" || !existsSync(decisionPath)) return `decision "${decisionId}" not found`;
@@ -1085,6 +1091,8 @@ function patronDecisionProblem(root: string, manifest: Manifest, decisionId: unk
   if (typeof by !== "string" || by.length === 0) return `decision "${decisionId}" has no "by"`;
   const patronId = manifest.patron ?? "patron";
   if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
+  // W-127: an exception must name the opus it lifts the limit for (the one contained read above).
+  if (mustName !== undefined && !contained.bytes.toString("utf8").includes(mustName)) return `decision "${decisionId}" does not name ${mustName}`;
   return undefined;
 }
 
