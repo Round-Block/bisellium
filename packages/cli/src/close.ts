@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { readFront } from "@bisellium/adapter-native";
+import { mergeRefusal } from "./integrate.js";
 import { runDone } from "./lifecycle.js";
 
 interface CloseResult {
@@ -37,7 +38,7 @@ export function executeClose(studio: string, opusId: string): CloseResult {
   const validation = closeChecks(studio, opusId);
   if (!validation.ok) return validation;
 
-  const doneResult = runDone([opusId, "--studio", studio]);
+  const doneResult = runDone([opusId, "--studio", studio], { mergeRefusal });
   if (doneResult.exitCode !== 0) return { ok: false, error: `done failed (exit ${doneResult.exitCode})` };
 
   return { ok: true };

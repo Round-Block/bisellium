@@ -1,0 +1,48 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test-name-pattern=W-123.behaviour.1: packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-05T06:52:33.201Z
+# sella: builder.W-123
+# tree: tree:063ed9d3a048c77c39bc446fe0bac307fd9c3c8e
+
+TAP version 13
+# Subtest: W-123 behaviour 1: done and close refuse an opus whose merge is not in the local master, and accept one whose merge is
+not ok 1 - W-123 behaviour 1: done and close refuse an opus whose merge is not in the local master, and accept one whose merge is
+  ---
+  duration_ms: 2295.369565
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-123/packages/cli/src/next.test.ts:89:23554'
+  failureType: 'testCodeFailure'
+  error: |-
+    an empty list: exit
+    --- exit 0
+    --- stdout
+    W-900: done
+    
+    --- stderr
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    expectRefused (/home/edckt/agents/bisellium/.worktrees/W-123/packages/cli/src/next.test.ts:2242:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-123/packages/cli/src/next.test.ts:2263:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2340.035056

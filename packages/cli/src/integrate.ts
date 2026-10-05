@@ -101,10 +101,26 @@ export function opusWorktree(repo: string, id: string): { dir: string; entry?: W
   return { dir, entry: listWorktrees(repo)?.find((e) => e.path === dir) };
 }
 
-export const localTip = (repo: string, id: string): string | undefined => {
-  const r = git(repo, ["rev-parse", "--verify", "-q", `refs/heads/opus/${id}`]);
-  return r.status === 0 && OID_RE.test(r.stdout.trim()) ? r.stdout.trim() : undefined;
-};
+/** A branch tip read three ways: a commit, truly absent (git says no such ref), or unreadable (never "absent"). */
+export type TipRead = { kind: "tip"; oid: string } | { kind: "absent" } | { kind: "error"; reason: string };
+export function readTip(repo: string, id: string): TipRead {
+  const ref = `refs/heads/opus/${id}`;
+  const r = git(repo, ["rev-parse", "--verify", "-q", ref]);
+  const oid = r.stdout.trim();
+  if (r.error === undefined && r.status === 0 && wellFormedOid(oid)) return { kind: "tip", oid };
+  if (r.error === undefined && r.status === 1 && oid === "") return { kind: "absent" };
+  return { kind: "error", reason: `cannot read ${ref}: ${why(r)}` };
+}
+/** The opus branch on origin, read now (`ls-remote`): exit 2 is the one "no such ref" answer. */
+function remoteTip(repo: string, id: string): TipRead {
+  const ref = `refs/heads/opus/${id}`;
+  const r = git(repo, ["ls-remote", "--exit-code", "origin", ref]);
+  if (r.error === undefined && r.status === 2) return { kind: "absent" };
+  const lines = r.stdout.trim().split("\n");
+  const [oid, name] = (lines[0] ?? "").split("\t");
+  if (r.error === undefined && r.status === 0 && lines.length === 1 && wellFormedOid(oid) && name === ref) return { kind: "tip", oid };
+  return { kind: "error", reason: `cannot read ${ref} on origin: ${why(r)}` };
+}
 
 const REMOTE_MASTER = "refs/remotes/origin/master";
 type Trunk = { ok: true } | { ok: false; reason: string };
@@ -251,7 +267,7 @@ function checkShape(o: unknown, keys: string[]): string | undefined {
   if (typeof o["state"] !== "string" || !PR_STATES.has(o["state"])) return `unknown PR state ${clean(JSON.stringify(o["state"]))}`;
   if (typeof o["mergeStateStatus"] !== "string" || !MERGE_STATES.has(o["mergeStateStatus"])) return `unknown mergeStateStatus ${clean(JSON.stringify(o["mergeStateStatus"]))}`;
   for (const k of ["headRefName", "baseRefName"]) if (typeof o[k] !== "string") return `${k} is not a string`;
-  if (typeof o["headRefOid"] !== "string" || !OID_RE.test(o["headRefOid"])) return "headRefOid is not a 40-hex commit id";
+  if (!wellFormedOid(o["headRefOid"])) return "headRefOid is not a 40-hex commit id";
   return undefined;
 }
 
@@ -315,7 +331,9 @@ export function identifyPr(repo: string, id: string): PrRead {
   }
   const open = counted.filter((p) => p.state === "OPEN");
   if (open.length > 1) return { kind: "held", reason: `more than one OPEN PR for ${head} (${open.map((p) => `#${p.number}`).join(", ")}): ambiguous` };
-  const chosen = open[0] ?? counted.filter((p) => p.state === "MERGED").sort((a, b) => b.number - a.number)[0];
+  // the NEWEST PR decides: an older MERGED one never outlives a newer CLOSED one (an OPEN one always wins, refusing)
+  const newest = [...counted].sort((a, b) => b.number - a.number)[0];
+  const chosen = open[0] ?? (newest?.state === "MERGED" ? newest : undefined);
   if (chosen === undefined) return { kind: "none" };
   return chosen.pr === undefined ? { kind: "held", reason: chosen.bad ?? "malformed PR" } : { kind: "pr", pr: chosen.pr };
 }
@@ -332,7 +350,9 @@ export type Settlement = { kind: "settled" } | { kind: "behind"; reason: string 
  * tip is not part of (exit 1) is "unrelated" and settles nothing; a name match
  * alone never settles.
  */
-export function settleMerged(repo: string, pr: Pr, tip: string | undefined): Settlement {
+export function settleMerged(repo: string, pr: Pr, read: TipRead): Settlement {
+  if (read.kind === "error") return { kind: "unverifiable", reason: read.reason };
+  const tip = read.kind === "tip" ? read.oid : undefined;
   const contained = trunkContainsMerge(repo, pr.mergeOid);
   let relation: "related" | "unrelated" | "unverifiable" = "related";
   if (tip !== undefined && tip !== pr.headRefOid) {
@@ -343,6 +363,23 @@ export function settleMerged(repo: string, pr: Pr, tip: string | undefined): Set
   if (!contained.ok) return { kind: "behind", reason: `merge commit ${pr.mergeOid?.slice(0, 12)} is not contained in the local trunk (${contained.reason})` };
   if (relation === "unverifiable") return { kind: "unverifiable", reason: `merged head ${pr.headRefOid.slice(0, 12)} is not known locally and cannot be tied to the local branch` };
   return { kind: "settled" };
+}
+
+/** W-123: why the opus's merge is not in the local trunk; undefined when its PR is MERGED and settled. */
+export function mergeRefusal(repo: string, id: string): string | undefined {
+  const read = identifyPr(repo, id);
+  if (read.kind === "held") return read.reason;
+  if (read.kind === "none") return `no MERGED PR from opus/${id} to master`;
+  if (read.pr.state !== "MERGED") return `PR #${read.pr.number} from opus/${id} is ${read.pr.state}, not MERGED`;
+  const tip = readTip(repo, id);
+  const s = settleMerged(repo, read.pr, tip);
+  if (s.kind !== "settled") return s.reason;
+  // no local branch to tie the merged head to: the remote branch, if it still exists, must not have moved since the merge
+  if (tip.kind !== "absent") return undefined;
+  const remote = remoteTip(repo, id);
+  if (remote.kind === "error") return remote.reason;
+  if (remote.kind === "tip" && remote.oid !== read.pr.headRefOid) return `PR #${read.pr.number} merged head ${read.pr.headRefOid.slice(0, 12)} is not the remote opus/${id} tip ${remote.oid.slice(0, 12)}`;
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -430,8 +467,9 @@ function readChecks(repo: string, pr: Pr): { ok: true; checks: Check[] } | { ok:
 function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
   const fetched = fetchTrunk(ctx.repo, pr.mergeOid);
   if (!fetched.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: ${fetched.reason}`, ...extra] };
-  const tip = localTip(ctx.repo, ctx.id);
-  if (tip !== undefined) git(ctx.repo, ["fetch", "-q", "origin", `+refs/heads/opus/${ctx.id}:refs/remotes/origin/opus/${ctx.id}`]);
+  const tip = readTip(ctx.repo, ctx.id);
+  if (tip.kind === "error") return held(tip.reason, ...extra);
+  if (tip.kind === "tip") git(ctx.repo, ["fetch", "-q", "origin", `+refs/heads/opus/${ctx.id}:refs/remotes/origin/opus/${ctx.id}`]);
   const contained = trunkContainsMerge(ctx.repo, pr.mergeOid);
   if (!contained.ok) return { ok: false, lines: ["state=MERGED_NOT_FETCHED", `why: merge commit ${pr.mergeOid?.slice(0, 12) ?? "(unknown)"} is not in the local master after the fetch (${contained.reason})`, ...extra] };
   // the merged head must be resolvable here now that the opus ref was fetched; otherwise it can never be tied to the local branch
@@ -543,7 +581,7 @@ export function cleanup(ctx: Ctx): StepResult {
     const read = identifyPr(repo, id);
     if (read.kind === "held") return { ok: false, reason: read.reason };
     if (read.kind === "none" || read.pr.state !== "MERGED") return { ok: false, reason: `no MERGED PR for ${branch} (PR ${read.kind === "pr" ? `#${read.pr.number} is ${read.pr.state}` : "absent"})` };
-    const s = settleMerged(repo, read.pr, localTip(repo, id));
+    const s = settleMerged(repo, read.pr, readTip(repo, id));
     return s.kind === "settled" ? { ok: true, pr: read.pr } : { ok: false, reason: s.reason };
   };
   const fetched = git(repo, ["fetch", "-q", "--prune", "origin"]);
@@ -577,7 +615,9 @@ export function cleanup(ctx: Ctx): StepResult {
   // (2) the local branch: compare-and-swap on the tip, only if the merged PR has it
   pr = reread();
   if (!pr.ok) return stop("local branch", pr.reason);
-  const tip = localTip(repo, id);
+  const read = readTip(repo, id);
+  if (read.kind === "error") return stop("local branch", read.reason);
+  const tip = read.kind === "tip" ? read.oid : undefined;
   if (tip === undefined) out.push("local branch: skipped (absent)");
   else {
     const elsewhere = listWorktrees(repo)?.find((e) => e.branch === ref);

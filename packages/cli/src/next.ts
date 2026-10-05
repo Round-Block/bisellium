@@ -29,7 +29,7 @@ import { censorSella, inspectUiDesignInput, readContainedRegularFile, type Nativ
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, git, identifyPr, localTip, MIN_CHECKS, mergeGate, openPr, opusWorktree, settleMerged, type Ctx, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -176,6 +176,8 @@ export interface Facts {
   excludes: string[];
   design: string;
   tip: string | undefined;
+  /** The tip as read: an unreadable ref is an error, never an absent branch. */
+  tipRead?: TipRead;
   wt: { dir: string; studio: string; usable: boolean };
   trunk: Src | undefined;
   trunkRecord: Dict | undefined;
@@ -220,7 +222,8 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const excludes = [studioRel, ".bisellium", ...(manifest.source_excludes ?? [])];
   const design = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
   const branchRef = `refs/heads/opus/${id}`;
-  const tip = localTip(repo, id);
+  const tipRead = readTip(repo, id);
+  const tip = tipRead.kind === "tip" ? tipRead.oid : undefined;
   const { dir, entry } = opusWorktree(repo, id);
   const usable = entry !== undefined && entry.branch === branchRef && !entry.prunable && statSafe(dir);
   const wt = { dir, studio: join(dir, studioRel), usable };
@@ -243,6 +246,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     excludes,
     design,
     tip,
+    tipRead,
     wt,
     trunk,
     trunkRecord,
@@ -276,7 +280,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiSpecProblems: memo(() => uiProblems(branchRecord ?? trunkRecord, studioAbs)),
     uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
-    pr: memo((): PrClass => classify(repo, tip, identifyPr(repo, id))),
+    pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, id))),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(Date.parse(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at") ?? ""));
@@ -340,13 +344,14 @@ function statSafe(path: string): boolean {
   }
 }
 
-function classify(repo: string, tip: string | undefined, read: PrRead): PrClass {
+function classify(repo: string, tipRead: TipRead, read: PrRead): PrClass {
+  const tip = tipRead.kind === "tip" ? tipRead.oid : undefined;
   if (read.kind === "held") return { kind: "held", reason: read.reason };
   if (read.kind === "none") return { kind: "none" };
   const pr = read.pr;
   if (pr.state === "OPEN") return tip !== undefined && pr.headRefOid === tip ? { kind: "open", pr } : { kind: "open-stale", pr };
   if (pr.state !== "MERGED") return { kind: "none" };
-  const s = settleMerged(repo, pr, tip);
+  const s = settleMerged(repo, pr, tipRead);
   // an unverifiable head is left at `merge`: its perform fetches the opus ref and re-checks (or holds naming the oid)
   return s.kind === "settled" ? { kind: "settled", pr } : { kind: s.kind === "unverifiable" ? "behind" : s.kind, pr, reason: s.reason };
 }
@@ -395,6 +400,7 @@ export function deriveNext(f: Facts): Derived {
   // 1 greenlight
   const state = str(rec["state"]);
   if (rec["declined"] !== undefined && rec["declined"] !== null && rec["declined"] !== false) return hold("greenlight", `${id} is declined (${one(String(rec["declined"]))}); nothing to build`);
+  if (f.tipRead?.kind === "error") return hold("branch", f.tipRead.reason);
   if (state === "halted") return hold("greenlight", `${id} is halted; resume it before the cascade continues`);
   if (state === undefined) return hold("greenlight", `${recordRel(id)} carries no state`);
   if (state === "backlog") return named("greenlight", "patron", `${id} is in the backlog; only the Patron greenlights`, `bisellium greenlight ${id} --studio ${f.studioRel}`);
@@ -920,11 +926,8 @@ function performDone(f: Facts): StepResult {
   if (git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim() !== "refs/heads/master") return heldResult("refusing: done is performed from the main checkout on master");
   const dirty = trackedDirty(repo);
   if (dirty.length > 0) return heldResult("refusing: the working tree has tracked changes", ...dirty.slice(0, 10).map((l) => `dirty: ${clean(l)}`));
-  const read = identifyPr(repo, id);
-  if (read.kind === "held") return heldResult(read.reason);
-  if (read.kind === "none" || read.pr.state !== "MERGED") return heldResult(`refusing: a fresh read finds no MERGED PR for opus/${id}`);
-  const s = settleMerged(repo, read.pr, localTip(repo, id));
-  if (s.kind !== "settled") return heldResult(`refusing: ${s.reason}`);
+  const why = mergeRefusal(repo, id);
+  if (why !== undefined) return heldResult(`refusing: ${why}`);
   if (refExists(repo, `refs/heads/${chore}`)) return heldResult(`refusing: ${chore} already exists`);
   const base = git(repo, ["rev-parse", "refs/heads/master"]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", chore]);
@@ -933,7 +936,7 @@ function performDone(f: Facts): StepResult {
     git(repo, ["switch", "-q", "master"]);
     git(repo, ["update-ref", "-d", `refs/heads/${chore}`, base]);
   };
-  const cap = capture(() => runDone([id, "--sella", "producer", "--studio", f.studioAbs]));
+  const cap = capture(() => runDone([id, "--sella", "producer", "--studio", f.studioAbs], { mergeRefusal }));
   if (cap.exit !== 0) {
     back();
     const text = [...cap.err, ...cap.out].map(one).filter(Boolean);
