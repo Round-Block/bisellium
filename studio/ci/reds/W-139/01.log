@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-139.behaviour.1: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-05T03:42:49.287Z
+# sella: builder.W-139
+# tree: tree:f8bf58da8d75df0a94385558d7198ef565198375
+
+TAP version 13
+# Subtest: W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite
+not ok 1 - W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite
+  ---
+  duration_ms: 1.572889
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:182:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    package.json has a test:record script
+    + actual - expected
+    
+    + 'undefined'
+    - 'string'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'string'
+  actual: 'undefined'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:184:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6.86165
