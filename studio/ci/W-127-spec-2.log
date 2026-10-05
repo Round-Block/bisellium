@@ -1,0 +1,20 @@
+# opus: W-127
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-05T10:17:44.189Z
+# tree: tree:2fd6f6fbd7384fb14b95ebfa618d4c7395866d49
+
+W-127 spec, revision 2. Architect, claude-opus-5-5. Brief: studio/briefs/W-127.md at opus/W-127 8929afa (347 lines, 5 behaviours, six sections, Decree family: brief-admission); byte-identical to ~/.bisellium-evidence/W-127-spec/W-127.rev2.md.
+Cause: the Patron's ruling, 2026-10-05, verbatim: "Let architect make the exceptions". It replaces revision 1's veto-able default (a Patron decision naming the opus). Delta: ~/.bisellium-evidence/W-127-spec/rev2-delta.md. Self-check: self-admit.mjs on the committed brief -> family=brief-admission, behaviours=5, one red each, no problems at limit 6.
+What changed: the Behaviour limit exception line now cites decisions/<id>.md, an existing D-nnn record. Its by must equal the magister of the manifest's design collegium, and its text must name the opus. patronDecisionProblem gains an optional { by, mustName } argument and, without it, keeps today's returns for waive and done; it keeps its name and file, so the containment census does not move. Behaviour 4's rows were reworked: by: patron is now refused, and two rows are new (no design collegium; a renamed magister read from the manifest). Its red is unchanged. Behaviours 1, 2, 3 and 5 are unchanged.
+
+## Findings
+1. advisory — the architect both writes the brief and grants its over-limit exception, so the bound's author can waive it; the Patron accepted this by ruling, and the record stays auditable as a decision with a kill_when — check: decision.kill
+2. advisory — patronDecisionProblem now also serves non-Patron authors through opts.by, and its name under-describes that; renaming it would move the containment census keys, so it is kept on purpose — check: packages/cli/src/containment.test.ts
+3. advisory — the revision 1 findings still stand: family mixing is judged, not tested (W-126's citation of the Decree family line), the limit of 6 is correlational, next's spec rung and verdict --phase spec do not run admission, and two private counter copies remain — check: none: a re-run of ~/.bisellium-evidence/W-127-spec/measure.mjs once ten opera are admitted under the limit
+
+## Recommendation
+Verdict: passed. Revision 2 applies the Patron's ruling with no new record kind and no new path join. The behaviour count stays at 5. Behaviour 4 still has its own genuine red after behaviour 2's implementation (D-036). The exception-authority question is closed; the other three Patron questions ship with their defaults.

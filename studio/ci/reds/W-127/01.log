@@ -1,0 +1,152 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.1 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T09:51:13.911Z
+# sella: builder.W-127
+# tree: tree:6a4be151f5ca35f089ecf1661783c7eaf2c47e3b
+
+TAP version 13
+# Subtest: behaviour 1
+    # Subtest: no Decree family line is refused
+    not ok 1 - no Decree family line is refused
+      ---
+      duration_ms: 40.112993
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:1954'
+      failureType: 'testCodeFailure'
+      error: |-
+        no family: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:139:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:158:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+      ...
+    # Subtest: two Decree family lines are refused
+    not ok 2 - two Decree family lines are refused
+      ---
+      duration_ms: 17.723237
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:2062'
+      failureType: 'testCodeFailure'
+      error: |-
+        two families: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:139:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:161:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: a family that is not one slug is refused
+    not ok 3 - a family that is not one slug is refused
+      ---
+      duration_ms: 11.498868
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:2320'
+      failureType: 'testCodeFailure'
+      error: |-
+        not a slug: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:139:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:168:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a Decree family line only inside a fence reads as none
+    not ok 4 - a Decree family line only inside a fence reads as none
+      ---
+      duration_ms: 11.218007
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:2472'
+      failureType: 'testCodeFailure'
+      error: |-
+        fenced family: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:139:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:171:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: one family and one marker per behaviour is accepted
+    ok 5 - one family and one marker per behaviour is accepted
+      ---
+      duration_ms: 11.050643
+      type: 'test'
+      ...
+    # Subtest: control: the no-family brief is accepted when the officina declares no limit
+    ok 6 - control: the no-family brief is accepted when the officina declares no limit
+      ---
+      duration_ms: 10.059473
+      type: 'test'
+      ...
+    1..6
+not ok 1 - behaviour 1
+  ---
+  duration_ms: 102.735426
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:1926'
+  failureType: 'subtestsFailed'
+  error: '4 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 6
+# suites 1
+# pass 2
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 117.757338

@@ -1,0 +1,231 @@
+# behaviour: 4
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.4 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T10:47:57.287Z
+# sella: builder.W-127
+# tree: tree:e27d97390f81196e19f2c04ff5d0b5bd2b110c4c
+
+TAP version 13
+# Subtest: behaviour 4
+    # Subtest: an architect ruling naming the opus lifts the limit
+    not ok 1 - an architect ruling naming the opus lifts the limit
+      ---
+      duration_ms: 54.81028
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5702'
+      failureType: 'testCodeFailure'
+      error: |-
+        valid exception: exit (stderr ["W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision \"D-900\" is by \"architect\", not patron \"patron\""])
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        accepted (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:149:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:267:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+      ...
+    # Subtest: a patron decision is refused
+    not ok 2 - a patron decision is refused
+      ---
+      duration_ms: 17.171996
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5825'
+      failureType: 'testCodeFailure'
+      error: |-
+        patron: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:142:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:270:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: a missing decision is refused
+    ok 3 - a missing decision is refused
+      ---
+      duration_ms: 17.178222
+      type: 'test'
+      ...
+    # Subtest: an architect ruling that never names the opus is refused
+    not ok 4 - an architect ruling that never names the opus is refused
+      ---
+      duration_ms: 12.530238
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:6190'
+      failureType: 'testCodeFailure'
+      error: |-
+        does not name: stderr
+        + actual - expected
+        
+          [
+        +   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+        -   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" does not name W-900'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" does not name W-900'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:280:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: two exception lines are refused
+    ok 5 - two exception lines are refused
+      ---
+      duration_ms: 11.302682
+      type: 'test'
+      ...
+    # Subtest: a valid exception does not excuse a missing family
+    not ok 6 - a valid exception does not excuse a missing family
+      ---
+      duration_ms: 12.153157
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:6633'
+      failureType: 'testCodeFailure'
+      error: |-
+        exception without family: stderr
+        + actual - expected
+        
+          [
+            'W-900: brief.admission: briefs/W-900.md declares no decree family; add one line "Decree family: <slug>"',
+        +   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md declares no decree family; add one line "Decree family: <slug>"'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md declares no decree family; add one line "Decree family: <slug>"'
+        1: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:294:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a copy with no design collegium has nobody to grant exceptions
+    not ok 7 - a copy with no design collegium has nobody to grant exceptions
+      ---
+      duration_ms: 12.638037
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:6815'
+      failureType: 'testCodeFailure'
+      error: |-
+        no design collegium: stderr
+        + actual - expected
+        
+          [
+        +   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+        -   'W-900: brief.admission: briefs/W-900.md behaviour limit exception: no design collegium declares a magister'
+          ]
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: no design collegium declares a magister'
+      actual:
+        0: 'W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision "D-900" is by "architect", not patron "patron"'
+      operator: 'deepStrictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:143:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:297:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: the author is the design magister the manifest names, not a hard-coded one
+    not ok 8 - the author is the design magister the manifest names, not a hard-coded one
+      ---
+      duration_ms: 13.754895
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:7180'
+      failureType: 'testCodeFailure'
+      error: |-
+        renamed magister: exit (stderr ["W-900: brief.admission: briefs/W-900.md behaviour limit exception: decision \"D-900\" is by \"chief-architect\", not patron \"patron\""])
+        
+        1 !== 0
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 0
+      actual: 1
+      operator: 'strictEqual'
+      stack: |-
+        accepted (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:149:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:311:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a bogus exception id on an in-limit brief is not read
+    ok 9 - a bogus exception id on an in-limit brief is not read
+      ---
+      duration_ms: 10.542803
+      type: 'test'
+      ...
+    1..9
+not ok 1 - behaviour 4
+  ---
+  duration_ms: 163.138224
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:5525'
+  failureType: 'subtestsFailed'
+  error: '6 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 9
+# suites 1
+# pass 3
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 181.55308

@@ -1,0 +1,146 @@
+# behaviour: 3
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.3 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T09:52:40.523Z
+# sella: builder.W-127
+# tree: tree:cb84d39fef27896114673889fbb0c6eca47e2034
+
+TAP version 13
+# Subtest: behaviour 3
+    # Subtest: a second marker in an indented bullet is refused
+    not ok 1 - a second marker in an indented bullet is refused
+      ---
+      duration_ms: 38.152122
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:4228'
+      failureType: 'testCodeFailure'
+      error: |-
+        bullet: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:142:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:216:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+      ...
+    # Subtest: a second marker in a table row is refused
+    not ok 2 - a second marker in a table row is refused
+      ---
+      duration_ms: 16.472962
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:4428'
+      failureType: 'testCodeFailure'
+      error: |-
+        table: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:142:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:223:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: a behaviour with no marker is refused
+    not ok 3 - a behaviour with no marker is refused
+      ---
+      duration_ms: 12.279801
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:4646'
+      failureType: 'testCodeFailure'
+      error: |-
+        none: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:142:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:230:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a marker before item 1 is refused
+    not ok 4 - a marker before item 1 is refused
+      ---
+      duration_ms: 11.083608
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:4789'
+      failureType: 'testCodeFailure'
+      error: |-
+        before item 1: exit (stderr [])
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        refused (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:142:10)
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:233:5)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: markers inside backticks or a fence are not counted; unmarked bullets and tables pass
+    ok 5 - markers inside backticks or a fence are not counted; unmarked bullets and tables pass
+      ---
+      duration_ms: 10.437419
+      type: 'test'
+      ...
+    1..5
+not ok 1 - behaviour 3
+  ---
+  duration_ms: 89.286132
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:4200'
+  failureType: 'subtestsFailed'
+  error: '4 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 5
+# suites 1
+# pass 1
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 102.23289

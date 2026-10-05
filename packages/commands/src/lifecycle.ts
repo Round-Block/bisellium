@@ -19,9 +19,10 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq } from "yaml";
-import { readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
+import { readBriefAdmission } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
@@ -296,6 +297,20 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     builder_runtime: ISOLATED_BUILDER_RUNTIME,
   };
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
+
+  // W-127: brief admission, only where the officina declares a limit.
+  const limit: unknown = manifest.brief_behaviour_limit;
+  if (limit !== undefined) {
+    if (typeof limit !== "number" || !Number.isInteger(limit) || limit < 1) {
+      console.error(`${opusId}: brief.admission: brief_behaviour_limit must be a positive integer`);
+      return { exitCode: 1 };
+    }
+    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), limit);
+    if (admission.length > 0) {
+      console.error(admission.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
+      return { exitCode: 1 };
+    }
+  }
 
   editOpusFrontMatter(opusPath, (doc) => {
     doc.set("builder_runtime", ISOLATED_BUILDER_RUNTIME);
@@ -1028,6 +1043,35 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
   return { exitCode: 0 };
 }
 
+/** W-127: every problem that keeps this brief from admission under `limit`
+ *  (`brief_behaviour_limit`), in order; empty when it is admitted. The one
+ *  predicate `ready` and `check` share. */
+export function briefAdmissionProblems(
+  root: string,
+  manifest: Pick<Manifest, "patron" | "collegia">,
+  opusId: string,
+  briefText: string,
+  limit: number,
+): string[] {
+  // The Patron ruled (2026-10-05) that the design collegium's magister grants exceptions.
+  // `collegia` is the caller's to validate, but a malformed one yields a problem, never a throw.
+  const rows: unknown[] = Array.isArray(manifest.collegia) ? manifest.collegia : [];
+  const design = rows.find((c) => typeof c === "object" && c !== null && (c as { id?: unknown }).id === "design") as
+    | { magister?: unknown }
+    | undefined;
+  const magister = typeof design?.magister === "string" && design.magister.length > 0 ? design.magister : undefined;
+  const { problems } = readBriefAdmission(briefText, limit, (decisionId) => {
+    const p = magister
+      ? patronDecisionProblem(root, manifest, decisionId, { by: magister, mustName: opusId })
+      : "no design collegium declares a magister";
+    return p === undefined ? undefined : `behaviour limit exception: ${p}`;
+  });
+  return problems;
+}
+
+const namesToken = (text: string, token: string): boolean =>
+  new RegExp(`(?<![A-Za-z0-9_-])${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9_-])`).test(text);
+
 /**
  * Whether `decisionId` names an honourable Patron decision: a non-empty
  * string that `safeItemPath` resolves under `<root>/decisions` to a file
@@ -1038,22 +1082,38 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
  * human-gate branch both call (studio/briefs/W-034.md, "One predicate, two
  * callers") — never re-derived at either call site.
  */
-function patronDecisionProblem(root: string, manifest: Manifest, decisionId: unknown): string | undefined {
+export function patronDecisionProblem(
+  root: string,
+  manifest: Pick<Manifest, "patron">,
+  decisionId: unknown,
+  opts?: { by?: string; mustName?: string },
+): string | undefined {
   if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
   if (typeof decisionPath !== "string" || !existsSync(decisionPath)) return `decision "${decisionId}" not found`;
   const contained = readContainedRegularFile(root, `decisions/${decisionId}.md`, "decisions");
   if ("error" in contained) return `decision "${decisionId}" is unsafe: ${contained.error}`;
+  // One read: the contained bytes are the only thing parsed, so the path is never reopened after the check.
+  const text = contained.bytes.toString("utf8");
   let data: Record<string, unknown>;
   try {
-    data = readFront<Record<string, unknown>>(decisionPath).data;
+    data = parseFrontMatter<Record<string, unknown>>(text, decisionPath).data;
   } catch {
     return `decision "${decisionId}" could not be read`;
   }
   const by = data["by"];
   if (typeof by !== "string" || by.length === 0) return `decision "${decisionId}" has no "by"`;
-  const patronId = manifest.patron ?? "patron";
-  if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
+  // W-127: `opts.by` swaps the expected author (a brief's exception is the architect's); no opts means the Patron.
+  if (opts?.by !== undefined) {
+    if (by !== opts.by) return `decision "${decisionId}" is by "${by}", not "${opts.by}"`;
+  } else {
+    const patronId = manifest.patron ?? "patron";
+    if (by !== patronId) return `decision "${decisionId}" is by "${by}", not patron "${patronId}"`;
+  }
+  // `opts.mustName`: an exception must name the opus it lifts the limit for (the one contained read above).
+  // as a whole token: W-12 is not named by a decision that only names W-127.
+  if (opts?.mustName !== undefined && !namesToken(text, opts.mustName))
+    return `decision "${decisionId}" does not name ${opts.mustName}`;
   return undefined;
 }
 

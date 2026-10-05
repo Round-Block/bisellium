@@ -1,0 +1,161 @@
+# behaviour: 5
+# command: node --test-reporter=tap --import tsx --test-name-pattern=behaviour.5 packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-05T09:53:39.905Z
+# sella: builder.W-127
+# tree: tree:d85cda1222f73d448d8e5cd3bdebd4e045369c30
+
+TAP version 13
+# Subtest: behaviour 5
+    # Subtest: an active opus (building) whose brief is over the limit is blocked
+    not ok 1 - an active opus (building) whose brief is over the limit is blocked
+      ---
+      duration_ms: 59.583742
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:7224'
+      failureType: 'testCodeFailure'
+      error: |-
+        []
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:307:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Test.start (node:internal/test_runner/test:1096:17)
+        node:internal/test_runner/test:1617:71
+        node:internal/per_context/primordials:466:82
+        new Promise (<anonymous>)
+        new SafePromise (node:internal/per_context/primordials:435:3)
+        node:internal/per_context/primordials:466:9
+        Array.map (<anonymous>)
+      ...
+    # Subtest: an active opus (verifying) whose brief is over the limit is blocked
+    not ok 2 - an active opus (verifying) whose brief is over the limit is blocked
+      ---
+      duration_ms: 17.761855
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:7224'
+      failureType: 'testCodeFailure'
+      error: |-
+        []
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:307:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Promise.all (index 0)
+        async Suite.run (node:internal/test_runner/test:1619:7)
+        async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+      ...
+    # Subtest: an active opus (review) whose brief is over the limit is blocked
+    not ok 3 - an active opus (review) whose brief is over the limit is blocked
+      ---
+      duration_ms: 15.986152
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:7224'
+      failureType: 'testCodeFailure'
+      error: |-
+        []
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:307:14)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    # Subtest: a done opus is left alone
+    ok 4 - a done opus is left alone
+      ---
+      duration_ms: 15.98844
+      type: 'test'
+      ...
+    # Subtest: a halted opus is left alone
+    ok 5 - a halted opus is left alone
+      ---
+      duration_ms: 14.46235
+      type: 'test'
+      ...
+    # Subtest: a greenlit opus is left alone
+    ok 6 - a greenlit opus is left alone
+      ---
+      duration_ms: 15.04086
+      type: 'test'
+      ...
+    # Subtest: no key means no finding
+    ok 7 - no key means no finding
+      ---
+      duration_ms: 15.017507
+      type: 'test'
+      ...
+    # Subtest: a limit of 0 is a manifest.shape block and no brief.admission
+    not ok 8 - a limit of 0 is a manifest.shape block and no brief.admission
+      ---
+      duration_ms: 15.288388
+      type: 'test'
+      location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:7819'
+      failureType: 'testCodeFailure'
+      error: |-
+        []
+        
+        0 !== 1
+        
+      code: 'ERR_ASSERTION'
+      name: 'AssertionError'
+      expected: 1
+      actual: 0
+      operator: 'strictEqual'
+      stack: |-
+        TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:325:12)
+        Test.runInAsyncScope (node:async_hooks:226:14)
+        Test.run (node:internal/test_runner/test:1201:25)
+        Suite.processPendingSubtests (node:internal/test_runner/test:831:18)
+        Test.postRun (node:internal/test_runner/test:1330:19)
+        Test.run (node:internal/test_runner/test:1258:12)
+        async Suite.processPendingSubtests (node:internal/test_runner/test:831:7)
+      ...
+    1..8
+not ok 1 - behaviour 5
+  ---
+  duration_ms: 170.210003
+  type: 'suite'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-127/packages/cli/src/brief-admission.test.ts:16:6832'
+  failureType: 'subtestsFailed'
+  error: '4 subtests failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 8
+# suites 1
+# pass 4
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 186.209509

@@ -18,7 +18,8 @@ import {
   PROVIDER_STATUSES,
   PETITIO_STATES,
 } from "@bisellium/schema";
-import { listMd, readFront, resolveSeat, STATES } from "@bisellium/adapter-native";
+import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
+import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
@@ -304,6 +305,21 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   const wipLimit = m["wip_limit"] === undefined ? undefined : num(m["wip_limit"]);
   if (m["wip_limit"] !== undefined && wipLimit === undefined)
     add("manifest.shape", "block", "bisellium.yml#wip_limit", "wip_limit must be a number");
+  // W-127: brief admission is opt-in; a present key must be a positive integer.
+  const briefLimitRaw = m["brief_behaviour_limit"];
+  const briefLimit = typeof briefLimitRaw === "number" && Number.isInteger(briefLimitRaw) && briefLimitRaw >= 1 ? briefLimitRaw : undefined;
+  // Only what admission reads, rebuilt from the raw manifest: a missing, null or non-list `collegia` is the
+  // manifest.collegia rule's finding, and here just means no design magister.
+  const admissionManifest: Pick<Manifest, "patron" | "collegia"> = {
+    ...(str(m["patron"]) === undefined ? {} : { patron: str(m["patron"])! }),
+    collegia: (Array.isArray(m["collegia"]) ? m["collegia"] : []).filter(isDict).map((c) => ({
+      id: str(c["id"]) ?? "",
+      name: str(c["name"]) ?? "",
+      magister: str(c["magister"]) ?? "",
+    })),
+  };
+  if (briefLimitRaw !== undefined && briefLimit === undefined)
+    add("manifest.shape", "block", "bisellium.yml#brief_behaviour_limit", "brief_behaviour_limit must be a positive integer");
   if (wipLimit === undefined) add("wip.declared", "advise", "bisellium.yml", "no wip_limit — WIP is unbounded");
 
   // integration: optional (D-015) — how an opus branch reaches the trunk is
@@ -634,6 +650,16 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (ACTIVE.has(state)) {
       const ids = new Set(certifies.values());
       if (ids.size > 1) add("probatio.certifies.mismatch", "advise", where, `gates certify different trees: ${[...ids].join(", ")}`);
+    }
+
+    // W-127: an active opus's brief must pass the same admission `ready` applies (done briefs are never re-read).
+    // An unreadable spec adds nothing here; state.building.spec and opus.red_evidence already cover it.
+    const specRel = str(d["spec"]);
+    if (briefLimit !== undefined && ACTIVE.has(state) && specRel) {
+      const brief = readContainedRegularFile(root, specRel, "briefs");
+      if (!("error" in brief))
+        for (const problem of briefAdmissionProblems(root, admissionManifest, id ?? basename(p, ".md"), brief.bytes.toString("utf8"), briefLimit))
+          add("brief.admission", "block", where, `${specRel} ${problem}`);
     }
 
     checkTraditio(where, d["traditio"], state, ACTIVE.has(state));

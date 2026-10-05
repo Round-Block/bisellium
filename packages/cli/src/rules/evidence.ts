@@ -103,29 +103,9 @@ function checkUntracked(root: string, opts: RuleOpts): Finding[] {
   return findings;
 }
 
-/** Exported for the test: N = the count of the ordered list directly under
- *  "## Behaviours to test" in a brief. Items match `^\s{0,3}\d+\.\s`;
- *  continuation lines, nested/indented items, bullet lists, and anything
- *  inside a fenced code block or after the next `^## ` heading don't count. */
-export function countBehaviours(briefText: string): number {
-  const lines = briefText.split(/\r?\n/);
-  const start = lines.findIndex((l) => l.trim() === "## Behaviours to test");
-  if (start === -1) return 0;
-
-  let count = 0;
-  let inFence = false;
-  for (let i = start + 1; i < lines.length; i++) {
-    const line = lines[i]!;
-    if (/^\s{0,3}```/.test(line)) {
-      inFence = !inFence;
-      continue;
-    }
-    if (inFence) continue;
-    if (/^## /.test(line)) break;
-    if (/^\s{0,3}\d+\.\s/.test(line)) count++;
-  }
-  return count;
-}
+// W-127: moved to @bisellium/commands (brief admission shares it); re-exported so importers stay as they were.
+import { countBehaviours } from "@bisellium/commands/brief-admission.js";
+export { countBehaviours };
 
 /** The leading `# key: value` header lines of a red log (W-020's contract),
  *  stopping at the first non-header line. */

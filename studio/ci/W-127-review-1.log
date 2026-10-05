@@ -1,0 +1,21 @@
+# opus: W-127
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-05T10:47:34.372Z
+# tree: tree:2fd6f6fbd7384fb14b95ebfa618d4c7395866d49
+
+## Findings
+1. blocking — studio/ci/reds/W-127/04.log:10 The canonical red expects a Patron decision to be accepted, while revision 2 requires that row to be refused; its failure is therefore not evidence for revised behaviour 4. The separate revision-2 run proves test-first development but does not repair the false canonical red or receipt replay. — check: none: replace red 04 and its receipt replay with the revision-2 behaviour-4 test tree
+2. blocking — packages/commands/src/brief-admission.ts:14 The section parser is bypassable: a fenced decoy `## Behaviours to test` is selected as real, while a repeated heading or an HTML-comment line beginning `## ` ends the section early, allowing later numbered behaviours and red markers to be ignored. This class comprises all four section-boundary sites searched: start/end in `countBehaviours` (lines 14/26) and `redMarkers` (lines 50/61). — check: packages/cli/src/brief-admission.test.ts
+3. blocking — packages/commands/src/lifecycle.ts:1090 The exception predicate validates one contained read but then reopens the path with `readFront`, contrary to the one-read interface and permitting a concurrent regular-file-to-symlink substitution to supply a spoofed `by`. This is one instance; I searched the exception path’s `safeItemPath`, contained read, and subsequent reads. — check: packages/cli/src/containment.test.ts
+4. blocking — packages/commands/src/lifecycle.ts:1104 `includes(opts.mustName)` accepts a decision naming only a longer opus ID, such as W-127 for W-12, so an architect ruling can authorize the wrong opus. — check: packages/cli/src/brief-admission.test.ts
+5. blocking — packages/cli/src/check.ts:651 The raw manifest is cast to a typed manifest; with a valid limit, an oversized exception brief, and missing/non-list/null `collegia`, `briefAdmissionProblems` reaches `manifest.collegia.find` and throws instead of returning manifest findings. — check: packages/cli/src/brief-admission.test.ts
+6. advisory — packages/commands/src/brief-admission.ts:81 The exported return type adds `exceptionAt`, although the brief’s Interface permits only `problems` and optional `exception`; ordering is correct, but this silently widens the specified API. — check: none: add a compile-time public-interface assertion
+
+## Verdict
+Reds 01–03 and 05, the gates, rule registration, lifecycle scope, and documentation are otherwise supported, but revised red 04 is false and the implementation contains admission and containment bypasses.
+
+VERDICT: FAIL
