@@ -29,7 +29,7 @@ import { censorSella, inspectUiDesignInput, readContainedRegularFile, type Nativ
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
-import { clean, cleanup, dirtyHold, git, identifyPr, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
+import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, readTip, settleMerged, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
@@ -303,7 +303,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiSpecProblems: memo(() => uiProblems(branchRecord ?? trunkRecord, studioAbs)),
     uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
-    pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, id))),
+    pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(Date.parse(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at") ?? ""));
@@ -405,13 +405,9 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify" | "commit";
+  act?: "verify" | "commit" | "land";
   extra: [string, string][];
 }
-
-/** The plain gh and git landing for a head the `pr` rung does not open; it ends on master so the pull can fast-forward after the squash. */
-const landing = (head: string, title: string): string =>
-  `git push origin ${head}, then gh pr create --base master --head ${head} --title ${JSON.stringify(title)} --body-file <body-file>, then gh pr merge <pr-number> --squash --auto once its checks pass, then git switch master && git pull --ff-only origin master`;
 
 /** The one legal next step, from facts alone (the only I/O is the lazy `pr()` read). */
 export function deriveNext(f: Facts): Derived {
@@ -435,7 +431,7 @@ export function deriveNext(f: Facts): Derived {
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design);
-    if (!spec.ok && onBranch.ok) return named("spec", "producer", `spec signed on spec/${id}, not on master`, landing(`spec/${id}`, `spec(${id}): signed`));
+    if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
     // no spec/<id> at all: the architect may have left the signed spec uncommitted in the main checkout
     if (!spec.ok && f.specBranch === undefined && specEvidence(fsSrc(f.studioAbs), id, f.design).ok)
       return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
@@ -529,7 +525,7 @@ export function deriveNext(f: Facts): Derived {
 
   // 10 cleanup, 11 done
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
-  if (f.choreDone) return named("done", "producer", `done committed on chore/done-${id}, not on master`, `git switch chore/done-${id} && ${landing(`chore/done-${id}`, `chore(studio): mark ${id} done`)}`);
+  if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`), act: "land" };
   if (!f.certified()) return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded`, `bisellium verify ${id} --studio ${f.studioRel} --repo .`), act: "verify" };
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
@@ -960,6 +956,15 @@ function performSpecCommit(f: Facts): StepResult {
   return { ok: true, lines: [`branch: ${head}`, `commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${head}`]).stdout.trim()}`] };
 }
 
+/** A landing head may change the officina and `docs/` only: anything else is refused before the push. */
+async function performLanding(f: Facts, ctx: Ctx, head: string): Promise<StepResult> {
+  const diff = git(f.repo, ["diff", "--name-only", "-z", `${TRUNK}...refs/heads/${head}`]);
+  if (diff.status !== 0) return heldResult(`refusing: could not read what ${head} changes: ${one(diff.stderr)}`);
+  const outside = diff.stdout.split("\0").filter((p) => p !== "" && !p.startsWith(`${f.studioRel}/`) && !p.startsWith("docs/"));
+  if (outside.length > 0) return heldResult(`refusing: ${head} changes ${outside.slice(0, 5).map((p) => clean(p)).join(", ")}, outside the officina and docs/; nothing pushed`);
+  return landHead({ ...ctx, head });
+}
+
 function performReady(f: Facts, d: Derived): StepResult {
   const sella = d.extra.find(([k]) => k === "attributed")?.[1]?.split(" ")[0] ?? f.design;
   const cap = capture(() => runReady([f.id, "--sella", sella, "--studio", f.wt.usable ? f.wt.studio : f.studioAbs]));
@@ -1145,7 +1150,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       if (a.expect !== undefined && a.expect !== d2.step) return refusal(d2);
       if (!performable(d2) || needsText(d2)) return say(d2.status === "held" ? 1 : 0, render(id, d2, f, d2.status));
       const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
-      const ctx: Ctx = { repo, id, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
+      const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
       let result: StepResult;
       switch (d2.step) {
         case "branch":
@@ -1155,7 +1160,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = performReady(f, d2);
           break;
         case "spec":
-          result = performSpecCommit(f);
+          result = d2.act === "land" ? await performLanding(f, ctx, `spec/${id}`) : performSpecCommit(f);
           break;
         case "pr":
           result = openPr(ctx, d2.pr, a.title, a.bodyFile);
@@ -1167,7 +1172,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = cleanup(ctx);
           break;
         default:
-          result = performDone(f, d2);
+          result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : performDone(f, d2);
       }
       log(`${d2.step} ${result.ok ? "performed" : "held"}`);
       f = gather(repo, opened.root, id);

@@ -927,8 +927,7 @@ if (runs(1)) {
     rung(specBranch, "brief and passing spec log only on spec/<id> still names spec", "spec", "named", (o) => {
       actor(o, /producer/i, "spec on branch");
       assert.match(o.out, /spec signed on spec\/W-900, not on master/, ran("spec-branch why", o));
-      assert.match(o.out, /git push origin spec\/W-900, then gh pr create --base master --head spec\/W-900 --title "spec\(W-900\): signed"/, ran("names the gh landing for spec/<id>", o));
-      assert.match(o.out, /git switch master && git pull --ff-only origin master/, ran("switches to master before it pulls", o));
+      assert.match(o.out, /^command: bisellium next W-900 --perform --expect spec$/m, ran("names next's own landing for spec/<id> (W-141)", o));
       assert.doesNotMatch(o.out, /scripts\//, ran("names no script", o));
     });
 
@@ -1012,8 +1011,7 @@ if (runs(1)) {
     scenario(chore, { list: mergedList(chore) });
     rung(chore, "done committed only on chore/done-<id> still names done", "done", "named", (o) => {
       assert.match(o.out, /done committed on chore\/done-W-900, not on master/, ran("chore why", o));
-      assert.match(o.out, /git switch chore\/done-W-900 && git push origin chore\/done-W-900, then gh pr create --base master --head chore\/done-W-900 --title "chore\(studio\): mark W-900 done"/, ran("names the gh landing for chore/done-<id>", o));
-      assert.match(o.out, /git switch master && git pull --ff-only origin master/, ran("chore: switches to master before it pulls", o));
+      assert.match(o.out, /^command: bisellium next W-900 --perform --expect done$/m, ran("names next's own landing for chore/done-<id> (W-141)", o));
       assert.doesNotMatch(o.out, /scripts\//, ran("chore: names no script", o));
     });
 
@@ -2612,6 +2610,7 @@ function landingScenario(w: World, head: string, o: { open: boolean; checks?: Js
       replies: [{ stdout: o.open ? [open] : [] }],
       alts: [{ ifExists: merged, replies: [{ stdout: [done] }] }, ...(o.open ? [] : [{ ifExists: created, replies: [{ stdout: [open] }] }])],
     },
+    { match: ["pr", "list"], replies: [{ stdout: [] }] },
     { match: ["pr", "view"], replies: [{ stdout: viewOf(open) }], alts: [{ ifExists: merged, replies: [{ stdout: viewOf(done) }] }] },
     std("repoView"),
     std("checks"),
