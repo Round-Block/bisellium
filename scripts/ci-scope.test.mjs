@@ -281,3 +281,24 @@ test("W-139 behaviour 4: checkReads names unattributed, unlisted and unread, and
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("W-139 behaviour 5: gates' npm test records reads and the guard step right after it checks them", () => {
+  const steps = workflow().jobs.gates.steps;
+  const npmTest = steps.findIndex((step) => step.run === "npm test");
+  assert.notEqual(npmTest, -1, "gates runs npm test");
+  assert.deepEqual(
+    steps[npmTest]?.env,
+    {
+      BISELLIUM_REQUIRE_LIVE_ROWS: "1",
+      NODE_OPTIONS: "--import ${{ github.workspace }}/scripts/record-reads.mjs",
+      BISELLIUM_RECORD_READS: "${{ runner.temp }}/record-reads.log",
+    },
+    "npm test's env holds the two recording keys beside the live-row guard",
+  );
+  const guard = "node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log";
+  assert.equal(steps[npmTest + 1]?.run, guard, "the step right after npm test is the guard");
+  assert.equal(steps[npmTest + 1]?.if, FULL, "and it runs on the full path");
+  const parity = join(HERE, "ci-workflow.test.mjs");
+  assert.ok(readFileSync(parity, "utf8").includes(guard), "ci-workflow.test.mjs names the guard step");
+  assert.equal(spawnSync(process.execPath, [parity], { encoding: "utf8" }).status, 0, "and still passes");
+});
