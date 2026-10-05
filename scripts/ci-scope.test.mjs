@@ -3,12 +3,14 @@
  * Rows are selected by name (`--test-name-pattern=W-131.behaviour.N:`), one
  * failing row per recorded red. The script is imported inside its row so a
  * missing file is an assertion failure, not a module-load failure.
+ *
+ * W-139 adds the `test:record` rows (`--test-name-pattern=W-139.behaviour.N:`).
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
@@ -82,9 +84,6 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
     ))
       assert.equal(step.if, FULL, `${job}: "${step.run}" carries the full-path guard`);
   }
-  const short = doc.jobs.gates.steps.filter((step) => step.if === SHORT);
-  assert.equal(short.length, 1, "gates has exactly one record-only step");
-  assert.equal(short[0].run, "npm run -s check -- studio --repo .", "and it is the studio check");
   assert.equal(
     doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
     0,
@@ -170,5 +169,285 @@ test("W-131 round 3 finding 2: a deleted source copied into studio/ and the hand
     assert.equal(result.status, 0);
   } finally {
     rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+const REPO = dirname(HERE);
+const pkgScripts = () => JSON.parse(readFileSync(join(REPO, "package.json"), "utf8")).scripts;
+const line = (owner, rel) => `${owner}\t${rel}\n`;
+/** A well-formed log: the root process started, its reads, the root ended. */
+const complete = (...rows) => `#start\tp1\troot\n${rows.join("")}#end\tp1\n`;
+const andSplit = (script) => script.split("&&").map((command) => command.trim());
+
+test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite", () => {
+  const scripts = pkgScripts();
+  assert.equal(typeof scripts["test:record"], "string", "package.json has a test:record script");
+  assert.notEqual(scripts["test:record"].trim(), "", "test:record is non-empty");
+  const suite = andSplit(scripts["test:suite"]);
+  const record = andSplit(scripts["test:record"]);
+  for (const command of record) {
+    assert.ok(suite.includes(command), `"${command}" is a verbatim member of test:suite`);
+    assert.doesNotMatch(command, /\bcd\b|[()]/, `"${command}" has no cd and no parenthesis`);
+  }
+  assert.equal(new Set(record).size, record.length, "test:record has no duplicates");
+});
+
+test("W-139 behaviour 2: gates' record-only steps are the studio check then test:record, and web-e2e has none", () => {
+  const doc = workflow();
+  assert.deepEqual(
+    doc.jobs.gates.steps.filter((step) => step.if === SHORT).map((step) => step.run),
+    ["npm run -s check -- studio --repo .", "npm run -s test:record"],
+    "gates' record-only steps, in order",
+  );
+  assert.equal(
+    doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
+    0,
+    "web-e2e has no record-only step",
+  );
+});
+
+test("W-139 behaviour 3: the preload records reads of the record-only set, nothing else, and stays invisible", () => {
+  const preload = join(HERE, "record-reads.mjs");
+  const tmp = mkdtempSync(join(tmpdir(), "w139-probe-"));
+  try {
+    const probe = join(tmp, "probe.test.mjs");
+    const child = `require("node:fs").existsSync(${JSON.stringify(join(REPO, "studio", "w139-child"))})`;
+    writeFileSync(
+      probe,
+      [
+        `import { existsSync, readFileSync, realpathSync } from "node:fs";`,
+        `import { readFile } from "node:fs/promises";`,
+        `import { spawnSync } from "node:child_process";`,
+        `existsSync(${JSON.stringify(join(REPO, "studio", "w139-probe-absent"))});`,
+        `await readFile(${JSON.stringify(join(REPO, "docs", "SESSION-HANDOFF.md"))});`,
+        `readFileSync(${JSON.stringify(join(REPO, "docs", "ADOPTION.md"))});`,
+        `existsSync(${JSON.stringify(join(tmp, "studio", "x"))});`,
+        `spawnSync(process.execPath, ["-e", ${JSON.stringify(child)}], { cwd: ${JSON.stringify(tmp)}, stdio: "ignore" });`,
+        `console.log(typeof realpathSync.native);`,
+      ].join("\n"),
+    );
+    const log = join(tmp, "reads.log");
+    const run = (extra) => {
+      const env = { ...process.env, NODE_OPTIONS: `--import ${preload}`, ...extra };
+      delete env.BISELLIUM_RECORD_OWNER;
+      if (!extra.BISELLIUM_RECORD_READS) delete env.BISELLIUM_RECORD_READS;
+      return spawnSync(process.execPath, [probe], { cwd: tmp, env, encoding: "utf8" });
+    };
+    const owner = relative(REPO, probe).split("\\").join("/");
+    const printed = run({ BISELLIUM_RECORD_READS: log });
+    const lines = existsSync(log)
+      ? readFileSync(log, "utf8")
+          .split("\n")
+          .filter((entry) => entry && !entry.startsWith("#"))
+          .sort()
+      : [];
+    assert.deepEqual(
+      lines,
+      [`${owner}\tdocs/SESSION-HANDOFF.md`, `${owner}\tstudio/w139-child`, `${owner}\tstudio/w139-probe-absent`],
+      "exactly the three in-set reads, each owned by the probe",
+    );
+    assert.equal(printed.stdout.trim(), "function", "realpathSync.native survives the wrappers");
+    rmSync(log, { force: true });
+    run({});
+    assert.equal(existsSync(log), false, "without BISELLIUM_RECORD_READS the preload writes no log");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("W-139 behaviour 4: checkReads names unattributed, unlisted and unread, and the CLI fails closed", async () => {
+  const mod = await import("./ci-scope.mjs").catch(() => ({}));
+  assert.equal(typeof mod.checkReads, "function", "scripts/ci-scope.mjs exports checkReads");
+  const commands = ["node a.test.mjs .", "node --import tsx b/c.test.ts"];
+  const exact = [line("a.test.mjs", "studio/x"), line("b/c.test.ts", "docs/SESSION-HANDOFF.md")];
+  assert.deepEqual(mod.checkReads(complete(...exact), commands), [], "an exact log has no problems");
+  assert.deepEqual(mod.checkReads(complete(...exact, line("?", "studio/y")), commands), ["unattributed: studio/y"]);
+  assert.deepEqual(
+    mod.checkReads(complete(...exact, line("d.test.mjs", "studio/z"), line("d.test.mjs", "studio/w")), commands),
+    ["unlisted: d.test.mjs (read studio/z)"],
+  );
+  assert.deepEqual(mod.checkReads(complete(line("a.test.mjs", "studio/x")), commands), [
+    "unread: node --import tsx b/c.test.ts",
+  ]);
+
+  const record = andSplit(pkgScripts()["test:record"] ?? "");
+  const owners = record.map((command) => command.split(/\s+/).find((token) => /\.test\.[cm]?[jt]s$/.test(token)));
+  const dir = mkdtempSync(join(tmpdir(), "w139-check-"));
+  try {
+    const log = join(dir, "reads.log");
+    const run = (path) => scope(dir, "--check-reads", path);
+    const absent = run(log);
+    assert.equal(absent.stdout, `missing: ${log}\n`, "an absent log is named");
+    assert.equal(absent.status, 1, "and fails closed");
+    writeFileSync(log, complete(...owners.map((owner) => line(owner, "studio/x"))));
+    const ok = run(log);
+    assert.equal(ok.stdout, "record_reads=ok\n");
+    assert.equal(ok.status, 0);
+    writeFileSync(log, complete(...owners.map((owner) => line(owner, "studio/x")), line("?", "studio/y")));
+    const bad = run(log);
+    assert.equal(bad.stdout, "unattributed: studio/y\n");
+    assert.equal(bad.status, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("W-139 behaviour 5: gates' npm test records reads and the guard step right after it checks them", () => {
+  const steps = workflow().jobs.gates.steps;
+  const npmTest = steps.findIndex((step) => step.run === "npm test");
+  assert.notEqual(npmTest, -1, "gates runs npm test");
+  assert.deepEqual(
+    steps[npmTest]?.env,
+    {
+      BISELLIUM_REQUIRE_LIVE_ROWS: "1",
+      NODE_OPTIONS: "--import ${{ github.workspace }}/scripts/record-reads.mjs",
+      BISELLIUM_RECORD_READS: "${{ runner.temp }}/record-reads.log",
+    },
+    "npm test's env holds the two recording keys beside the live-row guard",
+  );
+  const guard = "node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log";
+  assert.equal(steps[npmTest + 1]?.run, guard, "the step right after npm test is the guard");
+  assert.equal(steps[npmTest + 1]?.if, FULL, "and it runs on the full path");
+  const parity = join(HERE, "ci-workflow.test.mjs");
+  assert.ok(readFileSync(parity, "utf8").includes(guard), "ci-workflow.test.mjs names the guard step");
+  assert.equal(spawnSync(process.execPath, [parity], { encoding: "utf8" }).status, 0, "and still passes");
+});
+
+test("W-139 round 1 finding 1: the guard rejects a log with no completion evidence", async () => {
+  const mod = await import("./ci-scope.mjs").catch(() => ({}));
+  assert.equal(typeof mod.checkReads, "function", "scripts/ci-scope.mjs exports checkReads");
+  const commands = ["node a.test.mjs"];
+  const read = line("a.test.mjs", "studio/x");
+  for (const [name, log] of [
+    ["an empty log", ""],
+    ["owner lines with no markers", read],
+    ["a log with no final newline", complete(read).slice(0, -1)],
+    ["a root that never ended", `#start\tp1\troot\n${read}`],
+    ["a tail-truncated end marker", `#start\tp1\troot\n${read}#end\tp1`],
+    ["a run with no root", `#start\tp1\n${read}#end\tp1\n`],
+    ["two roots", `${complete(read)}#start\tp2\troot\n#end\tp2\n`],
+    ["an end with no start", `${complete(read)}#end\tp9\n`],
+    ["a process that failed to write", `${complete(read)}#fail\tp2\n`],
+    ["a malformed line", `${complete(read)}garbage\n`],
+  ])
+    assert.notDeepEqual(mod.checkReads(log, commands), [], `${name} is a problem`);
+  assert.deepEqual(mod.checkReads(complete(read), commands), [], "a rooted, ended log passes");
+  assert.deepEqual(
+    mod.checkReads(complete(`#start\tp2\n`, read), commands),
+    [],
+    "a non-root process killed before its exit handler ran is not a problem",
+  );
+  const dir = mkdtempSync(join(tmpdir(), "w139-integrity-"));
+  try {
+    const path = join(dir, "reads.log");
+    const owners = andSplit(pkgScripts()["test:record"] ?? "").map((command) =>
+      command.split(/\s+/).find((token) => /\.test\.[cm]?[jt]s$/.test(token)),
+    );
+    writeFileSync(path, owners.map((owner) => line(owner, "studio/x")).join(""));
+    const bare = scope(dir, "--check-reads", path);
+    assert.equal(bare.status, 1, "the CLI fails an owners-only log");
+    writeFileSync(path, "");
+    assert.equal(scope(dir, "--check-reads", path).status, 1, "and an empty one");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("W-139 round 1 finding 1: the preload ends its log and is loud when it cannot write", async () => {
+  const preload = join(HERE, "record-reads.mjs");
+  const tmp = mkdtempSync(join(tmpdir(), "w139-writer-"));
+  try {
+    const probe = join(tmp, "probe.test.mjs");
+    const studioRead = `existsSync(${JSON.stringify(join(REPO, "studio", "w139-probe-absent"))});`;
+    writeFileSync(
+      probe,
+      [
+        `import { chmodSync, existsSync } from "node:fs";`,
+        `if (process.env.W139_CHMOD) chmodSync(process.env.BISELLIUM_RECORD_READS, 0o444);`,
+        studioRead,
+        `import { spawnSync } from "node:child_process";`,
+        `spawnSync(process.execPath, ["-e", ""], { stdio: "ignore" });`,
+      ].join("\n"),
+    );
+    const run = (log, extra = {}) => {
+      const env = { ...process.env, NODE_OPTIONS: `--import ${preload}`, BISELLIUM_RECORD_READS: log, ...extra };
+      delete env.BISELLIUM_RECORD_OWNER;
+      delete env.BISELLIUM_RECORD_ROOT;
+      return spawnSync(process.execPath, [probe], { cwd: tmp, env, encoding: "utf8" });
+    };
+    const owner = relative(REPO, probe).split("\\").join("/");
+    const good = join(tmp, "good.log");
+    assert.equal(run(good).status, 0, "a writable log is silent and exits 0");
+    const text = existsSync(good) ? readFileSync(good, "utf8") : "";
+    assert.match(text, /^#start\t([^\t\n]+)\troot\n[^]*#end\t\1\n$/, "the log opens and closes the root process");
+    assert.equal(text.split("\troot\n").length - 1, 1, "and a child it spawns is not a second root");
+    const { checkReads } = await import("./ci-scope.mjs");
+    assert.deepEqual(checkReads(text, [`node ${owner}`]), [], "and the guard accepts it");
+
+    const locked = join(tmp, "locked.log");
+    const refused = run(locked, { W139_CHMOD: "1" });
+    assert.notEqual(refused.status, 0, "an append the process cannot write makes it exit non-zero");
+    assert.match(refused.stderr, /record-reads/, "and says why on stderr");
+    assert.notDeepEqual(
+      checkReads(existsSync(locked) ? readFileSync(locked, "utf8") : "", [`node ${owner}`]),
+      [],
+      "and the half-written log fails the guard",
+    );
+
+    const dirLog = join(tmp, "dir.log");
+    mkdirSync(dirLog);
+    assert.notEqual(run(dirLog).status, 0, "a log path that cannot be written at all exits non-zero");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("W-139 round 2 finding 1: a process that cannot record a read never makes it, and the guard fails on <log>.fail", () => {
+  const preload = join(HERE, "record-reads.mjs");
+  const tmp = mkdtempSync(join(tmpdir(), "w139-record-first-"));
+  try {
+    const target = join(REPO, "studio", "bisellium.yml");
+    const child = `console.log("read-happened", require("node:fs").existsSync(${JSON.stringify(target)}));`;
+    const probe = join(tmp, "probe.test.mjs");
+    writeFileSync(
+      probe,
+      [
+        `import { chmodSync } from "node:fs";`,
+        `import { spawnSync } from "node:child_process";`,
+        `chmodSync(process.env.BISELLIUM_RECORD_READS, 0o444);`,
+        `const r = spawnSync(process.execPath, ["-e", ${JSON.stringify(child)}], { encoding: "utf8" });`,
+        `console.log(JSON.stringify({ status: r.status, signal: r.signal, out: r.stdout, err: r.stderr }));`,
+      ].join("\n"),
+    );
+    const log = join(tmp, "reads.log");
+    const env = { ...process.env, NODE_OPTIONS: `--import ${preload}`, BISELLIUM_RECORD_READS: log };
+    delete env.BISELLIUM_RECORD_OWNER;
+    delete env.BISELLIUM_RECORD_ROOT;
+    const ran = spawnSync(process.execPath, [probe], { cwd: tmp, env, encoding: "utf8" });
+    const result = JSON.parse(ran.stdout.trim().split("\n").at(-1) ?? "{}");
+    assert.equal(result.out, "", "the child's read never happened: its call did not return");
+    assert.ok(result.signal === "SIGABRT" || result.status !== 0, "the child died before the read");
+    assert.match(result.err, /record-reads/, "and said why on stderr");
+    assert.equal(existsSync(`${log}.fail`), true, "it left the sibling <log>.fail marker");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test("W-139 round 2 finding 1: the guard CLI fails when <log>.fail exists beside an otherwise exact log", () => {
+  const dir = mkdtempSync(join(tmpdir(), "w139-failmark-"));
+  try {
+    const path = join(dir, "reads.log");
+    const owners = andSplit(pkgScripts()["test:record"] ?? "").map((command) =>
+      command.split(/\s+/).find((token) => /\.test\.[cm]?[jt]s$/.test(token)),
+    );
+    writeFileSync(path, complete(...owners.map((owner) => line(owner, "studio/x"))));
+    assert.equal(scope(dir, "--check-reads", path).stdout, "record_reads=ok\n", "the exact log passes alone");
+    writeFileSync(`${path}.fail`, "p2\n");
+    const marked = scope(dir, "--check-reads", path);
+    assert.equal(marked.status, 1, "a <log>.fail marker fails the guard");
+    assert.match(marked.stdout, /failed: .*reads\.log\.fail/, "and names it");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });

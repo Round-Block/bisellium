@@ -1,0 +1,16 @@
+# opus: W-139
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-05T04:28:00.126Z
+# tree: tree:c9ef1856a73edddd80232dcd8a23dabfd126df5e
+
+## Findings
+1. blocking — scripts/record-reads.mjs:52, scripts/ci-scope.mjs:28 The trace-integrity class has two instances across the writer and guard: append failures are silently swallowed after marking the path seen, and the guard accepts owner-only or tail-truncated logs without an integrity/completion marker. Once all eight listed owners appear, a later unwritable append or truncation can hide a new reader while still printing `record_reads=ok`. — check: scripts/ci-scope.test.mjs
+2. blocking — accept/fulltest.sh:3 The required opus-PR full-CI evidence is missing: the attached traced run is local and omits `BISELLIUM_REQUIRE_LIVE_ROWS=1`, while the producer receipt exercises local `bisellium ci`, not the GitHub workflow. No attached workflow run proves the preload and guard passed together under the required live-row environment. — check: none: attach the full GitHub gates-run evidence showing live rows and `record_reads=ok`
+
+## Verdict
+The short-path list, wiring, provenance, and bookkeeping are otherwise consistent, but the exactness authority can fail open and its required workflow evidence is absent.
+VERDICT: FAIL

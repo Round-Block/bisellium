@@ -1,0 +1,50 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-139.behaviour.3: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-05T03:43:21.303Z
+# sella: builder.W-139
+# tree: tree:c9d8828505b2f098a5e278e6cec5dc0e6fe7fcdc
+
+TAP version 13
+# Subtest: W-139 behaviour 3: the preload records reads of the record-only set, nothing else, and stays invisible
+not ok 1 - W-139 behaviour 3: the preload records reads of the record-only set, nothing else, and stays invisible
+  ---
+  duration_ms: 59.901796
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:206:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    exactly the three in-set reads, each owned by the probe
+    + actual - expected
+    
+    + []
+    - [
+    -   '../../../../../../tmp/claude-1000/w139-probe-uv1lDT/probe.test.mjs\tdocs/SESSION-HANDOFF.md',
+    -   '../../../../../../tmp/claude-1000/w139-probe-uv1lDT/probe.test.mjs\tstudio/w139-child',
+    -   '../../../../../../tmp/claude-1000/w139-probe-uv1lDT/probe.test.mjs\tstudio/w139-probe-absent'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: '../../../../../../tmp/claude-1000/w139-probe-uv1lDT/probe.test.mjs\tdocs/SESSION-HANDOFF.md'
+    1: '../../../../../../tmp/claude-1000/w139-probe-uv1lDT/probe.test.mjs\tstudio/w139-child'
+    2: '../../../../../../tmp/claude-1000/w139-probe-uv1lDT/probe.test.mjs\tstudio/w139-probe-absent'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:236:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 65.671953
