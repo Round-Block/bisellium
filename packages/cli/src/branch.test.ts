@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { test } from "node:test";
 import { join, relative, resolve, sep } from "node:path";
@@ -1230,7 +1230,22 @@ test("W-141-b6 behaviour 6: bisellium merge refuses under integration.pr.require
     const masterBefore = execSync("git rev-parse master", { cwd: dir, encoding: "utf8" }).trim();
     const tipBefore = execSync("git rev-parse opus/W-141", { cwd: dir, encoding: "utf8" }).trim();
 
-    const result = mergeOpusBranch(dir, "W-141", studio);
+    // a git shim on PATH logs every invocation: the refusal comes before any of them
+    const shimDir = mkdtempSync(join(tmpdir(), "w141-b6-shim-"));
+    const gitLog = join(shimDir, "calls.log");
+    const realGit = execSync("command -v git", { encoding: "utf8" }).trim();
+    writeFileSync(join(shimDir, "git"), `#!/bin/sh\necho "$*" >> "${gitLog}"\nexec "${realGit}" "$@"\n`, { mode: 0o755 });
+    const pathBefore = process.env["PATH"];
+    process.env["PATH"] = `${shimDir}:${pathBefore ?? ""}`;
+    let result: ReturnType<typeof mergeOpusBranch>;
+    try {
+      result = mergeOpusBranch(dir, "W-141", studio);
+    } finally {
+      process.env["PATH"] = pathBefore;
+    }
+    const invoked = existsSync(gitLog) ? readFileSync(gitLog, "utf8") : "";
+    rmSync(shimDir, { recursive: true, force: true });
+    assert.equal(invoked, "", `no git command ran before the refusal (${invoked})`);
     assert.equal(result.ok, false, `merge refuses under pr.required (${JSON.stringify(result)})`);
     assert.match(result.error ?? "", /bisellium next W-141/, "the error names next");
     assert.equal(execSync(`git --git-dir="${bare}" for-each-ref refs/heads`, { encoding: "utf8" }).trim(), "", "nothing was pushed: the bare origin has no opus/W-141");
