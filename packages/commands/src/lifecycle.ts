@@ -617,6 +617,14 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     return { exitCode: 2 };
   }
 
+  // W-126: a failure the verdict writer reconciled to passed is not a failed round; a new round must cite the brief.
+  if (fail && parseVerdictHeader(containedEvidence.bytes.toString("utf8")).values.has("submitted_outcome")) {
+    console.error(
+      `${opusId}: review --fail: ${evidence} records outcome passed; every blocking finding was recorded as advisory (see its # converted line). Record a new verdict round whose blocking finding cites a brief line.`,
+    );
+    return { exitCode: 2 };
+  }
+
   const currentState = readState(opusPath);
   if (typeof currentState !== "string") {
     console.error(currentState.error);
