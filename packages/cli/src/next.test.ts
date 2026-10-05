@@ -309,6 +309,8 @@ interface WorldOpts {
   specOn?: "master" | "spec-branch";
   legacy?: boolean;
   sec?: boolean;
+  /** W-123: the manifest declares integration.pr.required: true (the guard in `done` applies). */
+  prRequired?: boolean;
 }
 
 const MANIFEST = [
@@ -510,7 +512,7 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   put(w.repo, "README.md", "fixture\n");
   put(w.repo, "source.txt", "candidate source\n");
   put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Where things stand\n\n- (nothing recorded)\n");
-  put(w.studio, "bisellium.yml", MANIFEST);
+  put(w.studio, "bisellium.yml", o.prRequired ? `${MANIFEST}integration:\n  pr:\n    required: true\n` : MANIFEST);
   put(w.studio, "notes.md", "bookkeeping line\n");
   put(w.studio, `opera/${OPUS}.md`, recordText({ state: upTo === "backlog" ? "backlog" : "greenlit", probationes: {} }));
   commit(w.repo, "test: establish W-124 fixture");
@@ -2220,3 +2222,76 @@ if (runs(6)) {
     assert.doesNotMatch(plain.kv.get("command") ?? "", /--ui-input/, ran("a non-ui order carries no --ui-input", plain));
   });
 }
+
+// ---------------------------------------------------------------------------
+// W-123: `done` refuses unless the opus's merge is in the fetched trunk
+// ---------------------------------------------------------------------------
+const WHY_LINE = `${OPUS}: done needs the PR from ${BRANCH} merged and its merge commit in the local master; run: bisellium next ${OPUS}`;
+/** A bisellium verb run the way an operator would, under the stub gh and git shim. */
+function cli(w: World, args: string[], cwd: string): Out {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: envFor(w, {}), encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024 });
+  return parse(r.status, r.stdout ?? "", r.stderr ?? "");
+}
+const eventsOf = (studio: string): string | null => (existsSync(join(studio, ".bisellium", "events.jsonl")) ? readFileSync(join(studio, ".bisellium", "events.jsonl"), "utf8") : null);
+/** The row is refused: exit 1, the two exact stderr lines, and neither the record nor the event log moved. */
+function expectRefused(w: World, run: () => Out, reason: { is: string } | { startsWith: string }, row: string): Out {
+  const recordBefore = recordOf(w, "wt");
+  const eventsBefore = eventsOf(w.wtStudio);
+  const o = run();
+  const lines = o.err.split("\n");
+  assert.equal(o.status, 1, ran(`${row}: exit`, o));
+  const first = lines[0] ?? "";
+  if ("is" in reason) assert.equal(first, `${OPUS}: done refused: ${reason.is}`, ran(`${row}: first stderr line`, o));
+  else assert.ok(first.startsWith(`${OPUS}: done refused: ${reason.startsWith}`), ran(`${row}: first stderr line`, o));
+  assert.equal(lines[1], WHY_LINE, ran(`${row}: second stderr line`, o));
+  assert.equal(recordOf(w, "wt"), recordBefore, `${row}: the record's bytes are unchanged`);
+  assert.equal(eventsOf(w.wtStudio), eventsBefore, `${row}: the event log is unchanged`);
+  return o;
+}
+/** The handoff flow: the main checkout on a branch cut from master with no upstream. */
+const onHandoffBranch = (w: World): void => git(w.repo, ["switch", "-q", "--no-track", "-c", "chore/w123-done", "master"]);
+
+test("W-123 behaviour 1: done and close refuse an opus whose merge is not in the local master, and accept one whose merge is", { timeout: 1_800_000 }, () => {
+  const doneArgs = (w: World): string[] => ["done", OPUS, "--sella", "producer", "--studio", w.wtStudio, "--now", T.done];
+  const reviewWorld = (tag: string, merge?: (w: World) => SlotValue): World => {
+    const w = world(tag, "review", { prRequired: true });
+    if (merge !== undefined) scenario(w, { list: merge(w) });
+    return w;
+  };
+
+  const empty = reviewWorld("w123-b1-empty");
+  expectRefused(empty, () => cli(empty, doneArgs(empty), empty.wt), { is: `no MERGED PR from ${BRANCH} to master` }, "an empty list");
+
+  const open = reviewWorld("w123-b1-open", (w) => openList(w));
+  expectRefused(open, () => cli(open, doneArgs(open), open.wt), { is: `PR #${PR_NUMBER} from ${BRANCH} is OPEN, not MERGED` }, "an OPEN candidate");
+
+  const closed = reviewWorld("w123-b1-closed", (w) => ({ stdout: [cand(w, { state: "CLOSED" })] }));
+  expectRefused(closed, () => cli(closed, doneArgs(closed), closed.wt), { is: `no MERGED PR from ${BRANCH} to master` }, "a CLOSED-only candidate");
+
+  const failing = reviewWorld("w123-b1-gh-fails", () => ({ exit: 1, stderr: "boom\n" }));
+  expectRefused(failing, () => cli(failing, doneArgs(failing), failing.wt), { startsWith: "gh pr list exited 1" }, "gh pr list exits 1");
+
+  const behind = world("w123-b1-behind", "merge", { prRequired: true, fetched: false });
+  scenario(behind, { list: mergedList(behind) });
+  const refusedBehind = expectRefused(behind, () => cli(behind, doneArgs(behind), behind.wt), { startsWith: "merge commit " }, "MERGED but not fetched");
+  assert.ok((refusedBehind.err.split("\n")[0] ?? "").includes(behind.mergeOid!.slice(0, 12)), ran("the reason names the merge commit's first 12 characters", refusedBehind));
+
+  const closing = reviewWorld("w123-b1-close");
+  const refusedClose = expectRefused(closing, () => cli(closing, ["close", OPUS, "--studio", closing.wtStudio, "--repo", closing.wt], closing.wt), { is: `no MERGED PR from ${BRANCH} to master` }, "close with an empty list");
+  assert.ok(refusedClose.err.split("\n").includes("done failed (exit 1)"), ran("close still reports done failed (exit 1)", refusedClose));
+
+  // accepted: merged and fetched, branch and worktree gone, from the main checkout on a branch cut from master
+  const merged = world("w123-b1-merged", "cleanup", { prRequired: true });
+  scenario(merged, { list: mergedList(merged) });
+  onHandoffBranch(merged);
+  const accepted = cli(merged, ["done", OPUS, "--sella", "producer", "--studio", merged.studio, "--now", T.done], merged.repo);
+  assert.equal(accepted.status, 0, ran("done accepts a merged and fetched opus", accepted));
+  assert.match(recordOf(merged), /state: "?done/, "the record reads done");
+
+  const closed2 = world("w123-b1-merged-close", "cleanup", { prRequired: true });
+  scenario(closed2, { list: mergedList(closed2) });
+  onHandoffBranch(closed2);
+  const acceptedClose = cli(closed2, ["close", OPUS, "--studio", closed2.studio, "--repo", closed2.repo], closed2.repo);
+  assert.equal(acceptedClose.status, 0, ran("close accepts a merged and fetched opus", acceptedClose));
+  assert.match(recordOf(closed2), /state: "?done/, "close leaves the record done");
+});
