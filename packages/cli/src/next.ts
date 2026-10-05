@@ -177,7 +177,7 @@ export interface Facts {
   design: string;
   tip: string | undefined;
   /** The tip as read: an unreadable ref is an error, never an absent branch. */
-  tipRead: TipRead;
+  tipRead?: TipRead;
   wt: { dir: string; studio: string; usable: boolean };
   trunk: Src | undefined;
   trunkRecord: Dict | undefined;
@@ -400,7 +400,7 @@ export function deriveNext(f: Facts): Derived {
   // 1 greenlight
   const state = str(rec["state"]);
   if (rec["declined"] !== undefined && rec["declined"] !== null && rec["declined"] !== false) return hold("greenlight", `${id} is declined (${one(String(rec["declined"]))}); nothing to build`);
-  if (f.tipRead.kind === "error") return hold("branch", f.tipRead.reason);
+  if (f.tipRead?.kind === "error") return hold("branch", f.tipRead.reason);
   if (state === "halted") return hold("greenlight", `${id} is halted; resume it before the cascade continues`);
   if (state === undefined) return hold("greenlight", `${recordRel(id)} carries no state`);
   if (state === "backlog") return named("greenlight", "patron", `${id} is in the backlog; only the Patron greenlights`, `bisellium greenlight ${id} --studio ${f.studioRel}`);
