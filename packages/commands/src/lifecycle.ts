@@ -299,8 +299,13 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
 
   // W-127: brief admission, only where the officina declares a limit.
-  if (manifest.brief_behaviour_limit !== undefined) {
-    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), manifest.brief_behaviour_limit);
+  const limit: unknown = manifest.brief_behaviour_limit;
+  if (limit !== undefined) {
+    if (typeof limit !== "number" || !Number.isInteger(limit) || limit < 1) {
+      console.error(`${opusId}: brief.admission: brief_behaviour_limit must be a positive integer`);
+      return { exitCode: 1 };
+    }
+    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), limit);
     if (admission.length > 0) {
       console.error(admission.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
       return { exitCode: 1 };
