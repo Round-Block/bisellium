@@ -162,6 +162,8 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Open with the Patron
 
+- W-077 follow-ons (Patron): per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
+- Receipt mint can fail with "no recorded red for behaviour 1" while the log exists; a plain retry passed (W-077).
 - D-036's kill condition (spec check flags a behaviour an earlier one already satisfies) has no opus yet; no tool waives a missing red, so a pre-empted red means a branch rebuild.
 
 - Restart loop (`scripts/cascade-loop.sh`, #199) waits on the Patron's one-time settings step; the first launch is its live test.
@@ -169,7 +171,7 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Queue
 
-**W-085 done (PR 225).** Next: W-115, then W-077, W-116–W-119, W-122, W-123, W-120, W-126, W-127; backlog W-133, W-135 (Patron's architecture ruling), W-136, W-137, W-138, W-139; W-113 and W-136's UI need the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
+**W-077 done (PR 228).** Next: W-115 (needs the Patron's greenlight; still backlog), then W-116–W-119, W-122, W-123, W-120, W-126, W-127; backlog W-133, W-135 (Patron's architecture ruling), W-136, W-137, W-138, W-139; W-113 and W-136's UI need the Patron's UI/UX ruling at spec time. The 2026-09-24 ranking acta predates the W-130/W-131/runner insertions.
 
 ## Research lane (on the side)
 
