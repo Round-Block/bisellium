@@ -1,0 +1,48 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-139.behaviour.2: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-05T03:43:04.250Z
+# sella: builder.W-139
+# tree: tree:80ce8d424ba5cfbaccf6d16c91f285a2030445b3
+
+TAP version 13
+# Subtest: W-139 behaviour 2: gates' record-only steps are the studio check then test:record, and web-e2e has none
+not ok 1 - W-139 behaviour 2: gates' record-only steps are the studio check then test:record, and web-e2e has none
+  ---
+  duration_ms: 9.530642
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:192:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    gates' record-only steps, in order
+    + actual - expected
+    
+      [
+        'npm run -s check -- studio --repo .',
+    -   'npm run -s test:record'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'npm run -s check -- studio --repo .'
+    1: 'npm run -s test:record'
+  actual:
+    0: 'npm run -s check -- studio --repo .'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-139/scripts/ci-scope.test.mjs:194:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15.304512
