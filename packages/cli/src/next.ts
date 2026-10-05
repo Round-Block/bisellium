@@ -60,7 +60,7 @@ const NEXT_USAGE =
 
 const TRUNK = "refs/heads/master";
 const HANDOFF = "docs/SESSION-HANDOFF.md";
-const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done"]);
+const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec"]);
 const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
 
@@ -405,7 +405,7 @@ export interface Derived {
   order?: Order;
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
-  act?: "verify";
+  act?: "verify" | "commit";
   extra: [string, string][];
 }
 
@@ -436,6 +436,9 @@ export function deriveNext(f: Facts): Derived {
   if (!spec.ok || ui.length > 0) {
     const onBranch = specEvidence(f.specBranch, id, f.design);
     if (!spec.ok && onBranch.ok) return named("spec", "producer", `spec signed on spec/${id}, not on master`, landing(`spec/${id}`, `spec(${id}): signed`));
+    // no spec/<id> at all: the architect may have left the signed spec uncommitted in the main checkout
+    if (!spec.ok && f.specBranch === undefined && specEvidence(fsSrc(f.studioAbs), id, f.design).ok)
+      return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
     return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
 
@@ -933,6 +936,30 @@ function performBranch(f: Facts): StepResult {
   return { ok: true, lines: [`branch: opus/${id}`, `worktree: ${wt.dir}`] };
 }
 
+/** The spec signed in the main checkout, committed onto `spec/<id>`: only the brief and the spec log, nothing else moves. */
+function performSpecCommit(f: Facts): StepResult {
+  const { repo, id } = f;
+  const head = `spec/${id}`;
+  const symbolic = git(repo, ["symbolic-ref", "-q", "HEAD"]).stdout.trim();
+  if (symbolic !== "refs/heads/master") return heldResult(`refusing: HEAD is ${symbolic === "" ? "detached" : symbolic}, not the master branch`);
+  if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", TRUNK]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
+  if (refExists(repo, `refs/heads/${head}`)) return heldResult(`refusing: ${head} already exists`);
+  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design);
+  if (!spec.ok || spec.log === undefined) return heldResult(`refusing: ${spec.why}`);
+  const paths = [`${f.studioRel}/${briefRel(id)}`, `${f.studioRel}/${spec.log}`];
+  const base = git(repo, ["rev-parse", TRUNK]).stdout.trim();
+  const switched = git(repo, ["switch", "-q", "-c", head]);
+  if (switched.status !== 0) return heldResult(`could not create ${head}: ${one(switched.stderr)}`);
+  const staged = git(repo, ["add", "--", ...paths]);
+  const committed = staged.status === 0 ? git(repo, ["commit", "-q", "-m", `spec(${id}): signed`, "-m", `Co-Authored-By: ${spec.sella ?? f.design} (bisellium next) <noreply@anthropic.com>`, "--", ...paths]) : staged;
+  git(repo, ["switch", "-q", "master"]);
+  if (committed.status !== 0) {
+    git(repo, ["update-ref", "-d", `refs/heads/${head}`, base]);
+    return heldResult(`could not commit the spec: ${one(committed.stderr)}`);
+  }
+  return { ok: true, lines: [`branch: ${head}`, `commit: ${git(repo, ["rev-parse", "--short", `refs/heads/${head}`]).stdout.trim()}`] };
+}
+
 function performReady(f: Facts, d: Derived): StepResult {
   const sella = d.extra.find(([k]) => k === "attributed")?.[1]?.split(" ")[0] ?? f.design;
   const cap = capture(() => runReady([f.id, "--sella", sella, "--studio", f.wt.usable ? f.wt.studio : f.studioAbs]));
@@ -1062,7 +1089,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       return say(0, [`next: ${id} ${t.step} running`, `health: tracked pid ${pid} (writer track, an unverified attestation)`, `output: ${t.output}`]);
     }
 
-    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step);
+    const performable = (d: Derived): boolean => a.perform && d.status === "named" && PERFORMABLE.has(d.step) && (d.step !== "spec" || d.act !== undefined);
     // a `pr` that must be created needs --title and --body-file; without them it only names the command
     const needsText = (d: Derived): boolean => d.step === "pr" && d.pr === undefined && (a.title === undefined || a.bodyFile === undefined);
 
@@ -1126,6 +1153,9 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           break;
         case "ready":
           result = performReady(f, d2);
+          break;
+        case "spec":
+          result = performSpecCommit(f);
           break;
         case "pr":
           result = openPr(ctx, d2.pr, a.title, a.bodyFile);
