@@ -2224,8 +2224,8 @@ if (runs(6)) {
 // ---------------------------------------------------------------------------
 const WHY_LINE = `${OPUS}: done needs the PR from ${BRANCH} merged and its merge commit in the local master; run: bisellium next ${OPUS}`;
 /** A bisellium verb run the way an operator would, under the stub gh and git shim. */
-function cli(w: World, args: string[], cwd: string): Out {
-  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: envFor(w, {}), encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024 });
+function cli(w: World, args: string[], cwd: string, env: Record<string, string | undefined> = {}): Out {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: envFor(w, { env }), encoding: "utf8", timeout: 120_000, maxBuffer: 16 * 1024 * 1024 });
   return parse(r.status, r.stdout ?? "", r.stderr ?? "");
 }
 const eventsOf = (studio: string): string | null => (existsSync(join(studio, ".bisellium", "events.jsonl")) ? readFileSync(join(studio, ".bisellium", "events.jsonl"), "utf8") : null);
@@ -2339,4 +2339,47 @@ test("W-123 behaviour 2: the guard fails closed, and stays silent where no PR is
   assert.equal(counted.status, 0, ran("no pr.required: done exits 0", counted));
   assert.equal(reads, 0, "no pr.required: the reader was called 0 times");
   assert.match(recordOf(control), /state: "?done/, "no pr.required: the record reads done");
+});
+
+// round 1 (censor): the refusal reads the opus's identity from fresh, fail-closed reads
+const doneFrom = (w: World, env: Record<string, string | undefined> = {}): Out => cli(w, ["done", OPUS, "--sella", "producer", "--studio", w.studio, "--now", T.done], w.repo, env);
+/** A merged-and-fetched world on the handoff branch, whose gh list is `list`. */
+function mergedWorld(tag: string, list: (w: World) => SlotValue): World {
+  const w = world(tag, "cleanup", { prRequired: true });
+  scenario(w, { list: list(w) });
+  onHandoffBranch(w);
+  return w;
+}
+
+test("W-123 round-1 fix 1a: a newer CLOSED PR for the head outranks an older MERGED one", { timeout: 1_800_000 }, () => {
+  const w = mergedWorld("w123-r1-newest", (x) => ({ stdout: [cand(x, { state: "CLOSED", number: PR_NUMBER + 1 }), cand(x, { state: "MERGED" })] }));
+  expectRefused(w, () => doneFrom(w), { is: `no MERGED PR from ${BRANCH} to master` }, "newest PR is CLOSED", w.studio);
+});
+
+test("W-123 round-1 fix 1b: a head force-pushed after the merge is refused when the local branch is gone, and a matching remote head is accepted", { timeout: 1_800_000 }, () => {
+  const stale = mergedWorld("w123-r1-force", (x) => mergedList(x));
+  const side = join(scratch("w123-r1-force-side"), "c");
+  git(dirname(side), ["clone", "-q", stale.origin, side]);
+  git(side, ["switch", "-q", "-c", BRANCH, "origin/master"]);
+  put(side, "after-merge.txt", "force-pushed after the merge\n");
+  commit(side, "feat: a head the merged PR never had");
+  git(side, ["push", "-q", "origin", `HEAD:refs/heads/${BRANCH}`]);
+  expectRefused(stale, () => doneFrom(stale), { startsWith: `PR #${PR_NUMBER} merged head ${stale.headOid!.slice(0, 12)} is not the remote ${BRANCH} tip` }, "remote head differs from the merged head", stale.studio);
+
+  const same = mergedWorld("w123-r1-same", (x) => mergedList(x));
+  git(same.repo, ["push", "-q", "origin", `${same.headOid!}:refs/heads/${BRANCH}`]);
+  const accepted = doneFrom(same);
+  assert.equal(accepted.status, 0, ran("a remote head equal to the merged head is accepted", accepted));
+});
+
+test("W-123 round-1 fix 2a: an unreadable local branch ref is an error, never an absent branch", { timeout: 1_800_000 }, () => {
+  const w = mergedWorld("w123-r1-tip", (x) => mergedList(x));
+  const wrapper = join(scratch("w123-r1-tip-git"), "git-real");
+  writeFileSync(wrapper, `#!/bin/sh\ncase "$*" in *"rev-parse --verify -q refs/heads/${BRANCH}") echo "fatal: simulated failure" >&2; exit 3;; esac\nexec "${REAL_GIT}" "$@"\n`, { mode: 0o755 });
+  expectRefused(w, () => doneFrom(w, { GIT_STUB_REAL: wrapper }), { startsWith: `cannot read refs/heads/${BRANCH}` }, "rev-parse exits 3", w.studio);
+});
+
+test("W-123 round-1 fix 2b: an all-zero headRefOid is refused outright", { timeout: 1_800_000 }, () => {
+  const w = mergedWorld("w123-r1-zero", (x) => mergedList(x, { oid: "0".repeat(40) }));
+  expectRefused(w, () => doneFrom(w), { startsWith: "headRefOid is not a 40-hex commit id" }, "an all-zero headRefOid", w.studio);
 });
