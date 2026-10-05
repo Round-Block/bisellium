@@ -318,7 +318,6 @@ test("W-139 round 1 finding 1: the guard rejects a log with no completion eviden
   assert.equal(typeof mod.checkReads, "function", "scripts/ci-scope.mjs exports checkReads");
   const commands = ["node a.test.mjs"];
   const read = line("a.test.mjs", "studio/x");
-  assert.deepEqual(mod.checkReads(complete(read), commands), [], "a started, counted and ended log passes");
   for (const [name, log] of [
     ["an empty log", ""],
     ["owner lines with no markers", read],
@@ -330,6 +329,7 @@ test("W-139 round 1 finding 1: the guard rejects a log with no completion eviden
     ["a malformed line", `${complete(read)}garbage\n`],
   ])
     assert.notDeepEqual(mod.checkReads(log, commands), [], `${name} is a problem`);
+  assert.deepEqual(mod.checkReads(complete(read), commands), [], "a started, counted and ended log passes");
   const dir = mkdtempSync(join(tmpdir(), "w139-integrity-"));
   try {
     const path = join(dir, "reads.log");
