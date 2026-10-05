@@ -35,6 +35,8 @@ the branch ref) found serially in three places.
 Classify every finding by the severity rule in your charter (§2). Blocking
 means wrong behaviour, a security gap, or missing or false required evidence.
 A correct fix with an incomplete regression row is advisory, and only a
-blocking finding fails a round.
+blocking finding fails a round. A blocking finding cites `brief:<line>`, a
+non-blank line of the declared brief; the verdict writer records one that
+does not as advisory, so a round fails only on a cited blocker (W-126).
 
 Judge evidence as it stands; never wave through a gate that wasn't actually run.

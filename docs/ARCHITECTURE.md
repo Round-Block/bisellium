@@ -97,7 +97,7 @@ Six commands write a state id — `greenlight` (backlog only), `ready` (from
 `greenlit` or `halted`, and it refuses without a spec), `verify` (below),
 `done` (from `building`, `verifying` or `review`), `review --fail`'s reopen edge
 back to `building` from `verifying`, `review` or `done` (it emits its own
-`workflow.state_changed`), and `halt` from every non-done state. `ready`
+`workflow.state_changed`; it refuses a verdict log whose failure `verdict` reconciled to passed, W-126), and `halt` from every non-done state. `ready`
 records the first `start`, and where `bisellium.yml` declares `brief_behaviour_limit` refuses a brief that fails admission (W-127, shared with `check`'s `brief.admission`); `done` records `end`; reopening clears `end` but
 retains `start`. The same timestamp is emitted with the transition.
 
