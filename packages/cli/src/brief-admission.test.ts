@@ -14,6 +14,7 @@ import { after, describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { parseDocument } from "yaml";
 import { readFront } from "@bisellium/adapter-native";
+import { readBriefAdmission } from "@bisellium/commands/brief-admission.js";
 import { EVENTS_LOG_REL } from "@bisellium/core";
 import { checkStudio } from "./check.js";
 import { runReady } from "./lifecycle.js";
@@ -58,6 +59,10 @@ interface BriefSpec {
   fenced?: string[];
   /** Lines inside a fenced block in the Intent section. */
   fencedIntent?: string[];
+  /** Lines inside the real behaviours section, after the last numbered behaviour. */
+  inside?: string[];
+  /** Lines after "## Out of scope". */
+  tail?: string[];
 }
 
 const RED = "**Genuine red:**";
@@ -76,7 +81,8 @@ function brief(s: BriefSpec = {}): string {
     out.push(...(s.after?.[i + 1] ?? []));
   });
   if (s.fenced) out.push("```", ...s.fenced, "```");
-  out.push("", "## Acceptance", "", "green", "", "## Out of scope", "", "none", "");
+  out.push(...(s.inside ?? []));
+  out.push("", "## Acceptance", "", "green", "", "## Out of scope", "", "none", "", ...(s.tail ?? []));
   return out.join("\n");
 }
 
@@ -357,5 +363,68 @@ describe("behaviour 5", () => {
     assert.equal(mine.length, 1, JSON.stringify(shape));
     assert.equal(mine[0]!.level, "block");
     assert.equal(mine[0]!.message, "brief_behaviour_limit must be a positive integer");
+  });
+});
+
+describe("review round 1", () => {
+  const FIX = "W-127-r1";
+  test("a fenced decoy heading does not stand in for the real section", () => {
+    refused(
+      ready(brief({ reds: SEVEN, fencedIntent: ["## Behaviours to test", "", "1. decoy", `   ${RED} decoy`] })),
+      [OVER],
+      "fenced decoy",
+    );
+  });
+  test("a comment line that looks like a heading does not end the section early", () => {
+    // reds [1x7], the comment sits between behaviours 3 and 4
+    const lines = brief({ reds: SEVEN }).split("\n");
+    const at = lines.findIndex((l) => l.startsWith("4. "));
+    lines.splice(at, 0, "<!--", "## Not a heading", "-->");
+    refused(ready(lines.join("\n")), [OVER], "comment heading");
+  });
+  test("numbered lines and markers inside a comment are not counted", () => {
+    accepted(ready(brief({ reds: [1, 1], inside: ["<!--", "3. hidden", `   ${RED} one`, `   ${RED} two`, "-->"] })), "comment content");
+  });
+  test("a repeated real heading is itself a problem", () => {
+    refused(
+      ready(brief({ tail: ["## Behaviours to test", "", "1. second section", ""] })),
+      ['has 2 "## Behaviours to test" headings; one section only'],
+      "repeated heading",
+    );
+  });
+  test("a decision naming only a longer id does not name the opus", () => {
+    refused(
+      ready(brief({ reds: SEVEN, exceptions: ["D-900"] }), 6, (d) => decision(d, "D-900", "architect", "Lifted for W-9001 only.")),
+      ['behaviour limit exception: decision "D-900" does not name W-900'],
+      "longer id",
+    );
+    accepted(ready(brief({ reds: SEVEN, exceptions: ["D-900"] }), 6, (d) => decision(d, "D-900", "architect", "Lifted for W-900.")), "whole token");
+  });
+  test("check returns a finding, not a throw, when collegia is missing, null or not a list", () => {
+    for (const bad of [ABSENT, null, "design"]) {
+      const dir = studio(6);
+      put(dir, BRIEF_REL, brief({ reds: SEVEN, exceptions: ["D-900"] }));
+      decision(dir, "D-900", "architect", "Lifted for W-900.");
+      opus(dir, "building");
+      editManifest(dir, (doc) => (bad === ABSENT ? doc.deleteIn(["collegia"]) : doc.setIn(["collegia"], bad)));
+      let findings: ReturnType<typeof checkStudio>["findings"] = [];
+      assert.doesNotThrow(() => (findings = checkStudio(dir, NOW).findings), String(bad));
+      const found = findings.filter((f) => f.rule === "brief.admission");
+      assert.deepEqual(
+        found.map((f) => f.message),
+        [`${BRIEF_REL} behaviour limit exception: no design collegium declares a magister`],
+        String(bad),
+      );
+    }
+  });
+  test("the exception decision is read once, through the contained read", () => {
+    const src = readFileSync(join(HERE, "..", "..", "commands", "src", "lifecycle.ts"), "utf8");
+    const at = src.indexOf("export function patronDecisionProblem");
+    const body = src.slice(at, src.indexOf("\n}\n", at));
+    assert.ok(at > 0 && !/readFront\b/.test(body), "patronDecisionProblem reopens the path with readFront");
+  });
+  test("readBriefAdmission returns only problems and exception", () => {
+    const r = readBriefAdmission(brief({ reds: SEVEN, exceptions: ["D-900"] }), 6);
+    assert.deepEqual(Object.keys(r).sort(), ["exception", "problems"], FIX);
   });
 });
