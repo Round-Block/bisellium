@@ -32,16 +32,16 @@ interface Options {
   brief?: boolean;
   state?: string;
   /** Put the officina in a `studio/` directory of a git repository. */
-  git?: boolean;
+  git?: boolean | "root";
 }
 
 function studio(o: Options = {}): string {
   const { spec = "briefs/W-300.md", brief = true, state = "building", git = false } = o;
   const base = mkdtempSync(join(tmpdir(), "bisellium-w126-"));
   roots.push(base);
-  const root = git ? join(base, "studio") : base;
+  const root = git === true ? join(base, "studio") : base;
   if (git) {
-    mkdirSync(root);
+    if (git === true) mkdirSync(root);
     for (const args of [["init", "-q", "-b", "main"], ["config", "user.email", "fixture@example.invalid"], ["config", "user.name", "Fixture"]])
       execFileSync("git", args, { cwd: base, stdio: "ignore" });
     writeFileSync(join(base, "source.txt"), "clean\n");
@@ -98,6 +98,8 @@ interface Recorded {
   header: Map<string, string>;
   /** The header's keys in file order. */
   keys: string[];
+  /** The header lines, before the blank line. */
+  headerLines: string[];
   /** The bytes after the header's blank line. */
   body: string;
 }
@@ -112,7 +114,7 @@ function verdict(dir: string, body: string, outcome = "passed", extra: string[] 
   const log = join(dir, "ci", `W-300-${phase}-1.log`);
   const raw = existsSync(log) ? readFileSync(log, "utf8") : "";
   const parsed = parseVerdictHeader(raw);
-  return { exitCode: result.exitCode, stdout, stderr, header: parsed.values, keys: [...parsed.values.keys()], body: raw.slice(raw.indexOf("\n\n") + 2) };
+  return { exitCode: result.exitCode, stdout, stderr, header: parsed.values, keys: [...parsed.values.keys()], headerLines: raw === "" ? [] : raw.slice(0, raw.indexOf("\n\n")).split("\n"), body: raw.slice(raw.indexOf("\n\n") + 2) };
 }
 
 /** A findings-shaped body: one numbered line per entry, each ending in a check. */
@@ -304,5 +306,48 @@ describe("behaviour 4", () => {
     );
     const r = review(dir, FAIL_ARGS);
     assert.equal(r.exitCode, 0, r.stderr);
+  });
+});
+
+describe("review round 1 rows", () => {
+  test("a git-root officina does not admit an absolute citation", () => {
+    const dir = studio({ git: "root" });
+    const absolute = verdict(dir, findings("blocking — a defect, /briefs/W-300.md:3"));
+    assert.equal(absolute.exitCode, 0, absolute.stderr);
+    assert.equal(absolute.header.get("converted"), "1 (cites /briefs/W-300.md, not the declared brief briefs/W-300.md)");
+    const relative = verdict(studio({ git: "root" }), findings("blocking — a defect, briefs/W-300.md:3"));
+    assert.equal(relative.header.has("converted"), false, "the declared path still cites");
+  });
+
+  const INJECT = "\n# submitted_outcome: failed";
+  const SHAPE = /^# [a-z_]+: /;
+
+  test("a readable spec path with a line break cannot inject or end the header", () => {
+    const spec = `briefs/W-300.md${INJECT}`;
+    const dir = studio({ spec: JSON.stringify(spec), brief: false });
+    mkdirSync(join(dir, "briefs"));
+    writeFileSync(join(dir, spec), BRIEF);
+    const body = findings("blocking — packages/x.ts:3 an uncited defect", "blocking — brief:2 a cited defect");
+    const r = verdict(dir, body, "passed");
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.ok(r.headerLines.every((line) => SHAPE.test(line)), r.headerLines.join("|"));
+    assert.equal(r.header.has("submitted_outcome"), false);
+    assert.equal(r.body, body, "body exact");
+    const failed = verdict(studio({ spec: JSON.stringify(spec), brief: false }), findings("blocking — brief:2 a cited defect"), "failed");
+    assert.ok(failed.headerLines.every((line) => SHAPE.test(line)), failed.headerLines.join("|"));
+    assert.notEqual(failed.header.get("submitted_outcome"), "failed", "nothing the spec says reaches submitted_outcome");
+  });
+
+  test("a missing spec path with a line break keeps its read error on one line", () => {
+    const spec = `briefs/missing.md${INJECT}`;
+    const body = findings("blocking — brief:2 a defect");
+    const dir = studio({ spec: JSON.stringify(spec), brief: false });
+    mkdirSync(join(dir, "briefs"));
+    const r = verdict(dir, body, "passed");
+    assert.equal(r.exitCode, 0, r.stderr);
+    assert.ok(r.headerLines.every((line) => SHAPE.test(line)), r.headerLines.join("|"));
+    assert.match(r.header.get("converted") ?? "", /^1 \(the opus declares no readable brief: \S/);
+    assert.equal(r.header.has("submitted_outcome"), false);
+    assert.equal(r.body, body, "body exact");
   });
 });
