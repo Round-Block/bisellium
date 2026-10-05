@@ -442,7 +442,7 @@ if (runs(6)) {
 }
 
 // ---------------------------------------------------------------------------
-// 7. a spec or done that must still land names the gh path, not the scripts, and switches to master first
+// 7. a spec or done that must still land names next's own landing, never the scripts (W-141)
 // ---------------------------------------------------------------------------
 const mem = (files: Record<string, string>): { read(rel: string): string | undefined; list(dir: string): string[] } => ({
   read: (rel) => files[rel],
@@ -451,18 +451,9 @@ const mem = (files: Record<string, string>): { read(rel: string): string | undef
 const BRIEF = ["# W-900", "", ...["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"].flatMap((s) => [`## ${s}`, "", "text", ""])].join("\n");
 const SPEC_LOG = "# phase: spec\n# opus: W-900\n# sella: architect\n# outcome: passed\n";
 const evidence = (): Record<string, string> => ({ "briefs/W-900.md": BRIEF, "ci/W-900-spec-1.log": SPEC_LOG });
-const orderedIn = (text: string, parts: string[]): boolean => {
-  let from = 0;
-  for (const p of parts) {
-    const i = text.indexOf(p, from);
-    if (i === -1) return false;
-    from = i + p.length;
-  }
-  return true;
-};
 
 if (runs(7)) {
-  test("W-128 behaviour 7: a spec or done that must still land names the gh path, not the scripts, and switches to master before it pulls", () => {
+  test("W-128 behaviour 7: a spec or done that must still land is landed by next, never by the scripts", () => {
     const base = { id: "W-900", design: "architect", trunkRecord: { state: "greenlit" }, uiSpecProblems: () => [] as string[] };
     const spec = deriveNext({ ...base, trunk: undefined, specBranch: mem(evidence()) } as unknown as Facts);
     const done = deriveNext({
@@ -492,17 +483,11 @@ if (runs(7)) {
       assert.ok(!command.includes("merge-gate"), `7c: the ${label} command does not name merge-gate`);
     }
 
-    const specCommand = spec.command ?? "";
-    assert.ok(
-      orderedIn(specCommand, ["git push origin spec/W-900", "gh pr create --base master --head spec/W-900", '--title "spec(W-900): signed"', "gh pr merge <pr-number> --squash --auto", "git switch master && git pull --ff-only origin master"]),
-      `7d: the spec command is the gh path in order (${specCommand})`,
-    );
-    const doneCommand = done.command ?? "";
-    assert.ok(doneCommand.startsWith("git switch chore/done-W-900 &&"), `7e: the done command starts with the switch to the chore branch (${doneCommand})`);
-    assert.ok(
-      orderedIn(doneCommand, ["git push origin chore/done-W-900", "--head chore/done-W-900", '--title "chore(studio): mark W-900 done"', "gh pr merge", "git switch master && git pull --ff-only origin master"]),
-      `7e: the done command is the gh path in order (${doneCommand})`,
-    );
+    // W-141: the landing is the verb's own rung, not a hand script
+    assert.equal(spec.command, "bisellium next W-900 --perform --expect spec", "7d: the spec landing is performed by next");
+    assert.equal(spec.act, "land", "7d: the spec rung's act is the landing");
+    assert.equal(done.command, "bisellium next W-900 --perform --expect done", "7e: the done landing is performed by next");
+    assert.equal(done.act, "land", "7e: the done rung's act is the landing");
   });
 }
 

@@ -2585,3 +2585,114 @@ test("W-141-b4 behaviour 4: a spec signed in the main checkout is committed onto
   expectStep(landing, "spec", "named", "next names the landing of spec/<id>");
   assert.match(landing.out, /why: spec signed on spec\/W-900, not on master/, ran("the landing why", landing));
 });
+
+// ---------------------------------------------------------------------------
+// W-141 behaviour 5: next lands spec/<id> and chore/done-<id> through a PR
+// ---------------------------------------------------------------------------
+/** Write a raw gh scenario: `rules` are tried in order, first match wins (the slot builder cannot tell two `pr list` heads apart). */
+function rawScenario(w: World, rules: { match: string[]; replies: Reply[]; alts?: Alt[] }[]): void {
+  writeFileSync(w.scn, JSON.stringify({ rules }));
+  rmSync(`${w.scn}.state`, { force: true });
+  rmSync(w.log, { force: true });
+}
+/** The gh world of landing `head`: a PR that is created (or already OPEN), merges on request, and then reads MERGED. */
+function landingScenario(w: World, head: string, o: { open: boolean; checks?: Json[]; opusMerged?: boolean }): { merged: string } {
+  const created = join(w.root, "created.flag");
+  const merged = join(w.root, "merged.flag");
+  const oid = git(w.repo, ["rev-parse", `refs/heads/${head}`]);
+  const m = git(w.repo, ["commit-tree", `${head}^{tree}`, "-p", "master", "-m", `squash ${head} (#${PR_NUMBER})`]);
+  git(w.repo, ["push", "-q", "origin", `${m}:refs/heads/master`]);
+  const open = cand(w, { state: "OPEN", head, oid });
+  const done = cand(w, { state: "MERGED", head, oid, merge: m });
+  const std = (slot: SlotName): { match: string[]; replies: Reply[]; alts?: Alt[] } => ({ match: SLOT_MATCH[slot], ...asRule(slot === "checks" ? { stdout: o.checks ?? greens() } : slot === "view" ? { stdout: viewOf(open) } : slot === "create" ? { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n`, touch: created } : slot === "merge" ? { stdout: "", touch: merged } : slot === "alerts" ? { stdout: [] } : slot === "repoView" ? { stdout: { nameWithOwner: SLUG } } : { stdout: "" }) });
+  rawScenario(w, [
+    ...(o.opusMerged ? [{ match: ["pr", "list", "--head", BRANCH], replies: [{ stdout: [cand(w, { state: "MERGED" })] }] }] : []),
+    {
+      match: ["pr", "list", "--head", head],
+      replies: [{ stdout: o.open ? [open] : [] }],
+      alts: [{ ifExists: merged, replies: [{ stdout: [done] }] }, ...(o.open ? [] : [{ ifExists: created, replies: [{ stdout: [open] }] }])],
+    },
+    { match: ["pr", "view"], replies: [{ stdout: viewOf(open) }], alts: [{ ifExists: merged, replies: [{ stdout: viewOf(done) }] }] },
+    std("repoView"),
+    std("checks"),
+    std("alerts"),
+    std("update"),
+    std("merge"),
+    std("create"),
+  ]);
+  return { merged };
+}
+const originHas = (w: World, head: string): boolean => git(w.origin, ["for-each-ref", `refs/heads/${head}`]) !== "";
+
+test("W-141-b5 behaviour 5: next lands spec/<id> and chore/done-<id> through a PR, as it lands an opus", { timeout: 1_800_000 }, () => {
+  const specHead = `spec/${OPUS}`;
+  // spec head: no PR yet, so one is created
+  const s = world("w141-b5-spec", "greenlight");
+  signSpecUncommitted(s, s.repo);
+  expectStep(next(s, [OPUS, "--perform", "--expect", "spec"]), "spec", "performed", "the spec is committed first");
+  landingScenario(s, specHead, { open: false });
+  const subject = git(s.repo, ["log", "-1", "--format=%s", specHead]);
+  const body = git(s.repo, ["log", "-1", "--format=%b", specHead]);
+  const landed = next(s, [OPUS, "--perform", "--expect", "spec", ...FAST]);
+  const creates = ghCalls(s).filter((a) => a[0] === "pr" && a[1] === "create");
+  assert.equal(creates.length, 1, ran("one gh pr create call", landed));
+  const arg = (a: string[], flag: string): string | undefined => a[a.indexOf(flag) + 1];
+  assert.equal(arg(creates[0]!, "--title"), subject, "the PR title is the head commit's subject");
+  assert.equal(arg(creates[0]!, "--body"), body, "the PR body is the head commit's body");
+  assert.equal(arg(creates[0]!, "--head"), specHead);
+  assert.equal(landed.status, 0, ran("landing exits 0", landed));
+  expectStep(landed, "spec", "performed", "the spec head is landed");
+  assert.deepEqual(mutating(s), ["git push --force-with-lease", "gh pr create", "gh pr merge --squash --auto", "git fetch master:master", "git merge --ff-only"], "push, create, merge, fetch, in order");
+  const pushes = gitCalls(s).filter((a) => a[0] === "push");
+  assert.ok(pushes.every((a) => !a.includes("-u") && !a.includes("--set-upstream")), "no -u");
+  assert.deepEqual(pushes[0], ["push", "-q", "--force-with-lease", "origin", specHead], "the head is pushed with --force-with-lease");
+  assert.ok(pushes.some((a) => a.includes("--delete") && a.some((x) => x.startsWith(`--force-with-lease=refs/heads/${specHead}:`))), "the remote head is deleted, leased to the PR head");
+  assert.equal(branchExists(s, specHead), false, "the local head is deleted");
+  assert.equal(originHas(s, specHead), false, "the remote head is deleted");
+  assert.ok(existsSync(join(s.repo, "studio/briefs/W-900.md")), "master now carries the brief");
+  expectStep(next(s, [OPUS]), "branch", "named", "next reads branch");
+
+  // done head: an OPEN PR is reused, and the checkpoint rides along
+  const d = world("w141-b5-done", "cleanup");
+  scenario(d, { list: mergedList(d) });
+  touchHandoff(d);
+  expectStep(next(d, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "the done commit is made first");
+  const chore = `chore/done-${OPUS}`;
+  landingScenario(d, chore, { open: true, opusMerged: true });
+  const choreSubject = git(d.repo, ["log", "-1", "--format=%s", chore]);
+  expectStep(next(d, [OPUS]), "done", "named", "next names the landing of chore/done-<id>");
+  const doneLanded = next(d, [OPUS, "--perform", "--expect", "done", ...FAST]);
+  assert.equal(ghCalls(d).filter((a) => a[0] === "pr" && a[1] === "create").length, 0, ran("an OPEN PR is reused: no gh pr create", doneLanded));
+  assert.equal(ghCalls(d).filter((a) => a[0] === "pr" && a[1] === "merge" && a.includes("--squash") && a.includes("--auto")).length, 1, "merged with --squash --auto");
+  assert.equal(doneLanded.status, 0, ran("done landing exits 0", doneLanded));
+  assert.equal(branchExists(d, chore), false, "the local chore head is deleted");
+  assert.equal(originHas(d, chore), false, "the remote chore head is deleted");
+  assert.equal(git(d.repo, ["log", "-1", "--format=%s", "master"]), `squash ${chore} (#${PR_NUMBER})`, "master fast-forwarded to the squash commit");
+  assert.ok(choreSubject.includes(OPUS));
+  assert.equal(next(d, [OPUS]).first, `next: ${OPUS} checkpoint complete`, "the done head carried the handoff: complete");
+
+  // mergeGate's rules apply: a failing check holds, merges nothing and deletes nothing
+  const f = world("w141-b5-fail", "greenlight");
+  signSpecUncommitted(f, f.repo);
+  next(f, [OPUS, "--perform", "--expect", "spec"]);
+  landingScenario(f, specHead, { open: false, checks: [...greens(MIN_CHECKS), check("lint", "fail")] });
+  const failed = next(f, [OPUS, "--perform", "--expect", "spec", ...FAST]);
+  expectHeld(failed, "a failing check");
+  assert.match(failed.out, /state=CHECKS_FAILED/, ran("CHECKS_FAILED", failed));
+  assert.equal(ghMerges(f).length, 0, "no merge");
+  assert.equal(branchExists(f, specHead), true, "the head stays");
+
+  // a head that changes a path outside the officina and docs/ is refused before the push, with no gh call
+  const o = world("w141-b5-outside", "greenlight", { specOn: "spec-branch" });
+  git(o.repo, ["switch", "-q", specHead]);
+  put(o.repo, "source.txt", "changed outside the officina\n");
+  commit(o.repo, "feat: touch the source");
+  git(o.repo, ["switch", "-q", "master"]);
+  expectStep(next(o, [OPUS]), "spec", "named", "the spec head is named");
+  const refused = next(o, [OPUS, "--perform", "--expect", "spec", ...FAST]);
+  expectHeld(refused, "an outside path");
+  assert.match(refused.out, /why: .*source\.txt/, ran("the refusal names the path", refused));
+  assert.equal(ghCalls(o).length, 0, "no gh call is made");
+  assert.deepEqual(mutating(o), [], "nothing is pushed");
+  assert.equal(originHas(o, specHead), false, "the head never reached origin");
+});
