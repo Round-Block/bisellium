@@ -96,15 +96,28 @@ export function reconcileFindings(
   const blocking = contentLines(body).lines.filter(
     (line) => line.section === "Findings" && /^[1-9]\d*\. \S/.test(line.text) && /^[1-9]\d*\. \**blocking\b/i.test(line.text),
   );
+  const text = "error" in brief ? "" : brief.text;
+  const lines = text.split(/\r?\n/);
+  if (text.endsWith("\n")) lines.pop();
   for (const line of blocking) {
-    const citations = [...line.text.matchAll(CITATION)];
-    // ponytail: any citation token counts until behaviour 2 validates it against the brief
-    if (citations.length === 0) {
-      converted.push({
-        finding: /^\d+/.exec(line.text)![0],
-        reason: "error" in brief ? `the opus declares no readable brief: ${brief.error}` : `cites no line of ${brief.spec}`,
-      });
+    const finding = /^\d+/.exec(line.text)![0];
+    const citations = [...line.text.matchAll(CITATION)].map((m) => ({ path: m[1]!, n: Number(m[2]) }));
+    // The first reason that applies: no brief read, no citation, then the first citation's own defect.
+    let reason: string | undefined;
+    if ("error" in brief) reason = `the opus declares no readable brief: ${brief.error}`;
+    else {
+      const valid = (c: { path: string; n: number }): boolean =>
+        (c.path === "brief" || c.path === brief.spec || c.path === brief.repoSpec) && c.n <= lines.length && (lines[c.n - 1] ?? "").trim() !== "";
+      const first = citations[0];
+      if (first === undefined) reason = `cites no line of ${brief.spec}`;
+      else if (!citations.some(valid)) {
+        if (first.path !== "brief" && first.path !== brief.spec && first.path !== brief.repoSpec)
+          reason = `cites ${first.path}, not the declared brief ${brief.spec}`;
+        else if (first.n > lines.length) reason = `${brief.spec} has ${lines.length} lines, no line ${first.n}`;
+        else reason = `${brief.spec}:${first.n} is blank`;
+      }
     }
+    if (reason !== undefined) converted.push({ finding, reason });
   }
   return { converted, outcome };
 }
