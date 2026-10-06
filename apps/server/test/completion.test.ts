@@ -192,3 +192,38 @@ test("W-153-b5 behaviour 5: a non-finite milestone weight serves No estimate wit
     await server.close();
   }
 });
+
+test("W-153-b5 behaviour 5: a value or weight outside the milestone domain serves No estimate, and the whole body stays finite", async () => {
+  const finite = (v: unknown, path: string): void => {
+    if (typeof v === "number") assert.ok(Number.isFinite(v), `${path} is finite`);
+    else if (v === null) assert.fail(`${path} is null`);
+    else if (Array.isArray(v)) v.forEach((x, i) => finite(x, `${path}[${i}]`));
+    else if (typeof v === "object") for (const [k, x] of Object.entries(v as object)) finite(x, `${path}.${k}`);
+  };
+  const ms = (w1: number, w2: number): string =>
+    `milestones:\n  - { id: M1, title: "One", weight: ${w1}, exit: { needs: x } }\n  - { id: M2, title: "Two", weight: ${w2}, exit: { needs: x } }\n`;
+  const setValue = (id: string, state: string, value: string) => (d: string) =>
+    writeFileSync(join(d, "opera", `${id}.md`), front({ id, state, value: 8 }).replace("value: 8", `value: ${value}`));
+  const cases: [string, (d: string) => void][] = [
+    ["value 0", setValue("W-11", "backlog", "0")],
+    ["value 4", setValue("W-11", "backlog", "4")],
+    ["a huge value", (d) => (setValue("W-30", "backlog", "1e308")(d), setValue("W-31", "backlog", "1e308")(d))],
+    ["a fractional weight", (d) => writeFileSync(join(d, "milestones.yml"), ms(33.5, 66.5))],
+    ["a negative weight", (d) => writeFileSync(join(d, "milestones.yml"), ms(-10, 110))],
+    ["weights totalling 99", (d) => writeFileSync(join(d, "milestones.yml"), ms(49, 50))],
+  ];
+  for (const [what, mutate] of cases) {
+    const dir = studio("{ needs: x }");
+    writeFileSync(join(dir, "milestones.yml"), ms(50, 50));
+    mutate(dir);
+    const { server, get } = await serve(dir, () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }));
+    try {
+      const body = (await (await get("/api/completion")).json()) as { estimate: { kind: string; reason?: string } };
+      assert.equal(body.estimate.kind, "none", what);
+      assert.equal(body.estimate.reason, "unreadable-records", what);
+      finite(body, what);
+    } finally {
+      await server.close();
+    }
+  }
+});

@@ -161,3 +161,39 @@ test("W-153-b3 behaviour 3: a non-finite value on a dated done opus, or a non-fi
   for (const r of meter.rows) for (const [k, v] of Object.entries(r)) if (typeof v === "number") assert.ok(Number.isFinite(v), `meter row ${k} is finite`);
   assert.ok(Number.isFinite(meter.overall), "overall is finite");
 });
+
+/** Every number at any depth of `v` is finite, and nothing is null (JSON writes a non-finite number as null). */
+function assertAllFinite(v: unknown, path = "response"): void {
+  if (typeof v === "number") assert.ok(Number.isFinite(v), `${path} is finite`);
+  else if (v === null) assert.fail(`${path} is null`);
+  else if (Array.isArray(v)) v.forEach((x, i) => assertAllFinite(x, `${path}[${i}]`));
+  else if (typeof v === "object") for (const [k, x] of Object.entries(v as object)) assertAllFinite(x, `${path}.${k}`);
+}
+
+test("W-153-b3 behaviour 3: a value or weight outside the milestone domain gives No estimate, and the whole response stays finite", () => {
+  const two = (w1: number, w2: number) => [
+    { id: "M1", title: "One", weight: w1, exit: { needs: "x" } },
+    { id: "M2", title: "Two", weight: w2, exit: { needs: "x" } },
+  ];
+  const withOpus = (value: number, state = "backlog"): Opus[] => [...fixture().filter((o) => o.id !== "W-11"), { id: "W-11", state, milestone: "M1", value }];
+  const huge = [...fixture(), { id: "W-30", state: "backlog", milestone: "M1", value: 1e308 }, { id: "W-31", state: "backlog", milestone: "M1", value: 1e308 }];
+  const cases: [string, Opus[], typeof milestones][] = [
+    ["value 0", withOpus(0), two(50, 50)],
+    ["value 4", withOpus(4), two(50, 50)],
+    ["a done value 4", withOpus(4, "done"), two(50, 50)],
+    ["a huge value", huge, two(50, 50)],
+    ["a fractional weight", fixture(), two(33.5, 66.5)],
+    ["a negative weight", fixture(), two(-10, 110)],
+    ["weights totalling 99", fixture(), two(49, 50)],
+  ];
+  const ok = estimateFinish({ meter: computeMeter({ milestones: two(50, 50), opera: fixture(), findings: [] }), opera: fixture(), now: NOW });
+  assert.equal(ok.kind, "estimate", "control: a valid domain has an estimate");
+  assertAllFinite({ meter: computeMeter({ milestones: two(50, 50), opera: fixture(), findings: [] }), estimate: ok });
+  for (const [what, opera, ms] of cases) {
+    const meter = computeMeter({ milestones: ms, opera, findings: [] });
+    const estimate = estimateFinish({ meter, opera, now: NOW });
+    assert.equal(estimate.kind, "none", what);
+    assert.equal(estimate.reason, "unreadable-records", what);
+    assertAllFinite({ meter, estimate });
+  }
+});
