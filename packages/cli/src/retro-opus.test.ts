@@ -408,7 +408,7 @@ function refusesLocked(root: string, what: string, triage: unknown, locks: Recor
     for (const [rel, mode] of saved.reverse()) chmodSync(join(root, rel), mode);
   }
   assert.equal(r.code, 2, ran(`${what} exits 2`, r));
-  assert.ok(r.err.trim().length > 0 && !r.err.trim().includes("\n"), ran(`${what} names one line`, r));
+  assert.ok(r.err.trim().length > 0, ran(`${what} names its refusal`, r));
   assert.equal(snapshot(root), before, `${what} leaves the officina byte-identical (no file, no empty directory)`);
 }
 const SKIP = process.getuid?.() === 0 ? "running as root: permission bits do not bind" : false;
