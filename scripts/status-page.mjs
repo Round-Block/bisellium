@@ -228,7 +228,16 @@ ${meter.rows.map(row).join("\n")}
   </div>`;
 }
 
-export function renderStatusPage({ opera, declaredGates, openPetitionsByOpus, decisions, rankingActa, meter, historyRows = "", outPath }) {
+export function renderStatusPage({
+  opera,
+  declaredGates,
+  openPetitionsByOpus,
+  decisions,
+  rankingActa,
+  meter,
+  historyRows = "",
+  outPath,
+}) {
   const inFlight = opera.filter((o) => IN_FLIGHT_STATES.has(o.state)).sort(byIdDesc);
   const planned = opera.filter((o) => o.state === "greenlit").sort(byIdDesc);
   const backlog = opera.filter((o) => o.state === "backlog").sort(byIdDesc);
@@ -357,7 +366,16 @@ export function findGuardViolations(text) {
 
 /** One `check <studio> --repo <root> --json` run, for the `rule` exits. */
 function checkFindings(studioDir) {
-  const argv = ["--import", "tsx", join(REPO_ROOT, "packages/cli/src/main.ts"), "check", studioDir, "--repo", REPO_ROOT, "--json"];
+  const argv = [
+    "--import",
+    "tsx",
+    join(REPO_ROOT, "packages/cli/src/main.ts"),
+    "check",
+    studioDir,
+    "--repo",
+    REPO_ROOT,
+    "--json",
+  ];
   let out;
   try {
     out = execFileSync(process.execPath, argv, { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 << 20 });
@@ -382,7 +400,13 @@ function main() {
 
   const officina = readOfficina(args.studio);
   const milestones = readMilestones(args.studio);
-  const meter = milestones && computeMeter({ milestones, opera: officina.opera, findings: milestones.some((m) => m.exit?.rule) ? checkFindings(args.studio) : [] });
+  const meter =
+    milestones &&
+    computeMeter({
+      milestones,
+      opera: officina.opera,
+      findings: milestones.some((m) => m.exit?.rule) ? checkFindings(args.studio) : [],
+    });
   const html = renderStatusPage({ ...officina, meter, historyRows: readHistoryRows(args.history), outPath: args.out });
   writeFileSync(args.out, html);
   console.log(`status-page: wrote ${args.out}`);

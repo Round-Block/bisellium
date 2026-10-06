@@ -74,7 +74,10 @@ function officina(withMilestones) {
       'milestones:\n  - { id: M1, title: "Alpha", weight: 60, exit: { opus: W-1 } }\n  - { id: M2, title: "Beta", weight: 40, exit: { needs: x } }\n',
     );
   const history = join(dir, "history.html");
-  writeFileSync(history, `<table><thead><tr><th>c</th><th>t</th></tr></thead><tbody>\n${ROW1}\n${ROW2}\n</tbody></table>\n`);
+  writeFileSync(
+    history,
+    `<table><thead><tr><th>c</th><th>t</th></tr></thead><tbody>\n${ROW1}\n${ROW2}\n</tbody></table>\n`,
+  );
   return { dir, history };
 }
 
@@ -94,10 +97,18 @@ test("W-152-b5 behaviour 5: one page, in the approved order, with the history ca
 
   const html = render(dir);
   const headings = [...html.matchAll(/<h2>([^<]*)<\/h2>/g)].map((m) => m[1]);
-  assert.deepEqual(headings, ["Completion", "In flight", "Planned", "Backlog", "Cascade history", "Standing constraints"], "the <h2> headings, in order");
+  assert.deepEqual(
+    headings,
+    ["Completion", "In flight", "Planned", "Backlog", "Cascade history", "Standing constraints"],
+    "the <h2> headings, in order",
+  );
 
   const completion = section(html, "Completion");
-  assert.equal([...completion.matchAll(/class="bar"/g)].length, 2, "Completion carries one row (and bar) per milestone");
+  assert.equal(
+    [...completion.matchAll(/class="bar"/g)].length,
+    2,
+    "Completion carries one row (and bar) per milestone",
+  );
   assert.match(completion, /Alpha/);
   assert.match(completion, /Beta/);
   assert.match(completion, /\b60(\.0)?\s*%/, "Completion carries the overall %");
@@ -113,8 +124,16 @@ test("W-152-b5 behaviour 5: one page, in the approved order, with the history ca
 
   const noBody = join(dir, "none.html");
   writeFileSync(noBody, "<table></table>\n");
-  assert.throws(() => readHistoryRows(noBody), (e) => e instanceof Error && e.message.includes(noBody), "no <tbody> throws, naming the file");
+  assert.throws(
+    () => readHistoryRows(noBody),
+    (e) => e instanceof Error && e.message.includes(noBody),
+    "no <tbody> throws, naming the file",
+  );
   const twoBody = join(dir, "two.html");
   writeFileSync(twoBody, "<table><tbody></tbody></table><table><tbody></tbody></table>\n");
-  assert.throws(() => readHistoryRows(twoBody), (e) => e instanceof Error && e.message.includes(twoBody), "two <tbody> throws, naming the file");
+  assert.throws(
+    () => readHistoryRows(twoBody),
+    (e) => e instanceof Error && e.message.includes(twoBody),
+    "two <tbody> throws, naming the file",
+  );
 });
