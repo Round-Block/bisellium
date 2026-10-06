@@ -411,8 +411,9 @@ function scanCD(root: string, rels: string[]): CDScan {
           const base = kindOf(n.expression);
           const name = memberOf(n);
           if (base === "fs" && (name === undefined || RAW_FS.has(name))) fnRef = { list: out.d, tag: "D", what: name ?? "<computed>" };
-          if (base === "date" && (name === undefined || name === "parse")) fnRef = { list: out.c, tag: "C", what: name === undefined ? "Date.<computed>" : "Date.parse" };
+          if (base === "date" && name === "parse") fnRef = { list: out.c, tag: "C", what: "Date.parse" };
           // the Date member allowlist: parse (a C site), UTC and now, each only as a direct call; any other member fails closed
+          if (base === "date" && name === undefined) escapes.add(`${rel}:${enclosingFunctionName(n)}: a computed member of Date is off the Date member allowlist`);
           if (base === "date" && name !== undefined && name !== "parse") {
             const top = outer(n);
             const called = ts.isCallExpression(top.parent) && top.parent.expression === top;
