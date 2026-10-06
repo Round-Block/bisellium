@@ -28,7 +28,7 @@ const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1
 
 /** A YAML date or a strict ISO date(-time) string as an instant; anything else,
  *  including an impossible date such as 2026-02-30, is undefined. No zone means UTC. */
-function instant(v: unknown): Date | undefined {
+export function instant(v: unknown): Date | undefined {
   if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
   const m = typeof v === "string" ? ISO.exec(v) : null;
   if (!m) return undefined;

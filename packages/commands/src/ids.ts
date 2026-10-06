@@ -113,7 +113,7 @@ function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: Reg
   }
 }
 
-function requireRealDirectory(path: string): void {
+export function requireRealDirectory(path: string): void {
   const stat = lstatSync(path);
   if (stat.isSymbolicLink() || !stat.isDirectory()) {
     throw new Error(`record directory must be a real directory, not a symbolic link: ${path}`);

@@ -12,18 +12,19 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
 import { WF } from "@bisellium/schema";
-import { createNextRecord } from "@bisellium/commands/ids.js";
+import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
-import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { contentLines, readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
 import { RULE_IDS } from "./rules/ids.js";
+import { instant } from "./rules/process.js";
 
 export interface RetroFinding {
   class: string;
@@ -141,19 +142,14 @@ function classifyAddressedTarget(studioRoot: string, target: string): { kind: "o
   const opusPath = safeItemPath(join(studioRoot, "opera"), target);
   const decisionPath = safeItemPath(join(studioRoot, "decisions"), target);
   if (typeof opusPath !== "string" || typeof decisionPath !== "string") return { kind: "unresolvable" };
-  if (existsSync(opusPath)) {
-    let state = "unknown";
-    try {
-      const raw = readFileSync(opusPath, "utf8");
-      const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
-      const stateMatch = m ? /^state:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!) : null;
-      if (stateMatch) state = stateMatch[1]!.trim();
-    } catch {
-      /* state stays "unknown" */
-    }
-    return { kind: "opus", state };
+  // physical containment too (W-137 round 1): a symlinked record is no record, so it is read through the contained reader
+  const opus = readContainedRegularFile(studioRoot, relative(studioRoot, opusPath).split(sep).join("/"), "opera");
+  if (!("error" in opus)) {
+    const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(opus.bytes.toString("utf8"));
+    const stateMatch = m ? /^state:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!) : null;
+    return { kind: "opus", state: stateMatch ? stateMatch[1]!.trim() : "unknown" };
   }
-  if (existsSync(decisionPath)) return { kind: "decision" };
+  if (!("error" in readContainedRegularFile(studioRoot, relative(studioRoot, decisionPath).split(sep).join("/"), "decisions"))) return { kind: "decision" };
   return RULE_IDS.has(target) ? { kind: "rule" } : { kind: "unresolvable" };
 }
 
@@ -548,42 +544,50 @@ interface Verdicts {
   findings: RecordedFinding[];
 }
 
-/** One recorded log, or why it is outside the domain. */
+/**
+ * One recorded log, parsed exactly as `bisellium verdict` writes it: a header block of `# key: value` lines, a blank
+ * line, then the transcript, whose `## Findings` section (read by the writer's own `contentLines`) holds `No findings`
+ * or finding lines and nothing else. Anything outside that shape makes the whole log unreadable.
+ */
 function readVerdictLog(root: string, id: string, rel: string): { findings: RecordedFinding[] } | Refusal {
   const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
   if ("error" in file) return { error: `${rel}: ${file.error}` };
   const lines = file.bytes.toString("utf8").split(/\r?\n/);
-  const headers = lines.filter((l) => /^# opus:/.test(l));
-  if (headers.length !== 1 || headers[0]!.slice("# opus:".length).trim() !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
-  const headings = lines.flatMap((l, i) => (/^## Findings\s*$/.test(l) ? [i] : []));
-  if (headings.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${headings.length}` };
-  const rest = lines.slice(headings[0]! + 1);
-  const end = rest.findIndex((l) => /^## /.test(l));
-  const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l.trim() !== "");
-  const numbered = section.filter((l) => /^\d+[.)]/.test(l));
-  const none = section.filter((l) => l === "No findings");
-  if (none.length > 0) {
-    if (section.length !== 1) return { error: `${rel}: "No findings" must be the only line under "## Findings"` };
-    return { findings: [] };
+  const split = lines.findIndex((l) => l.trim() === "");
+  if (split === -1) return { error: `${rel}: no blank line ends the header block` };
+  const headers = new Map<string, string[]>();
+  for (const line of lines.slice(0, split)) {
+    const m = /^# ([a-z_]+): (.*)$/.exec(line);
+    if (!m) return { error: `${rel}: header line out of domain (want "# key: value"): ${line.slice(0, 60)}` };
+    headers.set(m[1]!, [...(headers.get(m[1]!) ?? []), m[2]!]);
   }
-  if (numbered.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
+  const body = lines.slice(split + 1);
+  const stray = body.find((l) => /^# [a-z_]+: /.test(l));
+  if (stray !== undefined) return { error: `${rel}: a header line outside the header block: ${stray.slice(0, 60)}` };
+  if (headers.get("opus")?.length !== 1 || headers.get("opus")![0]!.trim() !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
+  const parsed = contentLines(body.join("\n"));
+  const headings = parsed.headings.filter((h) => h.level === 2 && h.name === "Findings");
+  if (headings.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${headings.length}` };
+  const section = parsed.lines.filter((l) => l.section === "Findings").map((l) => l.text);
+  if (section.includes("No findings")) return section.length === 1 ? { findings: [] } : { error: `${rel}: "No findings" must be the only line under "## Findings"` };
+  if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
   const findings: RecordedFinding[] = [];
-  for (const line of numbered) {
-    if (!FINDING_LINE.test(line)) return { error: `${rel}: finding line out of domain (want "<n>. blocking|advisory …"): ${line.slice(0, 60)}` };
+  for (const line of section) {
+    if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …"): ${line.slice(0, 60)}` };
     const n = Number(/^\d+/.exec(line)![0]);
     if (findings.some((f) => f.n === n)) return { error: `${rel}: finding ${n} is numbered twice` };
     const text = line.replace(/^\d+\. /, "");
     findings.push({ log: rel, n, text, blocking: /^\**blocking\b/i.test(text) });
   }
-  const converted = lines.filter((l) => /^# converted:/.test(l));
-  if (converted.length > 1) return { error: `${rel}: more than one "# converted:" header` };
-  if (converted.length === 1) {
-    const value = converted[0]!.slice("# converted:".length).trim();
-    const numbers = [...value.matchAll(/(?:^|; )([1-9]\d*) \(/g)].map((m) => Number(m[1]));
-    if (!/^[1-9]\d* \(/.test(value) || numbers.length === 0) return { error: `${rel}: "# converted:" is not a list of "<n> (<reason>)"` };
-    for (const n of numbers) {
-      const f = findings.find((x) => x.n === n);
-      if (!f) return { error: `${rel}: "# converted:" names finding ${n}, which the log does not record` };
+  const converted = headers.get("converted");
+  if (converted !== undefined) {
+    if (converted.length !== 1) return { error: `${rel}: more than one "# converted:" header` };
+    // "<n> (<reason>)", joined by "; ": every piece closed, every n a blocking finding of this log
+    const pieces = converted[0]!.split(/; (?=[1-9]\d* \()/);
+    for (const piece of pieces) {
+      const m = /^([1-9]\d*) \((.+)\)$/.exec(piece);
+      const f = m ? findings.find((x) => x.n === Number(m[1])) : undefined;
+      if (!m || !f?.blocking) return { error: `${rel}: "# converted:" is not a list of "<n> (<reason>)" naming blocking findings of this log: ${piece.slice(0, 60)}` };
       f.blocking = false;
     }
   }
@@ -637,13 +641,6 @@ function readOpus(root: string, id: string): Dict | Refusal {
   return FRONT(file, rel);
 }
 
-const isoMs = (v: unknown): number | undefined => {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v.getTime();
-  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?)?$/.test(v)) return undefined;
-  const ms = Date.parse(v);
-  return Number.isNaN(ms) ? undefined : ms;
-};
-
 interface RetroSetting {
   since: number;
   highGreenlitBy?: string;
@@ -662,7 +659,7 @@ function readRetroSetting(root: string): RetroSetting | undefined | Refusal {
   if (!isDict(raw)) return { error: "bisellium.yml#retro: retro must be a mapping with a `since` date" };
   const unknown = Object.keys(raw).filter((k) => k !== "since" && k !== "high_greenlit_by");
   if (unknown.length > 0) return { error: `bisellium.yml#retro: unknown key ${unknown.join(", ")}` };
-  const since = isoMs(raw["since"]);
+  const since = instant(raw["since"])?.getTime();
   if (since === undefined) return { error: "bisellium.yml#retro: since must be an ISO date" };
   if (raw["high_greenlit_by"] === undefined) return { since };
   const patron = typeof manifest["patron"] === "string" ? manifest["patron"] : undefined;
@@ -835,6 +832,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   const dateStr = now.toISOString().slice(0, 10);
   const actaPath = safeItemPath(join(root, "acta"), `${dateStr}-retro-${id}`);
   if (typeof actaPath !== "string") throw new Error(`acta: ${actaPath.error}`);
+  actaDir(root);
   const actaRel = relative(root, actaPath).split(sep).join("/");
   if (existsSync(actaPath)) throw new Error(`${actaRel} already exists`);
 
@@ -921,9 +919,22 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     ...(started.length ? started.map((s) => `- ${s.fix}: greenlit by ${s.decision}`) : ["- (none)"]),
     "",
   ].join("\n");
-  mkdirSync(join(root, "acta"), { recursive: true });
-  writeFileSync(actaPath, acta, { flag: "wx" });
+  const dir = actaDir(root);
+  mkdirSync(dir, { recursive: true });
+  actaDir(root);
+  writeFileSync(join(dir, basename(actaPath)), acta, { flag: "wx" });
   return { path: actaRel };
+}
+
+/** The physical `acta/` directory, which must be a real directory (not a symlink) or absent: where the retro writes. */
+function actaDir(root: string): string {
+  const dir = join(realpathSync(root), "acta");
+  try {
+    requireRealDirectory(dir);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`acta: ${(e as Error).message}`);
+  }
+  return dir;
 }
 
 /** An opus's state, or undefined when it is not an opus record. */
