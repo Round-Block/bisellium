@@ -111,12 +111,12 @@ The verb walks every step: `bisellium next <id> --budget 400000 --studio studio 
 
 ## Model mapping (Patron, 2026-10-04)
 
-Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5; clerk = Claude Haiku; spec = Claude Opus 5.5 architect; ui-lead = `gpt-6-astra` medium (D-022). Each review names the check that would have caught each finding. Model choice is seat config set from the Seats screen, not a decision (Patron 2026-10-06): D-014/D-022's model wording is history; the qa-lead seat still says Opus until W-154 lets the console set model and harness. gpt-6-sol is unavailable on the ChatGPT plan; reviews stay on gpt-5.6-sol. Spend line per provider at every checkpoint.
+Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5; clerk = Claude Haiku; spec = Claude Opus 5.5 architect; ui-lead = `gpt-6-astra` medium (D-022), which drafts every console opus's layout and UI defaults at spec (D-044); scans and triage proposals can run on Codex `gpt-5.6-terra`. Security fixes are mandatory and their extra rounds pre-approved (D-044). Watch Claude usage: the Patron reports it; at ~87% stop starting Opus work and let in-flight work finish — never kill a running agent to save usage (2026-10-06: two specs were killed and one was lost). Each review names the check that would have caught each finding. Model choice is seat config set from the Seats screen, not a decision (Patron 2026-10-06): D-014/D-022's model wording is history; the qa-lead seat still says Opus until W-154 lets the console set model and harness. gpt-6-sol is unavailable on the ChatGPT plan; reviews stay on gpt-5.6-sol. Spend line per provider at every checkpoint.
 
 ## Open with the Patron
 
 - Decisions D-037, D-039–D-041 were hand-written by the producer from the Patron's chat rulings (no `decide` verb until W-157); D-024/D-025/D-038 kill fields added on the Patron's approval.
-- Still open: delete the retired Backlog artifact or keep it; the two narrow research decisions; a proposed build order (below) for the Patron to adjust; an architect triage of the 33 older agent-only backlog opera (fix, merge or close).
+- Nothing open with the Patron: the retired Backlog artifact is left alone (harmless); the research decisions were already D-030/D-031; the triage is applied (D-042).
 - To file (ranked after W-152, defaults): W-141's split-outs (evidence commits + review packet as a verb; filing PRs through `next`; a sweep of stale local heads/worktrees); speed up `packages/cli/src/next.test.ts` (~8 of the suite's ~11 min); W-142's advisories (pin the timeout's four consumers; a killed verify's orphaned lock).
 - W-077 follow-ons: per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
 - D-036's kill condition (spec check flags a behaviour an earlier one already satisfies) has no opus yet.
@@ -126,11 +126,9 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 - **Completion (D-038, Patron 2026-10-06):** ten weighted milestones in `studio/acta/2026-10-06-milestones.md`, now data in `studio/milestones.yml`; the Status page computes it (48.6% after filing W-153–W-160). Every new opus gets `amend <id> --milestone <M> --value <1|2|3|5|8>`; check rule `opus.milestone` fails an unmapped one.
 - **Order of record:** `studio/acta/2026-10-05-ranking.md`. Done this run: W-139, W-123, W-127, W-126, W-140, W-141, W-142, W-152, W-120 (PRs and their spec defaults are on the progress page and in each brief).
-- **Next (proposed order, Patron may adjust):** W-153 (finish estimate), W-068 (dependencies), W-158 (audience), W-137 (retro step), W-133, W-115, W-117 then W-116, W-143, W-144, W-157, W-145, W-136, W-146, W-160 (multi-team memo, design). Hold studio-only PRs while an opus sits between review pass and merge (a merge forces a rebase and a re-mint).
-- **Waiting on a greenlight:** W-147, W-148, W-113 (UI ruling), W-118, W-135 (architecture ruling), W-149, W-150, W-151, W-154, W-155, W-159; held on W-137: W-138, W-122. Scans: `studio/acta/2026-10-06-dependency-scan.md`, `2026-10-06-audience-sort.md`. Patron prefers plain one-line descriptions next to every id.
+- **Next:** W-068 (dependencies) — its signed spec is in `~/.bisellium-evidence/partial-specs/` (brief + spec log): copy both back into `studio/` and land with `next --perform --expect spec`. Then W-081 (high-severity security, spec from scratch), W-099 (high-severity security), W-158 (audience), W-137 (retro step), W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091, W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160 (multi-team memo), then the triage's medium and low fixes (`studio/acta/2026-10-06-backlog-triage.md`). Hold every records PR while an opus waits between review pass and merge.
+- **Waiting on a greenlight:** W-148 (Graph, revisit after W-160), W-155 (opencodex, after W-150), W-092 (lowest; W-160 decides); held on W-137: W-138, W-122. W-153's two round-6 advisories (a zero-sum test row; a stale formula comment in status-page.mjs) go to the next retro. Patron prefers plain one-line descriptions next to every id.
 
 ## Research lane (on the side)
 
-The methodology audit found none of the MAPS/read-efficiency/W-107 numbers stand as stated (re-run designs exist).
-The codex research branches (`codex/maps-lookup-experiment`, `codex/public-source-canary`, `codex/persistent-workflow`) stay off master until finalized.
-The Patron is owed a decision on recording two narrow research decisions.
+Closed by D-033 (branches deleted, files archived); D-030/D-031 record the two findings; D-032 pauses read-efficiency research until W-122 measures reading.
