@@ -76,24 +76,30 @@ function instant(v: unknown): string | undefined {
 export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?: unknown; status?: unknown } | undefined> | undefined }): string | undefined {
   const end = instant(opus.end);
   if (end !== undefined) return end;
+  // only a PASSED gate dates the work: a failed, waived or status-less gate is not "done"
   const gates = Object.values(opus.probationes ?? {})
-    .map((g) => instant(g?.at))
+    .map((g) => (g?.status === "passed" ? instant(g.at) : undefined))
     .filter((at): at is string => at !== undefined)
     .sort();
   return gates[gates.length - 1];
 }
 
 /** The estimated finish: remaining points over the mean of the last three weeks' paced points (W-153). */
-export function estimateFinish({ meter, opera, now }: { meter: Meter; opera: MeterOpus[]; now: Date; unreadable?: number }): Estimate {
-  const remaining = meter.rows.reduce((n, r) => n + r.planned - r.done, 0);
+export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: Meter; opera: MeterOpus[]; now: Date; unreadable?: number }): Estimate {
   const rows = new Set(meter.rows.map((r) => r.id));
+  // fail closed: a record the reader could not read, or a planned opus without a valid point value, means the
+  // remaining points are unknown, so there is no estimate (and never a false "nothing left")
+  const malformed =
+    unreadable > 0 ||
+    opera.some((o) => o.state !== "halted" && rows.has(o.milestone as string) && !(typeof o.value === "number" && Number.isFinite(o.value) && o.value >= 0));
+  const remaining = meter.rows.reduce((n, r) => n + r.planned - r.done, 0);
   const nowMs = now.getTime();
   const events = opera
     .filter((o) => o.state === "done" && rows.has(o.milestone as string))
     .flatMap((o) => {
       const at = doneAt(o);
       // an undated or future event counts as done but is not paced
-      return at !== undefined && Date.parse(at) <= nowMs ? [{ id: String(o.id), at, points: Number(o.value) || 0 }] : [];
+      return at !== undefined && Date.parse(at) <= nowMs ? [{ id: String(o.id), at, points: typeof o.value === "number" ? o.value : 0 }] : [];
     });
   const hours = new Map<string, typeof events>();
   for (const e of events) hours.set(e.at.slice(0, 13), [...(hours.get(e.at.slice(0, 13)) ?? []), e]);
@@ -108,7 +114,8 @@ export function estimateFinish({ meter, opera, now }: { meter: Meter; opera: Met
       })
       .reduce((n, e) => n + e.points, 0),
   ) as [number, number, number];
-  const none = (reason: "nothing-left" | "too-little-history", line: string): Estimate => ({ kind: "none", reason, remaining, weekly, bulk, line });
+  const none = (reason: "nothing-left" | "too-little-history" | "unreadable-records", line: string): Estimate => ({ kind: "none", reason, remaining, weekly, bulk, line });
+  if (malformed) return none("unreadable-records", "No estimate: an opus record is unreadable or carries no valid points.");
   if (remaining <= 0) return none("nothing-left", "Nothing left: every planned point is done.");
   if (weekly.some((w) => w <= 0)) return none("too-little-history", "No estimate yet: it needs points done in each of the last 3 weeks.");
   const over = (points: number): number => Math.ceil((7 * remaining) / points); // points is a weekly pace; 3 weeks' mean = sum / 3

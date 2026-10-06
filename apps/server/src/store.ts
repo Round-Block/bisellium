@@ -514,18 +514,20 @@ export class Store extends CoreStore {
       const milestones = readMilestones(this.studioDir);
       if (milestones === undefined) return { meter: null, estimate: null };
       const opera: Record<string, unknown>[] = [];
+      let unreadable = 0; // a record the reader cannot read is unknown work: the estimate then fails closed
       for (const file of listMd(join(this.studioDir, "opera"))) {
         try {
           const { data } = readFront<Record<string, unknown>>(file);
           if (typeof data["id"] === "string") opera.push(data);
+          else unreadable++;
         } catch {
-          // an unreadable record is skipped, as scripts/status-page.mjs does
+          unreadable++;
         }
       }
       const rule = milestones.some((m) => (m.exit as { rule?: unknown } | undefined)?.rule !== undefined);
       const findings = rule ? (checkStudio(this.studioDir, this.now()).findings as { rule?: unknown }[]) : [];
       const meter = computeMeter({ milestones: milestones as never, opera, findings });
-      return { meter, estimate: estimateFinish({ meter, opera, now: this.now() }) };
+      return { meter, estimate: estimateFinish({ meter, opera, now: this.now(), unreadable }) };
     },
 
     /** `<studio>/timeline/<sella>.jsonl` (talk chatter) or

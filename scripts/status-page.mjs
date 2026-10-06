@@ -92,7 +92,11 @@ export function readOfficina(studioDir) {
   const manifest = parseYaml(readFileSync(join(studioDir, "bisellium.yml"), "utf8"));
   const declaredGates = Array.isArray(manifest?.probationes) ? manifest.probationes.length : 0;
 
-  const opera = readAllFrontMatter(join(studioDir, "opera")).filter((o) => typeof o.id === "string");
+  const operaDir = join(studioDir, "opera");
+  const operaFiles = existsSync(operaDir) ? readdirSync(operaDir).filter((f) => f.endsWith(".md")) : [];
+  const opera = readAllFrontMatter(operaDir).filter((o) => typeof o.id === "string");
+  // a record the reader cannot read is unknown work: the estimate then fails closed (W-153)
+  const unreadable = operaFiles.length - opera.length;
 
   const petitiones = readAllFrontMatter(join(studioDir, "petitiones"));
   const openPetitionsByOpus = new Map();
@@ -109,7 +113,7 @@ export function readOfficina(studioDir) {
 
   const rankingActa = findLatestRankingActa(studioDir);
 
-  return { opera, declaredGates, openPetitionsByOpus, decisions, rankingActa };
+  return { opera, unreadable, declaredGates, openPetitionsByOpus, decisions, rankingActa };
 }
 
 // ---------------------------------------------------------------------------
@@ -395,7 +399,8 @@ function main() {
       opera: officina.opera,
       findings: milestones.some((m) => m.exit?.rule) ? checkFindings(args.studio) : [],
     });
-  const estimate = meter && estimateFinish({ meter, opera: officina.opera, now: new Date() });
+  const estimate =
+    meter && estimateFinish({ meter, opera: officina.opera, now: new Date(), unreadable: officina.unreadable });
   const html = renderStatusPage({
     ...officina,
     meter,
