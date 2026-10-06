@@ -1125,16 +1125,8 @@ const FIXTURES: Record<string, string> = {
   // inventory D: member and binding forms of an fs module
   "d-computed-ns": `import * as fs from "node:fs";\nexport function f(p: string) { return fs["readFileSync"](p); }\n`,
   "d-computed-default": `import fs from "fs";\nexport function f(p: string) { fs["writeFileSync"](p, ""); }\n`,
-  "d-destructure": `import * as fs from "node:fs";\nconst { readFileSync } = fs;\nexport function f(p: string) { return readFileSync(p, "utf8"); }\n`,
-  "d-destructure-rename": `import { promises } from "node:fs";\nconst { readFile: rd } = promises;\nexport async function f(p: string) { return rd(p); }\n`,
-  "d-alias": `import * as fs from "node:fs";\nconst g = fs;\nexport function f(p: string) { return g.readFileSync(p); }\n`,
-  "d-alias-chain": `import fs from "node:fs";\nconst a = fs.promises;\nconst b = a;\nexport async function f(p: string) { return b["readFile"](p); }\n`,
-  "d-assign-alias": `import * as fs from "node:fs";\nlet g: typeof fs;\ng = fs;\nexport function f(p: string) { return g.rmSync(p); }\n`,
-  "d-assign-destructure": `import * as fs from "node:fs";\nlet rd: any;\n({ readFileSync: rd } = fs);\nexport function f(p: string) { return rd(p); }\n`,
-  "d-rest-destructure": `import * as fs from "node:fs";\nconst { ...all } = fs;\nexport function f(p: string) { return all.readFileSync(p); }\n`,
   "d-default-specifier": `import { default as fs } from "node:fs";\nexport function f(p: string) { return fs.readFileSync(p); }\n`,
   "d-non-literal-member": `import * as fs from "node:fs";\nexport function f(name: string, p: string) { return (fs as any)[name](p); }\n`,
-  "d-non-literal-destructure": `import * as fs from "node:fs";\nconst key = "read" + "FileSync";\nconst { [key]: rd } = fs as any;\nexport function f(p: string) { return rd(p); }\n`,
   // fail closed: a binding the scan cannot follow
   "o-escape-fs": `import * as fs from "node:fs";\ndeclare function use(x: unknown): void;\nuse(fs);\n`,
   "o-create-require-alias": `import { createRequire as cr } from "node:module";\nconst r = cr(import.meta.url);\nexport function f() { return r("node:fs"); }\n`,
@@ -1145,16 +1137,63 @@ const FIXTURES: Record<string, string> = {
   "o-get-builtin-module": `export function f() { return process.getBuiltinModule("fs"); }\n`,
   // inventory C: member and binding forms of Date
   "c-computed-parse": `export function f(x: string) { return Date["parse"](x); }\n`,
-  "c-alias-ctor": `const D = Date;\nexport function f(x: string) { return new D(x); }\n`,
-  "c-alias-parse": `const D = Date;\nexport function f(x: string) { return D.parse(x); }\n`,
-  "c-destructure-parse": `const { parse } = Date;\nexport function f(x: string) { return parse(x); }\n`,
-  "c-bare-parse": `export function f(xs: string[]) { return xs.map(Date.parse); }\n`,
   "c-non-literal-member": `export function f(k: string, x: string) { return (Date as any)[k](x); }\n`,
   "c-global-date": `export function f(x: string) { return globalThis.Date.parse(x) + Number(new globalThis["Date"](x)); }\n`,
   "o-escape-date": `declare function use(x: unknown): void;\nuse(Date);\n`,
+  // direct calls: the form the census follows
+  "direct": `import * as fs from "node:fs";\nimport { writeFile } from "node:fs/promises";\nexport async function f(p: string, x: string) { fs.readFileSync(p); await writeFile(p, ""); return [Date.parse(x), new Date(x)]; }\n`,
   // controls: ordinary uses that must stay out of the scan
   "ok-control": `import { readdirSync } from "node:fs";\nexport function f(p: string, a: unknown) { return [readdirSync(p), Date.now(), new Date(5), new Date("2026-01-01"), a instanceof Date, typeof Date, Date.UTC(2000, 0, 1)]; }\n`,
 };
+
+// W-163 review round 2: the census follows a direct call and nothing else. Any other use of an fs function or namespace,
+// Date.parse or the Date constructor (aliased, destructured, stored, passed, returned, exported) fails by rule, so the
+// scan never has to track an alias; only a reviewed PINNED_ESCAPES entry can excuse one.
+const NO_ALIAS_FIXTURES: Record<string, string> = {
+  // an extracted fs function
+  "named-alias": `import { readFileSync } from "node:fs";\nconst r = readFileSync;\nexport function f(p: string) { return r(p); }\n`,
+  "destructured-alias": `import * as fs from "node:fs";\nconst { readFileSync } = fs;\nexport function f(p: string) { return readFileSync(p, "utf8"); }\n`,
+  "destructured-rename-promises": `import { promises } from "node:fs";\nconst { readFile: rd } = promises;\nexport async function f(p: string) { return rd(p); }\n`,
+  "destructured-rest": `import * as fs from "node:fs";\nconst { ...all } = fs;\nexport function f(p: string) { return all.readFileSync(p); }\n`,
+  "destructured-computed-key": `import * as fs from "node:fs";\nconst key = "read" + "FileSync";\nconst { [key]: rd } = fs as any;\nexport function f(p: string) { return rd(p); }\n`,
+  "property-alias": `import fs from "node:fs";\nconst r = fs.readFileSync;\nexport function f(p: string) { return r(p); }\n`,
+  "literal-computed-alias": `import fs from "node:fs";\nconst r = fs["readFileSync"];\nexport function f(p: string) { return r(p); }\n`,
+  "assignment-alias": `import { readFileSync } from "node:fs";\nlet r: any;\nr = readFileSync;\nexport function f(p: string) { return r(p); }\n`,
+  "assignment-destructure": `import * as fs from "node:fs";\nlet rd: any;\n({ readFileSync: rd } = fs);\nexport function f(p: string) { return rd(p); }\n`,
+  "inline-exported-alias": `import { readFileSync } from "node:fs";\nexport const read = readFileSync;\n`,
+  "inline-exported-property": `import fs from "node:fs";\nexport const read = fs.readFileSync;\n`,
+  "export-specifier": `import { readFileSync } from "node:fs";\nexport { readFileSync };\n`,
+  "export-specifier-renamed": `import { readFileSync } from "node:fs";\nexport { readFileSync as read };\n`,
+  "reexport-named": `export { readFileSync } from "node:fs";\n`,
+  "reexport-star": `export * from "node:fs";\n`,
+  "reexport-namespace": `export * as fs from "node:fs";\n`,
+  "passed-as-argument": `import { readFileSync } from "node:fs";\ndeclare function use(x: unknown): void;\nuse(readFileSync);\n`,
+  "returned": `import { readFileSync } from "node:fs";\nexport function f() { return readFileSync; }\n`,
+  "stored-on-property": `import { readFileSync } from "node:fs";\nexport const o = { read: readFileSync };\n`,
+  "stored-shorthand": `import { readFileSync } from "node:fs";\nexport const o = { readFileSync };\n`,
+  "bound-call": `import { readFileSync } from "node:fs";\nexport function f(p: string) { return readFileSync.call(undefined, p); }\n`,
+  // an fs namespace
+  "namespace-alias": `import * as fs from "node:fs";\nconst g = fs;\nexport function f(p: string) { return g.readFileSync(p); }\n`,
+  "namespace-alias-chain": `import fs from "node:fs";\nconst a = fs.promises;\nconst b = a;\nexport async function f(p: string) { return b["readFile"](p); }\n`,
+  "namespace-assignment": `import * as fs from "node:fs";\nlet g: typeof fs;\ng = fs;\nexport function f(p: string) { return g.rmSync(p); }\n`,
+  "namespace-stored": `import fs from "node:fs";\nexport const o = { fs };\n`,
+  "namespace-exported": `import fs from "node:fs";\nexport { fs };\n`,
+  "namespace-default-exported": `import fs from "node:fs";\nexport default fs;\n`,
+  // Date.parse and the Date constructor
+  "date-parse-alias": `export const p = Date.parse;\nexport function f(x: string) { return p(x); }\n`,
+  "date-parse-destructured": `const { parse } = Date;\nexport function f(x: string) { return parse(x); }\n`,
+  "date-parse-literal-computed": `const p = Date["parse"];\nexport function f(x: string) { return p(x); }\n`,
+  "date-parse-assignment": `let p: any;\np = Date.parse;\nexport function f(x: string) { return p(x); }\n`,
+  "date-parse-argument": `export function f(xs: string[]) { return xs.map(Date.parse); }\n`,
+  "date-parse-bound-call": `export function f(x: string) { return Date.parse.call(undefined, x); }\n`,
+  "date-ctor-alias": `const D = Date;\nexport function f(x: string) { return new D(x); }\n`,
+  "date-ctor-assignment": `let D: any;\nD = Date;\nexport function f(x: string) { return new D(x); }\n`,
+  "date-ctor-exported": `export { Date as D };\n`,
+  "date-ctor-inline-exported": `export const D = Date;\n`,
+  "date-ctor-stored": `export const o = { Date };\n`,
+  "global-object-alias": `const g = globalThis;\nexport function f(x: string) { return g.Date.parse(x); }\n`,
+};
+for (const name of Object.keys(NO_ALIAS_FIXTURES)) FIXTURES[`na-${name}`] = NO_ALIAS_FIXTURES[name]!;
 let fixtureScan: CDScan | undefined;
 function fixtureSites(name: string): { d: string[]; c: string[]; out: string[] } {
   const rel = (n: string): string => `packages/m/src/${n}.ts`;
@@ -1177,16 +1216,8 @@ function fixtureSites(name: string): { d: string[]; c: string[]; out: string[] }
 for (const [name, want] of [
   ["d-computed-ns", ["f:readFileSync#1"]],
   ["d-computed-default", ["f:writeFileSync#1"]],
-  ["d-destructure", ["f:readFileSync#1"]],
-  ["d-destructure-rename", ["f:readFile#1"]],
-  ["d-alias", ["f:readFileSync#1"]],
-  ["d-alias-chain", ["f:readFile#1"]],
-  ["d-assign-alias", ["f:rmSync#1"]],
-  ["d-assign-destructure", ["f:readFileSync#1"]],
-  ["d-rest-destructure", ["f:readFileSync#1"]],
   ["d-default-specifier", ["f:readFileSync#1"]],
   ["d-non-literal-member", ["f:<computed>#1"]],
-  ["d-non-literal-destructure", ["<module>:<computed>#1"]],
 ] as const) {
   test(`W-163-b6 round 2: inventory D lists the ${name} form`, () => {
     const got = fixtureSites(name);
@@ -1196,10 +1227,6 @@ for (const [name, want] of [
 }
 for (const [name, want] of [
   ["c-computed-parse", ["f:Date.parse#1"]],
-  ["c-alias-ctor", ["f:new Date#1"]],
-  ["c-alias-parse", ["f:Date.parse#1"]],
-  ["c-destructure-parse", ["f:Date.parse#1"]],
-  ["c-bare-parse", ["f:Date.parse#1"]],
   ["c-non-literal-member", ["f:Date.<computed>#1"]],
   ["c-global-date", ["f:Date.parse#1", "f:new Date#1"]],
 ] as const) {
@@ -1223,6 +1250,14 @@ for (const name of [
     assert.ok(fixtureSites(name).out.length > 0, "an out-of-domain finding names the file");
   });
 }
+for (const name of Object.keys(NO_ALIAS_FIXTURES)) {
+  test(`W-163-b6 round 3: the scan refuses the ${name} form`, () => {
+    assert.ok(fixtureSites(`na-${name}`).out.length > 0, "an out-of-domain finding names the file");
+  });
+}
+test("W-163-b6 round 3: a direct call stays the one followed form", () => {
+  assert.deepEqual(fixtureSites("direct"), { d: ["f:readFileSync#1", "f:writeFile#1"], c: ["f:Date.parse#1", "f:new Date#1"], out: [] });
+});
 test("W-163-b6 round 2: ordinary Date and fs uses stay out of the scan", () => {
   assert.deepEqual(fixtureSites("ok-control"), { d: [], c: [], out: [] });
 });
