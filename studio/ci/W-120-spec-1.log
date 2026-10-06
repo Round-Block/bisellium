@@ -1,0 +1,23 @@
+# opus: W-120
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T04:51:05.088Z
+# tree: tree:547488056e50f0ed72fc16aeb816e42e7566858d
+
+W-120 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-120.md (3 behaviours, six sections plus "Defaults for the Patron to veto", Decree family: fired-clause; readBriefAdmission at limit 6 reports no problems). Inputs: P-014 (Patron ruling 2026-10-01), P-020 (closed into W-120), lessons L-020/L-041/L-061 and their evidence (P-004, D-008, P-013, D-024, ci/W-132-review-1.log), decisions D-017, D-019, D-024, D-025, D-028, D-033, D-038.
+Measured at master b822418 with ~/.bisellium-evidence/W-120-spec/measure.mjs (output measure.out): 37 decisions, none records a fired kill; 14 recorded invocations, all halted_by, 0 waived_by; the record says in prose that D-024, D-025 and D-038 have fired, and not one invocation comes at or after its decision's firing. The rule flags 0 records today and 0 after those firings are recorded, so no waiver and no migration. check studio --repo . is 0 blocking with the brief present.
+
+## Findings
+1. advisory — the firing is a recorded field (killed_at + killed_by on the decision), not a reading of kill_when prose; the check can only judge what is recorded, and the producer records the three known firings after merge; defaults 1 and 8 — check: packages/cli/src/rules/decision-kill.test.ts (W-120-b1)
+2. advisory — invocations judged are halted_by/halted_at and a gate's waived_by/at, the only records carrying both a decision and a time; an invocation before the kill is history and never flagged, at-or-after is blocking, a missing time fails closed; defaults 2 to 5 — check: packages/cli/src/rules/decision-kill.test.ts (W-120-b2, W-120-b3)
+3. advisory — L-020's honoured insurance clause is untouched by construction (no decision invoked after a recorded kill); L-061's routed-around ratchet cites no decision and is left to its own class (L-035, L-050), named in Out of scope — check: none: a ratchet routed around without citing a clause
+4. advisory — an invocation dated before its decision's at is not flagged: the 3 D-033 halts (13:22Z) precede a hand-typed at (14:30Z) in the same commit 044bc88, so that arm would only flag noise — check: none: hand-typed decision times
+5. advisory — write-time refusal by halt, waive, done's human branch and brief exceptions, a kill verb, and a killed decision ceasing to address a lesson class are follow-ons; the check alone is what P-014 rules; default 6 — check: decision.invoked_after_kill
+6. advisory — no package edge, seam or serve route changes (Seam S2 unchanged, process.ts already wired), so docs/ARCHITECTURE.md is not touched — check: docs.arch.stale
+
+## Recommendation
+Verdict: passed. One decree family, fired-clause: once a decision's kill clause has fired, any later halt or waiver that invokes it is a blocking finding. Three behaviours, one test file, one new rule id plus the decision.shape extension.
+Eight defaults ship as stated and are veto-able at the checkpoint; the follow-ons are named in Out of scope.
