@@ -12,6 +12,7 @@ import { after, test } from "node:test";
 import { parse as parseYaml } from "yaml";
 import { checkStudio } from "./check.js";
 import { initStudio } from "./init.js";
+import * as retroModule from "./retro.js";
 import { runRetro } from "./retro.js";
 
 const NOW = "2026-10-06T14:00:00Z";
@@ -403,7 +404,7 @@ test("W-137-b1 round 5: an event log that is a directory refuses before anything
  * (spec round 2) exits 1, names every path written in this run in first-write order, and reverses nothing: the officina
  * differs from before in exactly the named paths, in the order named.
  */
-function failsLate(root: string, what: string, triage: unknown, locks: Record<string, number>, written: string[]): void {
+function failsLate(root: string, what: string, triage: unknown, locks: Record<string, number>, written: string[], touched: string[] = written): void {
   const before = entriesOf(root);
   const saved = Object.keys(locks).map((rel) => [rel, lstatSync(join(root, rel)).mode & 0o777] as const);
   let r: Ran;
@@ -419,7 +420,7 @@ function failsLate(root: string, what: string, triage: unknown, locks: Record<st
   assert.deepEqual(named === "" ? [] : named!.split(", "), written, ran(`${what} names the written paths in first-write order`, r));
   const after = entriesOf(root);
   const changed = [...new Set([...before.keys(), ...after.keys()])].filter((k) => before.get(k) !== after.get(k)).sort();
-  assert.deepEqual(changed, [...written].sort(), `${what}: the officina differs in exactly the named paths (nothing undone)`);
+  assert.deepEqual(changed, [...touched].sort(), `${what}: the officina differs in exactly the paths written (nothing undone)`);
 }
 const SKIP = process.getuid?.() === 0 ? "running as root: permission bits do not bind" : false;
 
@@ -460,4 +461,51 @@ test("W-137-b1 round 6: draftOpusRetro reverses no write on error (no undo journ
   const from = src.indexOf("export function draftOpusRetro");
   const body = src.slice(from, src.indexOf("\nfunction ", from));
   for (const call of ["rmSync(", "unlinkSync(", "rmdirSync(", "truncateSync(", "renameSync(", "undo"]) assert.ok(!body.includes(call), `draftOpusRetro contains ${call}`);
+});
+
+const NOT_LESSONS = { findings: [1, 2].map((n) => ({ log: L1, n, not_a_lesson: `finding ${n} is a repeat` })) };
+
+test("W-137-b1 round 7: a failure at the first write of a new fix is an I/O failure (exit 1), not a refusal", { skip: SKIP }, () => {
+  const root = fixture();
+  failsLate(root, "an unwritable opera/ at the first write", HIGH, { opera: 0o500 }, []);
+});
+
+test("W-137-b1 round 7: a failure at the first write of the first lesson is an I/O failure (exit 1)", { skip: SKIP }, () => {
+  const root = fixture();
+  mkdirSync(join(root, "lessons"));
+  failsLate(root, "an unwritable lessons/ at the first write", COVER, { lessons: 0o500 }, []);
+});
+
+test("W-137-b1 round 7: a failure at the acta, the only write, is an I/O failure (exit 1)", { skip: SKIP }, () => {
+  const root = fixture();
+  failsLate(root, "an unwritable acta/ with nothing else to write", NOT_LESSONS, { acta: 0o500 }, []);
+});
+
+/** Throws from the retro's `afterOpen` hook for `rel`: the file was opened, the write then fails. */
+function failingAfterOpen(rel: string, run: () => void): void {
+  const hooks = (retroModule as { retroTestHooks?: { afterOpen?: (rel: string) => void } }).retroTestHooks;
+  assert.ok(hooks, "retro.ts exposes retroTestHooks for fault injection");
+  hooks.afterOpen = (opened) => {
+    if (opened === rel) throw Object.assign(new Error(`EIO: injected write failure, write '${opened}'`), { code: "EIO", path: opened });
+  };
+  try {
+    run();
+  } finally {
+    delete hooks.afterOpen;
+  }
+}
+
+test("W-137-b1 round 7: a path counts as written once its open succeeds: the backlog fix edit", () => {
+  const backlog = '---\nid: "W-2"\ntitle: "an existing fix"\nkind: "opus"\ncollegium: "engineering"\nstate: backlog\nprobationes: {}\n---\n';
+  const root = fixture({ files: { "opera/W-2.md": backlog } });
+  const triage = { findings: [ride(1, "security×x", "W-2"), ride(2, "security×x", "W-2")] };
+  // the lesson is written first; opera/W-2.md is opened and then fails, so it is named but unchanged
+  failingAfterOpen("opera/W-2.md", () => failsLate(root, "a failure after opening the backlog fix", triage, {}, ["lessons/", "lessons/L-001.md", "opera/W-2.md"], ["lessons/", "lessons/L-001.md"]));
+});
+
+test("W-137-b1 round 7: a path counts as written once its open succeeds: the existing event log", () => {
+  const root = fixture({ files: { ".bisellium/events.jsonl": "" } });
+  failingAfterOpen(".bisellium/events.jsonl", () =>
+    failsLate(root, "a failure after opening the event log", HIGH, {}, ["opera/W-002.md", "lessons/", "lessons/L-001.md", ".bisellium/events.jsonl"], ["opera/W-002.md", "lessons/", "lessons/L-001.md"]),
+  );
 });
