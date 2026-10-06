@@ -131,3 +131,29 @@ test("W-153-b2 behaviour 2: a non-finite or non-numeric point value never makes 
   const meter = computeMeter({ milestones, opera, findings: [] });
   for (const f of [meter.overall, ...meter.rows.flatMap((r) => [r.done, r.planned, r.pct])]) assert.ok(Number.isFinite(f), `${String(f)} is finite`);
 });
+
+test("W-153-b3 behaviour 3: a non-finite value on a dated done opus, or a non-finite weight, gives No estimate with every numeric field finite", () => {
+  const finite = (e: ReturnType<typeof estimateFinish>): void => {
+    for (const [k, v] of Object.entries(e)) {
+      if (typeof v === "number") assert.ok(Number.isFinite(v), `${k} is finite`);
+    }
+    for (const w of e.weekly) assert.ok(Number.isFinite(w), "every weekly field is finite");
+  };
+  const run = (opera: Opus[], ms = milestones) => {
+    let got: ReturnType<typeof estimateFinish> | undefined;
+    assert.doesNotThrow(() => {
+      got = estimateFinish({ meter: computeMeter({ milestones: ms, opera, findings: [] }), opera, now: NOW });
+    });
+    return got as ReturnType<typeof estimateFinish>;
+  };
+  finite(run(fixture()));
+  for (const value of [Number.POSITIVE_INFINITY, Number.NaN, -5]) {
+    const e = run([...fixture().filter((o) => o.id !== "W-1"), done("W-1", value, "2026-10-05T10:00:00Z")]);
+    assert.equal(e.kind, "none", `a dated done ${String(value)}`);
+    assert.equal(e.reason, "unreadable-records");
+    finite(e);
+  }
+  const e = run(fixture(), [{ ...milestones[0]!, weight: Number.POSITIVE_INFINITY }]);
+  assert.equal(e.reason, "unreadable-records", "a non-finite weight");
+  finite(e);
+});

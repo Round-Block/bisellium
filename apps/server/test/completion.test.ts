@@ -163,3 +163,18 @@ test("W-153-b5 behaviour 5: a non-finite point value never reaches the served me
     await server.close();
   }
 });
+
+test("W-153-b5 behaviour 5: a dated done opus with a non-finite value serves No estimate with every numeric field finite", async () => {
+  const dir = studio("{ needs: x }");
+  writeFileSync(join(dir, "opera", "W-1.md"), front({ id: "W-1", state: "done", value: 8, end: "2026-10-05T10:00:00Z" }).replace("value: 8", "value: .inf"));
+  const { server, get } = await serve(dir, () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }));
+  try {
+    const body = (await (await get("/api/completion")).json()) as { estimate: Record<string, unknown> & { weekly: unknown[] } };
+    assert.equal(body.estimate["kind"], "none");
+    assert.equal(body.estimate["reason"], "unreadable-records");
+    for (const [k, v] of Object.entries(body.estimate)) if (typeof v === "number" || v === null) assert.ok(typeof v === "number" && Number.isFinite(v), `estimate.${k} is finite`);
+    for (const w of body.estimate.weekly) assert.ok(typeof w === "number" && Number.isFinite(w), "every weekly field is finite");
+  } finally {
+    await server.close();
+  }
+});
