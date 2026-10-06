@@ -1,0 +1,23 @@
+# opus: W-153
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T08:35:22.208Z
+# tree: tree:e9e6f62dcef1cb752cd048564d570c5078201417
+
+W-153 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-153.md (6 behaviours, six sections plus "Defaults for the Patron to veto", Decree family: completion-estimate; readBriefAdmission at limit 6 reports no problems). Inputs: opera/W-153.md (Patron 2026-10-06, "still subject to adjustments along the way"), D-038, D-041, briefs/W-152.md, scripts/status-page.mjs, the prototype ~/.bisellium-evidence/pace.mjs (data, not design).
+Measured at master 20b57e7 with ~/.bisellium-evidence/W-153-spec/survey.mjs and measure.mjs (outputs survey.out, measure.out): 84 done opera, 23 with end; end and git dates agree within a day; dating by end else latest gate at leaves only W-001..W-015 undated and moves W-089 and W-102..W-105 back to their review dates; no clock hour then holds more than 3 done opera. Today, at 2026-10-06T08:30Z: 165 points left, weekly 76/64/54, about 18 days (16 to 22), around 24 Oct 2026. check studio --repo . is 0 blocking with the brief present.
+
+## Findings
+1. advisory — done-dates come from the record (end, else the latest gate at), not git: git dates the closing commit, which put the research lane W-102..W-105 on one day although their gates passed 09-26..09-28; default 9 — check: packages/core/src/completion.test.ts (W-153-b1)
+2. advisory — pace is points done per week over the last three weeks, not % per day, so a mass halt (which shrinks points planned) never speeds the estimate; the range is the fastest and slowest week; defaults 5 and 8 — check: packages/core/src/completion.test.ts (W-153-b2)
+3. advisory — more than 3 done opera in one UTC clock hour are a bulk closure and are left out of the pace; it flags nothing today; a burst straddling an hour is the known ceiling, named in Out of scope; default 10 — check: packages/core/src/completion.test.ts (W-153-b3)
+4. advisory — computeMeter moves to packages/core/src/completion.ts (no imports, erasable TypeScript) so the Status page script and the server share one formula; status-page.mjs re-exports it and W-152-b4 keeps passing — check: scripts/status-estimate.test.mjs (W-153-b4)
+5. advisory — a new serve route GET /api/completion, so docs/ARCHITECTURE.md and docs/ADOPTION.md are in Files owned (design lex §2); no package edge changes — check: docs.arch.stale
+6. advisory — the console panel adds a heading to the Officina screen, so W-077-b2's pinned heading list gains Completion first, a one-assertion edit with its reason recorded in Files owned; W-136 also edits apps/server/src/http.ts and store.ts, and whichever lands second rebases — check: apps/web/test/completion-view.test.ts (W-153-b6)
+
+## Recommendation
+Verdict: passed. One decree family, completion-estimate: the time to completion is read from records by one rule and printed as one sentence on the Status page and the console. Six behaviours, five test files plus one assertion in W-077's.
+Ten defaults ship as stated and are veto-able at the checkpoint; the follow-ons are named in Out of scope.
