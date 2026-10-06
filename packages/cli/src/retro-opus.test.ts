@@ -5,7 +5,7 @@
  * `studio/` or `examples/`. `runRetro` is driven in process, its console output captured.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { after, test } from "node:test";
@@ -258,4 +258,61 @@ test("W-137-b1 round 2: a hostile id never reaches a path (W-047)", () => {
     assert.equal(snapshot(root), before, `--opus ${hostile} writes nothing`);
   }
   for (const fix of ["../x", "W-1/../W-1", "..", "../acta/x"]) refuses(root, `a fix naming ${fix}`, { findings: [ride(1, "tests×x", fix), ride(2, "tests×x", fix)] });
+});
+
+/** A log as `bisellium verdict` writes it, with the pieces a row wants to damage. */
+function logWith(o: { header?: string[]; body?: string; findings?: string }): string {
+  const header = o.header ?? ["# opus: W-1", "# phase: build", "# round: 1", "# sella: qa-lead", "# outcome: failed", "# at: 2026-10-06T11:00:00Z"];
+  return [...header, "", o.body ?? `## Findings\n${o.findings ?? TWO}\n\n## Verdict\nVERDICT: FAIL`, ""].join("\n");
+}
+const HEAD = ["# opus: W-1", "# phase: build", "# round: 1", "# sella: qa-lead", "# outcome: failed", "# at: 2026-10-06T11:00:00Z"];
+
+test("W-137-b1 round 3: a verdict log is read by one strict parser, or the retro refuses", () => {
+  const ok = fixture({ review1: logWith({ header: [...HEAD, "# converted: 1 (cites no line of briefs/W-1.md)"] }) });
+  assert.equal(retro(ok, COVER).code, 0, "a log shaped exactly as verdict writes it is accepted");
+
+  const cases: Record<string, string> = {
+    "# opus: only in the body, not in the header": logWith({ header: HEAD.slice(1), body: `# opus: W-1\n\n## Findings\n${TWO}\n` }),
+    "# opus: twice in the header": logWith({ header: [...HEAD, "# opus: W-1"] }),
+    "# converted: inside the Findings section": logWith({ findings: `${TWO}\n# converted: 1 (x)` }),
+    "# converted: after the header block": logWith({ body: `## Findings\n${TWO}\n\n# converted: 1 (x)\n` }),
+    "a stray prose line under Findings with valid findings": logWith({ findings: `${TWO}\nthe censor also noticed something` }),
+    "a malformed tail on # converted:": logWith({ header: [...HEAD, "# converted: 1 (x); junk"] }),
+    "an unclosed reason on # converted:": logWith({ header: [...HEAD, "# converted: 1 (cited"] }),
+    "# converted: naming an advisory finding": logWith({ header: [...HEAD, "# converted: 2 (x)"] }),
+    "# converted: naming a finding that does not exist": logWith({ header: [...HEAD, "# converted: 7 (x)"] }),
+    "# converted: twice": logWith({ header: [...HEAD, "# converted: 1 (x)", "# converted: 1 (y)"] }),
+    "a header line that is not # key: value": logWith({ header: [...HEAD, "stray header line"] }),
+    "No findings beside a numbered finding": logWith({ findings: `No findings\n${TWO}` }),
+  };
+  for (const [what, text] of Object.entries(cases)) refuses(fixture({ review1: text }), what, COVER);
+});
+
+test("W-137-b1 round 3: a symlinked fix, decision or acta parent never reaches outside the officina", () => {
+  const outsideOpus = '---\nid: "W-2"\ntitle: "outside"\nkind: "opus"\ncollegium: "engineering"\nstate: backlog\nprobationes: {}\n---\n';
+  const outsideDecision = '---\nid: "D-2"\ntitle: "outside"\nat: 2026-10-06T06:00:00Z\nprovenance: stated\nby: patron\nkill_when: "never"\n---\n';
+  const link = (root: string, name: string, text: string, rel: string): string => {
+    const outside = join(root, "..", name);
+    writeFileSync(outside, text);
+    symlinkSync(outside, join(root, rel));
+    return outside;
+  };
+  const both = (fix: string): unknown => ({ findings: [ride(1, "tests×x", fix), ride(2, "tests×x", fix)] });
+
+  const a = fixture();
+  const outA = link(a, "outside-opus.md", outsideOpus, "opera/W-2.md");
+  refuses(a, "a symlinked opera/<fix>.md", both("W-2"));
+  assert.equal(readFileSync(outA, "utf8"), outsideOpus, "the file outside is untouched");
+
+  const d = fixture();
+  link(d, "outside-decision.md", outsideDecision, "decisions/D-2.md");
+  refuses(d, "a symlinked decisions/<fix>.md", both("D-2"));
+
+  const p = fixture();
+  const outDir = join(p, "..", "outside-acta");
+  mkdirSync(outDir);
+  rmSync(join(p, "acta"), { recursive: true });
+  symlinkSync(outDir, join(p, "acta"));
+  refuses(p, "a symlinked acta/ parent", COVER);
+  assert.deepEqual(readdirSync(outDir), [], "nothing was written through the symlink");
 });

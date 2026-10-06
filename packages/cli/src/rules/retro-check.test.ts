@@ -91,3 +91,12 @@ test("W-137-b5 behaviour 5: check warns on an overdue retro and on a lesson with
   }
   assert.equal(findings(fixture(undefined), "retro.overdue").length, 0, "with no retro key nothing is owed");
 });
+
+test("W-137-b5 round 2: an impossible retro.since is a manifest.shape block", () => {
+  for (const since of ["2026-02-30T00:00:00Z", "2026-13-01T00:00:00Z", "2026-10-06T25:00:00Z", "2026-04-31"]) {
+    const shape = findings(fixture(`{ since: ${since} }`), "manifest.shape").filter((f) => f.where === "bisellium.yml#retro");
+    assert.equal(shape.length, 1, `since ${since} is one manifest.shape finding`);
+    assert.equal(shape[0]!.level, "block");
+  }
+  assert.equal(findings(fixture("{ since: 2026-02-28T00:00:00Z }"), "manifest.shape").length, 0, "a real date is accepted");
+});
