@@ -423,7 +423,8 @@ function failsLate(root: string, what: string, triage: unknown, locks: Record<st
 }
 const SKIP = process.getuid?.() === 0 ? "running as root: permission bits do not bind" : false;
 
-const WROTE = ["opera/W-2.md", "lessons/L-001.md"];
+// the new fix is W-002 and the retro creates lessons/ itself; the event log is the write that fails
+const WROTE = ["opera/W-002.md", "lessons/", "lessons/L-001.md"];
 
 test("W-137-b1 round 6: an unreadable but writable event log fails at the append and reports what was written", { skip: SKIP }, () => {
   const root = fixture({ files: { ".bisellium/events.jsonl": "" } });
@@ -439,7 +440,8 @@ test("W-137-b1 round 6: an absent event log under a read-only .bisellium fails a
 test("W-137-b1 round 6: an absent .bisellium under a read-only studio root fails at the append and reports what was written", { skip: SKIP }, () => {
   const root = fixture();
   rmSync(join(root, ".bisellium"), { recursive: true, force: true });
-  failsLate(root, "an absent .bisellium under a 0500 root", HIGH, { ".": 0o500 }, WROTE);
+  mkdirSync(join(root, "lessons")); // so the first write the read-only root refuses is the .bisellium directory
+  failsLate(root, "an absent .bisellium under a 0500 root", HIGH, { ".": 0o500 }, ["opera/W-002.md", "lessons/L-001.md"]);
 });
 
 test("W-137-b1 round 6: a failure on the last write (the acta) reports every earlier write and undoes none", { skip: SKIP }, () => {
