@@ -5,7 +5,7 @@
  * `studio/` or `examples/`. `runRetro` is driven in process, its console output captured.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { after, test } from "node:test";
@@ -83,14 +83,14 @@ function fixture(o: Fx = {}): string {
 function files(dir: string, base = dir): string[] {
   return readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
-    return statSync(p).isDirectory() ? files(p, base) : [relative(base, p)];
+    return lstatSync(p).isDirectory() ? files(p, base) : [relative(base, p)];
   });
 }
 /** every byte under the officina, so "writes nothing" is a byte comparison. */
 const snapshot = (root: string): string =>
   files(root)
     .sort()
-    .map((f) => `${f}\0${readFileSync(join(root, f), "utf8")}`)
+    .map((f) => `${f}\0${lstatSync(join(root, f)).isSymbolicLink() ? `link ${readlinkSync(join(root, f))}` : readFileSync(join(root, f), "utf8")}`)
     .join("\n\0\n");
 
 interface Ran {
@@ -315,4 +315,46 @@ test("W-137-b1 round 3: a symlinked fix, decision or acta parent never reaches o
   symlinkSync(outDir, join(p, "acta"));
   refuses(p, "a symlinked acta/ parent", COVER);
   assert.deepEqual(readdirSync(outDir), [], "nothing was written through the symlink");
+});
+
+{
+  const forms: Record<string, string> = {
+    "a fenced block of prose": `${TWO}\n\`\`\`\nhidden prose\n\`\`\``,
+    "a tilde-fenced finding": `${TWO}\n~~~\n3. blocking — c.ts:3 inside a fence\n~~~`,
+    "a fenced block holding the Findings heading": "```\n## Findings\n1. blocking — a.ts:1 fenced\n```",
+    "an HTML comment line": `${TWO}\n<!-- hidden -->`,
+    "a multi-line HTML comment": `${TWO}\n<!--\n3. blocking — c.ts:3 commented\n-->`,
+    "a comment before a finding on its line": `${TWO}\n<!-- x --> 3. advisory — c.ts:3 dressed`,
+    "an inline comment on No findings": "No findings <!-- x -->",
+    "an inline comment in a finding": "1. blocking — a.ts:1 text <!-- hidden --> more",
+    "an ATX heading": `${TWO}\n### Detail`,
+    "an ATX h1 heading": `${TWO}\n# Detail`,
+    "a malformed body # opus: heading": `${TWO}\n# opus: W-9`,
+    "a malformed body # converted: heading": `${TWO}\n# converted: 1 (x)`,
+    "a setext heading": `${TWO}\nDetail\n------`,
+    "a setext rule alone": `${TWO}\n=====`,
+    "a leading-space finding": `${TWO}\n  3. advisory — c.ts:3 indented`,
+    "a leading-tab finding": `${TWO}\n\t3. advisory — c.ts:3 tabbed`,
+    "an indented No findings": "  No findings",
+    "a whitespace-only line": `${TWO}\n   `,
+    "trailing-space No findings": "No findings ",
+    "a carriage return in a finding": "1. blocking — a.ts:1 first\r\n2. advisory — b.ts:2 second",
+  };
+  for (const [what, findings] of Object.entries(forms))
+    test(`W-137-b1 round 4: a Findings line outside the exact grammar refuses the retro: ${what}`, () => {
+      // whichever findings a lenient parser would see, a triage that accounts for exactly those must still be refused
+      for (const triage of [{ findings: [] }, COVER, { findings: [ride(1), ride(2), ride(3)] }, { findings: [ride(1)] }]) refuses(fixture({ review1: logWith({ findings }) }), what, triage);
+    });
+}
+
+test("W-137-b1 round 4: a dangling symlink at the acta output refuses before anything is written (existing fix)", () => {
+  const root = fixture();
+  symlinkSync(join(root, "..", "nowhere.md"), join(root, "acta", "2026-10-06-retro-W-1.md"));
+  refuses(root, "a dangling acta/<date>-retro-<id>.md", COVER);
+});
+
+test("W-137-b1 round 4: a dangling symlink at the acta output refuses before anything is written (new fix)", () => {
+  const fresh = fixture();
+  symlinkSync(join(fresh, "..", "nowhere.md"), join(fresh, "acta", "2026-10-06-retro-W-1.md"));
+  refuses(fresh, "a dangling acta output with a new fix to create", { findings: [ride(1, "tests×x", { title: "A new fix for the class", collegium: "engineering" }), ride(2, "tests×x", { title: "A new fix for the class", collegium: "engineering" })] });
 });
