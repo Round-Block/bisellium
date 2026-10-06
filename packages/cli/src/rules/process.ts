@@ -301,7 +301,7 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
 
     // W-120 decision.invoked_after_kill: a halt or a gate waiver citing a decision at or after its recorded kill.
     const invoke = (label: string, cited: unknown, at: unknown) => {
-      if (cited === undefined || cited === null) return;
+      if (cited === undefined) return; // only an absent key is silent; an explicit null is malformed
       if (!str(cited)) {
         // fail closed: a citation that is not a decision id string could be any decision
         add("decision.invoked_after_kill", "block", where, `${label} is not a decision id string (${JSON.stringify(cited)}); a malformed citation cannot be shown to avoid a killed decision`);
