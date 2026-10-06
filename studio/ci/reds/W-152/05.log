@@ -1,0 +1,59 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-152-b5 scripts/status-page.test.mjs
+# exit: 1
+# at: 2026-10-06T01:58:13.328Z
+# sella: builder.W-152
+# tree: tree:f4d4b80ec290a8c9d28f4895e4330caaaefe0600
+
+TAP version 13
+# Subtest: W-152-b5 behaviour 5: one page, in the approved order, with the history carried verbatim
+not ok 1 - W-152-b5 behaviour 5: one page, in the approved order, with the history carried verbatim
+  ---
+  duration_ms: 10.712807
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-152/scripts/status-page.test.mjs:86:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the <h2> headings, in order
+    + actual - expected
+    
+      [
+    -   'Completion',
+        'In flight',
+        'Planned',
+        'Backlog',
+    -   'Cascade history',
+        'Standing constraints'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'Completion'
+    1: 'In flight'
+    2: 'Planned'
+    3: 'Backlog'
+    4: 'Cascade history'
+    5: 'Standing constraints'
+  actual:
+    0: 'In flight'
+    1: 'Planned'
+    2: 'Backlog'
+    3: 'Standing constraints'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-152/scripts/status-page.test.mjs:97:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.854626
