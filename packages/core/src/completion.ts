@@ -33,22 +33,40 @@ export interface Meter {
   overall: number;
 }
 
+/**
+ * The ONE input boundary (W-153): every opus record and milestone weight is checked here, before any formula.
+ * A non-halted opus mapped to a milestone needs a finite, non-negative `value`, and a milestone a finite `weight`.
+ * `malformed` marks the whole estimate "No estimate"; the returned copies carry 0 for each invalid number, so no
+ * formula downstream ever sees one.
+ */
+function vet<M extends { id: string; weight: number }>(milestones: M[], opera: any[]): { milestones: M[]; opera: any[]; malformed: boolean } {
+  const ids = new Set(milestones.map((m) => m.id));
+  const bad = (o: any): boolean => o.state !== "halted" && ids.has(o.milestone) && !(typeof o.value === "number" && Number.isFinite(o.value) && o.value >= 0);
+  const badWeight = (m: M): boolean => !Number.isFinite(m.weight);
+  return {
+    milestones: milestones.map((m) => (badWeight(m) ? { ...m, weight: 0 } : m)),
+    opera: opera.map((o) => (bad(o) ? { ...o, value: 0 } : o)),
+    malformed: milestones.some(badWeight) || opera.some(bad),
+  };
+}
+
 export function computeMeter({ milestones, opera, findings }: { milestones: Milestone[]; opera: any[]; findings: { rule?: unknown }[] }): Meter {
-  const rows = milestones.map((m) => {
-    const mapped = opera.filter((o) => o.milestone === m.id && o.state !== "halted");
-    // a value that is not a finite, non-negative number adds nothing, so no meter field goes non-finite;
-    // estimateFinish then gives no estimate for such a record
-    const points = (o: { value?: unknown }): number => (typeof o.value === "number" && Number.isFinite(o.value) && o.value >= 0 ? o.value : 0);
-    const planned = mapped.reduce((n, o) => n + points(o), 0);
-    const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + points(o), 0);
+  const v = vet(milestones, opera);
+  const rows = milestones.map((m, i) => {
+    const mapped = v.opera.filter((o) => o.milestone === m.id && o.state !== "halted");
+    const planned = mapped.reduce((n, o) => n + o.value, 0);
+    const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + o.value, 0);
     const met =
       m.exit?.opus !== undefined
-        ? opera.some((o) => o.id === m.exit?.opus && o.state === "done")
+        ? v.opera.some((o) => o.id === m.exit?.opus && o.state === "done")
         : m.exit?.rule !== undefined && !findings.some((f) => f.rule === m.exit?.rule);
     const raw = planned === 0 ? 0 : (100 * done) / planned;
-    return { ...m, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
+    return { ...m, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN), vetted: v.milestones[i]!.weight };
   });
-  return { rows, overall: rows.reduce((n, r) => n + ((Number.isFinite(r.weight) ? r.weight : 0) * r.pct) / 100, 0) };
+  return {
+    rows: rows.map(({ vetted: _vetted, ...r }) => r),
+    overall: rows.reduce((n, r) => n + (r.vetted * r.pct) / 100, 0),
+  };
 }
 
 export interface Estimate {
@@ -89,20 +107,19 @@ export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?
 
 /** The estimated finish: remaining points over the mean of the last three weeks' paced points (W-153). */
 export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: Meter; opera: MeterOpus[]; now: Date; unreadable?: number }): Estimate {
+  const v = vet(meter.rows, opera);
+  const unknown = unreadable > 0 || v.malformed;
+  // fail closed: unknown work means unknown remaining points, so no estimate and never a false "nothing left"
+  if (unknown) return { kind: "none", reason: "unreadable-records", remaining: 0, weekly: [0, 0, 0], bulk: [], line: "No estimate: an opus record is unreadable or carries no valid points." };
   const rows = new Set(meter.rows.map((r) => r.id));
-  // fail closed: a record the reader could not read, or a planned opus without a valid point value, means the
-  // remaining points are unknown, so there is no estimate (and never a false "nothing left")
-  const malformed =
-    unreadable > 0 ||
-    opera.some((o) => o.state !== "halted" && rows.has(o.milestone as string) && !(typeof o.value === "number" && Number.isFinite(o.value) && o.value >= 0));
   const remaining = meter.rows.reduce((n, r) => n + r.planned - r.done, 0);
   const nowMs = now.getTime();
-  const events = opera
+  const events = v.opera
     .filter((o) => o.state === "done" && rows.has(o.milestone as string))
     .flatMap((o) => {
       const at = doneAt(o);
       // an undated or future event counts as done but is not paced
-      return at !== undefined && Date.parse(at) <= nowMs ? [{ id: String(o.id), at, points: typeof o.value === "number" ? o.value : 0 }] : [];
+      return at !== undefined && Date.parse(at) <= nowMs ? [{ id: String(o.id), at, points: o.value as number }] : [];
     });
   const hours = new Map<string, typeof events>();
   for (const e of events) hours.set(e.at.slice(0, 13), [...(hours.get(e.at.slice(0, 13)) ?? []), e]);
@@ -117,8 +134,7 @@ export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: M
       })
       .reduce((n, e) => n + e.points, 0),
   ) as [number, number, number];
-  const none = (reason: "nothing-left" | "too-little-history" | "unreadable-records", line: string): Estimate => ({ kind: "none", reason, remaining, weekly, bulk, line });
-  if (malformed) return none("unreadable-records", "No estimate: an opus record is unreadable or carries no valid points.");
+  const none = (reason: "nothing-left" | "too-little-history", line: string): Estimate => ({ kind: "none", reason, remaining, weekly, bulk, line });
   if (remaining <= 0) return none("nothing-left", "Nothing left: every planned point is done.");
   if (weekly.some((w) => w <= 0)) return none("too-little-history", "No estimate yet: it needs points done in each of the last 3 weeks.");
   const over = (points: number): number => Math.ceil((7 * remaining) / points); // points is a weekly pace; 3 weeks' mean = sum / 3
