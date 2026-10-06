@@ -1,13 +1,13 @@
 /**
  * W-129 behaviour 16: the dossier backlog page shows greenlit as Planned, not In
- * flight. `renderBacklogPage` over in-memory opera, no filesystem. Select the
+ * flight. `renderStatusPage` over in-memory opera, no filesystem. Select the
  * numbered behaviour with `--behaviour 16` (the only one); omitting the selector
  * runs it. node:test TAP, one test(), modelled on the W-128 suites. No timers,
  * sleeps or polling.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { renderBacklogPage } from "./backlog-page.mjs";
+import { renderStatusPage } from "./status-page.mjs";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -41,7 +41,7 @@ test("W-129 behaviour 16: the dossier backlog page shows greenlit as Planned, no
     state,
     probationes: {},
   }));
-  const html = renderBacklogPage({
+  const html = renderStatusPage({
     opera,
     declaredGates: 5,
     openPetitionsByOpus: new Map(),

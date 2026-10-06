@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * scripts/backlog-page.mjs — W-041: the slate rendered from the officina,
+ * scripts/status-page.mjs — W-041: the slate rendered from the officina,
  * never from prose. Reads studio/opera/*.md, studio/petitiones/*.md and
  * studio/decisions/*.md (front matter only — never brief prose, never
  * `reason`/`resume_when` for meaning) and renders three tables into
@@ -17,7 +17,7 @@
  * so defaults resolve against the repo root (this file's own `..`), never
  * the cwd; explicit flags resolve against the cwd.
  *
- * Usage: node scripts/backlog-page.mjs [--studio <dir>] [--out <path>] [--handoff <path>]
+ * Usage: node scripts/status-page.mjs [--studio <dir>] [--out <path>] [--handoff <path>]
  */
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -108,6 +108,32 @@ export function readOfficina(studioDir) {
 }
 
 // ---------------------------------------------------------------------------
+// W-152 meter (phase-1 stubs: exported so the rows run and fail on assertions)
+// ---------------------------------------------------------------------------
+
+export function readMilestones(_studioDir) {
+  return undefined;
+}
+
+export function computeMeter({ milestones, opera, findings }) {
+  const rows = milestones.map((m) => {
+    const mapped = opera.filter((o) => o.milestone === m.id && o.state !== "halted");
+    const planned = mapped.reduce((n, o) => n + o.value, 0);
+    const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + o.value, 0);
+    const met = m.exit.opus !== undefined
+      ? opera.some((o) => o.id === m.exit.opus && o.state === "done")
+      : m.exit.rule !== undefined && !findings.some((f) => f.rule === m.exit.rule);
+    const pct = planned === 0 ? 0 : (100 * done) / planned;
+    return { ...m, done, planned, met, pct };
+  });
+  return { rows, overall: rows.reduce((n, r) => n + (r.weight * r.pct) / 100, 0) };
+}
+
+export function readHistoryRows(_path) {
+  return "";
+}
+
+// ---------------------------------------------------------------------------
 // Rendering — pure, no I/O beyond what the caller already read.
 // ---------------------------------------------------------------------------
 
@@ -158,7 +184,7 @@ function decisionRow(d) {
   return `        <tr data-id="${esc(d.id)}"><td>${esc(d.id)}</td><td>${esc(d.title)}</td><td>${esc(d.kill_when ?? "—")}</td></tr>`;
 }
 
-export function renderBacklogPage({ opera, declaredGates, openPetitionsByOpus, decisions, rankingActa, outPath }) {
+export function renderStatusPage({ opera, declaredGates, openPetitionsByOpus, decisions, rankingActa, outPath }) {
   const inFlight = opera.filter((o) => IN_FLIGHT_STATES.has(o.state)).sort(byIdDesc);
   const planned = opera.filter((o) => o.state === "greenlit").sort(byIdDesc);
   const backlog = opera.filter((o) => o.state === "backlog").sort(byIdDesc);
@@ -283,7 +309,7 @@ function main() {
   }
 
   const officina = readOfficina(args.studio);
-  const html = renderBacklogPage({ ...officina, outPath: args.out });
+  const html = renderStatusPage({ ...officina, outPath: args.out });
   writeFileSync(args.out, html);
   console.log(`backlog-page: wrote ${args.out}`);
 }
