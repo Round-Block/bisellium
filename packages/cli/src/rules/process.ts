@@ -290,13 +290,13 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // resolveAddressedBy below can recognise an "opus" target — the lessons
   // loop above only collects, since it runs before this one.
   const operaStates = new Map<string, string | undefined>();
-  const opusEnds = new Map<string, unknown>();
+  const opusEnds = new Map<string, { where: string; end: unknown }>();
   for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
     const data = safeFront(p);
     if (!data) continue;
     operaStates.set(basename(p, ".md"), str(data["state"]));
-    opusEnds.set(basename(p, ".md"), data["end"]);
+    opusEnds.set(basename(p, ".md"), { where, end: data["end"] });
     if (sameSellaBuiltAndReviewed(data["probationes"])) {
       const sella = gateSella(data["probationes"], "spec");
       add("process.cascade", "advise", where, `sella "${sella}" recorded for both spec and review — one context built and reviewed its own work`);
@@ -331,8 +331,10 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // of retro-filed status; its error is check.ts's manifest.shape block, so here it adds nothing.
   const owed = owedRetros(root);
   if ("owed" in owed)
-    for (const id of owed.owed)
-      add("retro.overdue", "advise", `opera/${id}.md`, `${id} is done (${String(opusEnds.get(id))}) and its retro is not filed: bisellium retro --opus ${id} --from <triage.json>`);
+    for (const id of owed.owed) {
+      const at = opusEnds.get(id);
+      if (at) add("retro.overdue", "advise", at.where, `${id} is done (${String(at.end)}) and its retro is not filed: bisellium retro --opus ${id} --from <triage.json>`);
+    }
 
   // resolveAddressedBy: first match wins, in that fixed order. The three id
   // spaces are disjoint in practice (bisellium new / draftRetro allocate

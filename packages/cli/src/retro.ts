@@ -13,7 +13,7 @@
  * run/verify/talk/tick/new today.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
 import { WF } from "@bisellium/schema";
@@ -628,9 +628,13 @@ const FRONT = (file: { bytes: Buffer }, label: string): Dict | Refusal => {
 /** One opus record, or why it is unreadable. */
 function readOpus(root: string, id: string): Dict | Refusal {
   if (!OPUS_ID.test(id)) return { error: `${id}: not an opus id` };
-  const file = readContainedRegularFile(root, `opera/${id}.md`, "opera");
-  if ("error" in file) return { error: `opera/${id}.md: ${file.error}` };
-  return FRONT(file, `opera/${id}.md`);
+  // the id reaches a path only through the containment helper (W-047), then the contained reader
+  const path = safeItemPath(join(root, "opera"), id);
+  if (typeof path !== "string") return { error: `opera: ${path.error}` };
+  const rel = relative(root, path).split(sep).join("/");
+  const file = readContainedRegularFile(root, rel, "opera");
+  if ("error" in file) return { error: `${rel}: ${file.error}` };
+  return FRONT(file, rel);
 }
 
 const isoMs = (v: unknown): number | undefined => {
@@ -671,7 +675,7 @@ function readRetroSetting(root: string): RetroSetting | undefined | Refusal {
 function retroFiled(root: string, id: string): boolean {
   const dir = join(root, "acta");
   for (const name of existsSync(dir) ? readdirSync(dir) : []) {
-    if (!name.endsWith(`-retro-${id}.md`)) continue;
+    if (/^(\d{4}-\d{2}-\d{2})-retro-(W-[0-9]+)\.md$/.exec(name)?.[2] !== id) continue;
     const file = readContainedRegularFile(root, `acta/${name}`, "acta");
     if ("error" in file) continue;
     const data = FRONT(file, `acta/${name}`);
@@ -829,8 +833,10 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
       if (refusal !== undefined) throw new Error(refusal);
     }
   const dateStr = now.toISOString().slice(0, 10);
-  const actaRel = `acta/${dateStr}-retro-${id}.md`;
-  if (existsSync(join(root, actaRel))) throw new Error(`${actaRel} already exists`);
+  const actaPath = safeItemPath(join(root, "acta"), `${dateStr}-retro-${id}`);
+  if (typeof actaPath !== "string") throw new Error(`acta: ${actaPath.error}`);
+  const actaRel = relative(root, actaPath).split(sep).join("/");
+  if (existsSync(actaPath)) throw new Error(`${actaRel} already exists`);
 
   // 1. new fix opera
   const fixIds = new Map<string, string>();
@@ -875,7 +881,9 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     for (const cls of classes) {
       const fix = fixIds.get(cls)!;
       if (severity.get(cls) !== "high" || opusState(root, fix) !== "backlog") continue;
-      editOpusFrontMatter(join(root, "opera", `${fix}.md`), (doc) => {
+      const fixPath = safeItemPath(join(root, "opera"), fix);
+      if (typeof fixPath !== "string") throw new Error(`opera: ${fixPath.error}`);
+      editOpusFrontMatter(fixPath, (doc) => {
         doc.setIn(["state"], "greenlit");
         doc.setIn(["greenlit_by"], setting.highGreenlitBy);
         return undefined;
@@ -914,7 +922,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     "",
   ].join("\n");
   mkdirSync(join(root, "acta"), { recursive: true });
-  writeFileSync(join(root, actaRel), acta, { flag: "wx" });
+  writeFileSync(actaPath, acta, { flag: "wx" });
   return { path: actaRel };
 }
 

@@ -246,3 +246,16 @@ test("W-137-b3 behaviour 3: severity is a rule over recorded facts, and a high f
   const shape = checkStudio(bad, new Date(NOW)).findings.filter((f) => f.rule === "manifest.shape" && f.level === "block");
   assert.ok(shape.some((f) => f.where === "bisellium.yml#retro"), "high_greenlit_by: D-404 is a manifest.shape block");
 });
+
+test("W-137-b1 round 2: a hostile id never reaches a path (W-047)", () => {
+  const root = fixture();
+  // a valid-looking done record one level above opera/, which `../x` would resolve to
+  put(root, "x.md", '---\nid: "x"\ntitle: "x"\nkind: "opus"\ncollegium: "engineering"\nstate: done\nprobationes: {}\nend: 2026-10-06T12:00:00Z\n---\n');
+  for (const hostile of ["../x", "W-1/../W-1", "..", "W-1\\..\\x"]) {
+    const before = snapshot(root);
+    const r = retro(root, COVER, hostile);
+    assert.equal(r.code, 2, ran(`--opus ${hostile} exits 2`, r));
+    assert.equal(snapshot(root), before, `--opus ${hostile} writes nothing`);
+  }
+  for (const fix of ["../x", "W-1/../W-1", "..", "../acta/x"]) refuses(root, `a fix naming ${fix}`, { findings: [ride(1, "tests×x", fix), ride(2, "tests×x", fix)] });
+});
