@@ -34,8 +34,8 @@ import { closeSync, constants, existsSync, fstatSync, lstatSync, openSync, readF
 import { join, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
-import { EVENTS_LOG_REL, readLog, Store as CoreStore } from "@bisellium/core";
-import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
+import { computeMeter, EVENTS_LOG_REL, estimateFinish, readLog, Store as CoreStore } from "@bisellium/core";
+import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, readMilestones, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
 import { BranchRecordReader, type BranchRecordsStatus, type Overlay } from "./branchRecords.js";
 
 /** This server's own ingestion source id, stamped as `workflow.source` on
@@ -507,8 +507,26 @@ export class Store extends CoreStore {
       };
     },
 
-    // STUB (test-first commit): W-153 behaviour 5 is not implemented yet.
-    completion: (_checkStudio: CheckStudioFn): unknown => ({ meter: null, estimate: null }),
+    /** W-153: the completion meter and the estimated finish, read from the trunk's own records on disk (no branch
+     *  overlay), as the Status page does. `checkStudio` runs once, and only when a milestone's exit is a `rule`.
+     *  Both fields are null when `milestones.yml` is absent; one that does not parse throws. */
+    completion: (checkStudio: CheckStudioFn): unknown => {
+      const milestones = readMilestones(this.studioDir);
+      if (milestones === undefined) return { meter: null, estimate: null };
+      const opera: Record<string, unknown>[] = [];
+      for (const file of listMd(join(this.studioDir, "opera"))) {
+        try {
+          const { data } = readFront<Record<string, unknown>>(file);
+          if (typeof data["id"] === "string") opera.push(data);
+        } catch {
+          // an unreadable record is skipped, as scripts/status-page.mjs does
+        }
+      }
+      const rule = milestones.some((m) => (m.exit as { rule?: unknown } | undefined)?.rule !== undefined);
+      const findings = rule ? (checkStudio(this.studioDir, this.now()).findings as { rule?: unknown }[]) : [];
+      const meter = computeMeter({ milestones: milestones as never, opera, findings });
+      return { meter, estimate: estimateFinish({ meter, opera, now: this.now() }) };
+    },
 
     /** `<studio>/timeline/<sella>.jsonl` (talk chatter) or
      *  `timeline/patron.jsonl` (Patron write log). */

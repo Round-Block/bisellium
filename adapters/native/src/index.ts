@@ -216,6 +216,21 @@ export function readManifest(root: string): Manifest {
   return parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8")) as Manifest;
 }
 
+/** W-153: the declared milestones of `<root>/milestones.yml` — the Status page script's own reader's contract:
+ *  undefined when the file is absent; throws naming the file when it does not parse or has no `milestones` list. */
+export function readMilestones(root: string): { id: string; title: string; weight: number; exit: unknown }[] | undefined {
+  const path = join(root, "milestones.yml");
+  if (!existsSync(path)) return undefined;
+  let doc: { milestones?: unknown } | null;
+  try {
+    doc = parseYaml(readFileSync(path, "utf8")) as { milestones?: unknown } | null;
+  } catch (e) {
+    throw new Error(`${path} does not parse: ${(e as Error).message.split("\n")[0]}`);
+  }
+  if (!Array.isArray(doc?.milestones)) throw new Error(`${path} needs a "milestones" list`);
+  return (doc.milestones as { id: string; title: string; weight: number; exit: unknown }[]).map(({ id, title, weight, exit }) => ({ id, title, weight, exit }));
+}
+
 // ---------------------------------------------------------------------------
 // W-089 — Seam S1/S2: seats are templates, instance identity is minted at
 // dispatch. Both live here (not in @bisellium/cli or @bisellium/commands)

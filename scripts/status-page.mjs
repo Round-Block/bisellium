@@ -25,6 +25,7 @@ import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
+import { computeMeter, estimateFinish } from "../packages/core/src/completion.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, "..");
@@ -117,8 +118,6 @@ export function readOfficina(studioDir) {
 // open; overall = sum of weight x % / 100. A met exit only lifts the cap.
 // ---------------------------------------------------------------------------
 
-const CAP_WHILE_EXIT_OPEN = 95;
-
 /** The declared milestones, or undefined when `milestones.yml` is absent. */
 export function readMilestones(studioDir) {
   const path = join(studioDir, "milestones.yml");
@@ -133,20 +132,7 @@ export function readMilestones(studioDir) {
   return doc.milestones.map(({ id, title, weight, exit }) => ({ id, title, weight, exit }));
 }
 
-export function computeMeter({ milestones, opera, findings }) {
-  const rows = milestones.map((m) => {
-    const mapped = opera.filter((o) => o.milestone === m.id && o.state !== "halted");
-    const planned = mapped.reduce((n, o) => n + o.value, 0);
-    const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + o.value, 0);
-    const met =
-      m.exit?.opus !== undefined
-        ? opera.some((o) => o.id === m.exit.opus && o.state === "done")
-        : m.exit?.rule !== undefined && !findings.some((f) => f.rule === m.exit.rule);
-    const raw = planned === 0 ? 0 : (100 * done) / planned;
-    return { ...m, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
-  });
-  return { rows, overall: rows.reduce((n, r) => n + (r.weight * r.pct) / 100, 0) };
-}
+export { computeMeter } from "../packages/core/src/completion.ts";
 
 /** The inner HTML of the file's one <tbody>, byte for byte. */
 export function readHistoryRows(path) {
@@ -212,11 +198,12 @@ function decisionRow(d) {
 
 const pctText = (n) => `${n.toFixed(1)}%`;
 
-function completionSection(meter) {
+function completionSection(meter, estimate) {
   if (!meter) return `<p class="mock-caption">No milestone records</p>`;
   const row = (r) =>
     `        <tr data-milestone="${esc(r.id)}"><td>${esc(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.weight)}</td><td>${esc(r.done)}/${esc(r.planned)}</td><td>${r.met ? "met" : "open"}</td><td>${pctText(r.pct)}<span class="bar" style="display:block;height:6px;margin-top:4px;border-radius:3px;background:var(--pend-soft)"><span style="display:block;height:100%;width:${r.pct}%;border-radius:3px;background:var(--accent)"></span></span></td></tr>`;
-  return `<p><strong>Overall ${pctText(meter.overall)}</strong></p>
+  const line = estimate ? `\n<p class="estimate">${esc(estimate.line)}</p>` : "";
+  return `<p><strong>Overall ${pctText(meter.overall)}</strong></p>${line}
 <p class="mock-caption">Points done over points planned, capped at 95% while a milestone's exit check is open.</p>
 <div class="table-scroll">
     <table>
@@ -235,6 +222,7 @@ export function renderStatusPage({
   decisions,
   rankingActa,
   meter,
+  estimate,
   historyRows = "",
   outPath,
 }) {
@@ -260,7 +248,7 @@ export function renderStatusPage({
 
 ${rankingLink}<section>
 <h2>Completion</h2>
-${completionSection(meter)}
+${completionSection(meter, estimate)}
 </section>
 
 <section>
@@ -407,7 +395,8 @@ function main() {
       opera: officina.opera,
       findings: milestones.some((m) => m.exit?.rule) ? checkFindings(args.studio) : [],
     });
-  const html = renderStatusPage({ ...officina, meter, historyRows: readHistoryRows(args.history), outPath: args.out });
+  const estimate = meter && estimateFinish({ meter, opera: officina.opera, now: new Date() });
+  const html = renderStatusPage({ ...officina, meter, estimate, historyRows: readHistoryRows(args.history), outPath: args.out });
   writeFileSync(args.out, html);
   console.log(`status-page: wrote ${args.out}`);
 }

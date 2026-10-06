@@ -1249,6 +1249,7 @@ GET  /api/acta?days=               digest entries within the last `days` (defaul
 GET  /api/aerarium?period=         allowance + derived burn + posture per collegium
 GET  /api/providers?live=          provider status (usage.yml, or live quota-axi with live=1)
 GET  /api/health                   health.json if `tick` wrote one, else a fresh check summary; `due` items are `{kind, id}`, and a tick-written `{kind, sella|period|opus|models}` is mapped on read (the file is never rewritten)
+GET  /api/completion               `{ meter, estimate }` from the trunk's `milestones.yml` and `opera/*.md` (both `null` without milestone records): the completion meter and the estimated finish, the same sentence the Status page prints
 GET  /api/timeline/:sella?limit=   that sella's (or the Patron's) timeline
 GET  /api/events?since=&limit=&item=  raw log events, with a stable `seq` a client can resume from; `item=` scopes to one opus
 GET  /api/receipts?sella=          receipts, all sellae or one

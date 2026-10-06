@@ -44,7 +44,7 @@ test("W-153-b4 behaviour 4: the Status page prints the estimate on one line unde
   const escaped = "Estimated finish: in about 3 days (2 to 5 days) &lt;b&gt;&amp; more&lt;/b&gt;";
   assert.match(
     completion,
-    new RegExp(`<p><strong>Overall [^<]*</strong></p>\\s*<p class="estimate">${escaped}</p>`),
+    new RegExp(`<p><strong>Overall [^<]*</strong></p>\\s*<p class="estimate">${escaped.replace(/[()]/g, "\\$&")}</p>`),
     "estimate after Overall",
   );
 

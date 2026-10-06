@@ -332,3 +332,25 @@ export function subscribeLive(handlers: {
   });
   return () => source.close();
 }
+
+// ── W-153 fetchers ───────────────────────────────────────────────────
+
+export interface CompletionRow {
+  id: string;
+  title: string;
+  weight: number;
+  done: number;
+  planned: number;
+  met: boolean;
+  pct: number;
+}
+
+/** GET /api/completion: both fields are null when the studio has no milestone records. */
+export interface CompletionResponse {
+  meter: { rows: CompletionRow[]; overall: number } | null;
+  estimate: { kind: "estimate" | "none"; line: string } | null;
+}
+
+export function fetchCompletion(): Promise<CompletionResponse> {
+  return getJSON("/api/completion");
+}
