@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -83,4 +83,15 @@ test("W-152-b6 behaviour 6: a dossier source that loses more than half its bytes
   const noRemote = fixture({ origin: false });
   put(noRemote.repo, BODY, sized(2_400));
   assert.equal(shrink(noRemote.officina, noRemote.repo).length, 1, "with no origin/master an uncommitted cut is measured against HEAD");
+});
+
+test("W-152-b6-unreadable-source: one unreadable source does not discard another source's finding", () => {
+  const r = fixture();
+  put(r.repo, BODY, sized(2_400));
+  // progress-body.html sorts after body.html; a dangling symlink makes statSync throw
+  unlinkSync(join(r.repo, "docs/design/dossier/progress-body.html"));
+  symlinkSync("does-not-exist", join(r.repo, "docs/design/dossier/progress-body.html"));
+  const found = shrink(r.officina, r.repo);
+  assert.equal(found.length, 1, "the body.html cut is still reported");
+  assert.equal(found[0]?.where, BODY);
 });
