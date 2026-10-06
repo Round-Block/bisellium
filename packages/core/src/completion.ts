@@ -31,6 +31,8 @@ export interface MeterRow extends Milestone {
 export interface Meter {
   rows: MeterRow[];
   overall: number;
+  /** Present (true) when a record or weight was invalid: the rows carry vetted numbers and the estimate is "No estimate". */
+  malformed?: true;
 }
 
 /**
@@ -61,12 +63,9 @@ export function computeMeter({ milestones, opera, findings }: { milestones: Mile
         ? v.opera.some((o) => o.id === m.exit?.opus && o.state === "done")
         : m.exit?.rule !== undefined && !findings.some((f) => f.rule === m.exit?.rule);
     const raw = planned === 0 ? 0 : (100 * done) / planned;
-    return { ...m, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN), vetted: v.milestones[i]!.weight };
+    return { ...v.milestones[i]!, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
   });
-  return {
-    rows: rows.map(({ vetted: _vetted, ...r }) => r),
-    overall: rows.reduce((n, r) => n + (r.vetted * r.pct) / 100, 0),
-  };
+  return { rows, overall: rows.reduce((n, r) => n + (r.weight * r.pct) / 100, 0), ...(v.malformed ? { malformed: true as const } : {}) };
 }
 
 export interface Estimate {
@@ -108,7 +107,7 @@ export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?
 /** The estimated finish: remaining points over the mean of the last three weeks' paced points (W-153). */
 export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: Meter; opera: MeterOpus[]; now: Date; unreadable?: number }): Estimate {
   const v = vet(meter.rows, opera);
-  const unknown = unreadable > 0 || v.malformed;
+  const unknown = unreadable > 0 || v.malformed || meter.malformed === true;
   // fail closed: unknown work means unknown remaining points, so no estimate and never a false "nothing left"
   if (unknown) return { kind: "none", reason: "unreadable-records", remaining: 0, weekly: [0, 0, 0], bulk: [], line: "No estimate: an opus record is unreadable or carries no valid points." };
   const rows = new Set(meter.rows.map((r) => r.id));
