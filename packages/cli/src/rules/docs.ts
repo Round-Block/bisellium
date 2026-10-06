@@ -113,15 +113,19 @@ function checkDossierShrink(repo: string): Finding[] {
     if (name !== "body.html" && !name.endsWith("-body.html")) continue;
     const baseSize = Number(git(repo, ["cat-file", "-s", `${base}:./${DOSSIER_DIR}/${name}`]));
     if (!Number.isInteger(baseSize) || baseSize <= 0) continue; // new in the working tree
-    const size = statSync(join(dir, name)).size;
-    if (size * 2 >= baseSize) continue;
-    if (SHRINK_MARKER.test(readFileSync(join(dir, name), "utf8")) && !SHRINK_MARKER.test(git(repo, ["show", `${base}:./${DOSSIER_DIR}/${name}`]) ?? "")) continue;
-    out.push({
-      rule: "docs.dossier.shrink",
-      level: "block",
-      where: `${DOSSIER_DIR}/${name}`,
-      message: `${size} bytes, under half of the ${baseSize} it had at ${oid}; restore it, or keep a deliberate cut with <!-- dossier-shrink-ok: <reason> -->`,
-    });
+    try {
+      const size = statSync(join(dir, name)).size;
+      if (size * 2 >= baseSize) continue;
+      if (SHRINK_MARKER.test(readFileSync(join(dir, name), "utf8")) && !SHRINK_MARKER.test(git(repo, ["show", `${base}:./${DOSSIER_DIR}/${name}`]) ?? "")) continue;
+      out.push({
+        rule: "docs.dossier.shrink",
+        level: "block",
+        where: `${DOSSIER_DIR}/${name}`,
+        message: `${size} bytes, under half of the ${baseSize} it had at ${oid}; restore it, or keep a deliberate cut with <!-- dossier-shrink-ok: <reason> -->`,
+      });
+    } catch {
+      continue; // an unreadable source is not judged (like a deleted one); it never hides another source's finding
+    }
   }
   return out;
 }
