@@ -3,7 +3,7 @@
  * examples/sample-studio. `ts` is pinned so nothing here depends on the
  * wall clock.
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { snapshotDir } from "@bisellium/adapter-native";
@@ -256,6 +256,29 @@ const B: Snapshot = structuredClone(A);
     threw = true;
   }
   check("readLog: non-ENOENT fs error (EISDIR on a directory) propagates", threw);
+
+  // W-137: the shared append never follows a symlink out of the studio, and never creates through one.
+  const linkDir = mkdtempSync(join(tmpdir(), "bisellium-core-"));
+  const outside = join(linkDir, "outside.jsonl");
+  writeFileSync(outside, "keep\n");
+  symlinkSync(outside, join(linkDir, "events.jsonl"));
+  let linkThrew = false;
+  try {
+    appendEvents(join(linkDir, "events.jsonl"), [{ id: "x:0", name: "workflow.test", ts: TS, projectId: "p", attrs: {} } as GantryEvent]);
+  } catch {
+    linkThrew = true;
+  }
+  check("appendEvents: a symlinked log refuses and leaves the target alone", linkThrew && readFileSync(outside, "utf8") === "keep\n");
+  const parentOut = mkdtempSync(join(tmpdir(), "bisellium-core-"));
+  const parentHome = mkdtempSync(join(tmpdir(), "bisellium-core-"));
+  symlinkSync(parentOut, join(parentHome, ".bisellium"));
+  let parentThrew = false;
+  try {
+    appendEvents(join(parentHome, ".bisellium", "events.jsonl"), [{ id: "x:0", name: "workflow.test", ts: TS, projectId: "p", attrs: {} } as GantryEvent]);
+  } catch {
+    parentThrew = true;
+  }
+  check("appendEvents: a symlinked .bisellium parent refuses", parentThrew && readdirSync(parentOut).length === 0);
 
   // For the Store, force the SAME condition at its own derived log path
   // (<studioDir>/.bisellium/events.jsonl): a directory sitting where the log

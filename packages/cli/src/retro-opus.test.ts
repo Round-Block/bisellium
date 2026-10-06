@@ -358,3 +358,39 @@ test("W-137-b1 round 4: a dangling symlink at the acta output refuses before any
   symlinkSync(join(fresh, "..", "nowhere.md"), join(fresh, "acta", "2026-10-06-retro-W-1.md"));
   refuses(fresh, "a dangling acta output with a new fix to create", { findings: [ride(1, "tests×x", { title: "A new fix for the class", collegium: "engineering" }), ride(2, "tests×x", { title: "A new fix for the class", collegium: "engineering" })] });
 });
+
+test("W-137-b1 round 5: an unlisted verdict header name refuses the retro", () => {
+  refuses(fixture({ review1: logWith({ header: [...HEAD, "# bogus: x"] }) }), "an unlisted header name", COVER);
+});
+
+test("W-137-b1 round 5: a verdict header value is read raw, never trimmed into an identity", () => {
+  refuses(fixture({ review1: logWith({ header: ["# opus: W-1 ", ...HEAD.slice(1)] }) }), "# opus: with a trailing space", COVER);
+});
+
+/** A high-severity class with a new fix: the retro would write a fix, a lesson, a greenlight, an event, an acta. */
+const HIGH = { findings: [ride(1, "security×x", { title: "A new fix for the class", collegium: "engineering" }), ride(2, "security×x", { title: "A new fix for the class", collegium: "engineering" })] };
+
+test("W-137-b1 round 5: a symlinked event log never reaches outside the officina", () => {
+  const root = fixture();
+  const outside = join(root, "..", "outside-events.jsonl");
+  writeFileSync(outside, "keep\n");
+  mkdirSync(join(root, ".bisellium"), { recursive: true });
+  symlinkSync(outside, join(root, ".bisellium", "events.jsonl"));
+  refuses(root, "a symlinked .bisellium/events.jsonl", HIGH);
+  assert.equal(readFileSync(outside, "utf8"), "keep\n", "the file outside is untouched");
+});
+
+test("W-137-b1 round 5: a symlinked .bisellium parent never reaches outside the officina", () => {
+  const root = fixture();
+  const outDir = join(root, "..", "outside-bisellium");
+  mkdirSync(outDir);
+  symlinkSync(outDir, join(root, ".bisellium"));
+  refuses(root, "a symlinked .bisellium/", HIGH);
+  assert.deepEqual(readdirSync(outDir), [], "nothing was written through the symlink");
+});
+
+test("W-137-b1 round 5: an event log that is a directory refuses before anything is written", () => {
+  const root = fixture();
+  mkdirSync(join(root, ".bisellium", "events.jsonl"), { recursive: true });
+  refuses(root, "a directory at .bisellium/events.jsonl", HIGH);
+});
