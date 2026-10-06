@@ -12,12 +12,24 @@ import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import type { Finding, Level, RuleOpts } from "../check.js";
 import { RULE_IDS } from "./ids.js";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
 const str = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
+
+// W-120: `killed_by` may only point into these officina directories.
+const KILL_RECORD_DIRS = ["acta", "ci", "decisions", "lessons", "opera", "petitiones"];
+
+/** A YAML date or an ISO date string as an instant; anything else is undefined. */
+function instant(v: unknown): Date | undefined {
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(v)) return undefined;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
 
 const PROVENANCE = ["stated", "observed", "inferred", "suggested"] as const;
 
@@ -126,6 +138,8 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // existence on disk is what counts, so a decision is registered even when
   // its own shape is otherwise invalid.
   const decisionIds = new Set<string>();
+  // W-120: decisions whose recorded kill is well-formed, for decision.invoked_after_kill.
+  const killed = new Map<string, { at: Date; by: string }>();
   for (const p of safeList(join(root, "decisions"))) {
     const where = rel(p);
     decisionIds.add(basename(p, ".md"));
@@ -151,6 +165,27 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     if (data["by"] !== undefined && !str(data["by"])) add("decision.shape", "block", where, `"by" must be a non-empty string`);
     if (data["supersedes"] !== undefined && !str(data["supersedes"]))
       add("decision.shape", "block", where, `"supersedes" must be a non-empty string`);
+
+    // W-120: killed_at / killed_by, both optional, judged together.
+    const killedAt = data["killed_at"];
+    const killedBy = data["killed_by"];
+    if (killedAt !== undefined || killedBy !== undefined) {
+      if (killedAt === undefined || killedBy === undefined) {
+        add("decision.shape", "block", where, `"${killedAt === undefined ? "killed_at" : "killed_by"}" is missing — killed_at and killed_by are written together`);
+      } else {
+        let ok = true;
+        const at = instant(killedAt);
+        if (!at) { ok = false; add("decision.shape", "block", where, `"killed_at" must be an ISO date`); }
+        const decided = instant(data["at"]);
+        if (at && decided && at < decided) { ok = false; add("decision.shape", "block", where, `"killed_at" is earlier than the decision's own "at"`); }
+        const first = typeof killedBy === "string" ? killedBy.split(/[\\/]/)[0] ?? "" : "";
+        if (typeof killedBy !== "string" || !KILL_RECORD_DIRS.includes(first) || "error" in readContainedRegularFile(root, killedBy, first)) {
+          ok = false;
+          add("decision.shape", "block", where, `"killed_by" must name an existing officina file under ${KILL_RECORD_DIRS.join(", ")}`);
+        }
+        if (ok && at && typeof killedBy === "string") killed.set(basename(p, ".md"), { at, by: killedBy });
+      }
+    }
 
     // decision.kill: a decision with no kill condition is a belief.
     const killWhen = data["kill_when"];
@@ -248,6 +283,21 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     }
     const tierMsg = reviewTierAdvisory(data["probationes"]);
     if (tierMsg) add("process.review_tier", "advise", where, tierMsg);
+
+    // W-120 decision.invoked_after_kill: a halt or a gate waiver citing a decision at or after its recorded kill.
+    const invoke = (label: string, id: string | undefined, at: unknown) => {
+      const k = id === undefined ? undefined : killed.get(id);
+      if (!k) return;
+      const t = instant(at);
+      if (t && t < k.at) return;
+      add("decision.invoked_after_kill", "block", where, `${label} ${id} at ${t ? t.toISOString() : "(no time)"} invokes a decision killed at ${k.at.toISOString()} (${k.by}); a fired clause is not an excuse`);
+    };
+    invoke("halted_by", str(data["halted_by"]), data["halted_at"]);
+    if (isDict(data["probationes"])) {
+      for (const [gate, g] of Object.entries(data["probationes"])) {
+        if (isDict(g)) invoke(`gate "${gate}" waived_by`, str(g["waived_by"]), g["at"]);
+      }
+    }
   }
 
   // resolveAddressedBy: first match wins, in that fixed order. The three id
