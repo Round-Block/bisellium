@@ -1,0 +1,17 @@
+# opus: W-153
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T09:14:39.507Z
+# tree: tree:5d73828f534e49e255823a42e5cdadf12ad1ff39
+# brief: briefs/W-153.md blob:73b074c2bbe3e94c877f1e59bed91edf258a8da2
+
+## Findings
+1. blocking — packages/core/src/completion.ts:79 `doneAt` considers every parseable gate timestamp, including failed gates, although completion must fall back to the latest passed check; this is one instance, and both surfaces share it. brief:343 — check: packages/core/src/completion.test.ts W-153-b1 with a newer failed gate
+2. blocking — apps/server/src/store.ts:517 Malformed records fail open, so missing work can produce a shorter estimate or false “Nothing left.” This class includes the server’s swallowed parse errors at `store.ts:517-523`, the Status reader’s swallowed errors at `scripts/status-page.mjs:59-75`, and unchecked/coerced point values at `packages/core/src/completion.ts:39-40,96`; both production readers and every completion-formula use of `value` were searched. brief:109, brief:143 — check: apps/server/test/completion.test.ts and scripts/status-page.test.mjs with unreadable and non-numeric mapped opera
+
+## Verdict
+The shared formula, live outputs, panel wiring, regression repair, and evidence are otherwise sound, but the two fail-open classes can publish an incorrect completion estimate.
+VERDICT: FAIL
