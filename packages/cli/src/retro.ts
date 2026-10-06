@@ -12,7 +12,7 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { accessSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { accessSync, constants, existsSync, lstatSync, rmSync, rmdirSync, statSync, truncateSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
@@ -854,6 +854,23 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
   }
 
+  // From here every write is journalled: any throw undoes exactly what this run did (created files, directories and
+  // event-log bytes removed in reverse order, the greenlit opus's original bytes restored), then refuses with the
+  // original error. The preflights above only give early, clean refusals; this is what makes the retro all-or-nothing.
+  const phys = realpathSync(root);
+  const absent = (rel: string): boolean => {
+    try {
+      lstatSync(join(phys, rel));
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  const madeDirs = ["opera", "lessons", "acta", ".bisellium"].filter(absent);
+  const logPath = join(phys, EVENTS_LOG_REL);
+  const logSize = absent(EVENTS_LOG_REL) ? undefined : lstatSync(logPath).size;
+  const undo: (() => void)[] = [];
+  try {
   // 1. new fix opera
   const fixIds = new Map<string, string>();
   for (const cls of classes) {
@@ -865,6 +882,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     const made = newItem(root, { kind: "opus", collegium: fix.collegium, title: fix.title });
     if (!made.ok || made.id === undefined) throw new Error(`fix of "${cls}": ${made.message}`);
     fixIds.set(cls, made.id);
+    undo.push(() => rmSync(join(phys, "opera", `${made.id}.md`)));
   }
 
   // 2. one lesson per class
@@ -888,6 +906,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
         "",
       ].join("\n"),
     );
+    undo.push(() => rmSync(created.path));
     lessons.push({ id: created.id, cls });
   }
 
@@ -899,6 +918,8 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
       if (severity.get(cls) !== "high" || opusState(root, fix) !== "backlog") continue;
       const fixPath = safeItemPath(join(root, "opera"), fix);
       if (typeof fixPath !== "string") throw new Error(`opera: ${fixPath.error}`);
+      const original = readFileSync(fixPath);
+      undo.push(() => writeFileSync(fixPath, original));
       editOpusFrontMatter(fixPath, (doc) => {
         doc.setIn(["state"], "greenlit");
         doc.setIn(["greenlit_by"], setting.highGreenlitBy);
@@ -940,8 +961,36 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   const dir = realDir(root, "acta");
   mkdirSync(dir, { recursive: true });
   realDir(root, "acta");
-  writeFileSync(join(dir, basename(actaPath)), acta, { flag: "wx" });
+  const target = join(dir, basename(actaPath));
+  undo.push(() => rmSync(target));
+  try {
+    writeFileSync(target, acta, { flag: "wx" });
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "EEXIST") undo.pop(); // not ours to remove
+    throw e;
+  }
   return { path: actaRel };
+  } catch (e) {
+    for (const step of undo.reverse())
+      try {
+        step();
+      } catch {
+        // best effort: keep undoing the rest
+      }
+    try {
+      if (logSize === undefined) rmSync(logPath, { force: true });
+      else if (statSync(logPath).size !== logSize) truncateSync(logPath, logSize);
+    } catch {
+      // best effort
+    }
+    for (const d of madeDirs.reverse())
+      try {
+        rmdirSync(join(phys, d));
+      } catch {
+        // not empty or already gone
+      }
+    throw e;
+  }
 }
 
 /** A physical officina directory, which must be a real directory (not a symlink) or absent: where the retro writes. */
