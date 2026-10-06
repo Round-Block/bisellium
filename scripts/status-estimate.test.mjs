@@ -45,9 +45,13 @@ test("W-153-b4 behaviour 4: the Status page prints the estimate on one line unde
   const estimate = { kind: "estimate", remaining: 1, weekly: [1, 1, 1], bulk: [], line: LINE };
   const completion = section(renderStatusPage({ ...o, meter, estimate, historyRows: "" }), "Completion");
   const escaped = "Estimated finish: in about 3 days (2 to 5 days) &lt;b&gt;&amp; more&lt;/b&gt;";
-  assert.match(
-    completion,
-    new RegExp(`<p><strong>Overall [^<]*</strong></p>\\s*<p class="estimate">${escaped.replace(/[()]/g, "\\$&")}</p>`),
+  const overall = /<p><strong>Overall [^<]*<\/strong><\/p>/.exec(completion);
+  assert.ok(overall, "the Overall paragraph is there");
+  assert.ok(
+    completion
+      .slice(overall.index + overall[0].length)
+      .trimStart()
+      .startsWith(`<p class="estimate">${escaped}</p>`),
     "estimate after Overall",
   );
 
