@@ -412,6 +412,13 @@ function scanCD(root: string, rels: string[]): CDScan {
           const name = memberOf(n);
           if (base === "fs" && (name === undefined || RAW_FS.has(name))) fnRef = { list: out.d, tag: "D", what: name ?? "<computed>" };
           if (base === "date" && (name === undefined || name === "parse")) fnRef = { list: out.c, tag: "C", what: name === undefined ? "Date.<computed>" : "Date.parse" };
+          // the Date member allowlist: parse (a C site), UTC and now, each only as a direct call; any other member fails closed
+          if (base === "date" && name !== undefined && name !== "parse") {
+            const top = outer(n);
+            const called = ts.isCallExpression(top.parent) && top.parent.expression === top;
+            const typePos = ts.isTypeNode(top.parent) || ts.isQualifiedName(top.parent);
+            if (!typePos && !((name === "UTC" || name === "now") && called)) escapes.add(`${rel}:${enclosingFunctionName(n)}: Date.${name} is off the Date member allowlist (parse, UTC and now, called)`);
+          }
           if (base === "mod" && name === undefined) escapes.add(`${rel}:${enclosingFunctionName(n)}: a computed member of node:module is used where the scan cannot follow it`);
         }
         const top = outer(n);
