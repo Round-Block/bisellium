@@ -573,7 +573,7 @@ document the opus is no longer built against — survived untouched.
 ## bisellium amend
 
 ```bash
-npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
 ```
 
 `amend` is the one CLI path for an opus's descriptive/reference fields:
