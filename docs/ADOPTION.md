@@ -161,8 +161,23 @@ addressed_by: "opus.red_content"               # optional (W-035) — see below
 ---
 ```
 
+A fired kill clause is recorded on the decision by hand (W-120), with two
+optional keys that are written together:
+
+```yaml
+killed_at: 2026-09-25T07:22:38.951Z   # when its kill_when was observed to have fired
+killed_by: petitiones/P-013.md        # the record that saw it; officina-relative, under acta, ci, decisions, lessons, opera or petitiones
+```
+
 `decision.shape` blocks a missing/ill-typed key, an id that doesn't match
-its filename, or an unknown `provenance`. `decision.kill` blocks a missing
+its filename, an unknown `provenance`, one of `killed_at`/`killed_by`
+without the other, a `killed_at` that is not a date or is earlier than the
+decision's `at`, or a `killed_by` that does not open as a regular file under
+the allowed directories. `decision.invoked_after_kill` blocks an opus whose
+`halted_by` (time `halted_at`) or gate `waived_by` (time `at`) names a
+decision at or after its `killed_at`, or with no readable time: a fired
+clause is never a retroactive excuse. Records dated before the kill are
+history. `decision.kill` blocks a missing
 or empty `kill_when` — a decision with no kill condition is a belief, not a
 decision. `lesson.shape` blocks the same class of shape errors; `lesson
 .evidence` blocks an empty evidence list or a dead relative href (the same
