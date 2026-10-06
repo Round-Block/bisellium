@@ -1,0 +1,22 @@
+# opus: W-152
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T01:50:36.665Z
+# tree: tree:46262ea35fcee08e703d850a9bf9f94947f50f87
+
+W-152 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-152.md (6 behaviours, six sections plus "Defaults for the Patron to veto", Decree family: status-page; readBriefAdmission at limit 6 reports no problems). Inputs: D-038 "The Status page", acta/2026-10-06-milestones.md (two tables, 146 rows: 138 scored, 8 outside), ~/.bisellium-evidence/milestones/compute.mjs (overall 49.5% at master 0ddc2d9), scripts/backlog-page.mjs (W-041), docs/design/dossier/build.sh, DIRECTION.md section 7 bans.
+Spec-time probe: in a scratch clone at master with a detached HEAD, bisellium amend succeeded on all 138 non-halted opera with 0 failures, so the seed script can write every mapping through the verb from a trunk-side checkout. From opus/W-152 it cannot (D-021 step 3 refuses another opus's record), so the real seed lands as its own record-only PR after merge. check studio --repo . is 0 blocking with the brief present.
+
+## Findings
+1. advisory — mapping reuses amend (reason, amendments history, D-021 guard) with --milestone/--value instead of a new verb; listed as Patron default 1 — check: packages/cli/src/milestones.test.ts (W-152-b3)
+2. advisory — "active opus" is read as every opus not halted, matching the acta's mapping scope; checking only building/verifying/review would leave the meter's planned points unguarded; default 3 — check: packages/cli/src/milestones.test.ts (W-152-b2)
+3. advisory — the shrink rule measures against the merge-base with origin/master, so it bites on the PR (CI checks out head_ref at fetch-depth 0) and on uncommitted cuts on master; deletion and new files are not judged so this opus can retire backlog-body.html; a deliberate cut passes only with a marker the baseline lacked; default 4 — check: packages/cli/src/rules/dossier-shrink.test.ts (W-152-b6)
+4. advisory — the meter's formula is pinned with exact numbers, including that a met exit lifts the cap but does not force 100 (as compute.mjs and the acta's M1 97.3% read); the end-to-end proof is equality with compute.mjs on the seeded clone — check: scripts/status-page.test.mjs (W-152-b4)
+5. advisory — Standing constraints and the In flight/Planned headings are kept so W-041 and W-129 shipped rows keep passing unchanged; progress-body.html stays the hand-written history source so process.checkpoint still sees checkpoints; defaults 5 and 7 — check: scripts/status-page.test.mjs (W-152-b5)
+6. advisory — no package edge, seam or serve route changes (the new rule module uses Seam S2 as is), so docs/ARCHITECTURE.md is not touched — check: none: docs.arch.stale in check
+
+## Recommendation
+Verdict: passed. One decree family, status-page: progress is read from records, never typed; milestones and each opus's score are data, the page is generated, and a hand-written source cannot silently lose most of itself. Six behaviours. Eight defaults ship as stated and are veto-able at the checkpoint; follow-ons (console screen, new --milestone, a milestone-record verb, the five needs: exit checks, generated history rows) are named in Out of scope.
