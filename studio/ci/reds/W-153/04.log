@@ -1,0 +1,52 @@
+# behaviour: 4
+# command: node --test-reporter=tap scripts/status-estimate.test.mjs --test-name-pattern=W-153-b4
+# exit: 1
+# at: 2026-10-06T08:41:39.237Z
+# sella: builder.W-153
+# tree: tree:0f6008160be2cbf9d63e9c424464e3c62f7c2fcc
+
+TAP version 13
+# Subtest: W-153-b4 behaviour 4: the Status page prints the estimate on one line under the overall %
+not ok 1 - W-153-b4 behaviour 4: the Status page prints the estimate on one line under the overall %
+  ---
+  duration_ms: 7.35247
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-153/scripts/status-estimate.test.mjs:38:1'
+  failureType: 'testCodeFailure'
+  error: 'estimate after Overall'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    
+    <p><strong>Overall 95.0%</strong></p>
+    <p class="mock-caption">Points done over points planned, capped at 95% while a milestone's exit check is open.</p>
+    <div class="table-scroll">
+        <table>
+          <thead><tr><th>Id</th><th>Milestone</th><th>Weight</th><th>Points done/planned</th><th>Exit</th><th>%</th></tr></thead>
+          <tbody>
+            <tr data-milestone="M1"><td>M1</td><td>Alpha</td><td>100</td><td>3/3</td><td>open</td><td>95.0%<span class="bar" style="display:block;height:6px;margin-top:4px;border-radius:3px;background:var(--pend-soft)"><span style="display:block;height:100%;width:95%;border-radius:3px;background:var(--accent)"></span></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    
+    <section>
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-153/scripts/status-estimate.test.mjs:45:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14.038427

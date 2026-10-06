@@ -1,0 +1,43 @@
+# behaviour: 6
+# command: env TSX_TSCONFIG_PATH=apps/web/tsconfig.json node --test-reporter=tap --import ./apps/web/test/support/register-css-stub.mjs --import tsx apps/web/test/completion-view.test.ts --test-name-pattern=W-153-b6
+# exit: 1
+# at: 2026-10-06T08:41:40.468Z
+# sella: builder.W-153
+# tree: tree:0f6008160be2cbf9d63e9c424464e3c62f7c2fcc
+
+TAP version 13
+# Subtest: W-153-b6 behaviour 6: the Officina screen leads with the completion meter and the estimate
+not ok 1 - W-153-b6 behaviour 6: the Officina screen leads with the completion meter and the estimate
+  ---
+  duration_ms: 9.252006
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-153/apps/web/test/completion-view.test.ts:1:1145'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'Posture and burn'
+    - 'Completion'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'Completion'
+  actual: 'Posture and burn'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-153/apps/web/test/completion-view.test.ts:35:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 19.961744
