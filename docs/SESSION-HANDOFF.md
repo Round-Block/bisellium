@@ -88,73 +88,28 @@ lex, a decision, or a check rule and delete it here.
 
 ## Environment facts
 
-- Containment (Patron, 2026-09-19): `.claude/settings.local.json` carries the
-  Bash sandbox config (bubblewrap; writes confined to repo + evidence dir,
-  epoch0 and /mnt/c deny-listed) — it hard-fails until
-  `sudo apt-get install bubblewrap socat` has been run in the distro.
-  `.devcontainer/` is Anthropic's reference config on node:25 with the egress
-  firewall, for fully contained cascade runs. Under the sandbox the tsx CLI
-  cannot run (its IPC unix-socket listen is denied; docker.sock exists in this
-  distro so sockets stay blocked) — the bisellium bin and every package.json
-  script use `node --import tsx` instead; agents should too, never `npx tsx`.
-  The sandbox also masks shell/tool config paths in the repo root as /dev/null
-  devices; both ignore files carry the block so verify stays clean-tree. Repo backup: bundle at
-  C:\Users\edene\bisellium-backups\; remote github.com/Round-Block/bisellium, **public by Patron choice** (free Actions) — everything pushed is world-readable. Sandbox deps
-  (bubblewrap, socat) installed 2026-09-19.
-
-- Node, npm, git, `claude`, `codex`, Go, treehouse, no-mistakes exist only inside
-  WSL. From a Windows-hosted session run `wsl -e bash -lc "cd ~/projects/bisellium && …"`.
-  From a session whose project directory is this repo, run commands directly.
-- Commit with `-c user.name=edckt -c user.email=edene.chankt@gmail.com` and the
-  trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` — or
-  whichever session model actually ran (Fable 5 or Opus 5.5).
-- The Workflow tool is allowed without a prompt (`.claude/settings.json`).
-- **Codex operational** (cascade 24): sandbox allows `~/.codex` writes +
-  OpenAI domains in `.claude/settings.local.json`; `codex exec -c
-  model_provider=openai -m gpt-5.6-luna` works — provider is OpenAI direct,
-  not tokenharbor (tokenharbor is key storage convenience only). Luna does
-  bounded clerk-shaped work; review still gates through the Opus-tier censor
-  (D-014).
-- Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists
-  the other in `source_excludes`.
-
-- `test:serve` does NOT rebuild the web bundle. Run `npm --workspace @bisellium/web run build` first, or e2e tests stale code (cost one false failure here).
-- `scripts/no-vendor.test.mjs` row 3 (lock race) flakes under full-suite load; it passes alone 3/3. Since W-142 verify's cap is 30 minutes (the suite runs ~11). A record PR that touches docs/ between verify and done stales the certificate (docs/ is in the source tree): verify after the last such merge.
-- Write logs to `~/.bisellium-evidence/`, not `$TMPDIR` (it differs per call). Run multi-step git/red sequences as bash scripts (zsh word-splitting).
-- Codex: `< /dev/null`, `--skip-git-repo-check` outside its trust list; sandboxes can't run git, node servers or Chromium, so the orchestrator commits verbatim with the builder's trailer.
-- Reds: `--grep` without a `^` anchor; confirm "N failed" with an assertion error, not "No tests found".
-- The orchestrator trailer names the model that actually ran the session (Fable usage caps may force Opus 5.5): `Co-Authored-By: Claude <model> <noreply@anthropic.com>`.
+- Sandbox: bubblewrap via `.claude/settings.local.json` (writes: repo + `~/.bisellium-evidence`). tsx's CLI cannot run under it: use `node --import tsx`, never `npx tsx`. Logs go to `~/.bisellium-evidence/`, not `$TMPDIR`. Multi-step git/red sequences run as bash scripts (zsh word-splitting). node/npm/git/codex exist only in WSL.
+- Remote github.com/Round-Block/bisellium is **public by Patron choice**: everything pushed is world-readable.
+- Commits: `-c user.name=edckt -c user.email=edene.chankt@gmail.com`; trailer names the sella that wrote it and the model that actually ran (`Co-Authored-By: Claude <model> <noreply@anthropic.com>`).
 - Permissions (cascade 43, Patron-set, in `.claude/settings.local.json`): allow `Bash(gh pr merge*)` and `Bash(npm run -s bisellium*)`. **No unsandboxed path exists** (the `bisellium -- run` exclusion was removed 2026-10-03, Patron: "all inside the sandbox"). The orchestrator merges on the Patron's behalf. The auto-mode classifier blocks the orchestrator editing sandbox config (correct; route to the Patron).
 - **Agent workspace (2026-10-03, Patron: "as secure as possible"):** agents work in `~/agents/bisellium` only; `~/projects/bisellium` is the Patron's and write-denied to every session; personal credentials (`~/.ssh`, `~/.git-credentials`, `~/.config/gh`) are read-denied; GitHub goes through a fine-grained, non-admin, repo-only token (`GH_CONFIG_DIR=~/.config/agent-gh`) over HTTPS. Boot check: `bash scripts/agent-workspace.sh verify --inside`. Hooks run unsandboxed — never point one at agent-clone code. The repo's `bisellium` hooks are currently inert (`bisellium` is not on PATH); if ever installed, link it to the Patron's folder (reviewed master), never the agent clone.
-- Record-only commits: branch protection forces PR+CI per commit (use `gh pr merge --auto`); `opus.red_evidence` blocks `state: building` on master — `ready`/handoff happen on the opus branch after the branch rung (D-021). The ladder's six-section check exact-matches `## <Section>` headings (next.ts:62).
+- Branch protection forces PR+CI per commit. Record-only PRs run `test:record` (~15 s); two racing PRs leave one BEHIND (`gh pr update-branch <n>`).
+- Codex: `codex exec -c model_provider=openai -m <model> -s read-only --skip-git-repo-check -C <packet> -o <verdict.md> - < prompt.md`; its sandbox cannot run git, node servers or Chromium.
+- `test:serve` does NOT rebuild the web bundle: `npm --workspace @bisellium/web run build` first. `scripts/no-vendor.test.mjs` row 3 flakes under full-suite load (passes alone).
+- Reds: no whitespace inside any single argument; a TAP reporter; confirm an assertion-level `not ok`, not "No tests found".
 - Replay-safe reds (W-130 brief + measured): record so the logs land in the HOST studio (or `git restore --source opus/<id>` them across); no whitespace inside any single command argument (the replay cell splits on whitespace — `--grep behaviour.2:` not `--grep "… behaviour 2: "`); the W-125 Git broker no longer needs a socket (W-132: host-created named pipes in `/control`), so its live rows run, record and replay under confinement. After a rebase (W-134) a log whose `# tree:` header matches no commit is re-identified as the unique commit that introduced the log's bytes, which must carry no source of its own: **commit each red log in a studio-only commit directly on its pre-change commit** (a log committed with source, twice, or after the implementation is refused), and the log needs a `not ok <n> - <title>` line (a TAP reporter) for that path.
+- Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists the other in `source_excludes`.
 
-- The Codex builder sandbox cannot spawn git or child Node processes, so the
-  pre-existing amend, close, review, census, W-089 and W-101-row suites run
-  only at the producer's gate. This caused most W-096 rounds; W-125 addresses
-  it. CI gates/officina jobs check out full history and the PR-head branch
-  (W-096 revisions 9–10).
+## Opus ladder (since W-141, cascade 51)
 
-- W-125 replaces that proxy path for builder-class `bisellium run`: dispatch
-  now needs the owning opus branch and launches `scripts/run-builder-host.mjs`.
-  The producer host must provide bubblewrap user/PID/mount/network namespaces
-  and a separable model control plane; otherwise the run intentionally fails
-  closed. Builder work is committed in the disposable clone. The producer
-  exports only validated owned commits, destroys the runtime, recomputes with
-  pinned master tooling, and then attaches the current-tree run receipt.
-  Neither `review --pass` nor `review --fail` may be dispatched until that
-  receipt exists and remains current.
+The verb walks every step: `bisellium next <id> --budget 400000 --studio studio --repo .` names the step; `--perform --expect <step>` does it (spec landing, branch, ready, pr, merge, cleanup, done incl. its PR). Hand steps left (W-141 follow-ons, unfiled): the receipt-pointer and verdict commits on the opus branch, the review packet, filing PRs. Scripts that do them, kept in `~/.bisellium-evidence/`: `review-packet.sh <id> <round> [<prev-verdict-commit>]`, `review-receipt.sh <id> <round> <mint-log>`, `retrigger.sh <branch>` (empty commit; the agent token cannot re-run jobs).
 
-## Opus ladder gotchas (measured, cascade 43)
-
-- Opus worktree: `git branch --no-track` + `git worktree add`, then a real `npm ci --cache ~/.bisellium-evidence/npm-cache` (a symlinked `node_modules` fails the mint: "dependency link escapes the checkout").
-- The sandbox leaves a read-only `.git/config.lock`: `worktree add -b`, `push -u` and tracking branches print config errors — always `--no-track`. Guard every `cd` into a new worktree (a failed create once ran a filing in the main checkout).
-- Receipt mint: from the opus worktree, the bare command `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true` (~15 min). Wrapped in `cd`/redirects it misses the allow rule and hits the auto-mode Self-Approval block. One mint failed silently and passed on retry. Receipts are gitignored; commit only the opera's `run_receipt:` pointer.
-- Any rebase (including the ladder's `pr` step) needs a re-mint, so merge nothing else to master while an opus PR is open. Reds that already landed on master are dropped by a rebase and the replay then picks master's testless commit: re-record them at the rebased test commit. Playwright reds must run against a bundle built from the pre-change tree.
-- Review: Codex `gpt-5.6-sol` with `docs/CENSOR-PROMPT.md` (since W-126 a blocking finding must cite `brief:<n>`; record verdicts with the opus worktree's CLI so the built writer runs); record with `bisellium verdict <id> --round <n> --sella qa-lead --outcome passed|failed --model gpt-5.6-sol --from <verdict.md>` then `bisellium review <id> --pass|--fail --evidence ci/<id>-review-<n>.log`. At most five full rounds, then fix and merge after green with a narrow Codex check of the final delta.
-- `next` runs from the main checkout only; `--body-file` must lie under the repo or `$TMPDIR`; `cleanup` may hold on "Device or resource busy" — rerun it. If `done` holds on missing tests/lint/types, run `bisellium verify <id>` on master and commit the certificates with the done record (on a `--no-track` branch, auto-merged PR).
-- Record-only PRs run `test:record` (W-139: the 8 tests that read the officina); full runs trace reads and fail on drift. Two PRs racing: the faster one leaves the other BEHIND — `gh pr update-branch <n>`.
-- The `merge` step reads code-scanning alerts (agent token: Code scanning read, Workflows write). `gh run view --log` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. The main checkout cannot fast-forward over `.claude/agents/*` changes; the Patron runs `git -C ~/agents/bisellium reset --hard origin/master`.
+- Worktrees: `next` makes them; then a real `npm ci --cache ~/.bisellium-evidence/npm-cache` (a symlinked `node_modules` fails the mint). Always `--no-track` (read-only `.git/config.lock`); guard every `cd`.
+- Receipt mint: from the opus worktree, bare `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true` (~15 min; wrapped in `cd`/redirects it misses the allow rule). `next` from a worktree takes absolute `--studio`/`--repo` of the main checkout.
+- Any rebase needs a re-mint: hold other PRs (`gh pr merge <n> --disable-auto`) while an opus PR is open. Reds dropped by a rebase are re-recorded at the rebased test commit.
+- Review: Codex `gpt-5.6-sol` with `docs/CENSOR-PROMPT.md` (blocking findings cite `brief:<n>`, W-126); record from the opus worktree with `verdict … --from <$TMPDIR copy>` then `review --pass|--fail --evidence ci/<id>-review-<n>.log`. At most five rounds. A fresh builder per fix round once one passes ~250k.
+- Done: `verify` on master after the last merge that touched `docs/` (docs/ is in the certificate's source tree), then write the checkpoint (progress row, masthead, handoff; `build.sh`), then `next --perform --expect done` twice (commit, then land). Verify runs ~11 min under a 30-min cap (W-142). A killed verify leaves `.bisellium/vendor-sentinel.lock`; remove it before rerunning.
+- `.claude/` changes stop merge/branch/done with the Patron's command (W-141). `gh run view --log` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. Jobs cancelled with 0 steps = no runner (check githubstatus.com); retrigger.
 
 ## Model mapping (Patron, 2026-10-04)
 
@@ -162,18 +117,18 @@ Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5;
 
 ## Open with the Patron
 
-- W-127 and W-123 follow-ons are filed as W-140 (greenlit 2026-10-05, after W-126). A relayed instruction to a builder to overwrite a signed brief was blocked by its classifier (correctly); the orchestrator applies Patron-ruled brief revisions itself. `done` refuses until the opus's merge is in local master — run it after `git fetch` + ff of master.
-- Full GitHub CI on an unmerged opus tree: push it to `ci-probe/<id>`, open a draft PR, attach the `gates` job log, close the PR with `--delete-branch` (W-139 rounds 2–3).
-- W-077 follow-ons (Patron): per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
-- Receipt mint can fail with "no recorded red for behaviour 1" while the log exists; a plain retry passed (W-077).
-- D-036's kill condition (spec check flags a behaviour an earlier one already satisfies) has no opus yet; no tool waives a missing red, so a pre-empted red means a branch rebuild.
-
-- Restart loop (`scripts/cascade-loop.sh`, #199) waits on the Patron's one-time settings step; the first launch is its live test.
-- Hooks never run agent-clone code; the Stop hook points at `~/projects/bisellium/scripts/concise-stop.mjs`.
+- D-016 amendment: `next` now commits, pushes, rebases and merges; draft D-037 text is in `studio/briefs/W-141.md` (default: amend). The classifier blocks agents from amending decisions — the Patron applies it.
+- To file (ranked after W-152, defaults): W-141's split-outs (evidence commits + review packet as a verb; filing PRs through `next`; a sweep of stale local heads/worktrees); speed up `packages/cli/src/next.test.ts` (~8 of the suite's ~11 min); W-142's advisories (pin the timeout's four consumers; a killed verify's orphaned lock).
+- W-077 follow-ons: per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
+- D-036's kill condition (spec check flags a behaviour an earlier one already satisfies) has no opus yet.
+- Restart loop (`scripts/cascade-loop.sh`) waits on the Patron's one-time settings step. Hooks never run agent-clone code; the Stop hook is `~/projects/bisellium/scripts/concise-stop.mjs`.
 
 ## Queue
 
-**Milestones (Patron, 2026-10-06, D-038):** completion is measured by ten weighted milestones in `studio/acta/2026-10-06-milestones.md` (47.3% at filing; `~/.bisellium-evidence/milestones/compute.mjs` until W-152 makes it data). Every new opus gets a milestone and a value (1/2/3/5/8); the 8 outside opera are halted; W-143–W-151 filed as backlog; W-152 (the Status page: Progress + Backlog merged, completion meter, dossier-shrink check) greenlit, queued after W-142 and W-141 done. **W-077 done (PR 228).** Order of record: `studio/acta/2026-10-05-ranking.md` (Patron ruling 2026-10-05: rank by type of work). Greenlit 2026-10-05: group 1 process gates W-139, W-123, W-127, W-126, W-120; group 2 security W-133, W-115. W-139 done (PR 234). W-123 done (PR 237; narrowed to the done refusal, veto-able by the Patron, title unamended). W-127 done (PR 240): briefs carry one `Decree family:` line and at most 6 numbered behaviours (`brief_behaviour_limit: 6`); over the limit needs `Behaviour limit exception: <D-id>`, an architect decision naming the opus (Patron, 2026-10-05). W-126 done (PR 244): a blocking verdict finding cites `brief:<n>` or the writer records it advisory; its 4 spec questions shipped with their defaults (all-converted failure records passed; any non-blank brief line counts; build-phase non-UI only; producer proposes the qa.md §2 clause). W-140 done (PR 248): the receipt and host runner count behaviours with brief admission's one parser; its 4 spec questions shipped with defaults (host imports the .ts under Node >= 23.6; export narrowed; `~~~` stays a non-fence; landing items moved to W-141). W-141 done (PR 252): `next` performs spec landing, done (verify first; record + certificates + this checkpoint in one commit on `chore/done-<id>`) and stops on `.claude/` paths with the Patron's command; its 5 spec questions shipped with defaults; D-016's amendment (draft D-037 in its brief) is the Patron's. W-142 done (PR 256): one 30-minute GATE_TIMEOUT_MS for verify and ci; follow-on worth filing: speed up next.test.ts (~8 of the suite's ~11 minutes). Next: W-152 (the Status page), then W-120. Groups 3–6 (W-137, W-138, W-122, W-116, W-117, W-136, W-135, W-118) wait for the Patron's greenlight; W-136's UI and W-135's architecture need rulings at spec time; W-113 needs a UI ruling. Open questions in the ranking acta: W-138 depends on W-136; W-122 self-reported usage vs W-138's harness-log rule.
+- **Completion (D-038, Patron 2026-10-06):** ten weighted milestones in `studio/acta/2026-10-06-milestones.md`, 47.3% at filing (`~/.bisellium-evidence/milestones/compute.mjs` until W-152 makes it data). Every new opus gets one milestone and a value (1/2/3/5/8).
+- **Order of record:** `studio/acta/2026-10-05-ranking.md`. Done this run: W-139, W-123, W-127, W-126, W-140, W-141, W-142 (PRs and their spec defaults are on the progress page and in each brief).
+- **Next:** W-152 (the Status page: Progress + Backlog merged, completion meter on top, then in flight, backlog, history; plus a dossier-shrink check). Layout approved by the Patron 2026-10-06; it is UI, so confirm details with the Patron at spec. Then W-120, W-133, W-115 (greenlit).
+- **Waiting on a greenlight:** W-137, W-138, W-122, W-116, W-117, W-136 (UI ruling), W-135 (architecture ruling), W-118, W-113 (UI ruling), W-143–W-151.
 
 ## Research lane (on the side)
 
