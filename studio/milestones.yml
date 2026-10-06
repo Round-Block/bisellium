@@ -1,0 +1,51 @@
+milestones:
+  - id: M1
+    title: Build process, first version
+    weight: 10
+    exit:
+      opus: W-125
+  - id: M2
+    title: Records you can trust
+    weight: 10
+    exit:
+      needs: a test that a fresh init studio passes check, every bad fixture fails it, and one corrupt record degrades only itself
+  - id: M3
+    title: The work runs itself
+    weight: 15
+    exit:
+      opus: W-118
+  - id: M4
+    title: The Patron's desk
+    weight: 15
+    exit:
+      needs: a browser test that makes all four Patron decisions from the console and finds each in the records
+  - id: M5
+    title: The whole console, live
+    weight: 10
+    exit:
+      needs: a browser test that walks all seven screens and sees an event written by another process appear
+  - id: M6
+    title: Any vendor, any model
+    weight: 8
+    exit:
+      opus: W-061
+  - id: M7
+    title: The studio learns
+    weight: 10
+    exit:
+      rule: lesson.recurrent
+  - id: M8
+    title: Safe by construction
+    weight: 10
+    exit:
+      opus: W-099
+  - id: M9
+    title: Works on any project
+    weight: 8
+    exit:
+      needs: the dossier's acceptance test — a fresh repo set up by init, shown in the console beside one outside adapter with no adapter-specific code
+  - id: M10
+    title: Away from the desk
+    weight: 4
+    exit:
+      needs: a desktop build test that raises a native notification when something waits on the Patron
