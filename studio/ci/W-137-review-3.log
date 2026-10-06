@@ -1,0 +1,18 @@
+# opus: W-137
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T16:07:05.545Z
+# tree: tree:675677c92a1f6bcd560f0fc05258d5fad098cb22
+# brief: briefs/W-137.md blob:0da829322cab0f13ca02b2470e5f1014e16d1792
+
+## Findings
+1. blocking — packages/cli/src/retro.ts:563 Class: searching the sole retro verdict reader found two remaining raw-header violations: the generic regex admits unlisted header names, and `.trim()` normalizes `# opus: W-1 ` into a valid identity. Either lets an out-of-domain log pass and write; no second retro reader bypasses this parser, and Findings-line handling itself is closed. brief:168 — check: packages/cli/src/retro-opus.test.ts (W-137-b1 unknown-header and non-exact-opus-header rows)
+2. blocking — packages/cli/src/retro.ts:901 Class: searching all five mutation sites—new fix, lesson, greenlight record, event, and acta—found one unvalidated path: `.bisellium/events.jsonl`. The append can create a missing target and follows symlinks, permitting an outside write, while a directory or unwritable target refuses only after earlier mutations, violating write-nothing-on-refusal. brief:89 — check: packages/cli/src/retro-opus.test.ts (W-137-b1 unsafe event-log path with byte-identical officina and untouched outside target)
+
+## Verdict
+The supplied reds and gates close the tested Findings and acta-output cases, but the verdict-header allow-list and event-log mutation leave both blocker classes incomplete.
+
+VERDICT: FAIL
