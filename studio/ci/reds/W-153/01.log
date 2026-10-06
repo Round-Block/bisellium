@@ -1,0 +1,42 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-153-b1 --import tsx packages/core/src/completion.test.ts
+# exit: 1
+# at: 2026-10-06T08:42:09.893Z
+# sella: builder.W-153
+# tree: tree:0f6008160be2cbf9d63e9c424464e3c62f7c2fcc
+
+TAP version 13
+# Subtest: W-153-b1 behaviour 1: a done opus is dated by its record, end else its latest gate time
+not ok 1 - W-153-b1 behaviour 1: a done opus is dated by its record, end else its latest gate time
+  ---
+  duration_ms: 3.230387
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:1:1323'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - '2026-10-05T10:00:00.000Z'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '2026-10-05T10:00:00.000Z'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:41:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.117005

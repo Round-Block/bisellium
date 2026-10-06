@@ -21,6 +21,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq, parse as parseYaml } from "yaml";
 import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
+import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
 import { readBriefAdmission } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
@@ -1264,7 +1265,6 @@ const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <pat
 /** W-152: the scale an opus is scored on (D-038), and the milestone ids
  *  declared in `<officina>/milestones.yml` (empty when the file is absent or
  *  unreadable — `amend` then refuses any mapping). */
-export const MILESTONE_VALUES: readonly number[] = [1, 2, 3, 5, 8];
 function declaredMilestoneIds(root: string): Set<string> {
   try {
     const doc: unknown = parseYaml(readFileSync(join(root, "milestones.yml"), "utf8"));

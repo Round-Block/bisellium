@@ -29,3 +29,4 @@ export {
   type QueryAnswer,
   type QueryKind,
 } from "./query.js";
+export { computeMeter, doneAt, estimateFinish, isMilestoneValue, isMilestoneWeight, MILESTONE_VALUES, MILESTONE_WEIGHT_TOTAL, type Estimate, type Meter, type MeterRow, type Milestone } from "./completion.js";

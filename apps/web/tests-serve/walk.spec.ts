@@ -174,7 +174,7 @@ test("W-110 behaviour 3: every screen shows the served officina's own content, a
 
   // (d) Officina: headings, a posture card per seeded collegium, the Handoff notes count from /api/health.
   await page.locator('.sidebar__link[href="#/officina"]').click();
-  await expect(page.locator(".officina__panel-heading"), "officina panel headings").toHaveText(["Posture and burn", "Pending actions", "Contract integrity"]);
+  await expect(page.locator(".officina__panel-heading"), "officina panel headings").toHaveText(["Completion", "Posture and burn", "Pending actions", "Contract integrity"]);
   await expect
     .poll(() => page.locator(".officina__collegium-name").allTextContents().then((t) => [...t].sort()), "posture cards name exactly the seeded collegia")
     .toEqual(["art", "engineering", "production", "qa"]);

@@ -1,0 +1,16 @@
+# opus: W-153
+# phase: build
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T10:55:38.278Z
+# tree: tree:af885ec1ce604fb75a563e545335f2ff4b21e785
+# brief: briefs/W-153.md blob:73b074c2bbe3e94c877f1e59bed91edf258a8da2
+
+## Findings
+1. blocking — packages/core/src/completion.ts:57 The malformed-numeric class remains open: `isMilestoneWeight` admits arbitrarily large finite integers such as `1e308`, and `vet` retains them despite the invalid total; `computeMeter` can therefore overflow `weight * pct` at line 76, exposing `Infinity` or serialized `null` instead of a numeric Overall. I searched every numeric ingress and arithmetic path in `completion.ts`; the value, unreadable-count, remaining, and weekly paths are closed, leaving this unbounded-weight path as the sole instance. brief:99, brief:169 — check: packages/core/src/completion.test.ts and apps/server/test/completion.test.ts with a `1e308` milestone weight and recursive finite-response assertions
+
+## Verdict
+The earlier fixes, reds, receipt, and gates hold, but the round-4 malformed-numeric blocker is not fully closed because a finite invalid weight can still make the response non-finite.
+VERDICT: FAIL

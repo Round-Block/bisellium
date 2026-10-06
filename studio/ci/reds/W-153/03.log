@@ -1,0 +1,52 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-153-b3 --import tsx packages/core/src/completion.test.ts
+# exit: 1
+# at: 2026-10-06T08:42:10.938Z
+# sella: builder.W-153
+# tree: tree:0f6008160be2cbf9d63e9c424464e3c62f7c2fcc
+
+TAP version 13
+# Subtest: W-153-b3 behaviour 3: a bulk closure is left out of the pace; thin history or nothing left gives no estimate
+not ok 1 - W-153-b3 behaviour 3: a bulk closure is left out of the pace; thin history or nothing left gives no estimate
+  ---
+  duration_ms: 4.543528
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:1:2709'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + []
+    - [
+    -   'W-20',
+    -   'W-21',
+    -   'W-22',
+    -   'W-23'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'W-20'
+    1: 'W-21'
+    2: 'W-22'
+    3: 'W-23'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:72:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.432302

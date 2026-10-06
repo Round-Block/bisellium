@@ -1,0 +1,17 @@
+# opus: W-153
+# phase: build
+# round: 6
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-06T11:21:11.926Z
+# tree: tree:c743e0fb2c80fc6165ee41938b23cc2a9a721ee7
+# brief: briefs/W-153.md blob:73b074c2bbe3e94c877f1e59bed91edf258a8da2
+
+## Findings
+1. advisory — packages/core/src/completion.test.ts:173 The D-043 regression row covers non-100 and non-finite totals but omits the separately ruled zero-sum case; the implementation handles it correctly, so this is one coverage omission. — check: packages/core/src/completion.test.ts W-153-b3 with an empty or all-zero milestone set
+2. advisory — scripts/status-page.mjs:120 The sole implementation-facing Status-page comment still states the old `Σ(weight × pct) / 100` formula instead of normalization by the actual total; I searched formula descriptions under packages, apps, scripts, and docs and found no other stale instance. — check: none
+
+## Verdict
+D-043 closes the round-5 blocker: normalized shares keep the complete response finite, invalid totals fail closed, all earlier fixes remain green, and the delta introduces no behavioral regression.
+VERDICT: PASS

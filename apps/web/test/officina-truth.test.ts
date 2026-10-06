@@ -130,7 +130,7 @@ if (runs(2)) {
       }
     }
     const html = render();
-    assert.deepEqual(byClass(html, "officina__panel-heading", "h2").map(text), ["Posture and burn", "Pending actions", "Contract integrity"]);
+    assert.deepEqual(byClass(html, "officina__panel-heading", "h2").map(text), ["Completion", "Posture and burn", "Pending actions", "Contract integrity"]);
 
     const pending = (h: HealthResponse): string => panelOf(render({ health: h }), "Pending actions");
     assert.deepEqual(byClass(pending(health()), "officina__count").map(text), ["2"], "the count beside the heading reads 2");

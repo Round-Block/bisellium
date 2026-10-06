@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchActa, fetchAerarium, fetchHealth, fetchOfficina } from "../api.js";
-import type { AerariumEntry, HealthResponse, OfficinaResponse } from "../api.js";
+import { fetchActa, fetchAerarium, fetchCompletion, fetchHealth, fetchOfficina } from "../api.js";
+import type { AerariumEntry, CompletionResponse, HealthResponse, OfficinaResponse } from "../api.js";
 import { formatPosture } from "../lib/posture.js";
 import { healthStamp, integritySummary } from "../lib/officinaTruth.js";
 import { FastiStrip } from "../components/FastiStrip.js";
@@ -35,6 +35,17 @@ const DEV_ACTA: ActaEntry[] = [
   { id: "cascade-9", author: "sonnet-5", kind: "cascade", title: "Cascade 9", at: "2026-09-19T09:00:00Z", evidence: null },
 ];
 
+const DEV_COMPLETION: CompletionResponse = {
+  meter: {
+    rows: [
+      { id: "M1", title: "Build process, first version", weight: 10, done: 18, planned: 20, met: false, pct: 90 },
+      { id: "M2", title: "Records you can trust", weight: 10, done: 6, planned: 24, met: false, pct: 25 },
+    ],
+    overall: 11.5,
+  },
+  estimate: { kind: "estimate", line: "Estimated finish: in about 14 days (10 to 28 days), around 20 Oct 2026, at the pace of the last 3 weeks." },
+};
+
 const DEV_HEALTH: HealthResponse = {
   at: "2026-09-19T14:00:00.000Z",
   ok: false,
@@ -52,6 +63,7 @@ const DEV_HEALTH: HealthResponse = {
 export interface OfficinaViewProps {
   aerarium: AerariumEntry[] | "failed" | undefined; // undefined = not loaded yet
   health: HealthResponse | "failed" | undefined;
+  completion?: CompletionResponse | "failed"; // undefined = loading
   acta: ActaEntry[];
   now: Date;
 }
@@ -63,11 +75,50 @@ function healthState(health: OfficinaViewProps["health"]): React.ReactNode {
   return undefined;
 }
 
+const pct1 = (n: number): string => `${n.toFixed(1)}%`;
+
+function Bar({ pct }: { pct: number }) {
+  return (
+    <div className="officina__bar">
+      <div className="officina__bar-fill" style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }} />
+    </div>
+  );
+}
+
+/** W-153: overall %, the estimate line verbatim, one row per milestone. */
+function CompletionPanel({ completion }: { completion: OfficinaViewProps["completion"] }) {
+  if (completion === undefined) return <p className="officina__loading">Loading completion…</p>;
+  if (completion === "failed") return <p className="officina__empty">Could not load completion.</p>;
+  if (completion.meter === null) return <p className="officina__empty">No milestone records</p>;
+  // any null or non-finite figure (a non-finite value serialises as null) is never drawn: no estimate, no crash
+  const figures = [completion.meter.overall, ...completion.meter.rows.flatMap((r) => [r.done, r.planned, r.pct])];
+  if (!figures.every((n) => typeof n === "number" && Number.isFinite(n))) return <p className="officina__empty">No estimate</p>;
+  return (
+    <>
+      <p className="officina__completion-overall">Overall {pct1(completion.meter.overall)}</p>
+      <Bar pct={completion.meter.overall} />
+      {typeof completion.estimate?.line === "string" && <p className="officina__completion-estimate">{completion.estimate.line}</p>}
+      <div className="officina__completion-rows">
+        {completion.meter.rows.map((r) => (
+          <div key={r.id} className="officina__completion-row">
+            <span className="officina__completion-id">{r.id}</span>
+            <span className="officina__completion-title">{r.title}</span>
+            <span className="officina__completion-points">{r.done}/{r.planned}</span>
+            <span className="officina__completion-pct">{pct1(r.pct)}</span>
+            <Bar pct={r.pct} />
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export function Officina() {
   const [, setOfficina] = useState<OfficinaResponse>();
   const [aerarium, setAerarium] = useState<OfficinaViewProps["aerarium"]>();
   const [health, setHealth] = useState<OfficinaViewProps["health"]>();
   const [acta, setActa] = useState<ActaEntry[]>([]);
+  const [completion, setCompletion] = useState<OfficinaViewProps["completion"]>();
 
   const demo = location.search.includes("demo");
 
@@ -76,18 +127,20 @@ export function Officina() {
       setAerarium(DEV_AERARIUM);
       setHealth(DEV_HEALTH);
       setActa(DEV_ACTA);
+      setCompletion(DEV_COMPLETION);
       return;
     }
     fetchOfficina().then(setOfficina).catch(() => undefined);
     fetchAerarium().then(setAerarium).catch(() => setAerarium("failed"));
     fetchHealth().then(setHealth).catch(() => setHealth("failed"));
     fetchActa().then(setActa).catch(() => undefined);
+    fetchCompletion().then(setCompletion).catch(() => setCompletion("failed"));
   }, [demo]);
 
-  return <OfficinaView aerarium={aerarium} health={health} acta={acta} now={new Date()} />;
+  return <OfficinaView aerarium={aerarium} health={health} completion={completion} acta={acta} now={new Date()} />;
 }
 
-export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps) {
+export function OfficinaView({ aerarium, health, completion, acta, now }: OfficinaViewProps) {
   const loaded = typeof health === "object" ? health : undefined;
   const summary = loaded ? integritySummary(loaded) : undefined;
   const asOf = loaded && <p className="officina__as-of">{healthStamp(loaded.at, now)}</p>;
@@ -98,6 +151,11 @@ export function OfficinaView({ aerarium, health, acta, now }: OfficinaViewProps)
       </div>
 
       <FastiStrip acta={acta} today={now} />
+
+      <section className="officina__panel panel--completion">
+        <h2 className="officina__panel-heading">Completion</h2>
+        <CompletionPanel completion={completion} />
+      </section>
 
       {/* Top row: Status (full width) */}
       <section className="officina__panel panel--status-wide">

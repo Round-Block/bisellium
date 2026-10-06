@@ -486,6 +486,7 @@ const ROUTE_INDEX_HTML = `<!doctype html>
 <li>GET /api/aerarium?period=</li>
 <li>GET /api/providers?live=</li>
 <li>GET /api/health</li>
+<li>GET /api/completion</li>
 <li>GET /api/timeline/:sella?limit=</li>
 <li>GET /api/events?since=&amp;limit=</li>
 <li>GET /api/receipts?sella=</li>
@@ -706,6 +707,7 @@ async function route(
   }
 
   if (method === "GET" && pathname === "/api/health") return sendJson(res, 200, store.api.health(checkStudio));
+  if (method === "GET" && pathname === "/api/completion") return sendJson(res, 200, store.api.completion(checkStudio));
 
   {
     const m = /^\/api\/timeline\/([^/]+)$/.exec(pathname);

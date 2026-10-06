@@ -8,7 +8,7 @@
 import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
-import { MILESTONE_VALUES } from "@bisellium/commands/lifecycle.js";
+import { isMilestoneValue, isMilestoneWeight, MILESTONE_VALUES, MILESTONE_WEIGHT_TOTAL } from "@bisellium/core";
 import { parse as parseYaml } from "yaml";
 import { ID_RE } from "../check.js";
 import type { Finding, RuleOpts } from "../check.js";
@@ -51,7 +51,7 @@ function readDeclared(root: string): { ids: Set<string>; problems: string[] } | 
     else ids.add(id);
     const name = typeof id === "string" ? `milestone ${id}` : at;
     const w = m["weight"];
-    if (typeof w !== "number" || !Number.isInteger(w) || w <= 0) {
+    if (!isMilestoneWeight(w)) {
       problems.push(`${name} weight must be a positive integer`);
       weightsOk = false;
     } else total += w;
@@ -62,7 +62,7 @@ function readDeclared(root: string): { ids: Set<string>; problems: string[] } | 
       problems.push(`${name} exit must have exactly one of ${EXIT_KEYS.join(" | ")}`);
     else if (typeof exit[key] !== "string" || exit[key] === "") problems.push(`${name} exit ${key} must be a non-empty string`);
   });
-  if (weightsOk && total !== 100) problems.push(`milestone weights total ${total}, not 100`);
+  if (weightsOk && total !== MILESTONE_WEIGHT_TOTAL) problems.push(`milestone weights total ${total}, not ${MILESTONE_WEIGHT_TOTAL}`);
   return { ids, problems };
 }
 
@@ -85,7 +85,7 @@ export function checkMilestones(root: string, _opts: RuleOpts): Finding[] {
       }
       if (typeof mapped[0] !== "string" || !declared.ids.has(mapped[0]))
         findings.push(block("opus.milestone", where, `milestone ${JSON.stringify(mapped[0])} is not declared in ${MILESTONES_FILE}`));
-      else if (typeof d["value"] !== "number" || !MILESTONE_VALUES.includes(d["value"]))
+      else if (!isMilestoneValue(d["value"]))
         findings.push(block("opus.milestone", where, `value ${JSON.stringify(d["value"])} must be one of ${MILESTONE_VALUES.join(", ")}`));
     } catch {
       /* unreadable record: opus.parse already reports it */
