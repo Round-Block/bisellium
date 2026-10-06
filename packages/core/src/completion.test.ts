@@ -153,7 +153,11 @@ test("W-153-b3 behaviour 3: a non-finite value on a dated done opus, or a non-fi
     assert.equal(e.reason, "unreadable-records");
     finite(e);
   }
-  const e = run(fixture(), [{ ...milestones[0]!, weight: Number.POSITIVE_INFINITY }]);
+  const infinite = [{ ...milestones[0]!, weight: Number.POSITIVE_INFINITY }];
+  const e = run(fixture(), infinite);
   assert.equal(e.reason, "unreadable-records", "a non-finite weight");
   finite(e);
+  const meter = computeMeter({ milestones: infinite, opera: fixture(), findings: [] });
+  for (const r of meter.rows) for (const [k, v] of Object.entries(r)) if (typeof v === "number") assert.ok(Number.isFinite(v), `meter row ${k} is finite`);
+  assert.ok(Number.isFinite(meter.overall), "overall is finite");
 });

@@ -178,3 +178,17 @@ test("W-153-b5 behaviour 5: a dated done opus with a non-finite value serves No 
     await server.close();
   }
 });
+
+test("W-153-b5 behaviour 5: a non-finite milestone weight serves No estimate with every meter row finite", async () => {
+  const dir = studio("{ needs: x }");
+  writeFileSync(join(dir, "milestones.yml"), 'milestones:\n  - { id: M1, title: "One", weight: .inf, exit: { needs: x } }\n');
+  const { server, get } = await serve(dir, () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }));
+  try {
+    const body = (await (await get("/api/completion")).json()) as { meter: { overall: unknown; rows: Record<string, unknown>[] }; estimate: { reason?: string } };
+    assert.equal(body.estimate.reason, "unreadable-records");
+    for (const r of body.meter.rows) for (const [k, v] of Object.entries(r)) if (typeof v === "number" || v === null) assert.ok(typeof v === "number" && Number.isFinite(v), `meter row ${k} is finite`);
+    assert.ok(typeof body.meter.overall === "number" && Number.isFinite(body.meter.overall));
+  } finally {
+    await server.close();
+  }
+});
