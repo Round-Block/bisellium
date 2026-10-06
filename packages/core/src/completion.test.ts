@@ -170,6 +170,27 @@ function assertAllFinite(v: unknown, path = "response"): void {
   else if (typeof v === "object") for (const [k, x] of Object.entries(v as object)) assertAllFinite(x, `${path}.${k}`);
 }
 
+test("W-153-b3 behaviour 3: weights are normalized: any total works, a huge weight cannot overflow, and a non-finite sum gives No estimate", () => {
+  const two = (w1: number, w2: number) => [
+    { id: "M1", title: "One", weight: w1, exit: { needs: "x" } },
+    { id: "M2", title: "Two", weight: w2, exit: { needs: "x" } },
+  ];
+  const run = (ms: ReturnType<typeof two>) => {
+    const meter = computeMeter({ milestones: ms, opera: fixture(), findings: [] });
+    const estimate = estimateFinish({ meter, opera: fixture(), now: NOW });
+    assertAllFinite({ meter, estimate });
+    return { meter, estimate };
+  };
+  const scaled = run(two(20, 80));
+  assert.equal(scaled.estimate.kind, "estimate");
+  for (const ms of [two(10, 40), two(49, 50), two(1e308, 50)]) assert.equal(run(ms).estimate.kind, "estimate", `weights ${ms[0]!.weight}+${ms[1]!.weight}`);
+  assert.equal(run(two(10, 40)).meter.overall, scaled.meter.overall, "weights totalling 50 give the same Overall as the same weights scaled to 100");
+  assert.ok(Math.abs(run(two(1e308, 50)).meter.overall - 95) < 1e-9, "a huge weight takes its share, not an overflow");
+  const shares = run(two(10, 40)).meter.rows.map((r) => (r as { share?: number }).share);
+  assert.deepEqual(shares, [0.2, 0.8], "each row reports its normalized share beside its declared weight");
+  assert.equal(run(two(1e308, 1e308)).estimate.reason, "unreadable-records");
+});
+
 test("W-153-b3 behaviour 3: a value or weight outside the milestone domain gives No estimate, and the whole response stays finite", () => {
   const two = (w1: number, w2: number) => [
     { id: "M1", title: "One", weight: w1, exit: { needs: "x" } },
@@ -184,7 +205,7 @@ test("W-153-b3 behaviour 3: a value or weight outside the milestone domain gives
     ["a huge value", huge, two(50, 50)],
     ["a fractional weight", fixture(), two(33.5, 66.5)],
     ["a negative weight", fixture(), two(-10, 110)],
-    ["weights totalling 99", fixture(), two(49, 50)],
+    ["two huge weights whose sum overflows", fixture(), two(1e308, 1e308)],
   ];
   const ok = estimateFinish({ meter: computeMeter({ milestones: two(50, 50), opera: fixture(), findings: [] }), opera: fixture(), now: NOW });
   assert.equal(ok.kind, "estimate", "control: a valid domain has an estimate");

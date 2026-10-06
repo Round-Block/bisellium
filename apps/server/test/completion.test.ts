@@ -210,7 +210,7 @@ test("W-153-b5 behaviour 5: a value or weight outside the milestone domain serve
     ["a huge value", (d) => (setValue("W-30", "backlog", "1e308")(d), setValue("W-31", "backlog", "1e308")(d))],
     ["a fractional weight", (d) => writeFileSync(join(d, "milestones.yml"), ms(33.5, 66.5))],
     ["a negative weight", (d) => writeFileSync(join(d, "milestones.yml"), ms(-10, 110))],
-    ["weights totalling 99", (d) => writeFileSync(join(d, "milestones.yml"), ms(49, 50))],
+    ["two huge weights whose sum overflows", (d) => writeFileSync(join(d, "milestones.yml"), ms(1e308, 1e308))],
   ];
   for (const [what, mutate] of cases) {
     const dir = studio("{ needs: x }");
@@ -226,4 +226,24 @@ test("W-153-b5 behaviour 5: a value or weight outside the milestone domain serve
       await server.close();
     }
   }
+});
+
+test("W-153-b5 behaviour 5: weights are normalized: a total of 50 serves the same Overall as the same weights scaled to 100", async () => {
+  const overall = async (w1: number, w2: number): Promise<{ overall: number; kind: string }> => {
+    const dir = studio("{ needs: x }");
+    writeFileSync(join(dir, "milestones.yml"), `milestones:\n  - { id: M1, title: "One", weight: ${w1}, exit: { needs: x } }\n  - { id: M2, title: "Two", weight: ${w2}, exit: { needs: x } }\n`);
+    const { server, get } = await serve(dir, () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }));
+    try {
+      const body = (await (await get("/api/completion")).json()) as { meter: { overall: number }; estimate: { kind: string } };
+      assert.ok(Number.isFinite(body.meter.overall));
+      return { overall: body.meter.overall, kind: body.estimate.kind };
+    } finally {
+      await server.close();
+    }
+  };
+  const scaled = await overall(20, 80);
+  assert.equal(scaled.kind, "estimate");
+  assert.deepEqual(await overall(10, 40), scaled, "a total of 50");
+  assert.equal((await overall(49, 50)).kind, "estimate", "a total of 99");
+  assert.equal((await overall(1e308, 50)).kind, "estimate", "a huge weight");
 });
