@@ -374,7 +374,7 @@ flowchart LR
   log[(".bisellium/events.jsonl")]
   snaps[(".bisellium/snapshots/&lt;source&gt;.json")]
   idx[(".bisellium/index/index.db (SQLite)")]
-  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health"]
+  reads["GET /api/officina /opera /inbox /acta<br/>/aerarium /providers /health<br/>GET /api/completion"]
   events["GET /api/events"]
   live["GET /api/live (SSE)"]
   posts["POST /api/answer /greenlight /budget<br/>/handoff /talk /pause /resume<br/>X-Bisellium-Token + no-Origin"]
