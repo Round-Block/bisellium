@@ -5,9 +5,11 @@
  * OS tmp dir and writes nothing in studio/ or examples/.
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { after, test } from "node:test";
 import { computeMeter, readHistoryRows, readMilestones, readOfficina, renderStatusPage } from "./status-page.mjs";
 
@@ -136,4 +138,66 @@ test("W-152-b5 behaviour 5: one page, in the approved order, with the history ca
     (e) => e instanceof Error && e.message.includes(twoBody),
     "two <tbody> throws, naming the file",
   );
+});
+
+test("W-153-b4 behaviour 4: an unreadable or non-numeric opus record gives the Status page no estimate, never a number", () => {
+  const day = 86_400_000;
+  const ago = (days) => new Date(Date.now() - days * day).toISOString();
+  const rec = (id, state, value, end) =>
+    `---\nid: ${id}\ntitle: ${id}\nkind: opus\ncollegium: engineering\nstate: ${state}\nmilestone: M1\nvalue: ${value}\n${end ? `end: "${end}"\n` : ""}---\n`;
+  const page = (mutate) => {
+    const dir = tmp("b4r1");
+    writeFileSync(join(dir, "bisellium.yml"), GATES);
+    mkdirSync(join(dir, "opera"));
+    writeFileSync(
+      join(dir, "milestones.yml"),
+      'milestones:\n  - { id: M1, title: "Alpha", weight: 100, exit: { needs: x } }\n',
+    );
+    for (const [id, state, value, end] of [
+      ["W-1", "done", 5, ago(1)],
+      ["W-2", "done", 5, ago(8)],
+      ["W-3", "done", 5, ago(15)],
+      ["W-4", "backlog", 8],
+    ])
+      writeFileSync(join(dir, "opera", `${id}.md`), rec(id, state, value, end));
+    mutate(dir);
+    writeFileSync(join(dir, "handoff.md"), "plain handoff\n");
+    writeFileSync(join(dir, "history.html"), "<table><tbody></tbody></table>\n");
+    const out = join(dir, "out.html");
+    const script = join(dirname(fileURLToPath(import.meta.url)), "status-page.mjs");
+    execFileSync(
+      process.execPath,
+      [
+        script,
+        "--studio",
+        dir,
+        "--out",
+        out,
+        "--handoff",
+        join(dir, "handoff.md"),
+        "--history",
+        join(dir, "history.html"),
+      ],
+      { stdio: "pipe" },
+    );
+    return section(readFileSync(out, "utf8"), "Completion");
+  };
+
+  assert.match(
+    page(() => {}),
+    /Estimated finish: in about \d+ days/,
+    "control: the clean fixture has an estimate",
+  );
+  for (const [what, mutate] of [
+    ["an unreadable record", (d) => writeFileSync(join(d, "opera", "W-9.md"), "no front matter in this record\n")],
+    [
+      "a front matter that does not parse",
+      (d) => writeFileSync(join(d, "opera", "W-9.md"), "---\nid: [unclosed\n---\n"),
+    ],
+    ["a non-numeric value", (d) => writeFileSync(join(d, "opera", "W-4.md"), rec("W-4", "backlog", "lots"))],
+  ]) {
+    const html = page(mutate);
+    assert.doesNotMatch(html, /Estimated finish/, `${what}: no number`);
+    assert.match(html, /No estimate: an opus record is unreadable or carries no valid points\./, `${what}: says why`);
+  }
 });

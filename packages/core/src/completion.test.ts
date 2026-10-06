@@ -11,7 +11,7 @@ import { computeMeter, doneAt, estimateFinish } from "./completion.js";
 const NOW = new Date("2026-10-06T12:00:00Z");
 const milestones = [{ id: "M1", title: "One", weight: 100, exit: { needs: "x" } }];
 
-type Opus = { id: string; state: string; milestone: string; value: number; end?: string; probationes?: Record<string, { at?: string }> };
+type Opus = { id: string; state: string; milestone: string; value: number; end?: string; probationes?: Record<string, { at?: string; status?: string }> };
 const done = (id: string, value: number, end: string): Opus => ({ id, state: "done", milestone: "M1", value, end });
 const open = (id: string, state: string, value: number): Opus => ({ id, state, milestone: "M1", value });
 
@@ -25,7 +25,7 @@ function fixture(): Opus[] {
     done("W-7", 5, "2026-09-20T10:00:00Z"),
     done("W-8", 2, "2026-09-16T10:00:00Z"),
     done("W-10", 1, "2026-09-01T10:00:00Z"),
-    { id: "W-6", state: "done", milestone: "M1", value: 3, probationes: { spec: { at: "2026-09-23T09:00:00Z" }, review: { at: "2026-09-24T10:00:00Z" } } },
+    { id: "W-6", state: "done", milestone: "M1", value: 3, probationes: { spec: { status: "passed", at: "2026-09-23T09:00:00Z" }, review: { status: "passed", at: "2026-09-24T10:00:00Z" } } },
     { id: "W-9", state: "done", milestone: "M1", value: 3 },
     open("W-11", "backlog", 8),
     open("W-12", "greenlit", 8),
@@ -41,11 +41,11 @@ test("W-153-b1 behaviour 1: a done opus is dated by its record, end else its lat
   assert.equal(doneAt({ end: "2026-10-05T10:00:00Z" }), "2026-10-05T10:00:00.000Z");
   assert.equal(doneAt({ end: new Date("2026-10-05T10:00:00Z") }), "2026-10-05T10:00:00.000Z");
   assert.equal(
-    doneAt({ probationes: { spec: { at: "2026-09-23T09:00:00Z" }, review: { at: "2026-09-24T10:00:00Z" }, tests: {} } }),
+    doneAt({ probationes: { spec: { status: "passed", at: "2026-09-23T09:00:00Z" }, review: { status: "passed", at: "2026-09-24T10:00:00Z" }, tests: { status: "passed" } } }),
     "2026-09-24T10:00:00.000Z",
   );
-  assert.equal(doneAt({ end: new Date("2026-09-20T00:00:00Z"), probationes: { review: { at: "2026-09-25T10:00:00Z" } } }), "2026-09-20T00:00:00.000Z", "end wins");
-  assert.equal(doneAt({ end: "soon", probationes: { review: { at: "2026-09-24T10:00:00Z" } } }), "2026-09-24T10:00:00.000Z");
+  assert.equal(doneAt({ end: new Date("2026-09-20T00:00:00Z"), probationes: { review: { status: "passed", at: "2026-09-25T10:00:00Z" } } }), "2026-09-20T00:00:00.000Z", "end wins");
+  assert.equal(doneAt({ end: "soon", probationes: { review: { status: "passed", at: "2026-09-24T10:00:00Z" } } }), "2026-09-24T10:00:00.000Z");
   assert.equal(doneAt({}), undefined);
 });
 
@@ -88,4 +88,40 @@ test("W-153-b3 behaviour 3: a bulk closure is left out of the pace; thin history
   assert.equal(all.reason, "nothing-left");
   assert.equal(all.remaining, 0);
   assert.equal(all.line, "Nothing left: every planned point is done.");
+});
+
+test("W-153-b1 behaviour 1: only a passed gate dates a done opus, never a failed, waived or status-less one", () => {
+  const gate = (status: string | undefined, at: string) => ({ ...(status ? { status } : {}), at });
+  assert.equal(
+    doneAt({ probationes: { review: gate("passed", "2026-09-24T10:00:00Z"), tests: gate("failed", "2026-09-26T10:00:00Z") } }),
+    "2026-09-24T10:00:00.000Z",
+    "a newer failed gate does not date it",
+  );
+  assert.equal(doneAt({ probationes: { review: gate("failed", "2026-09-26T10:00:00Z"), qa: gate("waived", "2026-09-27T10:00:00Z"), lint: gate(undefined, "2026-09-28T10:00:00Z") } }), undefined);
+  assert.equal(doneAt({ end: "2026-09-20T00:00:00Z", probationes: { review: gate("passed", "2026-09-25T10:00:00Z") } }), "2026-09-20T00:00:00.000Z", "end still wins");
+});
+
+test("W-153-b3 behaviour 3: a malformed or unreadable record gives no estimate, never a number", () => {
+  const line = "No estimate: an opus record is unreadable or carries no valid points.";
+  const bad = (value: unknown, state = "backlog"): Opus[] => [...fixture().filter((o) => o.id !== "W-11"), { id: "W-11", state, milestone: "M1", value } as Opus];
+  const run = (opera: Opus[], unreadable?: number) => {
+    let got: ReturnType<typeof estimateFinish> | undefined;
+    assert.doesNotThrow(() => {
+      got = estimateFinish({ meter: computeMeter({ milestones, opera, findings: [] }), opera, now: NOW, ...(unreadable === undefined ? {} : { unreadable }) });
+    }, "estimateFinish does not throw");
+    return got as ReturnType<typeof estimateFinish>;
+  };
+
+  for (const value of ["lots", undefined, null, -3, Number.NaN, "8"]) {
+    const e = run(bad(value));
+    assert.equal(e.kind, "none", `value ${String(value)} gives no estimate`);
+    assert.equal(e.reason, "unreadable-records");
+    assert.equal(e.line, line);
+  }
+  assert.equal(run(bad("lots", "done")).reason, "unreadable-records", "a done opus with a bad value too");
+  assert.equal(run(bad("lots", "halted")).kind, "estimate", "a halted opus is not planned, so its value is not read");
+  assert.equal(run(fixture(), 1).reason, "unreadable-records", "an unreadable record the reader skipped");
+  assert.equal(run(fixture(), 0).kind, "estimate");
+  const allDone = fixture().map((o) => (o.state === "backlog" || o.state === "greenlit" || o.state === "building" || o.state === "review" ? { ...o, state: "done" } : o));
+  assert.equal(run(allDone, 1).reason, "unreadable-records", "never a false Nothing left");
 });

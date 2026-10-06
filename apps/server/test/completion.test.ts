@@ -121,3 +121,30 @@ test("W-153-b5 behaviour 5: GET /api/completion serves the same meter and estima
     await server.close();
   }
 });
+
+test("W-153-b5 behaviour 5: an unreadable or non-numeric opus record gives no estimate, never a number", () => {
+  const line = "No estimate: an opus record is unreadable or carries no valid points.";
+  const nope = (): { ok: boolean; blocks: number; advisories: number; findings: unknown[] } => ({ ok: true, blocks: 0, advisories: 0, findings: [] });
+  const ask = (dir: string) => new Store({ studioDir: dir, now: NOW }).api.completion(nope) as { meter: unknown; estimate: { kind: string; reason?: string; line: string } };
+
+  const clean = ask(studio("{ needs: x }"));
+  assert.equal(clean.estimate.kind, "estimate", "control: the clean fixture has an estimate");
+
+  const unreadable = studio("{ needs: x }");
+  writeFileSync(join(unreadable, "opera", "W-99.md"), "no front matter in this record\n");
+  const a = ask(unreadable);
+  assert.equal(a.estimate.kind, "none");
+  assert.equal(a.estimate.reason, "unreadable-records");
+  assert.equal(a.estimate.line, line);
+
+  const broken = studio("{ needs: x }");
+  writeFileSync(join(broken, "opera", "W-98.md"), "---\nid: [unclosed\n---\n");
+  assert.equal(ask(broken).estimate.reason, "unreadable-records", "a front matter that does not parse");
+
+  const lots = studio("{ needs: x }");
+  writeFileSync(join(lots, "opera", "W-11.md"), front({ id: "W-11", state: "backlog", value: 8 }).replace("value: 8", "value: lots"));
+  const c = ask(lots);
+  assert.equal(c.estimate.kind, "none");
+  assert.equal(c.estimate.reason, "unreadable-records");
+  assert.ok(c.meter !== null, "the meter is still served");
+});

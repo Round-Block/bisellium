@@ -20,7 +20,7 @@ export interface MeterOpus {
   milestone?: unknown;
   value?: unknown;
   end?: unknown;
-  probationes?: Record<string, { at?: unknown } | undefined> | undefined;
+  probationes?: Record<string, { at?: unknown; status?: unknown } | undefined> | undefined;
 }
 export interface MeterRow extends Milestone {
   done: number;
@@ -50,7 +50,7 @@ export function computeMeter({ milestones, opera, findings }: { milestones: Mile
 
 export interface Estimate {
   kind: "estimate" | "none";
-  reason?: "nothing-left" | "too-little-history";
+  reason?: "nothing-left" | "too-little-history" | "unreadable-records";
   remaining: number;
   weekly: [number, number, number];
   bulk: string[];
@@ -73,7 +73,7 @@ function instant(v: unknown): string | undefined {
 }
 
 /** When a done opus was done, from its own record: `end`, else its latest gate `at`; undefined when neither parses. */
-export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?: unknown } | undefined> | undefined }): string | undefined {
+export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?: unknown; status?: unknown } | undefined> | undefined }): string | undefined {
   const end = instant(opus.end);
   if (end !== undefined) return end;
   const gates = Object.values(opus.probationes ?? {})
@@ -84,7 +84,7 @@ export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?
 }
 
 /** The estimated finish: remaining points over the mean of the last three weeks' paced points (W-153). */
-export function estimateFinish({ meter, opera, now }: { meter: Meter; opera: MeterOpus[]; now: Date }): Estimate {
+export function estimateFinish({ meter, opera, now }: { meter: Meter; opera: MeterOpus[]; now: Date; unreadable?: number }): Estimate {
   const remaining = meter.rows.reduce((n, r) => n + r.planned - r.done, 0);
   const rows = new Set(meter.rows.map((r) => r.id));
   const nowMs = now.getTime();
