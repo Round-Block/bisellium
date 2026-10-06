@@ -87,12 +87,14 @@ function files(dir: string, base = dir): string[] {
     return lstatSync(p).isDirectory() ? [`${relative(base, p)}/`, ...files(p, base)] : [relative(base, p)];
   });
 }
-/** every byte under the officina, so "writes nothing" is a byte comparison. */
-const snapshot = (root: string): string =>
-  files(root)
-    .sort()
-    .map((f) => `${f}\0${f.endsWith("/") ? "dir" : lstatSync(join(root, f)).isSymbolicLink() ? `link ${readlinkSync(join(root, f))}` : readFileSync(join(root, f), "utf8")}`)
-    .join("\n\0\n");
+/** every entry under the officina with its bytes, so "writes nothing" and "writes exactly these" are byte comparisons. */
+const entriesOf = (root: string): Map<string, string> =>
+  new Map(
+    files(root)
+      .sort()
+      .map((f) => [f, f.endsWith("/") ? "dir" : lstatSync(join(root, f)).isSymbolicLink() ? `link ${readlinkSync(join(root, f))}` : readFileSync(join(root, f), "utf8")] as const),
+  );
+const snapshot = (root: string): string => [...entriesOf(root)].map(([f, v]) => `${f}\0${v}`).join("\n\0\n");
 
 interface Ran {
   code: number;
@@ -396,9 +398,13 @@ test("W-137-b1 round 5: an event log that is a directory refuses before anything
   refuses(root, "a directory at .bisellium/events.jsonl", HIGH);
 });
 
-/** Runs the retro with `locks` (officina-relative path -> mode) applied, restoring every mode after; the officina must be byte-identical. */
-function refusesLocked(root: string, what: string, triage: unknown, locks: Record<string, number>): void {
-  const before = snapshot(root);
+/**
+ * Runs the retro with `locks` (officina-relative path -> mode) applied, restoring every mode after. A late I/O failure
+ * (spec round 2) exits 1, names every path written in this run in first-write order, and reverses nothing: the officina
+ * differs from before in exactly the named paths, in the order named.
+ */
+function failsLate(root: string, what: string, triage: unknown, locks: Record<string, number>, written: string[]): void {
+  const before = entriesOf(root);
   const saved = Object.keys(locks).map((rel) => [rel, lstatSync(join(root, rel)).mode & 0o777] as const);
   let r: Ran;
   try {
@@ -407,31 +413,49 @@ function refusesLocked(root: string, what: string, triage: unknown, locks: Recor
   } finally {
     for (const [rel, mode] of saved.reverse()) chmodSync(join(root, rel), mode);
   }
-  assert.equal(r.code, 2, ran(`${what} exits 2`, r));
-  assert.ok(r.err.trim().length > 0, ran(`${what} names its refusal`, r));
-  assert.equal(snapshot(root), before, `${what} leaves the officina byte-identical (no file, no empty directory)`);
+  assert.equal(r.code, 1, ran(`${what} exits 1 (an I/O failure, not a refusal)`, r));
+  const named = /after writing \[(.*?)\]; failing path/.exec(r.err)?.[1];
+  assert.notEqual(named, undefined, ran(`${what} names the written paths`, r));
+  assert.deepEqual(named === "" ? [] : named!.split(", "), written, ran(`${what} names the written paths in first-write order`, r));
+  const after = entriesOf(root);
+  const changed = [...new Set([...before.keys(), ...after.keys()])].filter((k) => before.get(k) !== after.get(k)).sort();
+  assert.deepEqual(changed, [...written].sort(), `${what}: the officina differs in exactly the named paths (nothing undone)`);
 }
 const SKIP = process.getuid?.() === 0 ? "running as root: permission bits do not bind" : false;
 
-test("W-137-b1 round 6: an unreadable but writable event log refuses with the officina unchanged", { skip: SKIP }, () => {
+const WROTE = ["opera/W-2.md", "lessons/L-001.md"];
+
+test("W-137-b1 round 6: an unreadable but writable event log fails at the append and reports what was written", { skip: SKIP }, () => {
   const root = fixture({ files: { ".bisellium/events.jsonl": "" } });
-  refusesLocked(root, "a write-only .bisellium/events.jsonl", HIGH, { ".bisellium/events.jsonl": 0o200 });
+  failsLate(root, "a write-only .bisellium/events.jsonl", HIGH, { ".bisellium/events.jsonl": 0o200 }, WROTE);
 });
 
-test("W-137-b1 round 6: an absent event log under a read-only .bisellium refuses with the officina unchanged", { skip: SKIP }, () => {
+test("W-137-b1 round 6: an absent event log under a read-only .bisellium fails at the append and reports what was written", { skip: SKIP }, () => {
   const root = fixture();
   mkdirSync(join(root, ".bisellium"), { recursive: true });
-  refusesLocked(root, "an absent events.jsonl under a 0500 .bisellium", HIGH, { ".bisellium": 0o500 });
+  failsLate(root, "an absent events.jsonl under a 0500 .bisellium", HIGH, { ".bisellium": 0o500 }, WROTE);
 });
 
-test("W-137-b1 round 6: an absent .bisellium under a read-only studio root refuses with the officina unchanged", { skip: SKIP }, () => {
+test("W-137-b1 round 6: an absent .bisellium under a read-only studio root fails at the append and reports what was written", { skip: SKIP }, () => {
   const root = fixture();
   rmSync(join(root, ".bisellium"), { recursive: true, force: true });
-  refusesLocked(root, "an absent .bisellium under a 0500 root", HIGH, { ".": 0o500 });
+  failsLate(root, "an absent .bisellium under a 0500 root", HIGH, { ".": 0o500 }, WROTE);
 });
 
-test("W-137-b1 round 6: a failure on the last write (the acta) undoes every earlier write", { skip: SKIP }, () => {
+test("W-137-b1 round 6: a failure on the last write (the acta) reports every earlier write and undoes none", { skip: SKIP }, () => {
   const root = fixture();
   rmSync(join(root, ".bisellium"), { recursive: true, force: true });
-  refusesLocked(root, "an unwritable acta/ (the last write fails)", HIGH, { acta: 0o500 });
+  failsLate(root, "an unwritable acta/ (the last write fails)", HIGH, { acta: 0o500 }, [...WROTE, ".bisellium/", ".bisellium/events.jsonl"]);
+});
+
+test("W-137-b1 round 6: a refusal still exits 2 and writes nothing, an I/O failure exits 1", () => {
+  const root = fixture();
+  refuses(root, "a triage that omits a finding", { findings: [ride(1, "security×x", "W-1")] });
+});
+
+test("W-137-b1 round 6: draftOpusRetro reverses no write on error (no undo journal, no restore, no removal)", () => {
+  const src = readFileSync(new URL("./retro.ts", import.meta.url), "utf8");
+  const from = src.indexOf("export function draftOpusRetro");
+  const body = src.slice(from, src.indexOf("\nfunction ", from));
+  for (const call of ["rmSync(", "unlinkSync(", "rmdirSync(", "truncateSync(", "renameSync(", "undo"]) assert.ok(!body.includes(call), `draftOpusRetro contains ${call}`);
 });
