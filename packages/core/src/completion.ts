@@ -8,6 +8,13 @@
 
 const CAP_WHILE_EXIT_OPEN = 95;
 
+/** The milestone domain (D-038), defined once: the check rules (milestones.shape, opus.milestone), `amend` and
+ *  `vet()` below all read it from here. */
+export const MILESTONE_VALUES: readonly number[] = [1, 2, 3, 5, 8];
+export const MILESTONE_WEIGHT_TOTAL = 100;
+export const isMilestoneValue = (v: unknown): v is number => typeof v === "number" && MILESTONE_VALUES.includes(v);
+export const isMilestoneWeight = (w: unknown): w is number => typeof w === "number" && Number.isInteger(w) && w > 0;
+
 export interface Milestone {
   id: string;
   title: string;
@@ -36,19 +43,20 @@ export interface Meter {
 }
 
 /**
- * The ONE input boundary (W-153): every opus record and milestone weight is checked here, before any formula.
- * A non-halted opus mapped to a milestone needs a finite, non-negative `value`, and a milestone a finite `weight`.
+ * The ONE input boundary (W-153): every opus record and milestone weight is checked here, before any formula,
+ * against the milestone domain above. A non-halted opus mapped to a milestone needs a `value` in
+ * MILESTONE_VALUES; each milestone needs a positive integer `weight`, and the weights total MILESTONE_WEIGHT_TOTAL.
  * `malformed` marks the whole estimate "No estimate"; the returned copies carry 0 for each invalid number, so no
- * formula downstream ever sees one.
+ * formula downstream ever sees one (the domain also bounds every sum, so none can overflow).
  */
 function vet<M extends { id: string; weight: number }>(milestones: M[], opera: any[]): { milestones: M[]; opera: any[]; malformed: boolean } {
   const ids = new Set(milestones.map((m) => m.id));
-  const bad = (o: any): boolean => o.state !== "halted" && ids.has(o.milestone) && !(typeof o.value === "number" && Number.isFinite(o.value) && o.value >= 0);
-  const badWeight = (m: M): boolean => !Number.isFinite(m.weight);
+  const bad = (o: any): boolean => o.state !== "halted" && ids.has(o.milestone) && !isMilestoneValue(o.value);
+  const total = milestones.reduce((n, m) => n + (isMilestoneWeight(m.weight) ? m.weight : 0), 0);
   return {
-    milestones: milestones.map((m) => (badWeight(m) ? { ...m, weight: 0 } : m)),
+    milestones: milestones.map((m) => (isMilestoneWeight(m.weight) ? m : { ...m, weight: 0 })),
     opera: opera.map((o) => (bad(o) ? { ...o, value: 0 } : o)),
-    malformed: milestones.some(badWeight) || opera.some(bad),
+    malformed: milestones.some((m) => !isMilestoneWeight(m.weight)) || total !== MILESTONE_WEIGHT_TOTAL || opera.some(bad),
   };
 }
 
@@ -107,11 +115,12 @@ export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?
 /** The estimated finish: remaining points over the mean of the last three weeks' paced points (W-153). */
 export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: Meter; opera: MeterOpus[]; now: Date; unreadable?: number }): Estimate {
   const v = vet(meter.rows, opera);
-  const unknown = unreadable > 0 || v.malformed || meter.malformed === true;
+  // `unreadable` must be exactly 0 (a NaN or negative count is not "nothing unreadable")
+  const remaining = meter.rows.reduce((n, r) => n + r.planned - r.done, 0);
+  const unknown = unreadable !== 0 || v.malformed || meter.malformed === true || !Number.isFinite(remaining);
   // fail closed: unknown work means unknown remaining points, so no estimate and never a false "nothing left"
   if (unknown) return { kind: "none", reason: "unreadable-records", remaining: 0, weekly: [0, 0, 0], bulk: [], line: "No estimate: an opus record is unreadable or carries no valid points." };
   const rows = new Set(meter.rows.map((r) => r.id));
-  const remaining = meter.rows.reduce((n, r) => n + r.planned - r.done, 0);
   const nowMs = now.getTime();
   const events = v.opera
     .filter((o) => o.state === "done" && rows.has(o.milestone as string))
