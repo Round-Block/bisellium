@@ -356,8 +356,8 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     return a.harness.localeCompare(b.harness);
   });
 
-  const write = opts.fs?.writeFileSync ?? writeFileSync;
-  const rename = opts.fs?.renameSync ?? renameSync;
+  const write = opts.fs?.writeFileSync ?? ((path: string, data: string): void => writeFileSync(path, data));
+  const rename = opts.fs?.renameSync ?? ((from: string, to: string): void => renameSync(from, to));
 
   // Step 4's snapshot — a human-readable last-observed value, computed once
   // (gathered in step 1, alongside candidates and the listing) rather than

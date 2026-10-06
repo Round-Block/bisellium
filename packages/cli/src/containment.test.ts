@@ -286,6 +286,7 @@ const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirector
 
 // What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
 type Kind = "fs" | "date" | "global" | "mod";
+const KIND_LABEL: Record<Kind, string> = { fs: "the fs module", date: "Date", global: "the global object", mod: "node:module" };
 /** The kind of `<kind>.<name>` when it is itself a namespace (fs.promises, fs.default, globalThis.Date); else undefined. */
 const memberKind = (kind: Kind, name: string): Kind | undefined =>
   kind === "fs" && (name === "promises" || name === "default") ? "fs" : kind === "global" && name === "Date" ? "date" : undefined;
@@ -328,14 +329,13 @@ function scanCD(root: string, rels: string[]): CDScan {
     const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] }).parseDiagnostics ?? [];
     if (diags.length) out.outOfDomain.push(`${rel}: parse error`);
 
-    // Every binding in the file that refers to the fs module, `Date`, the global object or node:module — by name, ignoring
-    // scope (a shadowing name is a false alarm, never a miss). `ns` holds whole namespaces; `named` holds one member
-    // bound on its own (`const { readFileSync } = fs`, `import { open }`); `pending` holds the destructuring keys whose
-    // name is not a literal; `targets` holds assignment-pattern identifiers, which write a binding rather than read it.
+    // The census follows one form: a direct call. `ns` holds the names that are a whole namespace (an fs import, `Date`,
+    // the global object, node:module); `named` holds fs functions imported on their own. Any other use of an fs function,
+    // an fs namespace, Date.parse or the Date constructor (aliased, destructured, stored, passed, returned, exported) is an
+    // out-of-domain finding, so no alias is ever tracked: it fails by rule. Names are matched without scope, so a shadowing
+    // name is a false alarm, never a miss.
     const ns = new Map<string, Kind>([["Date", "date"], ["globalThis", "global"], ["global", "global"], ["window", "global"], ["self", "global"]]);
-    const named = new Map<string, { kind: Kind; name: string }>();
-    const pending = new Map<ts.Node, Kind>();
-    const targets = new Set<ts.Node>();
+    const named = new Map<string, string>();
     const kindOf = (e: ts.Node): Kind | undefined => {
       const x = unwrap(e);
       if (ts.isIdentifier(x)) return ns.get(x.text);
@@ -346,30 +346,6 @@ function scanCD(root: string, rels: string[]): CDScan {
       }
       return undefined;
     };
-    const bindMember = (rest: boolean, key: ts.Node, local: ts.Node, kind: Kind, at: ts.Node, assign: boolean): void => {
-      if (rest) return bind(local, kind, assign); // `...rest` of a namespace is a namespace
-      const name = ts.isIdentifier(key) || ts.isStringLiteralLike(key) ? key.text : ts.isComputedPropertyName(key) && ts.isStringLiteralLike(key.expression) ? key.expression.text : undefined;
-      if (name === undefined) {
-        pending.set(at, kind);
-        return;
-      }
-      const inner = memberKind(kind, name);
-      if (inner !== undefined) bind(local, inner, assign);
-      else if (ts.isIdentifier(local)) {
-        named.set(local.text, { kind, name });
-        if (assign) targets.add(local);
-      }
-    };
-    function bind(target: ts.Node, kind: Kind, assign: boolean): void {
-      if (ts.isIdentifier(target)) ns.set(target.text, kind);
-      else if (ts.isObjectBindingPattern(target)) for (const el of target.elements) bindMember(el.dotDotDotToken !== undefined, el.propertyName ?? el.name, el.name, kind, el, assign);
-      else if (ts.isObjectLiteralExpression(target))
-        for (const p of target.properties) {
-          if (ts.isSpreadAssignment(p)) bind(p.expression, kind, true);
-          else if (ts.isShorthandPropertyAssignment(p)) bindMember(false, p.name, p.name, kind, p, true);
-          else if (ts.isPropertyAssignment(p)) bindMember(false, p.name, p.initializer, kind, p, true);
-        }
-    }
     for (const st of sf.statements) {
       if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier)) {
         const m = st.moduleSpecifier.text;
@@ -384,7 +360,7 @@ function scanCD(root: string, rels: string[]): CDScan {
             const imported = (el.propertyName ?? el.name).text;
             const inner = imported === "default" ? kind : memberKind(kind, imported);
             if (inner !== undefined) ns.set(el.name.text, inner);
-            else named.set(el.name.text, { kind, name: imported });
+            else if (kind === "fs") named.set(el.name.text, imported);
           }
       }
       if (ts.isExportDeclaration(st) && st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier) && (FS_MODULES.has(st.moduleSpecifier.text) || MODULE_MODULES.has(st.moduleSpecifier.text)))
@@ -392,35 +368,21 @@ function scanCD(root: string, rels: string[]): CDScan {
       if (ts.isImportEqualsDeclaration(st) && ts.isExternalModuleReference(st.moduleReference) && ts.isStringLiteral(st.moduleReference.expression) && (FS_MODULES.has(st.moduleReference.expression.text) || MODULE_MODULES.has(st.moduleReference.expression.text)))
         out.outOfDomain.push(`${rel}: import = require(${st.moduleReference.expression.text})`);
     }
-    // aliases and destructuring, to a fixed point: `const g = fs`, `g = fs`, `const { readFile } = g.promises`, `({ rm } = fs)`
-    const collect = (n: ts.Node): void => {
-      if (ts.isVariableDeclaration(n) && n.initializer) {
-        const k = kindOf(n.initializer);
-        if (k !== undefined) bind(n.name, k, false);
-      } else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
-        const k = kindOf(n.right);
-        if (k !== undefined) bind(unwrap(n.left), k, true);
-      }
-      ts.forEachChild(n, collect);
-    };
-    for (let size = -1; size !== ns.size + named.size + pending.size; ) {
-      size = ns.size + named.size + pending.size;
-      collect(sf);
-    }
 
-    /** True when this read of an fs/Date expression is one the scan can see through; anything else lets it escape. */
-    const readsSeen = (e: ts.Node, kind: Kind): boolean => {
-      let top: ts.Node = e;
+    /** The expression around `e` once parentheses and casts are peeled off. */
+    const outer = (e: ts.Node): ts.Node => {
+      let top = e;
       while (top.parent && WRAPPERS(top.parent) && top.parent.expression === top) top = top.parent;
+      return top;
+    };
+    /** A namespace may only be the base of a member access (and, for Date, a constructor, a call, `instanceof` or `typeof`). */
+    const nsUseSeen = (e: ts.Node, kind: Kind): boolean => {
+      const top = outer(e);
       const p = top.parent;
       if (ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) return p.expression === top;
-      if (ts.isVariableDeclaration(p)) return p.initializer === top; // an alias: bound above
-      if (ts.isBinaryExpression(p)) {
-        const op = p.operatorToken.kind;
-        return (op === ts.SyntaxKind.EqualsToken && (p.right === top || p.left === top)) || (kind === "date" && op === ts.SyntaxKind.InstanceOfKeyword && p.right === top);
-      }
+      if (ts.isTypeOfExpression(p) || ts.isQualifiedName(p) || ts.isTypeNode(p)) return true;
       if (kind === "date" && (ts.isNewExpression(p) || ts.isCallExpression(p))) return p.expression === top;
-      return ts.isTypeOfExpression(p) || ts.isQualifiedName(p) || ts.isTypeNode(p);
+      return kind === "date" && ts.isBinaryExpression(p) && p.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword && p.right === top;
     };
 
     const escapes = new Set<string>();
@@ -435,32 +397,31 @@ function scanCD(root: string, rels: string[]): CDScan {
       list.push({ key: `${rel}:${fn}:${what}#${nth(`${tag}:${fn}:${what}`)}`, rel, fn });
     };
     const visit = (n: ts.Node): void => {
-      // a member of a bound namespace: a raw fs function, Date.parse, or any member named by a non-literal key (fail closed)
-      if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) {
-        const base = kindOf(n.expression);
-        const name = memberOf(n);
-        if (base === "fs" && (name === undefined || RAW_FS.has(name))) site(out.d, "D", n, name ?? "<computed>");
-        if (base === "date" && (name === undefined || name === "parse")) site(out.c, "C", n, name === undefined ? "Date.<computed>" : "Date.parse");
-        if (base === "mod" && name === undefined) out.outOfDomain.push(`${rel}: computed member of node:module`);
-      }
-      // a destructuring key that is not a literal, on a bound namespace
-      const kind = pending.get(n);
-      if (kind === "fs") site(out.d, "D", n, "<computed>");
-      if (kind === "date") site(out.c, "C", n, "Date.<computed>");
-      if (kind === "mod") out.outOfDomain.push(`${rel}: computed member of node:module`);
       if (ts.isIdentifier(n) || ts.isStringLiteralLike(n)) {
         // the only ways to reach fs that no import shows: a require function or the builtin loader
         if (n.text === "createRequire" || n.text === "getBuiltinModule") out.outOfDomain.push(`${rel}: ${n.text}`);
       }
-      const reads = ts.isIdentifier(n) ? !isNamePosition(n) && !targets.has(n) : ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n);
-      if (reads) {
-        // a member bound on its own, used: a call, or the name passed on or aliased
-        const one = ts.isIdentifier(n) ? named.get(n.text) : undefined;
-        if (one?.kind === "fs" && RAW_FS.has(one.name)) site(out.d, "D", n, one.name);
-        if (one?.kind === "date" && one.name === "parse") site(out.c, "C", n, "Date.parse");
-        // a whole fs module or Date handed on, where the scan can no longer follow it
+      // a reference: an fs function or Date.parse (followed only as the callee of a direct call), or a whole namespace
+      if ((ts.isIdentifier(n) && !isNamePosition(n)) || ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) {
+        let fnRef: { list: Site[]; tag: "C" | "D"; what: string } | undefined;
+        if (ts.isIdentifier(n)) {
+          const one = named.get(n.text);
+          if (one !== undefined && RAW_FS.has(one)) fnRef = { list: out.d, tag: "D", what: one };
+        } else {
+          const base = kindOf(n.expression);
+          const name = memberOf(n);
+          if (base === "fs" && (name === undefined || RAW_FS.has(name))) fnRef = { list: out.d, tag: "D", what: name ?? "<computed>" };
+          if (base === "date" && (name === undefined || name === "parse")) fnRef = { list: out.c, tag: "C", what: name === undefined ? "Date.<computed>" : "Date.parse" };
+          if (base === "mod" && name === undefined) escapes.add(`${rel}:${enclosingFunctionName(n)}: a computed member of node:module is used where the scan cannot follow it`);
+        }
+        const top = outer(n);
+        const type = ts.isTypeNode(top.parent) || ts.isQualifiedName(top.parent);
+        if (fnRef !== undefined && !type) {
+          if (ts.isCallExpression(top.parent) && top.parent.expression === top) site(fnRef.list, fnRef.tag, n, fnRef.what);
+          else escapes.add(`${rel}:${enclosingFunctionName(n)}: ${fnRef.what} is used other than as a direct call`);
+        }
         const k = kindOf(n);
-        if ((k === "fs" || k === "date") && !readsSeen(n, k)) escapes.add(`${rel}:${enclosingFunctionName(n)}: ${k === "fs" ? "the fs module" : "Date"} is used where the scan cannot follow it`);
+        if (k !== undefined && !nsUseSeen(n, k)) escapes.add(`${rel}:${enclosingFunctionName(n)}: ${KIND_LABEL[k]} is used where the scan cannot follow it`);
       }
       if (ts.isCallExpression(n)) {
         const callee = n.expression;
@@ -963,7 +924,6 @@ const PINNED_D: PinnedSite[] = [
   { key: "scripts/probe-builder-runtime.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/probe-builder-runtime.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/probe-builder-runtime.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
-  { key: "scripts/record-reads.mjs:<module>:appendFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/run-builder-host.mjs:flush:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/run-builder-host.mjs:flush:renameSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
   { key: "scripts/run-builder-host.mjs:rebaseWorkspaceLinks:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
@@ -1099,6 +1059,10 @@ const PINNED_ESCAPES: { key: string; why: string }[] = [
   {
     key: "scripts/record-reads.mjs:<module>: the fs module is used where the scan cannot follow it",
     why: "dev tooling: the read-tracing preload (W-139) patches fs and fs.promises with logging wrappers that call the originals with the traced process's own paths; it opens no officina path itself",
+  },
+  {
+    key: "scripts/record-reads.mjs:<module>: appendFileSync is used other than as a direct call",
+    why: "dev tooling: the same preload keeps the original appendFileSync before it patches fs, so its own log lines never pass through a wrapper",
   },
 ];
 {
