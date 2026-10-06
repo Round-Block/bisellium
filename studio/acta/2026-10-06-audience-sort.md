@@ -32,7 +32,7 @@ Proposed by Codex `gpt-5.6-terra` (medium) over every open opus and its brief, p
 | W-070 | both | Remote console delivery and write authentication. | high |
 | W-073 | both | Board reply UI writes through record machinery. | high |
 | W-074 | both | Board greenlight UI creates governed records. | high |
-| W-078 | both | Human probatio feeds the Patron’s needs-you path. | medium |
+| W-078 | both | Human probatio feeds the Patron’s needs-you path (Patron confirmed both, 2026-10-06). | high |
 | W-080 | agent | Spec-gate provenance check. | high |
 | W-081 | agent | Provider-command injection hardening. | high |
 | W-083 | agent | Per-session worktree enforcement. | high |
@@ -75,4 +75,4 @@ Proposed by Codex `gpt-5.6-terra` (medium) over every open opus and its brief, p
 | W-158 | both | Audience data/check machinery plus Status split. | high |
 
 ## Unclear
-W-078 — Does “human-kind probatio” itself add or change a Patron-visible console interaction, or only create agent-side data that existing Board UI consumes?
+W-078 — resolved: both (Patron, 2026-10-06).
