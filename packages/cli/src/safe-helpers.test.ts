@@ -7,15 +7,19 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { doneAt } from "@bisellium/core";
 import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import * as schema from "@bisellium/schema";
+import { fakeProfile, type HarnessProfile } from "@bisellium/shim";
 import { checkStudio } from "./check.js";
 import { initStudio } from "./init.js";
+import { pruneCiLogs } from "./prune.js";
+import { runTalk } from "./talk.js";
 
 const here = import.meta.dirname;
 const MAIN = join(here, "main.ts");
@@ -199,4 +203,90 @@ test("W-163-b5 behaviour 5: officina writes refuse a symlinked parent and write 
   assert.notEqual(a.status, 0, "answer exits non-zero through a symlinked acta/");
   assert.deepEqual(listing(outside), [], "answer: the outside dir stays empty");
   assert.ok(readFileSync(join(root, "petitiones", "P-1.md")).equals(before), "petitiones/P-1.md is byte-identical");
+});
+
+test("W-163-b1 round 2: instant reads years 0000 to 0099 as the year they say", () => {
+  const at = (v: string): string | undefined => schema.instant(v)?.toISOString();
+  assert.equal(at("0000-01-01"), "0000-01-01T00:00:00.000Z");
+  assert.equal(at("0099-12-31"), "0099-12-31T00:00:00.000Z");
+  assert.equal(at("0004-02-29"), "0004-02-29T00:00:00.000Z");
+  assert.equal(at("0000-02-29T12:30:00+01:00"), "0000-02-29T11:30:00.000Z");
+  assert.equal(at("0001-02-29"), undefined, "year 1 is not a leap year");
+  assert.equal(at("0100-02-29"), undefined, "year 100 is not a leap year");
+  assert.equal(at("0099-02-30"), undefined);
+});
+
+test("W-163-b5 round 2: readContainedRegularFile reads a file directly under the officina root and refuses a symlinked, nested or escaping one", () => {
+  const root = officina("b5r2");
+  const outside = scratch("b5r2-out");
+  writeFileSync(join(outside, "secret"), "outside");
+  writeFileSync(join(root, "milestones.yml"), "a: 1\n");
+  const ok = readContainedRegularFile(root, "milestones.yml", "");
+  if ("error" in ok) assert.fail(`a root-level regular file reads: ${ok.error}`);
+  assert.equal(ok.bytes.toString("utf8"), "a: 1\n");
+  symlinkSync(join(outside, "secret"), join(root, "PAUSED"));
+  assert.ok("error" in readContainedRegularFile(root, "PAUSED", ""), "a symlinked root-level file is refused");
+  assert.ok("error" in readContainedRegularFile(root, "acta/x.md", ""), "a nested path is not a root-level file");
+  assert.ok("error" in readContainedRegularFile(root, "../secret", ""), "an escaping path is refused");
+  assert.ok("error" in readContainedRegularFile(root, "nothing-here", ""), "a missing file is an error, not a throw");
+});
+
+test("W-163-b5 round 2: prune keeps a gate log cited from a file at the officina root", () => {
+  const root = officina("b5prune");
+  writeFileSync(join(root, "opera", "W-9.md"), ["---", 'id: "W-9"', 'title: "Old"', "kind: feature", "collegium: production", "state: done", "---", "Body.", ""].join("\n"));
+  mkdirSync(join(root, "ci"), { recursive: true });
+  for (const name of ["W-9-review-aaaaaaaa.log", "W-9-spec-bbbbbbbb.log"]) writeFileSync(join(root, "ci", name), "log\n");
+  writeFileSync(join(root, "milestones.yml"), "evidence: ci/W-9-review-aaaaaaaa.log\n");
+  assert.deepEqual(pruneCiLogs(root).removed, ["ci/W-9-spec-bbbbbbbb.log"]);
+  assert.ok(existsSync(join(root, "ci", "W-9-review-aaaaaaaa.log")), "the cited log stays");
+});
+
+/** One `talk` turn against a copy of the sample officina with a counting fake harness; returns the exit code and the harness calls. */
+async function talkOnce(studio: string): Promise<{ exitCode: number; calls: { start: number; resume: number } }> {
+  const calls = { start: 0, resume: 0 };
+  const profile: HarnessProfile = {
+    id: "fake",
+    tier: fakeProfile.tier,
+    available: () => fakeProfile.available(),
+    start: async (o) => (calls.start++, fakeProfile.start(o)),
+    resume: async (o) => (calls.resume++, fakeProfile.resume(o)),
+  };
+  const [log, err] = [console.log, console.error];
+  console.log = (): void => undefined;
+  console.error = (): void => undefined;
+  try {
+    const result = await runTalk(["--sella", "eng-lead", "--model-only", "--studio", studio, "--harness", "fake", "hello"], { harnesses: { fake: profile } });
+    return { exitCode: result.exitCode, calls };
+  } finally {
+    console.log = log;
+    console.error = err;
+  }
+}
+const sampleCopy = (tag: string): string => {
+  const dir = join(scratch(tag), "studio");
+  cpSync(join(here, "../../../examples/sample-studio"), dir, { recursive: true });
+  return dir;
+};
+
+test("W-163-b5 round 2: talk resumes no session through a symlinked sessions file and writes nothing outside", async () => {
+  const studio = sampleCopy("b5talk-file");
+  const outside = scratch("b5talk-file-out");
+  const record = JSON.stringify({ harness: "fake", sessionId: "OUTSIDE-SESSION", startedAt: "2026-10-01T00:00:00Z", lastAt: "2026-10-01T00:00:00Z", turns: 1 }) + "\n";
+  writeFileSync(join(outside, "session.json"), record);
+  mkdirSync(join(studio, "sessions"), { recursive: true });
+  symlinkSync(join(outside, "session.json"), join(studio, "sessions", "eng-lead.json"));
+  const r = await talkOnce(studio);
+  assert.notEqual(r.exitCode, 0, "talk refuses a symlinked session file");
+  assert.deepEqual(r.calls, { start: 0, resume: 0 }, "no harness turn is spent");
+  assert.equal(readFileSync(join(outside, "session.json"), "utf8"), record, "the outside file is untouched");
+});
+
+test("W-163-b5 round 2: talk refuses a symlinked sessions directory and writes nothing outside", async () => {
+  const studio = sampleCopy("b5talk-dir");
+  const outside = scratch("b5talk-dir-out");
+  symlinkSync(outside, join(studio, "sessions"));
+  const r = await talkOnce(studio);
+  assert.notEqual(r.exitCode, 0, "talk refuses a symlinked sessions/");
+  assert.deepEqual(r.calls, { start: 0, resume: 0 }, "no harness turn is spent");
+  assert.deepEqual(listing(outside), [], "the outside dir stays empty");
 });

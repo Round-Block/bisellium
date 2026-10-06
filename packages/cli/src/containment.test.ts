@@ -30,8 +30,9 @@
  * both bites (mE, mF) and does not false-drift on a reformat (mG).
  */
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { test } from "node:test";
 import ts from "typescript";
 
@@ -995,6 +996,125 @@ checkW("no out-of-domain fs binding", scanCD_.outOfDomain.length === 0, JSON.str
 // One node:test row so `--test-name-pattern=W-163-b6` yields an assertion-level TAP line.
 test("W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build", () => {
   assert.deepEqual(w163Failures, []);
+});
+
+// ---------------------------------------------------------------------------
+// W-163 review round 1 — the scan's own mutants. Each fixture is a synthetic
+// source file in a scratch tree, scanned once with the real scanCD; each row
+// states what that form must do to the census: become a pinned-or-fail site,
+// or fail the scan closed (out-of-domain). A form the scan does not see here
+// is a hole in the build gate.
+// ---------------------------------------------------------------------------
+const FIXTURES: Record<string, string> = {
+  // inventory D: member and binding forms of an fs module
+  "d-computed-ns": `import * as fs from "node:fs";\nexport function f(p: string) { return fs["readFileSync"](p); }\n`,
+  "d-computed-default": `import fs from "fs";\nexport function f(p: string) { fs["writeFileSync"](p, ""); }\n`,
+  "d-destructure": `import * as fs from "node:fs";\nconst { readFileSync } = fs;\nexport function f(p: string) { return readFileSync(p, "utf8"); }\n`,
+  "d-destructure-rename": `import { promises } from "node:fs";\nconst { readFile: rd } = promises;\nexport async function f(p: string) { return rd(p); }\n`,
+  "d-alias": `import * as fs from "node:fs";\nconst g = fs;\nexport function f(p: string) { return g.readFileSync(p); }\n`,
+  "d-alias-chain": `import fs from "node:fs";\nconst a = fs.promises;\nconst b = a;\nexport async function f(p: string) { return b["readFile"](p); }\n`,
+  "d-assign-alias": `import * as fs from "node:fs";\nlet g: typeof fs;\ng = fs;\nexport function f(p: string) { return g.rmSync(p); }\n`,
+  "d-assign-destructure": `import * as fs from "node:fs";\nlet rd: any;\n({ readFileSync: rd } = fs);\nexport function f(p: string) { return rd(p); }\n`,
+  "d-rest-destructure": `import * as fs from "node:fs";\nconst { ...all } = fs;\nexport function f(p: string) { return all.readFileSync(p); }\n`,
+  "d-default-specifier": `import { default as fs } from "node:fs";\nexport function f(p: string) { return fs.readFileSync(p); }\n`,
+  "d-non-literal-member": `import * as fs from "node:fs";\nexport function f(name: string, p: string) { return (fs as any)[name](p); }\n`,
+  "d-non-literal-destructure": `import * as fs from "node:fs";\nconst key = "read" + "FileSync";\nconst { [key]: rd } = fs as any;\nexport function f(p: string) { return rd(p); }\n`,
+  // fail closed: a binding the scan cannot follow
+  "o-escape-fs": `import * as fs from "node:fs";\ndeclare function use(x: unknown): void;\nuse(fs);\n`,
+  "o-create-require-alias": `import { createRequire as cr } from "node:module";\nconst r = cr(import.meta.url);\nexport function f() { return r("node:fs"); }\n`,
+  "o-create-require-namespace": `import * as m from "node:module";\nconst r = m.createRequire(import.meta.url);\nexport function f() { return r("node:fs"); }\n`,
+  "o-create-require-literal-member": `import * as m from "node:module";\nconst r = m["createRequire"](import.meta.url);\nexport function f() { return r("node:fs"); }\n`,
+  "o-create-require-computed": `import * as m from "node:module";\nexport function f(k: string) { return (m as any)[k](import.meta.url); }\n`,
+  "o-dynamic-import": `export async function f(x: string) { return import(x); }\n`,
+  "o-get-builtin-module": `export function f() { return process.getBuiltinModule("fs"); }\n`,
+  // inventory C: member and binding forms of Date
+  "c-computed-parse": `export function f(x: string) { return Date["parse"](x); }\n`,
+  "c-alias-ctor": `const D = Date;\nexport function f(x: string) { return new D(x); }\n`,
+  "c-alias-parse": `const D = Date;\nexport function f(x: string) { return D.parse(x); }\n`,
+  "c-destructure-parse": `const { parse } = Date;\nexport function f(x: string) { return parse(x); }\n`,
+  "c-bare-parse": `export function f(xs: string[]) { return xs.map(Date.parse); }\n`,
+  "c-non-literal-member": `export function f(k: string, x: string) { return (Date as any)[k](x); }\n`,
+  "c-global-date": `export function f(x: string) { return globalThis.Date.parse(x) + Number(new globalThis["Date"](x)); }\n`,
+  "o-escape-date": `declare function use(x: unknown): void;\nuse(Date);\n`,
+  // controls: ordinary uses that must stay out of the scan
+  "ok-control": `import { readdirSync } from "node:fs";\nexport function f(p: string, a: unknown) { return [readdirSync(p), Date.now(), new Date(5), new Date("2026-01-01"), a instanceof Date, typeof Date, Date.UTC(2000, 0, 1)]; }\n`,
+};
+let fixtureScan: CDScan | undefined;
+function fixtureSites(name: string): { d: string[]; c: string[]; out: string[] } {
+  const rel = (n: string): string => `packages/m/src/${n}.ts`;
+  if (!fixtureScan) {
+    const dir = mkdtempSync(join(tmpdir(), "w163-census-"));
+    try {
+      for (const [n, text] of Object.entries(FIXTURES)) {
+        mkdirSync(dirname(join(dir, rel(n))), { recursive: true });
+        writeFileSync(join(dir, rel(n)), text);
+      }
+      fixtureScan = scanCD(dir, Object.keys(FIXTURES).map(rel));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  const mine = (xs: Site[]): string[] => xs.filter((x) => x.rel === rel(name)).map((x) => x.key.slice(rel(name).length + 1)).sort();
+  return { d: mine(fixtureScan.d), c: mine(fixtureScan.c), out: fixtureScan.outOfDomain.filter((o) => o.startsWith(rel(name))) };
+}
+
+for (const [name, want] of [
+  ["d-computed-ns", ["f:readFileSync#1"]],
+  ["d-computed-default", ["f:writeFileSync#1"]],
+  ["d-destructure", ["f:readFileSync#1"]],
+  ["d-destructure-rename", ["f:readFile#1"]],
+  ["d-alias", ["f:readFileSync#1"]],
+  ["d-alias-chain", ["f:readFile#1"]],
+  ["d-assign-alias", ["f:rmSync#1"]],
+  ["d-assign-destructure", ["f:readFileSync#1"]],
+  ["d-rest-destructure", ["f:readFileSync#1"]],
+  ["d-default-specifier", ["f:readFileSync#1"]],
+  ["d-non-literal-member", ["f:<computed>#1"]],
+  ["d-non-literal-destructure", ["<module>:<computed>#1"]],
+] as const) {
+  test(`W-163-b6 round 2: inventory D lists the ${name} form`, () => {
+    const got = fixtureSites(name);
+    assert.deepEqual(got.d, [...want]);
+    assert.deepEqual(got.out, []);
+  });
+}
+for (const [name, want] of [
+  ["c-computed-parse", ["f:Date.parse#1"]],
+  ["c-alias-ctor", ["f:new Date#1"]],
+  ["c-alias-parse", ["f:Date.parse#1"]],
+  ["c-destructure-parse", ["f:Date.parse#1"]],
+  ["c-bare-parse", ["f:Date.parse#1"]],
+  ["c-non-literal-member", ["f:Date.<computed>#1"]],
+  ["c-global-date", ["f:Date.parse#1", "f:new Date#1"]],
+] as const) {
+  test(`W-163-b6 round 2: inventory C lists the ${name} form`, () => {
+    const got = fixtureSites(name);
+    assert.deepEqual(got.c, [...want]);
+    assert.deepEqual(got.out, []);
+  });
+}
+for (const name of [
+  "o-escape-fs",
+  "o-create-require-alias",
+  "o-create-require-namespace",
+  "o-create-require-literal-member",
+  "o-create-require-computed",
+  "o-dynamic-import",
+  "o-get-builtin-module",
+  "o-escape-date",
+]) {
+  test(`W-163-b6 round 2: the scan fails closed on the ${name} form`, () => {
+    assert.ok(fixtureSites(name).out.length > 0, "an out-of-domain finding names the file");
+  });
+}
+test("W-163-b6 round 2: ordinary Date and fs uses stay out of the scan", () => {
+  assert.deepEqual(fixtureSites("ok-control"), { d: [], c: [], out: [] });
+});
+test("W-163-b6 round 2: the bright line's two raw reads are contained pins", () => {
+  const pin = (key: string): string | undefined => PINNED_D.find((p) => p.key === key)?.disposition;
+  assert.equal(pin("packages/cli/src/prune.ts:walk:readFileSync#1"), "contained");
+  assert.equal(pin("packages/commands/src/talk.ts:readSession:readFileSync#1"), "contained");
+  assert.equal(pin("packages/commands/src/talk.ts:writeSession:writeFileSync#1"), "contained");
 });
 
 // W163_DUMP=1 prints the scan (C, D, out-of-domain, helper callers) as one JSON line: the input of the PINNED_D generator.
