@@ -5,7 +5,7 @@
  * `studio/` or `examples/`. `runRetro` is driven in process, its console output captured.
  */
 import assert from "node:assert/strict";
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { after, test } from "node:test";
@@ -83,14 +83,15 @@ function fixture(o: Fx = {}): string {
 function files(dir: string, base = dir): string[] {
   return readdirSync(dir).flatMap((n) => {
     const p = join(dir, n);
-    return lstatSync(p).isDirectory() ? files(p, base) : [relative(base, p)];
+    // a directory is listed too (trailing "/"), so an empty one a refused retro left behind shows
+    return lstatSync(p).isDirectory() ? [`${relative(base, p)}/`, ...files(p, base)] : [relative(base, p)];
   });
 }
 /** every byte under the officina, so "writes nothing" is a byte comparison. */
 const snapshot = (root: string): string =>
   files(root)
     .sort()
-    .map((f) => `${f}\0${lstatSync(join(root, f)).isSymbolicLink() ? `link ${readlinkSync(join(root, f))}` : readFileSync(join(root, f), "utf8")}`)
+    .map((f) => `${f}\0${f.endsWith("/") ? "dir" : lstatSync(join(root, f)).isSymbolicLink() ? `link ${readlinkSync(join(root, f))}` : readFileSync(join(root, f), "utf8")}`)
     .join("\n\0\n");
 
 interface Ran {
@@ -393,4 +394,44 @@ test("W-137-b1 round 5: an event log that is a directory refuses before anything
   const root = fixture();
   mkdirSync(join(root, ".bisellium", "events.jsonl"), { recursive: true });
   refuses(root, "a directory at .bisellium/events.jsonl", HIGH);
+});
+
+/** Runs the retro with `locks` (officina-relative path -> mode) applied, restoring every mode after; the officina must be byte-identical. */
+function refusesLocked(root: string, what: string, triage: unknown, locks: Record<string, number>): void {
+  const before = snapshot(root);
+  const saved = Object.keys(locks).map((rel) => [rel, lstatSync(join(root, rel)).mode & 0o777] as const);
+  let r: Ran;
+  try {
+    for (const [rel, mode] of Object.entries(locks)) chmodSync(join(root, rel), mode);
+    r = retro(root, triage);
+  } finally {
+    for (const [rel, mode] of saved.reverse()) chmodSync(join(root, rel), mode);
+  }
+  assert.equal(r.code, 2, ran(`${what} exits 2`, r));
+  assert.ok(r.err.trim().length > 0 && !r.err.trim().includes("\n"), ran(`${what} names one line`, r));
+  assert.equal(snapshot(root), before, `${what} leaves the officina byte-identical (no file, no empty directory)`);
+}
+const SKIP = process.getuid?.() === 0 ? "running as root: permission bits do not bind" : false;
+
+test("W-137-b1 round 6: an unreadable but writable event log refuses with the officina unchanged", { skip: SKIP }, () => {
+  const root = fixture({ files: { ".bisellium/events.jsonl": "" } });
+  refusesLocked(root, "a write-only .bisellium/events.jsonl", HIGH, { ".bisellium/events.jsonl": 0o200 });
+});
+
+test("W-137-b1 round 6: an absent event log under a read-only .bisellium refuses with the officina unchanged", { skip: SKIP }, () => {
+  const root = fixture();
+  mkdirSync(join(root, ".bisellium"), { recursive: true });
+  refusesLocked(root, "an absent events.jsonl under a 0500 .bisellium", HIGH, { ".bisellium": 0o500 });
+});
+
+test("W-137-b1 round 6: an absent .bisellium under a read-only studio root refuses with the officina unchanged", { skip: SKIP }, () => {
+  const root = fixture();
+  rmSync(join(root, ".bisellium"), { recursive: true, force: true });
+  refusesLocked(root, "an absent .bisellium under a 0500 root", HIGH, { ".": 0o500 });
+});
+
+test("W-137-b1 round 6: a failure on the last write (the acta) undoes every earlier write", { skip: SKIP }, () => {
+  const root = fixture();
+  rmSync(join(root, ".bisellium"), { recursive: true, force: true });
+  refusesLocked(root, "an unwritable acta/ (the last write fails)", HIGH, { acta: 0o500 });
 });
