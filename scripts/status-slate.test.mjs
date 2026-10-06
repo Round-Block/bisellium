@@ -1,5 +1,5 @@
 /**
- * scripts/backlog-page.test.mjs — the 9 behaviours of studio/briefs/W-041.md.
+ * scripts/status-slate.test.mjs — the 9 behaviours of studio/briefs/W-041.md.
  * No framework, same house style as scripts/changelog.test.mjs; the
  * behaviour-number filter follows packages/cli/src/ci.test.ts's `only`
  * pattern so `bisellium red` can record one assertion-level failure per
@@ -24,11 +24,11 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { findGuardViolations, readOfficina, renderBacklogPage } from "./backlog-page.mjs";
+import { findGuardViolations, readOfficina, renderStatusPage } from "./status-page.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = dirname(HERE);
-const SCRIPT = join(HERE, "backlog-page.mjs");
+const SCRIPT = join(HERE, "status-page.mjs");
 
 let failed = 0;
 const only = process.argv[2] !== undefined ? Number(process.argv[2]) : undefined;
@@ -144,7 +144,7 @@ function runCli(args) {
 
     const officina = readOfficina(dir);
     const outPath = join(dir, "out.html");
-    const html = renderBacklogPage({ ...officina, outPath });
+    const html = renderStatusPage({ ...officina, outPath });
 
     check(1, "greenlit opus appears", html.includes('data-id="W-002"'));
     check(1, "building opus appears", html.includes('data-id="W-003"'));
@@ -245,7 +245,7 @@ function runCli(args) {
     petitioFixture(dir, { id: "P-040", opus: "W-031", quoted: true, state: "needs_you" });
 
     const officina = readOfficina(dir);
-    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+    const html = renderStatusPage({ ...officina, outPath: join(dir, "out.html") });
 
     check(2, "quoted-opus open petitio appears", html.includes("P-001 (needs_you)"));
     check(2, "bare-opus open petitio appears", html.includes("P-002 (awaiting_reply)"));
@@ -288,7 +288,7 @@ function runCli(args) {
         "{ tests: { status: passed }, lint: { status: passed }, types: { status: waived }, spec: { status: failed } }",
     });
     const officina = readOfficina(dir);
-    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+    const html = renderStatusPage({ ...officina, outPath: join(dir, "out.html") });
     check(3, "passed/declared counts only passed gates", html.includes("2/5"));
     check(3, "a waived gate is called out and not counted as passed", html.includes("1 waived"));
   } finally {
@@ -317,7 +317,7 @@ function runCli(args) {
     });
 
     const officina = readOfficina(dir);
-    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+    const html = renderStatusPage({ ...officina, outPath: join(dir, "out.html") });
     const pos = (id) => html.indexOf(`data-id="${id}"`);
     check(
       4,
@@ -326,7 +326,7 @@ function runCli(args) {
       JSON.stringify({ "W-002": pos("W-002"), "W-001": pos("W-001"), "W-005": pos("W-005"), "W-004": pos("W-004") }),
     );
 
-    const html2 = renderBacklogPage({ ...readOfficina(dir), outPath: join(dir, "out.html") });
+    const html2 = renderStatusPage({ ...readOfficina(dir), outPath: join(dir, "out.html") });
     check(4, "identical input renders byte-identical output (in-process)", html === html2);
 
     const out1 = join(dir, "run1.html");
@@ -359,7 +359,7 @@ function runCli(args) {
     let threw = false;
     try {
       const officina = readOfficina(dir);
-      html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+      html = renderStatusPage({ ...officina, outPath: join(dir, "out.html") });
     } catch {
       threw = true;
     }
@@ -391,7 +391,7 @@ function runCli(args) {
     decisionFixture(dir, { id: "D-001", title: "d", killWhen: "<b>bold</b> & stuff" });
 
     const officina = readOfficina(dir);
-    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+    const html = renderStatusPage({ ...officina, outPath: join(dir, "out.html") });
 
     check(6, "title markup is escaped, not injected", !html.includes("<script>") && html.includes("&lt;script&gt;"));
     check(6, "title ampersand is escaped", html.includes("&amp; co"));
@@ -418,7 +418,7 @@ function runCli(args) {
     );
 
     const officina = readOfficina(dir);
-    const html = renderBacklogPage({ ...officina, outPath: join(dir, "out.html") });
+    const html = renderStatusPage({ ...officina, outPath: join(dir, "out.html") });
 
     check(
       6,
@@ -534,7 +534,7 @@ function runCli(args) {
     const handoff = join(dir, "handoff.md");
     writeFile(handoff, "# handoff\nnothing rotten here.\n");
     const outDir = tmp("b9-out");
-    const out = join(outDir, "backlog-body.html");
+    const out = join(outDir, "status-body.html");
 
     const before = snapshotDir(dir);
     const outDirBefore = snapshotDir(outDir);
@@ -544,7 +544,7 @@ function runCli(args) {
     check(9, "nothing inside --studio is written", snapshotsEqual(before, after));
     check(9, "--out itself was written", existsSync(out));
     const outDirAfter = snapshotDir(outDir);
-    const onlyOutChanged = outDirAfter.size === outDirBefore.size + 1 && outDirAfter.has("backlog-body.html");
+    const onlyOutChanged = outDirAfter.size === outDirBefore.size + 1 && outDirAfter.has("status-body.html");
     check(9, "nothing outside --out was written", onlyOutChanged, JSON.stringify([...outDirAfter.keys()]));
     rmSync(outDir, { recursive: true, force: true });
   } finally {

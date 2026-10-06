@@ -16,9 +16,9 @@
  */
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { isSeq } from "yaml";
+import { isSeq, parse as parseYaml } from "yaml";
 import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { WF } from "@bisellium/schema";
@@ -1259,7 +1259,23 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
 //    evidence or identity, never amendable — refused by name below.
 // ---------------------------------------------------------------------------
 
-const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
+const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
+
+/** W-152: the scale an opus is scored on (D-038), and the milestone ids
+ *  declared in `<officina>/milestones.yml` (empty when the file is absent or
+ *  unreadable — `amend` then refuses any mapping). */
+export const MILESTONE_VALUES: readonly number[] = [1, 2, 3, 5, 8];
+function declaredMilestoneIds(root: string): Set<string> {
+  try {
+    const doc: unknown = parseYaml(readFileSync(join(root, "milestones.yml"), "utf8"));
+    const list = typeof doc === "object" && doc !== null ? (doc as { milestones?: unknown }).milestones : undefined;
+    return new Set(
+      (Array.isArray(list) ? list : []).flatMap((m: unknown) => (typeof m === "object" && m !== null && typeof (m as { id?: unknown }).id === "string" ? [(m as { id: string }).id] : [])),
+    );
+  } catch {
+    return new Set();
+  }
+}
 
 /** Never-amendable fields, refused by name before argv is even parsed (an
  *  exact-arg scan, so `--title "--state"` is also refused — harmless, since
@@ -1299,7 +1315,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     }
   }
 
-  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--arc", "--parent", "--ui-ruling", "--reason", "--sella", "--studio", "--now"] });
+  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--arc", "--parent", "--ui-ruling", "--milestone", "--value", "--reason", "--sella", "--studio", "--now"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${AMEND_USAGE}`);
     return { exitCode: 2 };
@@ -1316,8 +1332,20 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   const arcFlag = values.get("--arc");
   const parentFlag = values.get("--parent");
   const rulingFlag = values.get("--ui-ruling");
-  if (titleFlag === undefined && specFlag === undefined && arcFlag === undefined && parentFlag === undefined && rulingFlag === undefined) {
+  const milestoneFlag = values.get("--milestone");
+  const valueFlag = values.get("--value");
+  if (titleFlag === undefined && specFlag === undefined && arcFlag === undefined && parentFlag === undefined && rulingFlag === undefined && milestoneFlag === undefined && valueFlag === undefined) {
     console.error(AMEND_USAGE);
+    return { exitCode: 2 };
+  }
+  // W-152: a mapping is the pair, never half of it.
+  if ((milestoneFlag === undefined) !== (valueFlag === undefined)) {
+    console.error(`amend: --milestone and --value come together\n${AMEND_USAGE}`);
+    return { exitCode: 2 };
+  }
+  const valueNum = valueFlag !== undefined && /^\d+$/.test(valueFlag) ? Number(valueFlag) : undefined;
+  if (valueFlag !== undefined && (valueNum === undefined || !MILESTONE_VALUES.includes(valueNum))) {
+    console.error(`amend: --value ${valueFlag} must be one of ${MILESTONE_VALUES.join(", ")}`);
     return { exitCode: 2 };
   }
 
@@ -1385,6 +1413,8 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   const currentSpec = typeof current.spec === "string" ? current.spec : undefined;
   const currentArc = typeof current.arc === "string" ? current.arc : undefined;
   const currentParent = typeof current.parent === "string" ? current.parent : undefined;
+  const currentMilestone: unknown = (current as Record<string, unknown>)["milestone"];
+  const currentValue: unknown = (current as Record<string, unknown>)["value"];
   const currentRulings = Array.isArray(current.ui_rulings) ? current.ui_rulings.filter((value): value is string => typeof value === "string") : [];
 
   let specRel: string | undefined;
@@ -1460,6 +1490,17 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
+  if (milestoneFlag !== undefined) {
+    if (!declaredMilestoneIds(root).has(milestoneFlag)) {
+      console.error(`${opusId}: --milestone ${milestoneFlag} is not declared in milestones.yml (or the file is absent) — refused`);
+      return { exitCode: 2 };
+    }
+    if (currentMilestone === milestoneFlag && currentValue === valueNum) {
+      console.error(`${opusId}: --milestone ${milestoneFlag} --value ${valueNum} is already the mapping — nothing to amend`);
+      return { exitCode: 2 };
+    }
+  }
+
   const proposedAmend: NativeRecord = {
     ...(current as NativeRecord),
     ...(titleFlag === undefined ? {} : { title: titleFlag }),
@@ -1467,6 +1508,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     ...(arcFlag === undefined ? {} : { arc: arcFlag }),
     ...(parentFlag === undefined ? {} : { parent: parentFlag }),
     ...(rulingFlag === undefined ? {} : { ui_rulings: [...currentRulings, rulingFlag] }),
+    ...(milestoneFlag === undefined ? {} : { milestone: milestoneFlag, value: valueNum }),
   };
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedAmend, "check", true))) return { exitCode: 1 };
 
@@ -1485,12 +1527,15 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   // Both flags in one call append one entry per changed field, title first,
   // then spec, regardless of flag order — the record is deterministic
   // regardless of argv order.
-  const fields: { field: "title" | "spec" | "arc" | "parent" | "ui_rulings"; value: unknown; superseded: unknown }[] = [];
+  const fields: { field: "title" | "spec" | "arc" | "parent" | "ui_rulings" | "milestone" | "value"; value: unknown; superseded: unknown }[] = [];
   if (titleFlag !== undefined) fields.push({ field: "title", value: titleFlag, superseded: currentTitle ?? "" });
   if (specRel !== undefined) fields.push({ field: "spec", value: specRel, superseded: currentSpec ?? "" });
   if (arcFlag !== undefined) fields.push({ field: "arc", value: arcFlag, superseded: currentArc ?? "" });
   if (parentFlag !== undefined) fields.push({ field: "parent", value: parentFlag, superseded: currentParent ?? "" });
   if (rulingFlag !== undefined) fields.push({ field: "ui_rulings", value: [...currentRulings, rulingFlag], superseded: currentRulings });
+  // Only a changed half is an amendment: the same milestone at a new value writes `value` alone.
+  if (milestoneFlag !== undefined && currentMilestone !== milestoneFlag) fields.push({ field: "milestone", value: milestoneFlag, superseded: currentMilestone ?? "" });
+  if (valueNum !== undefined && currentValue !== valueNum) fields.push({ field: "value", value: valueNum, superseded: currentValue ?? "" });
 
   try {
     editOpusFrontMatter(opusPath, (doc) => {

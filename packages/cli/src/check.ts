@@ -25,6 +25,7 @@ import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
 import { checkInstructions } from "./rules/instructions.js";
 import { checkDocs } from "./rules/docs.js";
+import { checkMilestones } from "./rules/milestones.js";
 import { checkEvidence } from "./rules/evidence.js";
 import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
@@ -916,6 +917,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkPaths(root, ruleOpts));
   findings.push(...checkDesign(root, ruleOpts));
   findings.push(...checkTests(root, ruleOpts));
+  findings.push(...checkMilestones(root, ruleOpts));
 
   return done();
 }

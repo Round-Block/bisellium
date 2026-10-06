@@ -1,0 +1,41 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-152-b2 --import tsx packages/cli/src/milestones.test.ts
+# exit: 1
+# at: 2026-10-06T01:58:11.623Z
+# sella: builder.W-152
+# tree: tree:f4d4b80ec290a8c9d28f4895e4330caaaefe0600
+
+TAP version 13
+# Subtest: W-152-b2 behaviour 2: opus.milestone fails an opus that is not halted and maps to zero, or to more than one, milestone
+not ok 1 - W-152-b2 behaviour 2: opus.milestone fails an opus that is not halted and maps to zero, or to more than one, milestone
+  ---
+  duration_ms: 35.743571
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-152/packages/cli/src/milestones.test.ts:24:487'
+  failureType: 'testCodeFailure'
+  error: |-
+    a backlog opus with no milestone yields one opus.milestone
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-152/packages/cli/src/milestones.test.ts:97:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 44.144086

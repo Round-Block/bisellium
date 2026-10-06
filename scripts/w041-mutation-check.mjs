@@ -4,7 +4,7 @@
  * for W-041 round-2 (studio/ci/W-041-review-1.log: B1's six untested
  * instances, B2's "none" sentinel, and the GHAS escaper advisory). Same
  * shape as scripts/w044-mutation-check.mjs: apply one named mutation to
- * scripts/backlog-page.mjs, run the test (or record a red through
+ * scripts/status-page.mjs, run the test (or record a red through
  * `bisellium red`), restore the original bytes in a `finally` regardless of
  * outcome, and confirm the tree is clean afterward.
  *
@@ -13,7 +13,7 @@
  *
  * <mutation> is one of MUTATIONS' keys below. Each names the finding it
  * demonstrates and the behaviour it targets. Without --record this runs
- * `node scripts/backlog-page.test.mjs <behaviour>` directly. With --record
+ * `node scripts/status-slate.test.mjs <behaviour>` directly. With --record
  * it instead runs `bisellium red W-041 --behaviour <behaviour> --sella
  * builder-a --studio studio --repo .` so the failure becomes the opus's
  * recorded red for that behaviour — the mutation name and finding it
@@ -26,7 +26,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const TARGET = "scripts/backlog-page.mjs";
+const TARGET = "scripts/status-page.mjs";
 const abs = join(repoRoot, TARGET);
 
 const MUTATIONS = {
@@ -124,10 +124,10 @@ try {
         ".",
         "--",
         "node",
-        "scripts/backlog-page.test.mjs",
+        "scripts/status-slate.test.mjs",
         String(mutation.behaviour),
       ]
-    : [join(repoRoot, "scripts/backlog-page.test.mjs"), String(mutation.behaviour)];
+    : [join(repoRoot, "scripts/status-slate.test.mjs"), String(mutation.behaviour)];
   const out = execFileSync(process.execPath, args, { cwd: repoRoot, encoding: "utf8" });
   process.stdout.write(out);
   exit = 0;

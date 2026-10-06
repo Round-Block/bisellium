@@ -1,0 +1,16 @@
+# opus: W-152
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T03:44:27.997Z
+# tree: tree:504e03dddda29ec23485898b9976ca5b185a0000
+# brief: briefs/W-152.md blob:d4bd77063fd1e2736e702c44c8c1b4c4be9da03d
+
+## Findings
+1. blocking — packages/cli/src/rules/docs.ts:126 The catch also suppresses a source’s own finding when `statSync` establishes a greater-than-half shrink but `readFileSync` cannot verify the exception marker; unreadable is not equivalent to the brief’s new/deleted exemptions, so the qualifying shrink silently passes, contrary to brief:330. This is one instance, not a class: I searched the complete per-source loop; all throwing operations are guarded, but only this path fails open after the threshold is established. — check: packages/cli/src/rules/dossier-shrink.test.ts
+
+## Verdict
+The regression row closes the cross-source discard and fails against the pre-fix implementation, but the fix still mishandles the unreadable source itself.
+VERDICT: FAIL
