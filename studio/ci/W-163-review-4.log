@@ -1,0 +1,16 @@
+# opus: W-163
+# phase: build
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T23:19:14.447Z
+# tree: tree:3b39805f70a0d276d9a4d26450f2d90df0832388
+# brief: briefs/W-163.md blob:0a48e1827be24a89516433d2f6009da203b39aa4
+
+## Findings
+1. blocking — packages/cli/src/containment.test.ts:414 Class defect: non-literal computed direct members such as `Date[k](x)` and `globalThis.Date[k](x)` become pinnable `Date.<computed>` inventory-C sites without an out-of-domain finding, bypassing the fail-closed member allowlist. The only tree instance is the scanned `c-non-literal-member` fixture at line 1111, which incorrectly expects `out: []`; I searched all non-test C/D source roots and found no production instance. brief:158 — check: packages/cli/src/containment.test.ts (`c-non-literal-member` and global-Date computed-member refusal rows)
+
+## Verdict
+The six allowlist rows are genuine pre-fix reds, and the earlier fixes and supplied gates remain closed, but the revised Date allowlist is incomplete.
+VERDICT: FAIL
