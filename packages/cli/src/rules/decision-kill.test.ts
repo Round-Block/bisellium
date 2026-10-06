@@ -155,7 +155,7 @@ test("W-120-r1a timestamps: an impossible date is unreadable and fails closed", 
 test("W-120-r1b citations: a malformed halted_by or waived_by is never silently skipped", () => {
   const root = officina();
   decision(root, 1, KILL);
-  const shapes = ["[D-1]", "{ id: D-1 }", "42", '""', "true"];
+  const shapes = ["[D-1]", "{ id: D-1 }", "42", '""', "true", "null"];
   shapes.forEach((v, i) => {
     opus(root, `W-${i + 1}`, "halted", [`halted_by: ${v}`, "halted_at: 2026-09-26T00:00:00Z"]);
     opus(root, `W-${i + 11}`, "review", ["probationes:", "  signoff:", "    status: waived", "    reason: r", `    waived_by: ${v}`, "    sella: patron", "    at: 2026-09-24T00:00:00Z"]);
