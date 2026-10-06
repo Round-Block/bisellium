@@ -1,0 +1,22 @@
+# opus: W-137
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T17:25:24.605Z
+# tree: tree:6b041d1a6be359eb1823b07e4400112dc77ea113
+
+W-137 spec, revision 2. Architect, claude-opus-5-5. Brief: studio/briefs/W-137.md (6 behaviours, six sections plus "Defaults for the Patron to veto", Decree family: retro-step; readBriefAdmission at limit 6 reports no problems; check studio --repo . is 0 blocking with the brief present). Inputs: build review rounds 2-5 (studio/ci/W-137-review-2..5.log), which read brief:89 "on any refusal ... writes nothing" to cover filesystem failures mid-write; each fix (preflights, then an undo journal) drew a finer finding, and round 5 found the undo journal can overwrite or delete state it did not create. Plain files give no transactions, so that reading is unattainable; this revision splits refusal from I/O failure.
+
+## Findings
+1. advisory — a refusal is a decision over inputs and officina state, all made before the first write: the input domain plus a new output-paths row (opera/, lessons/, acta/, .bisellium/ absent or real directories; the acta output absent by lstat; a greenlit fix opus and events.jsonl regular files); a refusal exits 2 and writes nothing. Rows unchanged: b1's refusal list, b1 round 2-5 rows (dangling acta symlink, symlinked .bisellium/ and events.jsonl, directory at events.jsonl) stay exit 2 byte-identical — check: packages/cli/src/retro-opus.test.ts (W-137-b1, W-137-b2 refusals)
+2. advisory — an I/O failure after the first write (permission, disk, concurrent change, EEXIST on an exclusive create) is not a refusal: exit 1, stderr names every path written in first-write order, then the failing path; a path counts as written once its create or open succeeds; no permission preflight. Rows that change from "exit 2, byte-identical" to "exit 1, names written paths, officina differs in exactly those paths": W-137-b1 round 6 unreadable-writable events.jsonl (0200), absent events.jsonl under 0500 .bisellium/, absent .bisellium/ under 0500 root, and acta/ 0500 (last write fails; earlier writes stay) — check: packages/cli/src/retro-opus.test.ts (W-137-b1 round 6 rows, rewritten)
+3. advisory — no rollback and no undo journal (round 5 #1 and #2 dissolve: nothing is undone, and a partially written created file is named as written); recovery is git on the officina's work tree, restoring before a rerun so half-written lessons are not read as an existing class; default 9 — check: packages/cli/src/retro-opus.test.ts (W-137-b1 acta/ 0500 row: earlier writes remain on disk)
+4. advisory — fix opera, lessons and the acta are created O_CREAT|O_EXCL|O_NOFOLLOW; an existing entry is an I/O failure left untouched; the only existing records changed are a backlog fix opus's front matter (step 3) and one appended event line — check: packages/cli/src/retro-opus.test.ts (W-137-b1 dangling acta-output rows, exit 2 before any write)
+5. advisory — concurrent-change and partial-write failures have no row: they need fault injection inside a write and the rule (name the path, undo nothing) has no branch to test beyond the permission rows — check: none: covered by the exit-1 path the round 6 rows drive
+6. advisory — b2-b6 and the live proof are unchanged; Acceptance adds that draftOpusRetro reverses no write on error; Out of scope adds transactions over plain files — check: packages/cli/src/retro-opus.test.ts (W-137-b1)
+
+## Recommendation
+Verdict: passed. Revision 2 keeps the decree and every behaviour; it narrows "refusal" to a decision made before the first write and makes a later I/O failure an exit 1 that names what it wrote, with git as the recovery path. The builder removes the undo journal and permission preflights, maps late I/O errors to exit 1, and rewrites the four round 6 rows.
+Nine defaults ship as stated and are veto-able at the checkpoint; default 9 (a failed retro is not undone) is new.
