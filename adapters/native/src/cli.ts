@@ -1,5 +1,6 @@
 /** `npm run snapshot -- <bisellium-dir> [--now <iso>]` — print what Bisellium would see. */
 import { createBiselliumAdapter, snapshotDir } from "./index.js";
+import { instant } from "@bisellium/schema";
 
 const args = process.argv.slice(2);
 const root = args[0];
@@ -11,8 +12,8 @@ let now: Date | undefined;
 const nowIdx = args.indexOf("--now");
 if (nowIdx !== -1) {
   const v = args[nowIdx + 1];
-  now = v === undefined ? undefined : new Date(v);
-  if (!now || Number.isNaN(now.getTime())) {
+  now = v === undefined ? undefined : instant(v);
+  if (!now) {
     console.error("--now must be an ISO date");
     process.exit(2);
   }

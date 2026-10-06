@@ -20,11 +20,13 @@
  * reads/appends to, so a hook-emitted event and a CLI/Store one never fork
  * the log).
  */
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { appendFileSync, readFileSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 import { readFront, readManifest, listMd, isBuilderClassSeat, resolveSeat, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL } from "@bisellium/core";
-import { WF, type GantryEvent } from "@bisellium/schema";
+import { WF, instant, type GantryEvent } from "@bisellium/schema";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import {
   claudeCodeHooksBlock,
   hookReceiptStatuses,
@@ -309,10 +311,12 @@ function handleStop(studio: string, sella: string, payload: Record<string, unkno
   const path = receiptPath(studio, sella, sessionId);
   let durationMs = 0;
   try {
-    const existing = JSON.parse(readFileSync(path, "utf8")) as { startedAt?: string };
+    const receipt = readContainedRegularFile(studio, relative(studio, path), "receipts");
+    if ("error" in receipt) throw new Error(receipt.error);
+    const existing = JSON.parse(receipt.bytes.toString("utf8")) as { startedAt?: string };
     if (typeof existing.startedAt === "string") {
-      const startedAt = new Date(existing.startedAt);
-      if (!Number.isNaN(startedAt.getTime())) durationMs = Math.max(0, now.getTime() - startedAt.getTime());
+      const startedAt = instant(existing.startedAt);
+      if (startedAt) durationMs = Math.max(0, now.getTime() - startedAt.getTime());
     }
   } catch {
     // No start receipt (hook-event start never ran, or a different studio) —
@@ -346,8 +350,8 @@ function staleTraditioReminder(studio: string, sella: string, now: Date): string
     if (typeof data["state"] !== "string" || !ACTIVE_STATES.has(data["state"])) continue;
     const traditio = data["traditio"];
     if (!isDict(traditio) || typeof traditio["at"] !== "string") continue;
-    const at = new Date(traditio["at"]);
-    if (Number.isNaN(at.getTime())) continue;
+    const at = instant(traditio["at"]);
+    if (!at) continue;
     const ageMs = now.getTime() - at.getTime();
     if (ageMs <= TRADITIO_STALE_MS) continue;
     const id = typeof data["id"] === "string" ? data["id"] : p;
@@ -448,8 +452,7 @@ function handleContext(studio: string, sella: string, now: Date): HooksResult {
 }
 
 function handleCompact(studio: string, sella: string, payload: Record<string, unknown>, now: Date): HooksResult {
-  const path = join(studio, "timeline", `${sella}.jsonl`);
-  mkdirSync(dirname(path), { recursive: true });
+  const path = join(ensureRealDirectory(studio, "timeline"), `${sella}.jsonl`);
   const trigger = stringField(payload, "trigger");
   // Redacted the same way talk.ts's timeline entries and tick.ts's daily
   // acta are (and hook-event tool's file_path above) — `trigger` comes

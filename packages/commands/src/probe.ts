@@ -30,6 +30,7 @@ import {
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
 import { vendorDiagnostic } from "./talk.js";
 import { openStudio, parseFlags, resolveNow } from "./writes.js";
+import { instant } from "@bisellium/schema";
 
 function readManifestSafe(studio: string): Manifest | undefined {
   try {
@@ -340,12 +341,12 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   function priorAtMs(c: Candidate): number {
     const prior = priorProbeByKey.get(`${c.id}\u0000${c.harness}`);
     if (!prior) return -Infinity;
-    const ms = new Date(prior.at).getTime();
+    const ms = instant(prior.at)?.getTime();
     // An unparseable `at` is classified as never-probed, same as an absent
     // one (behaviour 10c) — NaN must never reach the comparator below: two
     // NaN operands compare as neither <, >, nor === under `-`, which sorts
     // a corrupt pair unpredictably instead of first.
-    return Number.isNaN(ms) ? -Infinity : ms;
+    return ms === undefined ? -Infinity : ms;
   }
   const orderedDue = [...due].sort((a, b) => {
     const ta = priorAtMs(a);

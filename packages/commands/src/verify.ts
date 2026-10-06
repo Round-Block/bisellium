@@ -16,7 +16,7 @@
  * `check` would accept `review`), each by compare-and-set against the fresh
  * record. Anywhere else it writes gates exactly as before and never state.
  */
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, relative, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
@@ -25,8 +25,10 @@ import { WF } from "@bisellium/schema";
 import { localPipeline, selectPipeline, type GateRunResult, type MergePipeline } from "@bisellium/pipeline";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
+import { requireRealDirectory } from "./ids.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "./writes.js";
 import { effectiveProbationes, SERVED_E2E_PROBATIO, readContainedRegularFile, reviewFailedAtCertifiedTree, utcTimestampProblem, validateProtectedRecords } from "./opus-model.js";
+import { instant } from "@bisellium/schema";
 
 export interface RunVerifyOptions {
   /** Override pipeline selection — mainly for tests. Defaults to selectPipeline(). */
@@ -87,7 +89,8 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (a === "--commit") commit = v;
       else {
         if (utcTimestampProblem(v)) return { error: `--now must match the exact UTC timestamp profile\n${USAGE}` };
-        const d = new Date(v);
+        const d = instant(v);
+        if (!d) return { error: `--now must be an ISO date\n${USAGE}` };
         now = d;
       }
       continue;
@@ -244,6 +247,15 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
     return { exitCode: 2 };
   }
 
+  try {
+    requireRealDirectory(join(realpathSync(studioDir), "ci"));
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`verify: ${(e as Error).message}`);
+      return { exitCode: 2 };
+    }
+  }
+
   const effective = effectiveProbationes(opus.kind, manifest.probationes);
   if (effective.problems.length) {
     console.error(effective.problems.map((problem) => `${problem.rule}: ${problem.message}`).join("\n"));
@@ -252,8 +264,7 @@ export async function runVerify(args: string[], opts: RunVerifyOptions = {}): Pr
   const commands: Record<string, string> = {};
   for (const p of effective.probationes) if (p.kind === "automated" && p.command) commands[p.id] = p.command;
 
-  const raw = readFileSync(opusPath, "utf8");
-  const split = splitFront(raw);
+  const split = splitFront(containedOpus.bytes.toString("utf8"));
   if (!split) {
     console.error(`${opusPath}: missing front matter`);
     return { exitCode: 2 };

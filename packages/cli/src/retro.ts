@@ -12,13 +12,13 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { closeSync, constants, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { closeSync, constants, existsSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
-import { WF } from "@bisellium/schema";
-import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
+import { WF, instant } from "@bisellium/schema";
+import { createNextRecord, ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
 import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
@@ -26,7 +26,6 @@ import { VERDICT_HEADERS } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
 import { RULE_IDS } from "./rules/ids.js";
-import { instant } from "./rules/process.js";
 
 export interface RetroFinding {
   class: string;
@@ -95,12 +94,9 @@ function existingLessonsByClass(studioRoot: string): Map<string, { cascade: numb
     files = [];
   }
   for (const f of files) {
-    let raw: string;
-    try {
-      raw = readFileSync(join(dir, f), "utf8");
-    } catch {
-      continue;
-    }
+    const lessonFile = readContainedRegularFile(studioRoot, `lessons/${f}`, "lessons");
+    if ("error" in lessonFile) continue;
+    const raw = lessonFile.bytes.toString("utf8");
     const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
     if (!m) continue;
     const classMatch = /^class:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
@@ -169,12 +165,9 @@ function pruningCandidates(studioRoot: string, classes: string[]): { id: string;
     files = [];
   }
   for (const f of files) {
-    let raw: string;
-    try {
-      raw = readFileSync(join(dir, f), "utf8");
-    } catch {
-      continue;
-    }
+    const decisionFile = readContainedRegularFile(studioRoot, `decisions/${f}`, "decisions");
+    if ("error" in decisionFile) continue;
+    const raw = decisionFile.bytes.toString("utf8");
     const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
     if (!m) continue;
     const idMatch = /^id:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!);
@@ -214,7 +207,9 @@ function posturesFromCurrentAerarium(studioRoot: string, now: Date, totalTokens:
   let doc: unknown;
   try {
     if (!existsSync(path)) return [];
-    doc = parseYaml(readFileSync(path, "utf8"));
+    const aerariumFile = readContainedRegularFile(studioRoot, `aerarium/${period}.yml`, "aerarium");
+    if ("error" in aerariumFile) return [];
+    doc = parseYaml(aerariumFile.bytes.toString("utf8"));
   } catch {
     return [];
   }
@@ -252,12 +247,9 @@ function previousRetroTotalTokens(studioRoot: string, cascade: number): { cascad
     if (n < cascade && (best === undefined || n > best.cascadeNumber)) best = { cascadeNumber: n, file: f };
   }
   if (!best) return undefined;
-  let raw: string;
-  try {
-    raw = readFileSync(join(dir, best.file), "utf8");
-  } catch {
-    return undefined;
-  }
+  const retroFile = readContainedRegularFile(studioRoot, `acta/${best.file}`, "acta");
+  if ("error" in retroFile) return undefined;
+  const raw = retroFile.bytes.toString("utf8");
   const m = /Total tokens:\s*(\d+)/.exec(raw);
   if (!m) return undefined;
   return { cascadeNumber: best.cascadeNumber, totalTokens: Number(m[1]) };
@@ -505,10 +497,9 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
   ];
   const markdown = lines.join("\n");
 
-  const actaDir = join(studioRoot, "acta");
-  mkdirSync(actaDir, { recursive: true });
+  const actaDir = ensureRealDirectory(studioRoot, "acta");
   const actaPath = `acta/${dateStr}-retro-${cascade}.md`;
-  writeFileSync(join(studioRoot, actaPath), markdown);
+  writeFileSync(join(actaDir, basename(actaPath)), markdown);
 
   return { path: actaPath, markdown, lessons: lessons.map((l) => ({ path: l.path, markdown: l.markdown })), petitiones };
 }
@@ -706,7 +697,7 @@ export function owedRetros(root: string): { owed: string[] } | Refusal {
     const rec = readOpus(root, id);
     if (isRefusal(rec)) return rec;
     if (rec["state"] !== "done" || rec["end"] === undefined || rec["end"] === null) continue;
-    const end = utcTimestampProblem(rec["end"]) === undefined ? Date.parse(rec["end"] as string) : undefined;
+    const end = utcTimestampProblem(rec["end"]) === undefined ? instant(rec["end"])?.getTime() : undefined;
     if ((end === undefined || end >= setting.since) && !retroFiled(root, id)) owed.push(id);
   }
   return { owed };
@@ -964,12 +955,10 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     ...(started.length ? started.map((s) => `- ${s.fix}: greenlit by ${s.decision}`) : ["- (none)"]),
     "",
   ].join("\n");
-  const dir = realDir(root, "acta");
+  realDir(root, "acta");
   // exclusive create: an entry already there is an I/O failure and is left as it was
   writing(() => {
-    mkdirSync(dir, { recursive: true });
-    realDir(root, "acta");
-    writeFileSync(join(dir, basename(actaPath)), acta, { flag: "wx" });
+    writeFileSync(join(ensureRealDirectory(root, "acta"), basename(actaPath)), acta, { flag: "wx" });
   });
   return { path: actaRel };
   } catch (e) {
@@ -1067,8 +1056,8 @@ export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode:
 
   let now = opts.now ?? new Date();
   if (values.has("--now")) {
-    const parsed = new Date(values.get("--now")!);
-    if (Number.isNaN(parsed.getTime())) { console.error("--now must be an ISO date"); return { exitCode: 2 }; }
+    const parsed = instant(values.get("--now"));
+    if (!parsed) { console.error("--now must be an ISO date"); return { exitCode: 2 }; }
     now = parsed;
   }
 

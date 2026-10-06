@@ -8,6 +8,7 @@
  */
 import { basename, join } from "node:path";
 import { listMd, readFront, readManifest, resolveSeat } from "@bisellium/adapter-native";
+import { instant } from "@bisellium/schema";
 
 export interface OpenLessonClass {
   class: string;
@@ -31,8 +32,7 @@ const RULE_SHAPE = /^[A-Za-z][\w-]*(\.[\w-]+)+$/;
 
 /** `at` reads as a Date when unquoted in YAML, a string when quoted. */
 function iso(v: unknown): string {
-  const d = v instanceof Date ? v : new Date(typeof v === "string" ? v : Number.NaN);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  return instant(v)?.toISOString() ?? "";
 }
 
 function front(path: string): Front | undefined {

@@ -33,6 +33,7 @@ import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, merge
 import { runDone, runReady } from "./lifecycle.js";
 import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
+import { instant } from "@bisellium/schema";
 
 export { MIN_CHECKS };
 
@@ -251,13 +252,7 @@ function certificate(repo: string, studioRel: string, studioAbs: string, exclude
     if (!isDict(g) || g["status"] !== "passed" || g["certifies"] !== want) return { ok: false, why: `${gate} is not passed at the trunk's source tree` };
     const evidence = str(g["evidence"]);
     if (evidence === undefined || !new RegExp(`^ci/${esc(id)}-${esc(gate)}-[0-9a-f]+\\.log$`).test(evidence)) return { ok: false, why: `${gate} records no evidence of the form ci/${id}-${gate}-<hex>.log` };
-    const abs = join(studioAbs, evidence);
-    try {
-      if (!lstatSync(abs).isFile()) throw new Error("not a regular file");
-      readFileSync(abs);
-    } catch {
-      return { ok: false, why: `${gate}'s evidence ${evidence} is not a readable regular file` };
-    }
+    if ("error" in readContainedRegularFile(studioAbs, evidence, "ci")) return { ok: false, why: `${gate}'s evidence ${evidence} is not a readable regular file` };
     const rel = `${studioRel}/${evidence}`;
     const tracked = git(repo, ["ls-files", "-z", "--", rel]);
     if (tracked.status !== 0) return { ok: false, why: `could not list ${rel}` };
@@ -349,8 +344,8 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     owed: memo(() => owedRetros(studioAbs)),
     evidenceAt: memo(() => {
       const times: number[] = [];
-      for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(Date.parse(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at") ?? ""));
-      for (const { name } of reviewLogs(branch, id)) times.push(Date.parse(parseLogHeader(branch?.read(`ci/${name}`) ?? "").get("at") ?? ""));
+      for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(instant(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
+      for (const { name } of reviewLogs(branch, id)) times.push(instant(parseLogHeader(branch?.read(`ci/${name}`) ?? "").get("at"))?.getTime() ?? Number.NaN);
       return Math.max(0, ...times.filter((t) => !Number.isNaN(t)));
     }),
   };
@@ -680,7 +675,7 @@ function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived
   if (budget > DISPATCH_TOKEN_CAP) return refuse(`budget ${budget} exceeds DISPATCH_TOKEN_CAP ${DISPATCH_TOKEN_CAP}`);
   if (d.order.resume) {
     const t = (f.branchRecord ?? f.trunkRecord)?.["traditio"];
-    const at = isDict(t) ? Date.parse(String(t["at"])) : Number.NaN;
+    const at = isDict(t) ? (instant(t["at"])?.getTime() ?? Number.NaN) : Number.NaN;
     if (Number.isNaN(at)) return refuse("stale handover: run bisellium handoff first (the record carries no traditio)");
     if (at < f.evidenceAt()) return refuse(`stale handover: run bisellium handoff first (traditio at ${new Date(at).toISOString()} predates the newest red or review log)`);
   }
@@ -939,9 +934,9 @@ function parseArgs(argv: string[], env: NodeJS.ProcessEnv): Args | { error: stri
   const now = values.get("--now");
   if (now !== undefined) {
     if (!testClock) return { error: "--now is accepted only when BISELLIUM_TEST_CLOCK=1" };
-    const t = Date.parse(now);
-    if (Number.isNaN(t)) return { error: "--now must be an ISO date" };
-    a.nowMs = t;
+    const t = instant(now);
+    if (!t) return { error: "--now must be an ISO date" };
+    a.nowMs = t.getTime();
   }
   const track = values.get("--track");
   if (track !== undefined) {

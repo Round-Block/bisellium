@@ -17,6 +17,7 @@ import {
   PROBATIO_STATUSES,
   PROVIDER_STATUSES,
   PETITIO_STATES,
+  instant,
 } from "@bisellium/schema";
 import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
@@ -32,7 +33,7 @@ import { checkPaths } from "./rules/paths.js";
 import { checkDesign } from "./rules/design.js";
 import { checkTests } from "./rules/tests.js";
 import { diagnosticLabel } from "./reporting.js";
-import { effectiveProbationes, readContainedRegularFile, reviewFailedAtCertifiedTree, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
+import { effectiveProbationes, readContainedRegularFile, readRecordedFile, reviewFailedAtCertifiedTree, validateStudioNativeModel } from "@bisellium/commands/opus-model.js";
 import type { OpusModelProblem } from "@bisellium/commands/opus-model.js";
 import { DEFAULT_OPEN_LESSONS } from "@bisellium/commands/context.js";
 
@@ -79,7 +80,6 @@ const STAGE_RANK = new Map([["building", 0], ["verifying", 1], ["review", 2]]);
 /** WIP = items a sella is actively working: building + verifying. Review waits on someone else. */
 const WIP_STATES = new Set(["building", "verifying"]);
 const TRADITIO_KEYS = ["sella", "stage", "next", "blocked_on", "at"];
-const ISO = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
 
 // Defaults table (dossier Part II); overridable via manifest.defaults.
 const DEFAULTS = {
@@ -105,21 +105,22 @@ const days = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime(
 /** Same clamp as `days`, in minutes — receipts are checked on a minutes timescale, not days. */
 const minutes = (a: Date, b: Date): number => Math.max(0, (b.getTime() - a.getTime()) / 60_000);
 
-/** Dates must be ISO strings (or YAML-parsed Date objects); anything else is rejected, not guessed. */
-function isoDate(v: unknown): Date | undefined {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
-  if (typeof v !== "string" || !ISO.test(v)) return undefined;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-
-function safeYaml(path: string): { data: Dict | undefined; error?: string } {
+/** A YAML mapping from file text; the officina's fixed-name root files read it through `safeYaml`. */
+function safeYamlText(raw: string): { data: Dict | undefined; error?: string } {
   try {
-    const text = readFileSync(path, "utf8").replace(/^﻿/, "");
+    const text = raw.replace(/^﻿/, "");
     const v = parseYaml(text);
     if (v === null || v === undefined) return { data: undefined, error: "empty file" };
     if (!isDict(v)) return { data: undefined, error: "top level is not a mapping" };
     return { data: v };
+  } catch (e) {
+    return { data: undefined, error: (e as Error).message };
+  }
+}
+
+function safeYaml(path: string): { data: Dict | undefined; error?: string } {
+  try {
+    return safeYamlText(readFileSync(path, "utf8"));
   } catch (e) {
     return { data: undefined, error: (e as Error).message };
   }
@@ -387,9 +388,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     }
     const lex = str(d["lex"]);
     if (!lex) { add("lex.declared", "advise", `bisellium.yml#${id}`, "collegium has no lex"); continue; }
-    const cp = join(root, lex);
-    let text: string | undefined;
-    try { text = statSync(cp).isFile() ? readFileSync(cp, "utf8") : undefined; } catch { text = undefined; }
+    const lexFile = readRecordedFile(root, lex);
+    const text: string | undefined = "error" in lexFile ? undefined : lexFile.bytes.toString("utf8");
     if (text === undefined) { add("lex.present", "block", lex, `lex declared for ${id} but not a readable file`); continue; }
     for (const section of ["Decides alone", "Digests", "Asks"])
       if (!text.includes(section)) add("lex.sections", "advise", lex, `no "${section}" section`);
@@ -439,7 +439,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       add("manifest.shape", "block", `bisellium.yml#probationes`, `probatio "${gid}" since must be a string`);
       continue;
     }
-    const since = isoDate(g["since"]);
+    const since = instant(g["since"]);
     if (!since) { add("manifest.shape", "block", `bisellium.yml#probationes`, `probatio "${gid}" since "${g["since"]}" is not a parseable ISO datetime`); continue; }
     probatioSince.set(gid, since);
   }
@@ -481,7 +481,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (stage && stage !== state && !(stageRank !== undefined && stateRank !== undefined && stageRank <= stateRank))
       add("traditio.stage", "advise", where, `handoff stage "${stage}" ≠ state "${state}"`);
     if (h["at"] !== undefined) {
-      const at = isoDate(h["at"]);
+      const at = instant(h["at"]);
       if (!at) add("traditio.at", "block", where, "handoff.at must be an ISO date");
       else if (ACTIVE.has(state) && days(at, now) > defaults.handoff_stale_days)
         add("traditio.stale", "advise", where, `handoff is ${days(at, now).toFixed(1)} days old`);
@@ -514,7 +514,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     // Used by the `since:` exemption below — read directly off the raw
     // traditio value (not through checkTraditio, which runs later and only
     // adds findings) so a missing/unparseable traditio.at can fail closed.
-    const traditioAt = isDict(d["traditio"]) ? isoDate((d["traditio"] as Dict)["at"]) : undefined;
+    const traditioAt = isDict(d["traditio"]) ? instant((d["traditio"] as Dict)["at"]) : undefined;
     const collegium = str(d["collegium"]);
     if (collegium && !collegiumIds.has(collegium)) add("opus.collegium", "block", where, `collegium "${collegium}" not declared`);
     const sellaId = str(d["sella"]);
@@ -580,12 +580,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
               const hashMatch = itemProbatioKind.get(gid) === "automated" ? /^(?:tree|dirty):(.+)$/.exec(cs) : null;
               if (hashMatch) {
                 const hash = hashMatch[1]!;
-                let logText: string | undefined;
-                try {
-                  logText = existsSync(join(root, ev as string)) ? readFileSync(join(root, ev as string), "utf8") : undefined;
-                } catch {
-                  logText = undefined;
-                }
+                const logFile = readRecordedFile(root, ev as string);
+                const logText: string | undefined = "error" in logFile ? undefined : logFile.bytes.toString("utf8");
                 if (logText !== undefined && !logText.includes(hash))
                   add("probatio.evidence.tree", "advise", where, `gate "${gid}" evidence log does not mention the tree hash it certifies (${hash})`);
               }
@@ -673,7 +669,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
 
     if (state === "halted") {
       for (const k of ["reason", "resume_when"]) if (!str(d[k])) add("halted.exit", "block", where, `halted item missing "${k}"`);
-      const at = isoDate(d["halted_at"]) ?? (isDict(d["traditio"]) ? isoDate((d["traditio"] as Dict)["at"]) : undefined);
+      const at = instant(d["halted_at"]) ?? (isDict(d["traditio"]) ? instant((d["traditio"] as Dict)["at"]) : undefined);
       if (!at) add("halted.at", "block", where, "halted item has no halted_at (age cannot be tracked)");
       else if (days(at, now) > defaults.halted_stale_days) add("halted.stale", "advise", where, `halted for ${days(at, now).toFixed(0)} days`);
     }
@@ -737,7 +733,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       const collegium = from ? sellaCollegium.get(from) : undefined;
       if (collegium) openByCollegium.set(collegium, (openByCollegium.get(collegium) ?? 0) + 1);
       if (d["opened"] !== undefined) {
-        const opened = isoDate(d["opened"]);
+        const opened = instant(d["opened"]);
         if (!opened) add("petitio.opened", "block", where, "opened must be an ISO date");
         else if (s === "needs_you" && days(opened, now) > defaults.ask_stale_days)
           add("petitio.age", "advise", where, `needs you for ${days(opened, now).toFixed(1)} days`);
@@ -759,7 +755,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     if (d["author"] !== undefined && (!a || (!sellaIds.has(a) && a !== patron))) add("acta.author", "block", where, `author "${a ?? ""}" not a sella`);
     const k = str(d["kind"]) ?? "";
     if (!(ACTUM_KINDS as readonly string[]).includes(k)) add("acta.kind", "block", where, `kind "${k}" invalid`);
-    const at = isoDate(d["at"]);
+    const at = instant(d["at"]);
     if (d["at"] !== undefined && !at) add("acta.at", "block", where, "at must be an ISO date");
     if (at && k === "daily" && a) {
       const prev = latestDaily.get(a);
@@ -798,8 +794,9 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     for (const f of files) {
       const p = join(sellaDirPath, f);
       const where = rel(p);
-      let raw: string;
-      try { raw = readFileSync(p, "utf8"); } catch { add("receipt.shape", "block", where, "unreadable"); continue; }
+      const receiptFile = readContainedRegularFile(root, `receipts/${sellaDirName}/${f}`, "receipts");
+      if ("error" in receiptFile) { add("receipt.shape", "block", where, "unreadable"); continue; }
+      const raw = receiptFile.bytes.toString("utf8");
       let data: unknown;
       try { data = JSON.parse(raw); } catch { add("receipt.shape", "block", where, "not valid JSON"); continue; }
       if (!isDict(data) || !str(data["sella"]) || !str(data["startedAt"])) {
@@ -807,9 +804,9 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
         continue;
       }
       const sellaId = str(data["sella"])!;
-      const startedAt = isoDate(data["startedAt"]);
+      const startedAt = instant(data["startedAt"]);
       if (!startedAt) continue; // shape passed (non-empty string) but not a real date — nothing to age
-      const endedAt = data["endedAt"] !== undefined ? isoDate(data["endedAt"]) : undefined;
+      const endedAt = data["endedAt"] !== undefined ? instant(data["endedAt"]) : undefined;
       const prev = latestOpenBySella.get(sellaId);
       if (!prev || startedAt > prev.startedAt) latestOpenBySella.set(sellaId, { startedAt, endedAt });
     }
@@ -865,7 +862,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   if (aerariumFiles.length === 0) add("aerarium.present", "advise", "aerarium/", "no aerarium — postures will be unknown");
   for (const f of aerariumFiles) {
     const where = `aerarium/${f}`;
-    const { data: b, error } = safeYaml(join(aerariumDir, f));
+    const aerariumFile = readContainedRegularFile(root, `aerarium/${f}`, "aerarium");
+    const { data: b, error } = "error" in aerariumFile ? { data: undefined, error: aerariumFile.error } : safeYamlText(aerariumFile.bytes.toString("utf8"));
     if (!b) { add("aerarium.parse", "block", where, error ?? "unreadable"); continue; }
     const period = str(b["period"]) ?? (num(b["period"]) !== undefined ? String(b["period"]) : undefined);
     if (!period) add("aerarium.period", "block", where, "period missing");

@@ -9,7 +9,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { NATIVE_OPUS_KINDS, type NativeOpusKind } from "@bisellium/schema";
 import type { Manifest } from "@bisellium/adapter-native";
@@ -251,6 +251,20 @@ export function readContainedRegularFile(root: string, relPath: string, expected
     const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : undefined;
     return { error: (error as Error).message, ...(code === undefined ? {} : { code }) };
   }
+}
+
+/** An officina file named by a record value (`lex:`, `evidence:`), read through `readContainedRegularFile`: its own first
+ *  component is the expected directory, so only a nonempty relative path that stays under the officina passes. */
+export function readRecordedFile(root: string, relPath: string, maxBytes?: number): ContainedFile | { error: string; code?: string } {
+  if (typeof relPath !== "string" || relPath.length === 0 || isAbsolute(relPath)) return { error: "path must be a nonempty officina-relative string" };
+  const first = relative(resolve(root), resolve(root, relPath)).split(sep)[0] ?? "";
+  return readContainedRegularFile(root, relPath, first, maxBytes);
+}
+
+/** A record at `<root>/<dir>/<file>`, read through `readContainedRegularFile`: no symlink in any component. */
+export function readRecordAt(path: string, maxBytes?: number): ContainedFile | { error: string; code?: string } {
+  const dir = dirname(path);
+  return readContainedRegularFile(dirname(dir), join(basename(dir), basename(path)), basename(dir), maxBytes);
 }
 
 export interface LoadedNativeRecords {

@@ -16,6 +16,7 @@
 import { join } from "node:path";
 import { listMd, readFront, readManifest, snapshotDir } from "@bisellium/adapter-native";
 import { answer as answerFromIndex, Store } from "@bisellium/core";
+import { instant } from "@bisellium/schema";
 
 export type QueryKind = "needs_you" | "status" | "burn" | "unknown";
 export interface QueryAnswer {
@@ -31,12 +32,7 @@ const STATUS = /status\s+(W-\d+)/i;
 const BURN = /burn|budget|allowance/i;
 
 function toDate(v: unknown): Date | undefined {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
-  if (typeof v === "string") {
-    const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? undefined : d;
-  }
-  return undefined;
+  return instant(v);
 }
 const hoursSince = (at: Date | undefined, now: Date): string =>
   at ? `${(Math.abs(now.getTime() - at.getTime()) / 3_600_000).toFixed(1)}h` : "unknown age";

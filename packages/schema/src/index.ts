@@ -345,3 +345,30 @@ export interface EventAdapter extends AdapterBase {
 }
 
 export type Adapter = SnapshotAdapter | EventAdapter;
+
+// ---------------------------------------------------------------------------
+// Record dates — the one strict parser (W-120, moved here by W-163 so core,
+// server and commands can use it; none of them can import cli).
+// ---------------------------------------------------------------------------
+
+const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/** A YAML date or a strict ISO date(-time) string as an instant; anything else,
+ *  including an impossible date such as 2026-02-30, is undefined. No zone means UTC. */
+export function instant(v: unknown): Date | undefined {
+  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
+  const m = typeof v === "string" ? ISO.exec(v) : null;
+  if (!m) return undefined;
+  const [y, mo, d, h, mi, sec] = [m[1], m[2], m[3], m[4] ?? "0", m[5] ?? "0", m[6] ?? "0"].map(Number) as [number, number, number, number, number, number];
+  const ms = Number((m[7] ?? "0").padEnd(3, "0").slice(0, 3));
+  const t = new Date(Date.UTC(y, mo - 1, d, h, mi, sec, ms));
+  // round trip: the parsed fields must reproduce what was written (no JS normalisation)
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d || t.getUTCHours() !== h || t.getUTCMinutes() !== mi || t.getUTCSeconds() !== sec) return undefined;
+  const z = m[8];
+  if (z && z !== "Z") {
+    const [oh, om] = [Number(z.slice(1, 3)), Number(z.slice(-2))];
+    if (oh > 23 || om > 59) return undefined;
+    t.setTime(t.getTime() - (z[0] === "-" ? -1 : 1) * (oh * 60 + om) * 60000);
+  }
+  return t;
+}

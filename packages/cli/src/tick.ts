@@ -17,6 +17,7 @@
 import { basename, dirname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { listMd, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
+import { ensureRealDirectory } from "@bisellium/commands/ids.js";
 import { DEFAULT_HARNESS, codexListModels, harnessVersions, makeSessionId, receiptPath, redact, type ListedModel } from "@bisellium/shim";
 import {
   gatherCandidates,
@@ -29,6 +30,7 @@ import {
 import { checkStudio, type CheckOptions, type CheckResult } from "./check.js";
 import { isoWeek } from "./init.js";
 import { readPauseState, type PauseState } from "./pause.js";
+import { instant } from "@bisellium/schema";
 
 // ---------------------------------------------------------------------------
 // The talk seam. Builder A owns packages/cli/src/talk.ts; this module never
@@ -135,12 +137,7 @@ function localDateStr(now: Date, timeZone: string | undefined): string {
 }
 
 function toDate(v: unknown): Date | undefined {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
-  if (typeof v === "string") {
-    const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? undefined : d;
-  }
-  return undefined;
+  return instant(v);
 }
 
 /**
@@ -235,8 +232,8 @@ export function computeDue(studioRoot: string, manifest: Manifest, now: Date, pr
       let ageDue: boolean;
       if (!prior) ageDue = true;
       else {
-        const atMs = new Date(prior.at).getTime();
-        ageDue = Number.isNaN(atMs) ? true : (now.getTime() - atMs) / 86_400_000 > staleDays;
+        const atMs = instant(prior.at)?.getTime();
+        ageDue = atMs === undefined ? true : (now.getTime() - atMs) / 86_400_000 > staleDays;
       }
 
       // Version: per-pair, defined-vs-defined only (Sol note 12) — a pair
@@ -304,8 +301,7 @@ function writeHealthFile(
 function writeTickReceipt(studioRoot: string, now: Date): void {
   try {
     const sessionId = makeSessionId(now);
-    const path = receiptPath(studioRoot, "tick", sessionId);
-    mkdirSync(dirname(path), { recursive: true });
+    const path = join(ensureRealDirectory(studioRoot, "receipts", "tick"), basename(receiptPath(studioRoot, "tick", sessionId)));
     const receipt = {
       sella: "tick",
       sessionId,
@@ -344,6 +340,13 @@ async function writeDailyActum(
     return { ok: false, error: `unsafe sella id "${sella}" — refusing to write a daily acta for it` };
   }
 
+  let actaDir: string;
+  try {
+    actaDir = ensureRealDirectory(studioRoot, "acta");
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+
   let reply: string;
   try {
     const result = await talk({ studio: studioRoot, sella, message: DAILY_MESSAGE, harness, now });
@@ -359,7 +362,7 @@ async function writeDailyActum(
 
   const firstLine = reply.split("\n")[0]?.trim() ?? "";
   const title = firstLine.length > 0 ? firstLine.slice(0, 120) : "Daily acta diurna";
-  const path = join(studioRoot, "acta", `${today}-${sella}-daily.md`);
+  const path = join(actaDir, `${today}-${sella}-daily.md`);
   // health.json is generated and gitignored (see .gitignore) — a fresh
   // clone would never see it, so evidence points at bisellium.yml instead,
   // a link that's never dead.
@@ -423,8 +426,8 @@ function parseArgs(args: string[], defaultNow: Date): ParsedTickArgs | { error: 
       if (a === "--studio") studio = v;
       else if (a === "--repo") repo = v;
       else {
-        const d = new Date(v);
-        if (Number.isNaN(d.getTime())) return { error: `--now must be an ISO date\n${USAGE}` };
+        const d = instant(v);
+        if (!d) return { error: `--now must be an ISO date\n${USAGE}` };
         now = d;
       }
       continue;

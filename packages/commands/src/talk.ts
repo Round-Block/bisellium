@@ -24,7 +24,8 @@ import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, wr
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
 import { pauseWarning } from "./pause.js";
-import { createNextRecord } from "@bisellium/commands/ids.js";
+import { createNextRecord, ensureRealDirectory } from "@bisellium/commands/ids.js";
+import { instant } from "@bisellium/schema";
 
 export interface RunTalkOptions {
   /** Harness registry override — tests inject { fake: fakeProfile, ... }
@@ -66,8 +67,8 @@ function parseArgs(args: string[]): ParsedTalkArgs | { error: string } {
       else if (a === "--studio") studio = v;
       else if (a === "--harness") harness = v;
       else {
-        const d = new Date(v);
-        if (Number.isNaN(d.getTime())) return { error: `--now must be an ISO date\n${USAGE}` };
+        const d = instant(v);
+        if (!d) return { error: `--now must be an ISO date\n${USAGE}` };
         now = d;
       }
       continue;
@@ -155,8 +156,7 @@ interface TimelineEntry {
 }
 
 function appendTimeline(root: string, sella: string, entries: TimelineEntry[]): void {
-  const path = join(root, "timeline", `${sella}.jsonl`);
-  mkdirSync(dirname(path), { recursive: true });
+  const path = join(ensureRealDirectory(root, "timeline"), `${sella}.jsonl`);
   appendFileSync(path, entries.map((e) => JSON.stringify(e)).join("\n") + "\n");
 }
 
@@ -194,8 +194,7 @@ function slugify(text: string): string {
 
 /** Writes a `kind: decision` acta entry authored by `sella`. */
 function writeActum(root: string, sella: string, text: string, now: Date): string {
-  const dir = join(root, "acta");
-  mkdirSync(dir, { recursive: true });
+  const dir = ensureRealDirectory(root, "acta");
   const date = now.toISOString().slice(0, 10);
   const slug = slugify(text);
   let filename = `${date}-${slug}.md`;

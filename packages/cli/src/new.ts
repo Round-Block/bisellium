@@ -9,11 +9,11 @@
  * (cli.test.ts, which this builder does not own, must stay green), plus
  * `--spec <path>` and `--brief` (Design collegium, W-018).
  */
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { Manifest } from "@bisellium/adapter-native";
-import { createNextRecord } from "@bisellium/commands/ids.js";
+import { createNextRecord, ensureRealDirectory } from "@bisellium/commands/ids.js";
 import {
   isNativeOpusKind,
   loadNativeRecords,
@@ -269,10 +269,8 @@ ${values.get("--arc") === undefined ? "" : `arc: ${JSON.stringify(values.get("--
       return front;
     });
     if (brief) {
-      const briefsDir = join(root, "briefs");
-      mkdirSync(briefsDir, { recursive: true });
       try {
-        writeFileSync(join(briefsDir, `${created.id}.md`), briefTemplate(created.id, title), { flag: "wx" });
+        writeFileSync(join(ensureRealDirectory(root, "briefs"), `${created.id}.md`), briefTemplate(created.id, title), { flag: "wx" });
       } catch (error) {
         unlinkSync(created.path);
         throw error;

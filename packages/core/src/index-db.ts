@@ -14,7 +14,7 @@
 import { mkdirSync, rmSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync, type StatementSync } from "node:sqlite";
-import { WF, type GantryEvent } from "@bisellium/schema";
+import { WF, instant, type GantryEvent } from "@bisellium/schema";
 
 export interface GateResult {
   status: string;
@@ -488,8 +488,8 @@ export class Index {
     const rows = this.db.prepare("SELECT ts, attrs FROM events").all() as { ts: string; attrs: string }[];
     let total = 0;
     for (const r of rows) {
-      const ts = new Date(r.ts);
-      if (Number.isNaN(ts.getTime()) || isoWeek(ts) !== period) continue;
+      const ts = instant(r.ts);
+      if (!ts || isoWeek(ts) !== period) continue;
       const attrs = JSON.parse(r.attrs) as Record<string, string | number | boolean>;
       if (collegium !== undefined && attrs[WF.DEPARTMENT] !== collegium) continue;
       const total_tokens = attrs["gen_ai.usage.total_tokens"];

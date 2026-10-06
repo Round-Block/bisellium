@@ -17,6 +17,7 @@ import { dirname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
+import { instant } from "@bisellium/schema";
 
 export interface RenderedInstructions {
   claude: string;
@@ -176,8 +177,8 @@ export function runInstructions(args: string[], opts: { now?: Date } = {}): { ex
         console.error(`instructions: --now needs a value\n${USAGE}`);
         return { exitCode: 2 };
       }
-      const d = new Date(v);
-      if (Number.isNaN(d.getTime())) {
+      const d = instant(v);
+      if (!d) {
         console.error(`instructions: --now is not a valid date: ${v}\n${USAGE}`);
         return { exitCode: 2 };
       }

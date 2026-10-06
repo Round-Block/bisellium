@@ -280,7 +280,7 @@ interface CDScan {
   outOfDomain: string[];
 }
 
-const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "readContainedRegularFile", "createNextRecord"]);
+const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "readContainedRegularFile", "createNextRecord"]);
 
 function scanCD(root: string, rels: string[]): CDScan {
   const options: ts.CompilerOptions = {
@@ -309,7 +309,6 @@ function scanCD(root: string, rels: string[]): CDScan {
     if (diags.length) out.outOfDomain.push(`${rel}: parse error`);
     const named = new Map<string, string>(); // local name -> fs function name
     const spaces = new Set<string>(); // local names that are the fs module (or fs.promises)
-    const bound = new Set<string>();
     for (const st of sf.statements) {
       if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier) && FS_MODULES.has(st.moduleSpecifier.text)) {
         const c = st.importClause;
@@ -329,8 +328,6 @@ function scanCD(root: string, rels: string[]): CDScan {
       if (ts.isImportEqualsDeclaration(st) && ts.isExternalModuleReference(st.moduleReference) && ts.isStringLiteral(st.moduleReference.expression) && FS_MODULES.has(st.moduleReference.expression.text))
         out.outOfDomain.push(`${rel}: import = require(${st.moduleReference.expression.text})`);
     }
-    for (const n of named.keys()) bound.add(n);
-    for (const n of spaces) bound.add(n);
     const counts = new Map<string, number>();
     const nth = (k: string): number => {
       const n = (counts.get(k) ?? 0) + 1;
@@ -338,28 +335,30 @@ function scanCD(root: string, rels: string[]): CDScan {
       return n;
     };
     const visit = (n: ts.Node): void => {
+      // inventory D: every use of a raw fs function bound from a static import — a call, or the name passed on or aliased
+      {
+        let fsName: string | undefined;
+        if (ts.isIdentifier(n) && named.has(n.text) && !ts.isImportSpecifier(n.parent) && !((ts.isPropertyAccessExpression(n.parent) || ts.isPropertyAssignment(n.parent) || ts.isPropertySignature(n.parent)) && n.parent.name === n))
+          fsName = named.get(n.text);
+        else if (ts.isPropertyAccessExpression(n)) {
+          const target = n.expression;
+          if (ts.isIdentifier(target) && spaces.has(target.text)) fsName = n.name.text;
+          else if (ts.isPropertyAccessExpression(target) && target.name.text === "promises" && ts.isIdentifier(target.expression) && spaces.has(target.expression.text)) fsName = n.name.text;
+        }
+        if (fsName !== undefined && RAW_FS.has(fsName)) {
+          const fn = enclosingFunctionName(n);
+          out.d.push({ key: `${rel}:${fn}:${fsName}#${nth(`D:${fn}:${fsName}`)}`, rel, fn });
+        }
+      }
       if (ts.isCallExpression(n)) {
         const callee = n.expression;
         const arg0 = n.arguments[0];
-        // a bound fs name reached any way but a plain call
         if (ts.isIdentifier(callee) && callee.text === "require" && arg0 && ts.isStringLiteralLike(arg0) && FS_MODULES.has(arg0.text)) out.outOfDomain.push(`${rel}: require(${arg0.text})`);
         if (callee.kind === ts.SyntaxKind.ImportKeyword && arg0 && ts.isStringLiteralLike(arg0) && FS_MODULES.has(arg0.text)) out.outOfDomain.push(`${rel}: import(${arg0.text})`);
         if (ts.isIdentifier(callee) && callee.text === "createRequire") out.outOfDomain.push(`${rel}: createRequire`);
         // helper callers
         const calleeName = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
         if (CONTAINMENT_HELPERS.has(calleeName)) out.helperCallers.add(`${rel}:${enclosingFunctionName(n)}`);
-        // inventory D
-        let fsName: string | undefined;
-        if (ts.isIdentifier(callee) && named.has(callee.text)) fsName = named.get(callee.text);
-        else if (ts.isPropertyAccessExpression(callee)) {
-          const target = callee.expression;
-          if (ts.isIdentifier(target) && spaces.has(target.text)) fsName = callee.name.text;
-          else if (ts.isPropertyAccessExpression(target) && target.name.text === "promises" && ts.isIdentifier(target.expression) && spaces.has(target.expression.text)) fsName = callee.name.text;
-        }
-        if (fsName && RAW_FS.has(fsName)) {
-          const fn = enclosingFunctionName(n);
-          out.d.push({ key: `${rel}:${fn}:${fsName}#${nth(`D:${fn}:${fsName}`)}`, rel, fn });
-        }
         // inventory C: Date.parse
         if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === "Date" && callee.name.text === "parse") {
           const fn = enclosingFunctionName(n);
@@ -568,8 +567,18 @@ const PINNED_B: PinnedB[] = [
     disposition: "bypass-via-verify",
     why: "guarded at its lifecycle.ts callers, raw when verify.ts calls it",
   },
-  { key: "packages/commands/src/writes.ts:runAnswer#1", disposition: "derived", why: "--charter-gap acta path; slugify as above" },
-  { key: "packages/commands/src/writes.ts:runAnswer#2", disposition: "derived", why: "same slug plus a numeric suffix" },
+  {
+    key: "packages/commands/src/writes.ts:runAnswer#1",
+    disposition: "guarded",
+    why: "W-163: petitioId passes safeItemPath, and the petitio is read through readContainedRegularFile, which refuses a symlink and an escape; the bytes are what the rollback restores",
+  },
+  { key: "packages/commands/src/writes.ts:runAnswer#2", disposition: "derived", why: "--charter-gap acta path; slugify as above" },
+  { key: "packages/commands/src/writes.ts:runAnswer#3", disposition: "derived", why: "same slug plus a numeric suffix" },
+  {
+    key: "packages/commands/src/writes.ts:runGreenlight#1",
+    disposition: "guarded",
+    why: "W-163: opusId passes safeItemPath, and the opus is read through readContainedRegularFile; the bytes are what the rollback restores",
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -637,6 +646,7 @@ const APPROVED_HELPERS = new Set([
   "packages/commands/src/opus-model.ts:instant",
   "packages/commands/src/opus-model.ts:readContainedRegularFile",
   "packages/commands/src/ids.ts:createNextRecord",
+  "packages/commands/src/ids.ts:ensureRealDirectory",
 ]);
 
 // Inventory C — every raw date parse. After W-163 four remain: the strict
@@ -665,7 +675,276 @@ const PINNED_C: PinnedSite[] = [
   },
 ];
 
-const PINNED_D: PinnedSite[] = [];
+const PINNED_D: PinnedSite[] = [
+  { key: "adapters/native/src/index.ts:readFront:readFileSync#1", disposition: "listed", why: "reads a record by an absolute path the caller built; follow-on: read through readContainedRegularFile (the snapshot reader, Seams S1/S2)" },
+  { key: "adapters/native/src/index.ts:readManifest:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml); follow-on: read through readContainedRegularFile (the snapshot reader, Seams S1/S2)" },
+  { key: "adapters/native/src/index.ts:readMilestones:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (milestones.yml); follow-on: read through readContainedRegularFile (the snapshot reader, Seams S1/S2)" },
+  { key: "adapters/native/src/index.ts:snapshotDir:readFileSync#1", disposition: "listed", why: "reads each record found by a directory listing; follow-on: read through readContainedRegularFile (the snapshot reader, Seams S1/S2)" },
+  { key: "adapters/native/src/index.ts:readUsageProviders:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (usage.yml); follow-on: read through readContainedRegularFile (the snapshot reader, Seams S1/S2)" },
+  { key: "apps/server/src/branchRecords.ts:readBoundedRegular:open#1", disposition: "listed", why: "the server's own bounded reader: lstat, then open with O_NOFOLLOW, size-capped; follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "apps/server/src/http.ts:sendFile:readFileSync#1", disposition: "outside", why: "serves the built web assets from the package's own dist; never an officina file" },
+  { key: "apps/server/src/store.ts:readOpusBody:openSync#1", disposition: "listed", why: "opens the opus record with O_NOFOLLOW; follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "apps/server/src/store.ts:readPausedAt:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED); follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "apps/server/src/store.ts:readModelsRecord:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json); follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "apps/server/src/store.ts:health:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (health.json); follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "apps/server/src/store.ts:timeline:readFileSync#1", disposition: "listed", why: "reads timeline/patron.jsonl, a fixed name under timeline/; follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "apps/server/src/store.ts:receipts:readFileSync#1", disposition: "listed", why: "reads receipts found by a directory listing; follow-on: read through readContainedRegularFile or the server's bounded reader" },
+  { key: "packages/cli/src/branch.ts:rebaseOntoTrunk:rmSync#1", disposition: "outside", why: "removes a scratch directory it made under OS temp for the rebase" },
+  { key: "packages/cli/src/branch.ts:rebaseOntoTrunk:rmSync#2", disposition: "outside", why: "removes a scratch directory it made under OS temp for the rebase" },
+  { key: "packages/cli/src/check.ts:safeYaml:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml, usage.yml); every listed name (aerarium/) goes through readContainedRegularFile instead" },
+  { key: "packages/cli/src/docs.ts:collectDocFiles:readFileSync#1", disposition: "outside", why: "reads the repo's docs/ files, not an officina" },
+  { key: "packages/cli/src/docs.ts:runDocs:mkdirSync#1", disposition: "outside", why: "writes docs/registry.json in the repo (--repo), not an officina" },
+  { key: "packages/cli/src/docs.ts:runDocs:writeFileSync#1", disposition: "outside", why: "writes docs/registry.json in the repo (--repo), not an officina" },
+  { key: "packages/cli/src/hooks.ts:countLogLines:readFileSync#1", disposition: "outside", why: "reads .bisellium/events.jsonl, the runtime event log beside the officina" },
+  { key: "packages/cli/src/hooks.ts:handleCompact:appendFileSync#1", disposition: "contained", why: "timeline/<sella>.jsonl in a real timeline/ checked by ensureRealDirectory before the append" },
+  { key: "packages/cli/src/init.ts:initStudio:mkdirSync#1", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:mkdirSync#2", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:writeFileSync#1", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:writeFileSync#2", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:writeFileSync#3", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:writeFileSync#4", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:writeFileSync#5", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/init.ts:initStudio:writeFileSync#6", disposition: "listed", why: "init creates the officina tree from nothing and writes only fixed names; follow-on: refuse a symlinked root component before the first write" },
+  { key: "packages/cli/src/instructions.ts:readManifestLoosely:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml); no id or flag builds the path" },
+  { key: "packages/cli/src/instructions.ts:renderInstructions:readFileSync#1", disposition: "outside", why: "reads the instructions template shipped in the package" },
+  { key: "packages/cli/src/instructions.ts:runInstructions:writeFileSync#1", disposition: "outside", why: "writes CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root (--repo), not an officina" },
+  { key: "packages/cli/src/instructions.ts:runInstructions:writeFileSync#2", disposition: "outside", why: "writes CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root (--repo), not an officina" },
+  { key: "packages/cli/src/instructions.ts:runInstructions:writeFileSync#3", disposition: "outside", why: "writes CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root (--repo), not an officina" },
+  { key: "packages/cli/src/new.ts:waitAtIdsTestBarrier:writeFileSync#1", disposition: "outside", why: "test barrier file in a directory named by a test-only environment variable" },
+  { key: "packages/cli/src/new.ts:newItem:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
+  { key: "packages/cli/src/new.ts:runNew:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
+  { key: "packages/cli/src/new.ts:runNew:writeFileSync#1", disposition: "contained", why: "briefs/<id>.md in a real briefs/ checked by ensureRealDirectory; the id comes from createNextRecord" },
+  { key: "packages/cli/src/new.ts:runNew:unlinkSync#1", disposition: "contained", why: "removes the opus record createNextRecord just made in the same call" },
+  { key: "packages/cli/src/next.ts:readMarker:readFileSync#1", disposition: "outside", why: "reads the step marker under .bisellium/ (lstat first)" },
+  { key: "packages/cli/src/next.ts:readProc:readFileSync#1", disposition: "outside", why: "reads /proc/<pid>/stat" },
+  { key: "packages/cli/src/next.ts:readOutput:openSync#1", disposition: "outside", why: "reads the step output file under .bisellium/, opened with O_NOFOLLOW after an lstat of every parent" },
+  { key: "packages/cli/src/next.ts:installMarker:mkdirSync#1", disposition: "outside", why: "writes the step marker under .bisellium/, exclusive create" },
+  { key: "packages/cli/src/next.ts:installMarker:unlinkSync#1", disposition: "outside", why: "writes the step marker under .bisellium/, exclusive create" },
+  { key: "packages/cli/src/next.ts:installMarker:writeFileSync#1", disposition: "outside", why: "writes the step marker under .bisellium/, exclusive create" },
+  { key: "packages/cli/src/next.ts:runNext:readFileSync#1", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
+  { key: "packages/cli/src/next.ts:log:appendFileSync#1", disposition: "outside", why: "appends to the step output file under .bisellium/" },
+  { key: "packages/cli/src/next.ts:runNext:readFileSync#2", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
+  { key: "packages/cli/src/next.ts:runNext:unlinkSync#1", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
+  { key: "packages/cli/src/prune.ts:walk:readFileSync#1", disposition: "guarded", why: "a root-level entry from a withFileTypes listing: isFile() is an lstat answer, so a symlink is never read; every nested file goes through readContainedRegularFile" },
+  { key: "packages/cli/src/prune.ts:pruneCiLogs:unlinkSync#1", disposition: "contained", why: "the log was just read through readContainedRegularFile, which refuses a symlink and an escape; its absolute path is what is unlinked" },
+  { key: "packages/cli/src/retro.ts:draftRetro:writeFileSync#1", disposition: "contained", why: "acta/<date>-retro-<n>.md in a real acta/ checked by ensureRealDirectory before the write" },
+  { key: "packages/cli/src/retro.ts:readRetroSetting:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
+  { key: "packages/cli/src/retro.ts:claim:openSync#1", disposition: "guarded", why: "the write phase of draftOpusRetro: realDir() (requireRealDirectory on the real root) checked opera/, lessons/ and acta/ before the first write, and O_NOFOLLOW refuses a symlinked last component" },
+  { key: "packages/cli/src/retro.ts:draftOpusRetro:writeFileSync#1", disposition: "contained", why: "acta/<date>-retro-<id>.md in a real acta/ checked by ensureRealDirectory, exclusive create" },
+  { key: "packages/cli/src/retro.ts:runRetro:readFileSync#1", disposition: "outside", why: "reads the user-named --from file" },
+  { key: "packages/cli/src/retro.ts:runRetro:readFileSync#2", disposition: "outside", why: "reads the user-named --from file" },
+  { key: "packages/cli/src/rules/design.ts:checkDesign:readFileSync#1", disposition: "outside", why: "reads docs/design/DIRECTION.md in the repo (opts.repo)" },
+  { key: "packages/cli/src/rules/docs.ts:checkDossierShrink:readFileSync#1", disposition: "outside", why: "reads the dossier under docs/ in the repo" },
+  { key: "packages/cli/src/rules/instructions.ts:checkInstructions:readFileSync#1", disposition: "outside", why: "reads the generated CLAUDE.md, AGENTS.md and GLOSSARY.md at the repo root" },
+  { key: "packages/cli/src/rules/milestones.ts:readDeclared:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (milestones.yml)" },
+  { key: "packages/cli/src/rules/tests.ts:fileSet:readFileSync#1", disposition: "outside", why: "reads package.json and source files in the repo" },
+  { key: "packages/cli/src/rules/tests.ts:scanTests:readFileSync#1", disposition: "outside", why: "reads test files in the repo" },
+  { key: "packages/cli/src/test.ts:<module>:readFileSync#1", disposition: "outside", why: "acceptance run: reads the fixtures under examples/ in the repo" },
+  { key: "packages/cli/src/tick.ts:writeHealthFile:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (health.json)" },
+  { key: "packages/cli/src/tick.ts:writeTickReceipt:writeFileSync#1", disposition: "contained", why: "receipts/tick/<session>.json in a real receipts/tick/ checked by ensureRealDirectory" },
+  { key: "packages/cli/src/tick.ts:writeDailyActum:mkdirSync#1", disposition: "contained", why: "acta/<date>-<sella>-daily.md in a real acta/ checked by ensureRealDirectory before the turn is spent" },
+  { key: "packages/cli/src/tick.ts:writeDailyActum:writeFileSync#1", disposition: "contained", why: "acta/<date>-<sella>-daily.md in a real acta/ checked by ensureRealDirectory before the turn is spent" },
+  { key: "packages/commands/src/builder-run.ts:gitWriteProbe:openSync#1", disposition: "outside", why: "creates and removes .git/index.lock to probe git writability" },
+  { key: "packages/commands/src/builder-run.ts:gitWriteProbe:unlinkSync#1", disposition: "outside", why: "creates and removes .git/index.lock to probe git writability" },
+  { key: "packages/commands/src/builder-run.ts:acquireProducerLease:mkdirSync#1", disposition: "outside", why: "the producer lease under .bisellium/leases/" },
+  { key: "packages/commands/src/builder-run.ts:acquireProducerLease:mkdirSync#2", disposition: "outside", why: "the producer lease under .bisellium/leases/" },
+  { key: "packages/commands/src/builder-run.ts:acquireProducerLease:writeFileSync#1", disposition: "outside", why: "the producer lease under .bisellium/leases/" },
+  { key: "packages/commands/src/builder-run.ts:acquireProducerLease:rmSync#1", disposition: "outside", why: "the producer lease under .bisellium/leases/" },
+  { key: "packages/commands/src/builder-run.ts:readOptional:readFileSync#1", disposition: "outside", why: "reads the lease pid file under .bisellium/leases/" },
+  { key: "packages/commands/src/builder-run.ts:cleanupAbandonedRuntime:readFileSync#1", disposition: "outside", why: "reads the host result file and removes a runner-made directory directly under OS temp" },
+  { key: "packages/commands/src/builder-run.ts:cleanupAbandonedRuntime:rmSync#1", disposition: "outside", why: "reads the host result file and removes a runner-made directory directly under OS temp" },
+  { key: "packages/commands/src/builder-run.ts:runBuilderCommand:readFileSync#1", disposition: "outside", why: "reads the host result file and removes the result directory and lease under OS temp and .bisellium/" },
+  { key: "packages/commands/src/builder-run.ts:runBuilderCommand:rmSync#1", disposition: "outside", why: "reads the host result file and removes the result directory and lease under OS temp and .bisellium/" },
+  { key: "packages/commands/src/builder-run.ts:runBuilderCommand:rmSync#2", disposition: "outside", why: "reads the host result file and removes the result directory and lease under OS temp and .bisellium/" },
+  { key: "packages/commands/src/ci.ts:defaultInstallDeps:rmSync#1", disposition: "outside", why: "removes a cache directory the run made under OS temp" },
+  { key: "packages/commands/src/delegate.ts:runDelegate:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml), read and rewritten; no id or flag builds the path" },
+  { key: "packages/commands/src/delegate.ts:runDelegate:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml), read and rewritten; no id or flag builds the path" },
+  { key: "packages/commands/src/delegate.ts:runDelegate:writeFileSync#2", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml), read and rewritten; no id or flag builds the path" },
+  { key: "packages/commands/src/frontmatter.ts:editOpusFrontMatter:writeFileSync#1", disposition: "contained", why: "the record was just read through readContainedRegularFile; requireRealDirectory checks its directory before the write" },
+  { key: "packages/commands/src/ids.ts:ensureRealDirectory:mkdirSync#1", disposition: "helper", why: "the containment helper's own mkdir, one level at a time, each level checked by requireRealDirectory" },
+  { key: "packages/commands/src/ids.ts:createNextRecord:mkdirSync#1", disposition: "helper", why: "the shared allocator: requireRealDirectory before the exclusive create" },
+  { key: "packages/commands/src/ids.ts:createNextRecord:writeFileSync#1", disposition: "helper", why: "the shared allocator: requireRealDirectory before the exclusive create" },
+  { key: "packages/commands/src/lifecycle.ts:runRed:writeFileSync#1", disposition: "contained", why: "ci/reds/<opus>/<nn>.log in a real directory chain checked by ensureRealDirectory; nothing is created below a symlink" },
+  { key: "packages/commands/src/lifecycle.ts:declaredMilestoneIds:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (milestones.yml)" },
+  { key: "packages/commands/src/opus-model.ts:readContainedRegularFile:openSync#1", disposition: "helper", why: "the contained reader's own open and read" },
+  { key: "packages/commands/src/opus-model.ts:readContainedRegularFile:readFileSync#1", disposition: "helper", why: "the contained reader's own open and read" },
+  { key: "packages/commands/src/pause.ts:readPauseState:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
+  { key: "packages/commands/src/pause.ts:runPause:mkdirSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
+  { key: "packages/commands/src/pause.ts:runPause:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
+  { key: "packages/commands/src/pause.ts:runResume:rmSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (PAUSED)" },
+  { key: "packages/commands/src/probe.ts:probeBattery:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json) and its .tmp sibling, atomic rename" },
+  { key: "packages/commands/src/probe.ts:probeBattery:renameSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json) and its .tmp sibling, atomic rename" },
+  { key: "packages/commands/src/probe.ts:readModelsRecord:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json)" },
+  { key: "packages/commands/src/talk.ts:readSession:readFileSync#1", disposition: "listed", why: "sessions/<sella>.json, the sella's resumable session id: local state, not in the bright line's directory list; follow-on: read it through readContainedRegularFile" },
+  { key: "packages/commands/src/talk.ts:writeSession:mkdirSync#1", disposition: "listed", why: "sessions/<sella>.json: local state, not in the bright line's directory list; follow-on: ensureRealDirectory(root, \"sessions\")" },
+  { key: "packages/commands/src/talk.ts:writeSession:writeFileSync#1", disposition: "listed", why: "sessions/<sella>.json: local state, not in the bright line's directory list; follow-on: ensureRealDirectory(root, \"sessions\")" },
+  { key: "packages/commands/src/talk.ts:appendTimeline:appendFileSync#1", disposition: "contained", why: "timeline/<sella>.jsonl in a real timeline/ checked by ensureRealDirectory" },
+  { key: "packages/commands/src/talk.ts:writeActum:writeFileSync#1", disposition: "contained", why: "acta/<date>-<slug>.md in a real acta/ checked by ensureRealDirectory" },
+  { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#1", disposition: "outside", why: "reads the user-named --from findings file" },
+  { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#2", disposition: "outside", why: "reads the findings from stdin (fd 0)" },
+  { key: "packages/commands/src/verdict.ts:runVerdict:writeFileSync#1", disposition: "contained", why: "ci/<opus>-<phase>-<round>.log in a real ci/ checked by ensureRealDirectory, exclusive create" },
+  { key: "packages/commands/src/writes.ts:appendPatronTimeline:appendFileSync#1", disposition: "contained", why: "timeline/patron.jsonl in a real timeline/ checked by ensureRealDirectory" },
+  { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#1", disposition: "contained", why: "acta/<date>-<slug>.md in a real acta/ checked by ensureRealDirectory before any write" },
+  { key: "packages/commands/src/writes.ts:runAnswer:writeFileSync#2", disposition: "contained", why: "restores the petitio bytes just read through readContainedRegularFile; editOpusFrontMatter checked its directory" },
+  { key: "packages/commands/src/writes.ts:runAnswer:unlinkSync#1", disposition: "contained", why: "removes the acta this call created in the real acta/ it checked" },
+  { key: "packages/commands/src/writes.ts:runGreenlight:writeFileSync#1", disposition: "contained", why: "restores the opus bytes just read through readContainedRegularFile; editOpusFrontMatter checked its directory" },
+  { key: "packages/commands/src/writes.ts:runBudget:writeFileSync#1", disposition: "contained", why: "aerarium/<period>.yml in a real aerarium/ checked by ensureRealDirectory; the period is matched against YYYY-Www" },
+  { key: "packages/commands/src/writes.ts:runBudget:writeFileSync#2", disposition: "contained", why: "restores the aerarium bytes read through readContainedRegularFile" },
+  { key: "packages/commands/src/writes.ts:runBudget:unlinkSync#1", disposition: "contained", why: "removes the aerarium file this call created in the real aerarium/ it checked" },
+  { key: "packages/core/src/index-db.ts:<module>:mkdirSync#1", disposition: "outside", why: "creates the .bisellium/ directory for the SQLite index" },
+  { key: "packages/core/src/index-db.ts:openOrRecreate:rmSync#1", disposition: "outside", why: "removes a corrupt SQLite index file under .bisellium/" },
+  { key: "packages/core/src/log.ts:appendEvents:mkdirSync#1", disposition: "listed", why: "the event log under .bisellium/, opened with O_NOFOLLOW; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/core/src/log.ts:appendEvents:openSync#1", disposition: "listed", why: "the event log under .bisellium/, opened with O_NOFOLLOW; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/core/src/log.ts:readLog:readFileSync#1", disposition: "listed", why: "the event log under .bisellium/; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/core/src/store.ts:loadPersistedSnapshots:readFileSync#1", disposition: "listed", why: "persisted snapshots under .bisellium/; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/core/src/store.ts:persistSnapshot:mkdirSync#1", disposition: "listed", why: "persisted snapshots under .bisellium/; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/core/src/store.ts:persistSnapshot:writeFileSync#1", disposition: "listed", why: "persisted snapshots under .bisellium/; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/pipeline/src/index.ts:run:mkdirSync#1", disposition: "guarded", why: "writes the gate logs into logDir; its only caller, runVerify, passes ci/ and refuses a symlinked ci/ before any state is written" },
+  { key: "packages/pipeline/src/index.ts:run:writeFileSync#1", disposition: "guarded", why: "writes the gate logs into logDir; its only caller, runVerify, passes ci/ and refuses a symlinked ci/ before any state is written" },
+  { key: "packages/shim/src/harness/claude-code.ts:start:writeFileSync#1", disposition: "outside", why: "writes a system-prompt file in a temp directory and removes it" },
+  { key: "packages/shim/src/harness/claude-code.ts:start:rmSync#1", disposition: "outside", why: "writes a system-prompt file in a temp directory and removes it" },
+  { key: "packages/shim/src/hooks/claude-code.ts:claudeCodeHooksBlock:readFileSync#1", disposition: "outside", why: "reads the hooks template shipped in the package" },
+  { key: "packages/shim/src/hooks/receiptStatus.ts:readSellaReceipts:openSync#1", disposition: "listed", why: "reads receipts/<sella>/*.json, opened with O_NOFOLLOW; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/shim/src/hooks/receiptStatus.ts:readSellaReceipts:readFileSync#1", disposition: "listed", why: "reads receipts/<sella>/*.json, opened with O_NOFOLLOW; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/shim/src/receipts.ts:writeReceiptStart:mkdirSync#1", disposition: "listed", why: "receipts/<sella>/<session>.json; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/shim/src/receipts.ts:writeReceiptStart:writeFileSync#1", disposition: "listed", why: "receipts/<sella>/<session>.json; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/shim/src/receipts.ts:writeReceiptEnd:readFileSync#1", disposition: "listed", why: "receipts/<sella>/<session>.json; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/shim/src/receipts.ts:writeReceiptEnd:writeFileSync#1", disposition: "listed", why: "receipts/<sella>/<session>.json; follow-on: move the real-parent check below core/shim, then contain this write" },
+  { key: "packages/shim/src/worktree.ts:acquire:mkdirSync#1", disposition: "outside", why: "creates the worktrees root under .bisellium/" },
+  { key: "packages/shim/src/worktree.ts:reclaimWorktrees:rmSync#1", disposition: "outside", why: "removes a reclaimed worktree directory under .bisellium/worktrees/" },
+  { key: "scripts/agent-settings-merge.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/agent-settings-merge.mjs:<module>:copyFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/agent-settings-merge.mjs:<module>:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/agent-settings-merge.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/arch-graph.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/arch-graph.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/capture-gh-fixtures.mjs:save:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/capture-gh-fixtures.mjs:<module>:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/capture-gh-fixtures.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/changelog.mjs:main:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/ci-scope.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/ci-scope.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/concise-stop.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/concise-stop.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/gemini.mjs:loadKey:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/gemini.mjs:parseArgs:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/gemini.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-broker.mjs:openCellChannel:openSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-broker.mjs:openCellChannel:openSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:acquire:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:acquire:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:acquire:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:acquire:renameSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:acquire:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:call:openSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:call:openSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/git-cell-client.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/milestones-seed.mjs:stateOf:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/milestones-seed.mjs:main:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/milestones-seed.mjs:main:writeFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/milestones-seed.mjs:main:readFileSync#2", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/no-vendor.mjs:preflightBisDir:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:acquireLock:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:acquireLock:openSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:acquireLock:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:acquireLock:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:releaseLock:unlinkSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:readLogLines:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:clearLog:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:clearLog:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:scanBareVendorSpawns:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:scanTestFilesForVendorNames:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:scanTestSuppliedPaths:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/no-vendor.mjs:main:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/probe-builder-runtime.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/probe-builder-runtime.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/probe-builder-runtime.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/probe-builder-runtime.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/record-reads.mjs:<module>:appendFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:flush:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:flush:renameSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:rebaseWorkspaceLinks:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:rebaseWorkspaceLinks:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:rebaseWorkspaceLinks:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:rebaseWorkspaceLinks:symlinkSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:etcFor:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:etcFor:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:etcFor:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:removeScratch:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:teardownAll:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:teardownAll:rmSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:mkdirSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:mkdirSync#3", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:writeFileSync#3", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:copyModules:cpSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:copyFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:symlinkSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:copyFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:rmSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:rmSync#3", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:readFileSync#3", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:identifyRebased:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:readFileSync#4", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:mkdirSync#4", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/run-builder-host.mjs:<module>:mkdirSync#5", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:siteEdits:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:contractEdit:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:censusInsertHelperCallEdit:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:censusInsertRawJoinEdit:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:censusInsertInFunctionEdit:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:censusReformatEdit:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:<module>:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/safe-item-path-mutants.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/served-e2e.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/served-e2e.mjs:<module>:mkdirSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/served-e2e.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/served-e2e.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/status-page.mjs:readFrontMatter:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/status-page.mjs:readOfficina:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/status-page.mjs:readMilestones:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/status-page.mjs:readHistoryRows:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/status-page.mjs:main:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/status-page.mjs:main:writeFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/sweep-traditio-stage.mjs:readFrontMatter:readFileSync#1", disposition: "listed", why: "reads record files (opera, milestones, history) to build a report; follow-on: scripts that read records go through readContainedRegularFile" },
+  { key: "scripts/usage-from-workflow.mjs:readJson:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/usage-from-workflow.mjs:main:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w030-usage-guard-mutation.mjs:mutate:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w030-usage-guard-mutation.mjs:mutate:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w030-usage-guard-mutation.mjs:revert:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w041-mutation-check.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w041-mutation-check.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w041-mutation-check.mjs:<module>:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w041-mutation-check.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w044-mutation-check.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w044-mutation-check.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w044-mutation-check.mjs:<module>:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w049-mutation-check.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w049-mutation-check.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w049-mutation-check.mjs:<module>:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w057-behaviour7-mutation-check.mjs:<module>:copyFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w057-behaviour7-mutation-check.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w057-behaviour7-mutation-check.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w057-behaviour7-mutation-check.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w057-behaviour7-mutation-check.mjs:<module>:writeFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w057-behaviour7-mutation-check.mjs:<module>:rmSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:copyFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:rmSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:copyFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:rmSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w079-mutation-check.mjs:<module>:readFileSync#2", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w084-citation-census.mjs:<module>:readFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+  { key: "scripts/w084-citation-census.mjs:<module>:writeFileSync#1", disposition: "outside", why: "dev tooling: reads and writes repo files and temp scratch, never an officina" },
+];
 
 const filesCD = sourceFilesCD(repo);
 check("source set C/D is non-empty", filesCD.length > 0, String(filesCD.length));
@@ -718,4 +997,6 @@ test("W-163-b6 behaviour 6: the census lists every raw date parse and raw file a
   assert.deepEqual(w163Failures, []);
 });
 
+// W163_DUMP=1 prints the scan (C, D, out-of-domain, helper callers) as one JSON line: the input of the PINNED_D generator.
+if (process.env["W163_DUMP"]) console.log("DUMP" + JSON.stringify({ c: scanCD_.c.map((x) => x.key), d: scanCD_.d.map((x) => x.key), out: scanCD_.outOfDomain, hc: [...scanCD_.helperCallers] }));
 process.exitCode = failed ? 1 : 0;

@@ -6,10 +6,12 @@
  * `--- end ---` — content read from a studio file is data, never an
  * instruction to the sella reading its own context.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { listMd, readFront, readManifest, resolveSeat, snapshotDir } from "@bisellium/adapter-native";
 import { openLessons } from "./lessons.js";
+import { readRecordedFile } from "./opus-model.js";
+import { instant } from "@bisellium/schema";
 
 export interface ContextBundle {
   text: string;
@@ -30,12 +32,7 @@ const oneLine = (s: string): string => s.replace(/[\p{Cc}\u2028\u2029]/gu, " ");
 const dataBlock = (path: string, body: string): string => `--- data: ${path} ---\n${body}\n--- end ---`;
 
 function toDate(v: unknown): Date | undefined {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
-  if (typeof v === "string") {
-    const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? undefined : d;
-  }
-  return undefined;
+  return instant(v);
 }
 /** Signed elapsed days from `a` to `b`, clamped at 0 — mirrors check.ts's
  *  `days()`: a future `a` reads as fresh, never stale via an absolute value. */
@@ -52,8 +49,8 @@ const CARRY_TAIL_CHARS = 1000;
 function carryStamp(body: string, now: Date): number | undefined {
   const token = [...body.matchAll(STAMP_LINE)].at(-1)?.[1];
   if (token === undefined || !ISO_Z.test(token)) return undefined;
-  const at = Date.parse(token);
-  if (Number.isNaN(at) || at > now.getTime() || daysBetween(new Date(at), now) > DECISION_WINDOW_DAYS) return undefined;
+  const at = instant(token)?.getTime();
+  if (at === undefined || at > now.getTime() || daysBetween(new Date(at), now) > DECISION_WINDOW_DAYS) return undefined;
   return at;
 }
 
@@ -130,8 +127,9 @@ function buildContextFor(
   const collegium = sellaRow ? manifest.collegia.find((d) => d.id === sellaRow.collegium) : undefined;
   if (collegium?.lex) {
     const p = join(root, collegium.lex);
-    if (existsSync(p)) {
-      const body = readFileSync(p, "utf8").replace(/^﻿/, "").trim();
+    const lexFile = existsSync(p) ? readRecordedFile(root, collegium.lex) : undefined;
+    if (lexFile !== undefined && !("error" in lexFile)) {
+      const body = lexFile.bytes.toString("utf8").replace(/^﻿/, "").trim();
       sections.push({ name: "lex", priority: 1, text: `## ${collegium.name} lex\n${dataBlock(collegium.lex, body)}` });
     }
   }

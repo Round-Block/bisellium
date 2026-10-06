@@ -83,7 +83,11 @@ function officinaTextOutsideCi(root: string): string {
       const entryRel = rel === "" ? entry.name : `${rel}/${entry.name}`;
       if (entryRel === "ci") continue;
       if (entry.isDirectory()) walk(join(dir, entry.name), entryRel);
-      else if (entry.isFile()) parts.push(readFileSync(join(dir, entry.name), "utf8"));
+      else if (entry.isFile() && rel === "") parts.push(readFileSync(join(dir, entry.name), "utf8"));
+      else if (entry.isFile()) {
+        const nested = readContainedRegularFile(root, entryRel, entryRel.split("/")[0] ?? "");
+        if (!("error" in nested)) parts.push(nested.bytes.toString("utf8"));
+      }
     }
   };
   walk(root, "");
