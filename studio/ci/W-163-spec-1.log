@@ -1,0 +1,24 @@
+# opus: W-163
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T15:26:24.913Z
+# tree: dirty:cf04e35343b8e435434cf0f07a4633ddb4d5a02a
+
+W-163 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-163.md (6 behaviours, six sections plus "Input domain" and "Defaults for the Patron to veto", Decree family: safe-helpers; readBriefAdmission at limit 6 reports no problems). Inputs: D-039 (high severity), D-042 (extend, no new tech debt), L-069 and its fix W-161 (input domain named), W-120 r1 #1, W-137 r1 #2 and #3, W-152/W-153 review logs, eslint.config.mjs and .github/workflows/ci.yml, the W-047 census (packages/cli/src/containment.test.ts, scripts/safe-item-path-mutants.mjs), packages/commands/src/opus-model.ts, ids.ts, packages/cli/src/rules/process.ts, packages/core/src/completion.ts, and the W-137 worktree at b29f891.
+Measured with ~/.bisellium-evidence/W-163-spec/measure.mjs (output measure.out), non-test sources under packages/ apps/ adapters/ scripts/: at master c67cb93, 9 Date.parse and 28 single-argument new Date of a non-number (36 excluding one string literal: 1 inside the approved helper, 3 in the browser bundle, 11 flag parsers, 21 record-data reads), and 294 raw fs read/write calls (164 shipped, 130 scripts; 159 function groups in 70 files) plus 42 readdir; at W-137 b29f891, 10 Date.parse, 28 new Date, 297 fs read/write (160 groups) plus 47 readdir.
+
+## Findings
+1. advisory — enforcement is an extension of the W-047 census (inventories C for dates and D for fs) in packages/cli/src/containment.test.ts, not an ESLint rule: the repo's ESLint is deliberately untyped and cannot tell new Date(isoString) from new Date(epochMs) (13 of 42 sites take a number) nor an officina path from any path, and per-line disable comments are self-serve; the census pins every site with a disposition and reason in one reviewed list and already runs in CI through npm test; no new dependency; default 1 — check: packages/cli/src/containment.test.ts
+2. advisory — W-120's strict instant moves to @bisellium/schema because core, server and commands cannot import cli; no package edge changes (all callers already depend on schema), so docs/ARCHITECTURE.md is unchanged; the lenient duplicates completion.ts:103 and check.ts:108 isoDate are removed, the latter being the same regex-then-new-Date class W-137 r1 #3 found — check: packages/cli/src/safe-helpers.test.ts (W-163-b1, W-163-b2)
+3. advisory — requireRealDirectory lstat-checks only the last component, so a symlinked ci/ above ci/reds/<id>/ passes today; tightened to realpath equality with the lexical path from the officina's real root, signature unchanged; default 7 — check: packages/cli/src/safe-helpers.test.ts (W-163-b4)
+4. advisory — W-161 applied: one valid domain and one rejecting function per input (instant for record dates and --now, requireRealDirectory for write directories, readContainedRegularFile for derived reads, the census for the source set), each failing closed; --now now refuses impossible dates, default 2 — check: packages/cli/src/safe-helpers.test.ts (W-163-b3, W-163-b5)
+5. advisory — scope is bounded by a stated bright line (every officina-subdirectory write and every derived-name read in packages/cli and packages/commands is fixed); core, shim, server, adapters/native, scripts and fixed-name root files are listed with a reason and a named follow-on, so review judges dispositions against the line rather than finding sites one round at a time (L-069, W-162); defaults 3 to 6 — check: packages/cli/src/containment.test.ts
+6. advisory — the census mutants harness gains mH (raw Date.parse) and mI (raw officina write), which must die, while mG (reformat) must survive, so the scan is shown to bite and not to drift — check: scripts/safe-item-path-mutants.mjs (census group)
+7. advisory — W-163 edits W-137's retro.ts and its exports of instant and requireRealDirectory; it must branch after W-137 merges — check: none: ordering is the producer's slate, not a rule
+
+## Recommendation
+Verdict: passed. One decree family, safe-helpers: record dates go through one strict parser and officina files through the contained helpers, and a census in the build lists every raw date parse and raw file access with a disposition, so a new one fails until it is decided. Six behaviours over two test files plus the mutants harness.
+Seven defaults ship as stated and are veto-able at the checkpoint; the follow-ons are named in Out of scope.
