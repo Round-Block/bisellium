@@ -1,0 +1,16 @@
+# opus: W-120
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T05:47:28.516Z
+# tree: tree:b65362906ca1a79819def6b8dc1cb1f4b43d2c3b
+# brief: briefs/W-120.md blob:7e3cde94084214bf723f47380133946cf1d5501e
+
+## Findings
+1. blocking — packages/cli/src/rules/process.ts:304 The malformed-citation class remains open: `invoke` silently returns for explicit YAML `null`, although `null` is non-string. Both instances were searched: top-level `halted_by` at line 317 and every gate `waived_by` at line 320; the r1b row omits null at both sites. brief:100, brief:101 — check: packages/cli/src/rules/decision-kill.test.ts
+
+## Verdict
+The strict-timestamp blocker and live-proof blocker are closed, and the detached-clone proof stands on the added `decision.invoked_after_kill` line despite the baseline `opus.records_unchanged` block. The non-string citation class is not fully closed.
+VERDICT: FAIL

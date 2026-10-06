@@ -1,0 +1,41 @@
+# behaviour: 2
+# command: node --test-reporter=tap --import tsx --test --test-name-pattern=W-120-b2 packages/cli/src/rules/decision-kill.test.ts
+# exit: 1
+# at: 2026-10-06T04:55:18.554Z
+# sella: builder.W-120
+# tree: tree:558a141eff16880342cada89815d38e7e9ebb281
+
+TAP version 13
+# Subtest: W-120-b2 behaviour 2: a halt that invokes a decision after its kill is a blocking finding
+not ok 1 - W-120-b2 behaviour 2: a halt that invokes a decision after its kill is a blocking finding
+  ---
+  duration_ms: 42.092486
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-120/packages/cli/src/rules/decision-kill.test.ts:1:3551'
+  failureType: 'testCodeFailure'
+  error: |-
+    W-1: one decision.invoked_after_kill
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-120/packages/cli/src/rules/decision-kill.test.ts:103:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 257.060175

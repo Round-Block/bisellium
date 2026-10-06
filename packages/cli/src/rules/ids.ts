@@ -34,6 +34,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "collegium.autonomy",
   "collegium.fallback",
   "collegium.magister",
+  "decision.invoked_after_kill",
   "decision.kill",
   "decision.shape",
   "design.review-prompt",

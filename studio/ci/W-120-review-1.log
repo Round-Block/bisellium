@@ -1,0 +1,19 @@
+# opus: W-120
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T05:22:22.204Z
+# tree: tree:7b2e7473250bb86a7e3df33639cd1c6bed48cbfe
+# brief: briefs/W-120.md blob:7e3cde94084214bf723f47380133946cf1d5501e
+
+## Findings
+1. blocking — packages/cli/src/rules/process.ts:29 `instant` accepts a date-shaped prefix and relies on JavaScript normalization, so impossible dates such as `2026-02-30` are treated as readable. This class affects `killed_at`, decision `at`, halt `halted_at`, and gate `at`; an invalid invocation time can consequently be treated as pre-kill instead of failing closed. brief:87, brief:103 — check: packages/cli/src/rules/decision-kill.test.ts
+2. blocking — packages/cli/src/rules/process.ts:295 Malformed decision citations are silently discarded by `str(...)`. This class has two instances—the top-level `halted_by` read here and every gate `waived_by` read at line 298—so shapes such as `[D-1]` can cite a killed decision without any invocation or shape finding; both invocation sites were searched. brief:100, brief:101 — check: packages/cli/src/rules/decision-kill.test.ts
+3. blocking — studio/briefs/W-120.md:180 The required scratch-clone live proof is missing: the declared `~/.bisellium-evidence/W-120-build/accept` directory does not exist, and the review packet contains no equivalent evidence. brief:180 — check: none: preserve and packet the four-step live acceptance proof
+4. advisory — packages/cli/src/rules/decision-kill.test.ts:64 The `killed_by` regression row does not exercise absolute paths, backslashes, symlinks, or non-regular targets; these are all missing boundary cases found across b1–b3, although the implementation does use the required containment helper. — check: packages/cli/src/rules/decision-kill.test.ts
+
+## Verdict
+The change has two fail-open timestamp/citation classes and lacks its required live proof, so round 1 fails despite green suite and registration drift guards.
+VERDICT: FAIL
