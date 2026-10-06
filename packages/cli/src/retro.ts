@@ -882,7 +882,10 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     const made = newItem(root, { kind: "opus", collegium: fix.collegium, title: fix.title });
     if (!made.ok || made.id === undefined) throw new Error(`fix of "${cls}": ${made.message}`);
     fixIds.set(cls, made.id);
-    undo.push(() => rmSync(join(phys, "opera", `${made.id}.md`)));
+    // removed by directory entry, not by joining the id into a path (W-047)
+    undo.push(() => {
+      for (const entry of readdirSync(join(phys, "opera"))) if (entry === made.id + ".md") rmSync(join(phys, "opera", entry));
+    });
   }
 
   // 2. one lesson per class
