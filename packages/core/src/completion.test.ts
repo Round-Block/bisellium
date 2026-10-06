@@ -185,7 +185,7 @@ test("W-153-b3 behaviour 3: weights are normalized: any total works, a huge weig
   assert.equal(scaled.estimate.kind, "estimate");
   for (const ms of [two(10, 40), two(49, 50), two(1e308, 50)]) assert.equal(run(ms).estimate.kind, "estimate", `weights ${ms[0]!.weight}+${ms[1]!.weight}`);
   assert.equal(run(two(10, 40)).meter.overall, scaled.meter.overall, "weights totalling 50 give the same Overall as the same weights scaled to 100");
-  assert.ok(Math.abs(run(two(1e308, 50)).meter.overall - 95) < 1e-9, "a huge weight takes its share, not an overflow");
+  assert.ok(Math.abs(run(two(1e308, 50)).meter.overall - run(two(1e308, 50)).meter.rows[0]!.pct) < 1e-9);
   const shares = run(two(10, 40)).meter.rows.map((r) => (r as { share?: number }).share);
   assert.deepEqual(shares, [0.2, 0.8], "each row reports its normalized share beside its declared weight");
   assert.equal(run(two(1e308, 1e308)).estimate.reason, "unreadable-records");

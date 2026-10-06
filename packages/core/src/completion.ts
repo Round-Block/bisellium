@@ -11,7 +11,7 @@ const CAP_WHILE_EXIT_OPEN = 95;
 /** The milestone domain (D-038), defined once: the check rules (milestones.shape, opus.milestone), `amend` and
  *  `vet()` below all read it from here. */
 export const MILESTONE_VALUES: readonly number[] = [1, 2, 3, 5, 8];
-export const MILESTONE_WEIGHT_TOTAL = 100;
+export const MILESTONE_WEIGHT_TOTAL = 100; // milestones.shape's tidiness rule only: the meter normalizes by the real total
 export const isMilestoneValue = (v: unknown): v is number => typeof v === "number" && MILESTONE_VALUES.includes(v);
 export const isMilestoneWeight = (w: unknown): w is number => typeof w === "number" && Number.isInteger(w) && w > 0;
 
@@ -30,6 +30,8 @@ export interface MeterOpus {
   probationes?: Record<string, { at?: unknown; status?: unknown } | undefined> | undefined;
 }
 export interface MeterRow extends Milestone {
+  /** weight / Σweight (0 to 1): the milestone's share of the whole, beside its declared `weight`. */
+  share: number;
   done: number;
   planned: number;
   met: boolean;
@@ -45,18 +47,21 @@ export interface Meter {
 /**
  * The ONE input boundary (W-153): every opus record and milestone weight is checked here, before any formula,
  * against the milestone domain above. A non-halted opus mapped to a milestone needs a `value` in
- * MILESTONE_VALUES; each milestone needs a positive integer `weight`, and the weights total MILESTONE_WEIGHT_TOTAL.
- * `malformed` marks the whole estimate "No estimate"; the returned copies carry 0 for each invalid number, so no
- * formula downstream ever sees one (the domain also bounds every sum, so none can overflow).
+ * MILESTONE_VALUES; each milestone needs a positive integer `weight`, and the weights' sum must be finite and
+ * positive (the meter normalizes by it, so the declared total does not matter). `malformed` marks the whole
+ * estimate "No estimate"; the returned copies carry 0 for each invalid number, so no formula downstream ever
+ * sees one. `total` is 0 whenever it is not usable, so `share` is 0 rather than NaN.
  */
-function vet<M extends { id: string; weight: number }>(milestones: M[], opera: any[]): { milestones: M[]; opera: any[]; malformed: boolean } {
+function vet<M extends { id: string; weight: number }>(milestones: M[], opera: any[]): { milestones: M[]; opera: any[]; total: number; malformed: boolean } {
   const ids = new Set(milestones.map((m) => m.id));
   const bad = (o: any): boolean => o.state !== "halted" && ids.has(o.milestone) && !isMilestoneValue(o.value);
-  const total = milestones.reduce((n, m) => n + (isMilestoneWeight(m.weight) ? m.weight : 0), 0);
+  const sum = milestones.reduce((n, m) => n + (isMilestoneWeight(m.weight) ? m.weight : 0), 0);
+  const total = Number.isFinite(sum) && sum > 0 ? sum : 0;
   return {
     milestones: milestones.map((m) => (isMilestoneWeight(m.weight) ? m : { ...m, weight: 0 })),
     opera: opera.map((o) => (bad(o) ? { ...o, value: 0 } : o)),
-    malformed: milestones.some((m) => !isMilestoneWeight(m.weight)) || total !== MILESTONE_WEIGHT_TOTAL || opera.some(bad),
+    total,
+    malformed: milestones.some((m) => !isMilestoneWeight(m.weight)) || total === 0 || opera.some(bad),
   };
 }
 
@@ -71,9 +76,10 @@ export function computeMeter({ milestones, opera, findings }: { milestones: Mile
         ? v.opera.some((o) => o.id === m.exit?.opus && o.state === "done")
         : m.exit?.rule !== undefined && !findings.some((f) => f.rule === m.exit?.rule);
     const raw = planned === 0 ? 0 : (100 * done) / planned;
-    return { ...v.milestones[i]!, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
+    const weight = v.milestones[i]!.weight;
+    return { ...v.milestones[i]!, share: v.total === 0 ? 0 : weight / v.total, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
   });
-  return { rows, overall: rows.reduce((n, r) => n + (r.weight * r.pct) / 100, 0), ...(v.malformed ? { malformed: true as const } : {}) };
+  return { rows, overall: rows.reduce((n, r) => n + r.share * r.pct, 0), ...(v.malformed ? { malformed: true as const } : {}) };
 }
 
 export interface Estimate {
