@@ -29,3 +29,4 @@ export {
   type QueryAnswer,
   type QueryKind,
 } from "./query.js";
+export { computeMeter, doneAt, estimateFinish, type Estimate, type Meter, type MeterRow, type Milestone } from "./completion.js";

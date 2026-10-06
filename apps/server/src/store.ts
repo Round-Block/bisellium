@@ -507,6 +507,9 @@ export class Store extends CoreStore {
       };
     },
 
+    // STUB (test-first commit): W-153 behaviour 5 is not implemented yet.
+    completion: (_checkStudio: CheckStudioFn): unknown => ({ meter: null, estimate: null }),
+
     /** `<studio>/timeline/<sella>.jsonl` (talk chatter) or
      *  `timeline/patron.jsonl` (Patron write log). */
     timeline: (sella: string, limit?: number): Record<string, unknown>[] => {

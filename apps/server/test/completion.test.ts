@@ -1,0 +1,123 @@
+/**
+ * W-153 row b5 (studio/briefs/W-153.md): `GET /api/completion` serves the same
+ * meter and estimate the Status page computes, from the trunk's own records.
+ * node:test TAP, selected by `--test-name-pattern=W-153-b5`. The fixture is a
+ * copy of examples/sample-studio under the OS tmp dir.
+ *
+ * Run from the repo root:
+ *   node --test-reporter=tap --import tsx apps/server/test/completion.test.ts --test-name-pattern=W-153-b5
+ */
+import assert from "node:assert/strict";
+import { cpSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { computeMeter, estimateFinish } from "@bisellium/core";
+import { startServer, type StartServerOptions } from "../src/index.js";
+import { Store } from "../src/store.js";
+
+process.env["NODE_ENV"] = "test";
+
+const SAMPLE = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "examples", "sample-studio");
+const NOW = new Date("2026-10-06T12:00:00Z");
+const dirs: string[] = [];
+after(() => {
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+});
+
+const noopRunners: StartServerOptions["runners"] = {
+  answer: () => ({ exitCode: 0 }),
+  greenlight: () => ({ exitCode: 0 }),
+  budget: () => ({ exitCode: 0 }),
+  handoff: () => ({ exitCode: 0 }),
+  talk: async () => ({ exitCode: 0 }),
+  pause: async () => ({ exitCode: 0 }),
+  resume: async () => ({ exitCode: 0 }),
+  delegate: () => ({ exitCode: 0 }),
+};
+
+interface Rec { id: string; state: string; value: number; end?: string; gates?: string[] }
+const rec = (id: string, state: string, value: number, end?: string): Rec => ({ id, state, value, ...(end ? { end } : {}) });
+const RECORDS: Rec[] = [
+  rec("W-1", "done", 8, "2026-10-05T10:00:00Z"),
+  rec("W-2", "done", 8, "2026-10-04T10:00:00Z"),
+  rec("W-3", "done", 5, "2026-09-30T10:00:00Z"),
+  rec("W-4", "done", 8, "2026-09-28T10:00:00Z"),
+  rec("W-5", "done", 3, "2026-09-25T10:00:00Z"),
+  rec("W-7", "done", 5, "2026-09-20T10:00:00Z"),
+  rec("W-8", "done", 2, "2026-09-16T10:00:00Z"),
+  rec("W-10", "done", 1, "2026-09-01T10:00:00Z"),
+  { ...rec("W-6", "done", 3), gates: ["2026-09-23T09:00:00Z", "2026-09-24T10:00:00Z"] },
+  rec("W-9", "done", 3),
+  rec("W-11", "backlog", 8),
+  rec("W-12", "greenlit", 8),
+  rec("W-13", "building", 8),
+  rec("W-14", "review", 3),
+  rec("W-15", "backlog", 1),
+  rec("W-16", "halted", 8),
+];
+
+function front(r: Rec): string {
+  const gates = (r.gates ?? []).map((at, i) => `  g${i}: { status: passed, at: "${at}" }\n`).join("");
+  return [
+    "---", `id: ${r.id}`, `title: Row ${r.id}`, "kind: feature", "collegium: engineering", `state: ${r.state}`,
+    "milestone: M1", `value: ${r.value}`, ...(r.end ? [`end: "${r.end}"`] : []),
+    ...(gates ? ["probationes:", gates.trimEnd()] : []), "---", "", "",
+  ].join("\n");
+}
+
+function studio(exit: string): string {
+  const dir = mkdtempSync(join(tmpdir(), "bisellium-w153-b5-"));
+  dirs.push(dir);
+  cpSync(SAMPLE, dir, { recursive: true });
+  writeFileSync(join(dir, "milestones.yml"), `milestones:\n  - { id: M1, title: "One", weight: 100, exit: ${exit} }\n`);
+  for (const r of RECORDS) writeFileSync(join(dir, "opera", `${r.id}.md`), front(r));
+  return dir;
+}
+
+async function serve(studioDir: string, checkStudio: StartServerOptions["checkStudio"]) {
+  const server = await startServer({ studioDir, checkStudio, runners: noopRunners, token: "w153", once: true, now: NOW, port: 0 });
+  return { server, get: (path: string) => fetch(`http://127.0.0.1:${server.port}${path}`) };
+}
+
+test("W-153-b5 behaviour 5: GET /api/completion serves the same meter and estimate from the records", async () => {
+  const studioDir = studio("{ needs: x }");
+  let checked = 0;
+  const stub: StartServerOptions["checkStudio"] = () => {
+    checked++;
+    return { ok: true, blocks: 0, advisories: 0, findings: [] };
+  };
+  const { server, get } = await serve(studioDir, stub);
+  try {
+    const res = await get("/api/completion");
+    assert.equal(res.status, 200);
+    const opera = RECORDS.map((r) => ({
+      id: r.id, state: r.state, milestone: "M1", value: r.value,
+      ...(r.end ? { end: r.end } : {}),
+      ...(r.gates ? { probationes: Object.fromEntries(r.gates.map((at, i) => [`g${i}`, { status: "passed", at }])) } : {}),
+    }));
+    const milestones = [{ id: "M1", title: "One", weight: 100, exit: { needs: "x" } }];
+    const meter = computeMeter({ milestones, opera, findings: [] });
+    const estimate = estimateFinish({ meter, opera, now: NOW });
+    assert.equal(estimate.days, 14);
+    assert.deepEqual(await res.json(), JSON.parse(JSON.stringify({ meter, estimate })));
+    assert.equal(checked, 0, "checkStudio is not called for a non-rule exit");
+
+    const ruled = studio("{ rule: lesson.recurrent }");
+    let ruleChecked = 0;
+    const finding = { rule: "lesson.recurrent" };
+    const store = new Store({ studioDir: ruled, now: NOW });
+    const body = store.api.completion(() => {
+      ruleChecked++;
+      return { ok: false, blocks: 1, advisories: 0, findings: [finding] };
+    }) as { meter: { rows: { id: string; met: boolean }[] } };
+    assert.equal(ruleChecked, 1);
+    assert.equal(body.meter.rows.find((r) => r.id === "M1")?.met, false);
+
+    unlinkSync(join(studioDir, "milestones.yml"));
+    assert.deepEqual(await (await get("/api/completion")).json(), { meter: null, estimate: null });
+  } finally {
+    await server.close();
+  }
+});
