@@ -29,8 +29,10 @@
  * source files (never this one) and re-runs this file to prove the census
  * both bites (mE, mF) and does not false-drift on a reformat (mG).
  */
+import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
+import { test } from "node:test";
 import ts from "typescript";
 
 const repo = resolve(process.argv[2] ?? ".");
@@ -211,6 +213,174 @@ function collectInventoryB(root: string, rel: string): string[] {
   }
   visit(sf);
   return keys;
+}
+
+// ---------------------------------------------------------------------------
+// W-163 — inventories C (a raw date parse) and D (a raw file access).
+//
+// Source set for both: non-test .ts/.tsx under packages/, apps/ and adapters/,
+// plus scripts/*.mjs. Inventory C is typed: one ts.createProgram over the set
+// lets the checker say whether a `new Date(x)` argument is a number or a Date
+// (not a site) or anything else (a site). Keys are `rel:fn:what#n`, never a
+// line number, so a reformat moves nothing.
+// ---------------------------------------------------------------------------
+const CD_BASES = ["packages", "apps", "adapters"];
+
+function isExcludedCD(rel: string): boolean {
+  const parts = rel.split("/");
+  if (parts.includes("node_modules") || parts.includes("dist") || parts.includes("test") || parts.includes("tests-serve")) return true;
+  if (!/\.(ts|tsx)$/.test(rel) || rel.endsWith(".d.ts") || /\.(test|spec)\.tsx?$/.test(rel)) return true;
+  return false;
+}
+
+export function sourceFilesCD(root: string): string[] {
+  const found: string[] = [];
+  for (const base of CD_BASES) {
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = readdirSync(join(root, base), { recursive: true, withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (!e.isFile()) continue;
+      const parentAbs = (e as unknown as { parentPath?: string }).parentPath ?? e.path;
+      const rel = relative(root, join(parentAbs, e.name)).split(sep).join("/");
+      if (!isExcludedCD(rel)) found.push(rel);
+    }
+  }
+  try {
+    for (const name of readdirSync(join(root, "scripts"))) if (name.endsWith(".mjs") && !/\.test\.mjs$/.test(name)) found.push(`scripts/${name}`);
+  } catch {
+    // no scripts/ directory
+  }
+  return found.sort();
+}
+
+const FS_MODULES = new Set(["fs", "node:fs", "fs/promises", "node:fs/promises"]);
+const RAW_FS = new Set([
+  "readFileSync", "readFile", "openSync", "open", "createReadStream",
+  "writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream",
+  "mkdirSync", "mkdir", "rmSync", "rm", "rmdirSync", "unlinkSync", "unlink",
+  "renameSync", "rename", "copyFileSync", "copyFile", "cpSync", "symlinkSync", "truncateSync",
+]);
+
+interface Site {
+  key: string;
+  rel: string;
+  fn: string;
+}
+
+interface CDScan {
+  c: Site[];
+  d: Site[];
+  /** `rel:fn` of every function that calls a containment helper. */
+  helperCallers: Set<string>;
+  /** Anything that binds `fs` outside the static imports the scan understands. */
+  outOfDomain: string[];
+}
+
+const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "readContainedRegularFile", "createNextRecord"]);
+
+function scanCD(root: string, rels: string[]): CDScan {
+  const options: ts.CompilerOptions = {
+    allowJs: true,
+    noEmit: true,
+    skipLibCheck: true,
+    strict: true,
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    jsx: ts.JsxEmit.ReactJSX,
+    types: ["node"],
+    typeRoots: [join(root, "node_modules/@types")],
+  };
+  const program = ts.createProgram(rels.map((r) => join(root, r)), options);
+  const checker = program.getTypeChecker();
+  const out: CDScan = { c: [], d: [], helperCallers: new Set(), outOfDomain: [] };
+  for (const rel of rels) {
+    const sf = program.getSourceFile(join(root, rel));
+    if (!sf) {
+      out.outOfDomain.push(`${rel}: not in the program`);
+      continue;
+    }
+    // parseDiagnostics is internal API but is the one honest "does it parse" answer.
+    const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] }).parseDiagnostics ?? [];
+    if (diags.length) out.outOfDomain.push(`${rel}: parse error`);
+    const named = new Map<string, string>(); // local name -> fs function name
+    const spaces = new Set<string>(); // local names that are the fs module (or fs.promises)
+    const bound = new Set<string>();
+    for (const st of sf.statements) {
+      if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier) && FS_MODULES.has(st.moduleSpecifier.text)) {
+        const c = st.importClause;
+        if (!c) continue;
+        if (c.name) spaces.add(c.name.text);
+        const nb = c.namedBindings;
+        if (nb && ts.isNamespaceImport(nb)) spaces.add(nb.name.text);
+        if (nb && ts.isNamedImports(nb))
+          for (const el of nb.elements) {
+            const imported = (el.propertyName ?? el.name).text;
+            if (imported === "promises") spaces.add(el.name.text);
+            else named.set(el.name.text, imported);
+          }
+      }
+      if (ts.isExportDeclaration(st) && st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier) && FS_MODULES.has(st.moduleSpecifier.text))
+        out.outOfDomain.push(`${rel}: export from ${st.moduleSpecifier.text}`);
+      if (ts.isImportEqualsDeclaration(st) && ts.isExternalModuleReference(st.moduleReference) && ts.isStringLiteral(st.moduleReference.expression) && FS_MODULES.has(st.moduleReference.expression.text))
+        out.outOfDomain.push(`${rel}: import = require(${st.moduleReference.expression.text})`);
+    }
+    for (const n of named.keys()) bound.add(n);
+    for (const n of spaces) bound.add(n);
+    const counts = new Map<string, number>();
+    const nth = (k: string): number => {
+      const n = (counts.get(k) ?? 0) + 1;
+      counts.set(k, n);
+      return n;
+    };
+    const visit = (n: ts.Node): void => {
+      if (ts.isCallExpression(n)) {
+        const callee = n.expression;
+        const arg0 = n.arguments[0];
+        // a bound fs name reached any way but a plain call
+        if (ts.isIdentifier(callee) && callee.text === "require" && arg0 && ts.isStringLiteralLike(arg0) && FS_MODULES.has(arg0.text)) out.outOfDomain.push(`${rel}: require(${arg0.text})`);
+        if (callee.kind === ts.SyntaxKind.ImportKeyword && arg0 && ts.isStringLiteralLike(arg0) && FS_MODULES.has(arg0.text)) out.outOfDomain.push(`${rel}: import(${arg0.text})`);
+        if (ts.isIdentifier(callee) && callee.text === "createRequire") out.outOfDomain.push(`${rel}: createRequire`);
+        // helper callers
+        const calleeName = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
+        if (CONTAINMENT_HELPERS.has(calleeName)) out.helperCallers.add(`${rel}:${enclosingFunctionName(n)}`);
+        // inventory D
+        let fsName: string | undefined;
+        if (ts.isIdentifier(callee) && named.has(callee.text)) fsName = named.get(callee.text);
+        else if (ts.isPropertyAccessExpression(callee)) {
+          const target = callee.expression;
+          if (ts.isIdentifier(target) && spaces.has(target.text)) fsName = callee.name.text;
+          else if (ts.isPropertyAccessExpression(target) && target.name.text === "promises" && ts.isIdentifier(target.expression) && spaces.has(target.expression.text)) fsName = callee.name.text;
+        }
+        if (fsName && RAW_FS.has(fsName)) {
+          const fn = enclosingFunctionName(n);
+          out.d.push({ key: `${rel}:${fn}:${fsName}#${nth(`D:${fn}:${fsName}`)}`, rel, fn });
+        }
+        // inventory C: Date.parse
+        if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === "Date" && callee.name.text === "parse") {
+          const fn = enclosingFunctionName(n);
+          out.c.push({ key: `${rel}:${fn}:Date.parse#${nth(`C:${fn}:Date.parse`)}`, rel, fn });
+        }
+      }
+      if (ts.isNewExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "Date" && n.arguments?.length === 1) {
+        const a = n.arguments[0]!;
+        const literal = ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a);
+        const ty = checker.getTypeAtLocation(a);
+        const safe = !!(ty.flags & ts.TypeFlags.NumberLike) || checker.typeToString(ty) === "Date";
+        if (!literal && !safe) {
+          const fn = enclosingFunctionName(n);
+          out.c.push({ key: `${rel}:${fn}:new Date#${nth(`C:${fn}:new Date`)}`, rel, fn });
+        }
+      }
+      ts.forEachChild(n, visit);
+    };
+    visit(sf);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -450,4 +620,102 @@ check("inventory B: pinned list length matches the scan's own count", PINNED_B.l
 const knownDispositions = new Set(["guarded", "derived", "bypass", "helper", "bypass-via-verify"]);
 check("inventory B: every pinned disposition is a recognized value", PINNED_B.every((p) => knownDispositions.has(p.disposition)), JSON.stringify(PINNED_B.map((p) => p.disposition)));
 
-process.exit(failed ? 1 : 0);
+// ---------------------------------------------------------------------------
+// W-163 — inventories C and D: pinned lists and checks (behaviour 6).
+// ---------------------------------------------------------------------------
+
+type Disposition = "helper" | "contained" | "guarded" | "outside" | "listed";
+interface PinnedSite {
+  key: string;
+  disposition: Disposition;
+  why: string;
+}
+
+/** The approved helpers' own bodies: a `helper` pin is valid only for one of these (file + function). */
+const APPROVED_HELPERS = new Set([
+  "packages/schema/src/index.ts:instant",
+  "packages/commands/src/opus-model.ts:instant",
+  "packages/commands/src/opus-model.ts:readContainedRegularFile",
+  "packages/commands/src/ids.ts:createNextRecord",
+]);
+
+// Inventory C — every raw date parse. After W-163 four remain: the strict
+// UTC profile's own ordering parse, and the browser bundle's three reads of
+// times the server already sent it.
+const PINNED_C: PinnedSite[] = [
+  {
+    key: "apps/web/src/lib/board.ts:formatBoardTimestamp:new Date#1",
+    disposition: "listed",
+    why: "browser bundle: formats a timestamp the server already sent; it shares no code with the server, so it cannot import the schema parser. Follow-on: none (default 5)",
+  },
+  {
+    key: "apps/web/src/lib/board.ts:liveLabel:new Date#1",
+    disposition: "listed",
+    why: "browser bundle: same as formatBoardTimestamp#1 — a server-sent time, no shared code (default 5)",
+  },
+  {
+    key: "apps/web/src/lib/officinaTruth.ts:healthStamp:Date.parse#1",
+    disposition: "listed",
+    why: "browser bundle: a health stamp the server already sent, read for display only (default 5)",
+  },
+  {
+    key: "packages/commands/src/opus-model.ts:instant:Date.parse#1",
+    disposition: "helper",
+    why: "the exact-UTC profile's ordering instant: it runs only after utcTimestampProblem has accepted the string",
+  },
+];
+
+const PINNED_D: PinnedSite[] = [];
+
+const filesCD = sourceFilesCD(repo);
+check("source set C/D is non-empty", filesCD.length > 0, String(filesCD.length));
+const scanCD_ = scanCD(repo, filesCD);
+const w163Failures: string[] = [];
+const checkW = (name: string, ok: boolean, detail = ""): void => {
+  check(name, ok, detail);
+  if (!ok) w163Failures.push(name);
+};
+const REMEDY_CD =
+  "a raw date parse or raw file access changed — see studio/briefs/W-163.md; fix it through the approved helper, or pin it here with a disposition and a reason";
+
+for (const [letter, scanned, pinned, what] of [
+  ["C", scanCD_.c, PINNED_C, "raw date parse"],
+  ["D", scanCD_.d, PINNED_D, "raw file access"],
+] as const) {
+  const keys = pinned.map((p) => p.key);
+  const scanKeys = scanned.map((x) => x.key);
+  checkW(`inventory ${letter}: pinned list length matches the scan's own count`, pinned.length === scanned.length, `pinned=${pinned.length} scan=${scanned.length}`);
+  const { added, removed } = diffLists(scanKeys, keys);
+  checkW(
+    `inventory ${letter}: every ${what} is pinned, none missing`,
+    added.length === 0 && removed.length === 0,
+    added.length || removed.length ? `${REMEDY_CD} — added: ${JSON.stringify(added)} removed: ${JSON.stringify(removed)}` : "",
+  );
+  checkW(`inventory ${letter}: scan order matches the pinned order exactly`, JSON.stringify(scanKeys) === JSON.stringify(keys));
+  checkW(`inventory ${letter}: pinned keys are unique`, new Set(keys).size === keys.length);
+  checkW(`inventory ${letter}: every pinned disposition comes from the table`, pinned.every((p) => ["helper", "contained", "guarded", "outside", "listed"].includes(p.disposition)));
+}
+const allPins = [...PINNED_C, ...PINNED_D];
+checkW(
+  "every helper pin is inside an approved helper",
+  allPins.filter((p) => p.disposition === "helper").every((p) => {
+    const [rel, fn] = p.key.split(":");
+    return APPROVED_HELPERS.has(`${rel}:${fn}`);
+  }),
+);
+checkW(
+  "every contained pin's function calls a containment helper",
+  allPins.filter((p) => p.disposition === "contained").every((p) => {
+    const [rel, fn] = p.key.split(":");
+    return scanCD_.helperCallers.has(`${rel}:${fn}`);
+  }),
+);
+checkW("every why is non-empty", allPins.every((p) => p.why.trim().length > 0));
+checkW("no out-of-domain fs binding", scanCD_.outOfDomain.length === 0, JSON.stringify(scanCD_.outOfDomain));
+
+// One node:test row so `--test-name-pattern=W-163-b6` yields an assertion-level TAP line.
+test("W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build", () => {
+  assert.deepEqual(w163Failures, []);
+});
+
+process.exitCode = failed ? 1 : 0;
