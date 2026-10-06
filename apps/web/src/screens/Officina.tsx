@@ -149,7 +149,7 @@ export function OfficinaView({ aerarium, health, completion, acta, now }: Offici
 
       <FastiStrip acta={acta} today={now} />
 
-      <section className="officina__panel panel--status-wide">
+      <section className="officina__panel panel--completion">
         <h2 className="officina__panel-heading">Completion</h2>
         <CompletionPanel completion={completion} />
       </section>
