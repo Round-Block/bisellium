@@ -24,7 +24,7 @@ Packet (this directory): <list: boot.md (the output of the order's boot: command
 
 <Round scope. Round 1: what to look hardest at. Later rounds: only whether the previous blockers are closed by rows that fail without their fix, and whether the delta regressed anything.>
 
-Severity (charter §2): blocking only for wrong behaviour, a security gap, or missing or false required evidence (reds, receipt, gates). A correct fix whose regression row is incomplete is advisory. Only a blocking finding fails the round. When you find a defect, say whether it is one instance or a class; for a class, list every instance and what you searched.
+Severity (charter §2): blocking only for wrong behaviour, a security gap, or missing or false required evidence (reds, receipt, gates). A correct fix whose regression row is incomplete is advisory. A finding that names no instance in the code and only shows that a check could be deliberately evaded (reflection, prototype-chain recovery, `eval`, alias gymnastics) is advisory (D-045). Only a blocking finding fails the round. When you find a defect, say whether it is one instance or a class; for a class, list every instance and what you searched.
 
 Citation (W-126): a blocking finding cites a non-blank line of the declared brief as `brief:<line>` (or `studio/briefs/<ID>.md:<line>`), the line that states the behaviour it breaks. The verdict writer records a blocking finding that cites no such line as advisory, and a failed round whose blockers were all converted as passed.
 
