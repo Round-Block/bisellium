@@ -1,0 +1,23 @@
+# opus: W-137
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T13:43:16.041Z
+# tree: tree:d2e0fdecdded1d5f1700ac8b2e346e0d541311cb
+
+W-137 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-137.md (6 behaviours, six sections plus "Defaults for the Patron to veto", Decree family: retro-step; readBriefAdmission at limit 6 reports no problems; check studio --repo . is 0 blocking with the brief present). Inputs: D-039 (scope), D-042 (W-043 and W-060 merged in, no new tech debt), L-069 and its fix W-161 (input domain named), W-138 (left out), packages/cli/src/retro.ts, next.ts, rules/process.ts, packages/commands/src/verdict.ts (findings grammar, # converted), new.ts (newItem).
+Measured at master 48431c0 with ~/.bisellium-evidence/W-137-spec/measure.mjs (output measure.out): 85 done opera, 61 with no end (done writes end since W-096); W-120 and W-153 done after D-039's at, neither with a retro; their 12 verdict logs are all in the declared domain (W-120: 4 blocking, 7 advisory, 3 reds; W-153: 7 blocking, 8 advisory, 6 reds; no # converted); 70 lessons, 61 without addressed_by.
+
+## Findings
+1. advisory — the retro is a new mode of the existing verb (retro --opus --from triage.json), the retro-filed fact is an acta file carrying opus:, and owedRetros is the one reader next and check share; no parallel mechanism (D-042 §7); defaults 1 and 2 — check: packages/cli/src/retro-opus.test.ts (W-137-b1)
+2. advisory — W-161 applied: each record (verdict logs and reds, retro setting and opus end, triage) has a named domain and one rejecting function that fails closed and writes nothing; a done opus with no end is out of the retro's domain by the W-096 date, default 8 — check: packages/cli/src/retro-opus.test.ts (W-137-b1), packages/cli/src/rules/retro-check.test.ts (W-137-b5)
+3. advisory — severity is a rule over recorded facts (class area security/data-loss or an existing same-class lesson is high, an unconverted blocking finding is medium, else low); a high fix is greenlit only when retro.high_greenlit_by names a Patron decision (D-039 in studio/), with a workflow.greenlight event and no Patron timeline line; defaults 4 and 5 — check: packages/cli/src/retro-opus.test.ts (W-137-b3)
+4. advisory — W-060 still applies at master (classifyAddressedTarget returns rule for any unmatched id); fixed by resolving against RULE_IDS, which adds a retro.ts -> rules/ids.ts import inside packages/cli (ids.ts stays a leaf); W-043 folds in as the retro stamping addressed_by, re-stamping old lessons is out of scope — check: packages/cli/src/retro.test.ts (W-137-b6)
+5. advisory — adding the retro step to STEPS touches next.test.ts's STAGES mirror; manifests without a retro key behave exactly as today, so the existing ladder rows are unchanged — check: packages/cli/src/next.test.ts (W-137-b4)
+6. advisory — lesson.unfixed warns on all 61 older lessons at advise level (default 7); reds are listed but yield no findings (default 6) — check: none: a red log carries no review finding
+
+## Recommendation
+Verdict: passed. One decree family, retro-step: once an opus is done its retro is the next step and no new opus starts until it is filed; every recorded finding becomes a lesson with a named fix or is marked not a lesson, and severity by rule sets the fix's priority. Six behaviours over four test files, two new rule ids.
+Eight defaults ship as stated and are veto-able at the checkpoint; the follow-ons are named in Out of scope.
