@@ -12,7 +12,7 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { closeSync, constants, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
@@ -861,6 +861,13 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   const phys = realpathSync(root);
   const written: string[] = [];
   const note = (rel: string): void => void (written.includes(rel) || written.push(rel));
+  // An existing file this run changes counts as written once it opens for writing, before any byte goes in. The probe
+  // open uses the flags the writer will use, so a permission refusal surfaces here and is not recorded.
+  const claim = (rel: string, flags: number): void => {
+    closeSync(openSync(join(phys, rel), flags | constants.O_NOFOLLOW));
+    note(rel);
+    retroTestHooks.afterOpen?.(rel);
+  };
   const writing = <T>(step: () => T): T => {
     const before = listing(phys);
     try {
@@ -917,14 +924,14 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
       if (severity.get(cls) !== "high" || opusState(root, fix) !== "backlog") continue;
       const fixPath = safeItemPath(join(root, "opera"), fix);
       if (typeof fixPath !== "string") throw new Error(`opera: ${fixPath.error}`);
+      claim(relative(root, fixPath).split(sep).join("/"), constants.O_WRONLY);
       editOpusFrontMatter(fixPath, (doc) => {
         doc.setIn(["state"], "greenlit");
         doc.setIn(["greenlit_by"], setting.highGreenlitBy);
         return undefined;
       });
-      note(relative(root, fixPath).split(sep).join("/"));
+      if (existsSync(join(phys, EVENTS_LOG_REL))) claim(EVENTS_LOG_REL, constants.O_RDWR | constants.O_APPEND);
       writing(() => emitEvent(root, manifest, "workflow.greenlight", now, { [WF.ITEM_ID]: fix, [WF.GREENLIGHT]: "granted" }));
-      note(EVENTS_LOG_REL);
       started.push({ fix, decision: setting.highGreenlitBy });
     }
   }
@@ -966,13 +973,15 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   });
   return { path: actaRel };
   } catch (e) {
-    // nothing written yet: the failure is decided before any write, a refusal
-    if (written.length === 0) throw e;
+    // every refusal was decided before this block: whatever fails from here is an I/O failure
     throw new RetroIoError(written, e as NodeJS.ErrnoException);
   }
 }
 
-/** A failure after the retro's first write: names every path written in this run, in first-write order. */
+/** Test-only fault injection: `afterOpen` runs once a path to be written is opened and recorded, before its bytes. */
+export const retroTestHooks: { afterOpen?: (rel: string) => void } = {};
+
+/** A failure in the write phase: names every path written in this run, in first-write order. */
 export class RetroIoError extends Error {
   constructor(written: string[], cause: NodeJS.ErrnoException) {
     super(`I/O failure after writing [${written.join(", ")}]; failing path ${cause.path ?? "(unknown)"}: ${cause.message}`);
