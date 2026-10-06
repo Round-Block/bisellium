@@ -46,6 +46,7 @@ export const RULE_FAMILY_LABELS: Readonly<Record<string, string>> = {
   probatio: "Gate evidence",
   process: "Process steps",
   receipt: "Session receipts",
+  retro: "Retros owed after done",
   sella: "Seats",
   state: "Work item states",
   stray: "Stray files",

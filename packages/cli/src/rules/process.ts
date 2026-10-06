@@ -14,6 +14,7 @@ import { basename, join } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import type { Finding, Level, RuleOpts } from "../check.js";
+import { owedRetros } from "../retro.js";
 import { RULE_IDS } from "./ids.js";
 
 type Dict = Record<string, unknown>;
@@ -27,7 +28,7 @@ const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1
 
 /** A YAML date or a strict ISO date(-time) string as an instant; anything else,
  *  including an impossible date such as 2026-02-30, is undefined. No zone means UTC. */
-function instant(v: unknown): Date | undefined {
+export function instant(v: unknown): Date | undefined {
   if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
   const m = typeof v === "string" ? ISO.exec(v) : null;
   if (!m) return undefined;
@@ -263,6 +264,8 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     }
 
     if (data["addressed_by"] !== undefined) addressedClaims.push({ where, value: data["addressed_by"] });
+    // lesson.unfixed (advise, D-039 §3): every lesson names its fix.
+    else add("lesson.unfixed", "advise", where, `${basename(p, ".md")} names no fix (addressed_by)`);
 
     const cls = str(data["class"]);
     const ab = str(data["addressed_by"]);
@@ -287,11 +290,13 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // resolveAddressedBy below can recognise an "opus" target — the lessons
   // loop above only collects, since it runs before this one.
   const operaStates = new Map<string, string | undefined>();
+  const opusEnds = new Map<string, { where: string; end: unknown }>();
   for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
     const data = safeFront(p);
     if (!data) continue;
     operaStates.set(basename(p, ".md"), str(data["state"]));
+    opusEnds.set(basename(p, ".md"), { where, end: data["end"] });
     if (sameSellaBuiltAndReviewed(data["probationes"])) {
       const sella = gateSella(data["probationes"], "spec");
       add("process.cascade", "advise", where, `sella "${sella}" recorded for both spec and review — one context built and reviewed its own work`);
@@ -321,6 +326,15 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       }
     }
   }
+
+  // retro.overdue (advise, D-039 §1): a done opus owes its retro. `owedRetros` is the one reader of the setting and
+  // of retro-filed status; its error is check.ts's manifest.shape block, so here it adds nothing.
+  const owed = owedRetros(root);
+  if ("owed" in owed)
+    for (const id of owed.owed) {
+      const at = opusEnds.get(id);
+      if (at) add("retro.overdue", "advise", at.where, `${id} is done (${String(at.end)}) and its retro is not filed: bisellium retro --opus ${id} --from <triage.json>`);
+    }
 
   // resolveAddressedBy: first match wins, in that fixed order. The three id
   // spaces are disjoint in practice (bisellium new / draftRetro allocate

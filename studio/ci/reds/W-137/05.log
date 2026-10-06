@@ -1,0 +1,48 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-137-b5 --import tsx packages/cli/src/rules/retro-check.test.ts
+# exit: 1
+# at: 2026-10-06T13:52:29.236Z
+# sella: builder.W-137
+# tree: tree:a8b0181b477fc16575ef09465fc6de07767e3b91
+
+TAP version 13
+# Subtest: W-137-b5 behaviour 5: check warns on an overdue retro and on a lesson with no fix
+not ok 1 - W-137-b5 behaviour 5: check warns on an overdue retro and on a lesson with no fix
+  ---
+  duration_ms: 35.242037
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-137/packages/cli/src/rules/retro-check.test.ts:26:14'
+  failureType: 'testCodeFailure'
+  error: |-
+    W-1 is overdue, W-2 (no end) and W-4 (before since) are not, W-3 (end "soon") fails closed: []
+    + actual - expected
+    
+    + []
+    - [
+    -   'opera/W-1.md',
+    -   'opera/W-3.md'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'opera/W-1.md'
+    1: 'opera/W-3.md'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-137/packages/cli/src/rules/retro-check.test.ts:68:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 42.545554

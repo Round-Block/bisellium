@@ -43,6 +43,9 @@ wip_limit: 4
 # this many numbered behaviours, one genuine red each; `ready` and `check` enforce it.
 brief_behaviour_limit: 6
 source_excludes: [ examples/ ]
+# W-137 (D-039): a done opus owes a retro once it ended at or after `since` (the ruling's own time); a high-severity
+# fix is filed already greenlit by `high_greenlit_by`. Older done opera owe none.
+retro: { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }
 # D-015: how an opus branch reaches the trunk is a setting, not a fixed
 # flow. This is the Patron's own reference flow — rebase the opus branch
 # onto the trunk (bisellium merge does the rebase, then fast-forwards),

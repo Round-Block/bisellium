@@ -4,6 +4,8 @@
  */
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import assert from "node:assert/strict";
+import { test } from "node:test";
 import { dirname, join, relative, resolve } from "node:path";
 import { checkStudio } from "./check.js";
 import { draftRetro, runRetro, type RetroInput } from "./retro.js";
@@ -286,7 +288,7 @@ try {
     mkdirSync(join(dir, "lessons"), { recursive: true });
     writeFileSync(
       join(dir, "lessons", "L-101.md"),
-      '---\nid: "L-101"\nat: 2026-09-10T00:00:00Z\nclass: "addressed-class"\nevidence: ["ev.log"]\ncascade: 1\naddressed_by: "some.rule.id"\n---\nEarlier.\n',
+      '---\nid: "L-101"\nat: 2026-09-10T00:00:00Z\nclass: "addressed-class"\nevidence: ["ev.log"]\ncascade: 1\naddressed_by: "lesson.shape"\n---\nEarlier.\n',
     );
     writeFileSync(
       join(dir, "lessons", "L-102.md"),
@@ -319,7 +321,7 @@ try {
 
     check(
       "18c. '## Addressed' lists the addressed class with its target",
-      draft.markdown.includes('"addressed-class" → some.rule.id (rule)'),
+      draft.markdown.includes('"addressed-class" → lesson.shape (rule)'),
       draft.markdown,
     );
     check(
@@ -399,4 +401,31 @@ try {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
 }
 
-process.exit(failed ? 1 : 0);
+// W-137 b6: the script rows above are plain checks; this one is a node:test row so it can be selected
+// with --test-name-pattern=W-137-b6. The exit code is set, not forced, so the row still runs.
+test("W-137-b6 behaviour 6: an addressed_by that names nothing is never read as a rule (W-060)", () => {
+  const classText = "c×x";
+  const run = (addressedBy: string) => {
+    const dir = tempStudio("w060");
+    try {
+      writeFileSync(join(dir, "ev.log"), "x\n");
+      mkdirSync(join(dir, "lessons"), { recursive: true });
+      writeFileSync(
+        join(dir, "lessons", "L-001.md"),
+        `---\nid: "L-001"\nat: 2026-09-10T00:00:00Z\nclass: ${JSON.stringify(classText)}\nevidence: ["ev.log"]\ncascade: 1\naddressed_by: ${JSON.stringify(addressedBy)}\n---\nEarlier.\n`,
+      );
+      const input: RetroInput = { verifierIssues: 0, reviewFindings: [{ class: classText, where: "w", evidence: ["ev.log"] }], agents: [], tests: 1, fixRounds: 0, mutationsCaught: 0 };
+      return draftRetro(dir, 2, input, NOW);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  const dangling = run("W-999");
+  assert.equal(dangling.petitiones.length, 1, "a petitio is filed for a class whose addressed_by names nothing");
+  assert.ok(dangling.markdown.includes('"c×x" → nothing yet'), dangling.markdown);
+  const rule = run("lesson.shape");
+  assert.equal(rule.petitiones.length, 0, "a real rule id addresses the class: no petitio");
+  assert.ok(rule.markdown.includes('"c×x" → lesson.shape (rule)'), rule.markdown);
+});
+
+process.exitCode = failed ? 1 : 0;

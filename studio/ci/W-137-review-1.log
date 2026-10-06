@@ -1,0 +1,19 @@
+# opus: W-137
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T14:49:22.060Z
+# tree: tree:f5b66b0852413acdcb8a4e49ccdb64ab08ef19da
+# brief: briefs/W-137.md blob:0da829322cab0f13ca02b2470e5f1014e16d1792
+
+## Findings
+1. blocking — packages/cli/src/retro.ts:556 Class: verdict-log validation fails open. Searching all validation in `readVerdictLog`/`readOpusVerdicts` found four instances: `# opus:` and `# converted:` are accepted anywhere rather than only as headers, nonblank non-numbered lines are discarded when any valid finding exists, and `# converted:` validates only a prefix, so malformed tails or an unclosed reason can still convert a blocker and alter severity; brief:168 — check: packages/cli/src/retro-opus.test.ts (W-137-b1 malformed-log matrix)
+2. blocking — packages/cli/src/retro.ts:141 Class: physical containment remains incomplete. Searching all new ID-derived filesystem sites found three instances: symlinked `opera/<fix>.md` is read outside the officina, symlinked `decisions/<fix>.md` is accepted as an existing decision, and a symlinked `acta/` parent lets the final retro write escape the officina; `safeItemPath` is lexical and does not replace `readContainedRegularFile` or real-parent validation. brief:115, brief:171 — check: packages/cli/src/retro-opus.test.ts (W-137-b1 symlink-fix and symlink-parent rows)
+3. blocking — packages/cli/src/retro.ts:640 `isoMs` regex-checks `retro.since` and then trusts `Date.parse`, which normalizes impossible calendar dates such as `2026-02-30`; the malformed setting therefore avoids the required `manifest.shape` block and can compute the wrong owed set. brief:170 — check: packages/cli/src/rules/retro-check.test.ts (W-137-b5 impossible-date row)
+
+## Verdict
+The happy path and supplied gates pass, but malformed evidence can change accounting and severity, and unresolved physical-containment gaps permit an outside read or write. These are wrong behavior and security blockers.
+
+VERDICT: FAIL

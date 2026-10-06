@@ -12,12 +12,21 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, resolve } from "node:path";
+import { closeSync, constants, existsSync, lstatSync, mkdirSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { isoWeek } from "@bisellium/adapter-native";
-import { createNextRecord } from "@bisellium/commands/ids.js";
-import { safeItemPath } from "@bisellium/commands/writes.js";
+import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
+import { EVENTS_LOG_REL } from "@bisellium/core";
+import { WF } from "@bisellium/schema";
+import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
+import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
+import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
+import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { VERDICT_HEADERS } from "@bisellium/commands/verdict.js";
+import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
+import { newItem } from "./new.js";
+import { RULE_IDS } from "./rules/ids.js";
+import { instant } from "./rules/process.js";
 
 export interface RetroFinding {
   class: string;
@@ -119,10 +128,10 @@ function addressedTarget(existingByClass: Map<string, { cascade: number; id: str
   return undefined;
 }
 
-/** Classifies an `addressed_by` target by what exists on disk — never by
- *  `RULE_IDS` (retro.ts doesn't import `ids.ts`; see the opus's "Files
- *  owned" seam note) — and, for an opus target, reads its `state:` with the
- *  same regex style `existingLessonsByClass` already uses.
+/** Classifies an `addressed_by` target: an opus or a decision by what exists
+ *  on disk, a rule by `RULE_IDS` (W-060: a typo or a deleted opus is no rule,
+ *  it is `"unresolvable"`), and, for an opus target, reads its `state:` with
+ *  the same regex style `existingLessonsByClass` already uses.
  *
  *  `target` is a raw front-matter capture (`[^"\n]+`), never validated —
  *  P-007's containment-helper decree applies: both lookups go through
@@ -135,20 +144,15 @@ function classifyAddressedTarget(studioRoot: string, target: string): { kind: "o
   const opusPath = safeItemPath(join(studioRoot, "opera"), target);
   const decisionPath = safeItemPath(join(studioRoot, "decisions"), target);
   if (typeof opusPath !== "string" || typeof decisionPath !== "string") return { kind: "unresolvable" };
-  if (existsSync(opusPath)) {
-    let state = "unknown";
-    try {
-      const raw = readFileSync(opusPath, "utf8");
-      const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
-      const stateMatch = m ? /^state:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!) : null;
-      if (stateMatch) state = stateMatch[1]!.trim();
-    } catch {
-      /* state stays "unknown" */
-    }
-    return { kind: "opus", state };
+  // physical containment too (W-137 round 1): a symlinked record is no record, so it is read through the contained reader
+  const opus = readContainedRegularFile(studioRoot, relative(studioRoot, opusPath).split(sep).join("/"), "opera");
+  if (!("error" in opus)) {
+    const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(opus.bytes.toString("utf8"));
+    const stateMatch = m ? /^state:\s*"?([^"\n]+)"?\s*$/m.exec(m[1]!) : null;
+    return { kind: "opus", state: stateMatch ? stateMatch[1]!.trim() : "unknown" };
   }
-  if (existsSync(decisionPath)) return { kind: "decision" };
-  return { kind: "rule" };
+  if (!("error" in readContainedRegularFile(studioRoot, relative(studioRoot, decisionPath).split(sep).join("/"), "decisions"))) return { kind: "decision" };
+  return RULE_IDS.has(target) ? { kind: "rule" } : { kind: "unresolvable" };
 }
 
 /** Case-insensitive substring match of a finding class inside a decision's
@@ -510,10 +514,531 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
 }
 
 // ---------------------------------------------------------------------------
+// W-137 — `retro --opus`: the retro is a required step after done (D-039).
+//
+// Every record this mode reads has ONE named domain and ONE function that
+// rejects anything outside it, failing the whole retro closed (W-161):
+//   verdict logs + reds  -> readOpusVerdicts     the opus record  -> readOpus
+//   lessons              -> readLessonClasses     the retro setting -> readRetroSetting
+//   retro actas          -> retroFiled            the triage       -> parseTriage
+// `owedRetros` is the one reader of the setting and of retro-filed status.
+// ---------------------------------------------------------------------------
+
+type Dict = Record<string, unknown>;
+type Refusal = { error: string };
+const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
+const isRefusal = (v: unknown): v is Refusal => isDict(v) && typeof v["error"] === "string";
+const OPUS_ID = /^W-[0-9]+$/;
+const LOG_MAX_BYTES = 4_000_000;
+// the whole raw line: no carriage return and no comment marker anywhere in it
+const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b(?![^]*(?:\r|<!--|-->))/i;
+// a header line is one of the names the verdict writer emits, its value raw
+const HEADER_LINE = new RegExp(`^# (${VERDICT_HEADERS.join("|")}): (.*)$`);
+const CLASS_RE = /^[a-z][a-z0-9-]*×\S+$/;
+
+interface RecordedFinding {
+  log: string;
+  n: number;
+  /** the finding line after its number, whole */
+  text: string;
+  blocking: boolean;
+}
+interface Verdicts {
+  /** every log and red read, officina-relative and sorted */
+  sources: string[];
+  findings: RecordedFinding[];
+}
+
+/**
+ * One recorded log, read RAW: no line is stripped, trimmed or interpreted before it is judged. The header block is
+ * the lines before the first empty line, each exactly `# key: value`. In the body the one `## Findings` section
+ * (ends at the next `## ` line) holds empty lines, the exact line `No findings`, or lines of the finding grammar,
+ * and nothing else: a fence, comment, heading, indented or otherwise dressed line is out of domain and the whole
+ * log is unreadable. This is the only reader of a verdict log in the retro.
+ */
+function readVerdictLog(root: string, id: string, rel: string): { findings: RecordedFinding[] } | Refusal {
+  const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+  if ("error" in file) return { error: `${rel}: ${file.error}` };
+  const lines = file.bytes.toString("utf8").split("\n");
+  const split = lines.indexOf("");
+  if (split === -1) return { error: `${rel}: no blank line ends the header block` };
+  const headers = new Map<string, string[]>();
+  for (const line of lines.slice(0, split)) {
+    const m = HEADER_LINE.exec(line);
+    if (!m) return { error: `${rel}: header line out of domain (want "# <a verdict header>: value"): ${line.slice(0, 60)}` };
+    headers.set(m[1]!, [...(headers.get(m[1]!) ?? []), m[2]!]);
+  }
+  const body = lines.slice(split + 1);
+  const stray = body.find((l) => /^# [a-z_]+: /.test(l));
+  if (stray !== undefined) return { error: `${rel}: a header line outside the header block: ${stray.slice(0, 60)}` };
+  if (headers.get("opus")?.length !== 1 || headers.get("opus")![0] !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
+  const at = body.reduce<number[]>((n, l, i) => (l === "## Findings" ? [...n, i] : n), []);
+  if (at.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${at.length}` };
+  const rest = body.slice(at[0]! + 1);
+  const end = rest.findIndex((l) => l.startsWith("## "));
+  const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== "");
+  if (section.length === 1 && section[0] === "No findings") return { findings: [] };
+  if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
+  const findings: RecordedFinding[] = [];
+  for (const line of section) {
+    if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …", or "No findings" alone): ${line.slice(0, 60)}` };
+    const n = Number(/^\d+/.exec(line)![0]);
+    if (findings.some((f) => f.n === n)) return { error: `${rel}: finding ${n} is numbered twice` };
+    const text = line.replace(/^\d+\. /, "");
+    findings.push({ log: rel, n, text, blocking: /^\**blocking\b/i.test(text) });
+  }
+  const converted = headers.get("converted");
+  if (converted !== undefined) {
+    if (converted.length !== 1) return { error: `${rel}: more than one "# converted:" header` };
+    // "<n> (<reason>)", joined by "; ": every piece closed, every n a blocking finding of this log
+    const pieces = converted[0]!.split(/; (?=[1-9]\d* \()/);
+    for (const piece of pieces) {
+      const m = /^([1-9]\d*) \((.+)\)$/.exec(piece);
+      const f = m ? findings.find((x) => x.n === Number(m[1])) : undefined;
+      if (!m || !f?.blocking) return { error: `${rel}: "# converted:" is not a list of "<n> (<reason>)" naming blocking findings of this log: ${piece.slice(0, 60)}` };
+      f.blocking = false;
+    }
+  }
+  return { findings };
+}
+
+/** The verdict logs and reds of one opus (D-039 §2), or the first record outside the domain. */
+export function readOpusVerdicts(root: string, id: string): Verdicts | Refusal {
+  if (!OPUS_ID.test(id)) return { error: `${id}: not an opus id` };
+  const sources: string[] = [];
+  const findings: RecordedFinding[] = [];
+  const ci = join(root, "ci");
+  const names = existsSync(ci) ? readdirSync(ci).sort() : [];
+  for (const name of names) {
+    const prefix = [`${id}-review-`, `${id}-spec-`].find((p) => name.startsWith(p));
+    if (prefix === undefined) continue;
+    if (!/^[1-9]\d*\.log$/.test(name.slice(prefix.length))) return { error: `ci/${name}: a verdict log is named ${prefix}<n>.log, n a positive integer with no leading zero` };
+    const read = readVerdictLog(root, id, `ci/${name}`);
+    if (isRefusal(read)) return read;
+    sources.push(`ci/${name}`);
+    findings.push(...read.findings);
+  }
+  const redDir = join(ci, "reds", id);
+  for (const name of existsSync(redDir) ? readdirSync(redDir).sort() : []) {
+    if (!/^\d\d\.log$/.test(name)) return { error: `ci/reds/${id}/${name}: a red is named NN.log (two digits)` };
+    const file = readContainedRegularFile(root, `ci/reds/${id}/${name}`, "ci", LOG_MAX_BYTES);
+    if ("error" in file) return { error: `ci/reds/${id}/${name}: ${file.error}` };
+    sources.push(`ci/reds/${id}/${name}`);
+  }
+  return { sources, findings };
+}
+
+const FRONT = (file: { bytes: Buffer }, label: string): Dict | Refusal => {
+  try {
+    const data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), label).data;
+    return isDict(data) ? data : { error: `${label}: front matter is not a mapping` };
+  } catch (e) {
+    return { error: `${label}: ${(e as Error).message}` };
+  }
+};
+
+/** One opus record, or why it is unreadable. */
+function readOpus(root: string, id: string): Dict | Refusal {
+  if (!OPUS_ID.test(id)) return { error: `${id}: not an opus id` };
+  // the id reaches a path only through the containment helper (W-047), then the contained reader
+  const path = safeItemPath(join(root, "opera"), id);
+  if (typeof path !== "string") return { error: `opera: ${path.error}` };
+  const rel = relative(root, path).split(sep).join("/");
+  const file = readContainedRegularFile(root, rel, "opera");
+  if ("error" in file) return { error: `${rel}: ${file.error}` };
+  return FRONT(file, rel);
+}
+
+interface RetroSetting {
+  since: number;
+  highGreenlitBy?: string;
+}
+/** The `retro` setting: absent, or `{ since, high_greenlit_by? }` and nothing else. */
+function readRetroSetting(root: string): RetroSetting | undefined | Refusal {
+  let manifest: unknown;
+  try {
+    manifest = parseYaml(readFileSync(join(root, "bisellium.yml"), "utf8"));
+  } catch (e) {
+    return { error: `bisellium.yml: ${(e as Error).message}` };
+  }
+  if (!isDict(manifest)) return { error: "bisellium.yml: not a mapping" };
+  const raw = manifest["retro"];
+  if (raw === undefined) return undefined;
+  if (!isDict(raw)) return { error: "bisellium.yml#retro: retro must be a mapping with a `since` date" };
+  const unknown = Object.keys(raw).filter((k) => k !== "since" && k !== "high_greenlit_by");
+  if (unknown.length > 0) return { error: `bisellium.yml#retro: unknown key ${unknown.join(", ")}` };
+  const since = instant(raw["since"])?.getTime();
+  if (since === undefined) return { error: "bisellium.yml#retro: since must be an ISO date" };
+  if (raw["high_greenlit_by"] === undefined) return { since };
+  const patron = typeof manifest["patron"] === "string" ? manifest["patron"] : undefined;
+  const problem = patronDecisionProblem(root, patron === undefined ? {} : { patron }, raw["high_greenlit_by"]);
+  if (problem !== undefined) return { error: `bisellium.yml#retro: high_greenlit_by: ${problem}` };
+  return { since, highGreenlitBy: raw["high_greenlit_by"] as string };
+}
+
+/** Whether a retro acta for `id` is filed: `acta/*-retro-<id>.md` carrying `opus: <id>`. Unreadable never counts. */
+function retroFiled(root: string, id: string): boolean {
+  const dir = join(root, "acta");
+  for (const name of existsSync(dir) ? readdirSync(dir) : []) {
+    if (/^(\d{4}-\d{2}-\d{2})-retro-(W-[0-9]+)\.md$/.exec(name)?.[2] !== id) continue;
+    const file = readContainedRegularFile(root, `acta/${name}`, "acta");
+    if ("error" in file) continue;
+    const data = FRONT(file, `acta/${name}`);
+    if (!isRefusal(data) && data["opus"] === id) return true;
+  }
+  return false;
+}
+
+/**
+ * The retros that are owed: opera `done` whose `end` is at or after `retro.since` and that file no retro. An `end`
+ * that is present but not a date counts as owed (fail closed); a done opus with no `end` closed before W-096 and owes
+ * none. No `retro` setting: nothing is owed. This is the one reader of the setting; `next` and `check` call it.
+ */
+export function owedRetros(root: string): { owed: string[] } | Refusal {
+  const setting = readRetroSetting(root);
+  if (isRefusal(setting)) return setting;
+  if (setting === undefined) return { owed: [] };
+  const dir = join(root, "opera");
+  const owed: string[] = [];
+  for (const name of existsSync(dir) ? readdirSync(dir).sort() : []) {
+    const id = /^(W-[0-9]+)\.md$/.exec(name)?.[1];
+    if (id === undefined) continue;
+    const rec = readOpus(root, id);
+    if (isRefusal(rec)) return rec;
+    if (rec["state"] !== "done" || rec["end"] === undefined || rec["end"] === null) continue;
+    const end = utcTimestampProblem(rec["end"]) === undefined ? Date.parse(rec["end"] as string) : undefined;
+    if ((end === undefined || end >= setting.since) && !retroFiled(root, id)) owed.push(id);
+  }
+  return { owed };
+}
+
+/** The classes of every lesson on file; a lesson that cannot be read as a mapping with a class is out of domain. */
+function readLessonClasses(root: string): Set<string> | Refusal {
+  const dir = join(root, "lessons");
+  const classes = new Set<string>();
+  for (const name of existsSync(dir) ? readdirSync(dir).sort() : []) {
+    if (!name.endsWith(".md")) continue;
+    const file = readContainedRegularFile(root, `lessons/${name}`, "lessons");
+    if ("error" in file) return { error: `lessons/${name}: ${file.error}` };
+    const data = FRONT(file, `lessons/${name}`);
+    if (isRefusal(data)) return data;
+    if (typeof data["class"] !== "string" || data["class"] === "") return { error: `lessons/${name}: class must be a non-empty string` };
+    classes.add(data["class"]);
+  }
+  return classes;
+}
+
+type Fix = string | { title: string; collegium: string };
+interface Entry {
+  log: string;
+  n: number;
+  cls?: string;
+  fix?: Fix;
+  notALesson?: string;
+}
+const keysOnly = (o: Dict, allowed: string[]): string | undefined => Object.keys(o).find((k) => !allowed.includes(k));
+
+/** The triage's shape alone; what it names is judged against the records in `draftOpusRetro`. */
+function parseTriage(raw: unknown): Entry[] | Refusal {
+  if (!isDict(raw) || !Array.isArray(raw["findings"])) return { error: "triage: want { findings: [...] }" };
+  const extra = keysOnly(raw, ["findings"]);
+  if (extra !== undefined) return { error: `triage: unknown key "${extra}"` };
+  const entries: Entry[] = [];
+  for (const [i, e] of raw["findings"].entries()) {
+    const at = `triage entry ${i + 1}`;
+    if (!isDict(e)) return { error: `${at}: not an object` };
+    const bad = keysOnly(e, ["log", "n", "class", "fix", "not_a_lesson"]);
+    if (bad !== undefined) return { error: `${at}: unknown key "${bad}"` };
+    if (typeof e["log"] !== "string" || !Number.isInteger(e["n"]) || (e["n"] as number) < 1) return { error: `${at}: log must be a string and n a positive integer` };
+    const base = { log: e["log"], n: e["n"] as number };
+    const hasClass = e["class"] !== undefined;
+    const hasNot = e["not_a_lesson"] !== undefined;
+    if (hasClass === hasNot) return { error: `${at} (${base.log} #${base.n}): exactly one of class or not_a_lesson` };
+    if (hasNot) {
+      if (typeof e["not_a_lesson"] !== "string" || e["not_a_lesson"].trim() === "" || e["fix"] !== undefined) return { error: `${at} (${base.log} #${base.n}): not_a_lesson is a non-empty reason and takes no fix` };
+      entries.push({ ...base, notALesson: e["not_a_lesson"] });
+      continue;
+    }
+    if (typeof e["class"] !== "string" || !CLASS_RE.test(e["class"])) return { error: `${at} (${base.log} #${base.n}): class must match ${CLASS_RE.source}` };
+    const fix = e["fix"];
+    if (typeof fix === "string" && fix !== "") entries.push({ ...base, cls: e["class"], fix });
+    else if (isDict(fix) && keysOnly(fix, ["title", "collegium"]) === undefined && typeof fix["title"] === "string" && typeof fix["collegium"] === "string")
+      entries.push({ ...base, cls: e["class"], fix: { title: fix["title"], collegium: fix["collegium"] } });
+    else return { error: `${at} (${base.log} #${base.n}): fix is an id, or { title, collegium }` };
+  }
+  return entries;
+}
+
+const sameFix = (a: Fix, b: Fix): boolean => (typeof a === "string" || typeof b === "string" ? a === b : a.title === b.title && a.collegium === b.collegium);
+const oneLine = (s: string): string => s.replace(/\s*\n\s*/g, " ").trim();
+
+/**
+ * Files the retro of one done opus from its recorded verdicts and a triage (D-039 §2-§6): validates everything,
+ * then writes in the order that leaves a crash owing the retro, never falsely filed — new fix opera, lessons,
+ * greenlights of high-severity fixes, last the acta. Throws (nothing written) on any record outside its domain.
+ */
+export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now: Date): { path: string } {
+  const verdicts = readOpusVerdicts(root, id);
+  if (isRefusal(verdicts)) throw new Error(verdicts.error);
+  const opus = readOpus(root, id);
+  if (isRefusal(opus)) throw new Error(opus.error);
+  if (opus["state"] !== "done") throw new Error(`opera/${id}.md: ${id} is ${String(opus["state"])}, not done; a retro follows done`);
+  if (retroFiled(root, id)) throw new Error(`acta: the retro of ${id} is already filed`);
+  const setting = readRetroSetting(root);
+  if (isRefusal(setting)) throw new Error(setting.error);
+  const lessonClasses = readLessonClasses(root);
+  if (isRefusal(lessonClasses)) throw new Error(lessonClasses.error);
+  const entries = parseTriage(rawTriage);
+  if (isRefusal(entries)) throw new Error(entries.error);
+
+  // every recorded finding appears exactly once, and every entry names one
+  const seen = new Set<string>();
+  for (const e of entries) {
+    const key = `${e.log} #${e.n}`;
+    if (!verdicts.findings.some((f) => f.log === e.log && f.n === e.n)) throw new Error(`triage: ${key} is not a recorded finding`);
+    if (seen.has(key)) throw new Error(`triage: ${key} is accounted for twice`);
+    seen.add(key);
+  }
+  for (const f of verdicts.findings) if (!seen.has(`${f.log} #${f.n}`)) throw new Error(`triage: ${f.log} #${f.n} is not accounted for`);
+
+  // one fix per class; a named fix resolves, a new one names a declared collegium and a good title
+  const manifest = readManifest(root);
+  const fixOf = new Map<string, Fix>();
+  for (const e of entries) {
+    if (e.cls === undefined || e.fix === undefined) continue;
+    const had = fixOf.get(e.cls);
+    if (had !== undefined && !sameFix(had, e.fix)) throw new Error(`triage: class "${e.cls}" carries two different fixes`);
+    if (had !== undefined) continue;
+    fixOf.set(e.cls, e.fix);
+    if (typeof e.fix === "string") {
+      if (classifyAddressedTarget(root, e.fix).kind === "unresolvable") throw new Error(`triage: fix "${e.fix}" of "${e.cls}" names no opus, rule id or decision`);
+    } else {
+      const problem = titleProblem(e.fix.title);
+      if (problem !== undefined) throw new Error(`triage: fix of "${e.cls}": ${problem}`);
+      if (!(manifest.collegia ?? []).some((c) => c.id === (e.fix as { collegium: string }).collegium)) throw new Error(`triage: fix of "${e.cls}" names undeclared collegium "${e.fix.collegium}"`);
+    }
+  }
+
+  // severity: a rule over recorded facts (D-039 §5), never a model
+  const classes = [...fixOf.keys()].sort();
+  const severity = new Map<string, "high" | "medium" | "low">();
+  for (const cls of classes) {
+    const area = cls.slice(0, cls.indexOf("×"));
+    const mine = entries.filter((e) => e.cls === cls);
+    const blocking = mine.some((e) => verdicts.findings.find((f) => f.log === e.log && f.n === e.n)!.blocking);
+    severity.set(cls, area === "security" || area === "data-loss" || lessonClasses.has(cls) ? "high" : blocking ? "medium" : "low");
+  }
+
+  // a high fix that is already an opus in backlog is greenlit by the setting; refuse before any write if it cannot be
+  const startable = (fix: Fix): boolean => typeof fix === "string" && opusState(root, fix) === "backlog";
+  if (setting?.highGreenlitBy !== undefined)
+    for (const cls of classes) {
+      const fix = fixOf.get(cls)!;
+      const refusal = severity.get(cls) === "high" && startable(fix) ? recordOwnerRefusal(root, fix as string) : undefined;
+      if (refusal !== undefined) throw new Error(refusal);
+    }
+  const dateStr = now.toISOString().slice(0, 10);
+  const actaPath = safeItemPath(join(root, "acta"), `${dateStr}-retro-${id}`);
+  if (typeof actaPath !== "string") throw new Error(`acta: ${actaPath.error}`);
+  const actaRel = relative(root, actaPath).split(sep).join("/");
+  // before the FIRST write: every directory the retro creates in is a real directory (or absent), and the one fixed
+  // output is no entry at all (lstat: a dangling symlink is one). The other outputs are allocated by exclusive create
+  // inside those directories (fix opera, lessons) or are appends to existing records (greenlit fix, event log).
+  for (const dir of ["opera", "lessons", "acta"]) realDir(root, dir);
+  const greenlights = setting?.highGreenlitBy !== undefined && classes.some((cls) => severity.get(cls) === "high" && (typeof fixOf.get(cls) !== "string" || startable(fixOf.get(cls)!)));
+  if (greenlights) eventLogProblem(root);
+  try {
+    lstatSync(join(realDir(root, "acta"), basename(actaPath)));
+    throw new Error(`${actaRel} already exists`);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+
+  // From here the retro writes, and it reverses nothing (spec round 2): a reversal can overwrite or delete state this run
+  // does not own. A failure after the first write names every path written so far, in first-write order, and stops;
+  // a person inspects those paths with git. `writing` notes what a step created, by comparing the directories it
+  // writes in before and after, so a create that succeeded and then failed partway is still named.
+  const phys = realpathSync(root);
+  const written: string[] = [];
+  const note = (rel: string): void => void (written.includes(rel) || written.push(rel));
+  // An existing file this run changes counts as written once it opens for writing, before any byte goes in. The probe
+  // open uses the flags the writer will use, so a permission refusal surfaces here and is not recorded.
+  const claim = (rel: string, flags: number): void => {
+    closeSync(openSync(join(phys, rel), flags | constants.O_NOFOLLOW));
+    note(rel);
+    retroTestHooks.afterOpen?.(rel);
+  };
+  const writing = <T>(step: () => T): T => {
+    const before = listing(phys);
+    try {
+      return step();
+    } finally {
+      for (const rel of [...listing(phys)].filter((r) => !before.has(r)).sort()) note(rel);
+    }
+  };
+  try {
+  // 1. new fix opera
+  const fixIds = new Map<string, string>();
+  for (const cls of classes) {
+    const fix = fixOf.get(cls)!;
+    if (typeof fix === "string") {
+      fixIds.set(cls, fix);
+      continue;
+    }
+    const made = writing(() => newItem(root, { kind: "opus", collegium: fix.collegium, title: fix.title }));
+    if (!made.ok || made.id === undefined) throw new Error(`fix of "${cls}": ${made.message}`);
+    fixIds.set(cls, made.id);
+  }
+
+  // 2. one lesson per class
+  const lessons: { id: string; cls: string }[] = [];
+  for (const cls of classes) {
+    const mine = entries.filter((e) => e.cls === cls).sort((a, b) => (a.log === b.log ? a.n - b.n : a.log < b.log ? -1 : 1));
+    const evidence = [...new Set(mine.map((e) => e.log))].sort();
+    const body = mine.map((e) => `${e.log} #${e.n}: ${verdicts.findings.find((f) => f.log === e.log && f.n === e.n)!.text.slice(0, 200)}`);
+    const created = writing(() =>
+      createNextRecord(root, "lessons", "L", (candidate) =>
+      [
+        "---",
+        `id: ${JSON.stringify(candidate)}`,
+        `at: ${now.toISOString()}`,
+        `class: ${JSON.stringify(cls)}`,
+        `evidence: ${JSON.stringify(evidence)}`,
+        `opus: ${JSON.stringify(id)}`,
+        `severity: ${severity.get(cls)}`,
+        `addressed_by: ${JSON.stringify(fixIds.get(cls))}`,
+        "---",
+        ...body,
+        "",
+      ].join("\n"),
+      ),
+    );
+    lessons.push({ id: created.id, cls });
+  }
+
+  // 3. greenlight each high lesson's backlog fix, by the decision the setting names; no Patron timeline line
+  const started: { fix: string; decision: string }[] = [];
+  if (setting?.highGreenlitBy !== undefined) {
+    for (const cls of classes) {
+      const fix = fixIds.get(cls)!;
+      if (severity.get(cls) !== "high" || opusState(root, fix) !== "backlog") continue;
+      const fixPath = safeItemPath(join(root, "opera"), fix);
+      if (typeof fixPath !== "string") throw new Error(`opera: ${fixPath.error}`);
+      claim(relative(root, fixPath).split(sep).join("/"), constants.O_WRONLY);
+      editOpusFrontMatter(fixPath, (doc) => {
+        doc.setIn(["state"], "greenlit");
+        doc.setIn(["greenlit_by"], setting.highGreenlitBy);
+        return undefined;
+      });
+      if (existsSync(join(phys, EVENTS_LOG_REL))) claim(EVENTS_LOG_REL, constants.O_RDWR | constants.O_APPEND);
+      writing(() => emitEvent(root, manifest, "workflow.greenlight", now, { [WF.ITEM_ID]: fix, [WF.GREENLIGHT]: "granted" }));
+      started.push({ fix, decision: setting.highGreenlitBy });
+    }
+  }
+
+  // 4. last, the acta: its presence is what files the retro
+  const acta = [
+    "---",
+    "author: qa-lead",
+    "kind: decision",
+    `title: ${JSON.stringify(`Retro ${id}`)}`,
+    `at: ${now.toISOString()}`,
+    `opus: ${JSON.stringify(id)}`,
+    "---",
+    `# Retro ${id}`,
+    "",
+    "## Sources",
+    "",
+    ...(verdicts.sources.length ? verdicts.sources.map((s) => `- ${s}`) : ["- (none)"]),
+    "",
+    "## Lessons",
+    "",
+    ...(lessons.length ? lessons.map((l) => `- ${l.id}: ${l.cls}, severity ${severity.get(l.cls)}, fix ${fixIds.get(l.cls)}`) : ["- (none)"]),
+    "",
+    "## Not lessons",
+    "",
+    ...(entries.some((e) => e.notALesson !== undefined) ? entries.filter((e) => e.notALesson !== undefined).map((e) => `- ${e.log} #${e.n}: ${oneLine(e.notALesson!)}`) : ["- (none)"]),
+    "",
+    "## Fixes started",
+    "",
+    ...(started.length ? started.map((s) => `- ${s.fix}: greenlit by ${s.decision}`) : ["- (none)"]),
+    "",
+  ].join("\n");
+  const dir = realDir(root, "acta");
+  // exclusive create: an entry already there is an I/O failure and is left as it was
+  writing(() => {
+    mkdirSync(dir, { recursive: true });
+    realDir(root, "acta");
+    writeFileSync(join(dir, basename(actaPath)), acta, { flag: "wx" });
+  });
+  return { path: actaRel };
+  } catch (e) {
+    // every refusal was decided before this block: whatever fails from here is an I/O failure
+    throw new RetroIoError(written, e as NodeJS.ErrnoException);
+  }
+}
+
+/** Test-only fault injection: `afterOpen` runs once a path to be written is opened and recorded, before its bytes. */
+export const retroTestHooks: { afterOpen?: (rel: string) => void } = {};
+
+/** A failure in the write phase: names every path written in this run, in first-write order. */
+export class RetroIoError extends Error {
+  constructor(written: string[], cause: NodeJS.ErrnoException) {
+    super(`I/O failure after writing [${written.join(", ")}]; failing path ${cause.path ?? "(unknown)"}: ${cause.message}`);
+  }
+}
+
+/** The retro's output directories and what they hold, as officina-relative entries ("d/" for a directory). */
+function listing(phys: string): Set<string> {
+  const out = new Set<string>();
+  for (const d of ["opera", "lessons", "acta", ".bisellium"]) {
+    try {
+      if (!lstatSync(join(phys, d)).isDirectory()) continue;
+      out.add(`${d}/`);
+      for (const n of readdirSync(join(phys, d))) out.add(`${d}/${n}`);
+    } catch {
+      // absent
+    }
+  }
+  return out;
+}
+
+/** A physical officina directory, which must be a real directory (not a symlink) or absent: where the retro writes. */
+function realDir(root: string, name: string): string {
+  const dir = join(realpathSync(root), name);
+  try {
+    requireRealDirectory(dir);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`${name}: ${(e as Error).message}`);
+  }
+  return dir;
+}
+
+/** The event log a greenlight appends to: `.bisellium/` absent or a real directory, `events.jsonl` absent or a regular file (lstat; no permission check). */
+function eventLogProblem(root: string): void {
+  realDir(root, ".bisellium");
+  const log = join(realpathSync(root), EVENTS_LOG_REL);
+  try {
+    const stat = lstatSync(log);
+    if (!stat.isFile()) throw new Error(`${EVENTS_LOG_REL}: must be a regular file, not a symbolic link or directory`);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
+}
+
+/** An opus's state, or undefined when it is not an opus record. */
+function opusState(root: string, id: string): string | undefined {
+  const rec = readOpus(root, id);
+  return isRefusal(rec) || typeof rec["state"] !== "string" ? undefined : rec["state"];
+}
+
+// ---------------------------------------------------------------------------
 // Seam S1 — runRetro: self-parsing `bisellium retro`
 // ---------------------------------------------------------------------------
 
-const RETRO_USAGE = "usage: bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]";
+const RETRO_USAGE =
+  "usage: bisellium retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]";
 
 const EMPTY_INPUT: RetroInput = { verifierIssues: 0, reviewFindings: [], agents: [], tests: 0, fixRounds: 0, mutationsCaught: 0 };
 
@@ -525,15 +1050,17 @@ export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode:
     const eq = a.indexOf("=");
     const k = eq === -1 ? a : a.slice(0, eq);
     const inline = eq === -1 ? undefined : a.slice(eq + 1);
-    if (!["--cascade", "--from", "--studio", "--now"].includes(k)) { console.error(`flag ${k} not allowed for "retro"\n${RETRO_USAGE}`); return { exitCode: 2 }; }
+    if (!["--cascade", "--opus", "--from", "--studio", "--now"].includes(k)) { console.error(`flag ${k} not allowed for "retro"\n${RETRO_USAGE}`); return { exitCode: 2 }; }
     const v = inline ?? args[++i];
     if (v === undefined) { console.error(`${k} needs a value\n${RETRO_USAGE}`); return { exitCode: 2 }; }
     values.set(k, v);
   }
 
+  const opusId = values.get("--opus");
+  if (opusId !== undefined && (values.has("--cascade") || !values.has("--from"))) { console.error(`--opus excludes --cascade and requires --from\n${RETRO_USAGE}`); return { exitCode: 2 }; }
   const cascadeRaw = values.get("--cascade");
   const cascade = cascadeRaw !== undefined ? Number(cascadeRaw) : NaN;
-  if (!cascadeRaw || !Number.isFinite(cascade)) { console.error(RETRO_USAGE); return { exitCode: 2 }; }
+  if (opusId === undefined && (!cascadeRaw || !Number.isFinite(cascade))) { console.error(RETRO_USAGE); return { exitCode: 2 }; }
 
   const studio = resolve(values.get("--studio") ?? ".");
   if (!existsSync(join(studio, "bisellium.yml"))) { console.error(`${studio}: not a studio`); return { exitCode: 2 }; }
@@ -543,6 +1070,17 @@ export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode:
     const parsed = new Date(values.get("--now")!);
     if (Number.isNaN(parsed.getTime())) { console.error("--now must be an ISO date"); return { exitCode: 2 }; }
     now = parsed;
+  }
+
+  if (opusId !== undefined) {
+    try {
+      const triage: unknown = JSON.parse(readFileSync(resolve(values.get("--from")!), "utf8"));
+      console.log(draftOpusRetro(studio, opusId, triage, now).path);
+      return { exitCode: 0 };
+    } catch (e) {
+      console.error(oneLine((e as Error).message));
+      return { exitCode: e instanceof RetroIoError ? 1 : 2 };
+    }
   }
 
   let input: RetroInput = EMPTY_INPUT;

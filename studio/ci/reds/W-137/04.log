@@ -1,0 +1,55 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-137-b4 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-06T13:52:25.326Z
+# sella: builder.W-137
+# tree: tree:a8b0181b477fc16575ef09465fc6de07767e3b91
+
+TAP version 13
+# Subtest: W-137-b4 behaviour 4: next names the retro after done and holds every new start until it is filed
+not ok 1 - W-137-b4 behaviour 4: next names the retro after done and holds every new start until it is filed
+  ---
+  duration_ms: 3359.52656
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-137/packages/cli/src/next.test.ts:105:113'
+  failureType: 'testCodeFailure'
+  error: |-
+    a done opus whose retro is owed names the retro
+    --- exit 0
+    --- stdout
+    next: W-900 checkpoint named
+    actor: producer
+    why: W-900 is done on the trunk; the commit that made it done did not change docs/SESSION-HANDOFF.md
+    command: update docs/SESSION-HANDOFF.md, the progress row and the masthead for W-900, then republish
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 checkpoint named'
+    - 'next: W-900 retro named'
+                   ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 retro named'
+  actual: 'next: W-900 checkpoint named'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-137/packages/cli/src/next.test.ts:737:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-137/packages/cli/src/next.test.ts:3064:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3377.37038

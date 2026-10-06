@@ -21,6 +21,7 @@ import {
 import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
+import { owedRetros } from "./retro.js";
 import { checkProcess } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
 import { checkInstructions } from "./rules/instructions.js";
@@ -321,6 +322,11 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   };
   if (briefLimitRaw !== undefined && briefLimit === undefined)
     add("manifest.shape", "block", "bisellium.yml#brief_behaviour_limit", "brief_behaviour_limit must be a positive integer");
+  // W-137: the `retro` setting is validated by its one reader, `owedRetros`; a refusal is a shape block.
+  if (m["retro"] !== undefined) {
+    const owed = owedRetros(root);
+    if ("error" in owed) add("manifest.shape", "block", "bisellium.yml#retro", owed.error);
+  }
   if (wipLimit === undefined) add("wip.declared", "advise", "bisellium.yml", "no wip_limit — WIP is unbounded");
 
   // integration: optional (D-015) — how an opus branch reaches the trunk is

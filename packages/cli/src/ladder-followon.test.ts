@@ -428,7 +428,7 @@ if (runs(5)) {
 // 6. the checkpoint rung reads the done commit, not a heading (W-141)
 // ---------------------------------------------------------------------------
 const checkpoint = (handoff: string | undefined, checkpointed: boolean): ReturnType<typeof deriveNext> =>
-  deriveNext({ id: "W-900", trunkRecord: { state: "done" }, handoff, checkpointed: () => checkpointed } as unknown as Facts);
+  deriveNext({ id: "W-900", trunkRecord: { state: "done" }, handoff, checkpointed: () => checkpointed, owed: () => ({ owed: [] }) } as unknown as Facts);
 
 if (runs(6)) {
   test("W-128 behaviour 6: the checkpoint rung reads whether the done commit changed the handoff", () => {
