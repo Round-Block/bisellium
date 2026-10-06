@@ -259,6 +259,7 @@ export function sourceFilesCD(root: string): string[] {
 }
 
 const FS_MODULES = new Set(["fs", "node:fs", "fs/promises", "node:fs/promises"]);
+const MODULE_MODULES = new Set(["module", "node:module"]);
 const RAW_FS = new Set([
   "readFileSync", "readFile", "openSync", "open", "createReadStream",
   "writeFileSync", "writeFile", "appendFileSync", "appendFile", "createWriteStream",
@@ -282,6 +283,24 @@ interface CDScan {
 }
 
 const CONTAINMENT_HELPERS = new Set(["requireRealDirectory", "ensureRealDirectory", "readContainedRegularFile", "createNextRecord"]);
+
+// What a name can be bound to: the fs module, `Date`, the global object (whose `.Date` is `Date`), or node:module.
+type Kind = "fs" | "date" | "global" | "mod";
+/** The kind of `<kind>.<name>` when it is itself a namespace (fs.promises, fs.default, globalThis.Date); else undefined. */
+const memberKind = (kind: Kind, name: string): Kind | undefined =>
+  kind === "fs" && (name === "promises" || name === "default") ? "fs" : kind === "global" && name === "Date" ? "date" : undefined;
+const WRAPPERS = (n: ts.Node): n is ts.ParenthesizedExpression | ts.AsExpression | ts.NonNullExpression | ts.SatisfiesExpression | ts.TypeAssertion =>
+  ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n) || ts.isTypeAssertionExpression(n);
+const unwrap = (n: ts.Node): ts.Node => (WRAPPERS(n) ? unwrap(n.expression) : n);
+/** The member a property or element access names: its name, a string literal key, or undefined for any other key. */
+const memberOf = (n: ts.PropertyAccessExpression | ts.ElementAccessExpression): string | undefined =>
+  ts.isPropertyAccessExpression(n) ? n.name.text : ts.isStringLiteralLike(n.argumentExpression) ? n.argumentExpression.text : undefined;
+/** An identifier that declares or names something (a binding, a property key, a member) rather than reading a binding. */
+function isNamePosition(id: ts.Identifier): boolean {
+  const p = id.parent as ts.Node & { name?: ts.Node; propertyName?: ts.Node };
+  if (ts.isShorthandPropertyAssignment(p) || ts.isExportSpecifier(p)) return false; // `{ x }` and `export { x }` read x
+  return p.name === id || p.propertyName === id || (ts.isQualifiedName(p) && p.right === id);
+}
 
 function scanCD(root: string, rels: string[]): CDScan {
   const options: ts.CompilerOptions = {
@@ -308,77 +327,162 @@ function scanCD(root: string, rels: string[]): CDScan {
     // parseDiagnostics is internal API but is the one honest "does it parse" answer.
     const diags = (sf as unknown as { parseDiagnostics?: readonly ts.Diagnostic[] }).parseDiagnostics ?? [];
     if (diags.length) out.outOfDomain.push(`${rel}: parse error`);
-    const named = new Map<string, string>(); // local name -> fs function name
-    const spaces = new Set<string>(); // local names that are the fs module (or fs.promises)
+
+    // Every binding in the file that refers to the fs module, `Date`, the global object or node:module — by name, ignoring
+    // scope (a shadowing name is a false alarm, never a miss). `ns` holds whole namespaces; `named` holds one member
+    // bound on its own (`const { readFileSync } = fs`, `import { open }`); `pending` holds the destructuring keys whose
+    // name is not a literal; `targets` holds assignment-pattern identifiers, which write a binding rather than read it.
+    const ns = new Map<string, Kind>([["Date", "date"], ["globalThis", "global"], ["global", "global"], ["window", "global"], ["self", "global"]]);
+    const named = new Map<string, { kind: Kind; name: string }>();
+    const pending = new Map<ts.Node, Kind>();
+    const targets = new Set<ts.Node>();
+    const kindOf = (e: ts.Node): Kind | undefined => {
+      const x = unwrap(e);
+      if (ts.isIdentifier(x)) return ns.get(x.text);
+      if (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) {
+        const base = kindOf(x.expression);
+        const name = memberOf(x);
+        return base !== undefined && name !== undefined ? memberKind(base, name) : undefined;
+      }
+      return undefined;
+    };
+    const bindMember = (rest: boolean, key: ts.Node, local: ts.Node, kind: Kind, at: ts.Node, assign: boolean): void => {
+      if (rest) return bind(local, kind, assign); // `...rest` of a namespace is a namespace
+      const name = ts.isIdentifier(key) || ts.isStringLiteralLike(key) ? key.text : ts.isComputedPropertyName(key) && ts.isStringLiteralLike(key.expression) ? key.expression.text : undefined;
+      if (name === undefined) {
+        pending.set(at, kind);
+        return;
+      }
+      const inner = memberKind(kind, name);
+      if (inner !== undefined) bind(local, inner, assign);
+      else if (ts.isIdentifier(local)) {
+        named.set(local.text, { kind, name });
+        if (assign) targets.add(local);
+      }
+    };
+    function bind(target: ts.Node, kind: Kind, assign: boolean): void {
+      if (ts.isIdentifier(target)) ns.set(target.text, kind);
+      else if (ts.isObjectBindingPattern(target)) for (const el of target.elements) bindMember(el.dotDotDotToken !== undefined, el.propertyName ?? el.name, el.name, kind, el, assign);
+      else if (ts.isObjectLiteralExpression(target))
+        for (const p of target.properties) {
+          if (ts.isSpreadAssignment(p)) bind(p.expression, kind, true);
+          else if (ts.isShorthandPropertyAssignment(p)) bindMember(false, p.name, p.name, kind, p, true);
+          else if (ts.isPropertyAssignment(p)) bindMember(false, p.name, p.initializer, kind, p, true);
+        }
+    }
     for (const st of sf.statements) {
-      if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier) && FS_MODULES.has(st.moduleSpecifier.text)) {
+      if (ts.isImportDeclaration(st) && ts.isStringLiteral(st.moduleSpecifier)) {
+        const m = st.moduleSpecifier.text;
+        const kind: Kind | undefined = FS_MODULES.has(m) ? "fs" : MODULE_MODULES.has(m) ? "mod" : undefined;
         const c = st.importClause;
-        if (!c) continue;
-        if (c.name) spaces.add(c.name.text);
+        if (kind === undefined || !c) continue;
+        if (c.name) ns.set(c.name.text, kind);
         const nb = c.namedBindings;
-        if (nb && ts.isNamespaceImport(nb)) spaces.add(nb.name.text);
+        if (nb && ts.isNamespaceImport(nb)) ns.set(nb.name.text, kind);
         if (nb && ts.isNamedImports(nb))
           for (const el of nb.elements) {
             const imported = (el.propertyName ?? el.name).text;
-            if (imported === "promises") spaces.add(el.name.text);
-            else named.set(el.name.text, imported);
+            const inner = imported === "default" ? kind : memberKind(kind, imported);
+            if (inner !== undefined) ns.set(el.name.text, inner);
+            else named.set(el.name.text, { kind, name: imported });
           }
       }
-      if (ts.isExportDeclaration(st) && st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier) && FS_MODULES.has(st.moduleSpecifier.text))
+      if (ts.isExportDeclaration(st) && st.moduleSpecifier && ts.isStringLiteral(st.moduleSpecifier) && (FS_MODULES.has(st.moduleSpecifier.text) || MODULE_MODULES.has(st.moduleSpecifier.text)))
         out.outOfDomain.push(`${rel}: export from ${st.moduleSpecifier.text}`);
-      if (ts.isImportEqualsDeclaration(st) && ts.isExternalModuleReference(st.moduleReference) && ts.isStringLiteral(st.moduleReference.expression) && FS_MODULES.has(st.moduleReference.expression.text))
+      if (ts.isImportEqualsDeclaration(st) && ts.isExternalModuleReference(st.moduleReference) && ts.isStringLiteral(st.moduleReference.expression) && (FS_MODULES.has(st.moduleReference.expression.text) || MODULE_MODULES.has(st.moduleReference.expression.text)))
         out.outOfDomain.push(`${rel}: import = require(${st.moduleReference.expression.text})`);
     }
+    // aliases and destructuring, to a fixed point: `const g = fs`, `g = fs`, `const { readFile } = g.promises`, `({ rm } = fs)`
+    const collect = (n: ts.Node): void => {
+      if (ts.isVariableDeclaration(n) && n.initializer) {
+        const k = kindOf(n.initializer);
+        if (k !== undefined) bind(n.name, k, false);
+      } else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+        const k = kindOf(n.right);
+        if (k !== undefined) bind(unwrap(n.left), k, true);
+      }
+      ts.forEachChild(n, collect);
+    };
+    for (let size = -1; size !== ns.size + named.size + pending.size; ) {
+      size = ns.size + named.size + pending.size;
+      collect(sf);
+    }
+
+    /** True when this read of an fs/Date expression is one the scan can see through; anything else lets it escape. */
+    const readsSeen = (e: ts.Node, kind: Kind): boolean => {
+      let top: ts.Node = e;
+      while (top.parent && WRAPPERS(top.parent) && top.parent.expression === top) top = top.parent;
+      const p = top.parent;
+      if (ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) return p.expression === top;
+      if (ts.isVariableDeclaration(p)) return p.initializer === top; // an alias: bound above
+      if (ts.isBinaryExpression(p)) {
+        const op = p.operatorToken.kind;
+        return (op === ts.SyntaxKind.EqualsToken && (p.right === top || p.left === top)) || (kind === "date" && op === ts.SyntaxKind.InstanceOfKeyword && p.right === top);
+      }
+      if (kind === "date" && (ts.isNewExpression(p) || ts.isCallExpression(p))) return p.expression === top;
+      return ts.isTypeOfExpression(p) || ts.isQualifiedName(p) || ts.isTypeNode(p);
+    };
+
+    const escapes = new Set<string>();
     const counts = new Map<string, number>();
     const nth = (k: string): number => {
       const n = (counts.get(k) ?? 0) + 1;
       counts.set(k, n);
       return n;
     };
+    const site = (list: Site[], tag: "C" | "D", n: ts.Node, what: string): void => {
+      const fn = enclosingFunctionName(n);
+      list.push({ key: `${rel}:${fn}:${what}#${nth(`${tag}:${fn}:${what}`)}`, rel, fn });
+    };
     const visit = (n: ts.Node): void => {
-      // inventory D: every use of a raw fs function bound from a static import — a call, or the name passed on or aliased
-      {
-        let fsName: string | undefined;
-        if (ts.isIdentifier(n) && named.has(n.text) && !ts.isImportSpecifier(n.parent) && !((ts.isPropertyAccessExpression(n.parent) || ts.isPropertyAssignment(n.parent) || ts.isPropertySignature(n.parent)) && n.parent.name === n))
-          fsName = named.get(n.text);
-        else if (ts.isPropertyAccessExpression(n)) {
-          const target = n.expression;
-          if (ts.isIdentifier(target) && spaces.has(target.text)) fsName = n.name.text;
-          else if (ts.isPropertyAccessExpression(target) && target.name.text === "promises" && ts.isIdentifier(target.expression) && spaces.has(target.expression.text)) fsName = n.name.text;
-        }
-        if (fsName !== undefined && RAW_FS.has(fsName)) {
-          const fn = enclosingFunctionName(n);
-          out.d.push({ key: `${rel}:${fn}:${fsName}#${nth(`D:${fn}:${fsName}`)}`, rel, fn });
-        }
+      // a member of a bound namespace: a raw fs function, Date.parse, or any member named by a non-literal key (fail closed)
+      if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) {
+        const base = kindOf(n.expression);
+        const name = memberOf(n);
+        if (base === "fs" && (name === undefined || RAW_FS.has(name))) site(out.d, "D", n, name ?? "<computed>");
+        if (base === "date" && (name === undefined || name === "parse")) site(out.c, "C", n, name === undefined ? "Date.<computed>" : "Date.parse");
+        if (base === "mod" && name === undefined) out.outOfDomain.push(`${rel}: computed member of node:module`);
+      }
+      // a destructuring key that is not a literal, on a bound namespace
+      const kind = pending.get(n);
+      if (kind === "fs") site(out.d, "D", n, "<computed>");
+      if (kind === "date") site(out.c, "C", n, "Date.<computed>");
+      if (kind === "mod") out.outOfDomain.push(`${rel}: computed member of node:module`);
+      if (ts.isIdentifier(n) || ts.isStringLiteralLike(n)) {
+        // the only ways to reach fs that no import shows: a require function or the builtin loader
+        if (n.text === "createRequire" || n.text === "getBuiltinModule") out.outOfDomain.push(`${rel}: ${n.text}`);
+      }
+      const reads = ts.isIdentifier(n) ? !isNamePosition(n) && !targets.has(n) : ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n);
+      if (reads) {
+        // a member bound on its own, used: a call, or the name passed on or aliased
+        const one = ts.isIdentifier(n) ? named.get(n.text) : undefined;
+        if (one?.kind === "fs" && RAW_FS.has(one.name)) site(out.d, "D", n, one.name);
+        if (one?.kind === "date" && one.name === "parse") site(out.c, "C", n, "Date.parse");
+        // a whole fs module or Date handed on, where the scan can no longer follow it
+        const k = kindOf(n);
+        if ((k === "fs" || k === "date") && !readsSeen(n, k)) escapes.add(`${rel}:${enclosingFunctionName(n)}: ${k === "fs" ? "the fs module" : "Date"} is used where the scan cannot follow it`);
       }
       if (ts.isCallExpression(n)) {
         const callee = n.expression;
         const arg0 = n.arguments[0];
-        if (ts.isIdentifier(callee) && callee.text === "require" && arg0 && ts.isStringLiteralLike(arg0) && FS_MODULES.has(arg0.text)) out.outOfDomain.push(`${rel}: require(${arg0.text})`);
-        if (callee.kind === ts.SyntaxKind.ImportKeyword && arg0 && ts.isStringLiteralLike(arg0) && FS_MODULES.has(arg0.text)) out.outOfDomain.push(`${rel}: import(${arg0.text})`);
-        if (ts.isIdentifier(callee) && callee.text === "createRequire") out.outOfDomain.push(`${rel}: createRequire`);
+        const literal = arg0 !== undefined && ts.isStringLiteralLike(arg0);
+        if (ts.isIdentifier(callee) && callee.text === "require" && (!literal || FS_MODULES.has(arg0.text))) out.outOfDomain.push(`${rel}: require(${literal ? arg0.text : "…"})`);
+        if (callee.kind === ts.SyntaxKind.ImportKeyword && (!literal || FS_MODULES.has(arg0.text))) out.outOfDomain.push(`${rel}: import(${literal ? arg0.text : "…"})`);
         // helper callers
         const calleeName = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : "";
         if (CONTAINMENT_HELPERS.has(calleeName)) out.helperCallers.add(`${rel}:${enclosingFunctionName(n)}`);
-        // inventory C: Date.parse
-        if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === "Date" && callee.name.text === "parse") {
-          const fn = enclosingFunctionName(n);
-          out.c.push({ key: `${rel}:${fn}:Date.parse#${nth(`C:${fn}:Date.parse`)}`, rel, fn });
-        }
       }
-      if (ts.isNewExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "Date" && n.arguments?.length === 1) {
+      if (ts.isNewExpression(n) && kindOf(n.expression) === "date" && n.arguments?.length === 1) {
         const a = n.arguments[0]!;
         const literal = ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a);
         const ty = checker.getTypeAtLocation(a);
         const safe = !!(ty.flags & ts.TypeFlags.NumberLike) || checker.typeToString(ty) === "Date";
-        if (!literal && !safe) {
-          const fn = enclosingFunctionName(n);
-          out.c.push({ key: `${rel}:${fn}:new Date#${nth(`C:${fn}:new Date`)}`, rel, fn });
-        }
+        if (!literal && !safe) site(out.c, "C", n, "new Date");
       }
       ts.forEachChild(n, visit);
     };
     visit(sf);
+    out.outOfDomain.push(...escapes);
   }
   return out;
 }
@@ -726,11 +830,10 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/cli/src/next.ts:log:appendFileSync#1", disposition: "outside", why: "appends to the step output file under .bisellium/" },
   { key: "packages/cli/src/next.ts:runNext:readFileSync#2", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
   { key: "packages/cli/src/next.ts:runNext:unlinkSync#1", disposition: "outside", why: "reads, appends to and removes the step marker and its output under .bisellium/" },
-  { key: "packages/cli/src/prune.ts:walk:readFileSync#1", disposition: "guarded", why: "a root-level entry from a withFileTypes listing: isFile() is an lstat answer, so a symlink is never read; every nested file goes through readContainedRegularFile" },
   { key: "packages/cli/src/prune.ts:pruneCiLogs:unlinkSync#1", disposition: "contained", why: "the log was just read through readContainedRegularFile, which refuses a symlink and an escape; its absolute path is what is unlinked" },
   { key: "packages/cli/src/retro.ts:draftRetro:writeFileSync#1", disposition: "contained", why: "acta/<date>-retro-<n>.md in a real acta/ checked by ensureRealDirectory before the write" },
   { key: "packages/cli/src/retro.ts:readRetroSetting:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (bisellium.yml)" },
-  { key: "packages/cli/src/retro.ts:claim:openSync#1", disposition: "guarded", why: "the write phase of draftOpusRetro: realDir() (requireRealDirectory on the real root) checked opera/, lessons/ and acta/ before the first write, and O_NOFOLLOW refuses a symlinked last component" },
+  { key: "packages/cli/src/retro.ts:claim:openSync#1", disposition: "contained", why: "a write-capable probe open of opera/<fix>.md or .bisellium/events.jsonl, after requireRealDirectory on its parent; O_NOFOLLOW refuses a symlinked last component, and the bytes go through editOpusFrontMatter and emitEvent" },
   { key: "packages/cli/src/retro.ts:draftOpusRetro:writeFileSync#1", disposition: "contained", why: "acta/<date>-retro-<id>.md in a real acta/ checked by ensureRealDirectory, exclusive create" },
   { key: "packages/cli/src/retro.ts:runRetro:readFileSync#1", disposition: "outside", why: "reads the user-named --from file" },
   { key: "packages/cli/src/retro.ts:runRetro:readFileSync#2", disposition: "outside", why: "reads the user-named --from file" },
@@ -776,9 +879,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/probe.ts:probeBattery:writeFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json) and its .tmp sibling, atomic rename" },
   { key: "packages/commands/src/probe.ts:probeBattery:renameSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json) and its .tmp sibling, atomic rename" },
   { key: "packages/commands/src/probe.ts:readModelsRecord:readFileSync#1", disposition: "listed", why: "a fixed-name file at the officina root, not built from an id, a listed name or a flag (models.json)" },
-  { key: "packages/commands/src/talk.ts:readSession:readFileSync#1", disposition: "listed", why: "sessions/<sella>.json, the sella's resumable session id: local state, not in the bright line's directory list; follow-on: read it through readContainedRegularFile" },
-  { key: "packages/commands/src/talk.ts:writeSession:mkdirSync#1", disposition: "listed", why: "sessions/<sella>.json: local state, not in the bright line's directory list; follow-on: ensureRealDirectory(root, \"sessions\")" },
-  { key: "packages/commands/src/talk.ts:writeSession:writeFileSync#1", disposition: "listed", why: "sessions/<sella>.json: local state, not in the bright line's directory list; follow-on: ensureRealDirectory(root, \"sessions\")" },
+  { key: "packages/commands/src/talk.ts:writeSession:openSync#1", disposition: "contained", why: "sessions/<sella>.json in a real sessions/ made by ensureRealDirectory, opened with O_NOFOLLOW; talk refuses a symlinked sessions/ or session file before the turn is spent" },
+  { key: "packages/commands/src/talk.ts:writeSession:writeFileSync#1", disposition: "contained", why: "sessions/<sella>.json in a real sessions/ made by ensureRealDirectory, opened with O_NOFOLLOW; talk refuses a symlinked sessions/ or session file before the turn is spent" },
   { key: "packages/commands/src/talk.ts:appendTimeline:appendFileSync#1", disposition: "contained", why: "timeline/<sella>.jsonl in a real timeline/ checked by ensureRealDirectory" },
   { key: "packages/commands/src/talk.ts:writeActum:writeFileSync#1", disposition: "contained", why: "acta/<date>-<slug>.md in a real acta/ checked by ensureRealDirectory" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#1", disposition: "outside", why: "reads the user-named --from findings file" },
@@ -991,7 +1093,21 @@ checkW(
   }),
 );
 checkW("every why is non-empty", allPins.every((p) => p.why.trim().length > 0));
-checkW("no out-of-domain fs binding", scanCD_.outOfDomain.length === 0, JSON.stringify(scanCD_.outOfDomain));
+// A whole fs module handed on is a form the scan cannot follow, so it fails closed. These are the reviewed exceptions: each
+// must still be found (a stale one fails) and nothing else may be (a new one fails).
+const PINNED_ESCAPES: { key: string; why: string }[] = [
+  {
+    key: "scripts/record-reads.mjs:<module>: the fs module is used where the scan cannot follow it",
+    why: "dev tooling: the read-tracing preload (W-139) patches fs and fs.promises with logging wrappers that call the originals with the traced process's own paths; it opens no officina path itself",
+  },
+];
+{
+  const pinnedEscapes = PINNED_ESCAPES.map((e) => e.key);
+  const unexpected = scanCD_.outOfDomain.filter((o) => !pinnedEscapes.includes(o));
+  const stale = pinnedEscapes.filter((k) => !scanCD_.outOfDomain.includes(k));
+  checkW("no out-of-domain fs binding", unexpected.length === 0 && stale.length === 0, JSON.stringify({ unexpected, stale }));
+  checkW("every pinned escape has a why", PINNED_ESCAPES.every((e) => e.why.trim().length > 0));
+}
 
 // One node:test row so `--test-name-pattern=W-163-b6` yields an assertion-level TAP line.
 test("W-163-b6 behaviour 6: the census lists every raw date parse and raw file access, and a new one fails the build", () => {
@@ -1110,10 +1226,12 @@ for (const name of [
 test("W-163-b6 round 2: ordinary Date and fs uses stay out of the scan", () => {
   assert.deepEqual(fixtureSites("ok-control"), { d: [], c: [], out: [] });
 });
-test("W-163-b6 round 2: the bright line's two raw reads are contained pins", () => {
+test("W-163-b6 round 2: the bright line's two raw reads left the pins and the session write is a contained pin", () => {
   const pin = (key: string): string | undefined => PINNED_D.find((p) => p.key === key)?.disposition;
-  assert.equal(pin("packages/cli/src/prune.ts:walk:readFileSync#1"), "contained");
-  assert.equal(pin("packages/commands/src/talk.ts:readSession:readFileSync#1"), "contained");
+  assert.equal(pin("packages/cli/src/prune.ts:walk:readFileSync#1"), undefined, "prune's walk reads through readContainedRegularFile");
+  assert.equal(pin("packages/commands/src/talk.ts:readSession:readFileSync#1"), undefined, "talk's readSession reads through readContainedRegularFile");
+  assert.equal(pin("packages/commands/src/talk.ts:writeSession:mkdirSync#1"), undefined, "talk's writeSession makes sessions/ through ensureRealDirectory");
+  assert.equal(pin("packages/commands/src/talk.ts:writeSession:openSync#1"), "contained");
   assert.equal(pin("packages/commands/src/talk.ts:writeSession:writeFileSync#1"), "contained");
 });
 

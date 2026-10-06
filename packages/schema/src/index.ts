@@ -361,7 +361,9 @@ export function instant(v: unknown): Date | undefined {
   if (!m) return undefined;
   const [y, mo, d, h, mi, sec] = [m[1], m[2], m[3], m[4] ?? "0", m[5] ?? "0", m[6] ?? "0"].map(Number) as [number, number, number, number, number, number];
   const ms = Number((m[7] ?? "0").padEnd(3, "0").slice(0, 3));
-  const t = new Date(Date.UTC(y, mo - 1, d, h, mi, sec, ms));
+  // Date.UTC maps years 0-99 to 1900-1999, so the date fields go in through setUTCFullYear, which does not
+  const t = new Date(Date.UTC(2000, 0, 1, h, mi, sec, ms));
+  t.setUTCFullYear(y, mo - 1, d);
   // round trip: the parsed fields must reproduce what was written (no JS normalisation)
   if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d || t.getUTCHours() !== h || t.getUTCMinutes() !== mi || t.getUTCSeconds() !== sec) return undefined;
   const z = m[8];

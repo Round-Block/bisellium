@@ -17,14 +17,15 @@
  * 3 the harness reported a usage/rate limit (posture "limited") · anything
  * else the harness's own turn.exitCode, relayed as-is.
  */
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { appendFileSync, closeSync, constants, existsSync, lstatSync, openSync, realpathSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { filterEnv, HARNESS_PROFILES, makeSessionId, redact, writeReceiptEnd, writeReceiptStart, type HarnessProfile, type Turn } from "@bisellium/shim";
 import { answer } from "./query.js";
 import { buildContext } from "./context.js";
 import { pauseWarning } from "./pause.js";
-import { createNextRecord, ensureRealDirectory } from "@bisellium/commands/ids.js";
+import { createNextRecord, ensureRealDirectory, requireRealDirectory } from "@bisellium/commands/ids.js";
+import { readContainedRegularFile } from "./opus-model.js";
 import { instant } from "@bisellium/schema";
 
 export interface RunTalkOptions {
@@ -104,16 +105,34 @@ interface SessionRecord {
   turns: number;
 }
 
-function sessionPathFor(root: string, sella: string): string {
-  return join(root, "sessions", `${sella}.json`);
+/** The session file's own name, relative to the officina root. */
+const sessionRel = (sella: string): string => `sessions/${sella}.json`;
+
+/** A refusal, before any turn is spent, when `sessions/` or `sessions/<sella>.json` is a symlink: a write there lands
+ *  outside the officina. A missing directory or file is fine (nothing to refuse yet). */
+function sessionRefusal(root: string, sella: string): string | undefined {
+  const refusal = `${sella}: ${sessionRel(sella)} must be a regular file in a real sessions/ directory, not a symlink`;
+  const dir = join(realpathSync(root), "sessions");
+  try {
+    requireRealDirectory(dir);
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "ENOENT" ? undefined : refusal;
+  }
+  try {
+    return lstatSync(join(dir, `${sella}.json`)).isSymbolicLink() ? refusal : undefined;
+  } catch {
+    return undefined; // no session file yet
+  }
 }
 
 /** A record with no valid (non-empty string) sessionId can't be resumed —
  *  ignore it entirely (as if there were no session file at all) rather than
  *  ever resuming against "" or null. */
-function readSession(path: string): (SessionRecord & { sessionId: string }) | undefined {
+function readSession(root: string, sella: string): (SessionRecord & { sessionId: string }) | undefined {
+  const file = readContainedRegularFile(root, sessionRel(sella), "sessions");
+  if ("error" in file) return undefined;
   try {
-    const v: unknown = JSON.parse(readFileSync(path, "utf8"));
+    const v: unknown = JSON.parse(file.bytes.toString("utf8"));
     if (typeof v !== "object" || v === null) return undefined;
     const r = v as Partial<SessionRecord>;
     if (typeof r.harness !== "string") return undefined;
@@ -130,9 +149,15 @@ function readSession(path: string): (SessionRecord & { sessionId: string }) | un
   }
 }
 
-function writeSession(path: string, rec: SessionRecord): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify(rec, null, 2) + "\n");
+function writeSession(root: string, sella: string, rec: SessionRecord): void {
+  const path = join(ensureRealDirectory(root, "sessions"), `${sella}.json`);
+  // O_NOFOLLOW: a symlink that appears at the last component after sessionRefusal's check is refused, not followed
+  const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o666);
+  try {
+    writeFileSync(fd, JSON.stringify(rec, null, 2) + "\n");
+  } finally {
+    closeSync(fd);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -383,8 +408,9 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   const systemPrompt = bundle.text;
 
   // 4. Start or resume, in the studio root (worktrees are for `run`, not `talk`).
-  const sessPath = sessionPathFor(root, sella);
-  const existing = readSession(sessPath);
+  const refusal = sessionRefusal(root, sella);
+  if (refusal !== undefined) return { ok: false, exitCode: 2, message: refusal };
+  const existing = readSession(root, sella);
   // Same secret-shaped-env stripping packages/pipeline gives an untrusted
   // probatio command — a harness subprocess is no more trusted with the
   // parent process's credentials than one is.
@@ -448,7 +474,7 @@ async function performTalk(params: PerformTalkParams): Promise<PerformTalkOutcom
   // resumed against — treat it as a fresh start (sessionId: null) rather
   // than silently writing/resuming "".
   const hasValidSessionId = typeof turn.sessionId === "string" && turn.sessionId.length > 0;
-  writeSession(sessPath, {
+  writeSession(root, sella, {
     harness: harnessId,
     sessionId: hasValidSessionId ? turn.sessionId : null,
     startedAt: sameHarness ? existing.startedAt || now.toISOString() : now.toISOString(),

@@ -61,10 +61,9 @@ export interface TalkCallResult {
 export type TalkFn = (opts: TalkCallOptions) => Promise<TalkCallResult>;
 
 async function loadRealTalkOnce(): Promise<TalkFn> {
-  const specifier = "./talk.js";
   let mod: { talkOnce?: unknown };
   try {
-    mod = (await import(specifier)) as { talkOnce?: unknown };
+    mod = (await import("./talk.js")) as { talkOnce?: unknown };
   } catch (e) {
     throw new Error(`tick: daily acta due but ./talk.js is unavailable: ${(e as Error).message}`);
   }

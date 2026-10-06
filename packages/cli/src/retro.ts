@@ -13,7 +13,7 @@
  * run/verify/talk/tick/new today.
  */
 import { closeSync, constants, existsSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
-import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
 import { EVENTS_LOG_REL } from "@bisellium/core";
@@ -855,6 +855,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   // An existing file this run changes counts as written once it opens for writing, before any byte goes in. The probe
   // open uses the flags the writer will use, so a permission refusal surfaces here and is not recorded.
   const claim = (rel: string, flags: number): void => {
+    requireRealDirectory(dirname(join(phys, rel))); // no symlink in any parent: the open below refuses only the last component
     closeSync(openSync(join(phys, rel), flags | constants.O_NOFOLLOW));
     note(rel);
     retroTestHooks.afterOpen?.(rel);
