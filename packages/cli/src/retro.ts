@@ -12,15 +12,17 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { accessSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
+import { EVENTS_LOG_REL } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
 import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
 import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { VERDICT_HEADERS } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
 import { RULE_IDS } from "./rules/ids.js";
@@ -530,6 +532,8 @@ const OPUS_ID = /^W-[0-9]+$/;
 const LOG_MAX_BYTES = 4_000_000;
 // the whole raw line: no carriage return and no comment marker anywhere in it
 const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b(?![^]*(?:\r|<!--|-->))/i;
+// a header line is one of the names the verdict writer emits, its value raw
+const HEADER_LINE = new RegExp(`^# (${VERDICT_HEADERS.join("|")}): (.*)$`);
 const CLASS_RE = /^[a-z][a-z0-9-]*×\S+$/;
 
 interface RecordedFinding {
@@ -560,14 +564,14 @@ function readVerdictLog(root: string, id: string, rel: string): { findings: Reco
   if (split === -1) return { error: `${rel}: no blank line ends the header block` };
   const headers = new Map<string, string[]>();
   for (const line of lines.slice(0, split)) {
-    const m = /^# ([a-z_]+): (.*)$/.exec(line);
-    if (!m) return { error: `${rel}: header line out of domain (want "# key: value"): ${line.slice(0, 60)}` };
+    const m = HEADER_LINE.exec(line);
+    if (!m) return { error: `${rel}: header line out of domain (want "# <a verdict header>: value"): ${line.slice(0, 60)}` };
     headers.set(m[1]!, [...(headers.get(m[1]!) ?? []), m[2]!]);
   }
   const body = lines.slice(split + 1);
   const stray = body.find((l) => /^# [a-z_]+: /.test(l));
   if (stray !== undefined) return { error: `${rel}: a header line outside the header block: ${stray.slice(0, 60)}` };
-  if (headers.get("opus")?.length !== 1 || headers.get("opus")![0]!.trim() !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
+  if (headers.get("opus")?.length !== 1 || headers.get("opus")![0] !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
   const at = body.reduce<number[]>((n, l, i) => (l === "## Findings" ? [...n, i] : n), []);
   if (at.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${at.length}` };
   const rest = body.slice(at[0]! + 1);
@@ -841,6 +845,8 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   // output is no entry at all (lstat: a dangling symlink is one). The other outputs are allocated by exclusive create
   // inside those directories (fix opera, lessons) or are appends to existing records (greenlit fix, event log).
   for (const dir of ["opera", "lessons", "acta"]) realDir(root, dir);
+  const greenlights = setting?.highGreenlitBy !== undefined && classes.some((cls) => severity.get(cls) === "high" && (typeof fixOf.get(cls) !== "string" || startable(fixOf.get(cls)!)));
+  if (greenlights) eventLogProblem(root);
   try {
     lstatSync(join(realDir(root, "acta"), basename(actaPath)));
     throw new Error(`${actaRel} already exists`);
@@ -947,6 +953,19 @@ function realDir(root: string, name: string): string {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`${name}: ${(e as Error).message}`);
   }
   return dir;
+}
+
+/** The event log a greenlight appends to: `.bisellium/` absent or a real directory, `events.jsonl` absent or a writable regular file. */
+function eventLogProblem(root: string): void {
+  realDir(root, ".bisellium");
+  const log = join(realpathSync(root), EVENTS_LOG_REL);
+  try {
+    const stat = lstatSync(log);
+    if (!stat.isFile()) throw new Error(`${EVENTS_LOG_REL}: must be a regular file, not a symbolic link or directory`);
+    accessSync(log, constants.W_OK);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
 }
 
 /** An opus's state, or undefined when it is not an opus record. */

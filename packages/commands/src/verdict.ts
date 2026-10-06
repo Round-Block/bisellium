@@ -80,6 +80,25 @@ export interface Conversion {
   reason: string;
 }
 
+/** Every header name a verdict log carries: the writer emits no other, and `retro --opus` reads no other. */
+export const VERDICT_HEADERS = [
+  "opus",
+  "phase",
+  "round",
+  "sella",
+  "model",
+  "outcome",
+  "submitted_outcome",
+  "at",
+  "tree",
+  "brief",
+  "converted",
+  "dispatch_prompt",
+  "ui_input",
+  "design_digest",
+] as const;
+const headerLine = (name: (typeof VERDICT_HEADERS)[number], value: string | number): string => `# ${name}: ${value}`;
+
 /** A header value is one line: CR and LF in spec- or error-derived text are written as the two characters `\r` and `\n`. */
 const oneLine = (text: string): string => text.replace(/\r/g, "\\r").replace(/\n/g, "\\n");
 
@@ -380,20 +399,20 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
 
   const header = [
-    `# opus: ${opusId}`,
-    `# phase: ${phase}`,
-    `# round: ${round}`,
-    `# sella: ${sella}`,
-    ...(model === undefined ? [] : [`# model: ${model}`]),
-    `# outcome: ${recorded}`,
-    ...(submitted === undefined ? [] : [`# submitted_outcome: ${submitted}`]),
-    `# at: ${now.toISOString()}`,
-    `# tree: ${treeAtCapture(root, manifest.source_excludes ?? [])}`,
-    ...(briefHeader === undefined ? [] : [`# brief: ${briefHeader}`]),
-    ...(convertedHeader === undefined ? [] : [`# converted: ${convertedHeader}`]),
-    ...(promptHeader === undefined ? [] : [`# dispatch_prompt: ${promptHeader}`]),
-    ...(inputHeader === undefined ? [] : [`# ui_input: ${inputHeader}`]),
-    ...(uiDigest === undefined ? [] : [`# design_digest: ${uiDigest}`]),
+    headerLine("opus", opusId),
+    headerLine("phase", phase),
+    headerLine("round", round),
+    headerLine("sella", sella),
+    ...(model === undefined ? [] : [headerLine("model", model)]),
+    headerLine("outcome", recorded),
+    ...(submitted === undefined ? [] : [headerLine("submitted_outcome", submitted)]),
+    headerLine("at", now.toISOString()),
+    headerLine("tree", treeAtCapture(root, manifest.source_excludes ?? [])),
+    ...(briefHeader === undefined ? [] : [headerLine("brief", briefHeader)]),
+    ...(convertedHeader === undefined ? [] : [headerLine("converted", convertedHeader)]),
+    ...(promptHeader === undefined ? [] : [headerLine("dispatch_prompt", promptHeader)]),
+    ...(inputHeader === undefined ? [] : [headerLine("ui_input", inputHeader)]),
+    ...(uiDigest === undefined ? [] : [headerLine("design_digest", uiDigest)]),
   ].join("\n");
 
   mkdirSync(dirname(target), { recursive: true });

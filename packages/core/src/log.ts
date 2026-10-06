@@ -2,7 +2,7 @@
  * Append-only JSONL event log. One event per line; the log is never
  * rewritten, only appended to. Ordering within a source is the write order.
  */
-import { appendFileSync, closeSync, fstatSync, mkdirSync, openSync, readFileSync, readSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, writeSync } from "node:fs";
 import { dirname } from "node:path";
 import type { GantryEvent } from "@bisellium/schema";
 
@@ -12,37 +12,28 @@ export interface ReadLogResult {
 }
 
 /**
- * True if the file at `path` is empty, missing, or already ends with a
- * newline. Reads only the last byte (stat + a single-byte read), never the
- * whole file, so this stays cheap on a large log.
+ * Appends events to the log, never through a symlink: the parent must be a real directory and the log is opened
+ * O_NOFOLLOW (so a symlinked log, or a directory in its place, refuses). The log is created if missing.
  */
-function endsWithNewline(path: string): boolean {
-  let fd: number;
+export function appendEvents(path: string, events: GantryEvent[]): void {
+  if (events.length === 0) return;
+  const dir = dirname(path);
+  mkdirSync(dir, { recursive: true });
+  const parent = lstatSync(dir);
+  if (parent.isSymbolicLink() || !parent.isDirectory()) throw new Error(`event log parent must be a real directory, not a symbolic link: ${dir}`);
+  const fd = openSync(path, constants.O_RDWR | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW, 0o666);
   try {
-    fd = openSync(path, "r");
-  } catch {
-    return true; // no file yet — nothing to separate our append from
-  }
-  try {
+    if (!fstatSync(fd).isFile()) throw new Error(`event log must be a regular file: ${path}`);
+    // A prior write can leave the file without a trailing newline (e.g. a
+    // crash mid-write, or a line hand-edited in place) — guard the join so we
+    // never concatenate onto the previous line. Reads only the last byte.
     const size = fstatSync(fd).size;
-    if (size === 0) return true;
-    const buf = Buffer.alloc(1);
-    readSync(fd, buf, 0, 1, size - 1);
-    return buf[0] === 0x0a; // "\n"
+    const last = Buffer.alloc(1);
+    const prefix = size === 0 || (readSync(fd, last, 0, 1, size - 1), last[0] === 0x0a) ? "" : "\n";
+    writeSync(fd, prefix + events.map((e) => JSON.stringify(e)).join("\n") + "\n");
   } finally {
     closeSync(fd);
   }
-}
-
-export function appendEvents(path: string, events: GantryEvent[]): void {
-  if (events.length === 0) return;
-  mkdirSync(dirname(path), { recursive: true });
-  // A prior write can leave the file without a trailing newline (e.g. a
-  // crash mid-write, or a line hand-edited in place) — guard the join so we
-  // never concatenate onto the previous line.
-  const prefix = endsWithNewline(path) ? "" : "\n";
-  const lines = prefix + events.map((e) => JSON.stringify(e)).join("\n") + "\n";
-  appendFileSync(path, lines, "utf8");
 }
 
 /**
