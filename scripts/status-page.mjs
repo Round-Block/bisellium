@@ -396,7 +396,13 @@ function main() {
       findings: milestones.some((m) => m.exit?.rule) ? checkFindings(args.studio) : [],
     });
   const estimate = meter && estimateFinish({ meter, opera: officina.opera, now: new Date() });
-  const html = renderStatusPage({ ...officina, meter, estimate, historyRows: readHistoryRows(args.history), outPath: args.out });
+  const html = renderStatusPage({
+    ...officina,
+    meter,
+    estimate,
+    historyRows: readHistoryRows(args.history),
+    outPath: args.out,
+  });
   writeFileSync(args.out, html);
   console.log(`status-page: wrote ${args.out}`);
 }

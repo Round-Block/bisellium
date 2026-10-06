@@ -29,7 +29,10 @@ function officina(withMilestones) {
     "---\nid: W-1\ntitle: Done one\nkind: opus\ncollegium: engineering\nstate: done\nmilestone: M1\nvalue: 3\n---\n",
   );
   if (withMilestones)
-    writeFileSync(join(dir, "milestones.yml"), 'milestones:\n  - { id: M1, title: "Alpha", weight: 100, exit: { needs: x } }\n');
+    writeFileSync(
+      join(dir, "milestones.yml"),
+      'milestones:\n  - { id: M1, title: "Alpha", weight: 100, exit: { needs: x } }\n',
+    );
   return dir;
 }
 
@@ -49,7 +52,10 @@ test("W-153-b4 behaviour 4: the Status page prints the estimate on one line unde
   );
 
   const bare = officina(false);
-  const none = section(renderStatusPage({ ...readOfficina(bare), meter: undefined, estimate: undefined, historyRows: "" }), "Completion");
+  const none = section(
+    renderStatusPage({ ...readOfficina(bare), meter: undefined, estimate: undefined, historyRows: "" }),
+    "Completion",
+  );
   assert.match(none, /No milestone records/);
   assert.doesNotMatch(none, /class="estimate"/);
 });
