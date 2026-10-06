@@ -70,7 +70,10 @@ function officina(tag: string): string {
 }
 
 function cli(cwd: string, ...args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), MAIN, ...args], { cwd, encoding: "utf8" });
+  // PATH is an empty directory: tick's provider probe can find no vendor CLI to spawn (the no-vendor sentinel's rule)
+  const emptyBin = mkdtempSync(join(tmpdir(), "w163-nobin-"));
+  roots.push(emptyBin);
+  const r = spawnSync(process.execPath, ["--import", import.meta.resolve("tsx"), MAIN, ...args], { cwd, encoding: "utf8", env: { ...process.env, PATH: emptyBin } });
   if (r.error) throw r.error;
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
 }
