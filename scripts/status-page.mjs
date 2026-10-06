@@ -57,13 +57,11 @@ export function parseArgs(argv) {
 // ---------------------------------------------------------------------------
 
 function readFrontMatter(path) {
-  const text = readFileSync(path, "utf8");
-  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(text);
-  if (!m) return undefined;
   try {
-    return parseYaml(m[1]);
+    const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(readFileSync(path, "utf8"));
+    return m ? parseYaml(m[1]) : undefined;
   } catch {
-    return undefined;
+    return undefined; // an unreadable or unparseable record is dropped here and counted by the caller (W-153)
   }
 }
 
@@ -72,7 +70,7 @@ function readAllFrontMatter(dir) {
   return readdirSync(dir)
     .filter((f) => f.endsWith(".md"))
     .map((f) => readFrontMatter(join(dir, f)))
-    .filter((d) => d !== undefined && typeof d === "object");
+    .filter((d) => d !== undefined && d !== null && typeof d === "object");
 }
 
 /** Newest `*-ranking.md` acta by filename — dated filenames sort

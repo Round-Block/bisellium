@@ -90,11 +90,14 @@ function CompletionPanel({ completion }: { completion: OfficinaViewProps["comple
   if (completion === undefined) return <p className="officina__loading">Loading completion…</p>;
   if (completion === "failed") return <p className="officina__empty">Could not load completion.</p>;
   if (completion.meter === null) return <p className="officina__empty">No milestone records</p>;
+  // any null or non-finite figure (a non-finite value serialises as null) is never drawn: no estimate, no crash
+  const figures = [completion.meter.overall, ...completion.meter.rows.flatMap((r) => [r.done, r.planned, r.pct])];
+  if (!figures.every((n) => typeof n === "number" && Number.isFinite(n))) return <p className="officina__empty">No estimate</p>;
   return (
     <>
       <p className="officina__completion-overall">Overall {pct1(completion.meter.overall)}</p>
       <Bar pct={completion.meter.overall} />
-      {completion.estimate && <p className="officina__completion-estimate">{completion.estimate.line}</p>}
+      {typeof completion.estimate?.line === "string" && <p className="officina__completion-estimate">{completion.estimate.line}</p>}
       <div className="officina__completion-rows">
         {completion.meter.rows.map((r) => (
           <div key={r.id} className="officina__completion-row">

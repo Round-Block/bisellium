@@ -36,8 +36,11 @@ export interface Meter {
 export function computeMeter({ milestones, opera, findings }: { milestones: Milestone[]; opera: any[]; findings: { rule?: unknown }[] }): Meter {
   const rows = milestones.map((m) => {
     const mapped = opera.filter((o) => o.milestone === m.id && o.state !== "halted");
-    const planned = mapped.reduce((n, o) => n + o.value, 0);
-    const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + o.value, 0);
+    // a value that is not a finite, non-negative number adds nothing, so no meter field goes non-finite;
+    // estimateFinish then gives no estimate for such a record
+    const points = (o: { value?: unknown }): number => (typeof o.value === "number" && Number.isFinite(o.value) && o.value >= 0 ? o.value : 0);
+    const planned = mapped.reduce((n, o) => n + points(o), 0);
+    const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + points(o), 0);
     const met =
       m.exit?.opus !== undefined
         ? opera.some((o) => o.id === m.exit?.opus && o.state === "done")
@@ -45,7 +48,7 @@ export function computeMeter({ milestones, opera, findings }: { milestones: Mile
     const raw = planned === 0 ? 0 : (100 * done) / planned;
     return { ...m, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
   });
-  return { rows, overall: rows.reduce((n, r) => n + (r.weight * r.pct) / 100, 0) };
+  return { rows, overall: rows.reduce((n, r) => n + ((Number.isFinite(r.weight) ? r.weight : 0) * r.pct) / 100, 0) };
 }
 
 export interface Estimate {
