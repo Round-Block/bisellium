@@ -148,3 +148,18 @@ test("W-153-b5 behaviour 5: an unreadable or non-numeric opus record gives no es
   assert.equal(c.estimate.reason, "unreadable-records");
   assert.ok(c.meter !== null, "the meter is still served");
 });
+
+test("W-153-b5 behaviour 5: a non-finite point value never reaches the served meter as null", async () => {
+  const dir = studio("{ needs: x }");
+  writeFileSync(join(dir, "opera", "W-11.md"), front({ id: "W-11", state: "backlog", value: 8 }).replace("value: 8", "value: .inf"));
+  const { server, get } = await serve(dir, () => ({ ok: true, blocks: 0, advisories: 0, findings: [] }));
+  try {
+    const body = (await (await get("/api/completion")).json()) as { meter: { overall: unknown; rows: Record<string, unknown>[] }; estimate: { kind: string; reason?: string } };
+    assert.equal(body.estimate.kind, "none");
+    assert.equal(body.estimate.reason, "unreadable-records");
+    const fields = [body.meter.overall, ...body.meter.rows.flatMap((r) => [r["done"], r["planned"], r["pct"]])];
+    for (const f of fields) assert.ok(typeof f === "number" && Number.isFinite(f), `meter field ${String(f)} is a finite number`);
+  } finally {
+    await server.close();
+  }
+});

@@ -165,21 +165,25 @@ test("W-153-b4 behaviour 4: an unreadable or non-numeric opus record gives the S
     writeFileSync(join(dir, "history.html"), "<table><tbody></tbody></table>\n");
     const out = join(dir, "out.html");
     const script = join(dirname(fileURLToPath(import.meta.url)), "status-page.mjs");
-    execFileSync(
-      process.execPath,
-      [
-        script,
-        "--studio",
-        dir,
-        "--out",
-        out,
-        "--handoff",
-        join(dir, "handoff.md"),
-        "--history",
-        join(dir, "history.html"),
-      ],
-      { stdio: "pipe" },
-    );
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          script,
+          "--studio",
+          dir,
+          "--out",
+          out,
+          "--handoff",
+          join(dir, "handoff.md"),
+          "--history",
+          join(dir, "history.html"),
+        ],
+        { stdio: "pipe" },
+      );
+    } catch (e) {
+      assert.fail(`status-page exited non-zero: ${String(e.stderr).split("\n")[0]}`);
+    }
     return section(readFileSync(out, "utf8"), "Completion");
   };
 
@@ -194,6 +198,8 @@ test("W-153-b4 behaviour 4: an unreadable or non-numeric opus record gives the S
       "a front matter that does not parse",
       (d) => writeFileSync(join(d, "opera", "W-9.md"), "---\nid: [unclosed\n---\n"),
     ],
+    ["null front matter", (d) => writeFileSync(join(d, "opera", "W-9.md"), "---\n~\n---\n")],
+    ["a record that cannot be read", (d) => mkdirSync(join(d, "opera", "W-9.md"))],
     ["a non-numeric value", (d) => writeFileSync(join(d, "opera", "W-4.md"), rec("W-4", "backlog", "lots"))],
   ]) {
     const html = page(mutate);

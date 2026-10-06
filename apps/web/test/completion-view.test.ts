@@ -42,3 +42,16 @@ test("W-153-b6 behaviour 6: the Officina screen leads with the completion meter 
   assert.ok(text(render(undefined)).includes("Loading completion…"));
   assert.ok(text(render("failed")).includes("Could not load completion."));
 });
+
+test("W-153-b6 behaviour 6: a null or non-finite meter field renders No estimate and never crashes", () => {
+  const meter = (overall: unknown, pct: unknown) => ({ meter: { rows: [row("M1", "Alpha work", 3, 4, 75), { ...row("M2", "Beta work", 1, 8, 12.5), pct }], overall }, estimate });
+  for (const bad of [null, Number.NaN, Number.POSITIVE_INFINITY]) {
+    for (const completion of [meter(bad, 10), meter(50, bad)]) {
+      let html = "";
+      assert.doesNotThrow(() => {
+        html = render(completion);
+      }, `renders with ${String(bad)}`);
+      assert.ok(text(html).includes("No estimate"), `No estimate for ${String(bad)}`);
+    }
+  }
+});

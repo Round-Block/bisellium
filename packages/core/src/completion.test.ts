@@ -125,3 +125,9 @@ test("W-153-b3 behaviour 3: a malformed or unreadable record gives no estimate, 
   const allDone = fixture().map((o) => (o.state === "backlog" || o.state === "greenlit" || o.state === "building" || o.state === "review" ? { ...o, state: "done" } : o));
   assert.equal(run(allDone, 1).reason, "unreadable-records", "never a false Nothing left");
 });
+
+test("W-153-b2 behaviour 2: a non-finite or non-numeric point value never makes a meter field non-finite", () => {
+  const opera = [...fixture().filter((o) => o.id !== "W-11"), { id: "W-11", state: "backlog", milestone: "M1", value: Number.POSITIVE_INFINITY }, { id: "W-17", state: "done", milestone: "M1", value: Number.NaN }];
+  const meter = computeMeter({ milestones, opera, findings: [] });
+  for (const f of [meter.overall, ...meter.rows.flatMap((r) => [r.done, r.planned, r.pct])]) assert.ok(Number.isFinite(f), `${String(f)} is finite`);
+});
