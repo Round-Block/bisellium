@@ -23,12 +23,26 @@ const str = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 // W-120: `killed_by` may only point into these officina directories.
 const KILL_RECORD_DIRS = ["acta", "ci", "decisions", "lessons", "opera", "petitiones"];
 
-/** A YAML date or an ISO date string as an instant; anything else is undefined. */
+const ISO = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/** A YAML date or a strict ISO date(-time) string as an instant; anything else,
+ *  including an impossible date such as 2026-02-30, is undefined. No zone means UTC. */
 function instant(v: unknown): Date | undefined {
   if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
-  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(v)) return undefined;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? undefined : d;
+  const m = typeof v === "string" ? ISO.exec(v) : null;
+  if (!m) return undefined;
+  const [y, mo, d, h, mi, sec] = [m[1], m[2], m[3], m[4] ?? "0", m[5] ?? "0", m[6] ?? "0"].map(Number) as [number, number, number, number, number, number];
+  const ms = Number((m[7] ?? "0").padEnd(3, "0").slice(0, 3));
+  const t = new Date(Date.UTC(y, mo - 1, d, h, mi, sec, ms));
+  // round trip: the parsed fields must reproduce what was written (no JS normalisation)
+  if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d || t.getUTCHours() !== h || t.getUTCMinutes() !== mi || t.getUTCSeconds() !== sec) return undefined;
+  const z = m[8];
+  if (z && z !== "Z") {
+    const [oh, om] = [Number(z.slice(1, 3)), Number(z.slice(-2))];
+    if (oh > 23 || om > 59) return undefined;
+    t.setTime(t.getTime() - (z[0] === "-" ? -1 : 1) * (oh * 60 + om) * 60000);
+  }
+  return t;
 }
 
 const PROVENANCE = ["stated", "observed", "inferred", "suggested"] as const;
@@ -177,6 +191,7 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
         const at = instant(killedAt);
         if (!at) { ok = false; add("decision.shape", "block", where, `"killed_at" must be an ISO date`); }
         const decided = instant(data["at"]);
+        if (at && !decided) { ok = false; add("decision.shape", "block", where, `"at" is not a readable date, so "killed_at" cannot be judged against it`); }
         if (at && decided && at < decided) { ok = false; add("decision.shape", "block", where, `"killed_at" is earlier than the decision's own "at"`); }
         const first = typeof killedBy === "string" ? killedBy.split(/[\\/]/)[0] ?? "" : "";
         if (typeof killedBy !== "string" || !KILL_RECORD_DIRS.includes(first) || "error" in readContainedRegularFile(root, killedBy, first)) {
@@ -285,17 +300,24 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     if (tierMsg) add("process.review_tier", "advise", where, tierMsg);
 
     // W-120 decision.invoked_after_kill: a halt or a gate waiver citing a decision at or after its recorded kill.
-    const invoke = (label: string, id: string | undefined, at: unknown) => {
-      const k = id === undefined ? undefined : killed.get(id);
+    const invoke = (label: string, cited: unknown, at: unknown) => {
+      if (cited === undefined || cited === null) return;
+      if (!str(cited)) {
+        // fail closed: a citation that is not a decision id string could be any decision
+        add("decision.invoked_after_kill", "block", where, `${label} is not a decision id string (${JSON.stringify(cited)}); a malformed citation cannot be shown to avoid a killed decision`);
+        return;
+      }
+      const id = cited as string;
+      const k = killed.get(id);
       if (!k) return;
       const t = instant(at);
       if (t && t < k.at) return;
       add("decision.invoked_after_kill", "block", where, `${label} ${id} at ${t ? t.toISOString() : "(no time)"} invokes a decision killed at ${k.at.toISOString()} (${k.by}); a fired clause is not an excuse`);
     };
-    invoke("halted_by", str(data["halted_by"]), data["halted_at"]);
+    invoke("halted_by", data["halted_by"], data["halted_at"]);
     if (isDict(data["probationes"])) {
       for (const [gate, g] of Object.entries(data["probationes"])) {
-        if (isDict(g)) invoke(`gate "${gate}" waived_by`, str(g["waived_by"]), g["at"]);
+        if (isDict(g)) invoke(`gate "${gate}" waived_by`, g["waived_by"], g["at"]);
       }
     }
   }
