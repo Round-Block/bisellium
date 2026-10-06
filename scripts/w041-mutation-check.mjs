@@ -13,7 +13,7 @@
  *
  * <mutation> is one of MUTATIONS' keys below. Each names the finding it
  * demonstrates and the behaviour it targets. Without --record this runs
- * `node scripts/backlog-page.test.mjs <behaviour>` directly. With --record
+ * `node scripts/status-slate.test.mjs <behaviour>` directly. With --record
  * it instead runs `bisellium red W-041 --behaviour <behaviour> --sella
  * builder-a --studio studio --repo .` so the failure becomes the opus's
  * recorded red for that behaviour — the mutation name and finding it
@@ -124,10 +124,10 @@ try {
         ".",
         "--",
         "node",
-        "scripts/backlog-page.test.mjs",
+        "scripts/status-slate.test.mjs",
         String(mutation.behaviour),
       ]
-    : [join(repoRoot, "scripts/backlog-page.test.mjs"), String(mutation.behaviour)];
+    : [join(repoRoot, "scripts/status-slate.test.mjs"), String(mutation.behaviour)];
   const out = execFileSync(process.execPath, args, { cwd: repoRoot, encoding: "utf8" });
   process.stdout.write(out);
   exit = 0;

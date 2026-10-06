@@ -1,5 +1,5 @@
 /**
- * scripts/backlog-page.test.mjs — the 9 behaviours of studio/briefs/W-041.md.
+ * scripts/status-slate.test.mjs — the 9 behaviours of studio/briefs/W-041.md.
  * No framework, same house style as scripts/changelog.test.mjs; the
  * behaviour-number filter follows packages/cli/src/ci.test.ts's `only`
  * pattern so `bisellium red` can record one assertion-level failure per
@@ -534,7 +534,7 @@ function runCli(args) {
     const handoff = join(dir, "handoff.md");
     writeFile(handoff, "# handoff\nnothing rotten here.\n");
     const outDir = tmp("b9-out");
-    const out = join(outDir, "backlog-body.html");
+    const out = join(outDir, "status-body.html");
 
     const before = snapshotDir(dir);
     const outDirBefore = snapshotDir(outDir);
@@ -544,7 +544,7 @@ function runCli(args) {
     check(9, "nothing inside --studio is written", snapshotsEqual(before, after));
     check(9, "--out itself was written", existsSync(out));
     const outDirAfter = snapshotDir(outDir);
-    const onlyOutChanged = outDirAfter.size === outDirBefore.size + 1 && outDirAfter.has("backlog-body.html");
+    const onlyOutChanged = outDirAfter.size === outDirBefore.size + 1 && outDirAfter.has("status-body.html");
     check(9, "nothing outside --out was written", onlyOutChanged, JSON.stringify([...outDirAfter.keys()]));
     rmSync(outDir, { recursive: true, force: true });
   } finally {

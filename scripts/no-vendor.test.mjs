@@ -1,6 +1,6 @@
 /**
  * scripts/no-vendor.test.mjs — the 11 behaviours of studio/briefs/W-072.md
- * (revision 5). No framework, same house style as scripts/backlog-page.test.mjs
+ * (revision 5). No framework, same house style as scripts/status-slate.test.mjs
  * (the behaviour-number filter follows packages/cli/src/ci.test.ts's `only`
  * pattern, so `bisellium red` can record one assertion-level failure per
  * behaviour).

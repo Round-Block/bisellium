@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /**
- * scripts/status-page.mjs — W-041: the slate rendered from the officina,
- * never from prose. Reads studio/opera/*.md, studio/petitiones/*.md and
- * studio/decisions/*.md (front matter only — never brief prose, never
- * `reason`/`resume_when` for meaning) and renders three tables into
- * docs/design/dossier/backlog-body.html: in-flight opera, planned
- * (greenlit) opera, backlog (including halted), and standing constraints
- * (decisions). It links the
- * latest ranking acta as the source of record for order; it never ranks
- * and never writes one. See studio/briefs/W-041.md.
+ * scripts/status-page.mjs — W-041 + W-152: the Status page rendered from the
+ * officina, never from prose. Reads studio/opera/*.md, studio/petitiones/*.md,
+ * studio/decisions/*.md and studio/milestones.yml (front matter and records
+ * only — never brief prose, never `reason`/`resume_when` for meaning) and
+ * renders ONE page into docs/design/dossier/status-body.html, in this order:
+ * Completion (the meter, D-038), In flight, Planned, Backlog, Cascade history
+ * (the hand-written rows of progress-body.html, carried verbatim) and
+ * Standing constraints (decisions). It links the latest ranking acta as the
+ * source of record for order; it never ranks and never writes one. See
+ * studio/briefs/W-041.md and studio/briefs/W-152.md.
  *
  * The single-source guard: before writing anything, this refuses (exit 1,
  * naming line numbers) if the handoff still carries a slate heading or a
@@ -17,8 +18,9 @@
  * so defaults resolve against the repo root (this file's own `..`), never
  * the cwd; explicit flags resolve against the cwd.
  *
- * Usage: node scripts/status-page.mjs [--studio <dir>] [--out <path>] [--handoff <path>]
+ * Usage: node scripts/status-page.mjs [--studio <dir>] [--out <path>] [--handoff <path>] [--history <path>]
  */
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,15 +34,17 @@ const IN_FLIGHT_STATES = new Set(["building", "verifying", "review"]);
 export function parseArgs(argv) {
   const values = {
     studio: join(REPO_ROOT, "studio"),
-    out: join(REPO_ROOT, "docs/design/dossier/backlog-body.html"),
+    out: join(REPO_ROOT, "docs/design/dossier/status-body.html"),
     handoff: join(REPO_ROOT, "docs/SESSION-HANDOFF.md"),
+    history: join(REPO_ROOT, "docs/design/dossier/progress-body.html"),
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--studio") values.studio = resolve(argv[++i]);
     else if (a === "--out") values.out = resolve(argv[++i]);
     else if (a === "--handoff") values.handoff = resolve(argv[++i]);
-    else throw new Error(`backlog-page: unknown flag "${a}"`);
+    else if (a === "--history") values.history = resolve(argv[++i]);
+    else throw new Error(`status-page: unknown flag "${a}"`);
   }
   return values;
 }
@@ -108,11 +112,25 @@ export function readOfficina(studioDir) {
 }
 
 // ---------------------------------------------------------------------------
-// W-152 meter (phase-1 stubs: exported so the rows run and fail on assertions)
+// W-152 — the completion meter (D-038). Milestone % = 100 x points done /
+// points planned (0 when nothing is planned), capped at 95 while the exit is
+// open; overall = sum of weight x % / 100. A met exit only lifts the cap.
 // ---------------------------------------------------------------------------
 
-export function readMilestones(_studioDir) {
-  return undefined;
+const CAP_WHILE_EXIT_OPEN = 95;
+
+/** The declared milestones, or undefined when `milestones.yml` is absent. */
+export function readMilestones(studioDir) {
+  const path = join(studioDir, "milestones.yml");
+  if (!existsSync(path)) return undefined;
+  let doc;
+  try {
+    doc = parseYaml(readFileSync(path, "utf8"));
+  } catch (e) {
+    throw new Error(`status-page: ${path} does not parse: ${e.message.split("\n")[0]}`);
+  }
+  if (!Array.isArray(doc?.milestones)) throw new Error(`status-page: ${path} needs a "milestones" list`);
+  return doc.milestones.map(({ id, title, weight, exit }) => ({ id, title, weight, exit }));
 }
 
 export function computeMeter({ milestones, opera, findings }) {
@@ -120,17 +138,25 @@ export function computeMeter({ milestones, opera, findings }) {
     const mapped = opera.filter((o) => o.milestone === m.id && o.state !== "halted");
     const planned = mapped.reduce((n, o) => n + o.value, 0);
     const done = mapped.filter((o) => o.state === "done").reduce((n, o) => n + o.value, 0);
-    const met = m.exit.opus !== undefined
-      ? opera.some((o) => o.id === m.exit.opus && o.state === "done")
-      : m.exit.rule !== undefined && !findings.some((f) => f.rule === m.exit.rule);
-    const pct = planned === 0 ? 0 : (100 * done) / planned;
-    return { ...m, done, planned, met, pct };
+    const met =
+      m.exit?.opus !== undefined
+        ? opera.some((o) => o.id === m.exit.opus && o.state === "done")
+        : m.exit?.rule !== undefined && !findings.some((f) => f.rule === m.exit.rule);
+    const raw = planned === 0 ? 0 : (100 * done) / planned;
+    return { ...m, done, planned, met, pct: met ? raw : Math.min(raw, CAP_WHILE_EXIT_OPEN) };
   });
   return { rows, overall: rows.reduce((n, r) => n + (r.weight * r.pct) / 100, 0) };
 }
 
-export function readHistoryRows(_path) {
-  return "";
+/** The inner HTML of the file's one <tbody>, byte for byte. */
+export function readHistoryRows(path) {
+  const text = readFileSync(path, "utf8");
+  const opens = [...text.matchAll(/<tbody\b[^>]*>/g)];
+  if (opens.length !== 1) throw new Error(`status-page: ${path} must hold exactly one <tbody>, found ${opens.length}`);
+  const from = opens[0].index + opens[0][0].length;
+  const to = text.indexOf("</tbody>", from);
+  if (to === -1) throw new Error(`status-page: ${path} has an unclosed <tbody>`);
+  return text.slice(from, to);
 }
 
 // ---------------------------------------------------------------------------
@@ -184,7 +210,25 @@ function decisionRow(d) {
   return `        <tr data-id="${esc(d.id)}"><td>${esc(d.id)}</td><td>${esc(d.title)}</td><td>${esc(d.kill_when ?? "—")}</td></tr>`;
 }
 
-export function renderStatusPage({ opera, declaredGates, openPetitionsByOpus, decisions, rankingActa, outPath }) {
+const pctText = (n) => `${n.toFixed(1)}%`;
+
+function completionSection(meter) {
+  if (!meter) return `<p class="mock-caption">No milestone records</p>`;
+  const row = (r) =>
+    `        <tr data-milestone="${esc(r.id)}"><td>${esc(r.id)}</td><td>${esc(r.title)}</td><td>${esc(r.weight)}</td><td>${esc(r.done)}/${esc(r.planned)}</td><td>${r.met ? "met" : "open"}</td><td>${pctText(r.pct)}<span class="bar" style="display:block;height:6px;margin-top:4px;border-radius:3px;background:var(--pend-soft)"><span style="display:block;height:100%;width:${r.pct}%;border-radius:3px;background:var(--accent)"></span></span></td></tr>`;
+  return `<p><strong>Overall ${pctText(meter.overall)}</strong></p>
+<p class="mock-caption">Points done over points planned, capped at 95% while a milestone's exit check is open.</p>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Id</th><th>Milestone</th><th>Weight</th><th>Points done/planned</th><th>Exit</th><th>%</th></tr></thead>
+      <tbody>
+${meter.rows.map(row).join("\n")}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+export function renderStatusPage({ opera, declaredGates, openPetitionsByOpus, decisions, rankingActa, meter, historyRows = "", outPath }) {
   const inFlight = opera.filter((o) => IN_FLIGHT_STATES.has(o.state)).sort(byIdDesc);
   const planned = opera.filter((o) => o.state === "greenlit").sort(byIdDesc);
   const backlog = opera.filter((o) => o.state === "backlog").sort(byIdDesc);
@@ -200,12 +244,17 @@ export function renderStatusPage({ opera, declaredGates, openPetitionsByOpus, de
   return `<div class="wrap">
 
 <header class="masthead">
-  <p class="eyebrow">Agent studio &middot; the slate</p>
-  <h1>Bisellium Backlog</h1>
-  <p class="thesis">Generated from the officina's own front matter &mdash; opera, petitiones, decisions &mdash; never from prose. A <code>done</code> opus never appears here; that is the <a href="bisellium-progress.html">progress page</a>'s history.</p>
+  <p class="eyebrow">Agent studio &middot; status</p>
+  <h1>Bisellium Status</h1>
+  <p class="thesis">Generated from the officina's own records &mdash; milestones, opera, petitiones, decisions &mdash; never from prose. How far the product has come, what is moving, what is next, and what shipped.</p>
 </header>
 
 ${rankingLink}<section>
+<h2>Completion</h2>
+${completionSection(meter)}
+</section>
+
+<section>
 <h2>In flight</h2>
 <p class="mock-caption">State as recorded in this checkout&rsquo;s officina.</p>
 <div class="table-scroll">
@@ -239,6 +288,17 @@ ${planned.map((o) => opusRow(o, declaredGates, openPetitionsByOpus)).join("\n")}
       <tbody>
 ${backlogGroup.map((o) => opusRow(o, declaredGates, openPetitionsByOpus)).join("\n")}
       </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+<h2>Cascade history</h2>
+<p class="mock-caption">One row per cascade, oldest first, written at each checkpoint into <code>progress-body.html</code> and carried here unchanged.</p>
+<div class="table-scroll">
+    <table>
+      <thead><tr><th>Cascade</th><th>Shipped</th><th>Agents / tokens / time</th><th>Review found</th></tr></thead>
+      <tbody>${historyRows}</tbody>
     </table>
   </div>
 </section>
@@ -295,6 +355,18 @@ export function findGuardViolations(text) {
   return violations;
 }
 
+/** One `check <studio> --repo <root> --json` run, for the `rule` exits. */
+function checkFindings(studioDir) {
+  const argv = ["--import", "tsx", join(REPO_ROOT, "packages/cli/src/main.ts"), "check", studioDir, "--repo", REPO_ROOT, "--json"];
+  let out;
+  try {
+    out = execFileSync(process.execPath, argv, { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 << 20 });
+  } catch (e) {
+    out = e.stdout; // exit 1 = blocking findings; the report is still on stdout
+  }
+  return JSON.parse(out).findings;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -302,16 +374,18 @@ function main() {
   const violations = findGuardViolations(handoffText);
   if (violations.length > 0) {
     console.error(
-      `backlog-page: ${args.handoff} still carries hand-written slate state; refusing to write ${args.out}:`,
+      `status-page: ${args.handoff} still carries hand-written slate state; refusing to write ${args.out}:`,
     );
     for (const v of violations) console.error(`  line ${v.line}: ${v.kind}: ${v.text}`);
     process.exit(1);
   }
 
   const officina = readOfficina(args.studio);
-  const html = renderStatusPage({ ...officina, outPath: args.out });
+  const milestones = readMilestones(args.studio);
+  const meter = milestones && computeMeter({ milestones, opera: officina.opera, findings: milestones.some((m) => m.exit?.rule) ? checkFindings(args.studio) : [] });
+  const html = renderStatusPage({ ...officina, meter, historyRows: readHistoryRows(args.history), outPath: args.out });
   writeFileSync(args.out, html);
-  console.log(`backlog-page: wrote ${args.out}`);
+  console.log(`status-page: wrote ${args.out}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) main();

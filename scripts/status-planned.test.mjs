@@ -13,7 +13,7 @@ const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
 const only = behaviourAt === -1 ? undefined : Number(argv[behaviourAt + 1]);
 if (behaviourAt !== -1 && only !== 16) {
-  console.error("backlog-planned.test.mjs: --behaviour must be 16");
+  console.error("status-planned.test.mjs: --behaviour must be 16");
   process.exit(2);
 }
 
