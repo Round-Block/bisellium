@@ -1,0 +1,18 @@
+# opus: W-137
+# phase: build
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T17:22:38.431Z
+# tree: tree:6b041d1a6be359eb1823b07e4400112dc77ea113
+# brief: briefs/W-137.md blob:0da829322cab0f13ca02b2470e5f1014e16d1792
+
+## Findings
+1. blocking — packages/cli/src/retro.ts:925 Class: the path-only undo journal is not ownership-safe. Searching every cleanup target found six instances—new fix (887), lesson (912), greenlit opus (925), acta (968), event log (984–985), and created directories (991): it can overwrite an untouched fix when pre-write validation fails, erase concurrent event-log appends, or remove/overwrite entries replaced after journalling; brief:89 — check: packages/cli/src/retro-opus.test.ts (late-refusal rollback ownership/race matrix)
+2. blocking — packages/cli/src/retro.ts:882 Class: record-creation undo is registered only after the creator returns. Searching all forward mutation sites found two instances, `newItem` here and lesson `createNextRecord` at line 897, where an error after exclusive creation but during `writeFileSync` leaves an unjournalled partial file, so refusal is not byte-identical; brief:89 — check: packages/cli/src/retro-opus.test.ts (fault-injected partial-create failures for fix and lesson)
+
+## Verdict
+The supplied reds and gates are valid, but the rollback remains incomplete and can itself destroy state not owned by this retro.
+
+VERDICT: FAIL
