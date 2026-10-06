@@ -12,7 +12,7 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
@@ -20,7 +20,7 @@ import { WF } from "@bisellium/schema";
 import { createNextRecord, requireRealDirectory } from "@bisellium/commands/ids.js";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
-import { contentLines, readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
+import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
 import { RULE_IDS } from "./rules/ids.js";
@@ -528,7 +528,8 @@ const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null &&
 const isRefusal = (v: unknown): v is Refusal => isDict(v) && typeof v["error"] === "string";
 const OPUS_ID = /^W-[0-9]+$/;
 const LOG_MAX_BYTES = 4_000_000;
-const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b/i;
+// the whole raw line: no carriage return and no comment marker anywhere in it
+const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b(?![^]*(?:\r|<!--|-->))/i;
 const CLASS_RE = /^[a-z][a-z0-9-]*×\S+$/;
 
 interface RecordedFinding {
@@ -545,15 +546,17 @@ interface Verdicts {
 }
 
 /**
- * One recorded log, parsed exactly as `bisellium verdict` writes it: a header block of `# key: value` lines, a blank
- * line, then the transcript, whose `## Findings` section (read by the writer's own `contentLines`) holds `No findings`
- * or finding lines and nothing else. Anything outside that shape makes the whole log unreadable.
+ * One recorded log, read RAW: no line is stripped, trimmed or interpreted before it is judged. The header block is
+ * the lines before the first empty line, each exactly `# key: value`. In the body the one `## Findings` section
+ * (ends at the next `## ` line) holds empty lines, the exact line `No findings`, or lines of the finding grammar,
+ * and nothing else: a fence, comment, heading, indented or otherwise dressed line is out of domain and the whole
+ * log is unreadable. This is the only reader of a verdict log in the retro.
  */
 function readVerdictLog(root: string, id: string, rel: string): { findings: RecordedFinding[] } | Refusal {
   const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
   if ("error" in file) return { error: `${rel}: ${file.error}` };
-  const lines = file.bytes.toString("utf8").split(/\r?\n/);
-  const split = lines.findIndex((l) => l.trim() === "");
+  const lines = file.bytes.toString("utf8").split("\n");
+  const split = lines.indexOf("");
   if (split === -1) return { error: `${rel}: no blank line ends the header block` };
   const headers = new Map<string, string[]>();
   for (const line of lines.slice(0, split)) {
@@ -565,15 +568,16 @@ function readVerdictLog(root: string, id: string, rel: string): { findings: Reco
   const stray = body.find((l) => /^# [a-z_]+: /.test(l));
   if (stray !== undefined) return { error: `${rel}: a header line outside the header block: ${stray.slice(0, 60)}` };
   if (headers.get("opus")?.length !== 1 || headers.get("opus")![0]!.trim() !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
-  const parsed = contentLines(body.join("\n"));
-  const headings = parsed.headings.filter((h) => h.level === 2 && h.name === "Findings");
-  if (headings.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${headings.length}` };
-  const section = parsed.lines.filter((l) => l.section === "Findings").map((l) => l.text);
-  if (section.includes("No findings")) return section.length === 1 ? { findings: [] } : { error: `${rel}: "No findings" must be the only line under "## Findings"` };
+  const at = body.reduce<number[]>((n, l, i) => (l === "## Findings" ? [...n, i] : n), []);
+  if (at.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${at.length}` };
+  const rest = body.slice(at[0]! + 1);
+  const end = rest.findIndex((l) => l.startsWith("## "));
+  const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== "");
+  if (section.length === 1 && section[0] === "No findings") return { findings: [] };
   if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
   const findings: RecordedFinding[] = [];
   for (const line of section) {
-    if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …"): ${line.slice(0, 60)}` };
+    if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …", or "No findings" alone): ${line.slice(0, 60)}` };
     const n = Number(/^\d+/.exec(line)![0]);
     if (findings.some((f) => f.n === n)) return { error: `${rel}: finding ${n} is numbered twice` };
     const text = line.replace(/^\d+\. /, "");
@@ -832,9 +836,17 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   const dateStr = now.toISOString().slice(0, 10);
   const actaPath = safeItemPath(join(root, "acta"), `${dateStr}-retro-${id}`);
   if (typeof actaPath !== "string") throw new Error(`acta: ${actaPath.error}`);
-  actaDir(root);
   const actaRel = relative(root, actaPath).split(sep).join("/");
-  if (existsSync(actaPath)) throw new Error(`${actaRel} already exists`);
+  // before the FIRST write: every directory the retro creates in is a real directory (or absent), and the one fixed
+  // output is no entry at all (lstat: a dangling symlink is one). The other outputs are allocated by exclusive create
+  // inside those directories (fix opera, lessons) or are appends to existing records (greenlit fix, event log).
+  for (const dir of ["opera", "lessons", "acta"]) realDir(root, dir);
+  try {
+    lstatSync(join(realDir(root, "acta"), basename(actaPath)));
+    throw new Error(`${actaRel} already exists`);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+  }
 
   // 1. new fix opera
   const fixIds = new Map<string, string>();
@@ -919,20 +931,20 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     ...(started.length ? started.map((s) => `- ${s.fix}: greenlit by ${s.decision}`) : ["- (none)"]),
     "",
   ].join("\n");
-  const dir = actaDir(root);
+  const dir = realDir(root, "acta");
   mkdirSync(dir, { recursive: true });
-  actaDir(root);
+  realDir(root, "acta");
   writeFileSync(join(dir, basename(actaPath)), acta, { flag: "wx" });
   return { path: actaRel };
 }
 
-/** The physical `acta/` directory, which must be a real directory (not a symlink) or absent: where the retro writes. */
-function actaDir(root: string): string {
-  const dir = join(realpathSync(root), "acta");
+/** A physical officina directory, which must be a real directory (not a symlink) or absent: where the retro writes. */
+function realDir(root: string, name: string): string {
+  const dir = join(realpathSync(root), name);
   try {
     requireRealDirectory(dir);
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`acta: ${(e as Error).message}`);
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw new Error(`${name}: ${(e as Error).message}`);
   }
   return dir;
 }
