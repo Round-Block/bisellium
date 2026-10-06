@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -93,5 +93,15 @@ test("W-152-b6-unreadable-source: one unreadable source does not discard another
   symlinkSync("does-not-exist", join(r.repo, "docs/design/dossier/progress-body.html"));
   const found = shrink(r.officina, r.repo);
   assert.equal(found.length, 1, "the body.html cut is still reported");
+  assert.equal(found[0]?.where, BODY);
+});
+
+test("W-152-b6-unreadable-shrunk: a shrunk source whose content cannot be read is unverified and still fails", { skip: process.getuid?.() === 0 }, () => {
+  const r = fixture();
+  put(r.repo, BODY, sized(2_400, MARKER));
+  chmodSync(join(r.repo, BODY), 0o000); // stat works, read throws; the marker cannot be verified
+  const found = shrink(r.officina, r.repo);
+  chmodSync(join(r.repo, BODY), 0o644);
+  assert.equal(found.length, 1, "the cut is reported");
   assert.equal(found[0]?.where, BODY);
 });
