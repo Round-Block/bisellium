@@ -1176,6 +1176,9 @@ const DATE_MEMBER_FIXTURES: Record<string, string> = {
   "date-other-member": `export const n = Date.length;\n`,
   "date-now-uncalled": `export const f = Date.now;\n`,
 };
+// W-163 review round 4: a computed Date member whose key is not a string literal is off the allowlist, never a pinnable C site.
+DATE_MEMBER_FIXTURES["computed-member"] = `export function f(k: string, x: string) { return (Date as any)[k](x); }\n`;
+DATE_MEMBER_FIXTURES["global-computed-member"] = `export function f(k: string, x: string) { return (globalThis.Date as any)[k](x); }\n`;
 for (const name of Object.keys(DATE_MEMBER_FIXTURES)) FIXTURES[`dm-${name}`] = DATE_MEMBER_FIXTURES[name]!;
 let fixtureScan: CDScan | undefined;
 function fixtureSites(name: string): { d: string[]; c: string[]; out: string[] } {
@@ -1210,7 +1213,6 @@ for (const [name, want] of [
 }
 for (const [name, want] of [
   ["c-computed-parse", ["f:Date.parse#1"]],
-  ["c-non-literal-member", ["f:Date.<computed>#1"]],
   ["c-global-date", ["f:Date.parse#1", "f:new Date#1"]],
 ] as const) {
   test(`W-163-b6 round 2: inventory C lists the ${name} form`, () => {
@@ -1238,8 +1240,9 @@ for (const name of Object.keys(NO_ALIAS_FIXTURES)) {
     assert.ok(fixtureSites(`na-${name}`).out.length > 0, "an out-of-domain finding names the file");
   });
 }
+const round = (name: string): number => (name.endsWith("computed-member") ? 5 : 4);
 for (const name of Object.keys(DATE_MEMBER_FIXTURES)) {
-  test(`W-163-b6 round 4: the scan refuses the ${name} form`, () => {
+  test(`W-163-b6 round ${round(name)}: the scan refuses the ${name} form`, () => {
     assert.ok(fixtureSites(`dm-${name}`).out.length > 0, "an out-of-domain finding names the file");
   });
 }
