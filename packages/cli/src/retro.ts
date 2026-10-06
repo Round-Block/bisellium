@@ -12,7 +12,7 @@
  * wires in main.ts before the generic flag parser, same as
  * run/verify/talk/tick/new today.
  */
-import { accessSync, constants, existsSync, lstatSync, rmSync, rmdirSync, statSync, truncateSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { isoWeek, parseFrontMatter, readManifest } from "@bisellium/adapter-native";
@@ -854,22 +854,21 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
   }
 
-  // From here every write is journalled: any throw undoes exactly what this run did (created files, directories and
-  // event-log bytes removed in reverse order, the greenlit opus's original bytes restored), then refuses with the
-  // original error. The preflights above only give early, clean refusals; this is what makes the retro all-or-nothing.
+  // From here the retro writes, and it reverses nothing (spec round 2): a reversal can overwrite or delete state this run
+  // does not own. A failure after the first write names every path written so far, in first-write order, and stops;
+  // a person inspects those paths with git. `writing` notes what a step created, by comparing the directories it
+  // writes in before and after, so a create that succeeded and then failed partway is still named.
   const phys = realpathSync(root);
-  const absent = (rel: string): boolean => {
+  const written: string[] = [];
+  const note = (rel: string): void => void (written.includes(rel) || written.push(rel));
+  const writing = <T>(step: () => T): T => {
+    const before = listing(phys);
     try {
-      lstatSync(join(phys, rel));
-      return false;
-    } catch {
-      return true;
+      return step();
+    } finally {
+      for (const rel of [...listing(phys)].filter((r) => !before.has(r)).sort()) note(rel);
     }
   };
-  const madeDirs = ["opera", "lessons", "acta", ".bisellium"].filter(absent);
-  const logPath = join(phys, EVENTS_LOG_REL);
-  const logSize = absent(EVENTS_LOG_REL) ? undefined : lstatSync(logPath).size;
-  const undo: (() => void)[] = [];
   try {
   // 1. new fix opera
   const fixIds = new Map<string, string>();
@@ -879,13 +878,9 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
       fixIds.set(cls, fix);
       continue;
     }
-    const made = newItem(root, { kind: "opus", collegium: fix.collegium, title: fix.title });
+    const made = writing(() => newItem(root, { kind: "opus", collegium: fix.collegium, title: fix.title }));
     if (!made.ok || made.id === undefined) throw new Error(`fix of "${cls}": ${made.message}`);
     fixIds.set(cls, made.id);
-    // removed by directory entry, not by joining the id into a path (W-047)
-    undo.push(() => {
-      for (const entry of readdirSync(join(phys, "opera"))) if (entry === made.id + ".md") rmSync(join(phys, "opera", entry));
-    });
   }
 
   // 2. one lesson per class
@@ -894,7 +889,8 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     const mine = entries.filter((e) => e.cls === cls).sort((a, b) => (a.log === b.log ? a.n - b.n : a.log < b.log ? -1 : 1));
     const evidence = [...new Set(mine.map((e) => e.log))].sort();
     const body = mine.map((e) => `${e.log} #${e.n}: ${verdicts.findings.find((f) => f.log === e.log && f.n === e.n)!.text.slice(0, 200)}`);
-    const created = createNextRecord(root, "lessons", "L", (candidate) =>
+    const created = writing(() =>
+      createNextRecord(root, "lessons", "L", (candidate) =>
       [
         "---",
         `id: ${JSON.stringify(candidate)}`,
@@ -908,8 +904,8 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
         ...body,
         "",
       ].join("\n"),
+      ),
     );
-    undo.push(() => rmSync(created.path));
     lessons.push({ id: created.id, cls });
   }
 
@@ -921,14 +917,14 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
       if (severity.get(cls) !== "high" || opusState(root, fix) !== "backlog") continue;
       const fixPath = safeItemPath(join(root, "opera"), fix);
       if (typeof fixPath !== "string") throw new Error(`opera: ${fixPath.error}`);
-      const original = readFileSync(fixPath);
-      undo.push(() => writeFileSync(fixPath, original));
       editOpusFrontMatter(fixPath, (doc) => {
         doc.setIn(["state"], "greenlit");
         doc.setIn(["greenlit_by"], setting.highGreenlitBy);
         return undefined;
       });
-      emitEvent(root, manifest, "workflow.greenlight", now, { [WF.ITEM_ID]: fix, [WF.GREENLIGHT]: "granted" });
+      note(relative(root, fixPath).split(sep).join("/"));
+      writing(() => emitEvent(root, manifest, "workflow.greenlight", now, { [WF.ITEM_ID]: fix, [WF.GREENLIGHT]: "granted" }));
+      note(EVENTS_LOG_REL);
       started.push({ fix, decision: setting.highGreenlitBy });
     }
   }
@@ -962,38 +958,40 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     "",
   ].join("\n");
   const dir = realDir(root, "acta");
-  mkdirSync(dir, { recursive: true });
-  realDir(root, "acta");
-  const target = join(dir, basename(actaPath));
-  undo.push(() => rmSync(target));
-  try {
-    writeFileSync(target, acta, { flag: "wx" });
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "EEXIST") undo.pop(); // not ours to remove
-    throw e;
-  }
+  // exclusive create: an entry already there is an I/O failure and is left as it was
+  writing(() => {
+    mkdirSync(dir, { recursive: true });
+    realDir(root, "acta");
+    writeFileSync(join(dir, basename(actaPath)), acta, { flag: "wx" });
+  });
   return { path: actaRel };
   } catch (e) {
-    for (const step of undo.reverse())
-      try {
-        step();
-      } catch {
-        // best effort: keep undoing the rest
-      }
-    try {
-      if (logSize === undefined) rmSync(logPath, { force: true });
-      else if (statSync(logPath).size !== logSize) truncateSync(logPath, logSize);
-    } catch {
-      // best effort
-    }
-    for (const d of madeDirs.reverse())
-      try {
-        rmdirSync(join(phys, d));
-      } catch {
-        // not empty or already gone
-      }
-    throw e;
+    // nothing written yet: the failure is decided before any write, a refusal
+    if (written.length === 0) throw e;
+    throw new RetroIoError(written, e as NodeJS.ErrnoException);
   }
+}
+
+/** A failure after the retro's first write: names every path written in this run, in first-write order. */
+export class RetroIoError extends Error {
+  constructor(written: string[], cause: NodeJS.ErrnoException) {
+    super(`I/O failure after writing [${written.join(", ")}]; failing path ${cause.path ?? "(unknown)"}: ${cause.message}`);
+  }
+}
+
+/** The retro's output directories and what they hold, as officina-relative entries ("d/" for a directory). */
+function listing(phys: string): Set<string> {
+  const out = new Set<string>();
+  for (const d of ["opera", "lessons", "acta", ".bisellium"]) {
+    try {
+      if (!lstatSync(join(phys, d)).isDirectory()) continue;
+      out.add(`${d}/`);
+      for (const n of readdirSync(join(phys, d))) out.add(`${d}/${n}`);
+    } catch {
+      // absent
+    }
+  }
+  return out;
 }
 
 /** A physical officina directory, which must be a real directory (not a symlink) or absent: where the retro writes. */
@@ -1007,14 +1005,13 @@ function realDir(root: string, name: string): string {
   return dir;
 }
 
-/** The event log a greenlight appends to: `.bisellium/` absent or a real directory, `events.jsonl` absent or a writable regular file. */
+/** The event log a greenlight appends to: `.bisellium/` absent or a real directory, `events.jsonl` absent or a regular file (lstat; no permission check). */
 function eventLogProblem(root: string): void {
   realDir(root, ".bisellium");
   const log = join(realpathSync(root), EVENTS_LOG_REL);
   try {
     const stat = lstatSync(log);
     if (!stat.isFile()) throw new Error(`${EVENTS_LOG_REL}: must be a regular file, not a symbolic link or directory`);
-    accessSync(log, constants.W_OK);
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
   }
@@ -1073,7 +1070,7 @@ export function runRetro(args: string[], opts: { now?: Date } = {}): { exitCode:
       return { exitCode: 0 };
     } catch (e) {
       console.error(oneLine((e as Error).message));
-      return { exitCode: 2 };
+      return { exitCode: e instanceof RetroIoError ? 1 : 2 };
     }
   }
 
