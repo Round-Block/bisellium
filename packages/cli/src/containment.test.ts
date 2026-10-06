@@ -1158,6 +1158,18 @@ const NO_ALIAS_FIXTURES: Record<string, string> = {
   "global-object-alias": `const g = globalThis;\nexport function f(x: string) { return g.Date.parse(x); }\n`,
 };
 for (const name of Object.keys(NO_ALIAS_FIXTURES)) FIXTURES[`na-${name}`] = NO_ALIAS_FIXTURES[name]!;
+
+// W-163 spec round 2: on Date the only member uses are the direct calls Date.parse(...), Date.UTC(...) and Date.now();
+// any other member access is an out-of-domain finding (reflection and the prototype chain beyond it are out of scope).
+const DATE_MEMBER_FIXTURES: Record<string, string> = {
+  "date-prototype": `export const p = Date.prototype;\n`,
+  "date-prototype-constructor-parse": `export function f(x: string) { return (Date.prototype.constructor as DateConstructor).parse(x); }\n`,
+  "date-prototype-constructor-new": `export function f(x: string) { return new (Date.prototype.constructor as DateConstructor)(x); }\n`,
+  "date-global-prototype": `export const p = globalThis.Date.prototype;\n`,
+  "date-other-member": `export const n = Date.length;\n`,
+  "date-now-uncalled": `export const f = Date.now;\n`,
+};
+for (const name of Object.keys(DATE_MEMBER_FIXTURES)) FIXTURES[`dm-${name}`] = DATE_MEMBER_FIXTURES[name]!;
 let fixtureScan: CDScan | undefined;
 function fixtureSites(name: string): { d: string[]; c: string[]; out: string[] } {
   const rel = (n: string): string => `packages/m/src/${n}.ts`;
@@ -1217,6 +1229,11 @@ for (const name of [
 for (const name of Object.keys(NO_ALIAS_FIXTURES)) {
   test(`W-163-b6 round 3: the scan refuses the ${name} form`, () => {
     assert.ok(fixtureSites(`na-${name}`).out.length > 0, "an out-of-domain finding names the file");
+  });
+}
+for (const name of Object.keys(DATE_MEMBER_FIXTURES)) {
+  test(`W-163-b6 round 4: the scan refuses the ${name} form`, () => {
+    assert.ok(fixtureSites(`dm-${name}`).out.length > 0, "an out-of-domain finding names the file");
   });
 }
 test("W-163-b6 round 3: a direct call stays the one followed form", () => {
