@@ -1,7 +1,7 @@
 # behaviour: 1
-# command: node --test-reporter=tap --import tsx packages/core/src/completion.test.ts --test-name-pattern=W-153-b1
+# command: node --test-reporter=tap --test-name-pattern=W-153-b1 --import tsx packages/core/src/completion.test.ts
 # exit: 1
-# at: 2026-10-06T08:41:37.689Z
+# at: 2026-10-06T08:42:09.893Z
 # sella: builder.W-153
 # tree: tree:0f6008160be2cbf9d63e9c424464e3c62f7c2fcc
 
@@ -9,7 +9,7 @@ TAP version 13
 # Subtest: W-153-b1 behaviour 1: a done opus is dated by its record, end else its latest gate time
 not ok 1 - W-153-b1 behaviour 1: a done opus is dated by its record, end else its latest gate time
   ---
-  duration_ms: 3.418177
+  duration_ms: 3.230387
   type: 'test'
   location: '/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:1:1323'
   failureType: 'testCodeFailure'
@@ -31,75 +31,12 @@ not ok 1 - W-153-b1 behaviour 1: a done opus is dated by its record, end else it
     Test.start (node:internal/test_runner/test:1096:17)
     startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
   ...
-# Subtest: W-153-b2 behaviour 2: the estimate is the remaining points over the three-week mean, ranged by the fastest and slowest week
-not ok 2 - W-153-b2 behaviour 2: the estimate is the remaining points over the three-week mean, ranged by the fastest and slowest week
-  ---
-  duration_ms: 0.499353
-  type: 'test'
-  location: '/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:1:2024'
-  failureType: 'testCodeFailure'
-  error: |-
-    Expected values to be strictly equal:
-    
-    'none' !== 'estimate'
-    
-  code: 'ERR_ASSERTION'
-  name: 'AssertionError'
-  expected: 'estimate'
-  actual: 'none'
-  operator: 'strictEqual'
-  stack: |-
-    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:54:10)
-    Test.runInAsyncScope (node:async_hooks:226:14)
-    Test.run (node:internal/test_runner/test:1201:25)
-    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
-    Test.postRun (node:internal/test_runner/test:1330:19)
-    Test.run (node:internal/test_runner/test:1258:12)
-    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
-  ...
-# Subtest: W-153-b3 behaviour 3: a bulk closure is left out of the pace; thin history or nothing left gives no estimate
-not ok 3 - W-153-b3 behaviour 3: a bulk closure is left out of the pace; thin history or nothing left gives no estimate
-  ---
-  duration_ms: 1.723083
-  type: 'test'
-  location: '/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:1:2709'
-  failureType: 'testCodeFailure'
-  error: |-
-    Expected values to be strictly deep-equal:
-    + actual - expected
-    
-    + []
-    - [
-    -   'W-20',
-    -   'W-21',
-    -   'W-22',
-    -   'W-23'
-    - ]
-    
-  code: 'ERR_ASSERTION'
-  name: 'AssertionError'
-  expected:
-    0: 'W-20'
-    1: 'W-21'
-    2: 'W-22'
-    3: 'W-23'
-  actual:
-  operator: 'deepStrictEqual'
-  stack: |-
-    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-153/packages/core/src/completion.test.ts:72:10)
-    Test.runInAsyncScope (node:async_hooks:226:14)
-    Test.run (node:internal/test_runner/test:1201:25)
-    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
-    Test.postRun (node:internal/test_runner/test:1330:19)
-    Test.run (node:internal/test_runner/test:1258:12)
-    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
-  ...
-1..3
-# tests 3
+1..1
+# tests 1
 # suites 0
 # pass 0
-# fail 3
+# fail 1
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 13.276962
+# duration_ms 13.117005
