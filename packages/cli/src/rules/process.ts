@@ -14,6 +14,7 @@ import { basename, join } from "node:path";
 import { listMd, readFront } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import type { Finding, Level, RuleOpts } from "../check.js";
+import { owedRetros } from "../retro.js";
 import { RULE_IDS } from "./ids.js";
 
 type Dict = Record<string, unknown>;
@@ -263,6 +264,8 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
     }
 
     if (data["addressed_by"] !== undefined) addressedClaims.push({ where, value: data["addressed_by"] });
+    // lesson.unfixed (advise, D-039 §3): every lesson names its fix.
+    else add("lesson.unfixed", "advise", where, `${basename(p, ".md")} names no fix (addressed_by)`);
 
     const cls = str(data["class"]);
     const ab = str(data["addressed_by"]);
@@ -287,11 +290,13 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   // resolveAddressedBy below can recognise an "opus" target — the lessons
   // loop above only collects, since it runs before this one.
   const operaStates = new Map<string, string | undefined>();
+  const opusEnds = new Map<string, unknown>();
   for (const p of safeList(join(root, "opera"))) {
     const where = rel(p);
     const data = safeFront(p);
     if (!data) continue;
     operaStates.set(basename(p, ".md"), str(data["state"]));
+    opusEnds.set(basename(p, ".md"), data["end"]);
     if (sameSellaBuiltAndReviewed(data["probationes"])) {
       const sella = gateSella(data["probationes"], "spec");
       add("process.cascade", "advise", where, `sella "${sella}" recorded for both spec and review — one context built and reviewed its own work`);
@@ -321,6 +326,13 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
       }
     }
   }
+
+  // retro.overdue (advise, D-039 §1): a done opus owes its retro. `owedRetros` is the one reader of the setting and
+  // of retro-filed status; its error is check.ts's manifest.shape block, so here it adds nothing.
+  const owed = owedRetros(root);
+  if ("owed" in owed)
+    for (const id of owed.owed)
+      add("retro.overdue", "advise", `opera/${id}.md`, `${id} is done (${String(opusEnds.get(id))}) and its retro is not filed: bisellium retro --opus ${id} --from <triage.json>`);
 
   // resolveAddressedBy: first match wins, in that fixed order. The three id
   // spaces are disjoint in practice (bisellium new / draftRetro allocate

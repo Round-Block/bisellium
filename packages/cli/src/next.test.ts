@@ -297,7 +297,7 @@ interface World {
   /** The opus branch tip once the branch has been reviewed (survives the branch's deletion). */
   headOid?: string;
 }
-const STAGES = ["greenlight", "spec", "branch", "ready", "reds", "build", "review", "pr", "merge", "cleanup", "done", "checkpoint"] as const;
+const STAGES = ["greenlight", "spec", "branch", "ready", "reds", "build", "review", "pr", "merge", "cleanup", "done", "retro", "checkpoint"] as const;
 type Stage = (typeof STAGES)[number];
 const idx = (s: Stage | "backlog"): number => (s === "backlog" ? -1 : STAGES.indexOf(s));
 
@@ -3050,6 +3050,10 @@ function addSpecced(w: World): void {
   commit(w.repo, `spec(${OTHER}): signed`);
   git(w.repo, ["push", "-q", "origin", "master"]);
 }
+/** Expect `next: W-901 <step> <status>` as the first stdout line. */
+function expectOther(o: Out, step: string, status: string, row: string): void {
+  assert.equal(o.first, `next: ${OTHER} ${step} ${status}`, ran(row, o));
+}
 function setRetro(w: World, line: string): void {
   appendFileSync(join(w.studio, "bisellium.yml"), `${line}\n`);
   commit(w.repo, "test: retro setting");
@@ -3066,19 +3070,19 @@ test("W-137-b4 behaviour 4: next names the retro after done and holds every new 
   assert.match(named.out, /^actor: producer$/m, ran("the producer files it", named));
 
   const held = next(w, [OTHER]);
-  expectStep(held, "branch", "held", "a new start holds at branch while a retro is owed");
+  expectOther(held, "branch", "held", "a new start holds at branch while a retro is owed");
   assert.match(held.out, /retro owed: W-900; file them before a new opus starts/, ran("the hold names the owed opus", held));
 
   put(w.studio, "acta/2026-10-06-retro-W-900.md", `---\nauthor: producer\nkind: decision\ntitle: "Retro W-900"\nat: 2026-10-06T13:00:00Z\nopus: W-900\n---\nFiled.\n`);
   commit(w.repo, "chore(studio): retro W-900 filed");
   git(w.repo, ["push", "-q", "origin", "master"]);
   expectStep(next(w, [OPUS]), "checkpoint", "named", "once the retro is filed the ladder goes on to the checkpoint");
-  expectStep(next(w, [OTHER]), "branch", "named", "and the next opus may start");
+  expectOther(next(w, [OTHER]), "branch", "named", "and the next opus may start");
 
   const none = world("w137-b4-none", "done");
   addSpecced(none);
   expectStep(next(none, [OPUS]), "checkpoint", "named", "with no retro key the done opus goes straight to the checkpoint");
-  expectStep(next(none, [OTHER]), "branch", "named", "with no retro key a new start is named as today");
+  expectOther(next(none, [OTHER]), "branch", "named", "with no retro key a new start is named as today");
 
   const bad = world("w137-b4-bad", "done");
   addSpecced(bad);
@@ -3087,6 +3091,6 @@ test("W-137-b4 behaviour 4: next names the retro after done and holds every new 
   expectStep(badDone, "retro", "held", "a malformed retro setting holds the retro step");
   assert.match(badDone.out, /since/, ran("and names the setting", badDone));
   const badNew = next(bad, [OTHER]);
-  expectStep(badNew, "branch", "held", "a malformed retro setting holds a new start");
+  expectOther(badNew, "branch", "held", "a malformed retro setting holds a new start");
   assert.match(badNew.out, /since/, ran("and names the setting", badNew));
 });

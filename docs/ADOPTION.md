@@ -214,6 +214,12 @@ no petitio (re-filing one for work already open, accepted or ruled-on is the
 duplication this closes) and is instead listed, with its target and — for an
 opus — its current state, under the retro's "## Addressed" section.
 
+Two further optional lesson keys are written by `bisellium retro --opus`
+(W-137): `opus` (the opus whose verdicts the lesson came from) and `severity`
+(`high`, `medium` or `low`, by rule: see "bisellium retro"). A lesson carrying
+no `addressed_by` raises the advisory `lesson.unfixed` (`<id> names no fix
+(addressed_by)`); every lesson `retro --opus` files names its fix.
+
 **Open lessons (W-085).** A class is *open* until some lesson of it carries an
 `addressed_by` that names a rule id, a decision on disk, or an opus whose
 `state` is `done`. A value naming a not-done opus leaves it open, marked
@@ -234,7 +240,11 @@ orchestrator can hand the bundle to a harness that cannot run it.
 
 ```bash
 npm run bisellium -- retro --cascade <N> [--from <json>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- retro --opus <id> --from <triage.json> [--studio <dir>] [--now <iso>]
 ```
+
+`--opus` and `--cascade` exclude each other; `--opus` requires `--from`. The
+`--cascade` form is described first, the `--opus` form (W-137, D-039) after it.
 
 Validates every `reviewFindings[].evidence` first (non-empty, no dead
 relative href — the same contract `lesson.evidence` blocks) and writes
@@ -280,6 +290,66 @@ usage-from-workflow.mjs` builds this `usage` object (and the matching
 tool's own output file — see `cascades/README.md`'s "Usage tracking"
 section.
 
+### retro --opus (W-137)
+
+Once an opus is `done`, its retro is the next step, and no other opus starts
+until it is filed. The retro reads the opus's recorded verdicts and reds, and
+accounts for every finding exactly once: a lesson with a named fix, or "not a
+lesson" with a reason. The `retro` manifest key turns it on:
+
+```yaml
+retro: { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }
+```
+
+`since` (an ISO date) is when retros start being owed: a `done` opus whose
+`end` is at or after it owes one. A `done` opus with no `end` closed before
+W-096 and owes none; an `end` that is present but not a date counts as owed
+(fail closed). `high_greenlit_by` (optional) names a Patron decision; without
+it a high-severity fix stays in `backlog` like the rest. Absent `retro`, nothing
+is owed. A malformed `retro` (not a mapping, an unknown key, a bad `since`, a
+`high_greenlit_by` that is no Patron decision) is a `manifest.shape` block at
+`bisellium.yml#retro`. `owedRetros` (`packages/cli/src/retro.ts`) is the one
+reader of the setting and of retro-filed status; `next` and `check` call it.
+
+The triage (`--from`) has one entry per recorded finding and no other keys:
+
+```json
+{ "findings": [
+  { "log": "ci/W-153-review-2.log", "n": 2, "class": "review×fail-open", "fix": "W-161" },
+  { "log": "ci/W-153-review-3.log", "n": 1, "class": "tests×x", "fix": { "title": "add the x row", "collegium": "engineering" } },
+  { "log": "ci/W-153-review-4.log", "n": 3, "not_a_lesson": "a repeat of review-2 #2" }
+] }
+```
+
+Every record is judged at one boundary and the whole retro refuses (exit 2,
+one line, nothing written) on anything outside its domain: verdict logs
+(`ci/<id>-review-<n>.log` and `<id>-spec-<n>.log`, `# opus:` equal to the opus,
+one `## Findings` heading holding `No findings` or lines
+`<n>. blocking|advisory …`, `# converted:` naming recorded findings), reds
+(`ci/reds/<id>/NN.log`), lessons (a mapping with a `class`), the setting, and
+the triage (every recorded finding exactly once; `class` matches
+`<area>×<name>`; one `fix` per class: an opus, a rule id or a decision, or an
+object `{ title, collegium }` that is filed as a new opus in `backlog`). A
+`fix` naming the opus itself is a ride-along. The opus must be `done` and its
+retro not yet filed.
+
+Writes, in the order that leaves a crash owing the retro: new fix opera, one
+lesson per class (keys `id`, `at`, `class`, `evidence`, `opus`, `severity`,
+`addressed_by`), the greenlight of each high lesson's `backlog` fix (state
+`greenlit`, `greenlit_by`, a `workflow.greenlight` event; no Patron timeline
+line), and last `acta/<date>-retro-<id>.md` (`opus: <id>`; sections `Sources`,
+`Lessons`, `Not lessons`, `Fixes started`). Severity is a rule over recorded
+facts, never a model: `high` when the class area (the text before `×`) is
+`security` or `data-loss`, or a lesson of the same class already exists;
+`medium` when any finding of the class is blocking (first word `blocking`, and
+not listed in the log's `# converted:` header); otherwise `low`.
+
+`next` names step `retro` (actor `producer`) once an opus is `done` and owes
+one, before `checkpoint`, and holds at `branch` for any new opus while a retro
+is owed (`retro owed: <ids>; file them before a new opus starts`). `check`
+advises `retro.overdue` (`<id> is done (<end>) and its retro is not filed`) and
+`lesson.unfixed` (`<id> names no fix (addressed_by)`).
+
 ## bisellium.yml
 
 ```yaml
@@ -313,6 +383,7 @@ probationes:
 review_probatio: review           # probatio id that gates "review" state (default "review")
 wip_limit: 3                      # items in building + verifying, studio-wide
 brief_behaviour_limit: 6          # optional (W-127); turns on brief admission: most numbered behaviours a brief may carry
+retro: { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }  # optional (W-137); see "bisellium retro"
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
   model_probe_stale_days: 7       # optional; code default 7 — tick's probe-cadence age trigger (W-071)
@@ -992,8 +1063,8 @@ npm run bisellium -- next <opus> --track <step> --pid <n> --output <path> [--stu
 
 `next` is the cascade order as a verb (`packages/cli/src/next.ts`). From the
 record and its evidence alone it derives the one legal next step of the
-twelve-rung ladder `STEPS` (`greenlight`, `spec`, `branch`, `ready`, `reds`,
-`build`, `review`, `pr`, `merge`, `cleanup`, `done`, `checkpoint`), names it,
+thirteen-rung ladder `STEPS` (`greenlight`, `spec`, `branch`, `ready`, `reds`,
+`build`, `review`, `pr`, `merge`, `cleanup`, `done`, `retro`, `checkpoint`), names it,
 and refuses to skip. A rung is met by evidence, never by memory: the committed
 trunk (`refs/heads/master`, read with `git show`, never a working tree) carries
 the signed spec, and, once it carries the opus's `done` record, settles every

@@ -1,7 +1,7 @@
 /**
  * packages/cli/src/next.ts — W-124: `bisellium next <opus>`, the cascade order
  * as a verb. From the record and its evidence alone it derives the ONE legal
- * next step of the twelve-rung ladder (`STEPS`), names it (exact command or
+ * next step of the thirteen-rung ladder (`STEPS`), names it (exact command or
  * dispatch order) or, with `--perform`, performs it, and refuses to skip.
  *
  * Read-only unless `--perform` or `--track` is given. Trunk-side evidence (the
@@ -31,11 +31,12 @@ import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
 import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
+import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 
 export { MIN_CHECKS };
 
-export const STEPS = ["greenlight", "spec", "branch", "ready", "reds", "build", "review", "pr", "merge", "cleanup", "done", "checkpoint"] as const;
+export const STEPS = ["greenlight", "spec", "branch", "ready", "reds", "build", "review", "pr", "merge", "cleanup", "done", "retro", "checkpoint"] as const;
 export type Step = (typeof STEPS)[number];
 export const DISPATCH_TOKEN_CAP = 500_000;
 /** Seconds of output silence after which a live step reads stalled (`dead`). */
@@ -51,6 +52,7 @@ export const STEP_SILENCE_SECONDS: Record<Step, number> = {
   merge: 120,
   cleanup: 120,
   done: 120,
+  retro: 1800,
   checkpoint: 120,
 };
 
@@ -204,6 +206,8 @@ export interface Facts {
   /** the authoritative ui-lead input (`ci/<id>-spec-<n>.log`) of a kind: ui opus whose branch carries a valid one */
   uiReviewInput(): string | undefined;
   pr(): PrClass;
+  /** the retros owed (D-039 §1), or why the `retro` setting cannot be read; the one reader is `owedRetros` */
+  owed(): { owed: string[] } | { error: string };
   /** newest `# at:` among the opus's reds and review logs, in ms */
   evidenceAt(): number;
 }
@@ -342,6 +346,7 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
     uiReviewProblems: memo(() => (usable ? uiProblems(branchRecord, wt.studio) : [])),
     uiReviewInput: memo(() => (usable ? uiInput(branchRecord, wt.studio) : undefined)),
     pr: memo((): PrClass => classify(repo, tipRead, identifyPr(repo, `opus/${id}`))),
+    owed: memo(() => owedRetros(studioAbs)),
     evidenceAt: memo(() => {
       const times: number[] = [];
       for (const name of branch?.list(`ci/reds/${id}`) ?? []) times.push(Date.parse(parseLogHeader(branch?.read(`ci/reds/${id}/${name}`) ?? "").get("at") ?? ""));
@@ -485,7 +490,12 @@ export function deriveNext(f: Facts): Derived {
     if (p.kind === "held") return hold(f.tip === undefined ? "branch" : "pr", p.reason);
     if (p.kind === "settled") settled = true;
     else if (p.kind === "behind") return named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr);
-    else if (f.tip === undefined) return named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`);
+    else if (f.tip === undefined) {
+      // D-039 §1: no new opus starts while a retro is owed
+      const owing = retroHold(f);
+      if (owing !== undefined) return hold("branch", owing);
+      return named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`);
+    }
   }
 
   if (!settled) {
@@ -568,9 +578,27 @@ export function deriveNext(f: Facts): Derived {
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
 
+/** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. */
+function retroHold(f: Facts): string | undefined {
+  const owed = f.owed();
+  if ("error" in owed) return `the retro setting cannot be read: ${owed.error}`;
+  return owed.owed.length > 0 ? `retro owed: ${owed.owed.join(", ")}; file them before a new opus starts` : undefined;
+}
+
 /** The checkpoint rides the done commit: complete once the commit that made the record `done` also changed the handoff. */
 function afterDone(f: Facts): Derived {
   const { id } = f;
+  const owed = f.owed();
+  if ("error" in owed) return { step: "retro", status: "held", actor: "producer", why: `the retro setting cannot be read: ${owed.error}`, extra: [] };
+  if (owed.owed.includes(id))
+    return {
+      step: "retro",
+      status: "named",
+      actor: "producer",
+      why: `${id} is done on the trunk; its retro is not filed`,
+      command: `bisellium retro --opus ${id} --from <triage.json> --studio ${f.studioRel}`,
+      extra: [],
+    };
   if (f.handoff === undefined) return { step: "checkpoint", status: "complete", actor: "producer", why: "the trunk record is done and master has no handoff", extra: [] };
   if (f.checkpointed()) return { step: "checkpoint", status: "complete", actor: "producer", why: `the trunk record is done and its done commit changed ${HANDOFF}`, extra: [] };
   return {

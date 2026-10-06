@@ -480,6 +480,7 @@ if (runs(2)) {
     "packages/cli/src/new.ts:runNew",
     "packages/cli/src/retro.ts:draftRetro",
     "packages/cli/src/retro.ts:draftRetro",
+    "packages/cli/src/retro.ts:draftOpusRetro",
     "packages/commands/src/talk.ts:openPetitio",
   ];
   if (JSON.stringify(actualCalls) !== JSON.stringify(expectedCalls)) {
