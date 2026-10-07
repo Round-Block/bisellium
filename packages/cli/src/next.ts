@@ -27,6 +27,7 @@ import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bis
 import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { readRoundRulings } from "@bisellium/commands/lifecycle.js";
 import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
@@ -686,9 +687,11 @@ export function deriveNext(f: Facts): Derived {
     if (cur === undefined) return hold("review", `the current source tree of opus/${id} cannot be computed, so no review round can be judged current`);
     const gate = reviewGate(f, b, read);
     if (gate !== undefined && "error" in gate) return hold("review", gate.error);
+    const rulings = readRoundRulings(f.wt.studio, f.manifest, b, id, read.rounds);
+    if ("error" in rulings) return hold("review", rulings.error);
     const counted = countedFailures(read.rounds);
-    // D-046 §2: the cap is three counted failures; a pass already recorded at this tree proceeds
-    if (!(gate?.status === "passed" && gate.tree === cur) && counted.length >= REVIEW_ROUND_CAP) return capHold(f, counted);
+    // D-046 §2: the cap is three counted failures plus one round per Patron ruling; a pass already recorded at this tree proceeds
+    if (!(gate?.status === "passed" && gate.tree === cur) && counted.length >= REVIEW_ROUND_CAP + rulings.rulings.length) return capHold(f, counted);
     const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
     const receipt = f.receipt();
     if ((receipt !== undefined && !receipt.ok) || failedNow)

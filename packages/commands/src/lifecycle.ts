@@ -41,6 +41,7 @@ import {
   type OpusModelProblem,
 } from "./opus-model.js";
 import { ensureRealDirectory } from "./ids.js";
+import { countedFailures, readBuildReviewConfig, readBuildRounds, type BuildReviewRound } from "./verdict.js";
 import {
   emitEvent,
   mintDispatchSella,
@@ -1104,7 +1105,7 @@ export function patronDecisionProblem(
   root: string,
   manifest: Pick<Manifest, "patron">,
   decisionId: unknown,
-  opts?: { by?: string; mustName?: string },
+  opts?: { by?: string; mustName?: string; grantLine?: string; after?: number },
 ): string | undefined {
   if (typeof decisionId !== "string" || decisionId.trim().length === 0) return `waived_by is missing or not a string`;
   const decisionPath = safeItemPath(join(root, "decisions"), decisionId);
@@ -1132,7 +1133,45 @@ export function patronDecisionProblem(
   // as a whole token: W-12 is not named by a decision that only names W-127.
   if (opts?.mustName !== undefined && !namesToken(text, opts.mustName))
     return `decision "${decisionId}" does not name ${opts.mustName}`;
+  // W-167: a ruling's own sentence on a line of its own, and a time strictly after the failure it rules on.
+  if (opts?.grantLine !== undefined && !parseFrontMatter(text, decisionPath).body.split("\n").includes(opts.grantLine))
+    return `decision "${decisionId}" holds no line "${opts.grantLine}"`;
+  if (opts?.after !== undefined) {
+    const at = data["at"];
+    const problem = utcTimestampProblem(at);
+    if (problem !== undefined) return `decision "${decisionId}" at ${problem}`;
+    if (Date.parse(at as string) <= opts.after) return `decision "${decisionId}" is dated ${at as string}, not after the failure it rules on (${new Date(opts.after).toISOString()})`;
+  }
   return undefined;
+}
+
+/**
+ * W-167: the one reader of `round_rulings` (D-046 §2). Absent is no rulings. Present, it is a non-empty list of distinct
+ * decision ids, valid only once three failures count, each a decision by the manifest's `patron` (never defaulted) dated
+ * strictly after the third counted failure and holding the exact grant line for this opus. One bad id rejects the list.
+ */
+export function readRoundRulings(
+  root: string,
+  manifest: Pick<Manifest, "patron">,
+  rec: Record<string, unknown>,
+  id: string,
+  rounds: readonly BuildReviewRound[],
+): { rulings: string[] } | { error: string } {
+  const raw = rec["round_rulings"];
+  if (raw === undefined) return { rulings: [] };
+  const bad = (why: string): { error: string } => ({ error: `${id}: round_rulings: ${why}` });
+  if (!Array.isArray(raw) || raw.length === 0 || !raw.every((v) => typeof v === "string" && v !== "")) return bad("must be a non-empty list of decision-id strings");
+  if (new Set(raw).size !== raw.length) return bad("lists a decision id twice");
+  const counted = countedFailures(rounds);
+  if (counted.length < 3) return bad(`present with ${counted.length} counted failed build-review rounds; a ruling needs a third failure to postdate`);
+  const patron = manifest.patron;
+  if (typeof patron !== "string" || patron === "" || patron !== patron.trim()) return bad("bisellium.yml#patron must be a non-empty string equal to its own trim");
+  const grantLine = `Grant: one more build-review round for ${id}.`;
+  for (const decisionId of raw as string[]) {
+    const problem = patronDecisionProblem(root, manifest, decisionId, { by: patron, grantLine, after: counted[2]!.at });
+    if (problem !== undefined) return bad(problem);
+  }
+  return { rulings: raw as string[] };
 }
 
 // ---------------------------------------------------------------------------
@@ -1267,7 +1306,7 @@ export function runWaive(args: string[], opts: WriteOptions = {}): WriteResult {
 //    evidence or identity, never amendable — refused by name below.
 // ---------------------------------------------------------------------------
 
-const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
+const AMEND_USAGE = "usage: bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--round-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]";
 
 /** W-152: the scale an opus is scored on (D-038), and the milestone ids
  *  declared in `<officina>/milestones.yml` (empty when the file is absent or
@@ -1322,7 +1361,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     }
   }
 
-  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--arc", "--parent", "--ui-ruling", "--milestone", "--value", "--reason", "--sella", "--studio", "--now"] });
+  const parsed = parseFlags(args, { valued: ["--title", "--spec", "--arc", "--parent", "--ui-ruling", "--round-ruling", "--milestone", "--value", "--reason", "--sella", "--studio", "--now"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${AMEND_USAGE}`);
     return { exitCode: 2 };
@@ -1339,9 +1378,10 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   const arcFlag = values.get("--arc");
   const parentFlag = values.get("--parent");
   const rulingFlag = values.get("--ui-ruling");
+  const roundRulingFlag = values.get("--round-ruling");
   const milestoneFlag = values.get("--milestone");
   const valueFlag = values.get("--value");
-  if (titleFlag === undefined && specFlag === undefined && arcFlag === undefined && parentFlag === undefined && rulingFlag === undefined && milestoneFlag === undefined && valueFlag === undefined) {
+  if (titleFlag === undefined && specFlag === undefined && arcFlag === undefined && parentFlag === undefined && rulingFlag === undefined && roundRulingFlag === undefined && milestoneFlag === undefined && valueFlag === undefined) {
     console.error(AMEND_USAGE);
     return { exitCode: 2 };
   }
@@ -1497,6 +1537,35 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     return { exitCode: 2 };
   }
 
+  // W-167: a ruling attaches only when the review configuration and history read cleanly, the existing list passes,
+  // and the list with the new id appended passes (a repeat id fails distinctness); every refusal precedes any write.
+  let roundRulings: string[] | undefined;
+  let currentRoundRulings: unknown;
+  if (roundRulingFlag !== undefined) {
+    const config = readBuildReviewConfig(manifest);
+    if ("error" in config) {
+      console.error(`${opusId}: --round-ruling: ${config.error}`);
+      return { exitCode: 2 };
+    }
+    const history = readBuildRounds(root, opusId, config.config);
+    if ("error" in history) {
+      console.error(`${opusId}: --round-ruling: ${history.error}`);
+      return { exitCode: 2 };
+    }
+    const existing = readRoundRulings(root, manifest, current as Record<string, unknown>, opusId, history.rounds);
+    if ("error" in existing) {
+      console.error(`amend: ${existing.error}`);
+      return { exitCode: 2 };
+    }
+    const appended = readRoundRulings(root, manifest, { ...(current as Record<string, unknown>), round_rulings: [...existing.rulings, roundRulingFlag] }, opusId, history.rounds);
+    if ("error" in appended) {
+      console.error(`amend: --round-ruling ${roundRulingFlag}: ${appended.error}`);
+      return { exitCode: 2 };
+    }
+    roundRulings = appended.rulings;
+    currentRoundRulings = existing.rulings;
+  }
+
   if (milestoneFlag !== undefined) {
     if (!declaredMilestoneIds(root).has(milestoneFlag)) {
       console.error(`${opusId}: --milestone ${milestoneFlag} is not declared in milestones.yml (or the file is absent) — refused`);
@@ -1515,6 +1584,7 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
     ...(arcFlag === undefined ? {} : { arc: arcFlag }),
     ...(parentFlag === undefined ? {} : { parent: parentFlag }),
     ...(rulingFlag === undefined ? {} : { ui_rulings: [...currentRulings, rulingFlag] }),
+    ...(roundRulings === undefined ? {} : { round_rulings: roundRulings }),
     ...(milestoneFlag === undefined ? {} : { milestone: milestoneFlag, value: valueNum }),
   };
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposedAmend, "check", true))) return { exitCode: 1 };
@@ -1534,12 +1604,13 @@ export function runAmend(args: string[], opts: WriteOptions = {}): WriteResult {
   // Both flags in one call append one entry per changed field, title first,
   // then spec, regardless of flag order — the record is deterministic
   // regardless of argv order.
-  const fields: { field: "title" | "spec" | "arc" | "parent" | "ui_rulings" | "milestone" | "value"; value: unknown; superseded: unknown }[] = [];
+  const fields: { field: "title" | "spec" | "arc" | "parent" | "ui_rulings" | "round_rulings" | "milestone" | "value"; value: unknown; superseded: unknown }[] = [];
   if (titleFlag !== undefined) fields.push({ field: "title", value: titleFlag, superseded: currentTitle ?? "" });
   if (specRel !== undefined) fields.push({ field: "spec", value: specRel, superseded: currentSpec ?? "" });
   if (arcFlag !== undefined) fields.push({ field: "arc", value: arcFlag, superseded: currentArc ?? "" });
   if (parentFlag !== undefined) fields.push({ field: "parent", value: parentFlag, superseded: currentParent ?? "" });
   if (rulingFlag !== undefined) fields.push({ field: "ui_rulings", value: [...currentRulings, rulingFlag], superseded: currentRulings });
+  if (roundRulings !== undefined) fields.push({ field: "round_rulings", value: roundRulings, superseded: currentRoundRulings });
   // Only a changed half is an amendment: the same milestone at a new value writes `value` alone.
   if (milestoneFlag !== undefined && currentMilestone !== milestoneFlag) fields.push({ field: "milestone", value: milestoneFlag, superseded: currentMilestone ?? "" });
   if (valueNum !== undefined && currentValue !== valueNum) fields.push({ field: "value", value: valueNum, superseded: currentValue ?? "" });
