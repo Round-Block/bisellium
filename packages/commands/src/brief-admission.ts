@@ -91,7 +91,7 @@ const cellsOf = (line: string): string[] =>
 
 /** W-161: problems with the one "Input domain" section (`## ` or `### `, up to the next real `^#{1,3} ` line):
  *  a three-column table whose rows each name a record, its domain and one rejecting function, and which says
- *  that a rejection fails closed. Shape only: the named function is not looked up. */
+ *  that a rejection fails closed; or one `None: <reason>` line. Shape only: the named function is not looked up. */
 function inputDomainProblems(real: string[]): string[] {
   const starts = real.flatMap((l, i) => (DOMAIN_HEADING.test(l) ? [i] : []));
   if (starts.length === 0)
@@ -104,6 +104,11 @@ function inputDomainProblems(real: string[]): string[] {
   const first = section.findIndex((l) => /^ {0,3}\|/.test(l));
   const run: string[] = [];
   for (let i = first; i !== -1 && i < section.length && /^ {0,3}\|/.test(section[i]!); i++) run.push(section[i]!);
+  const nones = section.filter((l) => l.startsWith("None:"));
+  if (nones.length > 0) {
+    if (nones.length > 1 || run.length > 0) return ['input domain mixes "None:" with a table or repeats it; one table or one "None: <reason>" line'];
+    return /^None:\s*\S/.test(nones[0]!) ? [] : ['input domain "None:" line gives no reason'];
+  }
   const head = run[0] === undefined ? [] : cellsOf(run[0]);
   const delimiter = run[1] === undefined ? [] : cellsOf(run[1]);
   if (
@@ -124,6 +129,14 @@ function inputDomainProblems(real: string[]): string[] {
   });
   if (!/fails closed/i.test(section.join("\n"))) problems.push("input domain does not say that a rejection fails closed");
   return problems;
+}
+
+/** W-161: the one reader of `brief_behaviour_limit`. Absent is no admission; a positive integer is the limit;
+ *  anything else, `null` included, is an error that fails closed in both callers. */
+export function readBriefLimit(raw: unknown): { limit: number | undefined } | { error: string } {
+  if (raw === undefined) return { limit: undefined };
+  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 1) return { limit: raw };
+  return { error: "brief_behaviour_limit must be a positive integer" };
 }
 
 /** `exception`: the one "Behaviour limit exception:" value on an over-limit brief. It is not validated here

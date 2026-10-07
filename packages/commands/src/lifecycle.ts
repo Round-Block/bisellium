@@ -23,7 +23,7 @@ import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisell
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF } from "@bisellium/schema";
-import { readBriefAdmission } from "./brief-admission.js";
+import { readBriefAdmission, readBriefLimit } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
@@ -301,13 +301,13 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
   if (refuseModel(opusId, nativePreflight(root, manifest, opusId, proposed, "ready"))) return { exitCode: 1 };
 
   // W-127: brief admission, only where the officina declares a limit.
-  const limit: unknown = manifest.brief_behaviour_limit;
-  if (limit !== undefined) {
-    if (typeof limit !== "number" || !Number.isInteger(limit) || limit < 1) {
-      console.error(`${opusId}: brief.admission: brief_behaviour_limit must be a positive integer`);
-      return { exitCode: 1 };
-    }
-    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), limit);
+  const limit = readBriefLimit(manifest.brief_behaviour_limit);
+  if ("error" in limit) {
+    console.error(`${opusId}: brief.admission: ${limit.error}`);
+    return { exitCode: 1 };
+  }
+  if (limit.limit !== undefined) {
+    const admission = briefAdmissionProblems(root, manifest, opusId, containedSpec.bytes.toString("utf8"), limit.limit);
     if (admission.length > 0) {
       console.error(admission.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
       return { exitCode: 1 };

@@ -26,6 +26,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SAMPLE = join(HERE, "..", "..", "..", "examples", "sample-studio");
 const NOW = new Date("2026-10-05T12:00:00Z");
 const BRIEF_REL = "briefs/W-900.md";
+/** The sample copy's other active opera name no spec, so the check rows read W-900's findings only (W-161 b6 blocks them). */
+const W900 = "opera/W-900.md";
 
 const dirs: string[] = [];
 after(() => {
@@ -354,7 +356,7 @@ describe("behaviour 5", () => {
     put(dir, BRIEF_REL, brief({ reds: SEVEN }));
     opus(dir, state, spec);
     const found = checkStudio(dir, NOW).findings;
-    return { admission: found.filter((f) => f.rule === "brief.admission"), shape: found.filter((f) => f.rule === "manifest.shape") };
+    return { admission: found.filter((f) => f.rule === "brief.admission" && f.where === W900), shape: found.filter((f) => f.rule === "manifest.shape") };
   }
   for (const state of ["building", "verifying", "review"]) {
     test(`an active opus (${state}) whose brief is over the limit is blocked`, () => {
@@ -426,7 +428,7 @@ describe("review round 1", () => {
       editManifest(dir, (doc) => (bad === ABSENT ? doc.deleteIn(["collegia"]) : doc.setIn(["collegia"], bad)));
       let findings: ReturnType<typeof checkStudio>["findings"] = [];
       assert.doesNotThrow(() => (findings = checkStudio(dir, NOW).findings), String(bad));
-      const found = findings.filter((f) => f.rule === "brief.admission");
+      const found = findings.filter((f) => f.rule === "brief.admission" && f.where === W900);
       assert.deepEqual(
         found.map((f) => f.message),
         [`${BRIEF_REL} behaviour limit exception: no design collegium declares a magister`],
@@ -519,7 +521,7 @@ function checked(state: string, text: string | undefined, limit: unknown = 6, op
   if (opusText === undefined) opus(dir, state);
   else put(dir, "opera/W-900.md", opusText);
   const found = checkStudio(dir, NOW).findings;
-  return { admission: found.filter((f) => f.rule === "brief.admission"), shape: found.filter((f) => f.rule === "manifest.shape"), dir };
+  return { admission: found.filter((f) => f.rule === "brief.admission" && f.where === W900), shape: found.filter((f) => f.rule === "manifest.shape"), dir };
 }
 
 test("W-161-b1 behaviour 1: a brief with no Input domain section is refused, by ready and by check", () => {
@@ -592,7 +594,7 @@ test("W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot re
   put(link, BRIEF_REL, brief());
   symlinkSync("W-900.md", join(link, "briefs/W-901.md"));
   put(link, "opera/W-900.md", front("spec: briefs/W-901.md\n"));
-  const linked = checkStudio(link, NOW).findings.filter((f) => f.rule === "brief.admission");
+  const linked = checkStudio(link, NOW).findings.filter((f) => f.rule === "brief.admission" && f.where === W900);
   assert.equal(linked.length, 1, JSON.stringify(linked));
   for (const spec of ["", "spec: 7\n"]) {
     const found = checked("building", brief(), 6, front(spec)).admission;

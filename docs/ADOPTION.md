@@ -848,7 +848,11 @@ numbered behaviours under `## Behaviours to test`, and exactly one
 `**Genuine red:**` per numbered behaviour. A brief over the limit is admitted
 only with one `Behaviour limit exception: <decision-id>` line naming a
 decision `by` the design collegium's magister (the architect) whose text
-names the opus. `ready` refuses a brief
+names the opus. A brief also has one `## Input domain` section (W-161): a
+table with `Record`, `Valid domain` and `Rejected by` columns, each row naming
+one rejecting function in backticks, and the words "fails closed"; or one
+`None: <reason>` line when it reads no officina records. `check` also blocks
+an active opus whose `spec:` is missing or unreadable. `ready` refuses a brief
 that fails (`<id>: brief.admission: <spec> <problem>`, exit 1, nothing
 written), and `check` blocks `brief.admission` on an active opus
 (`building`, `verifying`, `review`) whose brief fails, through one shared
