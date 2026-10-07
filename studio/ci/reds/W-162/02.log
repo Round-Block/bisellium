@@ -1,0 +1,62 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-162-b2 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-07T07:19:10.175Z
+# sella: builder.W-162
+# tree: tree:66503dc3656c9a0ee85f5944374419e3d09a89ae
+
+TAP version 13
+# Subtest: W-162-b2 behaviour 2: architect signatures and review verdicts are strict, and their outcomes agree with their findings
+not ok 1 - W-162-b2 behaviour 2: architect signatures and review verdicts are strict, and their outcomes agree with their findings
+  ---
+  duration_ms: 1396.220909
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-162/packages/cli/src/next.test.ts:115:5138'
+  failureType: 'testCodeFailure'
+  error: |-
+    a brief edited after its signature: role: architect
+    --- exit 0
+    --- stdout
+    next: W-900 spec named
+    actor: spec-reviewer
+    why: ci/W-900-spec-1.log is signed and awaits the spec review
+    role: spec-reviewer
+    sella: spec-reviewer
+    boot: bisellium context --sella spec-reviewer --studio studio
+    budget_tokens: 100000
+    phase: spec
+    round: 2
+    model: gpt-5.6-sol
+    inputs: briefs/W-900.md, ci/W-900-spec-1.log
+    command: dispatch spec-reviewer (gpt-5.6-sol) to review the signed spec once, on two questions only (D-046): 1. does its Input domain name every record the opus reads, with one rejecting function that fails closed? 2. can every promise be guaranteed, or does it state its limit? Record findings under ## Findings, each ending "check: …", or write "No findings". Record with: bisellium verdict W-900 --round 2 --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <file> --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'spec-reviewer'
+    - 'architect'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'architect'
+  actual: 'spec-reviewer'
+  operator: 'strictEqual'
+  stack: |-
+    architectOrder (/home/edckt/agents/bisellium/.worktrees/W-162/packages/cli/src/next.test.ts:3161:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-162/packages/cli/src/next.test.ts:3236:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1408.262953
