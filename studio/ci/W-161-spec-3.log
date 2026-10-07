@@ -1,0 +1,17 @@
+# opus: W-161
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T01:04:22.037Z
+# tree: tree:164045172c9c0035e3b5a394c21d47d78683e1e5
+
+W-161 spec, revision 3. Architect, claude-opus-5-5. Brief: studio/briefs/W-161.md (6 behaviours, unchanged; readBriefAdmission at limit 6 reports no problems, and the reference reader in ~/.bisellium-evidence/W-161-spec/measure.mjs reports none for its own Input domain section). Answers the pre-build spec review (D-046, gpt-5.6-sol, round 2: one blocking finding, ~/.bisellium-evidence/W-161-specreview/r2/verdict.md). No behaviour, file or code change: both new rows name existing fail-closed functions, unchanged.
+
+## Findings
+1. advisory — review r2 #1 answered: the Input domain gains two rows for what the shared admission path reads on an over-limit brief with a Behaviour limit exception line: bisellium.yml#collegia's design magister, rejected by briefAdmissionProblems (never throws; "no design collegium declares a magister"), and decisions/<id>.md, rejected by patronDecisionProblem(root, manifest, exception, { by: magister, mustName: opusId }) (never throws; empty or escaping id, missing, unsafe or unparseable file, wrong author, or no mention of the opus each return a problem) — check: packages/cli/src/brief-admission.test.ts (W-127 and W-140 rows, unchanged)
+2. advisory — re-check of every other input on the touched path: the opus record row at check now states that admission names the opus by id, else its file name, with a missing or mismatched id already an opus.keys or opus.id.filename block; bisellium.yml#patron reaches patronDecisionProblem but is not read on this path; countBehaviours' other callers (builder-run.ts, next.ts, rules/evidence.ts) read nothing new, since neither countBehaviours nor realLines changes — check: packages/cli/src/brief-admission.test.ts (W-161-b1 to W-161-b6)
+
+## Recommendation
+Verdict: passed. Revision 3 closes round 2's finding by naming existing behaviour; the six behaviours, Files owned and six defaults stand.
