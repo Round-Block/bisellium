@@ -15,14 +15,12 @@ decision or a check rule and delete it here.
 ## Resume point (2026-10-07)
 
 - **W-167** (review loop stops at three failed rounds; the Patron's OK buys
-  one more; a whole-class blocker is fixed at the input boundary) is in spec.
-  Brief revision 5 and spec logs 1-8 are **uncommitted in the main checkout**
-  (`studio/briefs/W-167.md`, `studio/ci/W-167-spec-*.log`). Codex spec
-  reviews r1-r4 failed (3, 3, 2, 1 findings; `~/.bisellium-evidence/W-167-specreview/`).
-  r4's one finding is a naming fix (brief:105: the worktree-manifest row must
-  name the function that reads it, not `buildReviewDrift`). Next: send it to
-  the architect (sign as round 9), Codex review (round 10, prompt
-  `r4/prompt.md` pointed at spec-9.log), land with `next`, build.
+  one more; a whole-class blocker is fixed at the input boundary): spec
+  passed Codex review r5 (`ci/W-167-spec-10.log`) and is merged to master.
+  Next: `bisellium next W-167` (step `branch`), then the build. Paused here
+  at 97% Claude usage; resume when usage resets.
+- Codex runs inside the Bash sandbox with `allowed_domains`
+  `api.openai.com`, `chatgpt.com`, `auth.openai.com`; never unsandboxed.
 - `next` asks for a handoff before it names the architect after a failed
   spec review ("stale handover"); dispatch the architect directly instead
   of writing a handoff onto master's record.
