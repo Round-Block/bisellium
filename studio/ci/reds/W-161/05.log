@@ -1,0 +1,42 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-161-b5 --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-07T01:53:05.403Z
+# sella: builder.W-161
+# tree: tree:1aa872cd636f6f13a469c586be4f94680e4e194a
+
+TAP version 13
+# Subtest: W-161-b5 behaviour 5: a brief that reads no records declares one None line, with a reason, instead of a table
+not ok 1 - W-161-b5 behaviour 5: a brief that reads no records declares one None line, with a reason, instead of a table
+  ---
+  duration_ms: 32.961567
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:16:18922'
+  failureType: 'testCodeFailure'
+  error: |-
+    None with reason: exit (stderr ["W-900: brief.admission: briefs/W-900.md input domain has no table with \"Record\", \"Valid domain\" and \"Rejected by\" columns and at least one row"])
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    accepted (/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:172:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:576:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 42.373364

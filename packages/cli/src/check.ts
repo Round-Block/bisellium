@@ -20,6 +20,7 @@ import {
   instant,
 } from "@bisellium/schema";
 import { listMd, readFront, resolveSeat, STATES, type Manifest } from "@bisellium/adapter-native";
+import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { owedRetros } from "./retro.js";
@@ -309,8 +310,8 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   if (m["wip_limit"] !== undefined && wipLimit === undefined)
     add("manifest.shape", "block", "bisellium.yml#wip_limit", "wip_limit must be a number");
   // W-127: brief admission is opt-in; a present key must be a positive integer.
-  const briefLimitRaw = m["brief_behaviour_limit"];
-  const briefLimit = typeof briefLimitRaw === "number" && Number.isInteger(briefLimitRaw) && briefLimitRaw >= 1 ? briefLimitRaw : undefined;
+  const briefLimitRead = readBriefLimit(m["brief_behaviour_limit"]);
+  const briefLimit = "limit" in briefLimitRead ? briefLimitRead.limit : undefined;
   // Only what admission reads, rebuilt from the raw manifest: a missing, null or non-list `collegia` is the
   // manifest.collegia rule's finding, and here just means no design magister.
   const admissionManifest: Pick<Manifest, "patron" | "collegia"> = {
@@ -321,8 +322,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
       magister: str(c["magister"]) ?? "",
     })),
   };
-  if (briefLimitRaw !== undefined && briefLimit === undefined)
-    add("manifest.shape", "block", "bisellium.yml#brief_behaviour_limit", "brief_behaviour_limit must be a positive integer");
+  if ("error" in briefLimitRead) add("manifest.shape", "block", "bisellium.yml#brief_behaviour_limit", briefLimitRead.error);
   // W-137: the `retro` setting is validated by its one reader, `owedRetros`; a refusal is a shape block.
   if (m["retro"] !== undefined) {
     const owed = owedRetros(root);
@@ -656,11 +656,13 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
     }
 
     // W-127: an active opus's brief must pass the same admission `ready` applies (done briefs are never re-read).
-    // An unreadable spec adds nothing here; state.building.spec and opus.red_evidence already cover it.
+    // A brief it cannot read (no spec, or an unreadable one) is outside admission's domain, so it blocks (W-161).
     const specRel = str(d["spec"]);
-    if (briefLimit !== undefined && ACTIVE.has(state) && specRel) {
-      const brief = readContainedRegularFile(root, specRel, "briefs");
-      if (!("error" in brief))
+    if (briefLimit !== undefined && ACTIVE.has(state)) {
+      const brief = specRel ? readContainedRegularFile(root, specRel, "briefs") : undefined;
+      if (!specRel || brief === undefined) add("brief.admission", "block", where, "active opus names no spec: brief");
+      else if ("error" in brief) add("brief.admission", "block", where, `${specRel} unreadable: ${brief.error}`);
+      else
         for (const problem of briefAdmissionProblems(root, admissionManifest, id ?? basename(p, ".md"), brief.bytes.toString("utf8"), briefLimit))
           add("brief.admission", "block", where, `${specRel} ${problem}`);
     }

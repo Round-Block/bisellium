@@ -1,0 +1,42 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-161-b4 --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-07T01:52:49.027Z
+# sella: builder.W-161
+# tree: tree:20d6336dbebda3dc337c9e29f8ca16774daf554f
+
+TAP version 13
+# Subtest: W-161-b4 behaviour 4: a table section says that a rejection fails closed
+not ok 1 - W-161-b4 behaviour 4: a table section says that a rejection fails closed
+  ---
+  duration_ms: 38.723234
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:16:18521'
+  failureType: 'testCodeFailure'
+  error: |-
+    no phrase: exit (stderr [])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:165:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:570:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 49.089535

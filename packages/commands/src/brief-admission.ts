@@ -75,6 +75,70 @@ const captured = (lines: string[], re: RegExp): string[] =>
     return m ? [m[1]!.trim()] : [];
   });
 
+const DOMAIN_HEADING = /^#{2,3} Input domain\s*$/;
+const DOMAIN_COLUMNS = [/^(record|input)$/i, /^valid domain$/i, /^rejected by$/i];
+const REJECTING_FUNCTION = /^`[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)?(\([^`]*\))?`/;
+const NO_TABLE = 'input domain has no table with "Record", "Valid domain" and "Rejected by" columns and at least one row';
+
+/** The cells of one table line: one leading and one trailing `|` dropped, split on unescaped `|`, trimmed. */
+const cellsOf = (line: string): string[] =>
+  line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/(?<!\\)\|$/, "")
+    .split(/(?<!\\)\|/)
+    .map((c) => c.trim());
+
+/** W-161: problems with the one "Input domain" section (`## ` or `### `, up to the next real `^#{1,3} ` line):
+ *  a three-column table whose rows each name a record, its domain and one rejecting function, and which says
+ *  that a rejection fails closed; or one `None: <reason>` line. Shape only: the named function is not looked up. */
+function inputDomainProblems(real: string[]): string[] {
+  const starts = real.flatMap((l, i) => (DOMAIN_HEADING.test(l) ? [i] : []));
+  if (starts.length === 0)
+    return [
+      'declares no input domain; add one "## Input domain" section: a table with "Record", "Valid domain" and "Rejected by" columns, or one line "None: <reason>" if it reads no officina records',
+    ];
+  if (starts.length > 1) return [`has ${starts.length} "Input domain" headings; one section only`];
+  const end = real.findIndex((l, i) => i > starts[0]! && /^#{1,3} /.test(l));
+  const section = real.slice(starts[0]! + 1, end === -1 ? undefined : end);
+  const first = section.findIndex((l) => /^ {0,3}\|/.test(l));
+  const run: string[] = [];
+  for (let i = first; i !== -1 && i < section.length && /^ {0,3}\|/.test(section[i]!); i++) run.push(section[i]!);
+  const nones = section.filter((l) => l.startsWith("None:"));
+  if (nones.length > 0) {
+    if (nones.length > 1 || run.length > 0) return ['input domain mixes "None:" with a table or repeats it; one table or one "None: <reason>" line'];
+    return /^None:\s*\S/.test(nones[0]!) ? [] : ['input domain "None:" line gives no reason'];
+  }
+  const head = run[0] === undefined ? [] : cellsOf(run[0]);
+  const delimiter = run[1] === undefined ? [] : cellsOf(run[1]);
+  if (
+    head.length !== DOMAIN_COLUMNS.length ||
+    !DOMAIN_COLUMNS.every((re, i) => re.test(head[i]!)) ||
+    delimiter.length !== DOMAIN_COLUMNS.length ||
+    !delimiter.every((c) => /^:?-{3,}:?$/.test(c)) ||
+    run.length < 3
+  )
+    return [NO_TABLE];
+  const problems: string[] = [];
+  run.slice(2).forEach((l, i) => {
+    const cells = cellsOf(l);
+    if (cells.length !== DOMAIN_COLUMNS.length || cells.some((c) => c.length === 0))
+      problems.push(`input domain row ${i + 1} has an empty or missing cell`);
+    else if (!REJECTING_FUNCTION.test(cells[2]!))
+      problems.push(`input domain row ${i + 1} names no rejecting function; its "Rejected by" cell opens with one \`function\` name`);
+  });
+  if (!/fails closed/i.test(section.join("\n"))) problems.push("input domain does not say that a rejection fails closed");
+  return problems;
+}
+
+/** W-161: the one reader of `brief_behaviour_limit`. Absent is no admission; a positive integer is the limit;
+ *  anything else, `null` included, is an error that fails closed in both callers. */
+export function readBriefLimit(raw: unknown): { limit: number | undefined } | { error: string } {
+  if (raw === undefined) return { limit: undefined };
+  if (typeof raw === "number" && Number.isInteger(raw) && raw >= 1) return { limit: raw };
+  return { error: "brief_behaviour_limit must be a positive integer" };
+}
+
 /** `exception`: the one "Behaviour limit exception:" value on an over-limit brief. It is not validated here
  *  (W-140: two parameters, as W-127 signed); `briefAdmissionProblems` checks it and places its problem. */
 export function readBriefAdmission(briefText: string, limit: number): { problems: string[]; exception?: string } {
@@ -111,5 +175,6 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
         );
     });
   }
+  problems.push(...inputDomainProblems(real));
   return exception === undefined ? { problems } : { problems, exception };
 }
