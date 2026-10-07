@@ -9,128 +9,169 @@ kill: when every item here is enforced by a lex clause or a check rule
 # Session handoff
 
 What a fresh orchestrating session must know that is not derivable from the
-code. Read after CLAUDE.md. Keep this file short; move anything durable into a
-lex, a decision, or a check rule and delete it here.
+code. Read after CLAUDE.md. Keep it short; move anything durable into a lex,
+a decision or a check rule and delete it here.
 
 ## The Patron's standing instructions
 
-- **Session hygiene** (Patron, 2026-10-05; 2026-10-06: this session ran far past the 500k cap — prefer the restart loop, which enforces fresh sessions, over a long interactive one). Chain cascades in one
-  orchestrator session; refresh (`/clear`, boot fresh from this file) only when
-  its context nears 500k. Never park a fat context across an idle gap. The Patron may run
-  `~/projects/bisellium/scripts/cascade-loop.sh` to automate the fresh
-  sessions; each session then ends by writing one status word (CONTINUE,
-  NEEDS_PATRON, LOW_CREDIT or QUEUE_EMPTY) to the file named in its prompt.
-  Logs and the lock live in `~/projects/bisellium/.cascade-loop` (agent sessions cannot write
-  it; the loop refuses to run from inside the agent clone); per session the loop enforces `CASCADE_RUN_TIMEOUT` (4h) and
-  `CASCADE_MAX_USD` (20), over `CASCADE_MAX_RUNS` (5) sessions. One-time
-  Patron step: the loop runs `claude --restricted`, which loads no user,
-  project or local settings, hooks, plugins or MCP servers. It gets only
-  `~/projects/bisellium/.cascade-loop/settings.json` (just `sandbox` and `permissions`, copied from
-  your own settings and made strict: sandbox on with `failIfUnavailable` true,
-  `allowUnsandboxedCommands` false, no `excludedCommands`, the status file's
-  directory in `filesystem.allowWrite`, only the known nested keys, no `Edit`/`Write` allow rule; recipe in the script header; checked
-  before every run) and the agent definitions in the `.claude/agents` beside the
-  script (rebuilt before every run), and refuses to run without either. The
-  session writes its status word with Bash, not the Write tool.
-  Small reversible decisions ship as veto-able defaults reported at the
-  checkpoint; only irreversible or ruling-contradicting calls wait for the
-  Patron.
-- **Plain words to the Patron.** Status lines translate the vocabulary;
-  jargon stays in commits and records.
-- **Fewer words.** Lead with the proposal or the outcome; drop rationale that
-  does not change a decision.
-- **Not epoch0-centric.** epoch0 (`~/projects/epoch0`, WSL) is a reference
-  instance only. Never modify it; never frame designs around it.
-- **Keep going unless a judgment is needed.** Mechanical findings are fixed and
-  re-verified without asking; judgment (names, scope, lex boundaries, what a
-  collegium may decide, licences) goes to the Patron as a petitio. This is the
-  no-mistakes auto-fix-versus-escalate split, one level up.
-- **Update the progress page and dossier masthead at every checkpoint**
-  (after each cascade and each cleanup commit): a row on the Progress page
-  + the dossier's masthead status line. Source: `docs/design/dossier/`
-  (`build.sh` builds both pages; republish each with the Artifact tool at
-  the links below).
-- **Never relay a mid-turn Patron message into a running workflow**; answer
-  between cascades. Agents given a relayed question refused their build (4b).
+- **Session hygiene.** Chain cascades in one session; refresh (`/clear`, boot
+  from this file) before the context nears 500k, at a clean point (no agent
+  running). The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
+  automates fresh sessions: each ends by writing one status word (CONTINUE,
+  NEEDS_PATRON, LOW_CREDIT, QUEUE_EMPTY) with Bash to the file its prompt
+  names; limits 4h and $20 per session, 5 sessions; it runs
+  `claude --restricted` with only its own strict settings and agent files
+  (recipe in the script header). Never run it while a session is working.
+- **Plain words, fewer words.** Lead with the outcome or the proposal; a plain
+  one-line description beside every id; jargon stays in commits and records.
+- **Keep going unless a judgment is needed.** Mechanical findings are fixed
+  without asking; small reversible calls ship as veto-able defaults reported
+  at the checkpoint; scope, names, lex boundaries and ruling-contradicting
+  calls go to the Patron.
+- **Checkpoint after every opus:** a history row (`progress-body.html`) and
+  the dossier masthead (`body.html`), patched by a kept script; `build.sh`;
+  republish the Status page and the dossier.
+- **Never relay a mid-turn Patron message into a running agent;** answer
+  between steps.
+- **epoch0** (`~/projects/epoch0`) is a reference instance only; never modify
+  it or design around it.
 - Test-first with a recorded red; mechanical work is a script; evidence is
-  produced, never backfilled. These are in the leges; they bind here too.
+  produced, never backfilled.
 
 ## Artifacts (Patron-visible)
 
+- Status page: https://claude.ai/code/artifact/Rnk9m3UwfP9uexz57Zw37e
+  (generated by `scripts/status-page.mjs` via `build.sh`; history rows are
+  hand-written in `progress-body.html`).
 - Dossier: https://claude.ai/code/artifact/d70aefcf-d87a-4918-933f-cc7b58410d4c
-  (rebuild from `docs/design/dossier/head.html` + `body.html`; patch `body.html`
-  with a script, never by hand-editing the built page).
-- Design direction (what web I builds to; source docs/design/DIRECTION.md,
-  rendered by build-arch.mjs via build.sh):
-  https://claude.ai/artifact/J6LGxy2T7V7M1x3F3CrT15
-- Architecture (Mermaid system map, rendered from docs/ARCHITECTURE.md by
-  docs/design/dossier/build-arch.mjs via build.sh):
-  https://claude.ai/artifact/WUBAJ9JceMAX5qEhgjoyuN — republish after any
-  cascade that touched ARCHITECTURE.md (the design lex obliges the update).
-- Status page (W-152; replaced Progress and Backlog 2026-10-06): completion
-  meter, in flight and planned, backlog, history — generated by
-  `scripts/status-page.mjs` via `build.sh` into `bisellium-status.html`:
-  https://claude.ai/code/artifact/Rnk9m3UwfP9uexz57Zw37e (the old Progress
-  link). History rows stay hand-written in `progress-body.html`. Checkpoints
-  add a history row + the dossier masthead, then republish both.
-- UI design canvas (six screens, Patron-editable; check for external saves
-  before republishing): https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f
-  — sources in `docs/design/canvas/` (`*.dc.html`, `canvas.json`). Re-seeding
-  needs the Claude Code `design` skill's `seed-canvas.mjs` (node in WSL only).
-- Design tokens: ink #16211E, accent #0B6E5F, amber #B7791F = waiting on a human
-  only, ok #2E9E64, bad #C64A3A; Bricolage Grotesque / Instrument Sans /
-  IBM Plex Mono.
-- Old Backlog artifact https://claude.ai/artifact/BaVL3xfRg2gbERoLukDLqV is
-  retired (no longer built); the Status page carries the backlog. The
-  ranking `studio/acta/2026-10-05-ranking.md` stays the source of order.
+  (from `docs/design/dossier/head.html` + `body.html`).
+- Architecture: https://claude.ai/artifact/WUBAJ9JceMAX5qEhgjoyuN (from
+  `docs/ARCHITECTURE.md`; republish after a change to it).
+- Design direction: https://claude.ai/artifact/J6LGxy2T7V7M1x3F3CrT15 (from
+  `docs/design/DIRECTION.md`).
+- UI canvas (Patron-editable; check for external saves before republishing):
+  https://claude.ai/code/artifact/a2f1b828-4648-423b-bda8-f0bc2c77fb7f
+  (sources `docs/design/canvas/`).
+- A publish refused for an unviewed live version: diff the live copy against
+  the last committed build; if it only differs by generated data, read it in
+  full and publish again.
 
 ## Environment facts
 
-- Sandbox: bubblewrap via `.claude/settings.local.json` (writes: repo + `~/.bisellium-evidence`). tsx's CLI cannot run under it: use `node --import tsx`, never `npx tsx`. Logs go to `~/.bisellium-evidence/`, not `$TMPDIR`. Multi-step git/red sequences run as bash scripts (zsh word-splitting). node/npm/git/codex exist only in WSL.
-- Remote github.com/Round-Block/bisellium is **public by Patron choice**: everything pushed is world-readable.
-- Commits: `-c user.name=edckt -c user.email=edene.chankt@gmail.com`; trailer names the sella that wrote it and the model that actually ran (`Co-Authored-By: Claude <model> <noreply@anthropic.com>`).
-- Permissions (cascade 43, Patron-set, in `.claude/settings.local.json`): allow `Bash(gh pr merge*)` and `Bash(npm run -s bisellium*)`. **No unsandboxed path exists** (the `bisellium -- run` exclusion was removed 2026-10-03, Patron: "all inside the sandbox"). The orchestrator merges on the Patron's behalf. The auto-mode classifier blocks the orchestrator editing sandbox config (correct; route to the Patron).
-- **Agent workspace (2026-10-03, Patron: "as secure as possible"):** agents work in `~/agents/bisellium` only; `~/projects/bisellium` is the Patron's and write-denied to every session; personal credentials (`~/.ssh`, `~/.git-credentials`, `~/.config/gh`) are read-denied; GitHub goes through a fine-grained, non-admin, repo-only token (`GH_CONFIG_DIR=~/.config/agent-gh`) over HTTPS. Boot check: `bash scripts/agent-workspace.sh verify --inside`. Hooks run unsandboxed — never point one at agent-clone code. The repo's `bisellium` hooks are currently inert (`bisellium` is not on PATH); if ever installed, link it to the Patron's folder (reviewed master), never the agent clone.
-- Branch protection forces PR+CI per commit. Record-only PRs run `test:record` (~15 s); two racing PRs leave one BEHIND (`gh pr update-branch <n>`).
-- Codex: `codex exec -c model_provider=openai -m <model> -s read-only --skip-git-repo-check -C <packet> -o <verdict.md> - < prompt.md`; its sandbox cannot run git, node servers or Chromium.
-- `test:serve` does NOT rebuild the web bundle: `npm --workspace @bisellium/web run build` first. `scripts/no-vendor.test.mjs` row 3 flakes under full-suite load (passes alone).
-- Reds: no whitespace inside any single argument; a TAP reporter; confirm an assertion-level `not ok`, not "No tests found".
-- Replay-safe reds (W-130 brief + measured): record so the logs land in the HOST studio (or `git restore --source opus/<id>` them across); no whitespace inside any single command argument (the replay cell splits on whitespace — `--grep behaviour.2:` not `--grep "… behaviour 2: "`); the W-125 Git broker no longer needs a socket (W-132: host-created named pipes in `/control`), so its live rows run, record and replay under confinement. After a rebase (W-134) a log whose `# tree:` header matches no commit is re-identified as the unique commit that introduced the log's bytes, which must carry no source of its own: **commit each red log in a studio-only commit directly on its pre-change commit** (a log committed with source, twice, or after the implementation is refused), and the log needs a `not ok <n> - <title>` line (a TAP reporter) for that path.
-- Two officinae share this repo (`studio/`, `examples/sample-studio`); each lists the other in `source_excludes`.
+- Agents work only in `~/agents/bisellium` (HTTPS, repo-only token via
+  `GH_CONFIG_DIR=~/.config/agent-gh`); `~/projects/bisellium` is the
+  Patron's, write-denied; personal credentials are read-denied. Boot check:
+  `bash scripts/agent-workspace.sh verify --inside`. Hooks run unsandboxed:
+  never point one at agent-clone code. No unsandboxed path exists.
+- The remote is **public**: everything pushed is world-readable.
+- Commits: `git -c user.name=edckt -c user.email=edene.chankt@gmail.com`;
+  trailer names the sella and the model that ran.
+- Sandbox: `node --import tsx`, never `npx tsx`; logs and kept scripts in
+  `~/.bisellium-evidence/`; multi-step git sequences as bash scripts.
+  `.git/config.lock` is read-only on purpose ("could not lock config" is
+  expected); worktrees `--no-track`.
+- Branch protection: PR + CI per commit; record-only PRs run in ~15 s; racing
+  PRs leave one BEHIND (`gh pr update-branch <n>`). Merges run on the
+  Patron's behalf (`gh pr merge --squash --auto`).
+- Codex: `codex exec -c model_provider=openai -m <model> -c model_reasoning_effort=high -s read-only --skip-git-repo-check -C <dir> -o <out.md> - < prompt.md`;
+  it cannot run git, node servers or Chromium.
+- Reds: a TAP reporter, an assertion-level `not ok`, no whitespace inside any
+  single argument; commit red logs in a studio-only commit directly on the
+  test commit (W-134 re-identifies them after a rebase).
+- Builders must run the full `npm test` once (the no-vendor sentinel), not
+  only test files; a test that spawns `claude`/`codex` fails it.
+- `test:serve` does not rebuild the web bundle (`npm --workspace @bisellium/web run build`).
+- A killed `npm test`/verify leaves `.bisellium/vendor-sentinel.lock`; remove
+  it before rerunning.
 
-## Opus ladder (since W-141, cascade 51)
+## Opus ladder
 
-The verb walks every step: `bisellium next <id> --budget 400000 --studio studio --repo .` names the step; `--perform --expect <step>` does it (spec landing, branch, ready, pr, merge, cleanup, done incl. its PR). Hand steps left (W-141 follow-ons, unfiled): the receipt-pointer and verdict commits on the opus branch, the review packet, filing PRs. Scripts that do them, kept in `~/.bisellium-evidence/`: `review-packet.sh <id> <round> [<prev-verdict-commit>]`, `review-receipt.sh <id> <round> <mint-log>`, `retrigger.sh <branch>` (empty commit; the agent token cannot re-run jobs).
+`npm run -s bisellium -- next <id> --budget 400000 --studio studio --repo .`
+names the step; `--perform --expect <step>` does it (spec landing, branch,
+ready, pr, merge, cleanup, done). From a worktree, pass the main checkout's
+absolute `--studio`/`--repo`. Kept scripts in `~/.bisellium-evidence/`:
+`review-packet.sh <id> <round> [<prev-verdict-commit>]`,
+`review-receipt.sh <id> <round> <mint-log>`, `retrigger.sh <branch>`.
 
-- Worktrees: `next` makes them; then a real `npm ci --cache ~/.bisellium-evidence/npm-cache` (a symlinked `node_modules` fails the mint). Always `--no-track` (read-only `.git/config.lock`); guard every `cd`.
-- **One receipt per opus (D-045):** fix rounds are reviewed on the builder's gates + one full `npm test` log; mint once after the passing review (and any rebase), then `pr`. Evasion-only findings are advisory (D-045, in `docs/CENSOR-PROMPT.md`).
-- Receipt mint: from the opus worktree, bare `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true` (~15 min; wrapped in `cd`/redirects it misses the allow rule). `next` from a worktree takes absolute `--studio`/`--repo` of the main checkout.
-- Any rebase needs a re-mint: hold other PRs (`gh pr merge <n> --disable-auto`) while an opus PR is open. Reds dropped by a rebase are re-recorded at the rebased test commit.
-- Review: Codex `gpt-5.6-sol` with `docs/CENSOR-PROMPT.md` (blocking findings cite `brief:<n>`, W-126); record from the opus worktree with `verdict … --from <$TMPDIR copy>` then `review --pass|--fail --evidence ci/<id>-review-<n>.log`. At most three rounds without the Patron's OK; a re-spec does not restart the count; every spec gets one Codex spec review before `branch` (D-046). A fresh builder per fix round once one passes ~250k.
-- Done: `verify` on master after the last merge that touched `docs/` (docs/ is in the certificate's source tree), then write the checkpoint (progress row, masthead, handoff; `build.sh`), then `next --perform --expect done` twice (commit, then land). Verify runs ~11 min under a 30-min cap (W-142). A killed verify leaves `.bisellium/vendor-sentinel.lock`; remove it before rerunning.
-- `.claude/` changes stop merge/branch/done with the Patron's command (W-141). `gh run view --log` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. Jobs cancelled with 0 steps = no runner (check githubstatus.com); retrigger.
+1. **Spec:** the Opus architect writes the brief (with its input section,
+   W-161) and the spec log, uncommitted in the main checkout; `next` lands it.
+2. **Spec review (D-046):** one Codex `gpt-5.6-sol` review of the brief —
+   input section complete, every promise guaranteeable (prompt:
+   `~/.bisellium-evidence/W-161-specreview/r1/prompt.md`). A fail goes back
+   to the architect; revisions after `branch` are committed on the opus
+   branch as spec round n.
+3. **Build:** `branch`, then a real `npm ci --cache ~/.bisellium-evidence/npm-cache`
+   in the worktree, `ready` (commit it), then a Sonnet builder: reds, build,
+   gates, full `npm test`, handoff. A fresh builder past ~250k.
+4. **Review:** Codex `gpt-5.6-sol` with `docs/CENSOR-PROMPT.md`; packet =
+   `review-packet.sh` + the builder's gates and `npm test` log (no receipt per
+   round, D-045). Record with `verdict … --from <$TMPDIR copy>`; `review
+   --fail` refuses with a stale receipt (W-165) — the verdict log is the
+   record. Three failed rounds, then ask the Patron; a re-spec does not
+   restart the count (D-046). Evasion-only findings are advisory (D-045).
+5. **Merge:** after the passing review, rebase onto master, mint once (bare
+   `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`
+   from the worktree, ~15 min, no `cd`/redirect wrapper),
+   `review-receipt.sh`, record the pass, then `pr` and `merge`. Hold records
+   PRs between the mint and the merge.
+6. **Done:** `cleanup`; `verify <id>` on master (~11 min); checkpoint script;
+   `next --perform --expect done` (commit, then land).
+7. **Retro (D-039, W-137):** Codex `gpt-5.6-terra` proposes the triage
+   (`~/.bisellium-evidence/retro-triage*/prompt.md`), the producer adjusts it
+   with a kept `adjust.mjs`, `retro --opus <id> --from <triage>`, map any new
+   fix opus to a milestone, land in a records PR.
+- `.claude/` changes stop merge/branch/done for the Patron's command.
+  `gh run view --log` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`;
+  jobs cancelled with 0 steps mean no runner: retrigger.
 
-## Model mapping (Patron, 2026-10-04)
+## Models
 
-Censor + security review = Codex `gpt-5.6-sol` high; builds = Claude Sonnet 5.5; clerk = Claude Haiku; spec = Claude Opus 5.5 architect; ui-lead = `gpt-6-astra` medium (D-022), which drafts every console opus's layout and UI defaults at spec (D-044); scans and triage proposals can run on Codex `gpt-5.6-terra`. Security fixes are mandatory and their extra rounds pre-approved (D-044). Watch Claude usage: the Patron reports it; at ~87% stop starting Opus work and let in-flight work finish — never kill a running agent to save usage (2026-10-06: two specs were killed and one was lost). Each review names the check that would have caught each finding. Model choice is seat config set from the Seats screen, not a decision (Patron 2026-10-06): D-014/D-022's model wording is history; the qa-lead seat still says Opus until W-154 lets the console set model and harness. gpt-6-sol is unavailable on the ChatGPT plan; reviews stay on gpt-5.6-sol. Spend line per provider at every checkpoint.
+Review and security: Codex `gpt-5.6-sol` high (`gpt-6-sol` is not on the
+plan). Builds: Claude Sonnet 5.5. Specs: Claude Opus 5.5 architect. UI
+layouts at spec: `gpt-6-astra` medium (D-044). Triage and scans: Codex
+`gpt-5.6-terra`. Clerk: Haiku. At ~87% Claude usage (the Patron reports it)
+start no new Opus work; never kill a running agent to save usage. A spend
+line per provider at every checkpoint. Security fixes are mandatory, their
+extra rounds pre-approved (D-044).
 
-## Open with the Patron
+## Open items
 
-- Decisions D-037, D-039–D-041 were hand-written by the producer from the Patron's chat rulings (no `decide` verb until W-157); D-024/D-025/D-038 kill fields added on the Patron's approval.
-- Nothing open with the Patron: the retired Backlog artifact is left alone (harmless); the research decisions were already D-030/D-031; the triage is applied (D-042).
-- To file (ranked after W-152, defaults): W-141's split-outs (evidence commits + review packet as a verb; filing PRs through `next`; a sweep of stale local heads/worktrees); speed up `packages/cli/src/next.test.ts` (~8 of the suite's ~11 min); W-142's advisories (pin the timeout's four consumers; a killed verify's orphaned lock).
-- W-077 follow-ons: per-rule levels in the health contract; the served check runs without `--repo`, so `/api/health` reports 1 blocking problem `check --repo .` does not.
-- D-036's kill condition (spec check flags a behaviour an earlier one already satisfies) has no opus yet.
-- Restart loop (`scripts/cascade-loop.sh`) is ready: its settings file exists and passes the loop's rules (checked 2026-10-06); never run it while an orchestrator session is working. Hooks never run agent-clone code; the Stop hook is `~/projects/bisellium/scripts/concise-stop.mjs`.
+- To file: W-141's split-outs (evidence commits and the review packet as a
+  verb; filing PRs through `next`; a sweep of stale local branches and
+  worktrees); a faster `packages/cli/src/next.test.ts` (~8 of the suite's
+  ~11 min); W-142's advisories (pin the timeout's four consumers).
+- W-077 follow-ons: per-rule levels in the health contract; `/api/health`
+  runs check without `--repo` and reports 1 blocking problem that
+  `check --repo .` does not.
+- D-036's kill condition has no opus yet (a spec check that flags a
+  behaviour an earlier one already satisfies).
 
 ## Queue
 
-- **Completion (D-038, Patron 2026-10-06):** ten weighted milestones in `studio/acta/2026-10-06-milestones.md`, now data in `studio/milestones.yml`; the Status page computes it (48.6% after filing W-153–W-160). Every new opus gets `amend <id> --milestone <M> --value <1|2|3|5|8>`; check rule `opus.milestone` fails an unmapped one.
-- **Order of record:** `studio/acta/2026-10-05-ranking.md`. Done this run: W-139, W-123, W-127, W-126, W-140, W-141, W-142, W-152, W-120 (PRs and their spec defaults are on the progress page and in each brief).
-- **Resume point (2026-10-07, session refreshed for context):** W-161 spec signed and landed (PR 298); branch `opus/W-161` cut (worktree `.worktrees/W-161`, real node_modules), `ready` NOT yet run. Its first D-046 spec review (Codex, `~/.bisellium-evidence/W-161-specreview/r1/`: prompt.md + verdict.md) FAILED on four findings; the architect is revising the brief on `opus/W-161` as spec round 2 (commit `spec(W-161): round 2 …` + `ci/W-161-spec-2.log`). Next: check that commit exists (if not, re-dispatch the architect with r1/verdict.md), run spec review r2 (copy r1/prompt.md to r2/, same codex command with `-C /home/edckt/agents/bisellium/.worktrees/W-161`), on PASS `next W-161 --perform --expect ready` from the worktree (absolute --studio/--repo of the main checkout), commit, dispatch a Sonnet builder (reds then build; model the brief on the W-163 builder brief: full `npm test` once, never per-file only — the no-vendor sentinel). Review rounds per D-045/D-046: no receipt per round (packet = builder gates + npm-test log), receipt once after the passing review, three rounds then ask the Patron. W-163 done (PR 295/296), retro + W-165 filed (PR 297); D-045 (PR 293), D-046 (PR 299), W-135 widened (PR 294).
-- **Then:** W-161 and W-162 (L-069's high-severity fixes: specs name their input boundary; the review loop fixes a class at the boundary and re-specs after round 3), then W-068 (dependencies) — its signed spec is in `~/.bisellium-evidence/partial-specs/` (brief + spec log): copy both back into `studio/` and land with `next --perform --expect spec`. Then W-081 (high-severity security, spec from scratch), W-099 (high-severity security), W-158 (audience), W-137 (retro step), W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091, W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160 (multi-team memo), then the triage's medium and low fixes (`studio/acta/2026-10-06-backlog-triage.md`). Hold every records PR while an opus waits between review pass and merge.
-- **Waiting on a greenlight:** W-148 (Graph, revisit after W-160), W-155 (opencodex, after W-150), W-092 (lowest; W-160 decides); held on W-137: W-138, W-122. Patron prefers plain one-line descriptions next to every id.
-
-## Research lane (on the side)
-
-Closed by D-033 (branches deleted, files archived); D-030/D-031 record the two findings; D-032 pauses read-efficiency research until W-122 measures reading.
+- **Completion:** 52.7% (2026-10-07); ten weighted milestones in
+  `studio/milestones.yml` (D-038). Every new opus gets
+  `amend <id> --milestone <M> --value <1|2|3|5|8>` (check rule
+  `opus.milestone`).
+- **Order of record:** `studio/acta/2026-10-05-ranking.md`.
+- **Resume point (2026-10-07):** W-161 (specs name their input boundary) is
+  on `opus/W-161` (worktree `.worktrees/W-161`, real node_modules); its spec
+  round 2 is committed (5302e28) after the first spec review failed. Next:
+  spec review round 2 (copy `~/.bisellium-evidence/W-161-specreview/r1/prompt.md`
+  to `r2/`, point it at the worktree and round 2, run Codex with
+  `-C /home/edckt/agents/bisellium/.worktrees/W-161`); on a pass, `ready`,
+  commit, dispatch the builder.
+- **Then:** W-162 (the review loop: fix a class at its boundary; D-046's spec
+  review and three-round stop in `next`), W-068 (task dependencies; signed
+  spec in `~/.bisellium-evidence/partial-specs/` — copy into `studio/` and
+  land with `next`), W-081 and W-099 (high-severity security), W-158
+  (audience), W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
+  W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160 (multi-team memo),
+  W-135 (containment setup; compares the agent clone with a container), then
+  the triage's medium and low fixes
+  (`studio/acta/2026-10-06-backlog-triage.md`).
+- **Backlog, not greenlit:** W-148 (Graph, after W-160), W-155 (opencodex,
+  after W-150), W-092 (lowest; W-160 decides), W-138 and W-122 (were held on
+  W-137, now done), W-164 (a test row and a comment fix), W-165 (`review
+  --fail` without a fresh receipt).
+- Research lane closed (D-033); D-032 pauses read-efficiency research until
+  W-122 measures reading.
