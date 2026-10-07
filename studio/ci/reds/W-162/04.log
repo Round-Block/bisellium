@@ -1,0 +1,52 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-162-b4 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-07T07:23:08.376Z
+# sella: builder.W-162
+# tree: tree:bf5277af6caa262cd897a248d729d77f04905633
+
+TAP version 13
+# Subtest: W-162-b4 behaviour 4: a failed review returns to the architect, and only a newer signature can reopen review
+not ok 1 - W-162-b4 behaviour 4: a failed review returns to the architect, and only a newer signature can reopen review
+  ---
+  duration_ms: 1884.796776
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-162/packages/cli/src/next.test.ts:116:7370'
+  failureType: 'testCodeFailure'
+  error: |-
+    signature 1 plus failed review 2: role: architect
+    --- exit 1
+    --- stdout
+    next: W-900 spec held
+    actor: producer
+    why: ci/W-900-spec-2.log failed ci/W-900-spec-1.log; its outcome is not yet routed
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - 'architect'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'architect'
+  operator: 'strictEqual'
+  stack: |-
+    architectOrder (/home/edckt/agents/bisellium/.worktrees/W-162/packages/cli/src/next.test.ts:3161:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-162/packages/cli/src/next.test.ts:3430:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1897.479812
