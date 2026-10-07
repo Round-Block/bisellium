@@ -153,9 +153,9 @@ extra rounds pre-approved (D-044).
   `amend <id> --milestone <M> --value <1|2|3|5|8>` (check rule
   `opus.milestone`).
 - **Order of record:** `studio/acta/2026-10-05-ranking.md`.
-- **Resume point (2026-10-07):** W-161 is done (PR 302: spec reviewed three rounds, build review passed round 2). Next: W-161's retro (triage its review findings with Codex terra, then `retro --opus W-161 --from <triage.json>`), then W-162 (the review loop fixes a class at the boundary and re-specs after round 3): spec it with the architect, then the D-046 spec review. Every new brief now needs an `## Input domain` section (W-161).
+- **Resume point (2026-10-07):** W-161 is done (PR 302: spec reviewed three rounds, build review passed round 2). Retro filed (L-085, L-086; W-166 filed greenlit, high: a red must certify the tree its brief names). Next: W-162 (the review loop fixes a class at the boundary and re-specs after round 3): spec it with the architect, then the D-046 spec review. Every new brief now needs an `## Input domain` section (W-161).
 - **Then:** W-162 (the review loop: fix a class at its boundary; D-046's spec
-  review and three-round stop in `next`), W-068 (task dependencies; signed
+  review and three-round stop in `next`), W-166 (reds certify the tree their brief names), W-068 (task dependencies; signed
   spec in `~/.bisellium-evidence/partial-specs/` — copy into `studio/` and
   land with `next`), W-081 and W-099 (high-severity security), W-158
   (audience), W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
