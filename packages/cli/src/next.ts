@@ -138,7 +138,7 @@ interface SpecReviewer {
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
-type SpecGate = { kind: "signature" } | { kind: "review"; signature: string } | { kind: "invalid" };
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string } | { kind: "ready"; review: string } | { kind: "invalid" };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -253,12 +253,18 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer):
   const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
   if (anchor === undefined) return result(`no ${reviewer.design} signature names the current ${briefRel(id)} (ci/${id}-spec-<n>.log, phase spec, passed)`, { kind: "signature" });
   const above = read.filter((l) => l.n > anchor.n);
+  const reviews: { round: number; log: string; outcome: "passed" | "failed" }[] = [];
   for (const l of above) {
     const r = l.text === undefined ? { error: `${l.rel} is unreadable` } : readSpecReview(l.text, id, l.n, reviewer, expected, l.rel);
     if ("error" in r) return result(r.error, { kind: "invalid" });
+    reviews.push(r);
   }
-  if (above.length > 0) return result(`${above[0]!.rel} is a valid review of ${anchor.rel}; its outcome is not yet interpreted`, { kind: "invalid" });
-  return { ...result(`${anchor.rel} is signed and awaits the spec review`, { kind: "review", signature: anchor.rel }), sella: reviewer.design, log: anchor.rel };
+  const signed = (gate: SpecGate, why: string): SpecEvidence => ({ ...result(why, gate), sella: reviewer.design, log: anchor.rel });
+  const review = reviews[0];
+  if (review === undefined) return signed({ kind: "review", signature: anchor.rel }, `${anchor.rel} is signed and awaits the spec review`);
+  if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
+  if (review.outcome === "failed") return result(`${review.log} failed ${anchor.rel}; its outcome is not yet routed`, { kind: "invalid" });
+  return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
 }
 function signedSpec(src: Src | undefined, id: string, design: string): SpecEvidence {
   const none: SpecEvidence = { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false };
@@ -1171,9 +1177,12 @@ function performSpecCommit(f: Facts): StepResult {
   if (symbolic !== "refs/heads/master") return heldResult(`refusing: HEAD is ${symbolic === "" ? "detached" : symbolic}, not the master branch`);
   if (git(repo, ["rev-parse", "HEAD"]).stdout.trim() !== git(repo, ["rev-parse", TRUNK]).stdout.trim()) return heldResult("refusing: HEAD is not at the master tip");
   if (refExists(repo, `refs/heads/${head}`)) return heldResult(`refusing: ${head} already exists`);
-  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design);
+  const gate = readSpecReviewer(f.manifest, f.trunkRecord ?? {});
+  if ("error" in gate) return heldResult(`refusing: ${gate.error}`);
+  const spec = specEvidence(fsSrc(f.studioAbs), id, f.design, gate.reviewer);
   if (!spec.ok || spec.log === undefined) return heldResult(`refusing: ${spec.why}`);
-  const paths = [`${f.studioRel}/${briefRel(id)}`, `${f.studioRel}/${spec.log}`];
+  // exactly the brief, the newest signature and (with a reviewer) its one passed review: history stays where it is
+  const paths = [briefRel(id), spec.log, ...(spec.gate?.kind === "ready" ? [spec.gate.review] : [])].map((p) => `${f.studioRel}/${p}`);
   const base = git(repo, ["rev-parse", TRUNK]).stdout.trim();
   const switched = git(repo, ["switch", "-q", "-c", head]);
   if (switched.status !== 0) return heldResult(`could not create ${head}: ${one(switched.stderr)}`);
