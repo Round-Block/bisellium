@@ -149,6 +149,9 @@ interface SpecEvidence {
   gate?: SpecGate;
 }
 
+/** Every row of a manifest list with this id: a domain that says "exactly one" counts them, never takes the first. */
+const declared = (list: unknown, id: string): Dict[] => (Array.isArray(list) ? list : []).filter((r): r is Dict => isDict(r) && r["id"] === id);
+
 /**
  * W-162: the one reader of `bisellium.yml#spec_reviewer`. Absent keeps today's ladder; anything else must name one
  * declared, live codex agent on exactly `gpt-5.6-sol` who is not the design magister, or `next` holds at `spec`.
@@ -161,14 +164,17 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: Spe
   const bad = (why: string): { error: string } => ({ error: `bisellium.yml#spec_reviewer: ${why}` });
   const sella = str(m["spec_reviewer"]);
   if (sella === undefined) return bad("must be the id of one declared seat (a non-empty string)");
-  const row = (Array.isArray(m["sellae"]) ? m["sellae"] : []).find((r): r is Dict => isDict(r) && r["id"] === sella);
+  const rows = declared(m["sellae"], sella);
+  const row = rows[0];
   if (row === undefined) return bad(`${sella} is not a declared seat`);
+  if (rows.length > 1) return bad(`${sella} is declared ${rows.length} times; the reviewer must be one seat`);
   if (row["retired"] !== undefined && row["retired"] !== false) return bad(`${sella} is retired; the reviewer must be a live seat`);
   if (row["kind"] !== "agent") return bad(`${sella} must be kind: agent`);
   if (row["harness"] !== "codex") return bad(`${sella} must be on the codex harness`);
   if (row["model"] !== REVIEWER_MODEL) return bad(`${sella} must declare model ${REVIEWER_MODEL}, exactly`);
-  const design = (Array.isArray(m["collegia"]) ? m["collegia"] : []).find((c): c is Dict => isDict(c) && c["id"] === "design");
-  const magister = str(design?.["magister"]);
+  const designs = declared(m["collegia"], "design");
+  if (designs.length > 1) return bad(`the design collegium is declared ${designs.length} times; exactly one row names the magister`);
+  const magister = str(designs[0]?.["magister"]);
   if (magister === undefined) return bad("the design collegium declares no magister to sign the spec");
   if (magister === sella) return bad(`${sella} is the design magister; the reviewer must be another seat`);
   const state = str(rec["state"]);
