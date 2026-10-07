@@ -657,10 +657,34 @@ re-pointing a `building` opus at a shorter brief could erase an
 `opus.red_evidence` finding while the old passed gate — certifying a
 document the opus is no longer built against — survived untouched.
 
+## The build-review cap (W-167, D-046 §2–3)
+
+After a third counted failed build-review round, `bisellium next` holds for
+the Patron (`actor: patron`) with a `recommendation` (one more fix round, or a
+re-spec when the newest counted failure holds a standing blocker containing the
+whole word `class` or `classes`), the `grant` line and the `attach` command. A
+re-spec never restarts the count. A failed round counts only from a strictly
+parsed `ci/<id>-review-<n>.log` whose outcome agrees with its standing findings
+(converted blockers are advisory). A round whose every standing blocker opens
+`blocking (security)` is pre-approved and does not count (D-044); a mixed round
+counts. Each valid ruling permits one more round: a decision by the manifest's
+`patron`, in the worktree studio's `decisions/`, dated strictly after the third
+counted failure, whose body holds the exact standalone line
+`Grant: one more build-review round for <id>.`, attached with
+`bisellium amend <id> --round-ruling <decision-id> --reason <text>`. A pass
+already recorded at the current tree proceeds past the cap. When the failed
+current round has a standing class blocker, the fix order carries a `boundary:`
+line: fix the class with one check at the input boundary the brief's Input
+domain names, not a patch at the cited site (L-069). `next` holds, naming the
+problem, on any unreadable or out-of-domain review record, on a worktree
+manifest that differs from the main checkout's on a review key, and on an
+uncomputable source tree. The tool cannot judge whether a finding truly is a
+class or truly security-only; those words are the censor's claim (D-045).
+
 ## bisellium amend
 
 ```bash
-npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+npm run bisellium -- amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--round-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
 ```
 
 `amend` is the one CLI path for an opus's descriptive/reference fields:
@@ -674,7 +698,11 @@ field appends one entry to the record's own `amendments:` list — append-only,
 the same `{at, sella, field, reason, superseded}` shape W-040's gate
 corrections use — in stable field order when several are given in one call,
 regardless of flag order. `--ui-ruling` validates and appends one decision id;
-it never creates a decision or evidence. A duplicate or a value identical to
+it never creates a decision or evidence.
+`--round-ruling` (W-167) appends one Patron ruling to `round_rulings`: it
+refuses, before any write, unless the build-review history and the review
+configuration read cleanly and the list with the id appended is valid (see
+"The build-review cap" below). A duplicate or a value identical to
 the current one is
 refused as a no-op: `title` compared as an exact scalar (leading/trailing
 whitespace is a real change), `spec` by canonical resolved target (a path
