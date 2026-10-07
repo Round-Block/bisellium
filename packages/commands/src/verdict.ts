@@ -544,7 +544,7 @@ export interface BuildReviewRound {
 }
 
 /** A round counts toward the cap when it failed and is not security-only (D-046 §2, D-044). */
-export const countedFailures = (rounds: readonly BuildReviewRound[]): BuildReviewRound[] => rounds.filter((r) => r.outcome === "failed");
+export const countedFailures = (rounds: readonly BuildReviewRound[]): BuildReviewRound[] => rounds.filter((r) => r.outcome === "failed" && !r.securityOnly);
 
 /**
  * The one reader of the review configuration: `review_probatio` (absent means `review`) names exactly one declared
