@@ -3228,6 +3228,21 @@ test("W-162-b1 behaviour 1: a valid reviewer setting sends a signed spec to the 
   assert.match(held.kv.get("why") ?? "", /verdict/i, ran("it names the verdict writer", held));
 });
 
+test("W-162-b1 behaviour 1 review round 1: a duplicate reviewer-seat row holds at spec even when the first row is valid", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w162-b1-r1-dup-seat", { row: `${SR_ROW}\n${SR_ROW}` });
+  putBrief(w);
+  sign(w, 1);
+  specHeld(specNext(w), "two rows for the reviewer seat hold", /spec_reviewer|spec-reviewer/);
+});
+
+test("W-162-b1 behaviour 1 review round 1: a duplicate design collegium row holds at spec even when the first row is valid", { timeout: 1_800_000 }, () => {
+  const design = "  - { id: design, name: Design, magister: architect }";
+  const w = srWorld("w162-b1-r1-dup-design", { edit: (t) => t.replace(design, `${design}\n${design}`) });
+  putBrief(w);
+  sign(w, 1);
+  specHeld(specNext(w), "two design collegium rows hold", /spec_reviewer|spec-reviewer/);
+});
+
 test("W-162-b2 behaviour 2: architect signatures and review verdicts are strict, and their outcomes agree with their findings", { timeout: 1_800_000 }, () => {
   // editing the brief after the signature orders the architect at the next round, not the reviewer
   const w = srWorld("w162-b2-blob");
