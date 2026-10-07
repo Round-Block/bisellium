@@ -15,10 +15,20 @@ decision or a check rule and delete it here.
 ## Resume point (2026-10-07)
 
 - **W-167** (review loop stops at three failed rounds; the Patron's OK buys
-  one more; a whole-class blocker is fixed at the input boundary): spec
-  passed Codex review r5 (`ci/W-167-spec-10.log`) and is merged to master.
-  Next: `bisellium next W-167` (step `branch`), then the build. Paused here
-  at 97% Claude usage; resume when usage resets.
+  one more; a whole-class blocker is fixed at the input boundary) is built,
+  not reviewed. Worktree `.worktrees/W-167`, branch `opus/W-167` (unpushed):
+  tests d953417, reds 1-5 f6aa506, build 3ebdd67..abfe5ac (b1-b5, docs, fix).
+  Full `npm test` exit 0; gates under `~/.bisellium-evidence/W-167-build/`
+  all 0 except `check-studio.exit` 1 (compare with `check-studio-master.log`).
+  The phase-2 builder's final report was lost (its call was cut off when the
+  Patron sent a message), so audit before review: gate logs,
+  `accept/`, `accept/next-test-removed-lines.txt` (4 test lines removed:
+  justify or restore), and phase 1's notes: it dropped the brief's
+  "unreadable `ci/`" hold row from b1's test, and recorded all five reds on
+  the test commit (W-162 recorded them one behaviour at a time; check each
+  red is genuine). Next: audit, `handoff`, Codex review round 1 (ladder 4).
+- Run long builder dispatches in the background, so a Patron message does
+  not land on a running foreground call.
 - Codex runs inside the Bash sandbox with `allowed_domains`
   `api.openai.com`, `chatgpt.com`, `auth.openai.com`; never unsandboxed.
 - `next` asks for a handoff before it names the architect after a failed
