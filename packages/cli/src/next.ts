@@ -155,8 +155,9 @@ interface SpecEvidence {
  * The trunk record's state says whether the gate still applies: `greenlit` yes, a PAST_READY state passed it at `ready`.
  */
 export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: SpecReviewer | undefined } | { error: string } {
-  const m = manifest as unknown as Dict;
-  if (!("spec_reviewer" in m)) return { reviewer: undefined };
+  const m: unknown = manifest;
+  // a studio with no readable manifest object declares no setting: today's ladder
+  if (!isDict(m) || !("spec_reviewer" in m)) return { reviewer: undefined };
   const bad = (why: string): { error: string } => ({ error: `bisellium.yml#spec_reviewer: ${why}` });
   const sella = str(m["spec_reviewer"]);
   if (sella === undefined) return bad("must be the id of one declared seat (a non-empty string)");
