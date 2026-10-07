@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { ensureRealDirectory } from "./ids.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
@@ -649,7 +650,7 @@ function parseBuildReviewLog(text: string, id: string, rel: string, n: number, c
   return {
     n,
     log: rel,
-    at: Date.parse(once["at"]!),
+    at: instant(once["at"])!.getTime(), // utcTimestampProblem passed above, so the instant exists
     tree: once["tree"]!,
     outcome,
     blockers,

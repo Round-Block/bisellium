@@ -22,7 +22,7 @@ import { isSeq, parse as parseYaml } from "yaml";
 import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
-import { WF } from "@bisellium/schema";
+import { WF, instant } from "@bisellium/schema";
 import { readBriefAdmission, readBriefLimit } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentRunReceipt } from "./builder-run.js";
@@ -1140,7 +1140,7 @@ export function patronDecisionProblem(
     const at = data["at"];
     const problem = utcTimestampProblem(at);
     if (problem !== undefined) return `decision "${decisionId}" at ${problem}`;
-    if (Date.parse(at as string) <= opts.after) return `decision "${decisionId}" is dated ${at as string}, not after the failure it rules on (${new Date(opts.after).toISOString()})`;
+    if (instant(at)!.getTime() <= opts.after) return `decision "${decisionId}" is dated ${at as string}, not after the failure it rules on (${new Date(opts.after).toISOString()})`;
   }
   return undefined;
 }
