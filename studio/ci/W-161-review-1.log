@@ -1,0 +1,19 @@
+# opus: W-161
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-07T01:50:42.116Z
+# tree: tree:2497cc006a7f0e576bf50160882430dbd2ea79b2
+# brief: briefs/W-161.md blob:97e5d1fdba6ea2189dee5fb5c428887fad558a76
+
+## Findings
+1. blocking — packages/commands/src/brief-admission.ts:117 One instance: the delimiter is checked only for nonzero width and valid cell syntax, so one- or four-cell delimiters are admitted beneath a three-cell header; that is not the required three-column table. brief:160, brief:268 — check: packages/cli/src/brief-admission.test.ts (W-161-b2 malformed delimiter widths)
+2. blocking — studio/ci/reds/W-161/04.log:6 Class (searched all six red logs and their Genuine-red clauses): `04.log` and `05.log` certify the same wholly pre-implementation tree, while b4 was required after behaviour 3 and b5 after behaviour 4; `05.log:18` actually fails on admitting an empty `None:` rather than the specified intermediate refusal of the valid `None:` form. These required progressive reds are false. brief:247, brief:303, brief:316 — check: none: verify each red tree contains the preceding behaviour’s implementation and fails at the named assertion
+3. advisory — packages/cli/src/brief-admission.test.ts:359 Class (searched every W-127/W-140 hunk in the diff): the two existing W-127 rows at lines 359 and 431 were changed to scope findings to W-900, contrary to the acceptance promise that only the fixture changes and every W-127/W-140 row passes unchanged. The production behavior is correct, so this regression-row deviation is advisory. — check: none: preserve or snapshot the pre-W-161 W-127/W-140 row bodies
+
+## Verdict
+The final implementation largely follows the boundary design, but it admits malformed delimiter widths and carries false required red evidence for two progressive rows.
+
+VERDICT: FAIL
