@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { ensureRealDirectory } from "./ids.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
@@ -394,12 +394,14 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
 
   if (!isUi && phase === "spec") {
     // W-162: a spec verdict pins the brief it was recorded against, so an edit after it voids it
-    const read = readContainedRegularFile(root, `briefs/${opusId}.md`, "briefs");
+    // the id is already contained (safeItemPath above): the brief shares the record's file name
+    const briefRel = join("briefs", basename(opusPath));
+    const read = readContainedRegularFile(root, briefRel, "briefs");
     if ("error" in read) {
-      console.error(`${opusId}: the brief briefs/${opusId}.md is unreadable, so a spec verdict cannot pin it: ${read.error}`);
+      console.error(`${opusId}: the brief ${briefRel} is unreadable, so a spec verdict cannot pin it: ${read.error}`);
       return { exitCode: 2 };
     }
-    briefHeader = `briefs/${opusId}.md blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
+    briefHeader = `${briefRel} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
   }
 
   const filenamePhase = phase === "build" ? "review" : "spec";
