@@ -16,15 +16,13 @@ decision or a check rule and delete it here.
 
 - **W-167** (review loop stops at three failed rounds; the Patron's OK buys
   one more; a whole-class blocker is fixed at the input boundary) is in spec.
-  Brief revision 4 and spec logs 1-6 are **uncommitted in the main checkout**
-  (`studio/briefs/W-167.md`, `studio/ci/W-167-spec-*.log`). Three Codex
-  spec reviews failed (3, 3, 2 findings; `~/.bisellium-evidence/W-167-specreview/r1-r3/`).
-  The Patron approved one more revision: both open findings are one cause —
-  `next` reads the main checkout's manifest while the verbs read the
-  worktree's; the fix is to hold whenever the two disagree on the keys used.
-  The architect is revising (round 7); if `studio/ci/W-167-spec-7.log` is
-  missing, re-dispatch it with `r3/verdict.md`. Then the Codex review
-  (round 8, `--sella spec-reviewer`), land with `next`, build.
+  Brief revision 5 and spec logs 1-8 are **uncommitted in the main checkout**
+  (`studio/briefs/W-167.md`, `studio/ci/W-167-spec-*.log`). Codex spec
+  reviews r1-r4 failed (3, 3, 2, 1 findings; `~/.bisellium-evidence/W-167-specreview/`).
+  r4's one finding is a naming fix (brief:105: the worktree-manifest row must
+  name the function that reads it, not `buildReviewDrift`). Next: send it to
+  the architect (sign as round 9), Codex review (round 10, prompt
+  `r4/prompt.md` pointed at spec-9.log), land with `next`, build.
 - `next` asks for a handoff before it names the architect after a failed
   spec review ("stale handover"); dispatch the architect directly instead
   of writing a handoff onto master's record.
