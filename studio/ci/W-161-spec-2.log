@@ -1,0 +1,21 @@
+# opus: W-161
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T00:53:50.148Z
+# tree: tree:164045172c9c0035e3b5a394c21d47d78683e1e5
+
+W-161 spec, revision 2. Architect, claude-opus-5-5. Brief: studio/briefs/W-161.md (6 behaviours, six sections plus "Input domain" and "Defaults for the Patron to veto", Decree family: brief-admission; readBriefAdmission at limit 6 reports no problems, and the round-2 reference reader in measure.mjs reports none for its own Input domain section). Answers the pre-build spec review (D-046, gpt-5.6-sol, round 1: four blocking findings, ~/.bisellium-evidence/W-161-specreview/r1/verdict.md). Inputs as revision 1, plus lifecycle.ts runReady and check.ts checkStudio's limit, state and spec reads.
+Re-measured with ~/.bisellium-evidence/W-161-spec/measure.mjs at 4303711 (measure-r2.out): counts unchanged from revision 1 except W-163, whose census row names a test file, not a function, so only W-137 of the 2 sectioned briefs meets revision 2's shape; W-163 is done and never re-read. 0 active opera; 0 open opera admitted today and refused under this rule.
+
+## Findings
+1. advisory — review r1 #1 answered: the Input domain now covers every record this opus reads, each with one fail-closed rejecting function: brief_behaviour_limit by a new exported readBriefLimit (the two inline reads in runReady and checkStudio move into it, messages unchanged), the opus record at ready by runReady, the opus record at check by checkStudio, the brief file by readContainedRegularFile, the section by readBriefAdmission; check's silent skip of an active opus with a missing, non-string or unreadable spec becomes a brief.admission block — check: packages/cli/src/brief-admission.test.ts (W-161-b6)
+2. advisory — review r1 #2 answered: the table header is exactly three cells in order, Record or Input, Valid domain, Rejected by; a two-column, reordered or four-column header is NO_TABLE, and every row's three cells are non-empty, so every row names its record — check: packages/cli/src/brief-admission.test.ts (W-161-b2)
+3. advisory — review r1 #3 answered: Rejected by opens with one backticked function name (identifier or module.fn, optional arguments); a file name or command line is refused; admission does not look the function up in the source, a stated limit under D-045's threat model, left to the censor; default 3 — check: packages/cli/src/brief-admission.test.ts (W-161-b3)
+4. advisory — review r1 #4 answered: every real line starting None: is counted, empty or not; exactly one, with a reason, and no table; an empty None: beside a valid one is MIX, a lone empty one has its own problem — check: packages/cli/src/brief-admission.test.ts (W-161-b5)
+5. advisory — six behaviours, at the admission limit, each red after the previous one lands (D-036); behaviour 6 touches only check's skip branch, which behaviours 1 to 5 never reach — check: packages/cli/src/brief-admission.test.ts (W-161-b1 to W-161-b6)
+
+## Recommendation
+Verdict: passed. Revision 2 closes the four review findings inside the same decree family and the same files plus the two limit call sites; the six defaults stand, default 3 now naming the function-shape limit.
