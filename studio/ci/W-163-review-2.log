@@ -1,0 +1,16 @@
+# opus: W-163
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T21:52:36.027Z
+# tree: tree:f411d3d846b4497e69261a0bf160368bcef9214f
+# brief: briefs/W-163.md blob:9334db30e46120eeefb48976f29d4d7c78f4f114
+
+## Findings
+1. blocking — packages/cli/src/containment.test.ts:398 Alias collection propagates whole fs/Date namespaces but not extracted fs functions or `Date.parse`; after named-import, destructuring, property/literal-computed, or assignment aliases, only the initializer is counted and later calls through the alias are invisible, while inline-exported aliases also evade downstream local imports. I searched `collect`/`kindOf`/`named` propagation and the complete fixture matrix; there are no current production instances, but no mutation covers these member-alias or cross-file alias forms. brief:208 — check: packages/cli/src/containment.test.ts (mutation rows for extracted-member alias chains and inline-exported aliases)
+
+## Verdict
+The derived-read and low-year blockers are closed, and the changed containment row still fails against the pre-fix code. The census blocker remains open across its alias class.
+VERDICT: FAIL

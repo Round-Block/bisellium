@@ -9,6 +9,7 @@
  * is the intended caller.
  */
 import { isoWeek, type Index } from "./index-db.js";
+import { instant } from "@bisellium/schema";
 
 export type QueryKind = "needs_you" | "status" | "burn" | "unknown";
 export interface QueryAnswer {
@@ -24,8 +25,8 @@ const BURN = /burn|budget|allowance/i;
 
 function hoursSince(ts: string | undefined, now: Date): string {
   if (!ts) return "unknown age";
-  const at = new Date(ts);
-  if (Number.isNaN(at.getTime())) return "unknown age";
+  const at = instant(ts);
+  if (!at) return "unknown age";
   return `${(Math.abs(now.getTime() - at.getTime()) / 3_600_000).toFixed(1)}h`;
 }
 

@@ -33,7 +33,7 @@
 import { closeSync, constants, existsSync, fstatSync, lstatSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
-import type { GantryEvent, SnapshotAdapter } from "@bisellium/schema";
+import { instant, type GantryEvent, type SnapshotAdapter } from "@bisellium/schema";
 import { computeMeter, EVENTS_LOG_REL, estimateFinish, readLog, Store as CoreStore } from "@bisellium/core";
 import { createBiselliumAdapter, isoWeek, listMd, readFront, readManifest, readMilestones, resolveSeat, snapshotDir, type Manifest } from "@bisellium/adapter-native";
 import { BranchRecordReader, type BranchRecordsStatus, type Overlay } from "./branchRecords.js";
@@ -208,8 +208,8 @@ function computeDueSummary(studioDir: string, manifest: Manifest, now: Date, ove
       if (typeof data.id !== "string" || typeof data.collegium !== "string" || !activeCollegiumIds.has(data.collegium)) continue;
       const traditio = data.traditio;
       const at = typeof traditio === "object" && traditio !== null ? (traditio as Record<string, unknown>)["at"] : undefined;
-      const atDate = typeof at === "string" ? new Date(at) : undefined;
-      if (!atDate || Number.isNaN(atDate.getTime())) continue;
+      const atDate = typeof at === "string" ? instant(at) : undefined;
+      if (!atDate) continue;
       const ageDays = (now.getTime() - atDate.getTime()) / 86_400_000;
       if (ageDays > 3) due.push({ kind: "traditio", id: data.id });
     } catch {
@@ -448,8 +448,8 @@ export class Store extends CoreStore {
       const cutoffMs = Math.max(0, days) * 86_400_000;
       return (snap.acta ?? [])
         .filter((a) => {
-          const at = new Date(a.at);
-          return !Number.isNaN(at.getTime()) && now.getTime() - at.getTime() <= cutoffMs;
+          const at = instant(a.at);
+          return at !== undefined && now.getTime() - at.getTime() <= cutoffMs;
         })
         .map((a) => ({ id: a.id, author: a.authorRoleId, kind: a.kind, title: a.title, at: a.at, evidence: a.evidence }));
     },

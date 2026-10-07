@@ -9,7 +9,7 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readdirSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isMap, isScalar, parseDocument } from "yaml";
 import { NATIVE_OPUS_KINDS, type NativeOpusKind } from "@bisellium/schema";
 import type { Manifest } from "@bisellium/adapter-native";
@@ -215,7 +215,8 @@ export interface ContainedFile {
 
 /**
  * Resolve a studio-relative regular file without following a symlink in any
- * path component. `expectedDir` is the required first component.
+ * path component. `expectedDir` is the required first component; "" means a
+ * file directly in the officina root (one path component, its parent the root).
  */
 export function readContainedRegularFile(root: string, relPath: string, expectedDir: string, maxBytes?: number): ContainedFile | { error: string; code?: string } {
   if (typeof relPath !== "string" || relPath.length === 0 || isAbsolute(relPath)) return { error: "path must be a nonempty officina-relative string" };
@@ -224,7 +225,10 @@ export function readContainedRegularFile(root: string, relPath: string, expected
     const lexical = resolve(rootReal, relPath);
     const rel = relative(rootReal, lexical);
     const parts = rel.split(sep);
-    if (isAbsolute(rel) || parts[0] === ".." || parts[0] !== expectedDir) return { error: `path must remain under ${expectedDir}/` };
+    const atRoot = expectedDir === "";
+    // inside(p): p stays under expectedDir/, or (atRoot) is the one root-level name `whole`
+    const inside = (p: string, whole: string): boolean => !isAbsolute(p) && p.split(sep)[0] !== ".." && (atRoot ? p === whole : p.split(sep)[0] === expectedDir);
+    if (!inside(rel, parts.length === 1 ? rel : "")) return { error: atRoot ? "path must be a file directly under the officina root" : `path must remain under ${expectedDir}/` };
     let cursor = rootReal;
     for (const part of parts) {
       cursor = join(cursor, part);
@@ -232,8 +236,7 @@ export function readContainedRegularFile(root: string, relPath: string, expected
     }
     const parentReal = realpathSync(resolve(lexical, ".."));
     const parentRel = relative(rootReal, parentReal);
-    if (isAbsolute(parentRel) || parentRel.split(sep)[0] === ".." || parentRel.split(sep)[0] !== expectedDir)
-      return { error: `real parent escapes ${expectedDir}/` };
+    if (!inside(parentRel, "")) return { error: `real parent escapes ${atRoot ? "the officina root" : `${expectedDir}/`}` };
     const fd = openSync(lexical, constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
       const opened = fstatSync(fd);
@@ -241,8 +244,7 @@ export function readContainedRegularFile(root: string, relPath: string, expected
       if (maxBytes !== undefined && opened.size > maxBytes) return { error: `target exceeds ${maxBytes} bytes` };
       const real = realpathSync(lexical);
       const realRel = relative(rootReal, real);
-      if (isAbsolute(realRel) || realRel.split(sep)[0] === ".." || realRel.split(sep)[0] !== expectedDir)
-        return { error: `real target escapes ${expectedDir}/` };
+      if (!inside(realRel, rel)) return { error: `real target escapes ${atRoot ? "the officina root" : `${expectedDir}/`}` };
       return { absolute: lexical, relative: parts.join("/"), bytes: readFileSync(fd), mode: opened.mode };
     } finally {
       closeSync(fd);
@@ -251,6 +253,20 @@ export function readContainedRegularFile(root: string, relPath: string, expected
     const code = typeof error === "object" && error !== null && "code" in error && typeof error.code === "string" ? error.code : undefined;
     return { error: (error as Error).message, ...(code === undefined ? {} : { code }) };
   }
+}
+
+/** An officina file named by a record value (`lex:`, `evidence:`), read through `readContainedRegularFile`: its own first
+ *  component is the expected directory, so only a nonempty relative path that stays under the officina passes. */
+export function readRecordedFile(root: string, relPath: string, maxBytes?: number): ContainedFile | { error: string; code?: string } {
+  if (typeof relPath !== "string" || relPath.length === 0 || isAbsolute(relPath)) return { error: "path must be a nonempty officina-relative string" };
+  const first = relative(resolve(root), resolve(root, relPath)).split(sep)[0] ?? "";
+  return readContainedRegularFile(root, relPath, first, maxBytes);
+}
+
+/** A record at `<root>/<dir>/<file>`, read through `readContainedRegularFile`: no symlink in any component. */
+export function readRecordAt(path: string, maxBytes?: number): ContainedFile | { error: string; code?: string } {
+  const dir = dirname(path);
+  return readContainedRegularFile(dirname(dir), join(basename(dir), basename(path)), basename(dir), maxBytes);
 }
 
 export interface LoadedNativeRecords {

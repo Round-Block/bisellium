@@ -8,9 +8,10 @@
  *
  * Seam S2: never throws, `[]` for a non-officina.
  */
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { Finding, Level, RuleOpts } from "../check.js";
+import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { RULE_IDS } from "./ids.js";
 
 const CHECK_MARKER = /\(check:\s*[^)]+\)\s*$/;
@@ -80,12 +81,9 @@ export function checkLex(root: string, _opts: RuleOpts): Finding[] {
   const sectionNumbers = new Set(["2", "3", "4"]);
   for (const f of files) {
     const where = `leges/${f}`;
-    let text: string;
-    try {
-      text = readFileSync(join(legesDir, f), "utf8");
-    } catch {
-      continue; // unreadable lex is lex.present's job (check.ts), not ours
-    }
+    const lexFile = readContainedRegularFile(root, where, "leges");
+    if ("error" in lexFile) continue; // unreadable lex is lex.present's job (check.ts), not ours
+    const text = lexFile.bytes.toString("utf8");
     let unchecked = 0;
     let unknownClauses = 0;
     const unknownIds = new Set<string>();

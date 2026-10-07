@@ -17,6 +17,7 @@ import { runTalk } from "@bisellium/commands/talk.js";
 import { runPause, runResume } from "@bisellium/commands/pause.js";
 import { runDelegate } from "@bisellium/commands/delegate.js";
 import { checkStudio } from "./check.js";
+import { instant } from "@bisellium/schema";
 
 const REAL_RUNNERS: StartServerOptions["runners"] = {
   answer: (args) => runAnswer(args),
@@ -87,8 +88,8 @@ function parseArgs(args: string[], defaultNow: Date): ParsedServeArgs | { error:
         if (!Number.isFinite(n) || n <= 0) return { error: `--poll-ms must be a positive number\n${USAGE}` };
         pollMs = n;
       } else {
-        const d = new Date(v);
-        if (Number.isNaN(d.getTime())) return { error: `--now must be an ISO date\n${USAGE}` };
+        const d = instant(v);
+        if (!d) return { error: `--now must be an ISO date\n${USAGE}` };
         now = d;
       }
       continue;

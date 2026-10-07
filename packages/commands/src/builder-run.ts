@@ -1,7 +1,7 @@
 /** Private W-125 builder runtime and current-tree review admission seam. */
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, existsSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, realpathSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,7 @@ import {
 } from "@bisellium/shim";
 import { countBehaviours } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, markIsolatedBuilderRuntime } from "./frontmatter.js";
+import { readContainedRegularFile } from "./opus-model.js";
 
 interface BuilderRunCompletion {
   schema: 1; origin: "host-producer"; opus: string; branch: string; builder: string; producer: string;
@@ -143,10 +144,6 @@ export function acquireProducerLease(repo: string, opus: string): string | undef
 
 function readOptional(path: string): string | undefined {
   try { return readFileSync(path, "utf8"); } catch { return undefined; }
-}
-
-function readOptionalBytes(path: string): Buffer | undefined {
-  try { return readFileSync(path); } catch { return undefined; }
 }
 
 function ownerAlive(pid: number): boolean {
@@ -281,9 +278,9 @@ export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunRec
     if (typeof front.run_receipt !== "string" || front.run_receipt.trim() === "") return { ok: false, error: `${opus}: review requires a current host-produced run receipt` };
     const path = resolve(studioRoot, front.run_receipt);
     if (!contained(studioRoot, path) || !contained(join(studioRoot, "receipts"), path)) return { ok: false, error: `${opus}: run_receipt escapes receipts/` };
-    const stat = lstatSync(path);
-    if (!stat.isFile() || stat.isSymbolicLink() || !contained(realpathSync(studioRoot), realpathSync(path))) return { ok: false, error: `${opus}: run_receipt is not a contained regular file` };
-    const receipt = JSON.parse(readFileSync(path, "utf8")) as { sella?: unknown; harness?: unknown; exitCode?: unknown; completion?: Partial<BuilderRunCompletion> };
+    const receiptFile = readContainedRegularFile(studioRoot, relative(studioRoot, path), "receipts");
+    if ("error" in receiptFile) return { ok: false, error: `${opus}: run_receipt is not a contained regular file` };
+    const receipt = JSON.parse(receiptFile.bytes.toString("utf8")) as { sella?: unknown; harness?: unknown; exitCode?: unknown; completion?: Partial<BuilderRunCompletion> };
     const c = receipt.completion;
     const oid = /^[0-9a-f]{40}$/;
     if (receipt.exitCode !== 0 || c?.schema !== 1 || c.origin !== "host-producer" || c.completed !== true || c.teardownComplete !== true ||
@@ -315,14 +312,17 @@ export function admitCurrentRunReceipt(studioRoot: string, opus: string): RunRec
         return { ok: false, error: `${opus}: run_receipt has an unreachable or mismatched red identity` };
       if (red.replayedTree !== undefined && red.replayedTree !== red.sourceTree) {
         const logName = `${String(red.behaviour).padStart(2, "0")}.log`;
-        const log = readOptionalBytes(join(studioRoot, "ci", "reds", opus, logName));
+        const redLog = readContainedRegularFile(studioRoot, `ci/reds/${opus}/${logName}`, "ci");
+        const log = "error" in redLog ? undefined : redLog.bytes;
         const identified = log === undefined ? undefined : rebasedRedCommit(repo, c.finalCommit!, `${studioRel}/ci/reds/${opus}/${logName}`, log, exclusions);
         if (identified !== red.commit)
           return { ok: false, error: `${opus}: run_receipt red for behaviour ${red.behaviour} is not the rebased pre-change commit of its log` };
       }
     }
     // One red does not suffice: every numbered behaviour in the brief needs its replayed red.
-    const declared = countBehaviours(readFileSync(join(studioRoot, "briefs", `${opus}.md`), "utf8"));
+    const briefFile = readContainedRegularFile(studioRoot, `briefs/${opus}.md`, "briefs");
+    if ("error" in briefFile) throw new Error(briefFile.error);
+    const declared = countBehaviours(briefFile.bytes.toString("utf8"));
     if (declared === 0) return { ok: false, error: `${opus}: brief declares no numbered behaviours to replay` };
     for (let n = 1; n <= declared; n++)
       if (!behaviours.has(n)) return { ok: false, error: `${opus}: run_receipt lacks a replayed red for behaviour ${n}` };

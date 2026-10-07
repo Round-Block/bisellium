@@ -1,0 +1,37 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-163-b5 --import tsx packages/cli/src/safe-helpers.test.ts
+# exit: 1
+# at: 2026-10-06T19:18:02.338Z
+# sella: builder.W-163
+# tree: tree:2411e77afa0b7d7bf77130593e56a3b2651d47da
+
+TAP version 13
+# Subtest: W-163-b5 behaviour 5: officina writes refuse a symlinked parent and write nothing outside
+not ok 1 - W-163-b5 behaviour 5: officina writes refuse a symlinked parent and write nothing outside
+  ---
+  duration_ms: 955.569344
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-163/packages/cli/src/safe-helpers.test.ts:9:89'
+  failureType: 'testCodeFailure'
+  error: 'verdict exits non-zero through a symlinked ci/'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 0
+  operator: 'notStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-163/packages/cli/src/safe-helpers.test.ts:185:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 963.274357

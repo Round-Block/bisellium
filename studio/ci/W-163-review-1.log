@@ -1,0 +1,18 @@
+# opus: W-163
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-06T20:55:06.250Z
+# tree: tree:985568cbd8f1179f991bc6b5bcf7281627804710
+# brief: briefs/W-163.md blob:9334db30e46120eeefb48976f29d4d7c78f4f114
+
+## Findings
+1. blocking — packages/cli/src/containment.test.ts:341 Inventory D misses computed namespace/default members (`fs["readFileSync"]`), post-import destructuring (`const { readFileSync } = fs`), namespace aliases, and aliased/namespace `createRequire`; inventory C likewise misses computed or aliased `Date.parse` and aliased `Date` constructors. I searched the scanner’s import-binding, property-access, call, and constructor branches; these are enforcement holes even though the current tree contains no such forms. brief:208 — check: packages/cli/src/containment.test.ts (mutation rows for each binding/member form)
+2. blocking — packages/cli/src/containment.test.ts:728 Two D pins under the bright-line packages are wrongly exempted: `prune.ts:walk` raw-reads a directory-listed root name, and `talk.ts:readSession` at line 778 raw-reads `sessions/<sella>.json` from a flag-derived id. I reviewed every `guarded` and `listed` D pin under `packages/cli` and `packages/commands`; these are the two instances. brief:185 — check: packages/cli/src/containment.test.ts
+3. blocking — packages/schema/src/index.ts:364 `Date.UTC` remaps years 0–99 into 1900–1999, so `instant` rejects every otherwise-valid string date in years `0000`–`0099`, although the declared domain accepts four-digit years whose calendar fields are valid. brief:205 — check: packages/cli/src/safe-helpers.test.ts (W-163-b1 low-year cases)
+
+## Verdict
+The principal runtime symlink protections and supplied evidence are sound, but the census is bypassable, two prohibited raw reads are pinned as exceptions, and the sole date parser rejects part of its declared valid domain.
+VERDICT: FAIL

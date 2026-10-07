@@ -12,6 +12,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Finding, RuleOpts } from "../check.js";
 import { collectDocFiles, DOC_FRONT_KEYS, DOC_KINDS, type DocFile } from "../docs.js";
+import { instant } from "@bisellium/schema";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -29,10 +30,7 @@ function declaredSellae(manifest: unknown): { ids: Set<string>; patron: string }
 }
 
 function reviewDate(v: unknown): Date | undefined {
-  if (v instanceof Date) return Number.isNaN(v.getTime()) ? undefined : v;
-  if (typeof v !== "string") return undefined;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? undefined : d;
+  return instant(v);
 }
 
 const LINK_RE = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;

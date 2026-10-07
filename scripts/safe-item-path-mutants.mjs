@@ -256,6 +256,31 @@ function censusInsertRawJoinEdit() {
   return { file, edits: [{ start: text.length, end: text.length, replacement: insertion }] };
 }
 
+/** W-163: a statement inserted as the first line of an EXISTING function's body. */
+function censusInsertInFunctionEdit(file, fn, statement) {
+  const abs = join(REPO_ROOT, file);
+  const text = readFileSync(abs, "utf8");
+  const sf = parseFile(abs, text);
+  const decl = findFunctionDeclaration(sf, fn);
+  if (!decl || !decl.body) throw new AnchorError(`${file}: function ${fn} not found`);
+  const at = decl.body.getStart(sf) + 1;
+  return { file, edits: [{ start: at, end: at, replacement: `\n  ${statement}` }] };
+}
+
+function censusInsertRawDateEdit() {
+  // mH: a raw Date.parse in an existing function of packages/cli/src/next.ts — inventory C must name it.
+  return censusInsertInFunctionEdit("packages/cli/src/next.ts", "runNext", "void Date.parse(String(process.argv[2]));");
+}
+
+function censusInsertRawWriteEdit() {
+  // mI: a raw officina write in an existing function of packages/commands/src/writes.ts — inventory D must name it.
+  return censusInsertInFunctionEdit(
+    "packages/commands/src/writes.ts",
+    "appendPatronTimeline",
+    'writeFileSync(join(root, "acta", "x.md"), "");',
+  );
+}
+
 function censusReformatEdit() {
   // mG: an existing call, reformatted across two lines — no line numbers are
   // pinned anywhere, so this must leave both inventories unchanged.
@@ -507,6 +532,22 @@ const CENSUS_MUTANTS = [
     kills: ["inventory B"],
     testCmd: CONTAINMENT_CMD,
     edits: () => [censusInsertRawJoinEdit()],
+  },
+  {
+    label: "mH new raw date parse",
+    group: "census",
+    expect: "dead",
+    kills: ["inventory C"],
+    testCmd: CONTAINMENT_CMD,
+    edits: () => [censusInsertRawDateEdit()],
+  },
+  {
+    label: "mI new raw officina write",
+    group: "census",
+    expect: "dead",
+    kills: ["inventory D"],
+    testCmd: CONTAINMENT_CMD,
+    edits: () => [censusInsertRawWriteEdit()],
   },
   {
     label: "mG reformat across two lines",

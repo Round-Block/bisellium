@@ -18,13 +18,15 @@
  * workflow telemetry).
  */
 import { execFileSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseDocument } from "yaml";
 import { isBuilderClassSeat, readManifest, resolveSeat, retiredDispatchMessage, seatInstance, type Manifest } from "@bisellium/adapter-native";
 import { appendEvents, EVENTS_LOG_REL, readLog } from "@bisellium/core";
-import { WF, type GantryEvent } from "@bisellium/schema";
+import { WF, instant, type GantryEvent } from "@bisellium/schema";
 import { editOpusFrontMatter, splitFront } from "./frontmatter.js";
+import { ensureRealDirectory } from "./ids.js";
+import { readContainedRegularFile, readRecordAt } from "./opus-model.js";
 
 export interface WriteOptions {
   /** Pinned clock, for reproducible timestamps/events in tests — same
@@ -83,8 +85,7 @@ export function parseFlags(args: string[], spec: FlagSpec): ParsedFlags | { erro
  *  return means an explicit --now failed to parse as a date. */
 export function resolveNow(flagValue: string | undefined, fallback: Date | undefined): Date | undefined {
   if (flagValue === undefined) return fallback ?? new Date();
-  const d = new Date(flagValue);
-  return Number.isNaN(d.getTime()) ? undefined : d;
+  return instant(flagValue);
 }
 
 export interface OpenedStudio {
@@ -133,13 +134,9 @@ function projectIdFor(manifest: Manifest): string {
  *  adapter (which trims the body) — every command here needs this before it
  *  decides what to write. */
 export function readState(path: string): string | { error: string } {
-  let raw: string;
-  try {
-    raw = readFileSync(path, "utf8");
-  } catch (e) {
-    return { error: `could not read ${path}: ${(e as Error).message}` };
-  }
-  const split = splitFront(raw);
+  const file = readRecordAt(path);
+  if ("error" in file) return { error: `could not read ${path}: ${file.error}` };
+  const split = splitFront(file.bytes.toString("utf8"));
   if (!split) return { error: `${path}: missing front matter` };
   const state = parseDocument(split.front).get("state");
   return typeof state === "string" ? state : "";
@@ -168,8 +165,7 @@ export function emitEvent(root: string, manifest: Manifest, name: string, now: D
  *  wrapper around these commands; it defaults to "patron" so calling the
  *  functions directly (as the tests do) needs no wrapper. */
 export function appendPatronTimeline(root: string, entry: Record<string, unknown>): void {
-  const path = join(root, "timeline", "patron.jsonl");
-  mkdirSync(dirname(path), { recursive: true });
+  const path = join(ensureRealDirectory(root, "timeline"), "patron.jsonl");
   const role = process.env["BISELLIUM_ROLE"] || "patron";
   appendFileSync(path, JSON.stringify({ role, ...entry }) + "\n", "utf8");
 }
@@ -496,7 +492,9 @@ function parseRawEvent(json: string): RawCliEvent | { error: string } {
  *  failing the whole emit over an opus that happens to have no collegium. */
 function opusCollegium(opusPath: string): string | undefined {
   try {
-    const split = splitFront(readFileSync(opusPath, "utf8"));
+    const file = readRecordAt(opusPath);
+    if ("error" in file) return undefined;
+    const split = splitFront(file.bytes.toString("utf8"));
     if (!split) return undefined;
     const front = parseDocument(split.front).toJS() as Record<string, unknown> | null;
     const collegium = front?.["collegium"];
@@ -671,7 +669,9 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
   let firstLine = "";
   let petitioRawBefore: string;
   try {
-    petitioRawBefore = readFileSync(petitioPath, "utf8");
+    const petitioFile = readContainedRegularFile(root, `petitiones/${petitioId}.md`, "petitiones");
+    if ("error" in petitioFile) throw new Error(petitioFile.error);
+    petitioRawBefore = petitioFile.bytes.toString("utf8");
     const split = splitFront(petitioRawBefore);
     if (!split) throw new Error("missing front matter");
     firstLine = split.body.trim().split("\n")[0] ?? "";
@@ -700,6 +700,17 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
 
   const newState = askBack ? "awaiting_reply" : "resolved";
 
+  // The acta directory is checked before anything is written: a symlinked acta/ refuses with the petitio untouched.
+  let actaDir: string | undefined;
+  if (charterGap) {
+    try {
+      actaDir = ensureRealDirectory(root, "acta");
+    } catch (e) {
+      console.error(`answer failed: ${(e as Error).message}`);
+      return { exitCode: 2 };
+    }
+  }
+
   // The petitio front-matter edit, the optional acta file and the Patron
   // timeline append must land together: if any later step throws, we roll
   // the petitio back to its pre-edit bytes and remove any acta file we
@@ -722,9 +733,7 @@ export function runAnswer(args: string[], opts: WriteOptions = {}): WriteResult 
       return `${body}\n\n[stated] ${now.toISOString()} ${patronId}: ${reply}`;
     });
 
-    if (charterGap) {
-      const actaDir = join(root, "acta");
-      mkdirSync(actaDir, { recursive: true });
+    if (actaDir !== undefined) {
       const dateStr = now.toISOString().slice(0, 10);
       const slug = slugify(`lex-gap-${firstLine}`);
       actaPath = join(actaDir, `${dateStr}-${slug}.md`);
@@ -841,13 +850,12 @@ export function runGreenlight(args: string[], opts: WriteOptions = {}): WriteRes
   // together. If the event or timeline append throws after the opus was
   // already mutated, roll the opus back so a crash never leaves it
   // greenlit/declined with no matching event or timeline record.
-  let opusRawBefore: string;
-  try {
-    opusRawBefore = readFileSync(opusPath, "utf8");
-  } catch (e) {
-    console.error(`could not read ${opusPath}: ${(e as Error).message}`);
+  const opusFile = readContainedRegularFile(root, `opera/${opusId}.md`, "opera");
+  if ("error" in opusFile) {
+    console.error(`could not read ${opusPath}: ${opusFile.error}`);
     return { exitCode: 2 };
   }
+  const opusRawBefore = opusFile.bytes.toString("utf8");
   try {
     editOpusFrontMatter(opusPath, (doc) => {
       if (decline !== undefined) doc.setIn(["declined"], decline);
@@ -942,8 +950,7 @@ export function runBudget(args: string[], opts: WriteOptions = {}): WriteResult 
     return { exitCode: 2 };
   }
 
-  const aerariumDir = join(root, "aerarium");
-  const path = join(aerariumDir, `${period}.yml`);
+  const path = join(root, "aerarium", `${period}.yml`);
 
   // Same discipline as answer/greenlight: the aerarium write and the Patron
   // timeline append must land together. `existedBefore`/`rawBefore` let us
@@ -953,16 +960,16 @@ export function runBudget(args: string[], opts: WriteOptions = {}): WriteResult 
   const existedBefore = existsSync(path);
   let rawBefore: string | undefined;
   if (existedBefore) {
-    try {
-      rawBefore = readFileSync(path, "utf8");
-    } catch (e) {
-      console.error(`could not read ${path}: ${(e as Error).message}`);
+    const aerariumFile = readContainedRegularFile(root, `aerarium/${period}.yml`, "aerarium");
+    if ("error" in aerariumFile) {
+      console.error(`could not read ${path}: ${aerariumFile.error}`);
       return { exitCode: 2 };
     }
+    rawBefore = aerariumFile.bytes.toString("utf8");
   }
 
   try {
-    mkdirSync(aerariumDir, { recursive: true });
+    ensureRealDirectory(root, "aerarium");
     const raw = rawBefore ?? `period: ${JSON.stringify(period)}\ncollegia: {}\n`;
 
     // Allowances only, merged in — never a wholesale rewrite, so a hand-added

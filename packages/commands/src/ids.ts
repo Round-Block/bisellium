@@ -5,7 +5,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { lstatSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 
 export type RecordDirectory = "opera" | "petitiones" | "lessons";
 export type RecordPrefix = "W" | "P" | "L";
@@ -113,11 +113,34 @@ function refMaximum(studioRoot: string, directory: RecordDirectory, pattern: Reg
   }
 }
 
+/** Throws unless `path` is a real directory whose real path is its own lexical path: a symlink in ANY
+ *  component is refused, not only the last. So callers pass a path built from `realpathSync(<officina root>)`. */
 export function requireRealDirectory(path: string): void {
   const stat = lstatSync(path);
-  if (stat.isSymbolicLink() || !stat.isDirectory()) {
+  if (stat.isSymbolicLink() || !stat.isDirectory() || realpathSync(path) !== resolve(path)) {
     throw new Error(`record directory must be a real directory, not a symbolic link: ${path}`);
   }
+}
+
+/** `<root>/<segments…>` as a real directory, created one level at a time. The root is realpath'd, and every level is
+ *  checked with `requireRealDirectory` before anything is created inside it — a symlinked level refuses and nothing
+ *  lands outside. Each segment is one plain name. Returns the directory's path. */
+export function ensureRealDirectory(root: string, ...segments: string[]): string {
+  let current = realpathSync(root);
+  for (const segment of segments) {
+    if (segment === "" || segment === "." || segment === ".." || /[\\/]/.test(segment)) {
+      throw new Error(`record directory segment must be one plain name: ${JSON.stringify(segment)}`);
+    }
+    current = join(current, segment);
+    try {
+      lstatSync(current);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      mkdirSync(current);
+    }
+    requireRealDirectory(current);
+  }
+  return current;
 }
 
 export function createNextRecord(

@@ -1,0 +1,20 @@
+# opus: W-163
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-06T22:31:41.701Z
+# tree: tree:23ad9fd98f0c29075b37af6434106ee2f8f3cd0a
+
+W-163 spec, revision 2 (re-spec after build round 3, L-078/W-162). Architect, claude-opus-5-5. Brief: studio/briefs/W-163.md (6 behaviours, Decree family: safe-helpers; readBriefAdmission at limit 6 reports no problems). Inputs: studio/ci/W-163-review-1.log, -2.log, -3.log; packages/cli/src/containment.test.ts at 26fe11b (scanCD, the round 1-3 fixture matrix); eslint.config.mjs; docs/design/dossier/body.html (threat model).
+Each build round found one more syntactic route past the census: binding forms (r1), alias chains of extracted functions (r2), Date.prototype.constructor (r3). An untyped syntactic scan is not complete against code written to evade it, so revision 2 bounds the census's input domain to the forms a builder writes by mistake.
+
+## Findings
+1. advisory — the census's input domain is now the forms a builder writes by mistake: direct calls on fs bindings and Date, with any alias, destructure, store, pass, return or export of them refused by rule (already built, rounds 1-3); the Intent and behaviour 6 no longer claim "every" access in any form; default 8 — check: packages/cli/src/containment.test.ts (W-163-b6 fixture matrix)
+2. advisory — one fail-closed Date member allowlist: on Date or globalThis.Date only the direct calls Date.parse(…) (a C site), Date.UTC(…) and Date.now(), plus new Date(…), Date(…), instanceof, typeof and type positions; any other member access (Date.prototype, Date.length, an uncalled Date.now) is an out-of-domain finding; no non-test source at 26fe11b uses one, so no pin is added — check: packages/cli/src/containment.test.ts (rows date-prototype, date-prototype-constructor-parse, date-prototype-constructor-new, date-global-prototype, date-other-member, date-now-uncalled; ok-control and direct stay as they are)
+3. advisory — reaching fs or Date by reflection or the prototype chain (instance .constructor, Object.getPrototypeOf, Reflect, eval, new Function, globalThis[expr]) is out of scope with the threat-model reason "Mistakes, not adversaries"; no existing rule refuses eval or new Function (eslint.config.mjs enables neither no-eval nor no-new-func, and no check rule names them), none appears in the source set, and none is invented here — check: none: out of the census's domain by the threat model, stated in Out of scope
+4. advisory — behaviour 6's genuine red extends to the allowlist rows: at 26fe11b the row "the scan refuses the date-prototype-constructor-parse form" fails, since memberKind gives Date.prototype no kind and nsUseSeen accepts any member access on Date — check: packages/cli/src/containment.test.ts (W-163-b6)
+
+## Recommendation
+Verdict: passed. Revision 2 changes only the census's stated domain and adds the Date member allowlist with six named rows; behaviours 1-5, the bright line and the pins are unchanged. Default 8 is veto-able at the checkpoint.

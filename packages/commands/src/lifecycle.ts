@@ -16,7 +16,7 @@
  */
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isSeq, parse as parseYaml } from "yaml";
 import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisellium/adapter-native";
@@ -40,6 +40,7 @@ import {
   type NativeRecord,
   type OpusModelProblem,
 } from "./opus-model.js";
+import { ensureRealDirectory } from "./ids.js";
 import {
   emitEvent,
   mintDispatchSella,
@@ -915,9 +916,15 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     return { exitCode: 1 };
   }
 
-  mkdirSync(redsDir, { recursive: true });
+  let realRedsDir: string;
+  try {
+    realRedsDir = ensureRealDirectory(root, "ci", "reds", opusId);
+  } catch (e) {
+    console.error(`red: ${(e as Error).message}`);
+    return { exitCode: 2 };
+  }
   const nn = String(behaviour).padStart(2, "0");
-  const logPath = join(redsDir, `${nn}.log`);
+  const logPath = join(realRedsDir, `${nn}.log`);
   const header = [
     `# behaviour: ${behaviour}`,
     `# command: ${cmd.join(" ")}`,

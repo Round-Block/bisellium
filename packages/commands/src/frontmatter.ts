@@ -9,9 +9,11 @@
  * byte-for-byte unless a caller explicitly rewrites it.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import { existsSync, lstatSync, realpathSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { parseDocument } from "yaml";
+import { requireRealDirectory } from "./ids.js";
+import { readRecordAt } from "./opus-model.js";
 
 export const ISOLATED_BUILDER_RUNTIME = "isolated" as const;
 
@@ -33,6 +35,13 @@ export function splitFront(raw: string): SplitFrontMatter | undefined {
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw.replace(/^﻿/, ""));
   if (!m) return undefined;
   return { front: m[1] ?? "", body: m[2] ?? "" };
+}
+
+/** The record at `<root>/<dir>/<file>` as text, through the contained reader; throws when it is not a regular file inside `<dir>/`. */
+function readRecord(path: string): string {
+  const file = readRecordAt(path);
+  if ("error" in file) throw new Error(`${path}: ${file.error}`);
+  return file.bytes.toString("utf8");
 }
 
 function git(cwd: string, args: string[]): ReturnType<typeof spawnSync> {
@@ -73,7 +82,7 @@ function repositoryBoundary(path: string): string | undefined {
  */
 export function builderRuntimeObligation(path: string): BuilderRuntimeObligation {
   let current: unknown;
-  try { current = markerValue(readFileSync(path, "utf8"), path); }
+  try { current = markerValue(readRecord(path), path); }
   catch (error) { return { kind: "invalid", error: (error as Error).message }; }
   if (current !== undefined && current !== ISOLATED_BUILDER_RUNTIME)
     return { kind: "invalid", error: `${path}: builder_runtime must be exactly ${ISOLATED_BUILDER_RUNTIME}` };
@@ -126,7 +135,7 @@ export function editOpusFrontMatter(
   path: string,
   mutate: (doc: ReturnType<typeof parseDocument>, body: string) => string | undefined,
 ): void {
-  const raw = readFileSync(path, "utf8");
+  const raw = readRecord(path);
   const split = splitFront(raw);
   if (!split) throw new Error(`${path}: missing front matter`);
   const doc = parseDocument(split.front);
@@ -140,6 +149,9 @@ export function editOpusFrontMatter(
     throw new Error(`${path}: builder_runtime must be exactly ${ISOLATED_BUILDER_RUNTIME}`);
   if (before === ISOLATED_BUILDER_RUNTIME && after !== ISOLATED_BUILDER_RUNTIME)
     throw new Error(`${path}: builder_runtime is immutable`);
+  // the record's own directory must be a real one (the file itself was just read without following a symlink)
+  const dir = dirname(path);
+  requireRealDirectory(join(realpathSync(dirname(dir)), basename(dir)));
   writeFileSync(path, `---\n${doc.toString({ lineWidth: 0 })}---\n${newBody ?? split.body}`);
 }
 

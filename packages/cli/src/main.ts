@@ -34,6 +34,7 @@ import { runBranch, runMerge } from "./branch.js";
 import { runClose } from "./close.js";
 import { runPrune } from "./prune.js";
 import { runNext } from "./next.js";
+import { instant } from "@bisellium/schema";
 
 // Each command accepts only its own flags — a flag valid for one command
 // (e.g. context's --sella) must not silently no-op on another (check).
@@ -163,8 +164,8 @@ async function main(argv: string[]): Promise<number> {
     opts.set(k, v);
   }
 
-  const now = opts.has("--now") ? new Date(opts.get("--now")!) : new Date();
-  if (Number.isNaN(now.getTime())) { console.error("--now must be an ISO date"); return 2; }
+  const now = opts.has("--now") ? instant(opts.get("--now")) : new Date();
+  if (!now) { console.error("--now must be an ISO date"); return 2; }
 
   if (cmd === "check") {
     const root = resolve(args[0] ?? ".");

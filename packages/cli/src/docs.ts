@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { join, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { splitFront } from "./frontmatter.js";
+import { instant } from "@bisellium/schema";
 
 export interface DocEntry {
   path: string;
@@ -136,8 +137,8 @@ export function runDocs(args: string[]): { exitCode: number } {
       repoArg = v;
     } else if (a === "--now") {
       const v = rest[++i];
-      const d = v === undefined ? undefined : new Date(v);
-      if (!d || Number.isNaN(d.getTime())) {
+      const d = v === undefined ? undefined : instant(v);
+      if (!d) {
         console.error(`docs: --now is not a valid date: ${v ?? ""}\n${USAGE}`);
         return { exitCode: 2 };
       }

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, unlinkSync } from "node:fs";
+import { existsSync, readdirSync, unlinkSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { readFront, readManifest } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
@@ -83,7 +83,11 @@ function officinaTextOutsideCi(root: string): string {
       const entryRel = rel === "" ? entry.name : `${rel}/${entry.name}`;
       if (entryRel === "ci") continue;
       if (entry.isDirectory()) walk(join(dir, entry.name), entryRel);
-      else if (entry.isFile()) parts.push(readFileSync(join(dir, entry.name), "utf8"));
+      else if (entry.isFile()) {
+        // a root-level name ("" is the root) or one under a top-level directory: either way, the contained reader
+        const file = readContainedRegularFile(root, entryRel, rel === "" ? "" : (entryRel.split("/")[0] ?? ""));
+        if (!("error" in file)) parts.push(file.bytes.toString("utf8"));
+      }
     }
   };
   walk(root, "");

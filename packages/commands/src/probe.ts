@@ -30,6 +30,7 @@ import {
 import { readManifest, type Manifest } from "@bisellium/adapter-native";
 import { vendorDiagnostic } from "./talk.js";
 import { openStudio, parseFlags, resolveNow } from "./writes.js";
+import { instant } from "@bisellium/schema";
 
 function readManifestSafe(studio: string): Manifest | undefined {
   try {
@@ -340,12 +341,12 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
   function priorAtMs(c: Candidate): number {
     const prior = priorProbeByKey.get(`${c.id}\u0000${c.harness}`);
     if (!prior) return -Infinity;
-    const ms = new Date(prior.at).getTime();
+    const ms = instant(prior.at)?.getTime();
     // An unparseable `at` is classified as never-probed, same as an absent
     // one (behaviour 10c) — NaN must never reach the comparator below: two
     // NaN operands compare as neither <, >, nor === under `-`, which sorts
     // a corrupt pair unpredictably instead of first.
-    return Number.isNaN(ms) ? -Infinity : ms;
+    return ms === undefined ? -Infinity : ms;
   }
   const orderedDue = [...due].sort((a, b) => {
     const ta = priorAtMs(a);
@@ -355,8 +356,8 @@ export async function probeBattery(opts: ProbeBatteryOptions): Promise<ProbeBatt
     return a.harness.localeCompare(b.harness);
   });
 
-  const write = opts.fs?.writeFileSync ?? writeFileSync;
-  const rename = opts.fs?.renameSync ?? renameSync;
+  const write = opts.fs?.writeFileSync ?? ((path: string, data: string): void => writeFileSync(path, data));
+  const rename = opts.fs?.renameSync ?? ((from: string, to: string): void => renameSync(from, to));
 
   // Step 4's snapshot — a human-readable last-observed value, computed once
   // (gathered in step 1, alongside candidates and the listing) rather than

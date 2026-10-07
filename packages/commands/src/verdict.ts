@@ -1,8 +1,9 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
+import { ensureRealDirectory } from "./ids.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
 import { readFront } from "@bisellium/adapter-native";
 import {
@@ -415,8 +416,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     ...(uiDigest === undefined ? [] : [headerLine("design_digest", uiDigest)]),
   ].join("\n");
 
-  mkdirSync(dirname(target), { recursive: true });
   try {
+    ensureRealDirectory(root, "ci");
     writeFileSync(target, Buffer.concat([Buffer.from(`${header}\n\n`), transcript]), { flag: "wx" });
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code;

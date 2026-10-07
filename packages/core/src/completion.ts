@@ -1,10 +1,12 @@
 /**
  * packages/core/src/completion.ts — W-153: the completion meter (D-038, moved
  * verbatim from scripts/status-page.mjs) and the estimated finish read from
- * the recent pace of points done. NO IMPORTS and erasable TypeScript only, so
- * plain node loads it from a script (scripts/status-page.mjs) as well as the
- * server. See studio/briefs/W-153.md.
+ * the recent pace of points done. Erasable TypeScript only, and its one import
+ * is @bisellium/schema's strict `instant`, so plain node loads it from a script
+ * (scripts/status-page.mjs) as well as the server. See studio/briefs/W-153.md.
  */
+
+import { instant } from "@bisellium/schema";
 
 const CAP_WHILE_EXIT_OPEN = 95;
 
@@ -99,20 +101,16 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const DAY_MS = 86_400_000;
 const BULK_OVER = 3; // more than this many done opera in one UTC clock hour is a bulk closure
 
-/** ISO instant of a value that is a string or Date and parses as a date, else undefined. */
-function instant(v: unknown): string | undefined {
-  if (!(typeof v === "string" || v instanceof Date)) return undefined;
-  const t = new Date(v).getTime();
-  return Number.isNaN(t) ? undefined : new Date(t).toISOString();
-}
+/** ISO instant of a value the strict parser reads (a Date, or an ISO date(-time) string), else undefined. */
+const isoAt = (v: unknown): string | undefined => instant(v)?.toISOString();
 
 /** When a done opus was done, from its own record: `end`, else its latest gate `at`; undefined when neither parses. */
 export function doneAt(opus: { end?: unknown; probationes?: Record<string, { at?: unknown; status?: unknown } | undefined> | undefined }): string | undefined {
-  const end = instant(opus.end);
+  const end = isoAt(opus.end);
   if (end !== undefined) return end;
   // only a PASSED gate dates the work: a failed, waived or status-less gate is not "done"
   const gates = Object.values(opus.probationes ?? {})
-    .map((g) => (g?.status === "passed" ? instant(g.at) : undefined))
+    .map((g) => (g?.status === "passed" ? isoAt(g.at) : undefined))
     .filter((at): at is string => at !== undefined)
     .sort();
   return gates[gates.length - 1];
@@ -133,7 +131,8 @@ export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: M
     .flatMap((o) => {
       const at = doneAt(o);
       // an undated or future event counts as done but is not paced
-      return at !== undefined && Date.parse(at) <= nowMs ? [{ id: String(o.id), at, points: o.value as number }] : [];
+      const ms = at === undefined ? undefined : instant(at)?.getTime();
+      return at !== undefined && ms !== undefined && ms <= nowMs ? [{ id: String(o.id), at, ms, points: o.value as number }] : [];
     });
   const hours = new Map<string, typeof events>();
   for (const e of events) hours.set(e.at.slice(0, 13), [...(hours.get(e.at.slice(0, 13)) ?? []), e]);
@@ -143,7 +142,7 @@ export function estimateFinish({ meter, opera, now, unreadable = 0 }: { meter: M
   const weekly = [0, 1, 2].map((k) =>
     paced
       .filter((e) => {
-        const t = Date.parse(e.at);
+        const t = e.ms;
         return t > nowMs - 7 * (k + 1) * DAY_MS && t <= nowMs - 7 * k * DAY_MS;
       })
       .reduce((n, e) => n + e.points, 0),
