@@ -1968,6 +1968,8 @@ if (runs(6)) {
         where: "repo",
         build: (tag) => world(tag, "greenlight"),
         resume: (w) => {
+          // W-162: a spec verdict pins the brief, so the brief must exist when it is recorded
+          put(w.repo, "studio/briefs/W-900.md", briefText(w.behaviours));
           verb(w.repo, ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "revise", "--phase", "spec", "--from", writeTranscript(w, "spec-revise.md"), "--studio", w.studio, "--now", T.spec]);
           commit(w.repo, "studio: spec revise round");
         },
