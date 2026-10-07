@@ -1,0 +1,22 @@
+# opus: W-161
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T00:34:10.060Z
+# tree: tree:f0b8f5357ccb008f82cdacb16544a421bac713e6
+
+W-161 spec, revision 1. Architect, claude-opus-5-5. Brief: studio/briefs/W-161.md (5 behaviours, six sections plus "Input domain" and "Defaults for the Patron to veto", Decree family: brief-admission; readBriefAdmission at limit 6 reports no problems, and the reference reader in measure.mjs reports none for its own Input domain section). Inputs: D-039 (high severity), D-042 (extend, no new tech debt), D-045 (mistakes, not adversaries), L-069, L-072, L-074 and L-077 (review×fail-open-on-malformed-records-patched-per-site), the W-137 and W-163 briefs' Input domain tables, packages/commands/src/brief-admission.ts, lifecycle.ts briefAdmissionProblems and runReady, check.ts's brief.admission rule, packages/cli/src/brief-admission.test.ts, docs/ADOPTION.md.
+Measured with ~/.bisellium-evidence/W-161-spec/measure.mjs (output measure.out) at master d936b38: 78 signed briefs; 2 carry an Input domain section (W-137, W-163), both meeting the declared shape; 76 would be refused if re-admitted; 10 pass today's W-127 admission and only W-137 and W-163 of them carry the section. A Files-owned trigger would fire on 67 code briefs, 15 of whose owned code calls no record reader, and could not decide 2 (W-089, W-140). 0 active opera; 23 open opera with a spec, all already refused by today's admission; 0 admitted today and refused under this rule.
+
+## Findings
+1. advisory — "reads officina records" is declared, not inferred: every admitted brief carries the section, and one that reads no records writes one "None: <reason>" line; the Files-owned trigger was measured (15 of 67 proxy false positives, 2 undecidable) and an undecidable trigger either refuses or fails open, the class this opus closes; default 1 — check: brief.admission
+2. advisory — the declared shape is W-137's and W-163's: a table with "Valid domain" and "Rejected by" columns, at least one complete row, each Rejected by cell opening with one backticked name, and the section stating "fails closed"; admission checks shape, not truth, so whether the named function exists and fails closed stays the censor's judgment under D-045; default 3 — check: packages/cli/src/brief-admission.test.ts (W-161-b2, W-161-b3, W-161-b4)
+3. advisory — one private reader in brief-admission.ts behind the existing brief_behaviour_limit switch, its problems appended after every existing one, so readBriefAdmission keeps W-140's two-argument signature and W-127/W-140's order rows stay unchanged; lifecycle.ts and check.ts do not change, no package edge moves, docs/ARCHITECTURE.md is unchanged; default 4 — check: packages/cli/src/brief-admission.test.ts (W-140-b3)
+4. advisory — grandfathered by construction as W-127: admission runs at ready and on active opera only, done briefs are never re-read, no opus is active, and the 23 parked specs already fail today's admission, so no exemption list is kept; default 2 — check: brief.admission
+5. advisory — five behaviours, each red after the previous one lands (D-036): section present, table shape, rejecting name, fails closed, then the None: form, which the table rule refuses until it lands — check: packages/cli/src/brief-admission.test.ts (W-161-b1 to W-161-b5)
+
+## Recommendation
+Verdict: passed. One decree family, brief-admission: a brief names each record it reads, that record's valid domain and the one function that rejects anything else and fails closed, or declares None; ready and check refuse a brief without it through the predicate they already share.
+Six defaults ship as stated and are veto-able at the checkpoint; the follow-ons are named in Out of scope.
