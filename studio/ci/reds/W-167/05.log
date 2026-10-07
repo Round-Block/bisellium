@@ -1,0 +1,59 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-167-b5 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-07T13:18:51.302Z
+# sella: builder.W-167
+# tree: tree:a6f528a6a4a783e924b3a84b01ac9c748251511a
+
+TAP version 13
+# Subtest: W-167-b5 behaviour 5: a class blocker's fix order prescribes one check at the input boundary
+not ok 1 - W-167-b5 behaviour 5: a class blocker's fix order prescribes one check at the input boundary
+  ---
+  duration_ms: 2831.630301
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-167/packages/cli/src/next.test.ts:141:275'
+  failureType: 'testCodeFailure'
+  error: |-
+    finding 1 is named
+    --- exit 0
+    --- stdout
+    next: W-900 build named
+    actor: builder
+    why: review round 1 failed at this tree
+    head: opus/W-900 873e30135bf5
+    role: builder
+    sella: builder.W-900
+    boot: bisellium context --sella builder.W-900 --studio studio
+    budget_tokens: 100000
+    phase: fix
+    inputs: briefs/W-900.md, ci/W-900-review-1.log, opera/W-900.md#traditio
+    command: dispatch builder.W-900 (phase fix) through the host seam: bisellium run --sella builder --opus W-900 --studio studio -- <builder command…>
+    health: no step recorded
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - "ci/W-900-review-1.log finding 1 is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)"
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: "ci/W-900-review-1.log finding 1 is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)"
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-167/packages/cli/src/next.test.ts:3797:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2844.918577

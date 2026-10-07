@@ -1,0 +1,48 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-167-b4 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-07T13:18:46.238Z
+# sella: builder.W-167
+# tree: tree:a6f528a6a4a783e924b3a84b01ac9c748251511a
+
+TAP version 13
+# Subtest: W-167-b4 behaviour 4: a Patron ruling attached by amend --round-ruling permits exactly one more round
+not ok 1 - W-167-b4 behaviour 4: a Patron ruling attached by amend --round-ruling permits exactly one more round
+  ---
+  duration_ms: 4656.608915
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-167/packages/cli/src/next.test.ts:138:725'
+  failureType: 'testCodeFailure'
+  error: |-
+    a valid ruling attaches
+    --- exit 2
+    --- stdout
+    
+    --- stderr
+    unknown flag "--round-ruling"
+    usage: bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-167/packages/cli/src/next.test.ts:3736:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4670.894162
