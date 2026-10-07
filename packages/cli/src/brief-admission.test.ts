@@ -10,7 +10,7 @@
  */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, describe, test } from "node:test";
@@ -66,9 +66,20 @@ interface BriefSpec {
   inside?: string[];
   /** Lines after "## Out of scope". */
   tail?: string[];
+  /** W-161: the lines under the `## Input domain` heading, placed before "## Behaviours to test"; `[]` writes no heading. */
+  domain?: string[];
 }
 
 const RED = "**Genuine red:**";
+
+/** W-161: the default Input domain section body, the one valid one-row table. */
+const DOMAIN = [
+  "Each record has one valid domain and one rejecting function; a rejection fails closed.",
+  "",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  "| fixture record | a string | `readFixture` |",
+];
 
 function brief(s: BriefSpec = {}): string {
   const reds = s.reds ?? [1, 1];
@@ -76,7 +87,10 @@ function brief(s: BriefSpec = {}): string {
   for (const f of s.families ?? ["brief-admission"]) out.push(`Decree family: ${f}`);
   for (const e of s.exceptions ?? []) out.push(`Behaviour limit exception: ${e}`);
   if (s.fencedIntent) out.push("```", ...s.fencedIntent, "```");
-  out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "", "## Behaviours to test", "");
+  out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "");
+  const domain = s.domain ?? DOMAIN;
+  if (domain.length > 0) out.push("## Input domain", "", ...domain, "");
+  out.push("## Behaviours to test", "");
   out.push(...(s.before ?? []));
   reds.forEach((k, i) => {
     out.push(`${i + 1}. Behaviour ${i + 1} refuses a thing.`);
@@ -482,4 +496,116 @@ test("W-140-b3 behaviour 3: readBriefAdmission's export is the signed two-argume
     [EXC, 'has 2 "## Behaviours to test" headings; one section only'].map(line),
     "b3: the exception problem, then the heading problem",
   );
+});
+
+const NO_DOMAIN =
+  'declares no input domain; add one "## Input domain" section: a table with "Record", "Valid domain" and "Rejected by" columns, or one line "None: <reason>" if it reads no officina records';
+const NO_TABLE = 'input domain has no table with "Record", "Valid domain" and "Rejected by" columns and at least one row';
+const MIX = 'input domain mixes "None:" with a table or repeats it; one table or one "None: <reason>" line';
+const NOT_CLOSED = "input domain does not say that a rejection fails closed";
+const CELL = (k: number): string => `input domain row ${k} has an empty or missing cell`;
+const NO_FN = (k: number): string =>
+  `input domain row ${k} names no rejecting function; its "Rejected by" cell opens with one \`function\` name`;
+const CLOSED = "A rejection fails closed.";
+const HEAD = ["| Record | Valid domain | Rejected by |", "|---|---|---|"];
+const OKROW = "| fixture record | a string | `readFixture` |";
+/** A section body from table lines, with the `fails closed` prose first unless `prose` is false. */
+const sect = (rows: string[], head: string[] = HEAD, prose = true): string[] => [...(prose ? [CLOSED, ""] : []), ...head, ...rows];
+
+/** `checkStudio` on a copy with W-900 in `state`, the brief `text` (or none), and the `brief.admission` findings. */
+function checked(state: string, text: string | undefined, limit: unknown = 6, opusText?: string) {
+  const dir = studio(limit);
+  if (text !== undefined) put(dir, BRIEF_REL, text);
+  if (opusText === undefined) opus(dir, state);
+  else put(dir, "opera/W-900.md", opusText);
+  const found = checkStudio(dir, NOW).findings;
+  return { admission: found.filter((f) => f.rule === "brief.admission"), shape: found.filter((f) => f.rule === "manifest.shape"), dir };
+}
+
+test("W-161-b1 behaviour 1: a brief with no Input domain section is refused, by ready and by check", () => {
+  refused(ready(brief({ domain: [] })), [NO_DOMAIN], "no section");
+  accepted(ready(brief()), "default");
+  refused(ready(brief({ domain: [], fencedIntent: ["## Input domain", "", ...DOMAIN] })), [NO_DOMAIN], "fenced heading");
+  refused(ready(brief({ domain: [], tail: ["<!--", "## Input domain", "", ...DOMAIN, "-->"] })), [NO_DOMAIN], "comment heading");
+  refused(ready(brief({ domain: [], tail: ["#### Input domain", "", ...DOMAIN] })), [NO_DOMAIN], "level four heading");
+  refused(
+    ready(brief({ tail: ["## Input domain", "", ...DOMAIN] })),
+    ['has 2 "Input domain" headings; one section only'],
+    "two sections",
+  );
+  const { admission } = checked("building", brief({ domain: [] }));
+  assert.equal(admission.length, 1, JSON.stringify(admission));
+  assert.equal(admission[0]!.level, "block");
+  assert.ok(admission[0]!.message.endsWith(NO_DOMAIN), admission[0]!.message);
+  assert.equal(checked("done", brief({ domain: [] })).admission.length, 0, "done opus");
+  accepted(ready(brief({ domain: [] }), ABSENT), "no key");
+});
+
+test("W-161-b2 behaviour 2: the section holds a three-column table with at least one complete row", () => {
+  const none = (domain: string[], label: string): void => refused(ready(brief({ domain })), [NO_TABLE], label);
+  none([CLOSED], "prose only");
+  none(sect([]), "header, no data row");
+  none(sect(["| a | `f` |"], ["| Valid domain | Rejected by |", "|---|---|"]), "two columns");
+  none(sect(["| a | b | `f` |"], ["| Record | Domain | Checked by |", "|---|---|---|"]), "other names");
+  none(sect(["| a | b | `f` |"], ["| Valid domain | Record | Rejected by |", "|---|---|---|"]), "other order");
+  none(sect(["| a | b | `f` | n |"], ["| Record | Valid domain | Rejected by | Note |", "|---|---|---|---|"]), "fourth column");
+  const cell = (row: string, label: string): void => refused(ready(brief({ domain: sect([row]) })), [CELL(1)], label);
+  cell("|  | a string | `f` |", "empty record");
+  cell("| rec |  | `f` |", "empty valid domain");
+  cell("| rec | a string |", "one cell fewer");
+  accepted(ready(brief({ domain: sect(["| rec | (blocking\\|advisory) | `f` |"]) })), "escaped pipe");
+  accepted(ready(brief({ domain: sect([OKROW], ["| Input | Valid domain | Rejected by |", "|---|---|---|"]) })), "Input header");
+  accepted(ready(brief({ domain: sect([OKROW], ["| RECORD | VALID DOMAIN | REJECTED BY |", "|---|---|---|"]) })), "upper case");
+});
+
+test("W-161-b3 behaviour 3: every row names its one rejecting function", () => {
+  refused(ready(brief({ domain: sect([OKROW, "| other | a string | the parser |"]) })), [NO_FN(2)], "prose cell");
+  for (const bad of ["see `readOpusVerdicts`", "`containment.test.ts`", "`bisellium check`"])
+    refused(ready(brief({ domain: sect([`| rec | a string | ${bad} |`]) })), [NO_FN(1)], bad);
+  for (const good of ["`instant` (schema), the one parser", "`readOpusVerdicts(root, id)`", "`schema.instant`"])
+    accepted(ready(brief({ domain: sect([`| rec | a string | ${good} |`]) })), good);
+});
+
+test("W-161-b4 behaviour 4: a table section says that a rejection fails closed", () => {
+  refused(ready(brief({ domain: sect([OKROW], HEAD, false) })), [NOT_CLOSED], "no phrase");
+  accepted(ready(brief({ domain: sect(["| rec | a string; Fails closed | `f` |"], HEAD, false) })), "phrase in a cell");
+  refused(ready(brief({ domain: sect(["|  | a string | `f` |"], HEAD, false) })), [CELL(1), NOT_CLOSED], "empty cell, no phrase");
+});
+
+test("W-161-b5 behaviour 5: a brief that reads no records declares one None line, with a reason, instead of a table", () => {
+  accepted(ready(brief({ domain: ["None: docs only, reads no officina records"] })), "None with reason");
+  refused(ready(brief({ domain: ["None:"] })), ['input domain "None:" line gives no reason'], "None, no reason");
+  refused(ready(brief({ domain: ["None: docs only", "", ...DOMAIN] })), [MIX], "None and a table");
+  refused(ready(brief({ domain: ["None: docs only", "None: and more"] })), [MIX], "two None lines");
+  refused(ready(brief({ domain: ["None: docs only", "None:"] })), [MIX], "None and an empty None");
+  refused(ready(brief({ domain: ["```", "None: docs only", "```"] })), [NO_TABLE], "None in a fence");
+});
+
+test("W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot read, instead of skipping admission", () => {
+  const front = (spec: string): string =>
+    `---\nid: W-900\ntitle: Admission fixture\nkind: feature\ncollegium: engineering\nstate: building\nprobationes: {}\n${spec}---\nbody\n`;
+  const missing = checked("building", brief(), 6, front("spec: briefs/W-901.md\n")).admission;
+  assert.equal(missing.length, 1, JSON.stringify(missing));
+  assert.ok(missing[0]!.message.startsWith("briefs/W-901.md "), missing[0]!.message);
+  assert.ok(missing[0]!.message.length > "briefs/W-901.md ".length, "carries the read error");
+  const link = studio(6);
+  put(link, BRIEF_REL, brief());
+  symlinkSync("W-900.md", join(link, "briefs/W-901.md"));
+  put(link, "opera/W-900.md", front("spec: briefs/W-901.md\n"));
+  const linked = checkStudio(link, NOW).findings.filter((f) => f.rule === "brief.admission");
+  assert.equal(linked.length, 1, JSON.stringify(linked));
+  for (const spec of ["", "spec: 7\n"]) {
+    const found = checked("building", brief(), 6, front(spec)).admission;
+    assert.equal(found.length, 1, JSON.stringify(found));
+    assert.equal(found[0]!.message, "active opus names no spec: brief", spec);
+  }
+  assert.equal(checked("done", brief(), 6, front("spec: briefs/W-901.md\n").replace("state: building", "state: done")).admission.length, 0, "done");
+  assert.equal(checked("building", brief(), ABSENT, front("spec: briefs/W-901.md\n")).admission.length, 0, "no key");
+  for (const bad of [0, null]) {
+    const { admission, shape } = checked("building", brief(), bad, front("spec: briefs/W-901.md\n"));
+    assert.equal(admission.length, 0, `limit ${String(bad)}: admission`);
+    const mine = shape.filter((f) => f.where === "bisellium.yml#brief_behaviour_limit");
+    assert.equal(mine.length, 1, `limit ${String(bad)}: ${JSON.stringify(shape)}`);
+    assert.equal(mine[0]!.message, "brief_behaviour_limit must be a positive integer");
+  }
 });
