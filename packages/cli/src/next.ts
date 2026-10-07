@@ -66,6 +66,8 @@ const HANDOFF = "docs/SESSION-HANDOFF.md";
 const PERFORMABLE = new Set<Step>(["branch", "ready", "pr", "merge", "cleanup", "done", "spec"]);
 const SECTIONS = ["Intent", "Files owned", "Interfaces", "Behaviours to test", "Acceptance", "Out of scope"];
 const PAST_READY = new Set(["building", "verifying", "review", "done"]);
+/** W-162: the one model the spec reviewer may be. Another codex model is not close enough. */
+const REVIEWER_MODEL = "gpt-5.6-sol";
 
 type Dict = Record<string, unknown>;
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -129,6 +131,13 @@ function recordOf(src: Src | undefined, id: string): Dict | undefined {
   }
 }
 
+interface SpecReviewer {
+  sella: string;
+  model: typeof REVIEWER_MODEL;
+  design: string;
+}
+/** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -136,9 +145,45 @@ interface SpecEvidence {
   log?: string;
   maxRound: number;
   anyLog: boolean;
+  gate?: SpecGate;
 }
-/** The brief with the six design-lex sections AND a passing architect spec log. */
-function specEvidence(src: Src | undefined, id: string, design: string): SpecEvidence {
+
+/**
+ * W-162: the one reader of `bisellium.yml#spec_reviewer`. Absent keeps today's ladder; anything else must name one
+ * declared, live codex agent on exactly `gpt-5.6-sol` who is not the design magister, or `next` holds at `spec`.
+ * The trunk record's state says whether the gate still applies: `greenlit` yes, a PAST_READY state passed it at `ready`.
+ */
+export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: SpecReviewer | undefined } | { error: string } {
+  const m = manifest as unknown as Dict;
+  if (!("spec_reviewer" in m)) return { reviewer: undefined };
+  const bad = (why: string): { error: string } => ({ error: `bisellium.yml#spec_reviewer: ${why}` });
+  const sella = str(m["spec_reviewer"]);
+  if (sella === undefined) return bad("must be the id of one declared seat (a non-empty string)");
+  const row = (Array.isArray(m["sellae"]) ? m["sellae"] : []).find((r): r is Dict => isDict(r) && r["id"] === sella);
+  if (row === undefined) return bad(`${sella} is not a declared seat`);
+  if (row["retired"] !== undefined && row["retired"] !== false) return bad(`${sella} is retired; the reviewer must be a live seat`);
+  if (row["kind"] !== "agent") return bad(`${sella} must be kind: agent`);
+  if (row["harness"] !== "codex") return bad(`${sella} must be on the codex harness`);
+  if (row["model"] !== REVIEWER_MODEL) return bad(`${sella} must declare model ${REVIEWER_MODEL}, exactly`);
+  const design = (Array.isArray(m["collegia"]) ? m["collegia"] : []).find((c): c is Dict => isDict(c) && c["id"] === "design");
+  const magister = str(design?.["magister"]);
+  if (magister === undefined) return bad("the design collegium declares no magister to sign the spec");
+  if (magister === sella) return bad(`${sella} is the design magister; the reviewer must be another seat`);
+  const state = str(rec["state"]);
+  if (state !== undefined && PAST_READY.has(state)) return { reviewer: undefined };
+  if (state !== "greenlit") return bad(`the trunk record's state ${state ?? "(absent)"} is outside the gate's domain`);
+  if (rec["kind"] === "ui") return bad("a kind: ui opus cannot take a spec review yet: the spec-phase verdict writer reserves every UI verdict for ui-lead, and authoritativeUiInput reads the highest spec log as the UI input");
+  return { reviewer: { sella, model: REVIEWER_MODEL, design: magister } };
+}
+
+/** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
+function specEvidence(src: Src | undefined, id: string, design: string, reviewer?: SpecReviewer): SpecEvidence {
+  const signed = signedSpec(src, id, design);
+  if (reviewer === undefined) return signed;
+  if (!signed.ok || signed.log === undefined) return { ...signed, gate: { kind: "signature" } };
+  return { ...signed, ok: false, why: `${signed.log} is signed and awaits the spec review`, gate: { kind: "review", signature: signed.log } };
+}
+function signedSpec(src: Src | undefined, id: string, design: string): SpecEvidence {
   const none: SpecEvidence = { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false };
   if (src === undefined) return none;
   const brief = src.read(briefRel(id));
@@ -465,14 +510,20 @@ export function deriveNext(f: Facts): Derived {
   if (state === "backlog") return named("greenlight", "patron", `${id} is in the backlog; only the Patron greenlights`, `bisellium greenlight ${id} --studio ${f.studioRel}`);
 
   // 2 spec (the committed trunk)
-  const spec = specEvidence(f.trunk, id, f.design);
+  const gate = readSpecReviewer(f.manifest, f.trunkRecord ?? {});
+  if ("error" in gate) return hold("spec", gate.error);
+  const reviewer = gate.reviewer;
+  const spec = specEvidence(f.trunk, id, f.design, reviewer);
   const ui = spec.ok ? f.uiSpecProblems() : [];
   if (!spec.ok || ui.length > 0) {
-    const onBranch = specEvidence(f.specBranch, id, f.design);
+    const onBranch = specEvidence(f.specBranch, id, f.design, reviewer);
     if (!spec.ok && onBranch.ok) return { ...named("spec", "producer", `spec signed on spec/${id}, not on master`, `bisellium next ${id} --perform --expect spec`), act: "land" };
+    // a spec/<id> branch cannot take a review (performSpecCommit refuses an existing branch): never land it, name it
+    if (reviewer !== undefined && !spec.ok && f.specBranch !== undefined) return hold("spec", `spec/${id} exists but does not carry a signed spec with a passed review; it cannot take one, so it is not landed`);
     // no spec/<id> at all: the architect may have left the signed spec uncommitted in the main checkout
-    if (!spec.ok && f.specBranch === undefined && specEvidence(fsSrc(f.studioAbs), id, f.design).ok)
-      return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
+    const tree = !spec.ok && f.specBranch === undefined ? specEvidence(fsSrc(f.studioAbs), id, f.design, reviewer) : undefined;
+    if (tree?.ok) return { ...named("spec", "producer", "spec signed in the working tree, not committed", `bisellium next ${id} --perform --expect spec`), act: "commit" };
+    if (reviewer !== undefined && tree?.gate !== undefined) return specOrder(f, reviewer, tree, Math.max(spec.maxRound, tree.maxRound));
     return dispatch(f, "spec", spec.ok ? ui.join("; ") : spec.why, { phase: "spec", round: spec.maxRound + 1, resume: spec.anyLog, inputs: [briefRel(id)] });
   }
 
@@ -573,6 +624,14 @@ export function deriveNext(f: Facts): Derived {
   return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
 }
 
+/** The order a reviewer-configured spec step names, from the source that holds the newest signature. */
+function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number): Derived {
+  const { id } = f;
+  const round = maxRound + 1;
+  if (ev.gate?.kind === "review") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model]] });
+  return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
+}
+
 /** Why a new opus may not start: a retro is owed, or the setting that says so cannot be read. */
 function retroHold(f: Facts): string | undefined {
   const owed = f.owed();
@@ -627,7 +686,7 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string }): Derived {
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer }): Derived {
   const { id, studioRel, manifest } = f;
   const builder = (() => {
     const resolved = resolveSeat(manifest, "builder");
@@ -635,11 +694,21 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     return minted !== undefined && "sella" in minted ? minted.sella : "builder";
   })();
   const censor = censorSella(manifest) ?? "qa-lead";
-  const inputs = [...o.inputs, `${recordRel(id)}#traditio`];
+  const inputs = [...o.inputs, ...(o.reviewer === undefined ? [`${recordRel(id)}#traditio`] : [])];
   let role: string;
   let sella: string;
   let command: string;
-  if (step === "spec") {
+  if (step === "spec" && o.reviewer !== undefined) {
+    role = "spec-reviewer";
+    sella = o.reviewer.sella;
+    command = [
+      `dispatch ${sella} (${o.reviewer.model}) to review the signed spec once, on two questions only (D-046):`,
+      "1. does its Input domain name every record the opus reads, with one rejecting function that fails closed?",
+      "2. can every promise be guaranteed, or does it state its limit?",
+      'Record findings under ## Findings, each ending "check: …", or write "No findings".',
+      `Record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --model ${o.reviewer.model} --outcome <passed|failed> --phase spec --from <file> --studio ${studioRel}`,
+    ].join("\n");
+  } else if (step === "spec") {
     role = "architect";
     sella = f.design;
     command = `dispatch ${sella} to sign the spec for ${id}; close out with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome passed --phase spec --studio ${studioRel}`;
@@ -656,7 +725,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     sella = censor;
     command = `dispatch ${sella}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}`;
   }
-  const actor = step === "review" ? "censor" : step === "spec" ? "architect" : "builder";
+  const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   return {
     step,
     status: "named",
