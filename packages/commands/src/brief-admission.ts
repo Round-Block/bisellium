@@ -114,7 +114,7 @@ function inputDomainProblems(real: string[]): string[] {
   if (
     head.length !== DOMAIN_COLUMNS.length ||
     !DOMAIN_COLUMNS.every((re, i) => re.test(head[i]!)) ||
-    delimiter.length === 0 ||
+    delimiter.length !== DOMAIN_COLUMNS.length ||
     !delimiter.every((c) => /^:?-{3,}:?$/.test(c)) ||
     run.length < 3
   )
