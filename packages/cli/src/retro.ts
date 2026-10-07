@@ -22,7 +22,7 @@ import { createNextRecord, ensureRealDirectory, requireRealDirectory } from "@bi
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { patronDecisionProblem } from "@bisellium/commands/lifecycle.js";
 import { readContainedRegularFile, titleProblem, utcTimestampProblem } from "@bisellium/commands/opus-model.js";
-import { VERDICT_HEADERS } from "@bisellium/commands/verdict.js";
+import { LOG_MAX_BYTES, parseVerdictLog, type RecordedFinding } from "@bisellium/commands/verdict.js";
 import { emitEvent, recordOwnerRefusal, safeItemPath } from "@bisellium/commands/writes.js";
 import { newItem } from "./new.js";
 import { RULE_IDS } from "./rules/ids.js";
@@ -517,78 +517,16 @@ export function draftRetro(studioRoot: string, cascade: number, input: RetroInpu
 
 type Dict = Record<string, unknown>;
 type Refusal = { error: string };
+export { parseVerdictLog, type RecordedFinding };
 const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
 const isRefusal = (v: unknown): v is Refusal => isDict(v) && typeof v["error"] === "string";
 const OPUS_ID = /^W-[0-9]+$/;
-const LOG_MAX_BYTES = 4_000_000;
-// the whole raw line: no carriage return and no comment marker anywhere in it
-const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b(?![^]*(?:\r|<!--|-->))/i;
-// a header line is one of the names the verdict writer emits, its value raw
-const HEADER_LINE = new RegExp(`^# (${VERDICT_HEADERS.join("|")}): (.*)$`);
 const CLASS_RE = /^[a-z][a-z0-9-]*×\S+$/;
 
-export interface RecordedFinding {
-  log: string;
-  n: number;
-  /** the finding line after its number, whole */
-  text: string;
-  blocking: boolean;
-}
 interface Verdicts {
   /** every log and red read, officina-relative and sorted */
   sources: string[];
   findings: RecordedFinding[];
-}
-
-/**
- * One recorded log's text, judged RAW: no line is stripped, trimmed or interpreted before it is judged. The header block
- * is the lines before the first empty line, each exactly `# key: value`. In the body the one `## Findings` section
- * (ends at the next `## ` line) holds empty lines, the exact line `No findings`, or lines of the finding grammar,
- * and nothing else: a fence, comment, heading, indented or otherwise dressed line is out of domain and the whole
- * log is unreadable. This is the only parser of a verdict log, in the retro and in `next`'s spec-review gate (W-162).
- */
-export function parseVerdictLog(text: string, id: string, rel: string): { headers: Map<string, string[]>; findings: RecordedFinding[] } | Refusal {
-  const lines = text.split("\n");
-  const split = lines.indexOf("");
-  if (split === -1) return { error: `${rel}: no blank line ends the header block` };
-  const headers = new Map<string, string[]>();
-  for (const line of lines.slice(0, split)) {
-    const m = HEADER_LINE.exec(line);
-    if (!m) return { error: `${rel}: header line out of domain (want "# <a verdict header>: value"): ${line.slice(0, 60)}` };
-    headers.set(m[1]!, [...(headers.get(m[1]!) ?? []), m[2]!]);
-  }
-  const body = lines.slice(split + 1);
-  const stray = body.find((l) => /^# [a-z_]+: /.test(l));
-  if (stray !== undefined) return { error: `${rel}: a header line outside the header block: ${stray.slice(0, 60)}` };
-  if (headers.get("opus")?.length !== 1 || headers.get("opus")![0] !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
-  const at = body.reduce<number[]>((n, l, i) => (l === "## Findings" ? [...n, i] : n), []);
-  if (at.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${at.length}` };
-  const rest = body.slice(at[0]! + 1);
-  const end = rest.findIndex((l) => l.startsWith("## "));
-  const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== "");
-  if (section.length === 1 && section[0] === "No findings") return { headers, findings: [] };
-  if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
-  const findings: RecordedFinding[] = [];
-  for (const line of section) {
-    if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …", or "No findings" alone): ${line.slice(0, 60)}` };
-    const n = Number(/^\d+/.exec(line)![0]);
-    if (findings.some((f) => f.n === n)) return { error: `${rel}: finding ${n} is numbered twice` };
-    const text = line.replace(/^\d+\. /, "");
-    findings.push({ log: rel, n, text, blocking: /^\**blocking\b/i.test(text) });
-  }
-  const converted = headers.get("converted");
-  if (converted !== undefined) {
-    if (converted.length !== 1) return { error: `${rel}: more than one "# converted:" header` };
-    // "<n> (<reason>)", joined by "; ": every piece closed, every n a blocking finding of this log
-    const pieces = converted[0]!.split(/; (?=[1-9]\d* \()/);
-    for (const piece of pieces) {
-      const m = /^([1-9]\d*) \((.+)\)$/.exec(piece);
-      const f = m ? findings.find((x) => x.n === Number(m[1])) : undefined;
-      if (!m || !f?.blocking) return { error: `${rel}: "# converted:" is not a list of "<n> (<reason>)" naming blocking findings of this log: ${piece.slice(0, 60)}` };
-      f.blocking = false;
-    }
-  }
-  return { headers, findings };
 }
 
 /** One recorded log, read through the contained reader and judged by `parseVerdictLog`. */
