@@ -1,0 +1,14 @@
+# opus: W-167
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-sonnet-5-5
+# outcome: passed
+# at: 2026-10-07T12:21:38.932Z
+# tree: tree:b4a8ef9a593173d2cb0c54ecbc5720dd6902e22f
+# brief: briefs/W-167.md blob:d0ff5b32152115fb7b86ddad9a3f4bf0aee5f751
+
+Architect signature, revision 6, for W-167 under D-027 (Codex gpt-5.6-sol drafted; claude-sonnet-5-5 corrected and signed). Answers spec review r4 (ci/W-167-spec-8.log), one naming fix.
+
+## Findings
+1. advisory: r4 #1 answered; the input-boundary row for the worktree bisellium.yml now names readWorktreeManifest (new, wraps readManifest) as the fail-closed rejector of an unreadable or unparseable manifest, and buildReviewDrift only compares the two parsed manifests; the buildRounds contract line is consistent. check: packages/cli/src/next.test.ts
