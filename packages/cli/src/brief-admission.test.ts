@@ -560,6 +560,14 @@ test("W-161-b2 behaviour 2: the section holds a three-column table with at least
   accepted(ready(brief({ domain: sect([OKROW], ["| RECORD | VALID DOMAIN | REJECTED BY |", "|---|---|---|"]) })), "upper case");
 });
 
+test("W-161-b2 behaviour 2, review round 1: the delimiter row has exactly three cells", () => {
+  for (const [label, delimiter] of [
+    ["two cells", "|---|---|"],
+    ["four cells", "|---|---|---|---|"],
+  ] as const)
+    refused(ready(brief({ domain: sect([OKROW], [HEAD[0]!, delimiter]) })), [NO_TABLE], label);
+});
+
 test("W-161-b3 behaviour 3: every row names its one rejecting function", () => {
   refused(ready(brief({ domain: sect([OKROW, "| other | a string | the parser |"]) })), [NO_FN(2)], "prose cell");
   for (const bad of ["see `readOpusVerdicts`", "`containment.test.ts`", "`bisellium check`"])
