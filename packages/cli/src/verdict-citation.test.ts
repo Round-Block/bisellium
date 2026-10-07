@@ -151,11 +151,11 @@ describe("behaviour 1", () => {
     assert.equal(r.header.has("converted"), false);
   });
 
-  test("the same four-finding body in the spec phase gets neither line", () => {
+  test("the same four-finding body in the spec phase gets # brief: but no # converted:", () => {
     const body = findings("blocking — packages/x.ts:3 a", "advisory — b", "BLOCKING — brief:2 c", "**Blocking** — briefs/W-300.md:5 d");
     const r = verdict(studio(), body, "passed", ["--phase", "spec"]);
     assert.equal(r.exitCode, 0, r.stderr);
-    assert.equal(r.header.has("brief"), false);
+    assert.equal(r.header.get("brief"), `briefs/W-300.md ${BLOB}`);
     assert.equal(r.header.has("converted"), false);
   });
 });

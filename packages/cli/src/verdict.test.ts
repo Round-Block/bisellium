@@ -45,7 +45,9 @@ function studio(tag: string, ids: string[] = ["W-200"]): string {
     ].join("\n"),
   );
   mkdirSync(join(root, "opera"));
+  mkdirSync(join(root, "briefs"));
   for (const id of ids) {
+    writeFileSync(join(root, "briefs", `${id}.md`), `# ${id} fixture brief\n`);
     writeFileSync(
       join(root, "opera", `${id}.md`),
       [
@@ -132,6 +134,8 @@ function gitStudio(tag: string, ids: string[]): { repo: string; studio: string }
     ].join("\n"),
   );
   mkdirSync(join(inner, "opera"));
+  mkdirSync(join(inner, "briefs"));
+  for (const id of ids) writeFileSync(join(inner, "briefs", `${id}.md`), `# ${id} fixture brief\n`);
   for (const id of ids)
     writeFileSync(
       join(inner, "opera", `${id}.md`),
