@@ -1,0 +1,41 @@
+# behaviour: 6
+# command: node --test-reporter=tap --test-name-pattern=W-161-b6 --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-07T01:10:19.033Z
+# sella: builder.W-161
+# tree: tree:fdc476210f0d02e759cb739acd75b838057b762f
+
+TAP version 13
+# Subtest: W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot read, instead of skipping admission
+not ok 1 - W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot read, instead of skipping admission
+  ---
+  duration_ms: 63.439735
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:16:19617'
+  failureType: 'testCodeFailure'
+  error: |-
+    []
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-161/packages/cli/src/brief-admission.test.ts:588:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 72.515361
