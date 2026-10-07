@@ -27,7 +27,7 @@ import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bis
 import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
-import { buildReviewDrift, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
@@ -686,6 +686,9 @@ export function deriveNext(f: Facts): Derived {
     if (cur === undefined) return hold("review", `the current source tree of opus/${id} cannot be computed, so no review round can be judged current`);
     const gate = reviewGate(f, b, read);
     if (gate !== undefined && "error" in gate) return hold("review", gate.error);
+    const counted = countedFailures(read.rounds);
+    // D-046 §2: the cap is three counted failures; a pass already recorded at this tree proceeds
+    if (!(gate?.status === "passed" && gate.tree === cur) && counted.length >= REVIEW_ROUND_CAP) return capHold(f, counted);
     const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
     const receipt = f.receipt();
     if ((receipt !== undefined && !receipt.ok) || failedNow)
@@ -772,6 +775,29 @@ function afterDone(f: Facts): Derived {
     why: `${id} is done on the trunk; the commit that made it done did not change ${HANDOFF}`,
     command: `update ${HANDOFF}, the progress row and the masthead for ${id}, then republish`,
     extra: [],
+  };
+}
+
+/** D-046 §2: three counted failed build-review rounds, then a further round needs a Patron ruling. */
+const REVIEW_ROUND_CAP = 3;
+/** The lowest-numbered standing blocker that names a class (L-069): the whole word `class` or `classes`. */
+const classBlocker = (round: BuildReviewRound | undefined) => round?.blockers.filter((b) => /\bclass(?:es)?\b/i.test(b.text)).sort((a, b) => a.n - b.n)[0];
+
+/** The hold at the cap: the Patron's one more round or a re-spec, recommended from the newest counted failure. */
+function capHold(f: Facts, counted: BuildReviewRound[]): Derived {
+  const { id } = f;
+  const newest = counted[counted.length - 1]!;
+  const blocker = classBlocker(newest);
+  return {
+    step: "review",
+    status: "held",
+    actor: "patron",
+    why: `${counted.length} counted failed build-review rounds (${counted.map((r) => r.n).join(", ")}); a further round needs the Patron's OK (D-046)`,
+    extra: [
+      ["recommendation", blocker === undefined ? `one more fix round: round ${newest.n}'s blockers are single instances` : `re-spec: ${newest.log} finding ${blocker.n} is a class, so the brief's boundary or promise is the problem`],
+      ["grant", `Grant: one more build-review round for ${id}.`],
+      ["attach", `bisellium amend ${id} --round-ruling <decision-id> --reason <text> --studio ${join(".worktrees", id, f.studioRel)}`],
+    ],
   };
 }
 
