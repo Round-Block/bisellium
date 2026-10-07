@@ -1,0 +1,17 @@
+# opus: W-162
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T07:07:22.752Z
+# tree: tree:8c299ae0f03ed842b5f3dc87d082e4863dbc7240
+
+W-162 spec, narrowed revision 7. Signed by the architect, claude-opus-5-5, after the Codex spec review of revision 6 (~/.bisellium-evidence/W-162-specreview/n3/verdict.md, failed: n3 #1). Brief: studio/briefs/W-162.md (still 4 behaviours; readBriefAdmission at limit 6 reports no problems).
+
+## Findings
+1. advisory — n3 #1: named the one existing assertion that flips: verdict-citation.test.ts "the same four-finding body in the spec phase gets neither line", r.header.has("brief") false becomes r.header.get("brief") equal to briefs/W-300.md plus the brief's blob; it belongs to behaviour 2, which adds the header — check: packages/cli/src/verdict-citation.test.ts
+2. advisory — re-grepped both verdict test files for spec-phase header or brief-reading assertions: verdict.test.ts spec rows (W-201, W-202, W-212, W-230, W-270) use header.includes and need only a brief fixture; the citation file's other spec row asserts only the outcome; its brief-absence rows (no spec, missing spec) are build phase and stay — check: packages/cli/src/verdict.test.ts
+
+## Recommendation
+Verdict: passed. Revision 7 changes only the test-promise wording above; it goes to a new Codex gpt-5.6-sol spec review (D-046).
