@@ -138,7 +138,7 @@ interface SpecReviewer {
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
-type SpecGate = { kind: "signature" } | { kind: "review"; signature: string } | { kind: "ready"; review: string } | { kind: "invalid" };
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string } | { kind: "failed"; review: string } | { kind: "ready"; review: string } | { kind: "invalid" };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -263,7 +263,7 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer):
   const review = reviews[0];
   if (review === undefined) return signed({ kind: "review", signature: anchor.rel }, `${anchor.rel} is signed and awaits the spec review`);
   if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
-  if (review.outcome === "failed") return result(`${review.log} failed ${anchor.rel}; its outcome is not yet routed`, { kind: "invalid" });
+  if (review.outcome === "failed") return signed({ kind: "failed", review: review.log }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
   return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
 }
 function signedSpec(src: Src | undefined, id: string, design: string): SpecEvidence {
@@ -711,6 +711,7 @@ export function deriveNext(f: Facts): Derived {
 function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number): Derived {
   const { id } = f;
   const round = maxRound + 1;
+  if (ev.gate?.kind === "failed") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.review] });
   if (ev.gate?.kind === "invalid") return { step: "spec", status: "held", actor: "producer", why: ev.why, extra: [] };
   if (ev.gate?.kind === "review") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model]] });
   return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
