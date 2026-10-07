@@ -90,8 +90,8 @@ const cellsOf = (line: string): string[] =>
     .map((c) => c.trim());
 
 /** W-161: problems with the one "Input domain" section (`## ` or `### `, up to the next real `^#{1,3} ` line):
- *  a three-column table whose rows each name a record, its domain and one rejecting function.
- *  Shape only: the named function is not looked up. */
+ *  a three-column table whose rows each name a record, its domain and one rejecting function, and which says
+ *  that a rejection fails closed. Shape only: the named function is not looked up. */
 function inputDomainProblems(real: string[]): string[] {
   const starts = real.flatMap((l, i) => (DOMAIN_HEADING.test(l) ? [i] : []));
   if (starts.length === 0)
@@ -122,6 +122,7 @@ function inputDomainProblems(real: string[]): string[] {
     else if (!REJECTING_FUNCTION.test(cells[2]!))
       problems.push(`input domain row ${i + 1} names no rejecting function; its "Rejected by" cell opens with one \`function\` name`);
   });
+  if (!/fails closed/i.test(section.join("\n"))) problems.push("input domain does not say that a rejection fails closed");
   return problems;
 }
 
