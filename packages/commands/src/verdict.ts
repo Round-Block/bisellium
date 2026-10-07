@@ -392,6 +392,16 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     if (conversions.length > 0) convertedHeader = conversions.map((c) => `${c.finding} (${c.reason})`).join("; ");
   }
 
+  if (!isUi && phase === "spec") {
+    // W-162: a spec verdict pins the brief it was recorded against, so an edit after it voids it
+    const read = readContainedRegularFile(root, `briefs/${opusId}.md`, "briefs");
+    if ("error" in read) {
+      console.error(`${opusId}: the brief briefs/${opusId}.md is unreadable, so a spec verdict cannot pin it: ${read.error}`);
+      return { exitCode: 2 };
+    }
+    briefHeader = `briefs/${opusId}.md blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
+  }
+
   const filenamePhase = phase === "build" ? "review" : "spec";
   const target = join(root, "ci", `${opusId}-${filenamePhase}-${round}.log`);
   if (existsSync(target)) {

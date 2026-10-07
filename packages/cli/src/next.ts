@@ -19,6 +19,7 @@
  * `/proc` for EVERY health read (including the verb's own `/proc/self/stat`),
  * honoured only when `BISELLIUM_TEST_CLOCK=1` is also set; so is `--now`.
  */
+import { createHash } from "node:crypto";
 import { appendFileSync, closeSync, constants, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -31,7 +32,7 @@ import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
 import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
-import { owedRetros } from "./retro.js";
+import { owedRetros, parseVerdictLog } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { instant } from "@bisellium/schema";
 
@@ -137,7 +138,7 @@ interface SpecReviewer {
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
-type SpecGate = { kind: "signature" } | { kind: "review"; signature: string };
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string } | { kind: "invalid" };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -178,10 +179,86 @@ export function readSpecReviewer(manifest: Manifest, rec: Dict): { reviewer: Spe
 
 /** The brief with the six design-lex sections AND a passing architect spec log; with a reviewer, that signature then awaits its review. */
 function specEvidence(src: Src | undefined, id: string, design: string, reviewer?: SpecReviewer): SpecEvidence {
-  const signed = signedSpec(src, id, design);
-  if (reviewer === undefined) return signed;
-  if (!signed.ok || signed.log === undefined) return { ...signed, gate: { kind: "signature" } };
-  return { ...signed, ok: false, why: `${signed.log} is signed and awaits the spec review`, gate: { kind: "review", signature: signed.log } };
+  return reviewer === undefined ? signedSpec(src, id, design) : reviewedSpec(src, id, reviewer);
+}
+
+/** The git blob sha1 of a brief's text as a source returns it, encoded as UTF-8: the W-126 pin. */
+const blobOf = (text: string): string => {
+  const bytes = Buffer.from(text, "utf8");
+  return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+};
+type Parsed = Exclude<ReturnType<typeof parseVerdictLog>, { error: string }>;
+/** What every spec log must be, signature or review: exactly one of each required header, this phase, round, sella and brief blob. */
+function specLogProblem(p: Parsed, rel: string, round: number, sella: string, brief: string, required: string[]): string | undefined {
+  const bad = (why: string): string => `${rel}: ${why}`;
+  const once = (key: string): string | undefined => (p.headers.get(key)?.length === 1 ? p.headers.get(key)![0] : undefined);
+  for (const key of [...required, "brief"]) if (p.headers.get(key)?.length !== 1) return bad(`the header "# ${key}:" must appear exactly once`);
+  if (once("phase") !== "spec") return bad("the header \"# phase:\" must be spec");
+  if (once("round") !== String(round)) return bad(`the header "# round:" must equal the filename's round ${round}`);
+  if (once("sella") !== sella) return bad(`the header "# sella:" must be ${sella}`);
+  if (once("brief") !== brief) return bad(`the header "# brief:" must be "${brief}" (the brief changed, or this log names another one)`);
+  return undefined;
+}
+const standingBlocker = (p: Parsed): boolean => p.findings.some((f) => f.blocking);
+
+/** An architect signature: strict syntax, the design magister, exactly `passed`, no standing blocker. */
+function readSpecSignature(text: string, id: string, round: number, design: string, brief: string, rel: string): { round: number; log: string } | { error: string } {
+  const p = parseVerdictLog(text, id, rel);
+  if ("error" in p) return p;
+  const problem = specLogProblem(p, rel, round, design, brief, ["phase", "round", "sella", "outcome"]);
+  if (problem !== undefined) return { error: problem };
+  if (p.headers.get("outcome")![0] !== "passed") return { error: `${rel}: a signature's outcome must be exactly passed` };
+  if (standingBlocker(p)) return { error: `${rel}: a signature records a standing blocking finding` };
+  return { round, log: rel };
+}
+
+/** A spec review: strict syntax, the configured reviewer and exact model, `passed` or `failed`, findings that agree with it. */
+function readSpecReview(text: string, id: string, round: number, reviewer: SpecReviewer, brief: string, rel: string): { round: number; log: string; outcome: "passed" | "failed" } | { error: string } {
+  const p = parseVerdictLog(text, id, rel);
+  if ("error" in p) return p;
+  const problem = specLogProblem(p, rel, round, reviewer.sella, brief, ["phase", "round", "sella", "model", "outcome"]);
+  if (problem !== undefined) return { error: problem };
+  if (p.headers.get("model")![0] !== reviewer.model) return { error: `${rel}: the header "# model:" must be ${reviewer.model}, exactly` };
+  const outcome = p.headers.get("outcome")![0];
+  if (outcome !== "passed" && outcome !== "failed") return { error: `${rel}: a review's outcome must be exactly passed or failed` };
+  if (outcome === "passed" && standingBlocker(p)) return { error: `${rel}: outcome passed beside a standing blocking finding` };
+  if (outcome === "failed" && !standingBlocker(p)) return { error: `${rel}: outcome failed with no blocking finding` };
+  const unchecked = p.findings.find((f) => !/\bcheck: \S/.test(f.text));
+  if (unchecked !== undefined) return { error: `${rel}: finding ${unchecked.n} names no check ("check: <value>")` };
+  return { round, log: rel, outcome };
+}
+
+/**
+ * The reviewer-configured reading of one source (W-162): every `<id>-spec-` entry is judged, the newest valid
+ * architect signature naming the current brief anchors the sequence, and every log above it must be that
+ * signature's one valid review. Logs at or below the anchor are history: only their names were checked.
+ */
+function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer): SpecEvidence {
+  if (src === undefined) return { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false, gate: { kind: "signature" } };
+  const names = src.list("ci").filter((name) => name.startsWith(`${id}-spec-`));
+  const logs: { n: number; rel: string }[] = [];
+  let badName: string | undefined;
+  for (const name of names) {
+    const m = new RegExp(`^${esc(id)}-spec-([1-9][0-9]*)\\.log$`).exec(name);
+    if (m === null) badName ??= name;
+    else logs.push({ n: Number(m[1]), rel: `ci/${name}` });
+  }
+  logs.sort((a, b) => a.n - b.n);
+  const result = (why: string, gate: SpecGate): SpecEvidence => ({ ok: false, why, maxRound: Math.max(0, ...logs.map((l) => l.n)), anyLog: names.length > 0, gate });
+  if (badName !== undefined) return result(`ci/${badName}: a spec log is named ${id}-spec-<n>.log, n a positive integer with no leading zero`, { kind: "invalid" });
+  const brief = src.read(briefRel(id));
+  if (brief === undefined || !SECTIONS.every((s) => new RegExp(`^##\\s+${esc(s)}\\s*$`, "im").test(brief))) return result(`${briefRel(id)} is missing or lacks the six design-lex sections`, { kind: "signature" });
+  const expected = `${briefRel(id)} blob:${blobOf(brief)}`;
+  const read = logs.map((l) => ({ ...l, text: src.read(l.rel) }));
+  const anchor = [...read].reverse().find((l) => l.text !== undefined && !("error" in readSpecSignature(l.text, id, l.n, reviewer.design, expected, l.rel)));
+  if (anchor === undefined) return result(`no ${reviewer.design} signature names the current ${briefRel(id)} (ci/${id}-spec-<n>.log, phase spec, passed)`, { kind: "signature" });
+  const above = read.filter((l) => l.n > anchor.n);
+  for (const l of above) {
+    const r = l.text === undefined ? { error: `${l.rel} is unreadable` } : readSpecReview(l.text, id, l.n, reviewer, expected, l.rel);
+    if ("error" in r) return result(r.error, { kind: "invalid" });
+  }
+  if (above.length > 0) return result(`${above[0]!.rel} is a valid review of ${anchor.rel}; its outcome is not yet interpreted`, { kind: "invalid" });
+  return { ...result(`${anchor.rel} is signed and awaits the spec review`, { kind: "review", signature: anchor.rel }), sella: reviewer.design, log: anchor.rel };
 }
 function signedSpec(src: Src | undefined, id: string, design: string): SpecEvidence {
   const none: SpecEvidence = { ok: false, why: "no signed spec on the committed trunk", maxRound: 0, anyLog: false };
@@ -628,6 +705,7 @@ export function deriveNext(f: Facts): Derived {
 function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound: number): Derived {
   const { id } = f;
   const round = maxRound + 1;
+  if (ev.gate?.kind === "invalid") return { step: "spec", status: "held", actor: "producer", why: ev.why, extra: [] };
   if (ev.gate?.kind === "review") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model]] });
   return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
 }

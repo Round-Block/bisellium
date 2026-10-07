@@ -527,7 +527,7 @@ const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b(?![^]*(?:\r|<!--|-->)
 const HEADER_LINE = new RegExp(`^# (${VERDICT_HEADERS.join("|")}): (.*)$`);
 const CLASS_RE = /^[a-z][a-z0-9-]*×\S+$/;
 
-interface RecordedFinding {
+export interface RecordedFinding {
   log: string;
   n: number;
   /** the finding line after its number, whole */
@@ -541,16 +541,14 @@ interface Verdicts {
 }
 
 /**
- * One recorded log, read RAW: no line is stripped, trimmed or interpreted before it is judged. The header block is
- * the lines before the first empty line, each exactly `# key: value`. In the body the one `## Findings` section
+ * One recorded log's text, judged RAW: no line is stripped, trimmed or interpreted before it is judged. The header block
+ * is the lines before the first empty line, each exactly `# key: value`. In the body the one `## Findings` section
  * (ends at the next `## ` line) holds empty lines, the exact line `No findings`, or lines of the finding grammar,
  * and nothing else: a fence, comment, heading, indented or otherwise dressed line is out of domain and the whole
- * log is unreadable. This is the only reader of a verdict log in the retro.
+ * log is unreadable. This is the only parser of a verdict log, in the retro and in `next`'s spec-review gate (W-162).
  */
-function readVerdictLog(root: string, id: string, rel: string): { findings: RecordedFinding[] } | Refusal {
-  const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
-  if ("error" in file) return { error: `${rel}: ${file.error}` };
-  const lines = file.bytes.toString("utf8").split("\n");
+export function parseVerdictLog(text: string, id: string, rel: string): { headers: Map<string, string[]>; findings: RecordedFinding[] } | Refusal {
+  const lines = text.split("\n");
   const split = lines.indexOf("");
   if (split === -1) return { error: `${rel}: no blank line ends the header block` };
   const headers = new Map<string, string[]>();
@@ -568,7 +566,7 @@ function readVerdictLog(root: string, id: string, rel: string): { findings: Reco
   const rest = body.slice(at[0]! + 1);
   const end = rest.findIndex((l) => l.startsWith("## "));
   const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== "");
-  if (section.length === 1 && section[0] === "No findings") return { findings: [] };
+  if (section.length === 1 && section[0] === "No findings") return { headers, findings: [] };
   if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
   const findings: RecordedFinding[] = [];
   for (const line of section) {
@@ -590,7 +588,15 @@ function readVerdictLog(root: string, id: string, rel: string): { findings: Reco
       f.blocking = false;
     }
   }
-  return { findings };
+  return { headers, findings };
+}
+
+/** One recorded log, read through the contained reader and judged by `parseVerdictLog`. */
+function readVerdictLog(root: string, id: string, rel: string): { findings: RecordedFinding[] } | Refusal {
+  const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+  if ("error" in file) return { error: `${rel}: ${file.error}` };
+  const parsed = parseVerdictLog(file.bytes.toString("utf8"), id, rel);
+  return "error" in parsed ? parsed : { findings: parsed.findings };
 }
 
 /** The verdict logs and reds of one opus (D-039 §2), or the first record outside the domain. */
