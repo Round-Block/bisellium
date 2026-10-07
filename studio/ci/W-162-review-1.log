@@ -1,0 +1,16 @@
+# opus: W-162
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-07T08:48:45.537Z
+# tree: tree:7e5b0602f3f1c3ffb458cf4583a1e2652260e1df
+# brief: briefs/W-162.md blob:be7f3adb4aedb7656f5f0604eb0483959c011d05
+
+## Findings
+1. blocking — packages/cli/src/next.ts:164 Class (all instances found by searching `readSpecReviewer`’s cardinality lookups): the reviewer-seat lookup at line 164 and design-collegium lookup at line 170 use `.find`, so duplicate IDs are accepted when the first row is valid; `next` can proceed instead of holding despite both domains requiring exactly one row. brief:144, brief:149, brief:150 — check: packages/cli/src/next.test.ts (W-162-b1 duplicate reviewer-seat and duplicate design-collegium rows)
+
+## Verdict
+The gate remains fail-open for duplicate reviewer or design declarations, violating its central malformed-setting contract.
+VERDICT: FAIL

@@ -1,0 +1,19 @@
+# opus: W-162
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T07:01:49.173Z
+# tree: tree:8c299ae0f03ed842b5f3dc87d082e4863dbc7240
+
+W-162 spec, narrowed revision 6. Signed by the architect, claude-opus-5-5, after the builder's stop before building (~/.bisellium-evidence/W-162-build/probe/: verdict.test.ts rows b1 x3, b2, b4, b6 and verdict-citation.test.ts record non-UI spec-phase verdicts in fixtures without briefs/, and fail under the fail-closed refusal). Producer's ruling applied: the refusal stays. Brief: studio/briefs/W-162.md (still 4 behaviours; readBriefAdmission at limit 6 reports no problems).
+
+## Findings
+1. advisory — builder stop: verdict.test.ts and verdict-citation.test.ts join Files owned, limited to fixtures writing briefs/<id>.md for each opus given a non-UI spec-phase verdict; no existing assertion changes; Acceptance now says existing verdict rows pass with only that fixture change — check: packages/cli/src/verdict.test.ts, packages/cli/src/verdict-citation.test.ts
+2. advisory — the refusal (exit 2, names the brief, writes no ci/<id>-spec-<n>.log) is a regression row inside behaviour 2 — check: packages/cli/src/next.test.ts (W-162-b2)
+3. advisory — performSpecCommit stages exactly the brief, the anchor signature and its single passed review; history logs at or below the anchor are not staged — check: packages/cli/src/next.test.ts (W-162-b3)
+4. advisory — tests observe act: commit through the step's why text and the perform result (branch/commit lines); no new export — check: packages/cli/src/next.test.ts (W-162-b3)
+
+## Recommendation
+Verdict: passed. Revision 6 changes only the builder-stop points above; it goes to a new Codex gpt-5.6-sol spec review (D-046).

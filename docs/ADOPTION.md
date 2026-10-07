@@ -384,6 +384,7 @@ review_probatio: review           # probatio id that gates "review" state (defau
 wip_limit: 3                      # items in building + verifying, studio-wide
 brief_behaviour_limit: 6          # optional (W-127); turns on brief admission: most numbered behaviours a brief may carry
 retro: { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }  # optional (W-137); see "bisellium retro"
+spec_reviewer: spec-reviewer      # optional (W-162, D-046); see "The spec review gate" under "Running next"
 defaults:                         # optional overrides of the dossier's Defaults table
   handoff_stale_days: 3
   model_probe_stale_days: 7       # optional; code default 7 — tick's probe-cadence age trigger (W-071)
@@ -1181,6 +1182,37 @@ pid named and never killed) with the last output line as a JSON-quoted
 Test seams, honoured only with `BISELLIUM_TEST_CLOCK=1`: `--now <iso>` (otherwise
 a usage error) and `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every
 health read, including the verb's own `/proc/self/stat`.
+
+### The spec review gate
+
+With `spec_reviewer: <sella>` in `bisellium.yml`, `next` names no `branch` until one
+recorded review by that seat has passed after the architect's newest signature
+(W-162, D-046). The seat must be a declared, live `kind: agent` row on the `codex`
+harness with `model: gpt-5.6-sol` exactly, and not the design magister. An absent
+key keeps the ladder as it was. A malformed or unsuitable setting, or a `kind: ui`
+opus, holds the `spec` step and names the cause; it never disables the gate. The
+gate applies while the trunk record is `greenlit`; once the merged record is past
+`ready` (`building`, `verifying`, `review`, `done`) today's signature check applies.
+
+Architect signatures and reviews are both `bisellium verdict <opus> --phase spec`
+logs, `ci/<opus>-spec-<n>.log`, ordered by round, and each records
+`# brief: briefs/<opus>.md blob:<sha1>` (a spec verdict is refused, exit 2, when the
+brief is unreadable). With the setting present `next` reads every such log
+strictly. The newest valid signature naming the current brief's blob anchors the
+sequence; at most one valid review of the configured seat, with exact model, may
+follow it, and every log above the anchor must be that review:
+
+- no review: the spec-reviewer is ordered, a fresh one-shot dispatch (`resume: false`) at the next round;
+- `passed`: the existing commit (the brief, the signature and its review, nothing else), landing and then `branch`;
+- `failed`: the architect is ordered to revise and sign again; a newer signature needs a newer review;
+- an edited brief, or no valid signature: the architect is ordered to sign at the next round;
+- any malformed log, unreadable log, second reviewer verdict or log of another seat above the anchor: held. Logs at or below the anchor are history, so signing again recovers from a bad log.
+
+A review's outcome must agree with its findings (`passed` has no blocking finding,
+`failed` has at least one) and every numbered finding ends `check: <value>`. A
+`spec/<opus>` branch that carries a signature but no passed review is not landed:
+`next` holds and names it. Limit: the `# model:` header is the recorder's claim,
+and the gate cannot judge whether the review reasoned well.
 
 ## Writing to a studio (handoff, emit, answer, greenlight, budget)
 
