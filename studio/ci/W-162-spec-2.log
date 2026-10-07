@@ -1,0 +1,19 @@
+# opus: W-162
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T06:42:46.523Z
+# tree: tree:51eb05978e348063e849426c6d57555a8f8a2994
+
+W-162 spec, narrowed revision 5. Drafted by Codex (gpt-5.6-sol) under D-027; revised and signed by the architect, claude-opus-5-5, after the Codex spec review of revision 4 (~/.bisellium-evidence/W-162-specreview/n1/verdict.md, failed: n1 #1 traditio row, n1 #2 brief bytes unbound). Brief: studio/briefs/W-162.md (4 behaviours, Decree family: spec-review-gate; readBriefAdmission at limit 6 reports no problems). Read for this round: next.ts gateDispatch, evidenceAt, PAST_READY; verdict.ts's W-126 brief header (build phase only today).
+
+## Findings
+1. advisory — n1 #1: added an Input domain row for opera/<id>.md#traditio, rejected by the existing gateDispatch (holds "stale handover"); the reviewer order is a one-shot dispatch with resume false, so it never reads the handover; stated limit: spec logs are outside evidenceAt, and the failed review log is an input of the architect's order — check: packages/cli/src/next.test.ts (W-162-b4)
+2. advisory — n1 #2: extended W-126's "# brief: <path> blob:<sha1>" header to non-UI spec-phase verdicts (verdict.ts now owned); a signature or review counts only when its blob matches the current brief in the source read, so an edit after either orders the architect again; runVerdict refuses a spec verdict when the brief is unreadable — check: packages/cli/src/next.test.ts (W-162-b2, W-162-b3)
+3. advisory — re-checked the spec path for other record reads: added the trunk record's state row; the gate applies while it is greenlit and a PAST_READY trunk keeps today's check, so a merged opus (W-162 included, and any opus whose PR edits its brief) is not sent back to spec; declined, halted and absent states stay held at greenlight by deriveNext — check: packages/cli/src/next.test.ts (W-162-b3)
+4. advisory — still four behaviours, each red after the previous lands; the b2 red is now an edited-after-signature brief that still gets the reviewer order — check: packages/cli/src/next.test.ts (W-162-b1 to W-162-b4)
+
+## Recommendation
+Verdict: passed. Revision 5 answers both n1 findings and goes to a new Codex gpt-5.6-sol spec review (D-046).
