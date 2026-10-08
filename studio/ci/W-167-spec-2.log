@@ -1,0 +1,18 @@
+# opus: W-167
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-07T10:59:16.042Z
+# tree: tree:b0e0665abfc2ea5416961f3cf96c81e079cefca1
+# brief: briefs/W-167.md blob:6668742b0f1cf16d33ec73245b69f7c1b1d24287
+
+## Findings
+1. blocking — brief:97 The row makes containment, regular-file status, and the 4 MB limit part of the log domain but names `parseBuildReviewLog` as the rejector; that parser receives log text and cannot enforce those filesystem properties, which are actually rejected by `readBuildRounds`/`readContainedRegularFile`. — check: none: D-046 spec review must verify that the named boundary function can enforce the whole stated domain
+2. blocking — brief:98 The current source tree is an input to the gate/current-tree exception, but this row names only the opus gate and parsed log; it gives no valid domain or fail-closed rejector for a failed `curTree()`/source-tree hash, so the promised no-build, no-review, no-PR hold is unspecified for that input. — check: packages/cli/src/next.test.ts
+3. blocking — brief:11 This promises the boundary instruction whenever the failed current round has a class blocker, but the specified detection later examines only the first standing blocker; an ordinary log with a non-class blocker first and a class blocker second cannot satisfy both promises. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief lacks complete fail-closed boundaries for two inputs and contains an unguaranteeable class-blocker promise.
+VERDICT: FAIL

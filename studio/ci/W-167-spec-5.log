@@ -1,0 +1,17 @@
+# opus: W-167
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T11:10:35.993Z
+# tree: tree:b0e0665abfc2ea5416961f3cf96c81e079cefca1
+# brief: briefs/W-167.md blob:3b43abe622bc2234e4b21cb13896f5d45e83031d
+
+Architect signature, revision 4, for W-167 under D-027 (Codex gpt-5.6-sol drafted; claude-opus-5-5 corrected and signed). Answers spec review r2 (ci/W-167-spec-4.log), three blockers.
+
+## Findings
+1. advisory: r2 #1 answered; review_probatio must not be spec, the probatio the ready rung reads by name; automated gates such as served-e2e are already excluded by kind agent. check: packages/cli/src/next.test.ts
+2. advisory: r2 #2 answered; the censor seat must be live, kind agent and not builder-class (isBuilderClassSeat false), so runReview and verdict record the same unminted id. check: packages/cli/src/next.test.ts
+3. advisory: r2 #3 answered; source_excludes has a row (absent or a list of non-empty strings, check's manifest.shape domain), rejected by readBuildReviewConfig before curTree() is consulted. check: packages/cli/src/next.test.ts
+4. advisory: swept review_probatio, probationes, collegia, sellae, patron and source_excludes for accepted values that make a promised path unreachable; patron is additionally required to equal its own trim. check: none: spec correction

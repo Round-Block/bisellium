@@ -1,0 +1,18 @@
+# opus: W-167
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-07T11:09:19.476Z
+# tree: tree:b0e0665abfc2ea5416961f3cf96c81e079cefca1
+# brief: briefs/W-167.md blob:05211316495caf32c9d147e16fdccd85fc09c7b5
+
+## Findings
+1. blocking — brief:96 The valid domain permits `review_probatio: spec`, since `spec` is a declared agent probatio; a real failed `runReview` then overwrites `probationes.spec`, and `next` stops at its hardcoded ready check before W-167’s reader can produce the promised fix or cap behaviour. — check: packages/cli/src/next.test.ts
+2. blocking — brief:97 The valid domain permits the live `builder` and `builder-codex` templates as QA magister. The dispatched verdict records that template id, but `runReview` resolves it to an opus-specific instance in the gate, so the promised strict censor equality cannot be satisfied through the real verbs. — check: packages/cli/src/next.test.ts
+3. blocking — brief:101 The source-tree row omits `bisellium.yml#source_excludes`, which `gather` reads to compute `curTree()`; a scalar typo is spread into one-character exclusions and still yields `tree:<hex>`, so `deriveNext` does not reject this malformed manifest input or fail closed. — check: packages/cli/src/next.test.ts
+
+## Verdict
+Round 1’s findings are resolved, but accepted manifest configurations make promised review paths unachievable and the source-tree input boundary remains incomplete.
+VERDICT: FAIL

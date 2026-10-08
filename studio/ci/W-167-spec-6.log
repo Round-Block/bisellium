@@ -1,0 +1,17 @@
+# opus: W-167
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-07T11:19:52.262Z
+# tree: tree:b0e0665abfc2ea5416961f3cf96c81e079cefca1
+# brief: briefs/W-167.md blob:3b43abe622bc2234e4b21cb13896f5d45e83031d
+
+## Findings
+1. blocking — brief:97 The censor’s manifest source is unspecified: `next` currently dispatches from the main-checkout `f.manifest`, while the real verdict/review verbs and proposed worktree readers use the worktree manifest. An ordinary valid branch-side QA-magister change therefore makes the order name one censor while strict evidence requires another. — check: packages/cli/src/next.test.ts
+2. blocking — brief:101 `runVerdict` hashes with the worktree manifest’s `source_excludes`, but existing `f.curTree()` hashes with the main-checkout manifest captured by `gather`; a valid branch-side exclusion change therefore makes a same-HEAD verdict appear older and breaks the promised failed-current and passed-current paths. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief does not unify the manifest source across the paths that must agree on censor identity and source-tree identity.
+VERDICT: FAIL
