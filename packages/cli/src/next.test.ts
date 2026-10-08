@@ -4146,3 +4146,108 @@ test("W-168-b3 behaviour 3: a tracked change holds pr with today's lines and no 
   assert.equal(modeLine(o), undefined, ran("no mode line before the mode read", o));
   assert.deepEqual(mutating(w), [], "nothing was fetched or pushed");
 });
+
+const CONFLICT_WHY = `why: PR #${PR_NUMBER} conflicts with master; rebase ${BRANCH} and resolve it there: that changes the SOURCE tree and needs the local mint again`;
+const lineAfter = (o: Out, prefix: string): string | undefined => o.out.split("\n").find((l) => l.startsWith(prefix));
+
+test("W-168-b4 behaviour 4: in queue mode merge enqueues once and never updates the branch", { timeout: 3_600_000 }, () => {
+  const w = pushed("w168-b4-behind");
+  const flag = join(w.root, "merged.flag");
+  const m = landMerge(w, false);
+  scenario(w, {
+    rules: { stdout: QUEUE_RULES },
+    list: openList(w),
+    view: { replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "BEHIND" })) }], alts: [{ ifExists: flag, replies: [{ stdout: viewOf(cand(w, { state: "MERGED", merge: m })) }] }] },
+    merge: { replies: [{ stdout: "", touch: flag }] },
+  });
+  const o = performMerge(w);
+  assert.deepEqual(mutating(w), ["gh pr merge --squash --auto", "git fetch master:master"], ran("a BEHIND PR is enqueued, never updated", o));
+  assert.match(o.out, /state=MERGED/, ran("and lands", o));
+  assert.equal(o.out.split("\n")[1], "mode: merge-queue", ran("the mode line comes first", o));
+  assert.equal(ghCalls(w).filter((a) => a[0] === "api" && a[1] === `repos/${SLUG}/rules/branches/master?per_page=100`).length, 2, "the rules are read, then read again just before the merge call");
+  assert.deepEqual(unmatched(w), [], "no unexpected gh call");
+});
+
+test("W-168-b4 behaviour 4: a queued CLEAN PR gets no second merge call", { timeout: 3_600_000 }, () => {
+  const w = pushed("w168-b4-clean");
+  scenario(w, { rules: { stdout: QUEUE_RULES }, list: openList(w), view: { stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) } });
+  const o = performMerge(w);
+  assert.equal(ghMerges(w).length, 1, ran("exactly one gh pr merge call", o));
+  assert.deepEqual(mutating(w), ["gh pr merge --squash --auto"], "no direct merge and no update-branch");
+  assert.match(o.out, /state=QUEUE_TIMEOUT/, ran("and the poll runs out", o));
+});
+
+test("W-168-b4 behaviour 4: a DIRTY PR holds as a conflict in queue mode", { timeout: 3_600_000 }, () => {
+  const before = pushed("w168-b4-dirty");
+  scenario(before, { rules: { stdout: QUEUE_RULES }, list: openList(before), view: { stdout: viewOf(cand(before, { state: "OPEN", mss: "DIRTY" })) } });
+  const o = performMerge(before);
+  assert.deepEqual(mutating(before), [], ran("a DIRTY PR is never merged or updated", o));
+  assert.match(o.out, /state=CONFLICT/, ran("state=CONFLICT", o));
+  assert.ok(o.out.split("\n").includes(CONFLICT_WHY), ran("with the conflict why", o));
+  assert.equal(o.status, 1);
+
+  const after = pushed("w168-b4-dirty-after");
+  const flag = join(after.root, "merged.flag");
+  scenario(after, {
+    rules: { stdout: QUEUE_RULES },
+    list: openList(after),
+    view: { replies: [{ stdout: viewOf(cand(after, { state: "OPEN" })) }], alts: [{ ifExists: flag, replies: [{ stdout: viewOf(cand(after, { state: "OPEN", mss: "DIRTY" })) }] }] },
+    merge: { replies: [{ stdout: "", touch: flag }] },
+  });
+  const o2 = performMerge(after);
+  assert.deepEqual(mutating(after), ["gh pr merge --squash --auto"], ran("one merge call, then the hold", o2));
+  assert.match(o2.out, /state=CONFLICT/, ran("a PR that turns DIRTY after the request holds", o2));
+  assert.ok(o2.out.split("\n").includes(CONFLICT_WHY), ran("with the conflict why", o2));
+});
+
+test("W-168-b4 behaviour 4: a changed setup at the recheck holds with nothing enqueued", { timeout: 3_600_000 }, () => {
+  const w = pushed("w168-b4-recheck");
+  scenario(w, { rules: { replies: [{ stdout: QUEUE_RULES }, { stdout: [] }] }, list: openList(w) });
+  const o = performMerge(w);
+  assert.deepEqual(mutating(w), [], ran("no gh write after the setup changed", o));
+  assert.ok(o.out.includes("why: master's merge-queue setup changed while the merge step ran; nothing was enqueued"), ran("the why", o));
+  assert.equal(o.out.split("\n")[1], "mode: merge-queue");
+  assert.equal(o.status, 1);
+});
+
+test("W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls", { timeout: 3_600_000 }, () => {
+  const bound = pushed("w168-b4-bound");
+  git(bound.repo, ["config", BINDING, headOf(bound)]);
+  scenario(bound, { list: openList(bound) });
+  const o = performMerge(bound);
+  assert.deepEqual(mutating(bound), [], ran("a PR pushed for the queue is held when the queue is gone", o));
+  assert.equal(o.out.split("\n")[1], "mode: direct", ran("the mode line", o));
+  assert.ok(
+    o.out.includes(`why: PR #${PR_NUMBER} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${BRANCH} onto master, which changes the SOURCE tree and needs the local mint again`),
+    ran("the why", o),
+  );
+  assert.equal(o.status, 1);
+  assert.equal(ghMerges(bound).length, 0, "no gh pr merge");
+
+  const w = pushed("w168-b4-unbound");
+  const updated = join(w.root, "updated.flag");
+  const flag = join(w.root, "merged.flag");
+  const m = landMerge(w, false);
+  scenario(w, {
+    list: openList(w),
+    view: {
+      replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "BEHIND" })) }],
+      alts: [
+        { ifExists: flag, replies: [{ stdout: viewOf(cand(w, { state: "MERGED", merge: m })) }] },
+        { ifExists: updated, replies: [{ stdout: viewOf(cand(w, { state: "OPEN", mss: "CLEAN" })) }] },
+      ],
+    },
+    update: { stdout: "", touch: updated },
+    merge: { replies: [{ stdout: "", touch: flag }] },
+  });
+  const o2 = performMerge(w);
+  assert.deepEqual(mutating(w), ["gh pr update-branch", "gh pr merge --squash --auto", "git fetch master:master"], ran("direct mode with no binding updates a BEHIND PR", o2));
+  assert.equal(o2.out.split("\n")[1], "mode: direct", ran("the mode line", o2));
+
+  const merged = pushed("w168-b4-merged");
+  const mergedM = landMerge(merged, false);
+  scenario(merged, { rules: { stdout: QUEUE_RULES }, list: mergedList(merged, { merge: mergedM }) });
+  const o3 = performMerge(merged);
+  assert.match(o3.out, /state=MERGED/, ran("an already-MERGED PR lands", o3));
+  assert.equal(lineAfter(o3, "mode:"), undefined, ran("and reads no mode", o3));
+});
