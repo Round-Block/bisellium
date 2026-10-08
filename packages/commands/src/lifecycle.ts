@@ -808,7 +808,8 @@ function redRepository(
   if (repoFlag !== undefined) {
     const repo = resolve(repoFlag);
     if (!isGitRepo(repo)) return { header: "unknown" };
-    const repoRoot = realpathSync(findGitRoot(repo) ?? repo);
+    // the flag path itself, not any path inside the repository: a subdirectory is not the canonical root
+    const repoRoot = realpathSync(repo);
     if (repoRoot !== root)
       return { error: `red: --repo ${repoRoot} is not the repository the command runs in (${root ?? "none"}); --repo may confirm it, never choose another` };
   }

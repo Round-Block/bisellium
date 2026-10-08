@@ -133,6 +133,26 @@ test("W-166-b1 behaviour 1: a symlinked spelling of the cwd's root is accepted",
   assert.equal(r.status, 0, `1c: the symlinked --repo is the same root (${r.stderr})`);
 });
 
+test("W-166-b1 behaviour 1: a --repo that is a subdirectory or a symlink to one is refused and nothing runs", () => {
+  const M = repoWithStudio("b1-sub");
+  const studio = join(M, "studio");
+  const sub = join(M, "src");
+  const alias = join(scratch("b1-subalias"), "alias");
+  symlinkSync(sub, alias);
+  for (const [name, repo] of [
+    ["a subdirectory", sub],
+    ["a symlink to a subdirectory", alias],
+  ] as const) {
+    put(studio, "ci/reds/W-900/01.log", "PRESEEDED-01\n");
+    const marker = join(M, "ran-sub.txt");
+    const r = red(M, "W-900", 2, ["--studio", studio, "--repo", repo], ["node", "-e", "require('node:fs').writeFileSync('ran-sub.txt','x');process.exit(1)"]);
+    assert.equal(r.status, 2, `1e: ${name} exits 2 (${r.stderr})`);
+    assert.equal(existsSync(marker), false, `1e: ${name}: the command never ran`);
+    assert.deepEqual(readdirSync(join(studio, "ci", "reds", "W-900")), ["01.log"], `1e: ${name}: no log was written`);
+    assert.equal(readFileSync(join(studio, "ci", "reds", "W-900", "01.log"), "utf8"), "PRESEEDED-01\n", `1e: ${name}: the preseeded log is byte-identical`);
+  }
+});
+
 test("W-166-b1 behaviour 1: a non-Git --repo still records unknown", () => {
   const M = repoWithStudio("b1-nongit");
   const plain = scratch("b1-plain");
