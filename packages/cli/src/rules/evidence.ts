@@ -104,7 +104,7 @@ function checkUntracked(root: string, opts: RuleOpts): Finding[] {
 }
 
 // W-127: moved to @bisellium/commands (brief admission shares it); re-exported so importers stay as they were.
-import { countBehaviours } from "@bisellium/commands/brief-admission.js";
+import { countBehaviours, readRedOrder } from "@bisellium/commands/brief-admission.js";
 export { countBehaviours };
 
 /** The leading `# key: value` header lines of a red log (W-020's contract),
@@ -213,6 +213,27 @@ function checkRedEvidence(root: string): Finding[] {
             message: `red logs for behaviours ${texts[i]![0]} and ${texts[j]![0]} are identical after header strip`,
           });
         }
+      }
+    }
+
+    // W-166: under "Red order: one at a time", a red on the same clean tree as an earlier behaviour's red was
+    // recorded before that behaviour was implemented (D-036). Only what the logs prove alone: a usable
+    // `tree:<hex>` identity named twice.
+    const order = readRedOrder(briefText);
+    if ("declared" in order && order.declared) {
+      const first = new Map<string, number>();
+      for (const [nn, logText] of logTexts) {
+        const tree = parseLogHeader(logText).get("tree") ?? "";
+        if (!/^tree:[0-9a-f]+$/.test(tree)) continue;
+        const earlier = first.get(tree);
+        if (earlier === undefined) first.set(tree, nn);
+        else
+          findings.push({
+            rule: "opus.red_evidence",
+            level: "block",
+            where,
+            message: `red logs for behaviours ${earlier} and ${nn} certify one tree (${tree}); the brief declares "Red order: one at a time", so behaviour ${earlier} must be implemented before behaviour ${nn}'s red`,
+          });
       }
     }
 
