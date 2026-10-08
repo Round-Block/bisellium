@@ -349,7 +349,7 @@ const NO_RED_ORDER = `declares no red order; add the line "${LINE}"`;
 const NO_FAMILY = 'declares no decree family; add one line "Decree family: <slug>"';
 
 /** A copy of the sample officina (with `brief_behaviour_limit: 6` unless `limit` is false), a greenlit W-900 and an admitted brief whose Intent carries `lines`. */
-function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean } = {}): { dir: string; stderr: string[]; exitCode: number; opus: { before: string; after: string }; eventsSame: boolean } {
+function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean; state?: string; extra?: string } = {}): { dir: string; stderr: string[]; exitCode: number; opus: { before: string; after: string }; eventsSame: boolean } {
   const dir = scratch("b5-ready");
   cpSync(SAMPLE, dir, { recursive: true, dereference: true });
   const yml = join(dir, "bisellium.yml");
@@ -395,7 +395,7 @@ function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean } 
     "",
   ].join("\n");
   put(dir, `briefs/${ID}.md`, brief);
-  put(dir, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Admission fixture\nkind: feature\ncollegium: engineering\nstate: greenlit\nprobationes: {}\n---\nbody\n`);
+  put(dir, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Admission fixture\nkind: feature\ncollegium: engineering\nstate: ${o.state ?? "greenlit"}\n${o.extra ?? ""}probationes: {}\n---\nbody\n`);
   const opusPath = join(dir, `opera/${ID}.md`);
   const before = readFileSync(opusPath, "utf8");
   const eventsPath = join(dir, EVENTS_LOG_REL);
@@ -447,4 +447,14 @@ test("W-166-b5 behaviour 5: admission problems keep their exact stderr, and an o
   assert.deepEqual(r.stderr, [`${ID}: brief.admission: briefs/${ID}.md ${NO_FAMILY}`], "5d: the red order requirement waits for admission");
   const open = readyFixture([], { limit: false });
   assert.equal(open.exitCode, 0, `5e: no limit, no requirement (stderr ${JSON.stringify(open.stderr)})`);
+});
+
+test("W-166-b5 behaviour 5: an opus already past ready, halted without the line, resumes to building; one never past ready is still refused", () => {
+  const past = readyFixture([], { state: "halted", extra: "start: 2026-10-01T12:00:00.000Z\nbuilder_runtime: isolated\n" });
+  assert.equal(past.exitCode, 0, `5f: a halted opus past ready resumes (stderr ${JSON.stringify(past.stderr)})`);
+  assert.equal(readFront<{ state: string }>(join(past.dir, `opera/${ID}.md`)).data.state, "building", "5f: building");
+  const green = readyFixture([], { state: "greenlit" });
+  assert.deepEqual(green.stderr, [`${ID}: brief.admission: briefs/${ID}.md ${NO_RED_ORDER}`], "5g: a greenlit opus without the line is refused");
+  const never = readyFixture([], { state: "halted" });
+  assert.deepEqual(never.stderr, [`${ID}: brief.admission: briefs/${ID}.md ${NO_RED_ORDER}`], "5g: a halted opus never past ready is refused");
 });

@@ -314,8 +314,12 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
       return { exitCode: 1 };
     }
     // W-166: a new opus in an officina with a limit carries the one-at-a-time red order; checked only once admission passes.
+    // An opus already past ready is grandfathered (brief: "ready adds the requirement only on entry"): `runReady` alone writes
+    // `builder_runtime` and `start`, so a halted record carrying either was past ready when it halted. Limit: a record halted
+    // from greenlit, never ready, has neither and is held to the requirement.
+    const pastReady = currentState === "halted" && (currentFront.builder_runtime !== undefined || currentFront.start !== undefined);
     const order = readRedOrder(containedSpec.bytes.toString("utf8"));
-    const orderProblem = "error" in order ? order.error : order.declared ? undefined : 'declares no red order; add the line "Red order: one at a time"';
+    const orderProblem = pastReady ? undefined : "error" in order ? order.error : order.declared ? undefined : 'declares no red order; add the line "Red order: one at a time"';
     if (orderProblem !== undefined) {
       console.error(`${opusId}: brief.admission: ${specRel} ${orderProblem}`);
       return { exitCode: 1 };
