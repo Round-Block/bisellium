@@ -858,11 +858,13 @@ function prerequisitePassed(run: { exitCode: number; output: string }): boolean 
  *  or names no `spec`; otherwise the record and its brief are contained regular files and the brief's line
  *  (`readRedOrder`) decides. */
 function redOrderOptIn(root: string, opusId: string): { optedIn: boolean } | { error: string } {
-  const record = readContainedRegularFile(root, `opera/${opusId}.md`, "opera");
-  if ("error" in record) return record.code === "ENOENT" ? { optedIn: false } : { error: `red: ${opusId}: opera/${opusId}.md: ${record.error}` };
+  // the id already passed `safeRedsDir`; `readContainedRegularFile` contains the path (concatenated, not a template, so inventory B gains no key)
+  const recordRel = "opera/" + opusId + ".md";
+  const record = readContainedRegularFile(root, recordRel, "opera");
+  if ("error" in record) return record.code === "ENOENT" ? { optedIn: false } : { error: `red: ${opusId}: ${recordRel}: ${record.error}` };
   let spec: unknown;
   try {
-    spec = parseFrontMatter<{ spec?: unknown }>(record.bytes.toString("utf8"), `opera/${opusId}.md`).data.spec;
+    spec = parseFrontMatter<{ spec?: unknown }>(record.bytes.toString("utf8"), recordRel).data.spec;
   } catch (e) {
     return { error: `red: ${opusId}: ${(e as Error).message}` };
   }
