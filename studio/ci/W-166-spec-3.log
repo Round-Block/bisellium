@@ -1,0 +1,19 @@
+# opus: W-166
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T07:36:00.982Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:64627cf246f48d4e53f1748f875989a0348bf455
+
+Architect signature for W-166, revision 2, under D-027: answers spec review r1 (ci/W-166-spec-2.log). Each finding was checked against the code; all five are accepted.
+
+## Findings
+1. advisory: accepted r1 #1. lifecycle.ts hashRepo spreads manifest.source_excludes unvalidated (openStudio does not check it), so a scalar becomes one-character exclusions; runRed now refuses it for every red before any command runs, in check's manifest.shape domain. brief_behaviour_limit gets its row, rejected by the existing readBriefLimit. The host replay's Array.isArray guard is left unchanged (host script out of scope); red refusing means no red is recorded under a scalar. check: packages/cli/src/red-order.test.ts W-166-b2
+2. advisory: accepted r1 #2. runCapture turns a spawn error into exit 1 and runRed records it; runCapture now reports spawnError and runRed exits 2 writing nothing, for every red. Limit stated: a command that starts and fails for an environment reason keeps today's module-load handling. No existing row records a spawn failure, so nothing flips. check: packages/cli/src/red-order.test.ts W-166-b2
+3. advisory: accepted r1 #3. readRedOrder now treats any trimmed real line matching /^red[\s_-]*order\s*:/i as a marker attempt, and the brief states the limit: a misspelling outside that prefix reads as absent, which ready then refuses for new opera in an officina declaring brief_behaviour_limit. check: none: arbitrary misspellings cannot be recognised mechanically
+4. advisory: accepted r1 #4. The moved-tree refusal is restated as what hashRepo can see: committed source plus git status outside the exclusions; changes under the studio, .bisellium or source_excludes are not seen, by design, and b2 tests both sides. check: packages/cli/src/red-order.test.ts W-166-b2
+5. advisory: accepted r1 #5. The decree and the grandfathering paragraph now scope ready's requirement to officinae declaring brief_behaviour_limit, matching behaviour 5. check: packages/cli/src/brief-admission.test.ts W-166-b5
+6. advisory: no fixture newly flips beyond revision 1's two (ladder-followon W-128 b8, brief-admission.test.ts brief()): no test records a spawn failure or runs red under a scalar source_excludes (grep of packages/cli/src/*.test.ts). check: none: spec correction

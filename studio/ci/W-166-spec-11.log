@@ -1,0 +1,16 @@
+# opus: W-166
+# phase: spec
+# round: 11
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T08:03:45.977Z
+# tree: tree:4640970d88ce39dabe482eaee7bb7a0973fbd175
+# brief: briefs/W-166.md blob:871300a156ff3217ef47b90c33cf72c042f97ac3
+
+Architect signature for W-166, revision 6, under D-027: answers spec review r5 (ci/W-166-spec-10.log). Both findings were checked against the code and accepted.
+
+## Findings
+1. advisory: accepted r5 #1. next.ts gather spreads manifest.source_excludes raw (a scalar becomes character exclusions, a number throws). W-167, now on master, already validates it inside verdict.ts readBuildReviewConfig; that clause moves out unchanged as exported readSourceExcludes, used by readBuildReviewConfig, runRed and runNext before gather, so a malformed value holds next (exit 1, why naming bisellium.yml#source_excludes). The proving row sits in behaviour 4. check: packages/cli/src/next.test.ts W-166-b4
+2. advisory: accepted r5 #2 by rejecting. The host maps only rev-list <finalCommit>; an opted-in red now refuses a cwd whose HEAD is not an ancestor of or equal to refs/heads/opus/<id> (one git merge-base --is-ancestor). Stated limit: checked at record time only; a later rebase or reset leaves W-134's fallback, and reds without the line are not checked. check: packages/cli/src/red-order.test.ts W-166-b2
+3. advisory: sweep: the decree's reachability promise is scoped to opted-in reds; the "build after W-167 merges" line and the grandfathering sentence now record that W-167 has merged. No defaults needed narrowing. No fixture newly flips: readBuildReviewConfig keeps its message. check: none: spec correction

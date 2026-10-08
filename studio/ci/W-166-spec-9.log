@@ -1,0 +1,17 @@
+# opus: W-166
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T07:56:37.568Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:f6e58ee0431516bf427b361e57d747039d9f38c5
+
+Architect signature for W-166, revision 5, under D-027: answers spec review r4 (ci/W-166-spec-8.log). Each finding was checked against the code and accepted; the whole brief was swept for other over-broad promises.
+
+## Findings
+1. advisory: accepted r4 #1. next's reads now have rows naming today's rejectors in next.ts/integrate.ts: runNext (exit 2 through openStudio, the main-checkout and inside-repo checks), readTip (unreadable is never absent), deriveNext from gather's usable (an unusable worktree holds at build), deriveNext for the brief and red logs (trunk fallback, 0 behaviours holds), checkEvidence for redFindings. Stated limits, with no rejector today: gather spreads source_excludes unvalidated; an unknown/none red tree counts as usable; a checkEvidence throw reads as no finding. check: packages/cli/src/next.test.ts W-166-b4
+2. advisory: accepted r4 #2. The decree, the proof paragraph and behaviour 1's title now carry the same-repository limit: exclusions apply in every worktree of the studio's own repository; an unrelated repository keeps none, as today. check: packages/cli/src/red-order.test.ts W-166-b1
+3. advisory: accepted r4 #3. Default 7 and the Status line's revision-1 summary now scope ready's requirement to officinae declaring brief_behaviour_limit, matching behaviour 5. check: packages/cli/src/brief-admission.test.ts W-166-b5
+4. advisory: the sweep also scoped the decree's check promise to active opera, the rebase-fallback promise to "when followed", and the threat model's "unchanged tree" to changes outside the exclusions. No fixture newly flips. check: none: spec correction

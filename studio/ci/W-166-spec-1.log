@@ -1,0 +1,19 @@
+# opus: W-166
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T07:29:16.239Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:48ec62a4bc0d9500918ec8da26d1b09e29a40425
+
+Architect signature for W-166 under D-027: Codex (gpt-5.6-sol) drafted, the architect (claude-opus-5-5) reviewed, corrected and signed. Draft: ~/.bisellium-evidence/W-166-draft/W-166-draft.md.
+
+## Findings
+1. advisory: the draft synthesised prerequisite rows by rewriting --test-name-pattern in the target's command; behaviours tested in different files (the draft's own b1-b3 vs b4) would run the wrong file, and a pattern matching nothing exits 0. Prerequisites are now the earlier behaviours' own recorded # command:, and a run must count at least one passed test. check: packages/cli/src/red-order.test.ts W-166-b2
+2. advisory: the draft's # prerequisite_runs JSON header was a claim written by red and re-read by check; check now blocks the one contradiction provable from logs alone (a red on the same tree as an earlier behaviour's red), and the log keeps its six-line shape, so W-020's lines[6] row does not flip. check: packages/cli/src/red-order.test.ts W-166-b3
+3. advisory: the draft did not answer W-167 fact (a): hashRepo drops every exclusion when the studio lies outside the hashed directory, so a red in a linked worktree matches no branch commit. Exclusions now follow the repository (git-common-dir), which also gives the no-rewrite correction path for fact (b): re-record at the right commit in a detached worktree, commit at the tip, after the last rebase. check: packages/cli/src/red-order.test.ts W-166-b1
+4. advisory: the draft refused every --repo not equal to the cwd's root, flipping about a dozen W-020/W-039/W-089 rows that pass a non-Git --repo and needing a migration script; a non-Git --repo keeps its "unknown" header, and the one real flip, ladder-followon W-128 b8 (cwd REPO, --repo R), is named with its fix. check: packages/cli/src/ladder-followon.test.ts
+5. advisory: per-clause Prerequisites: [..] lists replaced by one brief-level opt-in line (all earlier behaviours, D-036), and ready now requires the line for new opera so the rule cannot be forgotten; brief-admission.test.ts's brief() helper is the named flip; check's brief.admission does not re-admit active opera, so W-167 is not stranded. check: packages/cli/src/brief-admission.test.ts
+6. advisory: studio/leges/production.md left Files owned (the host export refuses studio/ paths; the producer updates step 3 at checkpoint); next keeps phase: 1 and one dispatch so no next.test.ts assertion flips; the host replay is unchanged and the decision on where proof lives is stated (red runs it, check proves the shared-tree contradiction, host replay is the named upgrade). check: none: spec correction

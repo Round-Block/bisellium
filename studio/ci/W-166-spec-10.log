@@ -1,0 +1,17 @@
+# opus: W-166
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T08:02:28.404Z
+# tree: tree:4640970d88ce39dabe482eaee7bb7a0973fbd175
+# brief: briefs/W-166.md blob:f6e58ee0431516bf427b361e57d747039d9f38c5
+
+## Findings
+1. blocking — brief:103 The `next` manifest row still has no fail-closed boundary for `source_excludes`: `openStudio` accepts any parseable YAML, while `gather` spreads the raw value, so a scalar can be silently treated as character exclusions and a non-iterable value can throw instead of being rejected by `runNext`; saying that `check` blocks it does not make the named rejector fail closed. — check: packages/cli/src/next.test.ts W-166-b4
+2. blocking — brief:13 Sharing the studio repository and using its exclusions does not guarantee that the host can find the recorded commit: `redRepository`/`hashRepo` can accept a detached or other-branch worktree whose HEAD is not reachable from the final opus tip, while the host maps only `rev-list <finalCommit>` and its fallback identifies the parent of the log-introducing commit, not an arbitrary command cwd. State the reachability limit or reject such a cwd. — check: packages/cli/src/red-order.test.ts W-166-b1
+
+## Verdict
+The signed revision still has blocking input-boundary and host-reachability gaps.
+VERDICT: FAIL

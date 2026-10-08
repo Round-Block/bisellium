@@ -1,0 +1,19 @@
+# opus: W-166
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T07:41:50.677Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:64627cf246f48d4e53f1748f875989a0348bf455
+
+## Findings
+1. blocking — brief:120 Behaviour 1 cannot guarantee that every red certifies the repository its command ran in: brief:124 preserves an explicit non-Git `--repo` as `# tree: unknown`, even when the command cwd is a Git worktree. — check: packages/cli/src/red-order.test.ts W-166-b1
+2. blocking — brief:98 A refused missing target executable is detected only by `runCapture` after earlier prerequisite commands have run, so `red` cannot promise that every exit-2 refusal occurs before running any command. — check: packages/cli/src/red-order.test.ts W-166-b2
+3. blocking — brief:108 The earlier-log domain accepts any non-empty `# command:`, but the six-line log flattens argv with spaces and records no cwd; whitespace splitting in the current cwd cannot reconstruct an ordinary invocation containing a spaced argument or a different `--cwd`, and `runRed` does not reject those ambiguous records. — check: packages/cli/src/red-order.test.ts W-166-b2
+
+## Verdict
+The revision answers the five prior findings, but these remaining input-boundary and feasibility contradictions block the build.
+
+VERDICT: FAIL

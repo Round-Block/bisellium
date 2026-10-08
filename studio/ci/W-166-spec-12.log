@@ -1,0 +1,17 @@
+# opus: W-166
+# phase: spec
+# round: 12
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T08:08:54.305Z
+# tree: tree:4640970d88ce39dabe482eaee7bb7a0973fbd175
+# brief: briefs/W-166.md blob:871300a156ff3217ef47b90c33cf72c042f97ac3
+
+## Findings
+1. blocking — brief:82 `isDirtyOutside` uses ordinary `git status --porcelain`, which omits ignored files; a target can ordinarily leave an ignored untracked file outside all declared exclusions without changing the identity, contradicting the promise that every tracked or untracked outside-exclusion change is refused. State that ignored files are outside the guarantee or specify a detector that includes them. — check: packages/cli/src/red-order.test.ts W-166-b2
+
+## Verdict
+Revision 6 answers the five earlier reviews, but the remaining clean-tree promise still needs an ignored-file limit or enforcement.
+
+VERDICT: FAIL

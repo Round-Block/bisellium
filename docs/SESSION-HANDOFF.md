@@ -20,10 +20,19 @@ Rules, process and environment: studio/leges/production.md.
 - **W-167** (review loop stops at three failed rounds) is done (PR 322;
   checkpoint row 60). Its reds are the original recording: re-recording them
   at the branch tip made the receipt replay them on built code, so they were
-  restored (L-085 class; W-166 fixes it). Retro next (Codex terra triage).
-- **W-166** spec passed its Codex review (round 14, revision 7), uncommitted
-  in the main checkout (`studio/briefs/W-166.md`, `ci/W-166-spec-1..14.log`);
-  land it with `next W-166 --perform --expect spec`, then build (ladder 3).
+  restored (L-085 class; W-166 fixes it). **Retro owed first**: `next`
+  holds every new opus until it is filed (Codex terra triage, ladder 7).
+- **Republish owed** for checkpoint 60: Status and dossier (both refused
+  for an unviewed live version; the live copies are an older generated
+  build, so read each in full and publish `docs/design/dossier/` builds).
+- **W-166** spec is landed (PR 326, revision 7, Codex review passed at round
+  14). Next: `branch`, `npm ci`, `ready`, Sonnet builder (ladder 3). Its
+  brief's `Red order: one at a time` means reds are recorded one at a time
+  from `.worktrees/W-166`, without `--repo`, each log committed alone right
+  after the code it ran on (the receipt replays reds by the commit that
+  introduced the log).
+- `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
+  (sandbox mounts; "Device or resource busy"); harmless.
 
 ## Artifacts
 
@@ -44,7 +53,7 @@ Order of record: `studio/acta/2026-10-05-ranking.md`. Every new opus gets a
 milestone (`amend <id> --milestone <M> --value <n>`).
 
 1. W-166 — a recorded failing test must come from the code state its brief
-   names (high; L-085; spec review, above).
+   names (high; L-085; build next, above).
 2. W-168 — GitHub CI certifies the merge result (merge queue, master-pinned
    workflow, attested receipt), so a rebase needs no local re-mint (Patron,
    2026-10-08; research in `~/.bisellium-evidence/research-remint/`).
@@ -66,4 +75,8 @@ Not greenlit: W-148, W-155, W-092, W-138, W-122, W-164, W-165 (`review
   stale-handover hold after a failed spec review.
 - To file: a faster `packages/cli/src/next.test.ts` (most of the suite's
   ~11 min); evidence commits and the review packet as a verb; `/api/health`
-  runs check without `--repo` and reports a false blocking problem.
+  runs check without `--repo` and reports a false blocking problem;
+  `next --perform --expect spec` stages only the newest signature and review
+  log, dropping every earlier spec round (W-167 rounds 1-8 and W-166 rounds
+  1-12 had to be committed by hand, PRs 321 and this one); `verify` refuses
+  once the checkpoint's `docs/` edits exist, so verify before writing them.

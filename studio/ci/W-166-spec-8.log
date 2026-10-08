@@ -1,0 +1,18 @@
+# opus: W-166
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T07:55:11.958Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:99c43d139b3d97748511509af7bb06a4e2ed8fa2
+
+## Findings
+1. blocking — brief:98 The section acknowledges `next`’s manifest and Git/worktree reads but gives them no valid domains or fail-closed rejecting functions; the derived-behaviour row at brief:103 does not fully answer review r3 #2. — check: packages/cli/src/next.test.ts W-166-b4
+2. blocking — brief:122 Behaviour 1 promises officina exclusions in every worktree of the command’s repository, but brief:66 and brief:126 preserve an empty exclusion list for an unrelated repository; the promise needs the same-repository limit. — check: packages/cli/src/red-order.test.ts W-166-b1
+3. blocking — brief:191 The default unconditionally says every new opus needs the line at `ready`, contradicting behaviour 5’s guarantee that officinae without `brief_behaviour_limit` are unaffected. — check: packages/cli/src/brief-admission.test.ts W-166-b5
+
+## Verdict
+Revision 4 still has an incomplete input boundary and two promises broader than the implementation can guarantee.
+VERDICT: FAIL
