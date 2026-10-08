@@ -15,26 +15,15 @@ into a lex, a decision or a check rule and delete it here.
 
 Rules, process and environment: studio/leges/production.md.
 
-## Resume point (2026-10-08, session refresh)
+## Resume point (2026-10-08)
 
-- **W-166** (a recorded red certifies the tree its brief names) is done
-  (PR 347; checkpoint row 61). Four build-review rounds, the fourth granted
-  by the Patron (D-048). **Next: its retro** (ladder 7; `next` holds new
-  work until filed), then republish Status and the dossier with a **Haiku
-  subagent** (production lex §7), then **W-168**.
-- Hold every PR while an opus sits between a passing review and its merge
-  (a docs PR forced W-166's second mint).
-- Decided today (Patron): D-047 and its audit (every lesson names a fix,
-  a decline or obsolete; acta 2026-10-08-lesson-audit); D-049 / W-185
-  (records checked once at load; queued after W-168; architecture). Filed:
-  W-169 (lanes under one orchestrator), W-170, W-171, W-172 (greenlit,
-  high), W-173..W-184 (W-177 greenlit). Meta-retro: acta
-  2026-10-08-meta-retro and https://claude.ai/artifact/VkM85if6j7eiucAKcCCzgV.
-- Spec reviews use `studio/prompts/spec-review.md`. Before any re-review
-  the producer checks the fix's census (lex §9 step 4; W-184 enforces).
-  When a brief contradicts itself, take its literal, stricter reading.
+- **W-166** is done, retro filed, pages republished (checkpoint row 61).
+  **Next: W-168** (ladder from step 1), then W-185.
+- Today's rulings live in D-047..D-049 and the actas 2026-10-08-meta-retro
+  and -lesson-audit; new opera W-169..W-185 (W-171, W-172, W-177, W-185
+  greenlit).
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
-  (sandbox mounts; "Device or resource busy"); harmless.
+  (sandbox mounts); harmless.
 
 ## Concurrency readiness (Patron, 2026-10-08)
 
@@ -44,8 +33,9 @@ refusal, a handoff section per lane, retro hold scoped).
 Alongside: W-178 (test count never drops), W-179 (faster next.test.ts, no
 row cut), W-180 (no-vendor flake fixed at cause), W-181 (checkpoint pages
 generated from records), W-182 (smoke suite on a free port), W-093
-(security review per change), W-183 (a host queue for heavy jobs, so n lanes share one machine). One orchestrator for all lanes; step scripts print one-line results. Checked fine: lesson ids (ref-aware
-allocator), the vendor-sentinel lock (per worktree), the served e2e port.
+(security review per change), W-183 (host queue for heavy jobs). One
+orchestrator for all lanes; step scripts print one-line results. Checked
+fine: lesson ids, the vendor-sentinel lock, the served e2e port.
 
 ## Artifacts
 
@@ -86,10 +76,9 @@ Not greenlit: W-148, W-155, W-092, W-138, W-122, W-164, W-165 (`review
 - Follow-ons from W-162: UI opera hold at spec while the spec reviewer is
   set (the verdict writer reserves UI spec verdicts for ui-lead); `next`'s
   stale-handover hold after a failed spec review.
-- To file: a faster `packages/cli/src/next.test.ts` (most of the suite's
-  ~11 min); evidence commits and the review packet as a verb; `/api/health`
+- To file: evidence commits and the review packet as a verb; `/api/health`
   runs check without `--repo` and reports a false blocking problem;
   `next --perform --expect spec` stages only the newest signature and review
   log, dropping every earlier spec round (W-167 rounds 1-8 and W-166 rounds
-  1-12 had to be committed by hand, PRs 321 and this one); `verify` refuses
+  1-12 had to be committed by hand, PRs 321 and 327); `verify` refuses
   once the checkpoint's `docs/` edits exist, so verify before writing them.
