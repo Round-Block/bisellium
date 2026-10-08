@@ -1,0 +1,16 @@
+# opus: W-168
+# phase: spec
+# round: 21
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T22:38:11.404Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:b5df9780f8bd9dea2179f456d628f2d8e40e6a3d
+
+Architect signature for W-168, revision 11, under D-027 and D-050's per-job clause: answers spec review r10 (ci/W-168-spec-20.log). All findings were checked against ci.yml and the code and accepted.
+
+## Findings
+1. advisory: accepted r10 #1 to #22. There is one row each for the jobs gates, officina and web-e2e on merge_group. Each row says its steps run unchanged with no continue-on-error (ci.yml has no continue-on-error key), names the runner's step failure as the rejector, and says the job is a required check. check: scripts/ci-workflow.test.mjs W-168-b1
+2. advisory: accepted r10 #23. Those rows and the contexts row state the merge_group values. github.head_ref is empty, so github.ref_name is the queue branch, whose tip is the merge-group commit; web-e2e's ref-less checkout takes the same commit. github.event_name is merge_group. The scope step is skipped, so record_only is empty and the full path runs. github.workspace and runner.temp are the runner's own. Each value is correct for testing the merge result. check: scripts/ci-workflow.test.mjs W-168-b1
+3. advisory: accepted r10 #24. Queue-mode openPr reads the full HEAD with readRef(wt, "HEAD"), which requires exit 0 and a 40-hex OID through wellFormedOid. absent or error holds before the binding write and before any remote change. check: packages/cli/src/next.test.ts W-168-b3
