@@ -653,9 +653,23 @@ function landed(ctx: Ctx, pr: Pr, extra: string[]): StepResult {
 }
 
 export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
-  const { repo } = ctx;
   if (pr.state === "MERGED") return landed(ctx, pr, []);
   if (pr.state !== "OPEN") return held(`PR #${pr.number} is ${pr.state}`);
+  const mode = readMergeQueue(ctx.repo, pr.repo);
+  if (mode === "direct") {
+    // a head pushed for the queue (no rebase) is merged only through the queue
+    const read = git(ctx.repo, ["config", "--get", queueKey(ctx.head)]);
+    if (read.error !== undefined || read.status !== 1)
+      return { ok: false, lines: [`mode: ${mode}`, `why: PR #${pr.number} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${ctx.head} onto master, which changes the SOURCE tree and needs the local mint again`] };
+  }
+  const done = await gate(ctx, pr, mode);
+  return { ok: done.ok, lines: [`mode: ${mode}`, ...done.lines] };
+}
+
+async function gate(ctx: Ctx, pr: Pr, mode: "merge-queue" | "direct"): Promise<StepResult> {
+  const { repo } = ctx;
+  const queued = mode === "merge-queue";
+  const conflict = (): StepResult => ({ ok: false, lines: ["state=CONFLICT", `why: PR #${pr.number} conflicts with master; rebase ${ctx.head} and resolve it there: that changes the SOURCE tree and needs the local mint again`] });
   const n = String(pr.number);
   let pinned = pr.headRefOid;
   const headMoved = (now: string): StepResult => ({ ok: false, lines: [`state=HEAD_MOVED pinned=${pinned.slice(0, 12)} now=${now.slice(0, 12)}`] });
@@ -670,7 +684,9 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   // A PR that falls behind while its checks run stalls forever (PRs 139, 147): update it first.
   const first = readView(repo, pr);
   if (!first.ok) return held(first.reason);
-  if (first.view.mss === "BEHIND") {
+  if (queued && first.view.mss === "DIRTY") return conflict();
+  // in queue mode a BEHIND PR is never updated: the queue tests it merged with the latest master
+  if (!queued && first.view.mss === "BEHIND") {
     if (!sameIdentity(first.view)) return held(`PR #${pr.number} changed identity under the read`);
     if (first.view.headRefOid !== pinned) return headMoved(first.view.headRefOid);
     ctx.log("update-branch (BEHIND)");
@@ -703,6 +719,8 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   if (!alerts.ok || !Array.isArray(alerts.value)) return { ok: false, lines: ["state=GHAS_STOP", `why: ${alerts.ok ? "the code-scanning reply was not an array" : alerts.reason}`] };
   if (alerts.value.length > 0) return { ok: false, lines: [`state=GHAS_STOP open_alerts=${alerts.value.length}`] };
 
+  // the setup is read again just before the one call that depends on it; any change holds with nothing enqueued
+  if (queued && readMergeQueue(repo, pr.repo) !== "merge-queue") return held("master's merge-queue setup changed while the merge step ran; nothing was enqueued");
   // --auto lets the merge queue serialise PRs that leapfrog each other's update-branch.
   ctx.log("gh pr merge --squash --auto");
   const merge = sh("gh", ["pr", "merge", n, "-R", pr.repo, "--squash", "--auto", "--match-head-commit", pinned], repo);
@@ -721,7 +739,9 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
       pinned = v.headRefOid;
       moved = false;
     } else if (v.headRefOid !== pinned) return headMoved(v.headRefOid);
-    if (v.mss === "BEHIND") {
+    if (queued) {
+      if (v.mss === "DIRTY") return conflict();
+    } else if (v.mss === "BEHIND") {
       ctx.log("update-branch (BEHIND while queued)");
       if (sh("gh", ["pr", "update-branch", n, "-R", pr.repo], repo).status === 0) moved = true;
     } else if (v.mss === "CLEAN") {
