@@ -3589,6 +3589,14 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
   expectStep(n167(passed), "pr", "named", "a valid passed current round names pr");
 
   const w = w167("w167-b1-holds", [F]);
+  // an unreadable ci/ is an error, never zero rounds (an absent one also loses the reds beneath it, so the reds rung names first)
+  const ci = join(w.wt, "studio/ci");
+  try {
+    chmodSync(ci, 0o100); // traversable but not listable, so the reds under it still read
+    reviewHeld(n167(w), "an unreadable ci/ holds", /ci\//);
+  } finally {
+    chmodSync(ci, 0o755);
+  }
   // the round logs
   const rows: [string, (t: string) => string][] = [
     ["a duplicate header", (t) => t.replace("# round: 1\n", "# round: 1\n# round: 1\n")],
@@ -3605,14 +3613,6 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
     trial(w, [{ dir: "wt", rel: LOG167(1), text: mutate }], () => reviewHeld(n167(w), `${name} holds`, /W-900-review-1\.log/));
   for (const name of [`${OPUS}-review-01.log`, `${OPUS}-review-x.log`, `${OPUS}-review-2.txt`])
     trial(w, [{ dir: "wt", rel: `studio/ci/${name}`, text: () => "junk\n" }], () => reviewHeld(n167(w), `the name ${name} holds`, /review-/));
-  // an unreadable ci/ is an error, never zero rounds (an absent one also loses the reds beneath it, so the reds rung names first)
-  const ci = join(w.wt, "studio/ci");
-  try {
-    chmodSync(ci, 0o100); // traversable but not listable, so the reds under it still read
-    reviewHeld(n167(w), "an unreadable ci/ holds", /ci\//);
-  } finally {
-    chmodSync(ci, 0o755);
-  }
   const log = readFileSync(join(w.wt, LOG167(1)), "utf8");
   const elsewhere = join(w.root, "elsewhere.log");
   writeFileSync(elsewhere, log);
