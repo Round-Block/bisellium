@@ -1,0 +1,81 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-166-b1 --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-10-08T10:00:26.727Z
+# sella: builder.W-166
+# tree: tree:d948e276ce3a40afb94e91a312a23043d0dc79ff
+
+TAP version 13
+# Subtest: W-166-b1 behaviour 1: a linked-worktree red hashes with the studio's exclusions
+not ok 1 - W-166-b1 behaviour 1: a linked-worktree red hashes with the studio's exclusions
+  ---
+  duration_ms: 339.460474
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:1:2747'
+  failureType: 'testCodeFailure'
+  error: |-
+    1a: # tree: is the worktree's source tree under the studio exclusions
+    + actual - expected
+    
+    + '# tree: tree:049d25882249449ea91add1cca57483a7417b897'
+    - '# tree: tree:9ff780ef7ffaae2f7976b14ea93e2c7e9fdb0f31'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '# tree: tree:9ff780ef7ffaae2f7976b14ea93e2c7e9fdb0f31'
+  actual: '# tree: tree:049d25882249449ea91add1cca57483a7417b897'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:103:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-166-b1 behaviour 1: a --repo that is another worktree is refused and nothing runs
+not ok 2 - W-166-b1 behaviour 1: a --repo that is another worktree is refused and nothing runs
+  ---
+  duration_ms: 337.00416
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:1:3280'
+  failureType: 'testCodeFailure'
+  error: |-
+    1b: a disagreeing --repo exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:115:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-166-b1 behaviour 1: a symlinked spelling of the cwd's root is accepted
+ok 3 - W-166-b1 behaviour 1: a symlinked spelling of the cwd's root is accepted
+  ---
+  duration_ms: 325.329016
+  type: 'test'
+  ...
+# Subtest: W-166-b1 behaviour 1: a non-Git --repo still records unknown
+ok 4 - W-166-b1 behaviour 1: a non-Git --repo still records unknown
+  ---
+  duration_ms: 316.755338
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 2
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1346.593676
