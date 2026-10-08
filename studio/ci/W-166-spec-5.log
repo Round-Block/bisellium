@@ -1,0 +1,17 @@
+# opus: W-166
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T07:42:43.222Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:c270e79d48d59e4d618b94d9aa292a87e11cc237
+
+Architect signature for W-166, revision 3, under D-027: answers spec review r2 (ci/W-166-spec-4.log). Each finding was checked against the code; all three are accepted, two by narrowing the promise.
+
+## Findings
+1. advisory: accepted r2 #1 by narrowing. Refusing a non-Git --repo would flip the W-020, W-039 and W-089 red rows in lifecycle.test.ts, which pass a non-Git temp dir as --repo while the process cwd is the agent repo. `unknown` certifies no repository, so the decree and behaviour 1 now promise that a red never certifies a repository other than the one its command ran in, and an opted-in red refuses `unknown`. check: packages/cli/src/red-order.test.ts W-166-b1
+2. advisory: accepted r2 #2 by narrowing. runCapture learns of a spawn failure only from the child's error event, so no pre-check is sound across PATH and relative paths. The fail-closed sentence names the target spawn failure as the one exit-2 refusal found after prerequisites ran; it still writes nothing. check: packages/cli/src/red-order.test.ts W-166-b2
+3. advisory: accepted r2 #3. The host replay (scripts/run-builder-host.mjs, replayCell chdir /candidate) already runs `# command:` split on whitespace at the checkout root. An opted-in red now refuses, before running anything, a cwd below its repository root or an argument containing whitespace, so every opted-in log re-splits to its argv at the root where prerequisites re-run. Stated limit: a log not written by an opted-in red is trusted. check: packages/cli/src/red-order.test.ts W-166-b2
+4. advisory: no fixture newly flips; the new refusals apply only under the opt-in line, and no fixture brief carries it. check: none: spec correction

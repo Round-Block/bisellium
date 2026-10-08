@@ -1,0 +1,21 @@
+# opus: W-166
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T07:34:39.459Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:48ec62a4bc0d9500918ec8da26d1b09e29a40425
+
+## Findings
+1. blocking — brief:96 The input table omits `bisellium.yml#source_excludes` and `#brief_behaviour_limit`, although `runRed`/`hashRepo`, the host replay, and `runReady` read them; notably, a scalar `source_excludes` passes `openStudio` and is spread by `red` instead of failing closed. — check: packages/cli/src/red-order.test.ts W-166-b1 and packages/cli/src/brief-admission.test.ts W-166-b5
+2. blocking — brief:96 The wrapped target command has no input-domain row. A misspelled executable is an ordinary mistake, and existing `runCapture` converts its spawn error to exit 1, so `runRed` records a red even though the command never ran, contradicting the certification promised at brief:13. — check: packages/cli/src/red-order.test.ts W-166-b2
+3. blocking — brief:99 `readRedOrder` selects only lines starting exactly `Red order:`, so it cannot guarantee that a misspelt marker is an error rather than an absent legacy opt-in; the promise needs a stated syntactic limit. — check: none: arbitrary misspellings cannot be recognized mechanically
+4. blocking — brief:125 A target that changes a tracked file under `studio/`, `.bisellium`, or `source_excludes` does not move the defined source identity, so the unconditional tracked-file refusal cannot be guaranteed; limit it to tracked files outside the exclusions. — check: packages/cli/src/red-order.test.ts W-166-b2
+5. blocking — brief:13 The unconditional promise that `ready` refuses a new brief without the line conflicts with behaviour 5’s limit to officinae declaring `brief_behaviour_limit` and brief:150’s promise that other officinae are unaffected. — check: packages/cli/src/brief-admission.test.ts W-166-b5
+
+## Verdict
+The signed brief omits live inputs and contains promises that need correction or explicit limits before implementation.
+
+VERDICT: FAIL

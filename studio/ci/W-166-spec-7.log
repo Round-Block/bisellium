@@ -1,0 +1,17 @@
+# opus: W-166
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T07:49:36.292Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:99c43d139b3d97748511509af7bb06a4e2ed8fa2
+
+Architect signature for W-166, revision 4, under D-027: answers spec review r3 (ci/W-166-spec-6.log). Each finding was checked against the code; all three are accepted, two by narrowing the promise.
+
+## Findings
+1. advisory: accepted r3 #1. runRed writes `cmd.join(" ")`, so an empty argument vanishes on re-split; an opted-in red now also refuses an empty argument before running anything. check: packages/cli/src/red-order.test.ts W-166-b2
+2. advisory: accepted r3 #2 by scoping. W-166 adds no read to next: deriveNext already builds `missing` from countBehaviours on the branch brief and each branch red log, and behaviour 4 only names its lowest entry in the order text. One row names that value, rejected by the existing deriveNext; the over-broad "next never names build" sentence is replaced. check: packages/cli/src/next.test.ts W-166-b4
+3. advisory: accepted r3 #3 by narrowing. next.ts redFindings returns [] when the worktree is not usable, and the build rung then holds on `!f.wt.usable`. The promise is now: the shared-tree block reaches reds with a usable worktree; without one next holds at build naming the missing worktree and dispatches nothing. check: packages/cli/src/next.test.ts W-166-b4
+4. advisory: no fixture newly flips. check: none: spec correction

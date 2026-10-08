@@ -1,0 +1,19 @@
+# opus: W-166
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T07:49:12.156Z
+# tree: tree:d5e5b710049d1f635139ca021e84e88319c3e69f
+# brief: briefs/W-166.md blob:c270e79d48d59e4d618b94d9aa292a87e11cc237
+
+## Findings
+1. blocking — brief:102 The no-whitespace rule does not make the flattened `# command:` reversible: an empty argv element contains no whitespace but disappears when the header is split, so an opted-in log need not replay the argv that ran. — check: packages/cli/src/red-order.test.ts W-166-b2
+2. blocking — brief:100 The table omits `next`’s decision inputs: the branch/trunk brief, per-behaviour red logs, and the manifest/Git state gathered with them; the existing rows expressly scope those records to `red`, `check`, or `ready`, leaving no next-specific valid domain and fail-closed rejector. — check: packages/cli/src/next.test.ts W-166-b4
+3. blocking — brief:143 `next` cannot always surface the shared-tree block at `reds`: `redFindings` returns no findings without a usable worktree, after which complete logs let `deriveNext` return a held `build` step. The promise needs a usable-worktree limit or branch-source validation. — check: packages/cli/src/next.test.ts W-166-b4
+
+## Verdict
+Revision 3 still leaves command reconstruction, `next`’s input boundary, and its no-worktree behavior unresolved.
+
+VERDICT: FAIL
