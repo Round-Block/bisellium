@@ -888,6 +888,33 @@ written), and `check` blocks `brief.admission` on an active opus
 predicate. Fenced blocks and HTML comments are ignored, and `## Behaviours to test`
 appears once. Done briefs are never re-read, so history needs no migration.
 
+**Red order (W-166).** A brief that carries the one real line
+`Red order: one at a time` (outside fences and comments; any other spelling of
+that prefix, or a repeat, is an error) opts in to D-036's order. For such a
+brief, `bisellium red <id> --behaviour <n>` first runs every earlier
+behaviour's recorded `# command:` at the repository root, on the same clean
+`tree:` identity, and refuses unless each exits 0 having passed at least one
+test (progress on stderr); it then runs its own command, which must fail and
+leave the tree unchanged outside the studio, `.bisellium` and `source_excludes`.
+The command must run from the repository's root, with `HEAD` reachable from
+`opus/<id>`, and no argument may be empty or contain whitespace, the shape the
+host replay re-splits. `check` blocks (`opus.red_evidence`) an active opted-in
+opus whose reds for two behaviours name one `tree:`. `next` orders one
+behaviour at a time: commit its test, record its red from the worktree, commit
+the log alone, implement, then the next behaviour. Where `bisellium.yml`
+declares `brief_behaviour_limit`, `ready` refuses a new brief without the line
+(after brief admission passes). Briefs without the line behave as before.
+
+For every red, `--repo` may only confirm the repository the command runs in (a
+different Git root is refused; a non-Git `--repo` keeps `# tree: unknown`); a
+red recorded in any worktree of the studio's own repository is hashed with the
+officina's exclusions, so its `tree:` names a commit of the opus branch; a
+malformed `source_excludes` and a command that never starts are refused (exit
+2) with nothing written. A red recorded on the wrong tree is corrected by
+re-recording it with `--cwd` in a detached worktree at the commit it belongs
+on, after the branch's last rebase, and committing its log at the tip; history
+is never rewritten.
+
 ## Sleeps in tests
 
 `check --repo <dir>` runs `test.sleep` (block): a wall-clock wait in a tracked
