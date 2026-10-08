@@ -148,6 +148,13 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 
 ## 11. Standing rules
 
+- No shortcuts in CI or tests (Patron, 2026-10-08). CI certifies at least
+  what the local mint does; a test row is never removed or weakened to save
+  time; a flake is fixed at its cause, never rerun as the remedy. W-178's
+  check enforces the row count once built.
+- Concurrency readiness is the orchestrator's to manage: one lane until
+  W-168, W-083 and W-169 land (with W-178 to W-182 and W-093 alongside);
+  the handoff tracks what is left.
 - A security finding (CodeQL/GHAS alert or security review) is always
   fixed, never dismissed; extra review rounds or receipts it needs are
   pre-approved.
@@ -189,3 +196,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Session handoff's standing instructions, environment, opus ladder and models folded in; still-true standing rules folded in from memory | Producer |
 | 2026-10-08 | Status and dossier republished by a Haiku subagent, never the orchestrator | Patron |
 | 2026-10-08 | Spec review prompt checked in with a round-1 completeness clause (meta-retro) | Patron |
+| 2026-10-08 | No shortcuts in CI or tests; concurrency readiness owned by the orchestrator | Patron |
