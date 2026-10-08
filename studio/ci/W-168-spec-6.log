@@ -1,0 +1,21 @@
+# opus: W-168
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T17:23:38.234Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:52e1187535fce56e081fa8549a6e01670ee827ed
+
+## Findings
+1. blocking — brief:152 The rejecting function named as `check` does not exist; the implementation exports `checkStudio`, so this row fails D-046’s real-function requirement. — check: none: brief.input.rejector.exists
+2. blocking — brief:159 The table covers only selected flags and PR integration reads, omitting `next`’s manifest/source-excludes, opus and brief records, review/red/receipt evidence, Git refs/worktree, step marker and `/proc` inputs that `runNext`, `gather`, and `deriveNext` read before performing `pr` or `merge`. — check: packages/cli/src/next.test.ts
+3. blocking — brief:156 Dependency preparation also reads the candidate/tooling package manifests and lockfiles through `npm ci`, and every workspace `package.json` through `rebaseWorkspaceLinks`; the copied-`node_modules` row names neither these inputs nor a rejector for malformed files. — check: packages/commands/src/run.test.ts
+4. blocking — brief:155 The claimed duplicate-header refusal does not exist: the host runner uses first-match regexes for `# behaviour`, `# command`, and `# tree`, while `identifyRebased` and `classifyReplay` do not reject repeated header lines. — check: packages/commands/src/run.test.ts
+5. blocking — brief:155 The promise that every recorded `not ok` title must reproduce is broader than the existing mint: title comparison occurs only in the W-134 rebased-log fallback, while an ordinarily tree-matched red is accepted on any assertion-level failure. — check: packages/commands/src/run.test.ts
+6. blocking — brief:24 Queue mode is independently re-read by each verb with no persisted binding or configuration-stability limit: if the setup is present for `pr` but removed before or during `merge`, the head skipped the local rebase yet the direct path may update or merge it without the queue certification. — check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+
+## Verdict
+The brief still has blocking input-boundary omissions and guarantees broader than the specified mechanisms.
+VERDICT: FAIL

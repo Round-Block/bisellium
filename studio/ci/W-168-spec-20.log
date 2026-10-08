@@ -1,0 +1,39 @@
+# opus: W-168
+# phase: spec
+# round: 20
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T22:37:23.659Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:fe1fe217cf0ae645ffa3124d27bce9f8d4cdc9dd
+
+## Findings
+1. blocking — brief:28 The added `merge_group` execution of `gates` runs its `actions/checkout@v5` call, but the Input domain has no row naming that call, its zero-exit domain, and the runner’s step failure as rejector. — check: none: brief.input.reused-call-coverage
+2. blocking — brief:28 The added `gates` path runs `actions/setup-node@v5` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+3. blocking — brief:28 The added `gates` path runs `npm ci` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+4. blocking — brief:28 The added `gates` path runs the typecheck command without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+5. blocking — brief:28 The added `gates` path runs the lint command without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+6. blocking — brief:28 The added `gates` path runs the format check without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+7. blocking — brief:28 The added `gates` path runs the bubblewrap apt installation without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+8. blocking — brief:28 The added `gates` path runs the user-namespace `sysctl` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+9. blocking — brief:28 The added `gates` path runs `npm test` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+10. blocking — brief:28 The added `gates` path runs `ci-scope.mjs --check-reads` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+11. blocking — brief:28 The added `gates` path runs the sample-studio check without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+12. blocking — brief:28 The added `merge_group` execution of `officina` runs `actions/checkout@v5` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+13. blocking — brief:28 The added `officina` path runs `actions/setup-node@v5` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+14. blocking — brief:28 The added `officina` path runs `npm ci` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+15. blocking — brief:28 The added `officina` path runs `check -- studio` without a row naming this workflow call and the runner’s step failure; the mint’s separate `checkStudio`/`runCi` rows do not cover it. — check: none: brief.input.reused-call-coverage
+16. blocking — brief:28 The added `merge_group` execution of `web-e2e` runs `actions/checkout@v5` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+17. blocking — brief:28 The added `web-e2e` path runs `actions/setup-node@v5` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+18. blocking — brief:28 The added `web-e2e` path runs `npm ci` without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+19. blocking — brief:28 The added `web-e2e` path runs the `rm -rf apps/web/dist` step without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+20. blocking — brief:28 The added `web-e2e` path runs the web build without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+21. blocking — brief:28 The added `web-e2e` path runs Playwright installation without a corresponding call-level Input-domain row. — check: none: brief.input.reused-call-coverage
+22. blocking — brief:28 The added `web-e2e` path runs the served-console suite without a corresponding call-level Input-domain row; the mint’s separate `served-e2e.mjs` row is a different call. — check: none: brief.input.reused-call-coverage
+23. blocking — brief:28 The newly exercised workflow expressions also read `github.head_ref`, `github.ref_name`, `github.workspace`, `runner.temp`, `github.event_name`, and the skipped scope step’s output, but their merge-group domains and fail-closed consumers are absent; brief:166 covers only the certify job and omits several of these contexts. — check: none: brief.input.changed-reader-coverage
+24. blocking — brief:247 Queue-mode `openPr` must obtain the full current `HEAD` OID to write and later expose the promised binding value, but no row names that new read, its 40-hex domain, or a rejector for a failed/malformed read; the only `HEAD` row at brief:148 is the post-push short display. — check: packages/cli/src/next.test.ts W-168-b3
+
+## Verdict
+The brief still omits the call-level boundaries for the existing jobs newly run on merge groups and one new binding input.
+VERDICT: FAIL

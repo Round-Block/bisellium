@@ -1,0 +1,25 @@
+# opus: W-168
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T16:59:27.189Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:5b5106f6c7d77d52d2d47339a8516f505930f205
+
+## Findings
+1. blocking — brief:62 The CLI also reads `--candidate`, `--studio`, the tooling checkout/current directory and their filesystem/Git identities, but the Input domain gives none of them a valid containment/domain rule or rejecting function; a mistaken path can target the wrong checkout before certification. — check: scripts/ci-certify.test.mjs W-168-b1
+2. blocking — brief:102 “a `repository.full_name`” is not a valid domain: the value is used in `gh -R` but is neither constrained to the repository-slug grammar nor bound to the candidate’s origin. — check: scripts/ci-certify.test.mjs W-168-b2
+3. blocking — brief:107 The mint row validates only the child exit, while the invoked existing mint transitively reads the complete manifest/builder seat, opus record, signed brief and `Files owned`, numbered behaviours, red logs and their history, probationes/evidence, branch/master refs and prepared dependencies; those records have no domains and named rejectors in this Input section. — check: scripts/ci-certify.test.mjs W-168-b2
+4. blocking — brief:92 The changed `openPr` still reads the current branch, tracked-worktree state, fetched trunk, SOURCE hashes, repository slug and PR-create inputs, but none appears in the Input domain with its existing fail-closed reader. — check: packages/cli/src/next.test.ts W-168-b3
+5. blocking — brief:109 The single merge-state row does not cover the other records the changed `mergeGate` reads: the pinned PR/view identity, check list and buckets, code-scanning alert reply, repeated poll views, merge result and landed Git refs each need a domain and rejecting function. — check: packages/cli/src/next.test.ts W-168-b4
+6. blocking — brief:52 The rules domain is existential for `merge_queue`: an active-rules array containing one matching queue rule and another differently configured queue rule still qualifies, contradicting “anything else” becoming direct mode. — check: packages/cli/src/next.test.ts W-168-b3
+7. blocking — brief:28 The existing host runner does not fully use master’s prepared tooling dependencies: it sets `hostModules` to `<candidate>/node_modules` and copies that tree into both its candidate and master-tooling clones, so a PR dependency change can alter the purportedly master-pinned gate tooling despite the separate `npm ci` in `tooling`. — check: scripts/ci-certify.test.mjs W-168-b2
+8. blocking — brief:98 “Writing … nothing” cannot be guaranteed for every refusal: fetched-head/base mismatches are detected only after `git fetch`, and rebase/tree failures occur after checkout, branch and rebase mutations, while every attempted step is also logged. — check: scripts/ci-certify.test.mjs W-168-b2
+9. blocking — brief:94 `openPr` is specified to read mode only after its on-branch, dirty and `fetchTrunk` checks, so any of those early refusals returns before a mode exists and cannot also satisfy the promise that the verb always prints mode as its first result line. — check: packages/cli/src/next.test.ts W-168-b3
+10. blocking — brief:179 `readMergeQueue` checks only a subset of the Patron setup, omitting minimum group size/wait, grouping strategy, timeout and the other required contexts, so configurations short of the full setup can still change `next` to queue mode. — check: packages/cli/src/next.test.ts W-168-b3
+
+## Verdict
+The brief does not yet give a complete fail-closed input boundary, and several absolute guarantees exceed the specified mechanisms.
+VERDICT: FAIL

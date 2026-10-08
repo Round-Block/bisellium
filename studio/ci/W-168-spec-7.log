@@ -1,0 +1,17 @@
+# opus: W-168
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T17:32:46.235Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:fee492d7fc27b5c2232ee9da8a3a71ae4958fdf4
+
+Architect signature for W-168, revision 4, under D-027: answers spec review r3 (ci/W-168-spec-6.log). Each finding was checked against the code and accepted. The design is unchanged except for one fail-closed queue binding (#6). Both classes were swept over every row.
+
+## Findings
+1. advisory: accepted r3 #2 and #3 by changing method. The Input domain now comes from a mechanical enumeration: ~/.bisellium-evidence/W-168-spec/enumerate-reads.mjs (TypeScript AST, call graph closed by name from runNext, openPr, mergeGate, runCommand, runBuilderCommand, the host runner's top level, runCi, runVerify, checkStudio, classifyReplay and readSourceExcludes) with its output reads.txt (445 functions, 139 with reads). Every fs, Git, gh, env, /proc, parse and subprocess read falls in a row, grouped under new/changed, reused next, and reused mint. The rows cover next's gather families (refs and worktree, records, spec evidence, reds, receipt and rounds, UI, marker and /proc, done-only reads), npm ci on both manifests and lockfiles, and rebaseWorkspaceLinks' workspace package.json reads. check: none: existing readers, unchanged
+2. advisory: accepted r3 #1. Every cited camelCase or one-word function name is checked against a definition by check-names.sh, with its output in names.txt beside the enumeration; nothing is missing. check is now checkStudio, through runStep in runCi. countBehaviours is cited at packages/commands/src/brief-admission.ts. check: none: spec text
+3. advisory: accepted r3 #4 and #5. The red row states what the mint does: first-match # behaviour, # command and # tree headers, the behaviour not repeated across logs, a tree-matched commit replayed on any assertion-level failure, and titles compared only on the W-134 fallback. Repeated header lines are a stated limit. The parity row is narrowed the same way. check: none: existing readers, unchanged
+4. advisory: accepted r3 #6 with a binding. The suggested receipt answer was checked and does not hold: admitCurrentRunReceipt binds the head's own tree, which a non-rebased head keeps, so deriveNext still names merge. openPr in queue mode now sets git config branch.opus/<id>.bisellium-queue after its push, and direct-mode openPr unsets it. mergeGate in direct mode holds a bound PR before any gh write. Removing the queue while a PR waits in it is a stated limit, and Patron setup 4 says to empty the queue first and restore up-to-date branches. Behaviours 3 and 4 gain rows. check: packages/cli/src/next.test.ts W-168-b3/W-168-b4

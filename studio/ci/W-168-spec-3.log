@@ -1,0 +1,19 @@
+# opus: W-168
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T17:04:45.895Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:f6a35b833db39e35d34a8fb46897a7c91e2522c8
+
+Architect signature for W-168, revision 2, under D-027: answers spec review r1 (ci/W-168-spec-2.log). Each finding was checked against the code and accepted. The brief was swept for every other instance of each class.
+
+## Findings
+1. advisory: accepted r1 #1, #2 and #8. The CLI's argv goes through readCertifyArgs (new). certify binds the candidate's HEAD to head_sha and the tooling's HEAD to base_sha, requires them to be distinct work-tree roots, contains --studio, and requires repository.full_name to be a slug equal to the candidate's origin. "Writing nothing" is narrowed: phase A refusals run no writing Git command, which a refs-snapshot row checks; phase B moves only the disposable candidate; no refusal mints. check: scripts/ci-certify.test.mjs W-168-b2
+2. advisory: accepted r1 #3, #4 and #5. The records that the reused mint (runCommand, runBuilderCommand, filesOwned, countBehaviours, identifyRebased, classifyReplay, assertSelfContained, runCi/runVerify), openPr (dirtyHold, fetchTrunk, repoSlug) and mergeGate (readView, readChecks, the GHAS read, landed) read transitively are now Input domain rows, each naming its existing fail-closed reader. W-168 changes none of them. check: none: existing readers, unchanged
+3. advisory: accepted r1 #6 and #10. readMergeQueue requires exactly one merge_queue entry whose parameters equal the seven-key setup, all required-checks rules non-strict, and the four contexts. 100 or more entries is direct. The promise is narrowed to these two rule types; other rule types keep their own effect. Behaviour 3 lists a direct-mode row per departure. check: packages/cli/src/next.test.ts W-168-b3
+4. advisory: accepted r1 #7 as a stated limit (b). run-builder-host.mjs copies the repository's node_modules, here the candidate's, into its master-tooling clone and relinks only @bisellium/*. So third-party packages are the PR's, exactly as in today's local mint. The candidate's npm ci lifecycle scripts are limit (c). Closing (b) changes the host runner for both mints and is named as a follow-on. check: none: stated limit
+5. advisory: accepted r1 #9. The mode line is promised only once a verb reaches its mode read: after openPr's on-branch, dirty and fetchTrunk checks, and after mergeGate's MERGED and not-OPEN returns. Behaviour 3 adds a dirty-tree row that prints no mode. check: packages/cli/src/next.test.ts W-168-b3
+6. advisory: sweep. The tree check is now whole-tree equality, so the minted studio is the merge group's and the host runner's tolerant source_excludes read only sees the value readSourceExcludes accepted. sourceTreeHash is no longer used. The decree's "every step as today" is narrowed to pr and merge, plus the mode line. check: scripts/ci-certify.test.mjs W-168-b2

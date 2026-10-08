@@ -1,0 +1,16 @@
+# opus: W-168
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T17:42:40.553Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:373f492ff42e352c589b38cbccd6b09c53158a04
+
+Architect signature for W-168, revision 5, under D-027: answers spec review r4 (ci/W-168-spec-8.log). Each finding was checked against the code and accepted. Where a fix could either remove surface or add it, the brief removes it. The whole brief was swept for contradictory domains, fixtures that cannot meet their own checks, promises whose mechanism adds a write or failure path, and fields read without a type.
+
+## Findings
+1. advisory: accepted r4 #1 and #7. Queue-mode openPr writes the binding before its push, so a failed write holds before any remote change and a crash leaves the key set, which holds. Direct mode reads the key first. When it is absent (exit 1) there is no other binding call. When it is present, the unset runs only after a successful push, and a failed unset holds with the key kept. The decree, behaviour 3, Acceptance and Default 6 now name exactly what is added: the mode line and one local read. A lock-file row tests the failed write. check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+2. advisory: accepted r4 #3 and #5. The candidate and the tooling are each their own work-tree top level. The studio is a directory strictly inside the candidate's top level. The origin is compared from git config --get remote.origin.url, before insteadOf, and the fixture states the configured URL, the rewrite, base_sha, the studio and the merge-group commit. check: scripts/ci-certify.test.mjs W-168-b2
+3. advisory: accepted r4 #2, #4 and #6. The PR read types every field, and a missing or non-string headRefName exits 2. readManifest is named as the YAML reader: an unreadable file or malformed YAML throws, and a throw or non-mapping exits 2 before readSourceExcludes. The argv row gives the positional id's domain (exactly one, ID_RE, then safeItemPath, then a known record) and its rejectors (parseArgs, runNext). Sweep: readMergeQueue now types its entries and its required-check parameters. check: scripts/ci-certify.test.mjs W-168-b2; packages/cli/src/next.test.ts W-168-b3

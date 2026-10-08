@@ -1,0 +1,17 @@
+# opus: W-168
+# phase: spec
+# round: 15
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T18:15:09.097Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:9b7a41ae380fb1babba04b1fa7586079c9c1f462
+
+Architect signature for W-168, revision 8, under D-027: answers spec review r7 (ci/W-168-spec-14.log). All four findings were checked against the code and accepted. Every reader W-168 adds or changes was swept for its domain, its failure mode, and whether the mode still holds between its read and its write.
+
+## Findings
+1. advisory: accepted r7 #1. The decree now requires a successful rules read whose reply is exactly the setup. Any other reply, including a gh error or a malformed or truncated one, is direct mode, even when the setup is in fact active. check: packages/cli/src/next.test.ts W-168-b3
+2. advisory: accepted r7 #2 with the fail-closed recheck. Queue-mode mergeGate re-reads the rules immediately before gh pr merge. Any result but merge-queue holds with no gh write, and the binding is kept. Direct mode needs no recheck: a queue appearing mid-step only turns --auto into an enqueue. The step marker serializes one opus's steps, so the binding cannot change between its read and a write. Patron setup 4's limit is narrowed to a PR already waiting in the queue. Behaviour 4 gains a recheck row. check: packages/cli/src/next.test.ts W-168-b4
+3. advisory: accepted r7 #3. openPr's direct-mode sourceTreeHash reads have a row. The input is git ls-tree -r HEAD minus ctx.excludes (the studio, .bisellium and the validated source_excludes). A git failure throws, and runNext's catch ends the step before any push. Unequal hashes hold before the push. check: packages/cli/src/next.test.ts W-168-b3
+4. advisory: accepted r7 #4. served-e2e.mjs has a row: the claim needs an opus id matching its pattern and an absolute studio; a symlinked component exits 1; at most 64 PNG names matching its pattern, at least one with a claim; each PNG is read whole and a file under 24 bytes throws. The rejectors are the script's top level and refuseSymlinks, and the pipeline marks a non-zero exit failed. check: none: existing readers, unchanged

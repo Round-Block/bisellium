@@ -1,0 +1,19 @@
+# opus: W-168
+# phase: spec
+# round: 14
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T18:13:43.313Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:7ea24997d0c20a5afef1e87b0197cb607fde1619
+
+## Findings
+1. blocking — brief:13 The decree conditions queue behavior on the actual active rules, but `readMergeQueue` maps a `gh` error to direct mode; thus a fully configured repository with a transient read failure does not satisfy the promised queue behavior. The promise needs a successful in-domain rules-read condition. — check: packages/cli/src/next.test.ts W-168-b3
+2. blocking — brief:13 The mode is read once before checks and polling, so the setup can be removed before `gh pr merge`; queue mode ignores the binding and may then enable a direct merge of the unre-based head. The turn-off guidance at brief:279 does not cover a queue-bound PR still polling before enqueue, so a configuration-stability limit or a fail-closed recheck is required. — check: packages/cli/src/next.test.ts W-168-b4
+3. blocking — brief:163 `reads.txt` includes `sourceTreeHash <- openPr`, whose pre/post-rebase SOURCE-tree reads decide whether pushing is allowed, but this input row names neither that tree/exclusion domain nor a rejecting function for it. The refs/worktree row covers ref availability, not the contents consumed by this separate reader. — check: packages/cli/src/next.test.ts W-168-b3
+4. blocking — brief:190 `reads.txt` shows that `scripts/served-e2e.mjs` reads `BISELLIUM_OPUS`, `BISELLIUM_STUDIO_DIR`, the shots directory, and every generated PNG; the row states only the symlink and child-exit checks, omitting the existing ID/path, count, filename, nonempty-output, and file-read domains and their rejecting top-level function. — check: scripts/served-e2e.test.mjs
+
+## Verdict
+The brief still has configuration-observation promises broader than its mechanism and omits two live input families from its fail-closed boundary.
+VERDICT: FAIL

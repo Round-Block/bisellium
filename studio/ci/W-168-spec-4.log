@@ -1,0 +1,21 @@
+# opus: W-168
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T17:11:49.782Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:f6a35b833db39e35d34a8fb46897a7c91e2522c8
+
+## Findings
+1. blocking — brief:71 The queue-mode domain checks required-check names but not each context’s `integration_id`, even though the Patron setup binds `certify` to GitHub Actions integration 15368; mistakenly requiring a same-named check from another source would select queue mode without requiring this certifier. — check: packages/cli/src/next.test.ts W-168-b3
+2. blocking — brief:156 The Input domain starts with `pr view`, but `next` first reads `gh pr list` through `identifyPr` to select the PR passed to both changed paths; its array, repository/head/base/fork identity, ambiguity, and newest-PR domains and its real rejector are absent. — check: packages/cli/src/next.test.ts W-168-b3
+3. blocking — brief:155 The PR-creation row gives no valid domain or rejecting function for `--title` and `--body-file`, which `next` reads and `openPr` passes to `gh pr create`; their actual bounds, containment, and regular-file checks live in `parseArgs`. — check: packages/cli/src/next.test.ts W-168-b3
+4. blocking — brief:156 The changed merge path reads `--poll-ms` and `--max-polls` through `Ctx`, but the Input domain omits their numeric bounds and the existing `parseArgs` rejector. — check: packages/cli/src/next.test.ts W-168-b4
+5. blocking — brief:146 The reused mint reads more of `bisellium.yml` than seats and `source_excludes`: `studio`, `collegia`, the complete probationes rows, and the mapping/list shapes are consumed by `runCommand`, the host runner, and `runVerify`, but their valid domains and rejecting functions are not stated; “any failing gate fails” at line 151 is not a domain. — check: packages/commands/src/run.test.ts
+6. blocking — brief:147 The reused mint reads the complete `opera/<id>.md` through `markIsolatedBuilderRuntime`, the host runner, `snapshotDir`, `recordOwnerRefusal`, and `effectiveProbationes`, including `kind`, `state`, ownership, and probationes; the row specifies only the runtime marker and receipt attachment, leaving the rest of that record without domains or named rejectors. — check: packages/commands/src/run.test.ts
+
+## Verdict
+The required-check binding and several inputs to the changed and reused paths remain outside the stated fail-closed boundary.
+VERDICT: FAIL

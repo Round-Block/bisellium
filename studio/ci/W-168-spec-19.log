@@ -1,0 +1,17 @@
+# opus: W-168
+# phase: spec
+# round: 19
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T22:30:11.533Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:fe1fe217cf0ae645ffa3124d27bce9f8d4cdc9dd
+
+Architect signature for W-168, revision 10, under D-027 and the clarified D-050: answers spec review r9 (ci/W-168-spec-18.log). All findings were checked and accepted.
+
+## Findings
+1. advisory: accepted r9 #1 to #9. Each workflow-step row now names, as its rejector, the runner's step failure per D-050. The row names the step, says it has no continue-on-error, and says a non-zero exit fails job certify, a required check. The GitHub-contexts row says the same for step 9. check: scripts/ci-workflow.test.mjs W-168-b1
+2. advisory: accepted r9 #10 and #11 as a stated limit. The git rev-parse --short master and HEAD reads after openPr's push and in landed are display only. A failed read prints an empty value, and PR= and state=MERGED are decided by the checked calls before them. check: none: stated limit
+3. advisory: accepted r9 #12 as a stated limit. The rules recheck and gh pr merge --auto are separate calls, so a queue removed between them is outside D-045's mistake model. Patron setup 4 says to empty the queue first. check: none: stated limit
+4. advisory: accepted r9 #13. Every mention now says GitHub removes a PR whose merge group fails from the queue, and that it is not re-queued on its own. check: none: spec text
