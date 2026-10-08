@@ -23,7 +23,7 @@ import { parseFrontMatter, readFront, resolveSeat, type Manifest } from "@bisell
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { MILESTONE_VALUES } from "@bisellium/core";
 import { WF, instant } from "@bisellium/schema";
-import { readBriefAdmission, readBriefLimit } from "./brief-admission.js";
+import { readBriefAdmission, readBriefLimit, readRedOrder } from "./brief-admission.js";
 import { builderRuntimeObligation, editOpusFrontMatter, ISOLATED_BUILDER_RUNTIME } from "./frontmatter.js";
 import { admitCurrentRunReceipt } from "./builder-run.js";
 import {
@@ -41,7 +41,7 @@ import {
   type OpusModelProblem,
 } from "./opus-model.js";
 import { ensureRealDirectory } from "./ids.js";
-import { countedFailures, readBuildReviewConfig, readBuildRounds, type BuildReviewRound } from "./verdict.js";
+import { countedFailures, readBuildReviewConfig, readBuildRounds, readSourceExcludes, type BuildReviewRound } from "./verdict.js";
 import {
   emitEvent,
   mintDispatchSella,
@@ -827,16 +827,61 @@ function safeRedsDir(studioRoot: string, opusId: string): string | { error: stri
 /** Runs `cmd` (cwd: `--cwd` when given, else the caller's own), collecting
  *  stdout+stderr in the order the OS actually delivers them — real
  *  chronological combination, which is why this (unlike ready/done/review)
- *  has to be async. */
-function runCapture(cmd: string[], cwd: string): Promise<{ exitCode: number; output: string }> {
+ *  has to be async. `spawnError` is set when the executable never started
+ *  (its `error` event); `exitCode` is then 1, as before. */
+function runCapture(cmd: string[], cwd: string): Promise<{ exitCode: number; output: string; spawnError?: string }> {
   return new Promise((done) => {
     const child = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ["ignore", "pipe", "pipe"] });
     let output = "";
     child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString("utf8")));
     child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString("utf8")));
-    child.on("error", (err) => done({ exitCode: 1, output: output + `\n[red] failed to run command: ${(err as Error).message}\n` }));
+    child.on("error", (err) =>
+      done({ exitCode: 1, output: output + `\n[red] failed to run command: ${(err as Error).message}\n`, spawnError: (err as Error).message }),
+    );
     child.on("close", (code) => done({ exitCode: code ?? 1, output }));
   });
+}
+
+/** exit 0 and output counting at least one passed test: node TAP or spec, or playwright. */
+function prerequisitePassed(run: { exitCode: number; output: string }): boolean {
+  return run.exitCode === 0 && (/^(?:# |ℹ )pass [1-9]/m.test(run.output) || /^\s*[1-9]\d* passed\b/m.test(run.output));
+}
+
+/** W-166: does this opus's brief opt in to the one-at-a-time red order? No contract when the record is absent
+ *  or names no `spec`; otherwise the record and its brief are contained regular files and the brief's line
+ *  (`readRedOrder`) decides. */
+function redOrderOptIn(root: string, opusId: string): { optedIn: boolean } | { error: string } {
+  const record = readContainedRegularFile(root, `opera/${opusId}.md`, "opera");
+  if ("error" in record) return record.code === "ENOENT" ? { optedIn: false } : { error: `red: ${opusId}: opera/${opusId}.md: ${record.error}` };
+  let spec: unknown;
+  try {
+    spec = parseFrontMatter<{ spec?: unknown }>(record.bytes.toString("utf8"), `opera/${opusId}.md`).data.spec;
+  } catch (e) {
+    return { error: `red: ${opusId}: ${(e as Error).message}` };
+  }
+  if (spec === undefined) return { optedIn: false };
+  const brief = typeof spec === "string" ? readContainedRegularFile(root, spec, "briefs") : { error: "spec must be a string" };
+  if ("error" in brief) return { error: `red: ${opusId}: no safe spec at ${String(spec)} — ${brief.error}` };
+  const order = readRedOrder(brief.bytes.toString("utf8"));
+  if ("error" in order) return { error: `red: ${opusId}: ${spec}: ${order.error}` };
+  return { optedIn: order.declared };
+}
+
+/** Behaviours 1..n-1's recorded commands, each split on whitespace as the host replay does; every log must be
+ *  present, contained and regular, with exactly one non-empty `# command:` header. */
+function prerequisiteCommands(root: string, opusId: string, n: number): { commands: string[][] } | { error: string } {
+  const commands: string[][] = [];
+  for (let k = 1; k < n; k++) {
+    const rel = `ci/reds/${opusId}/${String(k).padStart(2, "0")}.log`;
+    const log = readContainedRegularFile(root, rel, "ci");
+    if ("error" in log) return { error: `red: behaviour ${k} has no usable ${rel} — ${log.error}` };
+    const header = log.bytes.toString("utf8").split(/\r?\n\r?\n/)[0]!.split(/\r?\n/);
+    const named = header.filter((l) => l.startsWith("# command:"));
+    const argv = (named[0] ?? "").slice("# command:".length).trim().split(/\s+/).filter((a) => a.length > 0);
+    if (named.length !== 1 || argv.length === 0) return { error: `red: ${rel} must carry exactly one non-empty "# command:" header` };
+    commands.push(argv);
+  }
+  return { commands };
 }
 
 export async function runRed(args: string[], opts: WriteOptions = {}): Promise<WriteResult> {
@@ -908,6 +953,12 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     return { exitCode: 2 };
   }
   const sella = namedResult;
+  const excluded = readSourceExcludes(manifest);
+  if ("error" in excluded) {
+    console.error(`red: ${excluded.error}`);
+    return { exitCode: 2 };
+  }
+  const sourceExcludes = excluded.excludes;
   const cwdFlag = values.get("--cwd");
   const execCwd = cwdFlag !== undefined ? resolve(cwdFlag) : process.cwd();
 
@@ -923,7 +974,7 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
       const studioGit = findGitRoot(root);
       const same = studioGit !== undefined && gitCommonDir(repoDir) !== undefined && gitCommonDir(repoDir) === gitCommonDir(root);
       const excludeDirs = same
-        ? [relative(studioGit, realpathSync(root)).split(sep).join("/"), ".bisellium", ...(manifest.source_excludes ?? [])]
+        ? [relative(studioGit, realpathSync(root)).split(sep).join("/"), ".bisellium", ...sourceExcludes]
         : [];
       const hash = sourceTreeHash(repoDir, excludeDirs, "HEAD");
       const dirty = isDirtyOutside(repoDir, excludeDirs);
@@ -944,10 +995,62 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
   }
   const treeHeader = "header" in repository ? repository.header : hashRepo(repository.root);
 
-  const { exitCode: cmdExit, output } = await runCapture(cmd, execCwd);
+  // W-166: a brief that carries "Red order: one at a time" opts in. Everything below is refused (exit 2)
+  // before any command runs; without the line the red behaves as it always did.
+  const optIn = redOrderOptIn(root, opusId);
+  if ("error" in optIn) {
+    console.error(optIn.error);
+    return { exitCode: 2 };
+  }
+  let prerequisites: string[][] = [];
+  if (optIn.optedIn) {
+    const refuse = (why: string): WriteResult => {
+      console.error(`red: ${opusId} declares "Red order: one at a time": ${why}`);
+      return { exitCode: 2 };
+    };
+    if (!("root" in repository) || !treeHeader.startsWith("tree:"))
+      return refuse(`the red needs a clean "tree:" identity, not "${treeHeader}"; commit the tests first, then re-record`);
+    if (realpathSync(execCwd) !== repository.root) return refuse(`run it from the repository root ${repository.root}, not ${execCwd}`);
+    try {
+      execFileSync("git", ["merge-base", "--is-ancestor", "HEAD", `refs/heads/opus/${opusId}`], {
+        cwd: repository.root,
+        timeout: GIT_TIMEOUT_MS,
+        stdio: ["ignore", "ignore", "ignore"],
+      });
+    } catch {
+      return refuse(`HEAD is not on refs/heads/opus/${opusId}; record it in that branch's worktree`);
+    }
+    if (cmd.some((a) => a.length === 0 || /\s/.test(a))) return refuse("every argument after \"--\" must be non-empty and free of whitespace, so the host replay re-splits it");
+    const listed = prerequisiteCommands(root, opusId, behaviour);
+    if ("error" in listed) {
+      console.error(listed.error);
+      return { exitCode: 2 };
+    }
+    prerequisites = listed.commands;
+  }
+  for (const [i, argv] of prerequisites.entries()) {
+    console.error(`red: prerequisite behaviour ${i + 1}: ${argv.join(" ")}`);
+    const ran = await runCapture(argv, execCwd);
+    if (!prerequisitePassed(ran)) {
+      console.error(`red: behaviour ${i + 1}'s recorded command did not pass (exit ${ran.exitCode}, at least one passed test required) — nothing recorded`);
+      return { exitCode: 1 };
+    }
+  }
+
+  const { exitCode: cmdExit, output, spawnError } = await runCapture(cmd, execCwd);
+
+  if (spawnError !== undefined) {
+    console.error(`red: failed to run command: ${spawnError} — nothing recorded`);
+    return { exitCode: 2 };
+  }
 
   if (cmdExit === 0) {
     console.error(`red: command exited 0 — that command passed, nothing recorded`);
+    return { exitCode: 1 };
+  }
+
+  if (optIn.optedIn && hashRepo((repository as { root: string }).root) !== treeHeader) {
+    console.error(`red: the commands changed the tree outside the exclusions (it was ${treeHeader}) — nothing recorded`);
     return { exitCode: 1 };
   }
 

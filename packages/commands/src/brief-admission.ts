@@ -178,3 +178,19 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
   problems.push(...inputDomainProblems(real));
   return exception === undefined ? { problems } : { problems, exception };
 }
+
+const RED_ORDER_LINE = "Red order: one at a time";
+
+/** W-166: the brief-level opt-in to D-036's one-at-a-time red order. A marker attempt is a real line (outside
+ *  fences and comments) whose trimmed text matches `/^red[\s_-]*order\s*:/i`. None: not declared. Exactly one,
+ *  equal to "Red order: one at a time": declared. Otherwise an error. Limit: a misspelling that no longer
+ *  matches that prefix (e.g. "Redorder:") reads as absent. */
+export function readRedOrder(briefText: string): { declared: boolean } | { error: string } {
+  const attempts = realLines(briefText)
+    .map((l) => l.trim())
+    .filter((l) => /^red[\s_-]*order\s*:/i.test(l));
+  if (attempts.length === 0) return { declared: false };
+  if (attempts.length > 1) return { error: `declares ${attempts.length} red order lines; one line "${RED_ORDER_LINE}" or none` };
+  if (attempts[0] !== RED_ORDER_LINE) return { error: `red order line "${attempts[0]}" is not exactly "${RED_ORDER_LINE}"` };
+  return { declared: true };
+}

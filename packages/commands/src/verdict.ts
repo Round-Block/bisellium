@@ -576,13 +576,19 @@ export function readBuildReviewConfig(manifest: Manifest): { config: BuildReview
   if (seat["retired"] !== undefined && seat["retired"] !== false) return bad(`the censor ${censor} is retired; it must be a live seat`);
   if (seat["kind"] !== "agent") return bad(`the censor ${censor} must be kind: agent`);
   if (isBuilderClassSeat(resolveSeat({ sellae: [{ id: censor }] }, censor))) return bad(`the censor ${censor} is builder-class; review and verdict would record a minted instance, not ${censor}`);
-  let sourceExcludes: string[] = [];
-  if ("source_excludes" in m) {
-    const raw = m["source_excludes"];
-    if (!Array.isArray(raw) || !raw.every(nonEmpty)) return bad("source_excludes must be a list of non-empty strings, or absent");
-    sourceExcludes = raw;
-  }
-  return { config: { reviewId, censor, sourceExcludes } };
+  const excluded = readSourceExcludes(manifest);
+  if ("error" in excluded) return excluded;
+  return { config: { reviewId, censor, sourceExcludes: excluded.excludes } };
+}
+
+/** W-166: the one reader of `source_excludes` (moved out of `readBuildReviewConfig`, same message). Absent is
+ *  `[]`; a list of non-empty strings is that list; anything else, `null` included, is an error. */
+export function readSourceExcludes(manifest: Manifest): { excludes: string[] } | { error: string } {
+  const m: unknown = manifest;
+  if (!isDict(m) || !("source_excludes" in m)) return { excludes: [] };
+  const raw = m["source_excludes"];
+  if (!Array.isArray(raw) || !raw.every(nonEmpty)) return { error: "bisellium.yml: source_excludes must be a list of non-empty strings, or absent" };
+  return { excludes: raw };
 }
 
 /**
