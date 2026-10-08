@@ -1114,6 +1114,52 @@ scratch checkout is untouched. Exit codes: 0 every step passed (with
 failed, 2 usage error, no git repo for `--ref`, or a ref that cannot be
 checked out.
 
+## Merge queue
+
+W-168. `next`'s `pr` and `merge` steps run in one of two modes, read from
+master's active rules on GitHub (`gh api repos/<slug>/rules/branches/master?per_page=100`,
+which the agents' non-admin token can read) and printed as the first line of
+the step's result, `mode: merge-queue` or `mode: direct`.
+
+The mode is `merge-queue` only when that read succeeds and its reply is
+exactly the queue the Patron sets up: one `merge_queue` rule (squash, one PR
+per group, build concurrency 1, minimum and maximum group size 1, wait time 0,
+all queue entries must pass, status check timeout 120 minutes), and
+required status checks `gates`, `officina`, `web-e2e` and `certify`, each
+from GitHub Actions (integration 15368), with "require branches to be up to
+date" off. Any other reply, a `gh` error or a malformed or truncated one
+included, is `direct`, even when the setup is in fact active.
+
+In `merge-queue` mode:
+
+- `pr` pushes the reviewed head as it is, without a rebase, and records that
+  head in the local Git key `branch.opus/<id>.bisellium-queue` before the push.
+  The receipt and the review stay current on that head, so master moving costs
+  no second local mint.
+- `merge` enqueues the PR with one `gh pr merge --squash --auto
+  --match-head-commit <head>`, never updates the branch and never merges
+  directly. It reads the rules again just before that call and holds if they
+  changed.
+- The queue's merge-group run of the `certify` job (`.github/workflows/ci.yml`,
+  `scripts/ci-certify.mjs`) rebases the PR head onto the group's base inside
+  the job, checks its whole tree against the merge-group commit, and runs the
+  existing mint (`bisellium run --sella builder --opus <id> -- true`) from
+  master's tooling. GitHub merges only the commit that the required `certify`
+  check passed on. The receipt is uploaded as the run's artifact; `bisellium`
+  never reads it.
+
+In `direct` mode `pr` and `merge` make today's writes and remote calls plus
+the rules read, one local `git config --get` of the queue key and the
+`mode: direct` line. A PR whose key is set was pushed for the queue without a
+rebase, so `merge` holds it (`master no longer enforces the queue`), and a
+direct-mode `pr` removes the key after its push.
+
+The conflict path. A PR that conflicts with master (`DIRTY`) holds with
+`state=CONFLICT` in queue mode, and the merge group's rebase conflict fails
+`certify`. The remedy is the same in both: rebase `opus/<id>` onto master
+locally and resolve it there. That fix is new source, so the local mint and
+review follow, exactly as before the queue.
+
 ## Running next
 
 ```bash
