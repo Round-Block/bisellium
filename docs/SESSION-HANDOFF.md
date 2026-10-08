@@ -65,11 +65,13 @@ milestone (`amend <id> --milestone <M> --value <n>`).
 2. W-168 — GitHub CI certifies the merge result (merge queue, master-pinned
    workflow, attested receipt), so a rebase needs no local re-mint (Patron,
    2026-10-08; research in `~/.bisellium-evidence/research-remint/`).
-3. W-068 — task dependencies (signed spec in
+3. W-185 — records checked once at load (D-049, Patron 2026-10-08;
+   architecture; the architect specs it).
+4. W-068 — task dependencies (signed spec in
    `~/.bisellium-evidence/partial-specs/`; copy into `studio/`, then the
    spec review).
-4. W-081, W-099 — high-severity security fixes.
-5. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
+5. W-081, W-099 — high-severity security fixes.
+6. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
    W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160, W-135, then the
    medium and low fixes in `studio/acta/2026-10-06-backlog-triage.md`.
 
