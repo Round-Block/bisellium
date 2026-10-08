@@ -34,12 +34,12 @@ Rules, process and environment: studio/leges/production.md.
 ## Concurrency readiness (Patron, 2026-10-08)
 
 One lane until these land: W-168 (CI certifies the merge result, no less
-than the local mint), W-083 (per-session orchestration worktrees), W-169
-(process lane: file-overlap refusal, per-lane handoff, retro hold scoped).
+than the local mint), W-169 (lanes under one orchestrator: file-overlap
+refusal, a handoff section per lane, retro hold scoped).
 Alongside: W-178 (test count never drops), W-179 (faster next.test.ts, no
 row cut), W-180 (no-vendor flake fixed at cause), W-181 (checkpoint pages
 generated from records), W-182 (smoke suite on a free port), W-093
-(security review per change), W-183 (a host queue for heavy jobs, so n lanes share one machine). Each lane is its own session so none nears 500k. Checked fine: lesson ids (ref-aware
+(security review per change), W-183 (a host queue for heavy jobs, so n lanes share one machine). One orchestrator for all lanes; step scripts print one-line results. Checked fine: lesson ids (ref-aware
 allocator), the vendor-sentinel lock (per worktree), the served e2e port.
 
 ## Artifacts
