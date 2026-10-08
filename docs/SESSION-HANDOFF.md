@@ -18,10 +18,11 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-08)
 
 - **W-166** is done, retro filed, pages republished (checkpoint row 61).
-  **Next: W-168** (ladder from step 1), then W-185.
+  **Next: W-168** (ladder from step 1), then W-186 (stale handoff refused;
+  small), then W-185.
 - Today's rulings live in D-047..D-049 and the actas 2026-10-08-meta-retro
-  and -lesson-audit; new opera W-169..W-185 (W-171, W-172, W-177, W-185
-  greenlit).
+  and -lesson-audit; new opera W-169..W-186 (W-171, W-172, W-177, W-185,
+  W-186 greenlit).
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts); harmless.
 

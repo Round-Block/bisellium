@@ -150,6 +150,9 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 
 ## 11. Standing rules
 
+- Every handoff edit passes `node ~/.bisellium-evidence/handoff-check.mjs .`
+  before it is committed (until W-186 makes it a check rule and a done-step
+  refusal).
 - Hold every PR while an opus sits between a passing review and its merge
   (until W-168): a moved master forces a rebase and a second mint.
 - When a brief contradicts itself, take its literal, stricter reading and
@@ -207,3 +210,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | No shortcuts in CI or tests; concurrency readiness owned by the orchestrator | Patron |
 | 2026-10-08 | Producer checks a fix round's census before re-review (W-184 enforces) | Patron |
 | 2026-10-08 | Hold PRs while an opus awaits merge; a self-contradicting brief is read literally | Patron |
+| 2026-10-08 | Handoff edits pass handoff-check.mjs (W-186 enforces) | Patron |
