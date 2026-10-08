@@ -1,0 +1,164 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-168-b3 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-08T23:06:09.677Z
+# sella: builder.W-168
+# tree: tree:63cbd8dc7ed8ef8a05a5f6cddef930faa30381ff
+
+TAP version 13
+# Subtest: W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge
+not ok 1 - W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge
+  ---
+  duration_ms: 2836.303962
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:61'
+  failureType: 'testCodeFailure'
+  error: |-
+    queue-mode pr never rebases
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    why: the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree
+    next-step: build
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        'git fetch master:master',
+    +   'git rebase'
+    -   'git push --force-with-lease',
+    -   'gh pr create'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'git fetch master:master'
+    1: 'git push --force-with-lease'
+    2: 'gh pr create'
+  actual:
+    0: 'git fetch master:master'
+    1: 'git rebase'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4048:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-168-b3 behaviour 3: a binding that cannot be written holds the queue-mode pr before any push
+not ok 2 - W-168-b3 behaviour 3: a binding that cannot be written holds the queue-mode pr before any push
+  ---
+  duration_ms: 2777.630037
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:1185'
+  failureType: 'testCodeFailure'
+  error: |-
+    no push when the binding cannot be written
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    why: the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree
+    next-step: build
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        'git fetch master:master',
+    +   'git rebase'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'git fetch master:master'
+  actual:
+    0: 'git fetch master:master'
+    1: 'git rebase'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4064:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and unsets the binding
+not ok 3 - W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and unsets the binding
+  ---
+  duration_ms: 2865.597691
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:1745'
+  failureType: 'testCodeFailure'
+  error: 'the binding is set'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: ''
+  operator: 'notStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4075:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b3 behaviour 3: any reply short of the full setup is direct mode and keeps today's calls
+not ok 4 - W-168-b3 behaviour 3: any reply short of the full setup is direct mode and keeps today's calls
+  ---
+  duration_ms: 2757.95387
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:2679'
+  failureType: 'testCodeFailure'
+  error: |-
+    no merge-queue rule: mode: direct
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    why: the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree
+    next-step: build
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + undefined
+    - 'mode: direct'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'mode: direct'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4135:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b3 behaviour 3: a tracked change holds pr with today's lines and no mode line
+ok 5 - W-168-b3 behaviour 3: a tracked change holds pr with today's lines and no mode line
+  ---
+  duration_ms: 2787.638844
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 1
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14060.850712
