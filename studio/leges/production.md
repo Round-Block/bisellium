@@ -108,7 +108,7 @@ the main checkout's absolute `--studio`/`--repo`.
    Tell the architect to name every existing test fixture or assertion the
    change breaks: W-162's builder stopped twice on that.
 2. **Spec review (D-046, W-162):** `next` orders it. Codex `gpt-5.6-sol`,
-   prompt `~/.bisellium-evidence/W-167-specreview/r1/prompt.md`; record with
+   prompt `studio/prompts/spec-review.md` (filled per round); record with
    `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <$TMPDIR copy>`.
    Any brief edit needs a new signature and review. On pass, `next` lands it.
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
@@ -188,3 +188,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-09-20 | Backlog ranked by long-term positive gain; a found gap owes a lesson or opus, not handoff prose (unmarked) | Patron |
 | 2026-10-08 | Session handoff's standing instructions, environment, opus ladder and models folded in; still-true standing rules folded in from memory | Producer |
 | 2026-10-08 | Status and dossier republished by a Haiku subagent, never the orchestrator | Patron |
+| 2026-10-08 | Spec review prompt checked in with a round-1 completeness clause (meta-retro) | Patron |
