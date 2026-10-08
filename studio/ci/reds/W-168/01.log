@@ -1,0 +1,114 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-168-b1 --import tsx scripts/ci-certify.test.mjs
+# exit: 1
+# at: 2026-10-08T22:59:24.990Z
+# sella: builder.W-168
+# tree: tree:385dfac8f91617f62c9b4b740ef13c9190da462d
+
+TAP version 13
+# Subtest: W-168-b1 behaviour 1: ci.yml triggers merge_group and carries the certify job exactly
+not ok 1 - W-168-b1 behaviour 1: ci.yml triggers merge_group and carries the certify job exactly
+  ---
+  duration_ms: 12.319884
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:70:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    ci.yml triggers merge_group on checks_requested
+    + actual - expected
+    
+    + undefined
+    - {
+    -   types: [
+    -     'checks_requested'
+    -   ]
+    - }
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    types:
+      0: 'checks_requested'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:72:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-168-b1 behaviour 1: readCertifyArgs accepts exactly the two flags once each
+not ok 2 - W-168-b1 behaviour 1: readCertifyArgs accepts exactly the two flags once each
+  ---
+  duration_ms: 0.385359
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:126:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/ci-certify.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:127:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-168-b1 behaviour 1: the script exits 2 for anything that is not a merge group
+not ok 3 - W-168-b1 behaviour 1: the script exits 2 for anything that is not a merge group
+  ---
+  duration_ms: 0.202882
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:147:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/ci-certify.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:148:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b1 behaviour 1: a valid merge group never exits 0 and names itself
+not ok 4 - W-168-b1 behaviour 1: a valid merge group never exits 0 and names itself
+  ---
+  duration_ms: 0.117625
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:170:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/ci-certify.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:171:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 0
+# fail 4
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 24.176477
