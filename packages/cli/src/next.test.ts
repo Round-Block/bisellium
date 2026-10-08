@@ -23,6 +23,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  chmodSync,
   constants,
   cpSync,
   closeSync,
@@ -383,9 +384,9 @@ const tipOf = (w: World): string => git(w.repo, ["rev-parse", `refs/heads/${BRAN
 const headOf = (w: World): string => (gitOk(w.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${BRANCH}`]) ? tipOf(w) : w.headOid!);
 const sourceTree = (dir: string): string => `tree:${sourceTreeHash(dir, ["studio", ".bisellium"], "HEAD")}`;
 
-function writeTranscript(w: World, name: string): string {
+function writeTranscript(w: World, name: string, body = "No findings"): string {
   const path = join(w.root, name);
-  writeFileSync(path, `## Findings\nNo findings\n`);
+  writeFileSync(path, `## Findings\n${body}\n`);
   return path;
 }
 function signSpec(w: World, dir: string): void {
@@ -444,8 +445,8 @@ function writeReceipt(w: World, kind: "current" | "stale"): void {
     }),
   );
 }
-function addReview(w: World, outcome: "passed" | "failed", round: number, at: string): void {
-  verb(w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `review-${round}.md`), "--studio", w.wtStudio, "--now", at]);
+function addReview(w: World, outcome: "passed" | "failed", round: number, at: string, body = outcome === "failed" ? "1. blocking: fixture defect at brief:1. check: none: fixture" : "No findings"): void {
+  verb(w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `review-${round}.md`, body), "--studio", w.wtStudio, "--now", at]);
   verb(w.wt, ["review", OPUS, outcome === "passed" ? "--pass" : "--fail", "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", at]);
   commit(w.wt, `studio(${OPUS}): review round ${round} ${outcome}`);
 }
@@ -3477,4 +3478,348 @@ test("W-162-b4 behaviour 4: a failed review returns to the architect, and only a
   specHeld(specNext(bad), "a malformed log at round 2 holds", /spec-2/);
   sign(bad, 3);
   reviewerOrder(specNext(bad), 4, "a valid signature at round 3 makes the malformed log history");
+});
+
+// ---------------------------------------------------------------------------
+// W-167: the build-review loop stops at three counted failures (D-046 §2),
+// security rounds are exempt (D-044), a class blocker's fix order names the
+// input boundary (L-069). Rows are selectable with --test-name-pattern=W-167-b<n>.
+// ---------------------------------------------------------------------------
+/** Round n's recorded time: 04:00 for round 1, then every half hour (all before the 09:00 handover). */
+const rt = (n: number): string => new Date(Date.parse("2026-10-02T03:30:00.000Z") + n * 30 * 60_000).toISOString();
+const plain = (t = "fixture defect"): string => `blocking: ${t} at brief:1. check: none: fixture`;
+const secure = (t = "fixture defect"): string => `blocking (security): ${t} at brief:1. check: none: fixture`;
+const klass = (t = "fixture"): string => `blocking: a class of defects (${t}) at brief:1. check: none: fixture`;
+/** A Findings body: each line is numbered in order; "pass" is a passed round. */
+const found = (...lines: string[]): string => lines.map((l, i) => `${i + 1}. ${l}`).join("\n");
+const F = found(plain());
+type Round = string;
+/** Round n is recorded through the verbs at its own tree: a source edit precedes every round after the first. */
+function record167(w: World, bodies: Round[], from = 1): void {
+  bodies.forEach((b, i) => {
+    const n = from + i;
+    if (n > 1) advanceSource(w);
+    addReview(w, b === "pass" ? "passed" : "failed", n, rt(n), b === "pass" ? undefined : b);
+  });
+}
+function secGate(w: World): void {
+  editRecord(w, "wt", (doc) => doc.setIn(["probationes", "sec"], { status: "passed", sella: "qa-lead", evidence: `ci/${OPUS}-review-1.log`, at: T.review1 }));
+  commit(w.wt, `studio(${OPUS}): sec gate`);
+}
+/** A build-stage world with the named rounds recorded and a fresh handover (so a named order passes the context cap). */
+function w167(tag: string, bodies: Round[]): World {
+  const w = world(tag, "build");
+  record167(w, bodies);
+  handoffAt(w, "wt", T.handoffFresh);
+  return w;
+}
+const n167 = (w: World, env?: Record<string, string | undefined>): Out => next(w, [OPUS, ...BUDGET], env === undefined ? {} : { env });
+function buildFix(o: Out, row: string): void {
+  expectStep(o, "build", "named", row);
+  assert.equal(o.status, 0, ran(`${row}: exit`, o));
+  assert.match(o.out, /^phase:\s*fix$/m, ran(`${row}: phase fix`, o));
+}
+function reviewNamed(o: Out, round: number, row: string): void {
+  expectStep(o, "review", "named", row);
+  assert.equal(o.kv.get("round"), String(round), ran(`${row}: round`, o));
+}
+function reviewHeld(o: Out, row: string, why?: RegExp): void {
+  expectStep(o, "review", "held", row);
+  assert.equal(o.status, 1, ran(`${row}: exit`, o));
+  assert.equal(o.kv.has("role"), false, ran(`${row}: no order is named`, o));
+  assert.equal(o.kv.has("command"), false, ran(`${row}: no command is named`, o));
+  if (why !== undefined) assert.match(o.kv.get("why") ?? "", why, ran(`${row}: why`, o));
+}
+function patronHeld(o: Out, row: string): void {
+  reviewHeld(o, row);
+  assert.equal(o.kv.get("actor"), "patron", ran(`${row}: actor`, o));
+}
+interface Edit {
+  dir: "repo" | "wt";
+  rel: string;
+  /** the new text from the old; a fixture whose edit changes nothing is a defect */
+  text?: (old: string) => string;
+  symlink?: string;
+}
+/** Apply the edits (committed in both checkouts), run `fn`, then put every file back and commit again. */
+function trial(w: World, edits: Edit[], fn: () => void): void {
+  const at = (e: Edit): string => join(e.dir === "repo" ? w.repo : w.wt, e.rel);
+  const saved = edits.map((e) => ({ path: at(e), old: existsSync(at(e)) ? readFileSync(at(e), "utf8") : undefined }));
+  try {
+    edits.forEach((e, i) => {
+      const path = at(e);
+      const old = saved[i]!.old;
+      rmSync(path, { force: true });
+      if (e.symlink !== undefined) symlinkSync(e.symlink, path);
+      else {
+        const text = e.text!(old ?? "");
+        assert.notEqual(text, old, `fixture defect: the edit of ${e.rel} changed nothing`);
+        mkdirSync(dirname(path), { recursive: true });
+        writeFileSync(path, text);
+      }
+    });
+    commit(w.repo, "test: W-167 trial");
+    commit(w.wt, "test: W-167 trial");
+    fn();
+  } finally {
+    for (const s of saved) {
+      rmSync(s.path, { force: true });
+      if (s.old !== undefined) writeFileSync(s.path, s.old);
+    }
+    commit(w.repo, "test: W-167 trial undone");
+    commit(w.wt, "test: W-167 trial undone");
+  }
+}
+const LOG167 = (n: number): string => `studio/ci/${OPUS}-review-${n}.log`;
+const MANIFEST_REL = "studio/bisellium.yml";
+/** The same manifest edit in the main checkout and in the worktree, so the two agree. */
+const both = (edit: (t: string) => string): Edit[] => [
+  { dir: "repo", rel: MANIFEST_REL, text: edit },
+  { dir: "wt", rel: MANIFEST_REL, text: edit },
+];
+const REVIEW_ROW = "  - { id: review, name: Lead review, kind: agent }";
+const CENSOR_ROW = "  - { id: qa-lead, collegium: qa, kind: agent }";
+const QA_COLLEGIUM = "  - { id: qa, name: QA, magister: qa-lead }";
+
+test("W-167-b1 behaviour 1: round history, review configuration and the cited gate are read strictly", { timeout: 1_800_000 }, () => {
+  // today's rungs, read from valid logs
+  buildFix(n167(w167("w167-b1-failed", [F])), "a valid failed current round names build, phase fix");
+  const passed = w167("w167-b1-passed", ["pass"]);
+  secGate(passed);
+  expectStep(n167(passed), "pr", "named", "a valid passed current round names pr");
+
+  const w = w167("w167-b1-holds", [F]);
+  // an unreadable ci/ is an error, never zero rounds (an absent one also loses the reds beneath it, so the reds rung names first)
+  const ci = join(w.wt, "studio/ci");
+  try {
+    chmodSync(ci, 0o100); // traversable but not listable, so the reds under it still read
+    reviewHeld(n167(w), "an unreadable ci/ holds", /ci\//);
+  } finally {
+    chmodSync(ci, 0o755);
+  }
+  // the round logs
+  const rows: [string, (t: string) => string][] = [
+    ["a duplicate header", (t) => t.replace("# round: 1\n", "# round: 1\n# round: 1\n")],
+    ["a missing # at", (t) => t.replace(/^# at: .*\n/m, "")],
+    ["a missing # tree", (t) => t.replace(/^# tree: .*\n/m, "")],
+    ["the wrong phase", (t) => t.replace("# phase: build", "# phase: spec")],
+    ["the wrong round", (t) => t.replace("# round: 1", "# round: 2")],
+    ["a non-censor sella", (t) => t.replace("# sella: qa-lead", "# sella: eng-lead")],
+    ["an invalid # at", (t) => t.replace(/^# at: .*$/m, "# at: yesterday")],
+    ["passed with a standing blocker", (t) => t.replace("# outcome: failed", "# outcome: passed")],
+    ["failed with no standing blocker", (t) => t.replace(/## Findings[^]*$/, "## Findings\nNo findings\n")],
+  ];
+  for (const [name, mutate] of rows)
+    trial(w, [{ dir: "wt", rel: LOG167(1), text: mutate }], () => reviewHeld(n167(w), `${name} holds`, /W-900-review-1\.log/));
+  for (const name of [`${OPUS}-review-01.log`, `${OPUS}-review-x.log`, `${OPUS}-review-2.txt`])
+    trial(w, [{ dir: "wt", rel: `studio/ci/${name}`, text: () => "junk\n" }], () => reviewHeld(n167(w), `the name ${name} holds`, /review-/));
+  const log = readFileSync(join(w.wt, LOG167(1)), "utf8");
+  const elsewhere = join(w.root, "elsewhere.log");
+  writeFileSync(elsewhere, log);
+  trial(w, [{ dir: "wt", rel: LOG167(1), symlink: elsewhere }], () => reviewHeld(n167(w), "a symlinked review log holds", /W-900-review-1\.log/));
+  trial(w, [{ dir: "wt", rel: LOG167(1), text: (t) => `${t}\n${"x".repeat(4_100_000)}` }], () => reviewHeld(n167(w), "an over-4 MB review log holds", /W-900-review-1\.log/));
+
+  // the review configuration, the same in both checkouts
+  const configs: [string, (t: string) => string][] = [
+    ["review_probatio: null", (t) => `${t}review_probatio: null\n`],
+    ["an empty review_probatio", (t) => `${t}review_probatio: ""\n`],
+    ["a non-string review_probatio", (t) => `${t}review_probatio: 42\n`],
+    ["review_probatio: spec", (t) => `${t}review_probatio: spec\n`],
+    ["an unknown review_probatio", (t) => `${t}review_probatio: ghost\n`],
+    ["a duplicated review probatio", (t) => t.replace(REVIEW_ROW, `${REVIEW_ROW}\n${REVIEW_ROW}`)],
+    ["a non-agent review probatio", (t) => `${t.replace("source_excludes:", '  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes:')}review_probatio: tests\n`],
+    ["a retired censor", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace(" }", ", retired: true }"))],
+    ["a non-agent censor", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace("kind: agent", "kind: orchestrator"))],
+    ["a builder-class censor", (t) => t.replace(QA_COLLEGIUM, QA_COLLEGIUM.replace("qa-lead", "builder"))],
+    ["a scalar source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: studio")],
+    ["a null source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: null")],
+    ["a source_excludes with an empty string", (t) => t.replace("source_excludes: []", 'source_excludes: [""]')],
+  ];
+  for (const [name, edit] of configs) trial(w, both(edit), () => reviewHeld(n167(w), `${name} holds`));
+  trial(w, both((t) => `${t}review_probatio: review\n`), () => buildFix(n167(w), "review_probatio: review is the default spelled out"));
+
+  // the worktree manifest against the main checkout's: one row per key, naming it and both values
+  const drift: [string, (t: string) => string, RegExp[]][] = [
+    ["review_probatio", (t) => `${t}review_probatio: sec\n`, [/review_probatio/, /sec/]],
+    ["the QA magister", (t) => t.replace(QA_COLLEGIUM, QA_COLLEGIUM.replace("magister: qa-lead", "magister: eng-lead")), [/qa-lead/, /eng-lead/]],
+    ["the censor's seat row", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace(" }", ", model: other-model }")), [/other-model/]],
+    ["patron", (t) => t.replace("patron: patron", "patron: someone-else"), [/patron/, /someone-else/]],
+    ["source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: [extra-dir]"), [/source_excludes/, /extra-dir/]],
+  ];
+  for (const [name, edit, parts] of drift)
+    trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: edit }], () => {
+      const o = n167(w);
+      reviewHeld(o, `a worktree manifest that differs in ${name} holds`);
+      for (const part of parts) assert.match(o.kv.get("why") ?? "", part, ran(`${name}: why names ${part}`, o));
+    });
+  trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => t.replace("studio: W-124 fixture", "studio: renamed") }], () => buildFix(n167(w), "an unrelated key differing does not hold"));
+  trial(w, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => `${t}: [unparseable\n` }], () => reviewHeld(n167(w), "an unparseable worktree manifest holds"));
+
+  // the cited gate
+  const gates: [string, (t: string) => string][] = [
+    ["a gate citing a missing log", (t) => t.replace(`ci/${OPUS}-review-1.log`, `ci/${OPUS}-review-9.log`)],
+    ["a gate whose status disagrees with its log", (t) => t.replace("status: failed", "status: passed")],
+    ["a gate carrying a non-censor sella", (t) => t.replace(/(review: \{[^}]*sella: )qa-lead/, "$1eng-lead")],
+  ];
+  for (const [name, mutate] of gates) trial(w, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: mutate }], () => reviewHeld(n167(w), `${name} holds`));
+  const two = w167("w167-b1-other-log", [F, F]);
+  trial(two, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace(`ci/${OPUS}-review-2.log`, `ci/${OPUS}-review-1.log`) }], () => reviewHeld(n167(two), "a gate citing another log holds"));
+
+  // an uncomputable current tree holds rather than naming review
+  reviewHeld(n167(w, { GIT_STUB_REAL: failingGit("w167-b1-tree", ["ls-tree -r"]) }), "an uncomputable current tree holds");
+});
+
+test("W-167-b2 behaviour 2: the third counted failure holds for the Patron, recommends from the newest failure, and survives a re-spec", { timeout: 1_800_000 }, () => {
+  const w = w167("w167-b2", [found(klass("round one")), F, F]);
+  const o = n167(w);
+  patronHeld(o, "three plain failures hold for the Patron");
+  assert.equal(o.kv.get("why"), "3 counted failed build-review rounds (1, 2, 3); a further round needs the Patron's OK (D-046)", ran("why", o));
+  assert.equal(o.kv.get("recommendation"), "one more fix round: round 3's blockers are single instances", ran("a class in an older round does not count", o));
+  assert.equal(o.kv.get("grant"), "Grant: one more build-review round for W-900.", ran("grant", o));
+  assert.equal(o.kv.get("attach"), "bisellium amend W-900 --round-ruling <decision-id> --reason <text> --studio .worktrees/W-900/studio", ran("attach", o));
+
+  advanceSource(w);
+  patronHeld(n167(w), "a source edit leaves the hold unchanged");
+  appendFileSync(join(w.wt, "studio", "briefs", `${OPUS}.md`), "\nA brief edit.\n");
+  verb(w.wt, ["verdict", OPUS, "--round", "2", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, "spec-2.md"), "--studio", w.wtStudio, "--now", "2026-10-02T08:00:00.000Z"]);
+  commit(w.wt, `spec(${OPUS}): re-signed`);
+  patronHeld(n167(w), "a brief edit and a newer signature leave the hold unchanged");
+
+  const classy = w167("w167-b2-class", [F, F, found(plain(), klass("round three"))]);
+  const c = n167(classy);
+  patronHeld(c, "a class blocker in the newest failure holds");
+  assert.equal(c.kv.get("recommendation"), "re-spec: ci/W-900-review-3.log finding 2 is a class, so the brief's boundary or promise is the problem", ran("the re-spec recommendation names the lowest class finding", c));
+
+  const two = w167("w167-b2-two", [F, F]);
+  buildFix(n167(two), "two failures name the normal fix rung");
+  advanceSource(two);
+  reviewNamed(n167(two), 3, "two failures then a fix name the next review");
+
+  const passed = w167("w167-b2-pass", [F, F, F]);
+  record167(passed, ["pass"], 4);
+  secGate(passed);
+  expectStep(n167(passed), "pr", "named", "three failures then a passed round 4 at the current tree reach pr");
+});
+
+test("W-167-b3 behaviour 3: a security-only round is pre-approved, a mixed round counts, and the review order says so", { timeout: 1_800_000 }, () => {
+  const exempt = w167("w167-b3-exempt", [F, F, found(secure("a"), secure("b"))]);
+  buildFix(n167(exempt), "two plain failures plus a security-only third name build, phase fix");
+  const mixed = w167("w167-b3-mixed", [F, F, found(secure("a"), plain("b"))]);
+  patronHeld(n167(mixed), "the same third round with one plain blocker holds");
+  record167(exempt, [F], 4);
+  const later = n167(exempt);
+  patronHeld(later, "a later plain failure holds");
+  assert.match(later.kv.get("why") ?? "", /^3 counted failed build-review rounds \(1, 2, 4\);/, ran("why names only the counted rounds", later));
+
+  const order = w167("w167-b3-order", [F]);
+  advanceSource(order);
+  const review = n167(order);
+  reviewNamed(review, 2, "a review order");
+  const command = review.kv.get("command") ?? "";
+  assert.match(command, /blocking \(security\)/, ran("the command names the marker", review));
+  assert.match(command, /every blocker/i, ran("the command says every blocker must carry it", review));
+  assert.match(command, /D-044/, ran("the command cites D-044", review));
+});
+
+const RULING_LINE = `Grant: one more build-review round for ${OPUS}.`;
+function decision(w: World, id: string, o: { by?: string; at?: string; body?: string } = {}): void {
+  put(w.wt, `studio/decisions/${id}.md`, `---\nid: "${id}"\ntitle: "Patron ruling for ${OPUS}"\nat: ${o.at ?? rt(3).replace(/(\d\d):00/, "$1:10")}\nprovenance: stated\nby: ${o.by ?? "patron"}\n---\n\n${o.body ?? RULING_LINE}\n`);
+  commit(w.wt, `studio(${OPUS}): ${id}`);
+}
+function amendRuling(w: World, id: string): Out {
+  return cli(w, ["amend", OPUS, "--round-ruling", id, "--reason", "Patron ruling", "--sella", "producer", "--studio", w.wtStudio, "--now", "2026-10-02T08:30:00.000Z"], w.wt);
+}
+const recordPath = (w: World): string => join(w.wtStudio, "opera", `${OPUS}.md`);
+/** Amend refuses with exit 2, and neither the record nor the event log moves. */
+function refusedRuling(w: World, id: string, row: string): void {
+  const before = [readFileSync(recordPath(w), "utf8"), eventsOf(w.wtStudio)];
+  const o = amendRuling(w, id);
+  assert.equal(o.status, 2, ran(`${row}: exit`, o));
+  assert.deepEqual([readFileSync(recordPath(w), "utf8"), eventsOf(w.wtStudio)], before, `${row}: the record and the event log are byte-identical`);
+}
+
+test("W-167-b4 behaviour 4: a Patron ruling attached by amend --round-ruling permits exactly one more round", { timeout: 1_800_000 }, () => {
+  const w = w167("w167-b4", [F, F, F]);
+  decision(w, "D-901");
+  const attached = amendRuling(w, "D-901");
+  assert.equal(attached.status, 0, ran("a valid ruling attaches", attached));
+  commit(w.wt, `studio(${OPUS}): ruling attached`);
+  buildFix(n167(w), "one ruling lets the fix run");
+  refusedRuling(w, "D-901", "a duplicate id");
+  advanceSource(w);
+  reviewNamed(n167(w), 4, "one ruling lets round 4 run");
+  addReview(w, "failed", 4, rt(4), F);
+  patronHeld(n167(w), "a fourth counted failure holds again");
+  decision(w, "D-902", { at: rt(3).replace(/(\d\d):00/, "$1:20") });
+  const second = amendRuling(w, "D-902");
+  assert.equal(second.status, 0, ran("a second valid ruling attaches", second));
+  commit(w.wt, `studio(${OPUS}): second ruling attached`);
+  buildFix(n167(w), "a second ruling permits one more");
+
+  const r = w167("w167-b4-refused", [F, F, F]);
+  refusedRuling(r, "D-999", "a missing decision");
+  decision(r, "D-910", { by: "someone-else" });
+  refusedRuling(r, "D-910", "a decision by another author");
+  decision(r, "D-911", { by: '""' });
+  refusedRuling(r, "D-911", "a decision with an empty by");
+  decision(r, "D-912", { body: "One more build-review round is fine." });
+  refusedRuling(r, "D-912", "a missing grant line");
+  decision(r, "D-913", { body: `Grant: one more build-review round for ${OPUS}` });
+  refusedRuling(r, "D-913", "an altered grant line");
+  decision(r, "D-914", { body: "Grant: one more build-review round for W-901." });
+  refusedRuling(r, "D-914", "a grant line for another opus");
+  decision(r, "D-915", { at: "not-a-date" });
+  refusedRuling(r, "D-915", "an invalid at");
+  decision(r, "D-916", { at: rt(3) });
+  refusedRuling(r, "D-916", "an at equal to the third failure");
+  decision(r, "D-917", { at: rt(2) });
+  refusedRuling(r, "D-917", "an at before the third failure");
+  decision(r, "D-918");
+  for (const [name, patron] of [["absent", ""], ["null", "patron: null\n"], ["empty", 'patron: ""\n']] as const)
+    trial(r, [{ dir: "wt", rel: MANIFEST_REL, text: (t) => t.replace("patron: patron\n", patron) }], () => refusedRuling(r, "D-918", `an ${name} manifest patron`));
+  trial(r, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: nonsense\n---\n") }], () => refusedRuling(r, "D-918", "an existing malformed round_rulings"));
+  trial(r, [{ dir: "wt", rel: LOG167(2), text: (t) => t.replace("# phase: build", "# phase: spec") }], () => refusedRuling(r, "D-918", "a malformed review history"));
+  const fewer = w167("w167-b4-fewer", [F, F]);
+  decision(fewer, "D-919", { at: rt(2).replace(/(\d\d):00/, "$1:10") });
+  refusedRuling(fewer, "D-919", "fewer than three counted failures");
+
+  // next reads the same lists, written by hand
+  const h = w167("w167-b4-hand", [F, F, F]);
+  decision(h, "D-930");
+  const lists: [string, string][] = [
+    ["a scalar", "round_rulings: D-930"],
+    ["an empty list", "round_rulings: []"],
+    ["a duplicated id", "round_rulings: [D-930, D-930]"],
+    ["a missing decision", "round_rulings: [D-940]"],
+  ];
+  for (const [name, line] of lists)
+    trial(h, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", `\n${line}\n---\n`) }], () => reviewHeld(n167(h), `${name} holds`, /round_rulings|D-9/));
+  trial(h, [{ dir: "wt", rel: `studio/opera/${OPUS}.md`, text: (t) => t.replace("\n---\n", "\nround_rulings: [D-930]\n---\n") }], () => buildFix(n167(h), "a valid hand-written list permits one round"));
+});
+
+test("W-167-b5 behaviour 5: a class blocker's fix order prescribes one check at the input boundary", { timeout: 1_800_000 }, () => {
+  const boundary = (n: number, f: number): string =>
+    `ci/${OPUS}-review-${n}.log finding ${f} is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)`;
+  const one = w167("w167-b5-one", [found(klass())]);
+  const o = n167(one);
+  buildFix(o, "a class blocker still names build, phase fix");
+  assert.equal(o.kv.get("boundary"), boundary(1, 1), ran("finding 1 is named", o));
+  const second = w167("w167-b5-second", [found(plain(), klass())]);
+  assert.equal(n167(second).kv.get("boundary"), boundary(1, 2), "a plain blocker 1 and a class blocker 2 name finding 2");
+  const single = w167("w167-b5-single", [F]);
+  assert.equal(n167(single).kv.has("boundary"), false, "a single-instance blocker prints no boundary");
+  const advisory = w167("w167-b5-advisory", [found(plain(), "advisory: this class of issue is minor. check: none: fixture")]);
+  assert.equal(n167(advisory).kv.has("boundary"), false, "class in an advisory finding prints no boundary");
+  const converted = w167("w167-b5-converted", [found(plain(), "blocking: a class of defects with no citation. check: none: fixture")]);
+  assert.match(readFileSync(join(converted.wt, LOG167(1)), "utf8"), /^# converted: 2 /m, "fixture: finding 2 was converted");
+  assert.equal(n167(converted).kv.has("boundary"), false, "class in a converted finding prints no boundary");
+  const security = w167("w167-b5-security", [found(secure("a class of defects"))]);
+  const s = n167(security);
+  buildFix(s, "a security-only round is exempt");
+  assert.equal(s.kv.get("boundary"), boundary(1, 1), ran("a security-marked class blocker still prints it", s));
+
+  advanceSource(single);
+  const review = n167(single);
+  reviewNamed(review, 2, "a review order");
+  assert.match(review.kv.get("command") ?? "", /\bclass\b[^]*recurs across sites|recurs across sites[^]*\bclass\b/, ran("the command names the word class for a blocker that recurs across sites", review));
 });

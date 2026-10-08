@@ -27,12 +27,14 @@ import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bis
 import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
+import { readRoundRulings } from "@bisellium/commands/lifecycle.js";
+import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
 import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, mergeGate, mergeRefusal, openPr, opusWorktree, quoted, readTip, settleMerged, touched, trackedChanges, type Ctx, type TipRead, type Pr, type PrRead, type StepResult } from "./integrate.js";
 import { runDone, runReady } from "./lifecycle.js";
-import { owedRetros, parseVerdictLog } from "./retro.js";
+import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
 import { instant } from "@bisellium/schema";
 
@@ -335,6 +337,8 @@ export interface Facts {
   pushed: boolean;
   manifest: Manifest;
   curTree(): string | undefined;
+  /** W-167: the review configuration and every strictly read build-review round, or why they cannot be read (held, never zero rounds) */
+  buildRounds(): { config: BuildReviewConfig; rounds: BuildReviewRound[] } | { error: string };
   receipt(): { ok: true } | { ok: false; error: string } | undefined;
   redFindings(): string[];
   uiSpecProblems(): string[];
@@ -460,6 +464,16 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
       } catch {
         return undefined;
       }
+    }),
+    buildRounds: memo(() => {
+      const worktree = readWorktreeManifest(wt.studio);
+      if ("error" in worktree) return worktree;
+      const drift = buildReviewDrift(manifest, worktree.manifest);
+      if (drift !== undefined) return { error: drift };
+      const config = readBuildReviewConfig(manifest);
+      if ("error" in config) return config;
+      const read = readBuildRounds(wt.studio, id, config.config);
+      return "error" in read ? read : { config: config.config, rounds: read.rounds };
     }),
     receipt: memo(() => (usable ? trackedOnly(() => admitCurrentRunReceipt(wt.studio, id)) : undefined)),
     redFindings: memo(() => {
@@ -666,20 +680,32 @@ export function deriveNext(f: Facts): Derived {
 
     // 6 build
     if (!f.wt.usable) return hold("build", `${join(".worktrees", id)} is not a worktree on opus/${id}; run: git worktree add .worktrees/${id} opus/${id}`);
-    const gate = reviewGate(f, b);
+    // W-167: the review configuration, the round history, the cited gate and the current tree are read strictly before any order
+    const read = f.buildRounds();
+    if ("error" in read) return hold("review", read.error);
     const cur = f.curTree();
-    const failedNow = gate !== undefined && gate.status === "failed" && cur !== undefined && gate.tree === cur;
+    if (cur === undefined) return hold("review", `the current source tree of opus/${id} cannot be computed, so no review round can be judged current`);
+    const gate = reviewGate(f, b, read);
+    if (gate !== undefined && "error" in gate) return hold("review", gate.error);
+    const rulings = readRoundRulings(f.wt.studio, f.manifest, b, id, read.rounds);
+    if ("error" in rulings) return hold("review", rulings.error);
+    const counted = countedFailures(read.rounds);
+    // D-046 §2: the cap is three counted failures plus one round per Patron ruling; a pass already recorded at this tree proceeds
+    if (!(gate?.status === "passed" && gate.tree === cur) && counted.length >= REVIEW_ROUND_CAP + rulings.rulings.length) return capHold(f, counted);
+    const failedNow = gate !== undefined && gate.status === "failed" && gate.tree === cur;
+    const boundary = failedNow ? boundaryExtra(id, read.rounds.find((r) => r.n === gate.round)) : [];
     const receipt = f.receipt();
     if ((receipt !== undefined && !receipt.ok) || failedNow)
       return dispatch(f, "build", failedNow ? `review round ${gate?.round} failed at this tree` : receipt !== undefined && !receipt.ok ? receipt.error : "no admissible run receipt", {
         phase: failedNow ? "fix" : "2",
         resume: str(b["run_receipt"]) !== undefined || reviewRounds(f).length > 0,
         inputs: [briefRel(id), ...(failedNow && gate?.evidence !== undefined ? [gate.evidence] : [])],
+        extra: boundary,
       });
 
     // 7 review
     const uiBranch = f.uiReviewProblems();
-    if (!(gate !== undefined && gate.status === "passed" && cur !== undefined && gate.tree === cur) || uiBranch.length > 0) {
+    if (!(gate !== undefined && gate.status === "passed" && gate.tree === cur) || uiBranch.length > 0) {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
       return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
@@ -757,20 +783,59 @@ function afterDone(f: Facts): Derived {
   };
 }
 
+/** D-046 §2: three counted failed build-review rounds, then a further round needs a Patron ruling. */
+const REVIEW_ROUND_CAP = 3;
+/** The lowest-numbered standing blocker that names a class (L-069): the whole word `class` or `classes`. */
+const classBlocker = (round: BuildReviewRound | undefined) => round?.blockers.filter((b) => /\bclass(?:es)?\b/i.test(b.text)).sort((a, b) => a.n - b.n)[0];
+
+/** The order's `boundary` line when the failed round names a class blocker, else nothing. */
+function boundaryExtra(id: string, round: BuildReviewRound | undefined): [string, string][] {
+  const blocker = classBlocker(round);
+  return round === undefined || blocker === undefined
+    ? []
+    : [["boundary", `${round.log} finding ${blocker.n} is a class: fix it with one check at the input boundary named by the brief's Input domain, which every path reads, not a patch at the cited site (L-069)`]];
+}
+
+/** The hold at the cap: the Patron's one more round or a re-spec, recommended from the newest counted failure. */
+function capHold(f: Facts, counted: BuildReviewRound[]): Derived {
+  const { id } = f;
+  const newest = counted[counted.length - 1]!;
+  const blocker = classBlocker(newest);
+  return {
+    step: "review",
+    status: "held",
+    actor: "patron",
+    why: `${counted.length} counted failed build-review rounds (${counted.map((r) => r.n).join(", ")}); a further round needs the Patron's OK (D-046)`,
+    extra: [
+      ["recommendation", blocker === undefined ? `one more fix round: round ${newest.n}'s blockers are single instances` : `re-spec: ${newest.log} finding ${blocker.n} is a class, so the brief's boundary or promise is the problem`],
+      ["grant", `Grant: one more build-review round for ${id}.`],
+      ["attach", `bisellium amend ${id} --round-ruling <decision-id> --reason <text> --studio ${join(".worktrees", id, f.studioRel)}`],
+    ],
+  };
+}
+
 interface Gate {
   status: string;
   evidence: string | undefined;
   tree: string | undefined;
   round: number | undefined;
 }
-function reviewGate(f: Facts, rec: Dict): Gate | undefined {
-  const reviewId = str((f.manifest as unknown as { review_probatio?: unknown }).review_probatio) ?? "review";
+/** The recorded review gate, cross-checked against the strictly read rounds: absent is no decided review, anything else must agree with its log. */
+function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; rounds: BuildReviewRound[] }): Gate | undefined | { error: string } {
+  const { reviewId, censor } = read.config;
   const g = isDict(rec["probationes"]) ? rec["probationes"][reviewId] : undefined;
-  if (!isDict(g) || typeof g["status"] !== "string") return undefined;
+  if (g === undefined) return undefined;
+  const bad = (why: string): { error: string } => ({ error: `${recordRel(f.id)}#probationes.${reviewId}: ${why}` });
+  if (!isDict(g)) return bad("the gate must be a mapping");
+  if (g["status"] !== "passed" && g["status"] !== "failed") return bad("status must be exactly passed or failed");
   const evidence = str(g["evidence"]);
-  const header = evidence === undefined || f.branch === undefined ? undefined : parseLogHeader(f.branch.read(evidence) ?? "");
-  const round = Number(/-review-(\d+)\.log$/.exec(evidence ?? "")?.[1]);
-  return { status: g["status"], evidence, tree: header?.get("tree"), round: Number.isNaN(round) ? undefined : round };
+  const round = read.rounds.find((r) => r.log === evidence);
+  if (round === undefined) return bad(`evidence ${evidence === undefined ? "(absent)" : evidence} names no read build-review log`);
+  const newest = read.rounds[read.rounds.length - 1]!;
+  if (round !== newest) return bad(`evidence ${round.log} is not the newest build-review log, ${newest.log}`);
+  if (g["sella"] !== censor) return bad(`sella must be the censor ${censor}`);
+  if (g["status"] !== round.outcome) return bad(`status ${g["status"]} disagrees with ${round.log}, which ${round.outcome}`);
+  return { status: g["status"], evidence, tree: round.tree, round: round.n };
 }
 const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.branch, f.id);
 
@@ -815,7 +880,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else {
     role = "censor";
     sella = censor;
-    command = `dispatch ${sella}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}`;
+    command = `dispatch ${sella}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   return {

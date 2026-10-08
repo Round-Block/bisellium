@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { ensureRealDirectory } from "./ids.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
-import { readFront } from "@bisellium/adapter-native";
+import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import {
   censorSella,
   contentLines,
@@ -147,6 +148,73 @@ export function reconcileFindings(
     return { converted, outcome: "passed", submittedOutcome: outcome };
   return { converted, outcome };
 }
+
+type Refusal = { error: string };
+export const LOG_MAX_BYTES = 4_000_000;
+// the whole raw line: no carriage return and no comment marker anywhere in it
+const FINDING_LINE = /^[1-9]\d*\. \**(blocking|advisory)\b(?![^]*(?:\r|<!--|-->))/i;
+// a header line is one of the names the verdict writer emits, its value raw
+const HEADER_LINE = new RegExp(`^# (${VERDICT_HEADERS.join("|")}): (.*)$`);
+
+export interface RecordedFinding {
+  log: string;
+  n: number;
+  /** the finding line after its number, whole */
+  text: string;
+  blocking: boolean;
+}
+
+/**
+ * One recorded log's text, judged RAW: no line is stripped, trimmed or interpreted before it is judged. The header block
+ * is the lines before the first empty line, each exactly `# key: value`. In the body the one `## Findings` section
+ * (ends at the next `## ` line) holds empty lines, the exact line `No findings`, or lines of the finding grammar,
+ * and nothing else: a fence, comment, heading, indented or otherwise dressed line is out of domain and the whole
+ * log is unreadable. This is the only parser of a verdict log, in the retro and in `next`'s spec-review gate (W-162).
+ */
+export function parseVerdictLog(text: string, id: string, rel: string): { headers: Map<string, string[]>; findings: RecordedFinding[] } | Refusal {
+  const lines = text.split("\n");
+  const split = lines.indexOf("");
+  if (split === -1) return { error: `${rel}: no blank line ends the header block` };
+  const headers = new Map<string, string[]>();
+  for (const line of lines.slice(0, split)) {
+    const m = HEADER_LINE.exec(line);
+    if (!m) return { error: `${rel}: header line out of domain (want "# <a verdict header>: value"): ${line.slice(0, 60)}` };
+    headers.set(m[1]!, [...(headers.get(m[1]!) ?? []), m[2]!]);
+  }
+  const body = lines.slice(split + 1);
+  const stray = body.find((l) => /^# [a-z_]+: /.test(l));
+  if (stray !== undefined) return { error: `${rel}: a header line outside the header block: ${stray.slice(0, 60)}` };
+  if (headers.get("opus")?.length !== 1 || headers.get("opus")![0] !== id) return { error: `${rel}: the header "# opus:" must appear once and equal ${id}` };
+  const at = body.reduce<number[]>((n, l, i) => (l === "## Findings" ? [...n, i] : n), []);
+  if (at.length !== 1) return { error: `${rel}: expected exactly one "## Findings" heading, found ${at.length}` };
+  const rest = body.slice(at[0]! + 1);
+  const end = rest.findIndex((l) => l.startsWith("## "));
+  const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== "");
+  if (section.length === 1 && section[0] === "No findings") return { headers, findings: [] };
+  if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
+  const findings: RecordedFinding[] = [];
+  for (const line of section) {
+    if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …", or "No findings" alone): ${line.slice(0, 60)}` };
+    const n = Number(/^\d+/.exec(line)![0]);
+    if (findings.some((f) => f.n === n)) return { error: `${rel}: finding ${n} is numbered twice` };
+    const text = line.replace(/^\d+\. /, "");
+    findings.push({ log: rel, n, text, blocking: /^\**blocking\b/i.test(text) });
+  }
+  const converted = headers.get("converted");
+  if (converted !== undefined) {
+    if (converted.length !== 1) return { error: `${rel}: more than one "# converted:" header` };
+    // "<n> (<reason>)", joined by "; ": every piece closed, every n a blocking finding of this log
+    const pieces = converted[0]!.split(/; (?=[1-9]\d* \()/);
+    for (const piece of pieces) {
+      const m = /^([1-9]\d*) \((.+)\)$/.exec(piece);
+      const f = m ? findings.find((x) => x.n === Number(m[1])) : undefined;
+      if (!m || !f?.blocking) return { error: `${rel}: "# converted:" is not a list of "<n> (<reason>)" naming blocking findings of this log: ${piece.slice(0, 60)}` };
+      f.blocking = false;
+    }
+  }
+  return { headers, findings };
+}
+
 
 function hasHeaderBreak(value: string): boolean {
   return value.includes("\r") || value.includes("\n");
@@ -442,4 +510,176 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   for (const c of conversions) console.log(`${opusId}: finding ${c.finding} recorded as advisory: ${c.reason}`);
   if (submitted !== undefined) console.log(`${opusId}: outcome "${submitted}" recorded as passed: no blocking finding cites a line of the brief`);
   return { exitCode: 0 };
+}
+
+// ---------------------------------------------------------------------------
+// W-167: the build-review history `next` and `amend` both read. One reader per
+// record, each failing closed: an unreadable or out-of-domain record is an
+// error, never "no rounds" (D-045: mistakes, not adversaries).
+// ---------------------------------------------------------------------------
+
+type Dict = Record<string, unknown>;
+const isDict = (v: unknown): v is Dict => typeof v === "object" && v !== null && !Array.isArray(v);
+const nonEmpty = (v: unknown): v is string => typeof v === "string" && v !== "";
+/** Every row of a manifest list with this id: a domain that says "exactly one" counts them, never takes the first. */
+const declared = (list: unknown, id: string): Dict[] => (Array.isArray(list) ? list : []).filter((r): r is Dict => isDict(r) && r["id"] === id);
+
+export interface BuildReviewConfig {
+  reviewId: string;
+  censor: string;
+  sourceExcludes: string[];
+}
+export interface BuildReviewRound {
+  n: number;
+  /** ci/<id>-review-<n>.log */
+  log: string;
+  /** ms, from "# at:" */
+  at: number;
+  /** "# tree:" */
+  tree: string;
+  outcome: "passed" | "failed";
+  /** standing, after "# converted:" */
+  blockers: RecordedFinding[];
+  /** failed, and every standing blocker opens "blocking (security)" (D-044) */
+  securityOnly: boolean;
+}
+
+/** A round counts toward the cap when it failed and is not security-only (D-046 §2, D-044). */
+export const countedFailures = (rounds: readonly BuildReviewRound[]): BuildReviewRound[] => rounds.filter((r) => r.outcome === "failed" && !r.securityOnly);
+
+/**
+ * The one reader of the review configuration: `review_probatio` (absent means `review`) names exactly one declared
+ * `kind: agent` probatio that is not `spec`; the one `qa` collegium's magister is exactly one declared, live,
+ * `kind: agent`, non-builder-class seat (the censor every build log and gate must name); `source_excludes` is absent
+ * or a list of non-empty strings, the domain `check`'s `manifest.shape` states.
+ */
+export function readBuildReviewConfig(manifest: Manifest): { config: BuildReviewConfig } | { error: string } {
+  const m: unknown = manifest;
+  if (!isDict(m)) return { error: "bisellium.yml: not a mapping" };
+  const bad = (why: string): { error: string } => ({ error: `bisellium.yml: ${why}` });
+  let reviewId = "review";
+  if ("review_probatio" in m) {
+    if (!nonEmpty(m["review_probatio"])) return bad("review_probatio must be the id of one declared probatio (a non-empty string), or absent");
+    reviewId = m["review_probatio"];
+  }
+  if (reviewId === "spec") return bad("review_probatio must not be spec: the ready rung reads that gate by name");
+  const gates = declared(m["probationes"], reviewId);
+  if (gates.length !== 1) return bad(`review_probatio ${reviewId} must be declared exactly once in probationes (found ${gates.length})`);
+  if (gates[0]!["kind"] !== "agent") return bad(`review_probatio ${reviewId} must be kind: agent`);
+  const qa = declared(m["collegia"], "qa");
+  if (qa.length !== 1) return bad(`the qa collegium must be declared exactly once (found ${qa.length})`);
+  const censor = qa[0]!["magister"];
+  if (!nonEmpty(censor)) return bad("the qa collegium declares no magister to be the censor");
+  const seats = declared(m["sellae"], censor);
+  if (seats.length !== 1) return bad(`the censor ${censor} must be exactly one declared seat (found ${seats.length})`);
+  const seat = seats[0]!;
+  if (seat["retired"] !== undefined && seat["retired"] !== false) return bad(`the censor ${censor} is retired; it must be a live seat`);
+  if (seat["kind"] !== "agent") return bad(`the censor ${censor} must be kind: agent`);
+  if (isBuilderClassSeat(resolveSeat({ sellae: [{ id: censor }] }, censor))) return bad(`the censor ${censor} is builder-class; review and verdict would record a minted instance, not ${censor}`);
+  let sourceExcludes: string[] = [];
+  if ("source_excludes" in m) {
+    const raw = m["source_excludes"];
+    if (!Array.isArray(raw) || !raw.every(nonEmpty)) return bad("source_excludes must be a list of non-empty strings, or absent");
+    sourceExcludes = raw;
+  }
+  return { config: { reviewId, censor, sourceExcludes } };
+}
+
+/**
+ * The keys `next` (from the main checkout's manifest) and the verbs (from the worktree's) must agree on, as one
+ * comparable value: `review_probatio`, its `probationes` row, the `qa` collegium row, the censor's `sellae` row,
+ * `patron` and `source_excludes`, each raw (absent kept as absent).
+ */
+export function buildReviewKeys(manifest: Manifest): Record<string, unknown> {
+  const m: Dict = isDict(manifest) ? (manifest as unknown as Dict) : {};
+  const reviewId = nonEmpty(m["review_probatio"]) ? m["review_probatio"] : "review";
+  const qa = declared(m["collegia"], "qa");
+  const censor = qa[0]?.["magister"];
+  return {
+    review_probatio: m["review_probatio"],
+    [`probationes.${reviewId}`]: declared(m["probationes"], reviewId),
+    "collegia.qa": qa,
+    [`sellae.${nonEmpty(censor) ? censor : "(censor)"}`]: nonEmpty(censor) ? declared(m["sellae"], censor) : undefined,
+    patron: m["patron"],
+    source_excludes: m["source_excludes"],
+  };
+}
+
+/** The worktree's manifest, read for comparison: any read or parse failure is an error, never an empty manifest. */
+export function readWorktreeManifest(studio: string): { manifest: Manifest } | { error: string } {
+  try {
+    const manifest: unknown = readManifest(studio);
+    return isDict(manifest) ? { manifest: manifest as unknown as Manifest } : { error: `${studio}/bisellium.yml: not a mapping` };
+  } catch (e) {
+    return { error: `${studio}/bisellium.yml: ${(e as Error).message.split("\n")[0]}` };
+  }
+}
+
+/** The first key the two manifests disagree on, with both values, or undefined when `buildReviewKeys` agrees. */
+export function buildReviewDrift(main: Manifest, worktree: Manifest): string | undefined {
+  const a = buildReviewKeys(main);
+  const b = buildReviewKeys(worktree);
+  const show = (v: unknown): string => (v === undefined ? "(absent)" : JSON.stringify(v));
+  for (const key of new Set([...Object.keys(a), ...Object.keys(b)]))
+    if (show(a[key]) !== show(b[key])) return `bisellium.yml#${key} differs between the main checkout (${show(a[key])}) and the opus worktree (${show(b[key])}); land the change on master first, then rebase the branch`;
+  return undefined;
+}
+
+/** One build-review log, strictly: the parser's grammar, then this opus's phase, round, censor, time, tree and outcome. */
+function parseBuildReviewLog(text: string, id: string, rel: string, n: number, censor: string): BuildReviewRound | { error: string } {
+  const p = parseVerdictLog(text, id, rel);
+  if ("error" in p) return p;
+  const bad = (why: string): { error: string } => ({ error: `${rel}: ${why}` });
+  const once: Record<string, string> = {};
+  for (const key of ["phase", "round", "sella", "outcome", "at", "tree"]) {
+    const values = p.headers.get(key);
+    if (values?.length !== 1) return bad(`the header "# ${key}:" must appear exactly once`);
+    once[key] = values[0]!;
+  }
+  if (once["phase"] !== "build") return bad('the header "# phase:" must be build');
+  if (once["round"] !== String(n)) return bad(`the header "# round:" must equal the filename's round ${n}`);
+  if (once["sella"] !== censor) return bad(`the header "# sella:" must be the censor ${censor}`);
+  const at = utcTimestampProblem(once["at"]);
+  if (at !== undefined) return bad(`the header "# at:" ${at}`);
+  const verdict = /^(?:verdict:\s*)?(pass(?:ed)?|fail(?:ed)?)\b/i.exec(once["outcome"]!.trim())?.[1];
+  if (verdict === undefined) return bad('the header "# outcome:" must be passed or failed');
+  const outcome = verdict.toLowerCase().startsWith("pass") ? "passed" : "failed";
+  const blockers = p.findings.filter((f) => f.blocking);
+  if (outcome === "passed" && blockers.length > 0) return bad("outcome passed beside a standing blocking finding");
+  if (outcome === "failed" && blockers.length === 0) return bad("outcome failed with no standing blocking finding");
+  return {
+    n,
+    log: rel,
+    at: instant(once["at"])!.getTime(), // utcTimestampProblem passed above, so the instant exists
+    tree: once["tree"]!,
+    outcome,
+    blockers,
+    securityOnly: outcome === "failed" && blockers.every((b) => /^\**blocking \(security\)/i.test(b.text)),
+  };
+}
+
+/**
+ * Every `ci/<id>-review-<n>.log` of an officina, sorted by `n`, each read through the contained reader (4 MB cap) and
+ * judged by `parseBuildReviewLog`. An unreadable `ci/`, a malformed name or an out-of-domain log is an error.
+ */
+export function readBuildRounds(root: string, id: string, config: BuildReviewConfig): { rounds: BuildReviewRound[] } | { error: string } {
+  let names: string[];
+  try {
+    names = readdirSync(join(root, "ci"));
+  } catch (e) {
+    return { error: `ci/: ${(e as Error).message.split("\n")[0]}` };
+  }
+  const prefix = `${id}-review-`;
+  const rounds: BuildReviewRound[] = [];
+  for (const name of names.filter((x) => x.startsWith(prefix)).sort()) {
+    const m = /^([1-9]\d*)\.log$/.exec(name.slice(prefix.length));
+    if (m === null) return { error: `ci/${name}: a build-review log is named ${prefix}<n>.log, n a positive integer with no leading zero` };
+    const rel = `ci/${name}`;
+    const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+    if ("error" in file) return { error: `${rel}: ${file.error}` };
+    const round = parseBuildReviewLog(file.bytes.toString("utf8"), id, rel, Number(m[1]), config.censor);
+    if ("error" in round) return round;
+    rounds.push(round);
+  }
+  return { rounds: rounds.sort((a, b) => a.n - b.n) };
 }
