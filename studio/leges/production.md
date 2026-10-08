@@ -153,7 +153,8 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
   time; a flake is fixed at its cause, never rerun as the remedy. W-178's
   check enforces the row count once built.
 - Concurrency readiness is the orchestrator's to manage: one lane until
-  W-168, W-083 and W-169 land (with W-178 to W-182 and W-093 alongside);
+  W-168, W-083 and W-169 land (with W-178 to W-183 and W-093 alongside);
+  then any number of lanes, each its own session under the 500k cap;
   the handoff tracks what is left.
 - A security finding (CodeQL/GHAS alert or security review) is always
   fixed, never dismissed; extra review rounds or receipts it needs are
