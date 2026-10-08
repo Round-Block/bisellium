@@ -1393,19 +1393,19 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   const rel = relative(realpathSync(repo), realpathSync(opened.root));
   if (rel.startsWith("..") || isAbsolute(rel)) return usage(`--studio ${opened.root} is outside the repository`);
 
-  // W-166: one validator for every reader of source_excludes. `gather` spreads only a validated list; a malformed
-  // value takes precedence over every derivation outcome (a named rung, an already-held rung, a complete opus),
-  // so nothing is dispatched or performed and the exit is never 0.
+  // W-166: one validator for every reader of source_excludes (brief:108). A malformed value holds here, before
+  // `gather`, `deriveNext` (and its lazy gh reads), --track, markers, perform or dispatch: nothing is derived, so
+  // the held line carries no step. `gather` reads the same value through the same validator and spreads only a valid list.
   const declaredExcludes = readSourceExcludes(opened.manifest);
+  if ("error" in declaredExcludes) {
+    console.log(`next: ${id} held\nwhy: ${clean(`bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, 1000)}`);
+    return { exitCode: 1 };
+  }
 
   let f = gather(repo, opened.root, id);
   if (f.trunkRecord === undefined && f.branchRecord === undefined) return usage(`unknown opus: ${id}`);
   const env: Env = { repo, procRoot: a.testClock && process.env["BISELLIUM_TEST_PROC"] ? process.env["BISELLIUM_TEST_PROC"] : "/proc", nowMs: a.nowMs };
-  const derive = (facts: Facts): Derived => {
-    const d = gateDispatch(deriveNext(facts), facts, a.budget);
-    if (!("error" in declaredExcludes)) return d;
-    return { step: d.step, status: "held", actor: d.actor, why: `bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, extra: [] };
-  };
+  const derive = (facts: Facts): Derived => gateDispatch(deriveNext(facts), facts, a.budget);
 
   const say = (code: number, lines: string[]): { exitCode: number } => {
     // the one choke point: every printed line loses its controls (a newline included) and is bounded
@@ -1418,10 +1418,6 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
 
   try {
     const d1 = derive(f);
-
-    // W-166: the one terminal point for a malformed source_excludes. `derive` has already made d1 the held line, and
-    // nothing below (--track, marker health, perform, dispatch) may replace it or exit 0.
-    if ("error" in declaredExcludes) return say(1, render(id, d1, f, "held"));
 
     // --track: register a step the orchestrator launched itself (an unverified attestation)
     if (a.track !== undefined) {

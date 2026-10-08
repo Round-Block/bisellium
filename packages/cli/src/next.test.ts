@@ -3530,6 +3530,14 @@ function reviewHeld(o: Out, row: string, why?: RegExp): void {
   assert.equal(o.kv.has("command"), false, ran(`${row}: no command is named`, o));
   if (why !== undefined) assert.match(o.kv.get("why") ?? "", why, ran(`${row}: why`, o));
 }
+/** W-166: the hold on a malformed source_excludes, printed before any derivation: `next: <id> held`, no step. */
+function excludesHeld(o: Out, row: string): void {
+  assert.equal(o.first, `next: ${OPUS} held`, ran(`${row}: the held line carries no step`, o));
+  assert.equal(o.status, 1, ran(`${row}: exit`, o));
+  assert.equal(o.kv.has("role"), false, ran(`${row}: no order is named`, o));
+  assert.equal(o.kv.has("command"), false, ran(`${row}: no command is named`, o));
+  assert.match(o.kv.get("why") ?? "", /^bisellium\.yml#source_excludes is malformed \(/, ran(`${row}: why names bisellium.yml#source_excludes`, o));
+}
 function patronHeld(o: Out, row: string): void {
   reviewHeld(o, row);
   assert.equal(o.kv.get("actor"), "patron", ran(`${row}: actor`, o));
@@ -3631,11 +3639,15 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
     ["a retired censor", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace(" }", ", retired: true }"))],
     ["a non-agent censor", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace("kind: agent", "kind: orchestrator"))],
     ["a builder-class censor", (t) => t.replace(QA_COLLEGIUM, QA_COLLEGIUM.replace("qa-lead", "builder"))],
+  ];
+  for (const [name, edit] of configs) trial(w, both(edit), () => reviewHeld(n167(w), `${name} holds`));
+  // W-166: a malformed source_excludes holds before any derivation, so there is no step on the held line
+  const malformed: [string, (t: string) => string][] = [
     ["a scalar source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: studio")],
     ["a null source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: null")],
     ["a source_excludes with an empty string", (t) => t.replace("source_excludes: []", 'source_excludes: [""]')],
   ];
-  for (const [name, edit] of configs) trial(w, both(edit), () => reviewHeld(n167(w), `${name} holds`));
+  for (const [name, edit] of malformed) trial(w, both(edit), () => excludesHeld(n167(w), `${name} holds`));
   trial(w, both((t) => `${t}review_probatio: review\n`), () => buildFix(n167(w), "review_probatio: review is the default spelled out"));
 
   // the worktree manifest against the main checkout's: one row per key, naming it and both values
@@ -3904,13 +3916,13 @@ test("W-166-b4 behaviour 4: a malformed source_excludes is a terminal hold: no t
     const manifest = join(w.studio, "bisellium.yml");
     writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", `source_excludes: ${to}`));
     commit(w.repo, "studio: malformed source_excludes");
-    // the derivation's own step: the malformed manifest also fails W-167's review config, so the rung reads `review`
+    // any step: nothing is derived, so no step is compared
     const step = "review";
     const child = liveChild();
     mkdirSync(stepsDir(w), { recursive: true });
     const held = (row: string, o: Out): void => {
       assert.equal(o.status, 1, ran(`${n} ${row}: exit 1`, o));
-      assert.match(o.first, new RegExp(`^next: W-900 ${step} held$`), ran(`${n} ${row}: the held line`, o));
+      assert.match(o.first, /^next: W-900 held$/, ran(`${n} ${row}: the held line`, o));
       assert.match(o.out, /bisellium\.yml#source_excludes/, ran(`${n} ${row}: names source_excludes`, o));
       assert.doesNotMatch(o.out, /^(role|command|health):/m, ran(`${n} ${row}: no order and no health line`, o));
     };
@@ -3942,4 +3954,41 @@ test("W-166-b4 behaviour 4: a malformed source_excludes is a terminal hold: no t
     assert.equal(existsSync(markerPath(w)), false, `${n}: --perform took no marker`);
     assert.deepEqual(calls(w).filter((c) => c[0] === "gh"), [], `${n}: no gh call was made`);
   }
+});
+
+test("W-166-b4 behaviour 4: a malformed source_excludes holds before any derivation, gh or git read", { timeout: 1_800_000 }, () => {
+  const spoil = (w: World): void => {
+    const manifest = join(w.studio, "bisellium.yml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", "source_excludes: examples/"));
+    commit(w.repo, "studio: scalar source_excludes");
+  };
+  const quiet = (w: World, row: string, o: Out): void => {
+    excludesHeld(o, row);
+    assert.deepEqual(ghCalls(w), [], `${row}: the gh stub recorded no call`);
+    assert.deepEqual(
+      gitCalls(w).filter((a) => a[0] !== "rev-parse"),
+      [],
+      `${row}: no git call beyond the repository checks`,
+    );
+  };
+  const rows: [string, (w: World) => void, World][] = [
+    ["5a an absent tip", () => undefined, world("w166-b4-notip", "spec")],
+    ["5b an unusable worktree", (w) => rmSync(w.wt, { recursive: true, force: true }), world("w166-b4-nowt", "reds")],
+    ["5c a pushed branch", () => undefined, world("w166-b4-pushed", "pr")],
+  ];
+  for (const [row, prep, w] of rows) {
+    prep(w);
+    spoil(w);
+    rmSync(w.log, { force: true });
+    quiet(w, row, next(w, [OPUS, "--budget", "100000"]));
+  }
+  // 5d: an unknown opus with a malformed value: the hold wins. The id, repository and studio checks come before
+  // readSourceExcludes and keep exit 2; "unknown opus" was found only after it (by gather), so it no longer wins.
+  const unknown = world("w166-b4-unknown", "spec");
+  spoil(unknown);
+  rmSync(unknown.log, { force: true });
+  const o = next(unknown, ["W-999", "--budget", "100000"]);
+  excludesHeld({ ...o, first: o.first.replace("W-999", OPUS) }, "5d an unknown opus");
+  assert.equal(o.first, "next: W-999 held", ran("5d: the hold names the asked id", o));
+  assert.deepEqual(ghCalls(unknown), [], "5d: no gh call");
 });
