@@ -3823,3 +3823,40 @@ test("W-167-b5 behaviour 5: a class blocker's fix order prescribes one check at 
   reviewNamed(review, 2, "a review order");
   assert.match(review.kv.get("command") ?? "", /\bclass\b[^]*recurs across sites|recurs across sites[^]*\bclass\b/, ran("the command names the word class for a blocker that recurs across sites", review));
 });
+
+test("W-166-b4 behaviour 4: next orders one behaviour's test, red, log commit and implementation at a time", { timeout: 1_800_000 }, () => {
+  const budget = ["--budget", "100000"];
+  const none = world("w166-b4-none", "ready");
+  handoffAt(none, "wt", T.handoffFresh);
+  const first = next(none, [OPUS, ...budget]);
+  expectStep(first, "reds", "named", "4a: a world with no reds names reds");
+  const order = first.kv.get("command") ?? "";
+  assert.match(order, /from behaviour 1 through 2/, ran("4a: the order starts from behaviour 1", first));
+  assert.equal(first.kv.get("actor"), "builder", "4a: the actor is the builder");
+  assert.equal(first.kv.get("phase"), "1", "4a: phase 1");
+  assert.match(order, /from \.worktrees\/W-900: bisellium red W-900 --behaviour <b> /, ran("4a: the red runs from the worktree", first));
+  assert.doesNotMatch(order, /--repo/, ran("4a: the red command carries no --repo", first));
+  assert.doesNotMatch(order, /reds only, implementation absent/, ran("4a: the old all-reds order is gone", first));
+  assert.match(order, /commit the red log alone \(studio files only\), before any implementation/, ran("4a: the log is committed alone before the implementation", first));
+  assert.match(order, /detached worktree[^]*never rewrite history/, ran("4a: the correction path is named", first));
+
+  const one = world("w166-b4-one", "ready");
+  writeReds(one);
+  rmSync(join(one.wtStudio, "ci", "reds", OPUS, "02.log"));
+  commit(one.wt, "studio: drop red 2");
+  handoffAt(one, "wt", T.handoffFresh);
+  const second = next(one, [OPUS, ...budget]);
+  expectStep(second, "reds", "named", "4b: 01.log usable and 02.log absent names reds");
+  assert.match(second.kv.get("command") ?? "", /from behaviour 2 through 2/, ran("4b: the order starts from behaviour 2", second));
+});
+
+test("W-166-b4 behaviour 4: a scalar source_excludes holds next and dispatches nothing", { timeout: 1_800_000 }, () => {
+  const w = world("w166-b4-scalar", "ready");
+  const manifest = join(w.studio, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", "source_excludes: examples/"));
+  commit(w.repo, "studio: scalar source_excludes");
+  const o = next(w, [OPUS, "--budget", "100000"]);
+  assert.equal(o.status, 1, ran("4c: a scalar source_excludes exits 1", o));
+  assert.match(o.out, /why: .*bisellium\.yml#source_excludes/, ran("4c: the why names bisellium.yml#source_excludes", o));
+  assert.doesNotMatch(o.out, /^(role|command|phase):/m, ran("4c: no order is dispatched", o));
+});
