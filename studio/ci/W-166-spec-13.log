@@ -1,0 +1,14 @@
+# opus: W-166
+# phase: spec
+# round: 13
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T08:09:08.464Z
+# tree: tree:4640970d88ce39dabe482eaee7bb7a0973fbd175
+# brief: briefs/W-166.md blob:ff83e05be8e827df949a1172a1a74e272cf04e3f
+
+Architect signature for W-166, revision 7, under D-027: answers spec review r6 (ci/W-166-spec-12.log). The finding was checked against the code and accepted.
+
+## Findings
+1. advisory: accepted r6 #1 as a stated limit. packages/shim/src/sourceTree.ts isDirtyOutside runs `git status --porcelain`, which omits ignored files, so the moved-tree promise in Interfaces step 6 and the threat model now cover tracked changes and non-ignored untracked files only; a file Git ignores is not seen. No detector is added. Behaviour 2's bullet already names only a tracked file and needed no change. check: packages/cli/src/red-order.test.ts W-166-b2
