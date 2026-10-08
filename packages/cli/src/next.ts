@@ -1419,6 +1419,10 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   try {
     const d1 = derive(f);
 
+    // W-166: the one terminal point for a malformed source_excludes. `derive` has already made d1 the held line, and
+    // nothing below (--track, marker health, perform, dispatch) may replace it or exit 0.
+    if ("error" in declaredExcludes) return say(1, render(id, d1, f, "held"));
+
     // --track: register a step the orchestrator launched itself (an unverified attestation)
     if (a.track !== undefined) {
       const t = a.track;

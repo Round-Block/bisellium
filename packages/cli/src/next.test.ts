@@ -3896,3 +3896,50 @@ test("W-166-b3 behaviour 3: with a usable worktree next surfaces the shared-tree
   expectStep(o, "reds", "named", "3a: a shared-tree pair in an opted-in opus names reds");
   assert.match(o.kv.get("why") ?? "", /opus\.red_evidence: red logs for behaviours 1 and 2 certify one tree/, ran("3a: the why carries the shared-tree block", o));
 });
+
+test("W-166-b4 behaviour 4: a malformed source_excludes is a terminal hold: no track, health or perform replaces it", { timeout: 1_800_000 }, () => {
+  const budget = ["--budget", "100000"];
+  for (const [n, to] of [["scalar", "examples/"], ["null", "null"], ["empty", '[""]']] as const) {
+    const w = world(`w166-b4-terminal-${n}`, "reds");
+    const manifest = join(w.studio, "bisellium.yml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", `source_excludes: ${to}`));
+    commit(w.repo, "studio: malformed source_excludes");
+    // the derivation's own step: the malformed manifest also fails W-167's review config, so the rung reads `review`
+    const step = "review";
+    const child = liveChild();
+    mkdirSync(stepsDir(w), { recursive: true });
+    const held = (row: string, o: Out): void => {
+      assert.equal(o.status, 1, ran(`${n} ${row}: exit 1`, o));
+      assert.match(o.first, new RegExp(`^next: W-900 ${step} held$`), ran(`${n} ${row}: the held line`, o));
+      assert.match(o.out, /bisellium\.yml#source_excludes/, ran(`${n} ${row}: names source_excludes`, o));
+      assert.doesNotMatch(o.out, /^(role|command|health):/m, ran(`${n} ${row}: no order and no health line`, o));
+    };
+
+    // (a) --track installs no marker
+    writeFileSync(join(stepsDir(w), "w124.log"), "tee\n");
+    held("--track", next(w, [OPUS, "--track", step, "--pid", String(child), "--output", "steps/w124.log", ...budget]));
+    assert.equal(existsSync(markerPath(w)), false, `${n}: --track wrote no marker`);
+
+    // (b) a live tracked process
+    putMarker(w, { step, pid: child, start_ticks: tickOf(child), writer: "track" });
+    putOutput(w, "fresh\n", 30);
+    held("running", next(w, [OPUS, ...budget]));
+
+    // (c) dead, invalid, unknown and anomaly markers
+    putMarker(w, { step, pid: deadPid(), start_ticks: 1234 });
+    held("dead", next(w, [OPUS, ...budget]));
+    writeFileSync(markerPath(w), "{ this is not json");
+    held("invalid", next(w, [OPUS, ...budget]));
+    putMarker(w, { step, pid: 4242, start_ticks: 777 });
+    held("unknown", next(w, [OPUS, ...budget], { env: PROC_ENV(fakeProc(w, { "4242": "dir" })) }));
+    putMarker(w, { step, pid: child, start_ticks: tickOf(child) });
+    putOutput(w, "future\n", -3600);
+    held("anomaly", next(w, [OPUS, ...budget]));
+
+    // (d) --perform --expect performs nothing and takes no marker
+    rmSync(markerPath(w), { force: true });
+    held("--perform", next(w, [OPUS, "--perform", "--expect", step, ...budget]));
+    assert.equal(existsSync(markerPath(w)), false, `${n}: --perform took no marker`);
+    assert.deepEqual(calls(w).filter((c) => c[0] === "gh"), [], `${n}: no gh call was made`);
+  }
+});
