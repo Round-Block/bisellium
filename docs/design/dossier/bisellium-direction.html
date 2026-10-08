@@ -393,4 +393,27 @@
 </section>
 
 </div>
-<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}</style>
+<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}pre.mermaid{font-family:"Segoe UI",system-ui,sans-serif}pre.mermaid svg{max-width:none}</style>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs";
+import elk from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.3/dist/mermaid-layout-elk.esm.min.mjs";
+mermaid.registerLayoutLoaders(elk);
+// Page tokens -> Mermaid theme, resolved at load so light and dark both read.
+const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SANS = '"Segoe UI", system-ui, sans-serif'; // concrete, so measure and paint use one font (a <pre> would paint monospace and clip labels)
+const natural = { useMaxWidth: false };
+mermaid.initialize({
+  startOnLoad: true,
+  layout: "elk",
+  theme: "base",
+  themeVariables: {
+    fontFamily: SANS,
+    primaryColor: v("--accent-soft"), primaryTextColor: v("--ink"), primaryBorderColor: v("--accent"),
+    secondaryColor: v("--surface-2"), tertiaryColor: v("--surface-2"),
+    lineColor: v("--muted"), textColor: v("--ink"), mainBkg: v("--accent-soft"),
+    nodeBorder: v("--accent"), clusterBkg: v("--surface-2"), clusterBorder: v("--line"),
+    edgeLabelBackground: v("--surface"), background: v("--surface"),
+  },
+  flowchart: natural, state: natural, sequence: natural, class: natural, er: natural,
+});
+</script>
