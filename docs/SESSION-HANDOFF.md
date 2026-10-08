@@ -17,14 +17,13 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-08)
 
-- **W-167** (review loop stops at three failed rounds) merged (#322);
-  `verify` and `done` run on branch `chore/done-W-167` in the main checkout.
-  Its reds are the original recording: re-recording them at the branch tip
-  made the receipt replay them on built code, so they were restored (L-085
-  class; W-166 fixes it).
-- **W-166** spec: revision 7 signed (round 13), uncommitted in the main
-  checkout (`studio/briefs/W-166.md`, `ci/W-166-spec-1..13.log`); Codex spec
-  review round 7 next (prompts in `~/.bisellium-evidence/W-166-specreview/`).
+- **W-167** (review loop stops at three failed rounds) is done (PR 322;
+  checkpoint row 60). Its reds are the original recording: re-recording them
+  at the branch tip made the receipt replay them on built code, so they were
+  restored (L-085 class; W-166 fixes it). Retro next (Codex terra triage).
+- **W-166** spec passed its Codex review (round 14, revision 7), uncommitted
+  in the main checkout (`studio/briefs/W-166.md`, `ci/W-166-spec-1..14.log`);
+  land it with `next W-166 --perform --expect spec`, then build (ladder 3).
 
 ## Artifacts
 
