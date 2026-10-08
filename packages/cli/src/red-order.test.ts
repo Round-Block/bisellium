@@ -12,6 +12,7 @@ import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { sourceTreeHash } from "@bisellium/shim";
+import { checkEvidence } from "./rules/evidence.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MAIN = join(HERE, "main.ts");
@@ -284,4 +285,35 @@ test("W-166-b2 behaviour 2: behaviour 1, a brief without the line and an opus wi
   const bare = optedFixture("b2-bare", { noRecord: true, prereq: null });
   assert.equal(redIn(bare, 2).status, 0, "2i: an opus with no record records");
   assert.equal(ranOrder(bare), "target\n", "2i: and runs only the target");
+});
+
+// ---------------------------------------------------------------------------
+// 3. check blocks an opted-in red that shares its tree with an earlier behaviour's red
+// ---------------------------------------------------------------------------
+/** An officina directory (no repository) with W-900 in `state`, a two-behaviour brief and one red log per entry of `trees`. */
+function evidenceRoot(tag: string, o: { state?: string; lines?: string[]; trees: string[] }): string {
+  const dir = scratch(tag);
+  put(dir, "bisellium.yml", "name: fixture\n");
+  put(dir, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Order fixture\nkind: feature\ncollegium: engineering\nstate: ${o.state ?? "building"}\nprobationes: {}\nspec: briefs/${ID}.md\n---\nbody\n`);
+  put(dir, `briefs/${ID}.md`, `# ${ID} fixture\n\n## Intent\n\n${(o.lines ?? [LINE]).join("\n")}\n\n## Behaviours to test\n\n1. one\n2. two\n`);
+  o.trees.forEach((tree, i) =>
+    put(dir, `ci/reds/${ID}/${String(i + 1).padStart(2, "0")}.log`, `# behaviour: ${i + 1}\n# command: node t.test.ts\n# exit: 1\n# at: 2026-10-02T12:00:00.000Z\n# sella: eng-lead\n# tree: ${tree}\n\nnot ok 1 - behaviour ${i + 1}\n`),
+  );
+  return dir;
+}
+const sharedTree = (root: string) => checkEvidence(root, { now: new Date("2026-10-08T12:00:00Z") }).filter((f) => f.rule === "opus.red_evidence" && f.level === "block");
+
+test("W-166-b3 behaviour 3: an active opted-in opus whose reds share a tree gets one block naming both behaviours and the tree", () => {
+  const blocks = sharedTree(evidenceRoot("b3-shared", { trees: ["tree:aaaa", "tree:aaaa"] }));
+  assert.equal(blocks.length, 1, `3a: one opus.red_evidence block (${JSON.stringify(blocks)})`);
+  assert.match(blocks[0]!.message, /behaviours 1 and 2/, "3a: the block names behaviours 1 and 2");
+  assert.ok(blocks[0]!.message.includes("tree:aaaa"), "3a: the block names the tree");
+  assert.equal(blocks[0]!.where, `opera/${ID}.md`, "3a: the block is on the opus record");
+});
+
+test("W-166-b3 behaviour 3: distinct trees, no line, and a done or halted opus give no shared-tree block", () => {
+  assert.deepEqual(sharedTree(evidenceRoot("b3-distinct", { trees: ["tree:aaaa", "tree:bbbb"] })), [], "3b: distinct trees give no block");
+  assert.deepEqual(sharedTree(evidenceRoot("b3-noline", { lines: [], trees: ["tree:aaaa", "tree:aaaa"] })), [], "3b: no opt-in line gives no block");
+  for (const state of ["done", "halted"])
+    assert.deepEqual(sharedTree(evidenceRoot(`b3-${state}`, { state, trees: ["tree:aaaa", "tree:aaaa"] })), [], `3b: a ${state} opus gives no block`);
 });
