@@ -124,8 +124,10 @@ the main checkout's absolute `--studio`/`--repo`.
    `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
    `censor.sh <id> <round>`; record `record-review.sh <id> <round> <passed|failed>`
-   (a failed round records only the verdict log; W-165). Three failed rounds,
-   then ask the Patron.
+   (a failed round records only the verdict log; W-165). Before any re-review
+   the producer checks the fix's census: every path to the input the blocker
+   named is closed (W-184 makes it a hold). Three failed rounds, then ask the
+   Patron.
 5. **Merge:** rebase if master moved; refresh `handoff`; mint once from the
    worktree (bare `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
    ~15 min); `review-receipt.sh`; record the pass; `pr`; wait for CI; `merge`;
@@ -199,3 +201,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Status and dossier republished by a Haiku subagent, never the orchestrator | Patron |
 | 2026-10-08 | Spec review prompt checked in with a round-1 completeness clause (meta-retro) | Patron |
 | 2026-10-08 | No shortcuts in CI or tests; concurrency readiness owned by the orchestrator | Patron |
+| 2026-10-08 | Producer checks a fix round's census before re-review (W-184 enforces) | Patron |
