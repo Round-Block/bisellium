@@ -74,7 +74,9 @@ detection. The Aedile owns the road, not the work travelling on it.
   Status page and the dossier, with a spend line per provider. A
   general-purpose subagent on Haiku republishes (the publish tool makes it
   read every line of a live page it did not publish, ~135k tokens per pair);
-  never the orchestrating session.
+  never the orchestrating session. The architecture page is republished the
+  same way after any `docs/ARCHITECTURE.md` change. Every new opus gets a
+  milestone (`amend <id> --milestone <M> --value <n>`).
 - Never relay a mid-turn Patron message into a running agent.
 - epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
 
@@ -151,8 +153,10 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 ## 11. Standing rules
 
 - Every handoff edit passes `node ~/.bisellium-evidence/handoff-check.mjs .`
-  before it is committed (until W-186 makes it a check rule and a done-step
-  refusal).
+  (until W-186 makes it a check rule and a done-step refusal), then an
+  independent review (`studio/prompts/handoff-review.md`, Codex terra), at
+  most three rounds, before it is committed (findings left after round
+  three go to the Patron); the producer never certifies its own handoff.
 - Hold every PR while an opus sits between a passing review and its merge
   (until W-168): a moved master forces a rebase and a second mint.
 - When a brief contradicts itself, take its literal, stricter reading and
@@ -211,3 +215,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Producer checks a fix round's census before re-review (W-184 enforces) | Patron |
 | 2026-10-08 | Hold PRs while an opus awaits merge; a self-contradicting brief is read literally | Patron |
 | 2026-10-08 | Handoff edits pass handoff-check.mjs (W-186 enforces) | Patron |
+| 2026-10-08 | Handoff reviewed independently before commit; republish and milestone rules moved in from the handoff | Patron |
