@@ -17,17 +17,14 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-08)
 
-- **W-167** (review loop stops at three failed rounds; the Patron's OK buys
-  one more) is built, not reviewed: worktree `.worktrees/W-167`, branch
-  `opus/W-167`, unpushed. Full `npm test` and every gate pass except the
-  studio check, whose one blocking finding is the missing `handoff` (step 3
-  records it). The builder's final report was lost, so before review check:
-  - `~/.bisellium-evidence/W-167-build/accept/next-test-removed-lines.txt`:
-    4 existing test lines removed; justify or restore.
-  - b1's test omits the brief's "unreadable `ci/`" hold row.
-  - All five reds sit on the test commit (f6aa506); confirm each fails for
-    its own behaviour, not because an earlier one is unbuilt.
-  Then `handoff` and Codex review round 1 (ladder 4).
+- **W-167** (review loop stops at three failed rounds) merged (#322);
+  `verify` and `done` run on branch `chore/done-W-167` in the main checkout.
+  Its reds are the original recording: re-recording them at the branch tip
+  made the receipt replay them on built code, so they were restored (L-085
+  class; W-166 fixes it).
+- **W-166** spec: revision 7 signed (round 13), uncommitted in the main
+  checkout (`studio/briefs/W-166.md`, `ci/W-166-spec-1..13.log`); Codex spec
+  review round 7 next (prompts in `~/.bisellium-evidence/W-166-specreview/`).
 
 ## Artifacts
 
@@ -47,9 +44,11 @@ Rules, process and environment: studio/leges/production.md.
 Order of record: `studio/acta/2026-10-05-ranking.md`. Every new opus gets a
 milestone (`amend <id> --milestone <M> --value <n>`).
 
-1. W-167 (built; review next, above).
-2. W-166 — a recorded failing test must come from the code state its brief
-   names (high; L-085).
+1. W-166 — a recorded failing test must come from the code state its brief
+   names (high; L-085; spec review, above).
+2. W-168 — GitHub CI certifies the merge result (merge queue, master-pinned
+   workflow, attested receipt), so a rebase needs no local re-mint (Patron,
+   2026-10-08; research in `~/.bisellium-evidence/research-remint/`).
 3. W-068 — task dependencies (signed spec in
    `~/.bisellium-evidence/partial-specs/`; copy into `studio/`, then the
    spec review).
