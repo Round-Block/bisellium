@@ -201,7 +201,7 @@ const put = (dir, rel, text) => {
 };
 const commitAll = (dir, message) => {
   git(dir, "add", "-A");
-  git(dir, "commit", "-q", "-m", message);
+  git(dir, "commit", "-q", "--allow-empty", "-m", message);
   return git(dir, "rev-parse", "HEAD");
 };
 const MANIFEST = "bisellium: 1\nstudio: fixture\nsource_excludes: []\n";
@@ -375,7 +375,10 @@ test("W-168-b2 behaviour 2: phase A refusals return 2, mint nothing and write no
     ],
     ["an unparseable bisellium.yml", (fx) => (put(fx.cand, "studio/bisellium.yml", "a: [\n"), {})],
     ["a bisellium.yml that is a YAML list", (fx) => (put(fx.cand, "studio/bisellium.yml", "- a\n- b\n"), {})],
-    ["a scalar source_excludes", (fx) => (put(fx.cand, "studio/bisellium.yml", `${MANIFEST}source_excludes: x\n`), {})],
+    [
+      "a scalar source_excludes",
+      (fx) => (put(fx.cand, "studio/bisellium.yml", "bisellium: 1\nstudio: fixture\nsource_excludes: x\n"), {}),
+    ],
     ["a PR read without a string headRefName", () => ({ dropPr: ["headRefName"] })],
     ["a PR read with a numeric headRefName", () => ({ pr: { headRefName: 7 } })],
     [
