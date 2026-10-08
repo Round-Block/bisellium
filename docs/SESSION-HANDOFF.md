@@ -12,28 +12,19 @@ What a fresh orchestrating session must know that the code does not say.
 Read after CLAUDE.md. Keep it short; move anything durable into a lex, a
 decision or a check rule and delete it here.
 
-## Resume point (2026-10-07)
+## Resume point (2026-10-08)
 
 - **W-167** (review loop stops at three failed rounds; the Patron's OK buys
-  one more; a whole-class blocker is fixed at the input boundary) is built,
-  not reviewed. Worktree `.worktrees/W-167`, branch `opus/W-167` (unpushed):
-  tests d953417, reds 1-5 f6aa506, build 3ebdd67..abfe5ac (b1-b5, docs, fix).
-  Full `npm test` exit 0; gates under `~/.bisellium-evidence/W-167-build/`
-  all 0 except `check-studio.exit` 1 (compare with `check-studio-master.log`).
-  The phase-2 builder's final report was lost (its call was cut off when the
-  Patron sent a message), so audit before review: gate logs,
-  `accept/`, `accept/next-test-removed-lines.txt` (4 test lines removed:
-  justify or restore), and phase 1's notes: it dropped the brief's
-  "unreadable `ci/`" hold row from b1's test, and recorded all five reds on
-  the test commit (W-162 recorded them one behaviour at a time; check each
-  red is genuine). Next: audit, `handoff`, Codex review round 1 (ladder 4).
-- Run long builder dispatches in the background, so a Patron message does
-  not land on a running foreground call.
-- Codex runs inside the Bash sandbox with `allowed_domains`
-  `api.openai.com`, `chatgpt.com`, `auth.openai.com`; never unsandboxed.
-- `next` asks for a handoff before it names the architect after a failed
-  spec review ("stale handover"); dispatch the architect directly instead
-  of writing a handoff onto master's record.
+  one more) is built, not reviewed: worktree `.worktrees/W-167`, branch
+  `opus/W-167`, unpushed. Full `npm test` and every gate pass except the
+  studio check, whose one blocking finding is the missing `handoff` (step 3
+  records it). The builder's final report was lost, so before review check:
+  - `~/.bisellium-evidence/W-167-build/accept/next-test-removed-lines.txt`:
+    4 existing test lines removed; justify or restore.
+  - b1's test omits the brief's "unreadable `ci/`" hold row.
+  - All five reds sit on the test commit (f6aa506); confirm each fails for
+    its own behaviour, not because an earlier one is unbuilt.
+  Then `handoff` and Codex review round 1 (ladder 4).
 
 ## Standing instructions (Patron)
 
@@ -82,7 +73,9 @@ decision or a check rule and delete it here.
 - `gh` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. Records PRs:
   `~/.bisellium-evidence/chore-pr.sh <n>` waits for CI and merges.
 - Codex: `codex exec -c model_provider=openai -m <model> -c model_reasoning_effort=high -s read-only --skip-git-repo-check -C <dir> -o <out.md> - < prompt.md`
-  (no git, node servers or browsers inside it).
+  (no git, node servers or browsers inside it). Runs inside the Bash
+  sandbox with `allowed_domains` `api.openai.com`, `chatgpt.com`,
+  `auth.openai.com`; unsandboxed commands are disabled in settings.
 
 ## Opus ladder
 
@@ -104,7 +97,10 @@ the main checkout's absolute `--studio`/`--repo`.
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
    behaviour at a time on the commit of the previous behaviour, build, gates,
    one full `npm test`. Record `handoff` before the review packet. A fresh
-   builder past ~250k.
+   builder past ~250k; dispatch builders in the background so a Patron
+   message cannot cut one off. `next` now orders all reds before any
+   implementation (phase 1), which conflicts with one-at-a-time; W-166
+   settles it.
 4. **Review:** Codex `gpt-5.6-sol`, prompt modelled on
    `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
@@ -136,7 +132,7 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 Order of record: `studio/acta/2026-10-05-ranking.md`. Every new opus gets a
 milestone (`amend <id> --milestone <M> --value <n>`).
 
-1. W-167 (in spec, above).
+1. W-167 (built; review next, above).
 2. W-166 — a recorded failing test must come from the code state its brief
    names (high; L-085).
 3. W-068 — task dependencies (signed spec in
