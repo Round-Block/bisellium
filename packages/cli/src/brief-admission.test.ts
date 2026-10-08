@@ -52,6 +52,8 @@ function studio(limit: unknown = 6): string {
 interface BriefSpec {
   /** `Decree family:` lines in the Intent section. */
   families?: string[];
+  /** W-166: the red order lines in the Intent section; default the one exact opt-in line. */
+  redOrder?: string[];
   /** `Behaviour limit exception:` lines in the Intent section. */
   exceptions?: string[];
   /** Genuine-red markers each numbered behaviour carries; its length is the count. */
@@ -88,6 +90,7 @@ function brief(s: BriefSpec = {}): string {
   const out: string[] = ["# W-900 fixture", "", "## Intent", ""];
   for (const f of s.families ?? ["brief-admission"]) out.push(`Decree family: ${f}`);
   for (const e of s.exceptions ?? []) out.push(`Behaviour limit exception: ${e}`);
+  for (const r of s.redOrder ?? ["Red order: one at a time"]) out.push(r);
   if (s.fencedIntent) out.push("```", ...s.fencedIntent, "```");
   out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "");
   const domain = s.domain ?? DOMAIN;

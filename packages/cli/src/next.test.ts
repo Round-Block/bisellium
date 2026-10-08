@@ -3530,6 +3530,14 @@ function reviewHeld(o: Out, row: string, why?: RegExp): void {
   assert.equal(o.kv.has("command"), false, ran(`${row}: no command is named`, o));
   if (why !== undefined) assert.match(o.kv.get("why") ?? "", why, ran(`${row}: why`, o));
 }
+/** W-166: the hold on a malformed source_excludes, printed before any derivation: `next: <id> held`, no step. */
+function excludesHeld(o: Out, row: string): void {
+  assert.equal(o.first, `next: ${OPUS} held`, ran(`${row}: the held line carries no step`, o));
+  assert.equal(o.status, 1, ran(`${row}: exit`, o));
+  assert.equal(o.kv.has("role"), false, ran(`${row}: no order is named`, o));
+  assert.equal(o.kv.has("command"), false, ran(`${row}: no command is named`, o));
+  assert.match(o.kv.get("why") ?? "", /^bisellium\.yml#source_excludes is malformed \(/, ran(`${row}: why names bisellium.yml#source_excludes`, o));
+}
 function patronHeld(o: Out, row: string): void {
   reviewHeld(o, row);
   assert.equal(o.kv.get("actor"), "patron", ran(`${row}: actor`, o));
@@ -3631,11 +3639,15 @@ test("W-167-b1 behaviour 1: round history, review configuration and the cited ga
     ["a retired censor", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace(" }", ", retired: true }"))],
     ["a non-agent censor", (t) => t.replace(CENSOR_ROW, CENSOR_ROW.replace("kind: agent", "kind: orchestrator"))],
     ["a builder-class censor", (t) => t.replace(QA_COLLEGIUM, QA_COLLEGIUM.replace("qa-lead", "builder"))],
+  ];
+  for (const [name, edit] of configs) trial(w, both(edit), () => reviewHeld(n167(w), `${name} holds`));
+  // W-166: a malformed source_excludes holds before any derivation, so there is no step on the held line
+  const malformed: [string, (t: string) => string][] = [
     ["a scalar source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: studio")],
     ["a null source_excludes", (t) => t.replace("source_excludes: []", "source_excludes: null")],
     ["a source_excludes with an empty string", (t) => t.replace("source_excludes: []", 'source_excludes: [""]')],
   ];
-  for (const [name, edit] of configs) trial(w, both(edit), () => reviewHeld(n167(w), `${name} holds`));
+  for (const [name, edit] of malformed) trial(w, both(edit), () => excludesHeld(n167(w), `${name} holds`));
   trial(w, both((t) => `${t}review_probatio: review\n`), () => buildFix(n167(w), "review_probatio: review is the default spelled out"));
 
   // the worktree manifest against the main checkout's: one row per key, naming it and both values
@@ -3822,4 +3834,161 @@ test("W-167-b5 behaviour 5: a class blocker's fix order prescribes one check at 
   const review = n167(single);
   reviewNamed(review, 2, "a review order");
   assert.match(review.kv.get("command") ?? "", /\bclass\b[^]*recurs across sites|recurs across sites[^]*\bclass\b/, ran("the command names the word class for a blocker that recurs across sites", review));
+});
+
+test("W-166-b4 behaviour 4: next orders one behaviour's test, red, log commit and implementation at a time", { timeout: 1_800_000 }, () => {
+  const budget = ["--budget", "100000"];
+  const none = world("w166-b4-none", "ready");
+  handoffAt(none, "wt", T.handoffFresh);
+  const first = next(none, [OPUS, ...budget]);
+  expectStep(first, "reds", "named", "4a: a world with no reds names reds");
+  const order = first.kv.get("command") ?? "";
+  assert.match(order, /from behaviour 1 through 2/, ran("4a: the order starts from behaviour 1", first));
+  assert.equal(first.kv.get("actor"), "builder", "4a: the actor is the builder");
+  assert.equal(first.kv.get("phase"), "1", "4a: phase 1");
+  assert.match(order, /from \.worktrees\/W-900: bisellium red W-900 --behaviour <b> /, ran("4a: the red runs from the worktree", first));
+  assert.doesNotMatch(order, /--repo/, ran("4a: the red command carries no --repo", first));
+  assert.doesNotMatch(order, /reds only, implementation absent/, ran("4a: the old all-reds order is gone", first));
+  assert.match(order, /commit the red log alone \(studio files only\), before any implementation/, ran("4a: the log is committed alone before the implementation", first));
+  assert.match(order, /detached worktree[^]*never rewrite history/, ran("4a: the correction path is named", first));
+
+  const one = world("w166-b4-one", "ready");
+  writeReds(one);
+  rmSync(join(one.wtStudio, "ci", "reds", OPUS, "02.log"));
+  commit(one.wt, "studio: drop red 2");
+  handoffAt(one, "wt", T.handoffFresh);
+  const second = next(one, [OPUS, ...budget]);
+  expectStep(second, "reds", "named", "4b: 01.log usable and 02.log absent names reds");
+  assert.match(second.kv.get("command") ?? "", /from behaviour 2 through 2/, ran("4b: the order starts from behaviour 2", second));
+});
+
+test("W-166-b4 behaviour 4: a scalar source_excludes holds next and dispatches nothing", { timeout: 1_800_000 }, () => {
+  const w = world("w166-b4-scalar", "ready");
+  const manifest = join(w.studio, "bisellium.yml");
+  writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", "source_excludes: examples/"));
+  commit(w.repo, "studio: scalar source_excludes");
+  const o = next(w, [OPUS, "--budget", "100000"]);
+  assert.equal(o.status, 1, ran("4c: a scalar source_excludes exits 1", o));
+  assert.match(o.out, /why: .*bisellium\.yml#source_excludes/, ran("4c: the why names bisellium.yml#source_excludes", o));
+  assert.doesNotMatch(o.out, /^(role|command|phase):/m, ran("4c: no order is dispatched", o));
+});
+
+test("W-166-b4 behaviour 4: a malformed source_excludes holds next on every derivation outcome", { timeout: 1_800_000 }, () => {
+  const spoil = (w: World, to: string): void => {
+    const manifest = join(w.studio, "bisellium.yml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", `source_excludes: ${to}`));
+    commit(w.repo, "studio: malformed source_excludes");
+  };
+  for (const to of ["examples/", "null", '[""]']) {
+    // a complete opus must not exit 0
+    const done = world(`w166-b4-complete-${to.length}`, "checkpoint");
+    spoil(done, to);
+    const c = next(done, [OPUS, "--budget", "100000"]);
+    assert.equal(c.status, 1, ran(`4d: a complete opus under source_excludes ${to} exits 1`, c));
+    assert.equal(c.first.endsWith(" held"), true, ran(`4d: ${to} holds a complete opus`, c));
+    assert.match(c.out, /bisellium\.yml#source_excludes/, ran(`4d: ${to} names source_excludes on a complete opus`, c));
+
+    // an already-held rung (no budget declared) names source_excludes, not its own why
+    const held = world(`w166-b4-held-${to.length}`, "ready");
+    handoffAt(held, "wt", T.handoffFresh);
+    spoil(held, to);
+    const h = next(held, [OPUS]);
+    assert.equal(h.status, 1, ran(`4e: a held rung under source_excludes ${to} exits 1`, h));
+    assert.match(h.kv.get("why") ?? h.out, /bisellium\.yml#source_excludes/, ran(`4e: ${to} names source_excludes on a held rung`, h));
+    assert.doesNotMatch(h.out, /^(role|command):/m, ran(`4e: ${to} dispatches nothing`, h));
+  }
+});
+
+test("W-166-b3 behaviour 3: with a usable worktree next surfaces the shared-tree block at reds", { timeout: 1_800_000 }, () => {
+  const w = world("w166-b3-shared", "ready");
+  appendFileSync(join(w.wt, "studio/briefs/W-900.md"), "\nRed order: one at a time\n");
+  writeReds(w);
+  handoffAt(w, "wt", T.handoffFresh);
+  const o = next(w, [OPUS, "--budget", "100000"]);
+  expectStep(o, "reds", "named", "3a: a shared-tree pair in an opted-in opus names reds");
+  assert.match(o.kv.get("why") ?? "", /opus\.red_evidence: red logs for behaviours 1 and 2 certify one tree/, ran("3a: the why carries the shared-tree block", o));
+});
+
+test("W-166-b4 behaviour 4: a malformed source_excludes is a terminal hold: no track, health or perform replaces it", { timeout: 1_800_000 }, () => {
+  const budget = ["--budget", "100000"];
+  for (const [n, to] of [["scalar", "examples/"], ["null", "null"], ["empty", '[""]']] as const) {
+    const w = world(`w166-b4-terminal-${n}`, "reds");
+    const manifest = join(w.studio, "bisellium.yml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", `source_excludes: ${to}`));
+    commit(w.repo, "studio: malformed source_excludes");
+    // any step: nothing is derived, so no step is compared
+    const step = "review";
+    const child = liveChild();
+    mkdirSync(stepsDir(w), { recursive: true });
+    const held = (row: string, o: Out): void => {
+      assert.equal(o.status, 1, ran(`${n} ${row}: exit 1`, o));
+      assert.match(o.first, /^next: W-900 held$/, ran(`${n} ${row}: the held line`, o));
+      assert.match(o.out, /bisellium\.yml#source_excludes/, ran(`${n} ${row}: names source_excludes`, o));
+      assert.doesNotMatch(o.out, /^(role|command|health):/m, ran(`${n} ${row}: no order and no health line`, o));
+    };
+
+    // (a) --track installs no marker
+    writeFileSync(join(stepsDir(w), "w124.log"), "tee\n");
+    held("--track", next(w, [OPUS, "--track", step, "--pid", String(child), "--output", "steps/w124.log", ...budget]));
+    assert.equal(existsSync(markerPath(w)), false, `${n}: --track wrote no marker`);
+
+    // (b) a live tracked process
+    putMarker(w, { step, pid: child, start_ticks: tickOf(child), writer: "track" });
+    putOutput(w, "fresh\n", 30);
+    held("running", next(w, [OPUS, ...budget]));
+
+    // (c) dead, invalid, unknown and anomaly markers
+    putMarker(w, { step, pid: deadPid(), start_ticks: 1234 });
+    held("dead", next(w, [OPUS, ...budget]));
+    writeFileSync(markerPath(w), "{ this is not json");
+    held("invalid", next(w, [OPUS, ...budget]));
+    putMarker(w, { step, pid: 4242, start_ticks: 777 });
+    held("unknown", next(w, [OPUS, ...budget], { env: PROC_ENV(fakeProc(w, { "4242": "dir" })) }));
+    putMarker(w, { step, pid: child, start_ticks: tickOf(child) });
+    putOutput(w, "future\n", -3600);
+    held("anomaly", next(w, [OPUS, ...budget]));
+
+    // (d) --perform --expect performs nothing and takes no marker
+    rmSync(markerPath(w), { force: true });
+    held("--perform", next(w, [OPUS, "--perform", "--expect", step, ...budget]));
+    assert.equal(existsSync(markerPath(w)), false, `${n}: --perform took no marker`);
+    assert.deepEqual(calls(w).filter((c) => c[0] === "gh"), [], `${n}: no gh call was made`);
+  }
+});
+
+test("W-166-b4 behaviour 4: a malformed source_excludes holds before any derivation, gh or git read", { timeout: 1_800_000 }, () => {
+  const spoil = (w: World): void => {
+    const manifest = join(w.studio, "bisellium.yml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", "source_excludes: examples/"));
+    commit(w.repo, "studio: scalar source_excludes");
+  };
+  const quiet = (w: World, row: string, o: Out): void => {
+    excludesHeld(o, row);
+    assert.deepEqual(ghCalls(w), [], `${row}: the gh stub recorded no call`);
+    assert.deepEqual(
+      gitCalls(w).filter((a) => a[0] !== "rev-parse"),
+      [],
+      `${row}: no git call beyond the repository checks`,
+    );
+  };
+  const rows: [string, (w: World) => void, World][] = [
+    ["5a an absent tip", () => undefined, world("w166-b4-notip", "spec")],
+    ["5b an unusable worktree", (w) => rmSync(w.wt, { recursive: true, force: true }), world("w166-b4-nowt", "reds")],
+    ["5c a pushed branch", () => undefined, world("w166-b4-pushed", "pr")],
+  ];
+  for (const [row, prep, w] of rows) {
+    prep(w);
+    spoil(w);
+    rmSync(w.log, { force: true });
+    quiet(w, row, next(w, [OPUS, "--budget", "100000"]));
+  }
+  // 5d: an unknown opus with a malformed value: the hold wins. The id, repository and studio checks come before
+  // readSourceExcludes and keep exit 2; "unknown opus" was found only after it (by gather), so it no longer wins.
+  const unknown = world("w166-b4-unknown", "spec");
+  spoil(unknown);
+  rmSync(unknown.log, { force: true });
+  const o = next(unknown, ["W-999", "--budget", "100000"]);
+  excludesHeld({ ...o, first: o.first.replace("W-999", OPUS) }, "5d an unknown opus");
+  assert.equal(o.first, "next: W-999 held", ran("5d: the hold names the asked id", o));
+  assert.deepEqual(ghCalls(unknown), [], "5d: no gh call");
 });

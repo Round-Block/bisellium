@@ -1,0 +1,16 @@
+# opus: W-166
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T11:58:49.792Z
+# tree: tree:521d711f1ec792b96bc83fe06bd5c41a8e019fa7
+# brief: briefs/W-166.md blob:ff83e05be8e827df949a1172a1a74e272cf04e3f
+
+## Findings
+1. blocking — packages/cli/src/next.ts:1454 The malformed-`source_excludes` hold is not terminal: `--track` ignores `d1.status` and can install a marker and exit 0, while report mode—including `--perform` after `performable` becomes false—lets `running`, `dead`, `invalid`, `unknown`, and `anomaly` health cases at lines 1454–1463 replace the required source-excludes hold; `running` also exits 0 (brief:108). This is one class; every branch after `derive(f)` was searched, these are all instances, and returning the malformed-manifest hold immediately after `readSourceExcludes`, before `gather` and marker handling, closes it. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The literal round-1 regression rows pass, but source-excludes precedence remains incomplete at the action and health boundary and can still permit mutation or exit 0.
+VERDICT: FAIL

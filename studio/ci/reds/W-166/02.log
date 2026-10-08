@@ -1,0 +1,503 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-166-b2 --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-10-08T10:03:36.982Z
+# sella: builder.W-166
+# tree: tree:5c2898055b231f8f300d20e7af75787b4251cc8d
+
+TAP version 13
+# Subtest: W-166-b2 behaviour 2: an opted-in red runs the earlier behaviour first, then the target
+not ok 1 - W-166-b2 behaviour 2: an opted-in red runs the earlier behaviour first, then the target
+  ---
+  duration_ms: 323.552656
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:498'
+  failureType: 'testCodeFailure'
+  error: |-
+    2a: behaviour 1's recorded command ran, then the target
+    + actual - expected
+    
+    + 'target\n'
+    - 'b1\ntarget\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    b1
+    target
+    
+  actual: |-
+    target
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:204:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-166-b2 behaviour 2: a missing 01.log exits 2 with no command run and no log
+not ok 2 - W-166-b2 behaviour 2: a missing 01.log exits 2 with no command run and no log
+  ---
+  duration_ms: 321.489606
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a missing 01.log exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-166-b2 behaviour 2: a malformed opt-in line exits 2 with no command run and no log
+not ok 3 - W-166-b2 behaviour 2: a malformed opt-in line exits 2 with no command run and no log
+  ---
+  duration_ms: 299.920004
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a malformed opt-in line exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a repeated opt-in line exits 2 with no command run and no log
+not ok 4 - W-166-b2 behaviour 2: a repeated opt-in line exits 2 with no command run and no log
+  ---
+  duration_ms: 311.301994
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a repeated opt-in line exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: an unsafe spec exits 2 with no command run and no log
+not ok 5 - W-166-b2 behaviour 2: an unsafe spec exits 2 with no command run and no log
+  ---
+  duration_ms: 323.467693
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: an unsafe spec exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a dirty tree exits 2 with no command run and no log
+not ok 6 - W-166-b2 behaviour 2: a dirty tree exits 2 with no command run and no log
+  ---
+  duration_ms: 312.936508
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a dirty tree exits 2 (red: warning: the working tree is dirty, so this red records a dirty: tree identity that the producer replay refuses; commit the tests first, then re-record
+    )
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a scalar source_excludes exits 2 with no command run and no log
+not ok 7 - W-166-b2 behaviour 2: a scalar source_excludes exits 2 with no command run and no log
+  ---
+  duration_ms: 304.08156
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a scalar source_excludes exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a scalar source_excludes without the line exits 2 with no command run and no log
+not ok 8 - W-166-b2 behaviour 2: a scalar source_excludes without the line exits 2 with no command run and no log
+  ---
+  duration_ms: 306.064494
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a scalar source_excludes without the line exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a HEAD that is not on the opus branch exits 2 with no command run and no log
+not ok 9 - W-166-b2 behaviour 2: a HEAD that is not on the opus branch exits 2 with no command run and no log
+  ---
+  duration_ms: 334.07639
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a HEAD that is not on the opus branch exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a cwd below the repository root exits 2 with no command run and no log
+not ok 10 - W-166-b2 behaviour 2: a cwd below the repository root exits 2 with no command run and no log
+  ---
+  duration_ms: 299.046956
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a cwd below the repository root exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: an empty target argument exits 2 with no command run and no log
+not ok 11 - W-166-b2 behaviour 2: an empty target argument exits 2 with no command run and no log
+  ---
+  duration_ms: 313.468627
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: an empty target argument exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a target argument with a space exits 2 with no command run and no log
+not ok 12 - W-166-b2 behaviour 2: a target argument with a space exits 2 with no command run and no log
+  ---
+  duration_ms: 305.193908
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a target argument with a space exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a non-Git --repo exits 2 with no command run and no log
+not ok 13 - W-166-b2 behaviour 2: a non-Git --repo exits 2 with no command run and no log
+  ---
+  duration_ms: 294.378846
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2425'
+  failureType: 'testCodeFailure'
+  error: |-
+    2b: a non-Git --repo exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:237:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: an executable that never starts exits 2 and writes no log (opted in)
+not ok 14 - W-166-b2 behaviour 2: an executable that never starts exits 2 and writes no log (opted in)
+  ---
+  duration_ms: 278.967933
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2977'
+  failureType: 'testCodeFailure'
+  error: |-
+    2c: a spawn failure exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:249:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: an executable that never starts exits 2 and writes no log (no line)
+not ok 15 - W-166-b2 behaviour 2: an executable that never starts exits 2 and writes no log (no line)
+  ---
+  duration_ms: 272.299792
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:2977'
+  failureType: 'testCodeFailure'
+  error: |-
+    2c: a spawn failure exits 2 ()
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:249:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a behaviour 1 command that exits 1 exits 1, writes no log and never runs the target
+not ok 16 - W-166-b2 behaviour 2: a behaviour 1 command that exits 1 exits 1, writes no log and never runs the target
+  ---
+  duration_ms: 310.625446
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:3559'
+  failureType: 'testCodeFailure'
+  error: |-
+    2d: an unmet prerequisite exits 1 ()
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:258:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a behaviour 1 command that exits 0 with \# pass 0 exits 1, writes no log and never runs the target
+not ok 17 - W-166-b2 behaviour 2: a behaviour 1 command that exits 0 with \# pass 0 exits 1, writes no log and never runs the target
+  ---
+  duration_ms: 307.134328
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:3559'
+  failureType: 'testCodeFailure'
+  error: |-
+    2d: an unmet prerequisite exits 1 ()
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:258:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a target that modifies a tracked file outside the exclusions exits 1
+not ok 18 - W-166-b2 behaviour 2: a target that modifies a tracked file outside the exclusions exits 1
+  ---
+  duration_ms: 309.767629
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:29:3954'
+  failureType: 'testCodeFailure'
+  error: |-
+    2e: a tree moved by the target exits 1 ()
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:266:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b2 behaviour 2: a target that writes under the studio still records
+ok 19 - W-166-b2 behaviour 2: a target that writes under the studio still records
+  ---
+  duration_ms: 320.851655
+  type: 'test'
+  ...
+# Subtest: W-166-b2 behaviour 2: behaviour 1, a brief without the line and an opus with no record run the target only
+ok 20 - W-166-b2 behaviour 2: behaviour 1, a brief without the line and an opus with no record run the target only
+  ---
+  duration_ms: 920.063536
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 2
+# fail 18
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6850.395366

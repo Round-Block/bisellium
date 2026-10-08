@@ -1,0 +1,47 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-166-b3 --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-10-08T10:11:37.566Z
+# sella: builder.W-166
+# tree: tree:21ffa5c0484b9017f63d79dc7527d86f2eda81cb
+
+TAP version 13
+# Subtest: W-166-b3 behaviour 3: an active opted-in opus whose reds share a tree gets one block naming both behaviours and the tree
+not ok 1 - W-166-b3 behaviour 3: an active opted-in opus whose reds share a tree gets one block naming both behaviours and the tree
+  ---
+  duration_ms: 11.914458
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:57:214'
+  failureType: 'testCodeFailure'
+  error: |-
+    3a: one opus.red_evidence block ([])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:308:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-166-b3 behaviour 3: distinct trees, no line, and a done or halted opus give no shared-tree block
+ok 2 - W-166-b3 behaviour 3: distinct trees, no line, and a done or halted opus give no shared-tree block
+  ---
+  duration_ms: 8.125491
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33.397979

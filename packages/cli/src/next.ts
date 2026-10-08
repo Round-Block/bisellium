@@ -28,7 +28,7 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readRoundRulings } from "@bisellium/commands/lifecycle.js";
-import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
@@ -409,7 +409,9 @@ export function gather(repo: string, studioAbs: string, id: string): Facts {
   const manifest = readManifest(studioAbs);
   const realRepo = realpathSync(repo);
   const studioRel = relative(realRepo, realpathSync(studioAbs)).split("\\").join("/");
-  const excludes = [studioRel, ".bisellium", ...(manifest.source_excludes ?? [])];
+  // W-166: only the validated list is spread; `runNext` holds on a malformed one before it gets here.
+  const declaredExcludes = readSourceExcludes(manifest);
+  const excludes = [studioRel, ".bisellium", ...("excludes" in declaredExcludes ? declaredExcludes.excludes : [])];
   const design = manifest.collegia.find((c) => c.id === "design")?.magister ?? "architect";
   const branchRef = `refs/heads/opus/${id}`;
   const tipRead = readTip(repo, id);
@@ -676,6 +678,7 @@ export function deriveNext(f: Facts): Derived {
         resume: bs.list(`ci/reds/${id}`).length > 0,
         inputs: [briefRel(id)],
         extra: [["missing", missing.join(",") || "(none; see why)"]],
+        ...(missing.length > 0 ? { behaviour: { from: missing[0]!, through: n } } : {}),
       });
 
     // 6 build
@@ -843,7 +846,7 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer }): Derived {
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; behaviour?: { from: number; through: number } }): Derived {
   const { id, studioRel, manifest } = f;
   const builder = (() => {
     const resolved = resolveSeat(manifest, "builder");
@@ -872,7 +875,23 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else if (step === "reds") {
     role = "builder";
     sella = builder;
-    command = `dispatch ${sella} (phase 1, reds only, implementation absent); record each red with: bisellium red ${id} --behaviour <n> --sella ${sella} --studio ${studioRel} --repo . -- <cmd…>`;
+    // W-166 (D-036): one behaviour at a time; with none missing, the finding is the work and only the last two lines remain.
+    const head = `dispatch ${sella} (phase 1, one behaviour at a time, D-036), in .worktrees/${id}`;
+    const closing = [
+      "If red refuses, finish the earlier behaviour it names; never re-record a red at the tip.",
+      "A red recorded on the wrong tree is re-recorded with --cwd in a detached worktree at the commit it belongs on, after the branch's last rebase, and its log committed at the tip; never rewrite history.",
+    ];
+    command =
+      o.behaviour === undefined
+        ? [`${head}, to resolve: ${why}`, ...closing].join("\n")
+        : [
+            `${head}, from behaviour ${o.behaviour.from} through ${o.behaviour.through}, for each in turn:`,
+            "1. commit the behaviour's test, its rows failing;",
+            `2. from .worktrees/${id}: bisellium red ${id} --behaviour <b> --sella ${sella} --studio ${studioRel} -- <cmd…>`,
+            "3. commit the red log alone (studio files only), before any implementation;",
+            "4. implement the behaviour until its rows and every earlier behaviour's rows pass, and commit.",
+            ...closing,
+          ].join("\n");
   } else if (step === "build") {
     role = "builder";
     sella = builder;
@@ -1373,6 +1392,15 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   if (typeof opusPath !== "string") return usage(`invalid opus id "${id}"`);
   const rel = relative(realpathSync(repo), realpathSync(opened.root));
   if (rel.startsWith("..") || isAbsolute(rel)) return usage(`--studio ${opened.root} is outside the repository`);
+
+  // W-166: one validator for every reader of source_excludes (brief:108). A malformed value holds here, before
+  // `gather`, `deriveNext` (and its lazy gh reads), --track, markers, perform or dispatch: nothing is derived, so
+  // the held line carries no step. `gather` reads the same value through the same validator and spreads only a valid list.
+  const declaredExcludes = readSourceExcludes(opened.manifest);
+  if ("error" in declaredExcludes) {
+    console.log(`next: ${id} held\nwhy: ${clean(`bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, 1000)}`);
+    return { exitCode: 1 };
+  }
 
   let f = gather(repo, opened.root, id);
   if (f.trunkRecord === undefined && f.branchRecord === undefined) return usage(`unknown opus: ${id}`);
