@@ -772,6 +772,43 @@ function findGitRoot(dir: string): string | undefined {
   }
 }
 
+/** `git rev-parse --git-common-dir`, canonicalised: the same for every worktree of one repository. */
+function gitCommonDir(dir: string): string | undefined {
+  try {
+    return realpathSync(
+      execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
+        cwd: dir,
+        encoding: "utf8",
+        timeout: GIT_TIMEOUT_MS,
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim(),
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+/** The repository a red certifies: the Git root containing `execCwd`. A `--repo` that is a Git work tree must
+ *  be that same root (both canonicalised); one that is not keeps today's "unknown", and a cwd outside any
+ *  repository keeps today's "none" (with `--cwd`) or "unknown". */
+function redRepository(
+  execCwd: string,
+  repoFlag: string | undefined,
+  cwdGiven: boolean,
+): { root: string } | { header: "unknown" | "none" } | { error: string } {
+  const found = findGitRoot(execCwd);
+  const root = found === undefined ? undefined : realpathSync(found);
+  if (repoFlag !== undefined) {
+    const repo = resolve(repoFlag);
+    if (!isGitRepo(repo)) return { header: "unknown" };
+    const repoRoot = realpathSync(findGitRoot(repo) ?? repo);
+    if (repoRoot !== root)
+      return { error: `red: --repo ${repoRoot} is not the repository the command runs in (${root ?? "none"}); --repo may confirm it, never choose another` };
+  }
+  if (root === undefined) return { header: cwdGiven ? "none" : "unknown" };
+  return { root };
+}
+
 /**
  * Same containment idiom as writes.ts's `safeItemPath`, applied to a
  * directory (`<studio>/ci/reds/<opus>/`) instead of an `<id>.md` file — an
@@ -876,15 +913,18 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
 
   // Same exclusion set verify.ts computes: the officina itself, .bisellium/,
   // and any manifest source_excludes — so red's own log write is never what
-  // makes the tree it just certified "dirty". Only applies when the officina
-  // actually lives inside the repo being hashed; a --cwd pointing at an
-  // unrelated repo (the usual reason to pass --cwd at all) has nothing of
-  // the officina's to exclude.
+  // makes the tree it just certified "dirty". Applies whenever the hashed
+  // repository and the officina belong to one repository (a linked worktree
+  // of the studio's repository included, W-166); an unrelated repository
+  // (the usual reason to pass --cwd at all) has nothing of the officina's to
+  // exclude.
   function hashRepo(repoDir: string): string {
     try {
-      const rel = relative(repoDir, root);
-      const rootInside = !isAbsolute(rel) && rel.split(sep)[0] !== "..";
-      const excludeDirs = rootInside ? [rel.split(sep).join("/"), ".bisellium", ...(manifest.source_excludes ?? [])] : [];
+      const studioGit = findGitRoot(root);
+      const same = studioGit !== undefined && gitCommonDir(repoDir) !== undefined && gitCommonDir(repoDir) === gitCommonDir(root);
+      const excludeDirs = same
+        ? [relative(studioGit, realpathSync(root)).split(sep).join("/"), ".bisellium", ...(manifest.source_excludes ?? [])]
+        : [];
       const hash = sourceTreeHash(repoDir, excludeDirs, "HEAD");
       const dirty = isDirtyOutside(repoDir, excludeDirs);
       return `${dirty ? "dirty" : "tree"}:${hash}`;
@@ -893,22 +933,16 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     }
   }
 
-  // `--repo` is an explicit override (unchanged): hash that repo, or
-  // "unknown" when it isn't one. Without it, the tree a red certifies is
-  // the repo containing the directory the command actually runs in — never
-  // assumed from wherever `--studio` happens to live (the round-3 false
-  // certificate, W-021 B2). With `--cwd` and no repo found there, that is
-  // reported as "none" rather than silently falling back to something the
-  // caller didn't ask for.
-  let treeHeader: string;
-  const repoFlag = values.get("--repo");
-  if (repoFlag !== undefined) {
-    const repo = resolve(repoFlag);
-    treeHeader = isGitRepo(repo) ? hashRepo(repo) : "unknown";
-  } else {
-    const found = findGitRoot(execCwd);
-    treeHeader = found === undefined ? (cwdFlag !== undefined ? "none" : "unknown") : hashRepo(found);
+  // The tree a red certifies is the repo containing the directory the
+  // command actually runs in — never assumed from wherever `--studio` lives
+  // (the round-3 false certificate, W-021 B2) and never chosen by `--repo`
+  // (W-166): `--repo` may only confirm it.
+  const repository = redRepository(execCwd, values.get("--repo"), cwdFlag !== undefined);
+  if ("error" in repository) {
+    console.error(repository.error);
+    return { exitCode: 2 };
   }
+  const treeHeader = "header" in repository ? repository.header : hashRepo(repository.root);
 
   const { exitCode: cmdExit, output } = await runCapture(cmd, execCwd);
 

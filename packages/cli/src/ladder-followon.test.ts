@@ -505,8 +505,8 @@ if (runs(8)) {
     const red = (k: number, exit: 0 | 1): { status: number | null; stdout: string; stderr: string } => {
       const r = spawnSync(
         process.execPath,
-        ["--import", "tsx", MAIN, "red", "W-900", "--behaviour", String(k), "--sella", "eng-lead", "--studio", join(R, "studio"), "--repo", R, "--now", "2026-10-02T12:00:00Z", "--", "node", "-e", `process.exit(${exit})`],
-        { cwd: REPO, encoding: "utf8", timeout: 120_000, env: process.env },
+        ["--import", import.meta.resolve("tsx"), MAIN, "red", "W-900", "--behaviour", String(k), "--sella", "eng-lead", "--studio", join(R, "studio"), "--repo", R, "--now", "2026-10-02T12:00:00Z", "--", "node", "-e", `process.exit(${exit})`],
+        { cwd: R, encoding: "utf8", timeout: 120_000, env: process.env },
       );
       if (r.error) throw r.error;
       return { status: r.status, stdout: r.stdout, stderr: r.stderr };
