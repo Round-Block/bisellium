@@ -1,0 +1,19 @@
+# opus: W-167
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-07T10:53:26.673Z
+# tree: tree:b0e0665abfc2ea5416961f3cf96c81e079cefca1
+# brief: briefs/W-167.md blob:6668742b0f1cf16d33ec73245b69f7c1b1d24287
+
+Architect signature for W-167 under D-027: Codex (gpt-5.6-sol) drafted, the architect (claude-opus-5-5) reviewed, corrected and signed. Draft: ~/.bisellium-evidence/W-167-draft/W-167-draft.md.
+
+## Findings
+1. advisory: the draft read build rounds twice (a strict Src listing in next plus readFilesystemBuildRounds for amend); next reaches the build/review rungs only with a usable worktree, so one readBuildRounds in @bisellium/commands now serves both. check: none: spec correction
+2. advisory: the draft renamed the shared parser parseRecordedVerdict behind a delegating wrapper; parseVerdictLog now moves unchanged to verdict.ts and retro.ts re-exports it. check: none: spec correction
+3. advisory: the gate cross-check now extends the existing reviewGate instead of a new parameter on the round reader. check: none: spec correction
+4. advisory: AMEND_USAGE in lifecycle.ts must change with the usage.ts banner (usage.test.ts matches them); the draft named only usage.ts. check: packages/commands/src/usage.test.ts
+5. advisory: the hold and boundary lines are specified through next's existing render extras; a held Derived prints no command line, so the amend route is an attach extra. check: none: spec correction
+6. advisory: named limits the draft missed: UI build logs need a strict Findings section to be read; a ruling's decision must be in the worktree studio; other review_probatio readers keep their default. check: none: stated limit

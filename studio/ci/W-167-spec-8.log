@@ -1,0 +1,16 @@
+# opus: W-167
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-07T11:51:32.653Z
+# tree: tree:5b5a8cae162dc5e49204e82f327b938df1b4d235
+# brief: briefs/W-167.md blob:b9f14d1be81b83e841db4909e789e5c8cab4e3ad
+
+## Findings
+1. blocking — brief:105 The row makes readability of the worktree `bisellium.yml` part of the valid domain but names `buildReviewDrift` as its rejector; that function receives two already-parsed `Manifest` values and therefore cannot reject an unreadable or unparseable worktree manifest or guarantee the promised rendered hold. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The earlier findings, including the main-checkout/worktree manifest drift, are otherwise resolved, but the new worktree-manifest read still lacks the required real fail-closed boundary.
+VERDICT: FAIL
