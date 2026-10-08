@@ -1,0 +1,20 @@
+# opus: W-168
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T16:54:21.189Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:5b5106f6c7d77d52d2d47339a8516f505930f205
+
+Architect signature for W-168 under D-027: Codex (gpt-5.6-sol) drafted, the architect (claude-opus-5-5) reviewed, corrected and signed. Draft: ~/.bisellium-evidence/W-168-draft/W-168-draft.md.
+
+## Findings
+1. advisory: the draft certified two CI receipts (pull_request and merge_group), imported the first before enqueue and carried the review across a rebase with a reviewed-patch digest. In queue mode the opus PR is now never rebased, so its local receipt and review stay current on the PR head and the merge-group run alone certifies the merge result. The digest is dropped; a conflict-resolving rebase keeps today's local re-mint (Patron call in Defaults 3). check: packages/cli/src/next.test.ts W-168-b3
+2. advisory: the draft added CiRunCompletion, readCiReceipt, verifyCiAttestation, importCiReceipt, an attestation bundle cache and changes to receipts.ts, builder-run.ts, verify.ts, lifecycle.ts, check.ts and next.ts, and gave admitCurrentRunReceipt a `use` parameter it does not have. Bisellium never reads the CI receipt: GitHub binds the required certify check to the merge-group head SHA and merges only that commit, so a stale or mismatched certification cannot land. An attestation guards against forgery, which D-045 leaves out of scope. verify stays offline and unchanged. check: none: no code path added
+3. advisory: the draft re-implemented ownership, red replay and gates in new runCi code. CI now runs the existing mint (run --sella builder --opus <id> -- true) from master's tooling on the PR head rebased in the job (D-042). The per-commit ownership check is dropped because the bare local mint exports no builder commits, so it checks none either (scripts/run-builder-host.mjs, baseCommit is the branch tip). check: scripts/ci-certify.test.mjs W-168-b2
+4. advisory: the draft's integration.pr.merge_queue key is replaced by readMergeQueue over master's active rules (gh api repos/<slug>/rules/branches/master, readable with the non-admin token, checked live), so the code never claims a queue GitHub does not enforce; anything short of the full setup is direct mode, which is today's path. check: packages/cli/src/next.test.ts W-168-b3
+5. advisory: no organization required-workflow ruleset and no action SHA pinning. The certifier is pinned by checking out merge_group.base_sha and refusing a base other than origin/master; the PR-editable YAML is a stated limit. Build concurrency is 1, not 4, because a second group's base is the first group, not master. check: scripts/ci-certify.test.mjs W-168-b2
+6. advisory: check -- studio passes today (0 blocking, 329 advisory) and is already a required check: the live ruleset master_protection requires gates, officina and web-e2e, and 80 of the last 80 officina runs were green. ci.yml's "deliberately NOT required" comment is stale and is corrected; the queue is not made unmergeable. check: none: ruleset read via gh api
+7. advisory: fixture flips named: ci-workflow.test.mjs's three-jobs row becomes four; next.test.ts's stub gains a rules slot ahead of alerts (whose ["api"] matches every api call), defaulting to direct mode, so the TERMINALS calls, W-124 b3, W-141 rows and ladder-followon's census do not change. Reds avoid replay-accept.mjs's POISON tokens, and b2 imports the script dynamically so b1's red is assertion-level. check: scripts/ci-workflow.test.mjs

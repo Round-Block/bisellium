@@ -1,0 +1,28 @@
+# opus: W-168
+# phase: spec
+# round: 18
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T22:29:29.817Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:d208867ad070fdfa7d779ababf867f5aa63902f5
+
+## Findings
+1. blocking — brief:155 The candidate checkout row names only generic “step failure,” not an existing or specified function that converts this reused call’s non-zero exit into refusal. — check: none: brief.input.rejector.exists
+2. blocking — brief:156 The tooling checkout row likewise lacks the required named rejecting function; `certify` cannot reject a checkout failure because that failure skips the script. — check: none: brief.input.rejector.exists
+3. blocking — brief:157 The setup-node call’s sole rejector is “step failure,” which is a workflow effect rather than an existing or specified function name. — check: none: brief.input.rejector.exists
+4. blocking — brief:158 The apt update/install call still has no named function that turns its non-zero exit into refusal. — check: none: brief.input.rejector.exists
+5. blocking — brief:159 The sysctl call still has no named function that turns its non-zero exit into refusal. — check: none: brief.input.rejector.exists
+6. blocking — brief:160 The tooling `npm ci` call still relies only on unnamed step-failure semantics rather than a real rejecting function. — check: none: brief.input.rejector.exists
+7. blocking — brief:161 The candidate `npm ci` call still relies only on unnamed step-failure semantics rather than a real rejecting function. — check: none: brief.input.rejector.exists
+8. blocking — brief:162 The Playwright installation call still lacks a named function that converts a non-zero exit into refusal. — check: none: brief.input.rejector.exists
+9. blocking — brief:164 The upload-artifact call still lacks a named rejecting function; “step failure” does not meet the stated input-boundary contract. — check: none: brief.input.rejector.exists
+10. blocking — brief:182 Changed `openPr` also reads `git rev-parse --short master` and `HEAD` after its remote writes, but the row omits those inputs and the code accepts failed reads as empty display values while reporting success. — check: packages/cli/src/next.test.ts W-168-b3
+11. blocking — brief:183 Changed `mergeGate` reaches `landed`, whose final `git rev-parse --short master` read is unchecked and can still produce `state=MERGED`; that input has no valid domain or fail-closed rejector. — check: packages/cli/src/next.test.ts W-168-b4
+12. blocking — brief:300 The claimed mid-step protection is not guaranteed: the rules recheck and `gh pr merge --auto` are separate calls, so an ordinary concurrent queue removal after the recheck can let the unre-based head merge directly. This needs a stated TOCTOU limit or an atomic queue-only enqueue. — check: packages/cli/src/next.test.ts W-168-b4
+13. blocking — brief:164 The workflow can fail the required check, but it cannot guarantee that GitHub re-queues the PR; this also conflicts with brief:130’s statement that a non-zero certification drops it. — check: none: brief.promise.consistency
+
+## Verdict
+The brief still lacks named fail-closed rejectors for added workflow calls and leaves several input and queue-state guarantees broader than their mechanisms.
+VERDICT: FAIL

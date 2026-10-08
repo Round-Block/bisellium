@@ -1,0 +1,22 @@
+# opus: W-168
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T17:39:58.438Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:fee492d7fc27b5c2232ee9da8a3a71ae4958fdf4
+
+## Findings
+1. blocking — brief:119 The queue binding is written only after the remote push, so a crash or binding-write failure can leave an existing/open-stale PR updated but unbound; if the queue is then removed, `mergeGate` reads absence and takes the direct path unrebased, contradicting the promised fail-closed binding. — check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+2. blocking — brief:141 `headRefName` has no required type/domain: “not matching” the opus regex is specified to return success, so a missing or non-string field can classify an opus merge group as “nothing to mint” instead of refusing. — check: scripts/ci-certify.test.mjs W-168-b2
+3. blocking — brief:139 The path domain is internally impossible: it requires candidate, tooling, and studio each to be distinct work-tree top levels while also requiring studio to be a directory inside candidate; the specified `--studio studio` cannot satisfy both. — check: scripts/ci-certify.test.mjs W-168-b2
+4. blocking — brief:140 `readSourceExcludes` validates an already-parsed manifest and cannot reject unreadable or malformed YAML, so the file input lacks a named parser/reader that fails closed before this rejector. — check: scripts/ci-certify.test.mjs W-168-b2
+5. blocking — brief:196 The fixture cannot satisfy the origin check as written: `git remote get-url origin` expands `url.*.insteadOf`, so the declared HTTPS URL rewritten to a scratch origin is read back as the scratch URL and rejected by brief:138. — check: scripts/ci-certify.test.mjs W-168-b2
+6. blocking — brief:154 The reused argv row omits the positional opus input’s domain—exactly one `W-[0-9]+` id—and therefore does not state that input’s fail-closed rejection even though `runNext` reads it before every path. — check: packages/cli/src/next.test.ts
+7. blocking — brief:240 Direct mode cannot “behave exactly as before”: brief:119 adds a post-push `git config --unset-all` operation whose non-0/5 result newly holds after the remote was already updated; the same overbroad parity promise also appears at brief:16 and brief:259. — check: packages/cli/src/next.test.ts W-168-b3
+
+## Verdict
+The brief still has incomplete and contradictory input domains, an unclosed queue-binding failure window, and direct-mode promises broader than its mechanism.
+VERDICT: FAIL

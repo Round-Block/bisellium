@@ -1,0 +1,15 @@
+# opus: W-168
+# phase: spec
+# round: 13
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T18:05:39.259Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:7ea24997d0c20a5afef1e87b0197cb607fde1619
+
+Architect signature for W-168, revision 7, under D-027: answers spec review r6 (ci/W-168-spec-12.log). All three findings were checked against the code and accepted.
+
+## Findings
+1. advisory: accepted r6 #1 and #2. enumerate-reads.mjs now follows process boundaries. A reached function that names a repo script or the CLI entry starts that process, which brings in the probe, the Git cell client and broker, served-e2e.mjs, and the CLI's ci and check. The local pipeline's run is a root, because its name is too generic to match. The output is reads.txt: 458 functions, 145 with reads, the processes followed and every subprocess call. Each subprocess is one row under "Reused: the mint's subprocesses", giving its inputs as a family, its in-script rejector, and the mint function that turns its exit into a refusal: bwrap; the probe; the git cell client (acquire, call); the broker (handle, openCellChannel, serve, validateGitArgs); the replay cell; the gate cell (runStep, the pipeline's run, served-e2e); the host runner. The subprocesses on the next and certify paths (git, gh, mint, npm ci) are stated. check: none: existing readers, unchanged
+2. advisory: accepted r6 #3. The log and artifact promise is narrowed. Once the script starts, certify lines go to the job log and certify.log. The upload runs if: always() with if-no-files-found: warn. A failure before the script leaves only the job log. check: scripts/ci-workflow.test.mjs W-168-b1

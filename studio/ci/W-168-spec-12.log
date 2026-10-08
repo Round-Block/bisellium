@@ -1,0 +1,18 @@
+# opus: W-168
+# phase: spec
+# round: 12
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T18:02:49.853Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:aa8cdc165ed00ae5d94040b207b99ea8614deb99
+
+## Findings
+1. blocking — brief:132 The mechanical enumeration does not follow the host runner’s live spawn of `scripts/probe-builder-runtime.mjs`; that script reads the cell environment and cwd, Git branch/index probe, package/link state, loopback, and optional browser availability, none of which has a complete domain and named fail-closed rejector in the table. — check: none: brief.input.live-read-coverage
+2. blocking — brief:178 The broker is live even with builder command `true`, because the capability probe invokes Git through the copied `scripts/git-cell-client.mjs`; `reads.txt` reaches only an unrelated name-matched `acquire`, while the client’s argv, control path, lock owner and JSON pipe replies have no stated domains or named rejectors. — check: none: brief.input.live-read-coverage
+3. blocking — brief:108 The promise that the log and artifact are written “in every case” exceeds the workflow: either `npm ci` can fail on the rejected package inputs at brief:147 before `certify.log` or a receipt exists, after which `upload-artifact` has no matched file to upload. — check: scripts/ci-workflow.test.mjs W-168-b1
+
+## Verdict
+The brief still omits live subprocess inputs from its fail-closed boundary and promises an artifact on preparation failures that occur before any artifact input exists.
+VERDICT: FAIL

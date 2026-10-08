@@ -1,0 +1,21 @@
+# opus: W-168
+# phase: spec
+# round: 16
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T22:16:32.615Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:9b7a41ae380fb1babba04b1fa7586079c9c1f462
+
+## Findings
+1. blocking — brief:108 Both added `actions/checkout@v5` invocations run reused code, but the Input domain has no row naming either call, its valid exit domain, and a function that turns failure into refusal as D-050 requires. — check: none: brief.input.reused-call-coverage
+2. blocking — brief:110 The added `actions/setup-node@v5` invocation is another reused-code input with no Input-domain row or named function that converts its failure into refusal. — check: none: brief.input.reused-call-coverage
+3. blocking — brief:111 The added `sudo apt-get update/install` and `sudo sysctl` prerequisite calls have no Input-domain rows naming their zero-exit domains and the function that refuses either non-zero exit. — check: none: brief.input.reused-call-coverage
+4. blocking — brief:143 The dependency-preparation row bundles two `npm ci` calls and `npx playwright install`, but its domain and rejector cover only `npm ci`, and “a non-zero step fails the job” is not the required existing or specified rejecting function for any of the calls. — check: none: brief.input.reused-call-coverage
+5. blocking — brief:115 The added `actions/upload-artifact@v4` call is absent from the Input domain, including the valid success/warn cases and a named function that turns an action failure into refusal. — check: none: brief.input.reused-call-coverage
+6. blocking — brief:114 The changed workflow directly reads `${{ runner.temp }}` for the log and `${{ github.run_id }}` for the artifact name, but neither input has a valid domain and named fail-closed rejector in the Input section. — check: none: brief.input.changed-reader-coverage
+
+## Verdict
+The brief still omits several inputs read by the new certification workflow and does not give its reused calls the D-050 exit-to-refusal boundary.
+VERDICT: FAIL

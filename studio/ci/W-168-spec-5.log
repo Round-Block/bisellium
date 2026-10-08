@@ -1,0 +1,17 @@
+# opus: W-168
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T17:16:33.731Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:52e1187535fce56e081fa8549a6e01670ee827ed
+
+Architect signature for W-168, revision 3, under D-027: answers spec review r2 (ci/W-168-spec-4.log). Each finding was checked against the code and accepted; the design is unchanged. The brief was swept for every other instance of each class.
+
+## Findings
+1. advisory: accepted r2 #1. readMergeQueue now requires each of gates, officina, web-e2e and certify as a required check with integration_id 15368 (GitHub Actions; all three are bound so on master today); a context missing, without a source or from another source is direct. Sweep: a PR adding another Actions job named certify can satisfy the context, so limit (a) now names it. check: packages/cli/src/next.test.ts W-168-b3
+2. advisory: accepted r2 #2. A row for identifyPr's gh pr list: gh error, non-array, missing field, ambiguous OPEN and malformed chosen PR hold; non-matching identity is ignored; newest decides; only 20 entries read is a stated limit. check: none: existing reader, unchanged
+3. advisory: accepted r2 #3 and #4. One row for next's parseArgs: --title at most 256 characters with no line break; --body-file a readable regular file of at most 64 KiB under the repository or the temp directory; --poll-ms 1 to 60000; --max-polls 1 to 1000; otherwise exit 2. --repo and --studio are only resolved, a stated limit. check: none: existing reader, unchanged
+4. advisory: accepted r2 #5 and #6. One row for the whole officina the mint reads (bisellium.yml, opera/<id>.md and every record snapshotDir reads): its domain is zero blocks from check -- studio, a CI_STEPS step the mint's own gate runs on the minted studio, also run by the required officina job; earlier tolerant reads refuse on a throw or act only in the disposable checkout. Sweep: the marker row names editOpusFrontMatter's and recordOwnerRefusal's refusals; the gate row states a domain (six CI_STEPS exit 0, no effectiveProbationes problem, each non-waived automated probatio exits 0). check: none: existing readers, unchanged

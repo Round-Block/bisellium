@@ -1,0 +1,21 @@
+# opus: W-168
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-08T17:50:31.110Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:373f492ff42e352c589b38cbccd6b09c53158a04
+
+## Findings
+1. blocking — brief:134 The mechanical enumeration does reach `readPauseState` through the live `runCommand` path at packages/commands/src/run.ts:211; the brief wrongly labels it an over-approximation and gives the `PAUSED` record no valid domain or fail-closed rejector. — check: none: brief.input.live-read-coverage
+2. blocking — brief:8 The claimed exhaustive list of direct-mode additions omits the new remote `gh api repos/<slug>/rules/branches/master?per_page=100` call required by `readMergeQueue`. — check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+3. blocking — brief:19 Direct mode cannot make today’s remote calls plus only the stated local binding read: selecting direct mode first adds the rules API call. — check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+4. blocking — brief:213 The numbered behaviour’s promise that direct-mode `pr` makes today’s calls conflicts with its own new `rules` stub and `readMergeQueue` mechanism, which necessarily add a remote API call. — check: packages/cli/src/next.test.ts W-168-b3
+5. blocking — brief:245 Acceptance omits the rules API call when promising today’s writes and remote calls plus one binding read. — check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+6. blocking — brief:264 Default 6 repeats the same infeasible direct-mode call guarantee: the mode cannot be determined without the additional remote rules read. — check: packages/cli/src/next.test.ts W-168-b3/W-168-b4
+
+## Verdict
+The brief still omits one live mint input and repeatedly promises direct-mode call parity that its mode-detection mechanism cannot provide.
+VERDICT: FAIL
