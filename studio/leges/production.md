@@ -1,6 +1,14 @@
+---
+kind: guide
+owner: producer
+tier: reference
+review: 2026-12-01
+kill: when every item here is enforced by a lex clause or a check rule
+---
+
 # Production Lex
 
-Magister: `producer` (the Aedile) · Adopted: 2026-09-17 · Amended: see §9
+Magister: `producer` (the Aedile) · Adopted: 2026-09-17 · Amended: see §12
 
 ## 1. Mandate
 
@@ -47,7 +55,127 @@ detection. The Aedile owns the road, not the work travelling on it.
 - Level: L1 scheduled — runs cadence work
 - Stops starting at posture: closeout
 
-## 9. Amendment log
+## 7. Standing instructions (Patron)
+
+- **Plain words, fewer words.** Outcome first; a plain one-line description
+  beside every id; jargon stays in commits and records.
+- **Keep going unless a judgment is needed.** Mechanical findings are fixed
+  without asking; small reversible calls ship as veto-able defaults reported
+  at the checkpoint; scope, names and ruling-contradicting calls go to the
+  Patron.
+- **Session hygiene.** Refresh before the context nears 500k, at a clean
+  point. The restart loop (`~/projects/bisellium/scripts/cascade-loop.sh`)
+  automates fresh sessions; never run it while a session is working.
+- **Usage.** At ~87% Claude usage (the Patron reports it) start no new Opus
+  work unless the Patron says go; never kill a running agent. Prefer Codex
+  for drafting (D-027) and reviews when Claude is tight.
+- **Checkpoint after every opus:** a history row (`progress-body.html`) and
+  the masthead (`body.html`) by a kept script, `build.sh`, republish the
+  Status page and the dossier, with a spend line per provider.
+- Never relay a mid-turn Patron message into a running agent.
+- epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
+
+## 8. Environment
+
+- Agents work only in `~/agents/bisellium` (repo-only token,
+  `GH_CONFIG_DIR=~/.config/agent-gh`); `~/projects/bisellium` is the
+  Patron's. Hooks run unsandboxed: never point one at agent-clone code.
+- The remote is **public**.
+- Commits: `git -c user.name=edckt -c user.email=edene.chankt@gmail.com`,
+  trailer naming the sella and model. "could not lock config" is expected.
+- `node --import tsx`, never `npx tsx`. Logs and kept scripts in
+  `~/.bisellium-evidence/`. A killed `npm test` leaves
+  `.bisellium/vendor-sentinel.lock`; remove it before rerunning.
+- `gh` needs `XDG_CACHE_HOME=~/.bisellium-evidence/gh-cache`. Records PRs:
+  `~/.bisellium-evidence/chore-pr.sh <n>` waits for CI and merges.
+- Codex: `codex exec -c model_provider=openai -m <model> -c model_reasoning_effort=high -s read-only --skip-git-repo-check -C <dir> -o <out.md> - < prompt.md`
+  (no git, node servers or browsers inside it). Runs inside the Bash
+  sandbox with `allowed_domains` `api.openai.com`, `chatgpt.com`,
+  `auth.openai.com`; unsandboxed commands are disabled in settings.
+
+## 9. Opus ladder
+
+`npm run -s bisellium -- next <id> --budget 400000 --studio studio --repo .`
+names each step; `--perform --expect <step>` does it. From a worktree, pass
+the main checkout's absolute `--studio`/`--repo`.
+
+1. **Spec:** Codex `gpt-5.6-sol` drafts (D-027; prompt
+   `~/.bisellium-evidence/W-167-draft/prompt.md`); the Opus architect checks
+   it against the code and signs (`verdict --phase spec`), uncommitted.
+   Tell the architect to name every existing test fixture or assertion the
+   change breaks: W-162's builder stopped twice on that.
+2. **Spec review (D-046, W-162):** `next` orders it. Codex `gpt-5.6-sol`,
+   prompt `~/.bisellium-evidence/W-167-specreview/r1/prompt.md`; record with
+   `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <$TMPDIR copy>`.
+   Any brief edit needs a new signature and review. On pass, `next` lands it.
+3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
+   in the worktree, `ready` (commit), then a Sonnet builder (brief model:
+   `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
+   behaviour at a time on the commit of the previous behaviour, build, gates,
+   one full `npm test`. Record `handoff` before the review packet. A fresh
+   builder past ~250k; dispatch builders in the background so a Patron
+   message cannot cut one off. `next` now orders all reds before any
+   implementation (phase 1), which conflicts with one-at-a-time; W-166
+   settles it.
+4. **Review:** Codex `gpt-5.6-sol`, prompt modelled on
+   `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
+   `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
+   `censor.sh <id> <round>`; record `record-review.sh <id> <round> <passed|failed>`
+   (a failed round records only the verdict log; W-165). Three failed rounds,
+   then ask the Patron.
+5. **Merge:** rebase if master moved; refresh `handoff`; mint once from the
+   worktree (bare `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
+   ~15 min); `review-receipt.sh`; record the pass; `pr`; wait for CI; `merge`;
+   `cleanup`.
+6. **Done:** `verify <id>` on master (~11 min); checkpoint script;
+   `next --perform --expect done` twice (commit, then land).
+7. **Retro:** Codex `gpt-5.6-terra` triage (prompt
+   `~/.bisellium-evidence/retro-triage-W-162/prompt.md`), adjust with a kept
+   script if needed, `retro --opus <id> --from <file>`, map any new opus to a
+   milestone (`amend --milestone --value`), land in a records PR.
+
+`.claude/` changes stop merge/branch/done for the Patron's command.
+
+## 10. Models
+
+Specs: Codex `gpt-5.6-sol` drafts, Claude Opus 5.5 architect signs. Spec
+review, build review, security: Codex `gpt-5.6-sol` high. Builds: Claude
+Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
+`gpt-5.6-terra`. Security fixes are mandatory (D-044).
+
+## 11. Standing rules
+
+- A security finding (CodeQL/GHAS alert or security review) is always
+  fixed, never dismissed; extra review rounds or receipts it needs are
+  pre-approved.
+- A high-severity fix (security, data loss, or a mistake class seen twice)
+  is filed greenlit and started without asking; report it only at the
+  checkpoint (D-039).
+- Every PR's GitHub Advanced Security findings (code-scanning alerts plus
+  bot review comments) are checked before merge; any new alert on
+  PR-introduced code stops the merge for triage — fix it or record an
+  explicit accept with reasoning.
+- A task counts as done only once its PR is MERGED and local master is
+  fetched afterward; rebase standing work on fetched master before opening
+  a new PR; cleanup and "done" follow that fetch, never chain on an earlier
+  step.
+- An "in flight" claim needs an output-file mtime check and a process check
+  before being reported, not a summary written from memory.
+- Extend an existing mechanism before adding a parallel one for the same
+  purpose (D-042).
+- Architecture decisions and UI/UX direction stay the Patron's; UI design
+  leadership within that direction delegates to the ui-lead Codex seat
+  (`gpt-6-astra`), which drafts layouts and defaults at spec.
+- Every Opus dispatch runs on Opus 5.5, never Opus 5; override an agent
+  file's model pin if it says otherwise.
+- Every subagent dispatch targets ≤500k tokens, the same ceiling as the
+  orchestrator session.
+- Never start a dispatch chain that might run out of budget mid-flight;
+  pause and write the resume state instead.
+- When usage limits are tight, run one Claude workstream at a time;
+  Codex-tier work may run alongside it without serializing.
+
+## 12. Amendment log
 
 | Date | Change | Authority |
 |---|---|---|
@@ -55,3 +183,4 @@ detection. The Aedile owns the road, not the work travelling on it.
 | 2026-09-18 | Rewritten into enforceable clauses; role named as the Aedile (W-018) | Patron |
 | 2026-09-19 | Cascade sizing clause added (D-012) | Patron |
 | 2026-09-20 | Backlog ranked by long-term positive gain; a found gap owes a lesson or opus, not handoff prose (unmarked) | Patron |
+| 2026-10-08 | Session handoff's standing instructions, environment, opus ladder and models folded in; still-true standing rules folded in from memory | Producer |
