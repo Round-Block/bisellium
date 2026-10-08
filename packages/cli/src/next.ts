@@ -1394,8 +1394,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   if (rel.startsWith("..") || isAbsolute(rel)) return usage(`--studio ${opened.root} is outside the repository`);
 
   // W-166: one validator for every reader of source_excludes. `gather` spreads only a validated list; a malformed
-  // value turns every named rung into a hold (a rung that already holds keeps its own why), so nothing is
-  // dispatched or performed.
+  // value takes precedence over every derivation outcome (a named rung, an already-held rung, a complete opus),
+  // so nothing is dispatched or performed and the exit is never 0.
   const declaredExcludes = readSourceExcludes(opened.manifest);
 
   let f = gather(repo, opened.root, id);
@@ -1403,7 +1403,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   const env: Env = { repo, procRoot: a.testClock && process.env["BISELLIUM_TEST_PROC"] ? process.env["BISELLIUM_TEST_PROC"] : "/proc", nowMs: a.nowMs };
   const derive = (facts: Facts): Derived => {
     const d = gateDispatch(deriveNext(facts), facts, a.budget);
-    if (!("error" in declaredExcludes) || d.status !== "named") return d;
+    if (!("error" in declaredExcludes)) return d;
     return { step: d.step, status: "held", actor: d.actor, why: `bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, extra: [] };
   };
 

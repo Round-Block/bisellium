@@ -3860,3 +3860,39 @@ test("W-166-b4 behaviour 4: a scalar source_excludes holds next and dispatches n
   assert.match(o.out, /why: .*bisellium\.yml#source_excludes/, ran("4c: the why names bisellium.yml#source_excludes", o));
   assert.doesNotMatch(o.out, /^(role|command|phase):/m, ran("4c: no order is dispatched", o));
 });
+
+test("W-166-b4 behaviour 4: a malformed source_excludes holds next on every derivation outcome", { timeout: 1_800_000 }, () => {
+  const spoil = (w: World, to: string): void => {
+    const manifest = join(w.studio, "bisellium.yml");
+    writeFileSync(manifest, readFileSync(manifest, "utf8").replace("source_excludes: []", `source_excludes: ${to}`));
+    commit(w.repo, "studio: malformed source_excludes");
+  };
+  for (const to of ["examples/", "null", '[""]']) {
+    // a complete opus must not exit 0
+    const done = world(`w166-b4-complete-${to.length}`, "checkpoint");
+    spoil(done, to);
+    const c = next(done, [OPUS, "--budget", "100000"]);
+    assert.equal(c.status, 1, ran(`4d: a complete opus under source_excludes ${to} exits 1`, c));
+    assert.equal(c.first.endsWith(" held"), true, ran(`4d: ${to} holds a complete opus`, c));
+    assert.match(c.out, /bisellium\.yml#source_excludes/, ran(`4d: ${to} names source_excludes on a complete opus`, c));
+
+    // an already-held rung (no budget declared) names source_excludes, not its own why
+    const held = world(`w166-b4-held-${to.length}`, "ready");
+    handoffAt(held, "wt", T.handoffFresh);
+    spoil(held, to);
+    const h = next(held, [OPUS]);
+    assert.equal(h.status, 1, ran(`4e: a held rung under source_excludes ${to} exits 1`, h));
+    assert.match(h.kv.get("why") ?? h.out, /bisellium\.yml#source_excludes/, ran(`4e: ${to} names source_excludes on a held rung`, h));
+    assert.doesNotMatch(h.out, /^(role|command):/m, ran(`4e: ${to} dispatches nothing`, h));
+  }
+});
+
+test("W-166-b3 behaviour 3: with a usable worktree next surfaces the shared-tree block at reds", { timeout: 1_800_000 }, () => {
+  const w = world("w166-b3-shared", "ready");
+  appendFileSync(join(w.wt, "studio/briefs/W-900.md"), "\nRed order: one at a time\n");
+  writeReds(w);
+  handoffAt(w, "wt", T.handoffFresh);
+  const o = next(w, [OPUS, "--budget", "100000"]);
+  expectStep(o, "reds", "named", "3a: a shared-tree pair in an opted-in opus names reds");
+  assert.match(o.kv.get("why") ?? "", /opus\.red_evidence: red logs for behaviours 1 and 2 certify one tree/, ran("3a: the why carries the shared-tree block", o));
+});
