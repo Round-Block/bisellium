@@ -31,6 +31,17 @@ Rules, process and environment: studio/leges/production.md.
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts; "Device or resource busy"); harmless.
 
+## Concurrency readiness (Patron, 2026-10-08)
+
+One lane until these land: W-168 (CI certifies the merge result, no less
+than the local mint), W-083 (per-session orchestration worktrees), W-169
+(process lane: file-overlap refusal, per-lane handoff, retro hold scoped).
+Alongside: W-178 (test count never drops), W-179 (faster next.test.ts, no
+row cut), W-180 (no-vendor flake fixed at cause), W-181 (checkpoint pages
+generated from records), W-182 (smoke suite on a free port), W-093
+(security review per change). Checked fine: lesson ids (ref-aware
+allocator), the vendor-sentinel lock (per worktree), the served e2e port.
+
 ## Artifacts
 
 - Status: https://claude.ai/code/artifact/Rnk9m3UwfP9uexz57Zw37e
