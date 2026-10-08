@@ -313,6 +313,13 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
       console.error(admission.map((problem) => `${opusId}: brief.admission: ${specRel} ${problem}`).join("\n"));
       return { exitCode: 1 };
     }
+    // W-166: a new opus in an officina with a limit carries the one-at-a-time red order; checked only once admission passes.
+    const order = readRedOrder(containedSpec.bytes.toString("utf8"));
+    const orderProblem = "error" in order ? order.error : order.declared ? undefined : 'declares no red order; add the line "Red order: one at a time"';
+    if (orderProblem !== undefined) {
+      console.error(`${opusId}: brief.admission: ${specRel} ${orderProblem}`);
+      return { exitCode: 1 };
+    }
   }
 
   editOpusFrontMatter(opusPath, (doc) => {
