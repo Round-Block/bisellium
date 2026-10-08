@@ -22,15 +22,12 @@ Rules, process and environment: studio/leges/production.md.
   at the branch tip made the receipt replay them on built code, so they were
   restored (L-085 class; W-166 fixes it). Retro filed (L-088, L-089, both
   fixed by W-167 itself).
-- **Republish owed** for checkpoint 60: Status and dossier (both refused
-  for an unviewed live version; the live copies are an older generated
-  build, so read each in full and publish `docs/design/dossier/` builds).
-- **W-166** spec is landed (PR 326, revision 7, Codex review passed at round
-  14). Next: `branch`, `npm ci`, `ready`, Sonnet builder (ladder 3). Its
-  brief's `Red order: one at a time` means reds are recorded one at a time
-  from `.worktrees/W-166`, without `--repo`, each log committed alone right
-  after the code it ran on (the receipt replays reds by the commit that
-  introduced the log).
+- Checkpoint 60's Status and dossier republished (2026-10-08).
+- **W-166** is building: branch, `npm ci` and `ready` (5b60684) done; a
+  Sonnet builder works in `.worktrees/W-166` from
+  `~/.bisellium-evidence/W-166-build/builder-brief.md` (reds one at a time,
+  each log committed alone right after the code it ran on, no `--repo`).
+  Check its commits there before re-dispatching. Next: review (ladder 4).
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts; "Device or resource busy"); harmless.
 
