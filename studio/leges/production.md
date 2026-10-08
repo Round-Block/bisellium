@@ -71,7 +71,10 @@ detection. The Aedile owns the road, not the work travelling on it.
   for drafting (D-027) and reviews when Claude is tight.
 - **Checkpoint after every opus:** a history row (`progress-body.html`) and
   the masthead (`body.html`) by a kept script, `build.sh`, republish the
-  Status page and the dossier, with a spend line per provider.
+  Status page and the dossier, with a spend line per provider. A
+  general-purpose subagent on Haiku republishes (the publish tool makes it
+  read every line of a live page it did not publish, ~135k tokens per pair);
+  never the orchestrating session.
 - Never relay a mid-turn Patron message into a running agent.
 - epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
 
@@ -184,3 +187,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-09-19 | Cascade sizing clause added (D-012) | Patron |
 | 2026-09-20 | Backlog ranked by long-term positive gain; a found gap owes a lesson or opus, not handoff prose (unmarked) | Patron |
 | 2026-10-08 | Session handoff's standing instructions, environment, opus ladder and models folded in; still-true standing rules folded in from memory | Producer |
+| 2026-10-08 | Status and dossier republished by a Haiku subagent, never the orchestrator | Patron |
