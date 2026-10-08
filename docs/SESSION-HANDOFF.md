@@ -20,8 +20,8 @@ Rules, process and environment: studio/leges/production.md.
 - **W-167** (review loop stops at three failed rounds) is done (PR 322;
   checkpoint row 60). Its reds are the original recording: re-recording them
   at the branch tip made the receipt replay them on built code, so they were
-  restored (L-085 class; W-166 fixes it). **Retro owed first**: `next`
-  holds every new opus until it is filed (Codex terra triage, ladder 7).
+  restored (L-085 class; W-166 fixes it). Retro filed (L-088, L-089, both
+  fixed by W-167 itself).
 - **Republish owed** for checkpoint 60: Status and dossier (both refused
   for an unviewed live version; the live copies are an older generated
   build, so read each in full and publish `docs/design/dossier/` builds).
