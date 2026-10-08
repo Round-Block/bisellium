@@ -150,6 +150,10 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 
 ## 11. Standing rules
 
+- Hold every PR while an opus sits between a passing review and its merge
+  (until W-168): a moved master forces a rebase and a second mint.
+- When a brief contradicts itself, take its literal, stricter reading and
+  record the flip it failed to name; never rule a softer variant (W-166).
 - No shortcuts in CI or tests (Patron, 2026-10-08). CI certifies at least
   what the local mint does; a test row is never removed or weakened to save
   time; a flake is fixed at its cause, never rerun as the remedy. W-178's
@@ -202,3 +206,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Spec review prompt checked in with a round-1 completeness clause (meta-retro) | Patron |
 | 2026-10-08 | No shortcuts in CI or tests; concurrency readiness owned by the orchestrator | Patron |
 | 2026-10-08 | Producer checks a fix round's census before re-review (W-184 enforces) | Patron |
+| 2026-10-08 | Hold PRs while an opus awaits merge; a self-contradicting brief is read literally | Patron |
