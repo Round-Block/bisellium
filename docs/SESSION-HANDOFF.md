@@ -15,19 +15,24 @@ into a lex, a decision or a check rule and delete it here.
 
 Rules, process and environment: studio/leges/production.md.
 
-## Resume point (2026-10-08)
+## Resume point (2026-10-08, session refresh)
 
-- **W-167** (review loop stops at three failed rounds) is done (PR 322;
-  checkpoint row 60). Its reds are the original recording: re-recording them
-  at the branch tip made the receipt replay them on built code, so they were
-  restored (L-085 class; W-166 fixes it). Retro filed (L-088, L-089, both
-  fixed by W-167 itself).
-- Checkpoint 60's Status and dossier republished (2026-10-08).
-- **W-166** is building: branch, `npm ci` and `ready` (5b60684) done; a
-  Sonnet builder works in `.worktrees/W-166` from
-  `~/.bisellium-evidence/W-166-build/builder-brief.md` (reds one at a time,
-  each log committed alone right after the code it ran on, no `--repo`).
-  Check its commits there before re-dispatching. Next: review (ladder 4).
+- **W-166** (a recorded red certifies the tree its brief names) is done
+  (PR 347; checkpoint row 61). Four build-review rounds, the fourth granted
+  by the Patron (D-048). **Next: its retro** (ladder 7; `next` holds new
+  work until filed), then republish Status and the dossier with a **Haiku
+  subagent** (production lex §7), then **W-168**.
+- Hold every PR while an opus sits between a passing review and its merge
+  (a docs PR forced W-166's second mint).
+- Decided today (Patron): D-047 and its audit (every lesson names a fix,
+  a decline or obsolete; acta 2026-10-08-lesson-audit); D-049 / W-185
+  (records checked once at load; queued after W-168; architecture). Filed:
+  W-169 (lanes under one orchestrator), W-170, W-171, W-172 (greenlit,
+  high), W-173..W-184 (W-177 greenlit). Meta-retro: acta
+  2026-10-08-meta-retro and https://claude.ai/artifact/VkM85if6j7eiucAKcCCzgV.
+- Spec reviews use `studio/prompts/spec-review.md`. Before any re-review
+  the producer checks the fix's census (lex §9 step 4; W-184 enforces).
+  When a brief contradicts itself, take its literal, stricter reading.
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts; "Device or resource busy"); harmless.
 
@@ -60,18 +65,16 @@ allocator), the vendor-sentinel lock (per worktree), the served e2e port.
 Order of record: `studio/acta/2026-10-05-ranking.md`. Every new opus gets a
 milestone (`amend <id> --milestone <M> --value <n>`).
 
-1. W-166 — a recorded failing test must come from the code state its brief
-   names (high; L-085; build next, above).
-2. W-168 — GitHub CI certifies the merge result (merge queue, master-pinned
+1. W-168 — GitHub CI certifies the merge result (merge queue, master-pinned
    workflow, attested receipt), so a rebase needs no local re-mint (Patron,
    2026-10-08; research in `~/.bisellium-evidence/research-remint/`).
-3. W-185 — records checked once at load (D-049, Patron 2026-10-08;
+2. W-185 — records checked once at load (D-049, Patron 2026-10-08;
    architecture; the architect specs it).
-4. W-068 — task dependencies (signed spec in
+3. W-068 — task dependencies (signed spec in
    `~/.bisellium-evidence/partial-specs/`; copy into `studio/`, then the
    spec review).
-5. W-081, W-099 — high-severity security fixes.
-6. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
+4. W-081, W-099 — high-severity security fixes.
+5. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
    W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160, W-135, then the
    medium and low fixes in `studio/acta/2026-10-06-backlog-triage.md`.
 
