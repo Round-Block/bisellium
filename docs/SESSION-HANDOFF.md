@@ -18,8 +18,7 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-08)
 
 - **W-166** is done, retro filed, pages republished (checkpoint row 61).
-  **Next: W-168** (ladder from step 1), then W-186 (stale handoff refused;
-  small), then W-185.
+  **Next: W-168** (ladder from step 1); then the Queue below.
 - Today's rulings live in D-047..D-049 and the actas 2026-10-08-meta-retro
   and -lesson-audit; new opera W-169..W-186 (W-171, W-172, W-177, W-185,
   W-186 greenlit).
@@ -59,15 +58,21 @@ milestone (`amend <id> --milestone <M> --value <n>`).
 1. W-168 — GitHub CI certifies the merge result (merge queue, master-pinned
    workflow, attested receipt), so a rebase needs no local re-mint (Patron,
    2026-10-08; research in `~/.bisellium-evidence/research-remint/`).
-2. W-185 — records checked once at load (D-049, Patron 2026-10-08;
+2. W-186 — a stale handoff is refused (check rule and done-step refusal;
+   small).
+3. W-185 — records checked once at load (D-049, Patron 2026-10-08;
    architecture; the architect specs it).
-3. W-068 — task dependencies (signed spec in
+4. W-068 — task dependencies (signed spec in
    `~/.bisellium-evidence/partial-specs/`; copy into `studio/`, then the
    spec review).
-4. W-081, W-099 — high-severity security fixes.
-5. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
+5. W-081, W-099 — high-severity security fixes.
+6. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
    W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160, W-135, then the
    medium and low fixes in `studio/acta/2026-10-06-backlog-triage.md`.
+
+Greenlit 2026-10-08, to be slotted at the Patron's queue review: W-171 and
+W-172 (high, D-039), W-177. Filed to backlog the same day, also for that
+review: W-169, W-170, W-173..W-176, W-178..W-184.
 
 Not greenlit: W-148, W-155, W-092, W-138, W-122, W-164, W-165 (`review
 --fail` without a fresh receipt).
