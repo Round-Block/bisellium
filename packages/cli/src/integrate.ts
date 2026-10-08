@@ -124,6 +124,50 @@ function ghJson(cwd: string, args: string[]): { ok: true; value: unknown } | { o
 }
 
 // ---------------------------------------------------------------------------
+// W-168: the merge-queue mode, read from master's active rules
+// ---------------------------------------------------------------------------
+
+/** The seven `merge_queue` parameters of the setup the brief names; any other value, key or count is not that setup. */
+const QUEUE_PARAMS: Readonly<Record<string, unknown>> = {
+  merge_method: "SQUASH",
+  max_entries_to_build: 1,
+  min_entries_to_merge: 1,
+  max_entries_to_merge: 1,
+  min_entries_to_merge_wait_minutes: 0,
+  grouping_strategy: "ALLGREEN",
+  check_response_timeout_minutes: 120,
+};
+const QUEUE_CONTEXTS = ["gates", "officina", "web-e2e", "certify"];
+const ACTIONS_APP_ID = 15368;
+
+/**
+ * "merge-queue" only when master's active rules (`gh api repos/<slug>/rules/branches/master?per_page=100`) are exactly the
+ * queue the brief sets up; every other reply, a gh error or a malformed or truncated one included, is "direct".
+ */
+export function readMergeQueue(repo: string, slug: string): "merge-queue" | "direct" {
+  const v = ghJson(repo, ["api", `repos/${slug}/rules/branches/master?per_page=100`]);
+  if (!v.ok || !Array.isArray(v.value) || v.value.length >= 100) return "direct";
+  const rules: unknown[] = v.value;
+  if (!rules.every((r) => isObj(r) && typeof r["type"] === "string")) return "direct";
+  const typed = (type: string): Json[] => rules.filter((r): r is Json => isObj(r) && r["type"] === type);
+  const queues = typed("merge_queue");
+  const params = queues[0]?.["parameters"];
+  if (queues.length !== 1 || !isObj(params)) return "direct";
+  if (Object.keys(params).length !== Object.keys(QUEUE_PARAMS).length || !Object.entries(QUEUE_PARAMS).every(([k, want]) => params[k] === want)) return "direct";
+  const checkRules = typed("required_status_checks");
+  if (checkRules.length === 0) return "direct";
+  const required = new Set<string>();
+  for (const rule of checkRules) {
+    const p = rule["parameters"];
+    if (!isObj(p) || p["strict_required_status_checks_policy"] !== false) return "direct";
+    const list = p["required_status_checks"];
+    if (!Array.isArray(list)) continue;
+    for (const c of list) if (isObj(c) && typeof c["context"] === "string" && c["integration_id"] === ACTIONS_APP_ID) required.add(c["context"]);
+  }
+  return QUEUE_CONTEXTS.every((c) => required.has(c)) ? "merge-queue" : "direct";
+}
+
+// ---------------------------------------------------------------------------
 // worktrees, trunk fetch
 // ---------------------------------------------------------------------------
 
@@ -515,6 +559,9 @@ export function dirtyHold(cwd: string, allow?: (path: string) => boolean): StepR
 // pr
 // ---------------------------------------------------------------------------
 
+/** The key that binds a queue-mode PR head: set by a queue-mode `pr` before its push, read by every direct-mode verb. */
+const queueKey = (branch: string): string => `branch.${branch}.bisellium-queue`;
+
 export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undefined, bodyFile: string | undefined): StepResult {
   const { repo, wt, id } = ctx;
   const branch = `opus/${id}`;
@@ -525,31 +572,53 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
   if (dirty !== undefined) return dirty;
   const fetched = fetchTrunk(repo);
   if (!fetched.ok) return held(fetched.reason, ...(fetched.after ?? []));
-  const before = sourceTreeHash(wt, ctx.excludes, "HEAD");
-  ctx.log("rebase onto the fetched trunk");
-  const rebase = git(wt, ["-c", "submodule.recurse=false", "rebase", "-q", TRUNK_REF]);
-  if (rebase.status !== 0) {
-    const status = git(wt, ["status", "--short"]).stdout.trim().split("\n").slice(0, 10);
-    git(wt, ["rebase", "--abort"]);
-    return { ok: false, lines: ["state=CONFLICT", "why: rebase onto master conflicted; resolve on the branch, then re-run", ...status.map((l) => `conflict: ${clean(l)}`)] };
-  }
-  if (sourceTreeHash(wt, ctx.excludes, "HEAD") !== before)
-    return held("the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree");
-  ctx.log("push --force-with-lease");
-  const push = git(wt, ["push", "-q", "--force-with-lease", "origin", branch]);
-  if (push.status !== 0) return held(`push failed: ${why(push)}`);
-  let number = existing?.number;
-  if (existing === undefined) {
-    const slug = repoSlug(repo);
-    if (!slug.ok) return held(slug.reason);
-    ctx.log("gh pr create");
-    const created = sh("gh", ["pr", "create", "-R", slug.slug, "--base", "master", "--head", branch, "--title", title ?? "", "--body-file", bodyFile ?? ""], wt, GH_MAX_BYTES);
-    const found = /\/pull\/([1-9][0-9]*)\s*$/.exec(created.stdout.trim());
-    if (created.status !== 0 || found === null) return held(`pr create failed: ${why(created)}`);
-    number = Number(found[1]);
-  }
-  const short = (ref: string): string => git(wt, ["rev-parse", "--short", ref]).stdout.trim();
-  return { ok: true, lines: [`PR=${number} base=${short("master")} head=${short("HEAD")}`] };
+  const slug = repoSlug(repo);
+  if (!slug.ok) return held(slug.reason);
+  const mode = readMergeQueue(repo, slug.slug);
+  const key = queueKey(branch);
+  const result = (): StepResult => {
+    let bound = false;
+    if (mode === "merge-queue") {
+      // the reviewed head is pushed as it is: no rebase, so the receipt and the review stay current on it
+      const head = readRef(wt, "HEAD");
+      if (head.kind !== "tip") return held(head.kind === "error" ? head.reason : "cannot read HEAD: absent");
+      const bind = git(wt, ["config", key, head.oid]);
+      if (bind.error !== undefined || bind.status !== 0) return held(`cannot write the queue binding ${key}: ${why(bind)}`);
+    } else {
+      const read = git(wt, ["config", "--get", key]);
+      if (read.error !== undefined || (read.status !== 0 && read.status !== 1)) return held(`cannot read the queue binding ${key}: ${why(read)}`);
+      bound = read.status === 0;
+      const before = sourceTreeHash(wt, ctx.excludes, "HEAD");
+      ctx.log("rebase onto the fetched trunk");
+      const rebase = git(wt, ["-c", "submodule.recurse=false", "rebase", "-q", TRUNK_REF]);
+      if (rebase.status !== 0) {
+        const status = git(wt, ["status", "--short"]).stdout.trim().split("\n").slice(0, 10);
+        git(wt, ["rebase", "--abort"]);
+        return { ok: false, lines: ["state=CONFLICT", "why: rebase onto master conflicted; resolve on the branch, then re-run", ...status.map((l) => `conflict: ${clean(l)}`)] };
+      }
+      if (sourceTreeHash(wt, ctx.excludes, "HEAD") !== before)
+        return held("the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree");
+    }
+    ctx.log("push --force-with-lease");
+    const push = git(wt, ["push", "-q", "--force-with-lease", "origin", branch]);
+    if (push.status !== 0) return held(`push failed: ${why(push)}`);
+    if (bound) {
+      const unset = git(wt, ["config", "--unset-all", key]);
+      if (unset.error !== undefined || unset.status !== 0) return held(`pushed, but the queue binding ${key} could not be removed: ${why(unset)}`);
+    }
+    let number = existing?.number;
+    if (existing === undefined) {
+      ctx.log("gh pr create");
+      const created = sh("gh", ["pr", "create", "-R", slug.slug, "--base", "master", "--head", branch, "--title", title ?? "", "--body-file", bodyFile ?? ""], wt, GH_MAX_BYTES);
+      const found = /\/pull\/([1-9][0-9]*)\s*$/.exec(created.stdout.trim());
+      if (created.status !== 0 || found === null) return held(`pr create failed: ${why(created)}`);
+      number = Number(found[1]);
+    }
+    const short = (ref: string): string => git(wt, ["rev-parse", "--short", ref]).stdout.trim();
+    return { ok: true, lines: [`PR=${number} base=${short("master")} head=${short("HEAD")}`] };
+  };
+  const done = result();
+  return { ok: done.ok, lines: [`mode: ${mode}`, ...done.lines] };
 }
 
 // ---------------------------------------------------------------------------
