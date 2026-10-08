@@ -7,10 +7,11 @@
  * mints, and a non-zero exit fails the required `certify` check.
  */
 import { spawnSync } from "node:child_process";
-import { lstatSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { lstatSync, realpathSync, statSync } from "node:fs";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readManifest } from "../adapters/native/src/index.ts";
+import { readContainedRegularFile } from "../packages/commands/src/opus-model.ts";
 import { readSourceExcludes } from "../packages/commands/src/verdict.ts";
 
 const QUEUE_REF_RE = /^refs\/heads\/gh-readonly-queue\/master\/pr-([1-9][0-9]*)-[0-9a-f]{40}$/;
@@ -214,16 +215,20 @@ export async function certify(o) {
   return code === 0 ? 0 : 1;
 }
 
-function main(argv) {
+async function main(argv) {
   const log = (line) => console.log(line);
   const args = readCertifyArgs(argv);
   if (args.error !== undefined) {
     log(`certify: refused: ${args.error}`);
     return 2;
   }
+  // the W-163 census pins every raw read: the event file goes through the contained, symlink-refusing reader
+  const path = resolve(process.env.GITHUB_EVENT_PATH ?? "");
+  const file = readContainedRegularFile(dirname(path), basename(path), "", 8 * 1024 * 1024);
   let event;
   try {
-    event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH ?? "", "utf8"));
+    if ("error" in file) throw new Error(file.error);
+    event = JSON.parse(file.bytes.toString("utf8"));
   } catch {
     log("certify: refused: GITHUB_EVENT_PATH is not a readable JSON file");
     return 2;
