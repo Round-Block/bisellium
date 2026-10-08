@@ -8,7 +8,7 @@ kill: when the console renders these graphs live from the index (web III, Graph 
 
 # Architecture
 
-Four maps of Bisellium as it stands after cascade 7: what depends on what, how
+Four maps of Bisellium as it stands after W-167 (2026-10-08): what depends on what, how
 an opus moves, how a cascade runs, and how a studio's files reach a screen.
 A map, not a spec — the contracts live in `docs/ADOPTION.md` and the leges.
 
@@ -39,6 +39,7 @@ flowchart TD
   cli --> adapter_native
   cli --> commands
   cli --> core
+  cli -.-> pipeline
   cli --> providers
   cli --> schema
   cli -- "injects checkStudio + runners" --> server
@@ -47,6 +48,7 @@ flowchart TD
   commands --> core
   commands --> pipeline
   commands --> schema
+  commands -.-> server
   commands --> shim
   core -.-> adapter_native
   core --> schema
@@ -58,6 +60,8 @@ flowchart TD
   server -.-> commands
   server --> core
   server --> schema
+  server --> shim
+  web -.-> commands
 ```
 
 Solid is a runtime import, dotted a deliberate dynamic `import()`
@@ -67,10 +71,9 @@ downward: `packages/cli/src/serve.ts` passes `checkStudio` and the seven write
 runners into `startServer`, so `apps/server` never imports `@bisellium/cli` or
 `@bisellium/commands` at runtime (the cycle W-016 cut).
 
-Two declared-but-unused dependencies stand today, reported by the script and
-left alone here: `packages/cli` → `@bisellium/pipeline` and `apps/server` →
-`@bisellium/shim`. `apps/web` has no `package.json` yet, so it is not in the
-graph.
+The script reports no drift today: every declared dependency is imported.
+`cli` → `pipeline`, `commands` → `server` and `web` → `commands` are
+test-only edges; `apps/server` imports `@bisellium/shim` at runtime.
 
 ## 2. Opus lifecycle
 
@@ -98,7 +101,7 @@ Six commands write a state id — `greenlight` (backlog only), `ready` (from
 `done` (from `building`, `verifying` or `review`), `review --fail`'s reopen edge
 back to `building` from `verifying`, `review` or `done` (it emits its own
 `workflow.state_changed`; it refuses a verdict log whose failure `verdict` reconciled to passed, W-126), and `halt` from every non-done state. `ready`
-records the first `start`, and where `bisellium.yml` declares `brief_behaviour_limit` refuses a brief that fails admission (W-127, shared with `check`'s `brief.admission`); `done` records `end`; reopening clears `end` but
+records the first `start`, and where `bisellium.yml` declares `brief_behaviour_limit` refuses a brief that fails admission (W-127, shared with `check`'s `brief.admission`; since W-161 that includes a brief with no `## Input domain` section naming, per record read, its valid domain and the one function that rejects the rest, failing closed); `done` records `end`; reopening clears `end` but
 retains `start`. The same timestamp is emitted with the transition.
 
 `verify` records the verifying and review stages as they run (W-129, D-034),
@@ -132,21 +135,28 @@ sources of truth.
 
 ```mermaid
 flowchart TD
-  spec["spec — architect writes studio/briefs/&lt;opus&gt;.md"]
-  gate1{"briefs committed<br/>+ spec gate recorded?"}
+  spec["spec — architect writes and signs studio/briefs/&lt;opus&gt;.md"]
+  gate1{"brief committed, Codex spec review passed<br/>+ spec gate recorded?"}
   build["build — one builder per opus,<br/>each in its own worktree"]
   integrate["integrate — eng-lead lands each builder's own files"]
   verify["verify — 1 Opus reviewer per opus<br/>bisellium verify + check"]
   gate2{"zero blocking findings?"}
+  cap{"third counted<br/>failed round?"}
+  patron["Patron — round ruling or re-spec"]
   fix["fix round — builder, then re-review"]
+  retro["retro — bisellium retro --opus, after done"]
   close["close — Censor: bisellium retro --cascade N"]
   spec --> gate1
   gate1 -- no --> spec
   gate1 -- yes --> build
   build --> integrate --> verify --> gate2
-  gate2 -- no --> fix
+  gate2 -- no --> cap
+  cap -- no --> fix
+  cap -- yes --> patron
+  patron -- "one more round" --> fix
+  patron -- re-spec --> spec
   fix --> verify
-  gate2 -- yes --> close
+  gate2 -- yes --> retro --> close
 ```
 
 Four phases are fixed in `cascades/cascade.js` (`spec → build → verify → close`)
@@ -156,6 +166,17 @@ inside `build`/`verify`, not phases of their own. The two gates are what actuall
 stop a cascade: no opus enters `building` without a committed brief and a passed
 `spec` gate (Design lex §1, `check`'s `state.building.spec`), and no cascade
 closes with a blocking finding outstanding.
+
+`next` adds three stops around them, each keyed in `bisellium.yml` and absent
+by default. With `spec_reviewer`, no `branch` is named until one Codex review
+by that seat has passed after the architect's newest `verdict --phase spec`
+signature of the current brief blob (W-162, D-046). After a third counted
+failed build-review round (security-only rounds do not count, D-044), `next`
+holds for the Patron with a recommendation; a Patron decision attached by
+`amend --round-ruling` buys exactly one more round (W-167). Once an opus is
+`done` and owes a retro under the `retro` key, `retro` is its next rung, and no
+other opus branches until `retro --opus` has filed every recorded finding as a
+lesson with a named fix or as "not a lesson" (W-137, D-039).
 
 Builder isolation is the hard rule around the build phase: a worktree per
 builder, or a commit of its own files before the Censor runs, because a
@@ -176,7 +197,9 @@ receipt binds those results to the final SOURCE tree. Each red entry binds
 both the SOURCE tree its log claims and the commit actually replayed
 (`replayedTree`); after a rebase moved the claim, that commit is the unique
 source-free commit that introduced the log's own bytes (W-134), which the
-review gate re-derives from the branch rather than trusting.
+review gate re-derives from the branch rather than trusting. In flight, not
+merged: W-166 (`Red order: one at a time`) has `red` run the earlier
+behaviours' reds first, so a red certifies the tree its brief names.
 
 The lifecycle review edge is now guarded by that receipt. Both pass and fail
 call the same read-only admission seam before evidence parsing or mutation;
@@ -243,7 +266,8 @@ files the next poll picks up.
   runs, and what drives it. Builder-class execution uses the stricter private
   `builder-run`/host-runner seam instead of this generic provider.
 - `bisellium next` (`packages/cli/src/next.ts`, `integrate.ts`) — the cascade
-  ladder derived from evidence (W-124). `integrate.ts` owns the `gh`/`git` PR
+  ladder derived from evidence (W-124), thirteen rungs `STEPS` from
+  `greenlight` to `checkpoint` with `retro` after `done` (W-137). `integrate.ts` owns the `gh`/`git` PR
   rungs (`pr`, `merge`, `cleanup`), which replaced the retired PR scripts;
   `fetchTrunk` fast-forwards a clean checked-out `master` to the reviewed merge
   commit only (never the origin tip, and never from the `pr` rung), and stops
@@ -260,8 +284,28 @@ files the next poll picks up.
   added (§1 is unchanged). `done` (W-123) reaches the same predicate through an
   injected reader: `integrate.ts`'s `mergeRefusal`, passed by `done`, `close` and
   `next` to `runDone`, which asks it only when `integration.pr.required` is set.
+- The ladder's one-reader seams, each refusing malformed input where it reads
+  it so `next` holds and names the cause: `readSpecReviewer` (`next.ts`,
+  W-162); `readBuildReviewConfig` / `readBuildRounds`
+  (`@bisellium/commands/verdict.js`, W-167), shared by `next` and `amend
+  --round-ruling`; `owedRetros` (`packages/cli/src/retro.ts`, W-137), shared by
+  `next` and `check`; `readBriefAdmission`
+  (`@bisellium/commands/brief-admission.js`), shared by `ready` and `check`.
+- `instant` (`@bisellium/schema`) — the one strict record-date parser (W-163,
+  moved from cli so core, server and commands can use it), with
+  `readContainedRegularFile` (`opus-model.js`) and `requireRealDirectory`
+  (`ids.js`) for officina reads and writes. `containment.test.ts`'s census
+  (inventories C and D) fails `npm test` on any raw date parse or officina file
+  access outside them that is not listed with a reason.
 - `admitCurrentRunReceipt` (`@bisellium/commands/builder-run`) — the shared
   current-SOURCE host-completion predicate used before either review outcome.
 - `SnapshotAdapter` (`adapters/native`, `adapters/epoch0`) — the only thing that
   knows a studio's file layout.
 - `workflow.*` (`@bisellium/schema`) — the wire vocabulary every layer shares.
+
+**Planned, not yet built** (D-049, W-185, greenlit): records are checked once,
+at load. One loader per record type (manifest, opus, decision, lesson, verdict
+and red logs) in `@bisellium/schema` refuses a malformed record where it is
+read; every other reader receives only checked data, and a census fails the
+build on a raw record read outside the loaders. Until it lands, the one-reader
+seams above validate per record at their own read sites.
