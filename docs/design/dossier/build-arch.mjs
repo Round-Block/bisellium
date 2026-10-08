@@ -1,12 +1,16 @@
 // Renders docs/ARCHITECTURE.md into bisellium-architecture.html using the
 // dossier's head.html styles. Mermaid fences become <pre class="mermaid">,
-// which the artifact runtime renders natively — no library. Kept because
-// every architecture republish repeats this exact transform (invoked by
-// build.sh; never hand-edit the built page).
+// which the page renders itself with Mermaid + the ELK layout (exact-pinned jsdelivr
+// ESM, an Artifact-CSP-allowed host): ELK minimises edge crossings and
+// useMaxWidth:false keeps each diagram at natural size inside its scrolling box.
+// Kept because every architecture republish repeats this exact transform
+// (invoked by build.sh; never hand-edit the built page).
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const MERMAID = "https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs";
+const ELK = "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.3/dist/mermaid-layout-elk.esm.min.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const [,, srcArg, outArg, titleArg, eyebrowArg, thesisArg] = process.argv;
 const SRC = srcArg ?? "../../ARCHITECTURE.md";
@@ -74,7 +78,30 @@ ${out.join("\n")}
 </section>
 
 </div>
-<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}</style>
+<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}pre.mermaid{font-family:"Segoe UI",system-ui,sans-serif}pre.mermaid svg{max-width:none}</style>
+<script type="module">
+import mermaid from "${MERMAID}";
+import elk from "${ELK}";
+mermaid.registerLayoutLoaders(elk);
+// Page tokens -> Mermaid theme, resolved at load so light and dark both read.
+const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SANS = '"Segoe UI", system-ui, sans-serif'; // concrete, so measure and paint use one font (a <pre> would paint monospace and clip labels)
+const natural = { useMaxWidth: false };
+mermaid.initialize({
+  startOnLoad: true,
+  layout: "elk",
+  theme: "base",
+  themeVariables: {
+    fontFamily: SANS,
+    primaryColor: v("--accent-soft"), primaryTextColor: v("--ink"), primaryBorderColor: v("--accent"),
+    secondaryColor: v("--surface-2"), tertiaryColor: v("--surface-2"),
+    lineColor: v("--muted"), textColor: v("--ink"), mainBkg: v("--accent-soft"),
+    nodeBorder: v("--accent"), clusterBkg: v("--surface-2"), clusterBorder: v("--line"),
+    edgeLabelBackground: v("--surface"), background: v("--surface"),
+  },
+  flowchart: natural, state: natural, sequence: natural, class: natural, er: natural,
+});
+</script>
 `;
 writeFileSync(join(here, OUT), page);
 console.log("built " + OUT);

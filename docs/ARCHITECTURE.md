@@ -23,45 +23,45 @@ diagram.
 ```mermaid
 flowchart TD
   adapter_epoch0["adapter-epoch0<br/>adapters/epoch0"]
-  adapter_native["adapter-native<br/>adapters/native"]
   cli["cli<br/>packages/cli"]
+  web["web<br/>apps/web"]
   commands["commands<br/>packages/commands"]
-  core["core<br/>packages/core"]
   pipeline["pipeline<br/>packages/pipeline"]
+  server["server<br/>apps/server"]
+  core["core<br/>packages/core"]
+  shim["shim<br/>packages/shim"]
+  adapter_native["adapter-native<br/>adapters/native"]
   providers["providers<br/>packages/providers"]
   schema["schema<br/>packages/schema"]
-  server["server<br/>apps/server"]
-  shim["shim<br/>packages/shim"]
-  web["web<br/>apps/web"]
   adapter_epoch0 --> schema
-  adapter_native -. dynamic .-> providers
-  adapter_native --> schema
-  cli --> adapter_native
   cli --> commands
-  cli --> core
   cli -.-> pipeline
+  cli -- "injects checkStudio + runners" --> server
+  cli --> core
+  cli --> shim
+  cli --> adapter_native
   cli --> providers
   cli --> schema
-  cli -- "injects checkStudio + runners" --> server
-  cli --> shim
-  commands --> adapter_native
-  commands --> core
+  web -.-> commands
   commands --> pipeline
-  commands --> schema
   commands -.-> server
+  commands --> core
   commands --> shim
-  core -.-> adapter_native
-  core --> schema
-  pipeline --> schema
+  commands --> adapter_native
+  commands --> schema
   pipeline --> shim
-  providers --> adapter_native
-  providers --> schema
-  server --> adapter_native
+  pipeline --> schema
   server -.-> commands
   server --> core
-  server --> schema
   server --> shim
-  web -.-> commands
+  server --> adapter_native
+  server --> schema
+  core -.-> adapter_native
+  core --> schema
+  adapter_native -. dynamic .-> providers
+  adapter_native --> schema
+  providers --> adapter_native
+  providers --> schema
 ```
 
 Solid is a runtime import, dotted a deliberate dynamic `import()`
@@ -208,7 +208,7 @@ there is still one independent censor and no automatic review transition.
 ## 4. Console read path
 
 ```mermaid
-flowchart LR
+flowchart TD
   files["studio/ files<br/>bisellium.yml, opera/, acta/, petitiones/"]
   snap["adapter-native snapshotDir()"]
   store["server Store extends core Store<br/>poll every --poll-ms (5s)"]
