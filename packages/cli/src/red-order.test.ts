@@ -11,7 +11,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { parseDocument } from "yaml";
+import { readFront } from "@bisellium/adapter-native";
+import { EVENTS_LOG_REL } from "@bisellium/core";
 import { sourceTreeHash } from "@bisellium/shim";
+import { runReady } from "./lifecycle.js";
 import { checkEvidence } from "./rules/evidence.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -316,4 +320,111 @@ test("W-166-b3 behaviour 3: distinct trees, no line, and a done or halted opus g
   assert.deepEqual(sharedTree(evidenceRoot("b3-noline", { lines: [], trees: ["tree:aaaa", "tree:aaaa"] })), [], "3b: no opt-in line gives no block");
   for (const state of ["done", "halted"])
     assert.deepEqual(sharedTree(evidenceRoot(`b3-${state}`, { state, trees: ["tree:aaaa", "tree:aaaa"] })), [], `3b: a ${state} opus gives no block`);
+});
+
+// ---------------------------------------------------------------------------
+// 5. ready refuses a brief without the opt-in line where brief_behaviour_limit is declared
+// ---------------------------------------------------------------------------
+const NO_RED_ORDER = `declares no red order; add the line "${LINE}"`;
+const NO_FAMILY = 'declares no decree family; add one line "Decree family: <slug>"';
+
+/** A copy of the sample officina (with `brief_behaviour_limit: 6` unless `limit` is false), a greenlit W-900 and an admitted brief whose Intent carries `lines`. */
+function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean } = {}): { dir: string; stderr: string[]; exitCode: number; opus: { before: string; after: string }; eventsSame: boolean } {
+  const dir = scratch("b5-ready");
+  cpSync(SAMPLE, dir, { recursive: true, dereference: true });
+  const yml = join(dir, "bisellium.yml");
+  const doc = parseDocument(readFileSync(yml, "utf8"));
+  if (o.limit !== false) doc.setIn(["brief_behaviour_limit"], 6);
+  writeFileSync(yml, doc.toString({ lineWidth: 0 }));
+  const brief = [
+    `# ${ID} fixture`,
+    "",
+    "## Intent",
+    "",
+    ...(o.family === false ? [] : ["Decree family: red-order"]),
+    ...lines,
+    "",
+    "## Files owned",
+    "",
+    "- a.ts",
+    "",
+    "## Interfaces",
+    "",
+    "none",
+    "",
+    "## Input domain",
+    "",
+    "Each record has one valid domain and one rejecting function; a rejection fails closed.",
+    "",
+    "| Record | Valid domain | Rejected by |",
+    "|---|---|---|",
+    "| fixture record | a string | `readFixture` |",
+    "",
+    "## Behaviours to test",
+    "",
+    "1. Behaviour 1 refuses a thing.",
+    "   **Genuine red:** row 1.1 fails on its assertion.",
+    "",
+    "## Acceptance",
+    "",
+    "green",
+    "",
+    "## Out of scope",
+    "",
+    "none",
+    "",
+  ].join("\n");
+  put(dir, `briefs/${ID}.md`, brief);
+  put(dir, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Admission fixture\nkind: feature\ncollegium: engineering\nstate: greenlit\nprobationes: {}\n---\nbody\n`);
+  const opusPath = join(dir, `opera/${ID}.md`);
+  const before = readFileSync(opusPath, "utf8");
+  const eventsPath = join(dir, EVENTS_LOG_REL);
+  const events = (): string | undefined => (existsSync(eventsPath) ? readFileSync(eventsPath, "utf8") : undefined);
+  const eventsBefore = events();
+  const errors: string[] = [];
+  const err = console.error;
+  const log = console.log;
+  console.error = (...a: unknown[]) => void errors.push(a.join(" "));
+  console.log = () => undefined;
+  let exitCode: number;
+  try {
+    exitCode = runReady([ID, "--sella", "architect", "--studio", dir], { now: new Date("2026-10-05T12:00:00Z") }).exitCode;
+  } finally {
+    console.error = err;
+    console.log = log;
+  }
+  return {
+    dir,
+    stderr: errors.join("\n").split("\n").filter((l) => l.trim().length > 0),
+    exitCode,
+    opus: { before, after: readFileSync(opusPath, "utf8") },
+    eventsSame: eventsBefore === events(),
+  };
+}
+
+test("W-166-b5 behaviour 5: an admitted brief without the line is refused and the record is unchanged", () => {
+  const r = readyFixture([]);
+  assert.equal(r.exitCode, 1, `5a: exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.deepEqual(r.stderr, [`${ID}: brief.admission: briefs/${ID}.md ${NO_RED_ORDER}`], "5a: the one refusal line");
+  assert.equal(r.opus.after, r.opus.before, "5a: the record is byte-identical");
+  assert.ok(r.eventsSame, "5a: no event log appeared");
+});
+
+test("W-166-b5 behaviour 5: with the line the opus reaches building", () => {
+  const r = readyFixture([LINE]);
+  assert.equal(r.exitCode, 0, `5b: exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.equal(readFront<{ state: string }>(join(r.dir, `opera/${ID}.md`)).data.state, "building", "5b: building");
+});
+
+test("W-166-b5 behaviour 5: a malformed line is refused with readRedOrder's error", () => {
+  const r = readyFixture(["red order: one at a time"]);
+  assert.equal(r.exitCode, 1, `5c: exit (stderr ${JSON.stringify(r.stderr)})`);
+  assert.deepEqual(r.stderr, [`${ID}: brief.admission: briefs/${ID}.md red order line "red order: one at a time" is not exactly "${LINE}"`], "5c: the error");
+});
+
+test("W-166-b5 behaviour 5: admission problems keep their exact stderr, and an officina with no limit asks nothing", () => {
+  const r = readyFixture([], { family: false });
+  assert.deepEqual(r.stderr, [`${ID}: brief.admission: briefs/${ID}.md ${NO_FAMILY}`], "5d: the red order requirement waits for admission");
+  const open = readyFixture([], { limit: false });
+  assert.equal(open.exitCode, 0, `5e: no limit, no requirement (stderr ${JSON.stringify(open.stderr)})`);
 });
