@@ -1,0 +1,79 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-166-b5 --import tsx packages/cli/src/red-order.test.ts
+# exit: 1
+# at: 2026-10-08T10:41:29.088Z
+# sella: builder.W-166
+# tree: tree:3dfcb8266fe01253eeb2848f1a3912b6501c74bc
+
+TAP version 13
+# Subtest: W-166-b5 behaviour 5: an admitted brief without the line is refused and the record is unchanged
+not ok 1 - W-166-b5 behaviour 5: an admitted brief without the line is refused and the record is unchanged
+  ---
+  duration_ms: 43.815598
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:66:768'
+  failureType: 'testCodeFailure'
+  error: |-
+    5a: exit (stderr [])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:407:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-166-b5 behaviour 5: with the line the opus reaches building
+ok 2 - W-166-b5 behaviour 5: with the line the opus reaches building
+  ---
+  duration_ms: 19.63785
+  type: 'test'
+  ...
+# Subtest: W-166-b5 behaviour 5: a malformed line is refused with readRedOrder's error
+not ok 3 - W-166-b5 behaviour 5: a malformed line is refused with readRedOrder's error
+  ---
+  duration_ms: 15.196308
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:66:1491'
+  failureType: 'testCodeFailure'
+  error: |-
+    5c: exit (stderr [])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-166/packages/cli/src/red-order.test.ts:421:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-166-b5 behaviour 5: admission problems keep their exact stderr, and an officina with no limit asks nothing
+ok 4 - W-166-b5 behaviour 5: admission problems keep their exact stderr, and an officina with no limit asks nothing
+  ---
+  duration_ms: 27.629721
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 2
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 121.944623
