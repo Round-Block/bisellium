@@ -282,45 +282,45 @@
 <pre class="mermaid">
 flowchart TD
   adapter_epoch0["adapter-epoch0<br/>adapters/epoch0"]
-  adapter_native["adapter-native<br/>adapters/native"]
   cli["cli<br/>packages/cli"]
+  web["web<br/>apps/web"]
   commands["commands<br/>packages/commands"]
-  core["core<br/>packages/core"]
   pipeline["pipeline<br/>packages/pipeline"]
+  server["server<br/>apps/server"]
+  core["core<br/>packages/core"]
+  shim["shim<br/>packages/shim"]
+  adapter_native["adapter-native<br/>adapters/native"]
   providers["providers<br/>packages/providers"]
   schema["schema<br/>packages/schema"]
-  server["server<br/>apps/server"]
-  shim["shim<br/>packages/shim"]
-  web["web<br/>apps/web"]
   adapter_epoch0 --> schema
-  adapter_native -. dynamic .-> providers
-  adapter_native --> schema
-  cli --> adapter_native
   cli --> commands
-  cli --> core
   cli -.-> pipeline
+  cli -- "injects checkStudio + runners" --> server
+  cli --> core
+  cli --> shim
+  cli --> adapter_native
   cli --> providers
   cli --> schema
-  cli -- "injects checkStudio + runners" --> server
-  cli --> shim
-  commands --> adapter_native
-  commands --> core
+  web -.-> commands
   commands --> pipeline
-  commands --> schema
   commands -.-> server
+  commands --> core
   commands --> shim
-  core -.-> adapter_native
-  core --> schema
-  pipeline --> schema
+  commands --> adapter_native
+  commands --> schema
   pipeline --> shim
-  providers --> adapter_native
-  providers --> schema
-  server --> adapter_native
+  pipeline --> schema
   server -.-> commands
   server --> core
-  server --> schema
   server --> shim
-  web -.-> commands
+  server --> adapter_native
+  server --> schema
+  core -.-> adapter_native
+  core --> schema
+  adapter_native -. dynamic .-> providers
+  adapter_native --> schema
+  providers --> adapter_native
+  providers --> schema
 </pre>
 <p>Solid is a runtime import, dotted a deliberate dynamic <code>import()</code> (<code>adapter-native</code> → <code>providers</code>, the one edge that would otherwise be a static ESM cycle), dashed a dev/test-only edge — and the only <code>cli</code>↔<code>server</code> edge runs downward: <code>packages/cli/src/serve.ts</code> passes <code>checkStudio</code> and the seven write runners into <code>startServer</code>, so <code>apps/server</code> never imports <code>@bisellium/cli</code> or <code>@bisellium/commands</code> at runtime (the cycle W-016 cut).</p>
 <p>The script reports no drift today: every declared dependency is imported. <code>cli</code> → <code>pipeline</code>, <code>commands</code> → <code>server</code> and <code>web</code> → <code>commands</code> are test-only edges; <code>apps/server</code> imports <code>@bisellium/shim</code> at runtime.</p>
@@ -379,7 +379,7 @@ flowchart TD
 <p>The lifecycle review edge is now guarded by that receipt. Both pass and fail call the same read-only admission seam before evidence parsing or mutation; there is still one independent censor and no automatic review transition.</p>
 <h2>4. Console read path</h2>
 <pre class="mermaid">
-flowchart LR
+flowchart TD
   files["studio/ files<br/>bisellium.yml, opera/, acta/, petitiones/"]
   snap["adapter-native snapshotDir()"]
   store["server Store extends core Store<br/>poll every --poll-ms (5s)"]
@@ -435,4 +435,27 @@ flowchart LR
 </section>
 
 </div>
-<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}</style>
+<style>pre.mermaid{background:var(--surface);color:var(--ink);border:1px solid var(--line);overflow-x:auto}pre.mermaid{font-family:"Segoe UI",system-ui,sans-serif}pre.mermaid svg{max-width:none}</style>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs";
+import elk from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.3/dist/mermaid-layout-elk.esm.min.mjs";
+mermaid.registerLayoutLoaders(elk);
+// Page tokens -> Mermaid theme, resolved at load so light and dark both read.
+const v = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SANS = '"Segoe UI", system-ui, sans-serif'; // concrete, so measure and paint use one font (a <pre> would paint monospace and clip labels)
+const natural = { useMaxWidth: false };
+mermaid.initialize({
+  startOnLoad: true,
+  layout: "elk",
+  theme: "base",
+  themeVariables: {
+    fontFamily: SANS,
+    primaryColor: v("--accent-soft"), primaryTextColor: v("--ink"), primaryBorderColor: v("--accent"),
+    secondaryColor: v("--surface-2"), tertiaryColor: v("--surface-2"),
+    lineColor: v("--muted"), textColor: v("--ink"), mainBkg: v("--accent-soft"),
+    nodeBorder: v("--accent"), clusterBkg: v("--surface-2"), clusterBorder: v("--line"),
+    edgeLabelBackground: v("--surface"), background: v("--surface"),
+  },
+  flowchart: natural, state: natural, sequence: natural, class: natural, er: natural,
+});
+</script>

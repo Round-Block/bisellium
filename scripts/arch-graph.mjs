@@ -101,13 +101,42 @@ for (const p of pkgs) {
 
 // ---- print ----------------------------------------------------------------
 const arrow = { solid: "-->", dotted: "-. dynamic .->", dashed: "-.->" };
+// Declaration order seeds ELK's layering, so list nodes by dependency layer —
+// dependents first, foundations last — then by name, and each node's edges together;
+// alphabetical order left ELK a crossing-heavy start (15 crossings, 10 in this order).
+const out = new Map(pkgs.map((p) => [p.name, []]));
+for (const e of edges.values()) out.get(e.from)?.push(e.to);
+const depth = new Map();
+const onStack = new Set();
+const back = new Set(); // edges closing a cycle, ignored for layering
+const seen = new Set();
+const dfs = (n) => {
+  seen.add(n);
+  onStack.add(n);
+  for (const t of out.get(n).sort())
+    if (onStack.has(t)) back.add(`${n}->${t}`);
+    else if (!seen.has(t)) dfs(t);
+  onStack.delete(n);
+};
+const hasIn = new Set([...edges.values()].map((e) => e.to));
+const names = pkgs.map((p) => p.name).sort();
+for (const n of names.filter((n) => !hasIn.has(n)).concat(names)) if (!seen.has(n)) dfs(n);
+const layer = (n) => {
+  if (!depth.has(n)) {
+    depth.set(n, 0);
+    for (const e of edges.values())
+      if (e.to === n && !back.has(`${e.from}->${n}`)) depth.set(n, Math.max(depth.get(n), layer(e.from) + 1));
+  }
+  return depth.get(n);
+};
+const order = (a, b) => layer(a) - layer(b) || a.localeCompare(b);
 const lines = ["flowchart TD"];
-for (const p of pkgs.sort((a, b) => a.name.localeCompare(b.name))) {
+for (const p of pkgs.sort((a, b) => order(a.name, b.name))) {
   lines.push(
     `  ${nodeId(p.name)}["${nodeId(p.name).replace(/_/g, "-")}<br/>${relative(repoRoot, p.dir).replaceAll("\\", "/")}"]`,
   );
 }
-for (const e of [...edges.values()].sort((a, b) => `${a.from}${a.to}`.localeCompare(`${b.from}${b.to}`))) {
+for (const e of [...edges.values()].sort((a, b) => order(a.from, b.from) || order(a.to, b.to))) {
   const from = nodeId(e.from);
   const to = nodeId(e.to);
   const seam = SEAM_LABELS[`${from}->${to}`];
