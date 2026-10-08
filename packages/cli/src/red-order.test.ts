@@ -136,3 +136,152 @@ test("W-166-b1 behaviour 1: a non-Git --repo still records unknown", () => {
   assert.equal(r.status, 0, `1d: a non-Git --repo records (${r.stderr})`);
   assert.equal(headerLine(logOf(studio, "W-900", 1), "tree"), "# tree: unknown", "1d: no repository is certified");
 });
+
+// ---------------------------------------------------------------------------
+// 2. an opted-in red runs every earlier behaviour's recorded command first
+// ---------------------------------------------------------------------------
+const ID = "W-900";
+const LINE = "Red order: one at a time";
+
+interface FxOptions {
+  /** The real lines of the brief's Intent that carry the opt-in; default one exact line. */
+  lines?: string[];
+  /** The opus record's `spec:` value; default the brief. */
+  spec?: string;
+  /** Written verbatim after `source_excludes:` in bisellium.yml. */
+  excludes?: string;
+  /** No `opera/W-900.md` at all. */
+  noRecord?: boolean;
+  /** 01.log: the prerequisite's exit code and `# pass` count; `null` writes no 01.log. */
+  prereq?: { exit: number; pass: number } | null;
+}
+interface Fx {
+  M: string;
+  studio: string;
+  /** Every command a red runs appends its name here, so the file is the order they ran in. */
+  order: string;
+  prereq: string;
+  target: (mode?: string) => string[];
+}
+
+/** A scratch repository with the sample officina, an opted-in (or not) two-behaviour W-900, branch opus/W-900 at HEAD. */
+function optedFixture(tag: string, o: FxOptions = {}): Fx {
+  const M = repoWithStudio(tag);
+  const studio = join(M, "studio");
+  const S = scratch(`${tag}-scripts`);
+  const order = join(S, "order.txt");
+  put(S, "prereq.cjs", 'const fs=require("node:fs");fs.appendFileSync(process.argv[2],"b1\\n");console.log("# pass "+process.argv[4]);process.exit(Number(process.argv[3]));\n');
+  put(
+    S,
+    "target.cjs",
+    'const fs=require("node:fs");fs.appendFileSync(process.argv[2],"target\\n");const m=process.argv[3];if(m==="tracked")fs.appendFileSync("src/a.txt","x\\n");if(m==="studio")fs.writeFileSync("studio/note.txt","x\\n");process.exit(1);\n',
+  );
+  if (o.excludes !== undefined) {
+    const yml = join(studio, "bisellium.yml");
+    writeFileSync(yml, readFileSync(yml, "utf8").replace(/^source_excludes:.*$/m, `source_excludes: ${o.excludes}`));
+  }
+  put(studio, `briefs/${ID}.md`, `# ${ID} fixture\n\n## Intent\n\n${(o.lines ?? [LINE]).join("\n")}\n\n## Behaviours to test\n\n1. one\n2. two\n`);
+  if (!o.noRecord)
+    put(studio, `opera/${ID}.md`, `---\nid: ${ID}\ntitle: Order fixture\nkind: feature\ncollegium: engineering\nstate: building\nprobationes: {}\nspec: ${o.spec ?? `briefs/${ID}.md`}\n---\nbody\n`);
+  const prereq = o.prereq === undefined ? { exit: 0, pass: 1 } : o.prereq;
+  const prereqCmd = `node ${join(S, "prereq.cjs")} ${order} ${prereq?.exit ?? 0} ${prereq?.pass ?? 1}`;
+  if (prereq !== null)
+    put(studio, `ci/reds/${ID}/01.log`, `# behaviour: 1\n# command: ${prereqCmd}\n# exit: 1\n# at: 2026-10-02T12:00:00.000Z\n# sella: eng-lead\n# tree: tree:0000\n\nfixture\n`);
+  put(M, "escape.md", "# not a brief\n");
+  G(M, ["add", "-A"]);
+  G(M, ["commit", "-q", "-m", "opus fixture"]);
+  G(M, ["branch", `opus/${ID}`]);
+  return { M, studio, order, prereq: prereqCmd, target: (mode = "plain") => ["node", join(S, "target.cjs"), order, mode] };
+}
+const ranOrder = (fx: Fx): string => (existsSync(fx.order) ? readFileSync(fx.order, "utf8") : "");
+const redIn = (fx: Fx, n: number, flags: string[] = [], cmd: string[] = fx.target(), cwd: string = fx.M): Ran =>
+  red(cwd, ID, n, ["--studio", fx.studio, ...flags], cmd);
+
+test("W-166-b2 behaviour 2: an opted-in red runs the earlier behaviour first, then the target", () => {
+  const fx = optedFixture("b2-ok");
+  const r = redIn(fx, 2);
+  assert.equal(r.status, 0, `2a: the red records (${r.stderr})`);
+  assert.equal(ranOrder(fx), "b1\ntarget\n", "2a: behaviour 1's recorded command ran, then the target");
+  const lines = readFileSync(logOf(fx.studio, ID, 2), "utf8").split("\n");
+  assert.deepEqual(lines.slice(0, 5).map((l) => l.split(":")[0]), ["# behaviour", "# command", "# exit", "# at", "# sella"], "2a: the log keeps today's header");
+  assert.ok((lines[5] ?? "").startsWith("# tree: tree:"), "2a: the sixth header line is a clean tree identity");
+  assert.equal(lines[1], `# command: ${fx.target().join(" ")}`, "2a: # command: is the target alone");
+  assert.equal(r.stdout.trim(), `${ID}: red recorded for behaviour 2 -> ci/reds/${ID}/02.log`, "2a: stdout keeps its one recorded line");
+});
+
+const refusals: { name: string; opts: FxOptions; flags?: (fx: Fx) => string[]; cmd?: (fx: Fx) => string[]; run?: (fx: Fx) => Ran; dirty?: boolean }[] = [
+  { name: "a missing 01.log", opts: { prereq: null } },
+  { name: "a malformed opt-in line", opts: { lines: ["red order: one at a time"] } },
+  { name: "a repeated opt-in line", opts: { lines: [LINE, LINE] } },
+  { name: "an unsafe spec", opts: { spec: "../escape.md" } },
+  { name: "a dirty tree", opts: {}, dirty: true },
+  { name: "a scalar source_excludes", opts: { excludes: "examples/" } },
+  { name: "a scalar source_excludes without the line", opts: { excludes: "examples/", lines: [] } },
+  { name: "a HEAD that is not on the opus branch", opts: {}, run: (fx) => {
+    const WT = linked(fx.M, "b2-side");
+    put(WT, "side.txt", "side\n");
+    G(WT, ["add", "-A"]);
+    G(WT, ["commit", "-q", "-m", "side"]);
+    return redIn(fx, 2, ["--cwd", WT]);
+  } },
+  { name: "a cwd below the repository root", opts: {}, flags: (fx) => ["--cwd", join(fx.M, "src")] },
+  { name: "an empty target argument", opts: {}, cmd: (fx) => [...fx.target(), ""] },
+  { name: "a target argument with a space", opts: {}, cmd: (fx) => [...fx.target(), "two words"] },
+  { name: "a non-Git --repo", opts: {}, flags: () => ["--repo", scratch("b2-plain")] },
+];
+for (const c of refusals)
+  test(`W-166-b2 behaviour 2: ${c.name} exits 2 with no command run and no log`, () => {
+    const fx = optedFixture("b2-refuse", c.opts);
+    if (c.dirty) appendDirty(fx);
+    const r = c.run ? c.run(fx) : redIn(fx, 2, c.flags?.(fx) ?? [], c.cmd?.(fx));
+    assert.equal(r.status, 2, `2b: ${c.name} exits 2 (${r.stderr})`);
+    assert.equal(ranOrder(fx), "", "2b: no command ran");
+    assert.equal(existsSync(logOf(fx.studio, ID, 2)), false, "2b: no 02.log");
+  });
+function appendDirty(fx: Fx): void {
+  writeFileSync(join(fx.M, "src", "a.txt"), "one\ndirty\n");
+}
+
+for (const withLine of [true, false])
+  test(`W-166-b2 behaviour 2: an executable that never starts exits 2 and writes no log (${withLine ? "opted in" : "no line"})`, () => {
+    const fx = optedFixture("b2-spawn", withLine ? {} : { lines: [] });
+    const r = redIn(fx, 2, [], ["definitely-not-a-command-w166"]);
+    assert.equal(r.status, 2, `2c: a spawn failure exits 2 (${r.stderr})`);
+    assert.equal(existsSync(logOf(fx.studio, ID, 2)), false, "2c: no 02.log");
+    assert.equal(ranOrder(fx), withLine ? "b1\n" : "", "2c: under the line b1 ran first; without it nothing did");
+  });
+
+for (const [name, prereq] of [["exits 1", { exit: 1, pass: 1 }], ["exits 0 with # pass 0", { exit: 0, pass: 0 }]] as const)
+  test(`W-166-b2 behaviour 2: a behaviour 1 command that ${name} exits 1, writes no log and never runs the target`, () => {
+    const fx = optedFixture("b2-prereq", { prereq });
+    const r = redIn(fx, 2);
+    assert.equal(r.status, 1, `2d: an unmet prerequisite exits 1 (${r.stderr})`);
+    assert.equal(ranOrder(fx), "b1\n", "2d: only the prerequisite ran");
+    assert.equal(existsSync(logOf(fx.studio, ID, 2)), false, "2d: no 02.log");
+  });
+
+test("W-166-b2 behaviour 2: a target that modifies a tracked file outside the exclusions exits 1", () => {
+  const fx = optedFixture("b2-tracked");
+  const r = redIn(fx, 2, [], fx.target("tracked"));
+  assert.equal(r.status, 1, `2e: a tree moved by the target exits 1 (${r.stderr})`);
+  assert.equal(existsSync(logOf(fx.studio, ID, 2)), false, "2e: no 02.log");
+});
+
+test("W-166-b2 behaviour 2: a target that writes under the studio still records", () => {
+  const fx = optedFixture("b2-studio");
+  const r = redIn(fx, 2, [], fx.target("studio"));
+  assert.equal(r.status, 0, `2f: the studio is excluded from the moved-tree check (${r.stderr})`);
+  assert.equal(existsSync(logOf(fx.studio, ID, 2)), true, "2f: 02.log exists");
+});
+
+test("W-166-b2 behaviour 2: behaviour 1, a brief without the line and an opus with no record run the target only", () => {
+  const first = optedFixture("b2-first");
+  assert.equal(redIn(first, 1).status, 0, "2g: behaviour 1 records");
+  assert.equal(ranOrder(first), "target\n", "2g: behaviour 1 of an opted-in brief runs only the target");
+  const plain = optedFixture("b2-plain", { lines: [], prereq: null });
+  assert.equal(redIn(plain, 2).status, 0, "2h: a brief without the line records with no 01.log");
+  assert.equal(ranOrder(plain), "target\n", "2h: and runs only the target");
+  const bare = optedFixture("b2-bare", { noRecord: true, prereq: null });
+  assert.equal(redIn(bare, 2).status, 0, "2i: an opus with no record records");
+  assert.equal(ranOrder(bare), "target\n", "2i: and runs only the target");
+});
