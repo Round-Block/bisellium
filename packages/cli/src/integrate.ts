@@ -12,8 +12,8 @@
  * `--match-head-commit`. `BLOCKED` is never merged directly.
  */
 import { spawnSync } from "node:child_process";
-import { lstatSync, realpathSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { lstatSync, mkdirSync, realpathSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { sourceTreeHash } from "@bisellium/shim";
 import { TRUNK_REF, trunkContainsMerge, wellFormedOid } from "@bisellium/commands/trunk.js";
 
@@ -580,8 +580,24 @@ export function dirtyHold(cwd: string, allow?: (path: string) => boolean): StepR
 // pr
 // ---------------------------------------------------------------------------
 
-/** The key that binds a queue-mode PR head: set by a queue-mode `pr` before its push, read by every direct-mode verb. */
-const queueKey = (branch: string): string => `branch.${branch}.bisellium-queue`;
+const thrown = (e: unknown): string => clean(e instanceof Error ? e.message : String(e));
+/** W-199: the file whose presence binds a queue-mode PR head: `<git common dir>/bisellium/queue/<encodeURIComponent(branch)>`. */
+function queueFile(repo: string, branch: string): { path: string } | { error: string } {
+  const r = git(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  const dir = r.stdout.trim();
+  if (r.error !== undefined || r.status !== 0 || dir === "" || !isAbsolute(dir)) return { error: why(r) };
+  return { path: join(dir, "bisellium", "queue", encodeURIComponent(branch)) };
+}
+/** W-199: `absent` only when `lstat` finds no entry; any entry is `bound`; any other failure is `error`. */
+function readBinding(repo: string, branch: string): { kind: "absent" | "bound"; path: string } | { kind: "error"; reason: string } {
+  const file = queueFile(repo, branch);
+  if ("error" in file) return { kind: "error", reason: file.error };
+  try {
+    return { kind: lstatSync(file.path, { throwIfNoEntry: false }) === undefined ? "absent" : "bound", path: file.path };
+  } catch (e) {
+    return { kind: "error", reason: thrown(e) };
+  }
+}
 
 export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undefined, bodyFile: string | undefined): StepResult {
   const { repo, wt, id } = ctx;
@@ -596,19 +612,24 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
   const slug = repoSlug(repo);
   if (!slug.ok) return held(slug.reason);
   const mode = readMergeQueue(repo, slug.slug);
-  const key = queueKey(branch);
   const result = (): StepResult => {
-    let bound = false;
+    let bound = "";
     if (mode === "merge-queue") {
       // the reviewed head is pushed as it is: no rebase, so the receipt and the review stay current on it
       const head = readRef(wt, "HEAD");
       if (head.kind !== "tip") return held(head.kind === "error" ? head.reason : "cannot read HEAD: absent");
-      const bind = git(wt, ["config", key, head.oid]);
-      if (bind.error !== undefined || bind.status !== 0) return held(`cannot write the queue binding ${key}: ${why(bind)}`);
+      const file = queueFile(repo, branch);
+      if ("error" in file) return held(`cannot write the queue binding: ${file.error}`);
+      try {
+        mkdirSync(dirname(file.path), { recursive: true });
+        writeFileSync(file.path, `${head.oid}\n`);
+      } catch (e) {
+        return held(`cannot write the queue binding ${file.path}: ${thrown(e)}`);
+      }
     } else {
-      const read = git(wt, ["config", "--get", key]);
-      if (read.error !== undefined || (read.status !== 0 && read.status !== 1)) return held(`cannot read the queue binding ${key}: ${why(read)}`);
-      bound = read.status === 0;
+      const read = readBinding(repo, branch);
+      if (read.kind === "error") return held(`cannot read the queue binding: ${read.reason}`);
+      if (read.kind === "bound") bound = read.path;
       const before = sourceTreeHash(wt, ctx.excludes, "HEAD");
       ctx.log("rebase onto the fetched trunk");
       const rebase = git(wt, ["-c", "submodule.recurse=false", "rebase", "-q", TRUNK_REF]);
@@ -623,9 +644,12 @@ export function openPr(ctx: Ctx, existing: Pr | undefined, title: string | undef
     ctx.log("push --force-with-lease");
     const push = git(wt, ["push", "-q", "--force-with-lease", "origin", branch]);
     if (push.status !== 0) return held(`push failed: ${why(push)}`);
-    if (bound) {
-      const unset = git(wt, ["config", "--unset-all", key]);
-      if (unset.error !== undefined || unset.status !== 0) return held(`pushed, but the queue binding ${key} could not be removed: ${why(unset)}`);
+    if (bound !== "") {
+      try {
+        unlinkSync(bound);
+      } catch (e) {
+        return held(`pushed, but the queue binding ${bound} could not be removed: ${thrown(e)}`);
+      }
     }
     let number = existing?.number;
     if (existing === undefined) {
@@ -679,8 +703,7 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   const mode = readMergeQueue(ctx.repo, pr.repo);
   if (mode === "direct") {
     // a head pushed for the queue (no rebase) is merged only through the queue
-    const read = git(ctx.repo, ["config", "--get", queueKey(ctx.head)]);
-    if (read.error !== undefined || read.status !== 1)
+    if (readBinding(ctx.repo, ctx.head).kind !== "absent")
       return { ok: false, lines: [`mode: ${mode}`, `why: PR #${pr.number} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${ctx.head} onto master, which changes the SOURCE tree and needs the local mint again`] };
   }
   const done = await gate(ctx, pr, mode);

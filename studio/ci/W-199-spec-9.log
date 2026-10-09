@@ -1,0 +1,16 @@
+# opus: W-199
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T09:53:28.408Z
+# tree: tree:ae181cf33cc08ba8360d036e7de0dd1904d00f0b
+# brief: briefs/W-199.md blob:bfbce752a2c35b4bed04a6419889f7509a5f2785
+
+Architect re-signature for W-199 (brief revision 5, branch copy) under D-027: a build-time amendment for the W-163 census blocker (builder log ~/.bisellium-evidence/W-199-build/npm-test.log). Admission by check-admission.mjs on the branch copy (admission-r9.txt: 0 problems, one table run, 28 rows, 0 failing the rejector shape).
+
+## Findings
+1. advisory: containment.test.ts row W-163-b6 behaviour 6 fails on the three new raw file calls in openPr's result closure (mkdirSync, writeFileSync, unlinkSync). W-163's disposition table (studio/briefs/W-163.md:186) defines outside as a path never under an officina and names git dirs among them; its bright line (contained) covers only writes into officina subdirectories. So an outside pin is the census's designed path, and the value comes from its fixed list. check: none: studio/briefs/W-163.md:186
+2. advisory: scan order from a W163_DUMP=1 run on the branch: after packages/cli/src/instructions.ts:runInstructions:writeFileSync#3, before packages/cli/src/new.ts:waitAtIdsTestBarrier:writeFileSync#1. PINNED_D has no earlier integrate.ts entry, so "after the existing integrate.ts entries" does not apply. check: packages/cli/src/containment.test.ts W-163-b6
+3. advisory: containment.test.ts joins Files owned, limited to those three PINNED_D entries. They land in a fix(W-199) commit after behaviour 2 and before the gates. No behaviour and no Input domain row changes. check: none: spec text

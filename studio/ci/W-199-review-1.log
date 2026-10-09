@@ -1,0 +1,16 @@
+# opus: W-199
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-09T11:08:09.294Z
+# tree: tree:4f13ac97fbb0f06126ac808da017d382316c5959
+# brief: briefs/W-199.md blob:bfbce752a2c35b4bed04a6419889f7509a5f2785
+
+## Findings
+1. advisory — packages/cli/src/next.test.ts:4306 The regular-file cases do not pin presence-only semantics: every `bindingPath` setup/observation uses either the queue-written valid OID (`next.test.ts:4091`) or a matching tip (`next.test.ts:4306`), so byte validation could pass both. This is one regression-row class across both direct-mode callers; one case using an empty or non-OID regular file would close it at the shared binding input. — check: packages/cli/src/next.test.ts W-199-b2
+
+## Verdict
+The implementation and required evidence satisfy the brief; the declared deviations are benign, with only advisory regression coverage remaining.
+VERDICT: PASS

@@ -1,0 +1,193 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-199-b1 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-09T09:06:54.404Z
+# sella: builder.W-199
+# tree: tree:682fda541fd253d28dc87e428ac67037e8457abf
+
+TAP version 13
+# Subtest: W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge (W-199-b1)
+not ok 1 - W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge (W-199-b1)
+  ---
+  duration_ms: 3372.149607
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:142:124'
+  failureType: 'testCodeFailure'
+  error: |-
+    queue-mode pr never rebases
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    mode: merge-queue
+    why: cannot write the queue binding branch.opus/W-900.bisellium-queue: error: could not lock config file /tmp/claude-1000/w124-w168-b3-queue-b3tw8f/repo/.git/config: File exists
+    next-step: pr
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+        'git fetch master:master',
+    -   'git push --force-with-lease',
+    -   'gh pr create'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'git fetch master:master'
+    1: 'git push --force-with-lease'
+    2: 'gh pr create'
+  actual:
+    0: 'git fetch master:master'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4057:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-168-b3 behaviour 3: a binding that cannot be written holds the queue-mode pr before any push (W-199-b1)
+not ok 2 - W-168-b3 behaviour 3: a binding that cannot be written holds the queue-mode pr before any push (W-199-b1)
+  ---
+  duration_ms: 3048.441678
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:143:347'
+  failureType: 'testCodeFailure'
+  error: |-
+    the why names the binding file
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    mode: merge-queue
+    why: cannot write the queue binding branch.opus/W-900.bisellium-queue: error: could not lock config file /tmp/claude-1000/w124-w168-b3-lock-l7KwEx/repo/.git/config: File exists
+    next-step: pr
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4079:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and unsets the binding (W-199-b1)
+not ok 3 - W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and unsets the binding (W-199-b1)
+  ---
+  duration_ms: 3008.753422
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:143:1281'
+  failureType: 'testCodeFailure'
+  error: |-
+    queue-mode pr
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    mode: merge-queue
+    why: cannot write the queue binding branch.opus/W-900.bisellium-queue: error: could not lock config file /tmp/claude-1000/w124-w168-b3-unset-5AGYm8/repo/.git/config: File exists
+    next-step: pr
+    
+    --- stderr
+    
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4086:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-199-b1 behaviour 1: a direct-mode pr holds before the rebase when the binding cannot be read
+not ok 4 - W-199-b1 behaviour 1: a direct-mode pr holds before the rebase when the binding cannot be read
+  ---
+  duration_ms: 3028.318315
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:143:2241'
+  failureType: 'testCodeFailure'
+  error: |-
+    the why
+    --- exit 1
+    --- stdout
+    next: W-900 pr held
+    mode: direct
+    why: the rebase changed the SOURCE tree; stopped before push and PR, the build gates must be re-run on the rebased tree
+    next-step: build
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4106:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-199-b1 behaviour 1: a direct-mode pr that pushed but cannot remove the binding holds before gh pr create
+not ok 5 - W-199-b1 behaviour 1: a direct-mode pr that pushed but cannot remove the binding holds before gh pr create
+  ---
+  duration_ms: 3113.417251
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:143:2848'
+  failureType: 'testCodeFailure'
+  error: |-
+    held
+    --- exit 0
+    --- stdout
+    next: W-900 pr performed
+    mode: direct
+    PR=901 base=60802dd head=185be43
+    next-step: merge
+    
+    --- stderr
+    
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4115:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 0
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15679.832912

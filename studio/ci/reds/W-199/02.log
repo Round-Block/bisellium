@@ -1,0 +1,97 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-199-b2 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-09T09:14:13.476Z
+# sella: builder.W-199
+# tree: tree:f2c6cfda736f0e19e98bd69ef94b3d83c5e4a8b6
+
+TAP version 13
+# Subtest: W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls (W-199-b2)
+not ok 1 - W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls (W-199-b2)
+  ---
+  duration_ms: 3701.159173
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:143:12446'
+  failureType: 'testCodeFailure'
+  error: |-
+    bound: a PR pushed for the queue is held when the queue is gone
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    mode: direct
+    why: PR #901 changed identity after the merge was requested
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + [
+    +   'gh pr merge --squash --auto'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'gh pr merge --squash --auto'
+  operator: 'deepStrictEqual'
+  stack: |-
+    expectBoundHold (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4287:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4307:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-199-b2 behaviour 2: a direct-mode merge holds a PR whose binding cannot be read
+not ok 2 - W-199-b2 behaviour 2: a direct-mode merge holds a PR whose binding cannot be read
+  ---
+  duration_ms: 3774.646022
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:144:1122'
+  failureType: 'testCodeFailure'
+  error: |-
+    unreadable: a PR pushed for the queue is held when the queue is gone
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    mode: direct
+    why: PR #901 changed identity after the merge was requested
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + [
+    +   'gh pr merge --squash --auto'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'gh pr merge --squash --auto'
+  operator: 'deepStrictEqual'
+  stack: |-
+    expectBoundHold (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4287:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-199/packages/cli/src/next.test.ts:4340:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7498.135198
