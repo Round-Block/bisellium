@@ -1,0 +1,21 @@
+# opus: W-199
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T07:11:41.611Z
+# tree: tree:967a14c5bb3b81cbc114e4858ede7cc81f7873cc
+# brief: briefs/W-199.md blob:869ef2aba9ae373ebe49cd52af4c3729be8d1c84
+
+## Findings
+1. blocking — brief:55 The catch-all “rest” row does not name each reused call or its valid result as D-050 requires, and at least one omitted input has no rejecting function: `openPr`’s final `git rev-parse --short` reads discard status/error, so `openPr` can return `ok: true` and `runNext` exits 0 with empty base/head text after a non-zero Git exit. — check: packages/cli/src/next.test.ts
+2. blocking — brief:57 The calls-log row declares that the log exists with one line per call, but `calls` accepts an absent, truncated, or malformed log and the proposed positive `ghCalls` assertion proves only that the rules-read line exists; no named assertion rejects the rest of that stated invalid domain. — check: none: add a log-integrity assertion that fails on every missing/malformed call record, or narrow the promised domain to the specific positive observations
+3. blocking — brief:49 `safeItemPath` does not check `ID_RE` again: it rejects empty ids, separators, bare `.`/`..`, and path escape, but accepts other strings outside `ID_RE`; only `parseArgs` provides the claimed rejection. — check: none: remove the incorrect second-validator claim or add the validation and a unit test
+4. blocking — brief:45 Row 4 does not always hold before any push or GitHub write: for the `spec/<id>` and `chore/done-<id>` paths expressly named at line 38, `landHead` pushes and may run `gh pr create` before it calls `mergeGate` and `readBinding`. The brief needs that prior-mutation limit instead of the blanket promise. — check: packages/cli/src/next.test.ts
+5. blocking — brief:41 The claim that every `git config` write in an agent session fails is broader than the `.git/config.lock` mechanism, which protects only this clone’s local config; the brief’s own read census identifies `run-builder-host.mjs` successfully writing `--local` config in a separate clone. The same overstatement appears in the intent at line 13. — check: none: limit the claim to local-config writes targeting this protected clone
+6. blocking — brief:95 The step marker does not guarantee that steps of one opus never overlap: `assess` classifies a still-live process as dead after its output-silence budget, `--perform` may replace that marker, and the old process is explicitly not killed. An accidental retry can therefore overlap the original process, so this needs a stated limit. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief has incomplete fail-closed input coverage and several promises broader than the mechanisms that support them.
+VERDICT: FAIL

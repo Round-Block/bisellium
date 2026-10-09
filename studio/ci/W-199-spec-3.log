@@ -1,0 +1,20 @@
+# opus: W-199
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T07:14:41.028Z
+# tree: tree:967a14c5bb3b81cbc114e4858ede7cc81f7873cc
+# brief: briefs/W-199.md blob:cdc3211448f1204480f60e936770f99a91d16cf3
+
+Architect re-signature for W-199 (brief revision 2) under D-027, answering spec review r1 (ci/W-199-spec-2.log, 6 blocking findings). Reads re-enumerated by ~/.bisellium-evidence/W-199-spec/enumerate-reads.mjs (reads.txt; section 7: all 38 cited names exist). Brief admission by check-admission.mjs (admission-r3.txt: 0 problems, one table run, 25 rows, 0 failing the rejector shape).
+
+## Findings
+1. advisory: r1#1: the catch-all reused row is split into one row per reused call in openPr and mergeGate (rows 6-19) plus the callers landHead and runNext (rows 20-21), each with its valid result (D-050). Row 16 states the display-only limit: a failed git rev-parse --short prints empty text, and openPr still returns ok and runNext exits 0, because the push and create decided the step. check: none: integrate.ts:637-639
+2. advisory: r1#2: the calls-log row is narrowed. Row 24 is the one positive observation (ghCalls contains the rules read, which fails on an absent log). Row 25 holds W-168's kept calls-log assertions, with the absent-log limit; the W-199 claim in the bound case rests on the why, the flag files and row 24. check: packages/cli/src/next.test.ts W-199-b2
+3. advisory: r1#3: safeItemPath is no longer cited; only parseArgs (ID_RE, next.ts:1134) rejects the id. check: none: next.ts:1134
+4. advisory: r1#4: row 20 and the Input domain preamble state that landHead pushes and may create the PR for spec/<id> and chore/done-<id> before mergeGate reads the binding; those heads read absent unless an entry was put there by hand or the read fails. check: none: integrate.ts:791-817
+5. advisory: r1#5: the lock claim (Intent and Migration) is narrowed to local-config writes in this protected clone (run-builder-host.mjs writes a separate clone's config). check: none: reads.txt section 4
+6. advisory: r1#6: the "steps never overlap" promise is replaced by a stated limit: assess (next.ts:1075) judges a still-live process dead after its silence budget, a new --perform may take over, and the old process is not killed. check: none: next.ts:1075
+7. advisory: sweep: each promise and domain row was re-read against its function. Row 17 now names gather (next.ts:494) as identifyPr's caller. Behaviour 2's red rests on W-168's why not being printed on master, not on mutating. check: none: spec text

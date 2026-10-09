@@ -1,0 +1,19 @@
+# opus: W-199
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T07:23:26.863Z
+# tree: tree:967a14c5bb3b81cbc114e4858ede7cc81f7873cc
+# brief: briefs/W-199.md blob:cdc3211448f1204480f60e936770f99a91d16cf3
+
+## Findings
+1. blocking — brief:80 The test-read row omits `headOf`, used by the retained queue row and expressly by (f); `headOf` first calls `gitOk`, which maps a non-zero `show-ref` exit to the fallback `w.headOid`, so this reader has no fail-closed rejector and contradicts the claim that rows 22–25 fail closed. — check: packages/cli/src/next.test.ts
+2. blocking — brief:80 The retained queue row still reads `admitCurrentRunReceipt(...).ok`, but rows 22–25 name no input for that reused function or its valid result, despite (a) saying the row stays as it is. — check: packages/cli/src/next.test.ts
+3. blocking — brief:51 “No code reads” a legacy binding key is broader than the mechanism: `supportsSafeRefInspection` still runs `git config --null --list` and parses every returned key, including any `branch.*.bisellium-queue` entry, even though it does not interpret that entry as a binding. The promise must be limited to binding-specific readers. — check: none: narrow the promise to code that interprets the legacy key as a queue binding
+4. blocking — brief:127 “No code reads the bytes” conflicts with behaviour 1, which requires `bound(w)` to use `readFileSync` and compare the exact OID-plus-newline bytes. The promise needs a production-code limit. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The revised brief closes the prior findings but still omits two touched test inputs and makes two unqualified read promises contradicted by the named code.
+VERDICT: FAIL

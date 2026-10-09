@@ -1,0 +1,18 @@
+# opus: W-199
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T07:24:36.523Z
+# tree: tree:967a14c5bb3b81cbc114e4858ede7cc81f7873cc
+# brief: briefs/W-199.md blob:f146202e9800a37376655155954c0a4e03c135b3
+
+Architect re-signature for W-199 (brief revision 3) under D-027, answering spec review r2 (ci/W-199-spec-4.log, 4 blocking findings). Names re-checked by enumerate-reads.mjs (reads.txt section 7: 47 cited names, none missing). Brief admission by check-admission.mjs (admission-r5.txt: 0 problems, one table run, 27 rows, 0 failing the rejector shape).
+
+## Findings
+1. advisory: r2#1: rows (a) and (f) read the tip with tipOf (fixture git, throws on failure) instead of headOf (gitOk fallback to w.headOid); row 22 states that no W-199 row reads through headOf, gitOk, gitq or branchExists. check: packages/cli/src/next.test.ts W-168-b3
+2. advisory: r2#2: row 26 covers the retained admitCurrentRunReceipt(...).ok assertion (reused; its catch returns ok:false, so a failed read fails the row). Row 27 covers the fixture's setup writes, with commit's gitOk skip as a limit. check: none: builder-run.ts:271-333
+3. advisory: r2#3: the migration promise is narrowed to production code that interprets the key as a binding; supportsSafeRefInspection (ids.ts:58) lists config keys and looks only for partial-clone markers. check: none: ids.ts:54-70
+4. advisory: r2#4: "no code reads the bytes" is narrowed to production code; the tests' bound(w) reads them (Interfaces and Default 2). check: none: spec text
+5. advisory: sweep: every "no code", "never", "only" and "every" was checked against its code. Row 13 now names the real rebase call (git -c submodule.recurse=false rebase -q onto TRUNK_REF), and rows 18-19 add runNext's catch for a throw. check: none: integrate.ts:614
