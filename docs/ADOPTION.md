@@ -870,6 +870,19 @@ fires on a log that was hand-edited or came from elsewhere).
 `done` item whose gates certify different trees from each other. `npm test`
 runs the sample and every fixture.
 
+**Session handoff (W-186).** Only for the repository's own `studio/` (`check` run
+with `--repo <repo>` on `<repo>/studio`; any other officina is outside the rule).
+Every `opera/*.md` record is loaded first and must have a lifecycle `state`; then
+`docs/SESSION-HANDOFF.md` is read, and an absent file is no finding. Unreadable
+records or handoff (`process.handoff.input`), a handoff with other than one
+`## Queue` line or one `## Resume point (YYYY-MM-DD)` line, an id that names no
+record, a Queue that names a `done` or `halted` opus or omits a `greenlit` one
+(`process.handoff.queue`), a `Next` field that names a `done`, `halted` or unqueued
+opus, a `**W-n** is building` claim about a `done` opus, or a Resume date earlier
+than the newest `done` record's `end` in UTC (`process.handoff.resume`), the phrases
+`this one`, `this PR` and `above)` (`process.handoff.reference`), and more than 100
+split lines (`process.handoff.lines`) all block.
+
 **Brief admission (W-127).** Only when `bisellium.yml` declares
 `brief_behaviour_limit` (a positive integer, else `manifest.shape` blocks).
 A brief carries `Decree family: <slug>` on exactly one line, at most that many
@@ -1241,7 +1254,7 @@ no `tree:` certificate; performed `done` then creates `chore/done-<opus>` from t
 `ci/<opus>-<probatio>-<hash>.log` files and the tracked `docs/` changes together
 (it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
 rides the done commit, and the checkpoint rung reads complete once the commit that
-made the record `done` also changed the handoff), and returns to `master`. A path
+made the record `done` also changed the handoff), and returns to `master`. Before `done` runs, performed `done` holds (`handoff: <rule> <where>: <message>` lines) when the real `studio/`'s working-tree handoff, read as if the opus were `done` now, would block `check` (see "Session handoff" under "Running check"); only `performDone` is held, and the step marker and log are written as for any perform. A path
 under `.claude/` or `.github/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
 stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
 dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.

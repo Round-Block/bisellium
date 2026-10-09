@@ -529,7 +529,7 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   put(w.repo, ".gitignore", ".bisellium/\nreceipts/\nnode_modules/\n");
   put(w.repo, "README.md", "fixture\n");
   put(w.repo, "source.txt", "candidate source\n");
-  put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Where things stand\n\n- (nothing recorded)\n");
+  put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Resume point (9999-12-31)\n\n- (nothing recorded)\n\n## Queue\n\n- (nothing queued)\n");
   if (o.patron) {
     put(w.repo, ".claude/agents/censor.md", "censor v1\n");
     put(w.repo, ".claude/my notes.md", "notes v1\n");
@@ -4432,4 +4432,57 @@ test("W-197 pin: the pull_request rule's code-owner and stale-review booleans le
   const w = queueWorld("w197-pin", { stdout: LIVE_RULES_WITH_OWNER_REVIEW });
   const o = performPr(w);
   assert.equal(modeLine(o), "mode: merge-queue", ran("the mode line", o));
+});
+
+// ---------------------------------------------------------------------------
+// W-186 behaviour 2: performed done holds on a stale working-tree handoff before performDone runs
+// ---------------------------------------------------------------------------
+/** The base world's handoff (nothing queued, a far-future Resume date), with an edit that names no opus: the checkpoint a perform commits. */
+const HANDOFF_FRESH = "# Handoff\n\n## Resume point (9999-12-31)\n\n- (nothing recorded)\n\n## Queue\n\n- (nothing queued)\n- checkpoint line\n";
+const handoffHolds = (o: Out): string[] => outLines(o).filter((l) => l.startsWith("handoff: "));
+/** The master tip, the chore heads and the tracked changes: what a hold must leave exactly as it found them. */
+const choreHeads = (w: World): string => git(w.repo, ["for-each-ref", "--format=%(refname)", "refs/heads/chore/"]);
+test("W-186-b2 behaviour 2: performed done holds on a stale working-tree handoff before performDone runs", { timeout: 1_800_000 }, () => {
+  const w = world("w186-b2", "cleanup");
+  scenario(w, { list: mergedList(w) });
+  expectStep(next(w, [OPUS]), "done", "named", "the fixture names done");
+  const tip = git(w.repo, ["rev-parse", "refs/heads/master"]);
+
+  // (a) the Queue names the opus, which the perform is about to make done
+  put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Resume point (9999-12-31)\n\n- (nothing recorded)\n\n## Queue\n\n1. W-900 — fixture\n");
+  const stale = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(stale, "a Queue that names the opus");
+  assert.ok(outLines(stale).some((l) => l.startsWith("why: refusing: docs/SESSION-HANDOFF.md is stale")), ran("the why line", stale));
+  assert.ok(handoffHolds(stale).some((l) => l.startsWith("handoff: process.handoff.queue ")), ran("a queue finding is printed", stale));
+  assert.equal(git(w.repo, ["rev-parse", "refs/heads/master"]), tip, "the master tip is unchanged");
+  assert.equal(choreHeads(w), "", "no chore head");
+  assert.equal(git(w.repo, ["status", "--porcelain", "--untracked-files=no"]), "M docs/SESSION-HANDOFF.md", "only the handoff edit is in the tree");
+
+  // (b) the Queue is emptied and the Resume date is older than the opus's done
+  put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Resume point (2000-01-01)\n\n- (nothing recorded)\n\n## Queue\n\n- (nothing queued)\n");
+  const old = next(w, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(old, "a Resume date before the done");
+  assert.deepEqual(
+    handoffHolds(old).map((l) => l.split(" ")[1]),
+    ["process.handoff.resume"],
+    ran("exactly a resume finding", old),
+  );
+  assert.equal(choreHeads(w), "", "still no chore head");
+
+  // (c) the date is restored: the step performs, and the one commit holds the handoff and the record
+  put(w.repo, "docs/SESSION-HANDOFF.md", HANDOFF_FRESH);
+  expectStep(next(w, [OPUS, "--perform", "--expect", "done"]), "done", "performed", "a fresh handoff performs");
+  const chore = `chore/done-${OPUS}`;
+  const paths = git(w.repo, ["diff-tree", "--no-commit-id", "--name-only", "-r", git(w.repo, ["rev-parse", `refs/heads/${chore}`])]).split("\n").sort();
+  assert.deepEqual(paths, ["docs/SESSION-HANDOFF.md", `studio/opera/${OPUS}.md`], "the chore commit holds the handoff and the record");
+
+  // (d) a second world: the working-tree handoff is deleted while master keeps it
+  const d = world("w186-b2-absent", "cleanup");
+  scenario(d, { list: mergedList(d) });
+  expectStep(next(d, [OPUS]), "done", "named", "the second fixture names done");
+  rmSync(join(d.repo, "docs/SESSION-HANDOFF.md"));
+  const gone = next(d, [OPUS, "--perform", "--expect", "done"]);
+  expectHeld(gone, "a deleted handoff that master keeps");
+  assert.ok(handoffHolds(gone).some((l) => l.startsWith("handoff: process.handoff.input ")), ran("an input finding is printed", gone));
+  assert.equal(choreHeads(d), "", "no chore head");
 });
