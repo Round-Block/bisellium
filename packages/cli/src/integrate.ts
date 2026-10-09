@@ -53,8 +53,8 @@ export const clean = (text: string, max = 200): string => text.replace(/[\u0000-
 const firstLine = (text: string): string => clean(text.trim().split("\n")[0] ?? "");
 const why = (r: Run): string => (r.error !== undefined ? clean(r.error.message) : firstLine(r.stderr)) || `exit ${r.status}`;
 
-/** Repo-relative prefixes the Patron owns: no agent writes them, so the CLI never moves them in the main checkout. */
-export const PATRON_PATHS: readonly string[] = [".claude/"];
+/** Repo-relative prefixes the Patron owns: the CLI never moves them in the main checkout, and a dirty one prints the Patron's command. */
+export const PATRON_PATHS: readonly string[] = [".claude/", ".github/"];
 const isPatronPath = (path: string): boolean => PATRON_PATHS.some((prefix) => path.startsWith(prefix));
 /** A path outside `[A-Za-z0-9/._-]` is single-quoted so a printed command can be pasted. */
 export const quoted = (path: string): string => (/^[A-Za-z0-9/._-]+$/.test(path) ? path : `'${path.replace(/'/g, "'\\''")}'`);
