@@ -1,0 +1,17 @@
+# opus: W-203
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T21:12:04.182Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:54c163984c23b3f4e50cc3a7485c0cbfbe250acb
+
+## Findings
+1. blocking — brief:100 The prior rejector-class fix is incomplete: `catch` is syntax, not an existing or specified function name, so the reused `git diff` input still has no real named function that converts `execFileSync` failure into the fail-closed result. — check: none: admission must resolve each rejector to an existing or specified function, except the expressly allowed runner step-failure case
+2. blocking — brief:103 The promise that the `web-e2e` scope step “always” runs contradicts Interfaces: on `push` its exact condition is false, so the step is skipped and its output is unset. The sentence needs an explicit `pull_request`/`merge_group` limit. — check: scripts/ci-scope.test.mjs W-203-b1
+
+## Verdict
+The brief still lacks a real named rejector for failed scope diffs and contains one overbroad workflow promise.
+VERDICT: FAIL

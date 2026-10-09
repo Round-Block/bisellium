@@ -1,0 +1,16 @@
+# opus: W-203
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T21:20:04.618Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:133e48f3a31f4a19819a94a973ea057b9d638aaa
+
+## Findings
+1. blocking — brief:117 The `W-203-b1` input row is incomplete: it omits the added dynamic import of changed `scripts/ci-scope.mjs` and its required `scopeOf` export, and its `ci.yml` domain omits the asserted trigger set and absence of scope use in `officina` and `certify`. — check: none: brief admission should compare every added test read and assertion with its input-domain row
+
+## Verdict
+The brief does not fully enumerate the new test reader’s inputs and valid domain.
+VERDICT: FAIL

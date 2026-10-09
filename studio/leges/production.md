@@ -114,7 +114,9 @@ the main checkout's absolute `--studio`/`--repo`.
    `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <$TMPDIR copy>`.
    Any brief edit needs a new signature and review. On pass, `next` lands it.
    Reused, unchanged code is one input judged by its exit, one row per
-   unchanged job (D-050). No round cap (D-053).
+   unchanged job (D-050); an unchanged line inside a changed function is
+   reused code too, unless a promise depends on it (D-054). Only substance
+   blocks: a path that fails open or a false promise (D-056). No round cap (D-053).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
    in the worktree, `ready` (commit), then a Sonnet builder (brief model:
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
@@ -222,3 +224,5 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Handoff reviewed independently before commit; republish and milestone rules moved in from the handoff | Patron |
 | 2026-10-09 | Spec review scope and round cap (D-050, D-051); merge step in queue mode; PR hold rule retired (W-168 live) | Patron |
 | 2026-10-10 | Review round caps removed (D-053) | Patron |
+| 2026-10-10 | Spec review judges only changed lines (D-054); Ops collegium decreed (D-055) | Patron |
+| 2026-10-10 | Spec-review findings block only on substance (D-056) | Patron |

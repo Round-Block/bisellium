@@ -1,0 +1,36 @@
+# opus: W-204
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T20:46:32.900Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-204.md blob:8d8b31b9c75d90e9c9632f3aba8c6052c6dc1686
+
+Architect signature for W-204 under D-027: Codex (gpt-5.6-sol) drafted ~/.bisellium-evidence/W-204-draft/W-204-draft.md. The architect (claude-opus-5-5) checked it against packages/cli/src/next.ts, packages/commands/src/verdict.ts, lifecycle.ts and usage.ts, packages/cli/src/retro.ts, next.test.ts, usage.test.ts, containment.test.ts, brief-admission.test.ts, docs/ADOPTION.md, docs/ARCHITECTURE.md and D-043, D-044, D-046, D-048, D-051 and D-053, corrected it and signed studio/briefs/W-204.md (revision 1).
+
+Evidence in ~/.bisellium-evidence/W-204-spec/:
+- prototype.mjs --source applied the brief's source change to a scratch copy of master (prototype.diff: every changed line only removes text). Typecheck of packages/cli and packages/commands passed on it.
+- enumerate-reads.mjs compared master with the prototype into reads.txt:
+  - changed: deriveNext, dispatch, runAmend, AMEND_USAGE, USAGE;
+  - deleted: REVIEW_ROUND_CAP, capHold, readRoundRulings, countedFailures, none with a caller left;
+  - byte-unchanged: thirteen shared readers;
+  - all 34 lines removed from runAmend are guarded by the retired flag;
+  - W-166 is the only record carrying round_rulings, and no check rule reads round_rulings or amendments.
+- flips.txt: the W-167 tests on the prototype with a soft assert. 66 assertions fail, all in W-167-b2, b3 and b4. The whole next.test.ts on the prototype (suites.txt) fails no other assertion, and ten related suites pass.
+- probe.txt: the brief's new assertions, observed on the prototype.
+- check-compare.txt: check findings on studio/ and examples/sample-studio are identical, master against prototype.
+
+Brief admission by check-admission.mjs (admission.txt): 0 problems, one table run, 14 rows, none failing the rejector shape.
+
+## Findings
+1. advisory: The draft narrowed patronDecisionProblem. It has four live callers besides readRoundRulings, which the draft did not name: retro.ts:609 (high_greenlit_by, D-039), runDone's waived-gate branch (lifecycle.ts:474), briefAdmissionProblems (lifecycle.ts:1234) and runAmend --ui-ruling (lifecycle.ts:1418). Narrowing it would make each a changed reader. It stays byte-unchanged, and its unused grantLine and after options are Default 3. check: packages/cli/src/brief-admission.test.ts
+2. advisory: The draft changed parseBuildReviewLog, BuildReviewRound and buildReviewKeys, and flipped W-167-b1's "worktree manifest that differs in patron holds". All three stay byte-unchanged (Defaults 2 and 4), so W-167-b1 does not flip. check: packages/cli/src/next.test.ts W-167-b1
+3. advisory: The draft listed the amend refusal rows as flips. They exit 2 with the record and event log byte-identical on both master and the prototype, so they do not flip. refusedRuling now also asserts stderr's first line `unknown flag "--round-ruling"`, which master does not print, so the rows are strengthened, not left vacuous. check: packages/cli/src/next.test.ts W-204-b2
+4. advisory: In the draft, both behaviours edited W-167-b4. Behaviour 1's code fails W-167-b4's "a fourth counted failure holds again" and the hand-written-list rows before behaviour 2's test commit. Behaviour 1 now takes W-167-b4's next rows (1c), and behaviour 2 its amend rows. Each test commit then covers every row its code flips, and each red is assertion-level. check: packages/cli/src/next.test.ts W-204-b1
+5. advisory: "one ruling lets the fix run", "one ruling lets round 4 run", "a second ruling permits one more" and "a valid hand-written list permits one round" pass on the prototype unchanged. They are rewritten to drive rounds 4 to 6 on a hand-written list, so they still test the loop and are red on master where the cap held. check: packages/cli/src/next.test.ts W-204-b1
+6. advisory: Existing ruling records stay readable. check's findings on studio/ are identical, master against prototype, and W-166 has only its four advisories. No check rule reads round_rulings or amendments. amend --title on a W-166-shaped record keeps round_rulings ["D-930"] and its round_rulings amendment entry (probe.txt). check: packages/cli/src/next.test.ts W-204-b2
+7. advisory: The draft named parseFrontMatter as the rejector for historical round_rulings. Nothing reads the key after W-204. The rejector is the record's own load: deriveNext holds at ready on an unparsable branch record (next.ts:656, unchanged). check: packages/cli/src/next.test.ts W-204-b1
+8. advisory: The draft did not name W-167-b5's "a security-only round is exempt" row (retitled, assertion unchanged), docs/ARCHITECTURE.md:291 ("shared by next and amend --round-ruling"), or the dispatch sentence's exact text. All are in Files owned now. check: docs.arch.stale
+9. advisory: The spec worktree's node_modules is a symlink to the main checkout's, so @bisellium/* resolves to the main checkout's packages there. The prototype copies used their own @bisellium links. Builders get a verbatim-symlink copy (run-builder-host.mjs:514). Anyone re-running this evidence must do the same, or the edits under packages/commands are not exercised. check: packages/cli/src/next.test.ts W-204-b2
