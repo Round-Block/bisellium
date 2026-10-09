@@ -119,6 +119,12 @@ function git(cwd: string, args: string[], check = true): string {
 /** git whose failure is data (an empty string), for reads of refs the verb should have made. */
 const gitq = (cwd: string, args: string[]): string => git(cwd, args, false);
 const gitOk = (cwd: string, args: string[]): boolean => spawnSync("git", args, { cwd, env: SETUP_ENV, timeout: 60_000 }).status === 0;
+/** W-199: a git read with two valid answers, exit 0 (true) and exit 1 (false); any other exit or a spawn error throws. */
+function gitYesNo(cwd: string, args: string[]): boolean {
+  const r = spawnSync("git", args, { cwd, env: SETUP_ENV, encoding: "utf8", timeout: 60_000 });
+  if (r.error !== undefined || (r.status !== 0 && r.status !== 1)) throw new Error(`fixture git ${args.join(" ")} failed in ${cwd}: ${r.error?.message ?? r.stderr}`);
+  return r.status === 0;
+}
 
 function put(dir: string, rel: string, text: string): void {
   const path = join(dir, rel);
@@ -127,7 +133,7 @@ function put(dir: string, rel: string, text: string): void {
 }
 function commit(dir: string, message: string): void {
   git(dir, ["add", "-A"]);
-  if (!gitOk(dir, ["diff", "--cached", "--quiet"])) git(dir, ["commit", "-q", "-m", message]);
+  if (!gitYesNo(dir, ["diff", "--cached", "--quiet"])) git(dir, ["commit", "-q", "-m", message]);
 }
 /** A REAL bisellium verb, run the way an operator would, in `cwd`. */
 function verb(cwd: string, args: string[]): void {
@@ -386,7 +392,7 @@ function recordText(fields: Json): string {
   return `---\n${lines.join("\n")}\n---\nFixture body.\n`;
 }
 const tipOf = (w: World): string => git(w.repo, ["rev-parse", `refs/heads/${BRANCH}`]);
-const headOf = (w: World): string => (gitOk(w.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${BRANCH}`]) ? tipOf(w) : w.headOid!);
+const headOf = (w: World): string => (gitYesNo(w.repo, ["show-ref", "--verify", "--quiet", `refs/heads/${BRANCH}`]) ? tipOf(w) : w.headOid!);
 const sourceTree = (dir: string): string => `tree:${sourceTreeHash(dir, ["studio", ".bisellium"], "HEAD")}`;
 
 function writeTranscript(w: World, name: string, body = "No findings"): string {
