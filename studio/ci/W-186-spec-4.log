@@ -1,0 +1,26 @@
+# opus: W-186
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T17:24:39.880Z
+# tree: tree:8d24c7541342137d6b23c05839d6d4c162d36fbc
+# brief: briefs/W-186.md blob:b3e5292a8918876d82ddc90ad46571439282ffa1
+
+## Findings
+1. blocking — brief:104 A record with missing or non-string `state` is rejected only when Queue or Next names it; an unmentioned record can therefore conceal a greenlit opus and the new done-side reader does not fail closed. — check: packages/cli/src/rules/process.test.ts behaviour 23
+2. blocking — brief:104 The row promises that an unknown id “the handoff names” is `process.handoff.input`, but the grammar at brief:90 accepts an unknown id in a fixed status claim because it rejects only records known to be `done`. — check: packages/cli/src/rules/process.test.ts behaviour 23
+3. blocking — brief:113 `safeList` maps an unreadable `decisions/` directory to `[]`; “pre-existing limit” and “As today” provide neither a valid domain nor a fail-closed rejector for this input of changed reader `checkProcess`. — check: packages/cli/src/rules/process.test.ts
+4. blocking — brief:114 `safeList` likewise maps an unreadable `lessons/` directory to `[]`, so this input still has no fail-closed rejector. — check: packages/cli/src/rules/process.test.ts
+5. blocking — brief:115 When the handoff is absent, `handoffInputs` deliberately reads no opera; the existing `safeList` call can therefore still turn an unreadable `opera/` into `[]` without a blocking refusal. — check: packages/cli/src/rules/process.test.ts behaviour 23
+6. blocking — brief:115 In that same absent-handoff path, the existing opera loop’s `safeFront` failure is skipped rather than refused, so an unreadable opus record still lacks a fail-closed rejector. — check: packages/cli/src/rules/process.test.ts behaviour 23
+7. blocking — brief:117 A non-zero `git diff --name-only HEAD~1 HEAD` produces only `process.history` at advisory level, which exits successfully; calling that a stated limit does not supply the fail-closed rejector required by question (a). — check: packages/cli/src/rules/process.test.ts behaviour 22
+8. blocking — brief:121 `gather` still maps every failed `git show refs/heads/master:docs/SESSION-HANDOFF.md` to `f.handoff === undefined`, and `performDone` then skips its tracked-handoff requirement; row 11’s separate absent-working-file query does not reject this failure when the working file exists. — check: packages/cli/src/next.test.ts W-186-b2
+9. blocking — brief:123 `refExists` maps an unexpected `git show-ref` failure to `false`; `git switch -c` can then succeed when the branch is genuinely absent, so no function turns that non-zero read into a refusal. — check: packages/cli/src/next.test.ts
+10. blocking — brief:124 The `git rev-parse refs/heads/master` exit remains unchecked, and a successful branch creation and done path can report success despite that failed input read. — check: packages/cli/src/next.test.ts
+11. blocking — brief:126 The final `git rev-parse --short HEAD` exit remains unchecked, allowing a successful result with an empty displayed commit id rather than a fail-closed refusal. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The handoff grammar is implementable, but the revised boundary still substitutes stated limits for required fail-closed rejectors and contains two unresolved loader-contract gaps.
+VERDICT: FAIL

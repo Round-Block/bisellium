@@ -1,0 +1,32 @@
+# opus: W-186
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T17:18:21.628Z
+# tree: tree:8d24c7541342137d6b23c05839d6d4c162d36fbc
+# brief: briefs/W-186.md blob:b3e5292a8918876d82ddc90ad46571439282ffa1
+
+Architect signature for W-186, revision 2, under D-027. This revision answers spec review round 2 (ci/W-186-spec-2.log, 24 blocking findings), and the architect (claude-opus-5-5) signs it as round 3.
+
+The kept scripts were re-run:
+- ~/.bisellium-evidence/W-186-spec/enumerate-reads.mjs, output reads.txt. It adds four sections:
+  - §9: every call site in checkProcess and performDone, in order.
+  - §10: runNext's marker and log writes before a performer, all under the gitignored .bisellium/.
+  - §11: the fixture helpers behaviour 2 reaches. Four fail open: ensureMaster, gitYesNo, landMerge and removeBranchAndWorktree.
+  - §12: 61 of 94 done records have no valid end; they are legacy, and the date comparison leaves them out.
+- check-admission.mjs, output admission.txt (copy: admission-r3.txt): 0 problems, one table run, 34 rows, none failing the rejector shape.
+
+Revision 1's copies are kept as reads-r1.txt and enumerate-reads-r1.mjs.
+
+## Findings
+1. advisory: Class answer for review findings 2–7 and 10–21 (changed readers): W-186's reads now live only in new functions (handoffInputs, sessionHandoffFindings, checkSessionHandoff, handoffHold). checkProcess gains exactly one appended statement, and performDone exactly one leading statement; no existing read in either changes or moves. Under D-050 their remaining call sites are reused, unchanged code, with one row per call site (brief rows 13–30), each judged by its result. Pre-existing fail-open spots are stated as limits that no W-186 promise depends on. Acceptance pins the one-statement diff of both functions. check: none: a diff check that a changed function differs only by the declared statement
+2. advisory: Findings 1 and 9 (fail-open opera reads): handoffInputs lists opera/ with readdirSync, where a throw is an error, never []. It reads each .md through readContainedRegularFile and parseFrontMatter, and a read error, a parse throw or a non-mapping is an error. Both check (process.handoff.input) and done (a hold) consume this one loader. Behaviour 1 adds rows for a file at studio/opera and an unparsable record. check: packages/cli/src/rules/process.test.ts behaviour 23
+3. advisory: Finding 8 (f.handoff fails open): the hold no longer reads f.handoff. When the working-tree handoff is absent, it reads master's tree with `git ls-tree -z --name-only refs/heads/master -- docs/SESSION-HANDOFF.md`: a spawn error or non-zero exit holds, a listed path holds as input, and empty output passes. Behaviour 2(d) deletes the working file while master keeps it. check: packages/cli/src/next.test.ts W-186-b2
+4. advisory: Finding 22 (write-scope promise): the hold is now performDone's first statement, and the promise is scoped to "before any of performDone's existing steps". runNext's marker and step-log writes under .bisellium/ precede it for every perform, and have row 29. check: packages/cli/src/next.test.ts W-186-b2
+5. advisory: Finding 23: `gates` and `officina` each have one row, rejected by the runner's step failure, per D-050 §2. check: none: brief.input.workflow-job-coverage
+6. advisory: Finding 24: behaviour 2's fixture reaches four fail-open helpers (reads.txt §11). Each W-186-b2 row first asserts that `next W-900` names done, and every later assertion is positive (a specific handoff line, a performed step, an exact status), so a fixture a helper left wrong fails the row instead of passing it. check: packages/cli/src/next.test.ts W-186-b2
+7. advisory: Because the hold runs first, it now precedes the dirty, verify and tracked-change holds too. It reads only, and passes on the corrected base fixture (Queue names nothing, date 9999-12-31), so every perform-done row in reads.txt §4 takes today's path. The brief names them. check: packages/cli/src/next.test.ts W-141-b3 behaviour 3
+8. advisory: Since performDone's runDone call is unchanged, the projected end is the hold's own clock. A UTC midnight between the hold and runDone's stamp would leave the Resume date a day behind, and `check -- studio` then blocks the chore PR. This is a stated limit that fails closed downstream. check: process.handoff.resume
+9. advisory: Default 8 is new: one unreadable opus record makes the whole handoff input process.handoff.input, even when the handoff does not name it. check.ts's own record rules already block such a record. check: process.handoff.input
