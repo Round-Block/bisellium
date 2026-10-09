@@ -104,7 +104,9 @@ detection. The Aedile owns the road, not the work travelling on it.
 names each step; `--perform --expect <step>` does it. From a worktree, pass
 the main checkout's absolute `--studio`/`--repo`.
 
-1. **Spec:** Codex `gpt-5.6-sol` drafts (D-027; prompt
+1. **Spec:** written ahead of the build where Files owned overlap no opus in
+   flight, in a scratch worktree; changed Files owned are re-reviewed before
+   `branch` (D-057). Codex `gpt-5.6-sol` drafts (D-027; prompt
    `~/.bisellium-evidence/W-167-draft/prompt.md`); the Opus architect checks
    it against the code and signs (`verdict --phase spec`), uncommitted.
    Tell the architect to name every existing test fixture or assertion the
@@ -226,3 +228,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Review round caps removed (D-053) | Patron |
 | 2026-10-10 | Spec review judges only changed lines (D-054); Ops collegium decreed (D-055) | Patron |
 | 2026-10-10 | Spec-review findings block only on substance (D-056) | Patron |
+| 2026-10-10 | Specs written ahead of the build (D-057) | Patron |

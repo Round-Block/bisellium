@@ -19,14 +19,10 @@ Rules, process and environment: studio/leges/production.md.
 
 - W-186 is done, its retro filed (L-116 to L-120). New Patron decisions
   2026-10-10: D-054 and D-055 (filed as W-205 to W-208).
-- **Next:** W-203's build. Its spec passed review and is landing from
-  `spec/W-203`; W-204's spec is on master.
+- **Next:** W-203 is building on `opus/W-203` (Sonnet builder); its review,
+  merge (the Patron approves: it edits `.github/`) and done follow. W-204's
+  spec is on master.
 - W-197's Patron setup is done (ruleset checked 2026-10-10).
-- Patron idea to explore, 2026-10-09: write specs ahead of the build. The
-  producer's advice: Codex drafts ahead freely; sign and review ahead only
-  where Files owned overlap nothing earlier in the queue; before a build,
-  re-review only what changed in its Files owned since signing (could join
-  W-169's overlap check). Not yet ruled; bring it to the Patron.
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts); harmless.
 
@@ -34,8 +30,7 @@ Rules, process and environment: studio/leges/production.md.
 
 Left before more than one lane (production lex §11, read strictly: it
 names W-093 alongside W-178 to W-183): Queue's multi-lane prep item
-(W-169 last) and W-093; work stays on one lane until both land. Lex §11's range "W-178 to W-183" also covers
-W-179 (see Open Patron choices).
+(W-169 last) and W-093; work stays on one lane until both land.
 
 ## Artifacts
 
@@ -64,9 +59,8 @@ may veto.
 9. W-201 — the mutation check gates build review (D-052).
 10. W-185 — records checked once at load (D-049; the architect specs it).
 11. W-172, W-171 — high-severity fixes.
-12. Multi-lane prep: W-178, W-180, W-182, W-193, W-181, W-183, then W-169
-   (switches lanes on, once W-093 has landed and the W-179 question in
-   Open Patron choices is settled).
+12. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, then W-169
+   (switches lanes on, once W-093 has landed).
 13. W-068 — task dependencies (signed brief to restore:
    `~/.bisellium-evidence/partial-specs/W-068.md` → `studio/briefs/W-068.md`,
    add `Red order: one at a time`, architect re-signs, then spec review).
@@ -85,11 +79,5 @@ W-159, W-177.
 
 ## Open Patron choices
 
-- Lex §11's prerequisite range "W-178 to W-183" includes W-179, but the queue
-  review left it for later: greenlight W-179, or amend the lex to drop it.
-- W-202 (backlog): the ledger opening page as the console's first view,
-  with a phone view (scope and DIRECTION.md rulings 2026-10-10). The Patron
-  slots it at the next queue review.
-- W-138's rescope: usage is read only from harness logs (W-122 declined);
-  it becomes W-202's cost data and depends on W-136. The producer drafts the
-  new title and scope; the Patron approves or declines it.
+- W-202 (backlog), the ledger opening page: the Patron ranks it after W-136
+  and W-138 (2026-10-10); placed at the queue review after W-203 lands.
