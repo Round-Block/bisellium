@@ -1,0 +1,28 @@
+# opus: W-186
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T17:28:51.835Z
+# tree: tree:8d24c7541342137d6b23c05839d6d4c162d36fbc
+# brief: briefs/W-186.md blob:1d45a3297fb9cdc81e258fd7065296799ed50363
+
+Architect signature for W-186, revision 3, under D-027. This revision answers spec review round 4 (ci/W-186-spec-4.log, 11 blocking findings), and the architect (claude-opus-5-5) signs it as round 5.
+
+The kept scripts were re-run:
+- ~/.bisellium-evidence/W-186-spec/enumerate-reads.mjs, output reads.txt. It adds three sections:
+  - §13: the two new call sites. One is check.ts:917–926's rule-module list (Seam S2). The other is runNext's done dispatch at next.ts:1522, whose f and d2 come from next.ts:1495–1496. Neither call site reads anything.
+  - §14: all 203 real opus records meet the loader contract (contained regular file, mapping front matter, state in STATES).
+  - §15: today's handoff makes no status claim.
+- check-admission.mjs, output admission.txt (copy: admission-r5.txt): 0 problems, one table run, 22 rows, none failing the rejector shape.
+
+Revision 2's copies are kept as reads-r2.txt and enumerate-reads-r2.mjs.
+
+## Findings
+1. advisory: Class answer for review findings 3–11 (reads inside changed functions answered by a stated limit): checkProcess and performDone are now byte-unchanged, and Acceptance pins it. The rule is its own S2 module, checkSessionHandoff, appended to checkStudio's rule-module list. handoffHold is called in runNext's done dispatch, as `handoffHold(f) ?? performDone(f, d2)`. Both call sites pass only values already computed there, and read nothing. checkProcess, performDone, the other modules, gather/derive and the marker are reused, unchanged code: one row each (brief rows 13–18), judged by their result under D-050. check: none: a diff check that checkProcess and performDone are byte-unchanged
+2. advisory: Finding 1 (an unmentioned record with a bad state could hide a greenlit opus): handoffInputs loads every opera record first, on every path (absent handoff included). A record whose state is not one of STATES is an error naming the file: process.handoff.input in check, and a hold at done. Behaviour 1 covers a typo state and a missing state, unnamed, with and without a handoff. check: packages/cli/src/rules/process.test.ts behaviour 23
+3. advisory: Finding 2 (an unknown id in a status claim): every id the grammar reads that has no record is process.handoff.input, Queue, Next and status claims alike. Behaviour 1 has a row for each. check: packages/cli/src/rules/process.test.ts behaviour 23
+4. advisory: Findings 5 and 6 (the absent-handoff path read no opera): closed by finding 2's change. Findings 3, 4 and 7 (decisions/, lessons/, and the git diff advisory inside checkProcess) concern unchanged code now, and checkProcess is one reused row. Findings 8–11 (f.handoff, refExists and the two rev-parse calls inside performDone) are likewise inside the unchanged performDone. W-186's hold uses none of them, and reads master's tree through its own ls-tree call, judged by its exit. check: packages/cli/src/next.test.ts W-186-b2
+5. advisory: Behaviour 1 now asserts through checkStudio, which exists on master, so the red is at assertion level. A probe confirmed that checkStudio does not throw with a regular file at studio/opera or with an unparsable record, using the sample studio's manifest, which has no retro setting. Because checkProcess no longer changes, rules/process.test.ts behaviours 1–22 and rules.test.ts's direct checkProcess calls are untouched. check: packages/cli/src/rules/process.test.ts behaviour 23
+6. advisory: Sweep. Every row in rows 1–12 now names a fail-closed rejector. The remaining limits are these, and none stands in for a rejector: row 10: lexical scope; row 12: the midnight race, which fails closed downstream in check -- studio; row 18: marker writes on every perform, outside W-186's promise. check: none: spec text
