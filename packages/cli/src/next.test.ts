@@ -40,6 +40,7 @@ import {
   utimesSync,
   writeFileSync,
   appendFileSync,
+  lstatSync,
 } from "node:fs";
 import { open } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -4025,11 +4026,14 @@ const QUEUE_RULES: Json[] = [
     },
   },
 ];
+/** W-168's key: until W-199 b2, the direct-mode merge row still seeds the binding as a config key. */
 const BINDING = `branch.${BRANCH}.bisellium-queue`;
+/** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
+const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
 const rulesWith = (edit: (rules: Json[]) => Json[]): SlotValue => ({ stdout: edit(structuredClone(QUEUE_RULES)) });
 const queueParams = (rules: Json[]): Json => rules.find((r) => r["type"] === "merge_queue")!["parameters"] as Json;
 const checksRule = (rules: Json[]): Json => rules.find((r) => r["type"] === "required_status_checks")!["parameters"] as Json;
-const bound = (w: World): string => git(w.repo, ["config", "--get", BINDING], false);
+const bound = (w: World): string => readFileSync(bindingPath(w), "utf8");
 const modeLine = (o: Out): string | undefined => o.out.split("\n").find((l) => l.startsWith("mode:"));
 /** A review-met world whose PR appears once `gh pr create` ran, with `rules` as master's rules. */
 function queueWorld(tag: string, rules: SlotValue, advance = true): World {
@@ -4041,40 +4045,46 @@ function queueWorld(tag: string, rules: SlotValue, advance = true): World {
     list: { replies: [{ stdout: [] }], alts: [{ ifExists: created, replies: [{ stdout: [cand(w, { state: "OPEN" })] }] }] },
     create: { stdout: `https://github.com/${SLUG}/pull/${PR_NUMBER}\n`, touch: created },
   });
+  // W-199: the sandbox's shape, an empty mode-444 lock, so a `git config` write in this clone fails as it does for an agent
+  writeFileSync(join(w.repo, ".git", "config.lock"), "", { mode: 0o444 });
   return w;
 }
 
-test("W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge", { timeout: 3_600_000 }, () => {
+test("W-168-b3 behaviour 3: in queue mode pr binds and pushes the reviewed head without a rebase and the ladder names merge (W-199-b1)", { timeout: 3_600_000 }, () => {
   const w = queueWorld("w168-b3-queue", { stdout: QUEUE_RULES });
-  const head = headOf(w);
+  const head = tipOf(w);
   const o = performPr(w);
   assert.deepEqual(mutating(w), ["git fetch master:master", "git push --force-with-lease", "gh pr create"], ran("queue-mode pr never rebases", o));
   assert.equal(o.status, 0, ran("queue-mode pr exits 0", o));
   assert.equal(o.out.split("\n")[1], "mode: merge-queue", ran("the mode line is the first line of the result", o));
   assert.equal(git(w.origin, ["rev-parse", `refs/heads/${BRANCH}`]), head, "the pushed head is the reviewed head");
   assert.equal(admitCurrentRunReceipt(w.wtStudio, OPUS).ok, true, "the receipt is still admitted");
-  assert.equal(bound(w), head, "the queue binding holds the pushed head");
+  assert.equal(bound(w), `${head}\n`, "the queue binding holds the pushed head");
   assert.deepEqual(unmatched(w), [], "no unexpected gh call");
   const rulesRead = ghCalls(w).filter((a) => a[0] === "api");
   assert.deepEqual(rulesRead, [["api", `repos/${SLUG}/rules/branches/master?per_page=100`]], "one rules read");
   expectStep(next(w, [OPUS]), "merge", "named", "the ladder goes on to merge, not build");
 });
 
-test("W-168-b3 behaviour 3: a binding that cannot be written holds the queue-mode pr before any push", { timeout: 3_600_000 }, () => {
+test("W-168-b3 behaviour 3: a binding that cannot be written holds the queue-mode pr before any push (W-199-b1)", { timeout: 3_600_000 }, () => {
   const w = queueWorld("w168-b3-lock", { stdout: QUEUE_RULES });
-  writeFileSync(join(w.repo, ".git", "config.lock"), "");
+  const blocker = join(w.repo, ".git", "bisellium");
+  writeFileSync(blocker, "a regular file where the binding directory belongs\n");
   const o = performPr(w);
   assert.deepEqual(mutating(w), ["git fetch master:master"], ran("no push when the binding cannot be written", o));
   assert.equal(o.status, 1, ran("held", o));
   assert.equal(remoteBranchExists(w), false, "nothing was pushed");
   assert.equal(o.out.split("\n")[1], "mode: merge-queue", ran("the mode line precedes the why", o));
+  const why = o.out.split("\n").find((l) => l.startsWith("why:"));
+  assert.ok(why?.startsWith("why: cannot write the queue binding ") && why.includes("bisellium/queue/opus%2FW-900"), ran("the why names the binding file", o));
+  assert.equal(lstatSync(blocker).isFile(), true, "the blocking file is untouched");
 });
 
-test("W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and unsets the binding", { timeout: 3_600_000 }, () => {
+test("W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and unsets the binding (W-199-b1)", { timeout: 3_600_000 }, () => {
   const w = queueWorld("w168-b3-unset", { stdout: QUEUE_RULES }, false);
   const first = performPr(w);
   assert.equal(first.status, 0, ran("queue-mode pr", first));
-  const old = bound(w);
+  const old = bound(w).trim();
   assert.notEqual(old, "", "the binding is set");
   put(w.wtStudio, "notes.md", "bookkeeping line\nmore bookkeeping\n");
   commit(w.wt, "studio: bookkeeping after the push");
@@ -4082,8 +4092,32 @@ test("W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and un
   const o = performPr(w);
   assert.deepEqual(mutating(w), ["git fetch master:master", "git rebase", "git push --force-with-lease"], ran("direct-mode pr rebases and pushes", o));
   assert.equal(o.out.split("\n")[1], "mode: direct", ran("the mode line", o));
-  assert.equal(gitOk(w.repo, ["config", "--get", BINDING]), false, "the binding is unset after the push");
+  assert.equal(lstatSync(bindingPath(w), { throwIfNoEntry: false }), undefined, "the binding is gone after the push");
   assert.equal(git(w.origin, ["rev-parse", `refs/heads/${BRANCH}`]), tipOf(w), "the new tip was pushed");
+});
+
+test("W-199-b1 behaviour 1: a direct-mode pr holds before the rebase when the binding cannot be read", { timeout: 3_600_000 }, () => {
+  const w = queueWorld("w199-b1-unreadable", { stdout: [] });
+  writeFileSync(join(w.repo, ".git", "bisellium"), "a regular file where the binding directory belongs\n");
+  const before = tipOf(w);
+  const o = performPr(w);
+  assert.equal(o.status, 1, ran("held", o));
+  const why = o.out.split("\n").find((l) => l.startsWith("why:"));
+  assert.ok(why?.startsWith("why: cannot read the queue binding:"), ran("the why", o));
+  assert.equal(tipOf(w), before, "no rebase");
+  assert.equal(remoteBranchExists(w), false, "nothing was pushed");
+});
+
+test("W-199-b1 behaviour 1: a direct-mode pr that pushed but cannot remove the binding holds before gh pr create", { timeout: 3_600_000 }, () => {
+  const w = queueWorld("w199-b1-undeletable", { stdout: [] }, false);
+  mkdirSync(bindingPath(w), { recursive: true });
+  const o = performPr(w);
+  assert.equal(o.status, 1, ran("held", o));
+  const why = o.out.split("\n").find((l) => l.startsWith("why:"));
+  assert.ok(why?.startsWith("why: pushed, but the queue binding "), ran("the why", o));
+  assert.equal(git(w.origin, ["rev-parse", `refs/heads/${BRANCH}`]), tipOf(w), "the head was pushed");
+  assert.equal(lstatSync(bindingPath(w)).isDirectory(), true, "the obstacle is still there");
+  assert.equal(existsSync(join(w.root, "created.flag")), false, "no gh pr create");
 });
 
 /** Each reply is direct mode: today's rebase and hold, the mode line, no queue call. */
