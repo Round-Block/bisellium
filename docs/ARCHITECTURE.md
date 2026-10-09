@@ -271,7 +271,7 @@ files the next poll picks up.
   rungs (`pr`, `merge`, `cleanup`), which replaced the retired PR scripts;
   `fetchTrunk` fast-forwards a clean checked-out `master` to the reviewed merge
   commit only (never the origin tip, and never from the `pr` rung), and stops
-  before the tree on a Patron path (`.claude/`). The architect's spec verdict
+  before the tree on a Patron path (`.claude/`, `.github/`). The architect's spec verdict
   is written in the main checkout before `opus/<id>` exists: the `spec` rung
   commits it onto `spec/<id>` and lands that head through a PR; the `done` rung
   names `verify`, then commits the record, the certificates and the checkpoint

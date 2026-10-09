@@ -1240,7 +1240,7 @@ no `tree:` certificate; performed `done` then creates `chore/done-<opus>` from t
 (it refuses without a tracked change to `docs/SESSION-HANDOFF.md`: the checkpoint
 rides the done commit, and the checkpoint rung reads complete once the commit that
 made the record `done` also changed the handoff), and returns to `master`. A path
-under `.claude/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
+under `.claude/` or `.github/` (the Patron's) is never moved in the main checkout: `fetchTrunk`
 stops before the tree and prints `patron: git -C <repo> merge --ff-only <oid>`; a
 dirty tracked Patron path prints `patron: git -C <repo> checkout -- <path>`.
 
