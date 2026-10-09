@@ -1,0 +1,20 @@
+# opus: W-199
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T07:01:04.846Z
+# tree: tree:967a14c5bb3b81cbc114e4858ede7cc81f7873cc
+# brief: briefs/W-199.md blob:869ef2aba9ae373ebe49cd52af4c3729be8d1c84
+
+Architect signature for W-199 under D-027: Codex drafted (~/.bisellium-evidence/W-199-draft/W-199-draft.md), the architect (claude-opus-5-5) checked it against packages/cli/src/integrate.ts and next.test.ts, corrected it and signed studio/briefs/W-199.md (revision 1). Reads enumerated by ~/.bisellium-evidence/W-199-spec/enumerate-reads.mjs (reads.txt: 4 binding calls in integrate.ts, 2 functions, their callers runNext/landHead/performLanding, 5 test rows, helper fail-open table, no legacy key, the sandbox's ro .git/config and empty mode-444 .git/config.lock, and a live probe showing git config fails while mkdir/write/lstat/unlink under the common dir succeed). Brief admission by check-admission.mjs (admission.txt: 0 problems, one table run, 9 rows, 0 failing the rejector shape).
+
+## Findings
+1. advisory: W-168's binding was presence-only (git config --get exit 0 read no value); the draft added a content check (/^[0-9a-f]{40}\n$/) that W-168 never had. The brief keeps presence as the binding: readBinding only lstats, a stat of any entry type is bound. check: none: integrate.ts:609-611,682-683
+2. advisory: the draft's temp-file-plus-rename write is dropped: a partial file is still present and so still holds, the same safe direction as W-168's crash between write and push. check: none: spec text
+3. advisory: openPr read and wrote the key through wt and mergeGate through ctx.repo; the file path is computed from ctx.repo for both, which runNext requires to be the main checkout (next.ts:1385-1388). check: none: next.ts:1388
+4. advisory: the fixture reproduces the sandbox: queueWorld pre-creates an empty mode-444 .git/config.lock (the shape measured in reads.txt section 9). Row W-168-b3 "in queue mode pr binds..." then fails on master, which proves a regression to git config fails a test. The induced failures use a file at .git/bisellium (ENOTDIR on mkdir and lstat) and a directory at the binding path (EISDIR on unlink), so they happen even when the tests run as root. check: packages/cli/src/next.test.ts W-199-b1
+5. advisory: calls(), and so mutating/ghCalls/unmatched, return [] for an absent log (reads.txt section 5b). No W-199 claim rests on an empty or negative calls-log result; "no push", "no rebase", "no create" and "no gh write" are asserted on origin refs, tipOf, and flag files read with lstatSync(throwIfNoEntry: false). check: packages/cli/src/next.test.ts W-199-b1
+6. advisory: four existing rows flip, named per behaviour: three W-168-b3 rows (behaviour 1) and the W-168-b4 bound row (behaviour 2). The tracked-change queueWorld row holds before the mode read and does not flip. check: packages/cli/src/next.test.ts W-168-b3
+7. advisory: migration: a legacy git-config key is ignored (no code reads it). None can be written in an agent session, and none exists in this clone (reads.txt section 8, exit 1). Default 4 gives the Patron a one-line check for a checkout outside the sandbox. check: none: git config --get-regexp bisellium-queue
