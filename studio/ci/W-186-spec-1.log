@@ -1,0 +1,33 @@
+# opus: W-186
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T16:57:04.194Z
+# tree: tree:8d24c7541342137d6b23c05839d6d4c162d36fbc
+# brief: briefs/W-186.md blob:4cc41332bd15a5c65eaa608a23fef9f5d3bb7914
+
+Architect signature for W-186 under D-027: Codex (gpt-5.6-sol) drafted ~/.bisellium-evidence/W-186-draft/W-186-draft.md. The architect (claude-opus-5-5) checked it against packages/cli/src/rules/process.ts, next.ts, the commands lifecycle runDone, next.test.ts, stage-states.test.ts, lex.test.ts and .github/workflows/ci.yml, corrected it and signed studio/briefs/W-186.md (revision 1).
+
+~/.bisellium-evidence/W-186-spec/enumerate-reads.mjs enumerated the reads into reads.txt:
+- the two entry points, checkProcess and performDone, and their callers up to the verb (checkStudio from check and tick; runNext);
+- the source calls that can pass a repo (main.ts:176 and tick.ts:463);
+- next.ts reads the handoff only from refs/heads/master (gather, next.ts:430);
+- every test row that writes or reads the handoff or performs done, and the helpers that fail open (gitq, gitOk, branchExists);
+- every check-with-repo test on a <repo>/studio layout;
+- the HARVEST_RE shape;
+- a prototype of the signed grammar run on today's handoff: it blocks on line 24 only (W-197 and W-199, both done, named in the Next field), and the kept checker passes the same file.
+
+Brief admission by check-admission.mjs (admission.txt): 0 problems, one table run, 13 rows, none failing the rejector shape.
+
+## Findings
+1. advisory: The draft ran the done-step check after runDone and relied on the existing unwind. runDone refuses a record that is already done ("not building, verifying or review"), and rollback() with nothing staged leaves the working record done. The draft's "a corrected handoff then performs" therefore could not happen. The check now runs before mergeRefusal, the chore branch and runDone, against the working-tree opera with the opus projected {state: done, end: at}; `at` is the same instant passed to runDone as --now. Nothing is written, so there is nothing to unwind. check: packages/cli/src/next.test.ts W-186-b2
+2. advisory: The done step must read the working-tree docs/SESSION-HANDOFF.md through readContainedRegularFile. f.handoff is `git show refs/heads/master:docs/SESSION-HANDOFF.md` (next.ts:430), which never holds the producer's edit. check: packages/cli/src/next.test.ts W-186-b2
+3. advisory: The Next field now covers any Resume line that opens with the word Next and has a colon on that line, together with its continuation lines. Today's "**Next, in order:**" is checked under it (production lex §11, stricter reading), and the draft's exact "Next:" label would have skipped it. Today's handoff then blocks at line 24, which names done W-197 and W-199. That is correct: next already holds new starts until a retro is filed (W-137 behaviour 4), and check advises retro.overdue. The producer rewords line 24 on master before `branch`; the builder never edits the handoff. check: process.handoff.resume
+4. advisory: The draft made an absent handoff a block. That would flip stage-states.test.ts "W-129 behaviour 15: the whole cycle on one branch, with check clean at every step": its fixture is <dir>/studio with repo <dir> and no handoff, and it asserts no block. The draft did not name this row. In check, an absent handoff (ENOENT) now gives no finding, matching performDone's own `f.handoff !== undefined` gate. At done, when master keeps a handoff, an absent working-tree file still holds. This is Default 2. check: packages/cli/src/stage-states.test.ts W-129 behaviour 15
+5. advisory: A behaviour-1 test that imported the new sessionHandoffFindings would fail on master at module load. The engineering lex counts that as one failure, not a per-behaviour red (opus.red_evidence). The rows therefore go through checkProcess, which exists on master and emits no process.handoff.* finding there. check: packages/cli/src/rules/process.test.ts behaviour 23
+6. advisory: Only the base world handoff (next.test.ts:532) changes, to a valid grammar dated 9999-12-31, so performs stamped with the real clock still pass. touchHandoff and W-141-b2's literal append add "- checkpoint line" inside Queue, which names no opus, so they stay as they are, against the draft's claim that they must change. The perform rows that reach the new check are named in the brief. Each would hold at process.handoff.input without the fixture change, and keeps its result with it. check: packages/cli/src/next.test.ts W-124 behaviour 4
+7. advisory: The W-166 greenlit-coverage threshold is dropped. Today's Queue names all 71 greenlit opera (reads.txt §7), so requiring every one is stricter and holds today. check: process.handoff.queue
+8. advisory: lex.test.ts behaviour 7 harvests rule ids only from literal `name("<id>"` calls or `rule: "<id>"` properties in check.ts and rules/*.ts. The five ids must appear in process.ts in that shape, and also in RULE_IDS. check: packages/cli/src/rules/lex.test.ts behaviour 7
+9. advisory: B2 asserts "no done commit" through the fail-closed fixture git helper: the master tip, `for-each-ref refs/heads/chore/` and `status --porcelain`. branchExists goes through gitOk, which answers false on a failed read (reads.txt §4b), so B2 does not use it. check: packages/cli/src/next.test.ts W-186-b2

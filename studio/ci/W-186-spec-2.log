@@ -1,0 +1,39 @@
+# opus: W-186
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T17:08:29.886Z
+# tree: tree:8d24c7541342137d6b23c05839d6d4c162d36fbc
+# brief: briefs/W-186.md blob:4cc41332bd15a5c65eaa608a23fef9f5d3bb7914
+
+## Findings
+1. blocking — brief:58 `safeList` turns an unreadable `opera/` into `[]`, so a handoff naming no opus can pass without any rejecting function; stating this as a limit does not make the input fail closed. — check: packages/cli/src/rules/process.test.ts behaviour 23
+2. blocking — brief:52 Changed reader `checkProcess` reads `bisellium.yml` with `existsSync`, but the table has no row for that file input, its valid domain, or its rejection behavior. — check: none: brief.input.changed-reader-coverage
+3. blocking — brief:52 Changed reader `checkProcess` reads the decisions directory, decision front matter, `killed_by` targets, and decision-linked evidence, but none is covered by an input row. — check: none: brief.input.changed-reader-coverage
+4. blocking — brief:52 Changed reader `checkProcess` reads the lessons directory, lesson front matter, and local evidence targets, but none is covered by an input row. — check: none: brief.input.changed-reader-coverage
+5. blocking — brief:52 Changed reader `checkProcess` calls `owedRetros`; that reused call and the function that refuses its error result are absent from the table. — check: none: brief.input.reused-call-coverage
+6. blocking — brief:52 Changed reader `checkProcess` runs `git diff --name-only HEAD~1 HEAD`, but the call has no input row and a non-zero exit produces only an advisory, not the required fail-closed rejection. — check: packages/cli/src/rules/process.test.ts behaviour 22
+7. blocking — brief:58 The opera row specifies only `state` and `end`, although changed `checkProcess` also consumes probationes, halted citations, and other opera facts for its existing rules; those record domains and rejectors are omitted. — check: none: brief.input.changed-reader-coverage
+8. blocking — brief:63 `f.handoff` is produced by `gather`’s `git show refs/heads/master:docs/SESSION-HANDOFF.md`, which maps every non-zero exit to `undefined`; an accidental read failure therefore skips the new done check instead of refusing. — check: packages/cli/src/next.test.ts W-186-b2
+9. blocking — brief:63 The done-side `fsSrc.list("opera")` likewise turns a failed directory read into `[]`, allowing the check to pass without a fail-closed rejector; the stated limit does not satisfy the input boundary. — check: packages/cli/src/next.test.ts W-186-b2
+10. blocking — brief:65 Row 10 bundles `dirtyHold`, the derived verify act, and the first `trackedChanges` call under the non-domain “As today”; each changed-reader input needs its own valid result and real rejector. — check: none: brief.input.reused-call-coverage
+11. blocking — brief:63 `performDone`’s initial `git symbolic-ref -q HEAD` call is absent from the input table. — check: none: brief.input.reused-call-coverage
+12. blocking — brief:63 The reused `mergeRefusal(repo, id)` call is absent from the input table. — check: none: brief.input.reused-call-coverage
+13. blocking — brief:63 The `refExists` call for `chore/done-<id>` is absent, and its current boolean mapping treats any unexpected `git show-ref` failure as “absent” rather than refusing. — check: packages/cli/src/next.test.ts
+14. blocking — brief:63 The base `git rev-parse refs/heads/master` read is absent, and `performDone` ignores its exit status before using the output for rollback. — check: packages/cli/src/next.test.ts
+15. blocking — brief:63 The reused `git switch -q -c chore/done-<id>` call has no row naming exit 0 as valid and `performDone` as its non-zero rejector. — check: none: brief.input.reused-call-coverage
+16. blocking — brief:64 The second `trackedChanges` call, after `runDone`, is absent from the table. — check: none: brief.input.reused-call-coverage
+17. blocking — brief:64 The reused `certificate` call is absent from the table, including its `{ ok: true }` domain and `performDone` refusal on `{ ok: false }`. — check: none: brief.input.reused-call-coverage
+18. blocking — brief:64 The done commit’s reused `git add` call has no input row. — check: none: brief.input.reused-call-coverage
+19. blocking — brief:64 The done commit’s reused `git commit` call has no input row. — check: none: brief.input.reused-call-coverage
+20. blocking — brief:64 The final `git rev-parse --short HEAD` read has no row or rejector; its status is ignored, so `performDone` can report success with an empty commit id. — check: packages/cli/src/next.test.ts
+21. blocking — brief:64 The reused `rollback`/`switchBack` recovery calls are absent from the table, including the existing unchecked branch-drop result that needs a stated limit. — check: packages/cli/src/next.test.ts
+22. blocking — brief:87 “Before anything is written” is broader than the mechanism: `runNext` installs a `.bisellium/steps` marker and appends its step log before calling `performDone`; the caller and these writes are also absent from the input table. — check: packages/cli/src/next.test.ts W-186-b2
+23. blocking — brief:66 The row covers both `gates` check forms but names only `officina` as rejector; the `gates` job needs its own runner step-failure boundary for non-zero check exits. — check: none: brief.input.workflow-job-coverage
+24. blocking — brief:68 Behaviour 2 also reads and writes through changed `world` plus `scenario`, `mergedList`, and the handoff-edit helpers; row 13 covers only the final `next` output and three Git observations, leaving the fixture inputs without domains and rejectors. — check: none: brief.input.test-helper-coverage
+
+## Verdict
+The brief’s core grammar is feasible, but both changed production readers and the changed test fixture still have extensive fail-closed input omissions, and one absolute write-order promise is false.
+VERDICT: FAIL
