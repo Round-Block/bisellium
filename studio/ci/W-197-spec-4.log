@@ -1,0 +1,21 @@
+# opus: W-197
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T04:32:17.375Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:570cff9528ea134a4263fb0609cadabec2e1681d
+
+## Findings
+1. blocking — brief:20 The promise that a dirty `.github/` path at `branch`, `pr`, or `done` prints a Patron command, repeated by the interface at line 35, is broader than `trackedChanges`: it passes `--untracked-files=no`, and the existing `pr` test expressly permits untracked files. Limit the promise to dirty tracked paths. — check: packages/cli/src/next.test.ts W-197-b1
+2. blocking — brief:41 The revised status-code limit contradicts the named implementation: `trackedChanges` trims the two columns, so raw intent-to-add code ` A` becomes exactly `A` and receives `rm --cached`, not the promised failing `checkout` form. — check: packages/cli/src/next.test.ts W-197-b1
+3. blocking — brief:56 The claim that every rejection in rows 1–4 occurs before any ref moves is false for row 1 on `fetchTrunk`’s checked-out-master path: it fetches `origin/master` into the remote-tracking ref before calling `dirtyReport`, so a failed `git status` holds only after that ref moved. — check: none: limit the promise to the protected master/checkout state or name the remote-tracking-ref exception
+4. blocking — brief:66 `gitCalls` does not fail closed as the row promises: `calls` maps an absent log to `[]`, so the “no git merge” assertion passes when its evidence was never read. — check: packages/cli/src/next.test.ts W-197-b1
+5. blocking — brief:66 `branchExists` also does not fail closed: `gitOk` maps every non-zero `show-ref` result, including an execution/read error, to `false`, so the no-branch assertion cannot distinguish absence from an invalid read. — check: packages/cli/src/next.test.ts W-197-b1
+6. blocking — brief:78 The merge row runs the printed `git -C <repo> merge --ff-only <merge>` command before its second `next` call, but the Input domain has no row for this added reused subprocess, its exit domain, and the `git` test helper that turns non-zero into failure. — check: packages/cli/src/next.test.ts W-197-b1
+
+## Verdict
+The revision leaves two test readers fail-open, omits one reused command input, and retains three promises broader than the implementation.
+VERDICT: FAIL
