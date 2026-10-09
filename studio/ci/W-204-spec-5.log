@@ -1,0 +1,22 @@
+# opus: W-204
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T21:07:37.094Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-204.md blob:9987e464667e6d42ee7c3c4d609c921c5024fdb6
+
+Architect signature for W-204, revision 3, under D-027. It answers spec review round 4 (ci/W-204-spec-4.log, 4 findings) and is signed as round 5 by claude-opus-5-5. Revision 2 is kept at ~/.bisellium-evidence/W-204-spec/W-204-r2.md.
+
+Re-run in ~/.bisellium-evidence/W-204-spec/:
+- enumerate-reads.mjs: reads.txt, 0 MISSING and 0 UNGUARDED. Every cited function exists, now including fsSrc, assess, installMarker and runNext.
+- check-admission.mjs: admission.txt, 0 problems, one table run, 18 rows.
+- The prototype's source change is unchanged, so flips.txt, probe.txt, suites.txt and check-compare.txt stand.
+
+## Findings
+1. advisory: Finding 1: row 8 is now the whole argv grammar of the changed parseFlags call (lifecycle.ts:1515). The NOT_AMENDABLE scan runs first. Then come the eleven accepted valued flags (each takes the next token), the last-value-wins rule for a repeated flag, and the positional rule (the first positional is the opus id; later ones are ignored, as on master). The rejectors are named: unknown flag, `<flag> needs a value`, and a missing positional (AMEND_USAGE), each exit 2 before openStudio. The limit is stated: a `--round-ruling` token consumed as another flag's value is that value. check: packages/cli/src/next.test.ts W-204-b2
+2. advisory: Finding 2: the Interfaces promises and Behaviour 1 hold once the reused, unchanged gates that come first let the derived step through. Row 13 states them: gateDispatch (a declared budget within DISPATCH_TOKEN_CAP, and a fresh traditio on a resumed order), and runNext's --expect match and step-marker health (running, dead, invalid, unknown or anomaly holds, or reports dead, with exit 1). W-204's rows supply a budget, a fresh handover and no marker. check: packages/cli/src/next.test.ts W-204-b1
+3. advisory: Finding 3: on the build and review rungs, deriveNext requires a usable worktree (next.ts:687). So f.branch is fsSrc(wt.studio) (next.ts:424), and reviewRounds lists the worktree's ci/, committed or not: the same directory readBuildRounds read strictly. Interfaces and row 6 now say so, and the limit is now a listing failure between the two reads. The sweep fixed row 5's "branch record" too: gather's record is the worktree's when usable, else the branch ref's (next.ts:424–426). check: packages/cli/src/next.test.ts W-204-b1
+4. advisory: Finding 4: row 12's "exactly as master" promise now covers statements, order, exit codes, writes and events. It carves out AMEND_USAGE, which loses the flag wherever it is printed. The sweep found the same over-broad claim in Behaviour 2's title ("refused before anything is read"): argv is scanned first, and a NOT_AMENDABLE flag or an earlier unknown flag is reported instead. The title now says parseFlags refuses the flag before the officina is opened. check: packages/cli/src/next.test.ts W-204-b2
