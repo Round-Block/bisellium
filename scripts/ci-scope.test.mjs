@@ -451,3 +451,74 @@ test("W-139 round 2 finding 1: the guard CLI fails when <log>.fail exists beside
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("W-203-b1 behaviour 1: pull requests and merge groups classify against their event base", async () => {
+  const mod = await import("./ci-scope.mjs").catch(() => ({}));
+  const doc = workflow();
+  assert.deepEqual(Object.keys(doc.on).sort(), ["merge_group", "pull_request", "push"], "the trigger set");
+  assert.deepEqual(doc.on.push?.branches, ["master"], "push names only master");
+  for (const job of ["gates", "web-e2e"]) {
+    const scopeSteps = doc.jobs[job].steps.filter((step) => step.id === "scope");
+    assert.equal(scopeSteps.length, 1, `${job} has one id: scope step`);
+    assert.equal(
+      scopeSteps[0].if,
+      "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
+      `${job}'s scope step runs on a pull request and a merge group`,
+    );
+    assert.deepEqual(
+      scopeSteps[0].env,
+      { BASE_SHA: "${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}" },
+      `${job}'s scope step takes the event's base`,
+    );
+    assert.equal(
+      scopeSteps[0].run,
+      'node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"',
+      `${job}'s scope step classifies against $BASE_SHA`,
+    );
+  }
+  for (const job of ["officina", "certify"]) {
+    assert.ok(!JSON.stringify(doc.jobs[job].if ?? "").includes("steps.scope"), `${job} has no scope condition`);
+    for (const step of doc.jobs[job].steps) {
+      assert.notEqual(step.id, "scope", `${job} has no id: scope step`);
+      assert.ok(!JSON.stringify(step.if ?? "").includes("steps.scope"), `${job} reads no scope output`);
+    }
+  }
+  assert.equal(typeof mod.scopeOf, "function", "scripts/ci-scope.mjs exports scopeOf");
+
+  const repo = mkdtempSync(join(tmpdir(), "w203-scope-"));
+  try {
+    git(repo, "init", "-q", "-b", "main");
+    git(repo, "config", "user.email", "fixture@example.invalid");
+    git(repo, "config", "user.name", "Fixture");
+    mkdirSync(join(repo, "docs"));
+    writeFileSync(join(repo, "a.txt"), "a\n");
+    git(repo, "add", ".");
+    git(repo, "commit", "-qm", "base");
+    const base = git(repo, "rev-parse", "HEAD");
+    mkdirSync(join(repo, "studio"));
+    writeFileSync(join(repo, "studio", "n.md"), "n\n");
+    writeFileSync(join(repo, "docs", "SESSION-HANDOFF.md"), "h\n");
+    git(repo, "add", ".");
+    git(repo, "commit", "-qm", "group one: records only");
+    const first = scope(repo, base, "HEAD");
+    assert.equal(first.stdout, "record_only=true\n", "a records-only group commit is record-only against its base");
+    assert.equal(first.status, 0);
+    const groupOne = git(repo, "rev-parse", "HEAD");
+    writeFileSync(join(repo, "a.txt"), "b\n");
+    git(repo, "commit", "-qam", "group two: one source path");
+    const mixed = scope(repo, base, "HEAD");
+    assert.equal(
+      mixed.stdout,
+      "record_only=false\n",
+      "records then source against the earlier base is not record-only",
+    );
+    assert.equal(mixed.status, 0);
+    assert.equal(
+      scope(repo, groupOne, "HEAD").stdout,
+      "record_only=false\n",
+      "the source commit alone is not record-only",
+    );
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
