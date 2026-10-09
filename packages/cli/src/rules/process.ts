@@ -9,9 +9,9 @@
  * `root` is always the OFFICINA, never the repo root.
  */
 import { execSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { basename, join } from "node:path";
-import { listMd, readFront } from "@bisellium/adapter-native";
+import { existsSync, readdirSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
+import { listMd, parseFrontMatter, readFront, STATES } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
 import type { Finding, Level, RuleOpts } from "../check.js";
@@ -403,4 +403,147 @@ export function checkProcess(root: string, _opts: RuleOpts): Finding[] {
   }
 
   return findings;
+}
+
+// ---- W-186: the session handoff ---------------------------------------------
+const HANDOFF_REL = "docs/SESSION-HANDOFF.md";
+const STATE_IDS: ReadonlySet<string> = new Set(STATES.map((s) => s.id));
+const ID_TOKEN = /\bW-\d+\b/g;
+
+export interface HandoffOpus {
+  state: string;
+  end?: unknown;
+}
+export type HandoffInputs = { kind: "error"; reason: string } | { kind: "absent"; opera: Map<string, HandoffOpus> } | { kind: "ok"; text: string; opera: Map<string, HandoffOpus> };
+
+/** W-186: every <studio>/opera/*.md, then <repo>/docs/SESSION-HANDOFF.md, read fail-closed; never throws. */
+export function handoffInputs(repo: string, studio: string): HandoffInputs {
+  const opera = new Map<string, HandoffOpus>();
+  let names: string[];
+  try {
+    names = readdirSync(join(studio, "opera"));
+  } catch (e) {
+    return { kind: "error", reason: `opera/ cannot be listed: ${(e as Error).message}` };
+  }
+  for (const name of names.filter((n) => n.endsWith(".md")).sort()) {
+    const file = `opera/${name}`;
+    const read = readContainedRegularFile(studio, file, "opera");
+    if ("error" in read) return { kind: "error", reason: `${file} cannot be read: ${read.error}` };
+    let data: unknown;
+    try {
+      data = parseFrontMatter<unknown>(read.bytes.toString("utf8"), file).data;
+    } catch (e) {
+      return { kind: "error", reason: `${file} does not parse: ${(e as Error).message}` };
+    }
+    if (!isDict(data)) return { kind: "error", reason: `${file}: front matter is not a mapping` };
+    const state = data["state"];
+    if (typeof state !== "string" || !STATE_IDS.has(state)) return { kind: "error", reason: `${file}: state is not a lifecycle state` };
+    opera.set(name.slice(0, -3), { state, end: data["end"] });
+  }
+  const read = readContainedRegularFile(repo, HANDOFF_REL, "docs");
+  if ("error" in read) return read.code === "ENOENT" ? { kind: "absent", opera } : { kind: "error", reason: `${HANDOFF_REL} cannot be read: ${read.error}` };
+  return { kind: "ok", text: read.bytes.toString("utf8"), opera };
+}
+
+/** The lines (0-based) strictly between the heading at `from` and the next line starting `## `. */
+function sectionOf(lines: string[], from: number): number[] {
+  const out: number[] = [];
+  for (let i = from + 1; i < lines.length && !lines[i]!.startsWith("## "); i++) out.push(i);
+  return out;
+}
+
+/** W-186: every `block` finding for one handoff text against the opera, keyed by filename id. Pure; never throws. */
+export function sessionHandoffFindings(text: string, opera: ReadonlyMap<string, HandoffOpus>): Finding[] {
+  const findings: Finding[] = [];
+  const add = (rule: string, line: number | undefined, message: string): void => {
+    findings.push({ rule, level: "block", where: line === undefined ? HANDOFF_REL : `${HANDOFF_REL}:${line}`, message });
+  };
+  const lines = text.split("\n");
+  const headings = (re: RegExp): number[] => lines.flatMap((l, i) => (re.test(l) ? [i] : []));
+  const queueAt = headings(/^## Queue\s*$/);
+  const resumeAt = headings(/^## Resume point/);
+  const stateOf = (id: string): string | undefined => opera.get(id)?.state;
+
+  let headed = true;
+  if (queueAt.length !== 1) {
+    headed = false;
+    add("process.handoff.input", queueAt[1] === undefined ? undefined : queueAt[1] + 1, queueAt.length === 0 ? "no ## Queue heading" : "more than one ## Queue heading");
+  }
+  let resumeDate = "";
+  if (resumeAt.length !== 1) {
+    headed = false;
+    add("process.handoff.input", resumeAt[1] === undefined ? undefined : resumeAt[1] + 1, resumeAt.length === 0 ? "no ## Resume point heading" : "more than one ## Resume point heading");
+  } else {
+    const m = /^## Resume point \((\d{4})-(\d{2})-(\d{2})\)\s*$/.exec(lines[resumeAt[0]!]!);
+    resumeDate = m === null ? "" : `${m[1]}-${m[2]}-${m[3]}`;
+    // a real calendar date: it survives a Date.UTC round trip
+    if (m === null || new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).toISOString().slice(0, 10) !== resumeDate) {
+      headed = false;
+      add("process.handoff.input", resumeAt[0]! + 1, "the Resume heading must be ## Resume point (YYYY-MM-DD) with a real date");
+    }
+  }
+
+  if (headed) {
+    // Queue: every id token in the section; a done or halted one is stale, and every greenlit opus must be named
+    const queued = new Set<string>();
+    for (const i of sectionOf(lines, queueAt[0]!)) {
+      for (const id of lines[i]!.match(ID_TOKEN) ?? []) {
+        if (queued.has(id)) continue;
+        queued.add(id);
+        const state = stateOf(id);
+        if (state === undefined) add("process.handoff.input", i + 1, `${id} has no record`);
+        else if (state === "done" || state === "halted") add("process.handoff.queue", i + 1, `the Queue names ${id}, which is ${state}`);
+      }
+    }
+    for (const id of [...opera.keys()].sort()) if (opera.get(id)!.state === "greenlit" && !queued.has(id)) add("process.handoff.queue", undefined, `${id} is greenlit and the Queue does not name it`);
+
+    // Resume: the Next field, status claims about a done opus, and the date
+    const resume = sectionOf(lines, resumeAt[0]!);
+    const seen = new Set<string>();
+    for (let k = 0; k < resume.length; k++) {
+      if (!/^(- )?(\*\*)?Next\b[^:\n]*:/.test(lines[resume[k]!]!)) continue;
+      let end = k;
+      while (end + 1 < resume.length && /^\s+\S/.test(lines[resume[end + 1]!]!)) end++;
+      for (const i of resume.slice(k, end + 1)) {
+        for (const id of lines[i]!.match(ID_TOKEN) ?? []) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          const state = stateOf(id);
+          if (state === undefined) add("process.handoff.input", i + 1, `${id} has no record`);
+          else if (state === "done" || state === "halted") add("process.handoff.resume", i + 1, `Next names ${id}, which is ${state}`);
+          else if (!queued.has(id)) add("process.handoff.resume", i + 1, `Next names ${id}, which the Queue does not name`);
+        }
+      }
+      k = end;
+    }
+    for (const i of resume) {
+      for (const m of lines[i]!.matchAll(/\*\*(W-\d+)\*\*[^.\n]*\b(is building|in review|waits? to merge)/g)) {
+        const id = m[1]!;
+        const state = stateOf(id);
+        if (state === undefined) add("process.handoff.input", i + 1, `${id} has no record`);
+        else if (state === "done") add("process.handoff.resume", i + 1, `${id} is claimed ${m[2]}, but it is done`);
+      }
+    }
+    let newest = "";
+    for (const o of opera.values()) {
+      const at = o.state === "done" ? instant(o.end) : undefined;
+      if (at !== undefined && at.toISOString().slice(0, 10) > newest) newest = at.toISOString().slice(0, 10);
+    }
+    if (newest !== "" && resumeDate < newest) add("process.handoff.resume", resumeAt[0]! + 1, `the Resume date ${resumeDate} is earlier than ${newest}, the day the newest opus was done`);
+  }
+
+  // Whole file: relative references and the line cap
+  lines.forEach((l, i) => {
+    if (/\bthis (one|PR)\b|\babove\)/i.test(l)) add("process.handoff.reference", i + 1, "a relative reference (this one, this PR, above) is stale once the file moves on");
+  });
+  if (lines.length > 100) add("process.handoff.lines", undefined, `${lines.length} lines; the cap is 100`);
+  return findings;
+}
+
+/** W-186: an S2 rule module: [] unless `opts.repo` is set and `resolve(root) === resolve(opts.repo, "studio")`. */
+export function checkSessionHandoff(root: string, opts: RuleOpts): Finding[] {
+  if (opts.repo === undefined || resolve(root) !== resolve(opts.repo, "studio")) return [];
+  const read = handoffInputs(opts.repo, root);
+  if (read.kind === "error") return [{ rule: "process.handoff.input", level: "block", where: HANDOFF_REL, message: read.reason }];
+  return read.kind === "absent" ? [] : sessionHandoffFindings(read.text, read.opera);
 }
