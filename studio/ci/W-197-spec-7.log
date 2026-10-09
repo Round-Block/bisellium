@@ -1,0 +1,17 @@
+# opus: W-197
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T04:41:55.307Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:40f3060a964a9f77f9d094210cc67e39d261af6b
+
+Architect signature for W-197, revision 4, under D-027. It answers spec review r3 (ci/W-197-spec-6.log, four blocking findings) in the round the Patron granted (D-051 item 3). Admission (check-admission.mjs): 0 problems, one table run, 16 rows, 0 failing the rejector shape. Names: reads.txt §8 and §8b.
+
+## Findings
+1. advisory: r3 #1. The acceptance `codeowners/errors?ref=opus/W-197` call has its own row as a reused command. The acceptance item is now `test "$(gh api …)" = '{"errors":[]}'`, so a 404, an auth or network failure, or a reported error makes `test` exit 1 and the item fails. check: none: acceptance shell test
+2. advisory: r3 #2. The `mode: merge-queue` confirmation is limited to a run that reaches the mode read: a `pr` run past `openPr`'s branch, dirty-tree, trunk-fetch and repository holds, or a `merge` run whose `mergeGate` gets an OPEN PR. check: packages/cli/src/next.test.ts W-168-b3
+3. advisory: r3 #3. "Dismiss stale pull request approvals" is stated as repository-wide: a later push dismisses a voluntary approval on any PR. Nothing in the ladder relies on one, because required approvals stay 0. check: none: Patron setup
+4. advisory: r3 #4. Approval enqueues the PR only where `gh pr merge --auto` armed auto-merge; after a non-zero exit, `merge` is re-run after approving. The Patron setup was re-checked sentence by sentence against `openPr`, `mergeGate`, `gate`, `landed` and `patronStop`, which added three narrowings: `gate`'s earlier steps run first; the direct merge call runs only in direct mode; and the local hold does not happen when local master already contains the merge commit. check: none: Patron setup
