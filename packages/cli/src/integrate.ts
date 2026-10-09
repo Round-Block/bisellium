@@ -141,28 +141,49 @@ const QUEUE_CONTEXTS = ["gates", "officina", "web-e2e", "certify"];
 const ACTIONS_APP_ID = 15368;
 
 /**
+ * The one boundary of the rules reply: the rule entries when every part the decision reads is well-typed (an array of fewer than
+ * 100 objects with a string `type` and, when present, object `parameters`; a `merge_queue` or `required_status_checks` rule with
+ * object parameters; a boolean strict flag and a list of objects with a string `context` and a numeric `integration_id`), else
+ * undefined. A malformed part is never skipped or filtered: it makes the whole reply unreadable, so the mode is "direct".
+ */
+function wellTypedRules(value: unknown): Json[] | undefined {
+  if (!Array.isArray(value) || value.length >= 100) return undefined;
+  const rules: Json[] = [];
+  for (const r of value as unknown[]) {
+    if (!isObj(r) || typeof r["type"] !== "string") return undefined;
+    if ("parameters" in r && !isObj(r["parameters"])) return undefined;
+    if (r["type"] === "merge_queue" && !isObj(r["parameters"])) return undefined;
+    if (r["type"] === "required_status_checks") {
+      const p = r["parameters"];
+      if (!isObj(p) || typeof p["strict_required_status_checks_policy"] !== "boolean") return undefined;
+      const list = p["required_status_checks"];
+      if (!Array.isArray(list)) return undefined;
+      for (const c of list as unknown[]) if (!isObj(c) || typeof c["context"] !== "string" || typeof c["integration_id"] !== "number") return undefined;
+    }
+    rules.push(r);
+  }
+  return rules;
+}
+
+/**
  * "merge-queue" only when master's active rules (`gh api repos/<slug>/rules/branches/master?per_page=100`) are exactly the
  * queue the brief sets up; every other reply, a gh error or a malformed or truncated one included, is "direct".
  */
 export function readMergeQueue(repo: string, slug: string): "merge-queue" | "direct" {
   const v = ghJson(repo, ["api", `repos/${slug}/rules/branches/master?per_page=100`]);
-  if (!v.ok || !Array.isArray(v.value) || v.value.length >= 100) return "direct";
-  const rules: unknown[] = v.value;
-  if (!rules.every((r) => isObj(r) && typeof r["type"] === "string")) return "direct";
-  const typed = (type: string): Json[] => rules.filter((r): r is Json => isObj(r) && r["type"] === type);
-  const queues = typed("merge_queue");
-  const params = queues[0]?.["parameters"];
-  if (queues.length !== 1 || !isObj(params)) return "direct";
+  const rules = v.ok ? wellTypedRules(v.value) : undefined;
+  if (rules === undefined) return "direct";
+  const queues = rules.filter((r) => r["type"] === "merge_queue");
+  const params = queues[0]?.["parameters"] as Json | undefined;
+  if (queues.length !== 1 || params === undefined) return "direct";
   if (Object.keys(params).length !== Object.keys(QUEUE_PARAMS).length || !Object.entries(QUEUE_PARAMS).every(([k, want]) => params[k] === want)) return "direct";
-  const checkRules = typed("required_status_checks");
+  const checkRules = rules.filter((r) => r["type"] === "required_status_checks");
   if (checkRules.length === 0) return "direct";
   const required = new Set<string>();
   for (const rule of checkRules) {
-    const p = rule["parameters"];
-    if (!isObj(p) || p["strict_required_status_checks_policy"] !== false) return "direct";
-    const list = p["required_status_checks"];
-    if (!Array.isArray(list)) continue;
-    for (const c of list) if (isObj(c) && typeof c["context"] === "string" && c["integration_id"] === ACTIONS_APP_ID) required.add(c["context"]);
+    const p = rule["parameters"] as Json;
+    if (p["strict_required_status_checks_policy"] !== false) return "direct";
+    for (const c of p["required_status_checks"] as Json[]) if (c["integration_id"] === ACTIONS_APP_ID) required.add(c["context"] as string);
   }
   return QUEUE_CONTEXTS.every((c) => required.has(c)) ? "merge-queue" : "direct";
 }

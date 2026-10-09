@@ -4083,6 +4083,20 @@ test("W-168-b3 behaviour 3: a direct-mode pr after a queue-mode pr pushes and un
   assert.equal(git(w.origin, ["rev-parse", `refs/heads/${BRANCH}`]), tipOf(w), "the new tip was pushed");
 });
 
+/** Each reply is direct mode: today's rebase and hold, the mode line, no queue call. */
+function expectDirect(variants: [string, SlotValue][]): void {
+  for (const [row, rules] of variants) {
+    const w = reviewed(`w168-b3-direct-${row.replace(/\W+/g, "-")}`, { mainOnMaster: false });
+    advanceOrigin(w, "trunk.txt", "a new trunk file changes the SOURCE tree\n");
+    scenario(w, { rules });
+    const o = performPr(w);
+    assert.deepEqual(mutating(w), ["git fetch master:master", "git rebase"], ran(`${row}: today's rebase and hold`, o));
+    assert.equal(modeLine(o), "mode: direct", ran(`${row}: mode: direct`, o));
+    assert.match(o.out, /\bbuild\b/, ran(`${row}: re-derives build`, o));
+    assert.deepEqual(unmatched(w), [], `${row}: no unexpected gh call`);
+  }
+}
+
 test("W-168-b3 behaviour 3: any reply short of the full setup is direct mode and keeps today's calls", { timeout: 3_600_000 }, () => {
   const drop = (key: string) => (rules: Json[]): Json[] => {
     delete queueParams(rules)[key];
@@ -4126,16 +4140,29 @@ test("W-168-b3 behaviour 3: any reply short of the full setup is direct mode and
     ["a gh exit 1", { exit: 1, stderr: "HTTP 500" }],
     ["a non-array reply", { stdout: { message: "Not Found" } }],
   ];
-  for (const [row, rules] of variants) {
-    const w = reviewed(`w168-b3-direct-${row.replace(/\W+/g, "-")}`, { mainOnMaster: false });
-    advanceOrigin(w, "trunk.txt", "a new trunk file changes the SOURCE tree\n");
-    scenario(w, { rules });
-    const o = performPr(w);
-    assert.deepEqual(mutating(w), ["git fetch master:master", "git rebase"], ran(`${row}: today's rebase and hold`, o));
-    assert.equal(modeLine(o), "mode: direct", ran(`${row}: mode: direct`, o));
-    assert.match(o.out, /\bbuild\b/, ran(`${row}: re-derives build`, o));
-    assert.deepEqual(unmatched(w), [], `${row}: no unexpected gh call`);
-  }
+  expectDirect(variants);
+});
+
+test("W-168-b3 behaviour 3: a malformed part anywhere in the reply is direct mode, never filtered out", { timeout: 3_600_000 }, () => {
+  const addCheck = (member: unknown) => (rules: Json[]): Json[] => {
+    const list = checksRule(rules)["required_status_checks"] as unknown[];
+    list.unshift(member);
+    return rules;
+  };
+  expectDirect([
+    ["a null required-status-check member", rulesWith(addCheck(null))],
+    ["a string required-status-check member", rulesWith(addCheck("gates"))],
+    ["a member with a non-string context", rulesWith(addCheck({ context: 7, integration_id: 15368 }))],
+    ["a member with a non-numeric integration_id", rulesWith(addCheck({ context: "extra", integration_id: "15368" }))],
+    [
+      "a second required-checks rule whose list is not an array",
+      rulesWith((r) => [...r, { type: "required_status_checks", parameters: { strict_required_status_checks_policy: false, required_status_checks: "gates" } }]),
+    ],
+    ["a null rule entry beside the valid ones", rulesWith((r) => [...r, null as unknown as Json])],
+    ["a rule entry with a non-string type beside the valid ones", rulesWith((r) => [...r, { type: 5 }])],
+    ["a rule whose parameters are not an object", rulesWith((r) => [...r, { type: "deletion", parameters: "x" }])],
+    ["a required-checks rule without a boolean strict flag", rulesWith((r) => ((checksRule(r)["strict_required_status_checks_policy"] = "false"), r))],
+  ]);
 });
 
 test("W-168-b3 behaviour 3: a tracked change holds pr with today's lines and no mode line", { timeout: 3_600_000 }, () => {
