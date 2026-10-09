@@ -1,0 +1,17 @@
+# opus: W-168
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T00:24:45.112Z
+# tree: tree:a4628aef41ea7b0e2744bf4542e23c20929b6e57
+# brief: briefs/W-168.md blob:516feac793ebc33e19f43c525866ae1da96f6b78
+
+## Findings
+1. blocking — packages/cli/src/integrate.ts:165 One instance: malformed members of `required_status_checks` are skipped instead of invalidating that parameter, so `[null, ...four valid contexts]` returns `merge-queue`; malformed replies must select direct mode, and a list that is not wholly objects with string contexts counts no contexts (brief:13; brief:67). — check: packages/cli/src/next.test.ts W-168-b3 malformed required-status-check member
+2. advisory — scripts/ci-certify.test.mjs:175 The b1 row accepts exit 1 or 2; in the final implementation its bare candidate is refused input and should specifically exit 2, so accepting 1 leaves the exit classification uncovered even though production currently behaves correctly. — check: scripts/ci-certify.test.mjs W-168-b1
+
+## Verdict
+The malformed-rules case can incorrectly select queue mode outside the signed domain, so round 1 fails despite the remaining master pin, binding, parity, red, and gate evidence checking out.
+VERDICT: FAIL
