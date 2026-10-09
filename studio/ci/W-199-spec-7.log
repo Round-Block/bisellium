@@ -1,0 +1,16 @@
+# opus: W-199
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T07:39:52.439Z
+# tree: tree:967a14c5bb3b81cbc114e4858ede7cc81f7873cc
+# brief: briefs/W-199.md blob:2fdd0f1c66007996aa81f50574fa5d31bd5de217
+
+Architect re-signature for W-199 (brief revision 4) under D-027 and the Patron's extra round (D-051 item 4), answering spec review r3 (ci/W-199-spec-6.log, 3 blocking findings) at the source. The helper closure is computed by ~/.bisellium-evidence/W-199-spec/helper-closure.mjs (helper-closure.txt: 5 retained rows, 99 names reached, the fail-open spots, the other rows that reach each one). Names re-checked by enumerate-reads.mjs (reads.txt section 7: 56 cited names, none missing). Admission by check-admission.mjs (admission-r7.txt: 0 problems, one table run, 28 rows, 0 failing the rejector shape).
+
+## Findings
+1. advisory: r3#1/#2: headOf (reached through cand, openList, viewOf(cand) and mergedList by every retained row) now throws on any show-ref exit other than 0 (tip) or 1 (git's no-such-ref answer, which keeps today's w.headOid fallback); cand, openList, viewOf and mergedList read only headOf and constants, so they fail closed too. 36 other rows reach headOf, and only a failed read changes their behaviour. check: packages/cli/src/next.test.ts headOf
+2. advisory: r3#3: row 27's commit claim was wrong (gitOk false on a failed diff led to a commit attempt). commit now reads git diff --cached --quiet itself: exit 0 skips, exit 1 commits, any other exit throws. 63 other rows reach it through world. check: packages/cli/src/next.test.ts commit
+3. advisory: calls keeps its [] answer for an absent log, because that is the valid no-call state (scenario removes the log; the shims create it), and readFileSync throws on an unreadable log. landMerge's git(..., false) runs only when fetched, and these rows pass false. removeBranchAndWorktree, markDone and ensureMaster are reached by name only (world runs them at cleanup and done; these rows stop at build). check: none: helper-closure.txt
