@@ -81,7 +81,8 @@ W-159, W-177.
 
 - Lex §11 lists W-179 among the multi-lane prerequisites, but the queue
   review left it for later: greenlight W-179, or amend the lex to drop it.
-
-- W-138's rescope: W-122 was declined (2026-10-09), so usage is read only
-  from harness logs. The producer drafts W-138's new title and scope on
-  that path (it also depends on W-136); the Patron approves or declines it.
+- W-202 (backlog): the studio dashboard as the console's first view, with
+  click-through sectors. The Patron slots it at the next queue review.
+- W-138's rescope: usage is read only from harness logs (W-122 declined);
+  it becomes W-202's cost data and depends on W-136. The producer drafts the
+  new title and scope; the Patron approves or declines it.
