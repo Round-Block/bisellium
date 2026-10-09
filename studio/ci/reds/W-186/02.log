@@ -1,0 +1,49 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-186-b2 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-09T18:04:13.465Z
+# sella: builder.W-186
+# tree: tree:be7d7c5667cc487b0ea27d03544ca1d4e4020ae7
+
+TAP version 13
+# Subtest: W-186-b2 behaviour 2: performed done holds on a stale working-tree handoff before performDone runs
+not ok 1 - W-186-b2 behaviour 2: performed done holds on a stale working-tree handoff before performDone runs
+  ---
+  duration_ms: 3470.917434
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-186/packages/cli/src/next.test.ts:144:7827'
+  failureType: 'testCodeFailure'
+  error: |-
+    a Queue that names the opus
+    --- exit 0
+    --- stdout
+    next: W-900 done performed
+    branch: chore/done-W-900
+    commit: 66d5692
+    done: W-900: done
+    next-step: done
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: 'next: W-900 done performed'
+  operator: 'match'
+  stack: |-
+    expectHeld (/home/edckt/agents/bisellium/.worktrees/W-186/packages/cli/src/next.test.ts:891:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-186/packages/cli/src/next.test.ts:4454:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3554.364296
