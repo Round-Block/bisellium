@@ -113,6 +113,9 @@ the main checkout's absolute `--studio`/`--repo`.
    prompt `studio/prompts/spec-review.md` (filled per round); record with
    `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <$TMPDIR copy>`.
    Any brief edit needs a new signature and review. On pass, `next` lands it.
+   Reused, unchanged code is one input judged by its exit, one row per
+   unchanged job (D-050). Three failed rounds, then ask the Patron (D-051;
+   W-196 makes `next` hold).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
    in the worktree, `ready` (commit), then a Sonnet builder (brief model:
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
@@ -130,10 +133,14 @@ the main checkout's absolute `--studio`/`--repo`.
    the producer checks the fix's census: every path to the input the blocker
    named is closed (W-184 makes it a hold). Three failed rounds, then ask the
    Patron.
-5. **Merge:** rebase if master moved; refresh `handoff`; mint once from the
-   worktree (bare `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
-   ~15 min); `review-receipt.sh`; record the pass; `pr`; wait for CI; `merge`;
-   `cleanup`.
+5. **Merge:** refresh `handoff`; mint once from the worktree (bare
+   `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
+   ~15 min); `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
+   With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
+   pushes the reviewed head without a rebase, `merge` enqueues it, and the
+   queue's `certify` job certifies the merge result: a moved master needs no
+   rebase and no second mint. In `mode: direct`, rebase if master moved and
+   mint after it, as before.
 6. **Done:** `verify <id>` on master (~11 min); checkpoint script;
    `next --perform --expect done` twice (commit, then land).
 7. **Retro:** Codex `gpt-5.6-terra` triage (prompt
@@ -157,8 +164,6 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
   independent review (`studio/prompts/handoff-review.md`, Codex terra), at
   most three rounds, before it is committed (findings left after round
   three go to the Patron); the producer never certifies its own handoff.
-- Hold every PR while an opus sits between a passing review and its merge
-  (until W-168): a moved master forces a rebase and a second mint.
 - When a brief contradicts itself, take its literal, stricter reading and
   record the flip it failed to name; never rule a softer variant (W-166).
 - No shortcuts in CI or tests (Patron, 2026-10-08). CI certifies at least
@@ -166,7 +171,8 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
   time; a flake is fixed at its cause, never rerun as the remedy. W-178's
   check enforces the row count once built.
 - Concurrency readiness is the orchestrator's to manage: one lane until
-  W-168 and W-169 land (with W-178 to W-183 and W-093 alongside); then
+  W-169 and W-197 land (W-168 landed 2026-10-09; with W-178 to W-183 and
+  W-093 alongside); then
   any number of lanes under one orchestrator, whose step scripts print
   one-line results so each lane costs little context;
   the handoff tracks what is left.
@@ -216,3 +222,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Hold PRs while an opus awaits merge; a self-contradicting brief is read literally | Patron |
 | 2026-10-08 | Handoff edits pass handoff-check.mjs (W-186 enforces) | Patron |
 | 2026-10-08 | Handoff reviewed independently before commit; republish and milestone rules moved in from the handoff | Patron |
+| 2026-10-09 | Spec review scope and round cap (D-050, D-051); merge step in queue mode; PR hold rule retired (W-168 live) | Patron |
