@@ -320,6 +320,8 @@ interface WorldOpts {
   patron?: boolean;
   /** W-141: the manifest declares an automated probatio, `tests`, whose command is `node -e 0`. */
   automated?: boolean;
+  /** W-197: the base commit tracks a `.github/` path (`.github/workflows/ci.yml`). */
+  github?: boolean;
 }
 
 const MANIFEST = [
@@ -525,6 +527,7 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
     put(w.repo, ".claude/agents/censor.md", "censor v1\n");
     put(w.repo, ".claude/my notes.md", "notes v1\n");
   }
+  if (o.github) put(w.repo, ".github/workflows/ci.yml", "name: ci\n");
   const manifest = o.automated ? MANIFEST.replace("source_excludes:", '  - { id: tests, name: Tests, kind: automated, command: "node -e 0" }\nsource_excludes:') : MANIFEST;
   put(w.studio, "bisellium.yml", o.prRequired ? `${manifest}integration:\n  pr:\n    required: true\n` : manifest);
   put(w.studio, "notes.md", "bookkeeping line\n");
@@ -4277,4 +4280,98 @@ test("W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one k
   const o3 = performMerge(merged);
   assert.match(o3.out, /state=MERGED/, ran("an already-MERGED PR lands", o3));
   assert.equal(lineAfter(o3, "mode:"), undefined, ran("and reads no mode", o3));
+});
+
+// ---------------------------------------------------------------------------
+// W-197 behaviour 1: `.github/` is a Patron path for every existing Patron hold
+// ---------------------------------------------------------------------------
+const CI_YML = ".github/workflows/ci.yml";
+/** What a hold must leave byte-identical, read only through the fixture `git` (it throws on a failed read) and `readFileSync`. */
+const frozenGithub = (w: World): string =>
+  [git(w.repo, ["rev-parse", "HEAD", "master"]), git(w.repo, ["ls-files", "-s"]), git(w.repo, ["status", "--porcelain"]), readFileSync(join(w.repo, CI_YML), "utf8")].join("\n--\n");
+
+test("W-197-b1 behaviour 1: .github/ is a Patron path for every existing Patron hold", { timeout: 1_800_000 }, () => {
+  // merge: the reviewed merge commit changes a .github/ path
+  const w = reviewed(
+    "w197-b1-merge",
+    { github: true },
+    (x) => {
+      put(x.wt, CI_YML, "name: ci v2\n");
+      commit(x.wt, `feat(${OPUS}): workflow change`);
+      writeReceipt(x, "current");
+    },
+    true,
+  );
+  const m = landMerge(w, false);
+  scenario(w, { list: mergedList(w, { merge: m }) });
+  expectStep(next(w, [OPUS]), "merge", "named", "the world sits at merge");
+  const before = frozenGithub(w);
+  const held = performMerge(w);
+  expectHeld(held, "merge: held");
+  assert.equal(frozenGithub(w), before, ran("merge: nothing is mutated (HEAD, master, index, status, ci.yml bytes)", held));
+  const lines = outLines(held);
+  const why = lines.findIndex((l) => l === `why: refusing: incoming paths belong to the Patron (${CI_YML}); the main checkout is untouched`);
+  assert.notEqual(why, -1, ran("merge: the why line names the .github/ path", held));
+  assert.equal(lines[why - 1], `state=MERGED_NOT_FETCHED`, ran("merge: the state line precedes the why line", held));
+  assert.equal(lines[why + 1], `patron: git -C ${w.repo} merge --ff-only ${m}`, ran("merge: the patron line follows the why line", held));
+  // the Patron runs that exact line, and next moves on
+  const [bin, ...args] = lines[why + 1]!.slice("patron: ".length).split(" ");
+  assert.equal(bin, "git");
+  git(w.root, args);
+  expectStep(next(w, [OPUS]), "cleanup", "named", "after the Patron's command next derives cleanup");
+
+  // branch and done: a tracked edit to a .github/ path holds the rung and prints the Patron's checkout line
+  const dirtyRow = (row: string, o: Out, w2: World, was: string): void => {
+    expectHeld(o, row);
+    assert.equal(frozenGithub(w2), was, ran(`${row}: nothing is mutated`, o));
+    const ls = outLines(o);
+    const at = ls.indexOf("why: refusing: the working tree has tracked changes");
+    assert.notEqual(at, -1, ran(`${row}: the why line`, o));
+    assert.ok(ls.indexOf(`dirty: M ${CI_YML}`) > at, ran(`${row}: the dirty line follows the why line`, o));
+    assert.ok(ls.indexOf(`patron: git -C ${w2.repo} checkout -- ${CI_YML}`) > at, ran(`${row}: the patron checkout line`, o));
+  };
+  const b = world("w197-b1-branch", "spec", { github: true });
+  appendFileSync(join(b.repo, CI_YML), "edit\n");
+  const bBefore = frozenGithub(b);
+  dirtyRow("branch", next(b, [OPUS, "--perform", "--expect", "branch"]), b, bBefore);
+  assert.equal(git(b.repo, ["for-each-ref", "--format=%(refname)", `refs/heads/${BRANCH}`]), "", "branch: no branch was cut");
+  const d = world("w197-b1-done", "cleanup", { github: true });
+  scenario(d, { list: mergedList(d) });
+  appendFileSync(join(d.repo, CI_YML), "edit\n");
+  const dBefore = frozenGithub(d);
+  dirtyRow("done", next(d, [OPUS, "--perform", "--expect", "done"]), d, dBefore);
+  assert.equal(git(d.repo, ["for-each-ref", "--format=%(refname)", `refs/heads/chore/done-${OPUS}`]), "", "done: no chore branch was made");
+
+  // renames: out of .github/ restores the original from HEAD, into .github/ takes the destination out of the index
+  const out = world("w197-b1-rename-out", "spec", { github: true });
+  git(out.repo, ["mv", CI_YML, "docs/ci.yml"]);
+  const outHeld = next(out, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(outHeld, "branch with a staged rename out of .github/");
+  assert.ok(outLines(outHeld).includes(`patron: git -C ${out.repo} checkout HEAD -- ${CI_YML}`), ran("rename out: checkout HEAD of the original", outHeld));
+  const into = world("w197-b1-rename-into", "spec", { github: true });
+  git(into.repo, ["mv", "README.md", ".github/readme.md"]);
+  const intoHeld = next(into, [OPUS, "--perform", "--expect", "branch"]);
+  expectHeld(intoHeld, "branch with a staged rename into .github/");
+  assert.ok(outLines(intoHeld).includes(`patron: git -C ${into.repo} rm --cached -q -- .github/readme.md`), ran("rename into: rm --cached of the destination", intoHeld));
+});
+
+// ---------------------------------------------------------------------------
+// W-197 behaviour 2: the GitHub owner rule covers .github/, itself included
+// ---------------------------------------------------------------------------
+test("W-197-b2 behaviour 2: .github/CODEOWNERS names @edckt for /.github/, itself included", () => {
+  const path = join(REPO_ROOT, ".github/CODEOWNERS");
+  assert.ok(existsSync(path), ".github/CODEOWNERS exists");
+  assert.equal(readFileSync(path, "utf8"), "/.github/ @edckt\n");
+});
+
+// ---------------------------------------------------------------------------
+// W-197 pin: the code-owner setting does not change the merge-queue mode
+// ---------------------------------------------------------------------------
+/** Master's active rules as the live reply read on 2026-10-09, with the two booleans the Patron's setup turns on. */
+const LIVE_RULES_WITH_OWNER_REVIEW: Json[] = [{"type": "deletion", "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}, {"type": "non_fast_forward", "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}, {"type": "pull_request", "parameters": {"required_approving_review_count": 0, "dismiss_stale_reviews_on_push": true, "required_reviewers": [], "require_code_owner_review": true, "dismissal_restriction": {"enabled": false, "allowed_actors": []}, "require_last_push_approval": false, "required_review_thread_resolution": true, "require_extra_approval_for_unattributed_changes": true, "allowed_merge_methods": ["merge", "squash", "rebase"]}, "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}, {"type": "required_status_checks", "parameters": {"strict_required_status_checks_policy": false, "do_not_enforce_on_create": false, "required_status_checks": [{"context": "gates", "integration_id": 15368}, {"context": "officina", "integration_id": 15368}, {"context": "web-e2e", "integration_id": 15368}, {"context": "certify", "integration_id": 15368}]}, "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}, {"type": "code_scanning", "parameters": {"code_scanning_tools": [{"tool": "CodeQL", "security_alerts_threshold": "medium_or_higher", "alerts_threshold": "errors_and_warnings"}]}, "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}, {"type": "code_quality", "parameters": {"severity": "errors"}, "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}, {"type": "merge_queue", "parameters": {"merge_method": "SQUASH", "max_entries_to_build": 1, "min_entries_to_merge": 1, "max_entries_to_merge": 1, "min_entries_to_merge_wait_minutes": 0, "grouping_strategy": "ALLGREEN", "check_response_timeout_minutes": 120}, "ruleset_source_type": "Repository", "ruleset_source": "Round-Block/bisellium", "ruleset_id": 23720000}];
+
+test("W-197 pin: the pull_request rule's code-owner and stale-review booleans leave the mode merge-queue", { timeout: 3_600_000 }, () => {
+  const w = queueWorld("w197-pin", { stdout: LIVE_RULES_WITH_OWNER_REVIEW });
+  const o = performPr(w);
+  assert.equal(modeLine(o), "mode: merge-queue", ran("the mode line", o));
 });
