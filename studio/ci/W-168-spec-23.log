@@ -1,0 +1,14 @@
+# opus: W-168
+# phase: spec
+# round: 23
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-08T22:51:46.435Z
+# tree: tree:a547b5905ce0815d6929dc5a7262439e66c09892
+# brief: briefs/W-168.md blob:516feac793ebc33e19f43c525866ae1da96f6b78
+
+Architect signature for W-168, revision 12, under D-027. This fixes the brief-admission refusal at ready, with no change to meaning.
+
+## Findings
+1. advisory: brief admission refused input-domain row 13 (the short-id display row), because its Rejected-by cell did not open with a backticked name, and it read only the first of five table runs. merge-domain-table.py, kept under ~/.bisellium-evidence/W-168-spec/, merges the Input domain's tables into one run of 61 rows. It tags each row with its group, (certify job, step n), (reused, next), (reused, mint) or (mint subprocess), and moves the group prose above the table. Every Rejected-by cell now opens with the real rejecting unit: certify, gates or officina (job, required) for the workflow rows; runner for web-e2e, whose hyphenated id is not an identifier; short and landed for the display-only row, kept as a stated limit; mustGit, identifyRebased and runBuilderCommand for the mint rows. The two cells with github.head_ref || github.ref_name have their pipes escaped. check-admission.mjs runs readBriefAdmission and lifecycle's briefAdmissionProblems with the studio's own manifest and limit, and also checks every row's Rejected-by shape. It reports 0 problems, one table run and 0 failing rows, for both the main checkout's and the worktree's brief, which are byte-identical. check: none: spec text; ~/.bisellium-evidence/W-168-spec/check-admission.mjs

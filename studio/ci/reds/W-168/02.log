@@ -1,0 +1,159 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-168-b2 --import tsx scripts/ci-certify.test.mjs
+# exit: 1
+# at: 2026-10-08T23:01:52.779Z
+# sella: builder.W-168
+# tree: tree:eeba55842d5f7878f0fcdcaab2cd59cd2906d18b
+
+TAP version 13
+# Subtest: W-168-b2 behaviour 2: an opus merge group is rebased, tree-checked and minted once with the exact argv
+not ok 1 - W-168-b2 behaviour 2: an opus merge group is rebased, tree-checked and minted once with the exact argv
+  ---
+  duration_ms: 120.191467
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:316:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a valid opus merge group certifies
+    certify: merge group for PR #7
+    certify: not certified: the certification steps are not in this script yet
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:319:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-168-b2 behaviour 2: master advanced by a source commit is rebased onto and the tree still matches
+not ok 2 - W-168-b2 behaviour 2: master advanced by a source commit is rebased onto and the tree still matches
+  ---
+  duration_ms: 129.321525
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:347:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    the rebased head certifies
+    certify: merge group for PR #7
+    certify: not certified: the certification steps are not in this script yet
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:350:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b2 behaviour 2: a head that is not an opus needs no mint
+not ok 3 - W-168-b2 behaviour 2: a head that is not an opus needs no mint
+  ---
+  duration_ms: 110.992444
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:358:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a chore head returns 0
+    certify: merge group for PR #7
+    certify: not certified: the certification steps are not in this script yet
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:361:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b2 behaviour 2: phase A refusals return 2, mint nothing and write no Git state
+not ok 4 - W-168-b2 behaviour 2: phase A refusals return 2, mint nothing and write no Git state
+  ---
+  duration_ms: 238.82803
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:366:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a repository.full_name other than the origin's returns 2
+    certify: merge group for PR #7
+    certify: not certified: the certification steps are not in this script yet
+    
+    1 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:415:12)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b2 behaviour 2: phase B refusals mint nothing
+not ok 5 - W-168-b2 behaviour 2: phase B refusals mint nothing
+  ---
+  duration_ms: 108.387928
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:421:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    a fetched head other than headRefOid returns 2
+    certify: merge group for PR #7
+    certify: not certified: the certification steps are not in this script yet
+    
+    1 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:424:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b2 behaviour 2: a mint that returns 1 makes certify return 1
+not ok 6 - W-168-b2 behaviour 2: a mint that returns 1 makes certify return 1
+  ---
+  duration_ms: 109.815121
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:448:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/scripts/ci-certify.test.mjs:452:10)
+    async Test.run (node:internal/test_runner/test:1208:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 0
+# fail 6
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 859.238264

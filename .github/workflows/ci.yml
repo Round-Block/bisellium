@@ -4,10 +4,16 @@ name: CI
 # request) instead of twice. The post-merge master push always runs the full
 # suite, which is what catches a record-only change that breaks a real-studio
 # test.
+#
+# W-168: `merge_group` runs on the merge queue's temporary commit (the PR merged
+# with the latest master). The first three jobs run there unchanged, on their
+# full path, and `certify` runs the existing mint on that merge result.
 on:
   push:
     branches: [master]
   pull_request:
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
@@ -63,9 +69,10 @@ jobs:
       - if: steps.scope.outputs.record_only == 'true'
         run: npm run -s test:record
 
-  # Deliberately NOT required (W-028's ruling): `check -- studio` fails on
-  # known officina debt, so this job stays honestly red until that debt
-  # clears rather than being marked continue-on-error or dropped.
+  # Required status check (ruleset `master_protection`). W-028 once kept it out
+  # of the required set while `check -- studio` failed on known officina debt;
+  # that debt cleared (0 blocking findings) and it was required since. Never
+  # marked continue-on-error.
   officina:
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +93,7 @@ jobs:
   # guard. Builds apps/web/dist from scratch (a removed dist first, so a
   # stale bundle can't quietly satisfy it) and drives it with the
   # served-dist harness (apps/web/playwright.serve.config.ts). No
-  # continue-on-error, and never merged into the deliberately non-required
+  # continue-on-error, and never merged into the separate
   # `officina` job above.
   web-e2e:
     runs-on: ubuntu-latest
@@ -109,3 +116,51 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s test:serve --workspace @bisellium/web
+
+  # W-168: the merge queue's certification. Runs only on a merge group. The
+  # certifying code is master's (`tooling`, checked out at the merge group's
+  # base commit), never the merge-group commit's own copy: scripts/ci-certify.mjs
+  # rebases the PR head onto the base inside the job and runs the existing mint
+  # on it. A non-zero exit fails the required `certify` check, so GitHub drops
+  # the PR from the queue. Skipped on a pull request, which a required check
+  # counts as passing.
+  certify:
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: candidate
+          fetch-depth: 0
+      - uses: actions/checkout@v5
+        with:
+          path: tooling
+          ref: ${{ github.event.merge_group.base_sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 25
+      - run: sudo apt-get update && sudo apt-get install -y bubblewrap
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: npm ci
+        working-directory: tooling
+      - run: npm ci
+        working-directory: candidate
+      - run: npx playwright install --with-deps chromium
+        working-directory: candidate
+      - run: node --import tsx scripts/ci-certify.mjs --candidate ../candidate --studio studio 2>&1 | tee "${{ runner.temp }}/certify.log"
+        shell: bash
+        working-directory: tooling
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: certify-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            candidate/studio/receipts/
+            ${{ runner.temp }}/certify.log

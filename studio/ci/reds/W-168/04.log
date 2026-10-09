@@ -1,0 +1,211 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-168-b4 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-08T23:28:04.728Z
+# sella: builder.W-168
+# tree: tree:d86a827de8504a906dce6c0566173bc0093ea5d1
+
+TAP version 13
+# Subtest: W-168-b4 behaviour 4: in queue mode merge enqueues once and never updates the branch
+not ok 1 - W-168-b4 behaviour 4: in queue mode merge enqueues once and never updates the branch
+  ---
+  duration_ms: 3234.933133
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:5895'
+  failureType: 'testCodeFailure'
+  error: |-
+    a BEHIND PR is enqueued, never updated
+    --- exit 0
+    --- stdout
+    next: W-900 merge performed
+    local master -> 8eb324d
+    state=MERGED
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+      [
+    +   'gh pr update-branch',
+        'gh pr merge --squash --auto',
+        'git fetch master:master'
+      ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'gh pr merge --squash --auto'
+    1: 'git fetch master:master'
+  actual:
+    0: 'gh pr update-branch'
+    1: 'gh pr merge --squash --auto'
+    2: 'git fetch master:master'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4164:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-168-b4 behaviour 4: a queued CLEAN PR gets no second merge call
+not ok 2 - W-168-b4 behaviour 4: a queued CLEAN PR gets no second merge call
+  ---
+  duration_ms: 3470.200862
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:6903'
+  failureType: 'testCodeFailure'
+  error: |-
+    exactly one gh pr merge call
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+    --- stderr
+    
+    
+    4 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 4
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4175:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-168-b4 behaviour 4: a DIRTY PR holds as a conflict in queue mode
+not ok 3 - W-168-b4 behaviour 4: a DIRTY PR holds as a conflict in queue mode
+  ---
+  duration_ms: 3228.785875
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:7416'
+  failureType: 'testCodeFailure'
+  error: |-
+    a DIRTY PR is never merged or updated
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    state=QUEUE_TIMEOUT
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + [
+    +   'gh pr merge --squash --auto'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'gh pr merge --squash --auto'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4184:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b4 behaviour 4: a changed setup at the recheck holds with nothing enqueued
+not ok 4 - W-168-b4 behaviour 4: a changed setup at the recheck holds with nothing enqueued
+  ---
+  duration_ms: 3053.692012
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:8625'
+  failureType: 'testCodeFailure'
+  error: |-
+    no gh write after the setup changed
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    why: PR #901 changed identity after the merge was requested
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + [
+    +   'gh pr merge --squash --auto'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'gh pr merge --squash --auto'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4207:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls
+not ok 5 - W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls
+  ---
+  duration_ms: 3028.436176
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:142:9166'
+  failureType: 'testCodeFailure'
+  error: |-
+    a PR pushed for the queue is held when the queue is gone
+    --- exit 1
+    --- stdout
+    next: W-900 merge held
+    why: PR #901 changed identity after the merge was requested
+    next-step: merge
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + [
+    +   'gh pr merge --squash --auto'
+    + ]
+    - []
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+    0: 'gh pr merge --squash --auto'
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-168/packages/cli/src/next.test.ts:4218:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 0
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16049.710715

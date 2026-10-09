@@ -24,6 +24,10 @@
  * still runs somewhere, gates' own five steps keep CI_STEPS' relative order
  * for the entries they carry, and officina's one step is exactly the studio
  * entry.
+ *
+ * W-168: a fourth job, `certify`, runs only on a merge group (see
+ * scripts/ci-certify.test.mjs). It carries no CI_STEPS entry, so the step
+ * comparisons below read only `gates` and `officina`.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -121,8 +125,8 @@ const studioStep = ciSteps.find((s) => s.includes("check -- studio") && !s.inclu
 check("CI_STEPS has a 'check -- studio' entry", studioStep !== undefined, JSON.stringify(ciSteps));
 
 check(
-  "workflow has exactly three jobs: gates, officina, web-e2e",
-  Object.keys(doc?.jobs ?? {}).join(",") === "gates,officina,web-e2e",
+  "workflow has exactly four jobs: gates, officina, web-e2e, certify",
+  Object.keys(doc?.jobs ?? {}).join(",") === "gates,officina,web-e2e,certify",
 );
 
 // W-131: gates also carries steps that are not CI_STEPS entries. Each is named
