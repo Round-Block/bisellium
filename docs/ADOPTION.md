@@ -1133,7 +1133,8 @@ included, is `direct`, even when the setup is in fact active.
 In `merge-queue` mode:
 
 - `pr` pushes the reviewed head as it is, without a rebase, and records that
-  head in the local Git key `branch.opus/<id>.bisellium-queue` before the push.
+  head in the file `<git common dir>/bisellium/queue/opus%2F<id>` before the
+  push.
   The receipt and the review stay current on that head, so master moving costs
   no second local mint.
 - `merge` enqueues the PR with one `gh pr merge --squash --auto
@@ -1149,10 +1150,11 @@ In `merge-queue` mode:
   never reads it.
 
 In `direct` mode `pr` and `merge` make today's writes and remote calls plus
-the rules read, one local `git config --get` of the queue key and the
-`mode: direct` line. A PR whose key is set was pushed for the queue without a
-rebase, so `merge` holds it (`master no longer enforces the queue`), and a
-direct-mode `pr` removes the key after its push.
+the rules read, one local `git rev-parse` and one `lstat` of the queue file and
+the `mode: direct` line. A PR whose file is present was pushed for the queue
+without a rebase, so `merge` holds it (`master no longer enforces the queue`),
+and a direct-mode `pr` removes the file after its push. A file that cannot be
+read holds too.
 
 The conflict path. A PR that conflicts with master (`DIRTY`) holds with
 `state=CONFLICT` in queue mode, and the merge group's rebase conflict fails

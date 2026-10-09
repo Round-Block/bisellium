@@ -580,9 +580,6 @@ export function dirtyHold(cwd: string, allow?: (path: string) => boolean): StepR
 // pr
 // ---------------------------------------------------------------------------
 
-/** The key that binds a queue-mode PR head: set by a queue-mode `pr` before its push, read by every direct-mode verb. */
-const queueKey = (branch: string): string => `branch.${branch}.bisellium-queue`;
-
 const thrown = (e: unknown): string => clean(e instanceof Error ? e.message : String(e));
 /** W-199: the file whose presence binds a queue-mode PR head: `<git common dir>/bisellium/queue/<encodeURIComponent(branch)>`. */
 function queueFile(repo: string, branch: string): { path: string } | { error: string } {
@@ -706,8 +703,7 @@ export async function mergeGate(ctx: Ctx, pr: Pr): Promise<StepResult> {
   const mode = readMergeQueue(ctx.repo, pr.repo);
   if (mode === "direct") {
     // a head pushed for the queue (no rebase) is merged only through the queue
-    const read = git(ctx.repo, ["config", "--get", queueKey(ctx.head)]);
-    if (read.error !== undefined || read.status !== 1)
+    if (readBinding(ctx.repo, ctx.head).kind !== "absent")
       return { ok: false, lines: [`mode: ${mode}`, `why: PR #${pr.number} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${ctx.head} onto master, which changes the SOURCE tree and needs the local mint again`] };
   }
   const done = await gate(ctx, pr, mode);
