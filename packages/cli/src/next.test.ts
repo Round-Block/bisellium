@@ -4032,8 +4032,6 @@ const QUEUE_RULES: Json[] = [
     },
   },
 ];
-/** W-168's key: until W-199 b2, the direct-mode merge row still seeds the binding as a config key. */
-const BINDING = `branch.${BRANCH}.bisellium-queue`;
 /** W-199: the queue binding is a file under the Git common directory (read through the fixture `git`, which throws on a failed read). */
 const bindingPath = (w: World): string => join(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]), "bisellium", "queue", encodeURIComponent(BRANCH));
 const rulesWith = (edit: (rules: Json[]) => Json[]): SlotValue => ({ stdout: edit(structuredClone(QUEUE_RULES)) });
@@ -4280,19 +4278,33 @@ test("W-168-b4 behaviour 4: a changed setup at the recheck holds with nothing en
   assert.equal(o.status, 1);
 });
 
-test("W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls", { timeout: 3_600_000 }, () => {
-  const bound = pushed("w168-b4-bound");
-  git(bound.repo, ["config", BINDING, headOf(bound)]);
-  scenario(bound, { list: openList(bound) });
-  const o = performMerge(bound);
-  assert.deepEqual(mutating(bound), [], ran("a PR pushed for the queue is held when the queue is gone", o));
-  assert.equal(o.out.split("\n")[1], "mode: direct", ran("the mode line", o));
+/** W-199: a direct-mode merge of a PR whose binding is present or unreadable holds with W-168's why, before any gh write. */
+function expectBoundHold(w: World, row: string): void {
+  const updated = join(w.root, "updated.flag");
+  const flag = join(w.root, "merged.flag");
+  scenario(w, { rules: { stdout: [] }, list: openList(w), update: { stdout: "", touch: updated }, merge: { replies: [{ stdout: "", touch: flag }] } });
+  const o = performMerge(w);
+  assert.deepEqual(mutating(w), [], ran(`${row}: a PR pushed for the queue is held when the queue is gone`, o));
+  assert.equal(o.out.split("\n")[1], "mode: direct", ran(`${row}: the mode line`, o));
   assert.ok(
     o.out.includes(`why: PR #${PR_NUMBER} was pushed for the merge queue without a rebase, and master no longer enforces the queue; rebase ${BRANCH} onto master, which changes the SOURCE tree and needs the local mint again`),
-    ran("the why", o),
+    ran(`${row}: the why`, o),
   );
-  assert.equal(o.status, 1);
-  assert.equal(ghMerges(bound).length, 0, "no gh pr merge");
+  assert.equal(o.status, 1, ran(`${row}: exit`, o));
+  assert.equal(ghMerges(w).length, 0, `${row}: no gh pr merge`);
+  assert.equal(existsSync(flag) || existsSync(updated), false, `${row}: no gh write reached the stub`);
+  assert.ok(
+    ghCalls(w).some((a) => a.length === 2 && a[0] === "api" && a[1] === `repos/${SLUG}/rules/branches/master?per_page=100`),
+    `${row}: the rules were read`,
+  );
+}
+
+test("W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one keeps today's calls (W-199-b2)", { timeout: 3_600_000 }, () => {
+  const bound = pushed("w168-b4-bound");
+  const file = bindingPath(bound);
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, `${tipOf(bound)}\n`);
+  expectBoundHold(bound, "bound");
 
   const w = pushed("w168-b4-unbound");
   const updated = join(w.root, "updated.flag");
@@ -4320,6 +4332,12 @@ test("W-168-b4 behaviour 4: in direct mode a bound PR holds and an unbound one k
   const o3 = performMerge(merged);
   assert.match(o3.out, /state=MERGED/, ran("an already-MERGED PR lands", o3));
   assert.equal(lineAfter(o3, "mode:"), undefined, ran("and reads no mode", o3));
+});
+
+test("W-199-b2 behaviour 2: a direct-mode merge holds a PR whose binding cannot be read", { timeout: 3_600_000 }, () => {
+  const w = pushed("w199-b2-unreadable");
+  writeFileSync(join(w.repo, ".git", "bisellium"), "a regular file where the binding directory belongs\n");
+  expectBoundHold(w, "unreadable");
 });
 
 // ---------------------------------------------------------------------------
