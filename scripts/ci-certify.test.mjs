@@ -171,8 +171,8 @@ test("W-168-b1 behaviour 1: a valid merge group never exits 0 and names itself",
   assert.ok(existsSync(SCRIPT), "scripts/ci-certify.mjs exists");
   const dir = scratch("valid");
   const r = spawnScript(GOOD_ARGS(dir), "merge_group", mergeGroup());
-  // Exit 1 until behaviour 2 lands (the job fails closed); behaviour 2's input checks refuse this bare directory with 2.
-  assert.ok(r.status === 1 || r.status === 2, `a valid merge group fails closed, got ${r.status}\n${r.output}`);
+  // The bare directory is refused input (exit 2), never certified.
+  assert.equal(r.status, 2, `a valid merge group on a bare directory is refused with 2\n${r.output}`);
   assert.match(r.output, /certify:/, "the script names itself");
 });
 
