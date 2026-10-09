@@ -1,6 +1,7 @@
 /**
  * W-131: is a diff record-only (officina bookkeeping and the handoff)? CI
- * uses the answer to take the short path on a pull request.
+ * uses the answer to take the short path on a pull request and, W-203, on a
+ * merge group (classified against the group's base).
  *
  *   node scripts/ci-scope.mjs <base> <head>   prints record_only=true|false
  *
@@ -19,6 +20,19 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 export function recordOnly(paths) {
   return paths.length > 0 && paths.every((path) => path.startsWith("studio/") || path === "docs/SESSION-HANDOFF.md");
+}
+
+/** W-203: true only when `git diff <base>...<head>` succeeds and recordOnly accepts its paths; any git failure is false. */
+export function scopeOf(base, head) {
+  try {
+    const out = execFileSync("git", ["diff", "--name-only", "--no-renames", `${base}...${head}`], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return recordOnly(out.split("\n").filter(Boolean));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -84,13 +98,5 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href && process.arg
   console.log("record_reads=ok");
 } else if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const [base, head] = process.argv.slice(2);
-  let only = false;
-  try {
-    const out = execFileSync("git", ["diff", "--name-only", "--no-renames", `${base}...${head}`], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    only = recordOnly(out.split("\n").filter(Boolean));
-  } catch {}
-  console.log(`record_only=${only}`);
+  console.log(`record_only=${scopeOf(base, head)}`);
 }

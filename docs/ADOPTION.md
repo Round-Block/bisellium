@@ -1175,6 +1175,15 @@ The conflict path. A PR that conflicts with master (`DIRTY`) holds with
 locally and resolve it there. That fix is new source, so the local mint and
 review follow, exactly as before the queue.
 
+Records-only merge groups. W-203. In a merge group, the `gates` and `web-e2e`
+jobs run `scripts/ci-scope.mjs` on the group commit against the group's base
+(`github.event.merge_group.base_sha`). A group whose delta touches only
+`studio/` and `docs/SESSION-HANDOFF.md` takes the records-only path a
+records-only pull request takes: `gates` runs the studio check and `test:record`,
+and `web-e2e` skips its build and browser steps. Any source path, an empty delta
+or an unreadable comparison takes the full path. `officina` and `certify` are
+unchanged, and the post-merge `push` run still runs the full suite on master.
+
 ## Running next
 
 ```bash

@@ -76,8 +76,8 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
     );
     assert.equal(
       scopeSteps[0].if,
-      "github.event_name == 'pull_request'",
-      `${job}'s scope step runs only on a pull request`,
+      "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
+      `${job}'s scope step runs on a pull request and a merge group`,
     );
     for (const step of steps.filter(
       (s) => typeof s.run === "string" && s.id !== "scope" && s.run !== "npm ci" && s.if !== SHORT,
