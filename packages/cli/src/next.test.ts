@@ -4354,3 +4354,12 @@ test("W-197-b1 behaviour 1: .github/ is a Patron path for every existing Patron 
   expectHeld(intoHeld, "branch with a staged rename into .github/");
   assert.ok(outLines(intoHeld).includes(`patron: git -C ${into.repo} rm --cached -q -- .github/readme.md`), ran("rename into: rm --cached of the destination", intoHeld));
 });
+
+// ---------------------------------------------------------------------------
+// W-197 behaviour 2: the GitHub owner rule covers .github/, itself included
+// ---------------------------------------------------------------------------
+test("W-197-b2 behaviour 2: .github/CODEOWNERS names @edckt for /.github/, itself included", () => {
+  const path = join(REPO_ROOT, ".github/CODEOWNERS");
+  assert.ok(existsSync(path), ".github/CODEOWNERS exists");
+  assert.equal(readFileSync(path, "utf8"), "/.github/ @edckt\n");
+});
