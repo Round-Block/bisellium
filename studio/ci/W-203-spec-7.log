@@ -1,0 +1,20 @@
+# opus: W-203
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T21:21:07.359Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:411abf41ad7830882282bef9a05be18ceac05e72
+
+Architect signature for W-203 revision 4 under D-027. It answers spec review r6 (ci/W-203-spec-6.log: 1 blocking finding). The architect (claude-opus-5-5) re-checked the new row's reads against scripts/ci-scope.test.mjs's existing patterns and the parsed ci.yml, and signed it.
+
+Evidence, kept in ~/.bisellium-evidence/W-203-spec/ (revision 3's outputs kept as *-r3.*):
+- reads.txt and flips.txt are byte-identical to revision 3's.
+- admission.txt: 0 problems; 9 rows, none failing the rejector shape.
+- The parsed ci.yml today has `on` keys push (branches [master]), pull_request and merge_group, which is the domain row 8 asserts.
+
+## Findings
+1. advisory: The finding said W-203-b1's input row omitted reads and assertions; row 8 now lists every read the new row makes. (a) The dynamic import of scripts/ci-scope.mjs uses the file's own `.catch(() => ({}))` pattern; its domain is that scopeOf is exported as a function, and a failed import resolves to {}, so the export assertion throws and node:test fails the row. (b) ci.yml is read through workflow(): an exact trigger set, both scope steps exactly as in Interfaces, and no scope id or steps.scope condition in officina or certify. (c) Every fs call and Git command on the scratch histories throws on failure. Behaviour 1 now says the trigger set is exact, matching row 8. check: scripts/ci-scope.test.mjs W-203-b1
+2. advisory: Sweep. The only other test change is W-131 behaviour 6's expected `if`, which adds no read. Row 9 now covers it. flips.txt shows that no other row changes. check: scripts/ci-scope.test.mjs W-131 behaviour 6
