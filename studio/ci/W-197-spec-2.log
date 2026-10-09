@@ -1,0 +1,20 @@
+# opus: W-197
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T04:23:01.840Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:6cfd858a22c5db1eb25cb6b5b8fb7d5aae27c1c9
+
+## Findings
+1. blocking — brief:74 Proving that `.github/workflows/ci.yml`’s bytes remain unchanged adds or changes a test reader for that fixture, but the Input domain names only the new CODEOWNERS file read; it gives this read no valid domain or fail-closed rejector. — check: packages/cli/src/next.test.ts W-197-b1
+2. blocking — brief:39 The promised HEAD-present/HEAD-absent remedies do not hold for every valid tracked change: `trackedChanges` retains the two-column status, while `dirtyReport` recognizes only exactly `"A"` as an addition, so ordinary HEAD-absent `AM` or `AD` states receive `checkout HEAD` instead of `rm --cached`. — check: packages/cli/src/next.test.ts W-197-b1
+3. blocking — brief:64 The row makes the two `pull_request` booleans part of its valid domain, but `readMergeQueue` intentionally does not read them; false or missing values can still return `merge-queue`, so the named function cannot reject the row’s out-of-domain input. — check: packages/cli/src/next.test.ts W-197 pin
+4. blocking — brief:54 The claim that every rejection holds with nothing moved or fails a required check is incompatible with `readMergeQueue`: a malformed reply or non-zero `gh` exit selects `direct`, whose callers may continue to rebase, push, or merge rather than refuse. — check: packages/cli/src/next.test.ts W-197 pin
+5. blocking — brief:89 “The diff touches only the files in Files owned” cannot hold together with the required recorded reds: `studio/ci/reds/W-197/01.log` and `02.log` must enter the opus history for replay, while brief:28 owns no `studio/` path. The promise needs to be limited to the source/export diff excluding generated officina evidence. — check: none: enforce the Files-owned comparison on a precisely defined diff that excludes only generated officina artifacts
+
+## Verdict
+The brief has incomplete or non-rejecting input boundaries, one valid Git-status case that breaks its remedy promise, and an acceptance condition incompatible with required evidence.
+VERDICT: FAIL

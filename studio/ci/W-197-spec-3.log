@@ -1,0 +1,18 @@
+# opus: W-197
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T04:24:49.201Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:570cff9528ea134a4263fb0609cadabec2e1681d
+
+Architect signature for W-197, revision 2, under D-027. It answers spec review r1 (ci/W-197-spec-2.log, five blocking findings) and records the Patron's ruling of 2026-10-09: the agents get their own GitHub machine-user account, and the Patron stays code owner as @edckt. Admission (check-admission.mjs): 0 problems, one table run, 14 rows, 0 failing the rejector shape. Names: reads.txt §8 and §8b.
+
+## Findings
+1. advisory: r1 #1, the class of test reads with no row. The reads of the tests W-197 adds now have rows: the next runs' exit status and stdout (expectHeld, expectStep, assert.equal); the fixture state around a hold (rev-parse HEAD master, ls-files -s, status --porcelain, the ci.yml bytes, gitCalls, branchExists; assert.equal); CODEOWNERS (assert.ok, assert.equal). check: packages/cli/src/next.test.ts W-197-b1
+2. advisory: r1 #2, the class of remedies picked by status string. dirtyReport's remedy is now described as what it is: the trimmed two-column code, an original path or a code other than exactly A giving checkout, and a destination or code A giving rm --cached. The limit is stated: a HEAD-absent path coded AM, AD, intent-to-add " A", AA, AU or UA gets the checkout form, which git refuses; the hold does not depend on the code. Behaviour 1's rows use only M, R and A destinations, which the rule covers. A HEAD-presence fix is out of scope, a separate opus for the producer to file. Sweep: trackedChanges's other comparisons (the length < 4 skip, staged = column 1 not a space, R/C in either column carrying the original path) set no promise beyond these. check: none: limit stated; follow-up opus
+3. advisory: r1 #3. The readMergeQueue row's domain is now W-168's own (the merge_queue parameters, the four required contexts under 15368 with strict off, wellTypedRules' shape); the pull_request booleans are gone from it. The pin row stays, as a test only. check: packages/cli/src/next.test.ts W-197 pin
+4. advisory: r1 #4. The fail-closed sentence now covers only rows 1-4 (hold before any ref or checkout file moves) and the test rows 6-8 (fail npm test, so gates). readMergeQueue's direct answer is named as W-168's fallback, the pre-queue path; the runNext row no longer promises "nothing moved". check: none: spec text
+5. advisory: r1 #5. The Files-owned acceptance is scoped to the source diff (every path outside studio/); the officina's evidence (record, studio/ci logs, studio/ci/reds/W-197/, receipts) is written by the verbs and is not owned. check: none: spec text

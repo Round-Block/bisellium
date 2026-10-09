@@ -1,0 +1,19 @@
+# opus: W-197
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T04:40:52.656Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:414ce1ccdae304bd748dddfe08fe2996c36d5354
+
+## Findings
+1. blocking — brief:97 The acceptance `gh api …/codeowners/errors?ref=opus/W-197` subprocess has no Input-domain row naming its valid zero-exit/empty-errors reply and the function that turns a non-zero or different reply into refusal; row 70 covers the file read, not this API call. — check: none: brief.input.reused-call-coverage
+2. blocking — brief:126 “The next `pr` or `merge` step prints `mode: merge-queue`” is broader than the code: `openPr` can hold on tracked changes before `readMergeQueue`, and the existing W-168 row expressly asserts no mode line on that path. Limit this confirmation to a run that reaches the mode read. — check: packages/cli/src/next.test.ts W-168-b3
+3. blocking — brief:114 A PR needing no review can still have a voluntary approval, which the repository-wide stale-review setting dismisses after a push; therefore the repeated claim at brief:133 that non-`.github/` PRs are unchanged because there is no approval to dismiss needs that limit. — check: none: setup confirmation for optional approvals
+4. blocking — brief:132 The scenario allows `gh pr merge --auto` to exit non-zero, but then promises that approval alone queues the PR; on that allowed branch no auto-merge request was armed, so approval does not enqueue it until `merge` is rerun. — check: packages/cli/src/next.test.ts W-197 setup scenario
+
+## Verdict
+The brief still omits one reused input boundary and makes three setup promises broader than the mechanisms guarantee.
+VERDICT: FAIL

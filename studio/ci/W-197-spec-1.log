@@ -1,0 +1,21 @@
+# opus: W-197
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T04:12:05.406Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:6cfd858a22c5db1eb25cb6b5b8fb7d5aae27c1c9
+
+Architect signature for W-197 under D-027: Codex (gpt-5.6-sol) drafted, the architect (claude-opus-5-5) checked it against the code, corrected it and signed. Draft: ~/.bisellium-evidence/W-197-draft/W-197-draft.md. Reads enumerated by ~/.bisellium-evidence/W-197-spec/enumerate-reads.mjs (reads.txt); readMergeQueue run on the live rules reply before and after the setup by mode-check.mjs (mode-check.txt: merge-queue both); brief admission by check-admission.mjs (0 problems, one table run, 12 rows, 0 failing the rejector shape).
+
+## Findings
+1. advisory: every agent PR is authored by @edckt (gh api user under the agent GH_CONFIG_DIR prints edckt; PR #359's author is edckt), GitHub never counts an author's approval, and master_protection has bypass_actors []. With @edckt as code owner the setting would leave every .github/ PR unmergeable, so the brief makes "agent token on another account" a stated prerequisite of the Patron setup (draft default 4 was conditional). check: none: gh api user --jq .login under ~/.config/agent-gh
+2. advisory: the draft's bootstrap approval is dropped: W-197's PR base has no CODEOWNERS and the setting is off, so no review is required, and the Patron could not approve an @edckt-authored PR anyway. check: none: Patron setup
+3. advisory: the draft retitled and extended four W-141 rows; the brief leaves them untouched and adds W-197-b1 rows. No existing row flips: reads.txt §5 lists the six rows pinning the Patron hold, all on .claude/ fixtures, and §6 shows no test fixture tracks a .github/ path. check: packages/cli/src/next.test.ts W-197-b1
+4. advisory: readMergeQueue reads only merge_queue and required_status_checks parameters (reads.txt §7); the setup flips two booleans in the pull_request rule, so the mode stays merge-queue (mode-check.txt). A pin row inlines the post-setup live reply. check: packages/cli/src/next.test.ts W-197 pin
+5. advisory: "Dismiss stale pull request approvals" is added to the setup, so an approval does not survive a later push to the PR (a mistake path under D-045). check: none: ruleset read via gh api
+6. advisory: GitHub ignores an invalid CODEOWNERS line instead of refusing it (fails open); stated as a limit, with gh api codeowners/errors?ref=opus/W-197 returning {"errors":[]} in Acceptance (404 today: no file). check: none: gh api codeowners/errors
+7. advisory: docs/ADOPTION.md:1243 and docs/ARCHITECTURE.md:274 name .claude/ as the only Patron path; both are owned and updated. check: none: doc text
+8. advisory: the draft's Acceptance required Patron actions; Acceptance now holds only build-checkable items and the Patron steps sit in Patron setup, with W-197's own merge described (holds only when next runs from the worktree's code). check: none: spec text

@@ -1,0 +1,16 @@
+# opus: W-197
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T04:34:30.077Z
+# tree: tree:3d0ce04336fac866a260694c520e66c404b5e3a3
+# brief: briefs/W-197.md blob:414ce1ccdae304bd748dddfe08fe2996c36d5354
+
+Architect signature for W-197, revision 3, under D-027. It answers spec review r2 (ci/W-197-spec-4.log, six blocking findings). Admission (check-admission.mjs): 0 problems, one table run, 15 rows, 0 failing the rejector shape. Names: reads.txt §8 and §8b.
+
+## Findings
+1. advisory: r2 #1-#3, the class of promises wider than their mechanism. I re-checked every promise sentence against its function's code path. The dirty-path promise now says tracked changes only (`trackedChanges` passes `--untracked-files=no`). The remedy limit follows the trim: ` A` becomes `A` and gets `rm --cached`. The limit now names a first column that is not a space, a path HEAD lacks and a trimmed code other than A (AM, AD, UA, DU); `HEAD ` is added when a checkout-line change is staged. Hold-before-move now names its protected set (local master, HEAD, index, checkout files). It names the remote-tracking `origin/master` fetch that `fetchTrunk` makes before its dirty check. `patronStop` runs first in `fetchTrunk` and its fetch by oid writes no ref, tag or FETCH_HEAD. Earlier parts of a step (`gate`'s opus remote-tracking fetch) are named as unchanged. `patronStop`'s trigger is stated as the tree diff from an ancestor master. The branch, done and pr holds name their checkout and the done allowance. check: none: spec text
+2. advisory: r2 #4-#5, the class of test helpers that fail open. The W-197 rows now assert only through readers that fail closed: the fixture `git` helper (throws on a non-zero exit), `readFileSync`, `existsSync` under `assert.ok`, and `expectHeld`/`expectStep`/`modeLine` on the run's own output. No assertion goes through `gitOk`, `gitq`, `calls`, `gitCalls` or `branchExists`. "No git merge ran" is dropped, because master's unchanged ref shows it. The no-branch checks are `git for-each-ref` reads, which must print nothing. check: packages/cli/src/next.test.ts W-197-b1
+3. advisory: r2 #6. The printed `git merge --ff-only` that the merge row runs has a row: a reused git command, its exit judged by the fixture `git` helper. check: packages/cli/src/next.test.ts W-197-b1
