@@ -243,6 +243,7 @@ Screens not owned by a touchpoint:
 
 | Screen | Role |
 |---|---|
+| **Opening page** | the console's first view: the needs-you rows, work in flight by who moves next, and the ledger sections (flow, quality, cost, reliability, Chaos) as tables that click through to records (W-202) |
 | **Acta** | read-only feed — consultations, decisions, dailies, evidence |
 | **Agents** | roster, per-sella cost, provider limits |
 | **Swimlane** | actors × time; the Patron is a lane |
@@ -348,3 +349,16 @@ becomes delegable by toggle/checklist. Design authority note: the writes
 this screen performs are decree-writes (manifest seats, tier mapping);
 they must land as records with the Patron's identity, never a model's —
 the same rule as the Inbox record bus above.
+
+## Patron rulings, 2026-10-10 — the opening page and the phone
+
+The Patron chose, on the producer's options after the agent-tools UI/UX
+research (`docs/research/agent-tools-2026-10-10/uiux.md`):
+
+1. **The opening page is a ledger page, not a dashboard.** §1 stands: W-202
+   is worded as the officina's ledger opening page, and its sections are
+   tables and rules under §7's rejects (no tiles, sparklines or charts).
+   §8 gains the **Opening page** row.
+2. **A phone view is in scope** (W-202): three jobs — what needs me, what
+   is moving, answer — plus a ping when something lands in needs-you.
+   Answering keeps the Inbox's rules (§6; a decision carries its reason).

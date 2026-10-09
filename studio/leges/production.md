@@ -114,8 +114,7 @@ the main checkout's absolute `--studio`/`--repo`.
    `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <$TMPDIR copy>`.
    Any brief edit needs a new signature and review. On pass, `next` lands it.
    Reused, unchanged code is one input judged by its exit, one row per
-   unchanged job (D-050). Three failed rounds, then ask the Patron (D-051;
-   W-196 makes `next` hold).
+   unchanged job (D-050). No round cap (D-053).
 3. **Build:** `branch`, real `npm ci --cache ~/.bisellium-evidence/npm-cache`
    in the worktree, `ready` (commit), then a Sonnet builder (brief model:
    `~/.bisellium-evidence/W-162-build/builder-brief.md`): reds recorded one
@@ -131,8 +130,7 @@ the main checkout's absolute `--studio`/`--repo`.
    `censor.sh <id> <round>`; record `record-review.sh <id> <round> <passed|failed>`
    (a failed round records only the verdict log; W-165). Before any re-review
    the producer checks the fix's census: every path to the input the blocker
-   named is closed (W-184 makes it a hold). Three failed rounds, then ask the
-   Patron.
+   named is closed (W-184 makes it a hold). No round cap (D-053).
 5. **Merge:** refresh `handoff`; mint once from the worktree (bare
    `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
    ~15 min); `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
@@ -161,9 +159,9 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 
 - Every handoff edit passes `node ~/.bisellium-evidence/handoff-check.mjs .`
   (until W-186 makes it a check rule and a done-step refusal), then an
-  independent review (`studio/prompts/handoff-review.md`, Codex terra), at
-  most three rounds, before it is committed (findings left after round
-  three go to the Patron); the producer never certifies its own handoff.
+  independent review (`studio/prompts/handoff-review.md`, Codex terra)
+  until it is clean, before it is committed (no round cap, D-053); the
+  producer never certifies its own handoff.
 - When a brief contradicts itself, take its literal, stricter reading and
   record the flip it failed to name; never rule a softer variant (W-166).
 - No shortcuts in CI or tests (Patron, 2026-10-08). CI certifies at least
@@ -223,3 +221,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-08 | Handoff edits pass handoff-check.mjs (W-186 enforces) | Patron |
 | 2026-10-08 | Handoff reviewed independently before commit; republish and milestone rules moved in from the handoff | Patron |
 | 2026-10-09 | Spec review scope and round cap (D-050, D-051); merge step in queue mode; PR hold rule retired (W-168 live) | Patron |
+| 2026-10-10 | Review round caps removed (D-053) | Patron |
