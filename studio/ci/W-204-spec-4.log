@@ -1,0 +1,19 @@
+# opus: W-204
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T21:05:51.628Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-204.md blob:c02e7df9aaf55b3ff4c496210d52241ed01e37aa
+
+## Findings
+1. blocking — brief:101 The changed `parseFlags` call reads the entire amend argv, but row 8 gives a domain and rejector only for `--round-ruling`; row 9 covers only the later field-presence test, leaving the positional and the remaining accepted flags outside the changed reader’s input boundary. — check: none: brief admission must require a full argv grammar row for every changed parser call
+2. blocking — brief:114 Behaviour 1 and the interface promises at lines 78–79 omit the existing dispatch and health limits: a missing/oversize budget, stale handover, or live/invalid step marker can hold or replace the named build/review output even with a valid current failed round. The W-204 rows always supply a valid budget, fresh handover, and marker-free world, so they cannot guarantee the promise as written. — check: packages/cli/src/next.test.ts W-204-b1
+3. blocking — brief:79 `reviewRounds(f)` does not read the branch tip when the worktree is usable; `gather` supplies `fsSrc(wt.studio)`, so an uncommitted review log can change the next round. Row 6 repeats the same incorrect branch-tip limit. — check: packages/cli/src/next.test.ts W-204-b1
+4. blocking — brief:105 The promise that every argv without `--round-ruling` runs exactly as on master contradicts Behaviour 2: `amend W-900 --reason r` contains no retired flag, yet its usage output must change to remove that flag. — check: packages/cli/src/next.test.ts W-204-b2
+
+## Verdict
+The brief still has an incomplete changed-parser boundary and several output promises broader than the mechanisms and tests can guarantee.
+VERDICT: FAIL

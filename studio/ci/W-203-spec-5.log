@@ -1,0 +1,24 @@
+# opus: W-203
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T21:13:40.200Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:133e48f3a31f4a19819a94a973ea057b9d638aaa
+
+Architect signature for W-203 revision 3 under D-027. It answers spec review r4 (ci/W-203-spec-4.log: 2 blocking findings). The architect (claude-opus-5-5) re-checked revision 3 against scripts/ci-scope.mjs, ci-scope.test.mjs, packages/cli/src/containment.test.ts and .github/workflows/ci.yml, and signed it.
+
+Evidence, kept in ~/.bisellium-evidence/W-203-spec/ (revision 2's outputs kept as *-r2.*):
+- prototype-flips.sh now also applies scopeOf to a scratch copy and runs the containment census. Output flips.txt:
+  - ci-scope.test.mjs 13 pass, 1 fail; the fail is W-131 behaviour 6, as before.
+  - W-131 behaviour 5 and both round rows pass through scopeOf.
+  - ci-certify.test.mjs 10 pass, 0 fail; ci-workflow.test.mjs 35 PASS, 0 FAIL; containment.test.ts 65 pass, 0 fail.
+- reads.txt: unchanged from revision 2.
+- admission.txt: 0 problems; 8 rows, whose rejectors are recordOnly, scopeOf, recordOnly, runner ×4 and test.
+
+## Findings
+1. advisory: Finding 1 named `catch` as a rejector, which is syntax. The scope mode's diff-and-classify becomes the new exported scopeOf(base, head) in scripts/ci-scope.mjs. It returns false when execFileSync throws, and otherwise returns recordOnly of the diff's paths. The CLI branch prints record_only=${scopeOf(base, head)}. scopeOf is now row 2's rejector, in Files owned and in Interfaces, and W-203-b1 asserts that it is exported. The refactor keeps the CLI's behaviour (flips.txt) and adds no fs call to the containment census. check: scripts/ci-scope.test.mjs W-203-b1
+2. advisory: Finding 2 said web-e2e's scope step "always" runs. Row 5 now says it runs under pull_request and merge_group and is skipped on push, which leaves the output unset. check: scripts/ci-scope.test.mjs W-203-b1
+3. advisory: Sweep. Every Rejected by cell opens with a function (recordOnly, scopeOf, test) or with runner, the case D-050 allows. No other sentence says the scope step always runs. Revision 2's history note on catch is marked as superseded by scopeOf. check: none

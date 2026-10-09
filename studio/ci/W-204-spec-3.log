@@ -1,0 +1,27 @@
+# opus: W-204
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T20:58:46.364Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-204.md blob:c02e7df9aaf55b3ff4c496210d52241ed01e37aa
+
+Architect signature for W-204, revision 2, under D-027. It answers spec review round 2 (ci/W-204-spec-2.log, 11 findings) and is signed as round 3 by claude-opus-5-5. Revision 1 is kept at ~/.bisellium-evidence/W-204-spec/W-204-r1.md.
+
+Re-run in ~/.bisellium-evidence/W-204-spec/:
+- enumerate-reads.mjs (master copy against the prototype): reads.txt, unchanged from revision 1 apart from the cited-name list.
+  - 0 MISSING and 0 UNGUARDED.
+  - Every cited function exists, now including runWaive, censorSella, safeItemPath and readBuildReviewConfig.
+- check-admission.mjs: admission.txt, 0 problems, one table run, 17 rows, none failing the rejector shape.
+- The prototype's source change is unchanged, so flips.txt, probe.txt, suites.txt and check-compare.txt stand.
+
+## Findings
+1. advisory: Findings 1–3 (catch-all rows for deriveNext, dispatch and runAmend) are answered under D-054 §5 (Patron, 2026-10-10). A read on a line the opus does not change is reused, unchanged code, even inside a changed function. Row 12 says so for every line except next.ts:694–698 and 903 and the lifecycle.ts lines in reads.txt §3. It also states the one promise that depends on them: runAmend runs every argv without --round-ruling exactly as master does, by the §3b guard proof. The lines W-204 changes that still read get full rows: row 7 (dispatch line 903's interpolations, with the censor validated by readBuildReviewConfig before dispatch), row 8 (the parse at lifecycle.ts:1515) and row 9 (the field test at :1535). check: packages/cli/src/next.test.ts W-204-b1
+2. advisory: Finding 4: the preamble's blanket exit-1 claim is gone. Rows 1–5 hold; row 6 routes (build phase 2, a named UI problem, a round-1 order refused by runVerdict's wx), and says so. The sweep of that class found two more instances. Row 1 said blocker wording is no input; a class blocker still adds boundary:. Interfaces said next never prints actor: patron; it does for a backlog greenlight (next.ts:617), so the promise is now scoped to the build and review rungs. check: packages/cli/src/next.test.ts W-204-b1
+3. advisory: Finding 5: patronDecisionProblem's fourth caller is runWaive (lifecycle.ts:1418). Revision 1's signing note named it wrongly as runAmend --ui-ruling, which calls no decision reader. Row 11 names all four callers with lines. check: packages/cli/src/containment.test.ts
+4. advisory: Findings 6–8: rows 13–16 give one row per job, each naming what it runs. gates runs the full path (on a pull request because W-204 is not record-only, and always on push and merge_group, where the scope step does not run): typecheck, lint, format:check, npm test, the record-reads check and check examples/sample-studio, but not check studio. officina runs check studio. web-e2e builds the web app and runs test:serve. certify runs only on merge_group, with master's tooling at merge_group.base_sha, and mints with `run --sella builder` on the candidate. check: scripts/ci-workflow.test.mjs
+5. advisory: Finding 9: the cascade Mermaid's cap and patron nodes and their five edges (ARCHITECTURE.md:144–157) are in Files owned; gate2's no-edge goes to fix. Acceptance greps both docs for any cap or ruling text. The doc sweep found no other instance; ADOPTION.md:705's no-op sentence is kept. check: none: the acceptance grep over docs/ADOPTION.md and docs/ARCHITECTURE.md
+6. advisory: Finding 10: both Genuine red clauses now separate the rows that fail on master from those that pass there. The sweep found more than the W-167-b5 retitle: 1a's absent boundary, 1c's [D-930] and [D-901] rows and the round-4 review row, 1b's L-069 match, and behaviour 2's guard row. check: packages/cli/src/next.test.ts W-204-b1
+7. advisory: Finding 11: the no-reference promise is scoped to non-test source under packages/. next.test.ts names --round-ruling only in the W-204-b2 rows and helpers that assert its refusal. check: packages/cli/src/next.test.ts W-204-b2

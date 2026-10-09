@@ -1,0 +1,26 @@
+# opus: W-204
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T20:53:52.982Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-204.md blob:8d8b31b9c75d90e9c9632f3aba8c6052c6dc1686
+
+## Findings
+1. blocking — brief:88 `deriveNext` is a changed reader, so D-050 requires its full input boundary; the catch-all “other rungs” row omits the trunk/branch records, spec evidence, red logs, PR state, retro state, certificates, and their domains and rejectors. — check: none: brief admission must require a complete per-input census for every changed reader
+2. blocking — brief:83 `dispatch` is a changed reader, but row 7 gives “Unchanged” instead of domains, omits `id`, `studioRel`, `manifest`, and the `o.*` inputs, and cites `gateDispatch`, which rejects only budget/handover failures rather than invalid seat/design inputs. — check: none: brief admission must require domains and matching fail-closed rejectors for every input of a changed reader
+3. blocking — brief:86 `runAmend` is a changed reader, so “Every other argv” and “Today’s domains” cannot black-box its remaining opus front matter, manifest, spec target, milestones, clock/environment, sella, preflight, and amendments reads under D-050. — check: none: brief admission must reject unchanged-portion catch-alls inside changed readers
+4. blocking — brief:73 The blanket claim that every rejection in rows 1–6 holds with exit 1 and names no order conflicts with row 6, which sends a non-`ok` receipt and UI problems to named orders and lets an unlistable review tree name round 1. — check: packages/cli/src/next.test.ts
+5. blocking — brief:21 The caller inventory for `patronDecisionProblem` is false: the fourth live caller is `runWaive`, not `runAmend --ui-ruling`, so the reused-call boundary is not accurately named. — check: packages/cli/src/containment.test.ts
+6. blocking — brief:89 The CI input table omits the required `web-e2e` job, which W-204’s full-path source change runs and which D-050 requires as its own job row. — check: scripts/ci-workflow.test.mjs
+7. blocking — brief:89 The CI input table also omits the required merge-group `certify` job and its differing `merge_group` context, including `base_sha`; D-050 requires a separate job row. — check: scripts/ci-certify.test.mjs
+8. blocking — brief:89 The `gates` row inaccurately includes `check -- studio --repo .`; on W-204’s full path, `gates` runs the sample-studio check while the separate `officina` job runs the studio check. — check: scripts/ci-workflow.test.mjs
+9. blocking — brief:57 The specified `ARCHITECTURE.md` edits omit the cascade Mermaid cap/ruling branch at lines 144–157, so the acceptance promise that the document describes an uncapped loop with no ruling path cannot be met by the stated mechanism. — check: none: assert the cascade Mermaid contains no build-review cap or round-ruling branch
+10. blocking — brief:107 “Every rewritten row fails at an assertion” contradicts the expressly retitled but assertion-unchanged W-167-b5 security row at brief:105, which the same paragraph says passes unchanged. — check: packages/cli/src/next.test.ts W-204-b1
+11. blocking — brief:126 The promise that no source names `--round-ruling` has no production-source exclusion, yet Behaviour 2 necessarily retains that literal in `packages/cli/src/next.test.ts` to invoke and assert refusal of the retired flag. — check: packages/cli/src/next.test.ts W-204-b2
+
+## Verdict
+The signed brief has incomplete changed-reader and CI boundaries plus several infeasible or contradictory promises, so it is not ready to build.
+VERDICT: FAIL

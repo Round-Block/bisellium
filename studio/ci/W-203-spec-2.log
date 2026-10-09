@@ -1,0 +1,24 @@
+# opus: W-203
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-09T21:06:25.666Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:e35956013784f8090ad63beea50e075047e3d00b
+
+## Findings
+1. blocking — brief:82 `recordOnly` does not reject an unusable base: `git diff` throws before `recordOnly` runs, and the fail-closed conversion is only an unnamed top-level catch. The row therefore names no real rejecting function for part of its invalid domain. — check: none: brief admission that resolves each rejector against the path handling every out-of-domain case
+2. blocking — brief:83 The same rejector gap recurs for an absent or unreadable commit: `recordOnly` sees paths only after a successful diff, while the unnamed CLI catch handles this failure. — check: none: brief admission that resolves each rejector against the path handling every out-of-domain case
+3. blocking — brief:85 The `gates` row neither names the reused `node scripts/ci-scope.mjs "$BASE_SHA" HEAD` call nor gives `$GITHUB_OUTPUT` a valid domain and runner rejection; moreover, `gates` is a job name, not the runner function that converts a non-zero step exit into refusal. — check: none: an input-boundary check for changed workflow-step calls, environment reads and output sinks
+4. blocking — brief:86 The `web-e2e` row likewise omits the reused scope CLI call and `$GITHUB_OUTPUT` input; its runner rejector is named, but the changed step’s input/output boundary is not. — check: none: an input-boundary check for changed workflow-step calls, environment reads and output sinks
+5. blocking — brief:87 The `officina` row names `officina`, not the runner’s step-failure function required for a reused Actions job, so it has no real rejecting function as written. — check: none: brief admission that distinguishes workflow job names from the runner rejector
+6. blocking — brief:88 The row is for the whole reused `certify` job, but its named `certify` function handles only step 9; checkout, setup, install and upload failures are rejected by the runner, which the row does not name. — check: scripts/ci-certify.test.mjs W-168-b1
+7. blocking — brief:89 `assert.equal` does not reject malformed YAML or failed scratch-history setup: `parseYaml` or `execFileSync` throws first and the test harness fails the row. The compound input therefore lacks one named rejector that covers its stated invalid domain. — check: none: brief admission that validates rejector reachability for compound test inputs
+8. blocking — brief:117 `gates` cannot run “only” the studio check and `test:record`: the unchanged checkout, setup-node and `npm ci` steps, plus the newly enabled scope step, also run, as the brief’s own input row states. — check: scripts/ci-scope.test.mjs W-203-b1
+9. blocking — brief:120 A records-only delta does not imply `certify` logs `nothing to mint`; an `opus/W-*` head with such a delta runs the mint. This acceptance promise needs the non-opus limit already stated earlier in the brief. — check: scripts/ci-certify.test.mjs W-168-b2
+
+## Verdict
+The brief’s fail-closed input boundary is incomplete and two acceptance promises exceed the mechanism.
+VERDICT: FAIL

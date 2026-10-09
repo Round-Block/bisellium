@@ -1,0 +1,24 @@
+# opus: W-203
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T21:08:31.515Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:54c163984c23b3f4e50cc3a7485c0cbfbe250acb
+
+Architect signature for W-203 revision 2 under D-027. It answers spec review r2 (ci/W-203-spec-2.log: 9 blocking findings in two classes). The architect (claude-opus-5-5) re-checked revision 2 against scripts/ci-scope.mjs (the CLI branch, lines 85–96), scripts/ci-scope.test.mjs, scripts/ci-certify.mjs, .github/workflows/ci.yml and D-050's clause in studio/prompts/spec-review.md, and signed it.
+
+Evidence, kept in ~/.bisellium-evidence/W-203-spec/ (revision 1's outputs kept as *-r1.*):
+- enumerate-reads.mjs, output reads.txt. New in revision 2: §9 the CLI branch and its catch; §10 every step gates and web-e2e run for a records-only merge group, and certify's opus test; §11 an empty base lists no path (exit 0), so it reaches recordOnly, not the catch.
+- prototype-flips.sh, output flips.txt: unchanged result. Only W-131 behaviour 6 fails; ci-certify 10/0; ci-workflow 35 PASS, 0 FAIL.
+- check-admission.mjs, output admission.txt: 0 problems, one table run, 8 rows, none failing the rejector shape.
+
+## Findings
+1. advisory: Class A, findings 1–2. A failed git diff (a base that is not a commit, an absent commit, a failed spawn) is rejected by the CLI branch's catch (ci-scope.mjs:88–94), now named as `catch` in row 2. An empty base is rejected by recordOnly on the empty list (row 1; reads.txt §11). Each row's rejector handles its whole invalid domain. check: scripts/ci-scope.test.mjs W-131 behaviour 5
+2. advisory: Class A, findings 3–6. Every job row now opens with `runner` and quotes D-050's clause verbatim: a step with no continue-on-error that exits non-zero fails its job, a required check. The job name is context only. The gates and web-e2e rows name the changed step's `node scripts/ci-scope.mjs "$BASE_SHA" HEAD` call and its $GITHUB_OUTPUT sink; an absent line leaves the output unset, which selects the full path. In the certify row, certify is step 9's source of a non-zero exit, and the runner judges every step. check: scripts/ci-certify.test.mjs W-168-b1
+3. advisory: Class A, finding 7. Row 8 opens with `test` (node:test). The harness fails the row when parseYaml, execFileSync or an assertion throws; spawnSync of the CLI is checked by assert.equal. check: scripts/ci-scope.test.mjs W-203-b1
+4. advisory: Class B, findings 8–9. Intent and Acceptance now say that for a records-only group gates runs checkout, setup-node, npm ci and scope, then the two checks, and web-e2e runs its four setup and scope steps (reads.txt §10). Acceptance says certify logs "nothing to mint" only for a head that is not an opus/W-* branch (ci-certify.mjs:164–166). check: scripts/ci-scope.test.mjs W-203-b1
+5. advisory: Sweep, Class B. Acceptance's "officina passes" became "officina runs as today", since W-203 cannot promise a check result. Interfaces' "always exits 0" is scoped to the CLI branch, with the failed-diff case named. Files owned said "three stale comments" but listed two; it now says two. No other "only", "always", "every" or "never" sentence promises more than its mechanism. check: none
+6. advisory: Sweep, Class A. Rows 1–8 each open with one unit that handles the row's whole invalid domain, and admission passes (admission.txt). check: none

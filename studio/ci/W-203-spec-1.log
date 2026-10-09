@@ -1,0 +1,39 @@
+# opus: W-203
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T21:00:31.365Z
+# tree: dirty:ba10e849d0ad3a4eb890dd5e2d0ee64ce836ed50
+# brief: briefs/W-203.md blob:e35956013784f8090ad63beea50e075047e3d00b
+
+Architect signature for W-203 under D-027. Codex (gpt-5.6-sol) drafted ~/.bisellium-evidence/W-203-draft/W-203-draft.md. The architect (claude-opus-5-5) checked it against the following, corrected it, and signed studio/briefs/W-203.md (revision 1):
+- .github/workflows/ci.yml
+- scripts/ci-scope.mjs, ci-scope.test.mjs, ci-workflow.test.mjs, ci-certify.mjs, ci-certify.test.mjs, record-reads.mjs
+- docs/ADOPTION.md (## Running ci, ## Merge queue)
+- studio/briefs/W-168.md
+- studio/bisellium.yml, packages/commands/src/verdict.ts, packages/cli/src/rules/docs.ts
+- scripts/status-page.mjs and status-slate.test.mjs
+- D-054 and D-055 (in flight)
+
+Evidence, kept in ~/.bisellium-evidence/W-203-spec/:
+- enumerate-reads.mjs, output reads.txt:
+  - every job and step, its condition, and whether it runs for a records-only and a source change under pull_request, merge_group and push, today and under the brief;
+  - each job's checkout;
+  - every test assertion on the scope step, a condition or the file's text;
+  - the real ci-scope.mjs on scratch merge-group histories at fetch depth 0 and 2;
+  - the evidence for Default 1.
+- prototype-flips.sh applies the brief's interface to a scratch copy and runs every test that asserts on ci.yml. Output flips.txt: only W-131 behaviour 6 fails; ci-certify 10/0; ci-workflow 35 PASS, 0 FAIL.
+- check-admission.mjs, output admission.txt: 0 problems, one table run, 8 rows, none failing the rejector shape.
+
+## Findings
+1. advisory: The draft has the builder edit "the records-only paragraph under ## Running ci". docs/ADOPTION.md has no such paragraph; no line in the file names record-only, ci-scope, test:record or merge_group (reads.txt §7). The brief now owns one new paragraph under ## Merge queue only. check: none
+2. advisory: web-e2e checks out at fetch-depth 2, so merge_group.base_sha is present only as HEAD's parent. That holds for the Patron's queue (squash, one PR per group, build concurrency 1; ADOPTION ## Merge queue). For two stacked group commits, depth 2 gives record_only=false even when both are records-only, while depth 0 gives true. This fails closed (reads.txt §4). It is now input-domain row 2 and listed in Out of scope. check: scripts/ci-scope.test.mjs W-203-b1
+3. advisory: The delta of a multi-PR group is the combined change against base_sha. A records PR stacked under a source PR gives false at both depths (reads.txt §4). Behaviour 1 now pins this with a stacked scratch history. check: scripts/ci-scope.test.mjs W-203-b1
+4. advisory: The draft's §11 argument claimed that typecheck, lint, format, the sample-studio check and the served E2E read no record, which W-203 changes nothing to back. The brief now rests on what stays fixed: the records-only step set is today's PR set (reads.txt §1), run on the commit master will hold; the full path still runs once on that commit in the post-merge push run (W-131's posture); and certify is not scope-gated, its mint running the six CI_STEPS and verify for an opus head (W-168 brief, local-mint table). W-168's brief line 28 ("always on the full path") describes the state before W-203; it is a signed historical record and is not edited. check: none
+5. advisory: Two more stale ci.yml comments are now owned: the W-168 header (lines 8–10) and gates' "Record-only pull request" comment (lines 65–66). No comment may contain the string "verify": ci-workflow.test.mjs:83 and ci-certify.test.mjs:123 assert its absence. check: scripts/ci-workflow.test.mjs
+6. advisory: Under the draft, both W-131 behaviour 6 and the new row would pin BASE_SHA. W-131 behaviour 6 now changes only its expected condition (ci-scope.test.mjs:78–79); its run regex still matches the new command. The new row pins the env. check: scripts/ci-scope.test.mjs W-131 behaviour 6
+7. advisory: The draft's assertion on job order in the new row is dropped. W-168-b1 behaviour 1 and ci-workflow.test.mjs already pin it. check: scripts/ci-certify.test.mjs W-168-b1
+8. advisory: The draft's Default 1 holds, each part checked (reads.txt §5): source_excludes is [ examples/ ] and verdict.ts:57 excludes only the studio, .bisellium and those, so the dossier pages are in the SOURCE tree hash; checkDossierShrink reads body.html and every *-body.html; status-slate.test.mjs is in test:record and never passes --history, so status-page.mjs reads the real progress-body.html; and record-reads.mjs logs only paths that recordOnly accepts. Default 1 is kept as reversible. check: none
+9. advisory: W-205 is not pre-empted. The pull_request run, the checkout depths, recordOnly, test:record, officina and certify are untouched. Only the scope step's condition and base change. check: none
