@@ -17,13 +17,17 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-09)
 
-- **W-197** is done (row 63 of `docs/design/dossier/progress-body.html`);
-  code-owner review is on. **W-199** is merged and verified; its done step
-  is next (checkpoint row 64 by `~/.bisellium-evidence/W-199-checkpoint.py`).
-  The merge queue works again (queue mode confirmed after W-199).
-- **Next, in order:** W-199's done step; republish Status and dossier;
-  retros for W-197 and W-199;
-  then the Queue from item 1.
+- **W-168, W-197, W-199** are done (rows 62-64 of
+  `docs/design/dossier/progress-body.html`); the merge queue works inside the
+  sandbox and code-owner review is on.
+- **Next, in order:** (1) rebuild and republish Status and dossier (lex §7;
+  owed for rows 63-64); (2) retros for W-197 and W-199, one triage each;
+  (3) the Queue from item 1.
+- Patron idea to explore, 2026-10-09: write specs ahead of the build. The
+  producer's advice: Codex drafts ahead freely; sign and review ahead only
+  where Files owned overlap nothing earlier in the queue; before a build,
+  re-review only what changed in its Files owned since signing (could join
+  W-169's overlap check). Not yet ruled; bring it to the Patron.
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts); harmless.
 
@@ -55,7 +59,8 @@ it (D-052), slotted by the producer as a default the Patron may veto.
 5. W-186 — a stale handoff is refused.
 6. W-172, W-171 — high-severity fixes.
 7. Multi-lane prep: W-178, W-180, W-182, W-193, W-181, W-183, then W-169
-   (switches lanes on).
+   (switches lanes on, once W-093 has landed and the W-179 question in
+   Open Patron choices is settled).
 8. W-068 — task dependencies (signed brief to restore:
    `~/.bisellium-evidence/partial-specs/W-068.md` → `studio/briefs/W-068.md`,
    add `Red order: one at a time`, architect re-signs, then spec review).
