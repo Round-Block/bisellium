@@ -36,6 +36,7 @@ import { clean, cleanup, dirtyHold, git, identifyPr, landHead, MIN_CHECKS, merge
 import { runDone, runReady } from "./lifecycle.js";
 import { owedRetros } from "./retro.js";
 import { checkEvidence, countBehaviours, isModuleLoadFailure, parseLogHeader } from "./rules/evidence.js";
+import { handoffInputs, sessionHandoffFindings } from "./rules/process.js";
 import { instant } from "@bisellium/schema";
 
 export { MIN_CHECKS };
@@ -1305,6 +1306,25 @@ function performReady(f: Facts, d: Derived): StepResult {
   return cap.exit === 0 ? { ok: true, lines: cap.out.map((l) => `ready: ${one(l)}`) } : heldResult(text[0] ?? `ready exited ${cap.exit}`, ...text.slice(1, 6).map((l) => `ready: ${l}`));
 }
 
+/** W-186: a hold when the real studio's working-tree handoff is stale with this opus done. Reads only; `performDone` is unchanged. */
+function handoffHold(f: Facts): StepResult | undefined {
+  if (f.studioRel !== "studio") return undefined;
+  const held = (findings: { rule: string; where: string; message: string }[]): StepResult =>
+    heldResult("refusing: docs/SESSION-HANDOFF.md is stale; fix it, then re-run", ...findings.map((x) => `handoff: ${x.rule} ${x.where}: ${clean(x.message)}`));
+  const input = (message: string): StepResult => held([{ rule: "process.handoff.input", where: HANDOFF, message }]);
+  const read = handoffInputs(f.repo, f.studioAbs);
+  if (read.kind === "error") return input(read.reason);
+  if (read.kind === "absent") {
+    // no working-tree handoff: only a master that keeps one is a problem
+    const tree = git(f.repo, ["ls-tree", "-z", "--name-only", TRUNK, "--", HANDOFF]);
+    if (tree.error !== undefined || tree.status !== 0) return input(`master's tree cannot be read: ${tree.error?.message ?? tree.stderr}`);
+    return tree.stdout === "" ? undefined : input(`${HANDOFF} is deleted in the working tree, but master keeps it`);
+  }
+  read.opera.set(f.id, { state: "done", end: new Date().toISOString() });
+  const findings = sessionHandoffFindings(read.text, read.opera);
+  return findings.length === 0 ? undefined : held(findings);
+}
+
 function performDone(f: Facts, d: Derived): StepResult {
   const { repo, id } = f;
   const chore = `chore/done-${id}`;
@@ -1519,7 +1539,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
           result = cleanup(ctx);
           break;
         default:
-          result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : performDone(f, d2);
+          result = d2.act === "land" ? await performLanding(f, ctx, `chore/done-${id}`) : (handoffHold(f) ?? performDone(f, d2));
       }
       log(`${d2.step} ${result.ok ? "performed" : "held"}`);
       f = gather(repo, opened.root, id);

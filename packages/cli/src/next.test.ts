@@ -529,7 +529,7 @@ function world(tag: string, upTo: Stage | "backlog", o: WorldOpts = {}): World {
   put(w.repo, ".gitignore", ".bisellium/\nreceipts/\nnode_modules/\n");
   put(w.repo, "README.md", "fixture\n");
   put(w.repo, "source.txt", "candidate source\n");
-  put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Where things stand\n\n- (nothing recorded)\n");
+  put(w.repo, "docs/SESSION-HANDOFF.md", "# Handoff\n\n## Resume point (9999-12-31)\n\n- (nothing recorded)\n\n## Queue\n\n- (nothing queued)\n");
   if (o.patron) {
     put(w.repo, ".claude/agents/censor.md", "censor v1\n");
     put(w.repo, ".claude/my notes.md", "notes v1\n");
