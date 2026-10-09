@@ -8,9 +8,13 @@
  * bug this rule exists to surface).
  */
 
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import assert from "node:assert/strict";
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { test } from "node:test";
+import { fileURLToPath } from "node:url";
+import { checkStudio } from "../check.js";
 import { checkProcess, tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
 
 let failed = 0;
@@ -177,4 +181,153 @@ function check(behaviour: number, name: string, ok: boolean, detail = "") {
   rmSync(repo, { recursive: true, force: true });
 }
 
-process.exit(failed ? 1 : 0);
+// behaviour 23 (W-186): `check` blocks a stale, relative, oversized or unreadable
+// docs/SESSION-HANDOFF.md in the repository's own `studio/` only. Each row is the
+// exact [rule, where] list of the `process.handoff.*` findings checkStudio emits,
+// on a scratch <repo>/studio built from the sample studio's manifest (no `retro`
+// setting, so owedRetros reads no opera).
+const HANDOFF = "docs/SESSION-HANDOFF.md";
+const SAMPLE_MANIFEST = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "examples", "sample-studio", "bisellium.yml");
+const W186_NOW = new Date("2026-10-10T12:00:00Z");
+const record = (id: string, state: string | undefined, end?: string): string =>
+  `---\nid: "${id}"\ntitle: "x"\nkind: "feature"\ncollegium: "engineering"\n${state === undefined ? "" : `state: ${state}\n`}${end === undefined ? "" : `end: ${end}\n`}---\n`;
+/** W-1 is done (ended 2026-10-09), W-2 is halted, W-3 and W-5 are greenlit, W-4 is backlog. */
+const baseRecords = (): Record<string, string> => ({
+  "W-1": record("W-1", "done", "2026-10-09T12:00:00Z"),
+  "W-2": record("W-2", "halted"),
+  "W-3": record("W-3", "greenlit"),
+  "W-4": record("W-4", "backlog"),
+  "W-5": record("W-5", "greenlit"),
+});
+interface HandoffParts {
+  resume?: string;
+  next?: string[];
+  queue?: string[];
+  extra?: string[];
+}
+/** A handoff shaped like today's: a Resume section with a Next field, then the Queue. */
+function handoff(p: HandoffParts = {}): string {
+  const lines = [
+    "# Session handoff",
+    "",
+    p.resume ?? "## Resume point (2026-10-10)",
+    "",
+    ...(p.next ?? ["- **Next, in order:** W-3 first,", "  then W-5."]),
+    ...(p.extra ?? []),
+    "",
+    "## Queue",
+    "",
+    ...(p.queue ?? ["1. W-3 - one.", "2. W-5 - two."]),
+  ];
+  return lines.join("\n");
+}
+const at = (text: string, needle: string): string => {
+  const n = text.split("\n").findIndex((l) => l.includes(needle));
+  assert.notEqual(n, -1, `the fixture has a line with ${needle}`);
+  return `${HANDOFF}:${n + 1}`;
+};
+const scratches: string[] = [];
+/** Run checkStudio over a scratch repo and return the process.handoff.* findings as [rule, where]. */
+function handoffFindings(records: Record<string, string>, text: string | null, o: { studioDir?: string; repo?: boolean; setup?: (repo: string, studio: string) => void } = {}): string[][] {
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-w186-"));
+  scratches.push(repo);
+  const studio = join(repo, o.studioDir ?? "studio");
+  mkdirSync(join(studio, "opera"), { recursive: true });
+  copyFileSync(SAMPLE_MANIFEST, join(studio, "bisellium.yml"));
+  for (const [id, body] of Object.entries(records)) writeFileSync(join(studio, "opera", `${id}.md`), body);
+  if (text !== null) {
+    mkdirSync(join(repo, "docs"), { recursive: true });
+    writeFileSync(join(repo, HANDOFF), text);
+  }
+  o.setup?.(repo, studio);
+  const result = checkStudio(studio, W186_NOW, o.repo === false ? {} : { repo });
+  return result.findings.filter((f) => f.rule.startsWith("process.handoff.")).map((f) => [f.rule, f.where]);
+}
+
+test("W-186-b1 behaviour 23: check blocks a stale, relative, oversized or unreadable handoff in the repository's own studio only", () => {
+  const base = baseRecords();
+  // a handoff shaped like today's, naming a queued greenlit opus in its Next field
+  assert.deepEqual(handoffFindings(base, handoff()), []);
+
+  // the Queue names a done opus, then a halted one; a greenlit opus is never named
+  let text = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-1 - gone."] });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.queue", at(text, "W-1 - gone")]]);
+  text = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-2 - stopped."] });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.queue", at(text, "W-2 - stopped")]]);
+  assert.deepEqual(handoffFindings({ ...base, "W-6": record("W-6", "greenlit") }, handoff()), [["process.handoff.queue", HANDOFF]]);
+
+  // an id with no record is input, in the Queue, in a Next field and in a status claim
+  text = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-77 - nobody."] });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-77")]]);
+  text = handoff({ next: ["- **Next:** W-3, W-78."] });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-78")]]);
+  text = handoff({ extra: ["- **W-79** is building."] });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "W-79")]]);
+
+  // Next fields, under both labels: a done id on a continuation line, and a backlog id the Queue does not name
+  for (const label of ["**Next:**", "**Next, in order:**"]) {
+    text = handoff({ next: [`- ${label} W-3 first,`, "  then W-1."] });
+    assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "then W-1")]], `${label} done id`);
+    text = handoff({ next: [`- ${label} W-3 first,`, "  then W-4,", "  then W-5."] });
+    assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "then W-4")]], `${label} backlog id`);
+  }
+  // a claim that a done opus is building
+  text = handoff({ extra: ["- **W-1** is building."] });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "**W-1**")]]);
+
+  // Resume dates against the newest done end (UTC)
+  text = handoff({ resume: "## Resume point (2026-10-08)" });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.resume", at(text, "## Resume point")]], "one day before the newest done end");
+  assert.deepEqual(handoffFindings(base, handoff({ resume: "## Resume point (2026-10-09)" })), [], "the same UTC date passes");
+  assert.deepEqual(handoffFindings({ ...base, "W-1": record("W-1", "done") }, handoff({ resume: "## Resume point (2000-01-01)" })), [], "no done end: the comparison is skipped");
+
+  // headings
+  const noQueue = ["# Session handoff", "", "## Resume point (2026-10-10)", "", "- **Next:** W-3."].join("\n");
+  assert.deepEqual(handoffFindings(base, noQueue), [["process.handoff.input", HANDOFF]], "no Queue heading");
+  const twoQueues = `${handoff()}\n\n## Queue\n\n- again`;
+  assert.deepEqual(handoffFindings(base, twoQueues), [["process.handoff.input", `${HANDOFF}:${twoQueues.split("\n").lastIndexOf("## Queue") + 1}`]], "a duplicate Queue heading");
+  text = handoff({ resume: "## Resume point" });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "## Resume point")]], "a Resume heading without a date");
+  text = handoff({ resume: "## Resume point (2026-02-30)" });
+  assert.deepEqual(handoffFindings(base, text), [["process.handoff.input", at(text, "## Resume point")]], "an impossible date");
+
+  // the three relative phrases, and the 100-line cap
+  for (const phrase of ["see this one", "as in this PR", "the list (above)"]) {
+    text = handoff({ extra: [`- ${phrase}.`] });
+    assert.deepEqual(handoffFindings(base, text), [["process.handoff.reference", at(text, phrase)]], phrase);
+  }
+  const padded = (n: number): string => {
+    const head = handoff().split("\n");
+    return [...head, ...Array.from({ length: n - head.length }, (_, i) => `- pad ${i}`)].join("\n");
+  };
+  assert.equal(padded(100).split("\n").length, 100);
+  assert.deepEqual(handoffFindings(base, padded(100)), [], "100 split lines pass");
+  assert.deepEqual(handoffFindings(base, padded(101)), [["process.handoff.lines", HANDOFF]], "101 split lines block");
+
+  // unreadable inputs, each one input
+  assert.deepEqual(handoffFindings(base, null, { setup: (repo) => mkdirSync(join(repo, HANDOFF), { recursive: true }) }), [["process.handoff.input", HANDOFF]], "a directory at the handoff path");
+  const opera = (repo: string): void => {
+    rmSync(join(repo, "studio", "opera"), { recursive: true, force: true });
+    writeFileSync(join(repo, "studio", "opera"), "not a directory\n");
+  };
+  assert.deepEqual(handoffFindings(base, handoff(), { setup: opera }), [["process.handoff.input", HANDOFF]], "a regular file at studio/opera");
+  const broken = { ...base, "W-8": "---\nid: [unclosed\n---\n" };
+  assert.deepEqual(handoffFindings(broken, handoff()), [["process.handoff.input", HANDOFF]], "a record that does not parse");
+  const typo = { ...base, "W-8": record("W-8", "greenlitt") };
+  const stateless = { ...base, "W-8": record("W-8", undefined) };
+  for (const [name, records] of [["greenlitt", typo], ["no state", stateless]] as const) {
+    assert.deepEqual(handoffFindings(records, handoff()), [["process.handoff.input", HANDOFF]], `${name}, handoff present`);
+    assert.deepEqual(handoffFindings(records, null), [["process.handoff.input", HANDOFF]], `${name}, handoff absent`);
+  }
+
+  // an absent handoff with valid records is none; other officinae and a run with no repo are outside the rule
+  assert.deepEqual(handoffFindings(base, null), []);
+  const stale = handoff({ queue: ["1. W-3 - one.", "2. W-5 - two.", "3. W-1 - gone."] });
+  assert.deepEqual(handoffFindings(base, null, { studioDir: "other" }), []);
+  assert.deepEqual(handoffFindings(base, stale, { studioDir: "other" }), []);
+  assert.deepEqual(handoffFindings(base, stale, { repo: false }), []);
+  assert.equal(handoffFindings(base, stale).length, 1, "control: the same handoff blocks in <repo>/studio");
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+process.exitCode = failed ? 1 : 0;
