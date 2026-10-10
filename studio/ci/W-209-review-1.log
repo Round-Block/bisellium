@@ -1,0 +1,28 @@
+# opus: W-209
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T16:59:08.071Z
+# tree: tree:ec2639d74983cb015879b28952721c90571ce717
+# brief: briefs/W-209.md blob:837013b04100673deab6c281dc880a827146b339
+
+## Findings
+1. blocking — scripts/ci-scope.test.mjs:33 W-209 makes this title false: `recordOnly` no longer accepts only `studio/` and the handoff, because it also accepts direct dossier HTML pages. brief:52 — check: none: no automated check reconciles existing test titles with the classifier
+2. advisory — scripts/record-reads.mjs:2 The “every fs read” wording is a pre-existing overclaim about the unchanged guard mechanism; W-209 changes only the set’s members, and its own promise states the wrapped-call limit. — check: none: no automated check pins this header to the guard’s wrapped-call limit
+3. advisory — scripts/record-reads.mjs:4 The claim that a new reader cannot land unlisted is a pre-existing overclaim and an evasion-only gap under D-045; W-209’s promise expressly disclaims unwrapped readers. — check: none: no automated check pins this header to the guard’s wrapped-call limit
+4. advisory — .github/workflows/ci.yml:74 This unchanged workflow comment overstates the guard’s coverage, but W-209 neither makes it false nor relies on its completeness. — check: none: no automated check pins this comment to the guard’s wrapped-call limit
+5. advisory — .github/workflows/ci.yml:80 This unchanged workflow comment omits the wrapped-call qualification, but W-209’s own promise supplies that limit and does not depend on this comment. — check: none: no automated check pins this comment to the guard’s wrapped-call limit
+
+## Ruling
+1. upheld — W-209 directly makes the existing test title false, contrary to brief:52.
+2. reclassified advisory — the overclaim predates W-209, while brief:54 states the operative limit.
+3. reclassified advisory — the overclaim predates W-209 and is evasion-only under D-045.
+4. reclassified advisory — W-209 leaves the line unchanged and no W-209 promise depends on it.
+5. reclassified advisory — W-209 leaves the line unchanged and brief:54 independently limits the promise.
+
+## Verdict
+Only finding 1 remains blocking; findings 2–5 are valid follow-up documentation debt but do not independently fail W-209.
+
+VERDICT: FAIL

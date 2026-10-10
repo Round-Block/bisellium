@@ -30,7 +30,7 @@ const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 const scope = (cwd, ...args) => spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: "utf8" });
 
-test("W-131 behaviour 5: recordOnly is true only for studio/ and the handoff, and the CLI fails closed", async () => {
+test("W-131 behaviour 5: recordOnly is true only for studio/, the handoff and the dossier's direct HTML pages, and the CLI fails closed", async () => {
   const mod = await import("./ci-scope.mjs").catch(() => ({}));
   assert.equal(typeof mod.recordOnly, "function", "scripts/ci-scope.mjs exports recordOnly");
   for (const paths of [["studio/opera/W-131.md"], ["docs/SESSION-HANDOFF.md"], ["studio/a", "docs/SESSION-HANDOFF.md"]])
@@ -182,6 +182,40 @@ const line = (owner, rel) => `${owner}\t${rel}\n`;
 /** A well-formed log: the root process started, its reads, the root ended. */
 const complete = (...rows) => `#start\tp1\troot\n${rows.join("")}#end\tp1\n`;
 const andSplit = (script) => script.split("&&").map((command) => command.trim());
+
+test("W-209-b1 behaviour 1: the dossier's direct HTML pages are record-only; its other files and other pages are not", async () => {
+  const mod = await import("./ci-scope.mjs").catch(() => ({}));
+  assert.equal(typeof mod.recordOnly, "function", "scripts/ci-scope.mjs exports recordOnly");
+  const pages = [
+    "body.html",
+    "progress-body.html",
+    "status-body.html",
+    "bisellium-dossier.html",
+    "bisellium-status.html",
+  ];
+  for (const paths of [
+    ...pages.map((page) => [`docs/design/dossier/${page}`]),
+    [
+      "studio/opera/W-209.md",
+      "docs/SESSION-HANDOFF.md",
+      "docs/design/dossier/body.html",
+      "docs/design/dossier/head.html",
+    ],
+  ])
+    assert.equal(mod.recordOnly(paths), true, `${paths.join(",")} is record-only`);
+  for (const paths of [
+    ["docs/design/dossier/build.sh"],
+    ["docs/design/dossier/build-arch.mjs"],
+    ["docs/design/dossier/old/body.html"],
+    ["docs/design/dossier/body.html.orig"],
+    ["docs/design/dossier.html"],
+    ["docs/design/queue-review/queue-review.html"],
+    ["docs/design/canvas/board.html"],
+    ["docs/design/DIRECTION.md"],
+    ["docs/design/dossier/body.html", "docs/ARCHITECTURE.md"],
+  ])
+    assert.equal(mod.recordOnly(paths), false, `${JSON.stringify(paths)} is not record-only`);
+});
 
 test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite", () => {
   const scripts = pkgScripts();

@@ -1,6 +1,6 @@
 /**
  * W-139: a `node --import` preload that logs every fs read of the record-only
- * set (`studio/`, the handoff: `recordOnly()` in ci-scope.mjs) by the process
+ * set (`recordOnly()` in ci-scope.mjs: `studio/`, the handoff, the dossier pages) by the process
  * and by every node child that inherits NODE_OPTIONS. On the full CI path
  * `ci-scope.mjs --check-reads` compares the log to `package.json`'s
  * `test:record`, so a new reader cannot land unlisted and a stale entry cannot

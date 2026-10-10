@@ -1,5 +1,5 @@
 /**
- * W-131: is a diff record-only (officina bookkeeping and the handoff)? CI
+ * W-131: is a diff record-only (officina bookkeeping, the handoff and, W-209, the dossier pages)? CI
  * uses the answer to take the short path on a merge group (W-203, classified
  * against the group's base). A pull request does not run it (W-205).
  *
@@ -18,8 +18,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+/** W-131: `studio/` and the handoff; W-209: a page directly in `docs/design/dossier/` whose name ends `.html`. */
+const DOSSIER_PAGE = /^docs\/design\/dossier\/[^/]+\.html$/;
 export function recordOnly(paths) {
-  return paths.length > 0 && paths.every((path) => path.startsWith("studio/") || path === "docs/SESSION-HANDOFF.md");
+  return (
+    paths.length > 0 &&
+    paths.every((path) => path.startsWith("studio/") || path === "docs/SESSION-HANDOFF.md" || DOSSIER_PAGE.test(path))
+  );
 }
 
 /** W-203: true only when `git diff <base>...<head>` succeeds and recordOnly accepts its paths; any git failure is false. */

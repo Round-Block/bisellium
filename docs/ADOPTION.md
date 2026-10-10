@@ -1045,10 +1045,15 @@ pair, not the raw git plumbing.
 `source_excludes` (`bisellium.yml`, above) extends the exclusion set beyond
 the studio dir and `.bisellium/` with repo-root-relative paths of the
 manifest's own choosing — a studio nested in a monorepo alongside unrelated
-sibling studios or fixtures (e.g. `studio/`'s own `source_excludes:
-[examples/]`, and `examples/sample-studio`'s `source_excludes: [studio/,
+sibling studios or fixtures (e.g. `studio/`'s own `source_excludes`:
+`examples/` and, W-209, each HTML page directly in `docs/design/dossier/`; and `examples/sample-studio`'s `source_excludes: [studio/,
 examples/fixtures/]`) so that sibling's churn never moves this studio's
 certificates. `check` blocks a non-list-of-strings value (`manifest.shape`).
+An entry is a path, never a pattern: a directory with everything under it,
+or one file. The dossier pages are listed by name, and `recordOnly`
+(`scripts/ci-scope.mjs`) treats the same pages as records, so a change to
+them alone moves no certificate and takes the records-only CI path. A new
+page stays in the SOURCE tree until a records PR adds it to the list.
 
 Certificate staleness/dirtiness/corroboration (`probatio.certifies.stale`,
 `.dirty`, `.mismatch`, `.evidence.tree`) is judged only for opera in an
@@ -1209,7 +1214,8 @@ review follow, exactly as before the queue.
 Records-only merge groups. W-203. In a merge group, the `gates` and `web-e2e`
 jobs run `scripts/ci-scope.mjs` on the group commit against the group's base
 (`github.event.merge_group.base_sha`). A group whose delta touches only
-`studio/` and `docs/SESSION-HANDOFF.md` takes the records-only path: `gates`
+`studio/`, `docs/SESSION-HANDOFF.md` and, W-209, the HTML pages directly in
+`docs/design/dossier/` takes the records-only path: `gates`
 runs the studio check and `test:record`, and `web-e2e` skips its build and
 browser steps. Any source path, an empty delta or an unreadable comparison
 takes the full path. `officina` and `certify` are unchanged, and the post-merge
