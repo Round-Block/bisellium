@@ -1,0 +1,17 @@
+# opus: W-205
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T12:01:05.687Z
+# tree: tree:322953ca904c83acd68fb8ca7ebf90d48c3a34f5
+# brief: briefs/W-205.md blob:5bc066d9f813e2b19c217e068de4009115048809
+
+## Findings
+1. blocking — docs/ADOPTION.md:1127 One instance: the `Running ci` sentence says every `merge_group` runs the same `CI_STEPS` commands and that `gates` runs every step except the studio check. A records-only merge group instead takes the short path, skipping five `CI_STEPS` and running the studio check plus `test:record`, so the per-kind claim is false (brief:61). — check: scripts/ci-workflow.test.mjs
+
+## Verdict
+The round-one sentence is corrected, but another required ADOPTION sentence remains materially false for records-only merge groups.
+
+VERDICT: FAIL
