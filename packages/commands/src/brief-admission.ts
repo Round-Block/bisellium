@@ -152,8 +152,65 @@ function readEnumerationProblems(real: string[]): string[] {
 const ABSOLUTE = /(?<![\w-])(always|in every case|in all cases|exactly as before|exactly as on master|exactly as today)(?![\w-])/i;
 const LIST_MARKER = "(?:(?:[-*]|\\d+\\.)\\s+)?";
 const PROMISE_ATTEMPT = new RegExp(`^${LIST_MARKER}Promise\\s+[^\\s:]+:`);
-const PROMISE_FORM = new RegExp(`^${LIST_MARKER}Promise ([a-z][a-z0-9]*(?:-[a-z0-9]+)*): (\\S.*?) — limit: (\\S.*)$`);
+const PROMISE_HEAD = new RegExp(`^${LIST_MARKER}Promise ([a-z][a-z0-9]*(?:-[a-z0-9]+)*): (?=\\S)`);
+const LIMIT_SEP = " — limit: ";
+const LINE_BREAK = /[\n\r\u2028\u2029]/;
 const PROMISE_LINE = "Promise <slug>: <claim> — limit: <what does not hold>";
+
+/** W-196: the slug and claim of a promise line: `^LIST_MARKER Promise <slug>: <claim> — limit: <limit>$`, where the claim
+ *  and the limit open with a non-space and the whole of both holds no line break (what `.` matches). The claim ends at
+ *  the first " — limit: " that a non-space follows. A scan, not a lazy regex: that backtracks quadratically (CodeQL). */
+function parsePromise(t: string): { slug: string; claim: string } | undefined {
+  const head = PROMISE_HEAD.exec(t);
+  if (head === null) return undefined;
+  const rest = t.slice(head[0].length);
+  if (LINE_BREAK.test(rest)) return undefined;
+  for (let at = rest.indexOf(LIMIT_SEP); at !== -1; at = rest.indexOf(LIMIT_SEP, at + 1))
+    if (/\S/.test(rest.charAt(at + LIMIT_SEP.length))) return { slug: head[1]!, claim: rest.slice(0, at) };
+  return undefined;
+}
+
+/** `text` with a trailing run of `.`, `,` or `;` dropped: `/[.,;]+$/`, which is quadratic on a long run (CodeQL). */
+function withoutTrailingPunctuation(text: string): string {
+  let end = text.length;
+  while (end > 0 && ".,;".includes(text.charAt(end - 1))) end--;
+  return text.slice(0, end);
+}
+
+/** `text` with its inline code spans removed: exactly `text.replace(/(`+).*?\1/g, "")`, in linear time (that regex is
+ *  cubic on a long backtick run, CodeQL). A span opens at a backtick run of length r (from where the scan stands), takes
+ *  the longest length k <= r that a later backtick run of at least k closes (any k <= r/2 closes inside its own run), and
+ *  ends at the first such run. It never crosses a line break, so each break-free stretch is scanned alone. */
+function withoutInlineCode(text: string): string {
+  return text.replace(/[^\n\r\u2028\u2029]+/g, (line) => {
+    const runs: { at: number; len: number }[] = [];
+    for (const m of line.matchAll(/`+/g)) runs.push({ at: m.index, len: m[0].length });
+    const longestAfter: number[] = new Array<number>(runs.length + 1).fill(0);
+    for (let j = runs.length - 1; j >= 0; j--) longestAfter[j] = Math.max(longestAfter[j + 1]!, runs[j]!.len);
+    let out = "";
+    let pos = 0;
+    for (let j = 0; j < runs.length; ) {
+      const { at, len } = runs[j]!;
+      if (at + len <= pos) {
+        j++;
+        continue;
+      }
+      const from = Math.max(pos, at);
+      const r = at + len - from;
+      const k = Math.max(r >> 1, Math.min(longestAfter[j + 1]!, r));
+      if (k === 0) break;
+      let end = from + 2 * k;
+      if (2 * k > r) {
+        let c = j + 1;
+        while (runs[c]!.len < k) c++;
+        end = runs[c]!.at + k;
+      }
+      out += line.slice(pos, from);
+      pos = end;
+    }
+    return out + line.slice(pos);
+  });
+}
 
 /** W-196: from the first real "## Intent" line (else the top) up to the first real "## Out of scope" after it (else the
  *  end), with inline code spans removed, an ABSOLUTE phrase appears only on a promise line, and each promise's slug and
@@ -168,18 +225,18 @@ function absolutePromiseProblems(real: string[]): string[] {
   for (let i = start; i < (stop === -1 ? real.length : stop); i++) {
     const t = real[i]!.trim();
     if (PROMISE_ATTEMPT.test(t)) {
-      const m = PROMISE_FORM.exec(t);
-      if (m === null) problems.push(`line ${i + 1}: a promise line is "${PROMISE_LINE}"`);
+      const m = parsePromise(t);
+      if (m === undefined) problems.push(`line ${i + 1}: a promise line is "${PROMISE_LINE}"`);
       else {
-        const claim = m[2]!.toLowerCase().replace(/\s+/g, " ").replace(/[.,;]+$/, "");
-        if (slugs.has(m[1]!)) problems.push(`line ${i + 1}: promise "${m[1]}" is declared twice; state each promise once`);
-        else if (claims.has(claim)) problems.push(`line ${i + 1}: promise "${m[1]}" repeats an earlier promise's claim; state each promise once`);
-        slugs.add(m[1]!);
+        const claim = withoutTrailingPunctuation(m.claim.toLowerCase().replace(/\s+/g, " "));
+        if (slugs.has(m.slug)) problems.push(`line ${i + 1}: promise "${m.slug}" is declared twice; state each promise once`);
+        else if (claims.has(claim)) problems.push(`line ${i + 1}: promise "${m.slug}" repeats an earlier promise's claim; state each promise once`);
+        slugs.add(m.slug);
         claims.add(claim);
       }
       continue;
     }
-    const hit = ABSOLUTE.exec(t.replace(/(`+).*?\1/g, ""));
+    const hit = ABSOLUTE.exec(withoutInlineCode(t));
     if (hit !== null) problems.push(`line ${i + 1} says "${hit[1]}" outside a promise line; declare it once as "${PROMISE_LINE}"`);
   }
   return problems;
