@@ -65,7 +65,8 @@ may veto. One-line descriptions of items 9-15 are in that acta.
    2026-10-10: the Patron named the repeated CI runs the priority for cadence).
 2. W-209 — checkpoint pages count as records, so done and retro PRs take the
    fast CI path (Patron 2026-10-10).
-2a. W-210, W-211 — the two pins the Patron asked for with W-205 and W-209.
+2a. W-210, W-211 — the two pins the Patron asked for with W-205 and W-209;
+    W-212 — CI docs checked against ci.yml (QA now, Ops after W-208).
 3. W-208 — set up the Ops collegium (D-055).
 4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 5. W-204 — next stops holding a build review after three failed rounds.
