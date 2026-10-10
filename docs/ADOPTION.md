@@ -1221,10 +1221,12 @@ skipped by its own `if` would not count toward `next`'s `MIN_CHECKS`);
 runs are step for step what they were. Five `gates` steps (checkout, setup,
 `npm ci`, typecheck, lint) still run in both runs for a source change, and
 `certify` reruns the `CI_STEPS` and `verify` for an opus head as before. A pull
-request that is never enqueued loses its run of the format check, the tests,
-the sample-officina check, the studio check and the build and E2E; it makes no
-merge result and cannot reach master, no certificate reads that run, and for an
-opus head the local mint already ran `CI_STEPS` and `verify` on its head. The
+request that is never enqueued loses its run on its head: for a source change,
+the format check, the tests, the read guard, the sample-officina check, the
+studio check, and the build and served E2E; for a records-only change, the
+studio check and `test:record`. It keeps typecheck and lint. It makes no merge
+result and cannot reach master, no certificate reads that run, and for an opus
+head the local mint already ran `CI_STEPS` and `verify` on its head. The
 `push` run is unchanged. This holds only while ruleset `master_protection`
 requires the merge queue: without it GitHub would merge on the light pull
 request checks, so removing the queue reverts these conditions in the same
