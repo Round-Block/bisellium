@@ -1,0 +1,101 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-215-b3 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-10T20:08:55.879Z
+# sella: builder.W-215
+# tree: tree:6d524168512ccbe3a1c4d03c4398e8db47d31c1e
+
+TAP version 13
+# Subtest: W-215-b3 behaviour 3: the spec reviewer's order resumes the recorded session and names the packet
+not ok 1 - W-215-b3 behaviour 3: the spec reviewer's order resumes the recorded session and names the packet
+  ---
+  duration_ms: 2360.253211
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/next.test.ts:146:513'
+  failureType: 'testCodeFailure'
+  error: |-
+    the order carries the session
+    --- exit 0
+    --- stdout
+    next: W-900 spec named
+    actor: spec-reviewer
+    why: ci/W-900-spec-3.log is signed and awaits the spec review
+    role: spec-reviewer
+    sella: spec-reviewer
+    boot: bisellium context --sella spec-reviewer --studio studio
+    budget_tokens: 100000
+    phase: spec
+    round: 4
+    model: gpt-5.6-sol
+    inputs: briefs/W-900.md, ci/W-900-spec-3.log
+    command: dispatch spec-reviewer (gpt-5.6-sol) to review the signed spec once, on two questions only (D-046): 1. does its Input domain name every record the opus reads, with one rejecting function that fails closed? 2. can every promise be guaranteed, or does it state its limit? Record findings under ## Findings, each ending "check: …", or write "No findings". Record with: bisellium verdict W-900 --round 4 --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <file> --studio studio
+    health: no step recorded
+    
+    --- stderr
+    
+    
+    undefined !== 'S1'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'S1'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/next.test.ts:4599:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-215-b3 behaviour 3: the censor's order resumes the recorded build session
+not ok 2 - W-215-b3 behaviour 3: the censor's order resumes the recorded build session
+  ---
+  duration_ms: 2953.639331
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/next.test.ts:146:2240'
+  failureType: 'testCodeFailure'
+  error: |-
+    the order carries the session
+    --- exit 0
+    --- stdout
+    next: W-900 review named
+    actor: censor
+    why: review round 1 failed at an older tree
+    head: opus/W-900 4e2fcc56f566
+    role: censor
+    sella: qa-lead
+    boot: bisellium context --sella qa-lead --studio studio
+    budget_tokens: 100000
+    phase: review
+    round: 2
+    inputs: briefs/W-900.md, ci/W-900-review-1.log, ci/reds/W-900/, opera/W-900.md#traditio
+    command: dispatch qa-lead; record the transcript with: bisellium verdict W-900 --round 2 --sella qa-lead --outcome <passed|failed> --studio studio; close out with: bisellium review W-900 --pass|--fail --evidence ci/W-900-review-2.log --round 2 --sella qa-lead --studio studio. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).
+    health: no step recorded
+    
+    --- stderr
+    
+    
+    undefined !== 'S9'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'S9'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/next.test.ts:4626:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5330.135501
