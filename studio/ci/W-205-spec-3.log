@@ -1,0 +1,25 @@
+# opus: W-205
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T03:31:02.987Z
+# tree: dirty:3ba3e6989a455193ec470d45c028874465b4650e
+# brief: briefs/W-205.md blob:5c1998a749da899376f331dce078f21871eec524
+
+Architect signature for W-205 revision 2 under D-027, ahead of the build under D-057. It answers spec review r2 (ci/W-205-spec-2.log: 3 blocking findings). The architect (claude-opus-5-5) re-ran the census, re-ran the prototype, swept the brief and signed studio/briefs/W-205.md (revision 2).
+
+Evidence, kept in ~/.bisellium-evidence/W-205-spec/ (revision 1's outputs kept as *-r1.*):
+- reads.txt (enumerate-reads.mjs, now keyed by job and step index). Parity holds: 24 of 24 records-only and 34 of 34 source. The per-job counts are gates 6/12, officina 4/4, web-e2e 4/8 and certify 10/10, each equal to today's merge_group run. The merge_group and push step sets are master's, step by step.
+- flips.txt (prototype-flips.sh, with the retitled row):
+  - stage A: W-205-b1 alone fails on master;
+  - stage B: W-131 behaviour 6, W-139 behaviour 5 and W-203-b1 flip;
+  - stage C: ci-scope 16/0, ci-certify 10/0, ci-workflow 35/0; eslint is clean.
+- admission.txt: 0 problems. admission-w196.txt (W-196's prototype admission): 0 problems.
+
+## Findings
+1. advisory: r2 finding 1 is answered. The census keyed steps by label, so certify's duplicate checkout and npm ci steps merged. It now keys by job and step index (enumerate-reads.mjs `ran`), and the brief cites 24 and 34 with per-job counts. check: none: the census is a signing script, not a repository check
+2. advisory: r2 finding 2 is answered. Intent's "the full CI work runs once before merge" is now promise one-pre-merge-run. Its limit: a records-only group takes W-203's short paths, certify mints nothing for a non-opus head, and so for a records-only non-opus head the full suite runs only on the post-merge push, as it does today. check: packages/commands/src/brief-admission.test.ts
+3. advisory: r2 finding 3 is answered. Behaviour 1 and its row title now claim parity: the merge-group and push runs are step-for-step today's, short paths included. Behaviour 1 states why the pinned condition table guarantees it: under merge_group and push, NOT_PR holds and DEFERRED reduces to FULL. reads.txt §2 shows it job by job. check: scripts/ci-scope.test.mjs W-205-b1
+4. advisory: Sweep. These claims were changed: the title, which no longer says "once" or "full"; the decree family, now merge-queue-no-pr-repeat; the never-enqueued paragraph, which now covers each change kind; the push sentence, which now covers either kind; Acceptance's own-PR line, which now names the source path on an opus head. No other "full" or "once" claim is unqualified. "Full path" names W-131's step set, and "mints an opus head once" is W-168's. check: none

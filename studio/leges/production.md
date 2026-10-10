@@ -128,16 +128,17 @@ the main checkout's absolute `--studio`/`--repo`.
    message cannot cut one off. `next` now orders all reds before any
    implementation (phase 1), which conflicts with one-at-a-time; W-166
    settles it.
-4. **Review:** Codex `gpt-5.6-sol`, prompt modelled on
+4. **Review:** `next` orders review only with a current host-minted receipt,
+   so mint first (the bare `run … -- true` below, ~15 min). Codex `gpt-5.6-sol`, prompt modelled on
    `~/.bisellium-evidence/W-162-review/r1/prompt.md`; packet
    `review-packet.sh <id> <round> [<prev-verdict-commit>]`; run
    `censor.sh <id> <round>`; record `record-review.sh <id> <round> <passed|failed>`
    (a failed round records only the verdict log; W-165). Before any re-review
    the producer checks the fix's census: every path to the input the blocker
    named is closed (W-184 makes it a hold). No round cap (D-053).
-5. **Merge:** refresh `handoff`; mint once from the worktree (bare
-   `npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
-   ~15 min); `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
+5. **Merge:** refresh `handoff`; the receipt minted before review
+   (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`);
+   `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
    pushes the reviewed head without a rebase, `merge` enqueues it, and the
    queue's `certify` job certifies the merge result: a moved master needs no
@@ -229,3 +230,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Spec review judges only changed lines (D-054); Ops collegium decreed (D-055) | Patron |
 | 2026-10-10 | Spec-review findings block only on substance (D-056) | Patron |
 | 2026-10-10 | Specs written ahead of the build (D-057) | Patron |
+| 2026-10-10 | Receipt minted before review, as `next` requires | Producer |

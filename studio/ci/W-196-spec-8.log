@@ -1,0 +1,17 @@
+# opus: W-196
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T02:34:29.988Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:e82d758ec273f40fbaccd36242a7f05339033560
+
+## Findings
+1. blocking — brief:24 The brief still says an inadmissible signed brief gets an architect order unconditionally, but W-196-b4 itself shows unchanged budget and handover gates can replace that order with a hold. — check: packages/cli/src/next.test.ts W-196-b4
+2. blocking — brief:134 The “none today” claim is false on the signed tree: W-203 is `building`, and its brief lacks the citation and contains unqualified absolute phrases, so the built `check` would report `brief.admission` blocks; the cited comparison predates that state. — check: brief.admission
+
+## Verdict
+Two promises remain false as written, so the build must not start.
+VERDICT: FAIL

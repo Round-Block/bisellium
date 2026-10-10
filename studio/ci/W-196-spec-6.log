@@ -1,0 +1,16 @@
+# opus: W-196
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T02:22:53.981Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:cef6fff4540d53b7a99a47f73174593785d57850
+
+## Findings
+1. blocking — brief:84 The `next-review-gate` promise omits the unchanged `readSourceExcludes` guard: a malformed `source_excludes` makes `runNext` hold before derivation, so neither promised order prints. This is an ordinary malformed-manifest mistake and needs a stated limit. — check: packages/cli/src/next.test.ts W-166-b4
+
+## Verdict
+The signed brief still makes one `next` outcome promise broader than the unchanged control flow can guarantee.
+VERDICT: FAIL

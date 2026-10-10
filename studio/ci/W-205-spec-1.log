@@ -1,0 +1,41 @@
+# opus: W-205
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T03:21:43.150Z
+# tree: dirty:3ba3e6989a455193ec470d45c028874465b4650e
+# brief: briefs/W-205.md blob:d8d505f025fa11f4ace70e48d47c736509633c32
+
+Architect signature for W-205 under D-027, written ahead of the build under D-057. Codex (gpt-5.6-sol) drafted ~/.bisellium-evidence/W-205-draft/W-205-draft.md. The architect (claude-opus-5-5) checked it against the following, corrected it, and signed studio/briefs/W-205.md (revision 1):
+- .github/workflows/ci.yml (every job and if)
+- ruleset master_protection, read live with gh api repos/Round-Block/bisellium/rules/branches/master (ruleset.json)
+- scripts/ci-scope.mjs, ci-scope.test.mjs, ci-workflow.test.mjs, ci-certify.mjs, ci-certify.test.mjs, run-builder-host.mjs (the mint's ci --opus)
+- packages/cli/src/integrate.ts (MIN_CHECKS, readChecks, gate, readMergeQueue)
+- docs/ADOPTION.md (## Running ci, ## Merge queue)
+- studio/briefs/W-203.md
+- D-050, D-054, D-056, D-057; production lex §11
+- PR 385's checks and runs
+
+Evidence, kept in ~/.bisellium-evidence/W-205-spec/:
+- enumerate-reads.mjs, output reads.txt. It evaluates every step condition of master's ci.yml and of the brief's (apply-ci.mjs on a copy) for pull_request, merge_group (records-only and source) and push.
+  - Parity holds. The merge_group and push step sets equal master's, job by job. Today's pull_request and merge_group steps together are 22 records-only and 32 source; all of them are in the brief's merge_group run.
+  - The ruleset requires gates, officina, web-e2e and certify (integration 15368).
+  - Under the brief, PR 385's checks project to 7 pass and certify skipping.
+- prototype-flips.sh, with proto-tests.mjs, output flips.txt:
+  - stage A: the new W-205-b1 row alone fails on master, at the gates table's deepEqual;
+  - stage B: with the ci.yml change, exactly W-131 behaviour 6, W-139 behaviour 5 and W-203-b1 flip; ci-certify is 10/0 and ci-workflow 35 PASS, 0 FAIL;
+  - stage C: with their new expectations, everything passes (ci-scope 16/0); eslint is clean; prettier passes ci.yml, and the prototype row needs --write only.
+- check-admission.mjs, output admission.txt: master's admission reports 0 problems; one table run, 7 rows.
+- check-admission-w196.sh, output admission-w196.txt: W-196's prototype admission (its prototype.mjs --source on a copy) reports 0 problems. A negative probe, one unqualified "always" in Intent, is refused, so the reader is live.
+
+## Findings
+1. advisory: The draft kept officina and web-e2e without a job-level if but gave no reason. The reason is load-bearing: next's merge step counts only checks in bucket pass and needs MIN_CHECKS = 5 (integrate.ts:21, :756). A job whose steps all skip is pass. A job skipped by its own if is skipping, as certify is on PR 385. Job-level skips would leave exactly 5 passes, held up only by CodeQL's three Analyze checks (reads.txt §3). The brief now states this in Correction 1 and Defaults 4, and the new row pins job.if as undefined for the three jobs. check: scripts/ci-scope.test.mjs W-205-b1
+2. advisory: The draft added a `pull_request ||` disjunct to typecheck and lint. It is redundant: the scope step no longer runs on a pull request, so its output is unset and FULL already selects them. They keep FULL unchanged, which is one less edit, and W-131 behaviour 6 pins FULL for exactly those two. check: scripts/ci-scope.test.mjs W-131 behaviour 6
+3. advisory: A limit the draft missed: the light pull_request run is sound only while ruleset master_protection requires the merge queue. Without the queue, GitHub would merge on typecheck and lint, and the full suite would run only after the merge, on the push. This is D-054's kill condition. It is now promise queue-only-merge with that limit, a sentence in the ci.yml comment and ADOPTION, and Defaults 3, whose veto alternative is a guard step that reads the rules. check: none: no check reads the ruleset from CI; Defaults 3 names the guard
+4. advisory: Files owned named "the event matrix under ## Running ci", which does not exist. The brief now owns the sentence there that says ci.yml "runs the same commands" (lines 1102–1107), which W-205 makes false on a pull request; its stale "officina is deliberately not required" clause sits in that sentence. It also owns W-203's paragraph under ## Merge queue, whose "a records-only pull request takes" becomes stale, plus one new paragraph. The ci.yml comments (lines 8–12, 69–70) and the ci-scope.mjs header (lines 2–4) are named. check: scripts/ci-workflow.test.mjs
+5. advisory: The draft's row re-derived the PR, group and push command sets in the test, which needs a condition evaluator inside a test. The row now pins each job's (step, if) table, one deepEqual per job. The command sets follow from the conditions, and reads.txt §1–§2 derives them mechanically for the signature. check: scripts/ci-scope.test.mjs W-205-b1
+6. advisory: Point by point, the brief certifies no less (production lex §11, D-054 §1). Every step today's two runs execute is in the merge_group run (reads.txt §2). That run is on the merge-group commit, the tree master holds. certify's mint runs ci --opus, which is the six CI_STEPS and then verify (run-builder-host.mjs:843). push and certify are unchanged. A never-enqueued PR loses only a full run on a tree that cannot reach master, and no studio certificate reads that run. check: none
+7. advisory: D-057 §3 overlap. docs/ADOPTION.md is also owned by the following signed or greenlit opera, each in a different section: W-196 (in spec; the Brief admission paragraph under ## Running check), W-204 (signed ahead), W-038 and W-040. Whichever lands first, the others take a §3 re-review limited to ADOPTION.md. No in-flight opus owns ci.yml, ci-scope.mjs or ci-scope.test.mjs. W-207 (verify reuses the queue's certificate) depends on the merge_group run this brief keeps, and does not conflict. check: none: D-057 is applied by hand until W-169
+8. advisory: The brief is written to W-196's admission ahead of it: a Read enumeration line under the status line, the two absolute claims as Promise lines with limits, none of the six phrases elsewhere in Intent to Out of scope, and runner/scopeOf/test rejectors, which master's form and W-196's both admit. check: packages/commands/src/brief-admission.test.ts
