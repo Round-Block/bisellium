@@ -1124,19 +1124,24 @@ fails. Today those are `npm run -s typecheck`, `npm run -s lint`,
 `npm run -s check -- studio --repo .` and
 `npm run -s check -- examples/sample-studio --repo .`. The steps are fixed
 in code and name this repository's two officinae; `ci` is not an adoption
-feature. `.github/workflows/ci.yml` runs the same commands on a `merge_group` and a
-`push`, each after `npm ci`, split across two jobs: `gates` runs every step
-except the studio check, in `CI_STEPS` order; `officina` runs
-`npm run -s check -- studio --repo .` alone. Both are required checks (ruleset
-`master_protection`; W-028 once kept `officina` out of the set while the studio
-check stayed red on known officina debt, and that debt has cleared). A pull
-request runs less (Merge queue, W-205). So the runner does not reproduce `ci`'s single sequence,
-and that divergence is deliberate. `scripts/ci-workflow.test.mjs`, part of
-`npm test`, fails when they drift: when `gates` differs from `CI_STEPS`
-minus the studio check, when `officina` is anything but that one check, or
-when this section stops naming a `CI_STEPS` command or `ci`'s usage. The
-workflow never runs `verify`, so no certificate is ever written from a
-runner.
+feature. `.github/workflows/ci.yml` runs the same commands on a `push` and on a
+source-change `merge_group`, each after `npm ci`, split across two jobs: `gates`
+runs every step except the studio check, in `CI_STEPS` order; `officina` runs
+`npm run -s check -- studio --repo .` alone. A records-only `merge_group` takes
+W-203's short path: `gates` skips five `CI_STEPS` and runs the studio check and
+`test:record`, `officina` is unchanged, and `web-e2e` skips its build and
+browser steps. A pull request runs less (Merge queue, W-205). All four jobs,
+`gates`, `officina`, `web-e2e` and `certify`, are required checks (ruleset
+`master_protection`); W-028 once kept `officina` out of the set while the studio
+check stayed red on known officina debt, and that debt has cleared. So the
+runner does not reproduce `ci`'s single sequence, and that divergence is
+deliberate. `scripts/ci-workflow.test.mjs`, part of `npm test`, fails when they
+drift: when `gates` differs from `CI_STEPS` minus the studio check, when
+`officina` is anything but that one check, or when this section stops naming a
+`CI_STEPS` command or `ci`'s usage. The workflow's own steps never run
+`verify`; only the `certify` job's mint does, on a merge group, and it uploads
+its receipt as a run artifact rather than committing it, so no certificate is
+ever written from a runner into the repository.
 
 A failed studio check also prints that it is officina-wide and that
 `bisellium verify <opus>` is the per-opus gate. `--ref <ref>` runs the
@@ -1218,16 +1223,19 @@ request still reports the four required contexts (`gates`, `officina`,
 `web-e2e` is skipped, so those jobs conclude success without work (a job
 skipped by its own `if` would not count toward `next`'s `MIN_CHECKS`);
 `certify` is skipped, as it has been since W-168. The `merge_group` and `push`
-runs are step for step what they were. Five `gates` steps (checkout, setup,
-`npm ci`, typecheck, lint) still run in both runs for a source change, and
-`certify` reruns the `CI_STEPS` and `verify` for an opus head as before. A pull
+runs are step for step what they were. For a source change, five `gates` steps
+(checkout, setup, `npm ci`, typecheck, lint) still run in both runs. For a
+records-only change, three do (checkout, setup, `npm ci`), and typecheck and
+lint then run on the pull request alone, because the records-only merge group
+skips them. `certify` reruns the `CI_STEPS` and `verify` for an opus head as before. A pull
 request that is never enqueued loses its run on its head: for a source change,
 the format check, the tests, the read guard, the sample-officina check, the
 studio check, and the build and served E2E; for a records-only change, the
 studio check and `test:record`. It keeps typecheck and lint. It makes no merge
 result and cannot reach master, no certificate reads that run, and for an opus
 head the local mint already ran `CI_STEPS` and `verify` on its head. The
-`push` run is unchanged. This holds only while ruleset `master_protection`
+`push` run is unchanged: for either change kind it runs the full `gates` and
+`web-e2e` paths and `officina`, and `certify` is skipped. This holds only while ruleset `master_protection`
 requires the merge queue: without it GitHub would merge on the light pull
 request checks, so removing the queue reverts these conditions in the same
 change.

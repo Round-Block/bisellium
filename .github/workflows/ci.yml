@@ -6,16 +6,19 @@ name: CI
 # test.
 #
 # W-168: `merge_group` runs on the merge queue's temporary commit (the PR merged
-# with the latest master). `certify` runs the existing mint on that merge result.
+# with the latest master). For an opus head, `certify` runs the existing mint on
+# that merge result; a head that is not `opus/W-*` mints nothing.
 # W-203: there `gates` and `web-e2e` classify the group commit against the
 # group's base, so a records-only group takes the records-only path; any source
 # path takes the full path.
 #
-# W-205: the merge group is the one full run before merge. A pull request still
-# reports all four required checks: `gates` runs only setup, typecheck and lint;
-# every step of `officina` and `web-e2e` is skipped, so those jobs succeed
-# without work; `certify` is skipped. The post-merge master push runs the full
-# path. Sound only while master's ruleset requires the merge queue.
+# W-205: the merge group is the one run of the heavy steps before merge: the full
+# path for a source change, W-203's short path for a records-only one. A pull
+# request still reports all four required checks: `gates` runs only setup,
+# typecheck and lint; every step of `officina` and `web-e2e` is skipped, so those
+# jobs succeed without work; `certify` is skipped. The post-merge master push
+# runs the full path for either change kind. Sound only while master's ruleset
+# requires the merge queue.
 on:
   push:
     branches: [master]
@@ -27,10 +30,12 @@ permissions:
   contents: read
 
 jobs:
-  # Required status check. Runs everything `bisellium ci` runs except the
-  # studio officina check (see the `officina` job below) — this is the job a
-  # branch protection rule can require, since every step here is expected to
-  # pass on a clean tree.
+  # Required status check. On a push and a source-change merge group it runs
+  # everything `bisellium ci` runs except the studio officina check (see the
+  # `officina` job below); a records-only merge group runs the studio check and
+  # `test:record` instead (W-203), and a pull request runs only setup,
+  # typecheck and lint (W-205). It is the job a branch protection rule can
+  # require, since every step that runs here is expected to pass on a clean tree.
   gates:
     runs-on: ubuntu-latest
     steps:
@@ -82,7 +87,8 @@ jobs:
   # Required status check (ruleset `master_protection`). W-028 once kept it out
   # of the required set while `check -- studio` failed on known officina debt;
   # that debt cleared (0 blocking findings) and it was required since. Never
-  # marked continue-on-error.
+  # marked continue-on-error. On a pull request every step skips (W-205), so the
+  # job still concludes success; a merge group and a push run the studio check.
   officina:
     runs-on: ubuntu-latest
     steps:
@@ -108,7 +114,9 @@ jobs:
   # stale bundle can't quietly satisfy it) and drives it with the
   # served-dist harness (apps/web/playwright.serve.config.ts). No
   # continue-on-error, and never merged into the separate
-  # `officina` job above.
+  # `officina` job above. On a pull request, and in a records-only merge group,
+  # the build and E2E steps skip (W-205, W-203); a push and a source-change merge
+  # group run them.
   web-e2e:
     runs-on: ubuntu-latest
     steps:
