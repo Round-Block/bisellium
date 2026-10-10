@@ -1,0 +1,22 @@
+# opus: W-209
+# phase: spec
+# round: 10
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T17:00:38.367Z
+# tree: tree:ec2639d74983cb015879b28952721c90571ce717
+# brief: briefs/W-209.md blob:8b454c8d25abf989fe3bbd82839c27a90b755890
+
+Architect signature for W-209 revision 5, under D-027. It answers build review r1 (~/.bisellium-evidence/W-209-review/r1/verdict.md; finding 1 upheld, 2-5 reclassified advisory). The architect (claude-opus-5-5) kept revision 4 as ~/.bisellium-evidence/W-209-spec/W-209-signed-r7.md and re-signed studio/briefs/W-209.md. Every Default and behaviour is unchanged.
+
+Evidence:
+- On the r7 prototype copy (scratch/r7-w209, restored afterwards), the retitled row passes prettier, and `--test-name-pattern=W-131.behaviour.5:`, the pattern W-131's recorded red ran (ci/reds/W-131/05.log), selects it and it passes 1/0.
+- opus.red_evidence (packages/cli/src/rules/evidence.ts) reads reds only for an ACTIVE opus; W-131 is done.
+- admission-r10.txt: 0 problems under this checkout's admission; one table run, 9 rows.
+
+## Rebuttal
+1. accepted — scripts/ci-scope.test.mjs:33 W-209 makes the W-131 behaviour 5 title false. Files owned now allows exactly that title to change, to "W-131 behaviour 5: recordOnly is true only for studio/, the handoff and the dossier's direct HTML pages, and the CLI fails closed", with its body unchanged. Revision 1's correction 5, which kept the title, is revised: the recorded red's name pattern still matches. check: none: no automated check reconciles test titles with the classifier
+
+## Findings
+1. advisory: Sweep. ci-scope.test.mjs's titles, comments and assertion messages and record-reads.mjs's comments were checked for claims about the set's members. Only line 33 becomes false. Line 148's title names one case; line 213's title and the messages refer to the set by name; record-reads.mjs line 3 is already owned; no other comment names a member. check: none: prose about the classifier's members

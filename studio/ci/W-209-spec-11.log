@@ -1,0 +1,19 @@
+# opus: W-209
+# phase: spec
+# round: 11
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-10T17:01:40.748Z
+# tree: tree:ec2639d74983cb015879b28952721c90571ce717
+# brief: briefs/W-209.md blob:8b454c8d25abf989fe3bbd82839c27a90b755890
+
+## Findings
+No findings
+
+## Earlier findings
+1. closed — The W-131 behaviour 5 title is retitled truthfully, its assertions remain unchanged, and its recorded red pattern still selects the row.
+
+## Verdict
+Revision 5 fully closes the build-review round-1 finding without leaving another W-209-created false title, comment, or assertion message.
+VERDICT: PASS
