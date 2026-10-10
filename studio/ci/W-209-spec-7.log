@@ -1,0 +1,20 @@
+# opus: W-209
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T15:15:16.905Z
+# tree: tree:62dc716bb3e82d8664cb8c6c982c403da2157709
+# brief: briefs/W-209.md blob:15047211bbf1d0a8739c4e18825237e2a9cd12db
+
+## Findings
+1. blocking — brief:90 The producer prerequisite requires the manifest line to land before W-205 branches, but W-205 has already merged; Defaults 2 repeats the now-impossible ordering. — check: none: prerequisite ordering is process state
+2. blocking — brief:122 W-205 changed header lines 3–4 and the W-203 paragraph but correctly left `ci-scope.mjs:2` and `ADOPTION.md:1212` true for the current classifier. W-209 will make both stale, while brief:57/120 requires them untouched and the conditional W-205 handoff can no longer occur. — check: none: D-057 cross-opus prose ownership has no automated check
+3. advisory — brief:7 W-205 added the sixteenth existing test row, so W-209’s current-master stages are 16 pass/1 fail and then 17/0, not 15 pass/1 fail and 16/0; brief:125 has the right final total but assigns it to the obsolete merge order. — check: scripts/ci-scope.test.mjs
+4. advisory — brief:58 W-139 behaviour 1 now begins at line 186, so the line-181 insertion point is stale although the named-test insertion point remains unambiguous. — check: none: source-location drift needs no automated check
+5. advisory — brief:60 The `source_excludes` paragraph is now at lines 1045–1051, not 1020–1026; its content remains suitable for the planned edit. — check: none: source-location drift needs no automated check
+
+## Verdict
+The reversed merge order makes the signed ownership handoff and prerequisite timing impossible as written, so the brief needs revision before branch.
+VERDICT: FAIL

@@ -17,26 +17,23 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-10)
 
-- **W-205 done** (CI runs once per merge; history row 68 in
-  `docs/design/dossier/progress-body.html`). Next: its retro (facts beyond
-  the logs: `~/.bisellium-evidence/retro-facts/205.md`), and a Haiku subagent
-  republishes Status, dossier and architecture (its page changed on rebuild).
-- **W-209** (Patron-approved): a records PR adds its eight-page
-  `source_excludes` list (named in the Interfaces section of
-  `studio/briefs/W-209.md`); re-review its ci-scope.mjs header
-  line 2 and ADOPTION's W-203 paragraph against W-205 (D-057 §3); then `branch`.
-- **W-208** (Ops collegium), split in its uncommitted brief (measurement
-  becomes a follow-on opus, its brief's Default 1; the record's title changes when the spec lands); spec review round 12 failed. Revision 7 is signed as
-  spec-log round 13 in `.worktrees/W-208-spec` (uncommitted; evidence
-  `~/.bisellium-evidence/W-208-spec/`); its brief still cites base 33c5cf4,
-  so ADOPTION line numbers move at build time. Next: spec review
-  round 14 (prompt and verdict in `~/.bisellium-evidence/W-208-specreview/r14/`). On a pass its Defaults go to the Patron as questions (Ops is
-  architecture); then PR A (collegium, seat, lex) before `branch`.
-- W-204's spec passed review (round 6); `next` names `branch` (queue item 5).
-- Queue review owed: rank W-202 (the console opens on the ledger page) below
-  W-136 (board liveness) and W-138 (usage per opus) (Patron 2026-10-10);
-  W-136 is in item 15, W-138 and W-202 are backlog, so the
-  Patron greenlights them at that review.
+- **W-205 done** (CI runs once per merge): dossier row 68, pages republished; retro
+  (L-129 to L-135) filed in records PR `chore/W-205-retro` (land it). High lessons are
+  fixed by W-205 itself or by queued W-184 and W-212.
+- **W-209** (Patron-approved): revision 4 (W-205 merged first) passed the
+  change-limited review (spec round 9). The revised spec and its
+  `source_excludes` pages ride records PR `chore/W-205-retro`; once it merges
+  and master is fetched, `branch` (no opus is between `branch` and `done`).
+- **W-208** (Ops collegium; measurement split off, its brief's Default 1).
+  Revision 8 (a fail-closed branch-check script) is signed as round 15 in
+  `.worktrees/W-208-spec` (uncommitted; evidence `~/.bisellium-evidence/W-208-spec/`;
+  base 33c5cf4). Spec review round 16 is running (prompt and verdict in
+  `~/.bisellium-evidence/W-208-specreview/r16/`). On a pass its brief's
+  Defaults 1-5 go to the Patron as questions; then PR A (collegium, seat, lex)
+  before `branch`.
+- W-204: spec passed (round 6), then W-196's admission rules failed it (3).
+- Queue review owed: rank W-202 (console opens on the ledger page) below W-136
+  (board liveness, item 15) and W-138 (usage per opus; in backlog today).
 
 ## Concurrency readiness
 
@@ -63,8 +60,8 @@ may veto. One-line descriptions of items 9-15 are in that acta.
 
 2. W-209 — checkpoint pages count as records, so done and retro PRs take the
    fast CI path (Patron 2026-10-10).
-2a. W-210 — a test pins the `source_excludes` list; W-211 — CI refuses a
-    merge path that skips the queue (the two pins the Patron asked for);
+2a. W-210 — CI refuses a merge path that skips the queue; W-211 — a test
+    pins the `source_excludes` list (the two pins the Patron asked for);
     W-212 — CI docs checked against ci.yml (QA now, Ops after W-208);
     W-213 — the retro reads beyond the review findings (wins, time, cost, slips).
 3. W-208 — set up the Ops collegium (D-055).
@@ -95,5 +92,7 @@ W-159, W-177.
 
 ## Open Patron choices
 
+- Greenlight W-214 (retro rides in the done PR) and W-215, widened to every
+  review loop (persistent reviewer, rebuttal, facts first)? Asked 2026-10-10.
 - At the owed queue review: greenlight and rank W-138 and W-202, and
   W-175 and W-176 (backlog from the 2026-10-08 lesson audit).
