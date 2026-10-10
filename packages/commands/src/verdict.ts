@@ -27,7 +27,7 @@ export interface VerdictOptions extends WriteOptions {
 
 const GIT_TIMEOUT_MS = 30_000;
 const BODY_CAP = 8192;
-const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+export const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 
 function gitRoot(dir: string): string | undefined {
   try {
