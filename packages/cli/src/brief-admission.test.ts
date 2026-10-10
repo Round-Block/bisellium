@@ -519,7 +519,7 @@ const MIX = 'input domain mixes "None:" with a table or repeats it; one table or
 const NOT_CLOSED = "input domain does not say that a rejection fails closed";
 const CELL = (k: number): string => `input domain row ${k} has an empty or missing cell`;
 const NO_FN = (k: number): string =>
-  `input domain row ${k} names no rejecting function; its "Rejected by" cell opens with one \`function\` name`;
+  `input domain row ${k} names no rejecting function; its "Rejected by" cell opens with one \`function\` name, or with "runner: \`job\` …", "exit: \`call\` …" or "limit: …" (D-050)`;
 const CLOSED = "A rejection fails closed.";
 const HEAD = ["| Record | Valid domain | Rejected by |", "|---|---|---|"];
 const OKROW = "| fixture record | a string | `readFixture` |";
@@ -709,4 +709,24 @@ test("W-196-b2 behaviour 2: an absolute phrase sits on one promise line with its
   no(brief({ intent: [P1, twice] }), twice, (n) => `line ${n}: promise "runs-twice" is declared twice; state each promise once`, "a repeated slug");
   const claim = "Promise other: The  step ALWAYS runs — limit: a different limit.";
   no(brief({ intent: [P1, claim] }), claim, (n) => `line ${n}: promise "other" repeats an earlier promise's claim; state each promise once`, "a repeated claim");
+});
+
+test("W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing looser", () => {
+  const cell = (text: string): string[] => sect([`| rec | a string | ${text} |`]);
+  for (const good of [
+    "runner: `gates`, step `scope` has no continue-on-error",
+    "exit: `git diff` non-zero is refused by `scopeOf`",
+    "limit: a misspelt prefix reads as absent",
+    "`readFixture` (schema), the one parser",
+  ])
+    accepted(ready(brief({ domain: cell(good) })), good);
+  for (const bad of [
+    "runner: `gates`",
+    "runner: gates, step scope",
+    "limit:",
+    "Runner: `gates`, step `scope` has no continue-on-error",
+    "the parser",
+    "containment.test.ts",
+  ])
+    refused(ready(brief({ domain: cell(bad) })), [NO_FN(1)], bad);
 });
