@@ -28,6 +28,10 @@ Rules, process and environment: studio/leges/production.md.
   W-205 is done. Its ci-scope.mjs header line 2 and ADOPTION's W-203
   paragraph are re-reviewed against W-205 first (D-057 §3); its stage C row
   count becomes 17.
+- Patron 2026-10-10: Ops changes are architecture (lex §7). W-205 and W-209
+  approved as specced; follow-ups W-210 (CI refuses a merge path outside the
+  queue) and W-211 (the source_excludes list is pinned) filed and greenlit.
+  W-208 (Ops collegium) is in spec revision; its Defaults go to the Patron.
 - W-204's brief now fails admission (no read citation; two bare `always`):
   the architect revises it before it branches.
 - A queue review is owed: it places W-202 (the ledger opening page) after
@@ -61,6 +65,7 @@ may veto. One-line descriptions of items 9-15 are in that acta.
    2026-10-10: the Patron named the repeated CI runs the priority for cadence).
 2. W-209 — checkpoint pages count as records, so done and retro PRs take the
    fast CI path (Patron 2026-10-10).
+2a. W-210, W-211 — the two pins the Patron asked for with W-205 and W-209.
 3. W-208 — set up the Ops collegium (D-055).
 4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 5. W-204 — next stops holding a build review after three failed rounds.
