@@ -1,0 +1,15 @@
+# opus: W-211
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T20:25:07.130Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-211.md blob:0de39c715bc3c74798e9b4ad3914fadefa1946b8
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 1 of studio/briefs/W-211.md (architect, claude-opus-5-5, D-027): Codex's draft checked against master 63efbd68 and cut to one behaviour, one row in scripts/ci-scope.test.mjs plus the file in test:record, with recordOnly as the one page definition; red probed on master (assertion level), seven probes and the W-139 guard over test:record measured (~/.bisellium-evidence/W-211-spec/measure.txt); brief admission 0 problems (admission.txt).
