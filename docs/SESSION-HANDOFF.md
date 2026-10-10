@@ -18,12 +18,13 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-10)
 
 - W-203 is done (PR 384): records-only PRs take the fast CI path in the
-  merge queue too. Owed: its retro, and republishing Status and the
-  dossier for checkpoint row 66.
+  merge queue too; its retro is filed and Status and the dossier are
+  republished for checkpoint row 66.
 - **Next:** W-196's spec, written ahead (D-057), is in Codex review in
   `/tmp/claude-1000/w196-spec` (brief and spec logs uncommitted there). On
   a pass, copy them into the main checkout's `studio/`, run
-  `next W-196 --perform --expect spec`, then build W-196.
+  `next W-196 --perform --expect spec`, then build W-196. W-205's spec is
+  being drafted ahead (`~/.bisellium-evidence/W-205-draft/`).
 - W-197's Patron setup is done (ruleset checked 2026-10-10).
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts); harmless.
@@ -51,9 +52,10 @@ since (D-052 to D-056), slotted by the producer as a default the Patron
 may veto.
 
 1. W-196 — spec reviews converge in fewer rounds (moved up 2026-10-10).
-2. W-208 — set up the Ops collegium (D-055).
-3. W-200 — set up the Chaos collegium (D-052; the architect specs it).
-4. W-205 — CI runs once per merge, in the queue (D-054; the Patron approves).
+2. W-205 — CI runs once per merge, in the queue (D-054; moved up 2026-10-10:
+   every PR pays a duplicate ~15-minute run until it lands; the Patron approves).
+3. W-208 — set up the Ops collegium (D-055).
+4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 5. W-204 — next stops holding a build review after three failed rounds.
 6. W-206 — the signed spec rides in the opus's own PR (D-054).
 7. W-207 — verify after merge reuses the queue's certificate (D-054).
