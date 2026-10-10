@@ -46,7 +46,17 @@ spec_reviewer: spec-reviewer
 # W-127 (briefs/W-127.md): brief admission — one decree family per brief, at most
 # this many numbered behaviours, one genuine red each; `ready` and `check` enforce it.
 brief_behaviour_limit: 6
-source_excludes: [ examples/ ]
+# W-209: the dossier's HTML pages are checkpoint records; a new page joins this list in a records PR.
+source_excludes:
+  - examples/
+  - docs/design/dossier/bisellium-architecture.html
+  - docs/design/dossier/bisellium-direction.html
+  - docs/design/dossier/bisellium-dossier.html
+  - docs/design/dossier/bisellium-status.html
+  - docs/design/dossier/body.html
+  - docs/design/dossier/head.html
+  - docs/design/dossier/progress-body.html
+  - docs/design/dossier/status-body.html
 # W-137 (D-039): a done opus owes a retro once it ended at or after `since` (the ruling's own time); a high-severity
 # fix is filed already greenlit by `high_greenlit_by`. Older done opera owe none.
 retro: { since: 2026-10-06T06:06:57Z, high_greenlit_by: D-039 }
