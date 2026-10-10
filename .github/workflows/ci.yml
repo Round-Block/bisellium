@@ -6,8 +6,10 @@ name: CI
 # test.
 #
 # W-168: `merge_group` runs on the merge queue's temporary commit (the PR merged
-# with the latest master). The first three jobs run there unchanged, on their
-# full path, and `certify` runs the existing mint on that merge result.
+# with the latest master). `certify` runs the existing mint on that merge result.
+# W-203: there `gates` and `web-e2e` classify the group commit against the
+# group's base, so a records-only group takes the records-only path; any source
+# path takes the full path. `officina` runs unchanged.
 on:
   push:
     branches: [master]
@@ -35,8 +37,10 @@ jobs:
           node-version: 25
       - run: npm ci
       - id: scope
-        if: github.event_name == 'pull_request'
-        run: node scripts/ci-scope.mjs "${{ github.event.pull_request.base.sha }}" HEAD >> "$GITHUB_OUTPUT"
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s typecheck
       - if: steps.scope.outputs.record_only != 'true'
@@ -62,7 +66,7 @@ jobs:
         run: node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s check -- examples/sample-studio --repo .
-      # Record-only pull request: the studio officina check, then the tests that
+      # Record-only pull request or merge group: the studio officina check, then the tests that
       # read the record-only files (W-139; the full path's guard keeps the list exact).
       - if: steps.scope.outputs.record_only == 'true'
         run: npm run -s check -- studio --repo .
@@ -106,8 +110,10 @@ jobs:
           node-version: 25
       - run: npm ci
       - id: scope
-        if: github.event_name == 'pull_request'
-        run: node scripts/ci-scope.mjs "${{ github.event.pull_request.base.sha }}" HEAD >> "$GITHUB_OUTPUT"
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
       - if: steps.scope.outputs.record_only != 'true'
         run: rm -rf apps/web/dist
       - if: steps.scope.outputs.record_only != 'true'
