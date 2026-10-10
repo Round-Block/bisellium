@@ -17,11 +17,13 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-10)
 
-- W-186 is done, its retro filed (L-116 to L-120). New Patron decisions
-  2026-10-10: D-054 and D-055 (filed as W-205 to W-208).
-- **Next:** W-203 is building on `opus/W-203` (Sonnet builder); its review,
-  merge (the Patron approves: it edits `.github/`) and done follow. W-204's
-  spec is on master.
+- W-203 is done (PR 384): records-only PRs take the fast CI path in the
+  merge queue too. Owed: its retro, and republishing Status and the
+  dossier for checkpoint row 66.
+- **Next:** W-196's spec, written ahead (D-057), is in Codex review in
+  `/tmp/claude-1000/w196-spec` (brief and spec logs uncommitted there). On
+  a pass, copy them into the main checkout's `studio/`, run
+  `next W-196 --perform --expect spec`, then build W-196.
 - W-197's Patron setup is done (ruleset checked 2026-10-10).
 - `.git/worktrees/{W-167,loop-state,cascade-loop}` cannot be pruned
   (sandbox mounts); harmless.
@@ -44,30 +46,29 @@ names W-093 alongside W-178 to W-183): Queue's multi-lane prep item
 ## Queue
 
 The ranked order, Patron 2026-10-09 (recorded in
-`studio/acta/2026-10-09-queue-review.md`). Items 1-9 were added or moved
+`studio/acta/2026-10-09-queue-review.md`). Items 1-8 were added or moved
 since (D-052 to D-056), slotted by the producer as a default the Patron
 may veto.
 
-1. W-203 — records-only PRs take the fast CI path in the merge queue too.
-2. W-196 — spec reviews converge in fewer rounds (moved up 2026-10-10).
-3. W-208 — set up the Ops collegium (D-055).
-4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
-5. W-205 — CI runs once per merge, in the queue (D-054; the Patron approves).
-6. W-204 — next stops holding a build review after three failed rounds.
-7. W-206 — the signed spec rides in the opus's own PR (D-054).
-8. W-207 — verify after merge reuses the queue's certificate (D-054).
-9. W-201 — the mutation check gates build review (D-052).
-10. W-185 — records checked once at load (D-049; the architect specs it).
-11. W-172, W-171 — high-severity fixes.
-12. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, then W-169
+1. W-196 — spec reviews converge in fewer rounds (moved up 2026-10-10).
+2. W-208 — set up the Ops collegium (D-055).
+3. W-200 — set up the Chaos collegium (D-052; the architect specs it).
+4. W-205 — CI runs once per merge, in the queue (D-054; the Patron approves).
+5. W-204 — next stops holding a build review after three failed rounds.
+6. W-206 — the signed spec rides in the opus's own PR (D-054).
+7. W-207 — verify after merge reuses the queue's certificate (D-054).
+8. W-201 — the mutation check gates build review (D-052).
+9. W-185 — records checked once at load (D-049; the architect specs it).
+10. W-172, W-171 — high-severity fixes.
+11. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, then W-169
    (switches lanes on, once W-093 has landed).
-13. W-068 — task dependencies (signed brief to restore:
+12. W-068 — task dependencies (signed brief to restore:
    `~/.bisellium-evidence/partial-specs/W-068.md` → `studio/briefs/W-068.md`,
    add `Red order: one at a time`, architect re-signs, then spec review).
-14. W-081, W-099 — security fixes; W-093 (security review on every change).
-15. W-173, W-174, W-184, W-195; then W-164, W-165, W-187, W-189, W-190,
+13. W-081, W-099 — security fixes; W-093 (security review on every change).
+14. W-173, W-174, W-184, W-195; then W-164, W-165, W-187, W-189, W-190,
     W-191, W-192, W-194, W-198.
-16. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
+15. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
     W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160, W-135, then
     the medium and low fixes W-038, W-040, W-045, W-051, W-058, W-066,
     W-073, W-074, W-080, W-083, W-086, W-094, W-098.
@@ -80,4 +81,4 @@ W-159, W-177.
 ## Open Patron choices
 
 - W-202 (backlog), the ledger opening page: the Patron ranks it after W-136
-  and W-138 (2026-10-10); placed at the queue review after W-203 lands.
+  and W-138 (2026-10-10); placed at the queue review now owed (W-203 landed).
