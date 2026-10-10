@@ -29,7 +29,7 @@ Rules, process and environment: studio/leges/production.md.
   (D-057 §3); then `branch`.
 - **W-208** (Ops collegium), split by the architect (measurement becomes a
   follow-on, Default 1); spec reviews 2-10 failed, each narrower. Revision 6
-  is being signed as round 11 in `.worktrees/W-208-spec` (uncommitted;
+  is signed as round 11 in `.worktrees/W-208-spec` (uncommitted;
   evidence `~/.bisellium-evidence/W-208-spec/`). Next: spec review round 12
   (prompt `~/.bisellium-evidence/W-208-specreview/r10/`, spec log updated).
   On a pass its Defaults go to the Patron as questions (Ops is
