@@ -1,0 +1,15 @@
+# opus: W-215
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T19:54:45.380Z
+# tree: tree:3127c85b96f1611dba3fe204133342b306557fd2
+# brief: briefs/W-215.md blob:ba34f75bfa965d7fd1722dbbfcae741a925d6ba4
+
+## Findings
+No findings
+
+## Verdict
+Re-signed revision 2 of studio/briefs/W-215.md, unchanged (blob ba34f75b, as signed at ci/W-215-spec-3.log), after master moved from 36ca84cb: W-209 and PRs 401-407 changed W-209's two docs/ADOPTION.md paragraphs, production lex §9 steps 5 and 7 and §12, and added studio/leges/ops.md (~/.bisellium-evidence/W-215-specreview/r5/changed-since-signature.diff). Checked against that diff: none of it touches a W-215 Files-owned line (ADOPTION's verdict usage line, now line 98, and the Running next bullet, now line 1392; usage.ts line 42), nor the lex lines the producer's follow-up edits (§9 steps 2 and 4, §11). The D-057 §3 re-review (ci/W-215-spec-5.log) found nothing to change.
