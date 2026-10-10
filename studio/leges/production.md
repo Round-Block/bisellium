@@ -240,3 +240,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Receipt minted before review, as `next` requires | Producer |
 | 2026-10-10 | Ops changes are architecture: the Patron approves each Ops spec and its Defaults before `branch` | Patron |
 | 2026-10-11 | Step 7 runs `tick` once per opus as Ops' cadence (W-208 Defaults 3) | Patron |
+| 2026-10-11 | §9 step 5: the receipt is minted from the opus worktree | Producer |
