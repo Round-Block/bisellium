@@ -131,6 +131,19 @@ function inputDomainProblems(real: string[]): string[] {
   return problems;
 }
 
+const READS_ATTEMPT = /^read[\s_-]*enumeration\s*:/i;
+const READS_FORM = /^Read enumeration: (?:`[^`\s]+` -> `[^`\s]+`|none: \S.*)$/;
+const READS_LINE = "Read enumeration: `<kept script>` -> `<its output>`";
+
+/** W-196: the one citation of the read enumeration the drafting ran. An attempt is a real line whose trimmed text
+ *  matches READS_ATTEMPT; exactly one, in READS_FORM. The cited files are not read. */
+function readEnumerationProblems(real: string[]): string[] {
+  const attempts = real.map((l) => l.trim()).filter((l) => READS_ATTEMPT.test(l));
+  if (attempts.length === 0) return [`cites no read enumeration; add one line "${READS_LINE}", or "Read enumeration: none: <reason>"`];
+  if (attempts.length > 1) return [`has ${attempts.length} read enumeration lines; one only`];
+  return READS_FORM.test(attempts[0]!) ? [] : [`read enumeration line "${attempts[0]}" is not "${READS_LINE}" or "Read enumeration: none: <reason>"`];
+}
+
 /** W-161: the one reader of `brief_behaviour_limit`. Absent is no admission; a positive integer is the limit;
  *  anything else, `null` included, is an error that fails closed in both callers. */
 export function readBriefLimit(raw: unknown): { limit: number | undefined } | { error: string } {
@@ -175,7 +188,7 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
         );
     });
   }
-  problems.push(...inputDomainProblems(real));
+  problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real));
   return exception === undefined ? { problems } : { problems, exception };
 }
 
