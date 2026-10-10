@@ -17,27 +17,27 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-10)
 
-- W-196 is done (PR 390): review round 1 passed, CodeQL then held the merge on
-  two ReDoS alerts; a security fix round (three regexes made linear) passed
-  round 2. Checkpoint row 67. Retro filed (L-125..L-128, no new opus).
-- **Next:** W-205 (CI once per merge). Revision 4 (citations only, ADOPTION.md
-  lines shifted) passed spec review round 8 and is on master; `branch` next.
-- W-209 (checkpoint pages count as records): spec signed on master (rev 3).
-  Before its build the producer lands a records PR adding the eight-page
-  `source_excludes` list (its Default 2; exact YAML in its Interfaces), after
-  W-205 is done. Its ci-scope.mjs header line 2 and ADOPTION's W-203
-  paragraph are re-reviewed against W-205 first (D-057 §3); its stage C row
-  count becomes 17.
-- Patron 2026-10-10: Ops changes are architecture (lex §7). W-205 and W-209
-  approved as specced; follow-ups W-210 (CI refuses a merge path outside the
-  queue) and W-211 (the source_excludes list is pinned) filed and greenlit.
-  W-208 (Ops collegium) is in spec revision; its Defaults go to the Patron.
-- W-204's brief now fails admission (no read citation; two bare `always`):
-  the architect revises it before it branches.
-- A queue review is owed: it places W-202 (the ledger opening page) after
-  W-136 and W-138, as the Patron ruled 2026-10-10.
-- `.git/worktrees/{W-167,W-196,loop-state,cascade-loop}` cannot be pruned
-  (sandbox mounts); harmless.
+- **W-205 merged (PR 397)**, review round 3 (rounds 1-2 failed on one-kind CI
+  sentences). After the Patron's fast-forward (`.github/` path): `next W-205`
+  merge and cleanup, `verify`, done, checkpoint row 68 (a Haiku subagent
+  republishes, lex §7), retro. Triage facts beyond the logs: round 2 went
+  to review without a census check; the builder graded its own sweep; a
+  W-208 architect left two wait loops running; the orchestrator republished
+  pages itself (~110k tokens).
+- **W-209** (Patron-approved): after W-205 is done, a records PR adds its
+  eight-page `source_excludes` list (its Interfaces); re-review its
+  ci-scope.mjs header line 2 and ADOPTION's W-203 paragraph against W-205
+  (D-057 §3); then `branch`.
+- **W-208** (Ops collegium), split by the architect (measurement becomes a
+  follow-on, Default 1); spec reviews 2-10 failed, each narrower. Revision 6
+  is being signed as round 11 in `.worktrees/W-208-spec` (uncommitted;
+  evidence `~/.bisellium-evidence/W-208-spec/`). Next: spec review round 12
+  (prompt `~/.bisellium-evidence/W-208-specreview/r10/`, spec log updated).
+  On a pass its Defaults go to the Patron as questions (Ops is
+  architecture); then PR A (collegium, seat, lex) before `branch`.
+- To file: `runBudget` takes `--tokens ""` as 0 (W-208 spec review r10).
+- W-204's brief fails admission: the architect revises it before `branch`.
+- Queue review owed: W-202 after W-136 and W-138 (Patron 2026-10-10).
 
 ## Concurrency readiness
 
