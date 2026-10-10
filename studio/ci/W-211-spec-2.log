@@ -1,0 +1,18 @@
+# opus: W-211
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-10T20:31:36.478Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-211.md blob:0de39c715bc3c74798e9b4ad3914fadefa1946b8
+
+## Findings
+1. advisory — brief:58 `assert.ok` is not the rejector for an unreadable or malformed `package.json`, or an absent/non-string `test:record`; those fail earlier in `readFileSync`, `JSON.parse`, or `andSplit`, so the path still fails closed. — check: scripts/ci-scope.test.mjs W-211-b1
+2. advisory — brief:59 The rejector description is imprecise: a YAML string is a non-array but does not throw when spread; it reaches `assert.deepEqual` and fails there, while other malformed values may throw earlier. The path still fails closed. — check: scripts/ci-scope.test.mjs W-211-b1
+3. advisory — brief:60 The table omits the new dynamic import and call of `scripts/ci-scope.mjs#recordOnly`; import or call failures already fail the node:test row, so the omission is closed. — check: scripts/ci-scope.test.mjs W-209-b1
+
+## Verdict
+The mechanism is feasible and fails closed; the remaining findings concern input-table precision only.
+VERDICT: PASS
