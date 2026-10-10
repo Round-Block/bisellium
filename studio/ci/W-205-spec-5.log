@@ -1,0 +1,26 @@
+# opus: W-205
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T03:37:23.719Z
+# tree: dirty:3ba3e6989a455193ec470d45c028874465b4650e
+# brief: briefs/W-205.md blob:91ffa9027d4bb43eb8da09b1fc84629f5841b30f
+
+Architect signature for W-205 revision 3 under D-027, ahead of the build under D-057. It answers spec review r4 (ci/W-205-spec-4.log: 3 blocking findings, one cause: "once" and "no repeat" were claimed too broadly). The architect (claude-opus-5-5) added a repeat census, replaced the claim with one precise promise, swept the brief and signed studio/briefs/W-205.md (revision 3).
+
+Evidence, kept in ~/.bisellium-evidence/W-205-spec/ (revision 2's outputs kept as *-r2.*, admission as *-r3.*):
+- reads.txt §2b (new, enumerate-reads.mjs, keyed by job and step index):
+  - Source change: today, 24 of 24 pull_request steps have a merge_group counterpart. W-205 removes 19 repeats and keeps 5 (gates checkout, setup-node, npm ci, typecheck, lint).
+  - Records-only change: today, 14 of 14 have a counterpart. W-205 removes 11 and keeps 3 (checkout, setup-node, npm ci). Typecheck and lint then run on the pull request only.
+  - certify's 10 steps run in the merge group only, today and under W-205.
+  - §2 is unchanged: the merge_group run is master's step for step, 24 records-only and 34 source.
+- flips.txt is byte-identical to revision 2's; no test or ci.yml change in this revision.
+- admission.txt: 0 problems. admission-w196.txt (W-196's prototype admission): 0 problems.
+
+## Findings
+1. advisory: r4 finding 1 (brief:1) is answered. The title now says the pull_request run stops running the heavy steps (the test suite, the checks, the build and E2E), not that it stops repeating the merge group's work. check: none
+2. advisory: r4 finding 2 (brief:38) is answered. Promise one-pre-merge-run is replaced by heavy-steps-once, which names the heavy steps from the census (19 source, 11 records-only). Its limit names the five gates steps that still run in both runs for a source change, the three for a records-only change, and typecheck and lint running on the records-only pull request alone. It also states certify's ten merge-group-only steps, whose opus-head rerun of the six CI_STEPS and verify is unchanged from master and not a repeat W-205 removes. check: none: no check reads the census; reads.txt §2b is the signing evidence
+3. advisory: r4 finding 3 (brief:48) is answered. The parity bullet no longer says every step is a repeat. It separates today's pull_request steps, each with a merge_group counterpart (14/14, 24/24), from certify's ten merge-group-only steps, and cites heavy-steps-once for what still runs in both. check: none
+4. advisory: Sweep. Every "once", "repeat", "duplicate" and "every step" was checked. Changed: the decree family (merge-queue-heavy-steps-once), the Tree bullet (removed steps), the mint bullet (certify unchanged, none of its work removed), certify's input row ("one mint per group") and Defaults 1 (cites the kept repeats). Left as true: "every step skipped" for officina and web-e2e on a pull request, and the revision-history notes. check: none
