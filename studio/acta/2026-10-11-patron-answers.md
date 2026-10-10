@@ -21,8 +21,12 @@ Defaults 5 (the `budget --tokens` fix as its own opus) is a filing, not a questi
 - W-214 — the retro rides in the done PR (one records PR per finished opus).
 - W-215 — widened from the handoff review to every review loop (persistent reviewer, judge changed lines, code-computed facts, author rebuttal before a round fails).
 
-Each states a measured result. Baseline (`~/.bisellium-evidence/W-215-baseline/rounds.py`, run 2026-10-11): spec reviews 65 rounds over 15 opera, 42 failed (65%), mean 4.3, max 12; build reviews 205 rounds over 88 opera, 144 failed (70%), mean 2.3, max 8; the W-205 handoff took 15 review rounds; 2 records PRs per finished opus. Preliminary targets, Patron-approved: mean spec reviews ≤ 2, build ≤ 1.5, a handoff review in one round plus at most one rebuttal, no finding later reversed, 1 records PR per finished opus. The retro of each reports the measured before and after.
+Each states a measured result. Baseline (`~/.bisellium-evidence/W-215-baseline/rounds.py`, run 2026-10-11): spec reviews 65 rounds over 15 opera, 42 failed (65%), mean 4.3, max 12; build reviews 205 rounds over 88 opera, 41 with a `failed` outcome header (about 62, ~30%, counting every FAIL form in older logs), mean 2.3, max 8; the W-205 handoff took 15 review rounds; 2 records PRs per finished opus. Preliminary targets, Patron-approved: mean spec reviews ≤ 2, build ≤ 1.5, a handoff review in one round plus at most one rebuttal, no finding later reversed, 1 records PR per finished opus. The retro of each reports the measured before and after.
 
 ## Filed
 
 - W-216 — agents ask each other through the petitio (sella to sella); backlog, for the Patron to greenlight.
+
+## Correction, 2026-10-11
+
+The build figure first given to the Patron, "144 failed (70%)", was the producer's arithmetic error (a tally that also summed the script's summary lines); the W-215 architect caught it. Corrected above. The spec figure (42 of 65) stands.
