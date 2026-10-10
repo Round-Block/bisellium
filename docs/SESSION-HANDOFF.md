@@ -17,18 +17,21 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-209 done**: its done PR took the records-only path in under 3 minutes
-  (was 19-33). Retro (L-136 to L-144) is in records PR `chore/W-209-retro`;
-  Status and dossier republished.
-- **W-208** (Ops collegium): spec, PR A and the Ops budget are on master.
-  Next, after W-215 is done (one lane): `branch W-208`; after its merge, PR B
-  runs `ops-moves.mjs`.
-- **W-215** (review loops converge): spec on master; re-review passed (round
-  5), re-signed unchanged (6) and confirmed (7), riding `chore/W-215-resign`.
-  Next, once it merges and master is fetched: `branch W-215`, then a builder.
+- **W-215** (review loops converge) is built on `opus/W-215` (`.worktrees/W-215`,
+  clean at e6b17493; builder report and evidence `~/.bisellium-evidence/W-215-build/`).
+  Revision 3 (two build-found gaps) is signed as spec round 8 there, uncommitted;
+  round 9 (Codex session 01a126b2-7335-7da2-86f9-8c58544962ae) failed, recorded
+  there. Next: the architect's revision 4, resumed review; then a builder.
+- **W-211** (pin `source_excludes`): spec passed, Defaults answered; builds after W-215.
+- **W-210, W-212** (CI pins): spec round 4 failed (narrower promise limits);
+  revision 3 next, by an architect in `.worktrees/ci-pins-spec` (uncommitted;
+  `~/.bisellium-evidence/W-21{0,2}-spec/`), then resume each reviewer's session
+  (ids in `~/.bisellium-evidence/W-21{0,2}-specreview/r2/session.log`).
+- **W-208** (Ops collegium): branches after W-215 and W-211; PR B after merge.
+- Until W-215 lands, later review rounds resume the reviewer's Codex session
+  (`codex exec resume <id>`) and take the author's rebuttal before recording.
 - W-204: spec passed (round 6), then W-196's admission rules failed it (3).
-- Queue review owed: rank W-202 (console opens on the ledger page) below W-136
-  (board liveness, item 15) and W-138 (usage per opus; in backlog today).
+- Queue review owed: W-202 (ledger page) below W-136 (item 15) and W-138.
 
 ## Concurrency readiness
 
