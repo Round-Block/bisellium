@@ -17,18 +17,17 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-209** (checkpoint pages count as records): build review round 1 failed
-  on one test title (four guard overclaims were reclassified advisory in a
-  rebuttal and moved to W-212); spec revision 5 passed round 11; the title fix
-  is committed on `opus/W-209`. Next: the round-2 receipt, then review round 2
-  resuming the round-1 session (id in `W-209-review/r1/session.log`).
+- **W-209 done** (checkpoint pages count as records; dossier row 69). Next:
+  its retro (its first review log holds the rebuttal and ruling), and confirm
+  its done PR printed `record_only=true` in the merge group (Acceptance).
+  Then a Haiku subagent republishes Status and dossier.
 - **W-208** (Ops collegium): spec, PR A and the Ops budget are on master.
-  Next, after W-209 is done (one lane): `branch W-208`; after its merge, PR B
+  Next, after W-215 is done (one lane): `branch W-208`; after its merge, PR B
   runs `ops-moves.mjs`.
-- **W-215** (review loops converge): spec passed at round 4 (two review
-  rounds, the resumed-session shape), landing in records PR
-  `chore/records-2026-10-11`. Before `branch`: D-057 §3 re-review of its Files
-  owned that changed on master since 36ca84cb.
+- **W-215** (review loops converge): spec on master; the D-057 §3 re-review
+  passed in the resumed session (verdict `~/.bisellium-evidence/W-215-specreview/r5/`,
+  to record as spec round 5). Next, after the W-209 retro: record it, then
+  `branch W-215`.
 - W-204: spec passed (round 6), then W-196's admission rules failed it (3).
 - Queue review owed: rank W-202 (console opens on the ledger page) below W-136
   (board liveness, item 15) and W-138 (usage per opus; in backlog today).
@@ -56,8 +55,6 @@ The ranked order, Patron 2026-10-09 (recorded in
 since (D-052 to D-056), slotted by the producer as a default the Patron
 may veto. One-line descriptions of items 9-15 are in that acta.
 
-2. W-209 — checkpoint pages count as records, so done and retro PRs take the
-   fast CI path (Patron 2026-10-10).
 2a. W-210 — CI refuses a merge path that skips the queue; W-211 — a test
     pins the `source_excludes` list (the two pins the Patron asked for);
     W-212 — CI docs checked against ci.yml (QA now, Ops after W-208);
