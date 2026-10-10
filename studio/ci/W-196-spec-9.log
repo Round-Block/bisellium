@@ -1,0 +1,24 @@
+# opus: W-196
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T03:03:08.039Z
+# tree: dirty:3ba3e6989a455193ec470d45c028874465b4650e
+# brief: briefs/W-196.md blob:aec571596a43ecfc6d2d67232c3d65cbb542102a
+
+Architect signature for W-196, revision 5 (round 9), answering spec review round 8 (ci/W-196-spec-8.log), under D-027 and D-057. Master is d61f50c, where W-203 is done. Revision 4 is kept as ~/.bisellium-evidence/W-196-spec/W-196-r4.md.
+
+Between a86f356 and d61f50c, no Files owned path changed: under packages/ and docs/, only SESSION-HANDOFF.md and the dossier pages changed, so the next.ts line numbers stand.
+
+Re-run on 2026-10-10 at d61f50c:
+- census.mjs gives flips.txt; the first run is kept as flips-r1.txt.
+- Newly refused non-done briefs: greenlit W-038, W-040, W-045, W-051, W-058, W-135, W-136, W-204; halted W-023, W-027, W-028, W-032, W-043, W-048, W-052, W-053, W-054, W-055, W-056, W-106, W-107, W-108, W-109; backlog W-138; and the record-less W-105-A1 and W-107-A1.
+- W-196's own brief is admitted; 81 done briefs are exempt.
+- check-compare.sh on committed copies gives check-compare.txt: brief.admission findings are 0 on master and 0 on the prototype for both officinae, since no opus is building, verifying or review. Every other check finding is the same apart from the tree hashes. The first run is kept as check-compare-r1.txt.
+- admission-r9.txt: revision 5 has 0 admission problems against master and against the prototype.
+
+## Findings
+1. advisory: Round 8 finding 1 is fixed. The correction note now says specOrder derives the architect order and cites promise next-review-gate. Sweep: grep finds every sentence that states a next outcome, and each now cites the promise and its E1–E13 limit: the correction notes, the Intent's gate paragraph, the Interfaces lead and no-limit line, the Input domain preamble, rows 4–5, Behaviour 4's title, lead and Genuine red, Acceptance's doc line, and Defaults 4. The remaining mentions are file paths, doc locations and the E-list itself. check: packages/cli/src/next.test.ts W-196-b4
+2. advisory: Round 8 finding 2 is fixed. Acceptance now states the measured result with its date and commit (0 brief.admission findings at d61f50c), and notes that at a86f356 the built check would have blocked W-203's brief. Defaults 3 lists the briefs still refused at d61f50c (W-203 dropped, now done), and its grandfathering note is restated for no active opus. check: brief.admission
