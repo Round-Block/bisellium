@@ -15,22 +15,17 @@ into a lex, a decision or a check rule and delete it here.
 
 Rules, process and environment: studio/leges/production.md.
 
-## Resume point (2026-10-10)
+## Resume point (2026-10-11)
 
-- **W-205 done** (CI runs once per merge): dossier row 68, pages republished; retro
-  (L-129 to L-135) filed in records PR `chore/W-205-retro` (land it). High lessons are
-  fixed by W-205 itself or by queued W-184 and W-212.
-- **W-209** (Patron-approved): revision 4 (W-205 merged first) passed the
-  change-limited review (spec round 9). The revised spec and its
-  `source_excludes` pages ride records PR `chore/W-205-retro`; once it merges
-  and master is fetched, `branch` (no opus is between `branch` and `done`).
-- **W-208** (Ops collegium; measurement split off, its brief's Default 1).
-  Revision 8 (a fail-closed branch-check script) is signed as round 15 in
-  `.worktrees/W-208-spec` (uncommitted; evidence `~/.bisellium-evidence/W-208-spec/`;
-  base 33c5cf4). Spec review round 16 is running (prompt and verdict in
-  `~/.bisellium-evidence/W-208-specreview/r16/`). On a pass its brief's
-  Defaults 1-5 go to the Patron as questions; then PR A (collegium, seat, lex)
-  before `branch`.
+- **W-209** (checkpoint pages count as records) is building: a Sonnet builder
+  subagent in `.worktrees/W-209` (branch `opus/W-209`; brief
+  `~/.bisellium-evidence/W-209-build/builder-brief.md`). Next: check its
+  report and census, mint the receipt, review round 1.
+- **W-208** (Ops collegium): spec passed round 16; the Patron answered its
+  Defaults 1-4 (`studio/acta/2026-10-11-patron-answers.md`). Its spec, PR A
+  (collegium, seat, lex, instructions) and the Ops budget ride records PR
+  `chore/W-208-prA`. Next, after W-209 is done (one lane): `branch W-208`;
+  after its merge, PR B runs `ops-moves.mjs`.
 - W-204: spec passed (round 6), then W-196's admission rules failed it (3).
 - Queue review owed: rank W-202 (console opens on the ledger page) below W-136
   (board liveness, item 15) and W-138 (usage per opus; in backlog today).
@@ -66,8 +61,11 @@ may veto. One-line descriptions of items 9-15 are in that acta.
     W-213 — the retro reads beyond the review findings (wins, time, cost, slips).
 3. W-208 — set up the Ops collegium (D-055).
 4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
+2b. W-215 — review loops converge (resumed reviewer, rebuttal, measured
+    targets; Patron 2026-10-11): spec it ahead now (D-057).
 5. W-204 — next stops holding a build review after three failed rounds.
-6. W-206 — the signed spec rides in the opus's own PR (D-054).
+6. W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
+   retro rides in the done PR (Patron 2026-10-11).
 7. W-207 — verify after merge reuses the queue's certificate (D-054).
 8. W-201 — the mutation check gates build review (D-052).
 9. W-185 — records checked once at load (D-049; the architect specs it).
@@ -92,7 +90,7 @@ W-159, W-177.
 
 ## Open Patron choices
 
-- Greenlight W-214 (retro rides in the done PR) and W-215, widened to every
-  review loop (persistent reviewer, rebuttal, facts first)? Asked 2026-10-10.
-- At the owed queue review: greenlight and rank W-138 and W-202, and
-  W-175 and W-176 (backlog from the 2026-10-08 lesson audit).
+- Greenlight W-216 (agents ask each other through the petitio), or let W-215
+  ship its rebuttal on plain session resume first? Asked 2026-10-11.
+- At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
+  --tokens fix), W-218 (Ops per-step times), and W-175, W-176 (2026-10-08 lesson audit).
