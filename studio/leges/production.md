@@ -155,6 +155,7 @@ the main checkout's absolute `--studio`/`--repo`.
    `~/.bisellium-evidence/retro-triage-W-162/prompt.md`), adjust with a kept
    script if needed, `retro --opus <id> --from <file>`, map any new opus to a
    milestone (`amend --milestone --value`), land in a records PR.
+   Then `npm run -s bisellium -- tick --studio studio`.
 
 `.claude/` changes stop merge/branch/done for the Patron's command.
 
@@ -237,3 +238,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Specs written ahead of the build (D-057) | Patron |
 | 2026-10-10 | Receipt minted before review, as `next` requires | Producer |
 | 2026-10-10 | Ops changes are architecture: the Patron approves each Ops spec and its Defaults before `branch` | Patron |
+| 2026-10-11 | Step 7 runs `tick` once per opus as Ops' cadence (W-208 Defaults 3) | Patron |

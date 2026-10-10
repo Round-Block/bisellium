@@ -81,6 +81,7 @@ commit with a `Co-Authored-By:` trailer naming the sella that wrote it.
 - design (magister: architect)
 - engineering (magister: eng-lead)
 - qa (magister: qa-lead)
+- ops (magister: ops-lead)
 
 ## Claude Code
 
