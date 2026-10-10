@@ -142,7 +142,8 @@ the main checkout's absolute `--studio`/`--repo`.
    the producer checks the fix's census: every path to the input the blocker
    named is closed (W-184 makes it a hold). No round cap (D-053).
 5. **Merge:** refresh `handoff`; the receipt minted before review
-   (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`);
+   (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
+   run from the opus worktree: the host reads the reds and brief from that studio);
    `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
    pushes the reviewed head without a rebase, `merge` enqueues it, and the
