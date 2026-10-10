@@ -17,17 +17,15 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-209 done** (checkpoint pages count as records; dossier row 69). Next:
-  its retro (its first review log holds the rebuttal and ruling), and confirm
-  its done PR printed `record_only=true` in the merge group (Acceptance).
-  Then a Haiku subagent republishes Status and dossier.
+- **W-209 done**: its done PR took the records-only path in under 3 minutes
+  (was 19-33). Retro (L-136 to L-144) is in records PR `chore/W-209-retro`;
+  Status and dossier republished.
 - **W-208** (Ops collegium): spec, PR A and the Ops budget are on master.
   Next, after W-215 is done (one lane): `branch W-208`; after its merge, PR B
   runs `ops-moves.mjs`.
-- **W-215** (review loops converge): spec on master; the D-057 §3 re-review
-  passed in the resumed session (verdict `~/.bisellium-evidence/W-215-specreview/r5/`,
-  to record as spec round 5). Next, after the W-209 retro: record it, then
-  `branch W-215`.
+- **W-215** (review loops converge): spec on master; its D-057 §3 re-review
+  (spec round 5) passed and rides `chore/W-209-retro`. Next, once that PR
+  merges and master is fetched: `branch W-215`, then a Sonnet builder.
 - W-204: spec passed (round 6), then W-196's admission rules failed it (3).
 - Queue review owed: rank W-202 (console opens on the ledger page) below W-136
   (board liveness, item 15) and W-138 (usage per opus; in backlog today).
@@ -93,4 +91,5 @@ W-159, W-177.
 - Greenlight W-216 (agents ask each other through the petitio), or let W-215
   ship its rebuttal on plain session resume first? Asked 2026-10-11.
 - At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
-  --tokens fix), W-218 (Ops per-step times), and W-175, W-176 (2026-10-08 lesson audit).
+  --tokens fix), W-218 (Ops per-step times), W-219 (next waits for the merge-group
+  run), and W-175, W-176 (2026-10-08 lesson audit).
