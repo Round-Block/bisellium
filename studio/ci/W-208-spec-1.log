@@ -1,0 +1,35 @@
+# opus: W-208
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T10:37:05.686Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:e8edffc5affa0249148b775cfe8732d21fe90330
+
+Architect signature for W-208 under D-027, written ahead of the build under D-057. Codex (gpt-5.6-sol) drafted ~/.bisellium-evidence/W-208-draft/W-208-draft.md. The architect (claude-opus-5-5) checked it against the code, corrected it, and signed studio/briefs/W-208.md (revision 1). The code checked:
+- packages/cli/src/tick.ts (computeDue, writeHealthFile, runTick) and tick.test.ts
+- packages/commands/src/lifecycle.ts (runAmend, AMEND_USAGE, runReady's start, runDone's end), usage.ts and usage.test.ts
+- packages/commands/src/writes.ts (recordOwnerRefusal, emit --usage's department)
+- packages/cli/src/new.ts (newItem) and packages/commands/src/opus-model.ts (the parent rule, loadNativeRecords, utcTimestampProblem, readContainedRegularFile)
+- packages/commands/src/verdict.ts (the # at: writer, readBuildRounds, readBuildReviewConfig) and next.ts's spec log readers
+- packages/cli/src/retro.ts (retroFiled, the retro actum writer, readRetroSetting)
+- packages/cli/src/check.ts and rules/{lex,instructions}.ts (what a new collegium must satisfy), containment.test.ts (inventories B and C)
+- .gitignore, docs/ADOPTION.md, docs/LEX_TEMPLATE.md, D-052 to D-057, production lex §9 to §11, the briefs of W-205 and W-209
+
+Evidence, kept in ~/.bisellium-evidence/W-208-spec/ (scratch git clones from make-copy.sh; the change applied by prototype.mjs in stages rows, code and records; signing-notes.md lists every script and output):
+- census.txt: the step sources over 97 done opera and the 14 of the ladder era; events.jsonl and receipts are local and gitignored, so five steps are measured from committed records.
+- reads.txt: the read enumeration the brief cites.
+- flips.txt: each new row alone on master fails at an assertion; with the code each passes and no existing row flips.
+- records-stage.txt: the producer's records on a copy (no block, five advisories, two cleared by the regeneration), the nine moves, the D-021 refusal of W-205's move while opus/W-205 exists, and the step rows over the real records.
+- proto-npm-test-final.txt (exit 0), proto-typecheck.txt, proto-lint.txt, proto-prettier.txt; admission.txt: 0 problems under master's admission.
+
+## Findings
+1. advisory: The draft measured seven rungs from the greenlight event, the run receipt and a verifying event. events.jsonl and receipts/ are gitignored and local to one checkout (a greenlight for 8 of the 14 ladder-era opera, no receipt on disk), traditio.at is overwritten by every handoff, and no verb records the merge, so five steps are measured from committed records: spec, build, review, merge (PR, queue, merge, verify, done) and retro. check: packages/cli/src/ops.test.ts W-208-b2
+2. advisory: The draft had the nine moves ride in W-208's PR. D-021 refuses amending another opus from opus/W-208, and W-205 while opus/W-205 exists, so the moves land in a records PR after W-208 merges and W-205's after its branch is deleted. check: none: records-stage.txt measures the refusal; the producer's records PR
+3. advisory: The draft filed a hygiene breach opus with parent: <opus>, which new refuses (parent only on a subtask, opus-model.ts:204). The dedupe key is the title prefix "Ops: <opus> <step> took ". check: packages/cli/src/ops.test.ts W-208-b3
+4. advisory: The draft typed the budgets in adapters/native, named three new readers and put the rows in lifecycle.test.ts and tick.test.ts. One raw reader (readStepBudgets, like readRetroSetting) in a new steps.ts that check, tick and W-202 import; reused readBuildRounds, parseLogHeader, loadNativeRecords, newItem and retroFiled's reading; rows in a new node:test file; ADOPTION lines outside W-205's ranges. check: packages/cli/src/ops.test.ts W-208-b1
+5. advisory: Only finished steps are filed; an open step is reported in health.json, since its minutes change on every tick. check: packages/cli/src/ops.test.ts W-208-b3
+6. advisory: The draft did not name the breaks: a raw `${id}.md` template and a raw Date.parse in steps.ts flip containment inventories B and C (the prototype's first version did both), and the new collegium makes CLAUDE.md and AGENTS.md stale. The brief requires instant() and no such template, and PR A regenerates the instructions. check: packages/cli/src/containment.test.ts
+7. advisory: The cadence needs no code (computeDue gives every magister a daily at L1), but tick runs on no schedule (the last health.json is from 2026-10-06); the brief makes running it at the retro step a Default, with its talk-turn cost. check: none: a production lex §9 sentence the producer lands

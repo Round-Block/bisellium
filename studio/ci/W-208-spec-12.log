@@ -1,0 +1,18 @@
+# opus: W-208
+# phase: spec
+# round: 12
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T13:59:49.136Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:ab5ac9b4df7a11ddb6826c8df2cfa7303f9493e7
+
+## Findings
+1. blocking — brief:38 The “reads only the `collegia` ids” promise is false: `namedSella` also reads `sellae`, and `emitEvent` reads `manifest.studio`; with valid `collegia`/`sellae` but a missing or non-string `studio`, the record is amended before event emission throws. The same overstatement appears at line 18. — check: packages/cli/src/ops.test.ts
+2. blocking — brief:148 `recordOwnerRefusal` treats every non-zero result from its initial `git ls-files` probe as “untracked” and allows the write, so a Git failure such as a corrupt index can move a tracked record while `opus/<id>` exists; the stated untracked-record limit does not cover this fail-open path, and line 130 repeats the promise. — check: packages/cli/src/lifecycle.test.ts
+3. blocking — brief:154 The valid domain says `--tokens` is a literal positive integer, but `runBudget` accepts and writes other values including `0` and fractions; the disclosed empty/whitespace limit therefore does not close the whole fail-open numeric-input class. — check: packages/cli/src/writes.test.ts
+
+## Verdict
+Three substantive fail-open or false-promise cases remain, so the brief is not ready to build.
+VERDICT: FAIL

@@ -1,0 +1,20 @@
+# opus: W-208
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T12:42:39.407Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:8bcdb3c5561d30733bb2b42eef5f5680ae0a4470
+
+## Findings
+1. blocking — brief:30 With a parseable manifest whose `collegia` is absent or not an array, `manifest.collegia.some(...)` throws; a well-formed undeclared id therefore does not exit 2 as promised. — check: packages/cli/src/ops.test.ts
+2. blocking — brief:140 `recordOwnerRefusal` permits an untracked record to move while `opus/<id>` exists; the existing test explicitly asserts exit 0, but the row omits the tracked-record limit and promises exit 2. — check: packages/cli/src/lifecycle.test.ts
+3. advisory — brief:138 The input table omits the new test reader’s direct reads of the generated opus and event log through `readFront`, `readFileSync`, and `JSON.parse`; malformed output does fail closed through a throw or assertion failure. — check: packages/cli/src/ops.test.ts
+4. advisory — brief:178 The input table omits the unchanged `tick --studio studio` command that W-208 adds to the production ladder, including the call and `runTick` rejection boundary required by D-050. — check: packages/cli/src/tick.test.ts
+5. advisory — brief:179 The input table omits the unchanged `budget <period> --collegium ops --tokens <n>` command used to establish Ops’ allowance, including its valid domain and `runBudget` refusal. — check: packages/cli/src/writes.test.ts
+
+## Verdict
+Two refusal guarantees remain broader than their actual code paths, so the brief is not ready to build.
+VERDICT: FAIL

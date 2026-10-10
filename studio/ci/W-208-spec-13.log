@@ -1,0 +1,28 @@
+# opus: W-208
+# phase: spec
+# round: 13
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T14:38:18.275Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:e49d8875ee5f74b4ca90e5c14b61a2d97191a9b4
+
+Architect signature for W-208 under D-027, revision 7, written ahead of the build under D-057. It answers spec review r12 (ci/W-208-spec-12.log: 3 blocking). Revision 6 is kept as ~/.bisellium-evidence/W-208-spec/W-208-r6.md. The architect (claude-opus-5-5) signed studio/briefs/W-208.md (revision 7, base 33c5cf4). No code changes from revision 6: each finding was judged against the code, found true, and narrowed with a limit rather than fixed, because each sits in unchanged code shared beyond W-208 (D-054 §5: the promise is narrowed to what that code guarantees).
+
+Evidence, kept in ~/.bisellium-evidence/W-208-spec/ (prototype-r7.mjs, proto-r7/):
+- lim-r7.txt (lim-r7.sh): L1 W-208's added lines name the manifest only in declaredCollegiumIds and its one call; L2 a manifest with no studio key or studio: 7, or an event log that is a directory, leaves the record moved, no event, exit 1; L3 unparseable front matter exits 1 with the record unchanged; L4 tracked record, local opus/W-206, index intact exits 2, corrupt index (ls-files 128) exits 0 and moves it, remote-only origin/opus/W-207 exits 0; L5 budget --tokens "", " ", 0, 0.5, 1e6, 0x10, " 7 " all exit 0 and write Number(); -1, abc, Infinity exit 2; L6 instructions --write changes CLAUDE.md and AGENTS.md only; L7 new --collegium ops before PR A exits 1, no record.
+- flips-r7.txt: W-208-b1 alone on the base fails at its first assertion (actual 2, expected 0); with the code it passes and six neighbouring suites pass. proto-r7-npm-test.txt (exit 0), proto-r7-typecheck.txt, proto-r7-lint.txt, proto-r7-prettier.txt; admission-r7.txt: 0 problems, 9 rows, 0 failing shape.
+
+## Findings
+1. advisory: r12 finding 1 (brief:38, :18), narrowed with a limit. True: namedSella reads sellae and emitEvent reads manifest.studio after the record write. A guard on studio alone would close one instance, not the class (any emitEvent throw after the write), and a rollback would change amend for every field. Promise collegium-move and the Interfaces paragraph now say W-208's added lines read the manifest only through declaredCollegiumIds, the rest of amend reads it as on master, earlier refusals/throws exit 2/1 before any write, and the record is written before the event with no rollback: a throw during or after the write exits 1 without the event (lim-r7.txt L2, L3); the r6 note at :18 is removed. check: none: lim-r7.txt L1-L3 measure it; the code is master's
+2. advisory: r12 finding 2 (brief:148, :130), narrowed with a limit. True: step 1 of recordOwnerRefusal allows on any non-zero probe, by its documented design shared by every lifecycle verb; changing it is a D-021 contract change outside W-208. The D-021 row's limit now covers the whole class: any non-zero first probe (untracked, no repo, corrupt index, git not running) and a remote-only branch are not refused. PR B's precondition is the producer's branch check after git fetch --prune (local and origin); D-021 backs it only as stated. check: none: lim-r7.txt L4 measures it; the code is master's
+3. advisory: r12 finding 3 (brief:154), narrowed with a limit. True: runBudget's only test is Number(raw) finite and at least 0. The budget row's valid domain is now that test, its limit lists every admitted form ("", whitespace, 0, fractions, exponent, hex), Defaults 4 passes 1000000 as a plain decimal integer, and Defaults 5's opus title covers the whole class. check: none: lim-r7.txt L5 measures it; the code is master's
+
+## Sweep
+- Reads/refusals of reused code: collegium-move (fixed, finding 1); Interfaces "refused with exit 2" now conditioned on master's earlier steps; Interfaces "emits one event" gains the no-rollback limit; Input domain W-208 row "any other id exits 2" now exit 2 or an earlier throw's 1 (L3); "rest of amend" row gains throw exit 1 and the write-before-event limit; D-021 row and PR B (finding 2).
+- Domains narrower than the rejector: check row (exactly-as-written lex vs a shape check) now "a lex the check passes", limit: the check judges shape, PR A's review the text; instructions row now lists its exact refusals and that it renders any studio and writes three files (GLOSSARY.md unchanged, L6); tick row adds that it runs on any other studio and W-208 promises nothing about its output or writes; budget (finding 3); new row's before-PR-A claim gained its evidence (L7).
+- Writes before a later throw: amend record before events (L2, stated); budget's aerarium before its timeline (master rolls back); instructions' three writes in turn (stated); new and tick writes: the Input domain preamble now says W-208 adds no rollback to any unchanged command and the outcome is master's.
+- Absolutes (only/never/always/every/none/no): each remaining one checked; "only through declaredCollegiumIds" (L1), "No other script changes" and the byte-unchanged list (prototype; writes.ts, instructions.ts and namedSella added so the limits stay master's), "changes CLAUDE.md and AGENTS.md only" (L6), "none flips"/"no fixture breaks" (flips-r7, npm test). The rest are lex prose or Defaults proposals.
+- Defaults heading: master's production lex (after the base) makes an Ops spec's Defaults questions the Patron answers before branch; the heading and two "veto" words now say so.
+- Breaking existing fixtures or assertions: none (flips-r7.txt stage B, proto-r7-npm-test.txt).

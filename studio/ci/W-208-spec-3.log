@@ -1,0 +1,27 @@
+# opus: W-208
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T11:29:10.159Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:e458ba1f20cd5ab757ba49df775fbe04c9477987
+
+Architect signature for W-208 under D-027, revision 2, written ahead of the build under D-057. It answers spec review r2 (ci/W-208-spec-2.log: 9 blocking, 2 advisory). Revision 1 is kept as ~/.bisellium-evidence/W-208-spec/W-208-r1.md. The architect (claude-opus-5-5) took over from the revision 1 session, split the opus, and signed studio/briefs/W-208.md (revision 2). The code checked:
+- packages/commands/src/lifecycle.ts (runAmend, AMEND_USAGE, the native preflight and refuseModel) and usage.ts with usage.test.ts
+- packages/commands/src/writes.ts (recordOwnerRefusal, D-021)
+- packages/cli/src/tick.ts (computeDue's daily at L1, writeDailyActum through talk)
+- packages/cli/src/check.ts (collegium.magister, sella.collegium, lex.present, lex.sections, opus.sella.collegium) and rules/{lex,instructions}.ts
+- packages/cli/src/instructions.ts (runInstructions' exits), packages/cli/src/new.ts (runNew's positional studio, for Defaults 1's command)
+- .github/workflows/ci.yml (job officina runs the studio check; read only, W-205 owns it), docs/ADOPTION.md §bisellium amend, D-055, production lex §9
+
+Evidence, kept in ~/.bisellium-evidence/W-208-spec/ (scratch git clones from make-copy.sh; the change applied by prototype-r2.mjs in stages rows, code and records):
+- flips-r2.txt: W-208-b1 alone on master fails at its first assertion (actual 2, expected 0); with the code it passes, and lifecycle, usage, check, cli, containment and rules suites pass.
+- records-stage-r2.txt: PR A on a copy adds three advisories and no block after the regeneration; PR B's nine moves exit 0, a repeated move exits 2, the check after the moves shows no new finding, and D-021 refuses W-205's move while opus/W-205 exists.
+- proto-r2-npm-test.txt (exit 0), proto-r2-typecheck.txt, proto-r2-lint.txt, proto-r2-prettier.txt; admission-r2.txt: 0 problems under master's admission.
+
+## Findings
+1. advisory: Class 1 of ci/W-208-spec-2.log (findings 1-6, advisory 10): every blocker sat in the step reader's records (log names and chains, record identity and state, the history filter, --now, the seats). W-208 is split: it keeps the collegium, the lex, the seat and amend --collegium, and the per-step times and breach filing become a follow-on opus the producer files (Defaults 1), which carries one validation at the reader's input boundary and stated limits. check: none: Defaults 1 names the follow-on and its class fix
+2. advisory: Class 2 (findings 7-9): breach-once, the exit codes and the lex's "every opus" left with the measurement. No sentence of the brief or the lex claims a measurement, a budget or a filing; the remaining promises each state their limit (a non-string collegium, the seat advisory, D-021 for any branch, the daily acta only on a live tick). check: packages/cli/src/ops.test.ts W-208-b1
+3. advisory: Class 3 (advisory 11): the input domain gains rows for the unchanged studio check (job officina), instructions --write and the lex's content, each judged by its exit (D-050). check: none: records-stage-r2.txt measures each on a copy

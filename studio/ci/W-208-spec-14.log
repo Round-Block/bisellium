@@ -1,0 +1,17 @@
+# opus: W-208
+# phase: spec
+# round: 14
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T15:00:42.849Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:e49d8875ee5f74b4ca90e5c14b61a2d97191a9b4
+
+## Findings
+1. blocking — brief:123 PR B does not require `git fetch --prune` and both branch-list probes to exit 0. A failed fetch can leave a live remote branch absent from stale local refs; both lists then appear empty, and `recordOwnerRefusal` admits the remote-only branch, so the move fails open. — check: none: make PR B a kept fail-closed script and test failed fetch and branch-list calls
+2. advisory — brief:22 The claim that no other collegium lex carries guide front matter is incorrect: `studio/leges/production.md` does. This does not prevent the proposed Ops lex from passing its checks. — check: none: compare record-shape claims against every existing collegium lex
+
+## Verdict
+PR B’s branch-deletion precondition can fail open on an ordinary Git failure, so the brief is not ready to build.
+VERDICT: FAIL

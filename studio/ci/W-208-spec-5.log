@@ -1,0 +1,25 @@
+# opus: W-208
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T12:18:43.068Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:aa1218295a1fefb662d6de850d7cb47b770a312f
+
+Architect signature for W-208 under D-027, revision 3, written ahead of the build under D-057. It answers spec review r4 (ci/W-208-spec-4.log: 2 blocking). Revision 2 is kept as ~/.bisellium-evidence/W-208-spec/W-208-r2.md. The architect (claude-opus-5-5) signed studio/briefs/W-208.md (revision 3). The code checked:
+- packages/commands/src/writes.ts (recordOwnerRefusal steps 1-5: untracked or no repo allows, the owner branch allows, another opus branch refuses, an existing branch not checked out refuses, a git failure refuses)
+- packages/commands/src/lifecycle.ts (runAmend, nativePreflight with the whole opera graph, refuseModel's exit 1, namedSella's guest and $BISELLIUM_SELLA fallback, resolveExactNow)
+- packages/cli/src/check.ts (ID_RE and the ".." test behind manifest.id.format, manifest.unique, collegium.magister, sella.collegium, lex.present)
+- packages/cli/src/instructions.ts (runInstructions' exits)
+
+Evidence, kept in ~/.bisellium-evidence/W-208-spec/ (prototype-r3.mjs, proto-r3/):
+- flips-r3.txt: W-208-b1 alone on master fails at its first assertion (actual 2, expected 0); with the code it passes and six neighbouring suites pass; stage R, revision 2's membership-only code writes --collegium "" that a malformed manifest declares (actual 0, expected 2).
+- d021-r3.txt: a move refused from another opus branch and from a records branch while opus/W-205 exists, written on opus/W-205 itself and after the branch is deleted.
+- proto-r3-npm-test.txt (exit 0), proto-r3-typecheck.txt, proto-r3-lint.txt, proto-r3-prettier.txt; admission-r3.txt: 0 problems under master's admission.
+
+## Findings
+1. advisory: Finding 1 of ci/W-208-spec-4.log (D-021 worded wider than recordOwnerRefusal): promise collegium-move, correction 1, PR B, Interfaces and the record row now state the real refusal and its allowances (the owner's branch, an untracked record, no repo), measured in d021-r3.txt. check: none: d021-r3.txt measures recordOwnerRefusal, unchanged code
+2. advisory: Finding 2 (membership-only target id): runAmend applies the manifest's own id rule (check.ts's ID_RE and its ".." test) before membership, so an empty or malformed id a malformed manifest declares is refused; the limit names what amend leaves to check (a duplicate row, a bad magister). check: packages/cli/src/ops.test.ts W-208-b1
+3. advisory: Sweep of every other promise resting on a reused refusal: the preflight's scope (record and opera graph, never collegium or the manifest), --sella's guest and env fallback, --now as exact UTC, and instructions --write's refusals were narrowed to the code; the lex relies on no reused refusal. check: none: the rows cite the unchanged functions by name

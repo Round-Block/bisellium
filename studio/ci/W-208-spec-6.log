@@ -1,0 +1,19 @@
+# opus: W-208
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T12:30:17.358Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:aa1218295a1fefb662d6de850d7cb47b770a312f
+
+## Findings
+1. blocking — brief:47 The commands do not “behave … as on master”: PR A makes `check` add three advisories, makes Ops cadence appear in `tick` and `health.json`, and makes the `new --collegium ops` call at line 191 succeed where master refuses it. — check: packages/cli/src/ops.test.ts
+2. blocking — brief:148 `nativePreflight` calls `validateUiPolicy`, which reads manifest collegia, seats and probationes and can refuse an active UI opus with exit 1; therefore the claims that it judges no manifest and that a valid target otherwise moves are false. — check: packages/cli/src/ops.test.ts
+3. blocking — brief:197 A live tick does not necessarily write one daily per magister or spend five turns: `computeDue` suppresses a daily already filed that local day, and `runTick` reports seat or talk failures without failing the tick. Per-opus ticks make the same-day suppression an ordinary path. — check: packages/cli/src/tick.test.ts
+4. advisory — brief:191 The input table omits the unchanged `new` command used to file the follow-on opus; D-050 requires a row naming that call and `runNew`’s non-zero refusal. The existing path fails closed before creating the requested record. — check: none: add a `runNew` input row
+
+## Verdict
+Several promises remain broader than the actual record-driven and reused-command behavior, so the brief is not ready to build.
+VERDICT: FAIL
