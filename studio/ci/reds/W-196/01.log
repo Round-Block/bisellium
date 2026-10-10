@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-196-b1 --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-10T03:40:58.155Z
+# sella: builder.W-196
+# tree: tree:2c1c3d739521807906d4164c738888fc13c23231
+
+TAP version 13
+# Subtest: W-196-b1 behaviour 1: a brief cites its read enumeration once, to ready and to check
+not ok 1 - W-196-b1 behaviour 1: a brief cites its read enumeration once, to ready and to check
+  ---
+  duration_ms: 171.646422
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:25:1838'
+  failureType: 'testCodeFailure'
+  error: |-
+    no citation: exit (stderr [])
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:176:10)
+    refuse (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:644:5)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:654:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 188.977024
