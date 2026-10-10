@@ -1,0 +1,21 @@
+# opus: W-209
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T15:47:14.701Z
+# tree: tree:62dc716bb3e82d8664cb8c6c982c403da2157709
+# brief: briefs/W-209.md blob:837013b04100673deab6c281dc880a827146b339
+
+Architect signature for W-209 revision 4, under D-027 and ahead of the build under D-057. It answers the change-limited re-review r7 (ci/W-209-spec-7.log, D-057 §3; two blockers, three advisories) after W-205 merged. The architect (claude-opus-5-5) kept the signed revision 3 as ~/.bisellium-evidence/W-209-spec/W-209-signed-r5.md, re-measured on master 25d47966 and re-signed studio/briefs/W-209.md. Every Default keeps its substance; only wording that named W-205's order changed.
+
+Evidence, new in ~/.bisellium-evidence/W-209-spec/:
+- r7-measure.sh with prototype-r7.mjs (prototype.mjs plus the two lines W-205 left to W-209), output r7-measure.txt, on master 25d47966: header line 2, recordOnly 21–23, header comment to 15, insertion before line 186, 16 existing rows, record-reads.mjs line 3, the source_excludes paragraph 1045–1051, ADOPTION line 1212. Stage A: the row alone fails, expected true, actual false. Stage A2: 16 pass, 1 fail. Stage B (source, manifest, row, docs): 17/0; ci-workflow.test.mjs, docs.test.ts, test:record, prettier and eslint pass; both officina checks PASS with master's counts (350 and 27 advisory). No existing test quotes the rewritten prose, so no fixture or assertion breaks.
+- census-r7.txt (run-census.sh on the r7 prototype copy): the full npm test under the preload passes the guard, record_reads=ok; the same five test files read the pages, all in test:record; the one failure is the census's own setup (W-139 behaviour 1, test:suite's && made ;).
+- admission-r7.txt: 0 problems under master 25d47966's admission; one table run, 9 rows.
+
+## Findings
+1. advisory: r7 findings 1 and 2. W-205 merged first, so its ordering and its handoff no longer apply. The prerequisite is now: the producer's records PR lands on master before branch W-209, while no opus is between branch and done (true at 25d47966). W-209 owns ci-scope.mjs header line 2 and ADOPTION line 1212, with their exact new wording in Files owned, and Acceptance's byte-unchanged claims exclude them. check: none: prerequisite ordering is process state
+2. advisory: r7 findings 3–5 re-measured: stages 16/1 then 17/0, insertion before line 186, paragraph at 1045–1051. check: scripts/ci-scope.test.mjs
+3. advisory: Sweep for sentences that assumed W-205 unmerged: the Intent's ~31 min (now split: PR 385's 15.7m pull request plus 16.4m merge group), promise records-path's "a pull request until W-205", rows 5–7 (records-only classification happens only in a merge group), revision 1's correction 6, and W-196's +25 shift. check: none: prose dated by a merge
