@@ -165,6 +165,73 @@ export interface RecordedFinding {
   /** the finding line after its number, whole */
   text: string;
   blocking: boolean;
+  /** W-215: ruled withdrawn in the log's own `## Ruling`; it no longer stands */
+  withdrawn?: true;
+}
+
+/** W-215: one `## Earlier findings` line: the reviewer's account of a standing blocker of its previous round. */
+export interface EarlierFinding {
+  log: string;
+  n: number;
+  status: "closed" | "open" | "reversed";
+  text: string;
+}
+/** W-215: one `## Rebuttal` line: the author's evidence against finding `n` of this log. */
+export interface Rebuttal {
+  n: number;
+  text: string;
+}
+type Parsed = { headers: Map<string, string[]>; findings: RecordedFinding[]; earlier: EarlierFinding[]; rebuttal: Rebuttal[] };
+
+// a CITE: a `path:line` token (`facts.txt:<line>` names a command's output)
+const CITE = /(?<![\w./-])[\w./-]+:[1-9]\d*(?!\d)/;
+const SEPARATOR = "(?:—| -)";
+
+/**
+ * W-215: the body sections after `## Findings` that carry a dispute and the earlier-findings account. Each exact heading
+ * appears at most once and runs to the next `## ` line; blank lines are skipped, every other line is in the grammar or the
+ * log is out of domain. A withdrawn finding no longer stands. Pure; the findings are changed in place.
+ */
+function readExchange(body: string[], id: string, rel: string, findings: RecordedFinding[]): { earlier: EarlierFinding[]; rebuttal: Rebuttal[] } | Refusal {
+  const sections = new Map<string, string[]>();
+  for (let i = 0; i < body.length; i++) {
+    const name = ["Rebuttal", "Ruling", "Earlier findings"].find((h) => body[i] === `## ${h}`);
+    if (name === undefined) continue;
+    if (sections.has(name)) return { error: `${rel}: more than one "## ${name}" heading` };
+    const end = body.findIndex((l, j) => j > i && l.startsWith("## "));
+    sections.set(name, body.slice(i + 1, end === -1 ? undefined : end).filter((l) => l !== ""));
+  }
+  const bad = (name: string, line: string, why: string): Refusal => ({ error: `${rel}: line under "## ${name}" out of domain (${why}): ${line.slice(0, 60)}` });
+  const known = (n: number): boolean => findings.some((f) => f.n === n);
+
+  const rebuttal: Rebuttal[] = [];
+  for (const line of sections.get("Rebuttal") ?? []) {
+    const m = /^([1-9]\d*)\. (.+)$/.exec(line);
+    if (m === null || !CITE.test(m[2]!)) return bad("Rebuttal", line, 'want "<k>. <evidence holding a file:line>"');
+    if (!known(Number(m[1])) || rebuttal.some((r) => r.n === Number(m[1]))) return bad("Rebuttal", line, "<k> is not a finding of this log, or is rebutted twice");
+    rebuttal.push({ n: Number(m[1]), text: m[2]! });
+  }
+  const ruled = new Map<number, "withdrawn" | "upheld">();
+  for (const line of sections.get("Ruling") ?? []) {
+    if (/^[1-9]\d*\. open\b/.test(line)) return { error: `${rel}: ruling is open (${line.slice(0, 60)}): a dispute the reviewer cannot rule goes to the Patron first; record the Patron's answer as the ruling` };
+    const m = new RegExp(`^([1-9]\\d*)\\. (withdrawn|upheld) ${SEPARATOR} (.+)$`).exec(line);
+    if (m === null || (m[2] === "upheld" && !CITE.test(m[3]!))) return bad("Ruling", line, 'want "<k>. withdrawn — <why>" or "<k>. upheld — <why holding a file:line>"');
+    if (!known(Number(m[1])) || ruled.has(Number(m[1]))) return bad("Ruling", line, "<k> is not a finding of this log, or is ruled twice");
+    ruled.set(Number(m[1]), m[2] as "withdrawn" | "upheld");
+  }
+  const disputed = rebuttal.map((r) => r.n).sort((a, b) => a - b).join(",");
+  if (disputed !== [...ruled.keys()].sort((a, b) => a - b).join(",")) return { error: `${rel}: "## Rebuttal" and "## Ruling" must come together and rule the same findings (rebutted: ${disputed || "none"})` };
+  for (const f of findings) if (ruled.get(f.n) === "withdrawn") (f.blocking = false), (f.withdrawn = true);
+
+  const earlier: EarlierFinding[] = [];
+  const line = new RegExp(`^- (ci/${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-(?:spec|review|handoff)-[1-9]\\d*\\.log) #([1-9]\\d*): (closed|open|reversed) ${SEPARATOR} (.+)$`);
+  for (const text of sections.get("Earlier findings") ?? []) {
+    const m = line.exec(text);
+    if (m === null || (m[3] === "reversed" && !CITE.test(m[4]!))) return bad("Earlier findings", text, 'want "- ci/<opus>-<kind>-<m>.log #<k>: closed|open|reversed — <evidence>", a reversal holding a file:line');
+    if (earlier.some((e) => e.log === m[1] && e.n === Number(m[2]))) return bad("Earlier findings", text, "this finding is accounted for twice");
+    earlier.push({ log: m[1]!, n: Number(m[2]), status: m[3] as EarlierFinding["status"], text: m[4]! });
+  }
+  return { earlier, rebuttal };
 }
 
 /**
@@ -174,7 +241,7 @@ export interface RecordedFinding {
  * and nothing else: a fence, comment, heading, indented or otherwise dressed line is out of domain and the whole
  * log is unreadable. This is the only parser of a verdict log, in the retro and in `next`'s spec-review gate (W-162).
  */
-export function parseVerdictLog(text: string, id: string, rel: string): { headers: Map<string, string[]>; findings: RecordedFinding[] } | Refusal {
+export function parseVerdictLog(text: string, id: string, rel: string): Parsed | Refusal {
   const lines = text.split("\n");
   const split = lines.indexOf("");
   if (split === -1) return { error: `${rel}: no blank line ends the header block` };
@@ -193,10 +260,9 @@ export function parseVerdictLog(text: string, id: string, rel: string): { header
   const rest = body.slice(at[0]! + 1);
   const end = rest.findIndex((l) => l.startsWith("## "));
   const section = (end === -1 ? rest : rest.slice(0, end)).filter((l) => l !== "");
-  if (section.length === 1 && section[0] === "No findings") return { headers, findings: [] };
   if (section.length === 0) return { error: `${rel}: "## Findings" holds neither "No findings" nor numbered findings` };
   const findings: RecordedFinding[] = [];
-  for (const line of section) {
+  for (const line of section.length === 1 && section[0] === "No findings" ? [] : section) {
     if (!FINDING_LINE.test(line)) return { error: `${rel}: line under "## Findings" out of domain (want "<n>. blocking|advisory …", or "No findings" alone): ${line.slice(0, 60)}` };
     const n = Number(/^\d+/.exec(line)![0]);
     if (findings.some((f) => f.n === n)) return { error: `${rel}: finding ${n} is numbered twice` };
@@ -204,7 +270,8 @@ export function parseVerdictLog(text: string, id: string, rel: string): { header
     findings.push({ log: rel, n, text, blocking: /^\**blocking\b/i.test(text) });
   }
   const converted = headers.get("converted");
-  if (converted !== undefined) {
+  // ponytail: a "No findings" body has nothing to convert; it was never judged against "# converted:" and still is not
+  if (converted !== undefined && findings.length > 0) {
     if (converted.length !== 1) return { error: `${rel}: more than one "# converted:" header` };
     // "<n> (<reason>)", joined by "; ": every piece closed, every n a blocking finding of this log
     const pieces = converted[0]!.split(/; (?=[1-9]\d* \()/);
@@ -215,7 +282,8 @@ export function parseVerdictLog(text: string, id: string, rel: string): { header
       f.blocking = false;
     }
   }
-  return { headers, findings };
+  const exchange = readExchange(body, id, rel, findings);
+  return "error" in exchange ? exchange : { headers, findings, ...exchange };
 }
 
 export type SequencePhase = "spec" | "build" | "handoff";
@@ -237,7 +305,7 @@ export interface SequenceRound {
   log: string;
   session?: string;
   /** present when the log carries a session */
-  parsed?: Exclude<ReturnType<typeof parseVerdictLog>, Refusal>;
+  parsed?: Parsed;
 }
 
 /**
@@ -275,6 +343,26 @@ export function readSequence(root: string, opus: string, phase: SequencePhase, s
 
 function hasHeaderBreak(value: string): boolean {
   return value.includes("\r") || value.includes("\n");
+}
+
+/** W-215: why a sessioned verdict cannot be recorded, or undefined. `text` is the whole log to be written. */
+function sessionedProblem(text: string, id: string, rel: string, outcome: string, recorded: string, previous: Parsed | undefined, previousLog: string | undefined): string | undefined {
+  if (outcome !== "passed" && outcome !== "failed") return "a sessioned verdict's outcome is exactly passed or failed";
+  const parsed = parseVerdictLog(text, id, rel);
+  if ("error" in parsed) return parsed.error;
+  const standing = parsed.findings.some((f) => f.blocking);
+  if (recorded === "passed" && standing) return `${rel}: outcome passed beside a standing blocking finding`;
+  if (recorded === "failed" && !standing) return `${rel}: outcome failed with no standing blocking finding (a withdrawn or converted one does not stand)`;
+  if (recorded === "passed" && parsed.earlier.some((e) => e.status === "open")) return `${rel}: an open earlier finding stands, so the round cannot pass`;
+  if (previous !== undefined && previousLog !== undefined) {
+    const want = previous.findings.filter((f) => f.blocking).map((f) => `${previousLog} #${f.n}`);
+    const have = parsed.earlier.map((e) => `${e.log} #${e.n}`);
+    const missing = want.find((w) => !have.includes(w));
+    if (missing !== undefined) return `${rel}: "## Earlier findings" must account for ${missing}, a standing blocker of the previous round`;
+    const extra = have.find((h) => !want.includes(h));
+    if (extra !== undefined) return `${rel}: "## Earlier findings" names ${extra}, which is not a standing blocker of the previous round`;
+  }
+  return undefined;
 }
 
 /** Records a review transcript under the officina without changing any gate. */
@@ -599,6 +687,16 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     ...(inputHeader === undefined ? [] : [headerLine("ui_input", inputHeader)]),
     ...(uiDigest === undefined ? [] : [headerLine("design_digest", uiDigest)]),
   ].join("\n");
+
+  // W-215: a sessioned verdict is judged whole, before it is written: it parses, its outcome agrees with what stands, and it
+  // accounts for every standing blocker of the sequence's previous round
+  if (session !== undefined) {
+    const problem = sessionedProblem(`${header}\n\n${transcript.toString("utf8")}`, opusId, relative(root, target).split(sep).join("/"), outcome, recorded, last?.parsed, last?.log);
+    if (problem !== undefined) {
+      console.error(problem);
+      return { exitCode: 2 };
+    }
+  }
 
   try {
     ensureRealDirectory(root, "ci");
