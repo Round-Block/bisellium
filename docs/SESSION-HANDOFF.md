@@ -23,9 +23,9 @@ Rules, process and environment: studio/leges/production.md.
 - **W-208** (Ops collegium): spec, PR A and the Ops budget are on master.
   Next, after W-215 is done (one lane): `branch W-208`; after its merge, PR B
   runs `ops-moves.mjs`.
-- **W-215** (review loops converge): spec on master; its D-057 §3 re-review
-  (spec round 5) passed and rides `chore/W-209-retro`. Next, once that PR
-  merges and master is fetched: `branch W-215`, then a Sonnet builder.
+- **W-215** (review loops converge): spec on master; re-review passed (round
+  5), re-signed unchanged (6) and confirmed (7), riding `chore/W-215-resign`.
+  Next, once it merges and master is fetched: `branch W-215`, then a builder.
 - W-204: spec passed (round 6), then W-196's admission rules failed it (3).
 - Queue review owed: rank W-202 (console opens on the ledger page) below W-136
   (board liveness, item 15) and W-138 (usage per opus; in backlog today).
@@ -92,4 +92,4 @@ W-159, W-177.
   ship its rebuttal on plain session resume first? Asked 2026-10-11.
 - At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
   --tokens fix), W-218 (Ops per-step times), W-219 (next waits for the merge-group
-  run), and W-175, W-176 (2026-10-08 lesson audit).
+  run), W-220 (one-step re-review record), and W-175, W-176 (2026-10-08 lesson audit).
