@@ -1,0 +1,29 @@
+# opus: W-205
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T08:17:26.006Z
+# tree: tree:50a4a3278a0655a219c88459a60cd33f4575cb1c
+# brief: briefs/W-205.md blob:5bc066d9f813e2b19c217e068de4009115048809
+
+Architect re-review and signature of W-205 revision 4 under D-057 §3, after W-196 merged (master 698914d). The architect (claude-opus-5-5) checked every line the brief cites against 698914d, re-ran the read enumeration, the flips and admission, and signed studio/briefs/W-205.md (revision 4). Revision 3 is kept as ~/.bisellium-evidence/W-205-spec/W-205-r3.md.
+
+What changed on master: W-196 inserted 25 lines in docs/ADOPTION.md's "Brief admission" paragraph. .github/workflows/ci.yml, scripts/ci-scope.mjs, scripts/ci-scope.test.mjs, ci-certify, ci-workflow, integrate.ts and run-builder-host.mjs are byte-unchanged (git diff be309ed 698914d).
+
+Evidence, in ~/.bisellium-evidence/W-205-spec/ (earlier outputs kept beside):
+- reads-698914d.txt: differs from reads.txt only in §5's ADOPTION line numbers, each +25. The owned ranges' text is unchanged.
+- flips-698914d.txt: matches flips.txt apart from timings. Stage A: W-205-b1 alone fails. Stage B: the same three rows flip. Stage C: green.
+- admission-698914d.txt: master's admission (W-196's code), 0 problems; 7 Input domain rows, 0 failing the rejector shape.
+
+Revision 4 changes citations only:
+- Files owned: ADOPTION 1102–1107 becomes 1127–1132, and 1178–1185 becomes 1203–1210.
+- The read-enumeration line cites reads-698914d.txt.
+- A revision note, and an Acceptance bullet: W-209 lands after W-205 (the Patron's order), so W-209's re-review takes ci-scope.mjs header line 2 and ADOPTION's W-203 paragraph as W-205 leaves them. W-209's brief is not edited.
+
+No substantive conflict with W-196. Behaviours, promises, Interfaces and the Input domain are unchanged.
+
+## Findings
+1. advisory: D-057 §3 re-review after W-196 (be309ed..698914d). Only docs/ADOPTION.md among the owned and cited files changed: 25 lines inserted above both owned ranges, text unchanged. Files owned now cites 1127–1132 and 1203–1210. check: none: D-057 §3 is applied by the producer until W-169
+2. advisory: W-209 now lands after W-205. Its brief's "if W-209 lands first" clause is moot; W-205's Acceptance names the two lines W-209's re-review takes later (ci-scope.mjs header line 2, ADOPTION's W-203 paragraph). W-209's brief is not edited. check: none

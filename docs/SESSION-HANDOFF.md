@@ -19,10 +19,9 @@ Rules, process and environment: studio/leges/production.md.
 
 - W-196 is done (PR 390): review round 1 passed, CodeQL then held the merge on
   two ReDoS alerts; a security fix round (three regexes made linear) passed
-  round 2. Checkpoint row 67. Its retro is owed (lex §9 step 7).
+  round 2. Checkpoint row 67. Retro filed (L-125..L-128, no new opus).
 - **Next:** W-205 (CI once per merge). Revision 4 (citations only, ADOPTION.md
-  lines shifted) passed spec review round 8; it lands on master in the next records
-  PR, then `branch`.
+  lines shifted) passed spec review round 8 and is on master; `branch` next.
 - W-209 (checkpoint pages count as records): spec signed on master (rev 3).
   Before its build the producer lands a records PR adding the eight-page
   `source_excludes` list (its Default 2; exact YAML in its Interfaces), after
