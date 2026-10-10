@@ -30,7 +30,7 @@ const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 const scope = (cwd, ...args) => spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: "utf8" });
 
-test("W-131 behaviour 5: recordOnly is true only for studio/ and the handoff, and the CLI fails closed", async () => {
+test("W-131 behaviour 5: recordOnly is true only for studio/, the handoff and the dossier's direct HTML pages, and the CLI fails closed", async () => {
   const mod = await import("./ci-scope.mjs").catch(() => ({}));
   assert.equal(typeof mod.recordOnly, "function", "scripts/ci-scope.mjs exports recordOnly");
   for (const paths of [["studio/opera/W-131.md"], ["docs/SESSION-HANDOFF.md"], ["studio/a", "docs/SESSION-HANDOFF.md"]])
