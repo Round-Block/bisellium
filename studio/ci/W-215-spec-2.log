@@ -1,0 +1,24 @@
+# opus: W-215
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T16:52:10.784Z
+# tree: tree:43049a0bda2935cc4e4deb7d16768069d0a4e8af
+# brief: briefs/W-215.md blob:d4106d08190637e7a0bb2e49ea507e4627cd5fc4
+
+## Findings
+1. blocking — brief:95 The censor order unconditionally gains `--session`, but UI build reviews use that branch while lines 37 and 122 require UI opera to reject `--session` and keep their current path; the generated UI command therefore exits 2. — check: packages/cli/src/next.test.ts
+2. blocking — brief:60 The prescribed handoff command always carries `--session`, while line 178 can place that review under a `kind: ui` opus and row 1 rejects sessions for every UI opus; an ordinary UI records PR cannot follow the prescribed handoff path. — check: packages/cli/src/verdict-findings.test.ts
+3. blocking — brief:103 Review sequences are defined at line 28 by opus, phase, and sella, but measurement groups only by opus and phase. A session from one sella consequently classifies another sella’s sessionless sequence as “after,” contradicting the promise at line 37. — check: packages/cli/src/retro-opus.test.ts
+4. blocking — brief:30 This promises `next` and admission facts for every opus on a changed handoff line, while line 101 computes them only for IDs on added lines. An opus appearing solely on a deleted line receives neither fact. — check: scripts/review-packet.test.mjs
+5. blocking — brief:163 The exact command cannot run in a worktree detached at `36ca84cb`, because `scripts/review-rounds.mjs` is a new W-215 file and does not exist at that commit. The acceptance must invoke the built script from W-215’s tip against the baseline worktree’s `studio`. — check: none: run the built measurement entry point against a checkout of the baseline tree
+6. advisory — brief:131 `briefAdmissionProblems` accepts already-read brief text and cannot reject an unreadable current spec subject; the new reader that copies `<studio>/briefs/<id>.md` is not named. — check: scripts/review-packet.test.mjs
+7. advisory — brief:131 The packet also reads the manifest before calling `readBriefLimit` and `briefAdmissionProblems`, but row 10 names neither that manifest’s domain nor the function that rejects a read or parse failure. — check: scripts/review-packet.test.mjs
+8. advisory — brief:103 The standalone `review-rounds.mjs <studio>` reader has no input row defining its positional arguments or naming the parser that rejects absent or extra arguments. — check: packages/cli/src/retro-opus.test.ts
+9. advisory — brief:135 The design-magister row does not define the domain for duplicate or malformed design collegium rows, nor say that `reviewRounds` rejects them instead of treating them as “none declared” and misclassifying signatures. — check: packages/cli/src/retro-opus.test.ts
+
+## Verdict
+The brief has incompatible UI, sequence-measurement, fact-coverage, and baseline-execution guarantees that must be resolved before building.
+VERDICT: FAIL

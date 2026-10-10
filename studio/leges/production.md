@@ -142,7 +142,8 @@ the main checkout's absolute `--studio`/`--repo`.
    the producer checks the fix's census: every path to the input the blocker
    named is closed (W-184 makes it a hold). No round cap (D-053).
 5. **Merge:** refresh `handoff`; the receipt minted before review
-   (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`);
+   (`npm run -s bisellium -- run --sella builder --opus <id> --studio studio --repo . -- true`,
+   run from the opus worktree: the host reads the reds and brief from that studio);
    `review-receipt.sh`; record the pass; `pr`; `merge`; `cleanup`.
    With the merge queue live (W-168; `pr` prints `mode: merge-queue`), `pr`
    pushes the reviewed head without a rebase, `merge` enqueues it, and the
@@ -239,3 +240,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Receipt minted before review, as `next` requires | Producer |
 | 2026-10-10 | Ops changes are architecture: the Patron approves each Ops spec and its Defaults before `branch` | Patron |
 | 2026-10-11 | Step 7 runs `tick` once per opus as Ops' cadence (W-208 Defaults 3) | Patron |
+| 2026-10-11 | §9 step 5: the receipt is minted from the opus worktree | Producer |

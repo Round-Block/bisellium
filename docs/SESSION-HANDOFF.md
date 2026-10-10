@@ -17,15 +17,18 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-209** (checkpoint pages count as records) is building: a Sonnet builder
-  subagent in `.worktrees/W-209` (branch `opus/W-209`; brief
-  `~/.bisellium-evidence/W-209-build/builder-brief.md`). Next: check its
-  report and census, mint the receipt, review round 1.
-- **W-208** (Ops collegium): spec passed round 16; the Patron answered its
-  Defaults 1-4 (`studio/acta/2026-10-11-patron-answers.md`). Its spec, PR A
-  (collegium, seat, lex, instructions) and the Ops budget ride records PR
-  `chore/W-208-prA`. Next, after W-209 is done (one lane): `branch W-208`;
-  after its merge, PR B runs `ops-moves.mjs`.
+- **W-209** (checkpoint pages count as records): build review round 1 failed
+  on one test title (four guard overclaims were reclassified advisory in a
+  rebuttal and moved to W-212); spec revision 5 passed round 11; the title fix
+  is committed on `opus/W-209`. Next: the round-2 receipt, then review round 2
+  resuming the round-1 session (id in `W-209-review/r1/session.log`).
+- **W-208** (Ops collegium): spec, PR A and the Ops budget are on master.
+  Next, after W-209 is done (one lane): `branch W-208`; after its merge, PR B
+  runs `ops-moves.mjs`.
+- **W-215** (review loops converge): spec passed at round 4 (two review
+  rounds, the resumed-session shape), landing in records PR
+  `chore/records-2026-10-11`. Before `branch`: D-057 §3 re-review of its Files
+  owned that changed on master since 36ca84cb.
 - W-204: spec passed (round 6), then W-196's admission rules failed it (3).
 - Queue review owed: rank W-202 (console opens on the ledger page) below W-136
   (board liveness, item 15) and W-138 (usage per opus; in backlog today).
@@ -62,7 +65,7 @@ may veto. One-line descriptions of items 9-15 are in that acta.
 3. W-208 — set up the Ops collegium (D-055).
 4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 2b. W-215 — review loops converge (resumed reviewer, rebuttal, measured
-    targets; Patron 2026-10-11): spec it ahead now (D-057).
+    targets; Patron 2026-10-11).
 5. W-204 — next stops holding a build review after three failed rounds.
 6. W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
    retro rides in the done PR (Patron 2026-10-11).

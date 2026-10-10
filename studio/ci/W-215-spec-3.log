@@ -1,0 +1,26 @@
+# opus: W-215
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T16:53:20.050Z
+# tree: tree:43049a0bda2935cc4e4deb7d16768069d0a4e8af
+# brief: briefs/W-215.md blob:ba34f75bfa965d7fd1722dbbfcae741a925d6ba4
+
+## Findings
+No findings
+
+## Rebuttal
+1. fixed — brief:39, :124, :142: the UI rejection of `--session`/`--session-reason` is removed; a `kind: ui` opus records a session under the same rules, so the censor order (brief:97) is valid for UI build reviews; other instances closed: none remained (sweep for `kind: ui`/UI in the brief).
+2. fixed — same change as 1: the handoff command (brief:62) is valid under a UI opus; Defaults 2 (brief:180) unchanged.
+3. fixed by narrowing — brief:39 promise one-session's limit now says the measurement classifies by opus and phase, so a sessionless sequence counts as after when another sella's rounds in that opus and phase carry a session; brief:105 already defines that; other instances: promise measured (brief:47) makes no per-sella claim.
+4. fixed by narrowing — brief:32 now says added lines of the delta, matching brief:103 and behaviour 4 (brief:154); other instances closed: none says "changed line" for facts.
+5. fixed — brief:165 runs W-215's script from its tip on a worktree detached at 36ca84cb; promise measured (brief:47) says the same; other instances: brief:7 and :9 ran on 36ca84cb with tools that exist there (rounds-headerblock.py, red-probe.mjs).
+6. fixed — row 10 (brief:133) names `readContainedRegularFile(studio, briefs/<id>.md, "briefs")` for the spec subject and the admission input.
+7. fixed — row 10 names `openStudio` for the manifest read and parse.
+8. fixed — row 6 (brief:129) adds `parseRoundsArgs` (new): exactly one positional, an existing directory.
+9. fixed — row 14 (brief:137): two or more design rows, or a non-string magister, is an error, as `readSpecReviewer` rules.
+
+## Verdict
+Signed revision 2 of studio/briefs/W-215.md (architect, claude-opus-5-5): answers spec review r2; admission 0 problems (~/.bisellium-evidence/W-215-spec/admission-r2.txt; diff r2.diff; revision 1 kept as W-215-r1.md).
