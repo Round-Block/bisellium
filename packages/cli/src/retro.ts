@@ -563,6 +563,163 @@ export function readOpusVerdicts(root: string, id: string): Verdicts | Refusal {
   return { sources, findings };
 }
 
+
+// ---------------------------------------------------------------------------
+// W-215: how many rounds each review sequence took, measured from the committed verdict logs. One reader, used by
+// `retro --opus` and `scripts/review-rounds.mjs`; a record outside its domain is an error, never a zero.
+// ---------------------------------------------------------------------------
+
+/** One opus's review rounds: the counts `## Review rounds` prints on its `this opus` line. */
+export interface OpusReviewRounds {
+  spec: number;
+  specFailed: number;
+  build: number;
+  buildFailed: number;
+  /** rounds per handoff run (a run ends at each passed log) */
+  handoff: number[];
+  /** disputed findings, as the author's `## Rebuttal` lines count them */
+  rebuttals: number;
+  /** findings ruled withdrawn in their own round */
+  withdrawn: number;
+  /** earlier findings a later round marked reversed */
+  reversed: number;
+  sessions: "none" | "kept" | `replaced ${number}`;
+}
+
+type RoundLog = { opus: string; phase: "spec" | "review" | "handoff"; n: number; outcome: string; session: boolean; reason: boolean; text: string };
+
+/** `.1f` as Python prints it (the baseline's), which rounds an exact tie to even where `toFixed` rounds it up. */
+const oneDecimal = (x: number): string => {
+  const t = x * 10;
+  return (t % 1 === 0.5 ? (Math.floor(t) % 2 === 0 ? Math.floor(t) : Math.ceil(t)) / 10 : x).toFixed(1);
+};
+const meanOf = (xs: number[]): number | undefined => (xs.length === 0 ? undefined : xs.reduce((a, b) => a + b, 0) / xs.length);
+const meanText = (xs: number[]): string => (xs.length === 0 ? "n/a" : oneDecimal(meanOf(xs)!));
+const verdict = (x: number | undefined, limit: number): string => (x === undefined ? "n/a" : x <= limit ? "PASS" : "MISS");
+
+/** The header block of a log (the lines before the first empty line), the first occurrence of each key. */
+function headerBlock(text: string): Map<string, string> {
+  const block = new Map<string, string>();
+  for (const line of text.split("\n")) {
+    if (line === "") break;
+    const m = /^# ([a-z_]+): (.*)$/.exec(line);
+    if (m !== null && !block.has(m[1]!)) block.set(m[1]!, m[2]!);
+  }
+  return block;
+}
+
+/** The design magister, whose spec logs are signatures and not reviews: none declared means every spec log is a review. */
+function designMagister(root: string): { design: string | undefined } | Refusal {
+  try {
+    const collegia: unknown = (readManifest(root) as unknown as Dict)["collegia"];
+    const rows = (Array.isArray(collegia) ? collegia : []).filter((c): c is Dict => isDict(c) && c["id"] === "design");
+    if (rows.length > 1) return { error: `bisellium.yml: the design collegium is declared ${rows.length} times; exactly one row names the magister` };
+    const magister = rows[0]?.["magister"];
+    if (rows.length === 1 && (typeof magister !== "string" || magister === "")) return { error: "bisellium.yml: the design collegium declares no magister" };
+    return { design: typeof magister === "string" ? magister : undefined };
+  } catch (e) {
+    return { error: `bisellium.yml: ${(e as Error).message.split("\n")[0]}` };
+  }
+}
+
+/**
+ * Every `ci/W-<n>-(spec|review|handoff)-<m>.log` of an officina, re-measured (W-215): the table `rounds.txt` held at the
+ * baseline (master 36ca84cb), then totals, the before and after lines and the targets. A sequence (opus, phase) with any
+ * `# session:` is after, and its logs also parse with `parseVerdictLog`; the rest are read by their header block only.
+ */
+export function reviewRounds(root: string): { lines: string[]; opus: Map<string, OpusReviewRounds> } | Refusal {
+  const magister = designMagister(root);
+  if (isRefusal(magister)) return magister;
+  let names: string[] = [];
+  try {
+    names = readdirSync(join(root, "ci")).sort();
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") return { error: `ci/: ${(e as Error).message.split("\n")[0]}` };
+  }
+  const logs: RoundLog[] = [];
+  const tabled = new Set<string>();
+  for (const name of names) {
+    const m = /^(W-\d+)-(spec|review|handoff)-(\d+)\.log$/.exec(name);
+    if (m === null) continue;
+    const file = readContainedRegularFile(root, `ci/${name}`, "ci", LOG_MAX_BYTES);
+    if ("error" in file) return { error: `ci/${name}: ${file.error}` };
+    const text = file.bytes.toString("utf8");
+    const h = headerBlock(text);
+    const phase = m[2] as RoundLog["phase"];
+    // the table lists every opus with a spec or review log, signature logs included
+    if (phase !== "handoff") tabled.add(m[1]!);
+    // a design magister's spec log is a signature, not a review round
+    if (phase === "spec" && magister.design !== undefined && h.get("sella") === magister.design) continue;
+    logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
+  }
+  const after = new Set(logs.filter((l) => l.session).map((l) => `${l.opus} ${l.phase}`));
+  const sequence = (l: RoundLog): string => `${l.opus} ${l.phase}`;
+  const opus = new Map<string, OpusReviewRounds>();
+  const of = (id: string): OpusReviewRounds => {
+    const have = opus.get(id) ?? { spec: 0, specFailed: 0, build: 0, buildFailed: 0, handoff: [], rebuttals: 0, withdrawn: 0, reversed: 0, sessions: "none" as OpusReviewRounds["sessions"] };
+    opus.set(id, have);
+    return have;
+  };
+  for (const id of tabled) of(id);
+  const replaced = new Map<string, number>();
+  const sessioned = new Set<string>();
+  for (const l of logs) {
+    const o = of(l.opus);
+    if (l.phase === "spec") (o.spec++, l.outcome === "failed" && o.specFailed++);
+    else if (l.phase === "review") (o.build++, l.outcome === "failed" && o.buildFailed++);
+    if (l.session) sessioned.add(l.opus);
+    if (l.reason) replaced.set(l.opus, (replaced.get(l.opus) ?? 0) + 1);
+    if (!after.has(sequence(l))) continue;
+    const rel = `ci/${l.opus}-${l.phase}-${l.n}.log`;
+    const parsed = parseVerdictLog(l.text, l.opus, rel);
+    if (isRefusal(parsed)) return parsed;
+    o.rebuttals += parsed.rebuttal.length;
+    o.withdrawn += parsed.findings.filter((f) => f.withdrawn).length;
+    o.reversed += parsed.earlier.filter((e) => e.status === "reversed").length;
+  }
+  for (const [id, o] of opus) o.sessions = !sessioned.has(id) ? "none" : replaced.has(id) ? `replaced ${replaced.get(id)!}` : "kept";
+
+  // handoff runs: the logs of one opus in round order, a run ending at each passed log (a trailing failed run still counts)
+  const runs = (id: string): number[] => {
+    const out: number[] = [];
+    let open = 0;
+    for (const l of logs.filter((x) => x.opus === id && x.phase === "handoff").sort((a, b) => a.n - b.n)) {
+      open++;
+      if (l.outcome === "passed") (out.push(open), (open = 0));
+    }
+    return open > 0 ? [...out, open] : out;
+  };
+  for (const [id, o] of opus) o.handoff = runs(id);
+
+  const ids = [...opus.keys()].sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
+  const withSpec = ids.filter((id) => opus.get(id)!.spec > 0);
+  const withBuild = ids.filter((id) => opus.get(id)!.build > 0);
+  const max = (xs: number[]): number => Math.max(0, ...xs);
+  const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0);
+  const lines = [
+    "opus spec_reviews spec_failed build_reviews build_failed",
+    ...ids.filter((id) => tabled.has(id)).map((id) => `${id} ${opus.get(id)!.spec} ${opus.get(id)!.specFailed} ${opus.get(id)!.build} ${opus.get(id)!.buildFailed}`),
+    "",
+    `opera with spec reviews: ${withSpec.length}; mean spec reviews ${meanText(withSpec.map((id) => opus.get(id)!.spec))}; max ${max(withSpec.map((id) => opus.get(id)!.spec))}`,
+    `opera with build reviews: ${withBuild.length}; mean build reviews ${meanText(withBuild.map((id) => opus.get(id)!.build))}; max ${max(withBuild.map((id) => opus.get(id)!.build))}`,
+    `totals: spec reviews ${sum(ids.map((id) => opus.get(id)!.spec))} rounds, ${sum(ids.map((id) => opus.get(id)!.specFailed))} failed; build reviews ${sum(ids.map((id) => opus.get(id)!.build))} rounds, ${sum(ids.map((id) => opus.get(id)!.buildFailed))} failed`,
+  ];
+  // before: sequences with no reviewer session; after: sequences with one
+  const rounds = (phase: "spec" | "review", wantAfter: boolean): number[] =>
+    ids.map((id) => ({ id, n: opus.get(id)![phase === "spec" ? "spec" : "build"] })).filter((x) => x.n > 0 && after.has(`${x.id} ${phase}`) === wantAfter).map((x) => x.n);
+  const handoffRuns = (wantAfter: boolean): number[] => ids.filter((id) => after.has(`${id} handoff`) === wantAfter).flatMap((id) => opus.get(id)!.handoff);
+  const [beforeSpec, beforeBuild, afterSpec, afterBuild] = [rounds("spec", false), rounds("review", false), rounds("spec", true), rounds("review", true)];
+  const afterRuns = handoffRuns(true);
+  const long = afterRuns.filter((n) => n > 1).length;
+  const [rebuttals, withdrawn, reversed] = [sum(ids.map((id) => opus.get(id)!.rebuttals)), sum(ids.map((id) => opus.get(id)!.withdrawn)), sum(ids.map((id) => opus.get(id)!.reversed))];
+  lines.push(
+    `before (no reviewer session): spec mean ${meanText(beforeSpec)} over ${beforeSpec.length} opera, max ${max(beforeSpec)}; build mean ${meanText(beforeBuild)} over ${beforeBuild.length} opera, max ${max(beforeBuild)}; handoff runs ${handoffRuns(false).length}`,
+    `after (reviewer session): spec mean ${meanText(afterSpec)} over ${afterSpec.length} opera; build mean ${meanText(afterBuild)} over ${afterBuild.length} opera; handoff runs ${afterRuns.length}, over one round ${long}; rebuttals ${rebuttals}; withdrawn at ruling ${withdrawn}; reversed later ${reversed}`,
+    `targets: spec mean <= 2 ${verdict(meanOf(afterSpec), 2)}; build mean <= 1.5 ${verdict(meanOf(afterBuild), 1.5)}; handoff one round per run ${afterRuns.length === 0 ? "n/a" : long === 0 ? "PASS" : "MISS"}; no finding reversed later ${after.size === 0 ? "n/a" : reversed === 0 ? "PASS" : "MISS"}`,
+  );
+  return { lines, opus };
+}
+
 const FRONT = (file: { bytes: Buffer }, label: string): Dict | Refusal => {
   try {
     const data = parseFrontMatter<unknown>(file.bytes.toString("utf8"), label).data;
@@ -725,6 +882,8 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   if (isRefusal(lessonClasses)) throw new Error(lessonClasses.error);
   const entries = parseTriage(rawTriage);
   if (isRefusal(entries)) throw new Error(entries.error);
+  const measured = reviewRounds(root);
+  if (isRefusal(measured)) throw new Error(measured.error);
 
   // every recorded finding appears exactly once, and every entry names one
   const seen = new Set<string>();
@@ -873,6 +1032,7 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
   }
 
   // 4. last, the acta: its presence is what files the retro
+  const mine: OpusReviewRounds = measured.opus.get(id) ?? { spec: 0, specFailed: 0, build: 0, buildFailed: 0, handoff: [], rebuttals: 0, withdrawn: 0, reversed: 0, sessions: "none" };
   const acta = [
     "---",
     "author: qa-lead",
@@ -898,6 +1058,11 @@ export function draftOpusRetro(root: string, id: string, rawTriage: unknown, now
     "## Fixes started",
     "",
     ...(started.length ? started.map((s) => `- ${s.fix}: greenlit by ${s.decision}`) : ["- (none)"]),
+    "",
+    "## Review rounds",
+    "",
+    `- this opus: spec ${mine.spec} (${mine.specFailed} failed), build ${mine.build} (${mine.buildFailed} failed), handoff runs ${mine.handoff.length === 0 ? "none" : mine.handoff.join("/")}, rebuttals ${mine.rebuttals}, withdrawn ${mine.withdrawn}, reversed ${mine.reversed}, sessions ${mine.sessions}`,
+    ...measured.lines.slice(-3).map((l) => `- ${l}`),
     "",
   ].join("\n");
   realDir(root, "acta");
