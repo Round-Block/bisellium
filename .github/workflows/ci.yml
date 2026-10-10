@@ -9,7 +9,13 @@ name: CI
 # with the latest master). `certify` runs the existing mint on that merge result.
 # W-203: there `gates` and `web-e2e` classify the group commit against the
 # group's base, so a records-only group takes the records-only path; any source
-# path takes the full path. `officina` runs unchanged.
+# path takes the full path.
+#
+# W-205: the merge group is the one full run before merge. A pull request still
+# reports all four required checks: `gates` runs only setup, typecheck and lint;
+# every step of `officina` and `web-e2e` is skipped, so those jobs succeed
+# without work; `certify` is skipped. The post-merge master push runs the full
+# path. Sound only while master's ruleset requires the merge queue.
 on:
   push:
     branches: [master]
@@ -37,24 +43,24 @@ jobs:
           node-version: 25
       - run: npm ci
       - id: scope
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s typecheck
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s lint
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s format:check
       # W-131: the live run.test.ts rows need bubblewrap and unprivileged user
       # namespaces; ubuntu-latest has neither out of the box, and the guard row
       # fails if one still skips under BISELLIUM_REQUIRE_LIVE_ROWS=1.
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: sudo apt-get update && sudo apt-get install -y bubblewrap
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm test
         env:
           BISELLIUM_REQUIRE_LIVE_ROWS: "1"
@@ -62,11 +68,11 @@ jobs:
           BISELLIUM_RECORD_READS: ${{ runner.temp }}/record-reads.log
       # W-139: the log above lists every test file that read the record-only
       # set; fail the run if test:record does not name exactly those.
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s check -- examples/sample-studio --repo .
-      # Record-only pull request or merge group: the studio officina check, then the tests that
+      # Records-only merge group: the studio officina check, then the tests that
       # read the record-only files (W-139; the full path's guard keeps the list exact).
       - if: steps.scope.outputs.record_only == 'true'
         run: npm run -s check -- studio --repo .
@@ -80,15 +86,19 @@ jobs:
   officina:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - if: github.event_name != 'pull_request'
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
-      - uses: actions/setup-node@v5
+      - if: github.event_name != 'pull_request'
+        uses: actions/setup-node@v5
         with:
           node-version: 25
-      - run: npm ci
-      - run: npm run -s check -- studio --repo .
+      - if: github.event_name != 'pull_request'
+        run: npm ci
+      - if: github.event_name != 'pull_request'
+        run: npm run -s check -- studio --repo .
 
   # Required status check (W-067): the served console's write path
   # (apps/server/src/http.ts's accepted-origin pair, the sessionStorage
@@ -102,25 +112,28 @@ jobs:
   web-e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - if: github.event_name != 'pull_request'
+        uses: actions/checkout@v5
         with:
           fetch-depth: 2
-      - uses: actions/setup-node@v5
+      - if: github.event_name != 'pull_request'
+        uses: actions/setup-node@v5
         with:
           node-version: 25
-      - run: npm ci
+      - if: github.event_name != 'pull_request'
+        run: npm ci
       - id: scope
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        if: github.event_name == 'merge_group'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: rm -rf apps/web/dist
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s build --workspace @bisellium/web
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npx playwright install --with-deps chromium
-      - if: steps.scope.outputs.record_only != 'true'
+      - if: github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'
         run: npm run -s test:serve --workspace @bisellium/web
 
   # W-168: the merge queue's certification. Runs only on a merge group. The

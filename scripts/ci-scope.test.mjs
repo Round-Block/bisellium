@@ -78,15 +78,15 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
       /^node scripts\/ci-scope\.mjs .*>> "?\$GITHUB_OUTPUT"?$/,
       `${job}'s scope step appends to $GITHUB_OUTPUT`,
     );
-    assert.equal(
-      scopeSteps[0].if,
-      "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
-      `${job}'s scope step runs on a pull request and a merge group`,
-    );
+    assert.equal(scopeSteps[0].if, MERGE_GROUP, `${job}'s scope step runs on a merge group`);
     for (const step of steps.filter(
       (s) => typeof s.run === "string" && s.id !== "scope" && s.run !== "npm ci" && s.if !== SHORT,
     ))
-      assert.equal(step.if, FULL, `${job}: "${step.run}" carries the full-path guard`);
+      assert.equal(
+        step.if,
+        ["npm run -s typecheck", "npm run -s lint"].includes(step.run) ? FULL : DEFERRED,
+        `${job}: "${step.run}" carries the full-path guard`,
+      );
   }
   assert.equal(
     doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
@@ -311,7 +311,7 @@ test("W-139 behaviour 5: gates' npm test records reads and the guard step right 
   );
   const guard = "node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log";
   assert.equal(steps[npmTest + 1]?.run, guard, "the step right after npm test is the guard");
-  assert.equal(steps[npmTest + 1]?.if, FULL, "and it runs on the full path");
+  assert.equal(steps[npmTest + 1]?.if, DEFERRED, "and it runs on the full path, off the pull request");
   const parity = join(HERE, "ci-workflow.test.mjs");
   assert.ok(readFileSync(parity, "utf8").includes(guard), "ci-workflow.test.mjs names the guard step");
   assert.equal(spawnSync(process.execPath, [parity], { encoding: "utf8" }).status, 0, "and still passes");
@@ -456,7 +456,7 @@ test("W-139 round 2 finding 1: the guard CLI fails when <log>.fail exists beside
   }
 });
 
-test("W-203-b1 behaviour 1: pull requests and merge groups classify against their event base", async () => {
+test("W-203-b1 behaviour 1: merge groups classify against their base", async () => {
   const mod = await import("./ci-scope.mjs").catch(() => ({}));
   const doc = workflow();
   assert.deepEqual(Object.keys(doc.on).sort(), ["merge_group", "pull_request", "push"], "the trigger set");
@@ -464,15 +464,11 @@ test("W-203-b1 behaviour 1: pull requests and merge groups classify against thei
   for (const job of ["gates", "web-e2e"]) {
     const scopeSteps = doc.jobs[job].steps.filter((step) => step.id === "scope");
     assert.equal(scopeSteps.length, 1, `${job} has one id: scope step`);
-    assert.equal(
-      scopeSteps[0].if,
-      "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
-      `${job}'s scope step runs on a pull request and a merge group`,
-    );
+    assert.equal(scopeSteps[0].if, MERGE_GROUP, `${job}'s scope step runs on a merge group`);
     assert.deepEqual(
       scopeSteps[0].env,
-      { BASE_SHA: "${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}" },
-      `${job}'s scope step takes the event's base`,
+      { BASE_SHA: "${{ github.event.merge_group.base_sha }}" },
+      `${job}'s scope step takes the merge group's base`,
     );
     assert.equal(
       scopeSteps[0].run,

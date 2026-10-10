@@ -1124,12 +1124,13 @@ fails. Today those are `npm run -s typecheck`, `npm run -s lint`,
 `npm run -s check -- studio --repo .` and
 `npm run -s check -- examples/sample-studio --repo .`. The steps are fixed
 in code and name this repository's two officinae; `ci` is not an adoption
-feature. `.github/workflows/ci.yml` runs the same commands, each after
-`npm ci`, split across two jobs: `gates` runs every step except the studio
-check, in `CI_STEPS` order, and is the one a branch protection rule can
-require; `officina` runs `npm run -s check -- studio --repo .` alone and is
-deliberately not required, since it stays red on known officina debt
-(W-028's ruling). So the runner does not reproduce `ci`'s single sequence,
+feature. `.github/workflows/ci.yml` runs the same commands on a `merge_group` and a
+`push`, each after `npm ci`, split across two jobs: `gates` runs every step
+except the studio check, in `CI_STEPS` order; `officina` runs
+`npm run -s check -- studio --repo .` alone. Both are required checks (ruleset
+`master_protection`; W-028 once kept `officina` out of the set while the studio
+check stayed red on known officina debt, and that debt has cleared). A pull
+request runs less (Merge queue, W-205). So the runner does not reproduce `ci`'s single sequence,
 and that divergence is deliberate. `scripts/ci-workflow.test.mjs`, part of
 `npm test`, fails when they drift: when `gates` differs from `CI_STEPS`
 minus the studio check, when `officina` is anything but that one check, or
@@ -1203,11 +1204,31 @@ review follow, exactly as before the queue.
 Records-only merge groups. W-203. In a merge group, the `gates` and `web-e2e`
 jobs run `scripts/ci-scope.mjs` on the group commit against the group's base
 (`github.event.merge_group.base_sha`). A group whose delta touches only
-`studio/` and `docs/SESSION-HANDOFF.md` takes the records-only path a
-records-only pull request takes: `gates` runs the studio check and `test:record`,
-and `web-e2e` skips its build and browser steps. Any source path, an empty delta
-or an unreadable comparison takes the full path. `officina` and `certify` are
-unchanged, and the post-merge `push` run still runs the full suite on master.
+`studio/` and `docs/SESSION-HANDOFF.md` takes the records-only path: `gates`
+runs the studio check and `test:record`, and `web-e2e` skips its build and
+browser steps. Any source path, an empty delta or an unreadable comparison
+takes the full path. `officina` and `certify` are unchanged, and the post-merge
+`push` run still runs the full suite on master.
+
+The pull request run. W-205. The heavy steps run once before merge, in the
+`merge_group` run on the merge-group commit, not on the pull request. A pull
+request still reports the four required contexts (`gates`, `officina`,
+`web-e2e`, `certify`) so it can be enqueued: `gates` runs checkout, setup,
+`npm ci`, typecheck and lint as an early signal; every step of `officina` and
+`web-e2e` is skipped, so those jobs conclude success without work (a job
+skipped by its own `if` would not count toward `next`'s `MIN_CHECKS`);
+`certify` is skipped, as it has been since W-168. The `merge_group` and `push`
+runs are step for step what they were. Five `gates` steps (checkout, setup,
+`npm ci`, typecheck, lint) still run in both runs for a source change, and
+`certify` reruns the `CI_STEPS` and `verify` for an opus head as before. A pull
+request that is never enqueued loses its run of the format check, the tests,
+the sample-officina check, the studio check and the build and E2E; it makes no
+merge result and cannot reach master, no certificate reads that run, and for an
+opus head the local mint already ran `CI_STEPS` and `verify` on its head. The
+`push` run is unchanged. This holds only while ruleset `master_protection`
+requires the merge queue: without it GitHub would merge on the light pull
+request checks, so removing the queue reverts these conditions in the same
+change.
 
 ## Running next
 
