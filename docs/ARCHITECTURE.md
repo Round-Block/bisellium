@@ -8,8 +8,9 @@ kill: when the console renders these graphs live from the index (web III, Graph 
 
 # Architecture
 
-Four maps of Bisellium as it stands after W-167 (2026-10-08): what depends on what, how
-an opus moves, how a cascade runs, and how a studio's files reach a screen.
+Five maps of Bisellium as it stands after W-205 (2026-10-10): what depends on what, how
+an opus moves, how a cascade runs, how a studio's files reach a screen, and how
+a change reaches master.
 A map, not a spec — the contracts live in `docs/ADOPTION.md` and the leges.
 
 ## 1. Packages
@@ -144,7 +145,7 @@ flowchart TD
   cap{"third counted<br/>failed round?"}
   patron["Patron — round ruling or re-spec"]
   fix["fix round — builder, then re-review"]
-  retro["retro — bisellium retro --opus, after done"]
+  retro["retro — bisellium retro --opus, after done,<br/>then bisellium tick (Ops' cadence)"]
   close["close — Censor: bisellium retro --cascade N"]
   spec --> gate1
   gate1 -- no --> spec
@@ -197,9 +198,10 @@ receipt binds those results to the final SOURCE tree. Each red entry binds
 both the SOURCE tree its log claims and the commit actually replayed
 (`replayedTree`); after a rebase moved the claim, that commit is the unique
 source-free commit that introduced the log's own bytes (W-134), which the
-review gate re-derives from the branch rather than trusting. In flight, not
-merged: W-166 (`Red order: one at a time`) has `red` run the earlier
-behaviours' reds first, so a red certifies the tree its brief names.
+review gate re-derives from the branch rather than trusting. Since W-166, a
+brief that carries `Red order: one at a time` has `red` run the earlier
+behaviours' recorded commands first, on the same tree, so a red certifies the
+tree its brief names.
 
 The lifecycle review edge is now guarded by that receipt. Both pass and fail
 call the same read-only admission seam before evidence parsing or mutation;
@@ -241,6 +243,59 @@ append-only `events.jsonl` and folds each new event into the SQLite index —
 through `adapter-native` on every call (no cache to invalidate), and the POSTs
 never write directly: they call the runners `serve.ts` injected, which edit the
 files the next poll picks up.
+
+## 5. CI and the merge queue
+
+```mermaid
+flowchart TD
+  pr["pull_request run<br/>gates: checkout, setup, npm ci, typecheck, lint<br/>officina, web-e2e: every step skipped; certify skipped"]
+  queue["merge queue: merge_group run<br/>on the PR merged with the latest master"]
+  scope{"scripts/ci-scope.mjs base...HEAD:<br/>only studio/ and docs/SESSION-HANDOFF.md?"}
+  full["full path<br/>gates: typecheck, lint, format:check, npm test,<br/>read guard, sample-studio check<br/>web-e2e: build + served E2E"]
+  records["records-only path (W-203)<br/>gates: studio check, test:record<br/>web-e2e: build and E2E skipped"]
+  officina["officina: check -- studio"]
+  certify["certify: master's scripts/ci-certify.mjs<br/>mints an opus/W-* head (CI_STEPS + verify);<br/>any other head mints nothing"]
+  green{"four required checks green?"}
+  dropped["dropped from the queue"]
+  master["master"]
+  push["push run on master<br/>full gates + web-e2e paths, officina"]
+  pr -- "four required contexts pass" --> queue
+  queue --> scope
+  scope -- no --> full
+  scope -- yes --> records
+  queue --> officina
+  queue --> certify
+  full --> green
+  records --> green
+  officina --> green
+  certify --> green
+  green -- no --> dropped
+  green -- yes --> master --> push
+```
+
+`.github/workflows/ci.yml` runs the heavy steps once per merge, in the merge
+queue (W-205): the `merge_group` run on the merge-group commit carries the full
+suite, the studio check, the build and served E2E and `certify`'s mint, and the
+`pull_request` run only reports the four required contexts (`gates`,
+`officina`, `web-e2e`, `certify`, ruleset `master_protection`) so the PR can be
+enqueued, with typecheck and lint as an early signal. `officina` and `web-e2e`
+skip every step rather than the whole job, because a job skipped by its own
+`if` would not count toward `next`'s `MIN_CHECKS` (`integrate.ts`). In a merge
+group, `gates` and `web-e2e` classify the delta against the group's base with
+`recordOnly` (`scripts/ci-scope.mjs`): a delta touching only `studio/` and
+`docs/SESSION-HANDOFF.md` takes W-203's records-only path; an empty, mixed or
+unreadable delta takes the full one. The post-merge `push` runs the full path
+for either kind. The light pull-request run is sound only while
+`master_protection` requires the merge queue (ADOPTION.md, Merge queue). On a
+`push` or a source-change group, `gates` is `CI_STEPS` minus the studio check
+and `officina` is that check alone; `scripts/ci-workflow.test.mjs` fails when
+they drift from `bisellium ci`.
+
+This pipeline belongs to the Ops collegium (D-055, W-208's PR A):
+`studio/bisellium.yml` declares `ops` with magister seat `ops-lead`
+(`claude-opus-5-5`) and `studio/leges/ops.md`, which owns CI, the merge queue,
+receipts, `verify`, flakes and the host runners. Its cadence is the production
+lex's ladder step 7, which runs `tick` once per opus after the retro.
 
 ## Seams
 
@@ -310,3 +365,16 @@ and red logs) in `@bisellium/schema` refuses a malformed record where it is
 read; every other reader receives only checked data, and a census fails the
 build on a raw record read outside the loaders. Until it lands, the one-reader
 seams above validate per record at their own read sites.
+
+**Planned, not yet built** (W-208, greenlit; `studio/briefs/W-208.md`): the
+pipeline opera move under Ops. `amend <opus> --collegium <id>` refuses, before
+any write, an id that fails `ID_RE`, is not declared in the manifest's
+`collegia`, or is the record's current collegium; `scripts/ops-moves.mjs`
+makes the moves only when no `opus/<id>` branch exists locally or on `origin`,
+in a records PR after W-208 merges.
+
+**Planned, not yet built** (W-209, in build on `opus/W-209`, not merged):
+checkpoint pages count as records. The HTML pages directly in
+`docs/design/dossier/` join `recordOnly`, so a done or retro PR that rebuilds
+them takes the records-only path in §5. Their half in `source_excludes`
+already landed (PR 401), so the pages no longer move a certificate.
