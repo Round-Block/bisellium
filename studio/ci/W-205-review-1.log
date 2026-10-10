@@ -1,0 +1,17 @@
+# opus: W-205
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T11:15:13.001Z
+# tree: tree:44d7f01d0aa24c701c034618ede5f0b8c6b03b5b
+# brief: briefs/W-205.md blob:5bc066d9f813e2b19c217e068de4009115048809
+
+## Findings
+1. blocking — docs/ADOPTION.md:1224 The never-enqueued paragraph presents the source-change loss set as applying to every PR and omits that a records-only PR loses the studio check and `test:record`, contradicting the required per-kind account at brief:82. — check: scripts/ci-scope.test.mjs W-205-b1
+
+## Verdict
+The CI behavior and evidence pass, but the required adoption documentation is materially false for records-only changes.
+
+VERDICT: FAIL
