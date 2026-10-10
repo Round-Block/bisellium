@@ -78,6 +78,8 @@ const captured = (lines: string[], re: RegExp): string[] =>
 const DOMAIN_HEADING = /^#{2,3} Input domain\s*$/;
 const DOMAIN_COLUMNS = [/^(record|input)$/i, /^valid domain$/i, /^rejected by$/i];
 const REJECTING_FUNCTION = /^`[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)?(\([^`]*\))?`/;
+/** W-196 (D-050): a required job's step failure, a reused call judged by its exit, or a stated limit. */
+const D050_REJECTOR = /^(?:(?:runner|exit): `[^`]+`\s*\S|limit: \S)/;
 const NO_TABLE = 'input domain has no table with "Record", "Valid domain" and "Rejected by" columns and at least one row';
 
 /** The cells of one table line: one leading and one trailing `|` dropped, split on unescaped `|`, trimmed. */
@@ -124,8 +126,10 @@ function inputDomainProblems(real: string[]): string[] {
     const cells = cellsOf(l);
     if (cells.length !== DOMAIN_COLUMNS.length || cells.some((c) => c.length === 0))
       problems.push(`input domain row ${i + 1} has an empty or missing cell`);
-    else if (!REJECTING_FUNCTION.test(cells[2]!))
-      problems.push(`input domain row ${i + 1} names no rejecting function; its "Rejected by" cell opens with one \`function\` name`);
+    else if (!REJECTING_FUNCTION.test(cells[2]!) && !D050_REJECTOR.test(cells[2]!))
+      problems.push(
+        `input domain row ${i + 1} names no rejecting function; its "Rejected by" cell opens with one \`function\` name, or with "runner: \`job\` …", "exit: \`call\` …" or "limit: …" (D-050)`,
+      );
   });
   if (!/fails closed/i.test(section.join("\n"))) problems.push("input domain does not say that a rejection fails closed");
   return problems;
