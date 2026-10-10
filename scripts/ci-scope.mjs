@@ -1,7 +1,7 @@
 /**
  * W-131: is a diff record-only (officina bookkeeping and the handoff)? CI
- * uses the answer to take the short path on a pull request and, W-203, on a
- * merge group (classified against the group's base).
+ * uses the answer to take the short path on a merge group (W-203, classified
+ * against the group's base). A pull request does not run it (W-205).
  *
  *   node scripts/ci-scope.mjs <base> <head>   prints record_only=true|false
  *

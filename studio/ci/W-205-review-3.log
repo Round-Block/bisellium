@@ -1,0 +1,17 @@
+# opus: W-205
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-10T12:42:01.589Z
+# tree: tree:909f64905ad4be0bc594606414891b4a4180ccaa
+# brief: briefs/W-205.md blob:5bc066d9f813e2b19c217e068de4009115048809
+
+## Findings
+1. advisory — scripts/ci-workflow.test.mjs:242 The documentation fix is correct, but its regression coverage remains incomplete: the guard checks command and job names, so neither corrected claim that failed rounds 1–2—the records-only `merge_group` distinction or the per-kind never-enqueued loss—would make it fail. Assertions over those two normalized ADOPTION clauses at this existing documentation boundary would close the gap. — check: scripts/ci-workflow.test.mjs
+
+## Verdict
+The workflow behavior, round-3 prose, census, red, gates, and host-minted receipt satisfy the brief; the remaining gap is advisory only.
+
+VERDICT: PASS

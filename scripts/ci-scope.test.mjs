@@ -21,6 +21,10 @@ const CI_YML = join(dirname(HERE), ".github", "workflows", "ci.yml");
 const workflow = () => parseYaml(readFileSync(CI_YML, "utf8"));
 const FULL = "steps.scope.outputs.record_only != 'true'";
 const SHORT = "steps.scope.outputs.record_only == 'true'";
+/** W-205: the full-path steps that also skip on a pull request. */
+const NOT_PR = "github.event_name != 'pull_request'";
+const DEFERRED = `${NOT_PR} && ${FULL}`;
+const MERGE_GROUP = "github.event_name == 'merge_group'";
 
 const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -74,15 +78,15 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
       /^node scripts\/ci-scope\.mjs .*>> "?\$GITHUB_OUTPUT"?$/,
       `${job}'s scope step appends to $GITHUB_OUTPUT`,
     );
-    assert.equal(
-      scopeSteps[0].if,
-      "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
-      `${job}'s scope step runs on a pull request and a merge group`,
-    );
+    assert.equal(scopeSteps[0].if, MERGE_GROUP, `${job}'s scope step runs on a merge group`);
     for (const step of steps.filter(
       (s) => typeof s.run === "string" && s.id !== "scope" && s.run !== "npm ci" && s.if !== SHORT,
     ))
-      assert.equal(step.if, FULL, `${job}: "${step.run}" carries the full-path guard`);
+      assert.equal(
+        step.if,
+        ["npm run -s typecheck", "npm run -s lint"].includes(step.run) ? FULL : DEFERRED,
+        `${job}: "${step.run}" carries the full-path guard`,
+      );
   }
   assert.equal(
     doc.jobs["web-e2e"].steps.filter((step) => step.if === SHORT).length,
@@ -307,7 +311,7 @@ test("W-139 behaviour 5: gates' npm test records reads and the guard step right 
   );
   const guard = "node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log";
   assert.equal(steps[npmTest + 1]?.run, guard, "the step right after npm test is the guard");
-  assert.equal(steps[npmTest + 1]?.if, FULL, "and it runs on the full path");
+  assert.equal(steps[npmTest + 1]?.if, DEFERRED, "and it runs on the full path, off the pull request");
   const parity = join(HERE, "ci-workflow.test.mjs");
   assert.ok(readFileSync(parity, "utf8").includes(guard), "ci-workflow.test.mjs names the guard step");
   assert.equal(spawnSync(process.execPath, [parity], { encoding: "utf8" }).status, 0, "and still passes");
@@ -452,7 +456,7 @@ test("W-139 round 2 finding 1: the guard CLI fails when <log>.fail exists beside
   }
 });
 
-test("W-203-b1 behaviour 1: pull requests and merge groups classify against their event base", async () => {
+test("W-203-b1 behaviour 1: merge groups classify against their base", async () => {
   const mod = await import("./ci-scope.mjs").catch(() => ({}));
   const doc = workflow();
   assert.deepEqual(Object.keys(doc.on).sort(), ["merge_group", "pull_request", "push"], "the trigger set");
@@ -460,15 +464,11 @@ test("W-203-b1 behaviour 1: pull requests and merge groups classify against thei
   for (const job of ["gates", "web-e2e"]) {
     const scopeSteps = doc.jobs[job].steps.filter((step) => step.id === "scope");
     assert.equal(scopeSteps.length, 1, `${job} has one id: scope step`);
-    assert.equal(
-      scopeSteps[0].if,
-      "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
-      `${job}'s scope step runs on a pull request and a merge group`,
-    );
+    assert.equal(scopeSteps[0].if, MERGE_GROUP, `${job}'s scope step runs on a merge group`);
     assert.deepEqual(
       scopeSteps[0].env,
-      { BASE_SHA: "${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}" },
-      `${job}'s scope step takes the event's base`,
+      { BASE_SHA: "${{ github.event.merge_group.base_sha }}" },
+      `${job}'s scope step takes the merge group's base`,
     );
     assert.equal(
       scopeSteps[0].run,
@@ -520,5 +520,70 @@ test("W-203-b1 behaviour 1: pull requests and merge groups classify against thei
     );
   } finally {
     rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge-group and push steps are today's", () => {
+  const doc = workflow();
+  assert.deepEqual(Object.keys(doc.on).sort(), ["merge_group", "pull_request", "push"], "the trigger set");
+  assert.deepEqual(doc.on.push?.branches, ["master"], "push names only master");
+  assert.deepEqual(doc.on.merge_group?.types, ["checks_requested"], "merge_group on checks_requested");
+  assert.deepEqual(Object.keys(doc.jobs), ["gates", "officina", "web-e2e", "certify"], "the four required jobs");
+  for (const [name, job] of Object.entries(doc.jobs)) {
+    assert.equal(job.if, name === "certify" ? MERGE_GROUP : undefined, `${name}'s job-level if`);
+    assert.equal(job["continue-on-error"], undefined, `${name} has no job-level continue-on-error`);
+    for (const step of job.steps)
+      assert.equal(step["continue-on-error"], undefined, `${name}: no step continue-on-error`);
+  }
+  const table = (name) =>
+    doc.jobs[name].steps.map((step) => [step.id === "scope" ? "scope" : (step.run ?? step.uses), step.if ?? null]);
+  const SCOPE = ["scope", MERGE_GROUP];
+  assert.deepEqual(
+    table("gates"),
+    [
+      ["actions/checkout@v5", null],
+      ["actions/setup-node@v5", null],
+      ["npm ci", null],
+      SCOPE,
+      ["npm run -s typecheck", FULL],
+      ["npm run -s lint", FULL],
+      ["npm run -s format:check", DEFERRED],
+      ["sudo apt-get update && sudo apt-get install -y bubblewrap", DEFERRED],
+      ["sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0", DEFERRED],
+      ["npm test", DEFERRED],
+      ["node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log", DEFERRED],
+      ["npm run -s check -- examples/sample-studio --repo .", DEFERRED],
+      ["npm run -s check -- studio --repo .", SHORT],
+      ["npm run -s test:record", SHORT],
+    ],
+    "gates: setup, then typecheck and lint on a pull request; the rest only off it",
+  );
+  assert.deepEqual(
+    table("officina"),
+    [
+      ["actions/checkout@v5", NOT_PR],
+      ["actions/setup-node@v5", NOT_PR],
+      ["npm ci", NOT_PR],
+      ["npm run -s check -- studio --repo .", NOT_PR],
+    ],
+    "officina: every step skips on a pull request, so the job succeeds without work",
+  );
+  assert.deepEqual(
+    table("web-e2e"),
+    [
+      ["actions/checkout@v5", NOT_PR],
+      ["actions/setup-node@v5", NOT_PR],
+      ["npm ci", NOT_PR],
+      SCOPE,
+      ["rm -rf apps/web/dist", DEFERRED],
+      ["npm run -s build --workspace @bisellium/web", DEFERRED],
+      ["npx playwright install --with-deps chromium", DEFERRED],
+      ["npm run -s test:serve --workspace @bisellium/web", DEFERRED],
+    ],
+    "web-e2e: every step skips on a pull request",
+  );
+  for (const job of ["gates", "web-e2e"]) {
+    const scope = doc.jobs[job].steps.find((step) => step.id === "scope");
+    assert.deepEqual(scope?.env, { BASE_SHA: "${{ github.event.merge_group.base_sha }}" }, `${job}'s scope base`);
   }
 });
