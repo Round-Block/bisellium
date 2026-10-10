@@ -19,7 +19,7 @@ import {
 } from "./opus-model.js";
 
 export const VERDICT_USAGE =
-  "usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]";
+  "usage: bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build|handoff] [--model <id>] [--session <id> [--session-reason <text>]] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]";
 
 export interface VerdictOptions extends WriteOptions {
   stdin?: Buffer;
@@ -27,6 +27,7 @@ export interface VerdictOptions extends WriteOptions {
 
 const GIT_TIMEOUT_MS = 30_000;
 const BODY_CAP = 8192;
+const SESSION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 
 function gitRoot(dir: string): string | undefined {
   try {
@@ -89,6 +90,8 @@ export const VERDICT_HEADERS = [
   "round",
   "sella",
   "model",
+  "session",
+  "session_reason",
   "outcome",
   "submitted_outcome",
   "at",
@@ -215,6 +218,60 @@ export function parseVerdictLog(text: string, id: string, rel: string): { header
   return { headers, findings };
 }
 
+export type SequencePhase = "spec" | "build" | "handoff";
+const LOG_KIND: Record<SequencePhase, string> = { spec: "spec", build: "review", handoff: "handoff" };
+/** One log's header block: the lines before the first empty line, the first occurrence of each key. */
+function headerBlock(text: string): Map<string, string> {
+  const block = new Map<string, string>();
+  for (const line of text.split("\n")) {
+    if (line === "") break;
+    const m = /^# ([a-z_]+): (.*)$/.exec(line);
+    if (m !== null && !block.has(m[1]!)) block.set(m[1]!, m[2]!);
+  }
+  return block;
+}
+
+export interface SequenceRound {
+  round: number;
+  /** ci/<opus>-<kind>-<round>.log */
+  log: string;
+  session?: string;
+  /** present when the log carries a session */
+  parsed?: Exclude<ReturnType<typeof parseVerdictLog>, Refusal>;
+}
+
+/**
+ * W-215: the last round of a review sequence (one opus, one phase, one sella): the highest-round
+ * `ci/<opus>-<spec|review|handoff>-<m>.log` whose header block names `sella`. A sessioned one is parsed
+ * strictly. An unreadable entry, or a sessioned one that does not parse, is an error.
+ */
+export function readSequence(root: string, opus: string, phase: SequencePhase, sella: string): { last: SequenceRound | undefined } | Refusal {
+  const contained = safeItemPath(join(root, "ci"), opus);
+  if (typeof contained !== "string") return contained;
+  let names: string[];
+  try {
+    names = readdirSync(join(root, "ci"));
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "ENOENT" ? { last: undefined } : { error: `ci/: ${(e as Error).message.split("\n")[0]}` };
+  }
+  const prefix = `${opus}-${LOG_KIND[phase]}-`;
+  let last: { round: number; rel: string; text: string; session: string | undefined } | undefined;
+  for (const name of names) {
+    const m = name.startsWith(prefix) ? /^([1-9]\d*)\.log$/.exec(name.slice(prefix.length)) : null;
+    if (m === null) continue;
+    const rel = `ci/${name}`;
+    const file = readContainedRegularFile(root, rel, "ci", LOG_MAX_BYTES);
+    if ("error" in file) return { error: `${rel}: ${file.error}` };
+    const text = file.bytes.toString("utf8");
+    const header = headerBlock(text);
+    if (header.get("sella") !== sella || (last !== undefined && Number(m[1]) < last.round)) continue;
+    last = { round: Number(m[1]), rel, text, session: header.get("session") };
+  }
+  if (last === undefined) return { last: undefined };
+  if (last.session === undefined) return { last: { round: last.round, log: last.rel } };
+  const parsed = parseVerdictLog(last.text, opus, last.rel);
+  return "error" in parsed ? parsed : { last: { round: last.round, log: last.rel, session: last.session, parsed } };
+}
 
 function hasHeaderBreak(value: string): boolean {
   return value.includes("\r") || value.includes("\n");
@@ -223,7 +280,7 @@ function hasHeaderBreak(value: string): boolean {
 /** Records a review transcript under the officina without changing any gate. */
 export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResult {
   const parsed = parseFlags(args, {
-    valued: ["--round", "--sella", "--outcome", "--phase", "--model", "--from", "--dispatch-prompt", "--ui-input", "--studio", "--now"],
+    valued: ["--round", "--sella", "--outcome", "--phase", "--model", "--session", "--session-reason", "--from", "--dispatch-prompt", "--ui-input", "--studio", "--now"],
   });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${VERDICT_USAGE}`);
@@ -274,8 +331,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   }
 
   const phase = values.get("--phase") ?? "build";
-  if (phase !== "spec" && phase !== "build") {
-    console.error(`--phase must be spec or build\n${VERDICT_USAGE}`);
+  if (phase !== "spec" && phase !== "build" && phase !== "handoff") {
+    console.error(`--phase must be spec, build or handoff\n${VERDICT_USAGE}`);
     return { exitCode: 2 };
   }
 
@@ -292,6 +349,20 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
   const model = values.get("--model");
   if (model !== undefined && model.trim() === "") {
     console.error("--model must be non-blank when provided");
+    return { exitCode: 2 };
+  }
+  const session = values.get("--session");
+  if (session !== undefined && !SESSION_ID.test(session)) {
+    console.error("--session must be one token: letters, digits and . _ : - only, at most 200 characters");
+    return { exitCode: 2 };
+  }
+  const sessionReason = values.get("--session-reason");
+  if (sessionReason !== undefined && (sessionReason.trim() === "" || hasHeaderBreak(sessionReason))) {
+    console.error("--session-reason must be non-blank and one line");
+    return { exitCode: 2 };
+  }
+  if (sessionReason !== undefined && session === undefined) {
+    console.error("--session-reason is valid only beside --session");
     return { exitCode: 2 };
   }
   for (const [flag, value] of [
@@ -356,6 +427,10 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     console.error("--dispatch-prompt is valid only for a spec-phase UI verdict");
     return { exitCode: 2 };
   }
+  if (phase === "handoff" && (dispatchPrompt !== undefined || uiInput !== undefined)) {
+    console.error("--dispatch-prompt and --ui-input are not valid for a handoff verdict");
+    return { exitCode: 2 };
+  }
 
   if (transcript.length > BODY_CAP) {
     console.error(`verdict body is ${transcript.length} bytes; the cap is ${BODY_CAP} — record findings, not a transcript`);
@@ -400,7 +475,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
     promptHeader = prompt.relative;
   }
-  if (!isUi) {
+  if (!isUi || phase === "handoff") {
     const problem = findingsProblem(transcript.toString("utf8"));
     if (problem !== undefined) {
       console.error(problem);
@@ -472,7 +547,34 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     briefHeader = `${briefRel} blob:${createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex")}`;
   }
 
-  const filenamePhase = phase === "build" ? "review" : "spec";
+  // W-215: a sequence (opus, phase, sella) keeps the reviewer session its first sessioned round recorded
+  const sequence = readSequence(root, opusId, phase, sella);
+  if ("error" in sequence) {
+    console.error(sequence.error);
+    return { exitCode: 2 };
+  }
+  const last = sequence.last;
+  if (last?.session !== undefined) {
+    const problem =
+      round <= last.round
+        ? `${last.log} records session ${last.session}; the next round of this sequence must be above ${last.round}`
+        : session === undefined
+          ? `${last.log} records session ${last.session}; a later verdict of the sequence needs --session (the same id, or another with --session-reason)`
+          : session !== last.session && sessionReason === undefined
+            ? `${last.log} records session ${last.session}; replacing it with ${session} needs --session-reason`
+            : session === last.session && sessionReason !== undefined
+              ? `--session-reason is valid only when --session differs from ${last.session}, the sequence's recorded session`
+              : undefined;
+    if (problem !== undefined) {
+      console.error(problem);
+      return { exitCode: 2 };
+    }
+  } else if (sessionReason !== undefined) {
+    console.error("--session-reason is valid only when --session replaces the sequence's recorded session; this sequence has none");
+    return { exitCode: 2 };
+  }
+
+  const filenamePhase = LOG_KIND[phase];
   const target = join(root, "ci", `${opusId}-${filenamePhase}-${round}.log`);
   if (existsSync(target)) {
     console.error(`${relative(root, target)} already exists — verdict evidence is never overwritten`);
@@ -485,6 +587,8 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     headerLine("round", round),
     headerLine("sella", sella),
     ...(model === undefined ? [] : [headerLine("model", model)]),
+    ...(session === undefined ? [] : [headerLine("session", session)]),
+    ...(sessionReason === undefined ? [] : [headerLine("session_reason", sessionReason)]),
     headerLine("outcome", recorded),
     ...(submitted === undefined ? [] : [headerLine("submitted_outcome", submitted)]),
     headerLine("at", now.toISOString()),
