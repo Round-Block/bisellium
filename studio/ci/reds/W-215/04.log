@@ -1,0 +1,125 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-215-b4 --import tsx scripts/review-packet.test.mjs
+# exit: 1
+# at: 2026-10-10T20:23:57.858Z
+# sella: builder.W-215
+# tree: tree:a15f29e158020897bee7cf6eede9570c4b357e8d
+
+TAP version 13
+# Subtest: W-215-b4 behaviour 4: a spec round with no sessioned predecessor gets its subject and facts, no delta
+not ok 1 - W-215-b4 behaviour 4: a spec round with no sessioned predecessor gets its subject and facts, no delta
+  ---
+  duration_ms: 1.941155
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:152:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/review-packet.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:153:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-215-b4 behaviour 4: a later spec round gets the change since the sessioned predecessor, and its prompt
+not ok 2 - W-215-b4 behaviour 4: a later spec round gets the change since the sessioned predecessor, and its prompt
+  ---
+  duration_ms: 0.24489
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:166:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/review-packet.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:167:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+# Subtest: W-215-b4 behaviour 4: a handoff round diffs against HEAD and states facts for the opera on added lines only
+not ok 3 - W-215-b4 behaviour 4: a handoff round diffs against HEAD and states facts for the opera on added lines only
+  ---
+  duration_ms: 0.146051
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:193:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/review-packet.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:194:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-215-b4 behaviour 4: a build round diffs from the commit that added the previous log, outside the officina
+not ok 4 - W-215-b4 behaviour 4: a build round diffs from the commit that added the previous log, outside the officina
+  ---
+  duration_ms: 0.218262
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:213:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/review-packet.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:214:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+# Subtest: W-215-b4 behaviour 4: a bad request exits 2 and writes nothing
+not ok 5 - W-215-b4 behaviour 4: a bad request exits 2 and writes nothing
+  ---
+  duration_ms: 0.177854
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:233:1'
+  failureType: 'testCodeFailure'
+  error: 'scripts/review-packet.mjs exists'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-215/scripts/review-packet.test.mjs:234:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 0
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12.745332
