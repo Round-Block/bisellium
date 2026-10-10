@@ -362,6 +362,7 @@ function readyFixture(lines: string[], o: { limit?: boolean; family?: boolean; s
     "## Intent",
     "",
     ...(o.family === false ? [] : ["Decree family: red-order"]),
+    "Read enumeration: `enumerate-reads.mjs` -> `reads.txt`",
     ...lines,
     "",
     "## Files owned",

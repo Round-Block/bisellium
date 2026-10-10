@@ -290,7 +290,8 @@ files the next poll picks up.
   (`@bisellium/commands/verdict.js`, W-167), shared by `next` and `amend
   --round-ruling`; `owedRetros` (`packages/cli/src/retro.ts`, W-137), shared by
   `next` and `check`; `readBriefAdmission`
-  (`@bisellium/commands/brief-admission.js`), shared by `ready` and `check`.
+  (`@bisellium/commands/brief-admission.js`), shared by `ready`, `check` and
+  `next`'s spec-review order.
 - `instant` (`@bisellium/schema`) — the one strict record-date parser (W-163,
   moved from cli so core, server and commands can use it), with
   `readContainedRegularFile` (`opus-model.js`) and `requireRealDirectory`

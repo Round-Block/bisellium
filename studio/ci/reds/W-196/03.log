@@ -1,0 +1,42 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-196-b3 --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-10T03:42:35.699Z
+# sella: builder.W-196
+# tree: tree:0bd38cfa786df244b701ac0b69dbc618512f9503
+
+TAP version 13
+# Subtest: W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing looser
+not ok 1 - W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing looser
+  ---
+  duration_ms: 43.799947
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:27:1669'
+  failureType: 'testCodeFailure'
+  error: |-
+    runner: `gates`, step `scope` has no continue-on-error: exit (stderr ["W-900: brief.admission: briefs/W-900.md input domain row 1 names no rejecting function; its \"Rejected by\" cell opens with one `function` name"])
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    accepted (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:186:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:722:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 56.296385

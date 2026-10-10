@@ -1,0 +1,46 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-196-b2 --import tsx packages/cli/src/brief-admission.test.ts
+# exit: 1
+# at: 2026-10-10T05:53:51.715Z
+# sella: builder.W-196
+# tree: tree:e6dc05a8aa5ab7f76a59da10281716bf81cd320b
+
+TAP version 13
+# Subtest: W-196-b2 behaviour 2: an absolute phrase sits on one promise line with its limit
+ok 1 - W-196-b2 behaviour 2: an absolute phrase sits on one promise line with its limit
+  ---
+  duration_ms: 337.255311
+  type: 'test'
+  ...
+# Subtest: W-196-b2 behaviour 2: admission reads a long hostile line in linear time (CodeQL polynomial regex)
+not ok 2 - W-196-b2 behaviour 2: admission reads a long hostile line in linear time (CodeQL polynomial regex)
+  ---
+  duration_ms: 7805.483383
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:27:1669'
+  failureType: 'testCodeFailure'
+  error: 'commas inside a promise claim: 150023 chars took 7802 ms'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    timed (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:720:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-196/packages/cli/src/brief-admission.test.ts:723:20)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8178.565519

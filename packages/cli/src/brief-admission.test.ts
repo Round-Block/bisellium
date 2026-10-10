@@ -72,9 +72,16 @@ interface BriefSpec {
   tail?: string[];
   /** W-161: the lines under the `## Input domain` heading, placed before "## Behaviours to test"; `[]` writes no heading. */
   domain?: string[];
+  /** W-196: the read enumeration lines in the Intent section; default the one valid citation. */
+  reads?: string[];
+  /** W-196: extra lines in the Intent section, after the read enumeration. */
+  intent?: string[];
 }
 
 const RED = "**Genuine red:**";
+
+/** W-196: the one valid read enumeration citation. */
+const READS = "Read enumeration: `enumerate-reads.mjs` -> `reads.txt`";
 
 /** W-161: the default Input domain section body, the one valid one-row table. */
 const DOMAIN = [
@@ -91,6 +98,8 @@ function brief(s: BriefSpec = {}): string {
   for (const f of s.families ?? ["brief-admission"]) out.push(`Decree family: ${f}`);
   for (const e of s.exceptions ?? []) out.push(`Behaviour limit exception: ${e}`);
   for (const r of s.redOrder ?? ["Red order: one at a time"]) out.push(r);
+  for (const r of s.reads ?? [READS]) out.push(r);
+  out.push(...(s.intent ?? []));
   if (s.fencedIntent) out.push("```", ...s.fencedIntent, "```");
   out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "");
   const domain = s.domain ?? DOMAIN;
@@ -510,7 +519,7 @@ const MIX = 'input domain mixes "None:" with a table or repeats it; one table or
 const NOT_CLOSED = "input domain does not say that a rejection fails closed";
 const CELL = (k: number): string => `input domain row ${k} has an empty or missing cell`;
 const NO_FN = (k: number): string =>
-  `input domain row ${k} names no rejecting function; its "Rejected by" cell opens with one \`function\` name`;
+  `input domain row ${k} names no rejecting function; its "Rejected by" cell opens with one \`function\` name, or with "runner: \`job\` …", "exit: \`call\` …" or "limit: …" (D-050)`;
 const CLOSED = "A rejection fails closed.";
 const HEAD = ["| Record | Valid domain | Rejected by |", "|---|---|---|"];
 const OKROW = "| fixture record | a string | `readFixture` |";
@@ -621,4 +630,120 @@ test("W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot re
     assert.equal(mine.length, 1, `limit ${String(bad)}: ${JSON.stringify(shape)}`);
     assert.equal(mine[0]!.message, "brief_behaviour_limit must be a positive integer");
   }
+});
+
+const READS_LINE = 'Read enumeration: `<kept script>` -> `<its output>`';
+const NO_READS = `cites no read enumeration; add one line "${READS_LINE}", or "Read enumeration: none: <reason>"`;
+const BAD_READS = (l: string): string => `read enumeration line "${l}" is not "${READS_LINE}" or "Read enumeration: none: <reason>"`;
+
+test("W-196-b1 behaviour 1: a brief cites its read enumeration once, to ready and to check", () => {
+  const check = (text: string, problem: string, label: string): void => {
+    const { admission } = checked("building", text);
+    assert.equal(admission.length, 1, `${label}: ${JSON.stringify(admission)}`);
+    assert.equal(admission[0]!.level, "block", label);
+    assert.ok(admission[0]!.message.endsWith(problem), `${label}: ${admission[0]!.message}`);
+  };
+  const refuse = (spec: BriefSpec, problem: string, label: string): void => {
+    refused(ready(brief(spec)), [problem], label);
+    check(brief(spec), problem, label);
+  };
+  const free = (text: string, label: string): void => {
+    accepted(ready(text), label);
+    assert.equal(checked("building", text).admission.length, 0, `${label}: check`);
+  };
+  free(brief(), "a valid citation");
+  free(brief({ reads: ["Read enumeration: none: docs only, nothing to enumerate"] }), "none with a reason");
+  free(brief({ reads: [], tail: [READS] }), "a citation after the Intent");
+  refuse({ reads: [] }, NO_READS, "no citation");
+  refuse({ reads: [READS, "Read enumeration: none: and more"] }, "has 2 read enumeration lines; one only", "two citations");
+  refuse({ reads: [], fencedIntent: [READS] }, NO_READS, "only in a fence");
+  refuse({ reads: [], tail: ["<!--", READS, "-->"] }, NO_READS, "only in a comment");
+  for (const bad of [
+    "Read enumeration: `enumerate-reads.mjs`",
+    "Read enumeration: `` -> `reads.txt`",
+    "read enumeration: `enumerate-reads.mjs` -> `reads.txt`",
+    "Read enumeration: none:",
+  ])
+    refuse({ reads: [bad] }, BAD_READS(bad), bad);
+  assert.equal(checked("done", brief({ reads: [] })).admission.length, 0, "a done opus");
+});
+
+const PROMISE = "Promise <slug>: <claim> — limit: <what does not hold>";
+const SAYS = (n: number, phrase: string): string => `line ${n} says "${phrase}" outside a promise line; declare it once as "${PROMISE}"`;
+const MALFORMED = (n: number): string => `line ${n}: a promise line is "${PROMISE}"`;
+/** The 1-based number of the one line of `text` equal to `line`. */
+const at = (text: string, line: string): number => {
+  const n = text.split("\n").flatMap((l, i) => (l === line ? [i + 1] : []));
+  assert.equal(n.length, 1, `${line}: ${n.length} lines`);
+  return n[0]!;
+};
+
+test("W-196-b2 behaviour 2: an absolute phrase sits on one promise line with its limit", () => {
+  const P1 = "Promise runs-twice: the step always runs. — limit: it does not run when the job is skipped.";
+  const P2 = "- Promise lands: the verb exits 0 in all cases — limit: a held step exits 1.";
+  const ok = (text: string, label: string): void => accepted(ready(text), label);
+  ok(brief({ intent: [P1] }), "a promise line");
+  ok(brief({ intent: [P2] }), "a listed promise line");
+  ok(brief({ intent: [P1, P2] }), "two distinct promises");
+  ok(brief({ intent: ["The `always` flag is set."] }), "a phrase in inline code");
+  ok(brief({ fencedIntent: ["It always runs."] }), "a phrase in a fence");
+  ok(brief({ intent: ["<!-- it always runs -->"] }), "a phrase in a comment");
+  ok(`It always runs.\n\n${brief()}`, "before the Intent");
+  ok(brief().replace("## Out of scope\n\nnone", "## Out of scope\n\nAlways none."), "in Out of scope");
+  ok(brief({ intent: ["Every record never fails; never say never."] }), "every and never");
+  const no = (text: string, line: string, problem: (n: number) => string, label: string): void =>
+    refused(ready(text), [problem(at(text, line))], label);
+  const prose = "The step always runs.";
+  no(brief({ intent: [prose] }), prose, (n) => SAYS(n, "always"), "always in prose");
+  const row = "| fixture record | always a string | `readFixture` |";
+  no(brief({ domain: sect([row]) }), row, (n) => SAYS(n, "always"), "always in a table row");
+  no(brief().replace("green", "The verb succeeds in every case."), "The verb succeeds in every case.", (n) => SAYS(n, "in every case"), "in every case");
+  no(brief({ intent: ["Exactly As Before."] }), "Exactly As Before.", (n) => SAYS(n, "Exactly As Before"), "exactly as before, any case");
+  const bare = "Promise runs: the step runs.";
+  no(brief({ intent: [bare] }), bare, MALFORMED, "a promise with no limit");
+  const empty = "Promise runs: the step runs — limit:";
+  no(brief({ intent: [empty] }), empty, MALFORMED, "a promise with an empty limit");
+  const slug = "Promise Not_a_slug: the step runs — limit: not when skipped.";
+  no(brief({ intent: [slug] }), slug, MALFORMED, "a slug that is not a slug");
+  const twice = "Promise runs-twice: another claim — limit: none.";
+  no(brief({ intent: [P1, twice] }), twice, (n) => `line ${n}: promise "runs-twice" is declared twice; state each promise once`, "a repeated slug");
+  const claim = "Promise other: The  step ALWAYS runs — limit: a different limit.";
+  no(brief({ intent: [P1, claim] }), claim, (n) => `line ${n}: promise "other" repeats an earlier promise's claim; state each promise once`, "a repeated claim");
+});
+
+test("W-196-b2 behaviour 2: admission reads a long hostile line in linear time (CodeQL polynomial regex)", () => {
+  // Each input made the regexes it targets take seconds (quadratic or cubic); the bound is far above a linear scan.
+  const timed = (label: string, line: string): string[] => {
+    const start = Date.now();
+    const { problems } = readBriefAdmission(brief({ intent: [line] }), 5);
+    const ms = Date.now() - start;
+    assert.ok(ms < 1000, `${label}: ${line.length} chars took ${ms} ms`);
+    return problems;
+  };
+  assert.deepEqual(timed("commas inside a promise claim", `Promise a: ${",".repeat(150_000)}x — limit: y`), []);
+  assert.deepEqual(timed("a backtick run with no closing run", `x${"`".repeat(20_000)}${"a".repeat(20_000)}`), []);
+  assert.deepEqual(timed("a backtick run after a lone backtick", `\`a${"`".repeat(20_000)}${"b".repeat(20_000)}`), []);
+  const hostile = timed("many limit separators and a line break inside the line", `Promise a: x${" — limit: y".repeat(30_000)}\rz`);
+  assert.equal(hostile.length, 1, JSON.stringify(hostile).slice(0, 200));
+  assert.match(hostile[0]!, /^line \d+: a promise line is /);
+});
+
+test("W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing looser", () => {
+  const cell = (text: string): string[] => sect([`| rec | a string | ${text} |`]);
+  for (const good of [
+    "runner: `gates`, step `scope` has no continue-on-error",
+    "exit: `git diff` non-zero is refused by `scopeOf`",
+    "limit: a misspelt prefix reads as absent",
+    "`readFixture` (schema), the one parser",
+  ])
+    accepted(ready(brief({ domain: cell(good) })), good);
+  for (const bad of [
+    "runner: `gates`",
+    "runner: gates, step scope",
+    "limit:",
+    "Runner: `gates`, step `scope` has no continue-on-error",
+    "the parser",
+    "containment.test.ts",
+  ])
+    refused(ready(brief({ domain: cell(bad) })), [NO_FN(1)], bad);
 });

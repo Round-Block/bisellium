@@ -27,7 +27,8 @@ import { parseFrontMatter, readManifest, resolveSeat, type Manifest } from "@bis
 import { sourceTreeHash } from "@bisellium/shim";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
-import { readRoundRulings } from "@bisellium/commands/lifecycle.js";
+import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
+import { briefAdmissionProblems, readRoundRulings } from "@bisellium/commands/lifecycle.js";
 import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
@@ -141,7 +142,7 @@ interface SpecReviewer {
   design: string;
 }
 /** Where the ordered architect/reviewer sequence of a source stands (only with a reviewer configured). */
-type SpecGate = { kind: "signature" } | { kind: "review"; signature: string } | { kind: "failed"; review: string } | { kind: "ready"; review: string } | { kind: "invalid" };
+type SpecGate = { kind: "signature" } | { kind: "review"; signature: string; brief: string } | { kind: "failed"; review: string } | { kind: "ready"; review: string } | { kind: "invalid" };
 interface SpecEvidence {
   ok: boolean;
   why: string;
@@ -271,7 +272,7 @@ function reviewedSpec(src: Src | undefined, id: string, reviewer: SpecReviewer):
   }
   const signed = (gate: SpecGate, why: string): SpecEvidence => ({ ...result(why, gate), sella: reviewer.design, log: anchor.rel });
   const review = reviews[0];
-  if (review === undefined) return signed({ kind: "review", signature: anchor.rel }, `${anchor.rel} is signed and awaits the spec review`);
+  if (review === undefined) return signed({ kind: "review", signature: anchor.rel, brief }, `${anchor.rel} is signed and awaits the spec review`);
   if (reviews.length > 1) return result(`${reviews[1]!.log} is a second reviewer verdict after ${anchor.rel} with no signature between them; a newer signature must come first`, { kind: "invalid" });
   if (review.outcome === "failed") return signed({ kind: "failed", review: review.log }, `${review.log} failed ${anchor.rel}; the architect revises and signs again`);
   return { ...signed({ kind: "ready", review: review.log }, `${briefRel(id)}, ${anchor.rel} and ${review.log} are the signed, reviewed spec`), ok: true };
@@ -750,7 +751,14 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
   const round = maxRound + 1;
   if (ev.gate?.kind === "failed") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.review] });
   if (ev.gate?.kind === "invalid") return { step: "spec", status: "held", actor: "producer", why: ev.why, extra: [] };
-  if (ev.gate?.kind === "review") return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model]] });
+  if (ev.gate?.kind === "review") {
+    // W-196: a signed brief that fails admission goes back to the architect, never to the reviewer.
+    const limit = readBriefLimit(f.manifest.brief_behaviour_limit);
+    if ("error" in limit) return { step: "spec", status: "held", actor: "producer", why: `brief.admission: ${limit.error}`, extra: [] };
+    const problems = limit.limit === undefined ? [] : briefAdmissionProblems(f.studioAbs, f.manifest, id, ev.gate.brief, limit.limit);
+    if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
+    return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model]] });
+  }
   return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
 }
 

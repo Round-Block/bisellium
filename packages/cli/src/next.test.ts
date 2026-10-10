@@ -4486,3 +4486,100 @@ test("W-186-b2 behaviour 2: performed done holds on a stale working-tree handoff
   assert.ok(handoffHolds(gone).some((l) => l.startsWith("handoff: process.handoff.input ")), ran("an input finding is printed", gone));
   assert.equal(choreHeads(d), "", "no chore head");
 });
+
+// ---------------------------------------------------------------------------
+// W-196: with `brief_behaviour_limit` declared, a signed brief that fails admission takes an architect
+// order, never the reviewer's. Rows are selectable with --test-name-pattern=W-196-b4.
+// ---------------------------------------------------------------------------
+const W196_ADMITTED = [
+  `# ${OPUS} fixture brief`,
+  "",
+  "Read enumeration: `enumerate-reads.mjs` -> `reads.txt`",
+  "",
+  "## Intent",
+  "",
+  "Decree family: fixture",
+  "",
+  "## Files owned",
+  "",
+  "- `source.txt`",
+  "",
+  "## Interfaces",
+  "",
+  "None.",
+  "",
+  "## Input domain",
+  "",
+  "A rejection fails closed.",
+  "",
+  "| Record | Valid domain | Rejected by |",
+  "|---|---|---|",
+  "| fixture record | a string | `readFixture` |",
+  "",
+  "## Behaviours to test",
+  "",
+  "1. **Fixture behaviour 1.**",
+  "   **Genuine red:** row 1 fails.",
+  "",
+  "## Acceptance",
+  "",
+  "Fixture.",
+  "",
+  "## Out of scope",
+  "",
+  "None.",
+  "",
+].join("\n");
+const w196World = (tag: string, limit: string): World => srWorld(tag, { edit: (t) => `${t}brief_behaviour_limit: ${limit}\n` });
+
+test("W-196-b4 behaviour 4: next sends an inadmissible signed brief back to the architect", { timeout: 1_800_000 }, () => {
+  const bad = w196World("w196-b4-bad", "6");
+  putBrief(bad);
+  sign(bad, 1);
+  const o = specNext(bad);
+  architectOrder(o, 2, "an inadmissible signed brief goes back to the architect");
+  assert.match(o.kv.get("why") ?? "", /^brief\.admission: .*cites no read enumeration/, ran("why names the admission problems", o));
+  assert.match(o.kv.get("inputs") ?? "", /ci\/W-900-spec-1\.log/, ran("the signature is an input", o));
+  assert.equal(o.out.includes(SR_MODEL), false, ran("no reviewer model is named", o));
+
+  const promise = w196World("w196-b4-promise", "6");
+  put(promise.repo, BRIEF_REL, W196_ADMITTED.replace("Decree family: fixture", "Decree family: fixture\n\nThe step always runs."));
+  sign(promise, 1);
+  const p = specNext(promise);
+  architectOrder(p, 2, "an unqualified absolute phrase goes back to the architect");
+  assert.match(p.kv.get("why") ?? "", /^brief\.admission: .*says "always" outside a promise line/, ran("why names the phrase", p));
+
+  const good = w196World("w196-b4-good", "6");
+  put(good.repo, BRIEF_REL, W196_ADMITTED);
+  sign(good, 1);
+  const g = specNext(good);
+  reviewerOrder(g, 2, "an admissible signed brief goes to the reviewer");
+
+  const off = srWorld("w196-b4-off");
+  putBrief(off);
+  sign(off, 1);
+  reviewerOrder(specNext(off), 2, "no limit: no admission, the reviewer as before");
+
+  const malformed = w196World("w196-b4-malformed", "0");
+  putBrief(malformed);
+  sign(malformed, 1);
+  const m = specNext(malformed);
+  specHeld(m, "a malformed limit holds", /^brief\.admission: brief_behaviour_limit must be a positive integer$/);
+
+  // the unchanged gateDispatch holds the architect order without --budget (E10), and without a traditio, a resumed order (E11)
+  const nobudget = next(bad, [OPUS]);
+  specHeld(nobudget, "no --budget holds the architect order", /^dispatch budget undeclared$/);
+  const nohandoff = srWorld("w196-b4-nohandoff", { handoff: false, edit: (t) => `${t}brief_behaviour_limit: 6\n` });
+  putBrief(nohandoff);
+  sign(nohandoff, 1);
+  const nh = specNext(nohandoff);
+  specHeld(nh, "no traditio holds the architect order", /^stale handover: .*no traditio/);
+  const nobudgetGood = next(good, [OPUS]);
+  specHeld(nobudgetGood, "no --budget holds the reviewer order too", /^dispatch budget undeclared$/);
+
+  const failed = w196World("w196-b4-failed", "6");
+  put(failed.repo, BRIEF_REL, W196_ADMITTED);
+  sign(failed, 1);
+  review(failed, 2, "failed");
+  architectOrder(specNext(failed), 3, "a failed review still returns to the architect");
+});
