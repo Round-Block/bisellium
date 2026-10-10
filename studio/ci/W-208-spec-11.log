@@ -1,0 +1,20 @@
+# opus: W-208
+# phase: spec
+# round: 11
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T13:46:03.830Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:ab5ac9b4df7a11ddb6826c8df2cfa7303f9493e7
+
+Architect signature for W-208 under D-027, revision 6, written ahead of the build under D-057. It answers spec review r10 (ci/W-208-spec-10.log: 2 blocking). Revision 5 is kept as ~/.bisellium-evidence/W-208-spec/W-208-r5.md. The architect (claude-opus-5-5) signed studio/briefs/W-208.md (revision 6).
+
+Evidence, kept in ~/.bisellium-evidence/W-208-spec/ (prototype-r6.mjs, proto-r6/):
+- flips-r6.txt: W-208-b1 alone on master fails at its first assertion (actual 2, expected 0); with the code it passes and six neighbouring suites pass; stage R, revision 5's code throws on a null manifest.
+- lim-r6.txt: budget --tokens "" and " " exit 0 and write 0; tick and new on a null manifest exit 1 on a TypeError.
+- moves-r5.txt, d021-r3.txt, lex-check-r4.txt; proto-r6-npm-test.txt (exit 0), proto-r6-typecheck.txt, proto-r6-lint.txt, proto-r6-prettier.txt; admission-r6.txt: 0 problems.
+
+## Findings
+1. advisory: Finding 1 of ci/W-208-spec-10.log: a null or empty manifest made W-208's check throw. One helper, declaredCollegiumIds(manifest), turns the raw manifest into the declared id list for W-208's only manifest read; anything but a mapping with a collegia list declares none, so the move exits 2. check: packages/cli/src/ops.test.ts W-208-b1
+2. advisory: Finding 2: runBudget's empty or whitespace --tokens is read as 0, pre-existing in unchanged code. The budget row states it as a limit, the call passes a literal positive integer, and Defaults 5 has the producer file the fix as its own opus; the tick row gained the same treatment for a non-mapping manifest. check: none: lim-r6.txt measures both limits

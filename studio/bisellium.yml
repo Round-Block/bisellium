@@ -8,6 +8,7 @@ collegia:
   - { id: design, name: Design, magister: architect, lex: leges/design.md }
   - { id: engineering, name: Engineering, magister: eng-lead, fallback: producer, lex: leges/engineering.md }
   - { id: qa, name: QA, magister: qa-lead, lex: leges/qa.md }
+  - { id: ops, name: Ops, magister: ops-lead, lex: leges/ops.md }
 sellae:
   - { id: producer, collegium: production, kind: orchestrator, model: claude-opus-5-5 }
   - { id: architect, collegium: design, kind: agent, model: claude-opus-5-5 }
@@ -33,6 +34,7 @@ sellae:
   # D-033: declared so the closed codex lane's records (W-102–W-109) stay
   # readable and blocking-clean; not a live dispatch target.
   - { id: pre-reviewer, collegium: qa, kind: agent, model: gpt-5.6-terra, harness: codex }
+  - { id: ops-lead, collegium: ops, kind: agent, model: claude-opus-5-5 }
   - { id: guest, collegium: production, kind: human }
 probationes:
   - { id: tests, name: Tests, kind: automated, command: "npm test -s" }

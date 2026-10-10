@@ -1,0 +1,17 @@
+# opus: W-208
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T13:14:55.283Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:73822e2bdf765aafc9b6556d03ca762c5ece111c
+
+## Findings
+1. blocking — brief:32 A parseable empty or `null` top-level manifest makes `readManifest` return `null`; the new `manifest.collegia` access throws instead of giving the promised exit 2 when no `collegia` row declares the target. — check: packages/cli/src/ops.test.ts
+2. blocking — brief:148 `runBudget` accepts `--tokens ""` or whitespace as zero because `Number("") === 0`, then writes the allowance; these values are outside the stated non-negative-number domain but fail open. — check: packages/cli/src/writes.test.ts
+
+## Verdict
+Two input classes remain broader than their refusal mechanisms, so the brief is not ready to build.
+VERDICT: FAIL

@@ -1,0 +1,22 @@
+# opus: W-208
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T12:33:16.341Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:8bcdb3c5561d30733bb2b42eef5f5680ae0a4470
+
+Architect signature for W-208 under D-027, revision 4, written ahead of the build under D-057. It answers spec review r6 (ci/W-208-spec-6.log: 3 blocking, 1 advisory). Revision 3 is kept as ~/.bisellium-evidence/W-208-spec/W-208-r3.md. The architect (claude-opus-5-5) signed studio/briefs/W-208.md (revision 4).
+
+Evidence, kept in ~/.bisellium-evidence/W-208-spec/:
+- sentence-diff-r4.txt (sentence-diff.py): 218 sentences in revision 3, 148 in revision 4.
+- signing-notes.md, "Revision 4": each sentence about unchanged code that was kept, and why.
+- lex-check-r4.txt: PR A's records with the revision 4 lex give the studio check no block.
+- flips-r3.txt, d021-r3.txt, proto-r3-*.txt (all exit 0): the code is unchanged since revision 3.
+- admission-r4.txt: 0 problems under master's admission.
+
+## Findings
+1. advisory: Blockers 1-3 of ci/W-208-spec-6.log are one class: sentences narrating unchanged code (check, tick and health.json, new, nativePreflight, computeDue and runTick) worded wider than the code. They were cut, in the brief and in the lex, unless a W-208 promise depends on them; the kept ones are listed in signing-notes.md with their measurement. check: none: signing-notes.md lists every kept sentence
+2. advisory: Advisory 4: the input domain gains Defaults 1's runNew row in D-050's exit form. check: none: new.ts, unchanged

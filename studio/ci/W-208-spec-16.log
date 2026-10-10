@@ -1,0 +1,17 @@
+# opus: W-208
+# phase: spec
+# round: 16
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-10T15:59:07.714Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:6f8503a8e6704c6c095e830ae8d7a063d61bd27b
+
+## Findings
+1. advisory — brief:148 The new `ops-moves` reader names only the command’s exit, not the actual rejecting function (`process.exit`) or a specified wrapper. The path nevertheless fails closed. — check: none: brief admission should require a function name for each new-reader rejector
+2. advisory — brief:150 The test-reader enumeration omits `existsSync` and b2’s `spawnSync` result/environment inputs. Missing or unexpected results already fail assertions, so the paths fail closed. — check: packages/cli/src/ops.test.ts
+
+## Verdict
+No blocking fail-open input or false promise remains; the two input-boundary documentation gaps are advisory.
+VERDICT: PASS

@@ -1,0 +1,26 @@
+# opus: W-208
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T10:47:07.082Z
+# tree: tree:e0ded1d4f68ce328a37353fd216e9596f5ac96cd
+# brief: briefs/W-208.md blob:e8edffc5affa0249148b775cfe8732d21fe90330
+
+## Findings
+1. blocking — brief:188 `specBounds` silently skips malformed `*-spec-*` names and logs with the wrong opus, phase, or sella; a later valid log can therefore produce and file a completed spec breach instead of making the chain unavailable. — check: packages/cli/src/ops.test.ts
+2. blocking — brief:160 `readBuildRounds` permits a valid `review-2.log` when round 1 is absent, and `stepTimes` treats the first returned round as “round 1”; the promised build boundary is therefore false for a mistaken sparse chain. — check: packages/cli/src/ops.test.ts
+3. blocking — brief:190 The record domain does not validate the record identity or known state before filing: `loadNativeRecords` accepts filename/id mismatches and duplicate ids, while `stepTimes` treats an unknown or missing state as merely non-`done`. Because filing is not gated on `checkStudio.ok`, these blocked records can still produce breach opera. — check: packages/cli/src/ops.test.ts
+4. blocking — brief:172 An invalid boundary is not always reported as `unavailable`: when it is the opus’s only boundary, the readable-boundary history filter drops the entire opus before emitting the promised row. — check: packages/cli/src/ops.test.ts
+5. blocking — brief:171 `now` has no relational domain or rejector; a valid but stale `--now` before an open step’s start is accepted and written as negative minutes. Open durations also depend on this clock input, contrary to the unqualified from-records promise at line 35. — check: packages/cli/src/ops.test.ts
+6. blocking — brief:159 Spec and build boundaries depend on the current design magister, `spec_reviewer`, and QA censor, but those mutable manifest inputs are neither recorded with the measured opus nor limited as stable for the measurement window. An ordinary seat rotation can erase prior spec rows or turn valid historical review logs into `unavailable`. — check: packages/cli/src/ops.test.ts
+7. blocking — brief:37 The breach-once guarantee has no single-runner limit or atomic deduplication: concurrent ticks can both observe no prefix match and create distinct breach opera. The sequential second-run test does not cover this check-then-write race. — check: packages/cli/src/ops.test.ts
+8. blocking — brief:176 The prototype’s dry-run branch still returns 0 regardless of `checkStudio.ok`, so “Exit 0 needs check ok” is false and also conflicts with the line-39 promise that a studio without budgets retains master’s dry-run exit behavior. — check: packages/cli/src/ops.test.ts
+9. blocking — brief:80 The exact Ops lex promises measurement for “every opus,” while `since` excludes earlier opera and line 174 deliberately emits no row for a step without a recorded start. The lex needs the same in-scope/history limit as the mechanism. — check: packages/cli/src/ops.test.ts
+10. advisory — brief:189 The table names build-review logs and `readBuildRounds` but omits the manifest review configuration newly consumed through `readBuildReviewConfig`; that reader does fail closed by returning an error. — check: packages/cli/src/ops.test.ts
+11. advisory — brief:184 The table omits the reused `instructions --write` and officina-check calls that consume PR A’s collegium, seat, lex, and rendered role files; D-050 permits one row per unchanged command naming its non-zero-exit refusal. — check: none: add acceptance coverage for the required producer commands
+
+## Verdict
+Multiple fail-open inputs and false guarantees remain, so the signed brief is not ready to build.
+VERDICT: FAIL
