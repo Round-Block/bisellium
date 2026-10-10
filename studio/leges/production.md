@@ -77,6 +77,11 @@ detection. The Aedile owns the road, not the work travelling on it.
   never the orchestrating session. The architecture page is republished the
   same way after any `docs/ARCHITECTURE.md` change. Every new opus gets a
   milestone (`amend <id> --milestone <M> --value <n>`).
+- **Ops changes are architecture, so the Patron approves them.** A spec for
+  pipeline work (CI, the merge queue, receipts, verify, certificates, the
+  Ops collegium and every opus under it) waits for the Patron's approval of
+  its design and Defaults before `branch`; its Defaults are questions, not
+  veto-able defaults.
 - Never relay a mid-turn Patron message into a running agent.
 - epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
 
@@ -231,3 +236,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Spec-review findings block only on substance (D-056) | Patron |
 | 2026-10-10 | Specs written ahead of the build (D-057) | Patron |
 | 2026-10-10 | Receipt minted before review, as `next` requires | Producer |
+| 2026-10-10 | Ops changes are architecture: the Patron approves each Ops spec and its Defaults before `branch` | Patron |
