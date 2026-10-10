@@ -1,0 +1,21 @@
+# opus: W-209
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T06:13:48.628Z
+# tree: tree:19870db386ed4f928f7dd00c24516ae5c80c9094
+# brief: briefs/W-209.md blob:a282001b8faf7e4785550394c2edb34ef6a96245
+
+## Findings
+1. blocking — brief:84 `readSourceExcludes` and `manifest.shape` accept any list of non-empty strings, not the declared exact page-only set. A mistaken extra entry such as `packages/` is silently excluded by every hasher, so this path fails open and contradicts the brief’s claim that other paths remain certified SOURCE. — check: none: a required check must pin the exact page-only `source_excludes` before the producer’s records PR lands
+2. blocking — brief:34 The census covers only Node filesystem reads during tests; `close` invokes `build.sh`, which reads `head.html`, `body.html`, and `status-body.html`, while `build-arch.mjs` also reads `head.html`, and neither runs on the records-only CI path. Thus “the repo’s readers” is false unless limited to the measured CI readers. — check: none: retain the broad promise only with a records-path test exercising the dossier build readers
+3. blocking — brief:36 Adding exclusions changes a tree’s hash only when that tree contains a matched path; a tree predating all eight pages retains the same hash. Therefore “landing the line moves every identity once,” repeated at line 75, is false without a limit to current trees containing the pages. — check: none: hash-scenarios must include a tree containing none of the listed pages
+4. blocking — brief:125 The fallback of adding `source_excludes` only on `opus/W-209` cannot progress through review: `buildReviewDrift` holds `next` when the main and worktree manifests differ on `source_excludes`. B7.1’s branch-local hashing does not bypass that refusal. — check: packages/cli/src/next.test.ts
+5. advisory — brief:83 The preload explicitly logs the exact `studio` directory even though `recordOnly(["studio"])` is false, so the row’s stated domain and “does not log that read” rejection omit a safe, over-recording path. — check: scripts/ci-scope.test.mjs
+
+## Verdict
+The brief has multiple fail-open or false guarantees and is not ready to build.
+
+VERDICT: FAIL

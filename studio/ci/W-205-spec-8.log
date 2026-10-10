@@ -1,0 +1,16 @@
+# opus: W-205
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-10T08:20:58.185Z
+# tree: tree:50a4a3278a0655a219c88459a60cd33f4575cb1c
+# brief: briefs/W-205.md blob:5bc066d9f813e2b19c217e068de4009115048809
+
+## Findings
+1. advisory — brief:7 “No other owned or cited file changed” is false: W-196 added the `W-196-b4` row to `packages/cli/src/next.test.ts`, which W-205 cites at line 173. That assertion remains true because the new row reads fixtures, so no behaviour or promise is falsified. — check: none: the D-057 change census should compare every owned and cited path against the signed base
+
+## Verdict
+Revision 4’s substantive citations remain valid, and W-196 falsifies no input-domain row, behaviour, or promise.
+VERDICT: PASS

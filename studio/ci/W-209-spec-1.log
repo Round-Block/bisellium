@@ -1,0 +1,50 @@
+# opus: W-209
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T06:05:07.446Z
+# tree: tree:19870db386ed4f928f7dd00c24516ae5c80c9094
+# brief: briefs/W-209.md blob:a282001b8faf7e4785550394c2edb34ef6a96245
+
+Architect signature for W-209 under D-027, written ahead of the build under D-057. Codex drafted ~/.bisellium-evidence/W-209-draft/W-209-draft.md. The architect (claude-opus-5-5) checked it against the code listed below, corrected it, and signed studio/briefs/W-209.md (revision 1). The code checked:
+- scripts/ci-scope.mjs (recordOnly, scopeOf, checkReads) and ci-scope.test.mjs
+- scripts/record-reads.mjs (the W-139 preload imports recordOnly)
+- package.json (test:record, test:suite) and .github/workflows/ci.yml
+- the SOURCE identity: packages/shim/src/sourceTree.ts and every source_excludes reader (branch.ts, check.ts, integrate.ts, next.ts certificate and gather, builder-run.ts receipt admission, lifecycle.ts, verdict.ts, verify.ts, run-builder-host.mjs's own sourceTree, ci-certify.mjs)
+- the page readers: checkDossierShrink, scripts/status-page.mjs, status-slate.test.mjs and docs/design/dossier/build.sh
+- docs/ADOPTION.md, the briefs of W-203, W-205 and W-196, D-050, D-053, D-054, D-056 and D-057, and production lex §11
+
+Evidence, kept in ~/.bisellium-evidence/W-209-spec/ (scratch git clones from make-copy.sh; the change is applied by prototype.mjs, with --source, --manifest, --docs and --row):
+- enumerate-reads.mjs, output reads.txt:
+  - §1, the classifier and its two callers;
+  - §2, every SOURCE-tree reader and the two prefix predicates;
+  - §3, every page reader and whether test:record lists it;
+  - §4, the steps a records-only change runs;
+  - §5, the lines W-205 and W-196 own next to W-209's;
+  - §6, the cited names exist.
+- flips.txt, three stages of ci-scope.test.mjs:
+  - A: the row alone on master gets expected true, actual false;
+  - A2: on master, 15 pass and 1 fail, the new row;
+  - B: on the prototype, 16 pass and 0 fail.
+- run-census.sh, outputs census-master.txt and census-w209.txt: W-139's read guard over the full npm test, with test:suite's && turned into ; in the copy so that every test runs. Both print record_reads=ok. On the prototype, five test files read pages: check.test.ts, rules.test.ts, docs.test.ts, answer-carry.test.ts and status-slate.test.mjs. All five are in test:record already, so W-209 changes no package script. The failing rows are the census's own setup: W-139 behaviour 1, because of the ; chain, and on master's detached copy check.test's W-089 b1 and b7.
+- hash-scenarios.sh (tree-hash.mjs), output hash-scenarios.txt, and host-hash.mjs, output host-hash.txt:
+  - master's code under the listed pages: a pages-and-studio commit keeps its parent's SOURCE identity;
+  - the handoff, build.sh, build-arch.mjs, queue-review, DIRECTION.md and a new, nested or canvas page each move it;
+  - the draft's literal glob is inert on master's code;
+  - the host's receipt hasher, extracted verbatim, equals sourceTreeHash at every ref.
+- shrink-readers.sh, output shrink-readers.txt: with two pages cut to a tenth, both officina checks block on docs.dossier.shrink, and status-page.mjs exits 1.
+- docs-suites.sh, output docs-suites.txt: the full prototype passes prettier and eslint on the changed files, and these suites: docs.test (32), ci-workflow (35), check.test (161), rules.test (67), ci-scope (16), dossier-shrink (3) and process (23).
+- check-compare.sh, output check-compare.txt: the studio check's 340 findings are identical on master and on the prototype. The sample studio's 27 differ only in the current tree hash its stale advisories name.
+- census-records-prs.sh, output census-records-prs.txt: of the last 40 chore(studio) commits, 29 are records-only today and 38 under W-209.
+- check-admission.mjs, output admission.txt: 0 problems under master's admission and under W-196's (5321282, its branch head at signing); a negative probe with one unqualified "always" in Intent is refused, so the phrase reader is live. One table run, 9 rows.
+
+## Findings
+1. advisory: The draft added `*` matching to sourceTreeHash, isDirtyOutside and the host-owned receipt hasher. Exact paths already match: an entry matches the path itself (sourceTree.ts:33, run-builder-host.mjs:136). So the studio lists the eight pages by name, and no certificate code changes. The draft's design also changed the hash definition inside W-209's own change: its certificates would be minted by master's tooling and judged at done (next.ts certificate) by the new code. check: none: hash-scenarios.txt and host-hash.txt measure it; the manifest line is the producer's records PR
+2. advisory: The draft promised that a change to studio/, the handoff and the pages keeps the SOURCE identity. That is false, because docs/SESSION-HANDOFF.md is in no exclusion list (hash-scenarios.txt §4). The promise source-boundary now names only the listed pages, and its limit names the handoff. check: none: a measured promise, no code path
+3. advisory: The draft confirmed the page readers by listing them. Readers are measured instead. The W-139 preload logs whatever recordOnly accepts (record-reads.mjs:95), so enlarging the set makes the full-path guard enforce that every test that reads a page is in test:record. The census runs that guard on master and on the prototype; it passes. The draft named two readers; there are five, all already listed. Non-test readers are named: the sample-studio check repeats checkDossierShrink on the full path only, and format:check ignores docs/. check: scripts/ci-scope.mjs --check-reads (gates, full path)
+4. advisory: The draft retitled W-131 behaviour 5. That row stays green, and W-131's recorded red (studio/ci/reds/W-131/05.log) names its title, so it is left alone. check: scripts/ci-scope.test.mjs W-131 behaviour 5
+5. advisory: Overlap. W-205 (signed, not built) owns ci-scope.mjs lines 2–4, the ci-scope.test.mjs constants and rows, and ADOPTION lines 1102–1107 and 1178–1185. W-196 (building) owns ADOPTION's Brief admission paragraph, about 886–925. W-209 edits other lines: ci-scope.mjs 21–23, a row inserted after ci-scope.test.mjs 181, record-reads.mjs 3, and ADOPTION 1020–1026 under ## The SOURCE tree hash. Two of W-205's lines go stale, and its D-057 §3 re-review takes them: ci-scope.mjs line 2, which names the set, and ADOPTION line 1181. Its row count moves from 15→16 to 16→17. ADOPTION.md is still shared with W-196 at file level, which D-057 §2 counts as overlap. Signing ahead anyway is the producer's call, as it was for W-196 beside W-203. check: none: D-057 is applied by hand until W-169
+6. advisory: The prerequisite manifest line changes the definition of every SOURCE identity once (hash-scenarios.txt §1 vs §3). An opus between branch and done at that moment has its done certificate judged under the new list, and next names bisellium verify on master. The brief sequences the line after W-196's done and before W-209 or W-205 branches (Defaults 2). check: packages/cli/src/next.ts certificate (act: verify)
+7. advisory: The brief is written to W-196's admission. It has the read-enumeration line, three promise lines with limits and none of the six phrases elsewhere, and it uses `runner` (job …)/function rejectors, which both admissions accept. check: packages/cli/src/brief-admission.test.ts

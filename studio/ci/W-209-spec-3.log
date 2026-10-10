@@ -1,0 +1,28 @@
+# opus: W-209
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T06:17:19.295Z
+# tree: tree:19870db386ed4f928f7dd00c24516ae5c80c9094
+# brief: briefs/W-209.md blob:ebe08f695bec20ab3661742136cd8bcaf03f6e53
+
+Architect signature for W-209 revision 2, under D-027 and ahead of the build under D-057. It answers spec review r2 (ci/W-209-spec-2.log; Codex gpt-5.6-sol; four blockers and one advisory). The architect (claude-opus-5-5) kept revision 1 as ~/.bisellium-evidence/W-209-spec/W-209-r1.md, with its notes as signing-notes-r1.md. Each finding was fixed as a class and measured on a scratch copy. The architect then re-signed studio/briefs/W-209.md.
+
+Evidence, new in ~/.bisellium-evidence/W-209-spec/:
+- r2-measure.sh, output r2-measure.txt:
+  - F3: ae03d0f (2026-09-18) is the first commit with a listed page. Its parent's identity is the same under both lists (0de6c69…); ae03d0f's and master's change.
+  - F1: readSourceExcludes and check (PASS, 0 blocking) accept an extra packages/ entry, and an edit under packages/ is then not dirty.
+  - F4: buildReviewDrift returns "bisellium.yml#source_excludes differs between the main checkout … and the opus worktree …".
+  - F2: build.sh and build-arch.mjs appear in no ci.yml step, package script or test. close.test.ts runs a fixture build.sh in its own temporary repo.
+- admission-r2.txt: revision 2 gets 0 problems under master's admission and under W-196's (5321282). One table run, 9 rows.
+- Revision 1's evidence stands: reads.txt, flips.txt, census-master.txt, census-w209.txt, hash-scenarios.txt, host-hash.txt, shrink-readers.txt, docs-suites.txt, check-compare.txt and census-records-prs.txt. The behaviour, Files owned and the prototype are unchanged.
+
+## Findings
+1. advisory: r2 finding 1. `source_excludes`' content is not pinned: readSourceExcludes and check accept any non-empty entry, so a wrong entry is excluded (r2-measure.txt F1). That is true on master today, and W-209 does not change it. Promise source-boundary and row 2 now state the limit. Defaults 4 leaves the pin to the Patron, with a narrow test:record row as the veto alternative. Sweep, for every row whose domain claimed more than its rejector enforces: row 1 names the preload's logging of the studio directory (r2's advisory), row 4 names the guard's blind spots, and row 7 cites its evidence. check: none: Defaults 4 names the missing pin
+2. advisory: r2 finding 2. "The repo's readers" was too wide: build.sh and build-arch.mjs read the pages but run in no CI step and no test (r2-measure.txt F2). The promise is now ci-page-readers, the page checks that ci.yml runs. Its limit names the sample-studio repeat, the generators, and the guard's blind spots (git-object and shell reads). Sweep: revision 1's correction 3 and rows 4 and 7. check: scripts/ci-scope.mjs --check-reads (gates, full path)
+3. advisory: r2 finding 3. The one-time identity move applies only to trees that hold a listed page. Every commit since ae03d0f holds one, and older trees keep their identity (r2-measure.txt F3). Fixed in promise source-boundary, in Interfaces and in Defaults 2. No other "every identity" claim remains. check: none: a measured promise, no code path
+4. advisory: r2 finding 4. The line cannot ride on opus/W-209: buildReviewDrift holds next while the main and worktree manifests differ (r2-measure.txt F4). Defaults 2's fallback is removed. The same hold applies to any opus in flight when the line lands on master, which is a second reason for the timing. Interfaces and Defaults 2 say so. check: packages/cli/src/next.test.ts
+5. advisory: The producer's prerequisite is unchanged: a records PR on master, after W-196 is done and before W-209 or W-205 branches. The D-057 overlap notes from revision 1 stand: W-205's re-review covers ci-scope.mjs line 2, ADOPTION line 1181 and its row count, and ADOPTION.md is shared with W-196 at file level. check: none: D-057 is applied by hand until W-169
+6. advisory: Process note. A first round-3 signature, written a few minutes earlier, carried revision 1's notes because the notes file had not yet been rewritten. That uncommitted log was removed, and this signature replaced it through the same verdict call. check: none

@@ -1,0 +1,17 @@
+# opus: W-209
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T06:25:06.378Z
+# tree: tree:19870db386ed4f928f7dd00c24516ae5c80c9094
+# brief: briefs/W-209.md blob:ebe08f695bec20ab3661742136cd8bcaf03f6e53
+
+## Findings
+1. blocking — brief:41 `record-reads.mjs` does not see all Node filesystem reads as claimed: its fixed wrapper lists omit `fs.openAsBlob` and other APIs, so an unlisted test can read a dossier page without producing a log row and `checkReads` can pass. The same overbroad exactness claim appears at brief:25 and brief:93; it needs a stated instrumentation limit or broader interception. — check: scripts/ci-scope.test.mjs
+
+## Verdict
+Revision 2 closes the prior findings, but its CI-reader exactness guarantee remains false as written.
+
+VERDICT: FAIL
