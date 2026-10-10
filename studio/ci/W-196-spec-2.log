@@ -1,0 +1,17 @@
+# opus: W-196
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T02:09:24.493Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:f9090136f77e2c883f28d60129fc1d787bfaa5ba
+
+## Findings
+1. blocking — brief:102 The same brief is called admissible yet promised both an architect order and a reviewer order; the `always` fixture is actually inadmissible, as the prototype correctly expects. — check: packages/cli/src/next.test.ts
+2. advisory — brief:86 `patronDecisionProblem` does not reject malformed `manifest.collegia`; `briefAdmissionProblems` handles that case directly. The path fails closed, but the row names its rejector imprecisely. — check: packages/cli/src/brief-admission.test.ts
+
+## Verdict
+Behaviour 4 contains a false promise as written and must be corrected before build.
+VERDICT: FAIL

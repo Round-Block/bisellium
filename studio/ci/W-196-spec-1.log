@@ -1,0 +1,29 @@
+# opus: W-196
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-09T23:15:26.431Z
+# tree: dirty:10dc050c615d1a52216caa9fe480dcffbc61dd04
+# brief: briefs/W-196.md blob:f9090136f77e2c883f28d60129fc1d787bfaa5ba
+
+Architect signature for W-196 under D-027, written ahead of the build under D-057: Codex (gpt-5.6-sol) drafted ~/.bisellium-evidence/W-196-draft/W-196-draft.md. The architect (claude-opus-5-5) checked it against packages/commands/src/brief-admission.ts, packages/commands/src/lifecycle.ts (briefAdmissionProblems, runReady), packages/cli/src/check.ts, packages/cli/src/next.ts (reviewedSpec, specOrder, deriveNext's spec rung, dispatch), packages/commands/src/verdict.ts, brief-admission.test.ts, red-order.test.ts, next.test.ts, docs/ADOPTION.md, docs/ARCHITECTURE.md, D-042, D-050, D-053, D-054, D-056 and D-057, and the spec-review verdicts of W-168, W-186, W-203 and W-204. It corrected the draft and signed studio/briefs/W-196.md (revision 1).
+
+Evidence in ~/.bisellium-evidence/W-196-spec/:
+- make-copy.sh: scratch copies with their own @bisellium links (W-204's note 9). prototype.mjs --source / --fixtures / --probe applies the brief's change (prototype.diff). Typecheck of packages/commands and packages/cli and eslint on the changed files pass on it.
+- reads.txt (enumerate-reads.mjs): admission callers on master and prototype (ready, check, and next's review order); the changed lines and their reads; the one producer of the review gate's brief field; briefAdmissionProblems byte-unchanged; no next.test.ts fixture declares brief_behaviour_limit; every cited function exists.
+- flips.txt (census.mjs): all 107 briefs under master's and the prototype's admission. Newly refused: 9 greenlit, 15 halted, 1 backlog, 2 with no record, 80 done (unread by every caller). Phrase counts: every 1017, never 854, always 50, exactly as today 6, exactly as before 2, in every case 1.
+- suites.txt: source-only prototype: brief-admission 40/51 and red-order 5/32 fail without the fixture line; next.test.ts 75/75, lifecycle, cli, stage-states, ladder-followon, containment, verdict and verdict-citation pass. Committed git copies, master vs source+fixtures: check.test, rules.test, evidence, verdict-citation and red-order identical; brief-admission fails only W-161-b3's message rows.
+- probe.txt: every behaviour's rows on master (red) and prototype (green), including W-196-b4 through next.test.ts.
+- check-compare.txt: brief.admission findings on studio and examples/sample-studio: 0 on master and on the prototype.
+- admission.txt (check-admission.mjs): the signed brief under master's admission and the prototype's: 0 problems each, one table run, 9 rows.
+
+## Findings
+1. advisory: The draft held next at spec before the architect order too, and on a missing brief, which would stop the ladder dispatching the architect to write or correct a Codex draft (D-027). next now gates only the review order (specOrder, gate review), and an inadmissible signed brief gets an architect order for the next round with the problems as its why; a malformed limit holds. check: packages/cli/src/next.test.ts W-196-b4
+2. advisory: The draft's phrase list included every and never: 1017 and 854 occurrences across about 90 briefs, a false-positive machine for the one place form is now enforced (D-056). The list is closed at six phrases (always, in every case, in all cases, exactly as before, exactly as on master, exactly as today), scanned from ## Intent up to ## Out of scope with inline code removed. check: packages/cli/src/brief-admission.test.ts W-196-b2
+3. advisory: The draft required the citation inside the Status line with fixed file names. It is now its own line, any two backticked paths, or none with a reason, detected like readRedOrder's line. check: packages/cli/src/brief-admission.test.ts W-196-b1
+4. advisory: The draft claimed no existing row flips. Measured: without the fixture citation line, 40 brief-admission tests and 5 red-order tests fail; the line goes into Behaviour 1's test commit (inert on master). W-161-b3's NO_FN rows flip on the reworded rejector message and are updated in Behaviour 3's test commit. check: packages/cli/src/brief-admission.test.ts W-161-b3
+5. advisory: D-056 §3 says before signing. The verdict writer cannot call briefAdmissionProblems: lifecycle.ts imports verdict.ts, so the reverse import is a cycle. The gate is the first step after the signature; moving the predicate is Default 5. check: packages/cli/src/next.test.ts W-196-b4
+6. advisory: D-057 §2 overlap. docs/ADOPTION.md is also owned by W-203, building now; signing ahead is the producer's call, and W-196 takes a §3 re-review of ADOPTION.md if W-203 lands first. W-204 (signed ahead) owns next.ts, lifecycle.ts, ADOPTION.md and ARCHITECTURE.md, and its brief fails the new admission (no citation, two always lines), so its §3 re-review must also revise it. check: none: D-057 is applied by hand until W-169
+7. advisory: Non-done briefs the new rules refuse when they reach a caller are named in Defaults 3; there is no past-ready grandfathering, which is safe only while one lane finishes W-203 before W-196 merges (check blocks an active opus's brief). check: packages/cli/src/brief-admission.test.ts W-196-b1

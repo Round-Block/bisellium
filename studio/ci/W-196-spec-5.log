@@ -1,0 +1,17 @@
+# opus: W-196
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T02:16:48.814Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:cef6fff4540d53b7a99a47f73174593785d57850
+
+Architect signature for W-196, revision 3 (round 5), answering spec review round 4 (ci/W-196-spec-4.log), under D-027 and D-057. Revision 2 is kept as ~/.bisellium-evidence/W-196-spec/W-196-r2.md, and revision 1's probe rows as probe-rows-r1.ts.
+
+Evidence: probe-r5.txt is W-196-b4 on prototype --source --fixtures --probe, a fresh copy of master a86f356, and it passes. The new rows: no --budget gives "dispatch budget undeclared" for the architect order and the reviewer order; srWorld handoff:false gives "stale handover: run bisellium handoff first (the record carries no traditio)". admission-r5.txt: revision 3 has 0 admission problems against master and against the prototype. The source change is unchanged from revision 1.
+
+## Findings
+1. advisory: Round 4's finding is fixed. The next outcomes are one promise line, next-review-gate. Its limit names gateDispatch's holds (next.ts:917–929): --budget absent or over DISPATCH_TOKEN_CAP, and, for the resumed architect order only, a traditio that is absent or older than the newest red or build-review log. W-196-b4 covers the missing budget and the missing traditio. check: packages/cli/src/next.test.ts W-196-b4
+2. advisory: Sweep. The reviewer order is subject to the budget hold only. runNext's --expect check and step-marker health (next.ts:1428–1498) can replace any printed outcome, and the promise's limit names both. Interfaces, row 5, Behaviour 4 and Defaults 4 now say "derives" and cite the promise. The malformed-limit hold passes gateDispatch unchanged. No other next outcome promise remains outside the promise line. check: packages/cli/src/next.test.ts W-196-b4

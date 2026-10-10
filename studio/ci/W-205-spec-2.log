@@ -1,0 +1,18 @@
+# opus: W-205
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T03:28:34.932Z
+# tree: dirty:3ba3e6989a455193ec470d45c028874465b4650e
+# brief: briefs/W-205.md blob:d8d505f025fa11f4ace70e48d47c736509633c32
+
+## Findings
+1. blocking — brief:33 The `22 of 22` and `32 of 32` counts are not counts of every step: the parity script collapses `certify`’s two checkout steps and two `npm ci` steps by identical labels; the actual occurrence counts are 24 and 34. — check: none: parity census must key steps by job and step index
+2. blocking — brief:25 “The full CI work runs once before merge” is false for a records-only non-opus head: `gates` and `web-e2e` take W-203’s short paths and `certify` mints nothing, leaving the full suite until post-merge `push`. — check: none: brief admission should require the records-only and non-opus limits on this claim
+3. blocking — brief:113 Behaviour 1 says merge groups run the full jobs, but records-only merge groups intentionally retain W-203’s short paths; the planned condition-table test preserves rather than guarantees the stated behaviour. — check: scripts/ci-scope.test.mjs
+
+## Verdict
+The brief’s parity counts and full-run promises must be corrected before building.
+VERDICT: FAIL

@@ -1,0 +1,24 @@
+# opus: W-196
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T02:24:15.570Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:e82d758ec273f40fbaccd36242a7f05339033560
+
+Architect signature for W-196, revision 4 (round 7), answering spec review round 6 (ci/W-196-spec-6.log), under D-027 and D-057. Revision 3 is kept as ~/.bisellium-evidence/W-196-spec/W-196-r3.md.
+
+The fix closes the class, not only the instance. The class is any unchanged step of next that holds, refuses or prints something else before or instead of the spec rung's order. runNext (next.ts:1396–1500 on master a86f356) and deriveNext (next.ts:604–634) were read from their first line to the spec rung. Every such step is listed once, in Interfaces, as E1–E13:
+- argument parsing; Git and linked-worktree checks; openStudio; id and studio containment;
+- readSourceExcludes; the unknown-opus check after gather;
+- deriveNext's pre-spec returns and the spec rung's branches before specOrder;
+- --track; gateDispatch's budget hold and its handover hold (resumed orders only);
+- the --expect refusal and step-marker health; exceptions inside and before the try.
+
+Evidence: admission-r7.txt shows 0 admission problems against master and against the prototype. The source change and probe-r5.txt are unchanged.
+
+## Findings
+1. advisory: Round 6's finding is fixed as a class. promise next-review-gate now reads "when next reaches the spec rung's review gate (every step E1–E13 above stands unchanged and none fires)", and E5 names readSourceExcludes. check: packages/cli/src/next.test.ts W-166-b4
+2. advisory: Sweep of next output promises. Row 4, row 5, Behaviour 4 and Defaults 4 cite the promise instead of naming holds. W-196-b4's no-budget and no-handover rows cite E10 and E11. Its other rows pass --budget with a fresh handover, so no E-step fires. The remaining statements are "next names no reviewer" and "no review is dispatched on an inadmissible brief", and both are true under every E-step, since each holds or prints something that names no reviewer. check: packages/cli/src/next.test.ts W-196-b4

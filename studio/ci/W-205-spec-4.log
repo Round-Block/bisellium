@@ -1,0 +1,18 @@
+# opus: W-205
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T03:36:06.667Z
+# tree: dirty:3ba3e6989a455193ec470d45c028874465b4650e
+# brief: briefs/W-205.md blob:5c1998a749da899376f331dce078f21871eec524
+
+## Findings
+1. blocking — brief:1 The title says the pull-request run stops repeating merge-group work, but for source changes both runs still execute checkout, setup-node, `npm ci`, typecheck, and lint. — check: none: brief admission should require no-repeat claims to exclude retained overlapping steps
+2. blocking — brief:38 Promise `one-pre-merge-run` is false as written: the retained five `gates` steps run in both pre-merge runs for source changes, and an opus `certify` additionally reruns the six `CI_STEPS`; the stated limit does not cover either repetition. — check: none: brief admission should reject “runs once” claims when the pinned event step sets overlap
+3. blocking — brief:48 “Every step is a repeat” is false because the cited 24/34-step census includes `certify`’s ten merge-group-only steps. The supported claim is only that every pull-request step has a merge-group counterpart. — check: none: the parity census should distinguish pull-request repeats from merge-group-only steps
+
+## Verdict
+The workflow is feasible, but its remaining no-repeat and once-only promises contradict the pinned execution matrix.
+VERDICT: FAIL

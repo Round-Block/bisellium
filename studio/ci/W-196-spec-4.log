@@ -1,0 +1,16 @@
+# opus: W-196
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T02:15:22.924Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:3c03477e2c758598371735c160d7213e0e247784
+
+## Findings
+1. blocking — brief:75 The promised architect order is not guaranteed: because a signed brief makes `ev.anyLog` true, unchanged `gateDispatch` replaces the order with a `spec` hold when `--budget` is absent or `traditio` is absent or stale. State these preconditions as the limit and cover both holds in W-196-b4. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The brief makes an unconditional `next` outcome promise that its mechanism cannot guarantee.
+VERDICT: FAIL

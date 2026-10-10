@@ -1,0 +1,19 @@
+# opus: W-196
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T02:10:19.982Z
+# tree: dirty:4be6ddb32d7618e0e3fb7026417dfe21c6bec326
+# brief: briefs/W-196.md blob:3c03477e2c758598371735c160d7213e0e247784
+
+Architect signature for W-196, revision 2 (round 3), answering spec review round 2 (ci/W-196-spec-2.log), under D-027 and D-057. Master is now a86f356 (W-203 merged). Revision 1 is kept as ~/.bisellium-evidence/W-196-spec/W-196-r1.md.
+
+Evidence: admission-r3.txt (check-admission.mjs on revision 2, against master a86f356 and against the prototype: 0 problems each, one table run, 9 rows). The source change, the flips and the suites are unchanged from revision 1 (prototype.diff, flips.txt, suites.txt, probe.txt). The probe row "# PROBE promise" already expected the architect order for the `always` brief.
+
+D-057 §3: since the round 1 signature, docs/ADOPTION.md changed on master (W-203's paragraph under ## Merge queue, lines 1178–1185). W-196's edit is the Brief admission paragraph (lines 886–903), so they do not collide. docs/ARCHITECTURE.md's readBriefAdmission entry is now lines 292–293. No other Files owned path changed (git diff fad38c2 a86f356). W-203's record is still building on master, so it must be marked done before W-196 merges, or check blocks its brief (Defaults 3).
+
+## Findings
+1. advisory: Round 2's finding 1 is fixed. Behaviour 4 now calls the `always` brief inadmissible under the phrase rule, and it gets the architect order, which matches the prototype. Sweep: every other "admissible" in the brief names a brief with no admission problem. check: packages/cli/src/next.test.ts W-196-b4
+2. advisory: Round 2's finding 2 is fixed. Row 6 now names briefAdmissionProblems as the rejector of a malformed manifest.collegia when the brief cites an exception ("no design collegium declares a magister"), and patronDecisionProblem for the cited decision only. check: packages/cli/src/brief-admission.test.ts
