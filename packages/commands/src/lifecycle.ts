@@ -1213,7 +1213,7 @@ export function runHalt(args: string[], opts: WriteOptions = {}): WriteResult {
 
 /** W-127: every problem that keeps this brief from admission under `limit`
  *  (`brief_behaviour_limit`), in order; empty when it is admitted. The one
- *  predicate `ready` and `check` share. */
+ *  predicate `ready`, `check` and `next`'s spec-review order (W-196) share. */
 export function briefAdmissionProblems(
   root: string,
   manifest: Pick<Manifest, "patron" | "collegia">,

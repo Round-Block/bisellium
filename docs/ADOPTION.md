@@ -900,6 +900,31 @@ written), and `check` blocks `brief.admission` on an active opus
 (`building`, `verifying`, `review`) whose brief fails, through one shared
 predicate. Fenced blocks and HTML comments are ignored, and `## Behaviours to test`
 appears once. Done briefs are never re-read, so history needs no migration.
+Three more forms (W-196, D-056) catch form problems before the spec review.
+A brief cites its read enumeration on exactly one line,
+``Read enumeration: `<script>` -> `<output>` `` (two backticked paths without
+spaces), or `Read enumeration: none: <reason>`; the cited files are not read.
+From `## Intent` up to `## Out of scope` (else the top and the end), with inline
+code removed, the closed list `always`, `in every case`, `in all cases`,
+`exactly as before`, `exactly as on master` and `exactly as today` (whole words,
+any case) appears only on a promise line,
+`Promise <slug>: <claim> — limit: <what does not hold>` (optionally a list
+item); each slug and each normalised claim appears once. A `Rejected by` cell
+opens with a backticked function name, or with ``runner: `job` …``,
+``exit: `call` …`` or `limit: …` (D-050). `next` applies the same predicate to
+the signed brief before it names the spec reviewer: with a declared
+`brief_behaviour_limit`, a brief that fails admission gets an architect order
+for the next round (`why` starting `brief.admission:`, no reviewer named), an
+admissible one the reviewer's, and a malformed limit holds at `spec`. That
+holds when `next` reaches the review gate; promise next-review-gate's limit is
+that each unchanged earlier or later step that fires prints its own result
+instead: refused arguments, a non-repository or linked worktree, an unloadable
+studio, an unsafe id, malformed `source_excludes`, an unknown opus, a
+`deriveNext` return before the review order (done, declined, halted, stateless
+or backlog record; a malformed or UI reviewer setting; a signed, reviewed spec
+on the trunk, a `spec/<id>` branch or the main checkout), `--track`, the
+dispatch gate (no `--budget`, or a stale or absent handover on a resumed
+order), `--expect`, a running, dead or invalid step marker, and an exception.
 
 **Red order (W-166).** A brief that carries the one real line
 `Red order: one at a time` (outside fences and comments; any other spelling of
