@@ -74,6 +74,8 @@ interface BriefSpec {
   domain?: string[];
   /** W-196: the read enumeration lines in the Intent section; default the one valid citation. */
   reads?: string[];
+  /** W-196: extra lines in the Intent section, after the read enumeration. */
+  intent?: string[];
 }
 
 const RED = "**Genuine red:**";
@@ -97,6 +99,7 @@ function brief(s: BriefSpec = {}): string {
   for (const e of s.exceptions ?? []) out.push(`Behaviour limit exception: ${e}`);
   for (const r of s.redOrder ?? ["Red order: one at a time"]) out.push(r);
   for (const r of s.reads ?? [READS]) out.push(r);
+  out.push(...(s.intent ?? []));
   if (s.fencedIntent) out.push("```", ...s.fencedIntent, "```");
   out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "");
   const domain = s.domain ?? DOMAIN;
@@ -663,4 +666,47 @@ test("W-196-b1 behaviour 1: a brief cites its read enumeration once, to ready an
   ])
     refuse({ reads: [bad] }, BAD_READS(bad), bad);
   assert.equal(checked("done", brief({ reads: [] })).admission.length, 0, "a done opus");
+});
+
+const PROMISE = "Promise <slug>: <claim> — limit: <what does not hold>";
+const SAYS = (n: number, phrase: string): string => `line ${n} says "${phrase}" outside a promise line; declare it once as "${PROMISE}"`;
+const MALFORMED = (n: number): string => `line ${n}: a promise line is "${PROMISE}"`;
+/** The 1-based number of the one line of `text` equal to `line`. */
+const at = (text: string, line: string): number => {
+  const n = text.split("\n").flatMap((l, i) => (l === line ? [i + 1] : []));
+  assert.equal(n.length, 1, `${line}: ${n.length} lines`);
+  return n[0]!;
+};
+
+test("W-196-b2 behaviour 2: an absolute phrase sits on one promise line with its limit", () => {
+  const P1 = "Promise runs-twice: the step always runs. — limit: it does not run when the job is skipped.";
+  const P2 = "- Promise lands: the verb exits 0 in all cases — limit: a held step exits 1.";
+  const ok = (text: string, label: string): void => accepted(ready(text), label);
+  ok(brief({ intent: [P1] }), "a promise line");
+  ok(brief({ intent: [P2] }), "a listed promise line");
+  ok(brief({ intent: [P1, P2] }), "two distinct promises");
+  ok(brief({ intent: ["The `always` flag is set."] }), "a phrase in inline code");
+  ok(brief({ fencedIntent: ["It always runs."] }), "a phrase in a fence");
+  ok(brief({ intent: ["<!-- it always runs -->"] }), "a phrase in a comment");
+  ok(`It always runs.\n\n${brief()}`, "before the Intent");
+  ok(brief().replace("## Out of scope\n\nnone", "## Out of scope\n\nAlways none."), "in Out of scope");
+  ok(brief({ intent: ["Every record never fails; never say never."] }), "every and never");
+  const no = (text: string, line: string, problem: (n: number) => string, label: string): void =>
+    refused(ready(text), [problem(at(text, line))], label);
+  const prose = "The step always runs.";
+  no(brief({ intent: [prose] }), prose, (n) => SAYS(n, "always"), "always in prose");
+  const row = "| fixture record | always a string | `readFixture` |";
+  no(brief({ domain: sect([row]) }), row, (n) => SAYS(n, "always"), "always in a table row");
+  no(brief().replace("green", "The verb succeeds in every case."), "The verb succeeds in every case.", (n) => SAYS(n, "in every case"), "in every case");
+  no(brief({ intent: ["Exactly As Before."] }), "Exactly As Before.", (n) => SAYS(n, "Exactly As Before"), "exactly as before, any case");
+  const bare = "Promise runs: the step runs.";
+  no(brief({ intent: [bare] }), bare, MALFORMED, "a promise with no limit");
+  const empty = "Promise runs: the step runs — limit:";
+  no(brief({ intent: [empty] }), empty, MALFORMED, "a promise with an empty limit");
+  const slug = "Promise Not_a_slug: the step runs — limit: not when skipped.";
+  no(brief({ intent: [slug] }), slug, MALFORMED, "a slug that is not a slug");
+  const twice = "Promise runs-twice: another claim — limit: none.";
+  no(brief({ intent: [P1, twice] }), twice, (n) => `line ${n}: promise "runs-twice" is declared twice; state each promise once`, "a repeated slug");
+  const claim = "Promise other: The  step ALWAYS runs — limit: a different limit.";
+  no(brief({ intent: [P1, claim] }), claim, (n) => `line ${n}: promise "other" repeats an earlier promise's claim; state each promise once`, "a repeated claim");
 });
