@@ -711,6 +711,23 @@ test("W-196-b2 behaviour 2: an absolute phrase sits on one promise line with its
   no(brief({ intent: [P1, claim] }), claim, (n) => `line ${n}: promise "other" repeats an earlier promise's claim; state each promise once`, "a repeated claim");
 });
 
+test("W-196-b2 behaviour 2: admission reads a long hostile line in linear time (CodeQL polynomial regex)", () => {
+  // Each input made the regexes it targets take seconds (quadratic or cubic); the bound is far above a linear scan.
+  const timed = (label: string, line: string): string[] => {
+    const start = Date.now();
+    const { problems } = readBriefAdmission(brief({ intent: [line] }), 5);
+    const ms = Date.now() - start;
+    assert.ok(ms < 1000, `${label}: ${line.length} chars took ${ms} ms`);
+    return problems;
+  };
+  assert.deepEqual(timed("commas inside a promise claim", `Promise a: ${",".repeat(150_000)}x — limit: y`), []);
+  assert.deepEqual(timed("a backtick run with no closing run", `x${"`".repeat(20_000)}${"a".repeat(20_000)}`), []);
+  assert.deepEqual(timed("a backtick run after a lone backtick", `\`a${"`".repeat(20_000)}${"b".repeat(20_000)}`), []);
+  const hostile = timed("many limit separators and a line break inside the line", `Promise a: x${" — limit: y".repeat(30_000)}\rz`);
+  assert.equal(hostile.length, 1, JSON.stringify(hostile).slice(0, 200));
+  assert.match(hostile[0]!, /^line \d+: a promise line is /);
+});
+
 test("W-196-b3 behaviour 3: D-050's three row forms are admitted, and nothing looser", () => {
   const cell = (text: string): string[] => sect([`| rec | a string | ${text} |`]);
   for (const good of [
