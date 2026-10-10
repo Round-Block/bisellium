@@ -72,9 +72,14 @@ interface BriefSpec {
   tail?: string[];
   /** W-161: the lines under the `## Input domain` heading, placed before "## Behaviours to test"; `[]` writes no heading. */
   domain?: string[];
+  /** W-196: the read enumeration lines in the Intent section; default the one valid citation. */
+  reads?: string[];
 }
 
 const RED = "**Genuine red:**";
+
+/** W-196: the one valid read enumeration citation. */
+const READS = "Read enumeration: `enumerate-reads.mjs` -> `reads.txt`";
 
 /** W-161: the default Input domain section body, the one valid one-row table. */
 const DOMAIN = [
@@ -91,6 +96,7 @@ function brief(s: BriefSpec = {}): string {
   for (const f of s.families ?? ["brief-admission"]) out.push(`Decree family: ${f}`);
   for (const e of s.exceptions ?? []) out.push(`Behaviour limit exception: ${e}`);
   for (const r of s.redOrder ?? ["Red order: one at a time"]) out.push(r);
+  for (const r of s.reads ?? [READS]) out.push(r);
   if (s.fencedIntent) out.push("```", ...s.fencedIntent, "```");
   out.push("", "## Files owned", "", "- a.ts", "", "## Interfaces", "", "none", "");
   const domain = s.domain ?? DOMAIN;
@@ -621,4 +627,40 @@ test("W-161-b6 behaviour 6: check blocks an active opus whose brief it cannot re
     assert.equal(mine.length, 1, `limit ${String(bad)}: ${JSON.stringify(shape)}`);
     assert.equal(mine[0]!.message, "brief_behaviour_limit must be a positive integer");
   }
+});
+
+const READS_LINE = 'Read enumeration: `<kept script>` -> `<its output>`';
+const NO_READS = `cites no read enumeration; add one line "${READS_LINE}", or "Read enumeration: none: <reason>"`;
+const BAD_READS = (l: string): string => `read enumeration line "${l}" is not "${READS_LINE}" or "Read enumeration: none: <reason>"`;
+
+test("W-196-b1 behaviour 1: a brief cites its read enumeration once, to ready and to check", () => {
+  const check = (text: string, problem: string, label: string): void => {
+    const { admission } = checked("building", text);
+    assert.equal(admission.length, 1, `${label}: ${JSON.stringify(admission)}`);
+    assert.equal(admission[0]!.level, "block", label);
+    assert.ok(admission[0]!.message.endsWith(problem), `${label}: ${admission[0]!.message}`);
+  };
+  const refuse = (spec: BriefSpec, problem: string, label: string): void => {
+    refused(ready(brief(spec)), [problem], label);
+    check(brief(spec), problem, label);
+  };
+  const free = (text: string, label: string): void => {
+    accepted(ready(text), label);
+    assert.equal(checked("building", text).admission.length, 0, `${label}: check`);
+  };
+  free(brief(), "a valid citation");
+  free(brief({ reads: ["Read enumeration: none: docs only, nothing to enumerate"] }), "none with a reason");
+  free(brief({ reads: [], tail: [READS] }), "a citation after the Intent");
+  refuse({ reads: [] }, NO_READS, "no citation");
+  refuse({ reads: [READS, "Read enumeration: none: and more"] }, "has 2 read enumeration lines; one only", "two citations");
+  refuse({ reads: [], fencedIntent: [READS] }, NO_READS, "only in a fence");
+  refuse({ reads: [], tail: ["<!--", READS, "-->"] }, NO_READS, "only in a comment");
+  for (const bad of [
+    "Read enumeration: `enumerate-reads.mjs`",
+    "Read enumeration: `` -> `reads.txt`",
+    "read enumeration: `enumerate-reads.mjs` -> `reads.txt`",
+    "Read enumeration: none:",
+  ])
+    refuse({ reads: [bad] }, BAD_READS(bad), bad);
+  assert.equal(checked("done", brief({ reads: [] })).admission.length, 0, "a done opus");
 });
