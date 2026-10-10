@@ -1,0 +1,23 @@
+# opus: W-209
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T06:26:27.173Z
+# tree: tree:19870db386ed4f928f7dd00c24516ae5c80c9094
+# brief: briefs/W-209.md blob:15047211bbf1d0a8739c4e18825237e2a9cd12db
+
+Architect signature for W-209 revision 3, under D-027 and ahead of the build under D-057. It answers spec review r4 (ci/W-209-spec-4.log; one blocker). The architect (claude-opus-5-5) kept revision 2 as ~/.bisellium-evidence/W-209-spec/W-209-r2.md, with its notes as signing-notes-r2.md. The finding was measured on a prototype copy and fixed as a class. The architect then re-signed studio/briefs/W-209.md.
+
+Evidence, new in ~/.bisellium-evidence/W-209-spec/:
+- r3-preload-coverage.mjs and r3-unwrapped.mjs, output r3-preload-coverage.txt, on Node v25.9.0. Each read API was probed in its own node process under scripts/record-reads.mjs, reading docs/design/dossier/body.html on the W-209 prototype copy.
+  - Logged: the 18 wrapped calls, plus reads that pass through them: import(), fs.promises.cp, a FileHandle's readFile, and readSync on an fd from a wrapped open.
+  - Not logged: openAsBlob, access/accessSync, fs.promises.access, realpathSync, readlinkSync, statfsSync and watch. A child cat or git reading the page is not logged either.
+  - Every fs export left unwrapped: access, accessSync, exists, glob, globSync, openAsBlob, read (fd), readlink, readlinkSync, realpath, realpathSync, statfs, statfsSync, watch and watchFile; on fs.promises: access, glob, readlink, statfs, realpath and watch.
+- admission-r3.txt: revision 3 gets 0 problems under master's admission and under W-196's (5321282). One table run, 9 rows.
+- Revisions 1 and 2's evidence stands. The behaviour, Files owned, the prototype and the producer's prerequisite are unchanged.
+
+## Findings
+1. advisory: r4 finding 1. The brief called W-139's guard exact over every node fs read. It logs only the preload's 18 wrapped calls, and openAsBlob and the other unwrapped APIs read unseen (r3-preload-coverage.txt). Promise ci-page-readers now claims only reads made through the wrapped calls, and its limit lists every unwrapped API and non-node children. The preload is unchanged; no new machinery. check: scripts/ci-scope.mjs --check-reads (gates, full path), within that limit
+2. advisory: Sweep. Every sentence that called the guard exhaustive now cites the promise's limit: the census evidence line, revision 1's correction 3, row 4's valid domain and behaviour 1's full-suite sentence. No other exactness claim about the guard remains between Status and Defaults. check: none: a measured promise, no code path
