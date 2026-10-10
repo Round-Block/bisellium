@@ -18,9 +18,8 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-10)
 
 - **W-205 merged (PR 397)**, review round 3 (rounds 1-2 failed on one-kind CI
-  sentences). After the Patron's fast-forward (`.github/` path): `next W-205`
-  merge and cleanup, `verify`, done, checkpoint row 68 (a Haiku subagent
-  republishes, lex §7), retro. Triage facts beyond the logs: round 2 went
+  sentences); fetched and cleaned up. Next: `verify` on master, done,
+  checkpoint row 68 (a Haiku subagent republishes, lex §7), retro. Triage facts beyond the logs: round 2 went
   to review without a census check; the builder graded its own sweep; a
   W-208 architect left two wait loops running; the orchestrator republished
   pages itself (~110k tokens).
@@ -30,7 +29,7 @@ Rules, process and environment: studio/leges/production.md.
   (D-057 §3); then `branch`.
 - **W-208** (Ops collegium), split by the architect (measurement becomes a
   follow-on, Default 1); spec reviews 2-10 failed, each narrower. Revision 6
-  is being signed as round 11 in `.worktrees/W-208-spec` (uncommitted;
+  is signed as round 11 in `.worktrees/W-208-spec` (uncommitted;
   evidence `~/.bisellium-evidence/W-208-spec/`). Next: spec review round 12
   (prompt `~/.bisellium-evidence/W-208-specreview/r10/`, spec log updated).
   On a pass its Defaults go to the Patron as questions (Ops is
