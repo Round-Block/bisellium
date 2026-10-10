@@ -1,0 +1,17 @@
+# opus: W-196
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-10T07:31:06.341Z
+# tree: tree:88989ca9e71baa605d5bc31a2ab3d61ecb2d11c7
+# brief: briefs/W-196.md blob:aec571596a43ecfc6d2d67232c3d65cbb542102a
+
+## Findings
+1. advisory — packages/cli/src/brief-admission.test.ts:714 One incomplete regression row: it does not assert semantics for multi-backtick spans, a genuinely unmatched run containing an absolute phrase, or selection among repeated ` — limit: ` separators; the uncommitted fuzz supports the correct implementation but does not pin these cases in the suite. — check: packages/cli/src/brief-admission.test.ts
+2. advisory — gates/summary.txt:8 One instance: the timed-out `next.test.ts` gate was rerun unchanged instead of having its timeout cause fixed, contrary to production lex §11. The passing full test run and host-minted receipt keep the required evidence present and true. — check: none: gate automation should reject an unchanged rerun after timeout without a recorded cause and fix
+
+## Verdict
+The replacements preserve admission behavior and are linear on hostile single-line input; the regex audit is complete, red 02 is genuine and correctly ordered, and the building-stage handoff accurately reflects the record. Both findings are advisory.
+VERDICT: PASS
