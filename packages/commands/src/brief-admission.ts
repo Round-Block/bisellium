@@ -144,6 +144,43 @@ function readEnumerationProblems(real: string[]): string[] {
   return READS_FORM.test(attempts[0]!) ? [] : [`read enumeration line "${attempts[0]}" is not "${READS_LINE}" or "Read enumeration: none: <reason>"`];
 }
 
+/** W-196: the closed list of absolute phrases admission reads, case-insensitive, whole words. */
+const ABSOLUTE = /(?<![\w-])(always|in every case|in all cases|exactly as before|exactly as on master|exactly as today)(?![\w-])/i;
+const LIST_MARKER = "(?:(?:[-*]|\\d+\\.)\\s+)?";
+const PROMISE_ATTEMPT = new RegExp(`^${LIST_MARKER}Promise\\s+[^\\s:]+:`);
+const PROMISE_FORM = new RegExp(`^${LIST_MARKER}Promise ([a-z][a-z0-9]*(?:-[a-z0-9]+)*): (\\S.*?) — limit: (\\S.*)$`);
+const PROMISE_LINE = "Promise <slug>: <claim> — limit: <what does not hold>";
+
+/** W-196: from the first real "## Intent" line (else the top) up to the first real "## Out of scope" after it (else the
+ *  end), with inline code spans removed, an ABSOLUTE phrase appears only on a promise line, and each promise's slug and
+ *  claim (lower-cased, spaces collapsed, trailing .,; dropped) appear once. */
+function absolutePromiseProblems(real: string[]): string[] {
+  const intent = real.findIndex((l) => l.trim() === "## Intent");
+  const start = intent === -1 ? 0 : intent;
+  const stop = real.findIndex((l, i) => i > start && l.trim() === "## Out of scope");
+  const slugs = new Set<string>();
+  const claims = new Set<string>();
+  const problems: string[] = [];
+  for (let i = start; i < (stop === -1 ? real.length : stop); i++) {
+    const t = real[i]!.trim();
+    if (PROMISE_ATTEMPT.test(t)) {
+      const m = PROMISE_FORM.exec(t);
+      if (m === null) problems.push(`line ${i + 1}: a promise line is "${PROMISE_LINE}"`);
+      else {
+        const claim = m[2]!.toLowerCase().replace(/\s+/g, " ").replace(/[.,;]+$/, "");
+        if (slugs.has(m[1]!)) problems.push(`line ${i + 1}: promise "${m[1]}" is declared twice; state each promise once`);
+        else if (claims.has(claim)) problems.push(`line ${i + 1}: promise "${m[1]}" repeats an earlier promise's claim; state each promise once`);
+        slugs.add(m[1]!);
+        claims.add(claim);
+      }
+      continue;
+    }
+    const hit = ABSOLUTE.exec(t.replace(/(`+).*?\1/g, ""));
+    if (hit !== null) problems.push(`line ${i + 1} says "${hit[1]}" outside a promise line; declare it once as "${PROMISE_LINE}"`);
+  }
+  return problems;
+}
+
 /** W-161: the one reader of `brief_behaviour_limit`. Absent is no admission; a positive integer is the limit;
  *  anything else, `null` included, is an error that fails closed in both callers. */
 export function readBriefLimit(raw: unknown): { limit: number | undefined } | { error: string } {
@@ -188,7 +225,7 @@ export function readBriefAdmission(briefText: string, limit: number): { problems
         );
     });
   }
-  problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real));
+  problems.push(...inputDomainProblems(real), ...readEnumerationProblems(real), ...absolutePromiseProblems(real));
   return exception === undefined ? { problems } : { problems, exception };
 }
 
