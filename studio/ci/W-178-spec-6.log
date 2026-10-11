@@ -1,0 +1,21 @@
+# opus: W-178
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0895-7041-9f12-d07c3da1f2d7
+# outcome: passed
+# at: 2026-10-11T06:21:31.840Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-178.md blob:85a45003fad411f89d4060ba855b282728a4ba62
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-178-spec-4.log #1: closed — brief:50 owns the live-row census update from 26 to 27, and brief:127 explicitly names W-132-b1’s flip and same-commit pin update.
+
+## Verdict
+The revision closes the previous blocker and the changed input boundary remains fail-closed.
+
+VERDICT: PASS

@@ -1,0 +1,23 @@
+# opus: W-178
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0895-7041-9f12-d07c3da1f2d7
+# outcome: failed
+# at: 2026-10-11T06:13:39.759Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-178.md blob:66aebf8ebdfde77ea21b82d35bd3497d2abb97b3
+
+## Findings
+1. blocking — brief:122 Adding W-178-b5 through the required `live(...)` helper increments `liveRows` from 26 to 27, so W-132-b1’s pinned assertion at `packages/commands/src/run.test.ts:1240` flips. The claim “Existing rows: none flips” and the `npm test` acceptance promise are false unless the brief owns that census update. — check: packages/commands/src/run.test.ts
+2. advisory — brief:100 The harness row omits W-178-b5’s added inputs: the live host invocation and its `gate.mjs` Git-ref check. Their paths fail closed through the host result and assertions, so this is an enumeration gap rather than an open path. — check: packages/commands/src/run.test.ts
+
+## Earlier findings
+- ci/W-178-spec-2.log #1: closed — brief:30 now distinguishes existing rows from the rows W-178 adds.
+- ci/W-178-spec-2.log #2: closed — brief:97 correctly assigns enforcement to `bisellium ci` and the host mint, and states that `verify` does not judge the rule.
+
+## Verdict
+The prior blockers are closed, but the new live row contradicts the existing pinned census and the brief’s no-flip promise.
+
+VERDICT: FAIL

@@ -1,0 +1,20 @@
+# opus: W-179
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-08c2-7001-a82a-21474948bbc7
+# outcome: passed
+# at: 2026-10-11T06:12:37.501Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-179.md blob:df6e4a4d1982f4948a6de64c80ba5f961405bad5
+
+## Findings
+1. advisory — brief:72 The measurement rejector does not cover two parts of its valid domain: exactly six alternating samples and the idle-host condition on which promise `faster` depends. As written, wrong sample ordering/count or host load can remain admissible. — check: none: `measure.sh` must reject invalid sample structure and a void host-load measurement
+
+## Earlier findings
+- ci/W-179-spec-2.log #1: closed — brief:66 now requires `buildWorld` to verify the deleted local, origin, and tracking refs plus the removed worktree before caching; `cleanup-refs.txt` confirms that postcondition for all ten current cleanup-or-later keys.
+
+## Verdict
+The previous blocker is closed; the remaining measurement-boundary imprecision is advisory.
+VERDICT: PASS

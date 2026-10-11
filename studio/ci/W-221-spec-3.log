@@ -1,0 +1,24 @@
+# opus: W-221
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:06:58.558Z
+# tree: dirty:d09ca13fa487df34cd0987a0335d4aae24dc1b83
+# brief: briefs/W-221.md blob:01abe3a4462a199df3c1e8f7e0a5664a671d3b7e
+
+## Findings
+
+1. r2 finding 1 upheld: censor.sh now refuses a missing or empty prompt.md (exit 2) before Codex runs. check: packages/cli/src/rules/process.test.ts
+2. r2 finding 2 upheld: censor.sh removes verdict.md first and exits 3 when Codex exits 0 without a non-empty verdict.md. check: packages/cli/src/rules/process.test.ts
+3. r2 finding 3 upheld: manifest.shape never checks a command's type and verify.ts:265 passes any truthy one on; checkPipeExit now blocks a present non-string automated command. check: packages/cli/src/rules/process.test.ts
+4. r2 finding 4 upheld: the scripts rule now requires the first command line to be exactly `set -euo pipefail` and blocks any `+o pipefail` text; the promise names set -e's Bash exemptions as its limit. check: process.pipe_exit
+5. r2 finding 5 upheld: a piped workflow step's effective shell (step, else job, else workflow default) must be exactly `bash`. check: process.pipe_exit
+6. r2 finding 6 upheld: every helper refuses (exit 2) unless scripts/.. holds a .git directory, so a worktree copy runs nothing; Default 4 rewritten. check: packages/cli/src/rules/process.test.ts
+7. r2 advisories 7-9 taken: rows for the directory listings, the scripts' other reused calls, and the test fixtures; Input domain is now 14 rows. check: brief.admission
+8. New Default 5: every scripts/*.sh opens with set -euo pipefail, piped or not; both existing scripts already comply (first command lines 26 and 92). check: process.pipe_exit
+
+## Verdict
+
+passed — signed revision 2. Admission: 0 problems, 1 table run, 14 rows (~/.bisellium-evidence/W-221-spec/admission-r2.txt). Revision 1 and the r1-r2 diff are kept in ~/.bisellium-evidence/W-221-spec/.

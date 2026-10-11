@@ -1,0 +1,25 @@
+# opus: W-221
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12988-64ad-74b1-aab8-61c0033cbe51
+# outcome: failed
+# at: 2026-10-11T06:04:22.671Z
+# tree: tree:d09ca13fa487df34cd0987a0335d4aae24dc1b83
+# brief: briefs/W-221.md blob:08f45b04378aeeaa7b5c8dbc4ffc3b9449f03f27
+
+## Findings
+1. blocking — brief:92 `censor.sh` reads `prompt.md` through `$(cat prompt.md)`; that read can fail while `codex exec` still receives an empty prompt and exits 0, so the added reader fails open. — check: packages/cli/src/rules/process.test.ts
+2. blocking — brief:92 The valid domain requires `codex exec` to write `verdict.md`, but a missing verdict only makes the diagnostic `cat` fail; the final `exit "$rc"` restores Codex’s zero exit and accepts the missing output. — check: packages/cli/src/rules/process.test.ts
+3. blocking — brief:88 A present non-string automated `command` is outside the stated domain, but current `manifest.shape` does not reject command type and the specified `checkPipeExit` only rejects strings containing a pipeline, leaving this input accepted. — check: packages/cli/src/rules/process.test.ts
+4. blocking — brief:65 A preceding textual `set -o pipefail` does not guarantee pipefail is active: the line can be inside a function or heredoc, or followed by `set +o pipefail`; all satisfy the accepted control while a later failing pipeline remains hidden, contradicting the headline’s “never.” — check: packages/cli/src/rules/process.test.ts
+5. blocking — brief:66 Treating any workflow shell that “contains `pipefail`” as controlled fails open: for example, `shell: bash -e {0} # pipefail` contains the word but runs Bash without pipefail, allowing the piped command’s exit to be hidden. — check: packages/cli/src/rules/process.test.ts
+6. blocking — brief:129 The claim that a worktree’s helper copy acts on that worktree is false for `record-review.sh`: after `ROOT` becomes that worktree, its unchanged `.worktrees/$ID/studio` and `.worktrees/$ID` paths point beneath it rather than to the worktree itself. — check: packages/cli/src/rules/process.test.ts
+7. advisory — brief:85 The `scripts/` and `.github/workflows/` directory enumerations are inputs, but their valid directory domain and rejection on an unreadable or non-directory path are unspecified; only enumerated files and absent directories are covered. — check: packages/cli/src/rules/process.test.ts
+8. advisory — brief:90 Rows 90–93 omit reused calls made by the newly added scripts, including `cp`, `git`, `verify`, `ready`, `npm ci`, and the `gh` reads. Their relevant failures otherwise appear to exit non-zero or are covered by the stated first-perform limit. — check: packages/cli/src/rules/process.test.ts
+9. advisory — brief:106 Behaviour 3 adds readers for the copied script sources and stub logs/outputs, but the input table has no rows for them; missing or malformed fixtures fail the test, so this omission is fail-closed. — check: packages/cli/src/rules/process.test.ts
+
+## Verdict
+The brief has fail-open inputs and guarantees its specified mechanisms cannot uphold, so it is not ready to build.
+VERDICT: FAIL

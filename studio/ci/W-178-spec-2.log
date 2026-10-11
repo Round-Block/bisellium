@@ -1,0 +1,21 @@
+# opus: W-178
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0895-7041-9f12-d07c3da1f2d7
+# outcome: failed
+# at: 2026-10-11T06:06:08.444Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-178.md blob:0186d1fbd0d54b1ed82189f1912a7023906117d8
+
+## Findings
+1. blocking — brief:25 “No … test row changes” contradicts the four new test rows required by Files owned and Behaviours 1–4; both promises cannot hold. — check: packages/cli/src/rules/tests.test.ts
+2. blocking — brief:90 `bisellium verify` does not execute either officina check or call `checkStudio`, so it cannot judge a `test.rows` failure as claimed. — check: none: add an integration proving `verify` refuses a row drop if that enforcement path remains promised
+3. advisory — brief:84 The working-tree `package.json` is an input to candidate classification, but the row defines no parseable domain or `testRowFindings` rejection for it; the existing sleep scan already blocks malformed candidate JSON, while malformed base JSON needs an explicit parse rejection. — check: packages/cli/src/rules/tests.test.ts
+4. advisory — brief:36 The changed `git init` call and the new fixture Git/CLI subprocesses in Behaviours 2–4 are test inputs omitted from the input table; their existing helpers and assertions fail closed on errors. — check: none: brief admission should require a harness row for added test subprocess inputs
+
+## Verdict
+The brief is not build-ready because two promises contradict the specified implementation and the existing `verify` path.
+
+VERDICT: FAIL

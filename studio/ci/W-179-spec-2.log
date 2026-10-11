@@ -1,0 +1,23 @@
+# opus: W-179
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-08c2-7001-a82a-21474948bbc7
+# outcome: failed
+# at: 2026-10-11T06:06:09.052Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-179.md blob:ff5a3e8033ed032fcacf47645cae56b08d869e75
+
+## Findings
+1. blocking — brief:61 `buildWorld` includes `removeBranchAndWorktree`, whose branch deletion, origin deletion, and remote-tracking deletion call `git(..., false)`; their non-zero exits do not throw, so the new cache can publish and reuse an incomplete cleanup seed despite the stated domain. — check: packages/cli/src/next.test.ts
+2. advisory — brief:62 The valid domain requires every worktree path to be under the copy’s root, but the named rejector only specifies rejecting the seed’s root; another external root is not excluded by that check. — check: packages/cli/src/next.test.ts
+3. advisory — brief:69 The input table omits the reused `nextAsync` subprocess exercised by the new behaviour and the assertions that turn an unexpected exit or output into refusal. — check: packages/cli/src/next.test.ts
+4. advisory — brief:77 The new inventory script reads base and candidate test source, but its inputs, parser domain, and rejecting function are absent from the input boundary. — check: none: the inventory script must reject an unreadable or unparseable source and every inventory mismatch
+5. advisory — brief:78 The new measurement script and focused command are omitted from the input boundary, including rejection of failed runs, mismatched commits or commands, and invalid host conditions. — check: none: the measurement script must fail closed on every invalid or unsuccessful sample
+6. advisory — brief:79 Typecheck, lint, format checking, and both officina checks are separate reused commands omitted from the input table, though their non-zero exits already fail acceptance closed. — check: none: add one input row per reused command
+7. advisory — brief:92 The fixed “78 to 79” default disagrees with the branch-base-relative promise and with line 40’s acknowledged possibility that W-213 lands rows first; it should remain `N` to `N + 1`. — check: test.rows
+
+## Verdict
+The cache can currently admit an incomplete seed after suppressed Git failures, so the brief is not yet safe to build.
+VERDICT: FAIL

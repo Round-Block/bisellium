@@ -1,0 +1,27 @@
+# opus: W-221
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:55:45.181Z
+# tree: dirty:d09ca13fa487df34cd0987a0335d4aae24dc1b83
+# brief: briefs/W-221.md blob:08f45b04378aeeaa7b5c8dbc4ffc3b9449f03f27
+
+## Findings
+
+1. Census widened from six named files to every reusable kept helper: opus-start.sh:5 and land-spec.sh:5,9 also pipe `next --perform` (census.txt); both move. check: none: kept scripts are outside every check (W-221 adds process.pipe_exit)
+2. Hazard measured, not asserted: hidden-exit-probe.txt runs the kept record-review.sh and opus-done.sh byte for byte; without pipefail a failed verdict reaches git commit (exit 0) and a failed cleanup reaches git checkout. check: packages/cli/src/rules/process.test.ts
+3. Live instance found: since W-215 the lex requires --session on reviewer verdicts; the kept record-review.sh never passes it, so a sessioned round 2 is refused and the pipe hides it. Optional session argument added (Default 3). check: packages/cli/src/rules/process.test.ts
+4. Cut the false claim that scripts/review-packet.mjs supersedes review-packet.sh (it runs no gate); review-packet.sh, chore-pr.sh, review-receipt.sh, fill-spec-review.sh stay outside (no hidden exit). check: none: brief text claim
+5. Cut the migration script, the sensitive-command list, and the markdown/TS-string surfaces; replaced by blanket per-surface rules (scripts/*.sh need pipefail first; workflow piped steps need a bash shell; root package.json scripts and manifest automated commands refuse a pipe). check: process.pipe_exit
+6. Draft put the rule inside checkProcess, which ignores opts; it is now an S2 module beside checkSessionHandoff with W-186's real-studio guard, wired by one line in check.ts; RULE_IDS registration named (lex.test.ts behaviour 7). check: packages/cli/src/rules/lex.test.ts
+7. Draft's "every repo-level checkProcess rule skips without --repo" was false (checkProcess takes _opts); removed. check: none: brief text claim
+8. Named breakage traps: containment.test.ts PINNED_D (reads via readContainedRegularFile only), brief-admission.test.ts W-140-b2 (no "## Behaviours to test" literal in process.ts), ladder-followon.test.ts:210-217 (retired scripts unnamed), CI read guard (new rows read no record path, so no test:record / package.json edit, no W-211 collision). check: packages/cli/src/containment.test.ts
+9. W-124 behaviour 3 pin resolved: it covered W-124's own diff; W-128 (0493868) deleted both scripts and ladder-followon.test.ts now pins them absent. check: packages/cli/src/ladder-followon.test.ts
+10. Input-domain rejectors rewritten to the admission shape (11 rows, D-050 runner/exit forms); behaviours cut from four to three. check: brief.admission
+11. Overlaps named: W-211 (package.json test:record, ADOPTION SOURCE-tree section), W-210 (its queue-required step has no unquoted pipe), W-212, W-213, W-189. check: none: D-057 re-review before branch
+
+## Verdict
+
+passed — signed revision 1. Admission: 0 problems, 1 table run, 11 rows, 0 shape failures (~/.bisellium-evidence/W-221-spec/admission.txt). Not pipeline work: ci.yml unchanged.

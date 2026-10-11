@@ -1,0 +1,27 @@
+# opus: W-221
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12988-64ad-74b1-aab8-61c0033cbe51
+# outcome: failed
+# at: 2026-10-11T06:10:39.179Z
+# tree: tree:d09ca13fa487df34cd0987a0335d4aae24dc1b83
+# brief: briefs/W-221.md blob:01abe3a4462a199df3c1e8f7e0a5664a671d3b7e
+
+## Findings
+1. blocking — brief:118 The kept `hidden-exit-probe.sh`, even with only its copy paths adjusted, places each script outside the required main-checkout shape; the new `$ROOT/.git` directory guard therefore returns 2 instead of the promised hidden exit 7. — check: none: hidden-exit-probe.sh acceptance probe
+2. advisory — brief:97 The catch-all row says a non-zero listed command stops with its own exit, but `opus-done.sh` handles the listed `verify` call with `|| { ...; exit 1; }`; this fails closed, but the stated rejector and resulting status are inaccurate. — check: packages/cli/src/rules/process.test.ts
+
+## Earlier findings
+- ci/W-221-spec-2.log #1: closed — A nonempty `prompt.md` guard now exits 2 before invoking Codex.
+- ci/W-221-spec-2.log #2: closed — The script removes stale `verdict.md` first and changes a successful Codex exit to 3 when no nonempty verdict is produced.
+- ci/W-221-spec-2.log #3: closed — A present non-string `automated.command` is now rejected, including the specified numeric-value test.
+- ci/W-221-spec-2.log #4: closed — The first effective command must be exactly `set -euo pipefail`, and any textual pipefail-disable command is rejected within the stated lexical limits.
+- ci/W-221-spec-2.log #5: closed — The effective workflow shell must now be exactly `bash`, so a shell string that merely mentions `pipefail` is rejected.
+- ci/W-221-spec-2.log #6: closed — Each review script now requires `$ROOT/.git` to be a directory, causing a standard linked-worktree copy to refuse before operational calls.
+
+## Verdict
+The revised brief closes every previous blocker, but its hidden-exit acceptance promise is incompatible with the newly required main-checkout guard.
+
+VERDICT: FAIL

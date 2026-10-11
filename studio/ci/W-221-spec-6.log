@@ -1,0 +1,21 @@
+# opus: W-221
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12988-64ad-74b1-aab8-61c0033cbe51
+# outcome: passed
+# at: 2026-10-11T06:11:54.614Z
+# tree: tree:d09ca13fa487df34cd0987a0335d4aae24dc1b83
+# brief: briefs/W-221.md blob:9f676df259fa14b14d4bfa21e65d5049ee939131
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-221-spec-4.log #1: closed — The legacy probe is now limited to before-state evidence, while behaviour 3 copies the new scripts into `<s>/scripts/` with `<s>/.git/` as a directory and verifies their fail-closed exits there.
+
+## Verdict
+The changed acceptance and input-domain text close the prior blocker and accurately specify the dependent behavior.
+
+VERDICT: PASS
