@@ -17,21 +17,21 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-215** (review loops converge) is built on `opus/W-215` (`.worktrees/W-215`,
-  clean at e6b17493; builder report and evidence `~/.bisellium-evidence/W-215-build/`).
-  Revision 3 (two build-found gaps) is signed as spec round 8 there, uncommitted;
-  round 9 (Codex session 01a126b2-7335-7da2-86f9-8c58544962ae) failed, recorded
-  there. Next: the architect's revision 4, resumed review; then a builder.
-- **W-211** (pin `source_excludes`): spec passed, Defaults answered; builds after W-215.
-- **W-210, W-212** (CI pins): spec round 4 failed (narrower promise limits);
-  revision 3 next, by an architect in `.worktrees/ci-pins-spec` (uncommitted;
-  `~/.bisellium-evidence/W-21{0,2}-spec/`), then resume each reviewer's session
-  (ids in `~/.bisellium-evidence/W-21{0,2}-specreview/r2/session.log`).
-- **W-208** (Ops collegium): branches after W-215 and W-211; PR B after merge.
+- **W-215** (review loops converge; `building` on its branch, `greenlit` on master): spec revision 4 passed (round 11); its
+  delta is built on `opus/W-215` (`.worktrees/W-215`, cac400cf; evidence and
+  kept delta reds `~/.bisellium-evidence/W-215-build/r4/`; review prompt drafted
+  in `~/.bisellium-evidence/W-215-review/r1/`). Next: mint, then build review round 1.
+- **W-210, W-212** (CI pins): specs passed and the Patron approved both designs
+  and Defaults (PR 410). **W-211** (pin `source_excludes`) likewise. All three
+  wait for W-215 (in flight) to land, then build in queue order.
+- **W-221** (a gate's exit hidden by a pipe in kept scripts): filed greenlit
+  under D-039; **W-222** (handoff checked against ground truth) in backlog.
+- **W-208** (Ops collegium): branches after W-215 and W-211; its brief's PR B follows.
 - Until W-215 lands, later review rounds resume the reviewer's Codex session
-  (`codex exec resume <id>`) and take the author's rebuttal before recording.
-- W-204: spec passed (round 6), then W-196's admission rules failed it (3).
-- Queue review owed: W-202 (ledger page) below W-136 (item 15) and W-138.
+  (`codex exec resume <id>`; ids in each `*-specreview/r*/session.log`) and
+  take the author's rebuttal (a subagent reply) before recording.
+- W-204: spec passed (round 6), then W-196's admission rules failed it (3); rerun
+  `~/.bisellium-evidence/W-208-spec/check-admission.mjs`, then an architect revises.
 
 ## Concurrency readiness
 
@@ -62,7 +62,7 @@ may veto. One-line descriptions of items 9-15 are in that acta.
     W-213 — the retro reads beyond the review findings (wins, time, cost, slips).
 3. W-208 — set up the Ops collegium (D-055).
 4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
-2b. W-215 — review loops converge (resumed reviewer, rebuttal, measured
+2b. W-215 (in flight, ahead of 2a) — review loops converge (resumed reviewer, rebuttal, measured
     targets; Patron 2026-10-11).
 5. W-204 — next stops holding a build review after three failed rounds.
 6. W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
@@ -70,7 +70,7 @@ may veto. One-line descriptions of items 9-15 are in that acta.
 7. W-207 — verify after merge reuses the queue's certificate (D-054).
 8. W-201 — the mutation check gates build review (D-052).
 9. W-185 — records checked once at load (D-049; the architect specs it).
-10. W-172, W-171 — high-severity fixes.
+10. W-172, W-171, W-221 — high-severity fixes.
 11. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, then W-169
    (switches lanes on; it waits for W-093, item 13, to land first).
 12. W-068 — task dependencies (signed brief to restore:
@@ -95,4 +95,5 @@ W-159, W-177.
   ship its rebuttal on plain session resume first? Asked 2026-10-11.
 - At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
   --tokens fix), W-218 (Ops per-step times), W-219 (next waits for the merge-group
-  run), W-220 (one-step re-review record), and W-175, W-176 (2026-10-08 lesson audit).
+  run), W-220 (one-step re-review record), W-222 (handoff ground-truth
+  probe), and W-175, W-176 (2026-10-08 lesson audit).
