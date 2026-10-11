@@ -34,7 +34,7 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Concurrency readiness
 
-One lane. Left before more: Queue item 11 (W-169 last) and W-093 (item 13).
+One lane. Left before more: Queue item 8 (W-169 last, with W-093).
 
 ## Artifacts
 
@@ -47,7 +47,7 @@ One lane. Left before more: Queue item 11 (W-169 last) and W-093 (item 13).
 
 ## Queue
 
-Ranked (next, after the open retro: item 1, then 2a). Item descriptions for 9-15:
+Ranked (next, after the open retro: item 1, then 2a). Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
 1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: a new high
@@ -61,21 +61,22 @@ Ranked (next, after the open retro: item 1, then 2a). Item descriptions for 9-15
     from a per-opus step ledger, and escalates a lesson class seen three times
     to a process opus (Patron 2026-10-11).
 3. W-208 — set up the Ops collegium (D-055).
-4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
-5. W-204 — next stops holding a build review after three failed rounds.
-6. W-223 — the Status page shows the ranked queue (Patron 2026-10-11).
+4. W-204 — next stops holding a build review after three failed rounds.
+5. W-223 — the Status page shows the ranked queue (Patron 2026-10-11).
    W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
    retro rides in the done PR (Patron 2026-10-11).
-7. W-207 — verify after merge reuses the queue's certificate (D-054).
-8. W-201 — the mutation check gates build review (D-052).
-9. W-185 — records checked once at load (D-049; the architect specs it).
-10. W-172, W-171 — high-severity fixes.
-11. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, then W-169
-   (switches lanes on; it waits for W-093, item 13, to land first).
+6. W-207 — verify after merge reuses the queue's certificate (D-054).
+7. W-201 — the mutation check gates build review (D-052).
+8. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
+   (security review on every change), then W-169 (switches lanes on). Moved up
+   by the Patron 2026-10-11; specs in review, uncommitted in `~/agents/bisellium/.worktrees/ml-a` (-b, -c).
+9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
+10. W-185 — records checked once at load (D-049; the architect specs it).
+11. W-172, W-171 — high-severity fixes.
 12. W-068 — task dependencies (signed brief to restore:
    copy `~/.bisellium-evidence/partial-specs/W-068.md` to a new `studio/briefs/W-068.md`,
    add `Red order: one at a time`, architect re-signs, then spec review).
-13. W-081, W-099 — security fixes; W-093 (security review on every change).
+13. W-081, W-099 — security fixes.
 14. W-173, W-174, W-184, W-195; then W-164, W-165, W-187, W-189, W-190,
     W-191, W-192, W-194, W-198.
 15. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
