@@ -1,0 +1,21 @@
+# opus: W-211
+# phase: handoff
+# round: 4
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12a20-63a2-7b81-b81a-f2a9a933ce5b
+# outcome: passed
+# at: 2026-10-11T11:48:12.636Z
+# tree: tree:eb19995e0850cd50e14bc029859f713da524f9df
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-211-handoff-3.log #1: closed — docs/SESSION-HANDOFF.md:21 now requires a fresh receipt before review, matching facts.txt:7-17.
+- ci/W-211-handoff-3.log #2: reversed — the prior facts read master; the committed Patron decision greenlights and ranks these items (studio/acta/2026-10-11-patron-queue-review.md:12-13).
+- ci/W-211-handoff-3.log #3: reversed — the committed Patron decision greenlights W-175 and W-176 at the queue’s end (studio/acta/2026-10-11-patron-queue-review.md:14).
+
+## Verdict
+The changed handoff correctly sequences W-221’s fresh receipt before its review.
+VERDICT: PASS

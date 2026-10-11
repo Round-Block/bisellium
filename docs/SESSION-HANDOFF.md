@@ -18,14 +18,15 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-11)
 
 Build lane:
-1. **W-221** (pipe-hidden exits): building on `opus/W-221` (`.worktrees/W-221`,
-   a Sonnet builder). Once merged, a records PR repoints the lex and this file to
-   the scripts it moves into `scripts/`. Until then a build review is recorded by
-   hand with `--session`.
-2. **W-229** once specced; then Queue 2a: W-210, W-212, W-213 (W-213 unspecced).
+1. **W-221** (pipe-hidden exits): a fresh receipt, then build review round 3, on `opus/W-221`
+   (`.worktrees/W-221`). Once merged, a records PR repoints the lex and this file
+   to the scripts it moves into `scripts/`. Until then a build review is recorded
+   by hand with `--session`.
+2. **W-229** (specced; a D-057 re-review after W-221 lands: both edit ADOPTION),
+   then Queue 1b, then 2a.
 Spec work alongside:
 - W-093, W-193 and W-204 specs passed review; every Default is answered (acta
-  `2026-10-11-patron-answers-w093-w193-w229`). W-229 needs its spec (drafting).
+  `2026-10-11-patron-answers-w093-w193-w229`).
 - W-221, W-181, W-169 were re-signed (round 7, 8, 12) because `next` could not
   parse their signatures; W-229 fixes the writer.
 - Reviewer sessions: `~/.bisellium-evidence/W-<id>-specreview/r*/session.log`
@@ -54,6 +55,8 @@ Ranked. Item descriptions for the older items:
 
 1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top);
    then W-229 — verdict refuses a signature next cannot read (D-039, Patron).
+1b. W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
+    (acta `2026-10-11-patron-queue-review`).
 
 2a. In this order (the briefs require it): W-210 — CI refuses a merge path that
     skips the queue (the second pin the Patron asked for);
@@ -81,17 +84,12 @@ Ranked. Item descriptions for the older items:
 15. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
     W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160, W-135, then
     the medium and low fixes W-038, W-040, W-045, W-051, W-058, W-066,
-    W-073, W-074, W-080, W-083, W-086, W-094, W-098.
+    W-073, W-074, W-080, W-083, W-086, W-094, W-098; then W-175, W-176.
 
 Greenlit, not yet ranked (next queue review): W-070, W-078, W-113, W-118 (split
 only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W-159, W-177.
 
 ## Open Patron choices
 
-
-- Greenlight W-216 (agents ask each other through the petitio), now that W-215's
-  plain session resume has shipped? Asked 2026-10-11.
-- At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
-  --tokens fix), W-218 (Ops per-step times), W-219 (next waits for the merge-group
-  run), W-227, W-228 (sandbox cleanup and step health), W-220 (one-step re-review record), W-222 (handoff ground-truth
-  probe), W-224 (next's `..` path test), W-225 (a revised red), W-226 (skill scan), W-175, W-176 (2026-10-08 lesson audit), W-148 and W-155.
+- W-230 (impeccable's detector in CI): its spec waits for the Patron's approval.
+- Deferred: W-216 until W-169; W-218 with W-213; W-202, W-148 after W-230.

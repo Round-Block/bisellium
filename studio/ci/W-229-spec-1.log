@@ -1,0 +1,21 @@
+# opus: W-229
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T10:05:51.949Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:6afad6beb7d2e057b13863d3f0c2d09a55b33516
+
+## Findings
+
+1. advisory — Scope cut to the five open writer/reader pairs (spec signature, spec review, build review, UI spec, UI build); a sessionless handoff log has no strict reader, so it stays unparsed at write (Default 1). check: none: pairs.txt read enumeration
+2. advisory — The draft's sessionedProblem refactor is dropped: the fix is one parseVerdictLog call on the candidate log before ensureRealDirectory, reusing the readers' parser. check: packages/cli/src/verdict-findings.test.ts
+3. advisory — Fixture breaks are measured, not inferred: the guard on a scratch copy fails exactly the six named rows, and fixture-fix.mjs makes them green again. check: packages/cli/src/verdict.test.ts
+4. advisory — verdict.test.ts behaviour 1 keeps its exact-bytes purpose with its CRLF and NUL moved below a Notes heading, instead of becoming a refusal control. check: packages/cli/src/verdict.test.ts
+5. advisory — Residual left out of scope: retro --opus on W-221, W-181 and W-169 will refuse their twelve free-form signatures, which needs its own opus. check: none: a retro-opus row for a pre-W-229 free-form signature
+
+## Verdict
+
+Passed: the brief closes every open verdict writer/reader pair with the readers' own parser, names every fixture it breaks, and passes admission with 0 problems.
