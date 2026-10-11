@@ -1,0 +1,20 @@
+# opus: W-211
+# phase: handoff
+# round: 10
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12bb7-8e54-77f3-a7f9-23d3117114e7
+# session_reason: round 9 was unrecorded when round 10 ran, so the resume found no session id and a fresh session reviewed the delta; the run script now refuses an unrecorded previous round
+# outcome: failed
+# at: 2026-10-11T16:09:24.523Z
+# tree: dirty:a5f9815cacc2e5ccb8d6bd02248e4093f3bb805d
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:92 W-233 is described as greenlit and held by the Patron, though facts.txt reports it as an unknown opus with no brief admission; reached by ci/W-211-handoff-9.log #1’s class — check: none: validate named opuses and admission
+
+## Earlier findings
+- ci/W-211-handoff-9.log #1: open — docs/SESSION-HANDOFF.md:92-93 still describes unknown W-233 as greenlit and held by the Patron.
+
+## Verdict
+Unsupported lifecycle claims and the W-229 scheduling conflict remain.
+VERDICT: FAIL
