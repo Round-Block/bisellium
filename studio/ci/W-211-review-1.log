@@ -1,0 +1,17 @@
+# opus: W-211
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a129e3-f245-7c50-be20-8db47f944413
+# outcome: passed
+# at: 2026-10-11T07:37:38.316Z
+# tree: tree:cf4672e320d11e23496921a70abbc0faf4c877d6
+# brief: briefs/W-211.md blob:0de39c715bc3c74798e9b4ad3914fadefa1946b8
+
+## Findings
+1. advisory — scripts/ci-scope.test.mjs:223 One instance: the row checks command inclusion, while W-139 checks uniqueness and suite membership, but no assertion pins the command immediately after `node scripts/status-slate.test.mjs`; the implementation is correct, but that required placement can regress unnoticed. — check: scripts/ci-scope.test.mjs W-211-b1
+
+## Verdict
+The implementation, red, acceptance probes, gates, and receipt satisfy the brief; the sole finding is incomplete regression coverage.
+VERDICT: PASS

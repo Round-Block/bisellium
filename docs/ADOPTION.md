@@ -1076,7 +1076,9 @@ An entry is a path, never a pattern: a directory with everything under it,
 or one file. The dossier pages are listed by name, and `recordOnly`
 (`scripts/ci-scope.mjs`) treats the same pages as records, so a change to
 them alone moves no certificate and takes the records-only CI path. A new
-page stays in the SOURCE tree until a records PR adds it to the list.
+page stays in the SOURCE tree until a records PR adds it to the list, and
+W-211's row in `scripts/ci-scope.test.mjs` (also in `test:record`) fails
+until it does: the list must be exactly `examples/` and those pages.
 
 Certificate staleness/dirtiness/corroboration (`probatio.certifies.stale`,
 `.dirty`, `.mismatch`, `.evidence.tree`) is judged only for opera in an
