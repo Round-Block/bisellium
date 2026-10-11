@@ -1,0 +1,19 @@
+# opus: W-221
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a12a7a-b4bd-7791-b97d-ab5f510e4c0b
+# outcome: failed
+# at: 2026-10-11T10:27:54.875Z
+# tree: tree:00bef7180c4f69131f2a10b8e57cdf5b83bc52e2
+# brief: briefs/W-221.md blob:9f676df259fa14b14d4bfa21e65d5049ee939131
+
+## Findings
+1. blocking — packages/cli/src/rules/process.ts:601,605 `shellPipeLine` infers shell state from the preceding raw byte, so ordinary pipelines in `echo $(date)#tag | cat`, `echo a\ #tag | cat`, and `echo \>|cat` are missed: the first two `#` characters remain within a word, while the escaped `>` does not form `>|` (brief:55; brief:63). I searched workflow commands, root package scripts, and automated manifest commands and found no checked-in occurrence, but every consuming surface exposes this classifier defect. — check: packages/cli/src/rules/process.test.ts
+2. advisory — packages/cli/src/rules/process.ts:633 The line-local disable regex admits `set +o \` followed by `pipefail` on the next line, which Bash joins and executes as `set +o pipefail`; no top-level `scripts/*.sh` currently contains this continuation bypass, so it is evasion-only under D-045. — check: packages/cli/src/rules/process.test.ts
+
+## Verdict
+The helper moves, integration, reds, gates, and receipt otherwise satisfy the brief, but the ordinary-input classifier false negatives break the promised pipe check.
+
+VERDICT: FAIL
