@@ -18,22 +18,20 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-11)
 
 Build lane:
-1. **W-211** (pin `source_excludes`): built and receipt minted on `opus/W-211`
-   (`.worktrees/W-211`); build review round 1 comes next, recorded by hand with
-   `--session` (the kept `record-review.sh` omits it until W-221 lands).
-2. **W-221** (pipe-hidden exits): branch after W-211 is done; once merged, a records
-   PR repoints the lex and this file to the scripts it moves into `scripts/`.
-3. Then Queue 2a: W-210, W-212, W-213 (W-213 still needs its spec).
+1. **W-221** (pipe-hidden exits): `handoff` (no traditio yet), then `branch`; merged, a records PR
+   repoints the lex and this file to the scripts it moves into `scripts/`. Until
+   then a build review is recorded by hand with `--session`.
+2. Then Queue 2a: W-210, W-212, W-213 (W-213 still needs its spec).
 Spec work alongside:
-- **W-093** (security review on every PR): the Patron answered Q2 no (acta
-  `2026-10-11-patron-answers-pipeline`): an architect removes the alert exclusion
-  and says how a security fix itself passes the merge gate; then spec re-review.
-- **W-193** (test discovery): failed spec round 8 in `.worktrees/ml-a`; a fresh
-  architect revises; then the Patron answers its Defaults.
+- **W-093** (security review on every PR): revision 7 drops the alert exclusion
+  and adds a fix pass; spec review passed (round 13). It waits on the Patron's Q5.
+- **W-193** (test discovery): revision 5 passed spec review (round 10). It waits
+  on the Patron's answers to Defaults 1-6.
+- **W-204**: revision 5 passes admission and spec review (round 10).
 - Reviewer sessions: `~/.bisellium-evidence/W-<id>-specreview/r*/session.log`
   (`multilane-spec/{review,resume}.sh` there run and resume them).
-- W-204: from the main checkout, `node --import tsx ~/.bisellium-evidence/W-208-spec/check-admission.mjs
-  . studio/briefs/W-204.md W-204` before `branch`; revise only if it still fails.
+- `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
+  `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox.
 
 ## Concurrency readiness
 
@@ -54,12 +52,10 @@ with W-169 (lanes on) last.
 Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
-1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: a new high
-   fix goes to the top; W-211 of 2a, already built, goes first).
+1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top).
 
-2a. In this order (the briefs require it): W-211 — a test pins the
-    `source_excludes` list (building); W-210 — CI refuses a merge path that skips the queue
-    (the two pins the Patron asked for);
+2a. In this order (the briefs require it): W-210 — CI refuses a merge path that
+    skips the queue (the second pin the Patron asked for);
     W-212 — CI docs checked against ci.yml (QA now, Ops after W-208);
     W-213 — the retro reads wins, time, cost and slips from a per-opus step ledger
     and escalates a lesson class seen three times (Patron 2026-10-11).
@@ -72,7 +68,7 @@ Ranked. Item descriptions for the older items:
 7. W-201 — the mutation check gates build review (D-052).
 8. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
    (security review on every change), then W-169 (switches lanes on). Designs
-   approved; W-093 and W-193 in revision.
+   approved; W-093 and W-193 wait on the Patron's answers.
 9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 10. W-185 — records checked once at load (D-049; the architect specs it).
 11. W-172, W-171 — high-severity fixes.
@@ -90,6 +86,10 @@ Greenlit, not yet ranked (next queue review): W-070, W-078, W-113, W-118 (split
 only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W-159, W-177.
 
 ## Open Patron choices
+
+- W-093 Q5: should the merge gate let an open CodeQL alert through only on the
+  PR whose own analysis shows it fixed (the fix pass)? Asked 2026-10-11.
+- W-193 Defaults 1-6 (test discovery), as its brief's `## Defaults` asks them.
 
 - Greenlight W-216 (agents ask each other through the petitio), now that W-215's
   plain session resume has shipped? Asked 2026-10-11.
