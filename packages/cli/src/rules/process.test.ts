@@ -9,7 +9,8 @@
  */
 
 import assert from "node:assert/strict";
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -431,6 +432,115 @@ test("W-221-b2 behaviour 25: check blocks each surface once, in the repository's
 
   // this checkout's own scripts, workflows and package.json hold none
   assert.deepEqual(rules.repoPipeFindings(W221_REPO), []);
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+// behaviour 26 (W-221): the moved helpers stop on a failed recording command, from a scratch main-checkout shape.
+const HELPERS = ["record-review.sh", "opus-done.sh", "opus-start.sh", "land-spec.sh", "censor.sh"];
+/** Stub commands: each logs its arguments to $LOG; npm exits 7 on the verb named by $STUB_FAIL (after $STUB_SKIP earlier calls with it). */
+const STUBS: Record<string, string> = {
+  npm: 'echo "npm $*" >> "$LOG"\nif [ -n "${STUB_FAIL:-}" ] && printf "%s\\n" "$@" | grep -qx "$STUB_FAIL"; then\n  [ "$(grep -c " $STUB_FAIL " "$LOG")" -gt "${STUB_SKIP:-0}" ] && exit 7\nfi\necho "npm-out"\n',
+  git: 'echo "git $*" | tr "\\n" " " >> "$LOG"; echo >> "$LOG"\n[ "${1:-}" = branch ] && echo "chore/done-W-9"\nexit 0\n',
+  gh: 'echo "gh $*" >> "$LOG"\ncase "$*" in "pr list"*) echo 5;; "pr view"*) echo "${STUB_PR:-MERGED}";; esac\n',
+  codex:
+    'echo "codex $*" >> "$LOG"\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done\n[ -n "${CODEX_VERDICT:-}" ] && echo "$CODEX_VERDICT" > "$out"\nexit "${CODEX_EXIT:-0}"\n',
+};
+/** A scratch checkout: scripts/ holding the helpers, a .git (directory, or a file for a worktree), stubs and an evidence dir. */
+function helperScratch(o: { worktree?: boolean; prompt?: boolean } = {}): string {
+  const s = mkdtempSync(join(tmpdir(), "bisellium-w221-h-"));
+  scratches.push(s);
+  mkdirSync(join(s, "scripts"));
+  for (const h of HELPERS) copyFileSync(join(W221_REPO, "scripts", h), join(s, "scripts", h));
+  if (o.worktree) writeFileSync(join(s, ".git"), "gitdir: elsewhere\n");
+  else mkdirSync(join(s, ".git"));
+  mkdirSync(join(s, ".worktrees", "W-9", "studio"), { recursive: true });
+  mkdirSync(join(s, "tmp"));
+  const round = join(s, "ev", "W-9-review", "r1");
+  mkdirSync(round, { recursive: true });
+  writeFileSync(join(round, "verdict.md"), "verdict text\n");
+  if (o.prompt !== false) writeFileSync(join(round, "prompt.md"), "review this\n");
+  mkdirSync(join(s, "bin"));
+  for (const [name, body] of Object.entries(STUBS)) {
+    writeFileSync(join(s, "bin", name), `#!/bin/sh\n${body}`);
+    chmodSync(join(s, "bin", name), 0o755);
+  }
+  return s;
+}
+function runHelper(s: string, name: string, args: string[], env: Record<string, string> = {}): { status: number | null; out: string; log: string } {
+  const run = spawnSync("/bin/bash", [join(s, "scripts", name), ...args], {
+    cwd: s,
+    encoding: "utf8",
+    env: { ...process.env, ...env, HOME: s, PATH: `${join(s, "bin")}:${process.env["PATH"]}`, BISELLIUM_EVIDENCE_DIR: join(s, "ev"), TMPDIR: join(s, "tmp"), LOG: join(s, "log") },
+  });
+  const log = existsSync(join(s, "log")) ? readFileSync(join(s, "log"), "utf8") : "";
+  return { status: run.status, out: run.stdout, log };
+}
+
+test("W-221-b3 behaviour 26: the moved helpers stop on a failed recording command", () => {
+  assert.ok(existsSync(join(W221_REPO, "scripts", "record-review.sh")), "scripts/record-review.sh exists");
+  for (const h of HELPERS) assert.ok(existsSync(join(W221_REPO, "scripts", h)), `scripts/${h} exists`);
+
+  // record-review.sh: a failed verdict or review is the script's exit, before git
+  const record = ["W-9", "1", "passed"];
+  let r = runHelper(helperScratch(), "record-review.sh", record, { STUB_FAIL: "verdict" });
+  assert.equal(r.status, 7, "verdict exits 7");
+  assert.doesNotMatch(r.log, / review /, "no review after a failed verdict");
+  assert.doesNotMatch(r.log, /^git /m, "no git after a failed verdict");
+  r = runHelper(helperScratch(), "record-review.sh", record, { STUB_FAIL: "review" });
+  assert.equal(r.status, 7, "review exits 7");
+  assert.doesNotMatch(r.log, /^git /m, "no git after a failed review");
+  r = runHelper(helperScratch(), "record-review.sh", [...record, "s-1"]);
+  assert.match(r.log, / verdict .*--session s-1/, "a fourth argument is the verdict's --session");
+  r = runHelper(helperScratch(), "record-review.sh", record);
+  assert.equal(r.status, 0);
+  assert.doesNotMatch(r.log, /--session/, "no session without the argument");
+  assert.match(r.log, /^git add studio/m, "git add");
+  assert.match(r.log, /^git .*commit /m, "git commit");
+
+  // opus-done.sh and opus-start.sh: a failed next is the exit, before git (and before ready)
+  r = runHelper(helperScratch(), "opus-done.sh", ["W-9"], { STUB_FAIL: "next" });
+  assert.equal(r.status, 7, "opus-done: next exits 7");
+  assert.doesNotMatch(r.log, /^git /m, "opus-done: no git");
+  r = runHelper(helperScratch(), "opus-start.sh", ["W-9"], { STUB_FAIL: "next" });
+  assert.equal(r.status, 7, "opus-start: next exits 7");
+  assert.doesNotMatch(r.log, / ready /, "opus-start: no ready");
+  assert.doesNotMatch(r.log, /^git /m, "opus-start: no git");
+
+  // censor.sh: Codex's exit, a missing verdict, a missing prompt
+  r = runHelper(helperScratch(), "censor.sh", ["W-9", "1"], { CODEX_EXIT: "9" });
+  assert.equal(r.status, 9);
+  assert.match(r.out, /exit=9/);
+  r = runHelper(helperScratch(), "censor.sh", ["W-9", "1"]);
+  assert.equal(r.status, 3, "codex exits 0 with no verdict.md");
+  r = runHelper(helperScratch(), "censor.sh", ["W-9", "1"], { CODEX_VERDICT: "PASS the round" });
+  assert.equal(r.status, 0);
+  assert.match(r.out, /PASS the round/);
+  r = runHelper(helperScratch({ prompt: false }), "censor.sh", ["W-9", "1"], { CODEX_VERDICT: "x" });
+  assert.equal(r.status, 2, "no prompt.md");
+  assert.doesNotMatch(r.log, /codex/, "codex is never run without a prompt");
+
+  // a worktree copy (.git is a file) refuses before any command
+  for (const h of HELPERS) {
+    r = runHelper(helperScratch({ worktree: true }), h, ["W-9", "1", "passed"]);
+    assert.equal(r.status, 2, `${h} refuses in a worktree`);
+    assert.equal(r.log, "", `${h} logs nothing in a worktree`);
+  }
+
+  // land-spec.sh: the final perform's exit
+  r = runHelper(helperScratch(), "land-spec.sh", ["W-9"], { STUB_FAIL: "next", STUB_SKIP: "1" });
+  assert.equal(r.status, 7, "land-spec: the second next exits 7");
+  r = runHelper(helperScratch(), "land-spec.sh", ["W-9"], { STUB_FAIL: "next" });
+  assert.match(r.out, /first perform exited 7/, "land-spec: the first perform's exit is printed and expected");
+
+  // the check rule admits the five scripts, and refuses one that drops pipefail
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-w221-r-"));
+  scratches.push(repo);
+  mkdirSync(join(repo, "scripts"));
+  for (const h of HELPERS) copyFileSync(join(W221_REPO, "scripts", h), join(repo, "scripts", h));
+  assert.deepEqual(rules.repoPipeFindings(repo), []);
+  const file = join(repo, "scripts", "record-review.sh");
+  writeFileSync(file, readFileSync(file, "utf8").replace("set -euo pipefail", "set -e"));
+  assert.deepEqual(rules.repoPipeFindings(repo).map((f) => f.rule), [RULE]);
   for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
