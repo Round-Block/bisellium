@@ -1,0 +1,18 @@
+# opus: W-211
+# phase: handoff
+# round: 12
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12bb7-8e54-77f3-a7f9-23d3117114e7
+# outcome: failed
+# at: 2026-10-11T16:57:37.563Z
+# tree: dirty:7576a38379083bfb5eee88c0478391b3caa87661
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:25 says W-233’s revision 2 is next, but facts.txt reports its spec held for a stale handover and requires `bisellium handoff` first — check: none: validate handoff sequencing against `next`
+
+## Earlier findings
+
+## Verdict
+The handoff incorrectly presents W-233’s revision as the next action before its required handover.
+VERDICT: FAIL
