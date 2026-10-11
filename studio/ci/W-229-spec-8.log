@@ -1,0 +1,19 @@
+# opus: W-229
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T10:42:37.659Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:3faf926b5c19670570222dc3cb5ac4bce98b28ab
+
+## Findings
+
+1. advisory — Review r7 findings 1, 3 and 4 fixed together: each promise and rejector now claims only what legacySignature and the writer guard do, with limits naming signedSpec, readSequence, reviewRounds and handoff logs, which read without the parser as today. check: packages/cli/src/retro-opus.test.ts
+2. advisory — Review r7 finding 2 closed in code with one predicate: legacySignature excludes the ui-lead sella, mirroring the writer's UI attribution; behaviour 2 gains the ui-lead-as-magister and duplicate design row cases. check: packages/cli/src/retro-opus.test.ts
+3. advisory — Review r7 advisory 5: the design-collegium manifest row is added; rerun with the predicate still reads all thirteen real signatures and breaks no retro row. check: none: fixture-census-reader-r5 output in the spec evidence
+
+## Verdict
+
+Passed: revision 5 states each guarantee exactly as the changed code gives it, closes the ui-lead overlap with one predicate, and passes admission with 0 problems.
