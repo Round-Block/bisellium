@@ -583,28 +583,43 @@ export function shellPipeLine(text: string): number | undefined {
     const opened = line;
     i += close === "" ? 0 : close === "`" ? 1 : 2;
     let depth = 0;
+    // explicit lexical state, never read back from the preceding raw byte: `start` is true where a word may begin
+    // (a `#` there is a comment); `gt` counts the unescaped `>` operators consumed just before this character
+    let start = true;
+    let gt = 0;
     while (i < text.length) {
       const c = text[i]!;
       if (c === close && depth === 0) {
         i++;
         return undefined;
       }
+      const clobber = gt === 1;
+      gt = 0;
       if (c === "\\") {
         if (text[i + 1] === "\n") line++;
+        else start = false;
         i += 2;
       } else if (c === "'" || c === '"') {
         const hit = quoted(c);
         if (hit !== undefined) return hit;
+        start = false;
       } else if (c === "`" || (c === "$" && text[i + 1] === "(")) {
         const hit = code(c === "`" ? "`" : ")");
         if (hit !== undefined) return hit;
-      } else if (c === "#" && (i === 0 || /[\s;&|()<>]/.test(text[i - 1]!))) {
+        start = false;
+      } else if (c === "#" && start) {
         while (i < text.length && text[i] !== "\n") i++;
+      } else if (c === "|" && text[i + 1] === "|") {
+        i += 2;
+        start = true;
+      } else if (c === "|" && clobber) {
+        i++;
+        start = true;
       } else if (c === "|") {
-        if (text[i + 1] === "|") i += 2;
-        else if (text[i - 1] === ">") i++;
-        else return line;
+        return line;
       } else {
+        start = /[\s;&()<>]/.test(c);
+        if (c === ">") gt = 1 + (clobber ? 1 : 0);
         if (c === "(") depth++;
         else if (c === ")") depth--;
         else if (c === "\n") line++;
@@ -630,7 +645,13 @@ function scriptPipeFinding(repo: string, name: string): Finding[] {
   const first = lines.findIndex((l) => l.trim() !== "" && !l.trimStart().startsWith("#"));
   if (first === -1) return [pipeBlock(where, "has no command line; the first must be `set -euo pipefail`")];
   if (lines[first]!.trim() !== "set -euo pipefail") return [pipeBlock(`${where}:${first + 1}`, "the first command line must be exactly `set -euo pipefail`")];
-  const off = lines.findIndex((l) => /\+[A-Za-z]*o[ \t]+pipefail/.test(l));
+  // a backslash-newline continuation joins lines for Bash, so each line is tested with its continuations, reported at its first line
+  const joined = lines.map((l, n) => {
+    let t = l;
+    for (let k = n + 1; t.endsWith("\\") && k < lines.length; k++) t = t.slice(0, -1) + lines[k]!;
+    return t;
+  });
+  const off = joined.findIndex((t) => /\+[A-Za-z]*o[ \t]+pipefail/.test(t));
   return off === -1 ? [] : [pipeBlock(`${where}:${off + 1}`, "turns pipefail off")];
 }
 
