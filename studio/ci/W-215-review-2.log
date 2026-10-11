@@ -1,0 +1,22 @@
+# opus: W-215
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-11T02:48:58.875Z
+# tree: tree:85b2c6d82c113a54d4b9134dbcefb9c5199f9f49
+# brief: briefs/W-215.md blob:99f2d55aae28a05446c663edadb76a4ceb89e11b
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-215-review-1.log #1: closed — the shared separator now accepts exactly spaced ASCII hyphens at every ruling and earlier-finding consumer.
+- ci/W-215-review-1.log #2: closed — the shared citation matcher now rejects word-character suffixes at all three consumers.
+- ci/W-215-review-1.log #3: closed — studio containment now uses component-aware real-path comparison and accepts an in-repository `..studio`.
+- ci/W-215-review-1.log #4: closed — `review round 2` now correctly describes the current review round.
+
+## Verdict
+All three classes are closed at every in-scope instance. Their reds are genuine assertion-level failures against the pre-fix test commit, and the focused, full-suite, and current host-receipt gates pass without regression.
+VERDICT: PASS
