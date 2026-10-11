@@ -183,8 +183,8 @@ export interface Rebuttal {
 }
 type Parsed = { headers: Map<string, string[]>; findings: RecordedFinding[]; earlier: EarlierFinding[]; rebuttal: Rebuttal[] };
 
-// a CITE: a `path:line` token (`facts.txt:<line>` names a command's output)
-const CITE = /(?<![\w./-])[\w./-]+:[1-9]\d*(?!\d)/;
+// a CITE: a `path:line` token (`facts.txt:<line>` names a command's output), ended by a non-word character
+const CITE = /(?<![\w./-])[\w./-]+:[1-9]\d*(?!\w)/;
 const SEPARATOR = "(?:—|-)";
 
 /**
