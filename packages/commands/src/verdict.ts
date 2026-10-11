@@ -188,7 +188,8 @@ const CITE = /(?<![\w./-])[\w./-]+:[1-9]\d*(?!\d)/;
 const SEPARATOR = "(?:—| -)";
 
 /**
- * W-215: the body sections after `## Findings` that carry a dispute and the earlier-findings account. Each exact heading
+ * W-215: the body sections after `## Findings` that carry a dispute and the earlier-findings account, read only in a log
+ * whose header block carries `# session:` (`parseVerdictLog` calls this for no other). Each exact heading
  * appears at most once and runs to the next `## ` line; blank lines are skipped, every other line is in the grammar or the
  * log is out of domain. A withdrawn finding no longer stands. Pure; the findings are changed in place.
  */
@@ -282,7 +283,8 @@ export function parseVerdictLog(text: string, id: string, rel: string): Parsed |
       f.blocking = false;
     }
   }
-  const exchange = readExchange(body, id, rel, findings);
+  // a log without `# session:` predates the exchange: its headings are prose, read as on master
+  const exchange = headers.has("session") ? readExchange(body, id, rel, findings) : { earlier: [], rebuttal: [] };
   return "error" in exchange ? exchange : { headers, findings, ...exchange };
 }
 

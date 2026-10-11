@@ -147,6 +147,8 @@ file:line>`) with the reviewer's `## Ruling` (`<k>. withdrawn — <why>` or
 `<k>. upheld — <why holding a file:line>`): both sections together, ruling the same
 findings, once each; a withdrawn finding no longer stands, and an `open` ruling is not
 recordable (the dispute goes to the Patron, whose answer is recorded as the ruling).
+These sections are read only in a log that carries `# session:`; any other log is read
+as before, its headings plain prose.
 The writer trusts the session id it is given and checks the grammar and the
 accounting, not the judgment. `scripts/review-packet.mjs` builds a round's packet
 (`delta.diff`, `facts.txt`, `prompt.md`); `scripts/review-rounds.mjs <studio>` prints
