@@ -563,7 +563,7 @@ export function shellPipeLine(text: string): number | undefined {
   const jump = (j: number): void => {
     for (; i < j; i++) if (text[i] === "\n") line++;
   };
-  // ponytail: no $'…' or heredoc/case awareness; both fail closed (read as a pipe or quote)
+  // ponytail: no $'…', heredoc or case awareness, and `>|` is read as a pipe; all fail closed (read as a pipe or quote)
   /** At an opening quote: skip the string; the opening line if it never closes, a pipe line from a substitution in "…". */
   const quoted = (q: string): number | undefined => {
     const opened = line;
@@ -578,11 +578,12 @@ export function shellPipeLine(text: string): number | undefined {
         if (text[i + 1] === "\n") line++;
         i += 2;
       } else if (q === '"' && (c === "`" || (c === "$" && text[past(i + 1)] === "("))) {
+        const at = line;
         if (c === "$") {
           jump(past(i + 1));
           i--; // code() skips two characters: the `$` and the `(`
         }
-        const hit = code(c === "`" ? "`" : ")");
+        const hit = code(c === "`" ? "`" : ")", at);
         if (hit !== undefined) return hit;
       } else {
         if (c === "\n") line++;
@@ -592,28 +593,26 @@ export function shellPipeLine(text: string): number | undefined {
     return opened;
   };
   /** Top-level code until `close` (`)` or a backtick, or "" for the whole text): the first pipeline line, or the opening line if unterminated. */
-  const code = (close: string): number | undefined => {
-    const opened = line;
+  const code = (close: string, opened = line): number | undefined => {
     i += close === "" ? 0 : close === "`" ? 1 : 2;
     let depth = 0;
     // explicit lexical state, never read back from the preceding raw byte: `start` is true where a word may begin
-    // (a `#` there is a comment); `gt` counts the unescaped `>` operators consumed just before this character
+    // (a `#` there is a comment); `redir` is true right after an unescaped `>`, so a `|` there is never half of `||`
     let start = true;
-    let gt = 0;
+    let redir = false;
     while (i < text.length) {
       const c = text[i]!;
       if (c === close && depth === 0) {
         i++;
         return undefined;
       }
-      const clobber = gt === 1;
-      const kept = gt;
-      gt = 0;
+      const after = redir;
+      redir = false;
       if (c === "\\") {
-        // a continuation is invisible: start and gt stay as they were
+        // a continuation is invisible: start and redir stay as they were
         if (text[i + 1] === "\n") {
           line++;
-          gt = kept;
+          redir = after;
         } else start = false;
         i += 2;
       } else if (c === "'" || c === '"') {
@@ -621,26 +620,24 @@ export function shellPipeLine(text: string): number | undefined {
         if (hit !== undefined) return hit;
         start = false;
       } else if (c === "`" || (c === "$" && text[past(i + 1)] === "(")) {
+        const at = line;
         if (c === "$") {
           jump(past(i + 1));
           i--; // code() skips two characters: the `$` and the `(`
         }
-        const hit = code(c === "`" ? "`" : ")");
+        const hit = code(c === "`" ? "`" : ")", at);
         if (hit !== undefined) return hit;
         start = false;
       } else if (c === "#" && start) {
         while (i < text.length && text[i] !== "\n") i++;
-      } else if (c === "|" && text[past(i + 1)] === "|") {
+      } else if (c === "|" && !after && text[past(i + 1)] === "|") {
         jump(past(i + 1) + 1);
-        start = true;
-      } else if (c === "|" && clobber) {
-        i++;
         start = true;
       } else if (c === "|") {
         return line;
       } else {
         start = /[\s;&()<>]/.test(c);
-        if (c === ">") gt = 1 + (clobber ? 1 : 0);
+        redir = c === ">";
         if (c === "(") depth++;
         else if (c === ")") depth--;
         else if (c === "\n") line++;

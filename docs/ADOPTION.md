@@ -918,7 +918,7 @@ needs the effective `shell` (the step's, else the job's or the workflow's
 pipeline blocks. An unreadable or unparseable file blocks at its path, and an absent
 `scripts/`, `.github/workflows/` or `package.json` is no finding. A pipeline is
 found lexically: a pipe inside a quoted string handed to another shell is not
-seen, a `case` pattern `a|b)` or a heredoc body is read as one, and a nested
+seen, a `case` pattern `a|b)`, a heredoc body or the clobber redirect `>|` is read as one, and a nested
 `scripts/` directory, a child shell or a sourced file is not read. `set -e` does
 not act inside `if`, `while`, `!` or a non-final `&&`/`||` member, so a pipeline
 there still hides its status from the script.
