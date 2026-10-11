@@ -8,36 +8,28 @@ kill: when every item here is enforced by a lex clause or a check rule
 
 # Session handoff
 
-What a fresh orchestrating session must know that the code does not say.
-Read after CLAUDE.md. Durable rules live in `studio/leges/production.md`;
-this file holds only current state. Keep it short; move anything durable
-into a lex, a decision or a check rule and delete it here.
-
-Rules, process and environment: studio/leges/production.md.
+Current state only, read after CLAUDE.md; rules, process and environment are in
+`studio/leges/production.md`.
 
 ## Resume point (2026-10-11)
 
 Build lane:
-1. **W-221** (pipe-hidden exits): a fresh receipt, then build review round 3, on `opus/W-221`
-   (`.worktrees/W-221`). Once merged, a records PR repoints the lex and this file
-   to the scripts it moves into `scripts/`. Until then a build review is recorded
-   by hand with `--session`.
-2. **W-229** (specced; a D-057 re-review after W-221 lands: both edit ADOPTION),
-   then Queue 1b, then 2a.
-Spec work alongside:
-- W-093, W-193 and W-204 specs passed review; every Default is answered (acta
-  `2026-10-11-patron-answers-w093-w193-w229`).
-- W-221, W-181, W-169 were re-signed (round 7, 8, 12) because `next` could not
-  parse their signatures; W-229 fixes the writer.
-- Reviewer sessions: `~/.bisellium-evidence/W-<id>-specreview/r*/session.log`
-  (`multilane-spec/{review,resume}.sh` there run and resume them).
+1. **W-221** (pipe-hidden exits), `opus/W-221` at 7ee7e677 (`.worktrees/W-221`):
+   mint a receipt, then build review round 4 in the resumed censor session
+   (`--session` in ci/W-221-review-3.log). Packet: `scripts/review-packet.mjs
+   --round 4` plus the r1 packet's files in `~/.bisellium-evidence/W-221-review/`.
+   Each fix round's red is kept as `W-221-build/r<n>fix/red.log`, its sha on line 1,
+   until W-225 gives it a CLI path. Until W-221 merges, record reviews by hand
+   with `--session`; after, a records PR repoints the lex and this file to its
+   `scripts/`.
+2. **W-229** (signed): a D-057 re-review after W-221 merges (both edit ADOPTION),
+   then `branch`. Then Queue 1b, whose items still need specs.
 - `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
   `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
 
 ## Concurrency readiness
 
-One lane until Queue 8 lands: W-093 (after its revision) and the rest of the prep,
-with W-169 (lanes on) last.
+One lane until Queue 8 lands (the multi-lane prep, W-169 last).
 
 ## Artifacts
 
@@ -91,5 +83,8 @@ only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W
 
 ## Open Patron choices
 
-- W-230 (impeccable's detector in CI): its spec waits for the Patron's approval.
+- W-230 (impeccable's detector in CI): backlog; the Patron greenlights it, then a
+  spec waits for approval of its design and Defaults.
+- W-231 (interactive self-refresh): filed, not greenlit until tested
+  (`~/.bisellium-evidence/W-231-draft/design-notes.md`).
 - Deferred: W-216 until W-169; W-218 with W-213; W-202, W-148 after W-230.
