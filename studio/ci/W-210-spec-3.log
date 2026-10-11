@@ -1,0 +1,24 @@
+# opus: W-210
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T20:40:10.650Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-210.md blob:6f19debd2df710fb8b0f95e0c9da294796f03a84
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 2 of studio/briefs/W-210.md (architect, claude-opus-5-5, D-027): every promise, the behaviour, the Defaults and the ci.yml/ADOPTION wording the build writes are now point in time per guard run; the mechanism is unchanged and re-measured (~/.bisellium-evidence/W-210-spec/measure-r2.txt, same results); brief admission 0 problems (admission-r2.txt); revision 1 kept as W-210-signed-r1.md.
+
+## Rebuttal
+1. fixed — promise light-path-refusal (brief Intent) now holds per guard run at its one read and states the post-read window (while typecheck/lint run or after green); other instances: the Intent paragraph, the ci.yml header and step comments and the ADOPTION sentence in Files owned (prototype.diff, measure-r2.txt).
+2. fixed — promise one-predicate's limit: each guard run that reads the changed rules (a new run or a rerun) fails, and a run already green stays green; other instance: Defaults 1 (finding 4).
+3. fixed — behaviour 1 is now "at the moment of its one rules read" and says the row cannot observe a later change; other instance: the W-210-b1 row title (prototype.mjs, measure-r2.txt).
+4. fixed — Defaults 1 now limited to runs and reruns that read the new rules, as in 2.
+5. fixed — promise event-parity's limit and Defaults 2: an outage during a run's read fails that run, and one after it is not seen; other instance: the new ADOPTION sentence.
+6. fixed — Input domain gains a row for `REPOSITORY` (GitHub's own `owner/repo`; an empty or unknown slug fails the `gh` read, so `direct`).
+7. fixed — the `ci.yml` row's rejector names `assert.equal`, `assert.deepEqual`, `assert.notEqual` and `check`.

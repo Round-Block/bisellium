@@ -1,0 +1,21 @@
+# opus: W-212
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T20:31:37.362Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-212.md blob:2b1dfacdf7bc216ca08fd2c5169ed6708fdc48a0
+
+## Findings
+1. blocking — brief:1 The brief promises coverage of each CI claim, but `CLAIMS` pins only 17 selected claims while brief:19 and brief:84 explicitly exclude other prose in those sections and comments. — check: none: enumerate and bind every CI claim, or narrow the promise
+2. blocking — brief:17 A workflow change can falsify a pinned claim without failing `npm test`: for example, adding `needs: certify` to `officina` makes the pull-request job skip instead of succeeding without work, while the existing and proposed checks ignore `needs`. — check: none: mutate a modeled job’s scheduling fields and require a claim-parity failure
+3. blocking — brief:19 `EXPECTED` is not pinned for the two merge-group `certify` cells: `CERTIFY_ALL` is derived from `doc.jobs.certify.steps`, so adding an allowed unconditional step changes actual and expected together and passes `W-212-b1`. — check: none: add an unconditional certify step and require W-212-b1 to fail
+4. blocking — brief:68 The numbered behaviour again promises agreement for “The CI claims,” but the mechanism checks only the 17 pinned claims; it needs the same explicit limit as brief:19. — check: scripts/ci-workflow.test.mjs
+5. advisory — brief:57 The input table omits the reused `execFileSync` subprocess that reads `CI_STEPS` from `packages/commands/src/ci.ts`, although the pinned Running-ci claim depends on it; its existing catch and `check` already fail closed. — check: scripts/ci-workflow.test.mjs
+6. advisory — brief:61 `holds` does not inspect conditions in an additional job, so “Each job’s and step’s `if`” is broader than the named rejector; the existing exact-four-jobs assertion still makes that path fail closed. — check: scripts/ci-workflow.test.mjs
+
+## Verdict
+The brief needs its claim scope narrowed and its certify expectation made genuinely pinned before build.
+VERDICT: FAIL

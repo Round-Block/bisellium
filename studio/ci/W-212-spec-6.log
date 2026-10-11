@@ -1,0 +1,19 @@
+# opus: W-212
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T00:09:56.327Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-212.md blob:5b9a43af01c643cea1ce189dfeea123437ff1c8b
+
+## Findings
+1. blocking — brief:26 Revision 3 expressly admits at brief:32 that an allowed value can stop selected steps while `W-212-b1` stays green, so a workflow change can falsify pinned claims such as “runs every step” or “always runs the full suite” without `npm test` failing and naming the claim. A required-context failure may refuse the merge, but it does not make this test-parity promise true. — check: none: narrow the title, Intent, CI-claim definition, and behaviour to selection parity
+
+## Earlier findings
+1. open — The changed `closed-model` limit is honest about allowed values, but dependent promises still say every workflow change that falsifies a run/skip claim fails `npm test`; the separate runner refusal does not close that false promise.
+
+## Verdict
+Revision 3 prevents the operational merge from failing open, but the stated claim-to-test guarantee remains broader than the selection-only mechanism.
+VERDICT: FAIL

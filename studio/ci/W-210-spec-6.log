@@ -1,0 +1,21 @@
+# opus: W-210
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-11T00:09:55.650Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-210.md blob:8f0c08376cb3361d048cf08d87671570ca1921d0
+
+## Findings
+No findings
+
+## Earlier findings
+1. closed — The planned-removal text now admits stale light-green runs, requires pushing to or closing them, and states that nothing enforces the procedure.
+2. closed — Default 2 now distinguishes reruns during the outage from reruns after API recovery.
+3. closed — The `REPOSITORY` row names the exact environment-binding assertion as the rejector and explicitly states `readMergeQueue`’s wrong-existing-slug limit.
+
+## Verdict
+Revision 3 closes all three open findings without introducing a false promise on the changed lines.
+VERDICT: PASS
