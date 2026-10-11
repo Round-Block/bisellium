@@ -554,6 +554,15 @@ export function checkSessionHandoff(root: string, opts: RuleOpts): Finding[] {
 export function shellPipeLine(text: string): number | undefined {
   let i = 0;
   let line = 1;
+  /** The index of the first character at or after `j` that is not part of a backslash-newline continuation (which Bash removes). */
+  const past = (j: number): number => {
+    while (text[j] === "\\" && text[j + 1] === "\n") j += 2;
+    return j;
+  };
+  /** Move `i` forward to `j`, counting the newlines passed. */
+  const jump = (j: number): void => {
+    for (; i < j; i++) if (text[i] === "\n") line++;
+  };
   // ponytail: no $'…' or heredoc/case awareness; both fail closed (read as a pipe or quote)
   /** At an opening quote: skip the string; the opening line if it never closes, a pipe line from a substitution in "…". */
   const quoted = (q: string): number | undefined => {
@@ -568,7 +577,11 @@ export function shellPipeLine(text: string): number | undefined {
       if (q === '"' && c === "\\") {
         if (text[i + 1] === "\n") line++;
         i += 2;
-      } else if (q === '"' && (c === "`" || (c === "$" && text[i + 1] === "("))) {
+      } else if (q === '"' && (c === "`" || (c === "$" && text[past(i + 1)] === "("))) {
+        if (c === "$") {
+          jump(past(i + 1));
+          i--; // code() skips two characters: the `$` and the `(`
+        }
         const hit = code(c === "`" ? "`" : ")");
         if (hit !== undefined) return hit;
       } else {
@@ -594,23 +607,31 @@ export function shellPipeLine(text: string): number | undefined {
         return undefined;
       }
       const clobber = gt === 1;
+      const kept = gt;
       gt = 0;
       if (c === "\\") {
-        if (text[i + 1] === "\n") line++;
-        else start = false;
+        // a continuation is invisible: start and gt stay as they were
+        if (text[i + 1] === "\n") {
+          line++;
+          gt = kept;
+        } else start = false;
         i += 2;
       } else if (c === "'" || c === '"') {
         const hit = quoted(c);
         if (hit !== undefined) return hit;
         start = false;
-      } else if (c === "`" || (c === "$" && text[i + 1] === "(")) {
+      } else if (c === "`" || (c === "$" && text[past(i + 1)] === "(")) {
+        if (c === "$") {
+          jump(past(i + 1));
+          i--; // code() skips two characters: the `$` and the `(`
+        }
         const hit = code(c === "`" ? "`" : ")");
         if (hit !== undefined) return hit;
         start = false;
       } else if (c === "#" && start) {
         while (i < text.length && text[i] !== "\n") i++;
-      } else if (c === "|" && text[i + 1] === "|") {
-        i += 2;
+      } else if (c === "|" && text[past(i + 1)] === "|") {
+        jump(past(i + 1) + 1);
         start = true;
       } else if (c === "|" && clobber) {
         i++;
@@ -648,7 +669,8 @@ function scriptPipeFinding(repo: string, name: string): Finding[] {
   // a backslash-newline continuation joins lines for Bash, so each line is tested with its continuations, reported at its first line
   const joined = lines.map((l, n) => {
     let t = l;
-    for (let k = n + 1; t.endsWith("\\") && k < lines.length; k++) t = t.slice(0, -1) + lines[k]!;
+    // only an odd run of trailing backslashes escapes the newline
+    for (let k = n + 1; (/\\+$/.exec(t)?.[0].length ?? 0) % 2 === 1 && k < lines.length; k++) t = t.slice(0, -1) + lines[k]!;
     return t;
   });
   const off = joined.findIndex((t) => /\+[A-Za-z]*o[ \t]+pipefail/.test(t));
