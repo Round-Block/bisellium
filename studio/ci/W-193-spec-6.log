@@ -1,0 +1,23 @@
+# opus: W-193
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0887-7683-a9c1-4fd57e547bf6
+# outcome: failed
+# at: 2026-10-11T06:21:32.441Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:7648c52b7138e46eb7bf3c57bf73bb07a05b9452
+
+## Findings
+1. blocking — brief:87 The generator still does not verify that `<repo>` is this repository: any other repository accepts its own merge-base and can produce an unrelated baseline. The previous provenance boundary therefore still fails open. — check: none: add a foreign-repository case that must exit 1
+2. blocking — brief:87 The promised rejection of every other shell construct remains false: the parser omits single `&`, so `node a.test.mjs & true` is accepted as one test program although its shell semantics cannot be preserved by the runner. — check: none: add malformed-chain cases covering single `&` and the remaining shell metacharacters
+3. blocking — brief:98 Moving parent parity to one-time Acceptance leaves no committed check preventing a later well-formed baseline edit; reordered entries or changed arguments pass `readTestBaseline` and the repository row, falsifying the “never edited” exact-order-and-arguments promise. — check: scripts/test-suite.test.mjs W-193-b2
+
+## Earlier findings
+- ci/W-193-spec-4.log #1: open — stale revisions in the supplied repository are rejected, but a different repository’s merge-base is still accepted.
+- ci/W-193-spec-4.log #2: open — the three cited group errors now reject, but the same shell-shape boundary still accepts constructs such as single `&`.
+
+## Verdict
+The revised generator and permanent parity mechanism still fail open on repository provenance, shell syntax, and later baseline edits.
+VERDICT: FAIL

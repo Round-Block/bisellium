@@ -1,0 +1,20 @@
+# opus: W-093
+# phase: spec
+# round: 10
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T07:46:08.318Z
+# tree: tree:927250a78d474cf492d4a773be5dde8aab1b5c49
+# brief: briefs/W-093.md blob:aa92e2c60af43ef101b49fc20d8f51b63677f566
+
+## Findings
+1. advisory — Patron answer Q2 = no (acta/2026-10-11-patron-answers-pipeline.md): the alert exclusion is removed from revision 6. Removed: promise alert-owner, the security log's "## Alert exclusions", parseAlertExclusions, the owner-liveness check, Input-domain row 3, and b1's and b5's exclusion rows. Any open alert stops every merge, named: state=GHAS_STOP open_alerts=<n> opus=<id> alerts=<numbers>. Old Default Q2 is removed, Q3-Q5 become Q2-Q4, and their approvals stand. check: packages/cli/src/next.test.ts
+2. advisory — the gap the review sheet found: the PR that fixes alert N was stopped by alert N itself. It now has a way through, the fix pass (promise alert-fix, row 9, behaviour 5). Alert N passes only on the PR whose own head GitHub lists N fixed (code-scanning/alerts?ref=refs/pull/<n>/head&state=fixed) and has analysed at the pinned commit in N's category (code-scanning/analyses?ref=refs/pull/<n>/head). Verified live in ~/.bisellium-evidence/multilane-spec/W-093/live-fix-pass.txt: alert 2 shows fixed on PR 4's head while open on master; alert 3 shows open on the head of PR 68, an unrelated opus. Not verified: whether a commit that brings a fixed alert back turns the state to open; the promise bounds that case. The pass is new Default Q5 for the Patron. check: packages/cli/src/next.test.ts
+
+## Verdict
+passed: signed spec, revision 6, of studio/briefs/W-093.md (architect, claude-opus-5-5, D-027), answering the Patron's pipeline answers (acta/2026-10-11-patron-answers-pipeline.md); revision 5 kept with r5-r6.diff; brief admission 0 problems (admission.txt). Pipeline work: the new Default Q5 needs the Patron's answer, and the change-limited spec re-review follows, before branch.
+
+## Rebuttal
+1. fixed — exclusion gone; the alert block it replaces is packages/cli/src/integrate.ts:761-764, and the existing GHAS_STOP terminal at packages/cli/src/next.test.ts:1228 still stops (its fix read finds nothing fixed).
+2. fixed — the fix pass adds two reads only when an alert is open, after the unchanged checks poll (packages/cli/src/integrate.ts:746) and before the merge call; queue mode enqueues the unrebased PR head (packages/cli/src/integrate.ts:769), and no existing assertion flips (next.test.ts:1416, :1417, :1293; ladder-followon.test.ts:242).

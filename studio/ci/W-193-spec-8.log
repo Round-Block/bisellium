@@ -1,0 +1,24 @@
+# opus: W-193
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0887-7683-a9c1-4fd57e547bf6
+# outcome: failed
+# at: 2026-10-11T06:50:25.168Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:ad88d87a89e40015d02f51ffda5ccf271f70da4e
+
+## Findings
+1. blocking — brief:70 `switch-parity.mjs` allows `scripts/test-suite.test.mjs` to be absent: it exempts that path from `extra` but never requires it in `found`, and `switch-parity-cases.txt` records the missing-own-test switch exiting 0. This contradicts the promised set equality and lets the switch lose W-193’s test without refusal. — check: none: make the missing-own-test switch case exit 1
+2. blocking — brief:70 The switch parser still accepts a segment containing multiple commands separated by a newline; for example, `node a.test.mjs\nnode --version && node b.test.mjs` contains one detected test file per split segment and no blacklisted character, so a matching tree exits 0 although the first segment is not one node program. — check: none: add a newline-separated-command case that must exit 1
+3. blocking — brief:38 The changed W-139 assertion is weaker: it replaces verbatim command membership with path-only membership, allowing different or extra arguments, while brief:28 promises no assertion is weakened. Keeping the title “subset of test:suite” also becomes false when `test:suite` contains only the runner command. — check: scripts/ci-scope.test.mjs W-139 behaviour 1
+
+## Earlier findings
+- ci/W-193-spec-6.log #1: closed — the frozen baseline, its generator, and the repository input that failed provenance validation are removed.
+- ci/W-193-spec-6.log #2: closed — the old generator is removed, and the replacement switch checker explicitly rejects single `&`.
+- ci/W-193-spec-6.log #3: closed — the editable frozen baseline and its permanent-parity promise are removed.
+
+## Verdict
+The replacement design closes all three prior snapshot defects, but its switch check still fails open and its W-139 change contradicts the no-weakening promise.
+VERDICT: FAIL

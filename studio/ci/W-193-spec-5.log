@@ -1,0 +1,19 @@
+# opus: W-193
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:13:46.458Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:7648c52b7138e46eb7bf3c57bf73bb07a05b9452
+
+## Findings
+
+1. advisory: Review r4 finding 1 (brief:81) upheld and fixed: the generator refuses any revision other than the opus branch's merge-base with master (generator-cases.txt, stale-revision). check: none: answered in the signed brief's revision-3 note
+2. advisory: Review r4 finding 2 (brief:81) upheld and fixed: the generator tracks group state and refuses an unclosed group, a stray close and a second group; the build runs it unchanged. check: none: answered in the signed brief's revision-3 note
+3. advisory: Sweep of the class: behaviour 2's real-repo comparison with the parent's generator output is moved to Acceptance, since a row cannot reach the parent revision after the merge. check: none: answered in the signed brief's revision-3 note
+
+## Verdict
+
+passed: signed spec, revision 3 (round 5).

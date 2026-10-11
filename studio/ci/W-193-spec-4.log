@@ -1,0 +1,22 @@
+# opus: W-193
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0887-7683-a9c1-4fd57e547bf6
+# outcome: failed
+# at: 2026-10-11T06:12:38.042Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:0af7ac50d337b0afb28628153f247c430477cb16
+
+## Findings
+1. blocking — brief:81 The generator accepts any repository and parseable revision, but migration parity requires this repository’s actual parent revision. A stale valid revision after an earlier opus changes `test:suite` produces an accepted baseline that moves the omitted parent program into the default tail, falsifying brief:28. — check: scripts/test-suite.test.mjs W-193-b2
+2. blocking — brief:81 The claimed shell-shape rejection is false for the cited generator: it accepts an unclosed web group, a stray closing `)`, and repeated `(cd apps/web && …)` groups because it neither tracks balanced group state nor counts groups. — check: none: add malformed-chain checks for unmatched, stray, and repeated web groups
+
+## Earlier findings
+- ci/W-193-spec-2.log #1: closed — brief:26 now promises plan membership and conditions execution on successful preflight and every preceding entry exiting 0.
+- ci/W-193-spec-2.log #2: closed — brief:30 now states plan placement and expressly limits execution to a tail entry whose predecessors all exit 0.
+
+## Verdict
+The earlier execution overclaims are closed, but the newly specified generator boundary still accepts stale provenance and malformed shell-group structure.
+VERDICT: FAIL

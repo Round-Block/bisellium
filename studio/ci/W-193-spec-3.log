@@ -1,0 +1,20 @@
+# opus: W-193
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:10:04.615Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:0af7ac50d337b0afb28628153f247c430477cb16
+
+## Findings
+
+1. advisory: Review r2 finding 1 (brief:20) upheld and fixed: promise discovered-on-add promises plan membership, and a run only past no-vendor's preflight and every earlier entry. check: none: answered in the signed brief's revision-2 note
+2. advisory: Review r2 finding 2 (brief:24) upheld and fixed: promise deterministic-tail states plan order with the same reachability limit. check: none: answered in the signed brief's revision-2 note
+3. advisory: Sweep of unconditional run claims: Acceptance's 110-program line now applies to a passing run; no other. check: none: answered in the signed brief's revision-2 note
+4. advisory: Advisories 3-5 taken: rows for the snapshot generator, the test:record input of W-139 behaviour 1, and the b4 row's reads. check: none: answered in the signed brief's revision-2 note
+
+## Verdict
+
+passed: signed spec, revision 2 (round 3).

@@ -1,0 +1,20 @@
+# opus: W-193
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:46:24.124Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:ad88d87a89e40015d02f51ffda5ccf271f70da4e
+
+## Findings
+
+1. advisory: Review r6's three blockers (brief:87 repository and single-ampersand, brief:98 later snapshot edits) all sat in the frozen snapshot and its generator; revision 4 removes both instead of widening them, so the three close with the machinery. check: none: answered in the signed brief's revision-4 note
+2. advisory: The chain's per-program arguments are replaced by one rule; argv-census.txt shows every dropped "." is a repo-root default or unread, and uniform-run.txt shows all 109 programs give the same results in path order with the rule as in today's order. check: none: answered in the signed brief's revision-4 note
+3. advisory: Set parity at the switch is a one-time kept check (switch-parity.mjs, exit form, refusing pipes, ampersands, unbalanced or second groups, set and blob differences: switch-parity-cases.txt); W-178's row floor guards the set afterwards. check: none: answered in the signed brief's revision-4 note
+4. advisory: The order change and the single rule are Defaults 1 and 2, asked of the Patron. check: none: answered in the signed brief's revision-4 note
+
+## Verdict
+
+passed: signed spec, revision 4 (round 7).

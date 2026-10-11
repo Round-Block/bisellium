@@ -1,0 +1,19 @@
+# opus: W-204
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12284-b9b7-75b0-befe-949535b19834
+# outcome: failed
+# at: 2026-10-11T07:52:55.701Z
+# tree: tree:927250a78d474cf492d4a773be5dde8aab1b5c49
+# brief: briefs/W-204.md blob:8652b1f18c4dcf67bf7975b8e393d494ee3b938d
+
+## Findings
+1. blocking — brief:116 falsely says the scope step does not run on `merge_group`; `.github/workflows/ci.yml` runs it specifically for `merge_group` and classifies against `base_sha`. — check: scripts/ci-scope.test.mjs
+
+## Earlier findings
+
+## Verdict
+Revision 4 introduces a false CI input-boundary promise and must be corrected.
+VERDICT: FAIL

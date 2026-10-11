@@ -1,0 +1,24 @@
+# opus: W-193
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:55:56.570Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:7ca942dd58eccd4ec569478d7f63209a01fc4a26
+
+## Findings
+
+1. advisory: Kept the draft's design (frozen snapshot of the 109 programs, sorted tail, sequential runner), measured: the chain parses into 109 programs, 11 from apps/web, one file each (baseline-from-chain.mjs); discovery over the four roots equals the chain once test.ts is renamed (discovery-parity.txt). check: none: draft correction recorded in the signed brief
+2. advisory: Corrected the containment change: a .test.ts file is outside the W-163 scan, so the test.ts pin (containment.test.ts:819) is deleted, not renamed; one pin is added for the runner's baseline read. check: none: draft correction recorded in the signed brief
+3. advisory: Cut the ADOPTION edit under "Running ci" (W-212 pins that section's claims); W-193 documents under a new "Test discovery" section. check: none: draft correction recorded in the signed brief
+4. advisory: Cut sharing W-178's file classification: the npm-test set is narrower and every name in it matches TEST_NAME. check: none: draft correction recorded in the signed brief
+5. advisory: Added the W-178 interface: landing after W-178, the rename is a drop to zero and W-193 appends the first test/row-drops.yml record. check: none: draft correction recorded in the signed brief
+6. advisory: Named the W-211 (package.json test:record, ci-scope.test.mjs) and W-212 overlaps; named no-vendor.mjs's stale header lines 6-7 and W-139 behaviour 1's body (title kept) as owned. check: none: draft correction recorded in the signed brief
+7. advisory: Narrowed promises: untracked matching files run; the apps/web group becomes a per-program cwd; a gone snapshot entry is skipped. Pipeline work: Defaults are questions; Patron approval before branch. check: none: draft correction recorded in the signed brief
+8. advisory: Split the rename into one owned path per bullet. check: none: draft correction recorded in the signed brief
+
+## Verdict
+
+passed: signed spec, revision 1.

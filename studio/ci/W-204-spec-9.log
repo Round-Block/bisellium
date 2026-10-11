@@ -1,0 +1,19 @@
+# opus: W-204
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T07:53:39.121Z
+# tree: tree:927250a78d474cf492d4a773be5dde8aab1b5c49
+# brief: briefs/W-204.md blob:e08a6f40a1bbae28367d888800b614c5c18332f6
+
+Architect signature for W-204, revision 5, under D-027. It answers spec review round 8 (ci/W-204-spec-8.log, 1 finding) and is signed as round 9 by claude-opus-5-5. Revision 4 is kept at ~/.bisellium-evidence/W-204-spec/W-204-r4.md; the change is r4-r5.diff, and check-admission.mjs gives admission-r5.txt, 0 problems, one table run, 18 rows.
+
+## Findings
+1. advisory: Finding 1: row 14's parenthetical now matches .github/workflows/ci.yml: the scope step runs on `merge_group` alone, in `gates` (ci.yml:50) and `web-e2e` (ci.yml:133), classifying the change against `merge_group.base_sha` as source; on `push` it does not run, so the full path runs. A sweep of the brief found no other statement about when the scope step runs. check: scripts/ci-scope.test.mjs
+2. advisory: The status line reads revision 5, and a one-line Revision 5 note is added. check: ~/.bisellium-evidence/W-208-spec/check-admission.mjs
+
+## Rebuttal
+1. No behaviour or promise changes: the corrected sentence is studio/briefs/W-204.md:118 and describes unchanged CI (.github/workflows/ci.yml:51, .github/workflows/ci.yml:134); W-204's path still takes the full `gates` steps, and r4-r5.diff shows no other row edited.
+2. Bookkeeping only: studio/briefs/W-204.md:3 and studio/briefs/W-204.md:21.

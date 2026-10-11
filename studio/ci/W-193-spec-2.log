@@ -1,0 +1,21 @@
+# opus: W-193
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0887-7683-a9c1-4fd57e547bf6
+# outcome: failed
+# at: 2026-10-11T06:06:09.633Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:7ca942dd58eccd4ec569478d7f63209a01fc4a26
+
+## Findings
+1. blocking — brief:20 “Every” matching file cannot be guaranteed to run: `npm test` may refuse in `no-vendor` preflight, and brief:26 deliberately stops before later files after the first failing program. Narrow this to plan membership or successful preflight and predecessors. — check: none: qualify the execution promise
+2. blocking — brief:24 A tail file is not guaranteed to run after all snapshot entries—or at all—when a snapshot or earlier tail entry fails; only its plan position is guaranteed. — check: none: state plan ordering or add a reachability limit
+3. advisory — brief:36 The kept baseline generator reads its repository argument, revision, and that revision’s `package.json#test:suite` through `git show`, but no input row gives their domain or the call-level refusal. The model’s `execFileSync` already fails closed. — check: none: add the generator-call input row
+4. advisory — brief:41 The changed W-139 reader depends on `package.json#test:record`, but the table does not state that direct test input’s domain and assertion rejector; malformed or mismatching content already fails the row. — check: scripts/ci-scope.test.mjs
+5. advisory — brief:91 The new b4 reader directly consumes `package.json`, both rename paths, `<base>`, and `git show <base>:packages/cli/src/test.ts`, without enumerating those inputs or the subprocess rejector. Read, command, or comparison failures already fail the test. — check: scripts/test-suite.test.mjs
+
+## Verdict
+The design is feasible, but its two unconditional execution promises contradict the specified fail-fast and preflight behavior.
+VERDICT: FAIL
