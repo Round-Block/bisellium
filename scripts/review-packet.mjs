@@ -16,7 +16,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { briefAdmissionProblems } from "../packages/commands/src/lifecycle.ts";
 import { readBriefLimit } from "../packages/commands/src/brief-admission.ts";
@@ -66,6 +66,10 @@ export function parsePacketArgs(argv) {
     if (!isDirectory(dir)) refuse(`${flag} ${JSON.stringify(got.get(flag))} is not a directory`);
     dirs[flag] = dir;
   }
+  // the packets are scratch: never the officina's own tree, by real path
+  const inside = relative(realpathSync(dirs["--studio"]), realpathSync(dirs["--packets"]));
+  if (inside !== ".." && !inside.startsWith(`..${sep}`) && !isAbsolute(inside))
+    refuse(`--packets ${JSON.stringify(got.get("--packets"))} is --studio or under it`);
   return {
     phase,
     opus,
