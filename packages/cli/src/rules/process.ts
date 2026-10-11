@@ -617,6 +617,8 @@ export function shellPipeLine(text: string): number | undefined {
 }
 
 const pipeBlock = (where: string, message: string): Finding => ({ rule: "process.pipe_exit", level: "block", where, message });
+// a constant, not a literal call argument: rules/lex.test.ts harvests dotted literals as rule ids
+const PACKAGE_JSON = "package.json";
 const PIPE_HINT = "a pipeline's status is its last member's; wrap it as `bash -o pipefail -c '…'`";
 
 /** One `scripts/<name>` file: its first command line must be `set -euo pipefail`, and nothing may switch pipefail off. */
@@ -673,9 +675,9 @@ export function repoPipeFindings(repo: string): Finding[] {
   findings.push(...scripts.findings, ...scripts.names.flatMap((n) => scriptPipeFinding(repo, n)));
   const workflows = listed(repo, ".github/workflows", (n) => /\.ya?ml$/.test(n));
   findings.push(...workflows.findings, ...workflows.names.flatMap((n) => workflowPipeFindings(repo, n)));
-  const pkg = readContainedRegularFile(repo, "package.json", "");
+  const pkg = readContainedRegularFile(repo, PACKAGE_JSON, "");
   if ("error" in pkg) {
-    if (pkg.code !== "ENOENT") findings.push(pipeBlock("package.json", `cannot be read: ${pkg.error}`));
+    if (pkg.code !== "ENOENT") findings.push(pipeBlock(PACKAGE_JSON, `cannot be read: ${pkg.error}`));
     return findings;
   }
   try {
@@ -683,7 +685,7 @@ export function repoPipeFindings(repo: string): Finding[] {
     for (const [name, cmd] of Object.entries(isDict(scriptsOf) ? scriptsOf : {}))
       if (typeof cmd === "string" && shellPipeLine(cmd) !== undefined) findings.push(pipeBlock(`package.json#scripts.${name}`, `npm runs scripts with sh; ${PIPE_HINT}`));
   } catch (e) {
-    findings.push(pipeBlock("package.json", `does not parse: ${(e as Error).message}`));
+    findings.push(pipeBlock(PACKAGE_JSON, `does not parse: ${(e as Error).message}`));
   }
   return findings;
 }
