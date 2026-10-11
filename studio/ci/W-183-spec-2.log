@@ -1,0 +1,25 @@
+# opus: W-183
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T05:27:11.789Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:f34202cd8e0ca59f3a245cb977319473b72501bf
+
+## Findings
+1. blocking — brief:75 `takeHeavySlot` has no stated runtime validation for `slots`; a mistaken direct call with `65` can acquire `slot-65`, bypassing the declared 1–64 capacity domain. — check: packages/commands/src/run.test.ts
+2. blocking — brief:81 Requiring inherited slot `k` to be within the nested reader’s `slots` makes the reuse promises false when supported `--repo`/`--studio` or `--ref` paths read different capacities: `runCi` or `runVerify` can reject its own lease and wait on itself. — check: packages/commands/src/run.test.ts
+3. blocking — brief:36 Killing a wrapper or command owner closes the holder pipe and frees the slot, but its spawned heavy child is not killed automatically; it can continue running while another job acquires the freed slot, violating the host cap. — check: packages/commands/src/run.test.ts
+4. blocking — brief:84 A holder that exits or is signalled after printing `held` releases the lock while the heavy work continues; the already-resolved `takeHeavySlot` promise cannot then “return an error” as promised. — check: packages/commands/src/run.test.ts
+5. blocking — brief:40 The promise that missing `flock` makes every entry point exit 2 contradicts brief:96, which requires `runBuilderCommand` to return its failure code 1 for the same rejection. — check: packages/commands/src/run.test.ts
+6. blocking — brief:42 Evidence cannot remain unchanged: `localPipeline` captures the wrapper’s new `heavy-job: running` stderr line, and translating a child signal to `128 + signal` changes its existing signal diagnostic into a numeric exit-code diagnostic. — check: packages/pipeline/test/gate-env.test.ts
+7. blocking — brief:109 In the existing `gates` environment, `NODE_OPTIONS` preloads `record-reads.mjs`; the new wrapper’s read of `studio/bisellium.yml` is owned by `?`, so the following required `--check-reads` step rejects it as unattributed even when the wrapper exits 0. — check: scripts/ci-scope.test.mjs
+8. advisory — brief:106 Row 7 covers the wrapper’s inner `no-vendor` command but not `runCi`’s reused `npm test` subprocess or the existing `runStep` conversion of its non-zero exit into refusal; that path already fails closed. — check: packages/cli/src/ci.test.ts
+9. advisory — brief:98 The input table omits `runBuilderCommand`’s reused `run-builder-host.mjs` subprocess and its existing status/result-file rejector; the omitted path already fails closed. — check: packages/commands/src/run.test.ts
+
+## Verdict
+The brief has substantive fail-open paths and false promises and is not ready to build.
+
+VERDICT: FAIL

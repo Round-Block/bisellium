@@ -1,0 +1,22 @@
+# opus: W-181
+# phase: spec
+# round: 3
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T05:19:45.261Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-181.md blob:bcf341582a95942dc779811fe7ccbab39df8d99d
+
+## Findings
+1. blocking — brief:104 A done record with a missing or malformed `end` remains readable but is silently excluded by the seed and normal selection; no rejector fails closed on that out-of-domain input. — check: scripts/status-page.test.mjs
+2. blocking — brief:105 Normal mode accepts marker pairs based only on count, order, and boundary, without requiring the progress markers inside the table or masthead markers around the date/status spans; accidentally moved markers therefore pass and receive output in the wrong region. — check: scripts/status-page.test.mjs
+3. blocking — brief:89 A newest post-boundary record may validly lack `checkpoint` under line 92, but the required masthead format needs its nonexistent `pr` and `summary`; neither a fallback nor a limiting condition is specified. — check: scripts/status-page.test.mjs
+4. blocking — brief:13 The unchanged Status caption claims rows are written at each checkpoint, yet valid records with no checkpoint also generate rows; its “one row per cascade” wording is likewise incompatible with the per-opus rows required at line 153. — check: scripts/status-page.test.mjs
+5. blocking — brief:96 The absolute claim that every generator rejection occurs before its first write is expressly contradicted by row 7, where failure of the second write leaves the first page changed. — check: scripts/status-page.test.mjs
+6. blocking — brief:27 “Each readable” post-boundary done record is broader than the mechanism: readable records with malformed checkpoints, duplicate ids, or ids already represented in the legacy prefix produce no row because line 104 rejects the generation. — check: scripts/status-page.test.mjs
+7. advisory — brief:132 The order assertion requires generation only before `status-page.mjs`; it permits placement after `cat head.html body.html`, leaving `bisellium-dossier.html` stale on the first build and changed by the second, contrary to line 140. — check: scripts/status-page.test.mjs
+
+## Verdict
+The brief has substantive fail-open inputs and generation promises contradicted by its own accepted cases and failure paths.
+VERDICT: FAIL

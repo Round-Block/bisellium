@@ -1,0 +1,25 @@
+# opus: W-181
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T05:26:10.540Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-181.md blob:4d3f056305b6916f1e27277e57725f146d1f373f
+
+## Findings
+1. blocking — brief:106 `writeFileSync` may truncate or partially write the second page before throwing, so a second-write failure can leave both pages changed; “at most one page changed” is false. — check: scripts/status-page.test.mjs
+2. advisory — brief:57 The seed’s new thesis rewrite depends on finding the old sentence, but row 4 neither declares that input nor requires `seedTemplates` to reject a missing or repeated match. — check: scripts/status-page.test.mjs
+
+## Earlier findings
+- ci/W-181-spec-3.log #1: closed — brief:96 and brief:114 reject every present malformed `end`; absent `end` is now explicitly a legacy-domain case limited out of the generated-pages promise.
+- ci/W-181-spec-3.log #2: closed — brief:95 and brief:115 require both marker pairs in their exact table or masthead regions, with a misplaced-marker rejection tested at brief:138.
+- ci/W-181-spec-3.log #3: closed — brief:102 specifies the no-checkpoint masthead fallback, tested at brief:139.
+- ci/W-181-spec-3.log #4: closed — brief:54 and brief:57 replace the false per-cascade/checkpoint wording with legacy-then-per-opus wording.
+- ci/W-181-spec-3.log #5: closed — brief:106 no longer claims write failures occur before the first write; the new blocker concerns its separate and false “at most one page” bound.
+- ci/W-181-spec-3.log #6: closed — brief:37 conditions row and masthead guarantees on an exit-zero generation and expressly limits whole-run rejections.
+
+## Verdict
+The prior blockers are answered, but the revised write-failure promise is still substantively false.
+VERDICT: FAIL

@@ -1,0 +1,19 @@
+# opus: W-183
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:38:46.431Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:83c1c0bb7571ae71287c40df1bfeacb00411844e
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 4 of studio/briefs/W-183.md (architect, claude-opus-5-5, D-027), answering spec review r6 (ci/W-183-spec-6.log); pipeline work, Patron approval of design and Defaults 1-6 before branch (Defaults 1 now asks to take the capacity from BISELLIUM_HEAVY_JOB_SLOTS instead of bisellium.yml as the title says). Revision 3 kept as ~/.bisellium-evidence/multilane-spec/W-183/W-183-r3.md, diff r3-to-r4.diff, edit script revise-r4.py; admission 0 problems (admission-r4.txt).
+
+## Rebuttal
+1. fixed — the capacity is the environment variable BISELLIUM_HEAVY_JOB_SLOTS, checked by readHeavyJobSlots as the first step of every takeHeavySlot and runInHeavySlot call, so the wrapper, runCi, runVerify and runBuilderCommand all refuse an out-of-domain value before a lease, a slot or a command (Input domain row 1; b1, b2, b3 and b4 rows). No file is read, so the gates job's record-reads preload (.github/workflows/ci.yml:72-77) sees nothing; the lazy read and its limit are gone.
+2. fixed — no entry point reads a manifest for the capacity any more (heavyJobSlotsFor, the bisellium.yml key, the check.ts line and the Manifest field are removed), so "a reused lease reads no manifest" is now simply true; the brief says instead that the capacity check runs before lease reuse and that a reused lease prints nothing.

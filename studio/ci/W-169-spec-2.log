@@ -1,0 +1,21 @@
+# opus: W-169
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T05:19:47.152Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:4a120c5c0ac5f561441755b815e356cb0078fec0
+
+## Findings
+1. blocking — brief:21 The repository-wide marker is a lease, not an atomic lock: reused `assess` declares a still-live branch owner dead after 120 seconds without output, permitting takeover while its synchronous Git/GitHub call may still be running. Two overlapping opera can therefore both pass the overlap check before either branches. — check: packages/cli/src/next.test.ts W-169-b3
+2. blocking — brief:84 The row promises an unreadable marker is held, but brief:63 requires invalid markers to be taken over “as for step markers”; the named `readMarker`/`assess`/`installMarker` path unlinks an unreadable marker and proceeds. This accepts the row’s out-of-domain input instead of refusing it. — check: packages/cli/src/next.test.ts W-169-b3
+3. blocking — brief:25 The lane-handoff promise fails when the handoff is absent: the specified change only passes `inFlight()` to `sessionHandoffFindings`, while `handoffHold` returns before calling that function when neither the working tree nor master has a handoff. A done commit can therefore proceed with other lanes in flight and no lane sections. — check: packages/cli/src/next.test.ts W-169-b4
+4. blocking — brief:25 Halted lanes cannot satisfy the promise consistently. `inFlight()` is defined from a branch plus the trunk record being merely “not done,” so a trunk-halted opus is simultaneously required to have a section and forbidden one; an ordinary branch-only halt is invisible to the trunk/main-checkout records and its section is incorrectly admitted. — check: packages/cli/src/next.test.ts W-169-b4
+5. blocking — brief:77 “Every rejection” leaving nothing created is false for reused `performBranch`: after `git worktree add` fails, it ignores failure of the compensating `update-ref -d`, so a held result can leave the opus ref behind. — check: packages/cli/src/next.test.ts W-169-b3
+6. advisory — brief:81 `readFilesOwned` returns an empty set rather than rejecting it, as behaviour 1 and its declared return type require; `deriveNext` and the host’s size guard are the actual rejectors, and row 8 repeats the same imprecise attribution. The paths are intended to fail closed, but the rows should name those callers. — check: none: name the empty-set guards as the rejecting functions
+
+## Verdict
+The brief’s marker mechanism does not guarantee atomic overlap admission, and its handoff and branch-ref promises have concrete failing paths.
+VERDICT: FAIL

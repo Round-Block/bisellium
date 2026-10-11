@@ -1,0 +1,23 @@
+# opus: W-181
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:02:59.136Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-181.md blob:4dd2c4a022bcf548f146f5f5c721a4ffecec087c
+
+## Findings
+1. Legacy prefix is 75 tbody rows (cascades 1-69), not 69; the seed keeps whatever rows exist when it runs. check: scripts/status-page.test.mjs
+2. Added row 5's rejector: a post-boundary record whose `<strong><id> shipped` is already a legacy row exits 2 (a hand row added after the seed). check: scripts/status-page.test.mjs
+3. Owned afterDone's checkpoint command (next.ts:812), which told the producer to hand-edit the progress row and masthead. check: none: wording only, no test pins it
+4. A done record without `checkpoint` renders a visible "no checkpoint recorded" row instead of exiting 2 (front matter cannot be repaired by hand); a malformed mapping still exits 2. check: scripts/status-page.test.mjs
+5. Cut the status-page.mjs caption and header rename (the caption stays true); status-page.mjs only exports `esc` for reuse. check: none: no behaviour changes
+6. Moved the build.sh end-to-end run from behaviour 4 to Acceptance (build.sh spawns build-arch and check); behaviour 4 keeps the static order assertion. check: scripts/status-page.test.mjs
+7. Named the containment inventory flip for next.ts readCheckpointFile's new raw read, not only the script's sites; no fixed pin count. check: packages/cli/src/containment.test.ts
+8. The nextArgs default-file rule gets an opt-out (RunOpts.noCheckpoint) for the no-flag case; the masthead tie goes to the higher id (sort order). check: packages/cli/src/next.test.ts
+9. The seed is the branch's last commit, re-run after a rebase if master gains a hand row; overlaps named: next.ts (W-169, W-213, W-093), ADOPTION.md (W-212), the handoff (W-169); package.json and .github untouched (W-211, W-193, W-210). check: none: D-057 re-review before branch
+
+## Verdict
+passed: signed spec, revision 1, of studio/briefs/W-181.md (architect, claude-opus-5-5, D-027), checked against master 580d5fd5 (~/.bisellium-evidence/multilane-spec/W-181/reads.txt); brief admission 0 problems (admission.txt).

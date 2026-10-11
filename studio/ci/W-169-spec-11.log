@@ -1,0 +1,20 @@
+# opus: W-169
+# phase: spec
+# round: 11
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12961-1eb7-7d63-b04c-6b79533acb91
+# outcome: passed
+# at: 2026-10-11T05:36:25.828Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:9c5e3ae339fc1f30980068845091dd72abacd8ca
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-169-spec-9.log #1: closed — brief:45 limits the guarantee to kept branches whose trunk records are neither `done` nor `halted` and explicitly excludes a halted opus’s surviving branch.
+
+## Verdict
+The revised atomic promise now matches the `inFlight()` domain and states the halted-branch limit.
+VERDICT: PASS

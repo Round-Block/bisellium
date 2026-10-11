@@ -1,0 +1,26 @@
+# opus: W-183
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:30:47.458Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:6fa32583e146b307bfc6ca48e7121ab75bfd8815
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 2 of studio/briefs/W-183.md (architect, claude-opus-5-5, D-027), answering spec review r2 (ci/W-183-spec-2.log); still pipeline work, Patron approval of design and Defaults 1-6 before branch. Revision 1 kept as ~/.bisellium-evidence/multilane-spec/W-183/W-183-r1.md, diff r1-to-r2.diff, edit script revise-r2.py; admission 0 problems (admission-r2.txt).
+
+## Rebuttal
+1. fixed — takeHeavySlot takes a `slots()` thunk and refuses any result that is not an integer 1..64 before trying a slot past 1 (Interfaces, row 5a, b2 row). Other instances: runInHeavySlot shares the same loop.
+2. fixed — an inherited lease is reused for slot-1..slot-64 whatever the reader's own capacity (Interfaces, row 4, b2 capacity-mismatch row), so a nested reader with a different heavy_job_slots never waits on its own lease.
+3. fixed for npm test, narrowed for in-process owners — the wrapper runs its command under `flock <slot> sh -c … exec "$@"`, so the command holds the locked file open (flock-fd-inherit.txt) and killing the wrapper does not free the slot (b3 row). For ci/verify/run, killing the owner alone frees the slot while children it started run on; stated as a limit under Promise host-cap (a capacity gap, no gate passes).
+4. fixed — after `held`, a helper exit prints `heavy-job: slot lost` and changes nothing else; the error clause applies only before `held` (Interfaces, row 5, host-cap limit, b2 row).
+5. fixed — missing flock refuses with the entry point's refusal code: 2, or 1 for runBuilderCommand (Promise freed-on-death, Interfaces).
+6. fixed — Promise outcome-kept narrowed: pass/fail and timeouts kept; a reused lease prints nothing, so verify's test-gate log (packages/pipeline/src/index.ts:96 status line) is unchanged; a taken slot adds heavy-job: stderr lines, and the wrapper reports a signal as 128+N.
+7. fixed — capacity is read only when slot 1 is busy, so on a fresh runner the wrapper reads no studio/ file under record-reads.mjs (.github/workflows/ci.yml:72-77); row 10 says so, and row 2 states that a bad value is then caught by checkStudio, not at run time.
+8. fixed — row 12 names runCi's reused `npm test` subprocess and runStep's exit (packages/commands/src/ci.ts:114-121).
+9. fixed — row 13 names runBuilderCommand's reused host runner and its status/result-file rejector (packages/commands/src/builder-run.ts:215-230).
