@@ -1,0 +1,20 @@
+# opus: W-204
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12284-b9b7-75b0-befe-949535b19834
+# outcome: passed
+# at: 2026-10-11T07:54:38.218Z
+# tree: tree:927250a78d474cf492d4a773be5dde8aab1b5c49
+# brief: briefs/W-204.md blob:e08a6f40a1bbae28367d888800b614c5c18332f6
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-204-spec-8.log #1: closed — brief:118 now matches the `merge_group`-only scope steps in `gates` and `web-e2e`, including `base_sha`; it correctly states that they do not run on `push`.
+
+## Verdict
+Revision 5 closes the prior false CI promise without introducing another substantive defect.
+VERDICT: PASS

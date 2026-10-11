@@ -1,0 +1,23 @@
+# opus: W-193
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T07:44:50.605Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:3e0ccab944ef8d1da176a60f5ae3db33be8fe9d6
+
+## Findings
+
+1. advisory: Review r8 finding 1 (brief:70) upheld and fixed: switch-parity.mjs now requires scripts/test-suite.test.mjs in HEAD's tree (expected = chain files plus the own test, then exact set equality); the switch missing its own test exits 1 (switch-parity-cases.txt). check: none: answered in the signed brief's revision-5 note
+2. advisory: Review r8 finding 2 (brief:70) upheld and fixed at its cause: the blacklist is replaced by a whitelist. A segment must be exactly one of the eight program shapes the chain uses, single-spaced, with at most one space beside each &&. Twenty file-set-preserving chain rewrites all exit 1 (newline, CRLF, tab, double or trailing space, ;, |, &, ||, &&&, #, backslash continuation, brace group, glob, no-break space, env prefix, second node, unknown argument). Revision 4's checker accepted 12 of them, plus the missing-own-test case. The real chains at 580d5fd5 and at opus/W-211's tip still pass. check: none: answered in the signed brief's revision-5 note
+3. advisory: Review r8 finding 3 (brief:38) upheld and fixed without weakening: test:record's commands are rewritten to the runner's commands (record-rewrite.mjs, same files and order, no other package.json byte changes). W-139 behaviour 1 keeps verbatim membership against the rendered commands of cwd-. plan entries. Its title becomes "subset of the commands test:suite runs". W-211-b1's pinned command is updated the same way, still verbatim. check: scripts/ci-scope.test.mjs W-139 behaviour 1
+
+## Rebuttal
+
+None of the three findings is contested.
+- r8 #1: the own test was only exempted from extra. It is now also required in found.
+- r8 #2: a blacklist cannot be closed, so the grammar is now a whitelist. The case run shows the whole class refused.
+- r8 #3: verbatim strength is restored by changing test:record's text, not the assertion. The no-weakening promise at brief:28 holds, and every title stays true.
+Overlap named for D-057: W-211 (test:record command and W-211-b1), W-210 (rows inserted above, line numbers move), W-221 (no pipe in either new value).

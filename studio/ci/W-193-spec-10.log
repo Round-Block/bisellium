@@ -1,0 +1,22 @@
+# opus: W-193
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12989-0887-7683-a9c1-4fd57e547bf6
+# outcome: passed
+# at: 2026-10-11T07:52:55.230Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-193.md blob:3e0ccab944ef8d1da176a60f5ae3db33be8fe9d6
+
+## Findings
+1. advisory — brief:35 The newly used `record-rewrite.mjs` is absent from the Input domain table. Its malformed-input paths exit non-zero and the resulting package is independently checked by W-139, so this is an enumeration gap rather than a fail-open path. — check: none: add one input row naming the rewrite call and the build refusal on non-zero exit
+
+## Earlier findings
+- ci/W-193-spec-8.log #1: closed — `switch-parity.mjs` now requires `scripts/test-suite.test.mjs`, and the missing-own-test case exits 1.
+- ci/W-193-spec-8.log #2: closed — the checker now uses a complete whitelist, and the newline-separated command plus the swept malformed variants exit 1.
+- ci/W-193-spec-8.log #3: closed — `test:record` is mechanically rewritten to the runner’s exact commands, while W-139 retains byte-for-byte membership and receives a true title.
+
+## Verdict
+All previous blockers are closed; the remaining input-row omission is advisory because the rewrite and its downstream validation fail closed.
+VERDICT: PASS
