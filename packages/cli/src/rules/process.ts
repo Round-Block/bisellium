@@ -547,3 +547,70 @@ export function checkSessionHandoff(root: string, opts: RuleOpts): Finding[] {
   if (read.kind === "error") return [{ rule: "process.handoff.input", level: "block", where: HANDOFF_REL, message: read.reason }];
   return read.kind === "absent" ? [] : sessionHandoffFindings(read.text, read.opera);
 }
+
+// ---- W-221: a pipe never hides a gate's exit ----------------------------------
+/** 1-based line of the first pipeline operator (`|` or `|&`, never `||`) outside quotes and comments, or undefined. */
+export function shellPipeLine(text: string): number | undefined {
+  let i = 0;
+  let line = 1;
+  // ponytail: no $'…' or heredoc/case awareness; both fail closed (read as a pipe or quote)
+  /** At an opening quote: skip the string; the opening line if it never closes, a pipe line from a substitution in "…". */
+  const quoted = (q: string): number | undefined => {
+    const opened = line;
+    i++;
+    while (i < text.length) {
+      const c = text[i]!;
+      if (c === q) {
+        i++;
+        return undefined;
+      }
+      if (q === '"' && c === "\\") {
+        if (text[i + 1] === "\n") line++;
+        i += 2;
+      } else if (q === '"' && (c === "`" || (c === "$" && text[i + 1] === "("))) {
+        const hit = code(c === "`" ? "`" : ")");
+        if (hit !== undefined) return hit;
+      } else {
+        if (c === "\n") line++;
+        i++;
+      }
+    }
+    return opened;
+  };
+  /** Top-level code until `close` (`)` or a backtick, or "" for the whole text): the first pipeline line, or the opening line if unterminated. */
+  const code = (close: string): number | undefined => {
+    const opened = line;
+    i += close === "" ? 0 : close === "`" ? 1 : 2;
+    let depth = 0;
+    while (i < text.length) {
+      const c = text[i]!;
+      if (c === close && depth === 0) {
+        i++;
+        return undefined;
+      }
+      if (c === "\\") {
+        if (text[i + 1] === "\n") line++;
+        i += 2;
+      } else if (c === "'" || c === '"') {
+        const hit = quoted(c);
+        if (hit !== undefined) return hit;
+      } else if (c === "`" || (c === "$" && text[i + 1] === "(")) {
+        const hit = code(c === "`" ? "`" : ")");
+        if (hit !== undefined) return hit;
+      } else if (c === "#" && (i === 0 || /[\s;&|()<>]/.test(text[i - 1]!))) {
+        while (i < text.length && text[i] !== "\n") i++;
+      } else if (c === "|") {
+        if (text[i + 1] === "|") i += 2;
+        else if (text[i - 1] === ">") i++;
+        else return line;
+      } else {
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+        else if (c === "\n") line++;
+        i++;
+      }
+    }
+    return close === "" ? undefined : opened;
+  };
+  return code("");
+}
