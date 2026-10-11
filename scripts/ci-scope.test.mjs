@@ -8,7 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { test } from "node:test";
@@ -215,6 +215,18 @@ test("W-209-b1 behaviour 1: the dossier's direct HTML pages are record-only; its
     ["docs/design/dossier/body.html", "docs/ARCHITECTURE.md"],
   ])
     assert.equal(mod.recordOnly(paths), false, `${JSON.stringify(paths)} is not record-only`);
+});
+
+test("W-211-b1 behaviour 1: source_excludes is examples/ plus the dossier's direct HTML pages, and test:record runs this pin", async () => {
+  const { recordOnly } = await import("./ci-scope.mjs");
+  const command = "node --test-reporter=tap scripts/ci-scope.test.mjs";
+  assert.ok(andSplit(pkgScripts()["test:record"]).includes(command), `test:record runs "${command}"`);
+  const listed = parseYaml(readFileSync(join(REPO, "studio", "bisellium.yml"), "utf8")).source_excludes;
+  const pages = readdirSync(join(REPO, "docs", "design", "dossier"), { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => `docs/design/dossier/${entry.name}`)
+    .filter((path) => recordOnly([path]));
+  assert.deepEqual([...listed].sort(), ["examples/", ...pages].sort(), "source_excludes names exactly these");
 });
 
 test("W-139 behaviour 1: test:record is a duplicate-free, cd-free subset of test:suite", () => {
