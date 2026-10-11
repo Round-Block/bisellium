@@ -1,0 +1,15 @@
+# opus: W-180
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:10:52.585Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-180.md blob:5b8d57e7bad52c4bd1c7e94cde24087bd75dfa12
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 4 of studio/briefs/W-180.md (architect, claude-opus-5-5, D-027): five capitalised citations of W-121's behaviours 4 and 5 reworded to lowercase "W-121's behaviour N", which brief.behaviour_citation (packages/cli/src/rules/evidence.ts:473, case-sensitive \bBehaviour (\d+)\b) no longer counts as W-180's own; nothing else changed (r3-to-r4.diff). With the brief copied into ml-land (master 659e961c + spec commit), `npm run -s check -- studio --repo .` exits 0 (check-r4.txt); revision 3 there gives the 5 findings. Admission 0 problems (admission-r4.txt). Revision 3 kept as ~/.bisellium-evidence/multilane-spec/W-180/W-180-r3.md.

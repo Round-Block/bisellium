@@ -1,0 +1,20 @@
+# opus: W-180
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12965-2b32-7fc0-b0b5-7d4459da2311
+# outcome: passed
+# at: 2026-10-11T06:11:40.503Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-180.md blob:5b8d57e7bad52c4bd1c7e94cde24087bd75dfa12
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The citation-only revision preserves the accepted promises and correctly distinguishes W-121’s behaviours from W-180’s own.
+
+VERDICT: PASS
