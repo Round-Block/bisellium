@@ -9,7 +9,7 @@
  */
 
 import assert from "node:assert/strict";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -356,6 +356,82 @@ test("W-221-b1 behaviour 24: the classifier finds an unquoted pipeline and nothi
     ["a heredoc body (limit: read as a pipe)", "cat <<EOF\nfoo\na | b\nEOF", 3],
   ];
   for (const [label, text, want] of rows) assert.equal(rules.shellPipeLine(text), want, label);
+});
+
+// behaviour 25 (W-221): `check` blocks each pipe-exit surface once, in the repository's own studio.
+const W221_REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const TESTS_GATE = 'id: tests, name: Tests, kind: automated, command: "true"';
+/** Run checkStudio over a scratch repo holding `files` and return the process.pipe_exit findings as [rule, where]. */
+function pipeFindings(files: Record<string, string>, o: { studioDir?: string; repo?: boolean; testsGate?: string; setup?: (repo: string) => void } = {}): string[][] {
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-w221-"));
+  scratches.push(repo);
+  const studio = join(repo, o.studioDir ?? "studio");
+  mkdirSync(join(studio, "opera"), { recursive: true });
+  const manifest = readFileSync(SAMPLE_MANIFEST, "utf8");
+  assert.ok(manifest.includes(TESTS_GATE), "the sample manifest has the tests gate row");
+  writeFileSync(join(studio, "bisellium.yml"), o.testsGate === undefined ? manifest : manifest.replace(TESTS_GATE, o.testsGate));
+  for (const [name, body] of Object.entries(files)) {
+    mkdirSync(dirname(join(repo, name)), { recursive: true });
+    writeFileSync(join(repo, name), body);
+  }
+  o.setup?.(repo);
+  const result = checkStudio(studio, W186_NOW, o.repo === false ? {} : { repo });
+  return result.findings.filter((f) => f.rule === "process.pipe_exit").map((f) => [f.rule, f.where]);
+}
+const RULE = "process.pipe_exit";
+const one = (where: string): string[][] => [[RULE, where]];
+const WF = "jobs:\n  j:\n    runs-on: ubuntu-latest\n";
+const workflow = (step: string, job = "", top = ""): string => `${top}${WF}${job}    steps:\n      - ${step}\n`;
+const CI = ".github/workflows/ci.yml";
+
+test("W-221-b2 behaviour 25: check blocks each surface once, in the repository's own studio", () => {
+  // scripts/*.sh: the first command line must be exactly `set -euo pipefail`
+  const script = (name: string, body: string): Record<string, string> => ({ [`scripts/${name}`]: body });
+  assert.deepEqual(pipeFindings(script("a.sh", "set -e\necho hi\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(pipeFindings(script("a.sh", "#!/usr/bin/env bash\n# usage\n\nset -euo pipefail\necho hi\n")), []);
+  assert.deepEqual(pipeFindings(script("a.sh", "#!/bin/sh\n# only comments\n")), one("scripts/a.sh"));
+  assert.deepEqual(pipeFindings(script("a.sh", "echo hi\nset -euo pipefail\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(pipeFindings(script("a.sh", "set -o pipefail\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho\nset +o pipefail\n")), one("scripts/a.sh:3"));
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho\nset +euo pipefail\n")), one("scripts/a.sh:3"));
+  assert.deepEqual(pipeFindings(script("a.sh", "f() {\n  set -euo pipefail\n}\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(
+    pipeFindings(script("a.sh", "set -euo pipefail\n"), { setup: (repo) => symlinkSync(join(repo, "scripts", "a.sh"), join(repo, "scripts", "b.sh")) }),
+    one("scripts/b.sh"),
+    "a symlinked script",
+  );
+  assert.deepEqual(pipeFindings({ scripts: "not a directory\n" }), one("scripts"), "scripts as a regular file");
+  assert.deepEqual(pipeFindings({}), [], "no scripts/ and no workflows");
+
+  // workflow run steps holding a pipeline need the effective shell to be exactly bash
+  const piped = "run: a | b";
+  assert.deepEqual(pipeFindings({ [CI]: workflow(piped) }), one(`${CI}#jobs.j.steps[0]`));
+  assert.deepEqual(pipeFindings({ [CI]: workflow("run: a && b") }), [], "no pipeline");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(`${piped}\n        shell: bash`) }), [], "step shell: bash");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(piped, "    defaults:\n      run:\n        shell: bash\n") }), [], "job defaults.run.shell: bash");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(piped, "", "defaults:\n  run:\n    shell: bash\n") }), [], "workflow defaults.run.shell: bash");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(`${piped}\n        shell: bash -e {0} # pipefail`) }), one(`${CI}#jobs.j.steps[0]`), "bash -e {0}");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(`${piped}\n        shell: sh`, "    defaults:\n      run:\n        shell: bash\n") }), one(`${CI}#jobs.j.steps[0]`), "step sh overrides job bash");
+  assert.deepEqual(pipeFindings({ [CI]: "jobs: [\n" }), one(CI), "an unparseable workflow");
+
+  // the root package.json: npm runs scripts with sh
+  assert.deepEqual(pipeFindings({ "package.json": '{"scripts":{"test":"node t.js | tee log"}}' }), one("package.json#scripts.test"));
+  assert.deepEqual(pipeFindings({ "package.json": '{"scripts":{"test":"bash -o pipefail -c \'node t.js | tee log\'"}}' }), []);
+  assert.deepEqual(pipeFindings({ "package.json": "{" }), one("package.json"), "an unparseable package.json");
+
+  // an automated probatio command is a string with no pipeline, on every officina
+  const tests = (command: string): string => `id: tests, name: Tests, kind: automated, command: ${command}`;
+  assert.deepEqual(pipeFindings({}, { testsGate: tests('"npm test | tail -1"') }), one("bisellium.yml#tests"));
+  assert.deepEqual(pipeFindings({}, { testsGate: tests("7") }), one("bisellium.yml#tests"));
+  assert.deepEqual(pipeFindings({}, { testsGate: tests('"npm test"') }), []);
+  const bad = { "scripts/x.sh": "set -e\n" };
+  assert.deepEqual(pipeFindings(bad, { testsGate: tests("7"), studioDir: "other" }), one("bisellium.yml#tests"), "another officina: the command only");
+  assert.deepEqual(pipeFindings(bad, { testsGate: tests("7"), repo: false }), one("bisellium.yml#tests"), "no --repo: the command only");
+  assert.deepEqual(pipeFindings(bad, { testsGate: tests("7") }), [[RULE, "bisellium.yml#tests"], [RULE, "scripts/x.sh:1"]], "control: <repo>/studio reads both");
+
+  // this checkout's own scripts, workflows and package.json hold none
+  assert.deepEqual(rules.repoPipeFindings(W221_REPO), []);
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
 process.exitCode = failed ? 1 : 0;
