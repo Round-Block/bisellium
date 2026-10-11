@@ -370,6 +370,11 @@ test("W-221-b1 behaviour 24: the classifier finds an unquoted pipeline and nothi
     ["a hash after a continuation and space starts a comment", "echo a \\\n#c | d", undefined],
     ["a hash after a continuation inside a word is mid-word", "echo a\\\n#c | d", 2],
     ["a length expansion is no comment", "echo ${#x} | cat", 1],
+    // round 2: a backslash-newline is invisible to every tracked state and lookahead
+    ["a continuation between > and | still forms the clobber", "echo x >\\\n|f", undefined],
+    ["a continuation between two > is an append before a pipe", "echo x >\\\n>|f", 2],
+    ["a continuation between two | forms an or-list", "echo a |\\\n| b", undefined],
+    ["a continuation between $ and ( opens a substitution", "x=$\\\n(a | b)", 2],
   ];
   for (const [label, text, want] of rows) assert.equal(rules.shellPipeLine(text), want, label);
 });
@@ -417,6 +422,7 @@ test("W-221-b2 behaviour 25: check blocks each surface once, in the repository's
     "a symlinked script",
   );
   assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho\nset +o \\\n  pipefail\n")), one("scripts/a.sh:3"), "a continuation joins the disable");
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho \\\\\nset +o pipefail\n")), one("scripts/a.sh:3"), "an even run of backslashes is no continuation");
   assert.deepEqual(pipeFindings({ scripts: "not a directory\n" }), one("scripts"), "scripts as a regular file");
   assert.deepEqual(pipeFindings({}), [], "no scripts/ and no workflows");
 
