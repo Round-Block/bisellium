@@ -11,19 +11,18 @@ kill: when every item here is enforced by a lex clause or a check rule
 Current state only, read after CLAUDE.md; rules, process and environment are in
 `studio/leges/production.md`.
 
-## Resume point (2026-10-11)
+## Resume point (2026-10-12)
 
-Build lane:
-1. **W-221** (pipe-hidden exits), `opus/W-221` at 7ee7e677 (`.worktrees/W-221`):
-   mint a receipt, then build review round 4 in the resumed censor session
-   (`--session` in ci/W-221-review-3.log). Packet: `scripts/review-packet.mjs
-   --round 4` plus the r1 packet's files in `~/.bisellium-evidence/W-221-review/`.
-   Each fix round's red is kept as `W-221-build/r<n>fix/red.log`, its sha on line 1,
-   until W-225 gives it a CLI path. Until W-221 merges, record reviews by hand
-   with `--session`; after, a records PR repoints the lex and this file to its
-   `scripts/`.
-2. **W-229** (signed): a D-057 re-review after W-221 merges (both edit ADOPTION),
-   then `branch`. Then Queue 1b, whose items still need specs.
+1. **W-221** (pipe-hidden exits), `opus/W-221` at 53a08bc5 (`.worktrees/W-221`):
+   held (D-046) after review rounds 1, 3 and 4 failed; fix round 4 is built, gates
+   green, unreviewed. The Patron grants a round with `amend W-221 --round-ruling`;
+   only then: the architect confirms the fix keeps the brief's promises, mint, review
+   round 5 like `~/.bisellium-evidence/W-221-review/r4-run.sh` (resumes the session
+   in ci/W-221-review-4.log), record like `r4-record.sh`. Each fix round's red is
+   kept as `W-221-build/r<n>fix/red.log`, sha on line 1, until W-225.
+2. **W-229** (signed; `next` names `branch`): ranked after W-221 (one lane; both edit
+   ADOPTION, so a D-057 §3 re-review if it changed). Then Queue 1b, which needs specs.
+3. The enforcement set W-233 is held by the Patron: see Open Patron choices.
 - `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
   `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
 
@@ -45,7 +44,8 @@ One lane until Queue 8 lands (the multi-lane prep, W-169 last).
 Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
-1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top);
+1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top; held);
+   W-233 — the ladder is enforced, not remembered (D-039: high; Patron greenlit, held);
    then W-229 — verdict refuses a signature next cannot read (D-039, Patron).
 1b. W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
     (acta `2026-10-11-patron-queue-review`).
@@ -56,7 +56,8 @@ Ranked. Item descriptions for the older items:
     W-213 — the retro reads wins, time, cost and slips from a per-opus step ledger
     and escalates a lesson class seen three times (Patron 2026-10-11).
 3. W-208 — set up the Ops collegium (D-055; its brief's PR A, then PR B's moves).
-4. W-204 — next stops holding a build review after three failed rounds.
+4. W-204 — next stops holding a build review after three failed rounds (the Patron
+   reconsiders before it builds: that hold caught W-221 on 2026-10-11).
 5. W-223 — the Status page shows the ranked queue (Patron 2026-10-11).
    W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
    retro rides in the done PR (Patron 2026-10-11).
@@ -83,6 +84,13 @@ only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W
 
 ## Open Patron choices
 
+- Leads as real agents (Patron 2026-10-11: eng-lead and qa-lead): the architect's
+  design is in `docs/design/leads-design.md` (uncommitted) and
+  `~/.bisellium-evidence/leads-design/`; its six questions wait for the Patron.
+- W-233 (the ladder is enforced, not remembered; D-039 high): greenlit 2026-10-11
+  and held by the Patron; W-232 is halted into it (D-042). On go, the architect specs
+  it from the uncommitted notes `docs/design/{enforcement-mechanism,gaps-and-solutions,
+  audit-2026-10-11}.md` (the audit: four rule breaks and eight gaps in 25 commits).
 - W-230 (impeccable's detector in CI): backlog; the Patron greenlights it, then a
   spec waits for approval of its design and Defaults.
 - W-231 (interactive self-refresh): filed, not greenlit until tested
