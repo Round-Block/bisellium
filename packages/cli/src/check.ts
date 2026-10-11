@@ -24,7 +24,7 @@ import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems } from "@bisellium/commands/lifecycle.js";
 import { sourceTreeHash, hookReceiptStatuses, HOOK_DEAD_RECENT_RECEIPTS } from "@bisellium/shim";
 import { owedRetros } from "./retro.js";
-import { checkProcess, checkSessionHandoff } from "./rules/process.js";
+import { checkPipeExit, checkProcess, checkSessionHandoff } from "./rules/process.js";
 import { checkLex } from "./rules/lex.js";
 import { checkInstructions } from "./rules/instructions.js";
 import { checkDocs } from "./rules/docs.js";
@@ -925,6 +925,7 @@ export function checkStudio(root: string, now: Date = new Date(), opts: CheckOpt
   findings.push(...checkTests(root, ruleOpts));
   findings.push(...checkMilestones(root, ruleOpts));
   findings.push(...checkSessionHandoff(root, ruleOpts));
+  findings.push(...checkPipeExit(root, ruleOpts));
 
   return done();
 }

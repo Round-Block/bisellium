@@ -14,6 +14,7 @@ import { basename, join, resolve } from "node:path";
 import { listMd, parseFrontMatter, readFront, STATES } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
+import { parse as parseYaml } from "yaml";
 import type { Finding, Level, RuleOpts } from "../check.js";
 import { owedRetros } from "../retro.js";
 import { RULE_IDS } from "./ids.js";
@@ -613,4 +614,90 @@ export function shellPipeLine(text: string): number | undefined {
     return close === "" ? undefined : opened;
   };
   return code("");
+}
+
+const pipeBlock = (where: string, message: string): Finding => ({ rule: "process.pipe_exit", level: "block", where, message });
+const PIPE_HINT = "a pipeline's status is its last member's; wrap it as `bash -o pipefail -c '…'`";
+
+/** One `scripts/<name>` file: its first command line must be `set -euo pipefail`, and nothing may switch pipefail off. */
+function scriptPipeFinding(repo: string, name: string): Finding[] {
+  const where = `scripts/${name}`;
+  const read = readContainedRegularFile(repo, where, "scripts");
+  if ("error" in read) return [pipeBlock(where, `cannot be read: ${read.error}`)];
+  const lines = read.bytes.toString("utf8").split("\n");
+  const first = lines.findIndex((l) => l.trim() !== "" && !l.trimStart().startsWith("#"));
+  if (first === -1) return [pipeBlock(where, "has no command line; the first must be `set -euo pipefail`")];
+  if (lines[first]!.trim() !== "set -euo pipefail") return [pipeBlock(`${where}:${first + 1}`, "the first command line must be exactly `set -euo pipefail`")];
+  const off = lines.findIndex((l) => /\+[A-Za-z]*o[ \t]+pipefail/.test(l));
+  return off === -1 ? [] : [pipeBlock(`${where}:${off + 1}`, "turns pipefail off")];
+}
+
+/** The names in a directory passing `ok`, sorted; [] when it is absent, or one finding when it cannot be listed. */
+function listed(repo: string, dir: string, ok: (name: string) => boolean): { names: string[]; findings: Finding[] } {
+  try {
+    return { names: readdirSync(join(repo, dir)).filter(ok).sort(), findings: [] };
+  } catch (e) {
+    const absent = (e as NodeJS.ErrnoException).code === "ENOENT";
+    return { names: [], findings: absent ? [] : [pipeBlock(dir, `cannot be listed: ${(e as Error).message}`)] };
+  }
+}
+
+/** One workflow file: each step `run:` holding a pipeline needs the effective shell to be exactly `bash`. */
+function workflowPipeFindings(repo: string, name: string): Finding[] {
+  const file = `.github/workflows/${name}`;
+  const read = readContainedRegularFile(repo, file, ".github");
+  if ("error" in read) return [pipeBlock(file, `cannot be read: ${read.error}`)];
+  let doc: unknown;
+  try {
+    doc = parseYaml(read.bytes.toString("utf8"));
+  } catch (e) {
+    return [pipeBlock(file, `does not parse: ${(e as Error).message}`)];
+  }
+  if (!isDict(doc)) return [pipeBlock(file, "is not a YAML mapping")];
+  const shellOf = (d: unknown): unknown => (isDict(d) && isDict(d["defaults"]) && isDict(d["defaults"]["run"]) ? d["defaults"]["run"]["shell"] : undefined);
+  const findings: Finding[] = [];
+  for (const [id, job] of Object.entries(isDict(doc["jobs"]) ? doc["jobs"] : {})) {
+    if (!isDict(job) || !Array.isArray(job["steps"])) continue;
+    job["steps"].forEach((step: unknown, i) => {
+      if (!isDict(step) || typeof step["run"] !== "string" || shellPipeLine(step["run"]) === undefined) return;
+      if ((step["shell"] ?? shellOf(job) ?? shellOf(doc)) !== "bash") findings.push(pipeBlock(`${file}#jobs.${id}.steps[${i}]`, `a piped run step needs \`shell: bash\` (GitHub then adds -o pipefail); ${PIPE_HINT}`));
+    });
+  }
+  return findings;
+}
+
+/** process.pipe_exit findings for <repo>'s scripts/*.sh, .github/workflows/*.{yml,yaml} and package.json. Never throws. */
+export function repoPipeFindings(repo: string): Finding[] {
+  const findings: Finding[] = [];
+  const scripts = listed(repo, "scripts", (n) => n.endsWith(".sh"));
+  findings.push(...scripts.findings, ...scripts.names.flatMap((n) => scriptPipeFinding(repo, n)));
+  const workflows = listed(repo, ".github/workflows", (n) => /\.ya?ml$/.test(n));
+  findings.push(...workflows.findings, ...workflows.names.flatMap((n) => workflowPipeFindings(repo, n)));
+  const pkg = readContainedRegularFile(repo, "package.json", "");
+  if ("error" in pkg) {
+    if (pkg.code !== "ENOENT") findings.push(pipeBlock("package.json", `cannot be read: ${pkg.error}`));
+    return findings;
+  }
+  try {
+    const scriptsOf = (JSON.parse(pkg.bytes.toString("utf8")) as Dict)["scripts"];
+    for (const [name, cmd] of Object.entries(isDict(scriptsOf) ? scriptsOf : {}))
+      if (typeof cmd === "string" && shellPipeLine(cmd) !== undefined) findings.push(pipeBlock(`package.json#scripts.${name}`, `npm runs scripts with sh; ${PIPE_HINT}`));
+  } catch (e) {
+    findings.push(pipeBlock("package.json", `does not parse: ${(e as Error).message}`));
+  }
+  return findings;
+}
+
+/** W-221: an S2 rule module: manifest automated commands for any officina; the repository surfaces only in `<repo>/studio`. */
+export function checkPipeExit(root: string, opts: RuleOpts): Finding[] {
+  const findings: Finding[] = [];
+  const probationes = isDict(opts.manifest) ? opts.manifest["probationes"] : undefined;
+  for (const g of Array.isArray(probationes) ? probationes : []) {
+    if (!isDict(g) || g["kind"] !== "automated" || g["command"] === undefined) continue;
+    const where = `bisellium.yml#${str(g["id"]) ?? "?"}`;
+    if (typeof g["command"] !== "string") findings.push(pipeBlock(where, "an automated command must be a string"));
+    else if (shellPipeLine(g["command"]) !== undefined) findings.push(pipeBlock(where, `the automated command holds a pipeline (it runs under /bin/sh); ${PIPE_HINT}`));
+  }
+  if (opts.repo !== undefined && resolve(root) === resolve(opts.repo, "studio")) findings.push(...repoPipeFindings(opts.repo));
+  return findings;
 }
