@@ -23,10 +23,10 @@ Rules, process and environment: studio/leges/production.md.
   Until W-221 lands, record reviews by hand with `--session` (`record-review.sh` omits it).
 - **W-221** (pipe-hidden exits): spec passed; builds after W-211, then 2a.
 - **Multi-lane prep** (Queue 8): specs passed and on master for W-093, W-169,
-  W-178 to W-183; W-193 re-signed, in spec review (`.worktrees/ml-a`; sessions
-  in `~/.bisellium-evidence/W-<id>-specreview/r*/session.log`; `multilane-spec/{review,resume}.sh`). W-093, W-169, W-183, W-178 (and W-193 once passed)
-  wait for the Patron's design answers:
-  https://claude.ai/artifact/XnbEYVxrGPZwHiFXTspRvC
+  W-178 to W-183; W-193 failed spec round 8; a fresh architect revises it (`.worktrees/ml-a`; sessions
+  in `~/.bisellium-evidence/W-<id>-specreview/r*/session.log`; `multilane-spec/{review,resume}.sh`). The Patron approved W-169, W-178, W-183 and W-093
+  but its Q2 (acta 2026-10-11-patron-answers-pipeline); W-093 needs a revision first.
+  W-193 still needs its design answers after it passes.
 - **W-208** (Ops collegium): Queue item 3; its brief splits it into PR A and PR B
   (B's record moves run after W-208 merges and master is fetched).
 - W-204: from the main checkout, `node --import tsx ~/.bisellium-evidence/W-208-spec/check-admission.mjs
@@ -69,7 +69,7 @@ Ranked (next: item 1, then 2a). Item descriptions for the older items:
 7. W-201 — the mutation check gates build review (D-052).
 8. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
    (security review on every change), then W-169 (switches lanes on). Moved up
-   by the Patron 2026-10-11; specs on master but W-193 (in review).
+   by the Patron 2026-10-11; specs on master but W-193 (in revision).
 9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 10. W-185 — records checked once at load (D-049; the architect specs it).
 11. W-172, W-171 — high-severity fixes.
