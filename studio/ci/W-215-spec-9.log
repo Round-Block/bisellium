@@ -1,0 +1,22 @@
+# opus: W-215
+# phase: spec
+# round: 9
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T23:31:20.085Z
+# tree: tree:80592a39998724adc3cec89958b32f8c291bcb61
+# brief: briefs/W-215.md blob:db19498fcfc4b1080c8b55c0b9c9d1de7b222884
+
+## Findings
+1. blocking — brief:60 Four `PINNED_D` sites are not `outside`: `buildPacket:readFileSync` and `main`’s `mkdirSync`, `writeFileSync`, and `rmSync` operate under caller-supplied `--packets`, which brief:132 permits to be inside the officina. The five `diffTexts` temp sites are correctly classified, but the other four need a truthful disposition or a refusal keeping `--packets` outside. — check: scripts/review-packet.test.mjs
+2. blocking — brief:161 Behaviour 5 still promises that an “after-log” failing strict parse makes the retro and script refuse, while brief:108 now classifies whole sequences as after but parses only their sessioned logs. A sessionless log in an after sequence is expressly header-only even when its body would fail `parseVerdictLog`; narrow this assertion to a sessioned log and test the mixed sequence. — check: packages/cli/src/retro-opus.test.ts
+
+## Earlier findings
+1. open — The census enumerates the required sites, but four packet-root sites have a false `outside` disposition.
+2. closed — Session-gating exchange parsing preserves all eight legacy logs and Default 1; the b2 fixture changes cover strict and legacy parsing.
+
+## Verdict
+Revision 3 closes the legacy-log class, but its containment classification and measurement behaviour remain false as written.
+
+VERDICT: FAIL

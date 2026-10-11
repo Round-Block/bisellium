@@ -1,0 +1,21 @@
+# opus: W-215
+# phase: spec
+# round: 11
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-11T00:05:36.235Z
+# tree: tree:80592a39998724adc3cec89958b32f8c291bcb61
+# brief: briefs/W-215.md blob:99f2d55aae28a05446c663edadb76a4ceb89e11b
+
+## Findings
+No findings
+
+## Earlier findings
+1. closed — `parsePacketArgs` now excludes packet roots at or below the studio by real path, making all four packet-root pins truthfully `outside`.
+2. closed — Behaviour 5 now promises refusal only for sessioned malformed logs, and the mixed-sequence row verifies sessionless logs remain header-only.
+
+## Verdict
+Revision 4 closes both round-9 findings and keeps the dependent input and measurement promises consistent.
+
+VERDICT: PASS

@@ -1,0 +1,19 @@
+# opus: W-215
+# phase: spec
+# round: 10
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T00:04:35.593Z
+# tree: tree:80592a39998724adc3cec89958b32f8c291bcb61
+# brief: briefs/W-215.md blob:99f2d55aae28a05446c663edadb76a4ceb89e11b
+
+## Findings
+No findings
+
+## Rebuttal
+1. fixed — packet root: brief:134 (row 6) has `parsePacketArgs` refuse a `--packets` whose real path is `--studio`'s or under it, so `buildPacket:readFileSync#1` and `main`'s `mkdirSync#1`, `writeFileSync#1`, `rmSync#1` stay `outside` truthfully; brief:62 gives those four the why `under --packets, which parsePacketArgs refuses at or under --studio`. Test: brief:159, a W-215-b4 refusal row with `--packets` at `<studio>` and at `<studio>/packets`. It fails today because review-packet.mjs:64-68 accepts any directory (brief:161). No existing fixture breaks: `world()` puts packets at `<root>/packets`, outside `<root>/repo/studio` (scripts/review-packet.test.mjs:98-99).
+2. fixed — after-log refusal: brief:163 narrows behaviour 5's refusal to a sessioned log that does not parse. It adds a mixed-sequence row: `measured()` plus a sessionless `ci/W-1-spec-3.log` whose body fails strict parse. `reviewRounds` gives no error, W-1 counts spec 2 (1 failed) and rebuttals 1, and the script exits 0. This matches brief:110 and row 13 (brief:141). The row fails today because retro.ts:672 parses every log of an after sequence (brief:165). No existing fixture breaks: both refusal rows already use the sessioned `h-1` log (packages/cli/src/retro-opus.test.ts:598, :622).
+
+## Verdict
+Signed revision 4 of studio/briefs/W-215.md (architect, claude-opus-5-5) on opus/W-215. It answers spec review r9's two findings. Admission: 0 problems (~/.bisellium-evidence/W-215-spec/admission-r4.txt). Diff: r4.diff. Revision 3 is kept as W-215-r3.md.

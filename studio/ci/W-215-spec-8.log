@@ -1,0 +1,19 @@
+# opus: W-215
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T23:28:58.236Z
+# tree: tree:80592a39998724adc3cec89958b32f8c291bcb61
+# brief: briefs/W-215.md blob:db19498fcfc4b1080c8b55c0b9c9d1de7b222884
+
+## Findings
+No findings
+
+## Rebuttal
+1. fixed — containment: brief:60 adds packages/cli/src/containment.test.ts to Files owned, with PINNED_A's readSequence entry and PINNED_D's nine review-packet.mjs entries (outside), as ~/.bisellium-evidence/W-215-build/containment-pins.patch gives them; other instances: no other census or pin file reads the new sites.
+2. fixed — parse scope: brief:53, :95, :130 read the exchange sections only in a log whose header carries `# session:`; a sessionless log keeps today's parse. Promise dispute-first (brief:47) gains that limit. reviewRounds counts only sessioned logs (brief:108, :139). Behaviour 2 (brief:149) names the fixture change: `# session: s-1` added to every header passed to parseVerdictLog in the first W-215-b2 test, plus two sessionless rows. It also explains why red 02 still stands, and replaces the false "no log has these headings" claim. Other instances swept: retro-opus W-215-b5 uses sections only in sessioned logs; no committed log carries `# session:`.
+
+## Verdict
+Signed revision 3 of studio/briefs/W-215.md (architect, claude-opus-5-5) on opus/W-215: answers the builder's two gaps; admission 0 problems (~/.bisellium-evidence/W-215-spec/admission-r3.txt; r3.diff; revision 2 kept as W-215-r2.md).
