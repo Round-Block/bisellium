@@ -15,6 +15,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { checkStudio } from "../check.js";
+import * as rules from "./process.js";
 import { checkProcess, tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
 
 let failed = 0;
@@ -328,6 +329,33 @@ test("W-186-b1 behaviour 23: check blocks a stale, relative, oversized or unread
   assert.deepEqual(handoffFindings(base, stale, { repo: false }), []);
   assert.equal(handoffFindings(base, stale).length, 1, "control: the same handoff blocks in <repo>/studio");
   for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+// behaviour 24 (W-221): shellPipeLine finds the first unquoted pipeline operator and nothing else.
+test("W-221-b1 behaviour 24: the classifier finds an unquoted pipeline and nothing else", () => {
+  assert.equal(typeof rules.shellPipeLine, "function");
+  const kept =
+    "npm run -s bisellium -- verdict $ID --round $N --sella qa-lead --outcome $OUT --model gpt-5.6-sol --from $TMPDIR/$ID-r$N.md --studio .worktrees/$ID/studio | tail -1";
+  const rows: [string, string, number | undefined][] = [
+    ["the kept record-review.sh line 6", kept, 1],
+    ["a plain pipe", "a | b", 1],
+    ["an or-list", "a || b", undefined],
+    ["a pipe in double quotes", 'echo "a|b"', undefined],
+    ["a pipe in single quotes", "echo 'a|b'", undefined],
+    ["an escaped pipe", "echo a\\|b", undefined],
+    ["a comment", "# a | b", undefined],
+    ["a trailing comment", "x # a | b", undefined],
+    ["a pipe-and-stderr", "a |& tee x", 1],
+    ["a hash inside a word is no comment", "echo a#b | c", 1],
+    ["a pipe in a dollar substitution", 'x="$(verdict W-1 | tail -1)"', 1],
+    ["a pipe in a backtick substitution", 'x="`a | b`"', 1],
+    ["a pipe on line 3 after a two-line string", 'echo "a\nb"\nx | y', 3],
+    ["a multi-line string holding a pipe", 'echo "a |\nb"', undefined],
+    ["an unterminated quote", "echo 'open", 1],
+    ["a case pattern (limit: read as a pipe)", "case $x in a|b) ;; esac", 1],
+    ["a heredoc body (limit: read as a pipe)", "cat <<EOF\nfoo\na | b\nEOF", 3],
+  ];
+  for (const [label, text, want] of rows) assert.equal(rules.shellPipeLine(text), want, label);
 });
 
 process.exitCode = failed ? 1 : 0;
