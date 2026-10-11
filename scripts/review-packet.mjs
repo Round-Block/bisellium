@@ -187,8 +187,9 @@ export function buildPacket(args) {
   const opened = openStudio(studio);
   if ("error" in opened) refuse(opened.error);
   const { manifest } = opened;
-  const studioRel = relative(realpathSync(repo), realpathSync(studio)).split("\\").join("/");
-  if (studioRel.startsWith("..")) refuse("--studio is outside --repo");
+  const studioUp = relative(realpathSync(repo), realpathSync(studio));
+  if (studioUp === ".." || studioUp.startsWith(`..${sep}`) || isAbsolute(studioUp)) refuse("--studio is outside --repo");
+  const studioRel = studioUp.split("\\").join("/");
 
   const sequence = readSequence(studio, opus, phase, sella);
   if ("error" in sequence) refuse(sequence.error);
