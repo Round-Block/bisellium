@@ -39,7 +39,7 @@ export const USAGE =
   "       bisellium amend <opus> [--title <text>] [--spec <path>] [--arc <id>] [--parent <id>] [--ui-ruling <decision-id>] [--round-ruling <decision-id>] [--milestone <id> --value <n>] --reason <text> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium done <opus> [--sella <id>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium review <opus> --pass|--fail --evidence <path> [--round <n>] [--sella <id>] [--model <id>] [--studio <dir>] [--now <iso>]\n" +
-  "       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build] [--model <id>] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]\n" +
+  "       bisellium verdict <opus> --round <n> --sella <id> --outcome <text> [--phase spec|build|handoff] [--model <id>] [--session <id> [--session-reason <text>]] [--from <path>] [--dispatch-prompt <ci-path>] [--ui-input <ci-path>] [--studio <dir>] [--now <iso>]\n" +
   "       bisellium red <opus> --behaviour <n> [--sella <id>] [--studio <dir>] [--repo <dir>] [--cwd <dir>] [--now <iso>] -- <cmd…>\n" +
   "       bisellium serve [--studio <dir>] [--port 4477] [--poll-ms 5000] [--now <iso>] [--once]\n" +
   "       bisellium hooks print --harness claude-code --sella <id> [--studio <dir>]\n" +

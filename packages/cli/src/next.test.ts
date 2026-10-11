@@ -456,8 +456,8 @@ function writeReceipt(w: World, kind: "current" | "stale"): void {
     }),
   );
 }
-function addReview(w: World, outcome: "passed" | "failed", round: number, at: string, body = outcome === "failed" ? "1. blocking: fixture defect at brief:1. check: none: fixture" : "No findings"): void {
-  verb(w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `review-${round}.md`, body), "--studio", w.wtStudio, "--now", at]);
+function addReview(w: World, outcome: "passed" | "failed", round: number, at: string, body = outcome === "failed" ? "1. blocking: fixture defect at brief:1. check: none: fixture" : "No findings", extra: string[] = []): void {
+  verb(w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `review-${round}.md`, body), "--studio", w.wtStudio, "--now", at, ...extra]);
   verb(w.wt, ["review", OPUS, outcome === "passed" ? "--pass" : "--fail", "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", at]);
   commit(w.wt, `studio(${OPUS}): review round ${round} ${outcome}`);
 }
@@ -3153,14 +3153,14 @@ function srWorld(tag: string, o: SrOpts = {}): World {
 const putBrief = (w: World): void => put(w.repo, BRIEF_REL, briefText(w.behaviours));
 const briefPath = (w: World): string => join(w.repo, BRIEF_REL);
 /** A spec-phase verdict through the real writer, in the main checkout. */
-function specVerdict(w: World, round: number, sella: string, outcome: string, body: string, model?: string): void {
+function specVerdict(w: World, round: number, sella: string, outcome: string, body: string, model?: string, extra: string[] = []): void {
   const from = join(w.root, `w162-${round}-${sella}.md`);
   writeFileSync(from, body);
-  verb(w.repo, ["verdict", OPUS, "--round", String(round), "--sella", sella, ...(model === undefined ? [] : ["--model", model]), "--outcome", outcome, "--phase", "spec", "--from", from, "--studio", w.studio, "--now", T.spec]);
+  verb(w.repo, ["verdict", OPUS, "--round", String(round), "--sella", sella, ...(model === undefined ? [] : ["--model", model]), "--outcome", outcome, "--phase", "spec", "--from", from, "--studio", w.studio, "--now", T.spec, ...extra]);
 }
 const sign = (w: World, round: number, body = NO_FINDINGS): void => specVerdict(w, round, "architect", "passed", body);
-const review = (w: World, round: number, outcome: "passed" | "failed", o: { body?: string; model?: string; sella?: string } = {}): void =>
-  specVerdict(w, round, o.sella ?? SR, outcome, o.body ?? (outcome === "passed" ? NO_FINDINGS : BLOCKER), o.model ?? SR_MODEL);
+const review = (w: World, round: number, outcome: "passed" | "failed", o: { body?: string; model?: string; sella?: string; extra?: string[] } = {}): void =>
+  specVerdict(w, round, o.sella ?? SR, outcome, o.body ?? (outcome === "passed" ? NO_FINDINGS : BLOCKER), o.model ?? SR_MODEL, o.extra ?? []);
 const readLog = (w: World, n: number): string => readFileSync(join(w.repo, specLog(n)), "utf8");
 const writeLog = (w: World, n: number, text: string): void => writeFileSync(join(w.repo, specLog(n)), text);
 const specNext = (w: World, extra: string[] = []): Out => next(w, [OPUS, ...BUDGET, ...extra]);
@@ -4582,4 +4582,61 @@ test("W-196-b4 behaviour 4: next sends an inadmissible signed brief back to the 
   sign(failed, 1);
   review(failed, 2, "failed");
   architectOrder(specNext(failed), 3, "a failed review still returns to the architect");
+});
+
+// ---------------------------------------------------------------------------
+// W-215: the review orders name the packet, the resume and --session. Rows are
+// selectable with --test-name-pattern=W-215-b3.
+// ---------------------------------------------------------------------------
+test("W-215-b3 behaviour 3: the spec reviewer's order resumes the recorded session and names the packet", { timeout: 1_800_000 }, () => {
+  const w = srWorld("w215-b3-spec");
+  putBrief(w);
+  sign(w, 1);
+  review(w, 2, "failed", { extra: ["--session", "S1"] });
+  sign(w, 3);
+  const o = specNext(w);
+  reviewerOrder(o, 4, "a failed review under session S1, then a new signature");
+  assert.equal(o.kv.get("session"), "S1", ran("the order carries the session", o));
+  const command = o.kv.get("command") ?? "";
+  assert.match(command, /^resume spec-reviewer's session S1 \(gpt-5\.6-sol\) with the packet's prompt, on the same two questions \(D-046\):/, ran("the first line resumes", o));
+  assert.match(command, /scripts\/review-packet\.mjs --phase spec --opus W-900 --round 4 --sella spec-reviewer --studio studio --repo \. --packets /, ran("the packet command", o));
+  assert.match(command, /studio\/prompts\/rebuttal\.md/, ran("the dispute line", o));
+  assert.match(command, /--studio studio --session S1$/, ran("the record command ends with the session", o));
+
+  const first = srWorld("w215-b3-spec-first");
+  putBrief(first);
+  sign(first, 1);
+  const none = specNext(first);
+  reviewerOrder(none, 2, "no session recorded");
+  assert.equal(none.kv.has("session"), false, ran("no session line", none));
+  const c = none.kv.get("command") ?? "";
+  assert.match(c, /^dispatch spec-reviewer \(gpt-5\.6-sol\) to review the signed spec once, on two questions only \(D-046\):/, ran("the round-1 wording is kept", none));
+  assert.match(c, /scripts\/review-packet\.mjs --phase spec --opus W-900 --round 2 --sella spec-reviewer/, ran("the packet command", none));
+  assert.match(c, /rebuttal/, ran("the dispute line", none));
+  assert.match(c, /--studio studio --session <the session id the reviewer prints>$/, ran("the record command asks for the printed session", none));
+});
+
+test("W-215-b3 behaviour 3: the censor's order resumes the recorded build session", { timeout: 1_800_000 }, () => {
+  const w = world("w215-b3-build", "build");
+  addReview(w, "failed", 1, rt(1), F, ["--session", "S9"]);
+  handoffAt(w, "wt", T.handoffFresh);
+  advanceSource(w);
+  const o = n167(w);
+  reviewNamed(o, 2, "review 1 failed under S9, then a source change");
+  assert.equal(o.kv.get("session"), "S9", ran("the order carries the session", o));
+  const command = o.kv.get("command") ?? "";
+  assert.match(command, /^resume qa-lead's session S9 with the packet's prompt/, ran("the censor resumes", o));
+  assert.match(command, /scripts\/review-packet\.mjs --phase build --opus W-900 --round 2 --sella qa-lead/, ran("the packet command", o));
+  assert.match(command, /rebuttal/, ran("the dispute line", o));
+  assert.match(command, /--studio studio --session S9;/, ran("--session follows --studio in the record command", o));
+
+  const plain = world("w215-b3-build-plain", "build");
+  addReview(plain, "failed", 1, rt(1), F);
+  handoffAt(plain, "wt", T.handoffFresh);
+  advanceSource(plain);
+  const p = n167(plain);
+  reviewNamed(p, 2, "review 1 failed with no session");
+  assert.equal(p.kv.has("session"), false, ran("no session line", p));
+  assert.match(p.kv.get("command") ?? "", /^dispatch qa-lead; /, ran("today's wording", p));
+  assert.match(p.kv.get("command") ?? "", /--studio studio --session <the session id the reviewer prints>;/, ran("the record command asks for the printed session", p));
 });

@@ -5,10 +5,12 @@
  * `studio/` or `examples/`. `runRetro` is driven in process, its console output captured.
  */
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { after, test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { checkStudio } from "./check.js";
 import { initStudio } from "./init.js";
@@ -508,4 +510,128 @@ test("W-137-b1 round 7: a path counts as written once its open succeeds: the exi
   failingAfterOpen(".bisellium/events.jsonl", () =>
     failsLate(root, "a failure after opening the event log", HIGH, {}, ["opera/W-002.md", "lessons/", "lessons/L-001.md", ".bisellium/events.jsonl"], ["opera/W-002.md", "lessons/", "lessons/L-001.md"]),
   );
+});
+
+// ---------------------------------------------------------------------------
+// W-215 behaviour 5: the measurement. Rows are named `W-215-b5 …`; the red is recorded with
+// `--test-name-pattern=W-215-b5`.
+// ---------------------------------------------------------------------------
+const ROUNDS_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "scripts", "review-rounds.mjs");
+
+/** A verdict log as the writer records it: a header block, then the body. */
+function vlog(opus: string, kind: "spec" | "review" | "handoff", round: number, sella: string, outcome: string, body: string, session?: string): string {
+  const phase = kind === "review" ? "build" : kind;
+  return [`# opus: ${opus}`, `# phase: ${phase}`, `# round: ${round}`, `# sella: ${sella}`, `# outcome: ${outcome}`, ...(session === undefined ? [] : [`# session: ${session}`]), "# at: 2026-10-06T11:00:00Z", "", body, ""].join("\n");
+}
+const NONE = "## Findings\nNo findings";
+const BLOCKER = "## Findings\n1. blocking — a.ts:1 wrong — check: none: x";
+/** W-1 (after: sessions) and W-2 (before: none), plus a design magister so the architect's signatures are not reviews. */
+function measured(): string {
+  const handoff2 = `${NONE}\n\n## Earlier findings\n- ci/W-1-handoff-1.log #1: closed — fixed at docs/SESSION-HANDOFF.md:3`;
+  const withdrawn = [
+    "## Findings",
+    "1. blocking — b.ts:2 other — check: none: y",
+    "",
+    "## Rebuttal",
+    "1. b.ts:2 shows the guard — facts.txt:4",
+    "",
+    "## Ruling",
+    "1. withdrawn — the guard is at b.ts:2",
+    "",
+    "## Earlier findings",
+    "- ci/W-1-review-1.log #1: reversed — the earlier finding was wrong, see a.ts:1",
+  ].join("\n");
+  return fixture({
+    review1: vlog("W-1", "review", 1, "qa-lead", "failed", BLOCKER, "c-1"),
+    review2: vlog("W-1", "review", 2, "qa-lead", "passed", withdrawn, "c-1"),
+    files: {
+      "bisellium.yml": manifest("{ since: 2026-10-06T00:00:00Z, high_greenlit_by: D-1 }").replace("collegia:\n", "collegia:\n  - { id: design, name: Design, magister: architect }\n"),
+      "ci/W-1-spec-1.log": vlog("W-1", "spec", 1, "architect", "passed", NONE),
+      "ci/W-1-spec-2.log": vlog("W-1", "spec", 2, "spec-reviewer", "passed", NONE, "s-1"),
+      "ci/W-1-handoff-1.log": vlog("W-1", "handoff", 1, "qa-lead", "failed", "## Findings\n1. blocking — docs/SESSION-HANDOFF.md:3 stale — check: none: x", "h-1"),
+      "ci/W-1-handoff-2.log": vlog("W-1", "handoff", 2, "qa-lead", "passed", handoff2, "h-1"),
+      "ci/W-2-spec-1.log": vlog("W-2", "spec", 1, "architect", "passed", NONE),
+      "ci/W-2-spec-2.log": vlog("W-2", "spec", 2, "spec-reviewer", "failed", BLOCKER),
+      "ci/W-2-spec-3.log": vlog("W-2", "spec", 3, "spec-reviewer", "failed", BLOCKER),
+      "ci/W-2-spec-4.log": vlog("W-2", "spec", 4, "spec-reviewer", "passed", NONE),
+      "ci/W-2-review-1.log": vlog("W-2", "review", 1, "qa-lead", "failed", BLOCKER),
+      "ci/W-2-review-2.log": vlog("W-2", "review", 2, "qa-lead", "passed", NONE),
+    },
+  });
+}
+const MEASURED = [
+  "opus spec_reviews spec_failed build_reviews build_failed",
+  "W-1 1 0 2 1",
+  "W-2 3 2 2 1",
+  "",
+  "opera with spec reviews: 2; mean spec reviews 2.0; max 3",
+  "opera with build reviews: 2; mean build reviews 2.0; max 2",
+  "totals: spec reviews 4 rounds, 2 failed; build reviews 4 rounds, 2 failed",
+  "before (no reviewer session): spec mean 3.0 over 1 opera, max 3; build mean 2.0 over 1 opera, max 2; handoff runs 0",
+  "after (reviewer session): spec mean 1.0 over 1 opera; build mean 2.0 over 1 opera; handoff runs 1, over one round 1; rebuttals 1; withdrawn at ruling 1; reversed later 1",
+  "targets: spec mean <= 2 PASS; build mean <= 1.5 MISS; handoff one round per run MISS; no finding reversed later MISS",
+];
+const WITHDRAWN_TRIAGE = { findings: [{ log: L1, n: 1, not_a_lesson: "reversed" }, { log: "ci/W-1-review-2.log", n: 1, not_a_lesson: "withdrawn at ruling" }] };
+
+test("W-215-b5 behaviour 5: reviewRounds re-measures the baseline and counts the exchange", () => {
+  const reviewRounds = (retroModule as { reviewRounds?: (root: string) => { lines: string[]; opus: Map<string, unknown> } | { error: string } }).reviewRounds;
+  assert.equal(typeof reviewRounds, "function", "retro.ts exports reviewRounds");
+  const root = measured();
+  const rr = reviewRounds!(root);
+  assert.ok(!("error" in rr), "error" in rr ? rr.error : "");
+  if ("error" in rr) return;
+  assert.deepEqual(rr.lines, MEASURED);
+  assert.deepEqual(rr.opus.get("W-1"), { spec: 1, specFailed: 0, build: 2, buildFailed: 1, handoff: [2], rebuttals: 1, withdrawn: 1, reversed: 1, sessions: "kept" });
+  assert.deepEqual(rr.opus.get("W-2"), { spec: 3, specFailed: 2, build: 2, buildFailed: 1, handoff: [], rebuttals: 0, withdrawn: 0, reversed: 0, sessions: "none" });
+});
+
+test("W-215-b5 behaviour 5: a sessionless log in an after sequence is counted from its header only", () => {
+  const reviewRounds = (retroModule as { reviewRounds?: (root: string) => { opus: Map<string, unknown> } | { error: string } }).reviewRounds;
+  assert.equal(typeof reviewRounds, "function", "retro.ts exports reviewRounds");
+  const root = measured();
+  put(root, "ci/W-1-spec-3.log", vlog("W-1", "spec", 3, "spec-reviewer-2", "failed", "## Findings\nnot a finding\n\n## Rebuttal\nfree form, no citation"));
+  const rr = reviewRounds!(root);
+  assert.ok(!("error" in rr), "error" in rr ? rr.error : "");
+  if ("error" in rr) return;
+  assert.deepEqual(rr.opus.get("W-1"), { spec: 2, specFailed: 1, build: 2, buildFailed: 1, handoff: [2], rebuttals: 1, withdrawn: 1, reversed: 1, sessions: "kept" });
+  const run = spawnSync(process.execPath, ["--import", "tsx", ROUNDS_SCRIPT, root], { cwd: join(dirname(ROUNDS_SCRIPT), ".."), encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+});
+
+test("W-215-b5 behaviour 5: scripts/review-rounds.mjs prints the same lines", () => {
+  assert.ok(existsSync(ROUNDS_SCRIPT), "scripts/review-rounds.mjs exists");
+  const run = (...args: string[]) => spawnSync(process.execPath, ["--import", "tsx", ROUNDS_SCRIPT, ...args], { cwd: join(dirname(ROUNDS_SCRIPT), ".."), encoding: "utf8" });
+  const root = measured();
+  const ok = run(root);
+  assert.equal(ok.status, 0, ok.stderr);
+  assert.equal(ok.stdout, `${MEASURED.join("\n")}\n`);
+  assert.equal(run().status, 2, "no argument exits 2");
+  assert.equal(run(root, root).status, 2, "two arguments exit 2");
+  assert.equal(run(join(root, "missing")).status, 2, "a missing directory exits 2");
+  put(root, "ci/W-1-handoff-2.log", vlog("W-1", "handoff", 2, "qa-lead", "passed", "## Findings\nnot a finding", "h-1"));
+  const bad = run(root);
+  assert.equal(bad.status, 2, "an after-log that does not parse exits 2");
+  assert.equal(bad.stdout, "", "and prints nothing");
+});
+
+test("W-215-b5 behaviour 5: retro --opus writes ## Review rounds, and refuses on an unreadable after-log", () => {
+  const root = measured();
+  const r = retro(root, WITHDRAWN_TRIAGE);
+  assert.equal(r.code, 0, ran("the retro files", r));
+  const acta = readFileSync(join(root, "acta/2026-10-06-retro-W-1.md"), "utf8");
+  const section = acta.slice(acta.indexOf("## Review rounds"));
+  assert.ok(acta.includes("## Review rounds"), "the acta has the section");
+  assert.deepEqual(
+    section.split("\n").filter((l) => l.startsWith("- ")),
+    [
+      "- this opus: spec 1 (0 failed), build 2 (1 failed), handoff runs 2, rebuttals 1, withdrawn 1, reversed 1, sessions kept",
+      `- ${MEASURED[7]}`,
+      `- ${MEASURED[8]}`,
+      `- ${MEASURED[9]}`,
+    ],
+  );
+
+  const broken = measured();
+  put(broken, "ci/W-1-handoff-2.log", vlog("W-1", "handoff", 2, "qa-lead", "passed", "## Findings\nnot a finding", "h-1"));
+  refuses(broken, "an after-log that does not parse", WITHDRAWN_TRIAGE);
 });

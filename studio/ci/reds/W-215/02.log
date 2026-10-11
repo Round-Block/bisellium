@@ -1,0 +1,67 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-215-b2 --import tsx packages/cli/src/verdict-findings.test.ts
+# exit: 1
+# at: 2026-10-10T20:07:26.817Z
+# sella: builder.W-215
+# tree: tree:7411d1390c57b69030d21a45b5305bdb221d9e7d
+
+TAP version 13
+# Subtest: W-215-b2 behaviour 2: a withdrawn blocker does not stand, and the exchange has a grammar
+not ok 1 - W-215-b2 behaviour 2: a withdrawn blocker does not stand, and the exchange has a grammar
+  ---
+  duration_ms: 3.393065
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/verdict-findings.test.ts:25:17'
+  failureType: 'testCodeFailure'
+  error: |-
+    a withdrawn blocker is not blocking
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/verdict-findings.test.ts:279:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+# Subtest: W-215-b2 behaviour 2: the writer accounts for every earlier blocker and every standing finding
+not ok 2 - W-215-b2 behaviour 2: the writer accounts for every earlier blocker and every standing finding
+  ---
+  duration_ms: 20.402511
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/verdict-findings.test.ts:69:171'
+  failureType: 'testCodeFailure'
+  error: |-
+    round 2 that omits the earlier line is refused
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-215/packages/cli/src/verdict-findings.test.ts:334:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+    Test.postRun (node:internal/test_runner/test:1330:19)
+    Test.run (node:internal/test_runner/test:1258:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 0
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 31.860394

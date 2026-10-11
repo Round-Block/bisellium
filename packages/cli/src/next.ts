@@ -29,7 +29,7 @@ import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedRegularFile, type NativeRecord } from "@bisellium/commands/opus-model.js";
 import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems, readRoundRulings } from "@bisellium/commands/lifecycle.js";
-import { buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { SESSION_ID, buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
@@ -550,6 +550,21 @@ function reviewLogs(src: Src | undefined, id: string): { n: number; name: string
   });
 }
 
+/**
+ * W-215: the reviewer session `sella` last recorded for `id` in `kind` logs ("spec" or "review"): the `# session:` header of
+ * its newest log, or undefined when it has none, the newest log records none, or the id is not a session token.
+ */
+function reviewSession(src: Src | undefined, id: string, kind: "spec" | "review", sella: string): string | undefined {
+  let newest: { n: number; session: string | undefined } | undefined;
+  for (const name of src?.list("ci") ?? []) {
+    const m = new RegExp(`^${esc(id)}-${kind}-([1-9][0-9]*)\\.log$`).exec(name);
+    if (m === null || (newest !== undefined && Number(m[1]) < newest.n)) continue;
+    const h = parseLogHeader(src?.read(`ci/${name}`) ?? "");
+    if (h.get("sella") === sella) newest = { n: Number(m[1]), session: h.get("session") };
+  }
+  return newest?.session !== undefined && SESSION_ID.test(newest.session) ? newest.session : undefined;
+}
+
 function statSafe(path: string): boolean {
   try {
     return statSync(path).isDirectory();
@@ -713,12 +728,15 @@ export function deriveNext(f: Facts): Derived {
     if (!(gate !== undefined && gate.status === "passed" && gate.tree === cur) || uiBranch.length > 0) {
       const rounds = reviewRounds(f);
       const uiIn = f.uiReviewInput();
+      const session = reviewSession(f.branch, id, "review", censorSella(f.manifest) ?? "qa-lead");
       return dispatch(f, "review", uiBranch.length > 0 ? uiBranch.join("; ") : gate === undefined ? "no review gate is recorded" : gate.status === "passed" ? `review round ${gate.round} passed an older tree` : `review round ${gate.round} ${gate.status} at an older tree`, {
         phase: "review",
         round: Math.max(0, ...rounds.map((r) => r.n)) + 1,
         resume: rounds.length > 0,
         inputs: [briefRel(id), ...(uiIn === undefined ? [] : [uiIn]), ...rounds.map((r) => `ci/${r.name}`), `ci/reds/${id}/`],
         ...(uiIn === undefined ? {} : { uiInput: uiIn }),
+        ...(session === undefined ? {} : { session }),
+        extra: session === undefined ? [] : [["session", session]],
       });
     }
 
@@ -757,7 +775,8 @@ function specOrder(f: Facts, reviewer: SpecReviewer, ev: SpecEvidence, maxRound:
     if ("error" in limit) return { step: "spec", status: "held", actor: "producer", why: `brief.admission: ${limit.error}`, extra: [] };
     const problems = limit.limit === undefined ? [] : briefAdmissionProblems(f.studioAbs, f.manifest, id, ev.gate.brief, limit.limit);
     if (problems.length > 0) return dispatch(f, "spec", `brief.admission: ${problems.join("; ")}`, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id), ev.gate.signature] });
-    return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model]] });
+    const session = reviewSession(fsSrc(f.studioAbs), id, "spec", reviewer.sella);
+    return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: false, inputs: [briefRel(id), ev.gate.signature], reviewer, extra: [["model", reviewer.model], ...(session === undefined ? [] : [["session", session] as [string, string]])], ...(session === undefined ? {} : { session }) });
   }
   return dispatch(f, "spec", ev.why, { phase: "spec", round, resume: ev.anyLog, inputs: [briefRel(id)] });
 }
@@ -855,7 +874,7 @@ const reviewRounds = (f: Facts): { n: number; name: string }[] => reviewLogs(f.b
 // dispatch orders and the context cap
 // ---------------------------------------------------------------------------
 
-function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; behaviour?: { from: number; through: number } }): Derived {
+function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: string, o: { phase: string; round?: number; resume: boolean; inputs: string[]; extra?: [string, string][]; uiInput?: string; reviewer?: SpecReviewer; session?: string; behaviour?: { from: number; through: number } }): Derived {
   const { id, studioRel, manifest } = f;
   const builder = (() => {
     const resolved = resolveSeat(manifest, "builder");
@@ -871,11 +890,13 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     role = "spec-reviewer";
     sella = o.reviewer.sella;
     command = [
-      `dispatch ${sella} (${o.reviewer.model}) to review the signed spec once, on two questions only (D-046):`,
+      o.session === undefined ? `dispatch ${sella} (${o.reviewer.model}) to review the signed spec once, on two questions only (D-046):` : `resume ${sella}'s session ${o.session} (${o.reviewer.model}) with the packet's prompt, on the same two questions (D-046):`,
       "1. does its Input domain name every record the opus reads, with one rejecting function that fails closed?",
       "2. can every promise be guaranteed, or does it state its limit?",
       'Record findings under ## Findings, each ending "check: …", or write "No findings".',
-      `Record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --model ${o.reviewer.model} --outcome <passed|failed> --phase spec --from <file> --studio ${studioRel}`,
+      packetLine("spec", id, o.round, sella, studioRel),
+      disputeLine(studioRel),
+      `Record with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --model ${o.reviewer.model} --outcome <passed|failed> --phase spec --from <file> --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}`,
     ].join("\n");
   } else if (step === "spec") {
     role = "architect";
@@ -908,7 +929,7 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
   } else {
     role = "censor";
     sella = censor;
-    command = `dispatch ${sella}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).`;
+    command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
   return {
@@ -920,6 +941,13 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     order: { role, sella, boot: `bisellium context --sella ${sella} --studio ${studioRel}`, phase: o.phase, inputs, command, ...(o.round === undefined ? {} : { round: o.round }), resume: o.resume, extra: o.extra ?? [] },
   };
 }
+
+const SESSION_PLACEHOLDER = "<the session id the reviewer prints>";
+/** W-215: the packet the reviewer is given before a round (delta, facts, prompt); `<packet dir>` is the caller's to choose. */
+const packetLine = (phase: "spec" | "build", id: string, round: number | undefined, sella: string, studioRel: string): string =>
+  `Packet first: node --import tsx scripts/review-packet.mjs --phase ${phase} --opus ${id} --round ${round} --sella ${sella} --studio ${studioRel} --repo . --packets <packet dir>`;
+const disputeLine = (studioRel: string): string =>
+  `If the author disputes a finding with evidence, send ${studioRel}/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.`;
 
 /** The cap, the declaration and the handover: a dispatch order needs all three. */
 function gateDispatch(d: Derived, f: Facts, budget: number | undefined): Derived {
