@@ -1,0 +1,17 @@
+# opus: W-169
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:24:27.766Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:dd209b0207c57315d8176ebddf605c3c662eaa13
+
+## Findings
+1. The branch claim's PID liveness cannot hold here: each sandboxed Bash call has its own PID namespace and PIDs repeat (W-183 probes pid-namespaces.txt, flock-cross-call.txt, probe-flock-death.txt), so branchClaimHold, its marker, /proc read and takeover are cut; branchClaim (new) holds <repo>/.bisellium/branch-claim.lock through W-183's holder form `flock -n -E 75 <lock> -c 'echo held; exec cat'`, freed by EOF or the holder's death, no PID read. check: packages/cli/src/next.test.ts
+2. Promise atomic-claim no longer cites the per-opus step marker (also PID-based); same-opus exclusion rests on the flock and `git branch` refusing an existing ref; its limit names flock on PATH, one clone, and a hung live holder. check: packages/cli/src/next.test.ts
+3. Shared interface with W-183 named (same holder form and flock reliance; call W-183's helper if it exports one, D-057 re-review); Defaults gain question 6 on relying on flock. check: none: Patron approval and D-057 re-review before branch
+
+## Verdict
+passed: signed spec, revision 3, of studio/briefs/W-169.md (architect, claude-opus-5-5, D-027): the branch claim moves from PID liveness to a flock-held file; revision 2 kept with r2-r3.diff; brief admission 0 problems (~/.bisellium-evidence/multilane-spec/W-169/admission.txt). Pipeline work: needs the Patron's approval before branch.

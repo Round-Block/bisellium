@@ -1,0 +1,18 @@
+# opus: W-183
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:35:44.227Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:bf78602ccc4eabb057a6f6511ab061c8e02d70e8
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 3 of studio/briefs/W-183.md (architect, claude-opus-5-5, D-027), answering spec review r4 (ci/W-183-spec-4.log); still pipeline work, Patron approval of design and Defaults 1-6 before branch. Revision 2 kept as ~/.bisellium-evidence/multilane-spec/W-183/W-183-r2.md, diff r2-to-r3.diff, edit script revise-r3.py; admission 0 problems (admission-r3.txt).
+
+## Rebuttal
+1. fixed for runCi, runVerify and runBuilderCommand; narrowed for the wrapper — the three in-process callers now read and check heavy_job_slots before taking any slot and refuse a bad value (exit 2, or 1 for run), with a new b4 row (heavy_job_slots: 0, every slot free, exit 2 before the pipeline or npm test step); takeHeavySlot takes a number and rejects one outside 1-64 before any slot. Only the npm test wrapper stays lazy, so the gates job's record-reads preload (.github/workflows/ci.yml:72-77) sees no studio/ read; with slot 1 free it runs one job without reading the value, which is within every valid capacity, stated as row 1's limit, and checkStudio blocks the value in the required check -- studio steps (.github/workflows/ci.yml:83, 107).

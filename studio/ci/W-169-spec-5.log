@@ -1,0 +1,23 @@
+# opus: W-169
+# phase: spec
+# round: 5
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T05:26:47.394Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:dd209b0207c57315d8176ebddf605c3c662eaa13
+
+## Findings
+1. blocking — brief:38 The promise covers any two branch runs, but `flock` excludes only overlapping runs. Two sequential runs on a dirty master can each acquire the lock, pass the overlap check, and then be held by `performBranch` before either creates a branch; the promise needs an overlapping-runs limit. — check: packages/cli/src/next.test.ts W-169-b3
+
+## Earlier findings
+- ci/W-169-spec-2.log #1: closed — `branchClaim` now uses kernel `flock` and no longer permits silence-based takeover through `assess`.
+- ci/W-169-spec-2.log #2: closed — the marker and its unreadable-input path were removed; a non-regular lock path is refused and lock-file contents are never read.
+- ci/W-169-spec-2.log #3: closed — `handoffHold` now holds an absent handoff when `inFlight()` is non-empty, with an integration assertion specified in `next.test.ts`.
+- ci/W-169-spec-2.log #4: closed — `inFlight()` excludes trunk records that are `done` or `halted`, and the promise limits branch-only halts to master’s visible state.
+- ci/W-169-spec-2.log #5: closed — row 5 now accurately permits a failed rollback to leave the ref and states the resulting conservative hold.
+
+## Verdict
+The earlier blockers are closed, but the revised atomic-claim promise remains broader than the `flock` mechanism.
+VERDICT: FAIL

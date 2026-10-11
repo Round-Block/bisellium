@@ -1,0 +1,25 @@
+# opus: W-183
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:17:17.020Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:f34202cd8e0ca59f3a245cb977319473b72501bf
+
+## Findings
+
+1. advisory — The draft's queue judged liveness from /proc/<pid>/stat; each sandboxed Bash call has its own PID namespace, so every other lane's entry would read dead and the cap would never hold; replaced by util-linux flock slots, freed by the kernel on owner death — check: ~/.bisellium-evidence/multilane-spec/W-183/pid-namespaces.txt
+2. advisory — Cut the /control broker (heavyCellRequest, /tools/heavy-job) and every run-builder-host.mjs change: the ladder mints with run -- true, the receipt slot is taken in runBuilderCommand before its 60-minute clock, and bwrap cells have a private /tmp queue so the inner ci --opus never deadlocks — check: none: acceptance's live mint
+3. advisory — Cut the scripts/no-vendor.mjs change: its runner copies in no-vendor.test.mjs behaviour 3 would fail to load a relative import; npm test is wrapped in package.json's test line instead (scripts/heavy-job.mjs), and W-180's files stay untouched — check: scripts/no-vendor.test.mjs
+4. advisory — bisellium ci's npm test step and verify take the slot themselves so GATE_TIMEOUT_MS starts after the wait; the draft's FIFO, positions, capacity-disagreement refusal, initStudio key, producer manifest line and ARCHITECTURE.md edit are cut (absent key reads as 1) — check: none: Defaults 1 and 4
+5. advisory — Promise host-cap narrowed to processes sharing os.tmpdir() and uid (agent sessions share /tmp/claude-1000; the Patron's shell, cells and runners do not) and to the largest configured value — check: none: Defaults 2
+6. advisory — Named the existing assertion that flips (containment.test.ts W-163 census, pinned in behaviours 2-3) and the census of 31 in-process verify/ci/run test sites plus stage-states:807, all inheriting the lease — check: ~/.bisellium-evidence/multilane-spec/W-183/census.txt
+7. advisory — Input domain rows reshaped to named rejectors and D-050 runner rows for gates and certify; Files owned one path per bullet; overlaps named (W-211/W-193 package.json, W-215/W-210/W-212 ADOPTION sections avoided, W-179 next.test.ts, W-213 next.ts) — check: ~/.bisellium-evidence/multilane-spec/W-183/admission.txt
+
+## Verdict
+
+Signed revision 1. Pipeline work (host job scheduling, verify, receipts): the Patron approves the design and answers Defaults 1-6 before branch.
+
+VERDICT: PASS

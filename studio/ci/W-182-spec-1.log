@@ -1,0 +1,25 @@
+# opus: W-182
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:05:24.915Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-182.md blob:e3f975df438f6e01ca2f1ef43552e749031afb59
+
+## Findings
+
+1. advisory — The draft's eager `test.use({ baseURL: smokeBaseURL(process.env.SMOKE_PORT) })` throws at file load under `playwright test --list`, which loads tests without starting the web server; the brief reads the port in a `baseURL` fixture function instead, and acceptance requires `--list` to exit 0 — check: ~/.bisellium-evidence/multilane-spec/W-182/proto-list-eager.txt
+2. advisory — Promise port-isolation was wider than the mechanism: two runs still share Vite's `/api` proxy target 127.0.0.1:4477 and, in one checkout, `test-results/`; both are now named limits — check: none: apps/web/vite.config.ts is outside Files owned
+3. advisory — Promise capture-closed: an inherited `SMOKE_PORT` with no banner match is refused by the 30 s readiness deadline, not by `smokeBaseURL`; stated — check: none: Playwright internals, judged by exit (D-050)
+4. advisory — Input domain rows numbered, rejectors cite the real Playwright 1.63.0 functions (`_waitForProcess`, `runAllTestsWithConfig`, testActions.js exit mapping), verified in node_modules — check: ~/.bisellium-evidence/multilane-spec/W-182/admission.txt
+5. advisory — The mechanism was prototyped: two concurrent runs from one checkout both exit 0 on ports 34465 and 41533 — check: ~/.bisellium-evidence/multilane-spec/W-182/proto-run-a.txt
+6. advisory — Red commands written as exact `bisellium red … --cwd apps/web -- npx playwright test --grep W-182.behaviour.N` (no whitespace in an argument); the concurrency driver kept outside the tree; new rows placed after W-029's five — check: none: acceptance evidence
+7. advisory — Overlaps checked: W-212's `scripts/ci-workflow.test.mjs` line 309 pins `test:e2e`, which W-182 keeps; none with W-221, W-211, W-210, W-213 — check: scripts/ci-workflow.test.mjs
+
+## Verdict
+
+Signed revision 1. Test infrastructure only, not pipeline work; no Patron approval needed before branch.
+
+VERDICT: PASS

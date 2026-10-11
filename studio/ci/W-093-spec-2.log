@@ -1,0 +1,15 @@
+# opus: W-093
+# phase: spec
+# round: 2
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:12:18.920Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-093.md blob:04afa3ee57bc5d17da60b02b5fbeafa1f74c9cab
+
+## Findings
+1. Revision 2: Files owned now lists each owned file as its own top-level backticked-path bullet, the builder host's ownership grammar (run-builder-host.mjs:433), which W-169's overlap check reuses; revision 1 grouped tests (and, for W-181, generated pages; for W-093, the second prompt) so the host would read them as unowned. No other change. check: none: W-169 behaviour 1 makes the shared reader testable
+
+## Verdict
+passed: signed spec, revision 2, of studio/briefs/W-093.md (architect, claude-opus-5-5, D-027); brief admission 0 problems (~/.bisellium-evidence/multilane-spec/W-093/admission.txt).

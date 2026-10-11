@@ -1,0 +1,15 @@
+# opus: W-093
+# phase: spec
+# round: 8
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:32:11.194Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-093.md blob:2fbf6d9f87e1609124330d354ab50ad1ab61360c
+
+## Findings
+1. F1 fixed: a security packet's head.txt is `<opus> security <round> <sella> <commit>`, and runVerdict refuses unless every field equals the verdict's own opus, --round, --sella and HEAD and delta.diff and facts.txt are regular files beside it (row 2, behaviour 1). check: packages/cli/src/verdict-findings.test.ts
+
+## Verdict
+passed: signed spec, revision 5, of studio/briefs/W-093.md (architect, claude-opus-5-5, D-027), answering ci/W-093-spec-7.log: 1 fixed, 0 rebutted; revision 4 kept with r4-r5.diff; brief admission 0 problems (admission.txt). Pipeline work: needs the Patron's approval before branch.

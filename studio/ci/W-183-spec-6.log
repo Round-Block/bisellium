@@ -1,0 +1,22 @@
+# opus: W-183
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12965-2bf7-7c41-844b-0f72ef537ff8
+# outcome: failed
+# at: 2026-10-11T05:37:31.545Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:bf78602ccc4eabb057a6f6511ab061c8e02d70e8
+
+## Findings
+1. blocking — brief:107 With slot 1 free, the wrapper still executes its command when `heavy_job_slots` is out of domain; stating this as a limit does not make the admitted no-refusal path fail closed. — check: packages/commands/src/run.test.ts
+2. blocking — brief:36 The promise that a reused lease reads no manifest is false for `runCi` and `runBuilderCommand`: brief:97 requires both to call `heavyJobSlotsFor` before `takeHeavySlot`, even when an inherited lease will be reused. — check: packages/commands/src/run.test.ts
+
+## Earlier findings
+- ci/W-183-spec-4.log #1: open — the three in-process callers now reject invalid capacity eagerly, but the wrapper still starts work with an invalid value whenever slot 1 is free.
+
+## Verdict
+The revision leaves the wrapper’s fail-open path and adds a promise contradicted by eager capacity reads.
+
+VERDICT: FAIL

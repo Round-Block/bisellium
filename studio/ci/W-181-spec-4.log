@@ -1,0 +1,21 @@
+# opus: W-181
+# phase: spec
+# round: 4
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:22:54.913Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-181.md blob:4d3f056305b6916f1e27277e57725f146d1f373f
+
+## Findings
+1. F1 fixed: a done record whose `end` is present but not a strict UTC ISO instant exits 2 (row 5); a record with no `end` is legacy and gets no row (61 of 99, end-census.txt), stated in the promise's limit. check: scripts/status-page.test.mjs
+2. F2 fixed: replaceGeneratedRegion also requires the progress pair inside the one tbody and the masthead pair inside the masthead header, around exactly the date and status spans (row 6). check: scripts/status-page.test.mjs
+3. F3 fixed: a newest record with no checkpoint gives the masthead status `<id> done — no checkpoint recorded`. check: scripts/status-page.test.mjs
+4. F4 fixed: the status-page.mjs caption and progress-body.html's thesis sentence are owned and reworded (no test pins either); correction 5 is withdrawn. check: scripts/status-page.test.mjs
+5. F5 fixed: the Input-domain lead sentence separates rejections (rows 4-6, before any write) from a write failure (row 7, after at most one page). check: none: wording
+6. F6 fixed: promise generated-pages holds only when the generator exits 0, with whole-run rejection named in its limit. check: scripts/status-page.test.mjs
+7. Advisory fixed: build.sh runs the generator before `cat head.html body.html`; behaviour 4 asserts both orders. check: scripts/status-page.test.mjs
+
+## Verdict
+passed: signed spec, revision 3, of studio/briefs/W-181.md (architect, claude-opus-5-5, D-027), answering ci/W-181-spec-3.log: 7 findings fixed, 0 rebutted; revision 2 kept with r2-r3.diff; brief admission 0 problems (~/.bisellium-evidence/multilane-spec/W-181/admission.txt).

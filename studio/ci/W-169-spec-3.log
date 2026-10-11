@@ -1,0 +1,20 @@
+# opus: W-169
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:22:56.767Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:dc4b6bea7ead91ef0f949897ff7fafe540658247
+
+## Findings
+1. F1 fixed: the branch claim no longer uses assess (which declares a live owner dead after 120 s of silence, next.ts:1111); branchClaimHold holds while the owner pid is live with its start ticks, however silent. check: packages/cli/src/next.test.ts
+2. F2 fixed: an invalid or unreadable branch-claim marker, or an unknown /proc read, holds and names the file; only a gone, zombie or reused pid is taken over. check: packages/cli/src/next.test.ts
+3. F3 fixed: handoffHold holds on an absent handoff while inFlight() is non-empty; the promise's limit names handoffHold's real-studio scope. check: packages/cli/src/next.test.ts
+4. F4 fixed: inFlight() excludes trunk records that are done or halted, matching the section rule; a halt recorded only on the branch is named in the limit. check: packages/cli/src/rules/process.test.ts
+5. F5 fixed: row 5 and the lead sentence no longer claim nothing is created after a failed rollback; a ref left behind reads as in flight and only holds more starts. check: none: reused performBranch, unchanged
+6. Advisory fixed: row 1 names deriveNext's empty-set hold and row 8 the host's line-615 guard as the rejectors. check: none: wording
+
+## Verdict
+passed: signed spec, revision 2, of studio/briefs/W-169.md (architect, claude-opus-5-5, D-027), answering ci/W-169-spec-2.log: 6 findings fixed, 0 rebutted; revision 1 kept with r1-r2.diff; brief admission 0 problems (admission.txt). Pipeline work: needs the Patron's approval before branch.

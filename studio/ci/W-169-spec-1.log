@@ -1,0 +1,21 @@
+# opus: W-169
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:12:20.092Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:4a120c5c0ac5f561441755b815e356cb0078fec0
+
+## Findings
+1. Cut the draft's claim store (`lanes.ts`, `.bisellium/lanes/*.json`, claim lock, release on done, `--lane`): a per-opus claim already exists (the exclusive step marker and `git branch` refusing an existing ref); in flight is derived as a local opus/<id> branch whose trunk record is not done. check: packages/cli/src/next.test.ts
+2. Replaced the draft's strict Files owned grammar, which would reject most signed briefs, with the builder host's existing grammar moved unchanged into brief-admission.ts and imported by the host; 15 of 117 briefs yield an empty set, which holds. check: packages/cli/src/brief-admission.test.ts
+3. The retro frontier already holds (retroHold is reached only with no local opus branch, next.ts:663); kept as a regression assertion, not a red. check: packages/cli/src/next.test.ts
+4. Added one repository-wide `branch-claim` marker through the existing readMarker/assess/installMarker so two overlapping opera cannot both pass the check before either branches; the red is a live-owner marker, not a race. check: packages/cli/src/next.test.ts
+5. Lane coverage moved from `check` to the done hold in the main checkout: CI and opus worktrees cannot see lane branches, so a check rule would block builders' gates; `check` validates form and staleness. check: packages/cli/src/rules/process.test.ts
+6. The draft's run.test.ts path corrected to packages/commands/src/run.test.ts; four behaviours instead of four with a race red; no usage change (usage.test.ts stays 41). check: packages/commands/src/run.test.ts
+7. Pipeline work: Defaults rewritten as five questions; lands last and is re-reviewed under D-057 against W-181 (done rung), W-093 (review order), W-179 (next.test.ts), W-183/W-178/W-193 (host, brief-admission.ts), W-212 (ADOPTION). check: none: Patron approval and D-057 re-review before branch
+
+## Verdict
+passed: signed spec, revision 1, of studio/briefs/W-169.md (architect, claude-opus-5-5, D-027), checked against master 580d5fd5 (~/.bisellium-evidence/multilane-spec/W-169/reads.txt); brief admission 0 problems (admission.txt). Pipeline work: needs the Patron's approval of design and Defaults before branch.

@@ -1,0 +1,27 @@
+# opus: W-183
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12965-2bf7-7c41-844b-0f72ef537ff8
+# outcome: failed
+# at: 2026-10-11T05:34:18.214Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-183.md blob:6fa32583e146b307bfc6ca48e7121ab75bfd8815
+
+## Findings
+1. blocking — brief:106 With slot 1 free, acquisition never calls `heavyJobSlotsFor` or `readHeavyJobSlots`, so an out-of-domain `heavy_job_slots` value lets the wrapper, `runCi`, `runVerify`, and `runBuilderCommand` start heavy work instead of refusing; `checkStudio` is not a runtime rejector for those paths. This also contradicts row 1’s promise that callers refuse every bad value. — check: packages/commands/src/run.test.ts
+
+## Earlier findings
+- ci/W-183-spec-2.log #1: closed — `slots()` is range-checked before any slot past 1, so `slot-65` cannot be acquired.
+- ci/W-183-spec-2.log #2: closed — an inherited held slot from 1 through 64 is accepted regardless of the nested reader’s capacity.
+- ci/W-183-spec-2.log #3: closed — the wrapper command inherits the lock descriptor, while the remaining in-process owner-death gap is explicitly stated as a host-cap limit.
+- ci/W-183-spec-2.log #4: closed — a post-`held` helper exit now reports `slot lost`; the brief no longer promises the resolved call returns an error.
+- ci/W-183-spec-2.log #5: closed — missing `flock` now maps explicitly to exit 2, or exit 1 for `runBuilderCommand`.
+- ci/W-183-spec-2.log #6: closed — outcome preservation is narrowed to pass/fail and timeouts, with added output and signal translation disclosed.
+- ci/W-183-spec-2.log #7: closed — a fresh runner acquires slot 1 without reading `studio/`, eliminating the unattributed record-read path.
+
+## Verdict
+The free-slot path still accepts an invalid capacity configuration, so the brief is not ready to build.
+
+VERDICT: FAIL

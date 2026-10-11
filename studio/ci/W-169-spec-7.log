@@ -1,0 +1,20 @@
+# opus: W-169
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12961-1eb7-7d63-b04c-6b79533acb91
+# outcome: failed
+# at: 2026-10-11T05:31:31.774Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-169.md blob:b9f52e5a8b498f35e8ab7bc4baecc7e85f6453cd
+
+## Findings
+1. blocking — brief:38 The revised promise is still broader than the mechanism: `performBranch` creates the ref before `git worktree add`, then may successfully roll it back when worktree creation fails. A later sequential retry can create the same or an overlapping branch again, so two runs can both “create” such branches; only simultaneous/coexisting branches are excluded. — check: packages/cli/src/next.test.ts W-169-b3
+
+## Earlier findings
+- ci/W-169-spec-5.log #1: open — the dirty-master example is now limited correctly, but replacing “both pass the check” with “no two create branches” remains false for sequential create–rollback–retry runs.
+
+## Verdict
+The atomic-claim promise remains false as written despite the added sequential-run limit.
+VERDICT: FAIL
