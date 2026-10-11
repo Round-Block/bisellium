@@ -118,7 +118,9 @@ the main checkout's absolute `--studio`/`--repo`.
    change breaks: W-162's builder stopped twice on that.
 2. **Spec review (D-046, W-162):** `next` orders it. Codex `gpt-5.6-sol`,
    prompt `studio/prompts/spec-review.md` (filled per round); record with
-   `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --from <$TMPDIR copy>`.
+   `verdict <id> --round <n> --sella spec-reviewer --model gpt-5.6-sol --outcome <passed|failed> --phase spec --session <codex session id> --from <$TMPDIR copy>`
+   (`--session` on every reviewer verdict, spec, build and handoff, or the W-215
+   measurement counts nothing; later rounds resume that session).
    Any brief edit needs a new signature and review. On pass, `next` lands it.
    Reused, unchanged code is one input judged by its exit, one row per
    unchanged job (D-050); an unchanged line inside a changed function is
@@ -241,3 +243,4 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-10 | Ops changes are architecture: the Patron approves each Ops spec and its Defaults before `branch` | Patron |
 | 2026-10-11 | Step 7 runs `tick` once per opus as Ops' cadence (W-208 Defaults 3) | Patron |
 | 2026-10-11 | §9 step 5: the receipt is minted from the opus worktree | Producer |
+| 2026-10-11 | §9 step 2: reviewer verdicts carry `--session` (W-215 measures only sessioned rounds) | Producer |

@@ -17,9 +17,6 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-215** (review loops converge) merged (PR 412); its record reads `review` until
-  the done PR carrying this handoff lands and marks it done. Its retro follows (§9 step 7: Codex terra triage to a
-  file, then `retro --opus W-215 --from <file>`).
 - **W-210, W-212** (CI pins): specs passed and the Patron approved both designs
   and Defaults (PR 410). **W-211** (pin `source_excludes`) likewise. All three
   follow W-221 (Queue 1)
@@ -47,7 +44,7 @@ One lane. Left before more: Queue item 8 (W-169 last, with W-093).
 
 ## Queue
 
-Ranked (next, after the open retro: item 1, then 2a). Item descriptions for the older items:
+Ranked (next: item 1, then 2a). Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
 1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: a new high
