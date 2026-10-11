@@ -1,0 +1,24 @@
+# opus: W-212
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T23:29:46.547Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-212.md blob:03b18287b1c094c79a66cc121eceb46c2591bbb6
+
+## Findings
+1. blocking — brief:35 The closed-model fix rejects unknown keys but does not constrain values of allowed scheduling keys. For example, changing `gates` to an unusable `runs-on` value or adding `timeout-minutes: 1` can prevent claimed steps from running while `W-212-b1` and `npm test` remain green, contradicting the promise that allowed keys do not change which steps run. — check: none: mutate allowed `runs-on` and `timeout-minutes` values and require W-212-b1 to fail
+
+## Earlier findings
+1. closed — “CI claim” is defined, all 84 sentences are classified, and all 34 in-domain claims are pinned with an explicit future-sentence limit.
+2. open — `needs` and other unknown keys now fail, but the scheduling-field class remains open through unconstrained values of allowed keys such as `runs-on` and `timeout-minutes`.
+3. closed — all certify expectations are now literal, and an added certify step fails W-212-b1.
+4. closed — behaviour 1 is explicitly limited to the 34 inventoried claims.
+5. closed — the input table now names the reused CI_STEPS subprocess and its existing fail-closed check.
+6. closed — every job is key-checked and any job list other than the modeled four fails W-212-b1.
+
+## Verdict
+Revision 2 closes five findings, but the workflow-model fix still permits scheduling changes that falsify pinned run/skip claims.
+VERDICT: FAIL

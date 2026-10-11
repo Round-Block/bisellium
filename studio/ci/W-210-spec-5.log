@@ -1,0 +1,20 @@
+# opus: W-210
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T00:08:15.270Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-210.md blob:8f0c08376cb3361d048cf08d87671570ca1921d0
+
+## Findings
+No findings
+
+## Rebuttal
+1. fixed — brief:20 no longer says the removal order closes the window: it states the limit that a pull request whose last run passed before the workflow change keeps its light green (a rerun replays its old workflow), that ADOPTION says to push to or close each such pull request before the ruleset changes, and that nothing checks it; other instance: the ADOPTION removal sentence at brief:43 (prototype.mjs/prototype.diff, re-measured in measure-r3.txt with the same results, docs.test.ts 0 failures, prettier exit 0).
+2. fixed — brief:75 names `assert.deepEqual` in `W-210-b1` (the env pin to `${{ github.repository }}`) as the rejector for a wrong existing slug, and states that `readMergeQueue` alone accepts another existing repository whose rules match; no new test, since a wrong-slug test of `readMergeQueue` would only show that acceptance.
+3. fixed — brief:110 Defaults 2: every rerun fails while the outage lasts, and a rerun after the API answers again recovers.
+
+## Verdict
+Signed revision 3 of studio/briefs/W-210.md (architect, claude-opus-5-5, D-027): the planned-removal and outage promises are narrowed to what the step does, and the `REPOSITORY` rejector names the test-pinned binding; mechanism, behaviour and tests unchanged, no existing assertion newly broken; brief admission 0 problems (~/.bisellium-evidence/W-210-spec/admission-r3.txt); revision 2 kept as W-210-signed-r2.md, diff in r3.diff.

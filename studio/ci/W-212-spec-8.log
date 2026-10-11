@@ -1,0 +1,19 @@
+# opus: W-212
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: passed
+# at: 2026-10-11T01:09:55.925Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-212.md blob:91ef6929214f3b837f3c0fc26905f00504b619e1
+
+## Findings
+No findings
+
+## Earlier findings
+1. closed — The title, Intent, CI-claim definition, behaviour 1, and Defaults 2 now consistently promise only step-selection parity and explicitly exclude execution outcomes.
+
+## Verdict
+Revision 4 closes the remaining false-promise class and is feasible as written.
+VERDICT: PASS

@@ -1,0 +1,23 @@
+# opus: W-212
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-10T20:40:11.664Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-212.md blob:03b18287b1c094c79a66cc121eceb46c2591bbb6
+
+## Findings
+No findings
+
+## Verdict
+Signed revision 2 of studio/briefs/W-212.md (architect, claude-opus-5-5, D-027): "CI claim" defined, every sentence of both sections and every ci.yml comment block enumerated and classified (34 pinned, 50 with reasons, 0 problems), the model closed over `on` and the workflow/job/step keys, certify's steps a literal; red unchanged, ten probes fail (~/.bisellium-evidence/W-212-spec/measure-r2.txt); brief admission 0 problems (admission-r2.txt); revision 1 kept as W-212-signed-r1.md.
+
+## Rebuttal
+1. fixed — "CI claim" defined in Intent; enumerate-claims.mjs lists all 84 sentences and claims-inventory.txt pins the 34 claims (27 CLAIMS rows) and gives a reason for each of the other 50, 0 problems; the H1 and the promise name those 34, with a stated limit for sentences added later; other instances: Interfaces, Out of scope, Defaults 2.
+2. fixed — promise closed-model: `on` must equal TRIGGERS and every workflow, job and step key must sit in MODEL_KEYS; other instances of the class: `concurrency`, matrix/`strategy`, job `continue-on-error`, trigger filters, workflow `env`/`defaults`; the `needs`, `concurrency` and `paths-ignore` probes fail (measure-r2.txt).
+3. fixed — CERTIFY_ALL is a literal list of the ten steps; other instances: none left, since every EXPECTED entry is literal; the added-certify-step probe fails (measure-r2.txt).
+4. fixed — behaviour 1 names the 34 CI claims at 63efbd68 and the stated limit, as in 1.
+5. fixed — Input domain gains the reused `CI_STEPS` read (`execFileSync`, its existing catch and `check`).
+6. fixed — the key check iterates every job in the file, and a jobs list other than the four is a W-212-b1 problem; the Input-domain row says so.

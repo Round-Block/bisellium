@@ -1,0 +1,18 @@
+# opus: W-212
+# phase: spec
+# round: 7
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T00:10:36.513Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-212.md blob:91ef6929214f3b837f3c0fc26905f00504b619e1
+
+## Findings
+No findings
+
+## Rebuttal
+1. fixed — brief:26 Intent now promises that a workflow change falsifying a claim by changing which steps a job selects fails `npm test`, and states that a change stopping selected steps without changing the selection (an allowed key's value) is not seen (promise closed-model's limit, brief:32). Other instances narrowed to selection parity: the title (brief:1), the CI-claim definition (brief:28: checked against the steps the conditions select, not what a run executes), behaviour 1 (brief:95) and Defaults 2 (brief:123). Wording only: `row.mjs`, the prototype and measure-r2.txt are unchanged; no existing test fixture or assertion breaks.
+
+## Verdict
+Signed revision 4 of studio/briefs/W-212.md (architect, claude-opus-5-5, D-027): every test-parity promise is now selection parity, consistent with closed-model's stated limit; brief admission 0 problems (~/.bisellium-evidence/W-212-spec/admission-r4.txt); revision 3 kept as W-212-signed-r3.md, diff in r4.diff.

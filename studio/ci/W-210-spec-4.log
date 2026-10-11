@@ -1,0 +1,27 @@
+# opus: W-210
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T23:29:45.927Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-210.md blob:6f19debd2df710fb8b0f95e0c9da294796f03a84
+
+## Findings
+1. blocking — brief:20 The stated removal order does not close the window for other already-green pull requests: landing the workflow restoration does not guarantee those runs rerun before the queue is removed. The procedure needs a drain/rerun limit. — check: none: removal procedure must verify no stale green pull requests remain
+2. advisory — brief:75 `readMergeQueue` does not reject every out-of-domain repository identity: another existing repository with the accepted rules returns `merge-queue`. The exact `${{ github.repository }}` binding is test-pinned, so the delivery path remains closed, but the named rejector is incomplete. — check: none: exercise a wrong existing slug with an accepted reply
+3. blocking — brief:110 “A rerun recovers” is false while the API outage persists; recovery requires a rerun after service availability returns. — check: none: run the guard twice against a continuously failing fake `gh`
+
+## Earlier findings
+1. open — The per-read promise is corrected, but the timing class remains open in the new claim that the planned removal order closes the stale-green window.
+2. closed — The one-predicate promise and Default 1 now apply only to runs or reruns that read the changed rules.
+3. closed — Behaviour 1 and its row title now state and test only the point-in-time decision.
+4. closed — Default 1 no longer claims already-green pull requests fail.
+5. open — Post-read outages are now bounded correctly, but Default 2 adds the false unconditional claim that a rerun recovers.
+6. open — The table now states `REPOSITORY`’s domain, but its rejector does not cover a wrong existing repository with accepted rules.
+7. closed — The test-input row now names the actual assertion and `check` rejectors.
+
+## Verdict
+Revision 2 closes four findings, but the planned-removal and outage promises remain broader than the mechanism.
+VERDICT: FAIL

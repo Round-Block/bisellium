@@ -1,0 +1,22 @@
+# opus: W-210
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-10T20:31:35.603Z
+# tree: tree:c2a86e4aecc0b842ccfaa853e9faa0db1bdf1afc
+# brief: briefs/W-210.md blob:6adf7cf2b91f971e20ab0ebbeb32238c18f30423
+
+## Findings
+1. blocking — brief:20 The point-in-time limit covers changes after a green check, but not a ruleset change after the single read and before typecheck/lint finish; `gates` can therefore pass while the queue is no longer required. — check: none: bound the promise to the instant of the rules read
+2. blocking — brief:22 “Every pull request” contradicts the admitted point-in-time boundary: already-green pull requests are not invalidated when queue parameters or required contexts change. — check: none: limit the claim to subsequent or rerun guard executions
+3. blocking — brief:78 The numbered behaviour overstates the mechanism for the same post-read, pre-green window; the proposed test proves only the parsed command’s point-in-time decision. — check: none: make the behaviour explicitly point-in-time
+4. blocking — brief:104 This repeats the false “every pull request” claim; pull requests whose guard already passed remain green until rerun. — check: none: limit the default to subsequent or rerun guard executions
+5. blocking — brief:105 An API outage beginning after a green guard does not block that pull request from enqueueing, so the outage claim needs the same point-in-time limit. — check: none: qualify the outage claim by whether the guard observes it
+6. advisory — brief:71 The changed command directly reads `REPOSITORY`, but the table never states its valid `owner/repo` domain; it only discusses the missing-value case, whose path fails closed. — check: none: input-boundary check for changed environment reads
+7. advisory — brief:74 `assert.equal` is not the rejector for the whole stated test domain: environment and table mismatches use `assert.deepEqual`, direct-mode status uses `assert.notEqual`, and `ci-workflow.test.mjs` uses `check`; those paths still fail closed. — check: none: admission that resolves each compound row’s rejector to its actual assertions
+
+## Verdict
+The fail-closed implementation is feasible, but five promises exceed its single point-in-time read.
+VERDICT: FAIL
