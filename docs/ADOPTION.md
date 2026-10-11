@@ -906,6 +906,23 @@ than the newest `done` record's `end` in UTC (`process.handoff.resume`), the phr
 `this one`, `this PR` and `above)` (`process.handoff.reference`), and more than 100
 split lines (`process.handoff.lines`) all block.
 
+**Hidden pipe exits (W-221).** `process.pipe_exit` blocks a pipe that hides a
+command's exit. `check` blocks, on every officina, an automated probatio `command`
+that is not a string or holds a pipeline (it runs with `/bin/sh`, so wrap it as
+`bash -o pipefail -c '…'`). Only for the repository's own `studio/` (`check` run
+with `--repo <repo>` on `<repo>/studio`) it also reads three repository surfaces:
+every top-level `scripts/*.sh` must have `set -euo pipefail` as its first command
+line and name `+o pipefail` nowhere; a workflow step `run:` holding a pipeline
+needs the effective `shell` (the step's, else the job's or the workflow's
+`defaults.run.shell`) to be exactly `bash`; a root `package.json` script holding a
+pipeline blocks. An unreadable or unparseable file blocks at its path, and an absent
+`scripts/`, `.github/workflows/` or `package.json` is no finding. A pipeline is
+found lexically: a pipe inside a quoted string handed to another shell is not
+seen, a `case` pattern `a|b)` or a heredoc body is read as one, and a nested
+`scripts/` directory, a child shell or a sourced file is not read. `set -e` does
+not act inside `if`, `while`, `!` or a non-final `&&`/`||` member, so a pipeline
+there still hides its status from the script.
+
 **Brief admission (W-127).** Only when `bisellium.yml` declares
 `brief_behaviour_limit` (a positive integer, else `manifest.shape` blocks).
 A brief carries `Decree family: <slug>` on exactly one line, at most that many
