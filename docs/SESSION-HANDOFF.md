@@ -18,20 +18,20 @@ Rules, process and environment: studio/leges/production.md.
 ## Resume point (2026-10-11)
 
 Build lane:
-1. **W-221** (pipe-hidden exits): `handoff` (no traditio yet), then `branch`; merged, a records PR
-   repoints the lex and this file to the scripts it moves into `scripts/`. Until
-   then a build review is recorded by hand with `--session`.
-2. Then Queue 2a: W-210, W-212, W-213 (W-213 still needs its spec).
+1. **W-221** (pipe-hidden exits): building on `opus/W-221` (`.worktrees/W-221`,
+   a Sonnet builder). Once merged, a records PR repoints the lex and this file to
+   the scripts it moves into `scripts/`. Until then a build review is recorded by
+   hand with `--session`.
+2. **W-229** once specced; then Queue 2a: W-210, W-212, W-213 (W-213 unspecced).
 Spec work alongside:
-- **W-093** (security review on every PR): revision 7 drops the alert exclusion
-  and adds a fix pass; spec review passed (round 13). It waits on the Patron's Q5.
-- **W-193** (test discovery): revision 5 passed spec review (round 10). It waits
-  on the Patron's answers to Defaults 1-6.
-- **W-204**: revision 5 passes admission and spec review (round 10).
+- W-093, W-193 and W-204 specs passed review; every Default is answered (acta
+  `2026-10-11-patron-answers-w093-w193-w229`). W-229 needs its spec (drafting).
+- W-221, W-181, W-169 were re-signed (round 7, 8, 12) because `next` could not
+  parse their signatures; W-229 fixes the writer.
 - Reviewer sessions: `~/.bisellium-evidence/W-<id>-specreview/r*/session.log`
   (`multilane-spec/{review,resume}.sh` there run and resume them).
 - `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
-  `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox.
+  `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
 
 ## Concurrency readiness
 
@@ -52,7 +52,8 @@ with W-169 (lanes on) last.
 Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
-1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top).
+1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top);
+   then W-229 — verdict refuses a signature next cannot read (D-039, Patron).
 
 2a. In this order (the briefs require it): W-210 — CI refuses a merge path that
     skips the queue (the second pin the Patron asked for);
@@ -68,7 +69,7 @@ Ranked. Item descriptions for the older items:
 7. W-201 — the mutation check gates build review (D-052).
 8. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
    (security review on every change), then W-169 (switches lanes on). Designs
-   approved; W-093 and W-193 wait on the Patron's answers.
+   approved; every Default answered.
 9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 10. W-185 — records checked once at load (D-049; the architect specs it).
 11. W-172, W-171 — high-severity fixes.
@@ -87,13 +88,10 @@ only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W
 
 ## Open Patron choices
 
-- W-093 Q5: should the merge gate let an open CodeQL alert through only on the
-  PR whose own analysis shows it fixed (the fix pass)? Asked 2026-10-11.
-- W-193 Defaults 1-6 (test discovery), as its brief's `## Defaults` asks them.
 
 - Greenlight W-216 (agents ask each other through the petitio), now that W-215's
   plain session resume has shipped? Asked 2026-10-11.
 - At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
   --tokens fix), W-218 (Ops per-step times), W-219 (next waits for the merge-group
-  run), W-220 (one-step re-review record), W-222 (handoff ground-truth
+  run), W-227, W-228 (sandbox cleanup and step health), W-220 (one-step re-review record), W-222 (handoff ground-truth
   probe), W-224 (next's `..` path test), W-225 (a revised red), W-226 (skill scan), W-175, W-176 (2026-10-08 lesson audit), W-148 and W-155.
