@@ -270,7 +270,7 @@ const withdrawal = (ruling: string): string =>
 
 test("W-215-b2 behaviour 2: a withdrawn blocker does not stand, and the exchange has a grammar", () => {
   const withdrawn = parseVerdictLog(
-    ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: passed", "", withdrawal("1. withdrawn — the line is current at docs/SESSION-HANDOFF.md:3"), "## Earlier findings", `- ${EARLIER} #1: closed — fixed at docs/SESSION-HANDOFF.md:3`, ""].join("\n"),
+    ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: passed", "# session: s-1", "", withdrawal("1. withdrawn — the line is current at docs/SESSION-HANDOFF.md:3"), "## Earlier findings", `- ${EARLIER} #1: closed — fixed at docs/SESSION-HANDOFF.md:3`, ""].join("\n"),
     "W-300",
     "ci/W-300-review-2.log",
   );
@@ -287,13 +287,13 @@ test("W-215-b2 behaviour 2: a withdrawn blocker does not stand, and the exchange
     [1],
   );
   const upheld = parseVerdictLog(
-    ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", "", withdrawal("1. upheld — the guard is absent, see a.ts:4"), ""].join("\n"),
+    ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", "# session: s-1", "", withdrawal("1. upheld — the guard is absent, see a.ts:4"), ""].join("\n"),
     "W-300",
     "ci/W-300-review-2.log",
   );
   assert.ok(!("error" in upheld) && upheld.findings[0]!.blocking && upheld.findings[0]!.withdrawn === undefined, "an upheld blocker stands");
 
-  const head = ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", ""];
+  const head = ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", "# session: s-1", ""];
   const rebuttal = "## Rebuttal\n1. the line is current — docs/SESSION-HANDOFF.md:3\n";
   const ruling = "## Ruling\n1. withdrawn — the line is current\n";
   const findings = `## Findings\n${BLOCK(1)}\n`;
@@ -316,6 +316,20 @@ test("W-215-b2 behaviour 2: a withdrawn blocker does not stand, and the exchange
   }
   const open = parseVerdictLog([...head, `${findings}\n${rebuttal}\n## Ruling\n1. open — needs a ruling\n`].join("\n"), "W-300", "ci/W-300-review-2.log");
   assert.ok("error" in open && /Patron/.test(open.error), "an open ruling is not recordable and the message names the Patron");
+});
+
+test("W-215-b2 behaviour 2: a log without a session is read as on master, its exchange headings are prose", () => {
+  const head = ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", ""];
+  const plain = parseVerdictLog([...head, withdrawal("1. withdrawn — the line is current at docs/SESSION-HANDOFF.md:3")].join("\n"), "W-300", "ci/W-300-review-2.log");
+  assert.ok(!("error" in plain), "error" in plain ? plain.error : "");
+  if ("error" in plain) return;
+  assert.equal(plain.findings[0]!.blocking, true, "a free-form ruling withdraws nothing without a session");
+  assert.equal(plain.findings[0]!.withdrawn, undefined);
+  assert.deepEqual([plain.earlier, plain.rebuttal], [[], []]);
+  // W-209-spec-10's shape: the heading before ## Findings, prose lines under it
+  const freeForm = parseVerdictLog([...head, "Signed.", "", "## Rebuttal", "1. accepted — the title is false", "", `## Findings\n${BLOCK(1)}`, ""].join("\n"), "W-300", "ci/W-300-spec-10.log");
+  assert.ok(!("error" in freeForm), "error" in freeForm ? freeForm.error : "");
+  if (!("error" in freeForm)) assert.equal(freeForm.findings[0]!.blocking, true);
 });
 
 test("W-215-b2 behaviour 2: the writer accounts for every earlier blocker and every standing finding", () => {

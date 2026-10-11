@@ -585,6 +585,19 @@ test("W-215-b5 behaviour 5: reviewRounds re-measures the baseline and counts the
   assert.deepEqual(rr.opus.get("W-2"), { spec: 3, specFailed: 2, build: 2, buildFailed: 1, handoff: [], rebuttals: 0, withdrawn: 0, reversed: 0, sessions: "none" });
 });
 
+test("W-215-b5 behaviour 5: a sessionless log in an after sequence is counted from its header only", () => {
+  const reviewRounds = (retroModule as { reviewRounds?: (root: string) => { opus: Map<string, unknown> } | { error: string } }).reviewRounds;
+  assert.equal(typeof reviewRounds, "function", "retro.ts exports reviewRounds");
+  const root = measured();
+  put(root, "ci/W-1-spec-3.log", vlog("W-1", "spec", 3, "spec-reviewer-2", "failed", "## Findings\nnot a finding\n\n## Rebuttal\nfree form, no citation"));
+  const rr = reviewRounds!(root);
+  assert.ok(!("error" in rr), "error" in rr ? rr.error : "");
+  if ("error" in rr) return;
+  assert.deepEqual(rr.opus.get("W-1"), { spec: 2, specFailed: 1, build: 2, buildFailed: 1, handoff: [2], rebuttals: 1, withdrawn: 1, reversed: 1, sessions: "kept" });
+  const run = spawnSync(process.execPath, ["--import", "tsx", ROUNDS_SCRIPT, root], { cwd: join(dirname(ROUNDS_SCRIPT), ".."), encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+});
+
 test("W-215-b5 behaviour 5: scripts/review-rounds.mjs prints the same lines", () => {
   assert.ok(existsSync(ROUNDS_SCRIPT), "scripts/review-rounds.mjs exists");
   const run = (...args: string[]) => spawnSync(process.execPath, ["--import", "tsx", ROUNDS_SCRIPT, ...args], { cwd: join(dirname(ROUNDS_SCRIPT), ".."), encoding: "utf8" });

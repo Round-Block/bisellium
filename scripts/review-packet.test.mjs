@@ -6,7 +6,16 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { after, test } from "node:test";
@@ -278,4 +287,38 @@ test("W-215-b4 behaviour 4: a bad request exits 2 and writes nothing", () => {
       bare.packets,
     ]),
   );
+});
+
+test("W-215-b4 behaviour 4: a --packets at or under --studio exits 2 and writes nothing", () => {
+  assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
+  const w = world();
+  mkdirSync(join(w.studio, "packets"));
+  symlinkSync(w.studio, join(w.root, "alias"));
+  const args = (packets) => [
+    "--phase",
+    "spec",
+    "--opus",
+    "W-1",
+    "--round",
+    "2",
+    "--sella",
+    "spec-reviewer",
+    "--studio",
+    w.studio,
+    "--repo",
+    w.repo,
+    "--packets",
+    packets,
+  ];
+  for (const [name, packets] of [
+    ["the studio itself", w.studio],
+    ["a directory under the studio", join(w.studio, "packets")],
+    ["a symlink to the studio", join(w.root, "alias")],
+  ]) {
+    const before = tree(w.studio);
+    const r = w.run(args(packets));
+    assert.equal(r.status, 2, `${name}: exit ${r.status}\n${r.err}`);
+    assert.deepEqual(tree(w.studio), before, `${name}: nothing is written`);
+  }
+  assert.equal(w.run(args(w.packets)).status, 0, "a --packets outside the studio still works");
 });
