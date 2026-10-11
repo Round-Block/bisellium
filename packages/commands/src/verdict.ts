@@ -185,7 +185,7 @@ type Parsed = { headers: Map<string, string[]>; findings: RecordedFinding[]; ear
 
 // a CITE: a `path:line` token (`facts.txt:<line>` names a command's output)
 const CITE = /(?<![\w./-])[\w./-]+:[1-9]\d*(?!\d)/;
-const SEPARATOR = "(?:—| -)";
+const SEPARATOR = "(?:—|-)";
 
 /**
  * W-215: the body sections after `## Findings` that carry a dispute and the earlier-findings account, read only in a log
