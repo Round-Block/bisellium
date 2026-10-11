@@ -1,0 +1,19 @@
+# opus: W-215
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# outcome: failed
+# at: 2026-10-11T01:39:56.580Z
+# tree: tree:9af3c5869535e94d3326bca82a1c0d75f5b019d4
+# brief: briefs/W-215.md blob:99f2d55aae28a05446c663edadb76a4ceb89e11b
+
+## Findings
+1. blocking — packages/commands/src/verdict.ts:188 The ASCII-separator class is broken: `SEPARATOR` includes a leading space for its hyphen branch while both consumers add another, so valid `upheld - …` rulings and `closed - …` earlier-finding lines are refused unless they contain two spaces. I searched every `SEPARATOR` use: `## Ruling` at line 218 and `## Earlier findings` at line 228; brief:97. — check: packages/cli/src/verdict-findings.test.ts
+2. blocking — packages/commands/src/verdict.ts:187 The citation-boundary class accepts malformed tokens such as `a.ts:4junk` as `a.ts:4`, because `CITE` excludes only a following digit. I searched every `CITE` consumer: rebuttals at line 211, upheld rulings at line 219, and reversed earlier findings at line 231; malformed sessioned logs therefore pass contrary to brief:83. — check: packages/cli/src/verdict-findings.test.ts
+3. blocking — scripts/review-packet.mjs:191 One path-classification instance rejects a valid in-repository studio whose relative name merely starts with `..` (for example `/repo/..studio`), treating it as outside the repository despite satisfying the declared directory domain at brief:134. The other changed real-path boundary, `parsePacketArgs` lines 70–72, uses component-aware containment. — check: scripts/review-packet.test.mjs
+4. advisory — studio/opera/W-215.md:37 The traditio says “review round 2,” although this is the first build-review round. — check: none: prose record
+
+## Verdict
+The evidence and declared build deviations are otherwise credible, but three parser and packet-domain behaviors contradict the signed brief.
+VERDICT: FAIL
