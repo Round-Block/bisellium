@@ -606,7 +606,7 @@ export function shellPipeLine(text: string): number | undefined {
         i++;
         return undefined;
       }
-      const after = redir;
+      const after: boolean = redir;
       redir = false;
       if (c === "\\") {
         // a continuation is invisible: start and redir stay as they were
