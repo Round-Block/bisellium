@@ -12,6 +12,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -321,4 +322,29 @@ test("W-215-b4 behaviour 4: a --packets at or under --studio exits 2 and writes 
     assert.deepEqual(tree(w.studio), before, `${name}: nothing is written`);
   }
   assert.equal(w.run(args(w.packets)).status, 0, "a --packets outside the studio still works");
+});
+
+test("W-215-r1-3 studio containment: a studio whose name merely starts with `..` is inside the repo", () => {
+  assert.ok(existsSync(SCRIPT), "scripts/review-packet.mjs exists");
+  const w = world();
+  const dotted = join(w.repo, "..studio");
+  renameSync(w.studio, dotted);
+  const r = w.run([
+    "--phase",
+    "spec",
+    "--opus",
+    "W-1",
+    "--round",
+    "1",
+    "--sella",
+    "spec-reviewer",
+    "--studio",
+    dotted,
+    "--repo",
+    w.repo,
+    "--packets",
+    w.packets,
+  ]);
+  assert.equal(r.status, 0, r.err);
+  assert.ok(w.has(1, "subject"), "the packet is written");
 });

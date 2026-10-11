@@ -373,3 +373,41 @@ test("W-215-b2 behaviour 2: the writer accounts for every earlier blocker and ev
   assert.match(openRuling.stderr, /Patron/);
   assert.deepEqual(openRuling.ci, []);
 });
+
+// W-215 build review round 1: the separator and the citation boundary are classes, not instances.
+// Rows are selected by name (`--test-name-pattern=W-215-r1-<n>`).
+const R1_HEAD = ["# opus: W-300", "# phase: build", "# round: 2", "# sella: qa-lead", "# outcome: failed", "# session: s-1", ""];
+const r1Parse = (body: string) => parseVerdictLog([...R1_HEAD, body].join("\n"), "W-300", "ci/W-300-review-2.log");
+
+test("W-215-r1-1 separator: ` - ` with one space on each side is accepted wherever ` — ` is", () => {
+  const findings = `## Findings\n${BLOCK(1)}\n`;
+  const rebuttal = "## Rebuttal\n1. the line is current - docs/SESSION-HANDOFF.md:3\n";
+  for (const [name, body] of [
+    ["a withdrawn ruling", `${findings}\n${rebuttal}\n## Ruling\n1. withdrawn - the line is current\n`],
+    ["an upheld ruling", `${findings}\n${rebuttal}\n## Ruling\n1. upheld - the guard is absent, see a.ts:4\n`],
+    ["a closed earlier line", `${findings}\n## Earlier findings\n- ${EARLIER} #1: closed - fixed at docs/SESSION-HANDOFF.md:3\n`],
+    ["an open earlier line", `${findings}\n## Earlier findings\n- ${EARLIER} #1: open - still stale\n`],
+    ["a reversed earlier line", `${findings}\n## Earlier findings\n- ${EARLIER} #1: reversed - wrong at docs/SESSION-HANDOFF.md:3\n`],
+  ] as const) {
+    const p = r1Parse(body);
+    assert.ok(!("error" in p), `${name}: ${"error" in p ? p.error : ""}`);
+  }
+  const doubled = r1Parse(`${findings}\n${rebuttal}\n## Ruling\n1. withdrawn  - the line is current\n`);
+  assert.ok("error" in doubled, "two spaces before the hyphen is not the grammar");
+});
+
+test("W-215-r1-2 citation: a token is bounded on its right by a non-word character", () => {
+  const findings = `## Findings\n${BLOCK(1)}\n`;
+  const cited = (text: string): string => `1. ${text}`;
+  for (const [name, body] of [
+    ["a rebuttal", `${findings}\n## Rebuttal\n${cited("fine at a.ts:4junk")}\n\n## Ruling\n1. withdrawn - x\n`],
+    ["an upheld ruling", `${findings}\n## Rebuttal\n${cited("fine at a.ts:4")}\n\n## Ruling\n1. upheld - absent at a.ts:4junk\n`],
+    ["a reversed earlier line", `${findings}\n## Earlier findings\n- ${EARLIER} #1: reversed - wrong at a.ts:4junk\n`],
+  ] as const) {
+    assert.ok("error" in r1Parse(body), `${name} with a.ts:4junk is out of domain`);
+  }
+  for (const text of ["see (a.ts:4)", "see a.ts:4.", "see a.ts:4, and more", "see a.ts:4"]) {
+    const p = r1Parse(`${findings}\n## Rebuttal\n${cited(text)}\n\n## Ruling\n1. withdrawn - x\n`);
+    assert.ok(!("error" in p), `${text}: ${"error" in p ? p.error : ""}`);
+  }
+});
