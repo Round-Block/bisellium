@@ -1,0 +1,20 @@
+# opus: W-211
+# phase: handoff
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12a20-63a2-7b81-b81a-f2a9a933ce5b
+# outcome: failed
+# at: 2026-10-11T11:47:11.305Z
+# tree: dirty:7431c78f9aa5da884810f1879d0368c40df4d226
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:21 Build review round 3 is not next: `next` names a builder because W-221’s run receipt is stale. (evidence: handoff-review-w211done/r3/facts.txt:7-17) — check: none: require a current receipt before naming review
+2. blocking — docs/SESSION-HANDOFF.md:58 The nine items are ranked in Queue 1b although each remains backlog and requires Patron greenlight. (evidence: handoff-review-w211done/r3/facts.txt:40-42, 53-55, 66-68, 79-81, 92-94, 105-107, 121-123, 134-136, 147-149) — check: none: rank only greenlit opera
+3. blocking — docs/SESSION-HANDOFF.md:87 W-175 and W-176 are likewise placed in the ranked queue while both remain backlog and require Patron greenlight. (evidence: handoff-review-w211done/r3/facts.txt:300-303, 313-316) — check: none: rank only greenlit opera
+
+## Earlier findings
+
+## Verdict
+The changed handoff misstates W-221’s next step and ranks backlog items as greenlit.
+VERDICT: FAIL

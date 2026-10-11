@@ -1,0 +1,20 @@
+# opus: W-229
+# phase: spec
+# round: 6
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T10:38:29.666Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:7c32f34a0d339d42b3c67c6dfc9db693b0403736
+
+## Findings
+
+1. advisory — Patron ruling folded in as behaviour 2: readOpusVerdicts reads a sessionless design-magister spec log that parseVerdictLog refuses by its header alone, as reviewRounds already reads sessionless logs; no committed log is touched. check: packages/cli/src/retro-opus.test.ts
+2. advisory — A new free-form signature still cannot count: verdict refuses it at write, next's readSpecSignature stays strict, and the exemption needs spec name, phase spec, the design magister and no session; every other refused log still refuses the retro. check: packages/cli/src/retro-opus.test.ts
+3. advisory — Verified on a scratch copy: the prototype reads all thirteen real signatures (W-221, W-181, W-169) and breaks no existing row; answer-carry W-114 b2 fails in the copy on unchanged master too, an environment artifact. check: none: fixture-census-reader and retro-demo outputs in the spec evidence
+4. advisory — No date cut-over: verdict --now sets the at header freely, so the exemption keys on the header and is a Default the Patron can veto. check: none: a cut-over row if the Default is vetoed
+
+## Verdict
+
+Passed: revision 4 brings the committed free-form signatures into retro's domain without backfill while every new signature stays strict at write, and passes admission with 0 problems.

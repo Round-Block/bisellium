@@ -1,0 +1,24 @@
+# opus: W-229
+# phase: spec
+# round: 7
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12a6d-8bd6-71f2-9ee7-dfd30340c60e
+# outcome: failed
+# at: 2026-10-11T10:41:27.456Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:7c32f34a0d339d42b3c67c6dfc9db693b0403736
+
+## Findings
+1. blocking — brief:50 The promise that a free-form log never anchors the spec gate is false when `spec_reviewer` is absent: `specEvidence` uses `signedSpec`, which accepts the newest passing design-magister spec log from headers without calling `parseVerdictLog`. A pre-W-229 free-form signature can therefore anchor that gate. — check: packages/cli/src/next.test.ts
+2. blocking — brief:50 The promise that a refused UI input still refuses retro is broader than the exemption: if `ui-lead` is also the declared design magister, a sessionless UI spec log satisfies every `legacySignature` predicate and is admitted without findings. — check: none: add a W-229-b2 row with ui-lead as design magister
+3. blocking — brief:114 The rejector claim for a refused handoff log is false for a sessionless handoff: `readOpusVerdicts` ignores handoff names and `reviewRounds` skips strict parsing when no session exists, so retro does not refuse it. — check: packages/cli/src/retro-opus.test.ts
+4. blocking — brief:115 The promise that every parser-refused log stays refused by `readSequence` and `reviewRounds` is false: both intentionally read sessionless logs without `parseVerdictLog` (`verdict.ts:341`; `retro.ts:672`). — check: packages/cli/src/retro-opus.test.ts
+5. advisory — brief:114 `legacySignature` newly reads `bisellium.yml` through `designMagister`, but the input boundary gives that manifest no separate valid-domain row; malformed or duplicate design declarations do fail closed. — check: none: add malformed and duplicate design-collegium cases to W-229-b2
+
+## Earlier findings
+- ci/W-229-spec-4.log #1: closed — r2-r3.diff:31 and r2-r3.diff:55 make `parseVerdictLog` the exact boundary without paraphrasing its CRLF behavior
+
+## Verdict
+Revision 3 closes the CRLF blocker, but revision 4 makes several guarantees broader than its header-only exemption and unchanged readers can provide.
+VERDICT: FAIL

@@ -1,0 +1,18 @@
+# opus: W-229
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T10:13:59.519Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:e09f5cf29b95fdc1f01a7f9f15ddceb25191b805
+
+## Findings
+
+1. advisory — Review r4 finding 1 fixed by removing the paraphrase: verdict refuses exactly what parseVerdictLog refuses (verdict.ts:245-289, readExchange at verdict.ts:196-236), and behaviour 1 now tests a CRLF finding line. check: packages/cli/src/verdict-findings.test.ts
+2. advisory — Swept every sentence restating the parser grammar (the parse row, the UI rows, the ADOPTION sentence, the committed-logs limit, Default 2) and replaced each with a reference to parseVerdictLog; nothing else changed. check: none: r2-r3.diff in the spec evidence
+
+## Verdict
+
+Passed: revision 3 states the write-time refusal as exactly the reader's parser, changes nothing else, and passes admission with 0 problems.
