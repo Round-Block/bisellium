@@ -625,7 +625,7 @@ function designMagister(root: string): { design: string | undefined } | Refusal 
 /**
  * Every `ci/W-<n>-(spec|review|handoff)-<m>.log` of an officina, re-measured (W-215): the table `rounds.txt` held at the
  * baseline (master 36ca84cb), then totals, the before and after lines and the targets. A sequence (opus, phase) with any
- * `# session:` is after, and its logs also parse with `parseVerdictLog`; the rest are read by their header block only.
+ * `# session:` is after; each log carrying `# session:` also parses with `parseVerdictLog`, every other is read by its header block only.
  */
 export function reviewRounds(root: string): { lines: string[]; opus: Map<string, OpusReviewRounds> } | Refusal {
   const magister = designMagister(root);
@@ -653,7 +653,6 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
     logs.push({ opus: m[1]!, phase, n: Number(m[3]), outcome: h.get("outcome") ?? "", session: h.has("session"), reason: h.has("session_reason"), text });
   }
   const after = new Set(logs.filter((l) => l.session).map((l) => `${l.opus} ${l.phase}`));
-  const sequence = (l: RoundLog): string => `${l.opus} ${l.phase}`;
   const opus = new Map<string, OpusReviewRounds>();
   const of = (id: string): OpusReviewRounds => {
     const have = opus.get(id) ?? { spec: 0, specFailed: 0, build: 0, buildFailed: 0, handoff: [], rebuttals: 0, withdrawn: 0, reversed: 0, sessions: "none" as OpusReviewRounds["sessions"] };
@@ -669,7 +668,8 @@ export function reviewRounds(root: string): { lines: string[]; opus: Map<string,
     else if (l.phase === "review") (o.build++, l.outcome === "failed" && o.buildFailed++);
     if (l.session) sessioned.add(l.opus);
     if (l.reason) replaced.set(l.opus, (replaced.get(l.opus) ?? 0) + 1);
-    if (!after.has(sequence(l))) continue;
+    // only a sessioned log carries the exchange; a sessionless one in an after sequence is counted from its header
+    if (!l.session) continue;
     const rel = `ci/${l.opus}-${l.phase}-${l.n}.log`;
     const parsed = parseVerdictLog(l.text, l.opus, rel);
     if (isRefusal(parsed)) return parsed;
