@@ -1,0 +1,19 @@
+# opus: W-178
+# phase: spec
+# round: 5
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:14:22.210Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-178.md blob:85a45003fad411f89d4060ba855b282728a4ba62
+
+## Findings
+
+1. advisory: Review r4 finding 1 (brief:122) upheld and fixed: W-178 owns W-132-b1's live-row pin (run.test.ts:1239-1240, 26 to 27), updated with behaviour 5, which names the flip. check: none: answered in the signed brief's revision-3 note
+2. advisory: Sweep of pinned counts W-178 moves: none other (RULE_IDS compared as sets, rule families unchanged, skipped-row count unpinned). check: none: answered in the signed brief's revision-3 note
+3. advisory: Advisory 2 taken: the harness row names behaviour 5's host run and gate.mjs ref check. check: none: answered in the signed brief's revision-3 note
+
+## Verdict
+
+passed: signed spec, revision 3 (round 5).

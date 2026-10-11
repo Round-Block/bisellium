@@ -1,0 +1,19 @@
+# opus: W-179
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:10:03.957Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-179.md blob:df6e4a4d1982f4948a6de64c80ba5f961405bad5
+
+## Findings
+
+1. advisory: Review r2 finding 1 (brief:61) upheld and fixed: row 2 names removeBranchAndWorktree's unchecked deletions (next.test.ts:486-488) and buildWorld asserts their result before caching; cleanup-refs.txt shows the assertion holds for all 10 cleanup-or-later keys today. check: none: answered in the signed brief's revision-2 note
+2. advisory: Sweep of unchecked git calls in the build: only the two symbolic-ref queries (next.test.ts:478, :491) remain, each selecting a checked command. check: none: answered in the signed brief's revision-2 note
+3. advisory: Advisories 2-7 taken: any outside path rejected in row 3; rows for nextAsync, the inventory and measurement scripts and each reused command; Default 3 reads N to N + 1. check: none: answered in the signed brief's revision-2 note
+
+## Verdict
+
+passed: signed spec, revision 2 (round 3).

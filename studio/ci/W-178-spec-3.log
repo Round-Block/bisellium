@@ -1,0 +1,20 @@
+# opus: W-178
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T06:10:03.291Z
+# tree: tree:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-178.md blob:66aebf8ebdfde77ea21b82d35bd3497d2abb97b3
+
+## Findings
+
+1. advisory: Review r2 finding 1 (brief:25) upheld and fixed: the sentence now says no existing row is removed or weakened. check: none: answered in the signed brief's revision-2 note
+2. advisory: Review r2 finding 2 (brief:90) upheld and fixed: verify runs no check; row 8 names bisellium ci (CI_STEPS, ci.ts:51-57) and the host mint's ci --opus gate. check: none: answered in the signed brief's revision-2 note
+3. advisory: Sweep found the host mint clones the candidate --single-branch (run-builder-host.mjs:798-806), so it has no master and test.rows would block every receipt; W-178 now owns one master fetch after that clone, with live row W-178-b5 and a Default question. check: none: answered in the signed brief's revision-2 note
+4. advisory: Advisories 3-4 taken: base package.json parse failure is named in row 2; a harness row covers the new rows' fixtures. check: none: answered in the signed brief's revision-2 note
+
+## Verdict
+
+passed: signed spec, revision 2 (round 3).

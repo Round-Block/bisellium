@@ -1,0 +1,23 @@
+# opus: W-179
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T05:56:00.493Z
+# tree: dirty:de0cf174a65d23a2c4f53aebca44da0e68b30033
+# brief: briefs/W-179.md blob:ff5a3e8033ed032fcacf47645cae56b08d869e75
+
+## Findings
+
+1. advisory: Measured the lever (timing.json): world() is 36% of next.test.ts's time, 332 calls for 35 distinct (stage, options) pairs; repeats are 31%. Promise faster is set to at most 80% of the base median; the draft's 70% is not attainable from fixture reuse alone. check: none: draft correction recorded in the signed brief
+2. advisory: Found that `git worktree repair` in a copied repository re-points the seed's worktree at the copy (worktree-repair.txt); copyWorld writes the two pointer files itself and validates both worktree lists. check: none: draft correction recorded in the signed brief
+3. advisory: Cut the two-level cache: the verbs are the cost, so one cache keyed on (stage, options) suffices. check: none: draft correction recorded in the signed brief
+4. advisory: Cut W-179-b2, which could not go red after behaviour 1; its concurrent-next check folds into behaviour 1. One row is added (78 to 79). check: none: draft correction recorded in the signed brief
+5. advisory: Cut the nextAsync spawn-error change; no row depends on it. check: none: draft correction recorded in the signed brief
+6. advisory: Named the absolute paths a copy must re-point (abs-paths.txt): origin URL and the worktree pointers only. check: none: draft correction recorded in the signed brief
+7. advisory: Not pipeline work (one test file); Defaults stay plain. Overlap named: W-178 first, W-213 may add rows. check: none: draft correction recorded in the signed brief
+
+## Verdict
+
+passed: signed spec, revision 1.
