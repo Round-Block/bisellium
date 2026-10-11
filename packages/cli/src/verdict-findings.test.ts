@@ -400,14 +400,14 @@ test("W-215-r1-2 citation: a token is bounded on its right by a non-word charact
   const findings = `## Findings\n${BLOCK(1)}\n`;
   const cited = (text: string): string => `1. ${text}`;
   for (const [name, body] of [
-    ["a rebuttal", `${findings}\n## Rebuttal\n${cited("fine at a.ts:4junk")}\n\n## Ruling\n1. withdrawn - x\n`],
-    ["an upheld ruling", `${findings}\n## Rebuttal\n${cited("fine at a.ts:4")}\n\n## Ruling\n1. upheld - absent at a.ts:4junk\n`],
-    ["a reversed earlier line", `${findings}\n## Earlier findings\n- ${EARLIER} #1: reversed - wrong at a.ts:4junk\n`],
+    ["a rebuttal", `${findings}\n## Rebuttal\n${cited("fine at a.ts:4junk")}\n\n## Ruling\n1. withdrawn — x\n`],
+    ["an upheld ruling", `${findings}\n## Rebuttal\n${cited("fine at a.ts:4")}\n\n## Ruling\n1. upheld — absent at a.ts:4junk\n`],
+    ["a reversed earlier line", `${findings}\n## Earlier findings\n- ${EARLIER} #1: reversed — wrong at a.ts:4junk\n`],
   ] as const) {
     assert.ok("error" in r1Parse(body), `${name} with a.ts:4junk is out of domain`);
   }
   for (const text of ["see (a.ts:4)", "see a.ts:4.", "see a.ts:4, and more", "see a.ts:4"]) {
-    const p = r1Parse(`${findings}\n## Rebuttal\n${cited(text)}\n\n## Ruling\n1. withdrawn - x\n`);
+    const p = r1Parse(`${findings}\n## Rebuttal\n${cited(text)}\n\n## Ruling\n1. withdrawn — x\n`);
     assert.ok(!("error" in p), `${text}: ${"error" in p ? p.error : ""}`);
   }
 });
