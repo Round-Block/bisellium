@@ -17,28 +17,24 @@ Rules, process and environment: studio/leges/production.md.
 
 ## Resume point (2026-10-11)
 
-- **W-215** (review loops converge; `building` on its branch, `greenlit` on master): spec revision 4 passed (round 11); its
-  delta is built on `opus/W-215` (`.worktrees/W-215`, cac400cf; evidence and
-  kept delta reds `~/.bisellium-evidence/W-215-build/r4/`; review prompt drafted
-  in `~/.bisellium-evidence/W-215-review/r1/`). Next: mint, then build review round 1.
+- **W-215** (review loops converge) merged (PR 412); its record reads `review` until
+  the done PR carrying this handoff lands and marks it done. Its retro follows (§9 step 7: Codex terra triage to a
+  file, then `retro --opus W-215 --from <file>`).
 - **W-210, W-212** (CI pins): specs passed and the Patron approved both designs
   and Defaults (PR 410). **W-211** (pin `source_excludes`) likewise. All three
-  wait for W-215 (in flight) to land, then build in queue order.
+  follow W-221 (Queue 1)
+  as Queue 2a.
 - **W-221** (a gate's exit hidden by a pipe in kept scripts): filed greenlit
   under D-039; **W-222** (handoff checked against ground truth) in backlog.
-- **W-208** (Ops collegium): branches after W-215 and W-211; its brief's PR B follows.
-- Until W-215 lands, later review rounds resume the reviewer's Codex session
-  (`codex exec resume <id>`; ids in each `*-specreview/r*/session.log`) and
-  take the author's rebuttal (a subagent reply) before recording.
-- W-204: spec passed (round 6), then W-196's admission rules failed it (3); rerun
-  `~/.bisellium-evidence/W-208-spec/check-admission.mjs`, then an architect revises.
+- **W-208** (Ops collegium): Queue item 3; its brief splits it into PR A and PR B
+  (B's record moves run after W-208 merges and master is fetched).
+- W-204: `next` names `branch`; an earlier admission run found 3 problems, so rerun
+  `~/.bisellium-evidence/W-208-spec/check-admission.mjs` (from a worktree with
+  node_modules) before branching; revise only if it still fails.
 
 ## Concurrency readiness
 
-Left before more than one lane (production lex §11 names W-169 and
-W-197 as the gates, W-197 landed, and, read strictly, W-093 alongside W-178
-to W-183): Queue's multi-lane prep item
-(W-169 last) and W-093; work stays on one lane until both land.
+One lane. Left before more: Queue item 8 (W-169 last, with W-093).
 
 ## Artifacts
 
@@ -51,32 +47,36 @@ to W-183): Queue's multi-lane prep item
 
 ## Queue
 
-The ranked order, Patron 2026-10-09 (recorded in
-`studio/acta/2026-10-09-queue-review.md`). Items 1-8 were added or moved
-since (D-052 to D-056), slotted by the producer as a default the Patron
-may veto. One-line descriptions of items 9-15 are in that acta.
+Ranked (next, after the open retro: item 1, then 2a). Item descriptions for the older items:
+`studio/acta/2026-10-09-queue-review.md`.
 
-2a. W-210 — CI refuses a merge path that skips the queue; W-211 — a test
-    pins the `source_excludes` list (the two pins the Patron asked for);
+1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: a new high
+   fix goes to the top).
+
+2a. In this order (the briefs require it): W-211 — a test pins the
+    `source_excludes` list; W-210 — CI refuses a merge path that skips the queue
+    (the two pins the Patron asked for);
     W-212 — CI docs checked against ci.yml (QA now, Ops after W-208);
-    W-213 — the retro reads beyond the review findings (wins, time, cost, slips).
+    W-213 — the retro reads beyond the review findings (wins, time, cost, slips),
+    from a per-opus step ledger, and escalates a lesson class seen three times
+    to a process opus (Patron 2026-10-11).
 3. W-208 — set up the Ops collegium (D-055).
-4. W-200 — set up the Chaos collegium (D-052; the architect specs it).
-2b. W-215 (in flight, ahead of 2a) — review loops converge (resumed reviewer, rebuttal, measured
-    targets; Patron 2026-10-11).
-5. W-204 — next stops holding a build review after three failed rounds.
-6. W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
+4. W-204 — next stops holding a build review after three failed rounds.
+5. W-223 — the Status page shows the ranked queue (Patron 2026-10-11).
+   W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
    retro rides in the done PR (Patron 2026-10-11).
-7. W-207 — verify after merge reuses the queue's certificate (D-054).
-8. W-201 — the mutation check gates build review (D-052).
-9. W-185 — records checked once at load (D-049; the architect specs it).
-10. W-172, W-171, W-221 — high-severity fixes.
-11. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, then W-169
-   (switches lanes on; it waits for W-093, item 13, to land first).
+6. W-207 — verify after merge reuses the queue's certificate (D-054).
+7. W-201 — the mutation check gates build review (D-052).
+8. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
+   (security review on every change), then W-169 (switches lanes on). Moved up
+   by the Patron 2026-10-11; specs in review, uncommitted in `~/agents/bisellium/.worktrees/ml-a` (-b, -c).
+9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
+10. W-185 — records checked once at load (D-049; the architect specs it).
+11. W-172, W-171 — high-severity fixes.
 12. W-068 — task dependencies (signed brief to restore:
-   `~/.bisellium-evidence/partial-specs/W-068.md` → `studio/briefs/W-068.md`,
+   copy `~/.bisellium-evidence/partial-specs/W-068.md` to a new `studio/briefs/W-068.md`,
    add `Red order: one at a time`, architect re-signs, then spec review).
-13. W-081, W-099 — security fixes; W-093 (security review on every change).
+13. W-081, W-099 — security fixes.
 14. W-173, W-174, W-184, W-195; then W-164, W-165, W-187, W-189, W-190,
     W-191, W-192, W-194, W-198.
 15. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
@@ -91,9 +91,9 @@ W-159, W-177.
 
 ## Open Patron choices
 
-- Greenlight W-216 (agents ask each other through the petitio), or let W-215
-  ship its rebuttal on plain session resume first? Asked 2026-10-11.
+- Greenlight W-216 (agents ask each other through the petitio), now that W-215's
+  plain session resume has shipped? Asked 2026-10-11.
 - At the owed queue review: greenlight and rank W-138, W-202, W-217 (budget
   --tokens fix), W-218 (Ops per-step times), W-219 (next waits for the merge-group
   run), W-220 (one-step re-review record), W-222 (handoff ground-truth
-  probe), and W-175, W-176 (2026-10-08 lesson audit).
+  probe), W-224 (next's `..` path test), W-225 (a revised red), W-175, W-176 (2026-10-08 lesson audit), W-148 and W-155.
