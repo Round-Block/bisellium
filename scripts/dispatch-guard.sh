@@ -7,7 +7,7 @@
 #   (cd ~/projects/bisellium-guard && npm ci)
 # ponytail: node_modules there is refreshed by hand; rerun `npm ci` in it when package-lock.json changes on master.
 set -u
-GUARD=~/projects/bisellium-guard; AGENT=~/agents/bisellium; LOG=~/projects/bisellium/scripts/patron/dispatch.log
+GUARD=~/projects/bisellium-guard; AGENT=~/agents/bisellium; LOG=~/.bisellium-dispatch.log
 block() { printf 'BLOCKED: %s\n' "$*" >&2; exit 2; }
 input=$(cat)
 tool=$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null) || block "dispatch-guard cannot read the hook input (jq?)"
