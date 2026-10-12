@@ -118,6 +118,15 @@ try {
   check("CI_STEPS reads from packages/commands/src/ci.ts", false, String(err));
 }
 
+// W-236: the moderate-or-worse npm advisory gate runs first, locally and in
+// `gates`, and the root `audit` script it names is exactly that command.
+check("CI_STEPS[0] is npm run -s audit", ciSteps[0] === "npm run -s audit", JSON.stringify(ciSteps[0]));
+const rootPackageJson = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));
+check(
+  "package.json: scripts.audit is npm audit --audit-level=moderate",
+  rootPackageJson?.scripts?.["audit"] === "npm audit --audit-level=moderate",
+);
+
 // The one CI_STEPS entry that's officina-wide (found by content, same rule
 // ci.ts itself uses for CHECK_STUDIO_STEP — never by position, since a
 // reorder of CI_STEPS must not silently stop this script from finding it).
