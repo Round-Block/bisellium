@@ -1,28 +1,37 @@
 # behaviour: 1
-# command: npm run -s audit
+# command: node --test-reporter=tap scripts/source-map-js.test.mjs
 # exit: 1
-# at: 2026-10-12T22:12:58.134Z
+# at: 2026-10-12T23:24:30.719Z
 # sella: builder.W-236
-# tree: tree:f298ed4395c4886d5a8a41c24b6dfaf0d48e1f1a
+# tree: tree:56f8b6ea202514fbd7fcd62dade32c6998d9fc87
 
-# npm audit report
-
-source-map-js  
-Severity: high
-source-map-js allows event-loop denial of service through indexed source-map section offsets - https://github.com/advisories/GHSA-68fv-2mgg-jv7q
-No fix available
-node_modules/source-map-js
-  postcss  
-  Depends on vulnerable versions of source-map-js
-  node_modules/postcss
-    vite  
-    Depends on vulnerable versions of postcss
-    node_modules/vite
-      @vitejs/plugin-react  
-      Depends on vulnerable versions of vite
-      node_modules/@vitejs/plugin-react
-
-4 high severity vulnerabilities
-
-Some issues need review, and may require choosing
-a different dependency.
+TAP version 13
+# Subtest: W-236 behaviour 1: package-lock.json carries no source-map-js below 1.2.2
+not ok 1 - W-236 behaviour 1: package-lock.json carries no source-map-js below 1.2.2
+  ---
+  duration_ms: 1.392249
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-236/scripts/source-map-js.test.mjs:18:1'
+  failureType: 'testCodeFailure'
+  error: 'node_modules/source-map-js is 1.2.1'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-236/scripts/source-map-js.test.mjs:30:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7.20881
