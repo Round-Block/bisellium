@@ -15,7 +15,7 @@ name: CI
 # W-205: the merge group is the one run of the heavy steps before merge: the full
 # path for a source change, W-203's short path for a records-only one. A pull
 # request still reports all four required checks: `gates` runs only setup,
-# typecheck and lint; every step of `officina` and `web-e2e` is skipped, so those
+# the npm audit (W-236), typecheck and lint; every step of `officina` and `web-e2e` is skipped, so those
 # jobs succeed without work; `certify` is skipped. The post-merge master push
 # runs the full path for either change kind. Sound only while master's ruleset
 # requires the merge queue.
@@ -34,7 +34,7 @@ jobs:
   # everything `bisellium ci` runs except the studio officina check (see the
   # `officina` job below); a records-only merge group runs the studio check and
   # `test:record` instead (W-203), and a pull request runs only setup,
-  # typecheck and lint (W-205). It is the job a branch protection rule can
+  # the npm audit (W-236), typecheck and lint (W-205). It is the job a branch protection rule can
   # require, since every step that runs here is expected to pass on a clean tree.
   gates:
     runs-on: ubuntu-latest
@@ -52,6 +52,10 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.merge_group.base_sha }}
         run: node scripts/ci-scope.mjs "$BASE_SHA" HEAD >> "$GITHUB_OUTPUT"
+      # W-236: a moderate-or-worse npm advisory, or an unreachable registry, fails
+      # the job (the same first step `bisellium ci` runs).
+      - if: steps.scope.outputs.record_only != 'true'
+        run: npm run -s audit
       - if: steps.scope.outputs.record_only != 'true'
         run: npm run -s typecheck
       - if: steps.scope.outputs.record_only != 'true'
