@@ -1,0 +1,28 @@
+# behaviour: 1
+# command: npm run -s audit
+# exit: 1
+# at: 2026-10-12T22:12:58.134Z
+# sella: builder.W-236
+# tree: tree:f298ed4395c4886d5a8a41c24b6dfaf0d48e1f1a
+
+# npm audit report
+
+source-map-js  
+Severity: high
+source-map-js allows event-loop denial of service through indexed source-map section offsets - https://github.com/advisories/GHSA-68fv-2mgg-jv7q
+No fix available
+node_modules/source-map-js
+  postcss  
+  Depends on vulnerable versions of source-map-js
+  node_modules/postcss
+    vite  
+    Depends on vulnerable versions of postcss
+    node_modules/vite
+      @vitejs/plugin-react  
+      Depends on vulnerable versions of vite
+      node_modules/@vitejs/plugin-react
+
+4 high severity vulnerabilities
+
+Some issues need review, and may require choosing
+a different dependency.
