@@ -21,11 +21,10 @@ Current state only, read after CLAUDE.md; rules, process and environment are in
 2. **W-229** (signed; `next` names `branch`): ranked after W-221 (one lane; both edit
    ADOPTION: D-057 §3 re-review if it changed). Then Queue 1b, which needs specs.
 3. **W-233** (the ladder is enforced, not remembered; Patron: "enforcement first",
-   2026-10-12): signed (`ci/W-233-spec-1.log`), spec review round 2 failed (four
-   blockers). `next` holds it for a stale handover until master carries the handover
-   record (chore/W-233-traditio, W-235); then the architect's revision 2, then round 4 resumes
-   the reviewer. Eight Defaults wait for the Patron; a D-057 re-review against W-204
-   and W-229 (shared `next.ts`, `lifecycle.ts`, `verdict.ts`) is owed before `branch`.
+   2026-10-12): spec review round 2 failed (four blockers, `ci/W-233-spec-2.log`); the
+   architect's revision is building as round 3, then round 4 resumes the reviewer
+   (`~/.bisellium-evidence/W-233-spec/`). Eight Defaults wait for the Patron; a D-057
+   re-review against W-204 and W-229 is owed before `branch`. Then W-236 (security).
 - `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
   `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
 
@@ -48,7 +47,8 @@ Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
 1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top; held);
-   W-233 — the ladder is enforced, not remembered (D-039: high; Patron greenlit, held);
+   W-233 — the ladder is enforced, not remembered (D-039: high; Patron: enforcement first);
+   W-236 — source-map-js advisory GHSA-68fv-2mgg-jv7q in the web build (D-044: security);
    then W-229 — verdict refuses a signature next cannot read (D-039, Patron).
 1b. W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
     (acta `2026-10-11-patron-queue-review`).
