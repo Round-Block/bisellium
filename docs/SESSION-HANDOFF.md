@@ -25,8 +25,8 @@ Current state only, read after CLAUDE.md; rules, process and environment are in
    (`~/.bisellium-evidence/W-233-spec/review.sh 4 3`); ten Defaults wait for the Patron;
    a D-057 re-review against W-204 and W-229 before `branch`. The brief and
    `ci/W-233-spec-{1,2,3}.log` are untracked in the main checkout: keep them.
-- The dispatch hook (`scripts/dispatch-guard.sh`, #431) guards every agent or Codex
-  launch: a declared seat only, its prompt opening `opus: W-<n>`, on the step `next` names.
+- No dispatch guard yet (Patron chose the lean path, 2026-10-13): it becomes a CLI verb in
+  W-233 part 2. Read `docs/design/next-handoff-notes.md` first (studio hooks, auto-handoff).
 - `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
   `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
 
