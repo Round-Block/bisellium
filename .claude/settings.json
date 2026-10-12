@@ -32,14 +32,6 @@
           { "type": "command", "command": "bisellium hook-event tool --studio studio", "timeout": 2 }
         ]
       }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Agent",
-        "hooks": [
-          { "type": "command", "command": "/home/edckt/projects/bisellium/scripts/dispatch-guard.sh", "timeout": 120 }
-        ]
-      }
     ]
   },
   "permissions": {
