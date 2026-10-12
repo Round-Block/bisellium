@@ -14,15 +14,18 @@ Current state only, read after CLAUDE.md; rules, process and environment are in
 ## Resume point (2026-10-12)
 
 1. **W-221** (pipe-hidden exits), `opus/W-221` at 53a08bc5 (`.worktrees/W-221`):
-   held (D-046) after review rounds 1, 3 and 4 failed; fix round 4 is built, gates
-   green, unreviewed. The Patron grants a round with `amend W-221 --round-ruling`;
-   only then: the architect confirms the fix keeps the brief's promises, mint, review
-   round 5 like `~/.bisellium-evidence/W-221-review/r4-run.sh` (resumes the session
-   in ci/W-221-review-4.log), record like `r4-record.sh`. Each fix round's red is
-   kept as `W-221-build/r<n>fix/red.log`, sha on line 1, until W-225.
+   held (D-046) after review rounds 1, 3 and 4 failed; fix round 4 built, gates green,
+   unreviewed. Only after the Patron's `amend W-221 --round-ruling`: the architect
+   confirms the fix keeps the brief's promises, mint, review round 5 and its record like
+   `~/.bisellium-evidence/W-221-review/r4-{run,record}.sh`; reds in `W-221-build/r<n>fix/`.
 2. **W-229** (signed; `next` names `branch`): ranked after W-221 (one lane; both edit
-   ADOPTION, so a D-057 §3 re-review if it changed). Then Queue 1b, which needs specs.
-3. The enforcement set W-233 is held by the Patron: see Open Patron choices.
+   ADOPTION: D-057 §3 re-review if it changed). Then Queue 1b, which needs specs.
+3. **W-233** (the ladder is enforced, not remembered; Patron: "enforcement first",
+   2026-10-12): signed (`ci/W-233-spec-1.log`), spec review round 2 failed (four
+   blockers). `next` holds it for a stale handover until master carries the handover
+   record (chore/W-233-traditio, W-235); then the architect's revision 2, then round 4 resumes
+   the reviewer. Eight Defaults wait for the Patron; a D-057 re-review against W-204
+   and W-229 (shared `next.ts`, `lifecycle.ts`, `verdict.ts`) is owed before `branch`.
 - `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
   `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
 
@@ -87,12 +90,10 @@ only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W
 - Leads as real agents (Patron 2026-10-11: eng-lead and qa-lead): the architect's
   design is in `docs/design/leads-design.md` (uncommitted) and
   `~/.bisellium-evidence/leads-design/`; its six questions wait for the Patron.
-- W-233 (the ladder is enforced, not remembered; D-039 high): greenlit 2026-10-11
-  and held by the Patron; W-232 is halted into it (D-042). On go, the architect specs
-  it from the uncommitted notes `docs/design/{enforcement-mechanism,gaps-and-solutions,
-  audit-2026-10-11}.md` (the audit: four rule breaks and eight gaps in 25 commits).
+- W-233's Defaults (eight questions, `briefs/W-233.md`); the Patron's setup steps
+  (CODEOWNERS, the dispatch hook) and the 2026-10-11 audit (four rule breaks, eight
+  gaps in 25 commits) are in `~/.bisellium-evidence/design-notes-1011/`.
 - W-230 (impeccable's detector in CI): backlog; the Patron greenlights it, then a
   spec waits for approval of its design and Defaults.
 - W-231 (interactive self-refresh): filed, not greenlit until tested
   (`~/.bisellium-evidence/W-231-draft/design-notes.md`).
-- Deferred: W-216 until W-169; W-218 with W-213; W-202, W-148 after W-230.
