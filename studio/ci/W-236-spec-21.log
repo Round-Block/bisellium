@@ -1,0 +1,16 @@
+# opus: W-236
+# phase: spec
+# round: 21
+# sella: architect
+# outcome: passed
+# at: 2026-10-12T23:23:33.109Z
+# tree: tree:526d26d803a8efa664f3f7154e69a20507f4dbb0
+# brief: briefs/W-236.md blob:ee6a6ad391214fae78eeefc2df96a8090a9d1237
+
+## Findings
+
+1. advisory — The lockfile test now requires each source-map-js version to match /^\d+\.\d+\.\d+$/ before the numeric compare to 1.2.2; Files owned and the Input-domain row say so. The updated prototype fails on 2.x, 1.2.2-beta, empty, missing, 0.9.9 and 1.2.1, and passes on 1.2.2, 1.3.0, 1.10.0 and 2.0.0. check: none: comparator-cases/results.txt
+
+## Verdict
+
+Passed: round 20's blocker is answered and shown on the prototype; admission reports 0 problems.

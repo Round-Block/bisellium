@@ -1,0 +1,21 @@
+# opus: W-236
+# phase: spec
+# round: 22
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: passed
+# at: 2026-10-12T23:24:00.773Z
+# tree: tree:526d26d803a8efa664f3f7154e69a20507f4dbb0
+# brief: briefs/W-236.md blob:ee6a6ad391214fae78eeefc2df96a8090a9d1237
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-236-spec-20.log #1: closed — brief:24 and brief:54 now require exact digit-only major.minor.patch validation before comparison, and malformed versions fail the test.
+
+## Verdict
+The changed lines close the prior fail-open path without introducing a false promise.
+
+VERDICT: PASS
