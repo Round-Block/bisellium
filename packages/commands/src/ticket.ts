@@ -87,7 +87,7 @@ function gitIn(cwd: string, args: string[]): string | undefined {
 }
 
 /** The facts a ticket binds, read from the studio's own checkout: the main checkout, the tickets directory, the studio's place in it, HEAD and the brief. */
-function readFacts(studio: string, opus: string): { common: string; main: string; prefix: string; studio: string; head: string; brief: string } | { error: string } {
+function readFacts(studio: string, opus: string): { common: string; top: string; main: string; prefix: string; studio: string; head: string; brief: string } | { error: string } {
   if (!OPUS_RE.test(opus)) return { error: `invalid opus id "${opus}"` };
   const root = resolve(studio);
   const common = gitIn(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
@@ -104,7 +104,7 @@ function readFacts(studio: string, opus: string): { common: string; main: string
   const read = readContainedRegularFile(root, "briefs/" + opus + ".md", "briefs");
   if ("error" in read && read.code !== "ENOENT") return { error: `the brief of ${opus} is unreadable: ${read.error}` };
   const brief = "error" in read ? "none" : createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex");
-  return { common, main, prefix: prefix.replace(/\/$/, ""), studio: place, head, brief };
+  return { common, top, main, prefix: prefix.replace(/\/$/, ""), studio: place, head, brief };
 }
 
 /** main = dirname of `git rev-parse --path-format=absolute --git-common-dir` run in studio. */
@@ -118,11 +118,19 @@ function ticketsDir(common: string): string {
   return join(common, "bisellium", "tickets");
 }
 
-/** Write (replace) or, with undefined, delete <common dir>/bisellium/tickets/<opus>.json; the error text, or undefined. */
+/**
+ * Write (replace) or, with undefined, delete <common dir>/bisellium/tickets/<opus>.json; the error text, or undefined.
+ * A deletion needs only the opus id and the common directory, never the facts a ticket binds: a studio whose HEAD or
+ * brief cannot be read must still be able to drop its stale ticket.
+ */
 export function setPendingTicket(studio: string, opus: string, ticket: StepTicket | undefined): string | undefined {
-  const facts = readFacts(studio, opus);
-  if ("error" in facts) return facts.error;
-  const dir = ticketsDir(facts.common);
+  if (!OPUS_RE.test(opus)) return `invalid opus id "${opus}"`;
+  const root = resolve(studio);
+  const facts = ticket === undefined ? undefined : readFacts(studio, opus);
+  if (facts !== undefined && "error" in facts) return facts.error;
+  const common = facts?.common ?? gitIn(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+  if (common === undefined || common === "") return `${root} is not inside a git checkout`;
+  const dir = ticketsDir(common);
   const path = join(dir, `${opus}.json`);
   try {
     if (ticket === undefined) {
@@ -151,7 +159,7 @@ export interface PendingTicket {
   /** the verb's two-line refusal for a reason found after `requireTicket` (`unclaimable: …`) */
   refuse: (reason: string) => string;
 }
-export function requireTicket(i: { studio: string; manifest: unknown; opus: string; verb: string; action: TicketAction; round: number }): { off: true } | PendingTicket | { refusal: string } {
+export function requireTicket(i: { studio: string; manifest: unknown; opus: string; verb: string; action: TicketAction; round: number; repo?: string }): { off: true } | PendingTicket | { refusal: string } {
   const setting = readStepTickets(i.manifest);
   if ("error" in setting) return { refusal: `${i.opus}: ${i.verb} refused: bisellium.yml#step_tickets is malformed (${setting.error})` };
   if (!setting.required) return { off: true };
@@ -160,6 +168,13 @@ export function requireTicket(i: { studio: string; manifest: unknown; opus: stri
     refusal: `${i.opus}: ${i.verb} refused: no matching next ticket (${reason})\nrun: bisellium next ${i.opus} --studio ${"error" in facts ? i.studio : join(facts.main, facts.prefix)} --repo ${"error" in facts ? "." : facts.main}`,
   });
   if ("error" in facts) return refuse(`facts unreadable: ${facts.error}`);
+  // a verb that mutates a repository other than its studio's (branch, merge: --repo) is bound to the ticket's checkout
+  if (i.repo !== undefined) {
+    const repo = resolve(i.repo);
+    const top = gitIn(repo, ["rev-parse", "--show-toplevel"]);
+    const common = gitIn(repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
+    if (top !== facts.top || common !== facts.common) return refuse(`facts unreadable: --repo ${repo} is not the checkout of ${resolve(i.studio)}`);
+  }
   const dir = ticketsDir(facts.common);
   const read = readContainedRegularFile(dir, i.opus + ".json", "");
   if ("error" in read) return refuse(read.code === "ENOENT" ? "absent" : "unreadable");

@@ -1429,13 +1429,16 @@ naming the cause), a report-mode `next <opus>` writes one ticket for the action
 the rung it names allows, to `<git common dir>/bisellium/tickets/<opus>.json`,
 replacing any earlier one, and ends its output with one `ticket: <action> round
 <n>` line; a hold, a Patron rung, a halted record and a rung no covered verb
-performs delete the pending ticket and print `ticket: none`. The ticket binds
+performs delete the pending ticket, by its path in the git common directory and
+without reading the facts, and print `ticket: none`; a deletion that fails prints
+`ticket: held, <why>` instead, never `none` with the file left. The ticket binds
 the opus, step, action, round, actor, the studio the action writes in, that
 checkout's HEAD, the brief's blob and the time. `verdict` (spec and build
 phases), `review`, `red`, `ready`, `done`, `branch` and `merge` then refuse, exit
 2 with two lines, unless the pending ticket names their action and round and its
 studio, head and brief equal what the verb reads at that moment; the refusal
-comes after the verb's argument checks and before its first write. A covered write claims the ticket by renaming it to
+comes after the verb's argument checks and before its first write; `branch` and
+`merge` also refuse when `--repo` is not the checkout their `--studio` belongs to. A covered write claims the ticket by renaming it to
 `<opus>.claimed` immediately before writing and copies its line into what it
 writes (a `# ticket:` header in a verdict or red log; one `tickets:` entry on the
 record for `ready`, `review` and `done`; `branch` and `merge` print it only), so

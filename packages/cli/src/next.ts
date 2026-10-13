@@ -1447,7 +1447,8 @@ function refreshTicket(f: Facts, d: Derived, nowMs: number): string[] {
   if ("error" in setting || !setting.required) return [];
   const none = (...why: string[]): string[] => {
     const bad = setPendingTicket(f.studioAbs, f.id, undefined);
-    return [...why, ...(bad === undefined ? [] : [`ticket-error: ${bad}`]), "ticket: none"];
+    // fail closed: a stale ticket that could not be deleted is held, never reported as none
+    return bad === undefined ? [...why, "ticket: none"] : [...why, `ticket: held, ${bad}`];
   };
   const t = d.status === "named" && d.actor !== "patron" ? d.ticket : undefined;
   if (t === undefined) return none();
