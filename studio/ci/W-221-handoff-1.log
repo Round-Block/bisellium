@@ -1,0 +1,21 @@
+# opus: W-221
+# phase: handoff
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a134e1-fb67-76c2-ad09-ffcceb86bee3
+# outcome: passed
+# at: 2026-10-13T10:52:30.974Z
+# tree: dirty:bcad677a39c7a9e332509059fa68e4c6239065c1
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:15 Stale: says `done` lands with this handoff, but neither W-240 nor W-221 is done. (evidence: facts.txt “trunk record is not done” for both) — check: W-240 and W-221 require `done`
+
+## Verdict
+The edit prematurely records completion for W-240 and W-221.
+VERDICT: FAIL
+## Rebuttal
+1. docs/SESSION-HANDOFF.md:15 does not say W-240 or W-221 is done; it says their `done` lands with this handoff, i.e. this handoff edit is committed by the `done` step itself. Evidence: `next --perform --expect done` refuses while the handoff is stale (it refused W-236 with "docs/SESSION-HANDOFF.md is stale ... the Queue names W-236, which is done"), and W-236's done commit carried the handoff edit: `git show --stat 32870059` lists docs/SESSION-HANDOFF.md beside studio/opera/W-236.md. So "not done yet" in facts.txt is the expected state for an edit that rides in the done commit; the same wording passed your round-7 review for W-236 (studio/ci/W-236-handoff-7.log:7).
+
+## Ruling
+1. withdrawn — “trunk record is not done” is the expected pre-`done` state for an edit that lands in that step; it does not contradict “`done` lands with this handoff.” The same formulation passed in studio/ci/W-236-handoff-7.log:7-18, and W-236’s `done` commit included the handoff edit.

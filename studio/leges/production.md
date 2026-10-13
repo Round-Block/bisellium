@@ -77,11 +77,18 @@ detection. The Aedile owns the road, not the work travelling on it.
   never the orchestrating session. The architecture page is republished the
   same way after any `docs/ARCHITECTURE.md` change. Every new opus gets a
   milestone (`amend <id> --milestone <M> --value <n>`).
-- **Ops changes are architecture, so the Patron approves them.** A spec for
-  pipeline work (CI, the merge queue, receipts, verify, certificates, the
-  Ops collegium and every opus under it) waits for the Patron's approval of
-  its design and Defaults before `branch`; its Defaults are questions, not
-  veto-able defaults.
+- **One Patron gate, at greenlight (D-061 §6).** The Patron rules on scope
+  and Defaults when an opus is greenlit. A spec for pipeline work (CI, the
+  merge queue, receipts, verify, certificates, the Ops collegium) still waits
+  for the Patron's approval of its design and Defaults before `branch` only
+  when it is over 3 points or touches security, the sandbox or branch
+  protection; the rest proceed on the architect's signature, vetoable at
+  the checkpoint.
+- **Process work is capped (D-061 §5).** At most one process opus in flight
+  per two product opera; the retro runs weekly. Exempt: security, D-039
+  high, and opera that remove process.
+- **The status page is frozen (D-061 §3).** Bug fixes only; new see-or-act
+  features go to the console.
 - Never relay a mid-turn Patron message into a running agent.
 - epoch0 (`~/projects/epoch0`) is a reference instance only; never modify it.
 
@@ -250,3 +257,5 @@ Sonnet 5.5. UI layouts at spec: `gpt-6-astra` medium. Triage: Codex
 | 2026-10-11 | §9 step 5: the receipt is minted from the opus worktree | Producer |
 | 2026-10-11 | §9 step 2: reviewer verdicts carry `--session` (W-215 measures only sessioned rounds) | Producer |
 | 2026-10-11 | §9 step 2: where reviewer sessions live; a shape-refused verdict is reissued in its session | Producer (handoff review) |
+| 2026-10-13 | §7: one Patron gate at greenlight; pre-`branch` Ops approval only over 3 points or for security/sandbox/branch protection (D-061) | Patron |
+| 2026-10-13 | §7: process work capped at one per two product opera, weekly retro; status page frozen (D-061) | Patron |
