@@ -4999,3 +4999,70 @@ test("W-233-b3 behaviour 3: a write claims its ticket before writing and copies 
     }
   }
 });
+
+test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet names review, not a new round", { timeout: 1_800_000 }, () => {
+  const b = world("w233-b4-substep", "build");
+  ticketed(b);
+  const verdict = (w: World, round: number, outcome: "passed" | "failed", body: string): Out =>
+    direct(w, w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `r${round}.md`, body), "--studio", w.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const reviewV = (w: World, round: number, flag: string): Out => direct(w, w.wt, ["review", OPUS, flag, "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const command = (round: number): string => `bisellium review ${OPUS} --pass|--fail --evidence ci/${OPUS}-review-${round}.log --round ${round} --sella qa-lead --studio ${WT_STUDIO_REL}`;
+  const substep = (w: World, round: number, row: string): void => {
+    const o = next(w, [OPUS, ...BUDGET]);
+    expectStep(o, "review", "named", row);
+    assert.equal(o.kv.get("actor"), "producer", ran(`${row}: actor`, o));
+    assert.equal(o.kv.get("command"), command(round), ran(`${row}: the exact review command`, o));
+    assert.equal(lastLine(o), `ticket: review round ${round}`, ran(`${row}: ticket`, o));
+    assert.equal(ticketOf(w)["action"], "review", `${row}: the ticket authorises review`);
+    assert.equal(ticketOf(w)["round"], round);
+  };
+
+  issued(b, BUDGET);
+  assert.equal(verdict(b, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  handoffAt(b, "wt", T.handoffFresh);
+  substep(b, 1, "verdict 1 recorded, no gate");
+  const r1 = reviewV(b, 1, "--fail");
+  assert.equal(r1.status, 0, ran("review --fail with the substep's ticket", r1));
+  handoffAt(b, "wt", T.handoffFresh);
+  const after = next(b, [OPUS, ...BUDGET]);
+  expectStep(after, "build", "named", "the gate cites round 1, failed at this tree");
+  assert.match(after.out, /^phase:\s*fix$/m, ran("phase fix", after));
+
+  // a fix, then round 2 passed while the gate still cites round 1
+  forge(b, "verdict-build", 2);
+  assert.equal(verdict(b, 2, "passed", "No findings").status, 0);
+  handoffAt(b, "wt", T.handoffFresh);
+  substep(b, 2, "verdict 2 recorded, the gate cites round 1");
+  const r2 = reviewV(b, 2, "--pass");
+  assert.equal(r2.status, 0, ran("review --pass with the substep's ticket", r2));
+  const done = next(b, [OPUS, ...BUDGET]);
+  assert.notEqual(done.first, `next: ${OPUS} review named`, ran("recorded: no longer review", done));
+  assert.notEqual(done.first, `next: ${OPUS} review held`, ran("recorded: not held either", done));
+
+  // another malformed gate state still holds
+  const m = world("w233-b4-malformed", "build");
+  ticketed(m);
+  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 2, "no ticket yet: the verdict is refused");
+  forge(m, "verdict-build", 1);
+  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  editRecord(m, "wt", (doc) => doc.setIn(["probationes", "sec"], { status: "maybe", sella: "qa-lead", evidence: `ci/${OPUS}-review-1.log` }));
+  commit(m.wt, "test: a malformed gate");
+  const om = next(m, [OPUS, ...BUDGET]);
+  expectStep(om, "review", "held", "a malformed gate holds as on master");
+  assert.equal(lastLine(om), "ticket: none", ran("a hold issues none", om));
+
+  // without the key: the censor is dispatched for round 2, and the stale gate holds, as on master
+  const p = world("w233-b4-plain", "build");
+  assert.equal(verdict(p, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  handoffAt(p, "wt", T.handoffFresh);
+  const op = next(p, [OPUS, ...BUDGET]);
+  expectStep(op, "review", "named", "no key: dispatch");
+  assert.equal(op.kv.get("round"), "2", ran("no key: round 2", op));
+  assert.equal(op.kv.get("actor"), "censor", ran("no key: the censor", op));
+  assert.equal(reviewV(p, 1, "--fail").status, 0);
+  assert.equal(verdict(p, 2, "passed", "No findings").status, 0);
+  handoffAt(p, "wt", T.handoffFresh);
+  const oh = next(p, [OPUS, ...BUDGET]);
+  expectStep(oh, "review", "held", "no key: the stale gate holds");
+  assert.match(oh.kv.get("why") ?? "", /is not the newest build-review log/, ran("no key: why", oh));
+});
