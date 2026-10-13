@@ -1,0 +1,72 @@
+# behaviour: 1
+# command: node --test-reporter=tap --import tsx --test packages/cli/src/ci.test.ts
+# exit: 1
+# at: 2026-10-13T04:28:18.579Z
+# sella: builder.W-240
+# tree: tree:255b680613076ce8f46ad9288a00401d799884f3
+
+TAP version 13
+# PASS  runs all seven steps in order and exits 0                              ["audit","typecheck","lint","format:check","test","check:studio","check:examples/sample-studio"]
+# PASS  stops at first failing step, names it, exits non-zero                  exit=1 order=["audit","typecheck","lint","format:check"] stderr=bisellium ci: step failed (exit 1): npm run -s format:check
+# bisellium ci: step failed (exit 1): npm run -s typecheck
+# PASS  --ref ignores a dirty working tree; the working tree itself still fails ref=0 workingTree=1
+# bisellium ci: step failed (exit 1): npm test
+# PASS  --ref tests the ref's packages/, not the working tree's                ref=0 workingTree=1
+# warning: Git ref-wide allocation unavailable; using local records only
+# tests: passed  ci/W-001-tests-b85de862.log
+# lint: passed  ci/W-001-lint-b85de862.log
+# types: passed  ci/W-001-types-b85de862.log
+# tests: passed  ci/W-001-tests-b85de862.log
+# lint: passed  ci/W-001-lint-b85de862.log
+# types: passed  ci/W-001-types-b85de862.log
+# PASS  --opus records certificates identical to verify's for the same tree    identical
+# warning: Git ref-wide allocation unavailable; using local records only
+# PASS  without --opus, exits 0 and writes no officina bookkeeping             exit=0 opusChanged=false ciDirExists=false
+# warning: Git ref-wide allocation unavailable; using local records only
+# tests: passed  ci/W-001-tests-f92662ee.log
+# lint: passed  ci/W-001-lint-f92662ee.log
+# types: passed  ci/W-001-types-f92662ee.log
+# tests: passed  ci/W-001-tests-f92662ee.log
+# lint: passed  ci/W-001-lint-f92662ee.log
+# types: passed  ci/W-001-types-f92662ee.log
+# PASS  --ref + --opus certifies the same tree the direct path would, studio excluded both ways identical
+# warning: Git ref-wide allocation unavailable; using local records only
+# PASS  ci --opus on a dirty tree without --allow-dirty exits 2 and writes nothing; step-6 hint fires dirty: exit=2 changed=false stderr=working tree is dirty; commit or pass --allow-dirty | hint: exit=1 stderr=bisellium ci: step failed (exit 1): npm run -s check -- studio --repo .
+# bisellium ci: "npm run -s check -- studio" is officina-wide; "bisellium verify <opus>" is the per-opus gate.
+# warning: Git ref-wide allocation unavailable; using local records only
+# tests: passed  ci/W-001-tests-4036ea79.log
+# lint: passed  ci/W-001-lint-4036ea79.log
+# types: passed  ci/W-001-types-4036ea79.log
+# PASS  --ref keeps passing --allow-dirty when a step dirties the scratch checkout mid-run exit=0
+# ---
+# id: "W-001"
+# title: "ci ref+opus opus"
+# kind: "task"
+# collegium: "production"
+# state: backlog
+# probationes: { tests: { status: passed, evidence: ci/W-001-tests-4036ea79.log, certifies: dirty:4036ea799e72fbc00d23c1917a3ae9739784d9f1 }, lint: { status: passed, evidence: ci/W-001-lint-4036ea79.log, certifies: dirty:4036ea799e72fbc00d23c1917a3ae9739784d9f1 }, types: { status: passed, evidence: ci/W-001-types-4036ea79.log, certifies: dirty:4036ea799e72fbc00d23c1917a3ae9739784d9f1 } }
+# ---
+# unknown flag "--offline"
+# usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+# FAIL  W-240 behaviour 1: --offline skips the audit step and only it          exit=2 order=[]
+# Subtest: packages/cli/src/ci.test.ts
+not ok 1 - packages/cli/src/ci.test.ts
+  ---
+  duration_ms: 14164.035236
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-240/packages/cli/src/ci.test.ts:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14172.507279
