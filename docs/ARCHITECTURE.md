@@ -177,7 +177,9 @@ holds for the Patron with a recommendation; a Patron decision attached by
 `amend --round-ruling` buys exactly one more round (W-167). Once an opus is
 `done` and owes a retro under the `retro` key, `retro` is its next rung, and no
 other opus branches until `retro --opus` has filed every recorded finding as a
-lesson with a named fix or as "not a lesson" (W-137, D-039).
+lesson with a named fix or as "not a lesson" (W-137, D-039). With `step_tickets:
+required`, `next` also issues one ticket per derivation that the ladder's direct
+writers require and consume (W-233); see `ticket.ts` under Seams.
 
 Builder isolation is the hard rule around the build phase: a worktree per
 builder, or a commit of its own files before the Censor runs, because a
@@ -347,6 +349,13 @@ lex's ladder step 7, which runs `tick` once per opus after the retro.
   `next` and `check`; `readBriefAdmission`
   (`@bisellium/commands/brief-admission.js`), shared by `ready`, `check` and
   `next`'s spec-review order.
+- `ticket.ts` (`@bisellium/commands/ticket.js`, W-233) — the one step-ticket seam:
+  `readStepTickets` reads the `step_tickets` key strictly, `actionFacts` reads the
+  head and brief a ticket binds, `setPendingTicket` writes or deletes it under the
+  git common directory, and `requireTicket` / `claimTicket` / `recordTicket` /
+  `dropClaim` are what `ready`, `review`, `done`, `red`, `verdict`, `branch` and
+  `merge` call. Every raw `fs` call in it touches only that directory
+  (`containment.test.ts`, inventory D).
 - `instant` (`@bisellium/schema`) — the one strict record-date parser (W-163,
   moved from cli so core, server and commands can use it), with
   `readContainedRegularFile` (`opus-model.js`) and `requireRealDirectory`
