@@ -12,22 +12,19 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 ## Resume point (2026-10-13)
 
-1. **W-240** (#441) and **W-221** (#442): merged and verified on master; `done` lands with this
-   handoff; retros owed (W-221: six build rounds before the D-059 re-spec).
-2. **W-236** done (#440); retro filed (L-152..L-159; W-244 to backlog: exercise a changed
-   CI step list in the host recomputation before merge, the class that broke every mint).
-3. **W-233** part 1: building on opus/W-233 (D-057 re-check: branch as is). b1-b3 built,
-   reds 01-03; a fresh builder on b4, b5, docs and gates
-   (`~/.bisellium-evidence/W-233-build/handover-b4.md`). After it: re-sign brief:179's
-   b3 subcase sentence (architect ruling `W-233-build/b3-ruling.md`), one spec review round.
-4. **W-241** part 1: spec passed (`ci/W-241-spec-4.log`, untracked until landed); the Patron
-   approved the split, the template names and blocking (2026-10-13).
-- Dispatch guard: a CLI verb in W-233 part 2 (`docs/design/next-handoff-notes.md`).
+1. **W-221** done (#444). **W-240** merged (#441): `next` names `done` (an agent cannot waive
+   its review gate under D-060; done lands on the merged, verified tree).
+2. **W-233** part 1: review round 1 failed (two findings); fix round built at f5252b04, gates
+   and npm test green (`W-233-build/r1fix/`). To do: mint; review round 2 resuming censor session
+   01a1351a-e2a3-7c03-8d41-3dedd964a2f1, flagging the new `ticket: held` form (not in the brief).
+3. **W-241** part 1 spec passed (untracked), Patron-approved.
+4. **Audits ruled (D-061):** 25 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
+   W-251 filed; the Queue below is the new order.
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Concurrency readiness
 
-One lane until Queue 8 lands (the multi-lane prep, W-169 last).
+One lane until the multi-lane prep lands (Queue item 7, W-169 last).
 
 ## Artifacts
 
@@ -43,52 +40,39 @@ One lane until Queue 8 lands (the multi-lane prep, W-169 last).
 Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
-Order set by the Patron 2026-10-13: in flight, then fewer rounds, then lanes.
+Order set by the Patron 2026-10-13 (D-061): in flight, then the audit cuts, then the
+milestone exits; lanes later.
 
-1. W-233 — the ladder is enforced, not remembered (D-039 high; spec landed);
-   W-243 — certify judges the diff, not the branch name (D-039 high; uncertified path).
-2. W-238 — brief admission refuses a red the host replay cannot run; W-237 — a review
-   finding carries its replacement text, applied verbatim it closes.
-3. W-242 — drop the PreCompact hook (no compaction); W-239 — `next`'s merge always
-   fast-forwards master.
-4. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
-   (security review on every change), then W-169 (switches lanes on). Designs
-   approved; every Default answered.
-5. W-241 — leads as agents, prompts versioned (part 1 specced, approved); W-231 —
-   the orchestrator refreshes itself by handoff.
-6. W-229 — verdict refuses a signature next cannot read (D-039, Patron);
-   W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
-   (acta `2026-10-11-patron-queue-review`).
-7. In this order (the briefs require it): W-210 — CI refuses a merge path that skips
-   the queue; W-212 — CI docs checked against ci.yml; W-213 — the retro reads a
-   per-opus step ledger and escalates a class seen three times (Patron 2026-10-11).
-8. W-208 — set up the Ops collegium (D-055; PR A, then PR B's moves); W-204 — next
-   stops holding a build review after three failed rounds (Patron reconsiders first);
-   W-223 — Status page shows the queue; W-206 — the spec rides in the opus's PR
-   (D-054); W-214 — the retro rides in the done PR; W-207 — verify reuses the
-   queue's certificate (D-054); W-201 — the mutation check gates build review (D-052).
-9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
-10. W-185 — records checked once at load (D-049; the architect specs it).
-11. W-172, W-171 — high-severity fixes.
-12. W-068 — task dependencies: copy `~/.bisellium-evidence/partial-specs/W-068.md` to
-   `studio/briefs/W-068.md`, add `Red order: one at a time`, re-sign, spec review.
-13. W-081, W-099 — security fixes.
-14. W-173, W-174, W-184, W-195; then W-164, W-165, W-187, W-189, W-190,
-    W-191, W-192, W-194, W-198.
-15. W-158, W-133, W-115, W-117 then W-116, the Seats pass (W-154, W-091,
-    W-090), W-143, W-144, W-157, W-145, W-136, W-146, W-160, W-135, then
-    the medium and low fixes W-038, W-040, W-045, W-051, W-058, W-066,
-    W-073, W-074, W-080, W-083, W-086, W-094, W-098; then W-175, W-176.
+1. In flight: W-233 — the ladder is enforced, not remembered (D-039 high; part 1 in review).
+2. Audit cuts: W-246 — spec review blocks only on substance, changed lines only, two-round
+   cap; W-247 — drop the handoff Resume point and its review;
+   W-250 — ci.yml runs `bisellium ci` once, verdict writes the gate; W-243 — certify judges the diff, not the branch name (D-039 high); W-206 + W-207
+   + W-214 as one opus — spec in the opus PR, done reads certify's receipt, retro in the done
+   PR; W-251 — process work capped, weekly retro.
+3. W-245 part 1 — census of every provider coupling (the Patron approves the design); then
+   W-248 — dead verbs and packages (W-081's injection note rides it), W-249 — lighter tests.
+4. W-068 — task dependencies (copy `~/.bisellium-evidence/partial-specs/W-068.md` to
+   `studio/briefs/W-068.md`, add `Red order: one at a time`, re-sign, spec review); then the
+   W-118 split (M3's exit; absorbs W-169, W-231, W-241 part 2).
+5. Milestone exits: W-045 + W-185 — atomic writes, records checked at load (M2); W-099 +
+   W-093 — realpath anchor, security review on every change (M8); W-078 → W-074 → W-073 —
+   greenlight and reply from the console (M4); W-149 + W-150 — outside-adapter test and
+   guide (M9); W-159 — model per seat, after W-245 (M6).
+6. W-238 — brief admission refuses a red the host replay cannot run; W-242 — drop the
+   PreCompact hook; W-239 — `next`'s merge always fast-forwards master; W-241 part 1 —
+   leads as agents (specced, approved); W-229, W-172 (high).
+7. Multi-lane prep: W-178, W-179, W-180, W-182, W-183, then W-169 (switches lanes on).
+8. The rest as ranked 2026-10-11/12 (acta `2026-10-11-patron-queue-review`), halted ids
+   dropped: W-225, W-219, W-228, W-227 (high), W-138, W-217, W-224; W-210, W-213; W-208,
+   W-223; W-081; W-173, W-174, W-195, W-165, W-190, W-191, W-192, W-194, W-198; W-158,
+   W-133, W-115, W-116, W-154, W-091, W-090, W-143, W-144, W-157, W-145, W-136, W-146,
+   W-160, W-135; W-038, W-040, W-051, W-058, W-066, W-080, W-086, W-094, W-098; W-175, W-176.
 
-Greenlit, not yet ranked (next queue review): W-070, W-078, W-113, W-118 (split
-only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W-159, W-177.
+Greenlit, not yet ranked: W-070, W-113, W-147, W-151.
 
 ## Open Patron choices
-
-- Leads as real agents (Patron 2026-10-11: eng-lead and qa-lead): the architect's
-  design and its six questions, `~/.bisellium-evidence/leads-design/design.md`.
+- Still open from the audit (`overengineering-audit/report.md`): hooks (C1), `talk` and its
+  harnesses (C7), ~45 check rules on unused records (P6), a lighter brief template (P8).
 - The 2026-10-11 audit (four rule breaks, eight gaps in 25 commits), `~/.bisellium-evidence/design-notes-1011/`.
 - W-230 (impeccable's detector in CI): backlog; the Patron greenlights it, then a
   spec waits for approval of its design and Defaults.
-- W-231 (interactive self-refresh): filed, not greenlit until tested
-  (`~/.bisellium-evidence/W-231-draft/design-notes.md`).
