@@ -1,0 +1,48 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-233-b2 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-13T10:00:30.061Z
+# sella: builder.W-233
+# tree: tree:f35f8f36a4574f3f15f41f1b5daf78b114a8effd
+
+TAP version 13
+# Subtest: W-233-b2 behaviour 2: every covered direct verb refuses a missing or mismatched ticket before writing
+not ok 1 - W-233-b2 behaviour 2: every covered direct verb refuses a missing or mismatched ticket before writing
+  ---
+  duration_ms: 1562.377168
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:157:137'
+  failureType: 'testCodeFailure'
+  error: |-
+    ready: no ticket: exit
+    --- exit 0
+    --- stdout
+    W-900: spec=briefs/W-900.md state=building
+    
+    --- stderr
+    
+    
+    0 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    refused (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:4778:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:4810:5)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1584.598924
