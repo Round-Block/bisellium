@@ -4857,6 +4857,21 @@ test("W-233-b2 behaviour 2: every covered direct verb refuses a missing or misma
   assert.equal(branchExists(made), true);
 });
 
+test("W-233-b2 cross-checkout: a ticket issued for checkout A is refused for branch and merge given --repo B", { timeout: 1_800_000 }, () => {
+  for (const verb of ["branch", "merge"]) {
+    const a = world(`w233-b2-xa-${verb}`, "spec");
+    const b = world(`w233-b2-xb-${verb}`, "spec");
+    ticketed(a);
+    ticketed(b);
+    forge(a, verb, 0, {}, "repo");
+    const before = [snap(a), snap(b), ticketTree(a), ticketTree(b)];
+    const o = direct(a, a.repo, [verb, OPUS, "--studio", a.studio, "--repo", b.repo]);
+    refused(o, verb, `facts unreadable: --repo ${b.repo} is not the checkout of ${a.studio}`, a, `${verb}: A's ticket, B's repository`);
+    assert.deepEqual([snap(a), snap(b), ticketTree(a), ticketTree(b)], before, `${verb}: both checkouts, their refs and both ticket directories are byte-identical`);
+    assert.equal(branchExists(b), false, `${verb}: B has no opus branch`);
+  }
+});
+
 const claimedPath = (w: World): string => ticketPath(w, `${OPUS}.claimed`);
 /** The record's `tickets:` list, read through the same front-matter parser the verbs use. */
 const recordTickets = (w: World, dir: "repo" | "wt"): unknown => parseFrontMatter<{ tickets?: unknown }>(recordOf(w, dir), "record").data.tickets;
