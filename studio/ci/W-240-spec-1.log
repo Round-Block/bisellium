@@ -1,0 +1,21 @@
+# opus: W-240
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T03:37:35.163Z
+# tree: dirty:6f9115874475a1f17e11aca7216ee3c6704557a0
+# brief: briefs/W-240.md blob:5bb0f5b83f5bb3adcb58785658eb3fc147c98598
+
+## Findings
+
+1. advisory — The draft's acceptance that W-240's own `bisellium run` mints a receipt cannot hold: the producer pins tooling to master (run-builder-host.mjs:466) and certify mints with master's tooling, so W-240 cannot mint, be admitted to `review` or pass `certify` until it is on master; dropped, and asked of the Patron as Defaults 1. check: none: census.txt section 5
+2. advisory — The draft's host-cells test was both "behaviour 2" and "behaviour 6", and `--behaviour 6` is refused by the file's selector (exit 2); the test is now `W-240-b2`, outside every runs(n) gate, selected by --test-name-pattern. check: scripts/host-cells.test.mjs
+3. advisory — ci.test.ts row 11 is cut to one assertion (offline order with audit set to fail); the default-order, --ref and `--offline=true` cases restate rows 1-2, the shared step loop and parseFlags' existing unknown-flag path. check: packages/cli/src/ci.test.ts
+4. advisory — The break census gains `scripts/ci-scope.test.mjs` W-139 behaviour 5 (it spawns ci-workflow.test.mjs), measured by running every test:suite command alone. check: none: suite-B1.txt
+5. advisory — Both Genuine reds were run in an offline replay-shaped cell and accepted by classifyReplay; the branch's `ci --offline` exits 0 in an offline producer-shaped cell, `ci` without it stops at the audit, and master's `ci` refuses `--offline` (exit 2). check: none: red1-cell.txt, red2-cell.txt, pc-offline.txt, pc-default.txt, master-offline-flag.txt
+
+## Verdict
+
+Passed: every claim is checked against master 0e37e56b on scratch clones (census.txt), the brief passes admission with 0 problems, names every existing row it breaks, and its one Default is a plain question for the Patron.

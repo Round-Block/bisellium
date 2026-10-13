@@ -1,0 +1,18 @@
+# opus: W-240
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a13356-c287-7ee2-a242-1938297d902d
+# outcome: passed
+# at: 2026-10-13T03:45:19.710Z
+# tree: dirty:6f9115874475a1f17e11aca7216ee3c6704557a0
+# brief: briefs/W-240.md blob:5bb0f5b83f5bb3adcb58785658eb3fc147c98598
+
+## Findings
+1. advisory — brief:5 Behaviour 2 adds a `readFileSync` reader for `scripts/run-builder-host.mjs`, so “Read enumeration: none” and the input table omit that source record, its valid domain, and its `sourceHas`/`assert.equal` rejectors; those assertions do fail closed. — check: scripts/host-cells.test.mjs
+2. advisory — brief:28 The input table omits the changed producer-gate subprocess call: its valid result is exit 0, while the existing `gate.status !== 0` path refuses completion and writes no receipt. — check: packages/commands/src/run.test.ts
+
+## Verdict
+The omissions are advisory because both paths already fail closed; the numbered behaviours and remaining promises are feasible as written.
+VERDICT: PASS
