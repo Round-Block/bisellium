@@ -1,0 +1,15 @@
+# opus: W-221
+# phase: spec
+# round: 9
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T01:54:39.374Z
+# tree: tree:bba579f3730ec28850e806b8e274a883c7ab5140
+# brief: briefs/W-221.md blob:f0853aa116539408b81f5d70ab6816733cc438a5
+
+## Findings
+No findings
+
+## Verdict
+passed: revision 4 of studio/briefs/W-221.md, the re-spec D-059 ordered after build review round 5. Every unquoted `|` outside a comment that is not half of `||` is a pipeline, and the Interfaces' scanning rules are the contract, not Bash's grammar. Twelve existing W-221-b1 rows flip by this ruling and two are added, each listed in behaviour 1. The four rows that go to undefined are lines Bash and dash refuse. The ruling changes no result on the rule's surfaces today, and the quoting limits are shown by example (~/.bisellium-evidence/W-221-respec/census.txt §1-3). The builder's steps are census.txt §4. The change is respec.diff.

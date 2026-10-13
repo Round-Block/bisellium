@@ -14,6 +14,7 @@ import { basename, join, resolve } from "node:path";
 import { listMd, parseFrontMatter, readFront, STATES } from "@bisellium/adapter-native";
 import { readContainedRegularFile } from "@bisellium/commands/opus-model.js";
 import { instant } from "@bisellium/schema";
+import { parse as parseYaml } from "yaml";
 import type { Finding, Level, RuleOpts } from "../check.js";
 import { owedRetros } from "../retro.js";
 import { RULE_IDS } from "./ids.js";
@@ -546,4 +547,195 @@ export function checkSessionHandoff(root: string, opts: RuleOpts): Finding[] {
   const read = handoffInputs(opts.repo, root);
   if (read.kind === "error") return [{ rule: "process.handoff.input", level: "block", where: HANDOFF_REL, message: read.reason }];
   return read.kind === "absent" ? [] : sessionHandoffFindings(read.text, read.opera);
+}
+
+// ---- W-221: a pipe never hides a gate's exit ----------------------------------
+/** 1-based line of the first `|` outside quotes and comments that is not half of `||` (D-059: no redirection is modelled), or undefined. */
+export function shellPipeLine(text: string): number | undefined {
+  let i = 0;
+  let line = 1;
+  /** The index of the first character at or after `j` that is not part of a backslash-newline continuation (which Bash removes). */
+  const past = (j: number): number => {
+    while (text[j] === "\\" && text[j + 1] === "\n") j += 2;
+    return j;
+  };
+  /** Move `i` forward to `j`, counting the newlines passed. */
+  const jump = (j: number): void => {
+    for (; i < j; i++) if (text[i] === "\n") line++;
+  };
+  // ponytail: no redirection, `$'…'`, heredoc, `case` or arithmetic awareness: every unquoted `|` that is not half of `||` is a pipeline,
+  // so `>|`, `<>|`, `&>|`, a `case` pattern `a|b)`, `=~ a|b` and a heredoc body are false alarms (rewrite the line); `$'…'` is read as `'…'`
+  // and an unpaired quote in a heredoc body shifts the quoting after it, either can hide a later pipe (W-221 census §3)
+  /** At an opening quote: skip the string; the opening line if it never closes, a pipe line from a substitution in "…". */
+  const quoted = (q: string): number | undefined => {
+    const opened = line;
+    i++;
+    while (i < text.length) {
+      const c = text[i]!;
+      if (c === q) {
+        i++;
+        return undefined;
+      }
+      if (q === '"' && c === "\\") {
+        if (text[i + 1] === "\n") line++;
+        i += 2;
+      } else if (q === '"' && (c === "`" || (c === "$" && text[past(i + 1)] === "("))) {
+        const at = line;
+        if (c === "$") {
+          jump(past(i + 1));
+          i--; // code() skips two characters: the `$` and the `(`
+        }
+        const hit = code(c === "`" ? "`" : ")", at);
+        if (hit !== undefined) return hit;
+      } else {
+        if (c === "\n") line++;
+        i++;
+      }
+    }
+    return opened;
+  };
+  /** Top-level code until `close` (`)` or a backtick, or "" for the whole text): the first pipeline line, or the opening line if unterminated. */
+  const code = (close: string, opened = line): number | undefined => {
+    i += close === "" ? 0 : close === "`" ? 1 : 2;
+    let depth = 0;
+    // explicit lexical state, never read back from the preceding raw byte: `start` is true where a word may begin
+    // (a `#` there is a comment)
+    let start = true;
+    while (i < text.length) {
+      const c = text[i]!;
+      if (c === close && depth === 0) {
+        i++;
+        return undefined;
+      }
+      if (c === "\\") {
+        // a continuation is invisible: start stays as it was
+        if (text[i + 1] === "\n") line++;
+        else start = false;
+        i += 2;
+      } else if (c === "'" || c === '"') {
+        const hit = quoted(c);
+        if (hit !== undefined) return hit;
+        start = false;
+      } else if (c === "`" || (c === "$" && text[past(i + 1)] === "(")) {
+        const at = line;
+        if (c === "$") {
+          jump(past(i + 1));
+          i--; // code() skips two characters: the `$` and the `(`
+        }
+        const hit = code(c === "`" ? "`" : ")", at);
+        if (hit !== undefined) return hit;
+        start = false;
+      } else if (c === "#" && start) {
+        while (i < text.length && text[i] !== "\n") i++;
+      } else if (c === "|" && text[past(i + 1)] === "|") {
+        jump(past(i + 1) + 1);
+        start = true;
+      } else if (c === "|") {
+        return line;
+      } else {
+        start = /[\s;&()<>]/.test(c);
+        if (c === "(") depth++;
+        else if (c === ")") depth--;
+        else if (c === "\n") line++;
+        i++;
+      }
+    }
+    return close === "" ? undefined : opened;
+  };
+  return code("");
+}
+
+const pipeBlock = (where: string, message: string): Finding => ({ rule: "process.pipe_exit", level: "block", where, message });
+// a constant, not a literal call argument: rules/lex.test.ts harvests dotted literals as rule ids
+const PACKAGE_JSON = "package.json";
+const PIPE_HINT = "a pipeline's status is its last member's; wrap it as `bash -o pipefail -c '…'`";
+
+/** One `scripts/<name>` file: its first command line must be `set -euo pipefail`, and nothing may switch pipefail off. */
+function scriptPipeFinding(repo: string, name: string): Finding[] {
+  const where = `scripts/${name}`;
+  const read = readContainedRegularFile(repo, where, "scripts");
+  if ("error" in read) return [pipeBlock(where, `cannot be read: ${read.error}`)];
+  const lines = read.bytes.toString("utf8").split("\n");
+  const first = lines.findIndex((l) => l.trim() !== "" && !l.trimStart().startsWith("#"));
+  if (first === -1) return [pipeBlock(where, "has no command line; the first must be `set -euo pipefail`")];
+  if (lines[first]!.trim() !== "set -euo pipefail") return [pipeBlock(`${where}:${first + 1}`, "the first command line must be exactly `set -euo pipefail`")];
+  // a backslash-newline continuation joins lines for Bash, so each line is tested with its continuations, reported at its first line
+  const joined = lines.map((l, n) => {
+    let t = l;
+    // only an odd run of trailing backslashes escapes the newline
+    for (let k = n + 1; (/\\+$/.exec(t)?.[0].length ?? 0) % 2 === 1 && k < lines.length; k++) t = t.slice(0, -1) + lines[k]!;
+    return t;
+  });
+  const off = joined.findIndex((t) => /\+[A-Za-z]*o[ \t]+pipefail/.test(t));
+  return off === -1 ? [] : [pipeBlock(`${where}:${off + 1}`, "turns pipefail off")];
+}
+
+/** The names in a directory passing `ok`, sorted; [] when it is absent, or one finding when it cannot be listed. */
+function listed(repo: string, dir: string, ok: (name: string) => boolean): { names: string[]; findings: Finding[] } {
+  try {
+    return { names: readdirSync(join(repo, dir)).filter(ok).sort(), findings: [] };
+  } catch (e) {
+    const absent = (e as NodeJS.ErrnoException).code === "ENOENT";
+    return { names: [], findings: absent ? [] : [pipeBlock(dir, `cannot be listed: ${(e as Error).message}`)] };
+  }
+}
+
+/** One workflow file: each step `run:` holding a pipeline needs the effective shell to be exactly `bash`. */
+function workflowPipeFindings(repo: string, name: string): Finding[] {
+  const file = `.github/workflows/${name}`;
+  const read = readContainedRegularFile(repo, file, ".github");
+  if ("error" in read) return [pipeBlock(file, `cannot be read: ${read.error}`)];
+  let doc: unknown;
+  try {
+    doc = parseYaml(read.bytes.toString("utf8"));
+  } catch (e) {
+    return [pipeBlock(file, `does not parse: ${(e as Error).message}`)];
+  }
+  if (!isDict(doc)) return [pipeBlock(file, "is not a YAML mapping")];
+  const shellOf = (d: unknown): unknown => (isDict(d) && isDict(d["defaults"]) && isDict(d["defaults"]["run"]) ? d["defaults"]["run"]["shell"] : undefined);
+  const findings: Finding[] = [];
+  for (const [id, job] of Object.entries(isDict(doc["jobs"]) ? doc["jobs"] : {})) {
+    if (!isDict(job) || !Array.isArray(job["steps"])) continue;
+    job["steps"].forEach((step: unknown, i) => {
+      if (!isDict(step) || typeof step["run"] !== "string" || shellPipeLine(step["run"]) === undefined) return;
+      if ((step["shell"] ?? shellOf(job) ?? shellOf(doc)) !== "bash") findings.push(pipeBlock(`${file}#jobs.${id}.steps[${i}]`, `a piped run step needs \`shell: bash\` (GitHub then adds -o pipefail); ${PIPE_HINT}`));
+    });
+  }
+  return findings;
+}
+
+/** process.pipe_exit findings for <repo>'s scripts/*.sh, .github/workflows/*.{yml,yaml} and package.json. Never throws. */
+export function repoPipeFindings(repo: string): Finding[] {
+  const findings: Finding[] = [];
+  const scripts = listed(repo, "scripts", (n) => n.endsWith(".sh"));
+  findings.push(...scripts.findings, ...scripts.names.flatMap((n) => scriptPipeFinding(repo, n)));
+  const workflows = listed(repo, ".github/workflows", (n) => /\.ya?ml$/.test(n));
+  findings.push(...workflows.findings, ...workflows.names.flatMap((n) => workflowPipeFindings(repo, n)));
+  const pkg = readContainedRegularFile(repo, PACKAGE_JSON, "");
+  if ("error" in pkg) {
+    if (pkg.code !== "ENOENT") findings.push(pipeBlock(PACKAGE_JSON, `cannot be read: ${pkg.error}`));
+    return findings;
+  }
+  try {
+    const scriptsOf = (JSON.parse(pkg.bytes.toString("utf8")) as Dict)["scripts"];
+    for (const [name, cmd] of Object.entries(isDict(scriptsOf) ? scriptsOf : {}))
+      if (typeof cmd === "string" && shellPipeLine(cmd) !== undefined) findings.push(pipeBlock(`package.json#scripts.${name}`, `npm runs scripts with sh; ${PIPE_HINT}`));
+  } catch (e) {
+    findings.push(pipeBlock(PACKAGE_JSON, `does not parse: ${(e as Error).message}`));
+  }
+  return findings;
+}
+
+/** W-221: an S2 rule module: manifest automated commands for any officina; the repository surfaces only in `<repo>/studio`. */
+export function checkPipeExit(root: string, opts: RuleOpts): Finding[] {
+  const findings: Finding[] = [];
+  const probationes = isDict(opts.manifest) ? opts.manifest["probationes"] : undefined;
+  for (const g of Array.isArray(probationes) ? probationes : []) {
+    if (!isDict(g) || g["kind"] !== "automated" || g["command"] === undefined) continue;
+    const where = `bisellium.yml#${str(g["id"]) ?? "?"}`;
+    if (typeof g["command"] !== "string") findings.push(pipeBlock(where, "an automated command must be a string"));
+    else if (shellPipeLine(g["command"]) !== undefined) findings.push(pipeBlock(where, `the automated command holds a pipeline (it runs under /bin/sh); ${PIPE_HINT}`));
+  }
+  if (opts.repo !== undefined && resolve(root) === resolve(opts.repo, "studio")) findings.push(...repoPipeFindings(opts.repo));
+  return findings;
 }

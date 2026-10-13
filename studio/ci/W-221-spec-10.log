@@ -1,0 +1,20 @@
+# opus: W-221
+# phase: spec
+# round: 10
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12988-64ad-74b1-aab8-61c0033cbe51
+# outcome: passed
+# at: 2026-10-13T01:56:27.992Z
+# tree: tree:bba579f3730ec28850e806b8e274a883c7ab5140
+# brief: briefs/W-221.md blob:f0853aa116539408b81f5d70ab6816733cc438a5
+
+## Findings
+No findings
+
+## Earlier findings
+
+## Verdict
+The D-059 lexical rule is internally consistent, fail-closed on the changed cases, and fully reflected in the revised tests and stated limits.
+
+VERDICT: PASS

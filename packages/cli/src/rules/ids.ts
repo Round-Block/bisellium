@@ -140,6 +140,7 @@ export const RULE_IDS: ReadonlySet<string> = new Set([
   "process.handoff.reference",
   "process.handoff.resume",
   "process.history",
+  "process.pipe_exit",
   "process.review_tier",
   "process.tdd",
   "receipt.shape",

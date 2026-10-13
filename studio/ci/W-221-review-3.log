@@ -1,0 +1,20 @@
+# opus: W-221
+# phase: build
+# round: 3
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a12a7a-b4bd-7791-b97d-ab5f510e4c0b
+# outcome: failed
+# at: 2026-10-11T12:17:55.444Z
+# tree: tree:27c65f41cf6e62860effa48701659c558c196ba5
+# brief: briefs/W-221.md blob:9f676df259fa14b14d4bfa21e65d5049ee939131
+
+## Findings
+1. blocking — packages/cli/src/rules/process.ts:633 Reached through the earlier finding’s clobber/continuation class: `||` recognition runs before `clobber`, so `echo x >||f` treats both pipes as `||`, although `>|` is the clobber token and the final `|` is a pipeline. The same miss occurs with backslash-newline continuations between those operator bytes; I searched `>|`, `||`, `>>|`, continuation variants, and all shared `code()` contexts (brief:55). — check: packages/cli/src/rules/process.test.ts
+2. blocking — packages/cli/src/rules/process.ts:580 Both continuation-aware `$(` call sites—here and at line 623—advance the line before `code()` captures `opened`, so an unterminated `$\\\n(` returns line 2 instead of its opening line 1. I searched both `$(` detection sites; these are all instances (brief:63). — check: packages/cli/src/rules/process.test.ts
+
+## Earlier findings
+
+## Verdict
+The direct round-2 defect is fixed, but the revised scanner still misses a clobber-followed-by-pipeline class and misreports continued unterminated substitutions.
+VERDICT: FAIL

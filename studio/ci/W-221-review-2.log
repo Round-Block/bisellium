@@ -1,0 +1,24 @@
+# opus: W-221
+# phase: build
+# round: 2
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a12a7a-b4bd-7791-b97d-ab5f510e4c0b
+# outcome: passed
+# submitted_outcome: failed
+# at: 2026-10-11T11:21:23.382Z
+# tree: tree:b6b6f05f38063041d4bde737bdd454122c8127e8
+# brief: briefs/W-221.md blob:9f676df259fa14b14d4bfa21e65d5049ee939131
+# converted: 1 (cites no line of briefs/W-221.md)
+
+## Findings
+1. blocking — packages/cli/src/rules/process.ts:597 Reached through the earlier finding’s lexical-state class: `gt` is cleared before a backslash-newline is consumed, so `echo x >\` followed by newline and `|f` is reported as a pipeline even though Bash removes the continuation and parses `>|` as a clobber redirect; every consuming surface therefore blocks an accepted command. — check: packages/cli/src/rules/process.test.ts
+2. advisory — packages/cli/src/rules/process.ts:651 A line ending in an even number of backslashes is not continued by Bash, but `endsWith("\\")` joins it anyway; if the following line contains `set +o pipefail`, the correct block is reported at the preceding line rather than the first matching line. — check: packages/cli/src/rules/process.test.ts
+
+## Earlier findings
+- ci/W-221-review-1.log #1: closed — packages/cli/src/rules/process.ts:586 now tracks explicit lexical state, the three reported false negatives have passing regression rows, and no `text[i-1]` lookbehind remains.
+
+## Verdict
+The original blocker is fixed, but the replacement loses redirect state across an ordinary shell continuation and wrongly blocks valid input.
+
+VERDICT: FAIL

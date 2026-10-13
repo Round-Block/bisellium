@@ -9,12 +9,14 @@
  */
 
 import assert from "node:assert/strict";
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { checkStudio } from "../check.js";
+import * as rules from "./process.js";
 import { checkProcess, tddViolation, checkpointStale, sameSellaBuiltAndReviewed, reviewTierAdvisory } from "./process.js";
 
 let failed = 0;
@@ -327,6 +329,253 @@ test("W-186-b1 behaviour 23: check blocks a stale, relative, oversized or unread
   assert.deepEqual(handoffFindings(base, stale, { studioDir: "other" }), []);
   assert.deepEqual(handoffFindings(base, stale, { repo: false }), []);
   assert.equal(handoffFindings(base, stale).length, 1, "control: the same handoff blocks in <repo>/studio");
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+// behaviour 24 (W-221): shellPipeLine finds the first unquoted pipeline operator and nothing else.
+test("W-221-b1 behaviour 24: the classifier finds an unquoted pipeline and nothing else", () => {
+  assert.equal(typeof rules.shellPipeLine, "function");
+  const kept =
+    "npm run -s bisellium -- verdict $ID --round $N --sella qa-lead --outcome $OUT --model gpt-5.6-sol --from $TMPDIR/$ID-r$N.md --studio .worktrees/$ID/studio | tail -1";
+  const rows: [string, string, number | undefined][] = [
+    ["the kept record-review.sh line 6", kept, 1],
+    ["a plain pipe", "a | b", 1],
+    ["an or-list", "a || b", undefined],
+    ["a pipe in double quotes", 'echo "a|b"', undefined],
+    ["a pipe in single quotes", "echo 'a|b'", undefined],
+    ["an escaped pipe", "echo a\\|b", undefined],
+    ["a comment", "# a | b", undefined],
+    ["a trailing comment", "x # a | b", undefined],
+    ["a pipe-and-stderr", "a |& tee x", 1],
+    ["a hash inside a word is no comment", "echo a#b | c", 1],
+    ["a pipe in a dollar substitution", 'x="$(verdict W-1 | tail -1)"', 1],
+    ["a pipe in a backtick substitution", 'x="`a | b`"', 1],
+    ["a pipe on line 3 after a two-line string", 'echo "a\nb"\nx | y', 3],
+    ["a multi-line string holding a pipe", 'echo "a |\nb"', undefined],
+    ["an unterminated quote", "echo 'open", 1],
+    ["a case pattern (limit: read as a pipe)", "case $x in a|b) ;; esac", 1],
+    ["a heredoc body (limit: read as a pipe)", "cat <<EOF\nfoo\na | b\nEOF", 3],
+    // round 1: lexical state is tracked, never read back from the preceding raw byte
+    ["a hash after a closed substitution is mid-word", "echo $(date)#tag | cat", 1],
+    ["a hash after a closed backtick substitution is mid-word", "echo `date`#tag | cat", 1],
+    ["a hash after an escaped space is mid-word", "echo a\\ #tag | cat", 1],
+    ["a hash after an escaped backslash is mid-word", "echo \\\\#tag | cat", 1],
+    ["a hash after a closed double quote is mid-word", 'echo "a"#tag | cat', 1],
+    ["a hash after a closed single quote is mid-word", "echo 'a'#tag | cat", 1],
+    ["an escaped greater-than before a pipe: the | is a pipeline", "echo \\>|cat", 1],
+    ["D-059: a clobber-looking >| is a pipeline", "echo x >| f", 1],
+    ["D-059: a space-free >|f is a pipeline", "echo x>|f", 1],
+    ["D-059: >||f is > then ||: no pipeline", "echo x >||f", undefined],
+    ["D-059: the | in >>| is a pipeline", "echo x >>| f", 1],
+    ["D-059: >>>| is a pipeline", "echo x >>>| f", 1],
+    ["D-059: 2>|f is a pipeline", "echo 2>|f", 1],
+    ["D-059: a >| in a dollar substitution is a pipeline", "x=$(echo x >| f)", 1],
+    ["D-059: a >| in a backtick substitution is a pipeline", "x=`echo x >| f`", 1],
+    ["D-059: a >| in a quoted substitution is a pipeline", 'x="$(echo x >| f)"', 1],
+    ["D-059: >||f in a substitution is > then ||: no pipeline", "x=$(echo x >||f)", undefined],
+    ["a hash after an operator starts a comment", "echo x;#c | d", undefined],
+    ["a hash after a continuation and space starts a comment", "echo a \\\n#c | d", undefined],
+    ["a hash after a continuation inside a word is mid-word", "echo a\\\n#c | d", 2],
+    ["a length expansion is no comment", "echo ${#x} | cat", 1],
+    // round 2: a backslash-newline is invisible to every tracked state and lookahead
+    ["D-059: a continuation between > and | leaves a pipeline on line 2", "echo x >\\\n|f", 2],
+    ["D-059: a continuation before || is > then ||: no pipeline", "echo x >\\\n||f", undefined],
+    ["D-059: a continuation between >| and | forms ||: no pipeline", "echo x >|\\\n|f", undefined],
+    ["D-059: <>| is a pipeline", "echo x <>|f", 1],
+    ["D-059: &>| is a pipeline", "echo x &>|f", 1],
+    ["an unterminated continued substitution returns its opening line", "x=$\\\n(a", 1],
+    ["an unterminated continued substitution in a double quote returns its opening line", 'x="$\\\n(a', 1],
+    ["D-059: a continuation between two > then >|: the | is a pipeline on line 2", "echo x >\\\n>|f", 2],
+    ["a continuation between two | forms an or-list", "echo a |\\\n| b", undefined],
+    ["a continuation between $ and ( opens a substitution", "x=$\\\n(a | b)", 2],
+  ];
+  for (const [label, text, want] of rows) assert.equal(rules.shellPipeLine(text), want, label);
+});
+
+// behaviour 25 (W-221): `check` blocks each pipe-exit surface once, in the repository's own studio.
+const W221_REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const TESTS_GATE = 'id: tests, name: Tests, kind: automated, command: "true"';
+/** Run checkStudio over a scratch repo holding `files` and return the process.pipe_exit findings as [rule, where]. */
+function pipeFindings(files: Record<string, string>, o: { studioDir?: string; repo?: boolean; testsGate?: string; setup?: (repo: string) => void } = {}): string[][] {
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-w221-"));
+  scratches.push(repo);
+  const studio = join(repo, o.studioDir ?? "studio");
+  mkdirSync(join(studio, "opera"), { recursive: true });
+  const manifest = readFileSync(SAMPLE_MANIFEST, "utf8");
+  assert.ok(manifest.includes(TESTS_GATE), "the sample manifest has the tests gate row");
+  writeFileSync(join(studio, "bisellium.yml"), o.testsGate === undefined ? manifest : manifest.replace(TESTS_GATE, o.testsGate));
+  for (const [name, body] of Object.entries(files)) {
+    mkdirSync(dirname(join(repo, name)), { recursive: true });
+    writeFileSync(join(repo, name), body);
+  }
+  o.setup?.(repo);
+  const result = checkStudio(studio, W186_NOW, o.repo === false ? {} : { repo });
+  return result.findings.filter((f) => f.rule === "process.pipe_exit").map((f) => [f.rule, f.where]);
+}
+const RULE = "process.pipe_exit";
+const one = (where: string): string[][] => [[RULE, where]];
+const WF = "jobs:\n  j:\n    runs-on: ubuntu-latest\n";
+const workflow = (step: string, job = "", top = ""): string => `${top}${WF}${job}    steps:\n      - ${step}\n`;
+const CI = ".github/workflows/ci.yml";
+
+test("W-221-b2 behaviour 25: check blocks each surface once, in the repository's own studio", () => {
+  // scripts/*.sh: the first command line must be exactly `set -euo pipefail`
+  const script = (name: string, body: string): Record<string, string> => ({ [`scripts/${name}`]: body });
+  assert.deepEqual(pipeFindings(script("a.sh", "set -e\necho hi\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(pipeFindings(script("a.sh", "#!/usr/bin/env bash\n# usage\n\nset -euo pipefail\necho hi\n")), []);
+  assert.deepEqual(pipeFindings(script("a.sh", "#!/bin/sh\n# only comments\n")), one("scripts/a.sh"));
+  assert.deepEqual(pipeFindings(script("a.sh", "echo hi\nset -euo pipefail\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(pipeFindings(script("a.sh", "set -o pipefail\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho\nset +o pipefail\n")), one("scripts/a.sh:3"));
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho\nset +euo pipefail\n")), one("scripts/a.sh:3"));
+  assert.deepEqual(pipeFindings(script("a.sh", "f() {\n  set -euo pipefail\n}\n")), one("scripts/a.sh:1"));
+  assert.deepEqual(
+    pipeFindings(script("a.sh", "set -euo pipefail\n"), { setup: (repo) => symlinkSync(join(repo, "scripts", "a.sh"), join(repo, "scripts", "b.sh")) }),
+    one("scripts/b.sh"),
+    "a symlinked script",
+  );
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho\nset +o \\\n  pipefail\n")), one("scripts/a.sh:3"), "a continuation joins the disable");
+  assert.deepEqual(pipeFindings(script("a.sh", "set -euo pipefail\necho \\\\\nset +o pipefail\n")), one("scripts/a.sh:3"), "an even run of backslashes is no continuation");
+  assert.deepEqual(pipeFindings({ scripts: "not a directory\n" }), one("scripts"), "scripts as a regular file");
+  assert.deepEqual(pipeFindings({}), [], "no scripts/ and no workflows");
+
+  // workflow run steps holding a pipeline need the effective shell to be exactly bash
+  const piped = "run: a | b";
+  assert.deepEqual(pipeFindings({ [CI]: workflow(piped) }), one(`${CI}#jobs.j.steps[0]`));
+  assert.deepEqual(pipeFindings({ [CI]: workflow("run: a && b") }), [], "no pipeline");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(`${piped}\n        shell: bash`) }), [], "step shell: bash");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(piped, "    defaults:\n      run:\n        shell: bash\n") }), [], "job defaults.run.shell: bash");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(piped, "", "defaults:\n  run:\n    shell: bash\n") }), [], "workflow defaults.run.shell: bash");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(`${piped}\n        shell: bash -e {0} # pipefail`) }), one(`${CI}#jobs.j.steps[0]`), "bash -e {0}");
+  assert.deepEqual(pipeFindings({ [CI]: workflow(`${piped}\n        shell: sh`, "    defaults:\n      run:\n        shell: bash\n") }), one(`${CI}#jobs.j.steps[0]`), "step sh overrides job bash");
+  assert.deepEqual(pipeFindings({ [CI]: "jobs: [\n" }), one(CI), "an unparseable workflow");
+
+  // the root package.json: npm runs scripts with sh
+  assert.deepEqual(pipeFindings({ "package.json": '{"scripts":{"test":"node t.js | tee log"}}' }), one("package.json#scripts.test"));
+  assert.deepEqual(pipeFindings({ "package.json": '{"scripts":{"test":"bash -o pipefail -c \'node t.js | tee log\'"}}' }), []);
+  assert.deepEqual(pipeFindings({ "package.json": "{" }), one("package.json"), "an unparseable package.json");
+
+  // an automated probatio command is a string with no pipeline, on every officina
+  const tests = (command: string): string => `id: tests, name: Tests, kind: automated, command: ${command}`;
+  assert.deepEqual(pipeFindings({}, { testsGate: tests('"npm test | tail -1"') }), one("bisellium.yml#tests"));
+  assert.deepEqual(pipeFindings({}, { testsGate: tests("7") }), one("bisellium.yml#tests"));
+  assert.deepEqual(pipeFindings({}, { testsGate: tests('"npm test"') }), []);
+  const bad = { "scripts/x.sh": "set -e\n" };
+  assert.deepEqual(pipeFindings(bad, { testsGate: tests("7"), studioDir: "other" }), one("bisellium.yml#tests"), "another officina: the command only");
+  assert.deepEqual(pipeFindings(bad, { testsGate: tests("7"), repo: false }), one("bisellium.yml#tests"), "no --repo: the command only");
+  assert.deepEqual(pipeFindings(bad, { testsGate: tests("7") }), [[RULE, "bisellium.yml#tests"], [RULE, "scripts/x.sh:1"]], "control: <repo>/studio reads both");
+
+  // this checkout's own scripts, workflows and package.json hold none
+  assert.deepEqual(rules.repoPipeFindings(W221_REPO), []);
+  for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
+});
+
+// behaviour 26 (W-221): the moved helpers stop on a failed recording command, from a scratch main-checkout shape.
+const HELPERS = ["record-review.sh", "opus-done.sh", "opus-start.sh", "land-spec.sh", "censor.sh"];
+/** Stub commands: each logs its arguments to $LOG; npm exits 7 on the verb named by $STUB_FAIL (after $STUB_SKIP earlier calls with it). */
+const STUBS: Record<string, string> = {
+  npm: 'echo "npm $*" >> "$LOG"\nif [ -n "${STUB_FAIL:-}" ] && printf "%s\\n" "$@" | grep -qx "$STUB_FAIL"; then\n  [ "$(grep -c " $STUB_FAIL " "$LOG")" -gt "${STUB_SKIP:-0}" ] && exit 7\nfi\necho "npm-out"\n',
+  git: 'echo "git $*" | tr "\\n" " " >> "$LOG"; echo >> "$LOG"\n[ "${1:-}" = branch ] && echo "chore/done-W-9"\nexit 0\n',
+  gh: 'echo "gh $*" >> "$LOG"\ncase "$*" in "pr list"*) echo 5;; "pr view"*) echo "${STUB_PR:-MERGED}";; esac\n',
+  codex:
+    'echo "codex $*" >> "$LOG"\nwhile [ $# -gt 0 ]; do [ "$1" = -o ] && out=$2; shift; done\n[ -n "${CODEX_VERDICT:-}" ] && echo "$CODEX_VERDICT" > "$out"\nexit "${CODEX_EXIT:-0}"\n',
+};
+/** A scratch checkout: scripts/ holding the helpers, a .git (directory, or a file for a worktree), stubs and an evidence dir. */
+function helperScratch(o: { worktree?: boolean; prompt?: boolean } = {}): string {
+  const s = mkdtempSync(join(tmpdir(), "bisellium-w221-h-"));
+  scratches.push(s);
+  mkdirSync(join(s, "scripts"));
+  for (const h of HELPERS) copyFileSync(join(W221_REPO, "scripts", h), join(s, "scripts", h));
+  if (o.worktree) writeFileSync(join(s, ".git"), "gitdir: elsewhere\n");
+  else mkdirSync(join(s, ".git"));
+  mkdirSync(join(s, ".worktrees", "W-9", "studio"), { recursive: true });
+  mkdirSync(join(s, "tmp"));
+  const round = join(s, "ev", "W-9-review", "r1");
+  mkdirSync(round, { recursive: true });
+  writeFileSync(join(round, "verdict.md"), "verdict text\n");
+  if (o.prompt !== false) writeFileSync(join(round, "prompt.md"), "review this\n");
+  mkdirSync(join(s, "bin"));
+  for (const [name, body] of Object.entries(STUBS)) {
+    writeFileSync(join(s, "bin", name), `#!/bin/sh\n${body}`);
+    chmodSync(join(s, "bin", name), 0o755);
+  }
+  return s;
+}
+function runHelper(s: string, name: string, args: string[], env: Record<string, string> = {}): { status: number | null; out: string; log: string } {
+  const run = spawnSync("/bin/bash", [join(s, "scripts", name), ...args], {
+    cwd: s,
+    encoding: "utf8",
+    env: { ...process.env, ...env, HOME: s, PATH: `${join(s, "bin")}:${process.env["PATH"]}`, BISELLIUM_EVIDENCE_DIR: join(s, "ev"), TMPDIR: join(s, "tmp"), LOG: join(s, "log") },
+  });
+  const log = existsSync(join(s, "log")) ? readFileSync(join(s, "log"), "utf8") : "";
+  return { status: run.status, out: run.stdout, log };
+}
+
+test("W-221-b3 behaviour 26: the moved helpers stop on a failed recording command", () => {
+  assert.ok(existsSync(join(W221_REPO, "scripts", "record-review.sh")), "scripts/record-review.sh exists");
+  for (const h of HELPERS) assert.ok(existsSync(join(W221_REPO, "scripts", h)), `scripts/${h} exists`);
+
+  // record-review.sh: a failed verdict or review is the script's exit, before git
+  const record = ["W-9", "1", "passed"];
+  let r = runHelper(helperScratch(), "record-review.sh", record, { STUB_FAIL: "verdict" });
+  assert.equal(r.status, 7, "verdict exits 7");
+  assert.doesNotMatch(r.log, / review /, "no review after a failed verdict");
+  assert.doesNotMatch(r.log, /^git /m, "no git after a failed verdict");
+  r = runHelper(helperScratch(), "record-review.sh", record, { STUB_FAIL: "review" });
+  assert.equal(r.status, 7, "review exits 7");
+  assert.doesNotMatch(r.log, /^git /m, "no git after a failed review");
+  r = runHelper(helperScratch(), "record-review.sh", [...record, "s-1"]);
+  assert.match(r.log, / verdict .*--session s-1/, "a fourth argument is the verdict's --session");
+  r = runHelper(helperScratch(), "record-review.sh", record);
+  assert.equal(r.status, 0);
+  assert.doesNotMatch(r.log, /--session/, "no session without the argument");
+  assert.match(r.log, /^git add studio/m, "git add");
+  assert.match(r.log, /^git .*commit /m, "git commit");
+
+  // opus-done.sh and opus-start.sh: a failed next is the exit, before git (and before ready)
+  r = runHelper(helperScratch(), "opus-done.sh", ["W-9"], { STUB_FAIL: "next" });
+  assert.equal(r.status, 7, "opus-done: next exits 7");
+  assert.doesNotMatch(r.log, /^git /m, "opus-done: no git");
+  r = runHelper(helperScratch(), "opus-start.sh", ["W-9"], { STUB_FAIL: "next" });
+  assert.equal(r.status, 7, "opus-start: next exits 7");
+  assert.doesNotMatch(r.log, / ready /, "opus-start: no ready");
+  assert.doesNotMatch(r.log, /^git /m, "opus-start: no git");
+
+  // censor.sh: Codex's exit, a missing verdict, a missing prompt
+  r = runHelper(helperScratch(), "censor.sh", ["W-9", "1"], { CODEX_EXIT: "9" });
+  assert.equal(r.status, 9);
+  assert.match(r.out, /exit=9/);
+  r = runHelper(helperScratch(), "censor.sh", ["W-9", "1"]);
+  assert.equal(r.status, 3, "codex exits 0 with no verdict.md");
+  r = runHelper(helperScratch(), "censor.sh", ["W-9", "1"], { CODEX_VERDICT: "PASS the round" });
+  assert.equal(r.status, 0);
+  assert.match(r.out, /PASS the round/);
+  r = runHelper(helperScratch({ prompt: false }), "censor.sh", ["W-9", "1"], { CODEX_VERDICT: "x" });
+  assert.equal(r.status, 2, "no prompt.md");
+  assert.doesNotMatch(r.log, /codex/, "codex is never run without a prompt");
+
+  // a worktree copy (.git is a file) refuses before any command
+  for (const h of HELPERS) {
+    r = runHelper(helperScratch({ worktree: true }), h, ["W-9", "1", "passed"]);
+    assert.equal(r.status, 2, `${h} refuses in a worktree`);
+    assert.equal(r.log, "", `${h} logs nothing in a worktree`);
+  }
+
+  // land-spec.sh: the final perform's exit
+  r = runHelper(helperScratch(), "land-spec.sh", ["W-9"], { STUB_FAIL: "next", STUB_SKIP: "1" });
+  assert.equal(r.status, 7, "land-spec: the second next exits 7");
+  r = runHelper(helperScratch(), "land-spec.sh", ["W-9"], { STUB_FAIL: "next" });
+  assert.match(r.out, /first perform exited 7/, "land-spec: the first perform's exit is printed and expected");
+
+  // the check rule admits the five scripts, and refuses one that drops pipefail
+  const repo = mkdtempSync(join(tmpdir(), "bisellium-w221-r-"));
+  scratches.push(repo);
+  mkdirSync(join(repo, "scripts"));
+  for (const h of HELPERS) copyFileSync(join(W221_REPO, "scripts", h), join(repo, "scripts", h));
+  assert.deepEqual(rules.repoPipeFindings(repo), []);
+  const file = join(repo, "scripts", "record-review.sh");
+  writeFileSync(file, readFileSync(file, "utf8").replace("set -euo pipefail", "set -e"));
+  assert.deepEqual(rules.repoPipeFindings(repo).map((f) => f.rule), [RULE]);
   for (const d of scratches.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
