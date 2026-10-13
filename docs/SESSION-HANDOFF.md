@@ -13,17 +13,15 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 ## Resume point (2026-10-13)
 
 0. **W-240** (mints fail since W-236: offline CI cannot run `npm audit`; fix `ci --offline`):
-   spec passed (`ci/W-240-spec-2.log`, untracked until landed). Patron 2026-10-13: one-time
-   exception, W-240 lands without its own receipt (write that decision; waive only that gate).
+   spec landed (#438), re-signed for red order (round 4 passed); builder on opus/W-240. Patron
+   2026-10-13: one-time exception, W-240 lands without its own receipt (decision; waive that gate).
 1. **W-221** (pipe-hidden exits): round 5 failed; re-specced under D-059. Built at aa038dc1,
    gates and npm test green (`W-221-build/respec/`); `next` names the builder step (stale
    receipt): the mint `run --sella builder --opus W-221 -- true`, failing until W-240 lands;
    then review round 6 by `~/.bisellium-evidence/W-221-review/r5-run.sh` adapted.
-2. **W-236** merged (#436); `verify`, `done`, retro (replay gap: W-238; mint gap: W-240).
-3. **W-233**: spec review round 10 passed, the Patron accepted all ten Defaults
-   (2026-10-13); land the spec (`next --perform --expect spec`), D-057 re-check against
-   what landed since (W-236 touched ci.ts/ci.yml), then `branch`. Its brief and
-   `ci/W-233-spec-*.log` are untracked in the main checkout until then: keep them.
+2. **W-236** merged (#436), verified on master; `done` lands with this handoff; retro owed.
+3. **W-233**: spec landed (#439), all ten Defaults accepted (Patron 2026-10-13); after
+   W-240 lands: D-057 re-check against W-236 and W-240 (ci.ts, ci.yml), then `branch`.
 - Dispatch guard: a CLI verb in W-233 part 2 (`docs/design/next-handoff-notes.md`).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
@@ -45,9 +43,8 @@ One lane until Queue 8 lands (the multi-lane prep, W-169 last).
 Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
-1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top; held);
-   W-233 — the ladder is enforced, not remembered (D-039: high; held, spec signed);
-   W-236 — source-map-js advisory GHSA-68fv-2mgg-jv7q in the web build (D-044: security);
+1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top; re-specced);
+   W-233 — the ladder is enforced, not remembered (D-039: high; spec landed);
    W-240 — receipt mints work again (`ci --offline`; D-039 high, blocks all mints);
    W-238 — brief admission refuses a red the host replay cannot run; W-237 — a review
    finding carries its replacement text, applied verbatim it closes (both: fewer spec-review
