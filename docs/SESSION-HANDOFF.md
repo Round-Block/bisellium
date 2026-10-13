@@ -8,27 +8,24 @@ kill: when every item here is enforced by a lex clause or a check rule
 
 # Session handoff
 
-Current state only, read after CLAUDE.md; rules, process and environment are in
-`studio/leges/production.md`.
+Current state only, after CLAUDE.md; rules and environment: `studio/leges/production.md`.
 
-## Resume point (2026-10-12)
+## Resume point (2026-10-13)
 
-1. **W-221** (pipe-hidden exits), `opus/W-221` at 53a08bc5 (`.worktrees/W-221`):
-   held (D-046) after review rounds 1, 3 and 4 failed; fix round 4 built, gates green,
-   unreviewed. Only after the Patron's `amend W-221 --round-ruling`: the architect
-   confirms the fix keeps the brief's promises, mint, review round 5 and its record like
-   `~/.bisellium-evidence/W-221-review/r4-{run,record}.sh`; reds in `W-221-build/r<n>fix/`.
-2. **W-229** (signed; `next` names `branch`): after W-221 (one lane; both edit ADOPTION).
-3. **W-233** (the ladder is enforced, not remembered): held by the Patron (2026-10-12)
-   with its revised spec signed (`ci/W-233-spec-3.log`, answering round 2's four
-   blockers). On go: spec review round 4 resumes the round-2 reviewer session
-   (`~/.bisellium-evidence/W-233-spec/review.sh 4 3`); ten Defaults wait for the Patron;
-   a D-057 re-review against W-204 and W-229 before `branch`. The brief and
-   `ci/W-233-spec-{1,2,3}.log` are untracked in the main checkout: keep them.
-- No dispatch guard yet (Patron chose the lean path, 2026-10-13): it becomes a CLI verb in
-  W-233 part 2. Read `docs/design/next-handoff-notes.md` first (studio hooks, auto-handoff).
-- `cleanup` fails on the sandbox's read-only `.git/worktrees/<name>/`: delete its
-  `HEAD`, rerun `cleanup`; the Patron prunes outside the sandbox (W-227).
+0. **W-240** (mints fail since W-236: offline CI cannot run `npm audit`; fix `ci --offline`):
+   spec passed (`ci/W-240-spec-2.log`, untracked until landed). Patron 2026-10-13: one-time
+   exception, W-240 lands without its own receipt (write that decision; waive only that gate).
+1. **W-221** (pipe-hidden exits): round 5 failed; re-specced under D-059. Built at aa038dc1,
+   gates and npm test green (`W-221-build/respec/`); `next` names the builder step (stale
+   receipt): the mint `run --sella builder --opus W-221 -- true`, failing until W-240 lands;
+   then review round 6 by `~/.bisellium-evidence/W-221-review/r5-run.sh` adapted.
+2. **W-236** merged (#436); `verify`, `done`, retro (replay gap: W-238; mint gap: W-240).
+3. **W-233**: spec review round 10 passed, the Patron accepted all ten Defaults
+   (2026-10-13); land the spec (`next --perform --expect spec`), D-057 re-check against
+   what landed since (W-236 touched ci.ts/ci.yml), then `branch`. Its brief and
+   `ci/W-233-spec-*.log` are untracked in the main checkout until then: keep them.
+- Dispatch guard: a CLI verb in W-233 part 2 (`docs/design/next-handoff-notes.md`).
+- `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
 ## Concurrency readiness
 
@@ -51,6 +48,10 @@ Ranked. Item descriptions for the older items:
 1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top; held);
    W-233 — the ladder is enforced, not remembered (D-039: high; held, spec signed);
    W-236 — source-map-js advisory GHSA-68fv-2mgg-jv7q in the web build (D-044: security);
+   W-240 — receipt mints work again (`ci --offline`; D-039 high, blocks all mints);
+   W-238 — brief admission refuses a red the host replay cannot run; W-237 — a review
+   finding carries its replacement text, applied verbatim it closes (both: fewer spec-review
+   rounds, Patron 2026-10-13); W-239 — `next`'s merge always fast-forwards master (Patron);
    then W-229 — verdict refuses a signature next cannot read (D-039, Patron).
 1b. W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
     (acta `2026-10-11-patron-queue-review`).
@@ -91,8 +92,7 @@ only, after W-160 and W-068; each piece greenlit), W-147, W-149, W-150, W-151, W
 
 - Leads as real agents (Patron 2026-10-11: eng-lead and qa-lead): the architect's
   design and its six questions, `~/.bisellium-evidence/leads-design/design.md`.
-- W-233's ten Defaults (`briefs/W-233.md`); the 2026-10-11 audit (four rule breaks,
-  eight gaps in 25 commits), `~/.bisellium-evidence/design-notes-1011/`.
+- The 2026-10-11 audit (four rule breaks, eight gaps in 25 commits), `~/.bisellium-evidence/design-notes-1011/`.
 - W-230 (impeccable's detector in CI): backlog; the Patron greenlights it, then a
   spec waits for approval of its design and Defaults.
 - W-231 (interactive self-refresh): filed, not greenlit until tested
