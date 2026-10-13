@@ -1605,6 +1605,8 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       const d2 = derive(f);
       if (a.expect !== undefined && a.expect !== d2.step) return refusal(d2);
       if (!performable(d2) || needsText(d2)) return say(d2.status === "held" ? 1 : 0, render(id, d2, f, d2.status));
+      // W-233: the ticket for the rung being performed, so `ready` and `done` consume it as a direct call would; the others take none
+      for (const l of refreshTicket(f, deriveNext(f), a.nowMs)) log(l);
       const note = read === undefined ? [] : [`health: took over the ${read.marker?.step ?? "invalid"} marker (${h.kind === "dead" ? h.reason : h.kind === "invalid" ? h.reason : h.kind})`];
       const ctx: Ctx = { repo, id, head: `opus/${id}`, wt: f.wt.dir, excludes: f.excludes, pollMs: a.pollMs, maxPolls: a.maxPolls, log, sleep: (ms) => new Promise((r) => setTimeout(r, ms)) };
       let result: StepResult;
@@ -1633,6 +1635,7 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
       log(`${d2.step} ${result.ok ? "performed" : "held"}`);
       f = gather(repo, opened.root, id);
       const d3 = deriveNext(f);
+      for (const l of refreshTicket(f, d3, a.nowMs)) log(l);
       const after = [`next-step: ${d3.step}`, ...(d3.status === "held" ? [`next-why: ${one(d3.why)}`] : [])];
       return say(result.ok ? 0 : 1, [`next: ${id} ${d2.step} ${result.ok ? "performed" : "held"}`, ...result.lines, ...note, ...after]);
     } finally {
