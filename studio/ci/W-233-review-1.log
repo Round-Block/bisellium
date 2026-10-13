@@ -1,0 +1,18 @@
+# opus: W-233
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a1351a-e2a3-7c03-8d41-3dedd964a2f1
+# outcome: failed
+# at: 2026-10-13T11:58:40.136Z
+# tree: tree:7456d841078c5db5cd934b2ecc1829f0ce1ed9a6
+# brief: briefs/W-233.md blob:23e434683be5945b30595e472df9d15a998f1955
+
+## Findings
+1. blocking — packages/cli/src/branch.ts:587 `runBranch` and `runMerge` at line 612 validate tickets against `--studio` but mutate refs in the independently supplied `--repo`; a valid ticket from checkout A can therefore authorize a branch or merge in checkout B. I searched all eight `requireTicket` call sites; these are the only two with a separate mutation root. brief:50 — check: packages/cli/src/next.test.ts W-233-b2 cross-repository branch and merge rows
+2. blocking — packages/commands/src/ticket.ts:123 deleting a pending ticket first re-runs `readFacts`, so when `refreshTicket` encounters an `actionFacts` failure for a main-checkout action, deletion fails for the same reason while output still ends `ticket: none`; restoring the original facts revives the stale ticket. I searched every `refreshTicket` deletion path; all main-checkout action-fact failures reach this path. brief:137 — check: packages/cli/src/next.test.ts W-233-b1 actionFacts-error deletion row
+
+## Verdict
+The supplied reds and gates pass, but two ticket-boundary defects violate the signed binding and deletion guarantees.
+VERDICT: FAIL
