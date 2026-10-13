@@ -12,14 +12,14 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 ## Resume point (2026-10-13)
 
-0. **W-240** merged (#441, the Patron's ruleset bypass: certify ran master's broken tooling);
-   cleaned up; next `verify`, `done`, retro. W-221's mint at 45caed6e proved the fix.
-1. **W-221**: build review round 6 passed (re-spec D-059); PR #442 waits for the Patron's
-   code-owner review (ADOPTION), then the queue; then `verify`, `done`, retro.
+1. **W-240** (#441) and **W-221** (#442): merged and verified on master; `done` lands with this
+   handoff; retros owed (W-221: six build rounds before the D-059 re-spec).
 2. **W-236** done (#440); retro filed (L-152..L-159; W-244 to backlog: exercise a changed
    CI step list in the host recomputation before merge, the class that broke every mint).
-3. **W-233**: spec landed (#439), all ten Defaults accepted (Patron 2026-10-13); `next`
-   names `branch`; first the D-057 re-check against W-236 and W-240 (ci.ts, ci.yml).
+3. **W-233** part 1: building on opus/W-233 (D-057 re-check: branch as is). b1-b3 built,
+   reds 01-03; a fresh builder on b4, b5, docs and gates
+   (`~/.bisellium-evidence/W-233-build/handover-b4.md`). After it: re-sign brief:179's
+   b3 subcase sentence (architect ruling `W-233-build/b3-ruling.md`), one spec review round.
 4. **W-241** part 1: spec passed (`ci/W-241-spec-4.log`, untracked until landed); the Patron
    approved the split, the template names and blocking (2026-10-13).
 - Dispatch guard: a CLI verb in W-233 part 2 (`docs/design/next-handoff-notes.md`).
@@ -45,9 +45,7 @@ Ranked. Item descriptions for the older items:
 
 Order set by the Patron 2026-10-13: in flight, then fewer rounds, then lanes.
 
-1. W-240 — receipt mints work again (`ci --offline`; merged #441 by the Patron's bypass);
-   W-221 — a gate's exit hidden by a pipe (D-039 high; re-specced, built);
-   W-233 — the ladder is enforced, not remembered (D-039 high; spec landed);
+1. W-233 — the ladder is enforced, not remembered (D-039 high; spec landed);
    W-243 — certify judges the diff, not the branch name (D-039 high; uncertified path).
 2. W-238 — brief admission refuses a red the host replay cannot run; W-237 — a review
    finding carries its replacement text, applied verbatim it closes.
