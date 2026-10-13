@@ -1,0 +1,43 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-253-b1 --import tsx packages/cli/src/retro-opus.test.ts
+# exit: 1
+# at: 2026-10-13T23:42:38.684Z
+# sella: builder.W-253
+# tree: tree:f3a3171b7694c563747e5821af4ad651bbb0aa45
+
+TAP version 13
+# Subtest: W-253-b1 behaviour 1: an architect-signed spec log with signing notes neither fails the retro nor adds findings
+not ok 1 - W-253-b1 behaviour 1: an architect-signed spec log with signing notes neither fails the retro nor adds findings
+  ---
+  duration_ms: 26.77429
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-253/packages/cli/src/retro-opus.test.ts:52:1326'
+  failureType: 'testCodeFailure'
+  error: |-
+    the retro files past the architect's signing notes: exit 2
+    
+    ci/W-1-spec-1.log: line under "## Findings" out of domain (want "<n>. blocking|advisory …", or "No findings" alone): 1. Census widened to every kept helper. check: none: x
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-253/packages/cli/src/retro-opus.test.ts:656:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 120.061917
