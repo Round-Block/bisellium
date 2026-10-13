@@ -55,7 +55,7 @@ milestone exits; lanes later.
    `studio/briefs/W-068.md`, add `Red order: one at a time`, re-sign, spec review); then the
    W-118 split (M3's exit; absorbs W-169, W-231, W-241 part 2).
 5. Milestone exits: W-045 + W-185 — atomic writes, records checked at load (M2); W-099 +
-   W-093 — realpath anchor, security review on every change (M8); W-078 → W-074 → W-073 —
+   W-093 — realpath anchor, security review on every change (M8); W-078, W-074, then W-073 —
    greenlight and reply from the console (M4); W-149 + W-150 — outside-adapter test and
    guide (M9); W-159 — model per seat, after W-245 (M6).
 6. W-238 — brief admission refuses a red the host replay cannot run; W-242 — drop the
