@@ -4746,6 +4746,32 @@ test("W-233-b1 behaviour 1: report-mode next issues one ticket per derivation, a
   assert.match(om.kv.get("why") ?? "", /^bisellium\.yml#step_tickets is malformed \(/, ran("why", om));
 });
 
+test("W-233-b1 actionFacts error: a stale pending ticket is deleted, or next holds naming it; never ticket: none with the file left", { timeout: 1_800_000 }, () => {
+  const w = world("w233-b1-facts", "spec");
+  ticketed(w);
+  const issuedNow = next(w, [OPUS]);
+  assert.equal(lastLine(issuedNow), "ticket: branch round 0", ran("a ticket for a main-checkout action", issuedNow));
+  const stale = ticketText(w);
+  // the brief becomes unreadable, so the facts every ticket binds cannot be read
+  const brief = join(w.repo, BRIEF_REL);
+  chmodSync(brief, 0o000);
+  try {
+    const o = next(w, [OPUS]);
+    const gone = !existsSync(ticketPath(w));
+    const none = lastLine(o) === "ticket: none";
+    assert.ok(gone || !none, `the output ends "${lastLine(o)}" while the stale ticket file is left`);
+    if (!gone) {
+      assert.match(lastLine(o), /^ticket: held/, `the last line is "${lastLine(o)}"`);
+      assert.ok(o.out.includes(ticketPath(w)), "the hold names the path");
+      assert.equal(ticketText(w), stale, "the file is untouched");
+    }
+  } finally {
+    chmodSync(brief, 0o644);
+  }
+  // once the facts are readable again nothing revives
+  assert.equal(existsSync(ticketPath(w)) && ticketText(w) === stale, false, "the stale ticket is not left to revive");
+});
+
 /** A real verb run directly, as an agent would: its refusal is the point, so the result is data. */
 function direct(w: World, cwd: string, args: string[]): Out {
   const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: envFor(w, {}), encoding: "utf8", timeout: 120_000 });
