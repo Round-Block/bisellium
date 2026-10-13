@@ -635,3 +635,30 @@ test("W-215-b5 behaviour 5: retro --opus writes ## Review rounds, and refuses on
   put(broken, "ci/W-1-handoff-2.log", vlog("W-1", "handoff", 2, "qa-lead", "passed", "## Findings\nnot a finding", "h-1"));
   refuses(broken, "an after-log that does not parse", WITHDRAWN_TRIAGE);
 });
+
+// ---------------------------------------------------------------------------
+// W-253 behaviour 1: an architect's spec signature is not a review. The red is recorded with
+// `--test-name-pattern=W-253-b1`.
+// ---------------------------------------------------------------------------
+test("W-253-b1 behaviour 1: an architect-signed spec log with signing notes neither fails the retro nor adds findings", () => {
+  const SPEC1 = "ci/W-1-spec-1.log";
+  const notes = "## Findings\n\n1. Census widened to every kept helper. check: none: x";
+  const withDesign = (sella: string, design = true): string =>
+    fixture({
+      files: {
+        ...(design ? { "bisellium.yml": manifest("{ since: 2026-10-06T00:00:00Z, high_greenlit_by: D-1 }").replace("collegia:\n", "collegia:\n  - { id: design, name: Design, magister: architect }\n") } : {}),
+        [SPEC1]: vlog("W-1", "spec", 1, sella, "passed", notes),
+      },
+    });
+
+  const root = withDesign("architect");
+  const r = retro(root, COVER);
+  assert.equal(r.code, 0, ran("the retro files past the architect's signing notes", r));
+  const acta = readFileSync(join(root, "acta/2026-10-06-retro-W-1.md"), "utf8");
+  const sources = acta.slice(acta.indexOf("## Sources"), acta.indexOf("## Lessons"));
+  assert.ok(sources.includes(`- ${SPEC1}`), `## Sources lists ${SPEC1}:\n${sources}`);
+
+  refuses(withDesign("architect"), "a triage naming a signing note as a finding", { findings: [...COVER.findings, { log: SPEC1, n: 1, not_a_lesson: "note" }] });
+  refuses(withDesign("spec-reviewer"), "the same log signed by spec-reviewer", COVER);
+  refuses(withDesign("architect", false), "the same architect log with no design collegium", COVER);
+});
