@@ -1,0 +1,19 @@
+# opus: W-236
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-12T17:16:45.967Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-236.md blob:01ceda98c7d5b54e595099974a8f8dca803d50d9
+
+## Findings
+
+1. advisory — The draft's exact override "source-map-js": "1.2.2" is dropped: measured, the override alone leaves the lock at 1.2.1, and `npm update source-map-js --package-lock-only` gives the identical three-line lock diff with or without it; an exact pin would also block later patches. Lockfile bump plus the audit gate; a ^1.2.2 floor is Default 1's veto option. check: none: census.txt override trial
+2. advisory — The gates audit step takes the full-path scope guard like typecheck and lint, not unconditional, so W-131 behaviour 6's every-step-guarded rule holds; it still runs on every pull request and master push. check: scripts/ci-scope.test.mjs
+3. advisory — The draft's census of broken tests was short: all nine runCi rows of ci.test.ts, lifecycle behaviour 30, ci-workflow's ADOPTION step row, and ci-scope W-131 b6, W-205-b1 b1 and W-139 b5 (transitive); measured by probe.sh in place and restored. check: none: probe.out
+4. advisory — npm audit works in the Bash sandbox through the proxy (exit 1 naming GHSA-68fv-2mgg-jv7q); behaviour 1's red must show the GHSA id so a network failure is not taken for the red. The --ref path's npm ci --no-audit needs no change. check: packages/commands/src/ci.ts
+
+## Verdict
+
+Passed: every claim is checked against master 6085e405 (census.txt, probe.out), the brief passes admission with 0 problems, names every existing row it breaks, and its Defaults are plain questions for the Patron.

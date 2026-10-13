@@ -1,0 +1,19 @@
+# opus: W-236
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: failed
+# at: 2026-10-12T22:07:06.572Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-236.md blob:b7c6add028c95abf1ba409efaaa87955a713bb80
+
+## Findings
+1. blocking — brief:92 “A new advisory” is broader than the moderate threshold and contradicts brief:93: a newly published low advisory remains non-blocking. The promise must be limited to a new moderate, high, or critical advisory. — check: none: Defaults must match the configured audit threshold
+
+## Earlier findings
+
+## Verdict
+The moderate gate is otherwise feasible, but the revised Defaults contain a false promise about low advisories.
+VERDICT: FAIL

@@ -1,0 +1,26 @@
+# opus: W-236
+# phase: handoff
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a1330f-eb7c-7b11-bc3d-9c2a5729efe6
+# outcome: passed
+# at: 2026-10-13T04:58:46.727Z
+# tree: dirty:f23852f80f699eefcf969d312b0f170683159c09
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:17 Stale: says W-240 may land without its own receipt, but its current build is required to produce a host run receipt for review. (evidence: handoff-review-w236/packets/r5/facts.txt, next W-240) — check: next W-240
+2. blocking — docs/SESSION-HANDOFF.md:24 Stale: defers W-233’s branch until W-240 lands and a re-check completes, but W-233’s current named step is `branch`. (evidence: handoff-review-w236/packets/r5/facts.txt, next W-233) — check: next W-233
+
+## Earlier findings
+
+## Verdict
+The edit contradicts the current W-240 receipt requirement and W-233 branch step.
+VERDICT: FAIL
+## Rebuttal
+1. `next W-240` names what the records show today; the handoff line states the Patron's decision that overrides it. Evidence: /home/edckt/agents/bisellium/.worktrees/W-240/studio/briefs/W-240.md:68-70 (on opus/W-240, committed): Default 1 asks for a one-time exception, and line 70 records "The Patron's answer, 2026-10-13: approved; W-240 lands once without its own receipt." The handoff says the decision and the waiver are still to be written, which is the true remaining step.
+2. `next W-233` names `branch` because nothing in the records holds it; the order "D-057 re-check, then branch" is the production lex's own ladder: studio/leges/production.md:112-114 ("changed Files owned are re-reviewed before `branch` (D-057)"), and sequencing is the producer's alone (production.md §2 "Sequence within the slate"). W-236 (merged) and W-240 (building) both change ci.ts/ci.yml, which W-233's Files owned overlap; the handoff states that sequence, not a contradiction of a recorded step.
+
+## Ruling
+1. withdrawn — W-240’s committed brief records the Patron’s approved one-time receipt waiver, so `next`’s ordinary receipt requirement does not contradict the handoff’s exception (studio/briefs/W-240.md:68-70).
+2. withdrawn — The production ladder requires re-review of changed overlapping Files owned before `branch`; therefore `next` naming `branch` does not make the handoff’s D-057 sequencing stale (studio/leges/production.md:112-114).

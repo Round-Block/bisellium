@@ -12,16 +12,16 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 ## Resume point (2026-10-13)
 
-0. **W-240** (mints fail since W-236: offline CI cannot run `npm audit`; fix `ci --offline`):
-   spec landed (#438), re-signed for red order (round 4 passed); builder on opus/W-240. Patron
-   2026-10-13: one-time exception, W-240 lands without its own receipt (decision; waive that gate).
-1. **W-221** (pipe-hidden exits): round 5 failed; re-specced under D-059. Built at aa038dc1,
-   gates and npm test green (`W-221-build/respec/`); `next` names the builder step (stale
-   receipt): the mint `run --sella builder --opus W-221 -- true`, failing until W-240 lands;
-   then review round 6 by `~/.bisellium-evidence/W-221-review/r5-run.sh` adapted.
-2. **W-236** merged (#436), verified on master; `done` lands with this handoff; retro owed.
-3. **W-233**: spec landed (#439), all ten Defaults accepted (Patron 2026-10-13); after
-   W-240 lands: D-057 re-check against W-236 and W-240 (ci.ts, ci.yml), then `branch`.
+0. **W-240** merged (#441, the Patron's ruleset bypass: certify ran master's broken tooling);
+   cleaned up; next `verify`, `done`, retro. W-221's mint at 45caed6e proved the fix.
+1. **W-221**: build review round 6 passed (re-spec D-059); PR #442 waits for the Patron's
+   code-owner review (ADOPTION), then the queue; then `verify`, `done`, retro.
+2. **W-236** done (#440); retro filed (L-152..L-159; W-244 to backlog: exercise a changed
+   CI step list in the host recomputation before merge, the class that broke every mint).
+3. **W-233**: spec landed (#439), all ten Defaults accepted (Patron 2026-10-13); `next`
+   names `branch`; first the D-057 re-check against W-236 and W-240 (ci.ts, ci.yml).
+4. **W-241** part 1: spec passed (`ci/W-241-spec-4.log`, untracked until landed); the Patron
+   approved the split, the template names and blocking (2026-10-13).
 - Dispatch guard: a CLI verb in W-233 part 2 (`docs/design/next-handoff-notes.md`).
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
@@ -43,32 +43,32 @@ One lane until Queue 8 lands (the multi-lane prep, W-169 last).
 Ranked. Item descriptions for the older items:
 `studio/acta/2026-10-09-queue-review.md`.
 
-1. W-221 — a gate's exit hidden by a pipe in kept scripts (D-039: high, top; re-specced);
-   W-233 — the ladder is enforced, not remembered (D-039: high; spec landed);
-   W-240 — receipt mints work again (`ci --offline`; D-039 high, blocks all mints);
-   W-238 — brief admission refuses a red the host replay cannot run; W-237 — a review
-   finding carries its replacement text, applied verbatim it closes (both: fewer spec-review
-   rounds, Patron 2026-10-13); W-239 — `next`'s merge always fast-forwards master (Patron);
-   then W-229 — verdict refuses a signature next cannot read (D-039, Patron).
-1b. W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
-    (acta `2026-10-11-patron-queue-review`).
+Order set by the Patron 2026-10-13: in flight, then fewer rounds, then lanes.
 
-2a. In this order (the briefs require it): W-210 — CI refuses a merge path that
-    skips the queue (the second pin the Patron asked for);
-    W-212 — CI docs checked against ci.yml (QA now, Ops after W-208);
-    W-213 — the retro reads wins, time, cost and slips from a per-opus step ledger
-    and escalates a lesson class seen three times (Patron 2026-10-11).
-3. W-208 — set up the Ops collegium (D-055; its brief's PR A, then PR B's moves).
-4. W-204 — next stops holding a build review after three failed rounds (the Patron
-   reconsiders before it builds: that hold caught W-221 on 2026-10-11).
-5. W-223 — the Status page shows the ranked queue (Patron 2026-10-11).
-   W-206 — the signed spec rides in the opus's own PR (D-054); W-214 — the
-   retro rides in the done PR (Patron 2026-10-11).
-6. W-207 — verify after merge reuses the queue's certificate (D-054).
-7. W-201 — the mutation check gates build review (D-052).
-8. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
+1. W-240 — receipt mints work again (`ci --offline`; merged #441 by the Patron's bypass);
+   W-221 — a gate's exit hidden by a pipe (D-039 high; re-specced, built);
+   W-233 — the ladder is enforced, not remembered (D-039 high; spec landed);
+   W-243 — certify judges the diff, not the branch name (D-039 high; uncertified path).
+2. W-238 — brief admission refuses a red the host replay cannot run; W-237 — a review
+   finding carries its replacement text, applied verbatim it closes.
+3. W-242 — drop the PreCompact hook (no compaction); W-239 — `next`'s merge always
+   fast-forwards master.
+4. Multi-lane prep: W-178, W-179, W-180, W-182, W-193, W-181, W-183, W-093
    (security review on every change), then W-169 (switches lanes on). Designs
    approved; every Default answered.
+5. W-241 — leads as agents, prompts versioned (part 1 specced, approved); W-231 —
+   the orchestrator refreshes itself by handoff.
+6. W-229 — verdict refuses a signature next cannot read (D-039, Patron);
+   W-225, W-219, W-228, W-227 (high), then W-220, W-138, W-222, W-217, W-224
+   (acta `2026-10-11-patron-queue-review`).
+7. In this order (the briefs require it): W-210 — CI refuses a merge path that skips
+   the queue; W-212 — CI docs checked against ci.yml; W-213 — the retro reads a
+   per-opus step ledger and escalates a class seen three times (Patron 2026-10-11).
+8. W-208 — set up the Ops collegium (D-055; PR A, then PR B's moves); W-204 — next
+   stops holding a build review after three failed rounds (Patron reconsiders first);
+   W-223 — Status page shows the queue; W-206 — the spec rides in the opus's PR
+   (D-054); W-214 — the retro rides in the done PR; W-207 — verify reuses the
+   queue's certificate (D-054); W-201 — the mutation check gates build review (D-052).
 9. W-200 — set up the Chaos collegium (D-052; the architect specs it).
 10. W-185 — records checked once at load (D-049; the architect specs it).
 11. W-172, W-171 — high-severity fixes.
