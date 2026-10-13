@@ -51,6 +51,8 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { runDone } from "@bisellium/commands/lifecycle.js";
+import { parseFrontMatter } from "@bisellium/adapter-native";
+import { parseVerdictLog } from "@bisellium/commands/verdict.js";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -4853,4 +4855,139 @@ test("W-233-b2 behaviour 2: every covered direct verb refuses a missing or misma
   const ob = direct(made, made.repo, ["branch", OPUS, "--studio", made.studio, "--repo", made.repo]);
   assert.equal(ob.status, 0, ran("branch without the key", ob));
   assert.equal(branchExists(made), true);
+});
+
+const claimedPath = (w: World): string => ticketPath(w, `${OPUS}.claimed`);
+/** The record's `tickets:` list, read through the same front-matter parser the verbs use. */
+const recordTickets = (w: World, dir: "repo" | "wt"): unknown => parseFrontMatter<{ tickets?: unknown }>(recordOf(w, dir), "record").data.tickets;
+/** The header block of a written log: the lines before its first blank line. */
+const headerOf = (path: string): string[] => readFileSync(path, "utf8").split("\n\n")[0]!.split("\n");
+/** next issues the ticket at the world's current state; its line is what a covered write must copy. */
+function issued(w: World, args: string[] = []): string {
+  const o = next(w, [OPUS, ...args]);
+  assert.ok(existsSync(ticketPath(w)), ran("next issued a ticket", o));
+  return ticketText(w).trimEnd();
+}
+const consumed = (w: World, row: string): void => {
+  assert.equal(existsSync(ticketPath(w)), false, `${row}: the pending ticket is gone`);
+  assert.equal(existsSync(claimedPath(w)), false, `${row}: the claimed file is gone`);
+};
+
+test("W-233-b3 behaviour 3: a write claims its ticket before writing and copies it; each ticket admits one write", { timeout: 1_800_000 }, () => {
+  // a spec signature
+  const sp = world("w233-b3-spec", "greenlight");
+  put(sp.repo, BRIEF_REL, briefText(sp.behaviours));
+  ticketed(sp);
+  const specLine = issued(sp);
+  const os = direct(sp, sp.repo, ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(sp, "spec.md"), "--studio", sp.studio, "--now", T.spec]);
+  assert.equal(os.status, 0, ran("the spec verdict", os));
+  const specLog = join(sp.studio, "ci", `${OPUS}-spec-1.log`);
+  assert.equal(headerOf(specLog).at(-1), `# ticket: ${specLine}`, "the signature's header block ends with the ticket");
+  assert.equal("error" in parseVerdictLog(readFileSync(specLog, "utf8"), OPUS, "ci/spec-1.log"), false, "parseVerdictLog accepts it");
+  consumed(sp, "spec");
+
+  // a red: a command that exits 0 records nothing and leaves the ticket; a failing one records the line after # tree:
+  const rd = world("w233-b3-red", "ready");
+  ticketed(rd);
+  const redLine = issued(rd);
+  const marker = join(rd.root, "red-ran.txt");
+  const redArgs = (code: number): string[] => ["red", OPUS, "--behaviour", "1", "--sella", "builder.W-900", "--studio", rd.wtStudio, "--repo", rd.wt, "--now", T.reds, "--", process.execPath, "-e", `require("fs").writeFileSync(${JSON.stringify(marker)},"x");process.exit(${code})`];
+  const before = ticketTree(rd);
+  const passing = direct(rd, rd.wt, redArgs(0));
+  assert.equal(passing.status, 1, ran("a red whose command exits 0", passing));
+  assert.equal(ticketTree(rd), before, "the pending file is byte-identical");
+  const failing = direct(rd, rd.wt, redArgs(1));
+  assert.equal(failing.status, 0, ran("a failing command is recorded", failing));
+  const redHeader = headerOf(join(rd.wtStudio, "ci", "reds", OPUS, "01.log"));
+  const treeAt = redHeader.findIndex((l) => l.startsWith("# tree: "));
+  assert.equal(redHeader[treeAt + 1], `# ticket: ${redLine}`, "the red's ticket follows # tree:");
+  consumed(rd, "red");
+
+  // a build verdict, then review --fail with a ticket, whose repeat finds none
+  const b = world("w233-b3-build", "build");
+  ticketed(b);
+  const buildLine = issued(b, BUDGET);
+  const verdict = (round: number, outcome: "passed" | "failed", body: string): Out =>
+    direct(b, b.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(b, `r${round}.md`, body), "--studio", b.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const review = (round: number, flag: string): Out => direct(b, b.wt, ["review", OPUS, flag, "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", b.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const v1 = verdict(1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture");
+  assert.equal(v1.status, 0, ran("the build verdict", v1));
+  assert.equal(headerOf(join(b.wtStudio, "ci", `${OPUS}-review-1.log`)).at(-1), `# ticket: ${buildLine}`, "the build verdict's header block ends with the ticket");
+  consumed(b, "build verdict");
+  const t1 = forge(b, "review", 1);
+  const r1 = review(1, "--fail");
+  assert.equal(r1.status, 0, ran("review --fail", r1));
+  assert.deepEqual(recordTickets(b, "wt"), [JSON.stringify(t1)], "the review entry is the ticket line");
+  consumed(b, "review");
+  const again = recordOf(b, "wt");
+  refused(review(1, "--fail"), "review", "absent", b, "the same review again");
+  assert.equal(recordOf(b, "wt"), again, "the record is unchanged");
+  // two writes, two entries in order
+  forge(b, "verdict-build", 2);
+  const t2v = ticketText(b).trimEnd();
+  assert.equal(verdict(2, "passed", "No findings").status, 0);
+  assert.equal(headerOf(join(b.wtStudio, "ci", `${OPUS}-review-2.log`)).at(-1), `# ticket: ${t2v}`);
+  const t2 = forge(b, "review", 2);
+  assert.equal(review(2, "--pass").status, 0);
+  assert.deepEqual(recordTickets(b, "wt"), [JSON.stringify(t1), JSON.stringify(t2)], "two writes, two entries, in order");
+
+  // ready and done
+  const rw = world("w233-b3-ready", "branch");
+  ticketed(rw);
+  const readyLine = issued(rw);
+  const ready = (w: World): Out => direct(w, w.wt, ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready]);
+  assert.equal(ready(rw).status, 0);
+  assert.deepEqual(recordTickets(rw, "wt"), [readyLine], "ready appends the ticket");
+  consumed(rw, "ready");
+  const dn = world("w233-b3-done", "cleanup");
+  ticketed(dn);
+  const doneLine = issued(dn);
+  const od = direct(dn, dn.repo, ["done", OPUS, "--sella", "producer", "--studio", dn.studio, "--now", T.done]);
+  assert.equal(od.status, 0, ran("done", od));
+  assert.deepEqual(recordTickets(dn, "repo"), [doneLine], "done appends the ticket");
+  consumed(dn, "done");
+
+  // a tickets: mapping refuses ready, leaving the record and the pending file
+  const bad = world("w233-b3-mapping", "branch");
+  editRecord(bad, "wt", (doc) => doc.setIn(["tickets"], { a: 1 }));
+  commit(bad.wt, "test: a tickets mapping");
+  ticketed(bad);
+  issued(bad);
+  const snapBad = [recordOf(bad, "wt"), ticketTree(bad)];
+  const ob = ready(bad);
+  assert.equal(ob.status, 2, ran("ready with a tickets: mapping", ob));
+  assert.match(ob.err, /tickets/, ran("the refusal names tickets", ob));
+  assert.deepEqual([recordOf(bad, "wt"), ticketTree(bad)], snapBad, "the record and the pending file are untouched");
+
+  // a directory at <opus>.claimed: unclaimable, nothing moves
+  const dir = world("w233-b3-claimed-dir", "branch");
+  ticketed(dir);
+  issued(dir);
+  mkdirSync(claimedPath(dir));
+  const snapDir = [recordOf(dir, "wt"), readFileSync(ticketPath(dir), "utf8")];
+  const odir = ready(dir);
+  assert.equal(odir.status, 2, ran("ready over a directory at .claimed", odir));
+  assert.match(odir.err.split("\n")[0] ?? "", /^W-900: ready refused: no matching next ticket \(unclaimable: /, ran("unclaimable", odir));
+  assert.deepEqual([recordOf(dir, "wt"), readFileSync(ticketPath(dir), "utf8")], snapDir, "the record and the pending file are byte-identical");
+
+  // a hand-written .claimed with nothing pending is not a ticket
+  const hand = world("w233-b3-claimed-hand", "branch");
+  ticketed(hand);
+  const handLine = issued(hand);
+  rmSync(ticketPath(hand));
+  writeFileSync(claimedPath(hand), `${handLine}\n`);
+  refused(ready(hand), "ready", "absent", hand, "a .claimed file holding a matching line");
+
+  // a verdict whose target appears after the existence check (a dangling link refuses the exclusive create): the ticket is spent
+  const col = world("w233-b3-collision", "build");
+  ticketed(col);
+  forge(col, "verdict-build", 1);
+  const colLine = ticketText(col).trimEnd();
+  symlinkSync(join(col.root, "nowhere"), join(col.wtStudio, "ci", `${OPUS}-review-1.log`));
+  const oc = direct(col, col.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(col, "c.md"), "--studio", col.wtStudio, "--now", T.review1]);
+  assert.equal(oc.status, 2, ran("the collision", oc));
+  assert.equal(existsSync(ticketPath(col)), false, "the pending path is empty");
+  assert.equal(readFileSync(claimedPath(col), "utf8"), `${colLine}\n`, "<opus>.claimed holds the line");
+  const oc2 = direct(col, col.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(col, "c.md"), "--studio", col.wtStudio, "--now", T.review1]);
+  refused(oc2, "verdict", "absent", col, "a second verdict");
 });
