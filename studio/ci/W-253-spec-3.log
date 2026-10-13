@@ -1,0 +1,18 @@
+# opus: W-253
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T23:36:54.706Z
+# tree: tree:4cf65becabbad63587371074ee4d90121943b649
+# brief: briefs/W-253.md blob:b520d2683a255deb224d4de2b0a8fdc1601dacac
+
+## Findings
+
+1. advisory — Round 2 #1 fixed: the W-221 acceptance step now first drops the triage entries whose log is architect-signed, with the producer's kept adjust.py (a producer step, not code), then files the retro. check: none: producer step
+2. advisory — Round 2 #2 taken: the signature row states the bound; LOG_MAX_BYTES is 4,000,000 bytes (verdict.ts:158), not 1 MiB. check: none: constant read
+
+## Verdict
+
+Passed: both findings addressed; admission and the block-level check pass.
