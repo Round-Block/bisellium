@@ -41,6 +41,7 @@ import {
   type OpusModelProblem,
 } from "./opus-model.js";
 import { ensureRealDirectory } from "./ids.js";
+import { requireTicket } from "./ticket.js";
 import { countedFailures, readBuildReviewConfig, readBuildRounds, readSourceExcludes, type BuildReviewRound } from "./verdict.js";
 import {
   emitEvent,
@@ -326,6 +327,13 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     }
   }
 
+  // W-233: in a studio that requires step tickets, the last check before the write
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "ready", action: "ready", round: 0 });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+
   editOpusFrontMatter(opusPath, (doc) => {
     doc.set("builder_runtime", ISOLATED_BUILDER_RUNTIME);
     doc.setIn(["spec"], specRel);
@@ -511,6 +519,13 @@ export function runDone(args: string[], opts: RunDoneOptions = {}): WriteResult 
     }
   }
 
+  // W-233: in a studio that requires step tickets, the last check before the write
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "done", action: "done", round: 0 });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["state"], "done");
     doc.setIn(["end"], now.toISOString());
@@ -693,6 +708,14 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
       console.error(`${opusId}: opus.ui.e2e: ${sourceProblem}`);
       return { exitCode: 1 };
     }
+  }
+
+  // W-233: the round is the evidence file's own (`ci/<opus>-review-<n>.log`); another name has none
+  const evidenceRound = /^ci\/(.+)-review-([1-9][0-9]*)\.log$/.exec(evidence);
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "review", action: "review", round: evidenceRound !== null && evidenceRound[1] === opusId ? Number(evidenceRound[2]) : -1 });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
   }
 
   editOpusFrontMatter(opusPath, (doc) => {
@@ -1042,6 +1065,13 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     }
     prerequisites = listed.commands;
   }
+  // W-233: in a studio that requires step tickets, after the red-order checks and before any command runs
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "red", action: "red", round: behaviour });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+
   for (const [i, argv] of prerequisites.entries()) {
     console.error(`red: prerequisite behaviour ${i + 1}: ${argv.join(" ")}`);
     const ran = await runCapture(argv, execCwd);

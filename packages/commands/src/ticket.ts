@@ -17,7 +17,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
-import { readContainedRegularFile } from "./opus-model.js";
+import { readContainedRegularFile, utcTimestampProblem } from "./opus-model.js";
 
 export type TicketAction = "verdict-spec" | "verdict-build" | "review" | "red" | "ready" | "done" | "branch" | "merge";
 export interface StepTicket {
@@ -40,6 +40,7 @@ export interface StepTicket {
 }
 
 const GIT_TIMEOUT_MS = 30_000;
+const ACTIONS: readonly string[] = ["verdict-spec", "verdict-build", "review", "red", "ready", "done", "branch", "merge"];
 const OPUS_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 /** Absent or a non-mapping manifest: not required. "required": required. Anything else: error. */
@@ -54,13 +55,38 @@ export function ticketLine(t: StepTicket): string {
   return JSON.stringify({ opus: t.opus, step: t.step, action: t.action, round: t.round, actor: t.actor, studio: t.studio, head: t.head, brief: t.brief, at: t.at });
 }
 
+/** Exactly what `ticketLine` writes: nine typed keys in order, no other whitespace. */
+export function parseTicketLine(text: string): StepTicket | { error: string } {
+  const bad = (why: string): { error: string } => ({ error: why });
+  let v: unknown;
+  try {
+    v = JSON.parse(text);
+  } catch {
+    return bad("not a JSON line");
+  }
+  if (typeof v !== "object" || v === null || Array.isArray(v)) return bad("not a JSON object");
+  const o = v as Record<string, unknown>;
+  const text9 = (k: string): string | undefined => (typeof o[k] === "string" && o[k] !== "" ? (o[k] as string) : undefined);
+  const { opus, step, action, actor, studio, head, brief, at } = { opus: text9("opus"), step: text9("step"), action: text9("action"), actor: text9("actor"), studio: text9("studio"), head: text9("head"), brief: text9("brief"), at: text9("at") };
+  const round = o["round"];
+  if (opus === undefined || step === undefined || action === undefined || actor === undefined || studio === undefined || head === undefined || brief === undefined || at === undefined) return bad("a field is missing or not a non-empty string");
+  if (!ACTIONS.includes(action)) return bad(`action ${action} is not a ticket action`);
+  if (typeof round !== "number" || !Number.isSafeInteger(round) || round < 0) return bad("round must be a non-negative integer");
+  if (!/^[0-9a-f]{40}$/.test(head)) return bad("head must be a 40-hex object id");
+  if (!/^[0-9a-f]{40}$/.test(brief) && brief !== "none") return bad('brief must be a 40-hex blob or "none"');
+  if (studio.startsWith("/") || studio.includes("\\") || studio.split("/").some((p) => p === "" || p === "." || p === "..")) return bad("studio must be a posix path inside the main checkout");
+  if (utcTimestampProblem(at) !== undefined) return bad("at must be an exact UTC timestamp");
+  const t: StepTicket = { opus, step, action: action as TicketAction, round, actor, studio, head, brief, at };
+  return ticketLine(t) === text ? t : bad("not the canonical line (keys in order, no other fields)");
+}
+
 function gitIn(cwd: string, args: string[]): string | undefined {
   const r = spawnSync("git", args, { cwd, encoding: "utf8", timeout: GIT_TIMEOUT_MS });
   return r.status === 0 ? r.stdout.trim() : undefined;
 }
 
 /** The facts a ticket binds, read from the studio's own checkout: the main checkout, the tickets directory, the studio's place in it, HEAD and the brief. */
-function readFacts(studio: string, opus: string): { common: string; main: string; studio: string; head: string; brief: string } | { error: string } {
+function readFacts(studio: string, opus: string): { common: string; main: string; prefix: string; studio: string; head: string; brief: string } | { error: string } {
   if (!OPUS_RE.test(opus)) return { error: `invalid opus id "${opus}"` };
   const root = resolve(studio);
   const common = gitIn(root, ["rev-parse", "--path-format=absolute", "--git-common-dir"]);
@@ -77,7 +103,7 @@ function readFacts(studio: string, opus: string): { common: string; main: string
   const read = readContainedRegularFile(root, "briefs/" + opus + ".md", "briefs");
   if ("error" in read && read.code !== "ENOENT") return { error: `the brief of ${opus} is unreadable: ${read.error}` };
   const brief = "error" in read ? "none" : createHash("sha1").update(`blob ${read.bytes.length}\0`).update(read.bytes).digest("hex");
-  return { common, main, studio: place, head, brief };
+  return { common, main, prefix: prefix.replace(/\/$/, ""), studio: place, head, brief };
 }
 
 /** main = dirname of `git rev-parse --path-format=absolute --git-common-dir` run in studio. */
@@ -114,4 +140,29 @@ export function setPendingTicket(studio: string, opus: string, ticket: StepTicke
   } catch (e) {
     return `could not ${ticket === undefined ? "delete" : "write"} ${path}: ${(e as Error).message}`;
   }
+}
+
+/** A ticket read against a verb: no ticket required, the accepted line and its pending path, or the refusal (one or two lines). */
+export function requireTicket(i: { studio: string; manifest: unknown; opus: string; verb: string; action: TicketAction; round: number }): { off: true } | { line: string; path: string } | { refusal: string } {
+  const setting = readStepTickets(i.manifest);
+  if ("error" in setting) return { refusal: `${i.opus}: ${i.verb} refused: bisellium.yml#step_tickets is malformed (${setting.error})` };
+  if (!setting.required) return { off: true };
+  const facts = readFacts(i.studio, i.opus);
+  const refuse = (reason: string): { refusal: string } => ({
+    refusal: `${i.opus}: ${i.verb} refused: no matching next ticket (${reason})\nrun: bisellium next ${i.opus} --studio ${"error" in facts ? i.studio : join(facts.main, facts.prefix)} --repo ${"error" in facts ? "." : facts.main}`,
+  });
+  if ("error" in facts) return refuse(`facts unreadable: ${facts.error}`);
+  const dir = ticketsDir(facts.common);
+  const read = readContainedRegularFile(dir, i.opus + ".json", "");
+  if ("error" in read) return refuse(read.code === "ENOENT" ? "absent" : "unreadable");
+  const text = read.bytes.toString("utf8");
+  const t = text.endsWith("\n") ? parseTicketLine(text.slice(0, -1)) : { error: "no trailing newline" };
+  if ("error" in t || t.opus !== i.opus) return refuse("unreadable");
+  const round = (n: number): string => (n < 0 ? "none" : String(n));
+  if (t.action !== i.action) return refuse(`action is ${t.action}, want ${i.action}`);
+  if (t.round !== i.round) return refuse(`round is ${t.round}, want ${round(i.round)}`);
+  if (t.studio !== facts.studio) return refuse(`studio is ${t.studio}, want ${facts.studio}`);
+  if (t.head !== facts.head) return refuse(`head is ${t.head}, want ${facts.head}`);
+  if (t.brief !== facts.brief) return refuse(`brief is ${t.brief}, want ${facts.brief}`);
+  return { line: ticketLine(t), path: join(dir, i.opus + ".json") };
 }

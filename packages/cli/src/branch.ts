@@ -15,7 +15,8 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
-import { opusBranchName } from "@bisellium/commands/writes.js";
+import { requireTicket } from "@bisellium/commands/ticket.js";
+import { opusBranchName, openStudio } from "@bisellium/commands/writes.js";
 import { sourceTreeHash } from "@bisellium/shim";
 import { parse as parseYaml } from "yaml";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
@@ -565,6 +566,13 @@ function parseSimple(args: string[]): { positionals: string[]; values: Map<strin
   return { positionals, values };
 }
 
+/** W-233: `branch` and `merge` may be given a bare studio with no manifest (it requires no ticket); one that does not parse refuses. */
+function ticketFor(studio: string, opusId: string, verb: "branch" | "merge"): ReturnType<typeof requireTicket> {
+  const opened = openStudio(studio);
+  if ("error" in opened) return existsSync(join(studio, "bisellium.yml")) ? { refusal: `${opusId}: ${verb} refused: ${opened.error}` } : { off: true };
+  return requireTicket({ studio, manifest: opened.manifest, opus: opusId, verb, action: verb, round: 0 });
+}
+
 export function runBranch(args: string[]): { exitCode: number } {
   const { positionals, values } = parseSimple(args);
   const opusId = positionals[0];
@@ -575,6 +583,9 @@ export function runBranch(args: string[]): { exitCode: number } {
     console.error(`opus ${opusId} not found in ${studio}`);
     return { exitCode: 1 };
   }
+
+  const ticket = ticketFor(studio, opusId, "branch");
+  if ("refusal" in ticket) { console.error(ticket.refusal); return { exitCode: 2 }; }
 
   const repo = resolve(values.get("--repo") ?? ".");
   const result = opusId === "W-096" ? createW096Branch(repo, studio) : createOpusBranch(repo, opusId);
@@ -593,6 +604,9 @@ export function runMerge(args: string[]): { exitCode: number } {
     console.error(`opus ${opusId} not found in ${studio}`);
     return { exitCode: 1 };
   }
+
+  const ticket = ticketFor(studio, opusId, "merge");
+  if ("refusal" in ticket) { console.error(ticket.refusal); return { exitCode: 2 }; }
 
   const repo = resolve(values.get("--repo") ?? ".");
   const result = mergeOpusBranch(repo, opusId, studio);

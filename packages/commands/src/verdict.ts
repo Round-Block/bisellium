@@ -5,6 +5,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { ensureRealDirectory } from "./ids.js";
+import { requireTicket } from "./ticket.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
 import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import {
@@ -696,6 +697,15 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     const problem = sessionedProblem(`${header}\n\n${transcript.toString("utf8")}`, opusId, relative(root, target).split(sep).join("/"), outcome, recorded, last?.parsed, last?.log);
     if (problem !== undefined) {
       console.error(problem);
+      return { exitCode: 2 };
+    }
+  }
+
+  // W-233: spec and build verdicts need the step ticket of their round (handoff verdicts stay unticketed)
+  if (phase !== "handoff") {
+    const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "verdict", action: phase === "spec" ? "verdict-spec" : "verdict-build", round });
+    if ("refusal" in ticket) {
+      console.error(ticket.refusal);
       return { exitCode: 2 };
     }
   }
