@@ -4743,3 +4743,114 @@ test("W-233-b1 behaviour 1: report-mode next issues one ticket per derivation, a
   assert.equal(om.status, 1);
   assert.match(om.kv.get("why") ?? "", /^bisellium\.yml#step_tickets is malformed \(/, ran("why", om));
 });
+
+/** A real verb run directly, as an agent would: its refusal is the point, so the result is data. */
+function direct(w: World, cwd: string, args: string[]): Out {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: envFor(w, {}), encoding: "utf8", timeout: 120_000 });
+  return parse(r.status, r.stdout ?? "", r.stderr ?? "");
+}
+const STEP_OF: Record<string, string> = { "verdict-spec": "spec", "verdict-build": "review", review: "review", red: "reds", ready: "ready", done: "done", branch: "branch", merge: "merge" };
+/** A ticket written by hand from facts read independently of `next`; `where` is the checkout the action writes in. */
+function forge(w: World, action: string, round: number, over: Json = {}, where: "repo" | "wt" = "wt"): Json {
+  const dir = where === "repo" ? w.repo : w.wt;
+  const t: Json = {
+    opus: OPUS,
+    step: STEP_OF[action],
+    action,
+    round,
+    actor: "producer",
+    studio: where === "repo" ? "studio" : WT_STUDIO_REL,
+    head: git(dir, ["rev-parse", "HEAD"]),
+    brief: git(dir, ["hash-object", BRIEF_REL]),
+    at: NOW_ISO,
+    ...over,
+  };
+  mkdirSync(ticketDir(w), { recursive: true });
+  rmSync(ticketPath(w), { force: true });
+  writeFileSync(ticketPath(w), `${JSON.stringify(t)}\n`);
+  return t;
+}
+/** Every file under the tickets directory, by name and content. */
+const ticketTree = (w: World): string => (existsSync(ticketDir(w)) ? walk(ticketDir(w)).join("\n") : "");
+const mainOf = (w: World): string => dirname(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]));
+/** The two-line refusal of a covered verb, exactly. */
+function refused(o: Out, verb: string, reason: string, w: World, row: string): void {
+  assert.equal(o.status, 2, ran(`${row}: exit`, o));
+  assert.equal(o.err.trimEnd(), `${OPUS}: ${verb} refused: no matching next ticket (${reason})\nrun: bisellium next ${OPUS} --studio ${mainOf(w)}/studio --repo ${mainOf(w)}`, ran(`${row}: the two lines`, o));
+}
+
+test("W-233-b2 behaviour 2: every covered direct verb refuses a missing or mismatched ticket before writing", { timeout: 1_800_000 }, () => {
+  const marker = join(scratch("w233-b2-marker"), "red-ran.txt");
+  const spec = (): World => {
+    const w = world("w233-b2-spec", "greenlight");
+    put(w.repo, BRIEF_REL, briefText(w.behaviours));
+    return w;
+  };
+  const withVerdict = (): World => {
+    const w = world("w233-b2-review", "build");
+    verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1]);
+    commit(w.wt, `studio(${OPUS}): review 1`);
+    return w;
+  };
+  const rows: { verb: string; world: () => World; cwd: (w: World) => string; args: (w: World) => string[] }[] = [
+    { verb: "ready", world: () => world("w233-b2-ready", "branch"), cwd: (w) => w.wt, args: (w) => ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready] },
+    { verb: "verdict", world: spec, cwd: (w) => w.repo, args: (w) => ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, "spec.md"), "--studio", w.studio, "--now", T.spec] },
+    { verb: "verdict", world: () => world("w233-b2-build", "build"), cwd: (w) => w.wt, args: (w) => ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1] },
+    { verb: "review", world: withVerdict, cwd: (w) => w.wt, args: (w) => ["review", OPUS, "--pass", "--evidence", `ci/${OPUS}-review-1.log`, "--round", "1", "--sella", "qa-lead", "--studio", w.wtStudio, "--now", T.review1] },
+    { verb: "red", world: () => world("w233-b2-red", "ready"), cwd: (w) => w.wt, args: (w) => ["red", OPUS, "--behaviour", "1", "--sella", "builder.W-900", "--studio", w.wtStudio, "--repo", w.wt, "--now", T.reds, "--", process.execPath, "-e", `require("fs").writeFileSync(${JSON.stringify(marker)},"x");process.exit(1)`] },
+    { verb: "done", world: () => world("w233-b2-done", "cleanup"), cwd: (w) => w.repo, args: (w) => ["done", OPUS, "--sella", "producer", "--studio", w.studio, "--now", T.done] },
+    { verb: "branch", world: () => world("w233-b2-branch", "spec"), cwd: (w) => w.repo, args: (w) => ["branch", OPUS, "--studio", w.studio, "--repo", w.repo] },
+    { verb: "merge", world: () => world("w233-b2-merge", "spec"), cwd: (w) => w.repo, args: (w) => ["merge", OPUS, "--studio", w.studio, "--repo", w.repo] },
+  ];
+  for (const row of rows) {
+    const w = row.world();
+    ticketed(w);
+    const before = [snap(w), ticketTree(w)];
+    const o = direct(w, row.cwd(w), row.args(w));
+    refused(o, row.verb, "absent", w, `${row.verb}: no ticket`);
+    assert.deepEqual([snap(w), ticketTree(w)], before, `${row.verb}: the record, ci/, the event log, the refs and the tickets are byte-identical`);
+    assert.equal(existsSync(marker), false, "red's command has not run");
+  }
+
+  // hand-written tickets against `ready`
+  const w = world("w233-b2-mismatch", "branch");
+  ticketed(w);
+  const ready = (): Out => direct(w, w.wt, ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready]);
+  const untouched = (o: Out, reason: string, row: string): void => {
+    const before = [snap(w), ticketTree(w)];
+    refused(o, "ready", reason, w, row);
+    assert.deepEqual([snap(w), ticketTree(w)], before, `${row}: nothing moved`);
+  };
+  const good = forge(w, "ready", 0);
+  rmSync(ticketPath(w));
+  writeFileSync(ticketPath(w), "not json\n");
+  untouched(ready(), "unreadable", "a non-JSON line");
+  rmSync(ticketPath(w));
+  writeFileSync(join(w.root, "elsewhere.json"), `${JSON.stringify(good)}\n`);
+  symlinkSync(join(w.root, "elsewhere.json"), ticketPath(w));
+  untouched(ready(), "unreadable", "a symlink");
+  const head = git(w.wt, ["rev-parse", "HEAD"]);
+  const blob = git(w.wt, ["hash-object", BRIEF_REL]);
+  const mismatches: [string, Json, string][] = [
+    ["action", { action: "red", step: "reds" }, "action is red, want ready"],
+    ["round", { round: 1 }, "round is 1, want 0"],
+    ["studio", { studio: "studio" }, `studio is studio, want ${WT_STUDIO_REL}`],
+    ["head", { head: "0".repeat(40) }, `head is ${"0".repeat(40)}, want ${head}`],
+    ["brief", { brief: "1".repeat(40) }, `brief is ${"1".repeat(40)}, want ${blob}`],
+  ];
+  for (const [name, over, reason] of mismatches) {
+    forge(w, "ready", 0, over);
+    untouched(ready(), reason, `a ticket for another ${name}`);
+  }
+
+  // without the key the same calls behave as on master
+  const plain = world("w233-b2-plain", "branch");
+  const ok = direct(plain, plain.wt, ["ready", OPUS, "--sella", "architect", "--studio", plain.wtStudio, "--now", T.ready]);
+  assert.equal(ok.status, 0, ran("ready without the key", ok));
+  assert.match(recordOf(plain, "wt"), /state: "?building/);
+  assert.equal(existsSync(join(plain.repo, ".git", "bisellium")), false, "no tickets directory");
+  const made = world("w233-b2-plain-branch", "spec");
+  const ob = direct(made, made.repo, ["branch", OPUS, "--studio", made.studio, "--repo", made.repo]);
+  assert.equal(ob.status, 0, ran("branch without the key", ob));
+  assert.equal(branchExists(made), true);
+});
