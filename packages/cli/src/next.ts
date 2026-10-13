@@ -4,7 +4,9 @@
  * next step of the thirteen-rung ladder (`STEPS`), names it (exact command or
  * dispatch order) or, with `--perform`, performs it, and refuses to skip.
  *
- * Read-only unless `--perform` or `--track` is given. Trunk-side evidence (the
+ * Read-only unless `--perform` or `--track` is given (W-233: in a studio that sets
+ * `step_tickets: required`, report mode and `--perform` also write or delete the
+ * pending ticket under `<git common dir>/bisellium/tickets/`). Trunk-side evidence (the
  * brief, spec log, `done`, checkpoint) is read from the COMMITTED `refs/heads/
  * master` with `git show`; opus-branch evidence from the opus's registered
  * worktree `<repo>/.worktrees/<id>` (or the branch ref when it has none). It
@@ -30,6 +32,7 @@ import { censorSella, effectiveProbationes, inspectUiDesignInput, readContainedR
 import { readBriefLimit } from "@bisellium/commands/brief-admission.js";
 import { briefAdmissionProblems, readRoundRulings } from "@bisellium/commands/lifecycle.js";
 import { SESSION_ID, buildReviewDrift, countedFailures, parseVerdictLog, readBuildReviewConfig, readBuildRounds, readSourceExcludes, readWorktreeManifest, type BuildReviewConfig, type BuildReviewRound } from "@bisellium/commands/verdict.js";
+import { actionFacts, readStepTickets, setPendingTicket, type TicketAction } from "@bisellium/commands/ticket.js";
 import { mintDispatchSella, openStudio, parseFlags, safeItemPath } from "@bisellium/commands/writes.js";
 import { createOpusBranch } from "./branch.js";
 import { ID_RE } from "./check.js";
@@ -612,6 +615,8 @@ export interface Derived {
   pr?: Pr;
   /** what `--perform` does at this rung, where the rung has more than one reading */
   act?: "verify" | "commit" | "land";
+  /** W-233: the action a step ticket would authorise at this derivation (only `refreshTicket` reads it) */
+  ticket?: { action: TicketAction; round: number };
   extra: [string, string][];
 }
 
@@ -658,12 +663,12 @@ export function deriveNext(f: Facts): Derived {
     const p = f.pr();
     if (p.kind === "held") return hold(f.tip === undefined ? "branch" : "pr", p.reason);
     if (p.kind === "settled") settled = true;
-    else if (p.kind === "behind") return named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr);
+    else if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     else if (f.tip === undefined) {
       // D-039 §1: no new opus starts while a retro is owed
       const owing = retroHold(f);
       if (owing !== undefined) return hold("branch", owing);
-      return named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`);
+      return { ...named("branch", "producer", `refs/heads/opus/${id} does not exist`, `bisellium next ${id} --perform --expect branch`), ticket: { action: "branch", round: 0 } };
     }
   }
 
@@ -673,7 +678,7 @@ export function deriveNext(f: Facts): Derived {
     // 4 ready
     if (!(PAST_READY.has(str(b["state"]) ?? "") && isDict(b["probationes"]) && isDict(b["probationes"]["spec"]) && b["probationes"]["spec"]["status"] === "passed")) {
       const where = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
-      return named("ready", "producer", `${id} is ${str(b["state"]) ?? "unstated"} and the spec gate is not recorded passed on the branch`, `bisellium ready ${id} --sella ${spec.sella ?? f.design} --studio ${where}`, [["attributed", `${spec.sella ?? f.design} (signed ${spec.log})`]]);
+      return { ...named("ready", "producer", `${id} is ${str(b["state"]) ?? "unstated"} and the spec gate is not recorded passed on the branch`, `bisellium ready ${id} --sella ${spec.sella ?? f.design} --studio ${where}`, [["attributed", `${spec.sella ?? f.design} (signed ${spec.log})`]]), ticket: { action: "ready", round: 0 } };
     }
     if (b["builder_runtime"] !== "isolated") return hold("ready", `${id} is past ready but its record carries no builder_runtime marker (a legacy record is outside the ladder)`);
 
@@ -743,8 +748,8 @@ export function deriveNext(f: Facts): Derived {
     // 8 pr, 9 merge
     const p = f.pr();
     if (p.kind === "held") return hold("pr", p.reason);
-    if (p.kind === "open") return named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr);
-    if (p.kind === "behind") return named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr);
+    if (p.kind === "open") return { ...named("merge", "producer", `PR #${p.pr.number} is OPEN on the local tip ${p.pr.headRefOid.slice(0, 12)}`, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
+    if (p.kind === "behind") return { ...named("merge", "producer", p.reason, `bisellium next ${id} --perform --expect merge`, [], p.pr), ticket: { action: "merge", round: 0 } };
     if (p.kind !== "settled")
       return named(
         "pr",
@@ -760,7 +765,7 @@ export function deriveNext(f: Facts): Derived {
   if (f.residue) return named("cleanup", "producer", `${id} is MERGED and fetched; its local branch, worktree or remote-tracking branch remain`, `bisellium next ${id} --perform --expect cleanup`);
   if (f.choreDone) return { ...named("done", "producer", `done committed on chore/done-${id}, not on master`, `bisellium next ${id} --perform --expect done`), act: "land" };
   if (!f.certified()) return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; no automated certificate is recorded`, `bisellium verify ${id} --studio ${f.studioRel} --repo .`), act: "verify" };
-  return named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`);
+  return { ...named("done", "producer", `${id} is MERGED, fetched and cleaned up; the trunk record is not done`, `bisellium next ${id} --perform --expect done`), ticket: { action: "done", round: 0 } };
 }
 
 /** The order a reviewer-configured spec step names, from the source that holds the newest signature. */
@@ -932,12 +937,16 @@ function dispatch(f: Facts, step: "spec" | "reds" | "build" | "review", why: str
     command = `${o.session === undefined ? `dispatch ${sella}` : `resume ${sella}'s session ${o.session} with the packet's prompt`}; ${packetLine("build", id, o.round, sella, studioRel)}; ${disputeLine(studioRel)}; record the transcript with: bisellium verdict ${id} --round ${o.round} --sella ${sella} --outcome <passed|failed>${o.uiInput === undefined ? "" : ` --ui-input ${o.uiInput}`} --studio ${studioRel} --session ${o.session ?? SESSION_PLACEHOLDER}; close out with: bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${o.round}.log --round ${o.round} --sella ${sella} --studio ${studioRel}. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).`;
   }
   const actor = step === "review" ? "censor" : step === "spec" ? (o.reviewer === undefined ? "architect" : "spec-reviewer") : "builder";
+  // W-233: the verb a dispatched session closes out with; a build session records none, and a reds order with only findings names no behaviour
+  const ticket: Derived["ticket"] =
+    step === "spec" && o.round !== undefined ? { action: "verdict-spec", round: o.round } : step === "reds" && o.behaviour !== undefined ? { action: "red", round: o.behaviour.from } : step === "review" && o.round !== undefined ? { action: "verdict-build", round: o.round } : undefined;
   return {
     step,
     status: "named",
     actor,
     why,
     extra: [],
+    ...(ticket === undefined ? {} : { ticket }),
     order: { role, sella, boot: `bisellium context --sella ${sella} --studio ${studioRel}`, phase: o.phase, inputs, command, ...(o.round === undefined ? {} : { round: o.round }), resume: o.resume, extra: o.extra ?? [] },
   };
 }
@@ -1415,6 +1424,30 @@ function performDone(f: Facts, d: Derived): StepResult {
 // the verb
 // ---------------------------------------------------------------------------
 
+/** W-233: the studio each ticketed action writes in: the main checkout, or else the opus's worktree when it is usable. */
+const MAIN_ACTIONS = new Set<TicketAction>(["verdict-spec", "branch", "merge", "done"]);
+
+/**
+ * W-233: in a studio that sets `step_tickets: required`, write the ticket for the action `d` names (replacing any
+ * earlier one) or delete the pending one when `d` holds, is complete, names the Patron or names no covered verb.
+ * Returns the lines to print, the last `ticket: …`; none when the studio does not require tickets.
+ */
+function refreshTicket(f: Facts, d: Derived, nowMs: number): string[] {
+  const setting = readStepTickets(f.manifest);
+  if ("error" in setting || !setting.required) return [];
+  const none = (...why: string[]): string[] => {
+    const bad = setPendingTicket(f.studioAbs, f.id, undefined);
+    return [...why, ...(bad === undefined ? [] : [`ticket-error: ${bad}`]), "ticket: none"];
+  };
+  const t = d.status === "named" && d.actor !== "patron" ? d.ticket : undefined;
+  if (t === undefined) return none();
+  const where = MAIN_ACTIONS.has(t.action) || !f.wt.usable ? f.studioAbs : f.wt.studio;
+  const facts = actionFacts(where, f.id);
+  if ("error" in facts) return none(`ticket-error: ${facts.error}`);
+  const written = setPendingTicket(where, f.id, { opus: f.id, step: d.step, action: t.action, round: t.round, actor: d.actor, studio: facts.studio, head: facts.head, brief: facts.brief, at: new Date(nowMs).toISOString() });
+  return written === undefined ? [`ticket: ${t.action} round ${t.round}`] : none(`ticket-error: ${written}`);
+}
+
 function render(id: string, d: Derived, f: Facts, status: string): string[] {
   const out = [`next: ${id} ${d.step} ${status}`, `actor: ${d.actor}`, `why: ${one(d.why)}`];
   if (f.tip !== undefined) out.push(`head: opus/${id} ${f.tip.slice(0, 12)}`);
@@ -1455,6 +1488,13 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
   const declaredExcludes = readSourceExcludes(opened.manifest);
   if ("error" in declaredExcludes) {
     console.log(`next: ${id} held\nwhy: ${clean(`bisellium.yml#source_excludes is malformed (${declaredExcludes.error})`, 1000)}`);
+    return { exitCode: 1 };
+  }
+
+  // W-233: the same hold for a malformed step_tickets, before `gather` and every derivation
+  const ticketSetting = readStepTickets(opened.manifest);
+  if ("error" in ticketSetting) {
+    console.log(`next: ${id} held\nwhy: ${clean(`bisellium.yml#step_tickets is malformed (${ticketSetting.error})`, 1000)}`);
     return { exitCode: 1 };
   }
 
@@ -1503,24 +1543,27 @@ export async function runNext(argv: string[]): Promise<{ exitCode: number }> {
 
     // ---- report mode (also --perform on a rung that is only named) ----
     if (!performable(d1)) {
+      // W-233: the ticket is refreshed from the ungated derivation, before the --expect check
+      const tickets = refreshTicket(f, deriveNext(f), a.nowMs);
+      const sayT = (code: number, lines: string[]): { exitCode: number } => say(code, [...lines, ...tickets]);
       if (a.expect !== undefined && a.expect !== d1.step) return refusal(d1);
       const h = assess(readMarker(repo, id), d1.step, env);
       const lines = (status: string): string[] => render(id, d1, f, status);
       switch (h.kind) {
         case "running":
-          return say(0, [`next: ${id} ${d1.step} running`, `health: running (pid ${h.m.pid}, writer ${h.m.writer}, last output ${h.ageS}s ago)`, ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`])]);
+          return sayT(0, [`next: ${id} ${d1.step} running`, `health: running (pid ${h.m.pid}, writer ${h.m.writer}, last output ${h.ageS}s ago)`, ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`])]);
         case "dead":
-          return say(1, [`next: ${id} ${d1.step} dead`, `health: dead (${h.reason})`, ...(h.m === undefined ? [] : [`pid: ${h.m.pid}`]), ...(h.ageS === undefined ? [] : [`age: ${h.ageS}s`]), ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`]), `resume: ${resume(d1)}`]);
+          return sayT(1, [`next: ${id} ${d1.step} dead`, `health: dead (${h.reason})`, ...(h.m === undefined ? [] : [`pid: ${h.m.pid}`]), ...(h.ageS === undefined ? [] : [`age: ${h.ageS}s`]), ...(h.last === undefined ? [] : [`last-output: ${JSON.stringify(h.last)}`]), `resume: ${resume(d1)}`]);
         case "invalid":
-          return say(1, [`next: ${id} ${d1.step} dead`, `health: dead (invalid marker: ${h.reason})`, `resume: ${resume(d1)}`]);
+          return sayT(1, [`next: ${id} ${d1.step} dead`, `health: dead (invalid marker: ${h.reason})`, `resume: ${resume(d1)}`]);
         case "unknown":
-          return say(1, [`next: ${id} ${d1.step} held`, `health: unknown (${h.reason})`, "why: step health cannot be proven; nothing is performed and the marker is untouched"]);
+          return sayT(1, [`next: ${id} ${d1.step} held`, `health: unknown (${h.reason})`, "why: step health cannot be proven; nothing is performed and the marker is untouched"]);
         case "anomaly":
-          return say(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: the output mtime is ahead of the clock; nothing is performed"]);
+          return sayT(1, [`next: ${id} ${d1.step} held`, `health: clock anomaly (output mtime is ${-h.ageS}s in the future)`, "why: the output mtime is ahead of the clock; nothing is performed"]);
         default: {
           const note = h.kind === "none" ? "no step recorded" : h.kind === "finished" ? `finished ${h.step}` : "stale marker (evidence regressed)";
           const status = d1.status === "named" ? "named" : d1.status;
-          return say(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
+          return sayT(d1.status === "held" ? 1 : 0, [...lines(status), `health: ${note}`]);
         }
       }
     }
