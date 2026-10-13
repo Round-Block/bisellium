@@ -12,9 +12,8 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 ## Resume point (2026-10-13)
 
-1. **W-221** (#444) and **W-233** part 1 (#446) done. **W-240** (#441) merged and verified on
-   master, but `done` holds: its review gate needs the run receipt, lost with its worktree, and
-   an agent gate cannot be waived; the Patron rules. Retros owed: the weekly retro (D-061 §5).
+1. **W-221** (#444), **W-233** part 1 (#446) and **W-240** (#441; review gate recorded on a
+   re-minted receipt, #448) done. Retros owed: the weekly retro (D-061 §5).
 2. **W-233** part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) waits for
    W-245's census (D-061 §1).
 3. **W-241** part 1 spec passed (untracked), Patron-approved.
