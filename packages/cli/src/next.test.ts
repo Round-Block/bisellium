@@ -5066,3 +5066,41 @@ test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet n
   expectStep(oh, "review", "held", "no key: the stale gate holds");
   assert.match(oh.kv.get("why") ?? "", /is not the newest build-review log/, ran("no key: why", oh));
 });
+
+test("W-233-b5 behaviour 5: next --perform goes through the same tickets", { timeout: 1_800_000 }, () => {
+  // ready: issued from the derivation performed, consumed by runReady, and the next derivation's ticket left behind
+  const r = world("w233-b5-ready", "branch");
+  ticketed(r);
+  const wtHead = git(r.wt, ["rev-parse", "HEAD"]);
+  const or = next(r, [OPUS, "--perform", "--expect", "ready"]);
+  expectStep(or, "ready", "performed", "ready is performed with a ticket");
+  const entries = recordTickets(r, "wt") as string[];
+  assert.equal(entries.length, 1, "one ticket entry");
+  const entry = JSON.parse(entries[0]!) as Json;
+  assert.equal(entry["action"], "ready");
+  assert.equal(entry["head"], wtHead, "issued at the worktree's HEAD");
+  assert.equal(existsSync(claimedPath(r)), false, "the claimed file is gone");
+  const left = ticketOf(r);
+  assert.equal(left["action"], "red", ran("the ticket left afterwards", or));
+  assert.equal(left["round"], 1);
+
+  // done: committed on chore/done-<id> with the done line in tickets:
+  const d = world("w233-b5-done", "cleanup");
+  scenario(d, { list: mergedList(d) });
+  ticketed(d);
+  touchHandoff(d);
+  const od = next(d, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(od, "done", "performed", "done is performed with a ticket");
+  const chore = parseFrontMatter<{ tickets?: unknown }>(git(d.repo, ["show", `refs/heads/chore/done-${OPUS}:studio/opera/${OPUS}.md`]), "record").data.tickets;
+  assert.equal(Array.isArray(chore) && chore.length, 1, "the done record carries one ticket");
+  assert.equal((JSON.parse((chore as string[])[0]!) as Json)["action"], "done");
+  assert.equal(existsSync(claimedPath(d)), false, "the claimed file is gone");
+
+  // branch: performed inside next, no ticket consumed; the ready ticket is left
+  const b = world("w233-b5-branch", "spec");
+  ticketed(b);
+  const ob = next(b, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(ob, "branch", "performed", "branch is performed");
+  assert.equal(ticketOf(b)["action"], "ready", ran("the ready ticket is left", ob));
+  assert.equal(existsSync(claimedPath(b)), false, "nothing was claimed");
+});
