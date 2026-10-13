@@ -1,0 +1,19 @@
+# opus: W-211
+# phase: handoff
+# round: 7
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12a20-63a2-7b81-b81a-f2a9a933ce5b
+# outcome: failed
+# at: 2026-10-11T16:03:43.035Z
+# tree: dirty:a5f9815cacc2e5ccb8d6bd02248e4093f3bb805d
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:19 W-221 is held for the Patron’s grant after three counted failed reviews; the handoff instead advances an ungranted fix and round 5. (evidence: handoff-review-w211done/r7/facts.txt:5-17) — check: none: handoff must name the current Patron hold before later work
+2. blocking — docs/SESSION-HANDOFF.md:52 W-232 is ranked although the supplied state does not recognize the opus or admit a brief. (evidence: handoff-review-w211done/r7/facts.txt:41-50) — check: none: ranked opus must be known and admitted
+
+## Earlier findings
+
+## Verdict
+The changed handoff bypasses W-221’s required Patron grant and ranks an unknown W-232.
+VERDICT: FAIL

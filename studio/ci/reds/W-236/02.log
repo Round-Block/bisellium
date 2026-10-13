@@ -1,0 +1,145 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-205-b1.behaviour.1: scripts/ci-scope.test.mjs
+# exit: 1
+# at: 2026-10-12T23:24:45.450Z
+# sella: builder.W-236
+# tree: tree:f09ef7f0ee04df5b75991c1696f833e48167e8a8
+
+TAP version 13
+# Subtest: W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge-group and push steps are today's
+not ok 1 - W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge-group and push steps are today's
+  ---
+  duration_ms: 11.915623
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-236-red2/scripts/ci-scope.test.mjs:572:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    gates: setup, then typecheck and lint on a pull request; the rest only off it
+    + actual - expected
+    ... Skipped lines
+    
+      [
+        [
+          'actions/checkout@v5',
+          null
+        ],
+    ...
+        [
+    -     'npm run -s audit',
+    -     "steps.scope.outputs.record_only != 'true'"
+    -   ],
+    -   [
+          'npm run -s typecheck',
+          "steps.scope.outputs.record_only != 'true'"
+        ],
+        [
+          'npm run -s lint',
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'actions/checkout@v5'
+      1: ~
+    1:
+      0: 'actions/setup-node@v5'
+      1: ~
+    2:
+      0: 'npm ci'
+      1: ~
+    3:
+      0: 'scope'
+      1: "github.event_name == 'merge_group'"
+    4:
+      0: 'npm run -s audit'
+      1: "steps.scope.outputs.record_only != 'true'"
+    5:
+      0: 'npm run -s typecheck'
+      1: "steps.scope.outputs.record_only != 'true'"
+    6:
+      0: 'npm run -s lint'
+      1: "steps.scope.outputs.record_only != 'true'"
+    7:
+      0: 'npm run -s format:check'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    8:
+      0: 'sudo apt-get update && sudo apt-get install -y bubblewrap'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    9:
+      0: 'sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    10:
+      0: 'npm test'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    11:
+      0: 'node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    12:
+      0: 'npm run -s check -- examples/sample-studio --repo .'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    13:
+      0: 'npm run -s check -- studio --repo .'
+      1: "steps.scope.outputs.record_only == 'true'"
+    14:
+      0: 'npm run -s test:record'
+      1: "steps.scope.outputs.record_only == 'true'"
+  actual:
+    0:
+      0: 'actions/checkout@v5'
+      1: ~
+    1:
+      0: 'actions/setup-node@v5'
+      1: ~
+    2:
+      0: 'npm ci'
+      1: ~
+    3:
+      0: 'scope'
+      1: "github.event_name == 'merge_group'"
+    4:
+      0: 'npm run -s typecheck'
+      1: "steps.scope.outputs.record_only != 'true'"
+    5:
+      0: 'npm run -s lint'
+      1: "steps.scope.outputs.record_only != 'true'"
+    6:
+      0: 'npm run -s format:check'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    7:
+      0: 'sudo apt-get update && sudo apt-get install -y bubblewrap'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    8:
+      0: 'sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    9:
+      0: 'npm test'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    10:
+      0: 'node scripts/ci-scope.mjs --check-reads ${{ runner.temp }}/record-reads.log'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    11:
+      0: 'npm run -s check -- examples/sample-studio --repo .'
+      1: "github.event_name != 'pull_request' && steps.scope.outputs.record_only != 'true'"
+    12:
+      0: 'npm run -s check -- studio --repo .'
+      1: "steps.scope.outputs.record_only == 'true'"
+    13:
+      0: 'npm run -s test:record'
+      1: "steps.scope.outputs.record_only == 'true'"
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-236-red2/scripts/ci-scope.test.mjs:587:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18.302331

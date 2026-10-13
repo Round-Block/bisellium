@@ -1,0 +1,19 @@
+# opus: W-229
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12a6d-8bd6-71f2-9ee7-dfd30340c60e
+# outcome: failed
+# at: 2026-10-11T10:10:35.328Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:6afad6beb7d2e057b13863d3f0c2d09a55b33516
+
+## Findings
+1. blocking — brief:121 The promise that “A CRLF transcript … exits 2” is false: brief:96 deliberately preserves an accepted CRLF below `## Notes`, and `parseVerdictLog` permits CRLF outside constrained grammar lines. Limit this promise to CRLF in `## Findings`. — check: packages/cli/src/verdict.test.ts
+2. blocking — brief:41 The history promise counts twelve unreadable free-form signatures, but `history.txt` enumerates thirteen: 3 for W-221, 4 for W-181, and 6 for W-169. — check: none: make history.mjs assert the expected refusal count
+3. advisory — brief:80 The valid-domain summary omits the sessioned `## Rebuttal`, `## Ruling`, and `## Earlier findings` constraints that `parseVerdictLog` also reads; those omitted cases do fail closed. — check: packages/cli/src/verdict-findings.test.ts
+
+## Verdict
+The guard is feasible, but two promises are false as written and must be corrected before build.
+VERDICT: FAIL

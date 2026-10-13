@@ -1,0 +1,37 @@
+# behaviour: 2
+# command: node --test-reporter=tap --test-name-pattern=W-240-b2 scripts/host-cells.test.mjs
+# exit: 1
+# at: 2026-10-13T05:25:58.387Z
+# sella: builder.W-240
+# tree: tree:1e2f4b68e4a03d22e87dc37ab9eb44818f86e5a3
+
+TAP version 13
+# Subtest: W-240-b2 behaviour 2: only the producer recomputation runs ci with --offline
+not ok 1 - W-240-b2 behaviour 2: only the producer recomputation runs ci with --offline
+  ---
+  duration_ms: 1.855315
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-240/scripts/host-cells.test.mjs:601:3'
+  failureType: 'testCodeFailure'
+  error: 'the producer gate passes --offline to ci'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/edckt/agents/bisellium/.worktrees/W-240/scripts/host-cells.test.mjs:604:12)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10.977777

@@ -1,0 +1,22 @@
+# opus: W-211
+# phase: handoff
+# round: 9
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12bb3-c021-7371-859f-4c6c161a5c1d
+# outcome: failed
+# at: 2026-10-11T16:07:54.412Z
+# tree: dirty:a5f9815cacc2e5ccb8d6bd02248e4093f3bb805d
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:16 W-233 is newly described as Patron-held, though facts.txt reports it as an unknown opus with no brief admission; reached by ci/W-211-handoff-8.log #2’s class — check: none: validate named opuses and admission
+
+## Earlier findings
+- ci/W-211-handoff-8.log #1: closed — docs/SESSION-HANDOFF.md:16 now limits the Patron hold to W-221 and W-233, leaving W-225’s architect spec step unblocked.
+- ci/W-211-handoff-8.log #2: open — docs/SESSION-HANDOFF.md:24 still presents unknown, unadmitted W-233 as greenlit and actionable.
+- ci/W-211-handoff-8.log #3: open — docs/SESSION-HANDOFF.md:26 still claims unknown W-232 was halted into W-233.
+- ci/W-211-handoff-8.log #4: open — docs/SESSION-HANDOFF.md:27-28 still makes W-229 wait for a post-W-221 re-review despite facts.txt naming `branch` as its current step.
+
+## Verdict
+W-233 remains an unsupported lifecycle claim, and W-229’s current branch step remains deferred.
+VERDICT: FAIL

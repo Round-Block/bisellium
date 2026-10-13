@@ -1,0 +1,18 @@
+# opus: W-236
+# phase: spec
+# round: 17
+# sella: architect
+# outcome: passed
+# at: 2026-10-12T23:19:42.132Z
+# tree: tree:526d26d803a8efa664f3f7154e69a20507f4dbb0
+# brief: briefs/W-236.md blob:b305729e45bcbace83094376585f260e1f65865d
+
+## Findings
+
+1. advisory — Per the Patron's ruling, behaviour 1's red is an offline node:test (`scripts/source-map-js.test.mjs`) asserting package-lock.json carries no source-map-js below 1.2.2; simulated at tip with 55bbd749's lock it prints `not ok 1` and `replay-accept.mjs` accepts it, and it passes on 8fc54534's lock. check: scripts/replay-accept.mjs
+2. advisory — Behaviour 2's red becomes `node --test-reporter=tap --test-name-pattern=W-205-b1.behaviour.1: scripts/ci-scope.test.mjs`, recorded with `--cwd` in a detached worktree at bc504c62; it fails there with an accepted `not ok`, passes at f99c70ae; `node scripts/ci-workflow.test.mjs` is refused by the classifier. check: scripts/ci-scope.test.mjs
+3. advisory — The recording sequence uses forward commits only (test plus 1.2.1 lock, red, lock restored) and follows the host's replay rule: each log's `# tree:` maps to the newest commit with that source tree (run-builder-host.mjs:686,724). The step list is in census.txt revision 9. check: scripts/run-builder-host.mjs
+
+## Verdict
+
+Passed: both reds are proved against the host's classifier on scratch clones, and the plan rewrites no history; admission reports 0 problems.

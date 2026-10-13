@@ -841,6 +841,7 @@ try {
           "tsx",
           "/tooling/packages/cli/src/main.ts",
           "ci",
+          "--offline",
           "--opus",
           request.opus,
           "--studio",

@@ -1,0 +1,17 @@
+# opus: W-236
+# phase: spec
+# round: 9
+# sella: architect
+# outcome: passed
+# at: 2026-10-12T22:15:19.297Z
+# tree: tree:f09ef7f0ee04df5b75991c1696f833e48167e8a8
+# brief: briefs/W-236.md blob:9dbf918708c2a5fa3319008b5609bc0a01af0460
+
+## Findings
+
+1. advisory — Revision 5 drops "Red order: one at a time": red re-runs behaviour 1's `npm run -s audit` as a prerequisite and `prerequisitePassed` (lifecycle.ts:858) needs a TAP or Playwright pass count that npm audit never prints; behaviour 2's red does not depend on behaviour 1. No other line changes. check: packages/commands/src/lifecycle.ts
+2. advisory — The tooling gap is drafted as a backlog opus in census.txt, outside W-236's scope. check: none: census.txt revision 5
+
+## Verdict
+
+Passed: the one-line change unblocks behaviour 2's red without rewriting history; admission reports 0 problems.

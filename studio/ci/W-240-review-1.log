@@ -1,0 +1,17 @@
+# opus: W-240
+# phase: build
+# round: 1
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a133b5-d672-7cd1-9207-c48b90e09cc3
+# outcome: failed
+# at: 2026-10-13T05:25:41.486Z
+# tree: tree:1d98882e5d2edf2a39512708522e6548f3a9cdbd
+# brief: briefs/W-240.md blob:48b14a4fe96d2f082204248a6d95a13967e75f4d
+
+## Findings
+1. blocking — scripts/host-cells.test.mjs:603 Red 02 is not replay-acceptable: `assert.match` prints the pre-fix runner source, which contains `sandbox`, and `classifyReplay` rejects that poison before considering `AssertionError`, falsifying the claim that both reds were accepted (brief:49). This is the only instance found after searching both red logs for every classifier poison; 01 has none, while 02 has nine `sandbox` hits. — check: scripts/replay-accept.test.mjs
+
+## Verdict
+The implementation behaves correctly, but required red evidence 02 cannot pass the host replay classifier; the receipt exception does not waive red validity.
+VERDICT: FAIL

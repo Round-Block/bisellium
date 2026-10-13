@@ -1,0 +1,20 @@
+# opus: W-229
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-11T10:11:14.475Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:ab255156c6b7bd76a12fc76b07298873243831e0
+
+## Findings
+
+1. advisory — Review r2 finding 1 fixed: the CRLF refusal is limited to the Findings heading and its lines; a CRLF below another heading is accepted and kept byte for byte, as the verdict.test.ts behaviour 1 fixture needs. check: packages/cli/src/verdict.test.ts
+2. advisory — Review r2 finding 2 fixed: thirteen free-form signatures (W-221 3, W-181 4, W-169 6), not twelve; history.mjs now exits 1 on any other count, and round 1's own finding 5 carried the same miscount. check: none: history.mjs count assertion in the spec evidence
+3. advisory — Review r2 advisory 3 fixed in one phrase: the parse row names the sessioned Rebuttal, Ruling and Earlier findings sections. check: packages/cli/src/verdict-findings.test.ts
+4. advisory — Sweep found one more wrong count: the fixture edits are nine across seven rows and five files, not six; no other count or CRLF claim changed. check: none: fixture-fix.mjs match-once guard
+
+## Verdict
+
+Passed: revision 2 corrects the two false promises and the fixture-edit count, changes nothing else, and passes admission with 0 problems.

@@ -84,7 +84,7 @@ test("W-131 behaviour 6: ci.yml pushes only master and gates every full-path ste
     ))
       assert.equal(
         step.if,
-        ["npm run -s typecheck", "npm run -s lint"].includes(step.run) ? FULL : DEFERRED,
+        ["npm run -s audit", "npm run -s typecheck", "npm run -s lint"].includes(step.run) ? FULL : DEFERRED,
         `${job}: "${step.run}" carries the full-path guard`,
       );
   }
@@ -591,6 +591,7 @@ test("W-205-b1 behaviour 1: a pull request runs setup, typecheck and lint; merge
       ["actions/setup-node@v5", null],
       ["npm ci", null],
       SCOPE,
+      ["npm run -s audit", FULL],
       ["npm run -s typecheck", FULL],
       ["npm run -s lint", FULL],
       ["npm run -s format:check", DEFERRED],

@@ -1,0 +1,21 @@
+# opus: W-229
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12a6d-8bd6-71f2-9ee7-dfd30340c60e
+# outcome: failed
+# at: 2026-10-11T10:13:18.293Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:ab255156c6b7bd76a12fc76b07298873243831e0
+
+## Findings
+1. blocking — brief:123 The CRLF exception remains too broad: in a sessioned log, a CRLF blank line under `## Rebuttal`, `## Ruling`, or `## Earlier findings` is retained as `"\r"` and rejected by `readExchange`, so brief:6 is also false that CRLF refusal is limited to `## Findings`. — check: packages/cli/src/verdict-findings.test.ts
+
+## Earlier findings
+- ci/W-229-spec-2.log #1: open — packages/commands/src/verdict.ts:203 retains CR-only exchange lines, contradicting brief:6 and brief:123
+- ci/W-229-spec-2.log #2: closed — history.txt:31 records 13 refusals and history.mjs:23 asserts the 3/4/6 distribution
+
+## Verdict
+Revision 2 closes the history-count blocker but retains a false CRLF promise for sessioned exchange sections.
+VERDICT: FAIL

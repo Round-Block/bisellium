@@ -1,0 +1,18 @@
+# opus: W-211
+# phase: handoff
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a12a20-63a2-7b81-b81a-f2a9a933ce5b
+# outcome: failed
+# at: 2026-10-11T13:08:13.888Z
+# tree: dirty:a274242925da5b2865cf576e0154f0249c6d7e30
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:94 W-230’s next required action is Patron greenlight, not drafting its spec; it remains backlog and has no readable brief. (evidence: handoff-review-w211done/r5/facts.txt:71-82; studio/opera/W-230.md:6) — check: none: handoff next-action status must include required greenlight
+
+## Earlier findings
+
+## Verdict
+The new W-230 entry omits the current Patron greenlight required before any spec work.
+VERDICT: FAIL

@@ -1514,6 +1514,7 @@ try {
           name: "close-ci-inherit-fixture",
           private: true,
           scripts: {
+            audit: 'node -e "process.exit(0)"',
             typecheck: 'node -e "process.exit(0)"',
             lint: 'node -e "process.exit(0)"',
             "format:check": 'node -e "process.exit(0)"',

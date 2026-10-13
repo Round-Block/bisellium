@@ -1,0 +1,23 @@
+# opus: W-229
+# phase: spec
+# round: 9
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12a6d-8bd6-71f2-9ee7-dfd30340c60e
+# outcome: passed
+# at: 2026-10-11T10:44:40.256Z
+# tree: tree:7431c78f9aa5da884810f1879d0368c40df4d226
+# brief: briefs/W-229.md blob:3faf926b5c19670570222dc3cb5ac4bce98b28ab
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-229-spec-7.log #1: closed — brief:37,50,52 now identifies `signedSpec` as the header-only gate when no `spec_reviewer` is configured.
+- ci/W-229-spec-7.log #2: closed — brief:98 excludes `ui-lead` from `legacySignature`, and brief:137 requires the overlap case to refuse.
+- ci/W-229-spec-7.log #3: closed — brief:52,116 now states that `readOpusVerdicts` does not read handoff logs.
+- ci/W-229-spec-7.log #4: closed — brief:52,118 now limits the guarantee by accurately naming the header-only behavior of `readSequence` and `reviewRounds`.
+
+## Verdict
+Revision 5 closes every prior blocking finding, and the changed guarantees match the specified readers and rejectors.
+VERDICT: PASS
