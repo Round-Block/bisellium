@@ -1,0 +1,20 @@
+# opus: W-236
+# phase: spec
+# round: 4
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: passed
+# at: 2026-10-12T17:22:00.197Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-236.md blob:743a8443397c448945f75b347bf34e918d7d7201
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-236-spec-2.log #1: closed — brief:8 and brief:88 now name every path class accepted by `recordOnly`, matching `scripts/ci-scope.mjs`.
+
+## Verdict
+The changed lines close the prior false promise and accurately describe the fail-closed input boundaries.
+VERDICT: PASS

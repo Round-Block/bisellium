@@ -1,0 +1,21 @@
+# opus: W-236
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1311e-6107-71e0-a63b-a02a48f429c1
+# outcome: failed
+# at: 2026-10-12T17:20:14.255Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-236.md blob:01ceda98c7d5b54e595099974a8f8dca803d50d9
+
+## Findings
+1. blocking — brief:81 The audit is not skipped only for studio-record changes: `recordOnly` also accepts `docs/SESSION-HANDOFF.md` and direct dossier HTML pages, so this promise is false as written. — check: scripts/ci-scope.test.mjs
+2. advisory — brief:47 The new workflow guard reads `steps.scope.outputs.record_only`, but the input section gives neither its valid domain nor the fail-closed guard that runs the audit for every value except exact `"true"`. — check: scripts/ci-scope.test.mjs
+3. advisory — brief:47 The reused `npm run -s audit:high` subprocess should be the input boundary, with exit zero as its valid domain and `runStep` plus the GitHub Actions runner named as the functions converting non-zero exit into refusal; the current text instead describes reads internal to npm. — check: none: assert both audit callers convert every non-zero exit into refusal
+4. advisory — brief:47 The newly added root `package.json#scripts.audit:high` reader is omitted from the input section, although line 32 specifies its exact domain and its failing `scripts/ci-workflow.test.mjs` check. — check: scripts/ci-workflow.test.mjs
+5. advisory — brief:47 The newly added `CI_STEPS[0]` reader is likewise omitted from the input section, although lines 32 and 38 specify its domain and failing check. — check: scripts/ci-workflow.test.mjs
+
+## Verdict
+The mechanisms are feasible and fail closed, but the stated merge-queue skip boundary is demonstrably narrower than the implemented classifier.
+VERDICT: FAIL
