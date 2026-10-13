@@ -1,0 +1,20 @@
+# opus: W-221
+# phase: build
+# round: 5
+# sella: qa-lead
+# model: gpt-5.6-sol
+# session: 01a12a7a-b4bd-7791-b97d-ab5f510e4c0b
+# outcome: failed
+# at: 2026-10-13T01:43:53.402Z
+# tree: tree:bba579f3730ec28850e806b8e274a883c7ab5140
+# brief: briefs/W-221.md blob:9f676df259fa14b14d4bfa21e65d5049ee939131
+
+## Findings
+1. blocking — packages/cli/src/rules/process.ts:644 Reached through the earlier operator-state class: `odd` assumes every consecutive `>` belongs only to `>`/`>>`, so it misclassifies pipes after redirection tokens that already consume `>`; for example, `<>|f` returns `undefined` although `<>` is one token and `|` is the pipeline. I searched Bash redirection operators containing `>` (`>`, `>>`, `>|`, `<>`, `&>`, `&>>`, `>&`): every `<` plus a nonempty `>` run followed by pipes has inverted parity, and `&>` followed by pipes is likewise shifted, including continuation variants and all shared substitution contexts; the oracle omitted `<` and discarded syntax errors despite the “Any string” domain (brief:55; brief:88). — check: packages/cli/src/rules/process.test.ts
+
+## Earlier findings
+- ci/W-221-review-4.log #1: closed — packages/cli/src/rules/process.ts:634 now consumes a bare clobber pipe, line 644 handles bare `>`-run parity, and process.test.ts:366-375,381 cover the named top-level and substitution cases.
+
+## Verdict
+The named clobber cases are fixed, but sibling `<>` and `&>` operator forms remain misclassified within the classifier’s “Any string” domain.
+VERDICT: FAIL
