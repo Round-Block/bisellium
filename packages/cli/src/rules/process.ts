@@ -550,7 +550,7 @@ export function checkSessionHandoff(root: string, opts: RuleOpts): Finding[] {
 }
 
 // ---- W-221: a pipe never hides a gate's exit ----------------------------------
-/** 1-based line of the first pipeline operator (`|` or `|&`, never `||`) outside quotes and comments, or undefined. */
+/** 1-based line of the first `|` outside quotes and comments that is not half of `||` (D-059: no redirection is modelled), or undefined. */
 export function shellPipeLine(text: string): number | undefined {
   let i = 0;
   let line = 1;
@@ -563,7 +563,9 @@ export function shellPipeLine(text: string): number | undefined {
   const jump = (j: number): void => {
     for (; i < j; i++) if (text[i] === "\n") line++;
   };
-  // ponytail: no $'…', heredoc or case awareness, all fail closed (read as a pipe or quote)
+  // ponytail: no redirection, `$'…'`, heredoc, `case` or arithmetic awareness: every unquoted `|` that is not half of `||` is a pipeline,
+  // so `>|`, `<>|`, `&>|`, a `case` pattern `a|b)`, `=~ a|b` and a heredoc body are false alarms (rewrite the line); `$'…'` is read as `'…'`
+  // and an unpaired quote in a heredoc body shifts the quoting after it, either can hide a later pipe (W-221 census §3)
   /** At an opening quote: skip the string; the opening line if it never closes, a pipe line from a substitution in "…". */
   const quoted = (q: string): number | undefined => {
     const opened = line;
@@ -597,24 +599,18 @@ export function shellPipeLine(text: string): number | undefined {
     i += close === "" ? 0 : close === "`" ? 1 : 2;
     let depth = 0;
     // explicit lexical state, never read back from the preceding raw byte: `start` is true where a word may begin
-    // (a `#` there is a comment); `odd` is true right after an odd run of unescaped `>`: Bash pairs a run greedily
-    // into `>>`, so the `|` after an odd run completes the clobber `>|` and is no pipe, nor half of `||`
+    // (a `#` there is a comment)
     let start = true;
-    let odd = false;
     while (i < text.length) {
       const c = text[i]!;
       if (c === close && depth === 0) {
         i++;
         return undefined;
       }
-      const clobber: boolean = odd;
-      odd = false;
       if (c === "\\") {
-        // a continuation is invisible: start and odd stay as they were
-        if (text[i + 1] === "\n") {
-          line++;
-          odd = clobber;
-        } else start = false;
+        // a continuation is invisible: start stays as it was
+        if (text[i + 1] === "\n") line++;
+        else start = false;
         i += 2;
       } else if (c === "'" || c === '"') {
         const hit = quoted(c);
@@ -631,9 +627,6 @@ export function shellPipeLine(text: string): number | undefined {
         start = false;
       } else if (c === "#" && start) {
         while (i < text.length && text[i] !== "\n") i++;
-      } else if (c === "|" && clobber) {
-        i++; // the clobber `>|`; the next `|` is judged afresh
-        start = true;
       } else if (c === "|" && text[past(i + 1)] === "|") {
         jump(past(i + 1) + 1);
         start = true;
@@ -641,7 +634,6 @@ export function shellPipeLine(text: string): number | undefined {
         return line;
       } else {
         start = /[\s;&()<>]/.test(c);
-        odd = c === ">" && !clobber;
         if (c === "(") depth++;
         else if (c === ")") depth--;
         else if (c === "\n") line++;

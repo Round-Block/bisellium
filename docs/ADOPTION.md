@@ -917,9 +917,12 @@ needs the effective `shell` (the step's, else the job's or the workflow's
 `defaults.run.shell`) to be exactly `bash`; a root `package.json` script holding a
 pipeline blocks. An unreadable or unparseable file blocks at its path, and an absent
 `scripts/`, `.github/workflows/` or `package.json` is no finding. A pipeline is
-found lexically: a pipe inside a quoted string handed to another shell is not
-seen, a `case` pattern `a|b)`, or a heredoc body is read as one, and a nested
-`scripts/` directory, a child shell or a sourced file is not read. `set -e` does
+found lexically: every unquoted `|` outside a comment that is not half of `||`
+counts, so a redirection such as `>|`, `<>|` or `&>|`, a `case` pattern `a|b)`, a
+`[[ … =~ a|b ]]` pattern, arithmetic or a heredoc body is read as one (a false
+alarm: rewrite that line); a pipe inside a quoted string handed to another shell
+is not seen, `$'…'` is read as `'…'`, and a nested `scripts/` directory, a child
+shell or a sourced file is not read. `set -e` does
 not act inside `if`, `while`, `!` or a non-final `&&`/`||` member, so a pipeline
 there still hides its status from the script.
 
