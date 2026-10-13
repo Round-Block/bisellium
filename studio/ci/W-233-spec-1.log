@@ -1,0 +1,21 @@
+# opus: W-233
+# phase: spec
+# round: 1
+# sella: architect
+# outcome: passed
+# at: 2026-10-11T16:46:51.297Z
+# tree: dirty:7576a38379083bfb5eee88c0478391b3caa87661
+# brief: briefs/W-233.md blob:fcafdf7612a30eb9822eeba1241c0d8c09c28bc8
+
+## Findings
+
+1. advisory — Split kept: part 1 is tickets and the ladder's direct writers (five behaviours, one decree family); part 2's certify rules, hook script and CODEOWNERS widening are listed at the top, ladder.hold dropped under D-053 and lex.enforced deferred to a third opus. check: none: studio/bisellium.yml:50 brief_behaviour_limit 6
+2. advisory — The ticket store moves from the draft's schema-2 step marker to the git common directory beside W-199's queue binding: the marker is pid-bound health deleted after each perform, and its schema 1 is pinned by three next.test.ts rows. check: packages/cli/src/next.test.ts
+3. advisory — The requirement is keyed in bisellium.yml (step_tickets, absent by default), so no existing fixture in lifecycle, verdict, writes, branch or next tests changes; the one existing edit is containment.test.ts PINNED_D for ticket.ts's raw fs sites. check: packages/cli/src/containment.test.ts
+4. advisory — Cut from the draft: spec anchoring on spec/<id>, the PR receipt commit, branch and merge receipts in records, a ticketed handoff (it deadlocks gateDispatch's stale-handover hold) and handoff-phase verdicts (no rung names them). check: none: census.txt judgements
+5. advisory — Corrected: pr has no direct verb; verbs already run git reads during validation, so the guarantee is before the first write and the wrapped command; the draft's VERDICT_HEADERS list assertion does not exist; its promise lines failed admission. check: none: admission.mjs reports 0 problems
+6. advisory — Files owned overlap W-204 and W-229 (next.ts, lifecycle.ts, verdict.ts, next.test.ts, ADOPTION, ARCHITECTURE): a D-057 §3 re-review is owed before branch for whichever lands first. check: none: census.txt overlaps
+
+## Verdict
+
+Passed: every claim is checked against master b221000e (census.txt), the brief passes admission with 0 problems, names the existing rows it touches, and its Defaults are questions for the Patron.

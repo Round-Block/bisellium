@@ -14,10 +14,13 @@ Current state only, after CLAUDE.md; rules and environment: `studio/leges/produc
 
 1. **W-221** (#444), **W-233** part 1 (#446) and **W-240** (#441; review gate recorded on a
    re-minted receipt, #448) done. Retros owed: the weekly retro (D-061 §5).
-2. **W-233** part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) waits for
+2. **W-246** spec landed (#450; two failed rounds, remainder split to W-252, backlog). Its branch
+   holds on W-221's owed retro, which the retro verb cannot file; W-253 fixes that by hand-branch
+   (D-062), then W-221's retro, then W-246 branches. Weekly retro filed for W-233 and W-240.
+3. **W-233** part 2 (the dispatch guard, `docs/design/next-handoff-notes.md`) waits for
    W-245's census (D-061 §1).
-3. **W-241** part 1 spec passed (untracked), Patron-approved.
-4. **Audits ruled (D-061):** 25 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
+4. **W-241** part 1 spec passed (untracked), Patron-approved.
+5. **Audits ruled (D-061):** 25 opera halted (`audit-rulings/apply-d061.sh`), lex §7 amended,
    W-251 filed; the Queue below is the new order.
 - `cleanup` on a read-only `.git/worktrees/<name>/`: delete its `HEAD`, rerun (W-227).
 
@@ -42,7 +45,8 @@ Ranked. Item descriptions for the older items:
 Order set by the Patron 2026-10-13 (D-061): in flight, then the audit cuts, then the
 milestone exits; lanes later.
 
-1. Audit cuts: W-246 — spec review blocks only on substance, changed lines only, two-round
+1. W-253 — the retro reads only reviewer findings (D-062 hotfix; unblocks every new opus).
+   Audit cuts: W-246 — spec review blocks only on substance, changed lines only, two-round
    cap; W-247 — drop the handoff Resume point and its review;
    W-250 — ci.yml runs `bisellium ci` once, verdict writes the gate; W-243 — certify judges the diff, not the branch name (D-039 high); W-206 + W-207
    + W-214 as one opus — spec in the opus PR, done reads certify's receipt, retro in the done

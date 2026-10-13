@@ -1,0 +1,22 @@
+# opus: W-233
+# phase: spec
+# round: 8
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: failed
+# at: 2026-10-13T01:15:26.815Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-233.md blob:b3046fc34bf9853f064f8df8a06a1762a2e6a03d
+
+## Findings
+1. blocking — brief:9 The claim that a malformed setting at either end passes when no covered item is added contradicts `ladder.switch`: with `required` at the base and a malformed head, line 16 requires failure regardless of other changes. — check: scripts/ci-certify.test.mjs
+
+## Earlier findings
+- ci/W-233-spec-6.log #1: closed — brief:16 adds `ladder.switch`, which refuses any required-base candidate whose head drops or changes the setting.
+- ci/W-233-spec-6.log #2: closed — brief:12 and brief:196 remove the quiet-moment preflight guarantee and retain fail-closed treatment of pre-switch evidence.
+
+## Verdict
+The prior blockers are closed, but the revised migration boundary now makes incompatible promises for a malformed head setting.
+
+VERDICT: FAIL

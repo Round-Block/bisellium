@@ -1,0 +1,24 @@
+# opus: W-233
+# phase: spec
+# round: 6
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: failed
+# at: 2026-10-13T01:13:43.365Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-233.md blob:d360b6c0eafd406c416f6f0b04846e4941b6ca75
+
+## Findings
+1. blocking — brief:9 A drop-only PR adds no covered item, so it can remove `step_tickets: required` without either ladder rule refusing; subsequent PRs then have the key absent at both ends and bypass enforcement. — check: scripts/ci-certify.test.mjs
+2. blocking — brief:195 The three “quiet moment” checks do not inspect local `opus/*` or `spec/*` branches that have neither a worktree nor an open PR, so they cannot guarantee that no pre-switch evidence remains in flight. — check: none: switch preflight must reject local opus/spec refs carrying unmerged evidence
+
+## Earlier findings
+- ci/W-233-spec-4.log #1: closed — brief:9 now activates coverage when the key is present at either the base or head, so the switch PR is judged.
+- ci/W-233-spec-4.log #2: closed — brief:10 now covers added evidence regardless of its self-reported timestamp.
+- ci/W-233-spec-4.log #3: closed — brief:10 explicitly judges the done PR’s added ticket entry, and the incompatible claim that it passes unchanged was removed.
+
+## Verdict
+The revision closes all prior blockers but introduces an enforcement-disable path and retains an incomplete quiet-moment guarantee.
+
+VERDICT: FAIL

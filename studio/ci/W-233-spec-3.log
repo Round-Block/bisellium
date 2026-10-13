@@ -1,0 +1,19 @@
+# opus: W-233
+# phase: spec
+# round: 3
+# sella: architect
+# outcome: passed
+# at: 2026-10-12T14:35:20.663Z
+# tree: tree:3a519b7f45b11447d41cbb726dc3505c845d710d
+# brief: briefs/W-233.md blob:a6e728b1bcf07cb9c423312d78d02800a6ee7194
+
+## Findings
+
+1. advisory — Spec-2 finding 1 (ladder.ticket vs unticketed handoff verdicts) accepted: part 2's ladder.ticket now covers only spec- and build-phase verdict logs, red logs and added tickets: entries; handoff-phase verdicts are exempt and judged by ladder.handoff's # subject: blob (brief part-2 "Not covered", Default 4). ladder.resign also reads the ready entry, since branch tickets are stdout-only. check: none: census.txt R3 f1 verdict.ts:612,628
+2. advisory — Spec-2 finding 2 (no migration boundary) accepted: coverage is keyed on the merge group's base (ci-certify.mjs:142-145), with the epoch at the first first-parent commit setting step_tickets: required; only files the candidate adds or changes in base_sha..head_sha are covered, logs only with # at: at or after the epoch; no epoch covers nothing; a malformed base setting fails only candidates adding covered files; in-flight opera take the switch commit first (brief part-2 boundary, Acceptance, new Default 9). check: none: census.txt R3 f2
+3. advisory — Spec-2 finding 3 (replay at head cannot see uncommitted evidence) accepted, and wider than raised: next also reads the worktree's files, a gitignored run receipt, superseded brief text and the live PR (next.ts:425,482,496,647,197-210; .gitignore:13-14). Part 2 no longer re-derives at head: ladder.ticket judges each ticket against the item carrying it and the items before it from the candidate alone; head binds part 1 locally; gatherAt dropped (Default 6 revised). check: none: census.txt R3 f3
+4. advisory — Spec-2 finding 4 (single use) accepted: consumeTicket is replaced by claimTicket (rename to <opus>.claimed immediately before the write, read back, refuse unclaimable on failure) and dropClaim; a claimed file is never read as a ticket, so no failure after the claim leaves a reusable one. New Input-domain row; behaviour 3 rewritten with reuse, wx-collision and unclaimable rows; new Default 10. check: packages/cli/src/next.test.ts
+
+## Verdict
+
+Passed: the four blocking findings of ci/W-233-spec-2.log are answered in revision 2 (diff ~/.bisellium-evidence/W-233-spec/r1-r2.diff), every new claim is cited in census.txt (round 3 section, master 89ba6150), and brief admission reports 0 problems over 5 behaviours. Defaults 1, 4 and 6 changed; 9 and 10 are new.

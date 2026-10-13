@@ -1,0 +1,21 @@
+# opus: W-233
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: failed
+# at: 2026-10-11T16:54:23.259Z
+# tree: dirty:7576a38379083bfb5eee88c0478391b3caa87661
+# brief: briefs/W-233.md blob:fcafdf7612a30eb9822eeba1241c0d8c09c28bc8
+
+## Findings
+1. blocking — brief:9 `ladder.ticket` requires every verdict log to carry a ticket, but lines 47 and 190 deliberately leave handoff-phase verdicts unticketed while `ladder.handoff` requires those verdicts. Valid handoff evidence would therefore fail certification. — check: scripts/ci-certify.test.mjs
+2. blocking — brief:9 Historical and part-1 evidence has no ticket because the setting remains absent until a post-merge records PR, yet the rule covers every candidate log and states no migration boundary. Running it before the non-opus early return would reject ordinary PRs containing that existing evidence. — check: scripts/ci-certify.test.mjs
+3. blocking — brief:9 Replay at the ticket’s `head` cannot validate legitimate spec-review or review-recording tickets whose preceding signature or verdict exists only uncommitted in the worktree, as Behaviours 3–4 permit. With undecidable cases failing closed and anchoring/receipt commits excluded, the successor rejects the workflow this brief creates. — check: scripts/ci-certify.test.mjs
+4. blocking — brief:49 The successful-write promise says the ticket is deleted, but `consumeTicket` is specified to return only a warning with exit unaffected when consumption fails. If unlinking leaves the same ticket present, `review` or `red` can reuse it successfully; the consumption reread/unlink also has no input-domain row. — check: packages/cli/src/next.test.ts
+
+## Verdict
+The signed brief has blocking contradictions between its valid part-1 workflow, single-use guarantee, and promised certification wall.
+
+VERDICT: FAIL

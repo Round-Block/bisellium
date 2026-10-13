@@ -1,0 +1,17 @@
+# opus: W-233
+# phase: spec
+# round: 7
+# sella: architect
+# outcome: passed
+# at: 2026-10-13T01:14:22.468Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-233.md blob:b3046fc34bf9853f064f8df8a06a1762a2e6a03d
+
+## Findings
+
+1. advisory — Spec-6 finding 1 (a drop-only PR disables enforcement) accepted: new part-2 rule `ladder.switch` (brief rules list): a candidate whose base sets `step_tickets: required` and whose head does not fails, whatever else it adds; turning tickets off needs a change to that rule in scripts/ci-certify.mjs, which .github/CODEOWNERS already routes to the Patron. Boundary bullet and Default 9 updated. check: scripts/ci-certify.test.mjs
+2. advisory — Spec-6 finding 2 (the quiet-moment preflight misses local opus/* and spec/* refs) accepted by removing the promise rather than widening it: Acceptance no longer lists preflight outputs; the boundary states that pre-switch evidence fails closed at merge and that the brief promises no preflight; Default 9 names the cost (the producer times the switch, unchecked). No path fails open: unticketed evidence still fails at merge. check: none: census.txt round 7 notes
+
+## Verdict
+
+Passed: both blocking findings of ci/W-233-spec-6.log are answered in revision 4 (diff ~/.bisellium-evidence/W-233-spec/r3-r4.diff): one rule added with its refusal stated, one promise deleted. Brief admission reports 0 problems over 5 behaviours; the red commands are unchanged from revision 3. Default 9 rewritten; no other Default changed.

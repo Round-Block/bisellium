@@ -1,0 +1,19 @@
+# opus: W-233
+# phase: spec
+# round: 5
+# sella: architect
+# outcome: passed
+# at: 2026-10-13T01:12:24.044Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-233.md blob:d360b6c0eafd406c416f6f0b04846e4941b6ca75
+
+## Findings
+
+1. advisory — Spec-4 finding 1 (the switch PR is unchecked: the epoch came only from base_sha) accepted: the epoch is removed; part 2's rules are on when `step_tickets: required` is set at the merge group's base or at its head (the candidate's manifest, ci-certify.mjs:142-145,155), so the switch PR is judged, and so is a PR that drops the key (brief part-2 boundary, first bullet; Default 9). check: none: census.txt R5 f1
+2. advisory — Spec-4 finding 2 (a pre-epoch self-reported `# at:` escapes) accepted: coverage reads no timestamp; every spec- or build-phase verdict log, red log and `tickets:` entry the diff base_sha..head_sha adds or changes is judged, whatever its own `# at:` says (the writer stamps it, verdict.ts:684, lifecycle.ts:1084). Ticketless pre-switch evidence would then fail whenever it landed, so the in-flight paragraph is replaced by a quiet-moment precondition on the switch: no `.worktrees/` entry, no open `opus/*` or `spec/*` PR, clean `studio/ci`, the three outputs in the switch PR's body (Acceptance; Default 9). `# at:` remains only as ladder.ticket's ordering input. check: none: census.txt R5 f2
+3. advisory — Spec-4 finding 3 (a ticketed `done` PR does not "pass as today") accepted and removed rather than qualified: the brief no longer claims any PR passes as today; it states that a spec PR's signatures, an opus PR's logs and entries and a done PR's `done` entry are judged. The claim was also false for handoff PRs (ladder.handoff, ladder.rank) and spec PRs (signatures). check: none: census.txt R5 f3
+4. advisory — Replay check (brief instruction): behaviour 1's red now names its first assertion as `assert.ok(existsSync(<ticket path>))`; a read would throw ENOENT, which scripts/replay-accept.mjs:11 rejects as an environment failure. Behaviours 2-5 fail on assertions over exit codes, output or bytes the test holds; every world runs the gh stub (next.test.ts:147,207), offline. Also corrected a stale fact: CODEOWNERS changed in #431; the brief now says only that it does not name studio/bisellium.yml. check: packages/cli/src/next.test.ts
+
+## Verdict
+
+Passed: the three blocking findings of ci/W-233-spec-4.log are answered in revision 3 (diff ~/.bisellium-evidence/W-233-spec/r2-r3.diff), each mostly by deleting a claim (the epoch, the in-flight paragraph, "passes as today"); the one new promise (the switch's quiet-moment precondition) names its evidence. Census rerun at master 9bf1ad65 with a round-5 section; brief admission reports 0 problems over 5 behaviours. Default 9 rewritten; no other Default changed.
