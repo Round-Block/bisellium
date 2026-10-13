@@ -4940,6 +4940,7 @@ test("W-233-b3 behaviour 3: a write claims its ticket before writing and copies 
   assert.deepEqual(recordTickets(rw, "wt"), [readyLine], "ready appends the ticket");
   consumed(rw, "ready");
   const dn = world("w233-b3-done", "cleanup");
+  scenario(dn, { list: mergedList(dn) });
   ticketed(dn);
   const doneLine = issued(dn);
   const od = direct(dn, dn.repo, ["done", OPUS, "--sella", "producer", "--studio", dn.studio, "--now", T.done]);
@@ -4978,16 +4979,23 @@ test("W-233-b3 behaviour 3: a write claims its ticket before writing and copies 
   writeFileSync(claimedPath(hand), `${handLine}\n`);
   refused(ready(hand), "ready", "absent", hand, "a .claimed file holding a matching line");
 
-  // a verdict whose target appears after the existence check (a dangling link refuses the exclusive create): the ticket is spent
+  // a verdict whose write fails after the claim (a read-only ci/ refuses the exclusive create): the ticket is spent, never pending again
   const col = world("w233-b3-collision", "build");
   ticketed(col);
   forge(col, "verdict-build", 1);
   const colLine = ticketText(col).trimEnd();
-  symlinkSync(join(col.root, "nowhere"), join(col.wtStudio, "ci", `${OPUS}-review-1.log`));
-  const oc = direct(col, col.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(col, "c.md"), "--studio", col.wtStudio, "--now", T.review1]);
-  assert.equal(oc.status, 2, ran("the collision", oc));
-  assert.equal(existsSync(ticketPath(col)), false, "the pending path is empty");
-  assert.equal(readFileSync(claimedPath(col), "utf8"), `${colLine}\n`, "<opus>.claimed holds the line");
-  const oc2 = direct(col, col.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(col, "c.md"), "--studio", col.wtStudio, "--now", T.review1]);
-  refused(oc2, "verdict", "absent", col, "a second verdict");
+  const ci = join(col.wtStudio, "ci");
+  const collide = (): Out => direct(col, col.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(col, "c.md"), "--studio", col.wtStudio, "--now", T.review1]);
+  if (process.getuid?.() !== 0) {
+    chmodSync(ci, 0o500);
+    try {
+      const oc = collide();
+      assert.equal(oc.status, 2, ran("the failed write", oc));
+      assert.equal(existsSync(ticketPath(col)), false, ran("the pending path is empty", oc));
+      assert.equal(readFileSync(claimedPath(col), "utf8"), `${colLine}\n`, "<opus>.claimed holds the line");
+      refused(collide(), "verdict", "absent", col, "a second verdict");
+    } finally {
+      chmodSync(ci, 0o755);
+    }
+  }
 });
