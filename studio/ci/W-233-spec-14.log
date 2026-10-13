@@ -1,0 +1,21 @@
+# opus: W-233
+# phase: spec
+# round: 14
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: failed
+# at: 2026-10-13T11:22:59.687Z
+# tree: tree:7456d841078c5db5cd934b2ecc1829f0ce1ed9a6
+# brief: briefs/W-233.md blob:a473861854f76f9082a1d44eff9f139b14ea609b
+
+## Findings
+1. blocking — brief:222 Default 10 still names an existing verdict target as a post-claim failure that costs a fresh ticket; the existence check actually refuses before the claim and preserves the pending ticket. — check: packages/cli/src/next.test.ts
+
+## Earlier findings
+- ci/W-233-spec-12.log #1: open — brief:56 is corrected, but brief:222 retains the same false existing-target example, so the fix did not close the whole class.
+
+## Verdict
+The primary promise is corrected, but its dependent Default still makes the same false claim.
+
+VERDICT: FAIL

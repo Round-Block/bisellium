@@ -1,0 +1,21 @@
+# opus: W-233
+# phase: spec
+# round: 16
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: passed
+# at: 2026-10-13T11:23:58.474Z
+# tree: tree:7456d841078c5db5cd934b2ecc1829f0ce1ed9a6
+# brief: briefs/W-233.md blob:23e434683be5945b30595e472df9d15a998f1955
+
+## Findings
+No findings
+
+## Earlier findings
+- ci/W-233-spec-14.log #1: closed — brief:222 now distinguishes a pre-existing target, which preserves the ticket, from an exclusive-create failure after the claim, which spends it.
+
+## Verdict
+The remaining duplicate claim is corrected, and the ticket-consumption promises are now consistent.
+
+VERDICT: PASS

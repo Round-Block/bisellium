@@ -1,0 +1,20 @@
+# opus: W-233
+# phase: spec
+# round: 12
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a12bdd-64c4-7923-8e8b-7bb6e1cfc870
+# outcome: failed
+# at: 2026-10-13T11:21:48.421Z
+# tree: tree:7456d841078c5db5cd934b2ecc1829f0ce1ed9a6
+# brief: briefs/W-233.md blob:473e0ce5d28e508bf821f31b9d0a968c18ebdf97
+
+## Findings
+1. blocking — brief:56 The dependent promise still says an existing verdict target fails after the claim and costs a fresh `next`; `existsSync(target)` actually refuses before the claim and preserves the pending ticket. — check: packages/cli/src/next.test.ts
+
+## Earlier findings
+
+## Verdict
+The revised test mechanism is feasible, but its governing ticket-consumption promise remains false as written.
+
+VERDICT: FAIL
