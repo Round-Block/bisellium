@@ -1,0 +1,17 @@
+# opus: W-233
+# phase: spec
+# round: 15
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T11:23:27.592Z
+# tree: tree:7456d841078c5db5cd934b2ecc1829f0ce1ed9a6
+# brief: briefs/W-233.md blob:23e434683be5945b30595e472df9d15a998f1955
+
+## Findings
+
+1. advisory: answers ci/W-233-spec-14.log #1 and closes ci/W-233-spec-12.log #1 across the whole class. I grepped the brief for every mention of an existing target, `wx`/EEXIST, a collision, a fresh `next`, or a failure after or past the claim (census: ~/.bisellium-evidence/W-233-spec/census.txt). Only brief:222's Default 10 example was still wrong. Its example is now "a verdict whose exclusive create fails", and it adds that a verdict target that already exists is refused before the claim and keeps the ticket. Default 10's decision (claim before the write, never restore) is unchanged. brief:56 (r7) and brief:179 (r6) already matched the code (verdict.ts:671 runs before the claim at :708-713). check: packages/cli/src/next.test.ts
+
+## Verdict
+
+Passed: revision 8 changes one sentence of brief:222 (diff ~/.bisellium-evidence/W-233-spec/r7-r8.diff), and a re-grep finds no sentence naming an existing target as a failure after the claim. Brief admission reports 0 problems, the red order is still declared, and no Default's decision changed.

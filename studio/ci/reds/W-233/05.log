@@ -1,0 +1,53 @@
+# behaviour: 5
+# command: node --test-reporter=tap --test-name-pattern=W-233-b5 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-13T10:27:27.617Z
+# sella: builder.W-233
+# tree: tree:5c1cb06c57466fb5b4506707457706ae79ada02f
+
+TAP version 13
+# Subtest: W-233-b5 behaviour 5: next --perform goes through the same tickets
+not ok 1 - W-233-b5 behaviour 5: next --perform goes through the same tickets
+  ---
+  duration_ms: 1681.897985
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:160:3909'
+  failureType: 'testCodeFailure'
+  error: |-
+    ready is performed with a ticket
+    --- exit 1
+    --- stdout
+    next: W-900 ready held
+    why: W-900: ready refused: no matching next ticket (absent) run: bisellium next W-900 --studio /tmp/claude-1000/w124-w233-b5-ready-Tx3Kkp/repo/studio --repo /tmp/claude-1000/w124-w233-b5-ready-Tx3Kkp/repo
+    next-step: ready
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'next: W-900 ready held'
+    - 'next: W-900 ready performed'
+                         ^
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'next: W-900 ready performed'
+  actual: 'next: W-900 ready held'
+  operator: 'strictEqual'
+  stack: |-
+    expectStep (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:753:10)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:5076:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1701.619986

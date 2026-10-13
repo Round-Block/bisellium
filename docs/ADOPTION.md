@@ -131,6 +131,10 @@ checked against. The body is never edited, a passed outcome is never turned
 into a failure, and each conversion is also printed. `review --fail` refuses a
 log carrying `# submitted_outcome:` (exit 2, nothing written).
 
+In a studio that sets `step_tickets: required` (see "Step tickets" under "Running next"), the verdict
+refuses without a matching `next` ticket and its log ends the header block with the
+ticket's line as `# ticket: <json>`; `parseVerdictLog` accepts and ignores it.
+
 `--phase handoff` writes `ci/<opus>-handoff-<n>.log` (the non-UI findings check on any
 opus kind, no `# brief:` pin, no conversion). A review sequence is one opus, one phase
 and one sella (W-215). `--session <id>`
@@ -1418,6 +1422,36 @@ pid named and never killed) with the last output line as a JSON-quoted
 Test seams, honoured only with `BISELLIUM_TEST_CLOCK=1`: `--now <iso>` (otherwise
 a usage error) and `BISELLIUM_TEST_PROC=<dir>` replacing `/proc` for every
 health read, including the verb's own `/proc/self/stat`.
+
+**Step tickets (W-233).** With `step_tickets: required` in `bisellium.yml`
+(the only value; absent keeps the ladder as it was, anything else holds `next`
+naming the cause), a report-mode `next <opus>` writes one ticket for the action
+the rung it names allows, to `<git common dir>/bisellium/tickets/<opus>.json`,
+replacing any earlier one, and ends its output with one `ticket: <action> round
+<n>` line; a hold, a Patron rung, a halted record and a rung no covered verb
+performs delete the pending ticket, by its path in the git common directory and
+without reading the facts, and print `ticket: none`; a deletion that fails prints
+`ticket: held, <why>` instead, never `none` with the file left. The ticket binds
+the opus, step, action, round, actor, the studio the action writes in, that
+checkout's HEAD, the brief's blob and the time. `verdict` (spec and build
+phases), `review`, `red`, `ready`, `done`, `branch` and `merge` then refuse, exit
+2 with two lines, unless the pending ticket names their action and round and its
+studio, head and brief equal what the verb reads at that moment; the refusal
+comes after the verb's argument checks and before its first write; `branch` and
+`merge` also refuse when `--repo` is not the checkout their `--studio` belongs to. A covered write claims the ticket by renaming it to
+`<opus>.claimed` immediately before writing and copies its line into what it
+writes (a `# ticket:` header in a verdict or red log; one `tickets:` entry on the
+record for `ready`, `review` and `done`; `branch` and `merge` print it only), so
+each ticket admits at most one write and a failure after the claim costs a fresh
+`next`. A recorded build verdict that the review gate does not cite yet makes
+`next` name `review` for that round (actor `producer`) instead of a new round;
+`next --perform` issues the ticket for the rung it performs, so `ready` and
+`done` consume it, and leaves the ticket the next derivation names. Limit: the
+file is local and agent-writable (mistakes, not adversaries, D-045); `handoff`,
+`verify`, `run`, `amend`, `halt`, `waive`, `greenlight` and the other verbs stay
+unticketed, `pr`, `cleanup` and the spec commit and landing run only inside
+`next --perform`, and dispatch preconditions (budget, stale handover) gate
+launching a session, not the ticket.
 
 ### The spec review gate
 

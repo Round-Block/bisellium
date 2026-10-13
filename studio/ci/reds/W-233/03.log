@@ -1,0 +1,43 @@
+# behaviour: 3
+# command: node --test-reporter=tap --test-name-pattern=W-233-b3 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-13T10:04:20.877Z
+# sella: builder.W-233
+# tree: tree:4f33c625b272ed4e7f861e06ae4513aeb3aa557e
+
+TAP version 13
+# Subtest: W-233-b3 behaviour 3: a write claims its ticket before writing and copies it; each ticket admits one write
+not ok 1 - W-233-b3 behaviour 3: a write claims its ticket before writing and copies it; each ticket admits one write
+  ---
+  duration_ms: 1531.369814
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:158:1934'
+  failureType: 'testCodeFailure'
+  error: |-
+    the signature's header block ends with the ticket
+    + actual - expected
+    
+    + '# brief: briefs/W-900.md blob:db2e112f8be86c753661c832adf46e4e2cba229c'
+    - '# ticket: {"opus":"W-900","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"172d6d2e7b7f1de05b9f8ad03f9c5000a2928277","brief":"db2e112f8be86c753661c832adf46e4e2cba229c","at":"2026-10-02T12:00:00.000Z"}'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '# ticket: {"opus":"W-900","step":"spec","action":"verdict-spec","round":1,"actor":"architect","studio":"studio","head":"172d6d2e7b7f1de05b9f8ad03f9c5000a2928277","brief":"db2e112f8be86c753661c832adf46e4e2cba229c","at":"2026-10-02T12:00:00.000Z"}'
+  actual: '# brief: briefs/W-900.md blob:db2e112f8be86c753661c832adf46e4e2cba229c'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:4885:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1549.465178

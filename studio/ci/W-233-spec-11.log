@@ -1,0 +1,17 @@
+# opus: W-233
+# phase: spec
+# round: 11
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T11:20:20.317Z
+# tree: tree:7456d841078c5db5cd934b2ecc1829f0ce1ed9a6
+# brief: briefs/W-233.md blob:473e0ce5d28e508bf821f31b9d0a968c18ebdf97
+
+## Findings
+
+1. advisory: brief:179's b3 subcase "a `verdict` whose target exists (the `wx` collision)" cannot be reached. A real file at the target is refused at verdict.ts:671 (`existsSync`), and a dangling link is refused by readSequence (verdict.ts:643, readContainedRegularFile). Both refusals come before the claim, so the EEXIST branch is reachable only through a race. The sentence now names the mechanism the test uses: a read-only `ci/` makes the exclusive create fail after the claim (skipped as root). The four stated expectations are unchanged (exit 2, the pending path empty, `.claimed` holding the line, a second verdict refusing `absent`), and so is the promise. Ruling: ~/.bisellium-evidence/W-233-build/b3-ruling.md. check: packages/cli/src/next.test.ts
+
+## Verdict
+
+Passed: revision 6 changes one sentence of behaviour 3 (diff ~/.bisellium-evidence/W-233-spec/r5-r6.diff). Brief admission reports 0 problems, the red order is still declared, and no Promise or Default changed. Red 03 stands: its failing assertion, the spec signature's missing `# ticket:` line, comes before the edited subcase.

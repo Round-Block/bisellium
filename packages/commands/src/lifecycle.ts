@@ -41,6 +41,7 @@ import {
   type OpusModelProblem,
 } from "./opus-model.js";
 import { ensureRealDirectory } from "./ids.js";
+import { claimPending, recordTicket, releaseClaim, requireTicket, ticketsProblem } from "./ticket.js";
 import { countedFailures, readBuildReviewConfig, readBuildRounds, readSourceExcludes, type BuildReviewRound } from "./verdict.js";
 import {
   emitEvent,
@@ -326,6 +327,23 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     }
   }
 
+  // W-233: in a studio that requires step tickets, the last check before the write
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "ready", action: "ready", round: 0 });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+  const badTickets = "line" in ticket ? ticketsProblem(currentFront.tickets) : undefined;
+  if (badTickets !== undefined) {
+    console.error(`${opusId}: ready refused: ${badTickets}`);
+    return { exitCode: 2 };
+  }
+  const claim = claimPending(ticket);
+  if ("refusal" in claim) {
+    console.error(claim.refusal);
+    return { exitCode: 2 };
+  }
+
   editOpusFrontMatter(opusPath, (doc) => {
     doc.set("builder_runtime", ISOLATED_BUILDER_RUNTIME);
     doc.setIn(["spec"], specRel);
@@ -339,8 +357,10 @@ export function runReady(args: string[], opts: WriteOptions = {}): WriteResult {
     if (doc.get("start") === undefined) doc.set("start", now.toISOString());
     // A halt's exit conditions describe a state this opus is no longer in.
     for (const k of ["halted_at", "reason", "resume_when", "halted_by"]) doc.delete(k);
+    if ("line" in ticket) recordTicket(doc, ticket.line);
     return undefined;
   });
+  releaseClaim(claim);
 
   emitEvent(root, manifest, "workflow.state_changed", now, {
     [WF.ITEM_ID]: opusId,
@@ -511,11 +531,30 @@ export function runDone(args: string[], opts: RunDoneOptions = {}): WriteResult 
     }
   }
 
+  // W-233: in a studio that requires step tickets, the last check before the write
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "done", action: "done", round: 0 });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+  const badTickets = "line" in ticket ? ticketsProblem((front as Record<string, unknown>)["tickets"]) : undefined;
+  if (badTickets !== undefined) {
+    console.error(`${opusId}: done refused: ${badTickets}`);
+    return { exitCode: 2 };
+  }
+  const claim = claimPending(ticket);
+  if ("refusal" in claim) {
+    console.error(claim.refusal);
+    return { exitCode: 2 };
+  }
+
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["state"], "done");
     doc.setIn(["end"], now.toISOString());
+    if ("line" in ticket) recordTicket(doc, ticket.line);
     return undefined;
   });
+  releaseClaim(claim);
 
   emitEvent(root, manifest, "workflow.state_changed", now, {
     [WF.ITEM_ID]: opusId,
@@ -695,6 +734,24 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
     }
   }
 
+  // W-233: the round is the evidence file's own (`ci/<opus>-review-<n>.log`); another name has none
+  const evidenceRound = /^ci\/(.+)-review-([1-9][0-9]*)\.log$/.exec(evidence);
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "review", action: "review", round: evidenceRound !== null && evidenceRound[1] === opusId ? Number(evidenceRound[2]) : -1 });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+  const badTickets = "line" in ticket ? ticketsProblem(currentFront.tickets) : undefined;
+  if (badTickets !== undefined) {
+    console.error(`${opusId}: review refused: ${badTickets}`);
+    return { exitCode: 2 };
+  }
+  const claim = claimPending(ticket);
+  if ("refusal" in claim) {
+    console.error(claim.refusal);
+    return { exitCode: 2 };
+  }
+
   editOpusFrontMatter(opusPath, (doc) => {
     doc.setIn(["probationes", reviewProbatioId, "sella"], sella);
     doc.setIn(["probationes", reviewProbatioId, "status"], status);
@@ -719,8 +776,10 @@ export function runReview(args: string[], opts: RunReviewOptions = {}): WriteRes
       doc.setIn(["state"], "building");
       doc.delete("end");
     }
+    if ("line" in ticket) recordTicket(doc, ticket.line);
     return undefined;
   });
+  releaseClaim(claim);
 
   const attrs: Record<string, string | number | boolean> = {
     [WF.ITEM_ID]: opusId,
@@ -1042,6 +1101,13 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     }
     prerequisites = listed.commands;
   }
+  // W-233: in a studio that requires step tickets, after the red-order checks and before any command runs
+  const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "red", action: "red", round: behaviour });
+  if ("refusal" in ticket) {
+    console.error(ticket.refusal);
+    return { exitCode: 2 };
+  }
+
   for (const [i, argv] of prerequisites.entries()) {
     console.error(`red: prerequisite behaviour ${i + 1}: ${argv.join(" ")}`);
     const ran = await runCapture(argv, execCwd);
@@ -1068,6 +1134,12 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     return { exitCode: 1 };
   }
 
+  // W-233: the claim, after the exit-0 and tree checks and before anything is written
+  const claim = claimPending(ticket);
+  if ("refusal" in claim) {
+    console.error(claim.refusal);
+    return { exitCode: 2 };
+  }
   let realRedsDir: string;
   try {
     realRedsDir = ensureRealDirectory(root, "ci", "reds", opusId);
@@ -1084,8 +1156,10 @@ export async function runRed(args: string[], opts: WriteOptions = {}): Promise<W
     `# at: ${now.toISOString()}`,
     `# sella: ${sella}`,
     `# tree: ${treeHeader}`,
+    ...("line" in ticket ? [`# ticket: ${ticket.line}`] : []),
   ].join("\n");
   writeFileSync(logPath, `${header}\n\n${output}`);
+  releaseClaim(claim);
 
   console.log(`${opusId}: red recorded for behaviour ${behaviour} -> ci/reds/${opusId}/${nn}.log`);
   if (treeHeader.startsWith("dirty:"))

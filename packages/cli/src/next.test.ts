@@ -51,6 +51,8 @@ import { sourceTreeHash } from "@bisellium/shim";
 import { editOpusFrontMatter } from "@bisellium/commands/frontmatter.js";
 import { admitCurrentRunReceipt } from "@bisellium/commands/builder-run.js";
 import { runDone } from "@bisellium/commands/lifecycle.js";
+import { parseFrontMatter } from "@bisellium/adapter-native";
+import { parseVerdictLog } from "@bisellium/commands/verdict.js";
 
 const argv = process.argv.slice(2);
 const behaviourAt = argv.indexOf("--behaviour");
@@ -4639,4 +4641,507 @@ test("W-215-b3 behaviour 3: the censor's order resumes the recorded build sessio
   assert.equal(p.kv.has("session"), false, ran("no session line", p));
   assert.match(p.kv.get("command") ?? "", /^dispatch qa-lead; /, ran("today's wording", p));
   assert.match(p.kv.get("command") ?? "", /--studio studio --session <the session id the reviewer prints>;/, ran("the record command asks for the printed session", p));
+});
+
+// ---------------------------------------------------------------------------
+// W-233: step tickets. `next` issues one per derivation in a studio whose
+// bisellium.yml sets `step_tickets: required`; the ladder's direct writers
+// require and consume it. Rows are selectable with --test-name-pattern=W-233-b<n>.
+// ---------------------------------------------------------------------------
+const ticketDir = (w: World): string => join(w.repo, ".git", "bisellium", "tickets");
+const ticketPath = (w: World, name = `${OPUS}.json`): string => join(ticketDir(w), name);
+const ticketText = (w: World, name?: string): string => (existsSync(ticketPath(w, name)) ? readFileSync(ticketPath(w, name), "utf8") : "");
+const ticketOf = (w: World): Json => JSON.parse(ticketText(w)) as Json;
+/** The key, appended to the main checkout's manifest and the worktree's, committed in each (W-167's `both`). */
+function ticketed(w: World, value = "required"): void {
+  for (const dir of [w.repo, ...(existsSync(w.wt) ? [w.wt] : [])]) {
+    const path = join(dir, MANIFEST_REL);
+    writeFileSync(path, `${readFileSync(path, "utf8")}step_tickets: ${value}\n`);
+    commit(dir, `test: W-233 step_tickets ${value}`);
+  }
+}
+/** Behaviour n's red log, as writeReds writes one, for this behaviour only. */
+function writeRed(w: World, n: number): void {
+  put(
+    w.wt,
+    `studio/ci/reds/${OPUS}/${String(n).padStart(2, "0")}.log`,
+    [`# behaviour: ${n}`, `# command: node fixture.test.ts --behaviour ${n}`, "# exit: 1", `# at: ${T.reds}`, "# sella: builder.W-900", `# tree: ${sourceTree(w.wt)}`, "", `TAP version 13\nnot ok 1 - W-900 behaviour ${n}: fixture\n  ---\n  code: 'ERR_ASSERTION'\n  ...\n`, ""].join("\n"),
+  );
+  commit(w.wt, `studio(${OPUS}): red ${n}`);
+}
+const lastLine = (o: Out): string => o.out.trimEnd().split("\n").at(-1) ?? "";
+const WT_STUDIO_REL = `.worktrees/${OPUS}/studio`;
+
+test("W-233-b1 behaviour 1: report-mode next issues one ticket per derivation, and none for a hold", { timeout: 1_800_000 }, () => {
+  // at branch
+  const a = world("w233-b1-branch", "spec");
+  ticketed(a);
+  const o1 = next(a, [OPUS]);
+  assert.ok(existsSync(ticketPath(a)), ran("branch: next writes the ticket", o1));
+  expectStep(o1, "branch", "named", "branch");
+  const want = { opus: OPUS, step: "branch", action: "branch", round: 0, actor: "producer", studio: "studio", head: git(a.repo, ["rev-parse", "refs/heads/master"]), brief: git(a.repo, ["hash-object", BRIEF_REL]), at: NOW_ISO };
+  assert.equal(ticketText(a), `${JSON.stringify(want)}\n`, "one JSON line, keys in order, at the --now instant");
+  assert.equal(lastLine(o1), "ticket: branch round 0", ran("the output ends with the ticket line", o1));
+  const later = "2026-10-02T12:30:00.000Z";
+  const o2 = next(a, [OPUS, "--now", later]);
+  assert.equal(ticketText(a), `${JSON.stringify({ ...want, at: later })}\n`, ran("a second call rewrites it with the new --now", o2));
+
+  // at reds: the worktree's studio and HEAD; the next red once the first is committed, also while the handover is stale
+  const r = world("w233-b1-reds", "ready");
+  ticketed(r);
+  const or = next(r, [OPUS, ...BUDGET]);
+  assert.equal(lastLine(or), "ticket: red round 1", ran("reds: first missing behaviour", or));
+  const base = { opus: OPUS, step: "reds", action: "red", actor: "builder", studio: WT_STUDIO_REL, brief: git(r.wt, ["hash-object", BRIEF_REL]), at: NOW_ISO };
+  assert.equal(ticketText(r), `${JSON.stringify({ opus: OPUS, step: "reds", action: "red", round: 1, actor: "builder", studio: WT_STUDIO_REL, head: git(r.wt, ["rev-parse", "HEAD"]), brief: base.brief, at: NOW_ISO })}\n`, "red round 1 at the worktree's HEAD");
+  writeRed(r, 1);
+  const or2 = next(r, [OPUS, ...BUDGET]);
+  expectStep(or2, "reds", "held", "a stale handover holds the order");
+  assert.equal(lastLine(or2), "ticket: red round 2", ran("the hold withholds no ticket", or2));
+  assert.equal(ticketOf(r)["head"], git(r.wt, ["rev-parse", "HEAD"]), "round 2 is bound to the new head");
+  assert.equal(ticketOf(r)["round"], 2);
+
+  // at review
+  const b = world("w233-b1-review", "build");
+  ticketed(b);
+  const ob = next(b, [OPUS, ...BUDGET]);
+  expectStep(ob, "review", "named", "review");
+  assert.equal(lastLine(ob), "ticket: verdict-build round 1", ran("review", ob));
+  assert.deepEqual({ ...ticketOf(b), head: undefined }, { opus: OPUS, step: "review", action: "verdict-build", round: 1, actor: "censor", studio: WT_STUDIO_REL, head: undefined, brief: git(b.wt, ["hash-object", BRIEF_REL]), at: NOW_ISO });
+
+  // a Patron rung and a halted record issue none, and delete one written before
+  for (const [tag, build] of [
+    ["backlog", () => world("w233-b1-backlog", "backlog")],
+    [
+      "halted",
+      () => {
+        const h = world("w233-b1-halted", "spec");
+        editRecord(h, "repo", (doc) => doc.setIn(["state"], "halted"));
+        commit(h.repo, "test: halted");
+        return h;
+      },
+    ],
+  ] as [string, () => World][]) {
+    const h = build();
+    ticketed(h);
+    mkdirSync(ticketDir(h), { recursive: true });
+    writeFileSync(ticketPath(h), ticketText(a));
+    const oh = next(h, [OPUS]);
+    assert.equal(lastLine(oh), "ticket: none", ran(`${tag}: no ticket`, oh));
+    assert.equal(existsSync(ticketPath(h)), false, `${tag}: the earlier ticket is deleted`);
+  }
+
+  // without the key: no directory, no line
+  const plain = world("w233-b1-plain", "spec");
+  const op = next(plain, [OPUS]);
+  expectStep(op, "branch", "named", "no key");
+  assert.equal(existsSync(join(plain.repo, ".git", "bisellium")), false, "no tickets directory");
+  assert.equal(/^ticket:/m.test(op.out), false, ran("no ticket line", op));
+
+  // a malformed value holds
+  const m = world("w233-b1-malformed", "spec");
+  ticketed(m, "yes");
+  const om = next(m, [OPUS]);
+  assert.equal(om.first, `next: ${OPUS} held`, ran("malformed", om));
+  assert.equal(om.status, 1);
+  assert.match(om.kv.get("why") ?? "", /^bisellium\.yml#step_tickets is malformed \(/, ran("why", om));
+});
+
+test("W-233-b1 actionFacts error: a stale pending ticket is deleted, or next holds naming it; never ticket: none with the file left", { timeout: 1_800_000 }, () => {
+  const w = world("w233-b1-facts", "spec");
+  ticketed(w);
+  const issuedNow = next(w, [OPUS]);
+  assert.equal(lastLine(issuedNow), "ticket: branch round 0", ran("a ticket for a main-checkout action", issuedNow));
+  const stale = ticketText(w);
+  // the brief becomes unreadable, so the facts every ticket binds cannot be read
+  const brief = join(w.repo, BRIEF_REL);
+  chmodSync(brief, 0o000);
+  try {
+    const o = next(w, [OPUS]);
+    const gone = !existsSync(ticketPath(w));
+    const none = lastLine(o) === "ticket: none";
+    assert.ok(gone || !none, `the output ends "${lastLine(o)}" while the stale ticket file is left`);
+    if (!gone) {
+      assert.match(lastLine(o), /^ticket: held/, `the last line is "${lastLine(o)}"`);
+      assert.ok(o.out.includes(ticketPath(w)), "the hold names the path");
+      assert.equal(ticketText(w), stale, "the file is untouched");
+    }
+  } finally {
+    chmodSync(brief, 0o644);
+  }
+  // once the facts are readable again nothing revives
+  assert.equal(existsSync(ticketPath(w)) && ticketText(w) === stale, false, "the stale ticket is not left to revive");
+});
+
+/** A real verb run directly, as an agent would: its refusal is the point, so the result is data. */
+function direct(w: World, cwd: string, args: string[]): Out {
+  const r = spawnSync(process.execPath, ["--import", TSX, MAIN, ...args], { cwd, env: envFor(w, {}), encoding: "utf8", timeout: 120_000 });
+  return parse(r.status, r.stdout ?? "", r.stderr ?? "");
+}
+const STEP_OF: Record<string, string> = { "verdict-spec": "spec", "verdict-build": "review", review: "review", red: "reds", ready: "ready", done: "done", branch: "branch", merge: "merge" };
+/** A ticket written by hand from facts read independently of `next`; `where` is the checkout the action writes in. */
+function forge(w: World, action: string, round: number, over: Json = {}, where: "repo" | "wt" = "wt"): Json {
+  const dir = where === "repo" ? w.repo : w.wt;
+  const t: Json = {
+    opus: OPUS,
+    step: STEP_OF[action],
+    action,
+    round,
+    actor: "producer",
+    studio: where === "repo" ? "studio" : WT_STUDIO_REL,
+    head: git(dir, ["rev-parse", "HEAD"]),
+    brief: git(dir, ["hash-object", BRIEF_REL]),
+    at: NOW_ISO,
+    ...over,
+  };
+  mkdirSync(ticketDir(w), { recursive: true });
+  rmSync(ticketPath(w), { force: true });
+  writeFileSync(ticketPath(w), `${JSON.stringify(t)}\n`);
+  return t;
+}
+/** Every file under the tickets directory, by name and content. */
+const ticketTree = (w: World): string => (existsSync(ticketDir(w)) ? walk(ticketDir(w)).join("\n") : "");
+const mainOf = (w: World): string => dirname(git(w.repo, ["rev-parse", "--path-format=absolute", "--git-common-dir"]));
+/** The two-line refusal of a covered verb, exactly. */
+function refused(o: Out, verb: string, reason: string, w: World, row: string): void {
+  assert.equal(o.status, 2, ran(`${row}: exit`, o));
+  assert.equal(o.err.trimEnd(), `${OPUS}: ${verb} refused: no matching next ticket (${reason})\nrun: bisellium next ${OPUS} --studio ${mainOf(w)}/studio --repo ${mainOf(w)}`, ran(`${row}: the two lines`, o));
+}
+
+test("W-233-b2 behaviour 2: every covered direct verb refuses a missing or mismatched ticket before writing", { timeout: 1_800_000 }, () => {
+  const marker = join(scratch("w233-b2-marker"), "red-ran.txt");
+  const spec = (): World => {
+    const w = world("w233-b2-spec", "greenlight");
+    put(w.repo, BRIEF_REL, briefText(w.behaviours));
+    return w;
+  };
+  const withVerdict = (): World => {
+    const w = world("w233-b2-review", "build");
+    verb(w.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1]);
+    commit(w.wt, `studio(${OPUS}): review 1`);
+    return w;
+  };
+  const rows: { verb: string; world: () => World; cwd: (w: World) => string; args: (w: World) => string[] }[] = [
+    { verb: "ready", world: () => world("w233-b2-ready", "branch"), cwd: (w) => w.wt, args: (w) => ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready] },
+    { verb: "verdict", world: spec, cwd: (w) => w.repo, args: (w) => ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(w, "spec.md"), "--studio", w.studio, "--now", T.spec] },
+    { verb: "verdict", world: () => world("w233-b2-build", "build"), cwd: (w) => w.wt, args: (w) => ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(w, "review-1.md"), "--studio", w.wtStudio, "--now", T.review1] },
+    { verb: "review", world: withVerdict, cwd: (w) => w.wt, args: (w) => ["review", OPUS, "--pass", "--evidence", `ci/${OPUS}-review-1.log`, "--round", "1", "--sella", "qa-lead", "--studio", w.wtStudio, "--now", T.review1] },
+    { verb: "red", world: () => world("w233-b2-red", "ready"), cwd: (w) => w.wt, args: (w) => ["red", OPUS, "--behaviour", "1", "--sella", "builder.W-900", "--studio", w.wtStudio, "--repo", w.wt, "--now", T.reds, "--", process.execPath, "-e", `require("fs").writeFileSync(${JSON.stringify(marker)},"x");process.exit(1)`] },
+    { verb: "done", world: () => world("w233-b2-done", "cleanup"), cwd: (w) => w.repo, args: (w) => ["done", OPUS, "--sella", "producer", "--studio", w.studio, "--now", T.done] },
+    { verb: "branch", world: () => world("w233-b2-branch", "spec"), cwd: (w) => w.repo, args: (w) => ["branch", OPUS, "--studio", w.studio, "--repo", w.repo] },
+    { verb: "merge", world: () => world("w233-b2-merge", "spec"), cwd: (w) => w.repo, args: (w) => ["merge", OPUS, "--studio", w.studio, "--repo", w.repo] },
+  ];
+  for (const row of rows) {
+    const w = row.world();
+    ticketed(w);
+    const before = [snap(w), ticketTree(w)];
+    const o = direct(w, row.cwd(w), row.args(w));
+    refused(o, row.verb, "absent", w, `${row.verb}: no ticket`);
+    assert.deepEqual([snap(w), ticketTree(w)], before, `${row.verb}: the record, ci/, the event log, the refs and the tickets are byte-identical`);
+    assert.equal(existsSync(marker), false, "red's command has not run");
+  }
+
+  // hand-written tickets against `ready`
+  const w = world("w233-b2-mismatch", "branch");
+  ticketed(w);
+  const ready = (): Out => direct(w, w.wt, ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready]);
+  const untouched = (o: Out, reason: string, row: string): void => {
+    const before = [snap(w), ticketTree(w)];
+    refused(o, "ready", reason, w, row);
+    assert.deepEqual([snap(w), ticketTree(w)], before, `${row}: nothing moved`);
+  };
+  const good = forge(w, "ready", 0);
+  rmSync(ticketPath(w));
+  writeFileSync(ticketPath(w), "not json\n");
+  untouched(ready(), "unreadable", "a non-JSON line");
+  rmSync(ticketPath(w));
+  writeFileSync(join(w.root, "elsewhere.json"), `${JSON.stringify(good)}\n`);
+  symlinkSync(join(w.root, "elsewhere.json"), ticketPath(w));
+  untouched(ready(), "unreadable", "a symlink");
+  const head = git(w.wt, ["rev-parse", "HEAD"]);
+  const blob = git(w.wt, ["hash-object", BRIEF_REL]);
+  const mismatches: [string, Json, string][] = [
+    ["action", { action: "red", step: "reds" }, "action is red, want ready"],
+    ["round", { round: 1 }, "round is 1, want 0"],
+    ["studio", { studio: "studio" }, `studio is studio, want ${WT_STUDIO_REL}`],
+    ["head", { head: "0".repeat(40) }, `head is ${"0".repeat(40)}, want ${head}`],
+    ["brief", { brief: "1".repeat(40) }, `brief is ${"1".repeat(40)}, want ${blob}`],
+  ];
+  for (const [name, over, reason] of mismatches) {
+    forge(w, "ready", 0, over);
+    untouched(ready(), reason, `a ticket for another ${name}`);
+  }
+
+  // without the key the same calls behave as on master
+  const plain = world("w233-b2-plain", "branch");
+  const ok = direct(plain, plain.wt, ["ready", OPUS, "--sella", "architect", "--studio", plain.wtStudio, "--now", T.ready]);
+  assert.equal(ok.status, 0, ran("ready without the key", ok));
+  assert.match(recordOf(plain, "wt"), /state: "?building/);
+  assert.equal(existsSync(join(plain.repo, ".git", "bisellium")), false, "no tickets directory");
+  const made = world("w233-b2-plain-branch", "spec");
+  const ob = direct(made, made.repo, ["branch", OPUS, "--studio", made.studio, "--repo", made.repo]);
+  assert.equal(ob.status, 0, ran("branch without the key", ob));
+  assert.equal(branchExists(made), true);
+});
+
+test("W-233-b2 cross-checkout: a ticket issued for checkout A is refused for branch and merge given --repo B", { timeout: 1_800_000 }, () => {
+  for (const verb of ["branch", "merge"]) {
+    const a = world(`w233-b2-xa-${verb}`, "spec");
+    const b = world(`w233-b2-xb-${verb}`, "spec");
+    ticketed(a);
+    ticketed(b);
+    forge(a, verb, 0, {}, "repo");
+    const before = [snap(a), snap(b), ticketTree(a), ticketTree(b)];
+    const o = direct(a, a.repo, [verb, OPUS, "--studio", a.studio, "--repo", b.repo]);
+    refused(o, verb, `facts unreadable: --repo ${b.repo} is not the checkout of ${a.studio}`, a, `${verb}: A's ticket, B's repository`);
+    assert.deepEqual([snap(a), snap(b), ticketTree(a), ticketTree(b)], before, `${verb}: both checkouts, their refs and both ticket directories are byte-identical`);
+    assert.equal(branchExists(b), false, `${verb}: B has no opus branch`);
+  }
+});
+
+const claimedPath = (w: World): string => ticketPath(w, `${OPUS}.claimed`);
+/** The record's `tickets:` list, read through the same front-matter parser the verbs use. */
+const recordTickets = (w: World, dir: "repo" | "wt"): unknown => parseFrontMatter<{ tickets?: unknown }>(recordOf(w, dir), "record").data.tickets;
+/** The header block of a written log: the lines before its first blank line. */
+const headerOf = (path: string): string[] => readFileSync(path, "utf8").split("\n\n")[0]!.split("\n");
+/** next issues the ticket at the world's current state; its line is what a covered write must copy. */
+function issued(w: World, args: string[] = []): string {
+  const o = next(w, [OPUS, ...args]);
+  assert.ok(existsSync(ticketPath(w)), ran("next issued a ticket", o));
+  return ticketText(w).trimEnd();
+}
+const consumed = (w: World, row: string): void => {
+  assert.equal(existsSync(ticketPath(w)), false, `${row}: the pending ticket is gone`);
+  assert.equal(existsSync(claimedPath(w)), false, `${row}: the claimed file is gone`);
+};
+
+test("W-233-b3 behaviour 3: a write claims its ticket before writing and copies it; each ticket admits one write", { timeout: 1_800_000 }, () => {
+  // a spec signature
+  const sp = world("w233-b3-spec", "greenlight");
+  put(sp.repo, BRIEF_REL, briefText(sp.behaviours));
+  ticketed(sp);
+  const specLine = issued(sp);
+  const os = direct(sp, sp.repo, ["verdict", OPUS, "--round", "1", "--sella", "architect", "--outcome", "passed", "--phase", "spec", "--from", writeTranscript(sp, "spec.md"), "--studio", sp.studio, "--now", T.spec]);
+  assert.equal(os.status, 0, ran("the spec verdict", os));
+  const specLog = join(sp.studio, "ci", `${OPUS}-spec-1.log`);
+  assert.equal(headerOf(specLog).at(-1), `# ticket: ${specLine}`, "the signature's header block ends with the ticket");
+  assert.equal("error" in parseVerdictLog(readFileSync(specLog, "utf8"), OPUS, "ci/spec-1.log"), false, "parseVerdictLog accepts it");
+  consumed(sp, "spec");
+
+  // a red: a command that exits 0 records nothing and leaves the ticket; a failing one records the line after # tree:
+  const rd = world("w233-b3-red", "ready");
+  ticketed(rd);
+  const redLine = issued(rd);
+  const marker = join(rd.root, "red-ran.txt");
+  const redArgs = (code: number): string[] => ["red", OPUS, "--behaviour", "1", "--sella", "builder.W-900", "--studio", rd.wtStudio, "--repo", rd.wt, "--now", T.reds, "--", process.execPath, "-e", `require("fs").writeFileSync(${JSON.stringify(marker)},"x");process.exit(${code})`];
+  const before = ticketTree(rd);
+  const passing = direct(rd, rd.wt, redArgs(0));
+  assert.equal(passing.status, 1, ran("a red whose command exits 0", passing));
+  assert.equal(ticketTree(rd), before, "the pending file is byte-identical");
+  const failing = direct(rd, rd.wt, redArgs(1));
+  assert.equal(failing.status, 0, ran("a failing command is recorded", failing));
+  const redHeader = headerOf(join(rd.wtStudio, "ci", "reds", OPUS, "01.log"));
+  const treeAt = redHeader.findIndex((l) => l.startsWith("# tree: "));
+  assert.equal(redHeader[treeAt + 1], `# ticket: ${redLine}`, "the red's ticket follows # tree:");
+  consumed(rd, "red");
+
+  // a build verdict, then review --fail with a ticket, whose repeat finds none
+  const b = world("w233-b3-build", "build");
+  ticketed(b);
+  const buildLine = issued(b, BUDGET);
+  const verdict = (round: number, outcome: "passed" | "failed", body: string): Out =>
+    direct(b, b.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(b, `r${round}.md`, body), "--studio", b.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const review = (round: number, flag: string): Out => direct(b, b.wt, ["review", OPUS, flag, "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", b.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const v1 = verdict(1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture");
+  assert.equal(v1.status, 0, ran("the build verdict", v1));
+  assert.equal(headerOf(join(b.wtStudio, "ci", `${OPUS}-review-1.log`)).at(-1), `# ticket: ${buildLine}`, "the build verdict's header block ends with the ticket");
+  consumed(b, "build verdict");
+  const t1 = forge(b, "review", 1);
+  const r1 = review(1, "--fail");
+  assert.equal(r1.status, 0, ran("review --fail", r1));
+  assert.deepEqual(recordTickets(b, "wt"), [JSON.stringify(t1)], "the review entry is the ticket line");
+  consumed(b, "review");
+  const again = recordOf(b, "wt");
+  refused(review(1, "--fail"), "review", "absent", b, "the same review again");
+  assert.equal(recordOf(b, "wt"), again, "the record is unchanged");
+  // two writes, two entries in order
+  forge(b, "verdict-build", 2);
+  const t2v = ticketText(b).trimEnd();
+  assert.equal(verdict(2, "passed", "No findings").status, 0);
+  assert.equal(headerOf(join(b.wtStudio, "ci", `${OPUS}-review-2.log`)).at(-1), `# ticket: ${t2v}`);
+  const t2 = forge(b, "review", 2);
+  assert.equal(review(2, "--pass").status, 0);
+  assert.deepEqual(recordTickets(b, "wt"), [JSON.stringify(t1), JSON.stringify(t2)], "two writes, two entries, in order");
+
+  // ready and done
+  const rw = world("w233-b3-ready", "branch");
+  ticketed(rw);
+  const readyLine = issued(rw);
+  const ready = (w: World): Out => direct(w, w.wt, ["ready", OPUS, "--sella", "architect", "--studio", w.wtStudio, "--now", T.ready]);
+  assert.equal(ready(rw).status, 0);
+  assert.deepEqual(recordTickets(rw, "wt"), [readyLine], "ready appends the ticket");
+  consumed(rw, "ready");
+  const dn = world("w233-b3-done", "cleanup");
+  scenario(dn, { list: mergedList(dn) });
+  ticketed(dn);
+  const doneLine = issued(dn);
+  const od = direct(dn, dn.repo, ["done", OPUS, "--sella", "producer", "--studio", dn.studio, "--now", T.done]);
+  assert.equal(od.status, 0, ran("done", od));
+  assert.deepEqual(recordTickets(dn, "repo"), [doneLine], "done appends the ticket");
+  consumed(dn, "done");
+
+  // a tickets: mapping refuses ready, leaving the record and the pending file
+  const bad = world("w233-b3-mapping", "branch");
+  editRecord(bad, "wt", (doc) => doc.setIn(["tickets"], { a: 1 }));
+  commit(bad.wt, "test: a tickets mapping");
+  ticketed(bad);
+  issued(bad);
+  const snapBad = [recordOf(bad, "wt"), ticketTree(bad)];
+  const ob = ready(bad);
+  assert.equal(ob.status, 2, ran("ready with a tickets: mapping", ob));
+  assert.match(ob.err, /tickets/, ran("the refusal names tickets", ob));
+  assert.deepEqual([recordOf(bad, "wt"), ticketTree(bad)], snapBad, "the record and the pending file are untouched");
+
+  // a directory at <opus>.claimed: unclaimable, nothing moves
+  const dir = world("w233-b3-claimed-dir", "branch");
+  ticketed(dir);
+  issued(dir);
+  mkdirSync(claimedPath(dir));
+  const snapDir = [recordOf(dir, "wt"), readFileSync(ticketPath(dir), "utf8")];
+  const odir = ready(dir);
+  assert.equal(odir.status, 2, ran("ready over a directory at .claimed", odir));
+  assert.match(odir.err.split("\n")[0] ?? "", /^W-900: ready refused: no matching next ticket \(unclaimable: /, ran("unclaimable", odir));
+  assert.deepEqual([recordOf(dir, "wt"), readFileSync(ticketPath(dir), "utf8")], snapDir, "the record and the pending file are byte-identical");
+
+  // a hand-written .claimed with nothing pending is not a ticket
+  const hand = world("w233-b3-claimed-hand", "branch");
+  ticketed(hand);
+  const handLine = issued(hand);
+  rmSync(ticketPath(hand));
+  writeFileSync(claimedPath(hand), `${handLine}\n`);
+  refused(ready(hand), "ready", "absent", hand, "a .claimed file holding a matching line");
+
+  // a verdict whose write fails after the claim (a read-only ci/ refuses the exclusive create): the ticket is spent, never pending again
+  const col = world("w233-b3-collision", "build");
+  ticketed(col);
+  forge(col, "verdict-build", 1);
+  const colLine = ticketText(col).trimEnd();
+  const ci = join(col.wtStudio, "ci");
+  const collide = (): Out => direct(col, col.wt, ["verdict", OPUS, "--round", "1", "--sella", "qa-lead", "--outcome", "passed", "--from", writeTranscript(col, "c.md"), "--studio", col.wtStudio, "--now", T.review1]);
+  if (process.getuid?.() !== 0) {
+    chmodSync(ci, 0o500);
+    try {
+      const oc = collide();
+      assert.equal(oc.status, 2, ran("the failed write", oc));
+      assert.equal(existsSync(ticketPath(col)), false, ran("the pending path is empty", oc));
+      assert.equal(readFileSync(claimedPath(col), "utf8"), `${colLine}\n`, "<opus>.claimed holds the line");
+      refused(collide(), "verdict", "absent", col, "a second verdict");
+    } finally {
+      chmodSync(ci, 0o755);
+    }
+  }
+});
+
+test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet names review, not a new round", { timeout: 1_800_000 }, () => {
+  const b = world("w233-b4-substep", "build");
+  ticketed(b);
+  const verdict = (w: World, round: number, outcome: "passed" | "failed", body: string): Out =>
+    direct(w, w.wt, ["verdict", OPUS, "--round", String(round), "--sella", "qa-lead", "--outcome", outcome, "--from", writeTranscript(w, `r${round}.md`, body), "--studio", w.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const reviewV = (w: World, round: number, flag: string): Out => direct(w, w.wt, ["review", OPUS, flag, "--evidence", `ci/${OPUS}-review-${round}.log`, "--round", String(round), "--sella", "qa-lead", "--studio", w.wtStudio, "--now", round === 1 ? T.review1 : T.review2]);
+  const command = (round: number): string => `bisellium review ${OPUS} --pass|--fail --evidence ci/${OPUS}-review-${round}.log --round ${round} --sella qa-lead --studio ${WT_STUDIO_REL}`;
+  const substep = (w: World, round: number, row: string): void => {
+    const o = next(w, [OPUS, ...BUDGET]);
+    expectStep(o, "review", "named", row);
+    assert.equal(o.kv.get("actor"), "producer", ran(`${row}: actor`, o));
+    assert.equal(o.kv.get("command"), command(round), ran(`${row}: the exact review command`, o));
+    assert.equal(lastLine(o), `ticket: review round ${round}`, ran(`${row}: ticket`, o));
+    assert.equal(ticketOf(w)["action"], "review", `${row}: the ticket authorises review`);
+    assert.equal(ticketOf(w)["round"], round);
+  };
+
+  issued(b, BUDGET);
+  assert.equal(verdict(b, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  handoffAt(b, "wt", T.handoffFresh);
+  substep(b, 1, "verdict 1 recorded, no gate");
+  const r1 = reviewV(b, 1, "--fail");
+  assert.equal(r1.status, 0, ran("review --fail with the substep's ticket", r1));
+  handoffAt(b, "wt", T.handoffFresh);
+  const after = next(b, [OPUS, ...BUDGET]);
+  expectStep(after, "build", "named", "the gate cites round 1, failed at this tree");
+  assert.match(after.out, /^phase:\s*fix$/m, ran("phase fix", after));
+
+  // a fix, then round 2 passed while the gate still cites round 1
+  forge(b, "verdict-build", 2);
+  assert.equal(verdict(b, 2, "passed", "No findings").status, 0);
+  handoffAt(b, "wt", T.handoffFresh);
+  substep(b, 2, "verdict 2 recorded, the gate cites round 1");
+  const r2 = reviewV(b, 2, "--pass");
+  assert.equal(r2.status, 0, ran("review --pass with the substep's ticket", r2));
+  const done = next(b, [OPUS, ...BUDGET]);
+  assert.notEqual(done.first, `next: ${OPUS} review named`, ran("recorded: no longer review", done));
+  assert.notEqual(done.first, `next: ${OPUS} review held`, ran("recorded: not held either", done));
+
+  // another malformed gate state still holds
+  const m = world("w233-b4-malformed", "build");
+  ticketed(m);
+  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 2, "no ticket yet: the verdict is refused");
+  forge(m, "verdict-build", 1);
+  assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  editRecord(m, "wt", (doc) => doc.setIn(["probationes", "review"], { status: "maybe", sella: "qa-lead", evidence: `ci/${OPUS}-review-1.log` }));
+  commit(m.wt, "test: a malformed gate");
+  const om = next(m, [OPUS, ...BUDGET]);
+  expectStep(om, "review", "held", "a malformed gate holds as on master");
+  assert.equal(lastLine(om), "ticket: none", ran("a hold issues none", om));
+
+  // without the key: the censor is dispatched for round 2, and the stale gate holds, as on master
+  const p = world("w233-b4-plain", "build");
+  assert.equal(verdict(p, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
+  handoffAt(p, "wt", T.handoffFresh);
+  const op = next(p, [OPUS, ...BUDGET]);
+  expectStep(op, "review", "named", "no key: dispatch");
+  assert.equal(op.kv.get("round"), "2", ran("no key: round 2", op));
+  assert.equal(op.kv.get("actor"), "censor", ran("no key: the censor", op));
+  assert.equal(reviewV(p, 1, "--fail").status, 0);
+  assert.equal(verdict(p, 2, "passed", "No findings").status, 0);
+  handoffAt(p, "wt", T.handoffFresh);
+  const oh = next(p, [OPUS, ...BUDGET]);
+  expectStep(oh, "review", "held", "no key: the stale gate holds");
+  assert.match(oh.kv.get("why") ?? "", /is not the newest build-review log/, ran("no key: why", oh));
+});
+
+test("W-233-b5 behaviour 5: next --perform goes through the same tickets", { timeout: 1_800_000 }, () => {
+  // ready: issued from the derivation performed, consumed by runReady, and the next derivation's ticket left behind
+  const r = world("w233-b5-ready", "branch");
+  ticketed(r);
+  const wtHead = git(r.wt, ["rev-parse", "HEAD"]);
+  const or = next(r, [OPUS, "--perform", "--expect", "ready"]);
+  expectStep(or, "ready", "performed", "ready is performed with a ticket");
+  const entries = recordTickets(r, "wt") as string[];
+  assert.equal(entries.length, 1, "one ticket entry");
+  const entry = JSON.parse(entries[0]!) as Json;
+  assert.equal(entry["action"], "ready");
+  assert.equal(entry["head"], wtHead, "issued at the worktree's HEAD");
+  assert.equal(existsSync(claimedPath(r)), false, "the claimed file is gone");
+  const left = ticketOf(r);
+  assert.equal(left["action"], "red", ran("the ticket left afterwards", or));
+  assert.equal(left["round"], 1);
+
+  // done: committed on chore/done-<id> with the done line in tickets:
+  const d = world("w233-b5-done", "cleanup");
+  scenario(d, { list: mergedList(d) });
+  ticketed(d);
+  touchHandoff(d);
+  const od = next(d, [OPUS, "--perform", "--expect", "done"]);
+  expectStep(od, "done", "performed", "done is performed with a ticket");
+  const chore = parseFrontMatter<{ tickets?: unknown }>(git(d.repo, ["show", `refs/heads/chore/done-${OPUS}:studio/opera/${OPUS}.md`]), "record").data.tickets;
+  assert.equal(Array.isArray(chore) && chore.length, 1, "the done record carries one ticket");
+  assert.equal((JSON.parse((chore as string[])[0]!) as Json)["action"], "done");
+  assert.equal(existsSync(claimedPath(d)), false, "the claimed file is gone");
+
+  // branch: performed inside next, no ticket consumed; the ready ticket is left
+  const b = world("w233-b5-branch", "spec");
+  ticketed(b);
+  const ob = next(b, [OPUS, "--perform", "--expect", "branch"]);
+  expectStep(ob, "branch", "performed", "branch is performed");
+  assert.equal(ticketOf(b)["action"], "ready", ran("the ready ticket is left", ob));
+  assert.equal(existsSync(claimedPath(b)), false, "nothing was claimed");
 });
