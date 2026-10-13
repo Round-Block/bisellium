@@ -710,8 +710,17 @@ export function deriveNext(f: Facts): Derived {
     if ("error" in read) return hold("review", read.error);
     const cur = f.curTree();
     if (cur === undefined) return hold("review", `the current source tree of opus/${id} cannot be computed, so no review round can be judged current`);
-    const gate = reviewGate(f, b, read);
+    // W-233: in a ticketed studio a recorded verdict the gate does not cite yet is recorded by `review`, not re-dispatched or held
+    const tickets = readStepTickets(f.manifest);
+    if ("error" in tickets) return hold("review", `bisellium.yml#step_tickets is malformed (${tickets.error})`);
+    const gate = reviewGate(f, b, read, tickets.required);
     if (gate !== undefined && "error" in gate) return hold("review", gate.error);
+    if (gate !== undefined && "unrecorded" in gate) {
+      const n = gate.unrecorded.n;
+      const censor = censorSella(f.manifest) ?? "qa-lead";
+      const studio = f.wt.usable ? join(".worktrees", id, f.studioRel) : f.studioRel;
+      return { ...named("review", "producer", `build-review round ${n} is recorded but the review gate does not cite it`, `bisellium review ${id} --pass|--fail --evidence ci/${id}-review-${n}.log --round ${n} --sella ${censor} --studio ${studio}`), ticket: { action: "review", round: n } };
+    }
     const rulings = readRoundRulings(f.wt.studio, f.manifest, b, id, read.rounds);
     if ("error" in rulings) return hold("review", rulings.error);
     const counted = countedFailures(read.rounds);
@@ -857,18 +866,19 @@ interface Gate {
   round: number | undefined;
 }
 /** The recorded review gate, cross-checked against the strictly read rounds: absent is no decided review, anything else must agree with its log. */
-function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; rounds: BuildReviewRound[] }): Gate | undefined | { error: string } {
+function reviewGate(f: Facts, rec: Dict, read: { config: BuildReviewConfig; rounds: BuildReviewRound[] }, tickets: boolean): Gate | undefined | { error: string } | { unrecorded: BuildReviewRound } {
   const { reviewId, censor } = read.config;
   const g = isDict(rec["probationes"]) ? rec["probationes"][reviewId] : undefined;
-  if (g === undefined) return undefined;
+  // W-233: with step tickets, the newest verdict not yet cited (no gate, or a gate citing an older round) is the `review` substep
+  const newest = read.rounds[read.rounds.length - 1];
+  if (g === undefined) return tickets && newest !== undefined ? { unrecorded: newest } : undefined;
   const bad = (why: string): { error: string } => ({ error: `${recordRel(f.id)}#probationes.${reviewId}: ${why}` });
   if (!isDict(g)) return bad("the gate must be a mapping");
   if (g["status"] !== "passed" && g["status"] !== "failed") return bad("status must be exactly passed or failed");
   const evidence = str(g["evidence"]);
   const round = read.rounds.find((r) => r.log === evidence);
   if (round === undefined) return bad(`evidence ${evidence === undefined ? "(absent)" : evidence} names no read build-review log`);
-  const newest = read.rounds[read.rounds.length - 1]!;
-  if (round !== newest) return bad(`evidence ${round.log} is not the newest build-review log, ${newest.log}`);
+  if (round !== newest) return tickets && newest !== undefined ? { unrecorded: newest } : bad(`evidence ${round.log} is not the newest build-review log, ${newest?.log}`);
   if (g["sella"] !== censor) return bad(`sella must be the censor ${censor}`);
   if (g["status"] !== round.outcome) return bad(`status ${g["status"]} disagrees with ${round.log}, which ${round.outcome}`);
   return { status: g["status"], evidence, tree: round.tree, round: round.n };
