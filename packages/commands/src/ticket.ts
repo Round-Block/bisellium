@@ -16,7 +16,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
+import { isSeq, type Document } from "yaml";
 import { readContainedRegularFile, utcTimestampProblem } from "./opus-model.js";
 
 export type TicketAction = "verdict-spec" | "verdict-build" | "review" | "red" | "ready" | "done" | "branch" | "merge";
@@ -143,7 +144,14 @@ export function setPendingTicket(studio: string, opus: string, ticket: StepTicke
 }
 
 /** A ticket read against a verb: no ticket required, the accepted line and its pending path, or the refusal (one or two lines). */
-export function requireTicket(i: { studio: string; manifest: unknown; opus: string; verb: string; action: TicketAction; round: number }): { off: true } | { line: string; path: string } | { refusal: string } {
+export interface PendingTicket {
+  line: string;
+  /** the pending file `claimTicket` renames */
+  path: string;
+  /** the verb's two-line refusal for a reason found after `requireTicket` (`unclaimable: …`) */
+  refuse: (reason: string) => string;
+}
+export function requireTicket(i: { studio: string; manifest: unknown; opus: string; verb: string; action: TicketAction; round: number }): { off: true } | PendingTicket | { refusal: string } {
   const setting = readStepTickets(i.manifest);
   if ("error" in setting) return { refusal: `${i.opus}: ${i.verb} refused: bisellium.yml#step_tickets is malformed (${setting.error})` };
   if (!setting.required) return { off: true };
@@ -164,5 +172,60 @@ export function requireTicket(i: { studio: string; manifest: unknown; opus: stri
   if (t.studio !== facts.studio) return refuse(`studio is ${t.studio}, want ${facts.studio}`);
   if (t.head !== facts.head) return refuse(`head is ${t.head}, want ${facts.head}`);
   if (t.brief !== facts.brief) return refuse(`brief is ${t.brief}, want ${facts.brief}`);
-  return { line: ticketLine(t), path: join(dir, i.opus + ".json") };
+  return { line: ticketLine(t), path: join(dir, i.opus + ".json"), refuse: (reason) => refuse(reason).refusal };
+}
+
+/**
+ * Renames `path` to `<dir>/<opus>.claimed` (replacing any earlier claimed file), then reads it back: a failed rename, a
+ * non-regular file or bytes other than `line` + "\n" is a refusal (`unclaimable: <why>`). After a rename the pending path is
+ * empty whatever follows, and `requireTicket` never reads a `.claimed` file.
+ */
+export function claimTicket(path: string, line: string): { claimed: string } | { refusal: string } {
+  const claimed = join(dirname(path), basename(path, ".json") + ".claimed");
+  try {
+    renameSync(path, claimed);
+  } catch (e) {
+    return { refusal: `unclaimable: ${(e as Error).message}` };
+  }
+  const read = readContainedRegularFile(dirname(claimed), basename(claimed), "");
+  if ("error" in read) return { refusal: `unclaimable: ${read.error}` };
+  return read.bytes.toString("utf8") === `${line}\n` ? { claimed } : { refusal: "unclaimable: the ticket's bytes changed after they were checked" };
+}
+
+/** Deletes the claimed file after a successful write; a failure is a warning (the file is never read as a ticket). */
+export function dropClaim(claimed: string): string | undefined {
+  try {
+    unlinkSync(claimed);
+    return undefined;
+  } catch (e) {
+    return `warning: could not delete ${claimed}: ${(e as Error).message}`;
+  }
+}
+
+/** The claim a covered write makes immediately before its first write: nothing when no ticket is required, else the claimed file or the refusal. */
+export function claimPending(ticket: { off: true } | PendingTicket): { claimed?: string } | { refusal: string } {
+  if ("off" in ticket) return {};
+  const claim = claimTicket(ticket.path, ticket.line);
+  return "refusal" in claim ? { refusal: ticket.refuse(claim.refusal) } : claim;
+}
+
+/** `dropClaim` after the write, its warning to stderr. */
+export function releaseClaim(claim: { claimed?: string }): void {
+  const warning = claim.claimed === undefined ? undefined : dropClaim(claim.claimed);
+  if (warning !== undefined) console.error(warning);
+}
+
+/** The record's `tickets`: absent or a list of strings parseTicketLine accepts. */
+export function ticketsProblem(value: unknown): string | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) return "tickets must be a list of step ticket lines";
+  const bad = value.find((v) => typeof v !== "string" || "error" in parseTicketLine(v));
+  return bad === undefined ? undefined : "tickets holds an entry that is not a step ticket line";
+}
+
+/** Appends the ticket line to the record's `tickets`. */
+export function recordTicket(doc: Document, line: string): void {
+  const list = doc.get("tickets", true);
+  if (isSeq(list)) list.add(line);
+  else doc.set("tickets", doc.createNode([line]));
 }

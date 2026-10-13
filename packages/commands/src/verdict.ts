@@ -5,7 +5,7 @@ import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { instant } from "@bisellium/schema";
 import { isDirtyOutside, sourceTreeHash } from "@bisellium/shim";
 import { ensureRealDirectory } from "./ids.js";
-import { requireTicket } from "./ticket.js";
+import { claimPending, releaseClaim, requireTicket } from "./ticket.js";
 import { openStudio, parseFlags, recordOwnerRefusal, resolveNow, safeItemPath, type WriteOptions, type WriteResult } from "./writes.js";
 import { isBuilderClassSeat, readFront, readManifest, resolveSeat, type Manifest } from "@bisellium/adapter-native";
 import {
@@ -102,6 +102,7 @@ export const VERDICT_HEADERS = [
   "dispatch_prompt",
   "ui_input",
   "design_digest",
+  "ticket",
 ] as const;
 const headerLine = (name: (typeof VERDICT_HEADERS)[number], value: string | number): string => `# ${name}: ${value}`;
 
@@ -672,7 +673,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     return { exitCode: 2 };
   }
 
-  const header = [
+  let header = [
     headerLine("opus", opusId),
     headerLine("phase", phase),
     headerLine("round", round),
@@ -701,13 +702,21 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     }
   }
 
-  // W-233: spec and build verdicts need the step ticket of their round (handoff verdicts stay unticketed)
+  // W-233: spec and build verdicts need the step ticket of their round (handoff verdicts stay unticketed); its line is the header block's last
+  let claim: { claimed?: string } = {};
   if (phase !== "handoff") {
     const ticket = requireTicket({ studio: root, manifest, opus: opusId, verb: "verdict", action: phase === "spec" ? "verdict-spec" : "verdict-build", round });
     if ("refusal" in ticket) {
       console.error(ticket.refusal);
       return { exitCode: 2 };
     }
+    const claimed = claimPending(ticket);
+    if ("refusal" in claimed) {
+      console.error(claimed.refusal);
+      return { exitCode: 2 };
+    }
+    claim = claimed;
+    if ("line" in ticket) header = `${header}\n${headerLine("ticket", ticket.line)}`;
   }
 
   try {
@@ -719,6 +728,7 @@ export function runVerdict(args: string[], opts: VerdictOptions = {}): WriteResu
     else console.error(`could not write ${relative(root, target)}: ${(e as Error).message}`);
     return { exitCode: 2 };
   }
+  releaseClaim(claim);
 
   console.log(`${opusId}: ${phase} verdict round ${round} -> ${relative(root, target).split(sep).join("/")}`);
   for (const c of conversions) console.log(`${opusId}: finding ${c.finding} recorded as advisory: ${c.reason}`);

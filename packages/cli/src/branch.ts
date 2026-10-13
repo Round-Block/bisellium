@@ -15,7 +15,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { parseFrontMatter, readFront, readManifest, type Manifest } from "@bisellium/adapter-native";
-import { requireTicket } from "@bisellium/commands/ticket.js";
+import { claimPending, releaseClaim, requireTicket } from "@bisellium/commands/ticket.js";
 import { opusBranchName, openStudio } from "@bisellium/commands/writes.js";
 import { sourceTreeHash } from "@bisellium/shim";
 import { parse as parseYaml } from "yaml";
@@ -588,8 +588,12 @@ export function runBranch(args: string[]): { exitCode: number } {
   if ("refusal" in ticket) { console.error(ticket.refusal); return { exitCode: 2 }; }
 
   const repo = resolve(values.get("--repo") ?? ".");
+  const claim = claimPending(ticket);
+  if ("refusal" in claim) { console.error(claim.refusal); return { exitCode: 2 }; }
   const result = opusId === "W-096" ? createW096Branch(repo, studio) : createOpusBranch(repo, opusId);
   if (!result.ok) { console.error(result.error); return { exitCode: 1 }; }
+  releaseClaim(claim);
+  if ("line" in ticket) console.log(`ticket: ${ticket.line}`);
   console.log(`created ${opusBranchName(opusId)}${result.note ? ` (${result.note})` : ""}`);
   return { exitCode: 0 };
 }
@@ -609,12 +613,16 @@ export function runMerge(args: string[]): { exitCode: number } {
   if ("refusal" in ticket) { console.error(ticket.refusal); return { exitCode: 2 }; }
 
   const repo = resolve(values.get("--repo") ?? ".");
+  const claim = claimPending(ticket);
+  if ("refusal" in claim) { console.error(claim.refusal); return { exitCode: 2 }; }
   const result = mergeOpusBranch(repo, opusId, studio);
   if (!result.ok) {
     console.error(result.error);
     if (result.note) console.error(result.note);
     return { exitCode: 1 };
   }
+  releaseClaim(claim);
+  if ("line" in ticket) console.log(`ticket: ${ticket.line}`);
   console.log(`merged ${opusBranchName(opusId)} into ${result.trunk ?? "master"}`);
   if (result.note) console.log(result.note);
   return { exitCode: 0 };

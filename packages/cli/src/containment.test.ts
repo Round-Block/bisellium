@@ -860,6 +860,8 @@ const PINNED_D: PinnedSite[] = [
   { key: "packages/commands/src/ticket.ts:setPendingTicket:mkdirSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
   { key: "packages/commands/src/ticket.ts:setPendingTicket:writeFileSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
   { key: "packages/commands/src/ticket.ts:setPendingTicket:renameSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
+  { key: "packages/commands/src/ticket.ts:claimTicket:renameSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
+  { key: "packages/commands/src/ticket.ts:dropClaim:unlinkSync#1", disposition: "outside", why: "the step-ticket store under the git common directory, never an officina file" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#1", disposition: "outside", why: "reads the user-named --from findings file" },
   { key: "packages/commands/src/verdict.ts:runVerdict:readFileSync#2", disposition: "outside", why: "reads the findings from stdin (fd 0)" },
   { key: "packages/commands/src/verdict.ts:runVerdict:writeFileSync#1", disposition: "contained", why: "ci/<opus>-<phase>-<round>.log in a real ci/ checked by ensureRealDirectory, exclusive create" },
