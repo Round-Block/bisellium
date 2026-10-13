@@ -594,3 +594,14 @@ if (runs(5)) {
     );
   });
 }
+
+// W-240 behaviour 2: outside every runs(n) gate, so --behaviour never selects it; run it with
+// --test-name-pattern=W-240-b2 (the --behaviour selector admits 1, 2, 3, 5 only).
+if (only === undefined) {
+  test("W-240-b2 behaviour 2: only the producer recomputation runs ci with --offline", () => {
+    const runner = readFileSync(RUNNER, "utf8");
+    // The failure messages are fixed text: an assert.match/equal failure would echo the runner source.
+    assert.ok(/"ci",\s*"--offline",\s*"--opus",/.test(runner), "the producer gate passes --offline to ci");
+    assert.ok(occurrences(runner, /"--offline"/g) === 1, "no other runner call passes --offline");
+  });
+}

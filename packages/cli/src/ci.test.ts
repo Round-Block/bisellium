@@ -563,4 +563,25 @@ function makeCiRepoWithNestedStudio(): { dir: string; opusId: string } {
   }
 }
 
+// ---------------------------------------------------------------------------
+// behaviour 11 (W-240 behaviour 1): --offline skips the audit step and only it
+// ---------------------------------------------------------------------------
+{
+  const dir = mkdtempSync(join(tmpdir(), "ci-offline-"));
+  try {
+    writeOrderRepo(dir);
+    // audit would fail the run if --offline ever ran it.
+    writeFileSync(join(dir, "fail-at.txt"), "audit");
+    const result = await runCi(["--repo", dir, "--offline"]);
+    check(
+      11,
+      "W-240 behaviour 1: --offline skips the audit step and only it",
+      result.exitCode === 0 && orderLog(dir).join(",") === EXPECTED_ORDER.slice(1).join(","),
+      `exit=${result.exitCode} order=${JSON.stringify(orderLog(dir))}`,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 process.exit(failed ? 1 : 0);

@@ -48,8 +48,10 @@ import { runVerify, toPosixRelative, type RunVerifyOptions, type RunVerifyResult
 // The seven steps `.github/workflows/ci.yml` runs, in order — `npm ci` is a
 // dependency-install prerequisite, not one of the seven, and is deliberately
 // left out here the same way it's left out of the brief's own list.
+const AUDIT_STEP = "npm run -s audit";
+
 export const CI_STEPS: readonly string[] = [
-  "npm run -s audit", // W-236: moderate-or-worse npm advisories fail CI; a registry failure fails it too
+  AUDIT_STEP, // W-236: moderate-or-worse npm advisories fail CI; a registry failure fails it too
   "npm run -s typecheck",
   "npm run -s lint",
   "npm run -s format:check",
@@ -85,7 +87,7 @@ export interface RunCiResult {
   exitCode: number;
 }
 
-const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]";
+const USAGE = "usage: bisellium ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty] [--offline]";
 const GIT_TIMEOUT_MS = 30_000;
 
 /** `git rev-parse --show-toplevel` from `cwd`, or undefined outside a repo. */
@@ -123,7 +125,7 @@ function runStep(command: string, cwd: string): number {
 }
 
 export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<RunCiResult> {
-  const parsed = parseFlags(args, { valued: ["--ref", "--opus", "--studio", "--repo"], boolean: ["--allow-dirty"] });
+  const parsed = parseFlags(args, { valued: ["--ref", "--opus", "--studio", "--repo"], boolean: ["--allow-dirty", "--offline"] });
   if ("error" in parsed) {
     console.error(`${parsed.error}\n${USAGE}`);
     return { exitCode: 2 };
@@ -139,6 +141,7 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
   const studioArg = values.get("--studio");
   const repoFlag = values.get("--repo");
   const allowDirty = flags.has("--allow-dirty");
+  const offline = flags.has("--offline");
 
   let execRepo: string;
   let worktree: AcquiredWorktree | undefined;
@@ -175,7 +178,9 @@ export async function runCi(args: string[], opts: RunCiOptions = {}): Promise<Ru
       }
     }
 
-    for (const step of CI_STEPS) {
+    // W-240: --offline skips the one step that needs the registry; the receipt
+    // host recomputes ci in a network-isolated cell and is the only caller.
+    for (const step of offline ? CI_STEPS.filter((s) => s !== AUDIT_STEP) : CI_STEPS) {
       const status = runStep(step, execRepo);
       if (status !== 0) {
         console.error(`bisellium ci: step failed (exit ${status}): ${step}`);

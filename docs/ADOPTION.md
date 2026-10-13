@@ -1143,7 +1143,7 @@ unparseable sibling opus / dirty source tree without `--allow-dirty`.
 ## Running ci
 
 ```bash
-npm run bisellium -- ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty]
+npm run bisellium -- ci [--ref <ref>] [--opus <id>] [--studio <dir>] [--repo <dir>] [--allow-dirty] [--offline]
 ```
 
 `ci` runs this repository's CI pipeline locally, without a runner: the
@@ -1156,7 +1156,9 @@ failure), `npm run -s typecheck`, `npm run -s lint`,
 `npm run -s check -- studio --repo .` and
 `npm run -s check -- examples/sample-studio --repo .`. The steps are fixed
 in code and name this repository's two officinae; `ci` is not an adoption
-feature. `.github/workflows/ci.yml` runs the same commands on a `push` and on a
+feature. `--offline` skips the audit step, the only one that needs the
+registry; the receipt host passes it in its network-isolated recomputation,
+and no other caller does. `.github/workflows/ci.yml` runs the same commands on a `push` and on a
 source-change `merge_group`, each after `npm ci`, split across two jobs: `gates`
 runs every step except the studio check, in `CI_STEPS` order; `officina` runs
 `npm run -s check -- studio --repo .` alone. A records-only `merge_group` takes
