@@ -5045,7 +5045,7 @@ test("W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet n
   assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 2, "no ticket yet: the verdict is refused");
   forge(m, "verdict-build", 1);
   assert.equal(verdict(m, 1, "failed", "1. blocking: fixture defect at brief:1. check: none: fixture").status, 0);
-  editRecord(m, "wt", (doc) => doc.setIn(["probationes", "sec"], { status: "maybe", sella: "qa-lead", evidence: `ci/${OPUS}-review-1.log` }));
+  editRecord(m, "wt", (doc) => doc.setIn(["probationes", "review"], { status: "maybe", sella: "qa-lead", evidence: `ci/${OPUS}-review-1.log` }));
   commit(m.wt, "test: a malformed gate");
   const om = next(m, [OPUS, ...BUDGET]);
   expectStep(om, "review", "held", "a malformed gate holds as on master");
