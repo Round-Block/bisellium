@@ -600,7 +600,8 @@ if (runs(5)) {
 if (only === undefined) {
   test("W-240-b2 behaviour 2: only the producer recomputation runs ci with --offline", () => {
     const runner = readFileSync(RUNNER, "utf8");
-    assert.match(runner, /"ci",\s*"--offline",\s*"--opus",/, "the producer gate passes --offline to ci");
-    assert.equal(occurrences(runner, /"--offline"/g), 1, "no other runner call passes --offline");
+    // The failure messages are fixed text: an assert.match/equal failure would echo the runner source.
+    assert.ok(/"ci",\s*"--offline",\s*"--opus",/.test(runner), "the producer gate passes --offline to ci");
+    assert.ok(occurrences(runner, /"--offline"/g) === 1, "no other runner call passes --offline");
   });
 }
