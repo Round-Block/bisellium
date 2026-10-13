@@ -1,0 +1,20 @@
+# opus: W-240
+# phase: handoff
+# round: 8
+# sella: qa-lead
+# model: gpt-5.6-terra
+# session: 01a13501-a078-7502-802f-f524e704db88
+# outcome: failed
+# at: 2026-10-13T22:17:53.567Z
+# tree: dirty:1156df6029282b74f9debc2aa505f9c6a5992474
+
+## Findings
+1. blocking — docs/SESSION-HANDOFF.md:17 W-252 is described as a backlog split, but it is an unknown opus. — check: next W-252
+2. blocking — docs/SESSION-HANDOFF.md:18 W-253 is described as the D-062 hand-branch fix, but it is an unknown opus. — check: next W-253
+3. blocking — docs/SESSION-HANDOFF.md:48 W-253 is again ranked as the hotfix despite being an unknown opus. — check: next W-253
+
+## Earlier findings
+
+## Verdict
+The new resume and queue entries rely on two opuses absent from the current studio records.
+VERDICT: FAIL

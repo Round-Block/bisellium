@@ -1,0 +1,20 @@
+# opus: W-246
+# phase: spec
+# round: 2
+# sella: spec-reviewer
+# model: gpt-5.6-sol
+# session: 01a1373f-05b7-7bd0-9ae8-4e8bf8fd4c8b
+# outcome: failed
+# at: 2026-10-13T21:55:52.404Z
+# tree: tree:1156df6029282b74f9debc2aa505f9c6a5992474
+# brief: briefs/W-246.md blob:93b2a10711d2e3227f5cf08eb31a4329ba5b4a21
+
+## Findings
+1. blocking — brief:46 `parseLogHeader` accepts noncanonical headers such as `#sella:` and overwrites duplicates; two such malformed historical logs can count as failures and select `split`, letting the opus reach build instead of refusing. — check: packages/cli/src/next.test.ts W-246-b2 malformed-history rows
+2. blocking — brief:65 The “no others” assertion census is false: spec reconciliation flips two existing rows in `packages/cli/src/verdict-citation.test.ts`—the spec-phase `# converted:` assertion and the uncited spec-failure outcome assertion—yet that test file is outside Files owned, so `npm test` and the promised diff cannot both hold. — check: packages/cli/src/verdict-citation.test.ts
+3. blocking — brief:27 Requiring a blocking finding to end with exact replacement text conflicts with the unchanged output contract requiring every finding to end with `check: …`; deletions also have no representable exact terminal text. — check: none: add a prompt-contract test with a blocking replacement and a deletion
+4. advisory — brief:44 The findings domain omits the valid exact `No findings` alternative used by behaviour 1 and the required `check:` marker, and it omits `findingsProblem`, the actual rejector on an un-sessioned write; these paths nevertheless refuse or subsequently hold. — check: packages/cli/src/next.test.ts W-246-b1
+
+## Verdict
+The brief has substantive fail-open and contradictory acceptance paths that must be corrected before build.
+VERDICT: FAIL

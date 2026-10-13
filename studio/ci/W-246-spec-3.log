@@ -1,0 +1,20 @@
+# opus: W-246
+# phase: spec
+# round: 3
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T21:56:51.242Z
+# tree: tree:1156df6029282b74f9debc2aa505f9c6a5992474
+# brief: briefs/W-246.md blob:18baa14fd004c6254c2232b92c05ede20f6fb906
+
+## Findings
+
+1. advisory — Round 2 #1 fixed: the cap counts only logs that readSpecReview accepts as failed reviews (canonical headers once each, reviewer seat and model, standing blocker); the input row names readSpecReview, and b2 gains malformed-history rows (#sella: and a duplicated outcome). check: packages/cli/src/next.test.ts W-246-b2
+2. advisory — Round 2 #2 fixed: verdict-citation.test.ts joins Files owned, and its two spec-phase flips are named under Acceptance with their new values. check: packages/cli/src/verdict-citation.test.ts
+3. advisory — Round 2 #3 fixed: the prompt sentence puts the replacement text, or "delete brief:<line>", before the check: marker. check: none: prompt text
+4. advisory — Round 2 advisory 4 taken: the findings row names the exact No findings alternative, the check: marker and findingsProblem. check: none: admission on a scratch copy
+
+## Verdict
+
+Passed: the three blockers and advisory 4 are fixed, the brief is admitted on a scratch copy, and the block-level check passes.

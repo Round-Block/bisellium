@@ -1,0 +1,19 @@
+# opus: W-246
+# phase: spec
+# round: 1
+# sella: architect
+# model: claude-opus-5-5
+# outcome: passed
+# at: 2026-10-13T21:49:56.338Z
+# tree: tree:1156df6029282b74f9debc2aa505f9c6a5992474
+# brief: briefs/W-246.md blob:93b2a10711d2e3227f5cf08eb31a4329ba5b4a21
+
+## Findings
+
+1. advisory — The "re-reviews only changed lines" part of the scope already ships (W-215: review-packet.mjs delta.diff and prompts/later-round.md); the brief says so and builds nothing for it. check: none: scripts/review-packet.test.mjs covers the delta
+2. advisory — later-round.md promised that verdict records an uncited spec blocker as advisory, but runVerdict reconciled only build verdicts; behaviour 1 closes that gap. check: packages/cli/src/next.test.ts W-246-b1
+3. advisory — W-220 dropped and W-237's automatic close dropped (reasons in Intent); W-204 carried whole. Admission passed on a scratch copy of the officina (the real record was not moved). check: none: ready on a scratch copy
+
+## Verdict
+
+Passed: three behaviours with verbatim reds, admission passes, the block-level check passes.
