@@ -9,6 +9,14 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "bisellium context --studio studio", "timeout": 2 }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "*",
