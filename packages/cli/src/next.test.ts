@@ -4640,3 +4640,106 @@ test("W-215-b3 behaviour 3: the censor's order resumes the recorded build sessio
   assert.match(p.kv.get("command") ?? "", /^dispatch qa-lead; /, ran("today's wording", p));
   assert.match(p.kv.get("command") ?? "", /--studio studio --session <the session id the reviewer prints>;/, ran("the record command asks for the printed session", p));
 });
+
+// ---------------------------------------------------------------------------
+// W-233: step tickets. `next` issues one per derivation in a studio whose
+// bisellium.yml sets `step_tickets: required`; the ladder's direct writers
+// require and consume it. Rows are selectable with --test-name-pattern=W-233-b<n>.
+// ---------------------------------------------------------------------------
+const ticketDir = (w: World): string => join(w.repo, ".git", "bisellium", "tickets");
+const ticketPath = (w: World, name = `${OPUS}.json`): string => join(ticketDir(w), name);
+const ticketText = (w: World, name?: string): string => (existsSync(ticketPath(w, name)) ? readFileSync(ticketPath(w, name), "utf8") : "");
+const ticketOf = (w: World): Json => JSON.parse(ticketText(w)) as Json;
+/** The key, appended to the main checkout's manifest and the worktree's, committed in each (W-167's `both`). */
+function ticketed(w: World, value = "required"): void {
+  for (const dir of [w.repo, ...(existsSync(w.wt) ? [w.wt] : [])]) {
+    const path = join(dir, MANIFEST_REL);
+    writeFileSync(path, `${readFileSync(path, "utf8")}step_tickets: ${value}\n`);
+    commit(dir, `test: W-233 step_tickets ${value}`);
+  }
+}
+/** Behaviour n's red log, as writeReds writes one, for this behaviour only. */
+function writeRed(w: World, n: number): void {
+  put(
+    w.wt,
+    `studio/ci/reds/${OPUS}/${String(n).padStart(2, "0")}.log`,
+    [`# behaviour: ${n}`, `# command: node fixture.test.ts --behaviour ${n}`, "# exit: 1", `# at: ${T.reds}`, "# sella: builder.W-900", `# tree: ${sourceTree(w.wt)}`, "", `TAP version 13\nnot ok 1 - W-900 behaviour ${n}: fixture\n  ---\n  code: 'ERR_ASSERTION'\n  ...\n`, ""].join("\n"),
+  );
+  commit(w.wt, `studio(${OPUS}): red ${n}`);
+}
+const lastLine = (o: Out): string => o.out.trimEnd().split("\n").at(-1) ?? "";
+const WT_STUDIO_REL = `.worktrees/${OPUS}/studio`;
+
+test("W-233-b1 behaviour 1: report-mode next issues one ticket per derivation, and none for a hold", { timeout: 1_800_000 }, () => {
+  // at branch
+  const a = world("w233-b1-branch", "spec");
+  ticketed(a);
+  const o1 = next(a, [OPUS]);
+  assert.ok(existsSync(ticketPath(a)), ran("branch: next writes the ticket", o1));
+  expectStep(o1, "branch", "named", "branch");
+  const want = { opus: OPUS, step: "branch", action: "branch", round: 0, actor: "producer", studio: "studio", head: git(a.repo, ["rev-parse", "refs/heads/master"]), brief: git(a.repo, ["hash-object", BRIEF_REL]), at: NOW_ISO };
+  assert.equal(ticketText(a), `${JSON.stringify(want)}\n`, "one JSON line, keys in order, at the --now instant");
+  assert.equal(lastLine(o1), "ticket: branch round 0", ran("the output ends with the ticket line", o1));
+  const later = "2026-10-02T12:30:00.000Z";
+  const o2 = next(a, [OPUS, "--now", later]);
+  assert.equal(ticketText(a), `${JSON.stringify({ ...want, at: later })}\n`, ran("a second call rewrites it with the new --now", o2));
+
+  // at reds: the worktree's studio and HEAD; the next red once the first is committed, also while the handover is stale
+  const r = world("w233-b1-reds", "ready");
+  ticketed(r);
+  const or = next(r, [OPUS, ...BUDGET]);
+  assert.equal(lastLine(or), "ticket: red round 1", ran("reds: first missing behaviour", or));
+  const base = { opus: OPUS, step: "reds", action: "red", actor: "builder", studio: WT_STUDIO_REL, brief: git(r.wt, ["hash-object", BRIEF_REL]), at: NOW_ISO };
+  assert.equal(ticketText(r), `${JSON.stringify({ opus: OPUS, step: "reds", action: "red", round: 1, actor: "builder", studio: WT_STUDIO_REL, head: git(r.wt, ["rev-parse", "HEAD"]), brief: base.brief, at: NOW_ISO })}\n`, "red round 1 at the worktree's HEAD");
+  writeRed(r, 1);
+  const or2 = next(r, [OPUS, ...BUDGET]);
+  expectStep(or2, "reds", "held", "a stale handover holds the order");
+  assert.equal(lastLine(or2), "ticket: red round 2", ran("the hold withholds no ticket", or2));
+  assert.equal(ticketOf(r)["head"], git(r.wt, ["rev-parse", "HEAD"]), "round 2 is bound to the new head");
+  assert.equal(ticketOf(r)["round"], 2);
+
+  // at review
+  const b = world("w233-b1-review", "build");
+  ticketed(b);
+  const ob = next(b, [OPUS, ...BUDGET]);
+  expectStep(ob, "review", "named", "review");
+  assert.equal(lastLine(ob), "ticket: verdict-build round 1", ran("review", ob));
+  assert.deepEqual({ ...ticketOf(b), head: undefined }, { opus: OPUS, step: "review", action: "verdict-build", round: 1, actor: "censor", studio: WT_STUDIO_REL, head: undefined, brief: git(b.wt, ["hash-object", BRIEF_REL]), at: NOW_ISO });
+
+  // a Patron rung and a halted record issue none, and delete one written before
+  for (const [tag, build] of [
+    ["backlog", () => world("w233-b1-backlog", "backlog")],
+    [
+      "halted",
+      () => {
+        const h = world("w233-b1-halted", "spec");
+        editRecord(h, "repo", (doc) => doc.setIn(["state"], "halted"));
+        commit(h.repo, "test: halted");
+        return h;
+      },
+    ],
+  ] as [string, () => World][]) {
+    const h = build();
+    ticketed(h);
+    mkdirSync(ticketDir(h), { recursive: true });
+    writeFileSync(ticketPath(h), ticketText(a));
+    const oh = next(h, [OPUS]);
+    assert.equal(lastLine(oh), "ticket: none", ran(`${tag}: no ticket`, oh));
+    assert.equal(existsSync(ticketPath(h)), false, `${tag}: the earlier ticket is deleted`);
+  }
+
+  // without the key: no directory, no line
+  const plain = world("w233-b1-plain", "spec");
+  const op = next(plain, [OPUS]);
+  expectStep(op, "branch", "named", "no key");
+  assert.equal(existsSync(join(plain.repo, ".git", "bisellium")), false, "no tickets directory");
+  assert.equal(/^ticket:/m.test(op.out), false, ran("no ticket line", op));
+
+  // a malformed value holds
+  const m = world("w233-b1-malformed", "spec");
+  ticketed(m, "yes");
+  const om = next(m, [OPUS]);
+  assert.equal(om.first, `next: ${OPUS} held`, ran("malformed", om));
+  assert.equal(om.status, 1);
+  assert.match(om.kv.get("why") ?? "", /^bisellium\.yml#step_tickets is malformed \(/, ran("why", om));
+});
