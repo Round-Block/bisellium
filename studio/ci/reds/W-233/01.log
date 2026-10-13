@@ -1,0 +1,48 @@
+# behaviour: 1
+# command: node --test-reporter=tap --test-name-pattern=W-233-b1 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-13T09:56:38.158Z
+# sella: builder.W-233
+# tree: tree:3193f460c1dbb255399acb78221a3591c3e3a7fd
+
+TAP version 13
+# Subtest: W-233-b1 behaviour 1: report-mode next issues one ticket per derivation, and none for a hold
+not ok 1 - W-233-b1 behaviour 1: report-mode next issues one ticket per derivation, and none for a hold
+  ---
+  duration_ms: 1731.13903
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:152:212'
+  failureType: 'testCodeFailure'
+  error: |-
+    branch: next writes the ticket
+    --- exit 0
+    --- stdout
+    next: W-900 branch named
+    actor: producer
+    why: refs/heads/opus/W-900 does not exist
+    command: bisellium next W-900 --perform --expect branch
+    health: no step recorded
+    
+    --- stderr
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:4678:10)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1755.430401
