@@ -1,0 +1,16 @@
+# opus: W-233
+# phase: spec
+# round: 9
+# sella: architect
+# outcome: passed
+# at: 2026-10-13T01:15:39.797Z
+# tree: tree:7f6bd787415c3d60b871389c1e0b6850abbf9822
+# brief: briefs/W-233.md blob:494e24f1a267eb5f3fef76886036cbcbbf060a33
+
+## Findings
+
+1. advisory — Spec-8 finding (brief:9's malformed-setting "passes one that adds none" contradicts ladder.switch) accepted by narrowing: brief:9 now says only that a malformed setting at either end fails a candidate that adds a covered item, and that ladder.switch also fails a required base with a malformed head; the "passes" claim is deleted. Nothing else changed. check: scripts/ci-certify.test.mjs
+
+## Verdict
+
+Passed: the one blocking finding of ci/W-233-spec-8.log is answered in revision 5 (diff ~/.bisellium-evidence/W-233-spec/r4-r5.diff, one sentence). Brief admission reports 0 problems; no Default changed.
