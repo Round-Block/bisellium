@@ -1,0 +1,63 @@
+# behaviour: 4
+# command: node --test-reporter=tap --test-name-pattern=W-233-b4 --import tsx packages/cli/src/next.test.ts
+# exit: 1
+# at: 2026-10-13T10:13:45.742Z
+# sella: builder.W-233
+# tree: tree:da4437bba97cfc34c23b9e49209249c6c2c6a79e
+
+TAP version 13
+# Subtest: W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet names review, not a new round
+not ok 1 - W-233-b4 behaviour 4: a recorded verdict that the gate does not cite yet names review, not a new round
+  ---
+  duration_ms: 4667.084574
+  type: 'test'
+  location: '/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:160:127'
+  failureType: 'testCodeFailure'
+  error: |-
+    verdict 1 recorded, no gate: actor
+    --- exit 0
+    --- stdout
+    next: W-900 review named
+    actor: censor
+    why: no review gate is recorded
+    head: opus/W-900 47f2bd912d2f
+    role: censor
+    sella: qa-lead
+    boot: bisellium context --sella qa-lead --studio studio
+    budget_tokens: 100000
+    phase: review
+    round: 2
+    inputs: briefs/W-900.md, ci/W-900-review-1.log, ci/reds/W-900/, opera/W-900.md#traditio
+    command: dispatch qa-lead; Packet first: node --import tsx scripts/review-packet.mjs --phase build --opus W-900 --round 2 --sella qa-lead --studio studio --repo . --packets <packet dir>; If the author disputes a finding with evidence, send studio/prompts/rebuttal.md and the author's ## Rebuttal into the same session and record the reviewer's ## Ruling in the same verdict.; record the transcript with: bisellium verdict W-900 --round 2 --sella qa-lead --outcome <passed|failed> --studio studio --session <the session id the reviewer prints>; close out with: bisellium review W-900 --pass|--fail --evidence ci/W-900-review-2.log --round 2 --sella qa-lead --studio studio. Open a security blocker with "blocking (security)": only a round whose every blocker carries it is exempt from the three-round cap (D-044). Use the word class in a blocker that recurs across sites (L-069).
+    health: no step recorded
+    ticket: verdict-build round 2
+    
+    --- stderr
+    
+    + actual - expected
+    
+    + 'censor'
+    - 'producer'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'producer'
+  actual: 'censor'
+  operator: 'strictEqual'
+  stack: |-
+    substep (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:5013:12)
+    TestContext.<anonymous> (/home/edckt/agents/bisellium/.worktrees/W-233/packages/cli/src/next.test.ts:5023:3)
+    Test.runInAsyncScope (node:async_hooks:226:14)
+    Test.run (node:internal/test_runner/test:1201:25)
+    Test.start (node:internal/test_runner/test:1096:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4687.156062
